@@ -93,7 +93,7 @@ describe("XpService.award", () => {
 
     await expect(
       service.award("user-1", XpReason.EPISODE_WATCHED, "watch-1"),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(false);
     expect(prisma.userScore.upsert).not.toHaveBeenCalled();
   });
 

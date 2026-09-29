@@ -14,6 +14,7 @@ export interface ProviderBookDetails {
   publisher: string | null;
   genres: string[];
   pageCount: number | null;
+  editionKey: string | null;
   releaseDate: string | null;
   /** Permalink to the picked edition's page on the source, when known. */
   website: string | null;

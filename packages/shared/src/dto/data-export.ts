@@ -28,6 +28,7 @@ import type {
   ReviewVisibility,
   ReviewVoteValue,
   SecurityEventType,
+  SessionSource,
   VisibilityAudience,
   VisibilityFacet,
 } from "../enums";
@@ -73,6 +74,9 @@ export interface DataExportGameEntry {
   notes: string | null;
   favorite: boolean;
   playtimeMinutes: number;
+  trackedPlaytimeMinutes: number;
+  steamPlaytimeMinutes: number | null;
+  steamSyncedAt: string | null;
   ownershipStatus: GameOwnershipStatus;
   ownershipSource: string | null;
   startedAt: string | null;
@@ -80,6 +84,14 @@ export interface DataExportGameEntry {
   createdAt: string;
   /** Completed replays beyond the first, oldest first. */
   replays: string[];
+  sessions: {
+    playthroughNumber: number | null;
+    durationMinutes: number;
+    notes: string | null;
+    occurredAt: string;
+    source: SessionSource;
+    createdAt: string;
+  }[];
 }
 
 export interface DataExportBookEntry {
@@ -95,6 +107,9 @@ export interface DataExportBookEntry {
   notes: string | null;
   favorite: boolean;
   currentPage: number;
+  editionKey: string | null;
+  referencePageCount: number | null;
+  trackedReadingMinutes: number;
   ownershipStatus: BookOwnershipStatus;
   ownershipSource: string | null;
   startedAt: string | null;
@@ -102,6 +117,17 @@ export interface DataExportBookEntry {
   createdAt: string;
   /** Completed rereads beyond the first, oldest first. */
   replays: string[];
+  sessions: {
+    readingNumber: number | null;
+    durationMinutes: number;
+    pagesRead: number;
+    startPage: number | null;
+    endPage: number | null;
+    notes: string | null;
+    occurredAt: string;
+    source: SessionSource;
+    createdAt: string;
+  }[];
 }
 
 export interface DataExportMusicEntry {

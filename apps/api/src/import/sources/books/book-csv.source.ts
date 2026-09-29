@@ -171,7 +171,7 @@ export abstract class BookCsvSource<
     const allowAdult = await this.ageGate.allowsAdultContent(userId);
 
     if (decisions.overwrite) {
-      // BookReplay cascades on BookEntry delete (schema onDelete: Cascade).
+      // Reading cycles cascade on BookEntry delete.
       await this.prisma.bookEntry.deleteMany({ where: { userId } });
     }
 
@@ -242,13 +242,14 @@ export abstract class BookCsvSource<
       status,
       notes: row.notes,
       currentPage,
+      editionKey: details.editionKey,
+      referencePageCount: details.pageCount,
+      readingBaselinePage: currentPage,
       startedAt: row.startedAt ? new Date(row.startedAt) : null,
       finishedAt: row.finishedAt ? new Date(row.finishedAt) : null,
       ownershipStatus: row.ownershipStatus,
     };
-    // Only a first-time import backfills replays from "Read Count" — an
-    // existing entry may already have its own, and re-running the same import
-    // shouldn't keep piling more on.
+    // Only a first-time import backfills reading cycles from "Read Count".
     const existing = await this.prisma.bookEntry.findUnique({
       where: { userId_bookItemId: { userId, bookItemId: bookItem.id } },
       select: { id: true },
@@ -269,11 +270,30 @@ export abstract class BookCsvSource<
       );
     }
 
-    if (!existing && row.readCount > 1) {
-      await this.prisma.bookReplay.createMany({
-        data: Array.from({ length: row.readCount - 1 }, () => ({
+    if (!existing && status !== "TO_READ") {
+      const count = status === "READ" ? Math.max(1, row.readCount) : 1;
+      await this.prisma.bookReading.createMany({
+        data: Array.from({ length: count }, (_, index) => ({
           bookEntryId: entry.id,
-          finishedAt: row.finishedAt ? new Date(row.finishedAt) : new Date(),
+          number: index + 1,
+          status:
+            status === "READ"
+              ? ("COMPLETED" as const)
+              : status === "DROPPED"
+                ? ("DROPPED" as const)
+                : ("ACTIVE" as const),
+          editionKey: details.editionKey,
+          referencePageCount: details.pageCount,
+          baselinePage: index === 0 ? currentPage : 0,
+          currentPage: status === "READ" ? currentPage : 0,
+          startedAt: row.startedAt ? new Date(row.startedAt) : null,
+          finishedAt:
+            status === "READ"
+              ? row.finishedAt
+                ? new Date(row.finishedAt)
+                : new Date()
+              : null,
+          legacyIncomplete: count > 1,
         })),
       });
     }

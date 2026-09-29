@@ -403,9 +403,8 @@ export class ProfileService {
   }
 
   /**
-   * Video-derived activity summary (streak, heatmap teaser, genres…) —
-   * deliberately video-only, since EpisodeWatch is the only true per-event
-   * log in the app. Gated as one block by the caller via `visible`.
+   * Activity summary. Watch time and genres remain video-specific, while the
+   * streak and heatmap use every dated watch, game session and reading session.
    */
   private async computeActivityStats(
     userId: string,
@@ -413,7 +412,7 @@ export class ProfileService {
   ): Promise<ProfileActivityStatsDto> {
     if (!visible) return EMPTY_ACTIVITY_STATS;
 
-    const [entries, watches] = await Promise.all([
+    const [entries, watches, gameSessions, bookSessions] = await Promise.all([
       this.prisma.libraryEntry.findMany({
         where: { userId },
         select: {
@@ -439,6 +438,14 @@ export class ProfileService {
           },
         },
       }),
+      this.prisma.gameSession.findMany({
+        where: { gameEntry: { userId } },
+        select: { occurredAt: true },
+      }),
+      this.prisma.bookSession.findMany({
+        where: { bookEntry: { userId } },
+        select: { occurredAt: true },
+      }),
     ]);
 
     const regular = watches.filter((w) => w.episode.season.number !== 0);
@@ -448,6 +455,11 @@ export class ProfileService {
     );
     const now = new Date();
     const watchDates = datedRegular.map((w) => w.watchedAt);
+    const activityDates = [
+      ...watchDates,
+      ...gameSessions.map((session) => session.occurredAt),
+      ...bookSessions.map((session) => session.occurredAt),
+    ];
 
     const watchMinutes = regular.map((w) => ({
       watchedAt: w.watchedAt,
@@ -480,19 +492,25 @@ export class ProfileService {
       .slice(0, 3)
       .map(([genre, count]) => ({ label: genre, count }));
 
-    const firstTimestamps = [...entries.map((e) => e.createdAt), ...watchDates];
-    const lastTimestamps = [...entries.map((e) => e.updatedAt), ...watchDates];
+    const firstTimestamps = [
+      ...entries.map((e) => e.createdAt),
+      ...activityDates,
+    ];
+    const lastTimestamps = [
+      ...entries.map((e) => e.updatedAt),
+      ...activityDates,
+    ];
 
     return {
       visible: true,
-      streakDays: computeStreak(watchDates, now),
-      streakSecuredToday: isStreakSecuredToday(watchDates, now),
+      streakDays: computeStreak(activityDates, now),
+      streakSecuredToday: isStreakSecuredToday(activityDates, now),
       firstActivityAt: earliest(firstTimestamps)?.toISOString() ?? null,
       lastActivityAt: latest(lastTimestamps)?.toISOString() ?? null,
       totalMinutes,
       mostActiveYear: mostActiveYear(computeYearlyMinutes(datedMinutes)),
       topGenres,
-      heatmap: computeHeatmap(watchDates, 90, now),
+      heatmap: computeHeatmap(activityDates, 90, now),
     };
   }
 }

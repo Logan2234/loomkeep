@@ -23,5 +23,5 @@ export class BookStatsResponseDto implements BookStatsDto {
   topAuthorsByPages!: AuthorPagesResponseDto[];
   distinctAuthorsCount!: number;
   rereadsCount!: number;
-  stagnantInProgressCount!: number;
+  pausedInProgressCount!: number;
 }

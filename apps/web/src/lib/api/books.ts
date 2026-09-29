@@ -3,7 +3,9 @@ import type {
   BookStatus,
   BulkEntriesTargetDto,
   BulkUpdateEntriesDto,
+  CreateBookSessionDto,
   UpdateBookEntryDto,
+  UpdateBookSessionDto,
   UpsertBookEntryDto,
   UpsertReadingGoalDto,
 } from "@loomkeep/shared";
@@ -82,17 +84,36 @@ export const deleteBookEntry = (entryId: string): Promise<void> =>
     params: { id: entryId },
   });
 
-export const addBookReplay = (entryId: string) =>
-  typedRequest("/books/entries/{id}/replays", {
-    method: "POST",
+export const getBookSessions = (entryId: string, page = 1) =>
+  typedRequest("/books/entries/{id}/sessions", {
     params: { id: entryId },
-    body: {},
+    query: { page: String(page) },
   });
 
-export const deleteBookReplay = (replayId: string): Promise<void> =>
-  typedRequest("/books/replays/{id}", {
+export const createBookSession = (
+  entryId: string,
+  body: CreateBookSessionDto,
+) =>
+  typedRequest("/books/entries/{id}/sessions", {
+    method: "POST",
+    params: { id: entryId },
+    body,
+  });
+
+export const updateBookSession = (
+  sessionId: string,
+  body: UpdateBookSessionDto,
+) =>
+  typedRequest("/books/sessions/{id}", {
+    method: "PATCH",
+    params: { id: sessionId },
+    body,
+  });
+
+export const deleteBookSession = (sessionId: string): Promise<void> =>
+  typedRequest("/books/sessions/{id}", {
     method: "DELETE",
-    params: { id: replayId },
+    params: { id: sessionId },
   });
 
 export const getReadingGoal = (year: number) =>

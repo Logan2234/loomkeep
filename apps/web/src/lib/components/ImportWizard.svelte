@@ -403,7 +403,7 @@
 
   function commit() {
     if (!analyzeJobId || !plan || selectedCount === 0) return;
-    if (overwrite) {
+    if (source !== "steam" && overwrite) {
       showOverwriteConfirm = true;
       return;
     }
@@ -430,7 +430,7 @@
           { source: m.source, sourceId: m.sourceId, type: m.type },
         ]),
       ),
-      overwrite,
+      overwrite: source === "steam" ? false : overwrite,
     });
   }
 
@@ -624,21 +624,25 @@
         </span>
       </p>
       <div class="flex items-center gap-3">
-        <label
-          class="border-danger/30 bg-danger/5 text-danger flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium">
-          <input
-            type="checkbox"
-            name="overwrite"
-            value="true"
-            bind:checked={overwrite}
-            class="accent-danger" />
-          {m.import_overwrite_data()}
-        </label>
+        {#if source !== "steam"}
+          <label
+            class="border-danger/30 bg-danger/5 text-danger flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium">
+            <input
+              type="checkbox"
+              name="overwrite"
+              value="true"
+              bind:checked={overwrite}
+              class="accent-danger" />
+            {m.import_overwrite_data()}
+          </label>
+        {/if}
         <button
           class="btn btn-primary"
           disabled={selectedCount === 0}
           onclick={commit}>
-          {m.common_import_action()}
+          {source === "steam"
+            ? m.import_steam_sync_action()
+            : m.common_import_action()}
         </button>
       </div>
     </div>
@@ -671,6 +675,9 @@
           </div>
         {/each}
       </div>
+      {#if source === "steam"}
+        <p class="text-dim mt-4 text-sm">{m.import_steam_no_sessions()}</p>
+      {/if}
       <div class="mt-5 flex gap-2">
         <a href={DOMAIN_TO_HREF[descriptor.domain]} class="btn btn-primary"
           >{m.library_view_own()}</a>

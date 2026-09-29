@@ -6,6 +6,7 @@ import {
 import {
   IsBoolean,
   IsIn,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -39,4 +40,14 @@ export class UpsertBookEntryDto implements UpsertBookEntryContract {
   @IsOptional()
   @IsBoolean()
   favorite?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  editionKey?: string | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  referencePageCount?: number | null;
 }

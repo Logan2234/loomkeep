@@ -48,7 +48,7 @@
     type="button"
     onclick={() => (open = true)}
     class="border-border bg-surface active:bg-surface-2 fixed inset-x-0 z-20 flex w-full items-center gap-2.5 border-t px-4 py-2.5 text-left transition-colors duration-150"
-    style="bottom: calc(4.5rem + env(safe-area-inset-bottom));">
+    style="bottom: calc(4.42rem + env(safe-area-inset-bottom));">
     <span
       class="border-accent/40 bg-accent/10 grid h-8 w-8 shrink-0 place-items-center rounded-full border">
       <Icon name="flag" class="text-accent h-4 w-4" />

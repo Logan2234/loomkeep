@@ -42,6 +42,16 @@ export class UpdateBookEntryDto implements UpdateBookEntryContract {
   currentPage?: number;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  editionKey?: string | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  referencePageCount?: number | null;
+
+  @IsOptional()
   @IsDateString()
   startedAt?: string | null;
 

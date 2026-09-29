@@ -218,11 +218,6 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
   ): Promise<ImportReport> {
     const matchByKey = indexPlanMatches(plan);
 
-    if (decisions.overwrite) {
-      // GameReplay cascades on GameEntry delete (schema onDelete: Cascade).
-      await this.prisma.gameEntry.deleteMany({ where: { userId } });
-    }
-
     // Resolve the target ids first, then bulk-fetch their IGDB details.
     const targets: { key: string; sourceId: string }[] = [];
 
@@ -254,17 +249,26 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
       );
       const status = (decisions.statuses.get(key) ?? "BACKLOG") as GameStatus;
       const playtimeMinutes = parsed.playtimeByKey.get(key) ?? 0;
-      // Every Steam-imported game is, by definition, owned digitally on Steam.
-      const data = {
+      const syncedAt = new Date();
+      // Every newly imported game is, by definition, owned digitally on
+      // Steam. A reimport only refreshes Steam's own counter, however: the
+      // user's Loomkeep status, notes, dates, ownership and sessions survive.
+      const createData = {
         status,
         playtimeMinutes,
+        steamPlaytimeMinutes: playtimeMinutes,
+        steamSyncedAt: syncedAt,
         ownershipStatus: GameOwnershipStatus.DIGITAL,
         ownershipSource: "Steam",
       };
       await this.prisma.gameEntry.upsert({
         where: { userId_gameItemId: { userId, gameItemId: gameItem.id } },
-        update: data,
-        create: { userId, gameItemId: gameItem.id, ...data },
+        update: {
+          playtimeMinutes,
+          steamPlaytimeMinutes: playtimeMinutes,
+          steamSyncedAt: syncedAt,
+        },
+        create: { userId, gameItemId: gameItem.id, ...createData },
       });
       tally.set(status, (tally.get(status) ?? 0) + 1);
       totalMinutes += playtimeMinutes;
@@ -288,7 +292,7 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
       sub: "hours imported",
     });
 
-    return { overwrite: decisions.overwrite, tiles };
+    return { overwrite: false, tiles };
   }
 
   /** IGDB ids (of the given set) the user already has a library entry for. */

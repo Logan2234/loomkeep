@@ -21,9 +21,12 @@
 
   let direction = $state(1);
   let previous: number | null = null;
+  let safeValue = $derived(
+    value !== null && Number.isFinite(value) ? value : null,
+  );
 
   $effect.pre(() => {
-    const current = value;
+    const current = safeValue;
     direction = (current ?? -1) >= (previous ?? -1) ? 1 : -1;
     previous = current;
   });
@@ -35,12 +38,12 @@
 </script>
 
 <span class="inline-grid overflow-clip {cls}">
-  {#key value}
+  {#key safeValue}
     <span
       class="[grid-area:1/1]"
       in:fly={{ ...motion(), y: `${direction * 70}%` }}
       out:fly={{ ...motion(), y: `${direction * -70}%` }}>
-      {value ?? "–"}
+      {safeValue ?? "–"}
     </span>
   {/key}
 </span>

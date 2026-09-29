@@ -1,10 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
   import {
-    addGameReplay,
     ApiError,
     deleteGameEntry,
-    deleteGameReplay,
     getGameDetail,
     updateGameEntry,
     upsertGameEntry,
@@ -13,13 +11,14 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
-  import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CommentsPanel from "$lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
+  import GameSessionDock from "$lib/components/GameSessionDock.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
+  import Modal from "$lib/components/Modal.svelte";
   import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
@@ -29,6 +28,7 @@
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "$lib/components/TrackingPanel.svelte";
+  import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { IGDB_API } from "$lib/constants/external-links";
   import {
@@ -42,9 +42,13 @@
     GAME_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
-  import { formatDate, joinMeta } from "$lib/format";
+  import { joinMeta } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
+  import {
+    GAME_DIRECT_STATUS_TARGETS,
+    getStatusCorrections,
+  } from "$lib/status-corrections";
   import { slide } from "svelte/transition";
   import GameTimeToBeat from "./components/GameTimeToBeat.svelte";
 
@@ -59,6 +63,7 @@
   };
 
   let confirmRemove = $state(false);
+  let statusEditorOpen = $state(false);
   let historyOpen = $state(false);
   const reduced = prefersReducedMotion();
 
@@ -95,9 +100,9 @@
         detail.publishers.length > 0 ||
         detail.gameModes.length > 0 ||
         detail.playerPerspectives.length > 0 ||
-        detail.multiplayerModes.length > 0 ||
-        detail.timeToBeat !== null),
+        detail.multiplayerModes.length > 0),
   );
+  const hasSidePanels = $derived(hasMeta || !!detail?.timeToBeat);
 
   // Cover + backdrop + screenshots, deduped, for the lightbox carousel.
   const galleryImages = $derived.by(() => {
@@ -130,31 +135,47 @@
     lightboxOpen = true;
   }
 
-  const { addMut, patchMut, removeMut, addReplayMut, removeReplayMut } =
-    createEntryTrackingMutations({
-      detailKey: () => detailKey,
-      detail: () => detail,
-      entryId: () => entry?.id,
-      upsert: (d) =>
-        upsertGameEntry({
-          source: d.source,
-          sourceId: d.sourceId,
-          status: "BACKLOG",
-        }),
-      update: (id, changes: Parameters<typeof updateGameEntry>[1]) =>
-        updateGameEntry(id, changes),
-      remove: (id) => deleteGameEntry(id),
-      addReplay: (id) => addGameReplay(id),
-      removeReplay: (replayId) => deleteGameReplay(replayId),
-      onRemoveSuccess: () => (confirmRemove = false),
-    });
+  const { addMut, patchMut, removeMut } = createEntryTrackingMutations({
+    detailKey: () => detailKey,
+    detail: () => detail,
+    entryId: () => entry?.id,
+    upsert: (d) =>
+      upsertGameEntry({
+        source: d.source,
+        sourceId: d.sourceId,
+        status: "BACKLOG",
+      }),
+    update: (id, changes: Parameters<typeof updateGameEntry>[1]) =>
+      updateGameEntry(id, changes),
+    remove: (id) => deleteGameEntry(id),
+    onRemoveSuccess: () => (confirmRemove = false),
+  });
 
-  const saving = $derived(
-    addMut.loading ||
-      patchMut.loading ||
-      addReplayMut.loading ||
-      removeReplayMut.loading,
+  const saving = $derived(addMut.loading || patchMut.loading);
+  const statusCorrections = $derived(
+    entry
+      ? getStatusCorrections(
+          STATUS_ORDER,
+          entry.status,
+          GAME_DIRECT_STATUS_TARGETS[entry.status],
+        ).filter(
+          (status) =>
+            status !== "BACKLOG" ||
+            !entry.playthroughs.some(
+              (playthrough) =>
+                playthrough.status === "ACTIVE" && playthrough.sessionCount > 0,
+            ),
+        )
+      : [],
   );
+
+  function openStatusCorrection() {
+    if (statusCorrections.length === 1) {
+      patchMut.mutate({ status: statusCorrections[0]! });
+      return;
+    }
+    statusEditorOpen = true;
+  }
 </script>
 
 <svelte:head>
@@ -244,13 +265,7 @@
                 <img src={url} alt={m.game_age_rating()} class="h-6 rounded" />
               {/each}
               {#if entry}
-                <span
-                  title={STATUS_DESC[entry.status]}
-                  class="rounded-full px-2.5 py-0.5 text-xs font-bold {STATUS_META[
-                    entry.status
-                  ].cls}">
-                  {STATUS_META[entry.status].label}
-                </span>
+                <TrackingStatusBadge domain="GAMES" status={entry.status} />
               {/if}
             </div>
             <h1
@@ -353,55 +368,44 @@
             {saving}
             onToggleFavorite={() =>
               patchMut.mutate({ favorite: !entry.favorite })}
-            onRemove={() => (confirmRemove = true)}>
-            <SegmentedStatusControl
-              statuses={STATUS_ORDER}
-              current={entry.status}
-              disabled={saving}
-              meta={STATUS_META}
-              desc={STATUS_DESC}
-              activeClass={SEG_ACTIVE}
-              onSelect={(status) => patchMut.mutate({ status })} />
-
-            <AddToListButton targetType="GAME" targetId={entry.game.id} />
-
-            <hr class="border-border" />
-
-            <NoteField
-              value={entry.notes}
-              placeholder={m.game_note_placeholder()}
-              onChange={(v) => patchMut.mutate({ notes: v })} />
-
-            <div class="flex items-center justify-between gap-2">
-              <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-                {m.game_playtime()}
-              </span>
-              <div class="flex items-center gap-1.5">
-                <input
-                  type="number"
-                  name="playtimeHours"
-                  min="0"
-                  step="0.5"
-                  inputmode="decimal"
-                  aria-label={m.game_playtime_hours()}
-                  class="input w-20 text-right text-sm"
-                  disabled={saving}
-                  value={Math.round((entry.playtimeMinutes / 60) * 10) / 10}
-                  onchange={(e) => {
-                    const hours = parseFloat(e.currentTarget.value);
-                    if (Number.isFinite(hours) && hours >= 0) {
-                      patchMut.mutate({
-                        playtimeMinutes: Math.round(hours * 60),
-                      });
-                    } else {
-                      e.currentTarget.value = String(
-                        Math.round((entry.playtimeMinutes / 60) * 10) / 10,
-                      );
-                    }
-                  }} />
-                <span class="text-dim text-xs">{m.common_hours_short()}</span>
-              </div>
-            </div>
+            onRemove={() => (confirmRemove = true)}
+            actions={[
+              ...(entry.status === "PLAYING"
+                ? [
+                    {
+                      label: m.game_status_mark_completed(),
+                      icon: "check" as const,
+                      onSelect: () => patchMut.mutate({ status: "COMPLETED" }),
+                    },
+                    {
+                      label: m.game_status_drop(),
+                      icon: "archive" as const,
+                      onSelect: () => patchMut.mutate({ status: "DROPPED" }),
+                    },
+                  ]
+                : []),
+              ...(entry.status === "DROPPED"
+                ? [
+                    {
+                      label: m.game_status_resume(),
+                      icon: "refresh" as const,
+                      onSelect: () => patchMut.mutate({ status: "PLAYING" }),
+                    },
+                  ]
+                : []),
+              {
+                label:
+                  statusCorrections.length === 1
+                    ? m.game_status_reset_backlog()
+                    : m.tracking_correct_status(),
+                icon: "edit" as const,
+                separator: true,
+                onSelect: openStatusCorrection,
+              },
+            ]}
+            targetType="GAME"
+            targetId={entry.game.id}>
+            <GameSessionDock {entry} {detailKey} />
 
             <hr class="border-border" />
 
@@ -416,54 +420,19 @@
                   ownershipSource: source,
                 })} />
 
-            {#if entry.status === "COMPLETED" || entry.replays.length > 0}
-              <hr class="border-border" />
+            <hr class="border-border" />
 
-              <div class="flex flex-col gap-2">
-                <div class="flex items-center justify-between gap-2">
-                  <span
-                    class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-                    {m.game_replays()}{#if entry.replays.length > 0}
-                      &nbsp;· {entry.replays.length}{/if}
-                  </span>
-                  {#if entry.status === "COMPLETED"}
-                    <button
-                      type="button"
-                      class="link-accent text-xs disabled:opacity-50"
-                      disabled={saving}
-                      onclick={() => addReplayMut.mutate()}>
-                      {m.game_add_replay()}
-                    </button>
-                  {/if}
-                </div>
-                {#if entry.replays.length > 0}
-                  <ul class="flex flex-col gap-1">
-                    {#each entry.replays as replay (replay.id)}
-                      <li class="text-dim flex items-center gap-2 text-xs">
-                        <span class="flex-1">
-                          {formatDate(replay.finishedAt)}
-                        </span>
-                        <button
-                          type="button"
-                          class="hover:text-danger"
-                          aria-label={m.game_delete_replay()}
-                          disabled={saving}
-                          onclick={() => removeReplayMut.mutate(replay.id)}>
-                          {m.common_delete()}
-                        </button>
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
-              </div>
-            {/if}
+            <NoteField
+              value={entry.notes}
+              placeholder={m.game_note_placeholder()}
+              onChange={(v) => patchMut.mutate({ notes: v })} />
           </TrackingPanel>
         {/if}
 
-        <!-- Details panel, mobile position: after "Mon suivi", before the carousels. -->
-        {#if hasMeta}
+        <!-- Side panels, mobile position: after "Mon suivi", before the carousels. -->
+        {#if hasSidePanels}
           <div class="mt-8 md:hidden">
-            {@render detailsPanel()}
+            {@render sidePanels()}
           </div>
         {/if}
 
@@ -518,7 +487,17 @@
         {/if}
       </div>
 
-      <!-- Details panel, desktop position: sidebar next to the main column. -->
+      <!-- Side panels, desktop position: sidebar next to the main column. -->
+      {#snippet sidePanels()}
+        <div class="flex flex-col gap-4">
+          {#if hasMeta}
+            {@render detailsPanel()}
+          {/if}
+          {#if detail?.timeToBeat}
+            <GameTimeToBeat timeToBeat={detail.timeToBeat} />
+          {/if}
+        </div>
+      {/snippet}
       {#snippet detailsPanel()}
         <div class="card p-4">
           <h2 class="font-display text-sm font-bold tracking-tight">
@@ -563,27 +542,22 @@
                 </dd>
               </div>
             {/if}
-            <!-- Last of the metadata: the only block with its own layout,
-                 it breaks the label/value rhythm when set between them. -->
-            {#if detail?.timeToBeat}
-              <GameTimeToBeat timeToBeat={detail.timeToBeat} />
-            {/if}
 
             {#if detail && detail.website}
               <a
                 href={detail.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="link-accent mt-0.5">
+                class="link-accent mt-0.5 w-fit text-xs decoration-1">
                 {m.media_official_site()}
               </a>
             {/if}
           </dl>
         </div>
       {/snippet}
-      {#if hasMeta}
+      {#if hasSidePanels}
         <div class="hidden md:block">
-          {@render detailsPanel()}
+          {@render sidePanels()}
         </div>
       {/if}
     </div>
@@ -598,6 +572,27 @@
       busy={removeMut.loading}
       onConfirm={() => removeMut.mutate()}
       onCancel={() => (confirmRemove = false)} />
+  {/if}
+
+  {#if statusEditorOpen && entry}
+    <Modal
+      title={m.tracking_correct_status()}
+      onclose={() => (statusEditorOpen = false)}>
+      <p class="text-dim mb-4 text-sm">
+        {m.tracking_correct_status_help()}
+      </p>
+      <SegmentedStatusControl
+        statuses={statusCorrections}
+        current={entry.status}
+        disabled={saving}
+        meta={STATUS_META}
+        desc={STATUS_DESC}
+        activeClass={SEG_ACTIVE}
+        onSelect={(status) => {
+          statusEditorOpen = false;
+          patchMut.mutate({ status });
+        }} />
+    </Modal>
   {/if}
 
   {#if lightboxOpen}

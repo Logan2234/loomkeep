@@ -40,7 +40,8 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
     ownershipSource: null,
     createdAt: overrides.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
     updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-    replays: [],
+    playthroughs: [],
+    sessions: [],
     gameItem: {
       id: `game-${id}`,
       title: overrides.title ?? "Hades",
@@ -56,6 +57,9 @@ describe("GameLibraryService.deleteEntry", () => {
     const reviewDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
     const commentUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
     const gameEntryDelete = vi.fn().mockResolvedValue({});
+    const sessionCreatedAt = new Date("2026-01-02T12:00:00.000Z");
+    const deleteLinked = vi.fn();
+    const refreshAfterDelete = vi.fn();
 
     const prisma = {
       gameEntry: {
@@ -71,7 +75,14 @@ describe("GameLibraryService.deleteEntry", () => {
         deleteMany: reviewDeleteMany,
       },
       comment: { updateMany: commentUpdateMany },
-      gameReplay: { findMany: vi.fn().mockResolvedValue([]) },
+      gamePlaythrough: { findMany: vi.fn().mockResolvedValue([]) },
+      gameSession: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { id: "session-1", createdAt: sessionCreatedAt },
+          ]),
+      },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
     const xp = stubXp();
@@ -83,11 +94,13 @@ describe("GameLibraryService.deleteEntry", () => {
       {} as import("../reviews/review.service").ReviewService,
       {
         emit: vi.fn(),
+        deleteLinked,
       } as unknown as import("../social/activity.service").ActivityService,
       xp,
       stubAchievements(),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
+      { refreshAfterDelete } as never,
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -106,6 +119,8 @@ describe("GameLibraryService.deleteEntry", () => {
     expect(gameEntryDelete).toHaveBeenCalledWith({ where: { id: "entry-1" } });
     expect(xp.revokeBySource).toHaveBeenCalledWith("GameEntry", ["entry-1"]);
     expect(xp.revokeBySource).toHaveBeenCalledWith("Entry", ["entry-1"]);
+    expect(deleteLinked).toHaveBeenCalledWith("GameSession", "session-1");
+    expect(refreshAfterDelete).toHaveBeenCalledWith("user-1", sessionCreatedAt);
   });
 });
 
@@ -125,7 +140,19 @@ describe("GameLibraryService — XP wiring", () => {
       .mockResolvedValue({ ...makeRow({ id: "e1" }), status: "COMPLETED" });
     const count = vi.fn().mockResolvedValue(1);
     const prisma = {
-      gameEntry: { findUnique, upsert, count },
+      gameEntry: {
+        findUnique,
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValue({ ...makeRow({ id: "e1" }), status: "COMPLETED" }),
+        upsert,
+        count,
+      },
+      gamePlaythrough: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "playthrough-1", number: 1 }),
+        update: vi.fn().mockResolvedValue({ id: "playthrough-1", number: 1 }),
+      },
     } as unknown as PrismaService;
     const xp = stubXp();
     const events = stubEvents();
@@ -152,58 +179,15 @@ describe("GameLibraryService — XP wiring", () => {
 
     expect(xp.award).toHaveBeenCalledWith("user-1", "WORK_ADDED", "e1");
     expect(xp.award).toHaveBeenCalledWith("user-1", "DOMAIN_STARTED", "GAMES");
-    expect(xp.award).toHaveBeenCalledWith("user-1", "GAME_FINISHED", "e1");
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "GAME_FINISHED",
+      "playthrough-1",
+    );
     expect(events.emitToUser).toHaveBeenCalledWith(
       "user-1",
       "onboarding-updated",
     );
-  });
-
-  it("awards GAME_REPLAYED on addReplay and revokes it on deleteReplay", async () => {
-    const findUnique = vi
-      .fn()
-      .mockResolvedValueOnce({ id: "e1", userId: "user-1" });
-    const gameEntryFindUniqueOrThrow = vi
-      .fn()
-      .mockResolvedValue(makeRow({ id: "e1" }));
-    const replayCreate = vi.fn().mockResolvedValue({ id: "replay-1" });
-    const prisma = {
-      gameEntry: {
-        findUnique,
-        findUniqueOrThrow: gameEntryFindUniqueOrThrow,
-      },
-      gameReplay: {
-        create: replayCreate,
-        findUnique: vi.fn().mockResolvedValue({
-          id: "replay-1",
-          gameEntry: { userId: "user-1" },
-        }),
-        delete: vi.fn().mockResolvedValue({}),
-      },
-    } as unknown as PrismaService;
-    const xp = stubXp();
-
-    const service = new GameLibraryService(
-      prisma,
-      {} as GameItemService,
-      {} as AgeGateService,
-      reviews,
-      activity,
-      xp,
-      stubAchievements(),
-      stubEvents(),
-      {} as import("../lists/list.service").ListService,
-    );
-
-    await service.addReplay("user-1", "e1", {} as never);
-    expect(xp.award).toHaveBeenCalledWith(
-      "user-1",
-      "GAME_REPLAYED",
-      "replay-1",
-    );
-
-    await service.deleteReplay("user-1", "replay-1");
-    expect(xp.revokeBySource).toHaveBeenCalledWith("GameReplay", ["replay-1"]);
   });
 });
 
@@ -251,6 +235,34 @@ describe("GameLibraryService.getPile", () => {
     expect(query.where.AND).toEqual([
       expect.objectContaining({ userId: "user-1", favorite: true }),
       { status: { in: ["BACKLOG", "PLAYING"] } },
+    ]);
+  });
+
+  it("turns the paused pseudo-status into a dated-session filter", async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const service = new GameLibraryService(
+      { gameEntry: { findMany } } as unknown as PrismaService,
+      {} as GameItemService,
+      {} as AgeGateService,
+      {} as import("../reviews/review.service").ReviewService,
+      {} as import("../social/activity.service").ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+
+    await service.getPile("user-1", { statuses: ["PAUSED"] });
+
+    const [[query]] = findMany.mock.calls;
+    expect(query.where.AND[0].AND[0].OR).toEqual([
+      {
+        status: "PLAYING",
+        sessions: {
+          some: { occurredAt: { lt: expect.any(Date) } },
+          none: { occurredAt: { gte: expect.any(Date) } },
+        },
+      },
     ]);
   });
 });

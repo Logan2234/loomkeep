@@ -10,7 +10,6 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
-  import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CommentsPanel from "$lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -252,6 +251,8 @@
           <TrackingPanel
             favorite={entry.favorite}
             {saving}
+            targetType="MUSIC"
+            targetId={entry.album.id}
             onToggleFavorite={() =>
               patchMut.mutate({ favorite: !entry.favorite })}
             onRemove={() => (confirmRemove = true)}>
@@ -263,8 +264,6 @@
               desc={STATUS_DESC}
               activeClass={SEG_ACTIVE}
               onSelect={(status) => patchMut.mutate({ status })} />
-
-            <AddToListButton targetType="MUSIC" targetId={entry.album.id} />
 
             <NoteField
               value={entry.notes}

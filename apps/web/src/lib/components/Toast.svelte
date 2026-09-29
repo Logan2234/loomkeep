@@ -39,7 +39,7 @@
       in:fly={{ y: 12, duration: reduced ? 0 : 150 }}
       out:fade={{ duration: reduced ? 0 : 120 }}
       animate:flip={{ duration: reduced ? 0 : 200 }}
-      class="border-border bg-surface pointer-events-auto relative flex w-full max-w-sm items-center gap-3 overflow-hidden rounded-xl border py-3.5 pr-3 pl-4 text-sm shadow-xl">
+      class="border-border bg-surface pointer-events-auto relative flex w-full max-w-md items-center gap-3 overflow-hidden rounded-xl border py-3.5 pr-3 pl-4 text-sm shadow-xl">
       <span class="absolute inset-y-0 left-0 w-1 {style.rail}"></span>
       <span
         class="grid h-7 w-7 shrink-0 place-items-center rounded-lg border {style.iconClass}"
@@ -48,21 +48,11 @@
       </span>
       <span class="flex-1 leading-snug">{t.message}</span>
       {#if t.action}
-        {@const action = t.action}
-        {#if t.duration > 0}
-          <!-- How long is left to undo: runs out with the toast itself. -->
-          <span
-            class="toast-countdown bg-accent absolute inset-x-0 bottom-0 h-0.5 origin-left"
-            style="animation-duration: {t.duration}ms"></span>
-        {/if}
         <button
           type="button"
-          class="text-accent hover:bg-surface-2 shrink-0 rounded-md px-2 py-1 font-semibold transition-colors"
-          onclick={() => {
-            toast.dismiss(t.id);
-            action.run();
-          }}>
-          {action.label}
+          class="text-accent hover:bg-accent/10 shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-extrabold transition-colors"
+          onclick={() => toast.selectAction(t.id)}>
+          {t.action.label}
         </button>
       {/if}
       <button
@@ -72,12 +62,20 @@
         onclick={() => toast.dismiss(t.id)}>
         <Icon name="x" class="h-3.5 w-3.5" />
       </button>
+      {#if t.action && t.duration > 0}
+        <span
+          class="toast-countdown bg-accent absolute right-0 bottom-0 h-0.5"
+          style={`animation-duration: ${t.duration}ms`}
+          aria-hidden="true"></span>
+      {/if}
     </div>
   {/each}
 </div>
 
 <style>
   .toast-countdown {
+    width: calc(100% - 0.25rem);
+    transform-origin: left;
     animation-name: toast-countdown;
     animation-timing-function: linear;
     animation-fill-mode: forwards;
@@ -86,6 +84,12 @@
   @keyframes toast-countdown {
     to {
       transform: scaleX(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toast-countdown {
+      animation-name: none;
     }
   }
 </style>

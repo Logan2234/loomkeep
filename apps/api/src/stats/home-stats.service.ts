@@ -1,5 +1,5 @@
 import type { OnThisDayEntryDto, StatsDomain } from "@loomkeep/shared";
-import { Domain } from "@loomkeep/shared";
+import { Domain, TrackingCycleStatus } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
@@ -118,7 +118,7 @@ export class HomeStatsService {
           for (const movie of movies) {
             const at = inWindow(movie.finishedAt)
               ? movie.finishedAt
-              : movie.replays[0].finishedAt;
+              : movie.replays[0]!.finishedAt;
             push(Domain.MEDIA, mediaWork(movie.mediaItem), "watched", at);
           }
         })(),
@@ -134,14 +134,24 @@ export class HomeStatsService {
               OR: [
                 { startedAt: within },
                 { finishedAt: within },
-                { replays: { some: { finishedAt: within } } },
+                {
+                  playthroughs: {
+                    some: {
+                      status: TrackingCycleStatus.COMPLETED,
+                      finishedAt: within,
+                    },
+                  },
+                },
               ],
             },
             select: {
               startedAt: true,
               finishedAt: true,
-              replays: {
-                where: { finishedAt: within },
+              playthroughs: {
+                where: {
+                  status: TrackingCycleStatus.COMPLETED,
+                  finishedAt: within,
+                },
                 select: { finishedAt: true },
               },
               gameItem: {
@@ -156,7 +166,13 @@ export class HomeStatsService {
               imageUrl: game.gameItem.coverUrl,
               href: workHref("games", game.gameItem),
             };
-            pushTimeline(push, Domain.GAMES, work, game, inWindow);
+            pushTimeline(
+              push,
+              Domain.GAMES,
+              work,
+              { ...game, replays: game.playthroughs },
+              inWindow,
+            );
           }
         })(),
       );
@@ -171,14 +187,24 @@ export class HomeStatsService {
               OR: [
                 { startedAt: within },
                 { finishedAt: within },
-                { replays: { some: { finishedAt: within } } },
+                {
+                  readings: {
+                    some: {
+                      status: TrackingCycleStatus.COMPLETED,
+                      finishedAt: within,
+                    },
+                  },
+                },
               ],
             },
             select: {
               startedAt: true,
               finishedAt: true,
-              replays: {
-                where: { finishedAt: within },
+              readings: {
+                where: {
+                  status: TrackingCycleStatus.COMPLETED,
+                  finishedAt: within,
+                },
                 select: { finishedAt: true },
               },
               bookItem: {
@@ -193,7 +219,13 @@ export class HomeStatsService {
               imageUrl: book.bookItem.coverUrl,
               href: workHref("books", book.bookItem),
             };
-            pushTimeline(push, Domain.BOOKS, work, book, inWindow);
+            pushTimeline(
+              push,
+              Domain.BOOKS,
+              work,
+              { ...book, replays: book.readings },
+              inWindow,
+            );
           }
         })(),
       );
@@ -277,13 +309,13 @@ function pushTimeline(
   entry: {
     startedAt: Date | null;
     finishedAt: Date | null;
-    replays: { finishedAt: Date }[];
+    replays: { finishedAt: Date | null }[];
   },
   inWindow: (at: Date | null) => at is Date,
 ) {
   const finished = inWindow(entry.finishedAt)
     ? entry.finishedAt
-    : entry.replays[0]?.finishedAt;
+    : entry.replays.map(({ finishedAt }) => finishedAt).find(inWindow);
   if (finished) push(domain, work, "finished", finished);
   else if (inWindow(entry.startedAt))
     push(domain, work, "started", entry.startedAt);

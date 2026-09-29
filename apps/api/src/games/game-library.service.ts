@@ -4,16 +4,17 @@ import type {
   GameDetailDto,
   GameEntryDto,
   GameItemDto,
-  GameReplayDto,
+  GamePlaythroughDto,
   GameSource,
   PagedResult,
   PileSummaryDto,
 } from "@loomkeep/shared";
 import {
-  ActivityType,
   Domain,
+  DORMANT_AFTER_DAYS,
   GameStatus,
   ReviewTargetType,
+  TrackingCycleStatus,
   XpReason,
 } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
@@ -21,7 +22,7 @@ import type {
   GameStatus as DbGameStatus,
   GameExternalId,
   GameItem,
-  GameReplay,
+  GamePlaythrough,
   Prisma,
 } from "@prisma/client";
 import {
@@ -39,7 +40,6 @@ import type {
 import {
   assertEntryOwnership,
   awardNewEntryXp,
-  deleteOwnedReplay,
   emitEntryActivity,
   listEntryPage,
   polymorphicTargetCleanup,
@@ -52,6 +52,7 @@ import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
+import { SessionXpService } from "../gamification/session-xp.service";
 import { XpService } from "../gamification/xp.service";
 import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -64,17 +65,24 @@ import {
 } from "../stats/pile.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
-import { AddGameReplayDto } from "./dto/add-game-replay.dto";
 import type { BulkUpdateGameEntriesBody } from "./dto/bulk-update-game-entries.dto";
 import { UpdateGameEntryDto } from "./dto/update-game-entry.dto";
 import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
 import { GameItemService } from "./game-item.service";
 
 // Entries always need the game + its external IDs (canonical sourceId), plus
-// its replay history, most recent first.
+// its playthrough history, most recent first.
 const ENTRY_INCLUDE = {
   gameItem: { include: { externalIds: true } },
-  replays: { orderBy: { finishedAt: "desc" } },
+  playthroughs: {
+    orderBy: { number: "desc" },
+    include: { _count: { select: { sessions: true } } },
+  },
+  sessions: {
+    orderBy: { occurredAt: "desc" },
+    take: 1,
+    select: { occurredAt: true },
+  },
 } satisfies Prisma.GameEntryInclude;
 
 type EntryWithGame = Prisma.GameEntryGetPayload<{
@@ -184,6 +192,7 @@ export class GameLibraryService {
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
     private readonly lists: ListService,
+    private readonly sessionXp?: SessionXpService,
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a game entry write. */
@@ -216,20 +225,36 @@ export class GameLibraryService {
 
     const before = await this.prisma.gameEntry.findUnique({
       where: { userId_gameItemId: { userId, gameItemId: gameItem.id } },
-      select: { status: true, favorite: true },
+      select: { status: true, favorite: true, finishedAt: true },
     });
 
     const changes = {
       status: dto.status,
       notes: dto.notes,
       favorite: dto.favorite,
+      ...(dto.status === GameStatus.COMPLETED && !before?.finishedAt
+        ? { finishedAt: new Date() }
+        : {}),
     };
-    const entry = await this.prisma.gameEntry.upsert({
+    let entry = await this.prisma.gameEntry.upsert({
       where: { userId_gameItemId: { userId, gameItemId: gameItem.id } },
       update: changes,
       create: { userId, gameItemId: gameItem.id, ...changes },
       include: ENTRY_INCLUDE,
     });
+    const statusPlaythrough =
+      dto.status &&
+      before?.status !== dto.status &&
+      (before !== null || dto.status !== GameStatus.BACKLOG)
+        ? await this.syncPlaythroughStatus(entry.id, dto.status)
+        : null;
+
+    if (statusPlaythrough) {
+      entry = await this.prisma.gameEntry.findUniqueOrThrow({
+        where: { id: entry.id },
+        include: ENTRY_INCLUDE,
+      });
+    }
 
     await this.emitEntryActivity(userId, gameItem.id, {
       prevStatus: before?.status ?? null,
@@ -237,6 +262,14 @@ export class GameLibraryService {
       prevFavorite: before?.favorite ?? false,
       nextFavorite: entry.favorite,
     });
+
+    if (
+      before?.status === GameStatus.COMPLETED &&
+      entry.status !== GameStatus.COMPLETED &&
+      statusPlaythrough
+    ) {
+      await this.xp.revokeBySource("GamePlaythrough", [statusPlaythrough.id]);
+    }
 
     if (before === null) {
       await awardNewEntryXp(this.xp, {
@@ -249,12 +282,17 @@ export class GameLibraryService {
 
     if (
       before?.status !== GameStatus.COMPLETED &&
-      entry.status === GameStatus.COMPLETED
+      entry.status === GameStatus.COMPLETED &&
+      statusPlaythrough
     ) {
-      await this.xp.award(userId, XpReason.GAME_FINISHED, entry.id);
+      const reason =
+        statusPlaythrough.number === 1
+          ? XpReason.GAME_FINISHED
+          : XpReason.GAME_REPLAYED;
+      await this.xp.award(userId, reason, statusPlaythrough.id);
       await this.achievements.evaluate(
         userId,
-        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.GAME_FINISHED],
+        ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
       );
     }
 
@@ -436,12 +474,32 @@ export class GameLibraryService {
     filters: ListEntriesFilters,
   ): Prisma.GameEntryWhereInput {
     const q = searchTerm(filters);
+    const statuses = filters.statuses ?? [];
+    const persistedStatuses = statuses.filter(
+      (status) => status !== "PAUSED",
+    ) as DbGameStatus[];
+    const statusFilters: Prisma.GameEntryWhereInput[] = [];
+
+    if (persistedStatuses.length > 0) {
+      statusFilters.push({ status: { in: persistedStatuses } });
+    }
+
+    if (statuses.includes("PAUSED")) {
+      const cutoff = new Date(
+        Date.now() - DORMANT_AFTER_DAYS * 24 * 60 * 60 * 1000,
+      );
+      statusFilters.push({
+        status: GameStatus.PLAYING,
+        sessions: {
+          some: { occurredAt: { lt: cutoff } },
+          none: { occurredAt: { gte: cutoff } },
+        },
+      });
+    }
+
     return {
       userId,
-      status:
-        filters.statuses && filters.statuses.length > 0
-          ? { in: filters.statuses as DbGameStatus[] }
-          : undefined,
+      AND: statusFilters.length > 0 ? [{ OR: statusFilters }] : undefined,
       favorite: filters.favorite ? true : undefined,
       gameItem: q ? { title: titleContains(q) } : undefined,
     };
@@ -472,8 +530,13 @@ export class GameLibraryService {
 
     const before = await this.prisma.gameEntry.findUnique({
       where: { id: entryId },
-      select: { status: true, favorite: true },
+      select: { status: true, favorite: true, finishedAt: true },
     });
+
+    const completedPlaythrough =
+      dto.status && before?.status !== dto.status
+        ? await this.syncPlaythroughStatus(entryId, dto.status)
+        : null;
 
     const entry = await this.prisma.gameEntry.update({
       where: { id: entryId },
@@ -486,7 +549,9 @@ export class GameLibraryService {
           dto.startedAt === undefined ? undefined : toDateOrNull(dto.startedAt),
         finishedAt:
           dto.finishedAt === undefined
-            ? undefined
+            ? dto.status === GameStatus.COMPLETED && before?.finishedAt === null
+              ? new Date()
+              : undefined
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,
@@ -502,13 +567,28 @@ export class GameLibraryService {
     });
 
     if (
-      before?.status !== GameStatus.COMPLETED &&
-      entry.status === GameStatus.COMPLETED
+      before?.status === GameStatus.COMPLETED &&
+      entry.status !== GameStatus.COMPLETED &&
+      completedPlaythrough
     ) {
-      await this.xp.award(userId, XpReason.GAME_FINISHED, entry.id);
+      await this.xp.revokeBySource("GamePlaythrough", [
+        completedPlaythrough.id,
+      ]);
+    }
+
+    if (
+      before?.status !== GameStatus.COMPLETED &&
+      entry.status === GameStatus.COMPLETED &&
+      completedPlaythrough
+    ) {
+      const reason =
+        completedPlaythrough.number === 1
+          ? XpReason.GAME_FINISHED
+          : XpReason.GAME_REPLAYED;
+      await this.xp.award(userId, reason, completedPlaythrough.id);
       await this.achievements.evaluate(
         userId,
-        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.GAME_FINISHED],
+        ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
       );
     }
 
@@ -533,21 +613,18 @@ export class GameLibraryService {
     );
   }
 
-  /**
-   * `GameReplay` cascades at the DB level (`onDelete: Cascade` on the entry
-   * FK), but `Review`/`Comment` are polymorphic (targetType/targetId, no FK)
-   * so they never did — same bug class as MEDIA's `deleteEntry` had before
-   * commit `0db5dc6` fixed it there.
-   */
+  /** Reviews and comments are polymorphic and need explicit cleanup. */
   async deleteEntry(userId: string, entryId: string): Promise<void> {
     const entry = await this.assertEntryOwnership(userId, entryId);
 
-    // Loaded before the transaction — GameReplay cascades at the DB level,
-    // so its ids would otherwise be gone by the time revokeBySource needs
-    // them when revocation runs after the transaction.
-    const replays = await this.prisma.gameReplay.findMany({
+    // Loaded before the transaction because cycles cascade with the entry.
+    const playthroughs = await this.prisma.gamePlaythrough.findMany({
       where: { gameEntryId: entryId },
       select: { id: true },
+    });
+    const sessions = await this.prisma.gameSession.findMany({
+      where: { gameEntryId: entryId },
+      select: { id: true, createdAt: true },
     });
     // Same reason: the transaction below deletes this Review outright (not
     // via ReviewService, which handles its own XP revocation) —
@@ -566,68 +643,24 @@ export class GameLibraryService {
     await this.xp.revokeBySource("GameEntry", [entryId]); // GAME_FINISHED
     await this.xp.revokeBySource("Entry", [entryId]); // WORK_ADDED
     await this.xp.revokeBySource(
-      "GameReplay",
-      replays.map((r) => r.id),
+      "GamePlaythrough",
+      playthroughs.map((playthrough) => playthrough.id),
     );
     await this.xp.revokeBySource(
       "Review",
       reviews.map((r) => r.id),
     ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
-  }
-
-  async addReplay(
-    userId: string,
-    entryId: string,
-    dto: AddGameReplayDto,
-  ): Promise<GameEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
-
-    const replay = await this.prisma.gameReplay.create({
-      data: {
-        gameEntryId: entryId,
-        finishedAt: dto.finishedAt ? new Date(dto.finishedAt) : undefined,
-      },
-    });
-    await this.xp.award(userId, XpReason.GAME_REPLAYED, replay.id);
-
-    const entry = await this.prisma.gameEntry.findUniqueOrThrow({
-      where: { id: entryId },
-      include: ENTRY_INCLUDE,
-    });
-
-    await this.activity.emit({
-      userId,
-      type: ActivityType.REWATCHED,
-      domain: "GAMES",
-      targetType: ReviewTargetType.GAME,
-      targetId: entry.gameItemId,
-      homeFeed: true,
-    });
-
-    return toEntryDto(
-      entry,
-      await this.reviews.getRating(
-        userId,
-        ReviewTargetType.GAME,
-        entry.gameItemId,
+    await Promise.all(
+      sessions.map((session) =>
+        this.activity.deleteLinked("GameSession", session.id),
       ),
     );
-  }
 
-  async deleteReplay(userId: string, replayId: string): Promise<void> {
-    await deleteOwnedReplay(this.xp, {
-      userId,
-      replayId,
-      xpSource: "GameReplay",
-      findOwnerId: async () =>
-        (
-          await this.prisma.gameReplay.findUnique({
-            where: { id: replayId },
-            select: { gameEntry: { select: { userId: true } } },
-          })
-        )?.gameEntry.userId ?? null,
-      remove: () => this.prisma.gameReplay.delete({ where: { id: replayId } }),
-    });
+    if (this.sessionXp) {
+      for (const session of sessions) {
+        await this.sessionXp.refreshAfterDelete(userId, session.createdAt);
+      }
+    }
   }
 
   /**
@@ -684,6 +717,70 @@ export class GameLibraryService {
       this.prisma.gameEntry.findUnique({ where: { id: entryId } }),
     );
   }
+
+  private async syncPlaythroughStatus(entryId: string, status: DbGameStatus) {
+    const active = await this.prisma.gamePlaythrough.findFirst({
+      where: { gameEntryId: entryId, status: TrackingCycleStatus.ACTIVE },
+      include: { _count: { select: { sessions: true } } },
+    });
+    const latest =
+      active ??
+      (await this.prisma.gamePlaythrough.findFirst({
+        where: { gameEntryId: entryId },
+        orderBy: { number: "desc" },
+        include: { _count: { select: { sessions: true } } },
+      }));
+
+    if (status === GameStatus.BACKLOG) {
+      if (active && active._count.sessions === 0) {
+        await this.prisma.gamePlaythrough.delete({ where: { id: active.id } });
+      }
+
+      return null;
+    }
+
+    if (status === GameStatus.PLAYING) {
+      if (active) return active;
+
+      if (latest) {
+        return this.prisma.gamePlaythrough.update({
+          where: { id: latest.id },
+          data: { status: TrackingCycleStatus.ACTIVE, finishedAt: null },
+        });
+      }
+
+      return this.prisma.gamePlaythrough.create({
+        data: {
+          gameEntryId: entryId,
+          number: 1,
+          status: TrackingCycleStatus.ACTIVE,
+          startedAt: new Date(),
+        },
+      });
+    }
+
+    const target =
+      active ??
+      latest ??
+      (await this.prisma.gamePlaythrough.create({
+        data: {
+          gameEntryId: entryId,
+          number: 1,
+          status: TrackingCycleStatus.ACTIVE,
+          startedAt: new Date(),
+        },
+      }));
+    return this.prisma.gamePlaythrough.update({
+      where: { id: target.id },
+      data: {
+        status:
+          status === GameStatus.COMPLETED
+            ? TrackingCycleStatus.COMPLETED
+            : TrackingCycleStatus.DROPPED,
+        finishedAt: new Date(),
+      },
+    });
+  }
 }
 
 function toGameItemDto(
@@ -707,15 +804,30 @@ function toEntryDto(entry: EntryWithGame, rating: number | null): GameEntryDto {
     notes: entry.notes,
     favorite: entry.favorite,
     playtimeMinutes: entry.playtimeMinutes,
+    trackedPlaytimeMinutes: entry.trackedPlaytimeMinutes,
+    steamPlaytimeMinutes: entry.steamPlaytimeMinutes,
+    steamSyncedAt: entry.steamSyncedAt?.toISOString() ?? null,
+    lastSessionAt: entry.sessions[0]?.occurredAt.toISOString() ?? null,
     startedAt: entry.startedAt?.toISOString() ?? null,
     finishedAt: entry.finishedAt?.toISOString() ?? null,
     createdAt: entry.createdAt.toISOString(),
-    replays: entry.replays.map(toReplayDto),
+    playthroughs: entry.playthroughs.map(toPlaythroughDto),
     ownershipStatus: entry.ownershipStatus,
     ownershipSource: entry.ownershipSource,
   };
 }
 
-function toReplayDto(replay: GameReplay): GameReplayDto {
-  return { id: replay.id, finishedAt: replay.finishedAt.toISOString() };
+function toPlaythroughDto(
+  playthrough: GamePlaythrough & { _count: { sessions: number } },
+): GamePlaythroughDto {
+  return {
+    id: playthrough.id,
+    number: playthrough.number,
+    status: playthrough.status,
+    startedAt: playthrough.startedAt?.toISOString() ?? null,
+    finishedAt: playthrough.finishedAt?.toISOString() ?? null,
+    sessionCount: playthrough._count.sessions,
+    trackedMinutes: playthrough.trackedMinutes,
+    legacyIncomplete: playthrough.legacyIncomplete,
+  };
 }

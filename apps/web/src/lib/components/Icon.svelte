@@ -61,6 +61,12 @@
     <path
       d="M6 3h10a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
     <path d="M4 18h13" />
+  {:else if name === "book-open"}
+    <path d="M3 5.5c3.2-.9 6-.3 9 1.7v13c-3-2-5.8-2.6-9-1.7Z" />
+    <path d="M21 5.5c-3.2-.9-6-.3-9 1.7v13c3-2 5.8-2.6 9-1.7Z" />
+  {:else if name === "info"}
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v6M12 7h.01" />
   {:else if name === "chevron-left"}
     <path d="M15 6l-6 6 6 6" />
   {:else if name === "chevron-right"}
@@ -83,6 +89,8 @@
     <path d="M8 20h8M12 16v4" />
   {:else if name === "plus"}
     <path d="M12 5v14M5 12h14" />
+  {:else if name === "minus"}
+    <path d="M5 12h14" />
   {:else if name === "trash"}
     <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />
   {:else if name === "x"}
@@ -258,6 +266,9 @@
     <path d="M6 3h12M6 21h12" />
     <path
       d="M7 3c0 4.5 4 6 5 8-1 2-5 3.5-5 8h10c0-4.5-4-6-5-8 1-2 5-3.5 5-8Z" />
+  {:else if name === "timer"}
+    <circle cx="12" cy="13" r="8" />
+    <path d="M12 9v4l2.5 1.5M9 2h6M12 2v3M18.5 6.5l1.5-1.5" />
   {:else if name === "mask"}
     <path d="M4 8c2-1.5 5-2 8-2s6 .5 8 2c0 6-3 11-8 11S4 14 4 8Z" />
     <circle cx="9" cy="10" r="1.3" fill="currentColor" stroke="none" />

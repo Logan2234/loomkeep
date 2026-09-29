@@ -15,8 +15,8 @@ import type {
   WatchStaleness,
 } from "@loomkeep/shared";
 import {
-  DORMANT_AFTER_DAYS,
   episodeRuntimeFor,
+  isSessionPaused,
   runtimeFor,
 } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
@@ -649,6 +649,11 @@ export class StatsService {
         select: {
           status: true,
           playtimeMinutes: true,
+          sessions: {
+            orderBy: { occurredAt: "desc" },
+            take: 1,
+            select: { occurredAt: true },
+          },
           gameItem: {
             select: {
               id: true,
@@ -661,8 +666,12 @@ export class StatsService {
           },
         },
       }),
-      this.prisma.gameReplay.count({
-        where: { gameEntry: { userId } },
+      this.prisma.gamePlaythrough.count({
+        where: {
+          gameEntry: { userId },
+          status: "COMPLETED",
+          number: { gt: 1 },
+        },
       }),
     ]);
 
@@ -694,6 +703,15 @@ export class StatsService {
             )
           : null,
       neverLaunchedCount: entries.filter((e) => e.playtimeMinutes === 0).length,
+      pausedInProgressCount: entries.filter((entry) =>
+        isSessionPaused(
+          {
+            status: entry.status,
+            lastSessionAt: entry.sessions[0]?.occurredAt ?? null,
+          },
+          "PLAYING",
+        ),
+      ).length,
       replaysCount,
       ...(advanced ?? EMPTY_GAME_ADVANCED),
     };
@@ -706,7 +724,11 @@ export class StatsService {
         select: {
           status: true,
           currentPage: true,
-          updatedAt: true,
+          sessions: {
+            orderBy: { occurredAt: "desc" },
+            take: 1,
+            select: { occurredAt: true },
+          },
           bookItem: {
             select: {
               title: true,
@@ -718,8 +740,12 @@ export class StatsService {
           },
         },
       }),
-      this.prisma.bookReplay.count({
-        where: { bookEntry: { userId } },
+      this.prisma.bookReading.count({
+        where: {
+          bookEntry: { userId },
+          status: "COMPLETED",
+          number: { gt: 1 },
+        },
       }),
     ]);
 
@@ -738,11 +764,14 @@ export class StatsService {
         : [],
     );
 
-    const now = new Date();
-    const stagnantInProgressCount = reading.filter(
-      (e) =>
-        (now.getTime() - e.updatedAt.getTime()) / (24 * 60 * 60 * 1000) >=
-        DORMANT_AFTER_DAYS,
+    const pausedInProgressCount = reading.filter((entry) =>
+      isSessionPaused(
+        {
+          status: entry.status,
+          lastSessionAt: entry.sessions[0]?.occurredAt ?? null,
+        },
+        "READING",
+      ),
     ).length;
 
     const advanced = premium
@@ -767,7 +796,7 @@ export class StatsService {
             )
           : null,
       rereadsCount,
-      stagnantInProgressCount,
+      pausedInProgressCount,
       ...(advanced ?? EMPTY_BOOK_ADVANCED),
     };
   }

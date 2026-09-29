@@ -8,6 +8,8 @@ import {
   BookEditionDto,
   BookEntryDto,
   BookSearchResponseDto,
+  BookSessionMutationDto,
+  BookSessionSummaryDto,
   BookSource,
   Domain,
   ErrorCode,
@@ -44,14 +46,20 @@ import { filterAdultContent } from "../users/age.util";
 import { DomainGateService } from "../users/domain-gate.service";
 import { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
-import { AddBookReplayDto } from "./dto/add-book-replay.dto";
+import { BookSessionService } from "./book-session.service";
 import { BookDetailResponseDto } from "./dto/book-detail-response.dto";
 import { BookEditionResponseDto } from "./dto/book-edition-response.dto";
 import { BookEntryResponseDto } from "./dto/book-entry-response.dto";
 import { BookSearchResultResponseDto } from "./dto/book-search-response.dto";
+import {
+  BookSessionMutationResponseDto,
+  BookSessionSummaryResponseDto,
+} from "./dto/book-session-response.dto";
 import { BulkUpdateBookEntriesBody } from "./dto/bulk-update-book-entries.dto";
+import { CreateBookSessionDto } from "./dto/create-book-session.dto";
 import { ReadingGoalResponseDto } from "./dto/reading-goal-response.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
+import { UpdateBookSessionDto } from "./dto/update-book-session.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";
 import { UpsertReadingGoalDto } from "./dto/upsert-reading-goal.dto";
 
@@ -60,6 +68,7 @@ export class BooksController {
   constructor(
     private readonly bookItemService: BookItemService,
     private readonly bookLibraryService: BookLibraryService,
+    private readonly bookSessionService: BookSessionService,
     private readonly domainGate: DomainGateService,
     private readonly ageGate: AgeGateService,
   ) {}
@@ -92,6 +101,49 @@ export class BooksController {
       this.ageGate.allowsAdultContent(user.sub),
     ]);
     return { results: filterAdultContent(results, allowAdult) };
+  }
+
+  @Get("entries/:id/sessions")
+  @ApiOkResponse({ type: BookSessionSummaryResponseDto })
+  listSessions(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") entryId: string,
+    @Query("page") page?: string,
+  ): Promise<BookSessionSummaryDto> {
+    return this.bookSessionService.list(
+      user.sub,
+      entryId,
+      page ? Number(page) : 1,
+    );
+  }
+
+  @Post("entries/:id/sessions")
+  @ApiCreatedResponse({ type: BookSessionMutationResponseDto })
+  createSession(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") entryId: string,
+    @Body() dto: CreateBookSessionDto,
+  ): Promise<BookSessionMutationDto> {
+    return this.bookSessionService.create(user.sub, entryId, dto);
+  }
+
+  @Patch("sessions/:id")
+  @ApiOkResponse({ type: BookSessionMutationResponseDto })
+  updateSession(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") sessionId: string,
+    @Body() dto: UpdateBookSessionDto,
+  ): Promise<BookSessionMutationDto> {
+    return this.bookSessionService.update(user.sub, sessionId, dto);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete("sessions/:id")
+  async deleteSession(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") sessionId: string,
+  ): Promise<void> {
+    await this.bookSessionService.delete(user.sub, sessionId);
   }
 
   @Get()
@@ -197,26 +249,6 @@ export class BooksController {
     @Param("id") entryId: string,
   ): Promise<void> {
     await this.bookLibraryService.deleteEntry(user.sub, entryId);
-  }
-
-  /** Log a completed reread (a completion beyond the entry's first one). */
-  @Post("entries/:id/replays")
-  @ApiCreatedResponse({ type: BookEntryResponseDto })
-  addReplay(
-    @CurrentUser() user: JwtPayload,
-    @Param("id") entryId: string,
-    @Body() dto: AddBookReplayDto,
-  ): Promise<BookEntryDto> {
-    return this.bookLibraryService.addReplay(user.sub, entryId, dto);
-  }
-
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete("replays/:id")
-  async deleteReplay(
-    @CurrentUser() user: JwtPayload,
-    @Param("id") replayId: string,
-  ): Promise<void> {
-    await this.bookLibraryService.deleteReplay(user.sub, replayId);
   }
 
   /** The current user's reading goal for `year` (defaults to this year) + progress. */

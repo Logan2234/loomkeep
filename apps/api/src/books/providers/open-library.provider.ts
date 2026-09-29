@@ -334,6 +334,7 @@ export class OpenLibraryProvider implements BookCatalogProvider {
         parsePagination(editionDetail?.pagination) ??
         doc?.number_of_pages_median ??
         null,
+      editionKey: pickedOlid ?? null,
       releaseDate: toIsoDate(work.first_publish_date),
       website: bookUrl,
       sameAuthorBooks: await this.sameAuthorBooks(id, doc?.author_key?.[0]),

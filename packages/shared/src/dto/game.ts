@@ -1,5 +1,13 @@
-import type { GameOwnershipStatus, GameSource, GameStatus } from "../enums";
+import type {
+  GameOwnershipStatus,
+  GameSource,
+  GameStatus,
+  SessionCycleAction,
+  SessionSource,
+  TrackingCycleStatus,
+} from "../enums";
 import type { RatingDto } from "./catalog";
+import type { SessionWeekDayDto } from "./session";
 
 /** A game as returned by a live catalogue search (not persisted). */
 export interface GameSummaryDto {
@@ -82,10 +90,16 @@ export interface GameItemDto {
   sourceId: string;
 }
 
-export interface GameReplayDto {
+export interface GamePlaythroughDto {
   id: string;
-  /** ISO date the replay was completed. */
-  finishedAt: string;
+  number: number;
+  status: TrackingCycleStatus;
+  startedAt: string | null;
+  finishedAt: string | null;
+  sessionCount: number;
+  trackedMinutes: number;
+  /** True when migrated history only supplied a completion date. */
+  legacyIncomplete: boolean;
 }
 
 export interface GameEntryDto {
@@ -98,12 +112,19 @@ export interface GameEntryDto {
   favorite: boolean;
   /** Total time played, in minutes (imported from Steam or set manually). */
   playtimeMinutes: number;
+  /** Sum of dated sessions recorded in Loomkeep. */
+  trackedPlaytimeMinutes: number;
+  /** Latest total reported by Steam, kept separate from Loomkeep sessions. */
+  steamPlaytimeMinutes: number | null;
+  steamSyncedAt: string | null;
+  /** Latest dated Loomkeep session, used for the derived paused signal. */
+  lastSessionAt: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   /** When the entry was added to the library (ISO). */
   createdAt: string;
-  /** Completed replays beyond the first, most recent first. */
-  replays: GameReplayDto[];
+  /** Playthrough history, current one first. */
+  playthroughs: GamePlaythroughDto[];
   /** How the user holds this game, if set (NONE = unset). */
   ownershipStatus: GameOwnershipStatus;
   /** Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise. */
@@ -132,6 +153,49 @@ export interface UpdateGameEntryDto {
   finishedAt?: string | null;
   ownershipStatus?: GameOwnershipStatus;
   ownershipSource?: string | null;
+}
+
+export interface GameSessionDto {
+  id: string;
+  playthroughId: string | null;
+  playthroughNumber: number | null;
+  durationMinutes: number;
+  notes: string | null;
+  occurredAt: string;
+  source: SessionSource;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGameSessionDto {
+  durationMinutes: number;
+  occurredAt: string;
+  notes?: string | null;
+  cycleAction?: SessionCycleAction;
+}
+
+export interface UpdateGameSessionDto {
+  durationMinutes?: number;
+  occurredAt?: string;
+  notes?: string | null;
+}
+
+export interface GameSessionSummaryDto {
+  items: GameSessionDto[];
+  hasMore: boolean;
+  totalSessions: number;
+  totalTrackedMinutes: number;
+  weekMinutes: number;
+  weekSessions: number;
+  weekDays: SessionWeekDayDto[];
+  monthMinutes: number;
+  activePlaythrough: GamePlaythroughDto | null;
+}
+
+export interface GameSessionMutationDto {
+  session: GameSessionDto;
+  summary: GameSessionSummaryDto;
+  xpAwarded: boolean;
 }
 
 /**

@@ -88,7 +88,14 @@ export class DataExportService {
         where: { userId },
         include: {
           gameItem: { include: { externalIds: true } },
-          replays: { orderBy: { finishedAt: "asc" } },
+          playthroughs: {
+            where: { status: "COMPLETED", number: { gt: 1 } },
+            orderBy: { number: "asc" },
+          },
+          sessions: {
+            orderBy: { occurredAt: "asc" },
+            include: { playthrough: { select: { number: true } } },
+          },
         },
         orderBy: { createdAt: "asc" },
       }),
@@ -96,7 +103,14 @@ export class DataExportService {
         where: { userId },
         include: {
           bookItem: { include: { externalIds: true } },
-          replays: { orderBy: { finishedAt: "asc" } },
+          readings: {
+            where: { status: "COMPLETED", number: { gt: 1 } },
+            orderBy: { number: "asc" },
+          },
+          sessions: {
+            orderBy: { occurredAt: "asc" },
+            include: { reading: { select: { number: true } } },
+          },
         },
         orderBy: { createdAt: "asc" },
       }),
@@ -283,12 +297,25 @@ export class DataExportService {
         notes: entry.notes,
         favorite: entry.favorite,
         playtimeMinutes: entry.playtimeMinutes,
+        trackedPlaytimeMinutes: entry.trackedPlaytimeMinutes,
+        steamPlaytimeMinutes: entry.steamPlaytimeMinutes,
+        steamSyncedAt: entry.steamSyncedAt?.toISOString() ?? null,
         ownershipStatus: entry.ownershipStatus,
         ownershipSource: entry.ownershipSource,
         startedAt: entry.startedAt?.toISOString() ?? null,
         finishedAt: entry.finishedAt?.toISOString() ?? null,
         createdAt: entry.createdAt.toISOString(),
-        replays: entry.replays.map((r) => r.finishedAt.toISOString()),
+        replays: entry.playthroughs.flatMap((playthrough) =>
+          playthrough.finishedAt ? [playthrough.finishedAt.toISOString()] : [],
+        ),
+        sessions: entry.sessions.map((session) => ({
+          durationMinutes: session.durationMinutes,
+          notes: session.notes,
+          occurredAt: session.occurredAt.toISOString(),
+          source: session.source,
+          createdAt: session.createdAt.toISOString(),
+          playthroughNumber: session.playthrough?.number ?? null,
+        })),
       })),
       books: bookEntries.map((entry) => ({
         book: {
@@ -306,12 +333,28 @@ export class DataExportService {
         notes: entry.notes,
         favorite: entry.favorite,
         currentPage: entry.currentPage,
+        editionKey: entry.editionKey,
+        referencePageCount: entry.referencePageCount,
+        trackedReadingMinutes: entry.trackedReadingMinutes,
         ownershipStatus: entry.ownershipStatus,
         ownershipSource: entry.ownershipSource,
         startedAt: entry.startedAt?.toISOString() ?? null,
         finishedAt: entry.finishedAt?.toISOString() ?? null,
         createdAt: entry.createdAt.toISOString(),
-        replays: entry.replays.map((r) => r.finishedAt.toISOString()),
+        replays: entry.readings.flatMap((reading) =>
+          reading.finishedAt ? [reading.finishedAt.toISOString()] : [],
+        ),
+        sessions: entry.sessions.map((session) => ({
+          durationMinutes: session.durationMinutes,
+          pagesRead: session.pagesRead,
+          startPage: session.startPage,
+          endPage: session.endPage,
+          notes: session.notes,
+          occurredAt: session.occurredAt.toISOString(),
+          source: session.source,
+          createdAt: session.createdAt.toISOString(),
+          readingNumber: session.reading?.number ?? null,
+        })),
       })),
       music: musicEntries.map((entry) => ({
         album: {

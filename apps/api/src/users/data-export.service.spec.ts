@@ -93,6 +93,9 @@ describe("DataExportService.buildExport", () => {
         notes: null,
         favorite: true,
         playtimeMinutes: 120,
+        trackedPlaytimeMinutes: 0,
+        steamPlaytimeMinutes: 120,
+        steamSyncedAt: new Date("2026-02-02T00:00:00.000Z"),
         ownershipStatus: "DIGITAL",
         ownershipSource: "Steam",
         startedAt: new Date("2026-02-01T00:00:00.000Z"),
@@ -103,7 +106,17 @@ describe("DataExportService.buildExport", () => {
           canonicalSource: "IGDB",
           externalIds: [{ source: "IGDB", externalId: "1234" }],
         },
-        replays: [{ finishedAt: new Date("2026-03-01T00:00:00.000Z") }],
+        playthroughs: [{ finishedAt: new Date("2026-03-01T00:00:00.000Z") }],
+        sessions: [
+          {
+            durationMinutes: 45,
+            notes: "Beat Meg",
+            occurredAt: new Date("2026-02-03T00:00:00.000Z"),
+            source: "MANUAL",
+            createdAt: new Date("2026-02-03T00:00:00.000Z"),
+            playthrough: { number: 1 },
+          },
+        ],
       },
     ]);
 
@@ -114,6 +127,7 @@ describe("DataExportService.buildExport", () => {
         game: expect.objectContaining({ title: "Hades", sourceId: "1234" }),
         playtimeMinutes: 120,
         replays: ["2026-03-01T00:00:00.000Z"],
+        sessions: [expect.objectContaining({ notes: "Beat Meg" })],
       }),
     ]);
   });
@@ -128,6 +142,9 @@ describe("DataExportService.buildExport", () => {
         notes: "great",
         favorite: false,
         currentPage: 320,
+        editionKey: "OL1M",
+        referencePageCount: 320,
+        trackedReadingMinutes: 0,
         ownershipStatus: "PHYSICAL",
         ownershipSource: null,
         startedAt: null,
@@ -139,7 +156,20 @@ describe("DataExportService.buildExport", () => {
           canonicalSource: "OPEN_LIBRARY",
           externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
         },
-        replays: [],
+        readings: [],
+        sessions: [
+          {
+            durationMinutes: 30,
+            pagesRead: 25,
+            startPage: null,
+            endPage: null,
+            notes: "The spice must flow",
+            occurredAt: new Date("2026-02-05T00:00:00.000Z"),
+            source: "MANUAL",
+            createdAt: new Date("2026-02-05T00:00:00.000Z"),
+            reading: { number: 1 },
+          },
+        ],
       },
     ]);
 
@@ -153,6 +183,7 @@ describe("DataExportService.buildExport", () => {
           sourceId: "OL1W",
         }),
         currentPage: 320,
+        sessions: [expect.objectContaining({ notes: "The spice must flow" })],
       }),
     ]);
   });

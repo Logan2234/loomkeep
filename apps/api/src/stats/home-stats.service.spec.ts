@@ -62,7 +62,7 @@ describe("HomeStatsService.onThisDay", () => {
           {
             startedAt: new Date("2025-09-23T08:00:00Z"),
             finishedAt: new Date("2025-09-26T08:00:00Z"),
-            replays: [],
+            readings: [],
             bookItem: {
               title: "Dune",
               coverUrl: null,

@@ -7,6 +7,7 @@ import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
 import { GameItemService } from "./game-item.service";
 import { GameLibraryService } from "./game-library.service";
+import { GameSessionService } from "./game-session.service";
 import { GamesController } from "./games.controller";
 import { IgdbProvider } from "./providers/igdb.provider";
 
@@ -22,7 +23,17 @@ import { IgdbProvider } from "./providers/igdb.provider";
     JobsModule,
   ],
   controllers: [GamesController],
-  providers: [GameItemService, GameLibraryService, IgdbProvider],
-  exports: [GameItemService, GameLibraryService, IgdbProvider],
+  providers: [
+    GameItemService,
+    GameLibraryService,
+    GameSessionService,
+    IgdbProvider,
+  ],
+  exports: [
+    GameItemService,
+    GameLibraryService,
+    GameSessionService,
+    IgdbProvider,
+  ],
 })
 export class GamesModule {}

@@ -63,7 +63,7 @@ function setup(
       upsert,
       deleteMany,
     },
-    bookReplay: { createMany },
+    bookReading: { createMany },
     user: {
       findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
@@ -240,7 +240,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     expect(job.plan!.counts.matched).toBe(0);
   });
 
-  it("commit persists metadata, marks finished books fully read, backfills replays", async () => {
+  it("commit persists metadata, marks finished books fully read, and backfills reading cycles", async () => {
     const getDetails = vi.fn().mockResolvedValue({
       summary: summary({ sourceId: "OL1W" }),
       overview: null,
@@ -288,18 +288,18 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       expect.any(String),
       8,
     );
-    // Read Count 3 → 2 backfilled replays on a first-time import.
+    // Read Count 3 becomes three completed historical reading cycles.
     expect(createMany).toHaveBeenCalledWith({
-      data: [
-        {
+      data: expect.arrayContaining([
+        expect.objectContaining({
           bookEntryId: "entry-1",
+          number: 1,
+          status: "COMPLETED",
           finishedAt: new Date("2025-03-31T00:00:00.000Z"),
-        },
-        {
-          bookEntryId: "entry-1",
-          finishedAt: new Date("2025-03-31T00:00:00.000Z"),
-        },
-      ],
+        }),
+        expect.objectContaining({ number: 2, status: "COMPLETED" }),
+        expect.objectContaining({ number: 3, status: "COMPLETED" }),
+      ]),
     });
   });
 

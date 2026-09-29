@@ -3,6 +3,7 @@ import type {
   GameOwnershipStatus,
   GameSource,
   GameStatus,
+  SessionSource,
 } from "@loomkeep/shared";
 
 class DataExportGameExternalIdResponseDto {
@@ -17,6 +18,15 @@ class DataExportGameEntryGameResponseDto {
   externalIds!: DataExportGameExternalIdResponseDto[];
 }
 
+class DataExportGameSessionResponseDto {
+  playthroughNumber!: number | null;
+  durationMinutes!: number;
+  notes!: string | null;
+  occurredAt!: string;
+  source!: SessionSource;
+  createdAt!: string;
+}
+
 export class DataExportGameEntryResponseDto implements DataExportGameEntry {
   game!: DataExportGameEntryGameResponseDto;
   status!: GameStatus;
@@ -24,10 +34,14 @@ export class DataExportGameEntryResponseDto implements DataExportGameEntry {
   notes!: string | null;
   favorite!: boolean;
   playtimeMinutes!: number;
+  trackedPlaytimeMinutes!: number;
+  steamPlaytimeMinutes!: number | null;
+  steamSyncedAt!: string | null;
   ownershipStatus!: GameOwnershipStatus;
   ownershipSource!: string | null;
   startedAt!: string | null;
   finishedAt!: string | null;
   createdAt!: string;
   replays!: string[];
+  sessions!: DataExportGameSessionResponseDto[];
 }

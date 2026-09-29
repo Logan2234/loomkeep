@@ -72,6 +72,16 @@ const MESSAGES = {
   [ErrorCode.LibraryNoWatchToUndo]: () => m.apierr_library_no_watch_to_undo(),
   [ErrorCode.LibraryEntryNotFound]: () => m.apierr_library_entry_not_found(),
   [ErrorCode.LibraryEntryForbidden]: () => m.apierr_library_entry_forbidden(),
+  [ErrorCode.LibrarySessionNotFound]: () =>
+    m.apierr_library_session_not_found(),
+  [ErrorCode.LibrarySessionForbidden]: () =>
+    m.apierr_library_session_forbidden(),
+  [ErrorCode.LibrarySessionDateFuture]: () =>
+    m.apierr_library_session_date_future(),
+  [ErrorCode.LibrarySessionInvalidPages]: () =>
+    m.apierr_library_session_invalid_pages(),
+  [ErrorCode.LibraryBookEditionRequired]: () =>
+    m.apierr_library_book_edition_required(),
   [ErrorCode.LibraryReplayNotMovie]: () => m.apierr_library_replay_not_movie(),
   [ErrorCode.LibraryReplayNotFound]: () => m.apierr_library_replay_not_found(),
   [ErrorCode.LibraryReplayForbidden]: () => m.apierr_library_replay_forbidden(),
@@ -235,6 +245,10 @@ const MESSAGES = {
   [ErrorCode.ImportArchiveMissingFiles]: () =>
     m.apierr_import_archive_missing_files(),
   [ErrorCode.ImportArchiveMalformed]: () => m.apierr_import_archive_malformed(),
+  [ErrorCode.LibrarySessionTimerAlreadyRunning]: () =>
+    m.apierr_library_session_timer_already_running(),
+  [ErrorCode.LibrarySessionTimerNotFound]: () =>
+    m.apierr_library_session_timer_not_found(),
   [ErrorCode.InvalidParam]: () => m.apierr_validation_invalid_param(),
   [ErrorCode.ValidationFailed]: () => m.apierr_validation_failed(),
   [ErrorCode.InternalError]: () => m.apierr_internal_error(),

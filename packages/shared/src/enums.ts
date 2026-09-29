@@ -127,6 +127,29 @@ export const ActivityType = {
 } as const;
 export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType];
 
+export const SessionSource = {
+  MANUAL: "MANUAL",
+  TIMER: "TIMER",
+  IMPORT: "IMPORT",
+} as const;
+export type SessionSource = (typeof SessionSource)[keyof typeof SessionSource];
+
+export const TrackingCycleStatus = {
+  ACTIVE: "ACTIVE",
+  COMPLETED: "COMPLETED",
+  DROPPED: "DROPPED",
+} as const;
+export type TrackingCycleStatus =
+  (typeof TrackingCycleStatus)[keyof typeof TrackingCycleStatus];
+
+export const SessionCycleAction = {
+  CONTINUE: "CONTINUE",
+  RESTART: "RESTART",
+  HISTORY_ONLY: "HISTORY_ONLY",
+} as const;
+export type SessionCycleAction =
+  (typeof SessionCycleAction)[keyof typeof SessionCycleAction];
+
 /** Kind of media. MOVIE/SERIES come from TMDB, ANIME from AniList. */
 export const MediaType = {
   MOVIE: "MOVIE",
@@ -161,10 +184,9 @@ export const GameSource = {
 export type GameSource = (typeof GameSource)[keyof typeof GameSource];
 
 /**
- * Status of a game in a user's library. Unlike media (whose status is derived
- * from episode progress), a game's status is entirely user-set: there is no
- * per-episode progress to infer "playing" or "completed" from. BACKLOG doubles
- * as the wishlist ("want to play").
+ * Status of a game in a user's library. The first play session moves BACKLOG
+ * to PLAYING, but completion and abandonment remain explicit user choices.
+ * BACKLOG doubles as the wishlist ("want to play").
  */
 export const GameStatus = {
   BACKLOG: "BACKLOG",
@@ -195,10 +217,10 @@ export const BookSource = {
 export type BookSource = (typeof BookSource)[keyof typeof BookSource];
 
 /**
- * Status of a book in a user's library. Like GameStatus it is entirely
- * user-set: books have no per-chapter progress to derive "reading"/"read" from
- * (page progress is tracked separately, on the entry). TO_READ doubles as the
- * wishlist ("want to read").
+ * Status of a book in a user's library. Reading sessions move TO_READ to
+ * READING and then READ once page progress reaches the selected edition's
+ * reference page count. DROPPED remains an explicit user choice. TO_READ
+ * doubles as the wishlist ("want to read").
  */
 export const BookStatus = {
   TO_READ: "TO_READ",
@@ -688,6 +710,7 @@ export const XpReason = {
   GAME_REPLAYED: "GAME_REPLAYED",
   BOOK_FINISHED: "BOOK_FINISHED",
   BOOK_REPLAYED: "BOOK_REPLAYED",
+  SESSION_DAY_LOGGED: "SESSION_DAY_LOGGED",
   ALBUM_LISTENED: "ALBUM_LISTENED",
   WORK_ADDED: "WORK_ADDED",
   DOMAIN_STARTED: "DOMAIN_STARTED",

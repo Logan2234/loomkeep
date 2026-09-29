@@ -76,10 +76,19 @@ export class XpService {
     reason: XpReason,
     sourceId: string,
     amountOverride?: number,
-  ): Promise<void> {
-    if (await this.creditEntry(userId, reason, sourceId, amountOverride)) {
+  ): Promise<boolean> {
+    const credited = await this.creditEntry(
+      userId,
+      reason,
+      sourceId,
+      amountOverride,
+    );
+
+    if (credited) {
       await this.recomputeScore(userId);
     }
+
+    return credited;
   }
 
   /**

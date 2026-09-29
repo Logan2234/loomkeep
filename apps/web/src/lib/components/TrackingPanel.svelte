@@ -1,11 +1,12 @@
 <script lang="ts">
-  // "Mon suivi" card shared by the three detail pages (books/games/media):
-  // header with the favourite toggle, domain-specific body via `children`,
-  // footer with the "remove from library" action.
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
+  import type { IconName } from "$lib/types/icon-name";
+  import type { ListItemTargetType } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
   import { scale } from "svelte/transition";
+  import AddToListButton from "./AddToListButton.svelte";
+  import Dropdown from "./Dropdown.svelte";
   import Icon from "./Icon.svelte";
 
   const reduced = prefersReducedMotion();
@@ -13,60 +14,107 @@
   let {
     favorite,
     saving,
+    targetType,
+    targetId,
     onToggleFavorite,
     onRemove,
+    actions = [],
     children,
   }: {
     favorite: boolean;
     saving: boolean;
+    targetType: ListItemTargetType;
+    targetId: string;
     onToggleFavorite: () => void;
     onRemove: () => void;
+    actions?: {
+      label: string;
+      icon: IconName;
+      onSelect: () => void;
+      separator?: boolean;
+    }[];
     children: Snippet;
   } = $props();
 </script>
 
-<!-- This block appearing *is* the confirmation that a work joined the
-     library — before it, the page only had a button. It lands with a slight
-     overshoot so the arrival registers as an event rather than a reflow. -->
 <div
-  class="tracking-panel border-border bg-surface mt-6 flex max-w-xl flex-col gap-4 rounded-xl border p-4 {reduced
+  class="tracking-panel border-border bg-surface mt-6 flex flex-col gap-4 rounded-xl border p-4 {reduced
     ? ''
     : 'tracking-panel-enter'}">
-  <!-- Block header: label + favourite pinned top-right. -->
   <div class="flex items-center justify-between gap-2">
-    <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase"
-      >{m.tracking_title()}</span>
-    <button
-      type="button"
-      aria-pressed={favorite}
-      disabled={saving}
-      title={favorite ? m.common_favorite_remove() : m.common_favorite_add()}
-      aria-label={favorite
-        ? m.common_favorite_remove()
-        : m.common_favorite_add()}
-      onclick={onToggleFavorite}
-      class="rounded-full p-1.5 transition-colors disabled:opacity-50 {favorite
-        ? 'text-accent'
-        : 'text-dim hover:bg-surface-2 hover:text-fg'}">
-      {#key favorite}
-        <span in:scale|global={{ duration: reduced ? 0 : 200, start: 0.5 }}>
-          <Icon name="star" class="h-5 w-5 {favorite ? 'fill-accent' : ''}" />
-        </span>
-      {/key}
-    </button>
+    <span class="text-sm font-semibold">{m.tracking_title()}</span>
+
+    <div class="flex shrink-0 items-center gap-2.5">
+      <AddToListButton {targetType} {targetId} />
+
+      <button
+        type="button"
+        aria-pressed={favorite}
+        disabled={saving}
+        title={favorite ? m.common_favorite_remove() : m.common_favorite_add()}
+        aria-label={favorite
+          ? m.common_favorite_remove()
+          : m.common_favorite_add()}
+        onclick={onToggleFavorite}
+        class="btn-icon h-9 w-9 border {favorite
+          ? 'border-accent text-accent'
+          : 'border-border text-dim hover:bg-surface-2 hover:text-fg'}">
+        {#key favorite}
+          <span in:scale|global={{ duration: reduced ? 0 : 200, start: 0.5 }}>
+            <Icon name="star" class="h-4 w-4 {favorite ? 'fill-accent' : ''}" />
+          </span>
+        {/key}
+      </button>
+
+      <Dropdown placement="bottom-end" class="min-w-64">
+        {#snippet trigger({ open, toggle, onkeydown })}
+          <button
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={open}
+            {onkeydown}
+            aria-label={m.common_more_actions()}
+            title={m.common_more_actions()}
+            onclick={toggle}
+            class="btn-icon border-border h-9 w-9 border transition-colors">
+            <Icon name="dots-vertical" class="h-4 w-4" />
+          </button>
+        {/snippet}
+        {#snippet children({ close })}
+          {#each actions as action (action.label)}
+            <button
+              role="menuitem"
+              type="button"
+              class="menu-item"
+              class:border-t={action.separator}
+              class:border-border={action.separator}
+              disabled={saving}
+              onclick={() => {
+                close();
+                action.onSelect();
+              }}>
+              <Icon name={action.icon} class="h-4 w-4" />
+              {action.label}
+            </button>
+          {/each}
+          <button
+            role="menuitem"
+            type="button"
+            class="menu-item menu-item-danger border-border border-t"
+            disabled={saving}
+            onclick={() => {
+              close();
+              onRemove();
+            }}>
+            <Icon name="trash" class="h-4 w-4" />
+            {m.tracking_remove()}
+          </button>
+        {/snippet}
+      </Dropdown>
+    </div>
   </div>
 
   {@render children()}
-
-  <div class="flex justify-end">
-    <button
-      type="button"
-      class="btn-text hover:text-danger text-sm"
-      disabled={saving}
-      onclick={onRemove}>
-      {m.tracking_remove()}
-    </button>
-  </div>
 </div>
 
 <style>

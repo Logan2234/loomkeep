@@ -2,9 +2,11 @@ import { getLocale } from "$lib/paraglide/runtime.js";
 import type {
   BulkEntriesTargetDto,
   BulkUpdateEntriesDto,
+  CreateGameSessionDto,
   GameOwnershipStatus,
   GameStatus,
   UpdateGameEntryDto,
+  UpdateGameSessionDto,
   UpsertGameEntryDto,
 } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
@@ -68,17 +70,36 @@ export const deleteGameEntry = (entryId: string): Promise<void> =>
     params: { id: entryId },
   });
 
-export const addGameReplay = (entryId: string) =>
-  typedRequest("/games/entries/{id}/replays", {
-    method: "POST",
+export const getGameSessions = (entryId: string, page = 1) =>
+  typedRequest("/games/entries/{id}/sessions", {
     params: { id: entryId },
-    body: {},
+    query: { page: String(page) },
   });
 
-export const deleteGameReplay = (replayId: string): Promise<void> =>
-  typedRequest("/games/replays/{id}", {
+export const createGameSession = (
+  entryId: string,
+  body: CreateGameSessionDto,
+) =>
+  typedRequest("/games/entries/{id}/sessions", {
+    method: "POST",
+    params: { id: entryId },
+    body,
+  });
+
+export const updateGameSession = (
+  sessionId: string,
+  body: UpdateGameSessionDto,
+) =>
+  typedRequest("/games/sessions/{id}", {
+    method: "PATCH",
+    params: { id: sessionId },
+    body,
+  });
+
+export const deleteGameSession = (sessionId: string): Promise<void> =>
+  typedRequest("/games/sessions/{id}", {
     method: "DELETE",
-    params: { id: replayId },
+    params: { id: sessionId },
   });
 
 export const bulkUpdateGameEntries = (

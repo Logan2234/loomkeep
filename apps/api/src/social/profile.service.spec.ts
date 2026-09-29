@@ -115,6 +115,8 @@ describe("ProfileService.getProfile xp", () => {
       bookEntry: { count: vi.fn().mockResolvedValue(0) },
       musicEntry: { count: vi.fn().mockResolvedValue(0) },
       episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
+      gameSession: { findMany: vi.fn().mockResolvedValue([]) },
+      bookSession: { findMany: vi.fn().mockResolvedValue([]) },
       userScore: {
         findUnique:
           opts.userScoreXp === undefined
@@ -224,6 +226,8 @@ describe("ProfileService.getProfile xp", () => {
       bookEntry: { count: vi.fn().mockResolvedValue(0) },
       musicEntry: { count: vi.fn().mockResolvedValue(0) },
       episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
+      gameSession: { findMany: vi.fn().mockResolvedValue([]) },
+      bookSession: { findMany: vi.fn().mockResolvedValue([]) },
       userScore: { findUnique: vi.fn() },
     } as unknown as PrismaService;
     const visibility = {

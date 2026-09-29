@@ -70,7 +70,7 @@ export const XP_RULES: Record<XpReason, XpRule> = {
   GAME_REPLAYED: {
     reason: XpReason.GAME_REPLAYED,
     amount: 50,
-    sourceType: "GameReplay",
+    sourceType: "GamePlaythrough",
     dailyCap: 3,
     socialGated: false,
   },
@@ -84,8 +84,16 @@ export const XP_RULES: Record<XpReason, XpRule> = {
   BOOK_REPLAYED: {
     reason: XpReason.BOOK_REPLAYED,
     amount: 50,
-    sourceType: "BookReplay",
+    sourceType: "BookReading",
     dailyCap: 3,
+    socialGated: false,
+  },
+  SESSION_DAY_LOGGED: {
+    reason: XpReason.SESSION_DAY_LOGGED,
+    amount: 10,
+    sourceType: "SESSION_DAY",
+    // One shared reward across game and book sessions per local day.
+    dailyCap: 1,
     socialGated: false,
   },
   ALBUM_LISTENED: {

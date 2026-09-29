@@ -225,6 +225,7 @@ describe("OpenLibraryProvider", () => {
       publisher: "George Allen & Unwin",
       genres: ["Fiction", "Fantasy"],
       pageCount: 310,
+      editionKey: null,
       releaseDate: "1937-09-21T00:00:00.000Z",
       website: "https://openlibrary.org/works/OL27482W",
       sameAuthorBooks: [],

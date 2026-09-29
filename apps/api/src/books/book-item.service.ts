@@ -145,6 +145,7 @@ export class BookItemService {
       publisher: details.publisher,
       genres: details.genres,
       pageCount: details.pageCount,
+      editionKey: details.editionKey,
       releaseDate: details.releaseDate,
       website: details.website,
       sameAuthorBooks: details.sameAuthorBooks,
