@@ -24,6 +24,8 @@ function renderPanel(
     props: {
       favorite: props.favorite ?? false,
       saving: props.saving ?? false,
+      targetType: "GAME",
+      targetId: "game-1",
       onToggleFavorite,
       onRemove,
       actions: props.actions ?? [],

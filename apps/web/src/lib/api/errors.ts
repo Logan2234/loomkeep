@@ -232,6 +232,10 @@ const MESSAGES = {
   [ErrorCode.ImportArchiveMissingFiles]: () =>
     m.apierr_import_archive_missing_files(),
   [ErrorCode.ImportArchiveMalformed]: () => m.apierr_import_archive_malformed(),
+  [ErrorCode.LibrarySessionTimerAlreadyRunning]: () =>
+    m.apierr_library_session_timer_already_running(),
+  [ErrorCode.LibrarySessionTimerNotFound]: () =>
+    m.apierr_library_session_timer_not_found(),
   [ErrorCode.InvalidParam]: () => m.apierr_validation_invalid_param(),
   [ErrorCode.ValidationFailed]: () => m.apierr_validation_failed(),
   [ErrorCode.InternalError]: () => m.apierr_internal_error(),

@@ -2,7 +2,6 @@ import { Domain, ErrorCode } from "@loomkeep/shared";
 import { SessionSource, type SessionTimer } from "@prisma/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BookSessionService } from "../books/book-session.service";
-import { AppException } from "../common/app.exception";
 import type { GameSessionService } from "../games/game-session.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { SessionTimerService } from "./session-timer.service";
@@ -67,7 +66,7 @@ describe("SessionTimerService", () => {
 
     await expect(
       service.start("user-1", { domain: Domain.GAMES, entryId: "game-1" }),
-    ).rejects.toMatchObject<AppException>({
+    ).rejects.toMatchObject({
       code: ErrorCode.LibrarySessionTimerAlreadyRunning,
     });
   });
