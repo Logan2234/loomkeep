@@ -108,6 +108,91 @@
   </section>
 
   <p class="text-dim mb-2 text-sm font-semibold">
+    {m.common_libraries()}
+  </p>
+  <section class="card divide-border mb-4 divide-y p-5 md:p-6">
+    <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
+      <span class="flex items-center gap-3">
+        <Icon name="rows" class="text-dim h-4 w-4 shrink-0" />
+        <span class="font-semibold">{m.settings_shortcuts_library_move()}</span>
+      </span>
+      <span class="flex items-center gap-1">
+        <kbd
+          class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
+          J
+        </kbd>
+        <kbd
+          class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
+          K
+        </kbd>
+      </span>
+    </div>
+    <div class="flex items-center justify-between gap-4 py-3">
+      <span class="flex items-center gap-3">
+        <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+        <span class="font-semibold">{m.settings_shortcuts_library_open()}</span>
+      </span>
+      <span class="flex items-center gap-1">
+        <kbd
+          class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
+          ↵
+        </kbd>
+      </span>
+    </div>
+    <div class="flex items-center justify-between gap-4 py-3">
+      <span class="flex items-center gap-3">
+        <Icon name="check" class="text-dim h-4 w-4 shrink-0" />
+        <span class="font-semibold"
+          >{m.settings_shortcuts_library_select()}</span>
+      </span>
+      <span class="flex items-center gap-1">
+        <kbd
+          class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
+          X
+        </kbd>
+      </span>
+    </div>
+    <div class="flex items-center justify-between gap-4 py-3">
+      <span class="flex items-center gap-3">
+        <Icon name="check" class="text-dim h-4 w-4 shrink-0" />
+        <span class="font-semibold"
+          >{m.settings_shortcuts_library_range()}</span>
+      </span>
+      <span class="flex items-center gap-1">
+        <kbd
+          class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
+          ⇧ X
+        </kbd>
+      </span>
+    </div>
+    <div class="flex items-center justify-between gap-4 py-3">
+      <span class="flex items-center gap-3">
+        <Icon name="check" class="text-dim h-4 w-4 shrink-0" />
+        <span class="font-semibold"
+          >{m.settings_shortcuts_library_select_all()}</span>
+      </span>
+      <span class="flex items-center gap-1">
+        <kbd
+          class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
+          ⇧ A
+        </kbd>
+      </span>
+    </div>
+    <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
+      <span class="flex items-center gap-3">
+        <Icon name="x" class="text-dim h-4 w-4 shrink-0" />
+        <span class="font-semibold">{m.settings_shortcuts_library_exit()}</span>
+      </span>
+      <span class="flex items-center gap-1">
+        <kbd
+          class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
+          {m.settings_shortcuts_escape()}
+        </kbd>
+      </span>
+    </div>
+  </section>
+
+  <p class="text-dim mb-2 text-sm font-semibold">
     {m.settings_shortcuts_viewer_title()}
   </p>
   <section class="card divide-border mb-4 divide-y p-5 md:p-6">

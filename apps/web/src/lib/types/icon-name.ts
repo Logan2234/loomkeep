@@ -78,4 +78,7 @@ export type IconName =
   | "key"
   | "keyboard"
   | "send"
-  | "rss";
+  | "rss"
+  | "table"
+  | "wall"
+  | "rows";

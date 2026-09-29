@@ -1,6 +1,10 @@
 <script lang="ts">
   import { getLibraryPile, listLibrary } from "$lib/api/client";
-  import { updateLibraryEntry } from "$lib/api/library";
+  import {
+    bulkDeleteLibraryEntries,
+    bulkUpdateLibraryEntries,
+    updateLibraryEntry,
+  } from "$lib/api/library";
   import type {
     LibraryLoadParams,
     PileLoadParams,
@@ -9,10 +13,21 @@
   import PosterCard from "$lib/components/PosterCard.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
-  import { toggleFavorite } from "$lib/favorite-toggle";
+  import {
+    MEDIA_OWNERSHIP_SOURCES,
+    MEDIA_OWNERSHIP_STATUS_OPTIONS,
+  } from "$lib/constants/ownership-sources";
+  import { MEDIA_STATUS_META } from "$lib/constants/status-labels";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
+  import {
+    ownershipText,
+    type LibraryBulkActions,
+    type LibraryColumn,
+    type LibraryItemView,
+  } from "$lib/library-view";
   import { m } from "$lib/paraglide/messages";
   import type { LibraryEntryDto, MediaType } from "@loomkeep/shared";
-  import { Domain, isDormant } from "@loomkeep/shared";
+  import { Domain, isDormant, MEDIA_BULK_STATUSES } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
     { label: m.library_status_in_progress(), value: "WATCHING" },
@@ -43,6 +58,116 @@
       (entry.progress.watchedEpisodes / entry.progress.totalEpisodes) * 100,
     );
   }
+
+  const TYPE_LABELS: Record<MediaType, string> = {
+    MOVIE: m.media_movie(),
+    SERIES: m.media_series(),
+    ANIME: m.media_anime(),
+  };
+
+  const mediaHref = (entry: LibraryEntryDto) =>
+    `/app/media/${entry.mediaItem.type.toLowerCase()}/${entry.mediaItem.sourceId}`;
+
+  const setFavorite = (entry: LibraryEntryDto, next: boolean) =>
+    updateLibraryEntry(entry.id, { favorite: next });
+
+  const itemView = (entry: LibraryEntryDto): LibraryItemView => ({
+    href: mediaHref(entry),
+    title: entry.mediaItem.title,
+    subtitle: TYPE_LABELS[entry.mediaItem.type],
+    imageUrl: entry.mediaItem.posterUrl,
+    status: { value: entry.status, ...MEDIA_STATUS_META[entry.status] },
+    ownership: entry.ownershipStatus,
+    ownershipSource: entry.ownershipSource,
+    reviewTarget: { type: "MEDIA", id: entry.mediaItem.id },
+    rating: entry.rating,
+    favorite: entry.favorite,
+    progress: entry.progress
+      ? {
+          percent: pct(entry),
+          label: `${entry.progress.watchedEpisodes} / ${entry.progress.totalEpisodes} ${m.media_episode_short()}`,
+          paused: isDormant(entry),
+        }
+      : null,
+  });
+
+  const COLUMNS: LibraryColumn<LibraryEntryDto>[] = [
+    { key: "title", kind: "title", label: m.common_title(), sort: "title" },
+    { key: "status", kind: "status", label: m.common_status(), sort: "status" },
+    {
+      key: "progress",
+      kind: "progress",
+      label: m.common_progress(),
+      sort: "progress",
+    },
+    {
+      key: "rating",
+      kind: "rating",
+      label: m.library_rating(),
+      sort: "rating",
+      numeric: true,
+    },
+    {
+      key: "ownership",
+      kind: "text",
+      ownership: true,
+      label: m.ownership_title(),
+      value: (e) =>
+        ownershipText(
+          MEDIA_OWNERSHIP_STATUS_OPTIONS,
+          e.ownershipStatus,
+          e.ownershipSource,
+        ),
+    },
+    {
+      key: "watched",
+      kind: "text",
+      label: m.library_col_watched(),
+      sort: "recent",
+      value: (e) =>
+        e.lastWatchedAt
+          ? formatDate(e.lastWatchedAt, DATE_MEDIUM_OPTIONS)
+          : null,
+    },
+    {
+      key: "added",
+      kind: "text",
+      label: m.library_col_added(),
+      sort: "added",
+      value: (e) => formatDate(e.createdAt, DATE_MEDIUM_OPTIONS),
+    },
+    {
+      key: "started",
+      kind: "text",
+      label: m.library_col_started(),
+      sort: "started",
+      defaultHidden: true,
+      value: (e) =>
+        e.startedAt ? formatDate(e.startedAt, DATE_MEDIUM_OPTIONS) : null,
+    },
+    {
+      key: "notes",
+      kind: "text",
+      label: m.library_col_notes(),
+      defaultHidden: true,
+      truncate: true,
+      value: (e) => e.notes,
+    },
+  ];
+
+  const BULK: LibraryBulkActions = {
+    statusOptions: MEDIA_BULK_STATUSES.map((value) => ({
+      value,
+      label: MEDIA_STATUS_META[value].label,
+    })),
+    ownershipOptions: MEDIA_OWNERSHIP_STATUS_OPTIONS,
+    ownershipSources: MEDIA_OWNERSHIP_SOURCES,
+    update: (dto) =>
+      bulkUpdateLibraryEntries(
+        dto as Parameters<typeof bulkUpdateLibraryEntries>[0],
+      ),
+    remove: bulkDeleteLibraryEntries,
+  };
 
   const load = (params: LibraryLoadParams) =>
     listLibrary({
@@ -78,20 +203,24 @@
   keyOf={(e) => e.id}
   statusOptions={STATUS_OPTIONS}
   sorts={SORTS}
-  defaultSort="recent">
+  defaultSort="recent"
+  {itemView}
+  columns={COLUMNS}
+  bulk={BULK}
+  {setFavorite}>
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
     <MediaSearchPanel {query} limit={10} {onResults} />
   {/snippet}
-  {#snippet card(entry: LibraryEntryDto)}
+  {#snippet card(
+    entry: LibraryEntryDto,
+    onToggleFavorite: (next: boolean) => void,
+  )}
     <PosterCard
-      href={`/app/media/${entry.mediaItem.type.toLowerCase()}/${entry.mediaItem.sourceId}`}
+      href={mediaHref(entry)}
       src={entry.mediaItem.posterUrl}
       title={entry.mediaItem.title}
       favorite={entry.favorite}
-      onToggleFavorite={(next) =>
-        toggleFavorite(entry, next, (n) =>
-          updateLibraryEntry(entry.id, { favorite: n }),
-        )}>
+      {onToggleFavorite}>
       {#snippet meta()}
         {#if entry.progress}
           <ProgressBar

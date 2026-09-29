@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
+import { ListsModule } from "../lists/list.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
 import { MusicItemService } from "./music-item.service";
@@ -9,7 +10,13 @@ import { MusicController } from "./music.controller";
 import { MusicBrainzProvider } from "./providers/musicbrainz.provider";
 
 @Module({
-  imports: [UsersModule, ReviewsModule, GamificationModule, EventsModule],
+  imports: [
+    UsersModule,
+    ReviewsModule,
+    GamificationModule,
+    ListsModule,
+    EventsModule,
+  ],
   controllers: [MusicController],
   providers: [MusicItemService, MusicLibraryService, MusicBrainzProvider],
   exports: [MusicItemService, MusicLibraryService, MusicBrainzProvider],

@@ -1,5 +1,33 @@
 import { m } from "$lib/paraglide/messages";
-import type { BookStatus, GameStatus, MusicStatus } from "@loomkeep/shared";
+import type {
+  BookStatus,
+  EntryStatus,
+  GameStatus,
+  MusicStatus,
+} from "@loomkeep/shared";
+
+export const MEDIA_STATUS_META: Record<
+  EntryStatus,
+  { label: string; cls: string }
+> = {
+  PLANNED: { label: m.media_status_planned(), cls: "bg-surface-2 text-dim" },
+  WATCHING: {
+    label: m.library_status_in_progress(),
+    cls: "bg-accent text-accent-fg",
+  },
+  UP_TO_DATE: {
+    label: m.media_status_caught_up(),
+    cls: "border border-success text-success",
+  },
+  COMPLETED: {
+    label: m.library_status_completed(),
+    cls: "bg-success/15 text-success",
+  },
+  DROPPED: {
+    label: m.library_status_dropped(),
+    cls: "border border-danger text-danger",
+  },
+};
 
 export const BOOK_STATUS_LABELS: Record<BookStatus, string> = {
   TO_READ: m.book_status_to_read(),

@@ -7,6 +7,7 @@
     alt,
     class: cls = "",
     adult = false,
+    caption = true,
   }: {
     src?: string | null;
     title: string;
@@ -15,6 +16,8 @@
     class?: string;
     /** 18+ title — shows a small corner badge. */
     adult?: boolean;
+    /** Sets the title on the fallback gradient; off for thumbnails too small to read it. */
+    caption?: boolean;
   } = $props();
 
   const resolvedAlt = $derived(alt ?? title);
@@ -48,10 +51,12 @@
       style="background: linear-gradient(150deg, hsl({hue} 32% 24%), hsl({(hue +
         40) %
         360} 34% 13%));">
-      <span
-        class="font-display line-clamp-3 text-xs leading-tight font-bold wrap-anywhere text-white/90 [text-shadow:0_1px_3px_rgba(0,0,0,.6)]">
-        {title}
-      </span>
+      {#if caption}
+        <span
+          class="font-display line-clamp-3 text-xs leading-tight font-bold wrap-anywhere text-white/90 [text-shadow:0_1px_3px_rgba(0,0,0,.6)]">
+          {title}
+        </span>
+      {/if}
     </div>
   {/if}
   {#if adult}
