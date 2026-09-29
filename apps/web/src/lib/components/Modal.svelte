@@ -13,6 +13,7 @@
 
   let {
     title,
+    description,
     eyebrow,
     leading,
     onclose,
@@ -25,6 +26,7 @@
     initialFocus,
   }: {
     title: string;
+    description?: string;
     /** Metadata line above the title (timecode voice). */
     eyebrow?: string;
     /** Visual before the title block, e.g. a work's poster thumbnail. */
@@ -85,12 +87,20 @@
           class="font-display text-lg leading-tight font-bold text-balance">
           {title}
         </h3>
+        {#if description}
+          <p class="text-dim mt-1 text-sm">{description}</p>
+        {/if}
       </div>
     </div>
   {:else}
-    <h3 id="modal-title" class="font-display mb-4 text-lg font-bold">
-      {title}
-    </h3>
+    <div class="mb-4 pr-8">
+      <h3 id="modal-title" class="font-display text-lg font-bold">
+        {title}
+      </h3>
+      {#if description}
+        <p class="text-dim mt-1 text-sm">{description}</p>
+      {/if}
+    </div>
   {/if}
 {/snippet}
 

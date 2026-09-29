@@ -12,16 +12,19 @@
   import { m } from "$lib/paraglide/messages.js";
   import type { Domain, SessionTimerDto } from "@loomkeep/shared";
   import ConfirmationModal from "./ConfirmationModal.svelte";
+  import Icon from "./Icon.svelte";
 
   let {
     domain,
     entryId,
     disabled = false,
+    compact = false,
     onFinish,
   }: {
     domain: Extract<Domain, "GAMES" | "BOOKS">;
     entryId: string;
     disabled?: boolean;
+    compact?: boolean;
     onFinish: (elapsedSeconds: number) => void;
   } = $props();
 
@@ -87,13 +90,17 @@
 {#if !timer}
   <button
     type="button"
-    class="btn btn-ghost border-border w-full border"
+    class="btn btn-ghost border-border border {compact
+      ? 'px-3 text-sm'
+      : 'w-full'}"
     disabled={disabled || startMut.loading}
     onclick={() => startMut.mutate()}>
+    <Icon name="timer" class="h-4 w-4" />
     {m.session_timer_start()}
   </button>
 {:else if isCurrentEntry}
-  <div class="border-accent/35 bg-accent/6 rounded-xl border p-3">
+  <div
+    class="border-accent/35 bg-accent/6 w-full basis-full rounded-xl border p-3">
     <div class="flex items-center justify-between gap-3">
       <div>
         <p class="timecode text-dim text-[0.58rem] tracking-[0.14em] uppercase">
@@ -127,7 +134,8 @@
     </div>
   </div>
 {:else}
-  <p class="border-border text-dim rounded-xl border px-3 py-2.5 text-sm">
+  <p
+    class="border-border text-dim w-full basis-full rounded-xl border px-3 py-2.5 text-sm">
     {m.session_timer_other_work()}
   </p>
 {/if}

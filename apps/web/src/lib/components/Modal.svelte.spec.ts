@@ -13,7 +13,9 @@ const body = createRawSnippet(() => ({
   </div>`,
 }));
 
-function renderModal(props: { dismissable?: boolean } = {}) {
+function renderModal(
+  props: { dismissable?: boolean; description?: string } = {},
+) {
   const onclose = vi.fn();
   render(Modal, {
     props: { title: "Edit list", onclose, children: body, ...props },
@@ -41,6 +43,16 @@ describe("Modal on a desktop shell", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Edit list" });
     expect(dialog.getAttribute("aria-modal")).toBe("true");
+  });
+
+  it("places supporting copy below the title", () => {
+    renderModal({ description: "8 sessions grouped by playthrough" });
+
+    expect(
+      within(screen.getByRole("dialog")).getByText(
+        "8 sessions grouped by playthrough",
+      ),
+    ).toBeTruthy();
   });
 
   it("moves focus inside on opening", async () => {

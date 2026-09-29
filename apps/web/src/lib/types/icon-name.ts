@@ -69,6 +69,7 @@ export type IconName =
   | "divider-horizontal"
   | "divider-vertical"
   | "hourglass"
+  | "timer"
   | "mask"
   | "footprint"
   | "shooting-star"

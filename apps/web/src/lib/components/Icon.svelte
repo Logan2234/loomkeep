@@ -260,6 +260,9 @@
     <path d="M6 3h12M6 21h12" />
     <path
       d="M7 3c0 4.5 4 6 5 8-1 2-5 3.5-5 8h10c0-4.5-4-6-5-8 1-2 5-3.5 5-8Z" />
+  {:else if name === "timer"}
+    <circle cx="12" cy="13" r="8" />
+    <path d="M12 9v4l2.5 1.5M9 2h6M12 2v3M18.5 6.5l1.5-1.5" />
   {:else if name === "mask"}
     <path d="M4 8c2-1.5 5-2 8-2s6 .5 8 2c0 6-3 11-8 11S4 14 4 8Z" />
     <circle cx="9" cy="10" r="1.3" fill="currentColor" stroke="none" />

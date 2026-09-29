@@ -199,6 +199,18 @@
     return count === 1 ? m.session_view_one() : m.session_view_many({ count });
   }
 
+  function historyDescription(count: number): string {
+    return count === 1
+      ? m.game_session_history_grouped_one()
+      : m.game_session_history_grouped_many({ count });
+  }
+
+  function historyItemTitle(session: GameSessionDto): string {
+    return session.playthroughNumber === null
+      ? m.game_session_history_standalone()
+      : m.game_session_history_item({ number: session.playthroughNumber });
+  }
+
   function submit() {
     if (durationMinutes < 1) return;
     const cycleAction = !linkToPlaythrough
@@ -529,132 +541,102 @@
 
 {#if showHistory}
   <Modal
-    title={historyLabel(totalSessions)}
+    title={m.game_session_history_title()}
+    description={historyDescription(totalSessions)}
     wide
     onclose={() => (showHistory = false)}>
     {#if sessionsQuery.error}
       <Banner variant="error">{sessionsQuery.error}</Banner>
     {:else if summary?.items.length}
-      <div class="grid grid-cols-2 gap-2">
-        <div class="border-border bg-surface rounded-xl border p-3">
-          <p
-            class="timecode text-dim text-[0.58rem] tracking-[0.14em] uppercase">
-            {m.session_total()}
-          </p>
-          <p class="font-display mt-1 text-lg font-bold tabular-nums">
-            {formatSessionMinutes(summary.totalTrackedMinutes)}
-          </p>
-        </div>
-        <div class="border-border bg-surface rounded-xl border p-3">
-          <p
-            class="timecode text-dim text-[0.58rem] tracking-[0.14em] uppercase">
-            {m.session_month()}
-          </p>
-          <p class="font-display mt-1 text-lg font-bold tabular-nums">
-            {formatSessionMinutes(summary.monthMinutes)}
-          </p>
-        </div>
-      </div>
-
-      <ol class="mt-4 flex flex-col gap-3">
+      <ol
+        class="before:bg-border relative before:absolute before:top-3 before:bottom-3 before:left-1.5 before:w-px sm:before:left-[8.65rem]">
         {#each summary.items as session, index (session.id)}
-          {#if index === 0 || summary.items[index - 1]?.playthroughNumber !== session.playthroughNumber}
-            <li
-              class="timecode text-dim flex items-center gap-2 pt-1 text-[0.6rem] tracking-[0.16em] uppercase">
-              <span class="bg-border h-px flex-1"></span>
-              {session.playthroughNumber
-                ? m.game_cycle_current({ number: session.playthroughNumber })
-                : m.session_cycle_standalone()}
-              <span class="bg-border h-px flex-1"></span>
-            </li>
-          {/if}
           <li
             in:fly|global={{
               y: reduced ? 0 : 8,
               duration: reduced ? 0 : 220,
               delay: reduced ? 0 : Math.min(index * 35, 175),
             }}
-            class="border-border bg-surface group hover:border-accent/35 rounded-xl border p-3.5 transition-colors">
+            class="border-border group relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b py-4 pl-7 last:border-b-0 sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:gap-x-6 sm:pl-0">
+            <span
+              class="bg-accent ring-bg absolute top-[1.35rem] left-0.5 h-2.5 w-2.5 rounded-full ring-4 sm:left-[8.35rem]"
+              aria-hidden="true"></span>
+            <time
+              class="text-dim col-span-2 mb-1 text-xs tabular-nums sm:col-span-1 sm:mb-0">
+              {formatDate(session.occurredAt)}
+            </time>
             {#if editingId === session.id}
-              <div class="grid gap-2 sm:grid-cols-2">
-                <AnimatedNumberInput
-                  bind:value={editDuration}
-                  label={m.session_duration()}
-                  min={1}
-                  max={MAX_SESSION_DURATION_MINUTES}
-                  class="border-border bg-bg h-10 w-full"
-                  numberClass="text-sm" />
-                <input
-                  class="input"
-                  type="date"
-                  max={today}
-                  bind:value={editDate}
-                  aria-label={m.session_date()} />
-              </div>
-              <label class="mt-2 block">
-                <span class="sr-only">{m.session_notes()}</span>
-                <textarea
-                  class="input min-h-24 w-full resize-y"
-                  maxlength="1000"
-                  placeholder={m.game_session_notes_placeholder()}
-                  bind:value={editNotes}></textarea>
-              </label>
-              <div class="mt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  class="btn btn-ghost text-xs"
-                  onclick={() => (editingId = null)}>
-                  {m.common_cancel()}
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-primary text-xs"
-                  disabled={updateMut.loading}
-                  onclick={() => saveEdit(session.id)}>
-                  {m.common_save()}
-                </button>
+              <div class="col-span-2 min-w-0">
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <AnimatedNumberInput
+                    bind:value={editDuration}
+                    label={m.session_duration()}
+                    min={1}
+                    max={MAX_SESSION_DURATION_MINUTES}
+                    class="border-border bg-bg h-10 w-full"
+                    numberClass="text-sm" />
+                  <input
+                    class="input"
+                    type="date"
+                    max={today}
+                    bind:value={editDate}
+                    aria-label={m.session_date()} />
+                </div>
+                <label class="mt-2 block">
+                  <span class="sr-only">{m.session_notes()}</span>
+                  <textarea
+                    class="input min-h-24 w-full resize-y"
+                    maxlength="1000"
+                    placeholder={m.game_session_notes_placeholder()}
+                    bind:value={editNotes}></textarea>
+                </label>
+                <div class="mt-2 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-ghost text-xs"
+                    onclick={() => (editingId = null)}>
+                    {m.common_cancel()}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-primary text-xs"
+                    disabled={updateMut.loading}
+                    onclick={() => saveEdit(session.id)}>
+                    {m.common_save()}
+                  </button>
+                </div>
               </div>
             {:else}
-              <div class="flex items-start gap-3">
+              <div class="min-w-0">
+                <p class="text-sm font-semibold">{historyItemTitle(session)}</p>
+                {#if session.notes}
+                  <p
+                    class="text-dim mt-1 text-sm leading-relaxed whitespace-pre-line">
+                    « {session.notes} »
+                  </p>
+                {/if}
+              </div>
+              <div class="flex items-start gap-2">
+                <span
+                  class="font-display pt-0.5 text-sm font-bold tabular-nums">
+                  {formatSessionMinutes(session.durationMinutes)}
+                </span>
                 <div
-                  class="bg-accent/12 text-accent mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl">
-                  <Icon name="gamepad" class="h-4 w-4" />
-                </div>
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-start justify-between gap-3">
-                    <div>
-                      <p class="font-display text-base font-bold tabular-nums">
-                        {formatSessionMinutes(session.durationMinutes)}
-                      </p>
-                      <p
-                        class="text-dim mt-0.5 flex items-center gap-1.5 text-xs">
-                        <Icon name="calendar" class="h-3.5 w-3.5" />
-                        {formatDate(session.occurredAt)}
-                      </p>
-                    </div>
-                    <div class="flex gap-1">
-                      <button
-                        type="button"
-                        class="text-dim hover:bg-bg hover:text-fg rounded-lg p-1.5 transition-colors"
-                        aria-label={m.session_edit()}
-                        onclick={() => beginEdit(session)}>
-                        <Icon name="edit" class="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        class="text-dim hover:bg-danger/10 hover:text-danger rounded-lg p-1.5 transition-colors"
-                        aria-label={m.session_delete()}
-                        onclick={() => (deletingId = session.id)}>
-                        <Icon name="trash" class="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  {#if session.notes}
-                    <p
-                      class="border-border text-dim mt-3 border-l-2 pl-3 text-sm leading-relaxed whitespace-pre-line">
-                      {session.notes}
-                    </p>
-                  {/if}
+                  class="flex opacity-60 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+                  <button
+                    type="button"
+                    class="text-dim hover:bg-surface-2 hover:text-fg rounded-lg p-1.5 transition-colors"
+                    aria-label={m.session_edit()}
+                    onclick={() => beginEdit(session)}>
+                    <Icon name="edit" class="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    class="text-dim hover:bg-danger/10 hover:text-danger rounded-lg p-1.5 transition-colors"
+                    aria-label={m.session_delete()}
+                    onclick={() => (deletingId = session.id)}>
+                    <Icon name="trash" class="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             {/if}
