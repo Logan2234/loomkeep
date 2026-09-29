@@ -48,6 +48,7 @@ vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
 interface Entry {
   id: string;
   title: string;
+  favorite?: boolean;
 }
 
 const card = createRawSnippet((entry: () => Entry) => ({
@@ -59,15 +60,24 @@ const itemView = (entry: Entry): LibraryItemView => ({
   title: entry.title,
   subtitle: null,
   imageUrl: null,
-  status: { label: "Reading", cls: "" },
+  status: { value: "READING", label: "Reading", cls: "" },
+  ownership: "NONE",
+  ownershipSource: null,
+  reviewTarget: { type: "BOOK", id: "item" },
   rating: null,
-  favorite: false,
-  onToggleFavorite: () => {},
+  favorite: entry.favorite ?? false,
   progress: null,
 });
 
 const columns: LibraryColumn<Entry>[] = [
-  { kind: "title", label: "Titre", sort: "title" },
+  { key: "title", kind: "title", label: "Titre", sort: "title" },
+  {
+    key: "notes",
+    kind: "text",
+    label: "Notes",
+    defaultHidden: true,
+    value: () => null,
+  },
 ];
 
 const pageOf = (
@@ -87,10 +97,14 @@ function renderBrowser(
   load: (params: LibraryLoadParams) => Promise<PagedResult<Entry>>,
   loadPile?: (params: PileLoadParams) => Promise<PileSummaryDto>,
   bulk?: LibraryBulkActions,
+  setFavorite: (entry: Entry, next: boolean) => Promise<unknown> = vi.fn(
+    async () => undefined,
+  ),
 ) {
   return renderWithQuery(LibraryBrowser, {
     loadPile,
     bulk,
+    setFavorite,
     icon: "book",
     title: "Books",
     subtitle: (count: number) => `${count} books`,
@@ -133,6 +147,7 @@ describe("LibraryBrowser", () => {
     return {
       statusOptions: [{ label: "Read", value: "READ" }],
       ownershipOptions: [{ label: "Physical", value: "PHYSICAL" }],
+      ownershipSources: {},
       update: vi.fn(async () => ({ updated: 1, skipped: 0 })),
       remove: vi.fn(async () => ({ updated: 1, skipped: 0 })),
     };
@@ -146,6 +161,59 @@ describe("LibraryBrowser", () => {
       screen.getByRole("menuitem", { name: m.library_select_start() }),
     );
   }
+
+  it("shows a hidden column picked in the display menu, remembered for this library", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("lk-library-view-books", "table");
+    renderBrowser(
+      vi.fn(async () => pageOf([DUNE])),
+      undefined,
+      bulkActions(),
+    );
+    await screen.findByRole("table");
+    expect(screen.queryByRole("columnheader", { name: "Notes" })).toBeNull();
+
+    await user.click(
+      screen.getByRole("button", { name: new RegExp(m.library_display()) }),
+    );
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Notes" }));
+
+    expect(screen.getByRole("columnheader", { name: "Notes" })).toBeTruthy();
+    expect(localStorage.getItem("lk-library-columns-books")).toBe(
+      JSON.stringify(["title", "notes"]),
+    );
+
+    await user.click(
+      screen.getByRole("menuitem", { name: m.library_columns_reset() }),
+    );
+    expect(screen.queryByRole("columnheader", { name: "Notes" })).toBeNull();
+    expect(localStorage.getItem("lk-library-columns-books")).toBeNull();
+  });
+
+  it("shows a favorite toggled from the table at once, and saves it", async () => {
+    const user = userEvent.setup();
+    const setFavorite = vi.fn(async () => undefined);
+    localStorage.setItem("lk-library-view-books", "table");
+    renderBrowser(
+      vi.fn(async () => pageOf([{ ...DUNE, favorite: false }])),
+      undefined,
+      undefined,
+      setFavorite,
+    );
+    await screen.findByRole("table");
+
+    await user.click(
+      screen.getByRole("button", { name: m.common_favorite_add() }),
+    );
+
+    expect(
+      screen.getByRole("button", { name: m.common_favorite_remove() }),
+    ).toBeTruthy();
+    expect(setFavorite).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "1" }),
+      true,
+    );
+  });
 
   it("applies a bulk action to exactly the picked entries", async () => {
     const user = userEvent.setup();

@@ -13,6 +13,7 @@
   import { fly } from "svelte/transition";
   import Dropdown from "./Dropdown.svelte";
   import Icon from "./Icon.svelte";
+  import OwnershipMenuItems from "./OwnershipMenuItems.svelte";
   import type { IconName } from "$lib/types/icon-name";
 
   let {
@@ -76,17 +77,13 @@
 {/snippet}
 
 {#snippet ownershipItems(close: () => void)}
-  {#each bulk.ownershipOptions as option (option.value)}
-    <button
-      role="menuitem"
-      class="menu-item"
-      onclick={() => {
-        close();
-        onUpdate({ ownershipStatus: option.value });
-      }}>
-      {option.label}
-    </button>
-  {/each}
+  <OwnershipMenuItems
+    options={bulk.ownershipOptions}
+    sourcesByStatus={bulk.ownershipSources}
+    onPick={(ownershipStatus, ownershipSource) => {
+      close();
+      onUpdate({ ownershipStatus, ownershipSource });
+    }} />
 {/snippet}
 
 {#snippet favoriteItems(close: () => void)}
