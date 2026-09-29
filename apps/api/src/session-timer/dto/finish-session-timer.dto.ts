@@ -1,5 +1,6 @@
 import type { FinishSessionTimerDto as Contract } from "@loomkeep/shared";
 import {
+  IsBoolean,
   IsInt,
   IsOptional,
   IsString,
@@ -9,6 +10,10 @@ import {
 } from "class-validator";
 
 export class FinishSessionTimerDto implements Contract {
+  @IsOptional()
+  @IsBoolean()
+  resumeTracking?: boolean;
+
   @IsOptional()
   @IsString()
   @MaxLength(1000)

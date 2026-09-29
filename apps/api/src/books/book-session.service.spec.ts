@@ -223,6 +223,39 @@ describe("BookSessionService", () => {
     });
   });
 
+  it("resumes a read book without immediately completing it again", async () => {
+    prisma.bookEntry.findUnique.mockResolvedValue({
+      id: "entry-1",
+      userId: "user-1",
+      bookItemId: "book-1",
+      status: "READ",
+      startedAt: occurredAt,
+      finishedAt: occurredAt,
+      editionKey: "edition-1",
+      referencePageCount: 100,
+    });
+    tx.bookEntry.findUniqueOrThrow.mockResolvedValue({
+      readingBaselinePage: 0,
+      referencePageCount: 100,
+      status: "READING",
+      startedAt: occurredAt,
+      finishedAt: occurredAt,
+    });
+
+    await service.create("user-1", "entry-1", {
+      durationMinutes: 45,
+      pagesRead: 10,
+      occurredAt: occurredAt.toISOString(),
+      resumeTracking: true,
+    });
+
+    expect(tx.bookEntry.update).toHaveBeenNthCalledWith(1, {
+      where: { id: "entry-1" },
+      data: { status: "READING" },
+    });
+    expect(tx.bookEntry.update.mock.calls[1]?.[0].data.status).toBeUndefined();
+  });
+
   it("does not roll a read status back when its session is deleted", async () => {
     prisma.bookSession.findUnique.mockResolvedValue({
       ...created,

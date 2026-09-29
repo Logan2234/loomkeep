@@ -20,6 +20,7 @@ export interface StartSessionTimerDto {
 
 export interface FinishSessionTimerDto {
   notes?: string | null;
+  resumeTracking?: boolean;
   pagesRead?: number;
   startPage?: number;
   endPage?: number;

@@ -64,7 +64,8 @@ export class GameSessionService {
             ? { playtimeMinutes: { increment: dto.durationMinutes } }
             : {}),
           ...(entry.status === "BACKLOG" ||
-          (entry.status === "DROPPED" && dto.resumeTracking)
+          ((entry.status === "DROPPED" || entry.status === "COMPLETED") &&
+            dto.resumeTracking)
             ? { status: "PLAYING" }
             : {}),
           ...(entry.startedAt === null ? { startedAt: occurredAt } : {}),

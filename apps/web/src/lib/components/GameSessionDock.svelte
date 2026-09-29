@@ -39,6 +39,7 @@
   import SessionDurationPicker from "./SessionDurationPicker.svelte";
   import SessionTimerControl from "./SessionTimerControl.svelte";
   import SessionWeekChart from "./SessionWeekChart.svelte";
+  import Switch from "./Switch.svelte";
 
   let { entry, detailKey }: { entry: GameEntryDto; detailKey: QueryKey } =
     $props();
@@ -195,25 +196,34 @@
   function submit() {
     if (durationMinutes < 1) return;
     if (finishingTimer) {
-      finishTimerMut.mutate({ notes: notes || null });
+      finishTimerMut.mutate({
+        notes: notes || null,
+        resumeTracking:
+          (entry.status === "DROPPED" || entry.status === "COMPLETED") &&
+          resumeTracking,
+      });
       return;
     }
     createMut.mutate({
       durationMinutes,
       occurredAt: sessionDateToIso(occurredOn),
       notes: notes || null,
-      resumeTracking: entry.status === "DROPPED" && resumeTracking,
+      resumeTracking:
+        (entry.status === "DROPPED" || entry.status === "COMPLETED") &&
+        resumeTracking,
     });
   }
 
   function openAdd() {
     finishingTimer = false;
+    resumeTracking = true;
     showAdd = true;
   }
 
   function finishTimedSession(elapsedSeconds: number) {
     durationMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
     notes = "";
+    resumeTracking = true;
     finishingTimer = true;
     showAdd = true;
   }
@@ -281,25 +291,9 @@
     {/if}
   </div>
 
-  {#if entry.status === "DROPPED"}
-    <label
-      class="border-border bg-bg/45 flex items-start gap-3 rounded-xl border p-3 text-sm">
-      <input class="mt-0.5" type="checkbox" bind:checked={resumeTracking} />
-      <span>
-        <span class="font-semibold">{m.session_resume_tracking()}</span>
-        <span class="text-dim mt-0.5 block text-xs">
-          {m.session_resume_tracking_help()}
-        </span>
-      </span>
-    </label>
-  {:else if entry.status === "COMPLETED"}
-    <Banner variant="info">{m.session_completed_notice()}</Banner>
-  {/if}
-
   <SessionTimerControl
     domain="GAMES"
     entryId={entry.id}
-    resumeTracking={entry.status === "DROPPED" && resumeTracking}
     onFinish={finishTimedSession} />
 
   <button
@@ -365,20 +359,27 @@
           finishTimerMut.loading ||
           finishingTimer} />
 
-      {#if entry.status === "DROPPED" && !finishingTimer}
-        <label
-          class="border-border mt-4 flex items-start gap-3 rounded-xl border p-3 text-sm">
-          <input class="mt-0.5" type="checkbox" bind:checked={resumeTracking} />
-          <span>
-            <span class="font-semibold">{m.session_resume_tracking()}</span>
-            <span class="text-dim mt-0.5 block text-xs">
-              {m.session_resume_tracking_help()}
-            </span>
-          </span>
-        </label>
-      {:else if entry.status === "COMPLETED"}
-        <div class="mt-4">
-          <Banner variant="info">{m.session_completed_notice()}</Banner>
+      {#if entry.status === "DROPPED" || entry.status === "COMPLETED"}
+        <div
+          class="border-border bg-bg/55 mt-4 flex items-center justify-between gap-4 rounded-xl border p-3.5">
+          <div class="min-w-0">
+            <p class="text-sm font-semibold">
+              {entry.status === "COMPLETED"
+                ? m.session_resume_completed()
+                : m.session_resume_tracking()}
+            </p>
+            <p class="text-dim mt-0.5 text-xs leading-relaxed">
+              {entry.status === "COMPLETED"
+                ? m.session_resume_completed_help()
+                : m.session_resume_tracking_help()}
+            </p>
+          </div>
+          <Switch
+            checked={resumeTracking}
+            onChange={(checked) => (resumeTracking = checked)}
+            label={entry.status === "COMPLETED"
+              ? m.session_resume_completed()
+              : m.session_resume_tracking()} />
         </div>
       {/if}
 

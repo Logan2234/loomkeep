@@ -42,6 +42,7 @@
   import SessionDurationPicker from "./SessionDurationPicker.svelte";
   import SessionTimerControl from "./SessionTimerControl.svelte";
   import SessionWeekChart from "./SessionWeekChart.svelte";
+  import Switch from "./Switch.svelte";
 
   let {
     entry,
@@ -240,26 +241,36 @@
     const pageData =
       mode === "quantity" ? { pagesRead } : { startPage, endPage };
     if (finishingTimer) {
-      finishTimerMut.mutate({ notes: notes || null, ...pageData });
+      finishTimerMut.mutate({
+        notes: notes || null,
+        resumeTracking:
+          (entry.status === "DROPPED" || entry.status === "READ") &&
+          resumeTracking,
+        ...pageData,
+      });
       return;
     }
     createMut.mutate({
       durationMinutes,
       occurredAt: sessionDateToIso(occurredOn),
       notes: notes || null,
-      resumeTracking: entry.status === "DROPPED" && resumeTracking,
+      resumeTracking:
+        (entry.status === "DROPPED" || entry.status === "READ") &&
+        resumeTracking,
       ...pageData,
     });
   }
 
   function openAdd() {
     finishingTimer = false;
+    resumeTracking = true;
     showAdd = true;
   }
 
   function finishTimedSession(elapsedSeconds: number) {
     durationMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
     notes = "";
+    resumeTracking = true;
     finishingTimer = true;
     showAdd = true;
   }
@@ -348,26 +359,10 @@
     {/if}
   </div>
 
-  {#if entry.status === "DROPPED"}
-    <label
-      class="border-border bg-bg/45 flex items-start gap-3 rounded-xl border p-3 text-sm">
-      <input class="mt-0.5" type="checkbox" bind:checked={resumeTracking} />
-      <span>
-        <span class="font-semibold">{m.session_resume_tracking()}</span>
-        <span class="text-dim mt-0.5 block text-xs">
-          {m.session_resume_tracking_help()}
-        </span>
-      </span>
-    </label>
-  {:else if entry.status === "READ"}
-    <Banner variant="info">{m.session_completed_notice()}</Banner>
-  {/if}
-
   <SessionTimerControl
     domain="BOOKS"
     entryId={entry.id}
     disabled={!referencePages}
-    resumeTracking={entry.status === "DROPPED" && resumeTracking}
     onFinish={finishTimedSession} />
 
   {#if !referencePages}
@@ -468,20 +463,27 @@
         label={m.book_session_pages()}
         class="w-full [&>button]:flex-1 [&>button]:justify-center" />
 
-      {#if entry.status === "DROPPED" && !finishingTimer}
-        <label
-          class="border-border mt-3 flex items-start gap-3 rounded-xl border p-3 text-sm">
-          <input class="mt-0.5" type="checkbox" bind:checked={resumeTracking} />
-          <span>
-            <span class="font-semibold">{m.session_resume_tracking()}</span>
-            <span class="text-dim mt-0.5 block text-xs">
-              {m.session_resume_tracking_help()}
-            </span>
-          </span>
-        </label>
-      {:else if entry.status === "READ"}
-        <div class="mt-3">
-          <Banner variant="info">{m.session_completed_notice()}</Banner>
+      {#if entry.status === "DROPPED" || entry.status === "READ"}
+        <div
+          class="border-border bg-bg/55 mt-3 flex items-center justify-between gap-4 rounded-xl border p-3.5">
+          <div class="min-w-0">
+            <p class="text-sm font-semibold">
+              {entry.status === "READ"
+                ? m.session_resume_completed()
+                : m.session_resume_tracking()}
+            </p>
+            <p class="text-dim mt-0.5 text-xs leading-relaxed">
+              {entry.status === "READ"
+                ? m.session_resume_completed_help()
+                : m.session_resume_tracking_help()}
+            </p>
+          </div>
+          <Switch
+            checked={resumeTracking}
+            onChange={(checked) => (resumeTracking = checked)}
+            label={entry.status === "READ"
+              ? m.session_resume_completed()
+              : m.session_resume_tracking()} />
         </div>
       {/if}
 

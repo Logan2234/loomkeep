@@ -173,6 +173,28 @@ describe("GameSessionService", () => {
     expect(tx.gameEntry.update.mock.calls[0]?.[0].data.status).toBe("PLAYING");
   });
 
+  it("resumes a completed game when the session explicitly requests it", async () => {
+    prisma.gameEntry.findUnique.mockResolvedValue({
+      id: "entry-1",
+      userId: "user-1",
+      gameItemId: "game-1",
+      status: "COMPLETED",
+      startedAt: created.occurredAt,
+      finishedAt: created.occurredAt,
+      playtimeMinutes: 30,
+      trackedPlaytimeMinutes: 30,
+      steamPlaytimeMinutes: null,
+    });
+
+    await service.create("user-1", "entry-1", {
+      durationMinutes: 60,
+      occurredAt: "2024-09-26T12:00:00.000Z",
+      resumeTracking: true,
+    });
+
+    expect(tx.gameEntry.update.mock.calls[0]?.[0].data.status).toBe("PLAYING");
+  });
+
   it("returns a playing game to the backlog when its only session is deleted", async () => {
     prisma.gameSession.findUnique.mockResolvedValue({
       ...created,

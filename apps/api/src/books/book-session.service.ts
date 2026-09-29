@@ -72,14 +72,24 @@ export class BookSessionService {
           },
         });
 
-        if (entry.status === BookStatus.DROPPED && dto.resumeTracking) {
+        const resumesTracking =
+          (entry.status === BookStatus.DROPPED ||
+            entry.status === BookStatus.READ) &&
+          dto.resumeTracking;
+
+        if (resumesTracking) {
           await tx.bookEntry.update({
             where: { id: entry.id },
             data: { status: BookStatus.READING },
           });
         }
 
-        const recomputed = await this.recomputeEntry(tx, entry.id, occurredAt);
+        const recomputed = await this.recomputeEntry(
+          tx,
+          entry.id,
+          occurredAt,
+          entry.status === BookStatus.READ && dto.resumeTracking,
+        );
         return { session: created, completed: recomputed.completed };
       },
     );
@@ -169,6 +179,7 @@ export class BookSessionService {
     tx: Prisma.TransactionClient,
     entryId: string,
     completionAt?: Date,
+    suppressCompletion = false,
   ): Promise<{ completed: boolean }> {
     const [entry, sessions] = await Promise.all([
       tx.bookEntry.findUniqueOrThrow({
@@ -200,6 +211,7 @@ export class BookSessionService {
     );
     const completed =
       completionAt !== undefined &&
+      !suppressCompletion &&
       entry.status !== BookStatus.READ &&
       entry.status !== BookStatus.DROPPED &&
       aggregate.completionSuggested;

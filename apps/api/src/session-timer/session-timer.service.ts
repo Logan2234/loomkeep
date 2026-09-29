@@ -110,7 +110,7 @@ export class SessionTimerService {
           durationMinutes,
           occurredAt,
           notes: dto.notes,
-          resumeTracking: timer.resumeTracking,
+          resumeTracking: dto.resumeTracking ?? timer.resumeTracking,
         },
         SessionSource.TIMER,
       );
@@ -122,7 +122,7 @@ export class SessionTimerService {
           durationMinutes,
           occurredAt,
           notes: dto.notes,
-          resumeTracking: timer.resumeTracking,
+          resumeTracking: dto.resumeTracking ?? timer.resumeTracking,
           pagesRead: dto.pagesRead,
           startPage: dto.startPage,
           endPage: dto.endPage,
