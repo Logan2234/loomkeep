@@ -37,6 +37,7 @@ export * from "./enums";
 export * from "./error-codes";
 export * from "./legal";
 export * from "./level";
+export * from "./locale";
 export * from "./password";
 export * from "./realtime";
 export * from "./runtime";

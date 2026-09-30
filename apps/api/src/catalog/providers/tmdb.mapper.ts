@@ -399,11 +399,6 @@ function personSubtitle(p: TmdbPersonDetails): string | null {
   return [years, p.place_of_birth].filter(Boolean).join(" · ") || null;
 }
 
-/** "fr" → "fr-FR"; anything else (including unset) → "en-US". */
-export function tmdbLanguage(lang: string | undefined): string {
-  return lang === "fr" ? "fr-FR" : "en-US";
-}
-
 /**
  * Movies: the crew members credited as "Director". Series: TMDB's `credits`
  * append has no reliable per-series director, so the show's own creator(s)

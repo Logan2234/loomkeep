@@ -11,6 +11,7 @@ import {
   DigestCadence as DigestCadenceValues,
   Domain as DomainValues,
   ListVisibility as ListVisibilityValues,
+  Locale as LocaleValues,
   ReviewVisibility as ReviewVisibilityValues,
   SpoilerSensitivity as SpoilerSensitivityValues,
 } from "@loomkeep/shared";
@@ -30,10 +31,6 @@ import {
   Min,
   MinLength,
 } from "class-validator";
-
-// Mirrors `locales` in apps/web/project.inlang/settings.json — the set of
-// locales Paraglide actually has translations for.
-const ALLOWED_LOCALES = ["fr", "en"];
 
 export class UpdateUserDto implements UpdateUserRequestDto {
   @IsOptional()
@@ -102,7 +99,7 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   defaultListVisibility?: ListVisibility;
 
   @IsOptional()
-  @IsIn(ALLOWED_LOCALES)
+  @IsIn([...LocaleValues])
   locale?: Locale;
 
   @IsOptional()

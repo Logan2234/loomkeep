@@ -2,11 +2,13 @@ import {
   type Locale,
   ModerationLegalBasis,
   ModerationMeasure,
+  regionalLocale,
 } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import nodemailer, { Transporter } from "nodemailer";
+import { resolveCopyLocale } from "../common/copy-locale.util";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
-import { dateLocale, MAIL_COPY, resolveMailLocale } from "./mail.i18n";
+import { MAIL_COPY } from "./mail.i18n";
 
 /** A provider reaching one of its daily-quota alert thresholds. */
 export interface QuotaAlert {
@@ -502,7 +504,7 @@ export class MailService {
     const template = this.templates[key];
     if (!template) return null;
     return template.build(
-      resolveMailLocale(locale),
+      resolveCopyLocale(locale),
       this.resolveFieldValues(template.fields, overrides),
     );
   }
@@ -518,7 +520,7 @@ export class MailService {
     await this.send({
       to: recipient.email,
       ...template.build(
-        resolveMailLocale(recipient.locale),
+        resolveCopyLocale(recipient.locale),
         this.resolveFieldValues(template.fields, overrides),
       ),
     });
@@ -543,7 +545,7 @@ export class MailService {
     recipient: MailRecipient,
     token: string,
   ): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildPasswordResetLink(locale, token),
@@ -551,7 +553,7 @@ export class MailService {
   }
 
   async sendPasswordChanged(recipient: MailRecipient): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildPasswordChanged(locale),
@@ -563,7 +565,7 @@ export class MailService {
     deviceLabel: string | null,
     ip: string | null,
   ): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildNewDeviceLogin(locale, deviceLabel, ip),
@@ -575,7 +577,7 @@ export class MailService {
     newEmail: string,
     localeValue: string,
   ): Promise<void> {
-    const locale = resolveMailLocale(localeValue);
+    const locale = resolveCopyLocale(localeValue);
     await Promise.all([
       this.send({
         to: oldEmail,
@@ -592,7 +594,7 @@ export class MailService {
     recipient: MailRecipient,
     code: string,
   ): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildEmailChangeCode(locale, code),
@@ -603,7 +605,7 @@ export class MailService {
     recipient: MailRecipient,
     code: string,
   ): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildMfaEmailCode(locale, code),
@@ -614,7 +616,7 @@ export class MailService {
     recipient: MailRecipient,
     displayName: string,
   ): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildWelcome(locale, displayName),
@@ -625,7 +627,7 @@ export class MailService {
     recipient: MailRecipient,
     token: string,
   ): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildVerifyEmail(locale, token),
@@ -639,7 +641,7 @@ export class MailService {
     url: string,
     expiresAt: Date,
   ): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildInvitation(locale, inviterName, url, expiresAt),
@@ -655,7 +657,7 @@ export class MailService {
     items: { title: string; body: string; url: string }[],
     period: "daily" | "weekly",
   ): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildEpisodeDigest(locale, items, period),
@@ -667,7 +669,7 @@ export class MailService {
     recipient: MailRecipient,
     pendingCount: number,
   ): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildReportsDigest(locale, pendingCount),
@@ -679,7 +681,7 @@ export class MailService {
     recipient: MailRecipient,
     alert: QuotaAlert,
   ): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildQuotaAlert(locale, alert),
@@ -688,7 +690,7 @@ export class MailService {
 
   /** Tells an admin a scheduled job started failing, or recovered. */
   async sendJobAlert(recipient: MailRecipient, alert: JobAlert): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildJobAlert(locale, alert),
@@ -705,7 +707,7 @@ export class MailService {
     recipient: MailRecipient,
     deletionDate: Date,
   ): Promise<void> {
-    const locale = resolveMailLocale(recipient.locale);
+    const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
       ...this.buildInactivityWarning(locale, deletionDate),
@@ -730,7 +732,7 @@ export class MailService {
       to: recipient.email,
       replyTo: "contact@loomkeep.app",
       ...this.buildModerationDecision(
-        resolveMailLocale(recipient.locale),
+        resolveCopyLocale(recipient.locale),
         input,
       ),
     });
@@ -747,7 +749,7 @@ export class MailService {
     await this.send({
       to: recipient.email,
       ...this.buildNewsletter(
-        resolveMailLocale(recipient.locale),
+        resolveCopyLocale(recipient.locale),
         title,
         contentPreview,
         contentHtml,
@@ -757,7 +759,7 @@ export class MailService {
   }
 
   private buildQuotaAlert(locale: Locale, alert: QuotaAlert) {
-    const copy = MAIL_COPY[locale].quotaAlert;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].quotaAlert;
     const percent = Math.round(alert.threshold * 100);
     const sentence = copy.sentence(
       alert.provider,
@@ -781,7 +783,7 @@ export class MailService {
   }
 
   private buildJobAlert(locale: Locale, alert: JobAlert): TemplateBody {
-    const copy = MAIL_COPY[locale].jobAlert;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].jobAlert;
     const url = `${this.webOrigin}/app/admin/jobs`;
     const failed = alert.error !== null;
     const sentence = failed
@@ -808,7 +810,7 @@ export class MailService {
     locale: Locale,
     pendingCount: number,
   ): TemplateBody {
-    const copy = MAIL_COPY[locale].reportsDigest;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].reportsDigest;
     const url = `${this.webOrigin}/app/admin/reports`;
     return {
       subject: copy.subject(pendingCount),
@@ -837,7 +839,7 @@ export class MailService {
       tosClause: string;
     },
   ): TemplateBody {
-    const copy = MAIL_COPY[locale].moderation;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].moderation;
     const variant = {
       [ModerationMeasure.COMMENT_REMOVED]: copy.comment,
       [ModerationMeasure.REVIEW_REMOVED]: copy.review,
@@ -873,11 +875,14 @@ export class MailService {
     locale: Locale,
     deletionDate: Date,
   ): TemplateBody {
-    const copy = MAIL_COPY[locale].inactivity;
-    const formattedDate = new Intl.DateTimeFormat(dateLocale(locale), {
-      dateStyle: "long",
-      timeZone: "UTC",
-    }).format(deletionDate);
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].inactivity;
+    const formattedDate = new Intl.DateTimeFormat(
+      regionalLocale(resolveCopyLocale(locale)),
+      {
+        dateStyle: "long",
+        timeZone: "UTC",
+      },
+    ).format(deletionDate);
     const url = `${this.webOrigin}/login`;
     return {
       subject: copy.subject,
@@ -894,7 +899,7 @@ export class MailService {
   }
 
   private buildPasswordResetLink(locale: Locale, token: string): TemplateBody {
-    const copy = MAIL_COPY[locale].passwordReset;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].passwordReset;
     const url = `${this.webOrigin}/reset-password?token=${token}`;
     return {
       subject: copy.subject,
@@ -910,7 +915,7 @@ export class MailService {
   }
 
   private buildPasswordChanged(locale: Locale): TemplateBody {
-    const copy = MAIL_COPY[locale].passwordChanged;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].passwordChanged;
     // The old password no longer works, so a link into the app (which needs
     // a session) would be a dead end for the "it wasn't me" case — the
     // account may already be compromised. The reset flow works regardless,
@@ -936,7 +941,7 @@ export class MailService {
     deviceLabelValue: string | null,
     ip: string | null,
   ): TemplateBody {
-    const copy = MAIL_COPY[locale].newDevice;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].newDevice;
     const deviceLabel = deviceLabelValue ?? copy.unknownDevice;
     const ipSuffix = ip ? ` (IP ${ip})` : "";
     const ipTextSuffix = ip ? ` (IP ${ip})` : "";
@@ -961,7 +966,7 @@ export class MailService {
   }
 
   private buildEmailChangedOld(locale: Locale, newEmail: string): TemplateBody {
-    const copy = MAIL_COPY[locale].emailChangedOld;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].emailChangedOld;
     // The account's login email has already changed (and possibly the
     // password too, if compromised), so a link into the app or a reset flow
     // tied to either address can't be assumed to reach the real owner —
@@ -981,7 +986,7 @@ export class MailService {
   }
 
   private buildEmailChangedNew(locale: Locale, oldEmail: string): TemplateBody {
-    const copy = MAIL_COPY[locale].emailChangedNew;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].emailChangedNew;
     return {
       subject: copy.subject,
       text: copy.intro(oldEmail),
@@ -994,7 +999,7 @@ export class MailService {
   }
 
   private buildEmailChangeCode(locale: Locale, code: string): TemplateBody {
-    const copy = MAIL_COPY[locale].emailChangeCode;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].emailChangeCode;
     return {
       subject: copy.subject,
       text: `${copy.intro} ${code}\n\n${copy.expiry}`,
@@ -1009,7 +1014,7 @@ export class MailService {
   }
 
   private buildMfaEmailCode(locale: Locale, code: string): TemplateBody {
-    const copy = MAIL_COPY[locale].mfaCode;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].mfaCode;
     return {
       subject: copy.subject,
       text: `${copy.intro} ${code}\n\n${copy.expiry}`,
@@ -1024,7 +1029,7 @@ export class MailService {
   }
 
   private buildWelcome(locale: Locale, displayName: string): TemplateBody {
-    const copy = MAIL_COPY[locale].welcome;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].welcome;
     const url =
       this.umamiLink(UMAMI_LINK_SLUG_WELCOME) ?? `${this.webOrigin}/app`;
     return {
@@ -1040,7 +1045,7 @@ export class MailService {
   }
 
   private buildVerifyEmail(locale: Locale, token: string): TemplateBody {
-    const copy = MAIL_COPY[locale].verifyEmail;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].verifyEmail;
     const url = `${this.webOrigin}/verify-email?token=${token}`;
     return {
       subject: copy.subject,
@@ -1061,11 +1066,14 @@ export class MailService {
     url: string,
     expiresAt: Date,
   ): TemplateBody {
-    const copy = MAIL_COPY[locale].invitation;
-    const formattedDate = new Intl.DateTimeFormat(dateLocale(locale), {
-      dateStyle: "long",
-      timeZone: "UTC",
-    }).format(expiresAt);
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].invitation;
+    const formattedDate = new Intl.DateTimeFormat(
+      regionalLocale(resolveCopyLocale(locale)),
+      {
+        dateStyle: "long",
+        timeZone: "UTC",
+      },
+    ).format(expiresAt);
     return {
       subject: copy.subject(inviterName),
       text: `${copy.intro(inviterName)}\n\n${url}\n\n${copy.expiry(formattedDate)}`,
@@ -1090,7 +1098,7 @@ export class MailService {
     items: { title: string; body: string; url: string }[],
     period: "daily" | "weekly",
   ): TemplateBody {
-    const copy = MAIL_COPY[locale].episodeDigest;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].episodeDigest;
     const periodLabel = period === "daily" ? copy.today : copy.thisWeek;
     const prefsUrl =
       this.umamiLink(UMAMI_LINK_SLUG_EPISODE_NOTIFICATIONS) ??
@@ -1138,7 +1146,7 @@ export class MailService {
     contentHtml: string,
     unsubscribeToken: string,
   ): TemplateBody {
-    const copy = MAIL_COPY[locale].newsletter;
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].newsletter;
     const entryUrl =
       this.umamiLink(UMAMI_LINK_SLUG_NEWSLETTER_CHANGELOG) ??
       "https://feedback.loomkeep.app/changelog";

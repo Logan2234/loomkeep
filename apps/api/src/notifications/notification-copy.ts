@@ -1,4 +1,4 @@
-import { Locale, type Locale as LocaleCode } from "@loomkeep/shared";
+import { type CopyLocale, resolveCopyLocale } from "../common/copy-locale.util";
 
 /**
  * User-facing copy the API has to render itself, in the recipient's language.
@@ -75,7 +75,7 @@ const COPY = {
     },
     securityKey: "Security key",
   },
-} satisfies Record<LocaleCode, NotificationCopy>;
+} satisfies Record<CopyLocale, NotificationCopy>;
 
 export interface NotificationCopy {
   adminTestPush: string;
@@ -94,8 +94,5 @@ export interface NotificationCopy {
 }
 
 export function notificationCopy(locale: string | undefined): NotificationCopy {
-  const resolved = Locale.includes(locale as LocaleCode)
-    ? (locale as LocaleCode)
-    : "fr";
-  return COPY[resolved];
+  return COPY[resolveCopyLocale(locale)];
 }

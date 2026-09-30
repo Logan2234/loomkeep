@@ -16,6 +16,7 @@
     adminTemplateFieldLabel,
   } from "$lib/constants/admin-presentation";
   import { debounce } from "$lib/debounce";
+  import { languageName } from "$lib/locales";
   import { m } from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
   import { createLatestEmailPreviewRequest } from "./email-preview";
@@ -187,9 +188,7 @@
                 emailLocale = locale;
                 void loadPreview();
               }}>
-              {locale === "fr"
-                ? m.common_language_fr()
-                : m.common_language_en()}
+              {languageName(locale)}
             </button>
           {/each}
         </div>

@@ -7,6 +7,7 @@
   import { appConfig } from "$lib/config.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
+  import { languageOptions } from "$lib/locales";
   import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
   import { createDomainToggle } from "$lib/domain-toggle.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -286,22 +287,11 @@
 
     <div class="mb-5">
       <p class="mb-2 text-sm font-semibold">{m.common_language()}</p>
-      <div class="flex gap-2">
-        <button
-          type="button"
-          class="chip"
-          class:chip-on={(auth.user?.locale ?? getLocale()) === "fr"}
-          onclick={() => saveLocale("fr")}>
-          {m.common_language_fr()}
-        </button>
-        <button
-          type="button"
-          class="chip"
-          class:chip-on={(auth.user?.locale ?? getLocale()) === "en"}
-          onclick={() => saveLocale("en")}>
-          {m.common_language_en()}
-        </button>
-      </div>
+      <Combobox
+        label={m.common_language()}
+        options={languageOptions()}
+        values={[auth.user?.locale ?? getLocale()]}
+        onChange={([next]) => saveLocale(next as Locale)} />
     </div>
 
     <div class="divide-border divide-y">

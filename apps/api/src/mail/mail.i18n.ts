@@ -1,4 +1,4 @@
-import { Locale, type Locale as LocaleCode } from "@loomkeep/shared";
+import type { CopyLocale } from "../common/copy-locale.util";
 
 type ModerationVariant = {
   measure: string;
@@ -471,12 +471,4 @@ export const MAIL_COPY = {
       eyebrow: "New version",
     },
   },
-} satisfies Record<LocaleCode, MailCopy>;
-
-export function resolveMailLocale(locale: string | undefined): LocaleCode {
-  return Locale.includes(locale as LocaleCode) ? (locale as LocaleCode) : "fr";
-}
-
-export function dateLocale(locale: LocaleCode): string {
-  return locale === "fr" ? "fr-FR" : "en-US";
-}
+} satisfies Record<CopyLocale, MailCopy>;
