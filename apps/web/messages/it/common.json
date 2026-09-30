@@ -22,11 +22,11 @@
   "common_edit": "Modifica",
   "common_add": "Aggiungi",
   "common_settings": "Impostazioni impostazioni",
-  "common_loom": "telaio",
-  "common_Loom": "Lode",
-  "common_LOOM": "LOO",
-  "common_keep": "continua",
-  "common_Keep": "Continua",
+  "common_loom": "loom",
+  "common_Loom": "Loom",
+  "common_LOOM": "LOOM",
+  "common_keep": "keep",
+  "common_Keep": "Keep",
   "common_KEEP": "KEEP",
   "common_loomkeep": "Loomkeep",
   "common_status": "Stato",
@@ -257,5 +257,10 @@
   "common_image_large": "Immagine ingrandita",
   "common_camera_unavailable": "Accesso telecamera negato o non disponibile.",
   "common_saved": "Salvataggio",
-  "common_transparency": "Trasparenza"
+  "common_transparency": "Trasparenza",
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "common_cancel": "Cancellare",
+  "common_save": "Salva",
+  "common_delete": "Elimina",
+  "common_confirm": "Conferma"
 }
