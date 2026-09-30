@@ -196,7 +196,8 @@ describe("JwtAuthGuard", () => {
 
     it("authenticates a key on a route opened to its resource", async () => {
       const apiKeys = makeApiKeys(PRINCIPAL);
-      const request: { user?: unknown } = bearer("lk_secret");
+      const request: ReturnType<typeof bearer> & { user?: unknown } =
+        bearer("lk_secret");
 
       await expect(
         makeGuard(apiKeys, { resource: "library" }).canActivate(

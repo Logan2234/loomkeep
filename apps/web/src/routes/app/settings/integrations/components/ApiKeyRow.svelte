@@ -17,7 +17,7 @@
 
   let open = $state(false);
 
-  const state = $derived(expiryState(apiKey));
+  const status = $derived(expiryState(apiKey));
   const resources = $derived(scopeLabels(apiKey.scopes));
   const summary = $derived(
     resources.length > 2
@@ -27,7 +27,7 @@
   const expiry = $derived.by(() => {
     if (!apiKey.expiresAt) return m.settings_api_keys_never_expires();
     const date = formatDate(apiKey.expiresAt);
-    return state === "expired"
+    return status === "expired"
       ? m.settings_api_keys_expired_on({ date })
       : m.settings_api_keys_expires_on({ date });
   });
@@ -49,7 +49,7 @@
     <span class="grid min-w-0 flex-1">
       <span class="flex items-center gap-2 font-semibold">
         <span class="truncate">{apiKey.name}</span>
-        {#if state === "expired"}
+        {#if status === "expired"}
           <span
             class="border-danger text-danger shrink-0 rounded-full border px-2 text-xs font-semibold">
             {m.settings_api_keys_expired()}
@@ -59,8 +59,8 @@
       <span class="text-dim truncate text-sm">
         {summary} ·
         <span
-          class:text-warning={state === "soon"}
-          class:text-danger={state === "expired"}>{expiry}</span>
+          class:text-warning={status === "soon"}
+          class:text-danger={status === "expired"}>{expiry}</span>
         · {used}
       </span>
     </span>
@@ -101,7 +101,7 @@
           type="button"
           class="btn btn-ghost btn-sm text-danger"
           onclick={() => onrevoke(apiKey)}>
-          {state === "expired"
+          {status === "expired"
             ? m.settings_api_keys_delete()
             : m.settings_api_keys_revoke()}
         </button>

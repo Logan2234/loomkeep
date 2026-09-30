@@ -56,6 +56,11 @@ const MESSAGES = {
   [ErrorCode.AuthInvitationExpired]: () => m.apierr_auth_invitation_expired(),
   [ErrorCode.AuthInvitationEmailMismatch]: () =>
     m.apierr_auth_invitation_email_mismatch(),
+  [ErrorCode.AuthInvalidApiKey]: () => m.apierr_auth_invalid_api_key(),
+  [ErrorCode.AuthApiKeyForbidden]: () => m.apierr_auth_api_key_forbidden(),
+  [ErrorCode.ApiKeyNotFound]: () => m.apierr_api_key_not_found(),
+  [ErrorCode.ApiKeyLimitReached]: () => m.apierr_api_key_limit_reached(),
+  [ErrorCode.ApiKeyExpiryInPast]: () => m.apierr_api_key_expiry_in_past(),
   [ErrorCode.AdminCacheItemNotFound]: () =>
     m.apierr_admin_cache_item_not_found(),
   [ErrorCode.AdminCacheResyncFailed]: () =>
