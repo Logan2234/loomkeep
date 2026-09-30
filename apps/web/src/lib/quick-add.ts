@@ -62,7 +62,7 @@ export function quickAddTarget(href: string): QuickAddTarget | null {
   };
 }
 
-export interface QuickAddView {
+interface QuickAddView {
   title: string;
   posterUrl: string | null;
   /** Kind, year and creator, as far as the source knows them. */
