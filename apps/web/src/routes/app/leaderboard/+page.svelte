@@ -52,7 +52,7 @@
   let scope = $state<LeaderboardScope>("global");
   const scopeTabs: { value: LeaderboardScope; label: string }[] = [
     { value: "global", label: m.gamification_leaderboard_tab_global() },
-    { value: "friends", label: m.gamification_leaderboard_tab_friends() },
+    { value: "friends", label: m.common_friends() },
   ];
   let period = $state<LeaderboardPeriod>("month");
 
@@ -148,7 +148,7 @@
                   {#if entry.isViewer}
                     <span
                       class="text-accent text-[0.6rem] font-bold tracking-wide uppercase">
-                      {m.gamification_leaderboard_you()}
+                      {m.common_you()}
                     </span>
                   {/if}
                 </span>
@@ -182,7 +182,7 @@
             <span class="min-w-0 flex-1">
               <span
                 class="text-accent block text-[0.6rem] font-bold tracking-wide uppercase">
-                {m.gamification_leaderboard_you()}
+                {m.common_you()}
               </span>
               <span class="truncate text-sm font-semibold">
                 {viewerOutsideTop.displayName}

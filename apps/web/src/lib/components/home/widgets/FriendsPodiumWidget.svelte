@@ -51,7 +51,7 @@
   icon={def.icon}
   title={scope === "friends"
     ? def.title()
-    : m.home_widget_podium_global_title()}
+    : m.gamification_widget_podium_global_title()}
   tag={PERIOD_LABELS[period]()}
   href="/app/leaderboard"
   linkLabel={m.common_see()}>
@@ -79,7 +79,7 @@
                 {entry.displayName}
               </p>
               <p class="timecode text-[0.65rem]">
-                {m.home_podium_xp({ xp: formatNumber(entry.xp) })}
+                {m.gamification_podium_xp({ xp: formatNumber(entry.xp) })}
               </p>
               <div
                 class="border-accent/40 mt-1 flex w-full items-start justify-center rounded-t-md border border-b-0 pt-1 {step.place ===
@@ -97,7 +97,7 @@
       {#if viewer}
         <p
           class="border-border text-dim mt-2 shrink-0 border-t pt-2 text-center text-xs">
-          {m.home_podium_viewer({
+          {m.gamification_podium_viewer({
             rank: viewer.rank,
             xp: formatNumber(viewer.xp),
           })}
@@ -107,7 +107,7 @@
   {:else}
     <p
       class="text-dim flex h-full items-center justify-center text-center text-sm">
-      {m.home_podium_empty()}
+      {m.gamification_podium_empty()}
     </p>
   {/if}
 </WidgetShell>

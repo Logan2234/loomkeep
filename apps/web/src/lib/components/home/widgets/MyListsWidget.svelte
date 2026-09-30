@@ -40,9 +40,9 @@
 <WidgetShell icon={def.icon} title={def.title()} href="/app/lists">
   {#if !listsQuery.loading && lists.length === 0}
     <div class="flex h-full flex-col items-center justify-center gap-2">
-      <p class="text-dim text-center text-sm">{m.home_my_lists_empty()}</p>
+      <p class="text-dim text-center text-sm">{m.lists_none_yet()}</p>
       <a href="/app/lists" class="btn btn-ghost btn-sm">
-        {m.home_my_lists_create()}
+        {m.lists_create_button()}
       </a>
     </div>
   {:else}
@@ -59,7 +59,7 @@
       {size}
       metaHeight={16}
       loading={listsQuery.loading}
-      empty={m.home_my_lists_empty()}>
+      empty={m.lists_none_yet()}>
       {#snippet image(list)}
         <ListCoverGrid images={list.previewImageUrls} title={list.title} />
       {/snippet}

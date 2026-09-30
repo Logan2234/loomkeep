@@ -55,7 +55,7 @@
     </span>
     <span class="min-w-0 flex-1">
       <span class="text-fg block text-xs font-semibold">
-        {m.gamification_onboarding_checklist_title()}
+        {m.gamification_premiere_seance_name()}
       </span>
       <span class="text-dim timecode block text-[0.65rem]">
         {done} / {steps.length}
@@ -75,7 +75,7 @@
       <h2
         id="onboarding-checklist-title"
         class="font-display mb-3 text-lg font-bold">
-        {m.gamification_onboarding_checklist_title()}
+        {m.gamification_premiere_seance_name()}
       </h2>
       <OnboardingChecklistRows
         {steps}

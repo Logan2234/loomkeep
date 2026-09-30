@@ -4,7 +4,7 @@ import { Locale } from "@loomkeep/shared";
  * The languages the API writes its own copy in (emails, push, notifications,
  * feeds). Adding one here makes the compiler list every copy table missing it.
  */
-const COPY_LOCALES = ["fr", "en"] as const;
+const COPY_LOCALES = ["fr", "en", "it"] as const;
 export type CopyLocale = (typeof COPY_LOCALES)[number];
 
 /**

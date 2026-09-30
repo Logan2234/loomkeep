@@ -119,7 +119,6 @@ const MESSAGES = {
   [ErrorCode.AdminReportNotFound]: () => m.apierr_admin_report_not_found(),
   [ErrorCode.AdminCannotSelfDemote]: () => m.apierr_admin_cannot_self_demote(),
   [ErrorCode.AdminCannotSelfDelete]: () => m.apierr_admin_cannot_self_delete(),
-  [ErrorCode.AdminUserNotFound]: () => m.apierr_admin_user_not_found(),
   [ErrorCode.AdminForbidden]: () => m.apierr_admin_forbidden(),
   [ErrorCode.AdminBackupNotFound]: () => m.apierr_admin_backup_not_found(),
   [ErrorCode.AdminBackupNotOrphan]: () => m.apierr_admin_backup_not_orphan(),
@@ -152,8 +151,6 @@ const MESSAGES = {
   [ErrorCode.ListItemAlreadyExists]: () => m.apierr_lists_item_already_exists(),
   [ErrorCode.ListReorderMismatch]: () => m.apierr_lists_reorder_mismatch(),
   [ErrorCode.ListStale]: () => m.apierr_lists_stale(),
-  [ErrorCode.ListMemberUserNotFound]: () =>
-    m.apierr_lists_member_user_not_found(),
   [ErrorCode.ListCannotAddSelf]: () => m.apierr_lists_cannot_add_self(),
   [ErrorCode.ListMemberAlreadyEditor]: () =>
     m.apierr_lists_member_already_editor(),
@@ -179,7 +176,6 @@ const MESSAGES = {
     m.apierr_reviews_unknown_target_type(),
   [ErrorCode.ReviewNotFound]: () => m.apierr_reviews_not_found(),
   [ErrorCode.ReviewCannotVoteSelf]: () => m.apierr_reviews_cannot_vote_self(),
-  [ErrorCode.SocialUserNotFound]: () => m.apierr_social_user_not_found(),
   [ErrorCode.SocialCannotFollowSelf]: () =>
     m.apierr_social_cannot_follow_self(),
   [ErrorCode.SocialGhostPublicOnly]: () => m.apierr_social_ghost_public_only(),
@@ -201,6 +197,7 @@ const MESSAGES = {
   [ErrorCode.UserCsvExportUnavailable]: () =>
     m.apierr_user_csv_export_unavailable(),
   [ErrorCode.UserAccountNotFound]: () => m.apierr_user_account_not_found(),
+  [ErrorCode.UserNotFound]: () => m.apierr_user_not_found(),
   [ErrorCode.UserDomainDisabled]: () => m.apierr_user_domain_disabled(),
   [ErrorCode.UserAvatarNotFound]: () => m.apierr_user_avatar_not_found(),
   [ErrorCode.UserPremiumRequired]: () => m.apierr_user_premium_required(),

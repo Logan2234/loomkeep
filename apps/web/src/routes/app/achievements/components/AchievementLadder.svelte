@@ -115,7 +115,7 @@
           : m.gamification_equip_badge()}
         {@const blocked = !entry.equipped && atLimit}
         {#if blocked}
-          <Tooltip text={m.gamification_badge_limit_reached()}>
+          <Tooltip text={m.apierr_gamification_badge_limit_reached()}>
             <button type="button" class="equip-btn" disabled aria-label={label}>
               <Icon name="pin" class="h-3 w-3" />
             </button>

@@ -66,6 +66,24 @@ const FEED_COPY = {
     seasonFinished: (season, title) => `Season ${season} finished · ${title}`,
     progress: (count, title) => `Episode(s) watched (${count}) · ${title}`,
   },
+  it: {
+    title: "Loomkeep · Attività",
+    description: "Il registro pubblico delle attività di questo account.",
+    verbs: {
+      ADDED: "Aggiunto",
+      STARTED: "Iniziato",
+      FINISHED: "Finito",
+      DROPPED: "Abbandonato",
+      REWATCHED: "Rivisto",
+      FAVORITED: "Tra i preferiti",
+      REVIEWED: "Votato",
+      LIST_CREATED: "Lista creata",
+      LIST_ITEM_ADDED: "Aggiunto a una lista",
+      LIST_SHARED: "Lista condivisa",
+    },
+    seasonFinished: (season, title) => `Stagione ${season} finita · ${title}`,
+    progress: (count, title) => `Episodi visti (${count}) · ${title}`,
+  },
 } satisfies Record<CopyLocale, ActivityFeedCopy>;
 
 /** A short, localized entry title, e.g. "Terminé · Breaking Bad". */

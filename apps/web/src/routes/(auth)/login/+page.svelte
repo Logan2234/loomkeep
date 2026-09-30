@@ -275,7 +275,7 @@
             <Icon name="key" class="text-accent h-6 w-6 shrink-0" />
             <span>
               <span class="block font-semibold">
-                {m.auth_mfa_webauthn_label()}
+                {m.common_security_key()}
               </span>
               <span class="text-dim block text-sm">
                 {webauthnMfaMut.loading

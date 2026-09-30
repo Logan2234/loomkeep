@@ -401,7 +401,7 @@ describe("AdminUsersController.adjustUserXp", () => {
 
     await expect(
       controller.adjustUserXp("ghost", { amount: 10 }),
-    ).rejects.toMatchObject({ code: "admin.user_not_found" });
+    ).rejects.toMatchObject({ code: "user.not_found" });
     expect(xp.adjust).not.toHaveBeenCalled();
   });
 });

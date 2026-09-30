@@ -19,7 +19,24 @@ const locales = readdirSync(new URL("../messages", import.meta.url), {
 })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name);
-const names = ["common", "other", "errors", "gamification", "admin"] as const;
+const names = [
+  "common",
+  "other",
+  "errors",
+  "gamification",
+  "admin",
+  "settings",
+  "site",
+] as const;
+// A key with one of these prefixes lives in that file and nowhere else.
+const prefixHomes: [string, (typeof names)[number]][] = [
+  ["common_", "common"],
+  ["settings_", "settings"],
+  ["landing_", "site"],
+  ["transparency_", "site"],
+  ["gamification_", "gamification"],
+  ["admin_", "admin"],
+];
 const catalogs = Object.fromEntries(
   locales.map((locale) => [
     locale,
@@ -51,8 +68,11 @@ describe("message catalogs", () => {
           .map((match) => match[1])
           .filter((key) => key !== "$schema");
         expect(rawKeys.length, name).toBe(new Set(rawKeys).size);
-        for (const key of rawKeys)
+        for (const key of rawKeys) {
           expect(key.startsWith("common_"), key).toBe(name === "common");
+          const home = prefixHomes.find(([prefix]) => key.startsWith(prefix));
+          if (home) expect(name, key).toBe(home[1]);
+        }
         for (const value of Object.values(messages))
           expect(typeof value).toBe("string");
         keys.push(...rawKeys);
@@ -104,7 +124,7 @@ describe("message catalogs", () => {
     }
   });
 
-  it("does not duplicate generic common messages in other", () => {
+  it("does not duplicate generic common messages in other catalogs", () => {
     const pairs = new Map(
       Object.entries(catalogs.fr.common.messages).map(([key, fr]) => [
         JSON.stringify([fr, catalogs.en.common.messages[key]]),
@@ -114,14 +134,16 @@ describe("message catalogs", () => {
     expect(pairs.size, "duplicate generic messages within common").toBe(
       Object.keys(catalogs.fr.common.messages).length,
     );
-    const duplicates = Object.entries(catalogs.fr.other.messages).flatMap(
-      ([key, fr]) => {
-        const commonKey = pairs.get(
-          JSON.stringify([fr, catalogs.en.other.messages[key]]),
-        );
-        return commonKey ? [`${key} duplicates ${commonKey}`] : [];
-      },
-    );
+    const duplicates = names
+      .filter((name) => name !== "common")
+      .flatMap((name) =>
+        Object.entries(catalogs.fr[name].messages).flatMap(([key, fr]) => {
+          const commonKey = pairs.get(
+            JSON.stringify([fr, catalogs.en[name].messages[key]]),
+          );
+          return commonKey ? [`${key} duplicates ${commonKey}`] : [];
+        }),
+      );
     expect(duplicates).toEqual([]);
   });
 

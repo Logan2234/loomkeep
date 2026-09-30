@@ -80,20 +80,14 @@ export class ProfileService {
       },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     const relation = await this.visibility.getRelation(viewerId, target);
     const visibility = resolveProfileVisibility(target.profileAccess, relation);
 
     if (visibility === "hidden") {
       // GHOST or a block in either direction: the profile must not exist.
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     }
 
     if (visibility === "locked") {
@@ -293,18 +287,12 @@ export class ProfileService {
       select: { id: true, profileAccess: true },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     const relation = await this.visibility.getRelation(viewerId, target);
     const visibility = resolveProfileVisibility(target.profileAccess, relation);
     if (visibility === "hidden")
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     if (visibility === "locked") return null;
     return target;
   }
@@ -343,18 +331,12 @@ export class ProfileService {
       select: { id: true, profileAccess: true },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     const relation = await this.visibility.getRelation(viewerId, target);
     const visibility = resolveProfileVisibility(target.profileAccess, relation);
     if (visibility === "hidden")
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     if (visibility === "locked") return null;
     return target.id;
   }

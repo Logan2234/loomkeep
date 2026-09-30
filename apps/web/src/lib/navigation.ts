@@ -112,7 +112,7 @@ const NAVIGATION: NavSection[] = [
       },
       {
         href: "/app/leaderboard",
-        label: m.nav_leaderboard(),
+        label: m.gamification_leaderboard_title(),
         icon: "crown",
         social: true,
         gamification: true,
@@ -326,7 +326,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   leaderboard: {
     id: "leaderboard",
     href: "/app/leaderboard",
-    label: m.nav_leaderboard(),
+    label: m.gamification_leaderboard_title(),
     icon: "crown",
     social: true,
     gamification: true,

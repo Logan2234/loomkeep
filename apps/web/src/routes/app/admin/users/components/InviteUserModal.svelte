@@ -374,9 +374,7 @@
                     in:fly={{ y: 6, duration: reduced ? 0 : 160 }}
                     out:fade={{ duration: reduced ? 0 : 80 }}>
                     <Icon name={copied ? "check" : "link"} class="h-4 w-4" />
-                    {copied
-                      ? m.admin_invitations_copied()
-                      : m.admin_invitations_copy()}
+                    {copied ? m.common_copied() : m.common_copy()}
                   </span>
                 {/key}
               </span>
@@ -446,7 +444,7 @@
                 class="btn btn-ghost mr-auto"
                 onclick={shareLink}>
                 <Icon name="share" class="h-4 w-4" />
-                {m.admin_invitations_share()}
+                {m.common_share()}
               </button>
             {/if}
             <button type="button" class="btn btn-ghost" onclick={inviteAnother}>

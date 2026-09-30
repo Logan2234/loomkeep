@@ -30,6 +30,10 @@ const FEED_COPY = {
     title: "Loomkeep · New episodes",
     description: "The latest episodes of the shows you follow.",
   },
+  it: {
+    title: "Loomkeep · Episodi usciti",
+    description: "Gli ultimi episodi usciti delle serie che segui.",
+  },
 } satisfies Record<CopyLocale, { title: string; description: string }>;
 
 /**

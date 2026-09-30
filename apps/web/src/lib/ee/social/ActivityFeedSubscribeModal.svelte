@@ -38,7 +38,7 @@
     onSuccess: async (result) => {
       confirmingRegenerate = false;
       await navigator.clipboard.writeText(feedUrl(result.token));
-      toast.success(m.activity_feed_link_regenerated());
+      toast.success(m.subscription_link_regenerated());
     },
   }));
 
@@ -93,7 +93,7 @@
       </button>
       <button class="btn btn-primary" onclick={copyLink}>
         <Icon name={copied ? "check" : "link"} class="h-4 w-4" />
-        {copied ? m.common_link_copied() : m.activity_feed_copy_atom()}
+        {copied ? m.common_link_copied() : m.subscription_copy_atom()}
       </button>
     </div>
   {/if}

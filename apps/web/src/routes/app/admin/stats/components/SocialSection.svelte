@@ -114,7 +114,7 @@
     <div class="grid grid-cols-2 gap-3">
       <StatFigure
         value={formatNumber(stats.reports.pending)}
-        label={m.report_status_pending()}
+        label={m.common_pending()}
         alert={stats.reports.pending > 0} />
       <StatFigure
         value={formatNumber(stats.reports.resolved)}

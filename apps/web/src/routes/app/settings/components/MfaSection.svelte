@@ -424,7 +424,7 @@
         <div class="divide-border divide-y">
           <SettingRow
             anchor="mfa-webauthn"
-            label={m.settings_mfa_webauthn_label()}
+            label={m.common_security_key()}
             description={webauthnSecureContext
               ? m.settings_mfa_webauthn_desc()
               : m.settings_mfa_webauthn_unsupported()}

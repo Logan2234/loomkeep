@@ -96,10 +96,10 @@
           href={config.href}
           aria-label={label}
           class="absolute inset-0 rounded-xl"></a>
-        <Tooltip text={m.gamification_onboarding_skip()} placement="top">
+        <Tooltip text={m.common_skip()} placement="top">
           <button
             type="button"
-            aria-label={m.gamification_onboarding_skip()}
+            aria-label={m.common_skip()}
             class="text-dim hover:border-border hover:text-fg hover:bg-surface relative z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-transparent transition-colors duration-200 disabled:opacity-50"
             disabled={busyKey === step.key}
             onclick={(e) => {

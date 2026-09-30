@@ -40,9 +40,9 @@ export function familyLabel(family: AchievementFamily): string {
     case "seasonal":
       return m.gamification_family_seasonal();
     case "social":
-      return m.gamification_family_social();
+      return m.common_social();
     case "account":
-      return m.gamification_family_account();
+      return m.common_account();
     case "misc":
       return m.gamification_family_misc();
   }

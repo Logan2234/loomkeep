@@ -14,6 +14,7 @@ describe("languageOptions", () => {
     expect(languageOptions()).toEqual([
       { value: "fr", label: "Français" },
       { value: "en", label: "English" },
+      { value: "it", label: "Italiano" },
     ]);
   });
 });
