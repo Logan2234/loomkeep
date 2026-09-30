@@ -4,6 +4,14 @@ import type { Reflector } from "@nestjs/core";
 import type { JwtService } from "@nestjs/jwt";
 import type { FastifyReply } from "fastify";
 import { afterEach, beforeEach, vi } from "vitest";
+import {
+  API_KEY_ACCESS_KEY,
+  type ApiKeyAccess,
+} from "../../api-keys/api-key-access.decorator";
+import type {
+  ApiKeyAuthService,
+  ApiKeyPrincipal,
+} from "../../api-keys/api-key-auth.service";
 import type { PrismaService } from "../../prisma/prisma.service";
 import { setAuthCookies } from "../auth-cookies";
 import { SessionCacheService } from "../session-cache.service";
@@ -24,6 +32,23 @@ function makeReflector(isPublic = false): Reflector {
   return {
     getAllAndOverride: vi.fn().mockReturnValue(isPublic),
   } as unknown as Reflector;
+}
+
+/** A reflector for a non-public route, with the given @AllowApiKey metadata. */
+function makeApiKeyReflector(access?: ApiKeyAccess): Reflector {
+  return {
+    getAllAndOverride: vi.fn((key: string) =>
+      key === API_KEY_ACCESS_KEY ? access : false,
+    ),
+  } as unknown as Reflector;
+}
+
+function makeApiKeys(principal: ApiKeyPrincipal | null = null) {
+  return {
+    authenticate: vi.fn().mockResolvedValue(principal),
+  } as unknown as ApiKeyAuthService & {
+    authenticate: ReturnType<typeof vi.fn>;
+  };
 }
 
 function makeConfigService(): ConfigService {
@@ -67,6 +92,7 @@ describe("JwtAuthGuard", () => {
       makeReflector(),
       prisma,
       new SessionCacheService(),
+      makeApiKeys(),
     );
     // A WS context has no HTTP request to read a cookie from — the socket's
     // own connection already went through the equivalent check once, at the
@@ -100,6 +126,7 @@ describe("JwtAuthGuard", () => {
       makeReflector(),
       prisma,
       new SessionCacheService(),
+      makeApiKeys(),
     );
 
     await expect(guard.canActivate(makeContext(request))).resolves.toBe(true);
@@ -130,12 +157,136 @@ describe("JwtAuthGuard", () => {
       makeReflector(),
       prisma,
       new SessionCacheService(),
+      makeApiKeys(),
     );
 
     await expect(guard.canActivate(makeContext(request))).rejects.toMatchObject(
       { status: 401 },
     );
     expect(jwtService.verifyAsync).not.toHaveBeenCalled();
+  });
+
+  describe("API keys", () => {
+    const PRINCIPAL: ApiKeyPrincipal = {
+      keyId: "key-1",
+      userId: "user-1",
+      email: "alice@example.com",
+      scopes: ["library:read"],
+      expiresAt: null,
+    };
+
+    function makeGuard(
+      apiKeys: ApiKeyAuthService,
+      access?: ApiKeyAccess,
+    ): JwtAuthGuard {
+      return new JwtAuthGuard(
+        { verifyAsync: vi.fn() } as unknown as JwtService,
+        makeConfigService(),
+        makeApiKeyReflector(access),
+        { refreshToken: { findUnique: vi.fn() } } as unknown as PrismaService,
+        new SessionCacheService(),
+        apiKeys,
+      );
+    }
+
+    const bearer = (secret: string) => ({
+      headers: { authorization: `Bearer ${secret}` },
+      ip: "203.0.113.7",
+    });
+
+    it("authenticates a key on a route opened to its resource", async () => {
+      const apiKeys = makeApiKeys(PRINCIPAL);
+      const request: { user?: unknown } = bearer("lk_secret");
+
+      await expect(
+        makeGuard(apiKeys, { resource: "library" }).canActivate(
+          makeContext(request),
+        ),
+      ).resolves.toBe(true);
+      expect(apiKeys.authenticate).toHaveBeenCalledWith(
+        "lk_secret",
+        "203.0.113.7",
+      );
+      expect(request.user).toEqual({
+        sub: "user-1",
+        email: "alice@example.com",
+        apiKeyId: "key-1",
+      });
+    });
+
+    it("lets any valid key through a route that needs no resource", async () => {
+      await expect(
+        makeGuard(makeApiKeys(PRINCIPAL), { resource: null }).canActivate(
+          makeContext(bearer("lk_secret")),
+        ),
+      ).resolves.toBe(true);
+    });
+
+    it("refuses a valid key on a route not opened to API keys", async () => {
+      await expect(
+        makeGuard(makeApiKeys(PRINCIPAL)).canActivate(
+          makeContext(bearer("lk_secret")),
+        ),
+      ).rejects.toMatchObject({
+        status: 403,
+        code: "auth.api_key_forbidden",
+      });
+    });
+
+    it("refuses a key that wasn't granted the route's resource", async () => {
+      await expect(
+        makeGuard(makeApiKeys(PRINCIPAL), { resource: "lists" }).canActivate(
+          makeContext(bearer("lk_secret")),
+        ),
+      ).rejects.toMatchObject({
+        status: 403,
+        code: "auth.api_key_forbidden",
+      });
+    });
+
+    it("rejects an unknown, expired or revoked key before checking access", async () => {
+      await expect(
+        makeGuard(makeApiKeys(null), { resource: "library" }).canActivate(
+          makeContext(bearer("lk_unknown")),
+        ),
+      ).rejects.toMatchObject({ status: 401, code: "auth.invalid_api_key" });
+    });
+
+    it("never looks up a bearer value that isn't an API key", async () => {
+      const apiKeys = makeApiKeys(PRINCIPAL);
+
+      await expect(
+        makeGuard(apiKeys, { resource: null }).canActivate(
+          makeContext(bearer("some-jwt")),
+        ),
+      ).rejects.toMatchObject({ status: 401 });
+      expect(apiKeys.authenticate).not.toHaveBeenCalled();
+    });
+
+    it("ignores the Authorization header when a session cookie is present", async () => {
+      const apiKeys = makeApiKeys(PRINCIPAL);
+      const jwtService = {
+        verifyAsync: vi.fn().mockResolvedValue({
+          sub: "user-2",
+          email: "bob@example.com",
+        }),
+      } as unknown as JwtService;
+      const guard = new JwtAuthGuard(
+        jwtService,
+        makeConfigService(),
+        makeApiKeyReflector(),
+        { refreshToken: { findUnique: vi.fn() } } as unknown as PrismaService,
+        new SessionCacheService(),
+        apiKeys,
+      );
+      const cookie = makeCookieHeader();
+      const request = {
+        headers: { ...cookie.headers, authorization: "Bearer lk_secret" },
+      };
+
+      await expect(guard.canActivate(makeContext(request))).resolves.toBe(true);
+      expect(apiKeys.authenticate).not.toHaveBeenCalled();
+    });
   });
 
   it("rejects a token whose sid no longer names a live session", async () => {
@@ -155,6 +306,7 @@ describe("JwtAuthGuard", () => {
       makeReflector(),
       prisma,
       new SessionCacheService(),
+      makeApiKeys(),
     );
 
     await expect(
@@ -185,6 +337,7 @@ describe("JwtAuthGuard", () => {
       makeReflector(),
       prisma,
       new SessionCacheService(),
+      makeApiKeys(),
     );
     const request = makeCookieHeader();
 

@@ -362,6 +362,7 @@ describe("MailService template gallery", () => {
         "emailChangedNew",
         "emailChangeCode",
         "newDeviceLogin",
+        "apiKeyCreated",
       ]),
     );
   });

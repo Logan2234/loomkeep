@@ -341,6 +341,8 @@ export const SecurityEventType = {
   // A pending MfaLoginChallenge was deleted for exceeding MAX_MFA_CHALLENGE_ATTEMPTS —
   // the 2nd-factor equivalent of LOGIN_FAILED's brute-force signal.
   MFA_CHALLENGE_LOCKED: "MFA_CHALLENGE_LOCKED",
+  API_KEY_CREATED: "API_KEY_CREATED",
+  API_KEY_REVOKED: "API_KEY_REVOKED",
 } as const;
 export type SecurityEventType =
   (typeof SecurityEventType)[keyof typeof SecurityEventType];

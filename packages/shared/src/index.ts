@@ -3,6 +3,7 @@ export * from "./dto/account-deletion";
 export * from "./dto/activity";
 export * from "./dto/admin";
 export * from "./dto/admin-stats";
+export * from "./dto/api-key";
 export * from "./dto/auth";
 export * from "./dto/book";
 export * from "./dto/bulk-entries";

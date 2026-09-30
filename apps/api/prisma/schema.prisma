@@ -618,6 +618,7 @@ model User {
   entries                    LibraryEntry[]
   episodeWatches             EpisodeWatch[]
   refreshTokens              RefreshToken[]
+  apiKeys                    ApiKey[]
   devices                    UserDevice[]
   mfaRecoveryCodes           MfaRecoveryCode[]
   mfaLoginChallenges         MfaLoginChallenge[]
@@ -1170,6 +1171,28 @@ model RefreshToken {
   @@index([userId])
 }
 
+// A personal API key for the public API (/api/v1). Only the SHA-256 of the
+// secret is stored, like RefreshToken; the secret itself is shown once.
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  tokenHash  String    @unique
+  // Last characters of the secret, to tell keys apart in the settings list.
+  suffix     String
+  // `<resource>:read` strings (see API_KEY_SCOPES in @loomkeep/shared).
+  scopes     String[]
+  // Null for a key that never expires.
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  lastUsedIp String?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 // Hashes of already-rotated refresh tokens. A replay identifies the durable
 // session family and revokes it without retaining any bearer token in clear.
 model ConsumedRefreshToken {
@@ -1286,6 +1309,8 @@ enum SecurityEventType {
   MFA_RECOVERY_CODES_REGENERATED
   MFA_RECOVERY_CODE_USED
   MFA_CHALLENGE_LOCKED
+  API_KEY_CREATED
+  API_KEY_REVOKED
 }
 
 // One sensitive account action, for the admin "Sécurité" page. userId is

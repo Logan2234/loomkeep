@@ -32,6 +32,13 @@ export const ErrorCode = {
   AuthInvalidInvitation: "auth.invalid_invitation",
   AuthInvitationExpired: "auth.invitation_expired",
   AuthInvitationEmailMismatch: "auth.invitation_email_mismatch",
+  AuthInvalidApiKey: "auth.invalid_api_key",
+  AuthApiKeyForbidden: "auth.api_key_forbidden",
+
+  // api keys
+  ApiKeyNotFound: "api_key.not_found",
+  ApiKeyLimitReached: "api_key.limit_reached",
+  ApiKeyExpiryInPast: "api_key.expiry_in_past",
 
   // admin
   AdminCacheItemNotFound: "admin.cache_item_not_found",

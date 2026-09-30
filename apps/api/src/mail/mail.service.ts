@@ -380,6 +380,13 @@ export class MailService {
       build: (locale, v) =>
         this.buildNewDeviceLogin(locale, v.deviceLabel, v.ip || null),
     },
+    apiKeyCreated: {
+      label: "Clé API créée",
+      fields: [
+        { key: "name", label: "Nom de la clé", default: "Script perso" },
+      ],
+      build: (locale, v) => this.buildApiKeyCreated(locale, v.name),
+    },
     inactivityWarning: {
       label: "Relance compte inactif",
       fields: [
@@ -569,6 +576,17 @@ export class MailService {
     await this.send({
       to: recipient.email,
       ...this.buildNewDeviceLogin(locale, deviceLabel, ip),
+    });
+  }
+
+  async sendApiKeyCreated(
+    recipient: MailRecipient,
+    name: string,
+  ): Promise<void> {
+    const locale = resolveCopyLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildApiKeyCreated(locale, name),
     });
   }
 
@@ -959,6 +977,24 @@ export class MailService {
         locale,
         copy.heading,
         `<p>${escapeHtml(copy.intro(deviceLabel, ipSuffix))}</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.warning)}</p>
+         ${this.button(url, copy.button)}`,
+      ),
+    };
+  }
+
+  private buildApiKeyCreated(locale: Locale, name: string): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].apiKeyCreated;
+    const url = `${this.webOrigin}/app/settings/integrations`;
+    return {
+      subject: copy.subject,
+      text: `${copy.intro(name)} ${copy.warning}
+
+${url}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(name))}</p>
          <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.warning)}</p>
          ${this.button(url, copy.button)}`,
       ),

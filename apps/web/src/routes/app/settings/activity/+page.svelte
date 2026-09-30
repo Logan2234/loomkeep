@@ -42,6 +42,8 @@
       m.settings_activity_event_mfa_recovery_codes_regenerated(),
     MFA_RECOVERY_CODE_USED: m.settings_activity_event_mfa_recovery_code_used(),
     MFA_CHALLENGE_LOCKED: m.settings_activity_event_mfa_challenge_locked(),
+    API_KEY_CREATED: m.settings_activity_event_api_key_created(),
+    API_KEY_REVOKED: m.settings_activity_event_api_key_revoked(),
   };
 
   // What might not have been the account owner stands out from their own
@@ -57,7 +59,13 @@
     if (type === "NEW_DEVICE_LOGIN") return "monitor";
     if (type === "USER_REGISTERED") return "user";
     if (type === "EMAIL_CHANGED") return "mail";
-    if (type === "PASSWORD_CHANGED" || type === "PASSWORD_RESET") return "key";
+    if (
+      type === "PASSWORD_CHANGED" ||
+      type === "PASSWORD_RESET" ||
+      type === "API_KEY_CREATED" ||
+      type === "API_KEY_REVOKED"
+    )
+      return "key";
     return "lock";
   }
 

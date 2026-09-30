@@ -137,8 +137,11 @@ fix does.
   `(verification)` layouts only, never the root). Tokens live in
   encrypted (AES-256-GCM), `HttpOnly`/`SameSite=Strict` cookies
   (`Secure` in production) set by `apps/api/src/auth/auth-cookies.ts` —
-  never in localStorage, and `JwtAuthGuard` reads only that cookie,
-  rejecting an `Authorization: Bearer` header outright. Auto-refresh-and-
+  never in localStorage, and `JwtAuthGuard` reads only that cookie for a
+  session. The one exception is a personal API key (`Authorization: Bearer
+lk_…`), accepted only on routes marked `@AllowApiKey()` — the versioned
+  public API (`apps/api/src/public-api`, `/api/v1`); every other route
+  refuses keys by default, and internal routes stay unversioned. Auto-refresh-and-
   retry on 401 lives in `src/lib/api/core.ts` (`src/lib/api/client.ts` is
   now just a re-export barrel). The API itself emits `/app`-prefixed paths
   (push/email links) — grep `/app/` in `apps/api/src` before renaming a

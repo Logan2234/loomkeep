@@ -80,6 +80,7 @@ export type IconName =
   | "pumpkin"
   | "crown"
   | "key"
+  | "copy"
   | "keyboard"
   | "send"
   | "rss"

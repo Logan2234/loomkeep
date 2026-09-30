@@ -74,6 +74,9 @@ export const keys = {
   sessions: {
     all: () => ["sessions", "all"] as const,
   },
+  apiKeys: {
+    all: () => ["api-keys", "all"] as const,
+  },
   sessionTimer: {
     current: () => ["session-timer"] as const,
   },

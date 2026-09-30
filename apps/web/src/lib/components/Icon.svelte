@@ -295,6 +295,9 @@
   {:else if name === "key"}
     <circle cx="8" cy="8" r="4.2" />
     <path d="M11 11l9 9M16 16l2.5-2.5M18.5 18.5 21 16" />
+  {:else if name === "copy"}
+    <rect x="9" y="9" width="11" height="11" rx="2" />
+    <path d="M5 15V6a2 2 0 0 1 2-2h8" />
   {:else if name === "keyboard"}
     <rect x="2" y="6" width="20" height="13" rx="2" />
     <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01" />

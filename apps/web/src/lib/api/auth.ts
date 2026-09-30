@@ -4,6 +4,7 @@ import type {
   ChangeEmailRequestDto,
   ChangePasswordRequestDto,
   ConfirmEmailChangeRequestDto,
+  CreateApiKeyDto,
   DeleteAccountRequestDto,
   Domain,
   HomeLayoutDto,
@@ -324,6 +325,14 @@ export const revokeSession = (id: string): Promise<void> =>
 
 export const revokeOtherSessions = (): Promise<void> =>
   typedRequest("/auth/sessions", { method: "DELETE" });
+
+export const getApiKeys = () => typedRequest("/api-keys");
+
+export const createApiKey = (body: CreateApiKeyDto) =>
+  typedRequest("/api-keys", { method: "POST", body });
+
+export const revokeApiKey = (id: string): Promise<void> =>
+  typedRequest("/api-keys/{id}", { method: "DELETE", params: { id } });
 
 export const getAccountSecurityEvents = (page: number) =>
   typedRequest("/auth/security-events", {

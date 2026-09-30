@@ -76,6 +76,13 @@ export interface MailCopy {
     warning: string;
     button: string;
   };
+  apiKeyCreated: {
+    subject: string;
+    heading: string;
+    intro: (name: string) => string;
+    warning: string;
+    button: string;
+  };
   emailChangedOld: {
     subject: string;
     heading: string;
@@ -231,6 +238,15 @@ export const MAIL_COPY = {
       warning:
         "Si ce n'est pas toi, change ton mot de passe immédiatement et déconnecte les autres appareils depuis Réglages > Sécurité.",
       button: "Ouvrir mes réglages de sécurité",
+    },
+    apiKeyCreated: {
+      subject: "Nouvelle clé API sur ton compte Loomkeep",
+      heading: "Clé API créée",
+      intro: (name) =>
+        `Une clé API nommée « ${name} » vient d'être créée sur ton compte Loomkeep. Elle permet à un outil de lire ton compte sans ton mot de passe.`,
+      warning:
+        "Si tu n'es pas à l'origine de cette clé, révoque-la tout de suite depuis Réglages > Intégrations, puis change ton mot de passe.",
+      button: "Voir mes clés API",
     },
     emailChangedOld: {
       subject: "L'email de ton compte Loomkeep a changé",
@@ -397,6 +413,15 @@ export const MAIL_COPY = {
         "If this wasn't you, change your password immediately and sign out other devices from Settings > Security.",
       button: "Open security settings",
     },
+    apiKeyCreated: {
+      subject: "New API key on your Loomkeep account",
+      heading: "API key created",
+      intro: (name) =>
+        `An API key named "${name}" was just created on your Loomkeep account. It lets a tool read your account without your password.`,
+      warning:
+        "If you did not create this key, revoke it right away from Settings > Integrations, then change your password.",
+      button: "View my API keys",
+    },
     emailChangedOld: {
       subject: "Your Loomkeep account email has changed",
       heading: "Email address changed",
@@ -562,6 +587,15 @@ export const MAIL_COPY = {
       warning:
         "Se non sei stato tu, cambia subito la password e disconnetti gli altri dispositivi da Impostazioni > Sicurezza.",
       button: "Apri le impostazioni di sicurezza",
+    },
+    apiKeyCreated: {
+      subject: "Nuova chiave API sul tuo account Loomkeep",
+      heading: "Chiave API creata",
+      intro: (name) =>
+        `Sul tuo account Loomkeep è appena stata creata una chiave API chiamata «${name}». Permette a uno strumento di leggere il tuo account senza la tua password.`,
+      warning:
+        "Se non l'hai creata tu, revocala subito da Impostazioni > Integrazioni, poi cambia la password.",
+      button: "Vedi le mie chiavi API",
     },
     emailChangedOld: {
       subject: "L'email del tuo account Loomkeep è cambiata",

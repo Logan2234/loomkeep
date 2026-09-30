@@ -19,6 +19,7 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { enableApiVersioning } from "../src/common/api-versioning";
 
 const DIST_APP_MODULE = join(__dirname, "../dist/src/app.module.js");
 
@@ -36,6 +37,7 @@ async function main() {
     logger: false,
   });
   app.setGlobalPrefix("api");
+  enableApiVersioning(app);
 
   const document = SwaggerModule.createDocument(
     app,

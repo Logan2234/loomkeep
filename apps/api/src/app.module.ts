@@ -5,6 +5,8 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { LoggerModule } from "nestjs-pino";
 import { AdminModule } from "./admin/admin.module";
+import { ApiKeyAuthModule } from "./api-keys/api-key-auth.module";
+import { ApiKeysModule } from "./api-keys/api-keys.module";
 import { AuthModule } from "./auth/auth.module";
 import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
 import { SessionCacheModule } from "./auth/session-cache.module";
@@ -32,6 +34,7 @@ import { MusicModule } from "./music/music.module";
 import { NewsletterModule } from "./newsletter/newsletter.module";
 import { NotificationModule } from "./notifications/notification.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { PublicApiModule } from "./public-api/public-api.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { SavedViewsModule } from "./saved-views/saved-view.module";
 import { SessionTimerModule } from "./session-timer/session-timer.module";
@@ -60,6 +63,7 @@ import { UsersModule } from "./users/users.module";
     CommonModule,
     FeatureFlagsModule,
     SessionCacheModule,
+    ApiKeyAuthModule,
     RuntimeConfigModule,
     MailModule,
     AuthModule,
@@ -85,6 +89,8 @@ import { UsersModule } from "./users/users.module";
     StatsModule,
     NewsletterModule,
     MetricsModule,
+    ApiKeysModule,
+    PublicApiModule,
     EeModule,
   ],
   controllers: [],
