@@ -23,6 +23,10 @@ import { enableApiVersioning } from "./common/api-versioning";
 import { registerRequestContext } from "./common/request-context";
 import { ValidationException } from "./common/validation.exception";
 import { MetricsService } from "./metrics/metrics.service";
+import {
+  buildPublicApiDocument,
+  PUBLIC_API_DOCUMENT_PATH,
+} from "./public-api/openapi";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -165,6 +169,16 @@ async function bootstrap() {
       exceptionFactory: (errors) => new ValidationException(errors),
     }),
   );
+
+  // The public API's contract is public itself, on every instance: scripts
+  // and doc tools read it from the instance they target.
+  const publicApiDocument = buildPublicApiDocument(app, "1");
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .get(PUBLIC_API_DOCUMENT_PATH, (_request, reply) =>
+      reply.send(publicApiDocument),
+    );
 
   // Swagger UI on /docs, dev-only. @nestjs/swagger is a production dependency
   // regardless (the nest-cli swagger plugin injects it into every compiled

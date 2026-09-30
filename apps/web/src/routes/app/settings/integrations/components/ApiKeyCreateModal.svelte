@@ -15,20 +15,36 @@
     type ApiKeyResource,
     type CreatedApiKeyDto,
   } from "@loomkeep/shared";
+  import { untrack } from "svelte";
   import {
     DEFAULT_EXPIRATION,
+    EXAMPLE_LANGUAGES,
+    exampleSnippets,
     expiresAtFor,
     minCustomDate,
+    type ExampleLanguage,
     type ExpirationChoice,
+    type Recipe,
   } from "../api-key-form";
+  import { RECIPE_LABELS } from "../recipes";
   import { RESOURCE_LABELS } from "../resources";
 
-  let { onclose }: { onclose: () => void } = $props();
+  let {
+    onclose,
+    recipe = null,
+  }: {
+    onclose: () => void;
+    /** Opens with a recipe's name and resources already filled in. */
+    recipe?: Recipe | null;
+  } = $props();
 
   const FORM_ID = "api-key-form";
 
-  let name = $state("");
-  let readable = $state(new Set<ApiKeyResource>());
+  // The modal is mounted per use, so `recipe` is only ever read once.
+  const initial = untrack(() => recipe);
+  let name = $state(initial ? RECIPE_LABELS[initial.id].name() : "");
+  let readable = $state(new Set<ApiKeyResource>(initial?.resources ?? []));
+  let language = $state<ExampleLanguage>("curl");
   let expiration = $state<ExpirationChoice>(DEFAULT_EXPIRATION);
   let customDate = $state("");
   let created = $state<CreatedApiKeyDto | null>(null);
@@ -49,6 +65,10 @@
     { value: "custom", label: m.settings_api_keys_expiration_custom() },
     { value: "never", label: m.settings_api_keys_expiration_never() },
   ];
+
+  const snippets = $derived(
+    created && exampleSnippets(API_URL, created.secret, created.apiKey.scopes),
+  );
 
   const canSubmit = $derived(
     name.trim().length > 0 &&
@@ -241,12 +261,23 @@
           <Icon name="mail" class="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {m.settings_api_keys_created_mail()}
         </p>
-        <div class="flex flex-col gap-1.5">
-          <span class="text-sm font-semibold"
-            >{m.settings_api_keys_example()}</span>
+        <div class="flex flex-col gap-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-sm font-semibold"
+              >{m.settings_api_keys_example()}</span>
+            <SegmentedControl
+              label={m.settings_api_keys_example()}
+              options={EXAMPLE_LANGUAGES.map((value) => ({
+                value,
+                label: value,
+              }))}
+              value={language}
+              onChange={(value) => (language = value)} />
+          </div>
           <pre
-            class="bg-surface-2 rounded-lg px-3 py-2.5 font-mono text-xs break-all whitespace-pre-wrap">curl -H "Authorization: Bearer {created.secret}" \
-  {API_URL}/v1/me</pre>
+            class="bg-surface-2 rounded-lg px-3 py-2.5 font-mono text-xs break-all whitespace-pre-wrap">{snippets?.[
+              language
+            ]}</pre>
         </div>
       </div>
     {/if}

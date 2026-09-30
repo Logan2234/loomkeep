@@ -441,5 +441,13 @@
   "settings_subscription_links_activity": "Activity feed",
   "settings_subscription_links_activity_formats": "Atom",
   "settings_activity_event_api_key_created": "API key created",
-  "settings_activity_event_api_key_revoked": "API key revoked"
+  "settings_activity_event_api_key_revoked": "API key revoked",
+  "settings_api_keys_recipes_title": "Recipes",
+  "settings_api_keys_recipes_hint": "A ready-made key, with the access it needs.",
+  "settings_api_keys_recipe_backup_name": "Automatic backup",
+  "settings_api_keys_recipe_backup_desc": "Fetch all your data as JSON, every night.",
+  "settings_api_keys_recipe_releases_name": "Today's releases",
+  "settings_api_keys_recipe_releases_desc": "Today's episodes, for a calendar, a bot or home automation.",
+  "settings_api_keys_recipe_script_name": "Personal script",
+  "settings_api_keys_recipe_script_desc": "Read your library, lists and stats."
 }

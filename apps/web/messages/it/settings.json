@@ -441,5 +441,13 @@
   "settings_subscription_links_activity": "Feed attività",
   "settings_subscription_links_activity_formats": "Atom",
   "settings_activity_event_api_key_created": "Chiave API creata",
-  "settings_activity_event_api_key_revoked": "Chiave API revocata"
+  "settings_activity_event_api_key_revoked": "Chiave API revocata",
+  "settings_api_keys_recipes_title": "Ricette",
+  "settings_api_keys_recipes_hint": "Una chiave pronta all'uso, con gli accessi necessari.",
+  "settings_api_keys_recipe_backup_name": "Backup automatico",
+  "settings_api_keys_recipe_backup_desc": "Recupera tutti i tuoi dati in JSON, ogni notte.",
+  "settings_api_keys_recipe_releases_name": "Uscite del giorno",
+  "settings_api_keys_recipe_releases_desc": "Gli episodi del giorno, per un'agenda, un bot o la domotica.",
+  "settings_api_keys_recipe_script_name": "Script personale",
+  "settings_api_keys_recipe_script_desc": "Leggi la tua libreria, le tue liste e le tue statistiche."
 }

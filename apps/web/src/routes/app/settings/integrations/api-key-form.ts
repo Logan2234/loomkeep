@@ -1,4 +1,4 @@
-import type { ApiKeyDto } from "@loomkeep/shared";
+import type { ApiKeyDto, ApiKeyResource, ApiKeyScope } from "@loomkeep/shared";
 
 export const EXPIRATION_CHOICES = [
   "30",
@@ -52,3 +52,43 @@ export function expiryState(
   if (left <= 0) return "expired";
   return left < EXPIRING_SOON_DAYS * DAY_MS ? "soon" : "active";
 }
+
+/** The endpoint an example calls: the first one the key can read. */
+const EXAMPLE_PATHS: Record<ApiKeyResource, string> = {
+  library: "/v1/library?phase=IN_PROGRESS",
+  lists: "/v1/lists",
+  calendar: "/v1/calendar",
+  stats: "/v1/stats/summary",
+  reviews: "/v1/reviews",
+  profile: "/v1/profile",
+  notifications: "/v1/notifications",
+  export: "/v1/export",
+};
+
+export const EXAMPLE_LANGUAGES = ["curl", "JavaScript", "Python"] as const;
+export type ExampleLanguage = (typeof EXAMPLE_LANGUAGES)[number];
+
+export function exampleSnippets(
+  apiUrl: string,
+  secret: string,
+  scopes: ApiKeyScope[],
+): Record<ExampleLanguage, string> {
+  const resource = (scopes[0]?.split(":")[0] ?? "library") as ApiKeyResource;
+  const url = `${apiUrl}${EXAMPLE_PATHS[resource]}`;
+  return {
+    curl: `curl -H "Authorization: Bearer ${secret}" \\n  "${url}"`,
+    JavaScript: `const res = await fetch("${url}", {\n  headers: { Authorization: "Bearer ${secret}" },\n});\nconsole.log(await res.json());`,
+    Python: `import requests\n\nres = requests.get(\n    "${url}",\n    headers={"Authorization": "Bearer ${secret}"},\n)\nprint(res.json())`,
+  };
+}
+
+/** Ready-made keys: a name and the resources their use case needs. */
+export const RECIPES = [
+  { id: "backup", resources: ["export"] },
+  { id: "releases", resources: ["calendar"] },
+  { id: "script", resources: ["library", "lists", "stats"] },
+] as const satisfies readonly {
+  id: string;
+  resources: readonly ApiKeyResource[];
+}[];
+export type Recipe = (typeof RECIPES)[number];

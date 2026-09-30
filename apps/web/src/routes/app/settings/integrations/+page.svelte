@@ -20,9 +20,10 @@
   import type { ApiKeyDto } from "@loomkeep/shared";
   import { flashAnchor } from "../flash-anchor";
   import SettingsSection from "../components/SettingsSection.svelte";
-  import { expiryState } from "./api-key-form";
+  import { expiryState, RECIPES, type Recipe } from "./api-key-form";
   import ApiKeyCreateModal from "./components/ApiKeyCreateModal.svelte";
   import ApiKeyRow from "./components/ApiKeyRow.svelte";
+  import { RECIPE_LABELS } from "./recipes";
 
   const apiKeysQuery = createApiQuery(() => ({
     key: keys.apiKeys.all(),
@@ -31,6 +32,7 @@
   const apiKeys = $derived(apiKeysQuery.data ?? []);
 
   let creating = $state(false);
+  let recipe = $state<Recipe | null>(null);
   let revoking = $state<ApiKeyDto | null>(null);
   let subscription = $state<"calendar" | "activity" | null>(null);
 
@@ -105,6 +107,30 @@
         {/each}
       </div>
     {/if}
+
+    <div class="mt-3 flex flex-col gap-2">
+      <h3 class="text-sm font-semibold">
+        {m.settings_api_keys_recipes_title()}
+        <span class="text-dim font-normal"
+          >· {m.settings_api_keys_recipes_hint()}</span>
+      </h3>
+      <div class="grid gap-2 sm:grid-cols-3">
+        {#each RECIPES as item (item.id)}
+          <button
+            type="button"
+            class="card hover:border-accent/60 flex flex-col gap-0.5 p-3 text-left transition-colors motion-reduce:transition-none"
+            onclick={() => {
+              recipe = item;
+              creating = true;
+            }}>
+            <span class="text-sm font-semibold"
+              >{RECIPE_LABELS[item.id].name()}</span>
+            <span class="text-dim text-xs"
+              >{RECIPE_LABELS[item.id].description()}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
   </section>
 
   <section
@@ -153,7 +179,12 @@
 </SettingsSection>
 
 {#if creating}
-  <ApiKeyCreateModal onclose={() => (creating = false)} />
+  <ApiKeyCreateModal
+    {recipe}
+    onclose={() => {
+      creating = false;
+      recipe = null;
+    }} />
 {/if}
 
 {#if revoking}
