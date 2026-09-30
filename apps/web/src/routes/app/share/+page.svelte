@@ -48,7 +48,7 @@
       </p>
       <p class="mt-2">{m.share_unrecognized_body()}</p>
       <a class="btn btn-primary mt-5" href="/app/search">
-        {m.share_search_cta()}
+        {m.search_title_cta()}
       </a>
     </EmptyState>
   </div>

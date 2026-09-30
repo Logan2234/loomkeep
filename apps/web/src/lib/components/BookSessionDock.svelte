@@ -432,7 +432,7 @@
           </h3>
           {#if displayedReading?.startedAt}
             <p class="text-dim mt-1 text-xs">
-              {m.book_cycle_started({
+              {m.session_cycle_started({
                 date: formatDate(displayedReading.startedAt),
               })}
             </p>
@@ -475,7 +475,7 @@
 
         <div>
           <div class="flex flex-wrap items-baseline justify-between gap-2">
-            <h4 class="font-display font-bold">{m.session_week()}</h4>
+            <h4 class="font-display font-bold">{m.common_this_week()}</h4>
             <p class="text-dim text-xs tabular-nums">
               {weeklySummary(
                 summary?.weekSessions ?? 0,

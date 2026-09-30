@@ -110,7 +110,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "mfa-webauthn",
-            label: m.settings_mfa_webauthn_label(),
+            label: m.common_security_key(),
             keywords: [
               "webauthn",
               "passkey",

@@ -48,7 +48,7 @@
     </div>
 
     <button type="button" class="btn btn-ghost w-full" onclick={onclose}>
-      {m.gamification_drawer_close()}
+      {m.common_close()}
     </button>
   </div>
 </Drawer>

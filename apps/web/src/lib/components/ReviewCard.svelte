@@ -130,7 +130,7 @@
     {#if mine}
       <span
         class="text-accent ml-1 font-mono text-[0.6rem] tracking-[0.14em] uppercase">
-        {m.reviews_you()}
+        {m.common_you()}
       </span>
     {/if}
     {#if review.spoilerTag && mine}
@@ -225,7 +225,7 @@
           {#if appConfig.gamificationEnabled && level !== null}
             <span
               class="border-border text-dim shrink-0 rounded border px-[5px] font-mono text-[0.62rem] font-bold"
-              title={m.profile_level_full({ level })}>
+              title={m.gamification_level({ level })}>
               {level}
             </span>
           {/if}

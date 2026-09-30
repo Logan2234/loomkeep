@@ -10,8 +10,8 @@
 
   let {
     value = null,
-    label = m.user_selector_all_accounts(),
-    searchPlaceholder = m.user_selector_search_placeholder(),
+    label = m.admin_user_selector_all_accounts(),
+    searchPlaceholder = m.admin_user_search_placeholder(),
     valueMode = "id",
     onChange,
   }: {

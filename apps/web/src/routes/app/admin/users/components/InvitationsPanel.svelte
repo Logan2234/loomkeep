@@ -70,7 +70,7 @@
     { label: () => string; pill: string; dot: string }
   > = {
     pending: {
-      label: m.admin_invitations_status_pending,
+      label: m.common_pending,
       pill: "border-accent/40 bg-accent/10 text-accent",
       dot: "bg-accent/15 text-accent",
     },

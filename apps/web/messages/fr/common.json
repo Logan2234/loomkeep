@@ -257,5 +257,9 @@
   "common_image_large": "Image en grand",
   "common_camera_unavailable": "Accès à la caméra refusé ou indisponible.",
   "common_saved": "Enregistré",
-  "common_transparency": "Transparence"
+  "common_transparency": "Transparence",
+  "common_pending": "En attente",
+  "common_security_key": "Clé de sécurité",
+  "common_this_week": "Cette semaine",
+  "common_you": "Toi"
 }

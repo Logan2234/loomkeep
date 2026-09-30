@@ -224,7 +224,9 @@ relationship primitive (friend = reciprocal accepted follow). Details:
 
 - Code, comments, commits: English. UI is French-first but i18n-ready via
   Paraglide — use `m()`, never hardcode a string. Sources live in
-  `apps/web/messages/{locale}/{common,errors,gamification,other}.json`.
+  `apps/web/messages/{locale}/{common,other,errors,gamification,admin,settings,site}.json`
+  (a `settings_`, `landing_`/`transparency_`, `gamification_` or `admin_` key
+  goes in its matching file; `src/catalogs.spec.ts` enforces it).
 - Prefer no new runtime deps (global `fetch`, Node ≥22). pnpm blocks
   postinstall scripts by default — allow-list in `pnpm-workspace.yaml`'s
   `allowBuilds`. Ask before adding one.

@@ -688,7 +688,7 @@ export const ListVisibility = {
 export type ListVisibility =
   (typeof ListVisibility)[keyof typeof ListVisibility];
 
-export const Locale = ["fr", "en"] as const;
+export const Locale = ["fr", "en", "it"] as const;
 export type Locale = (typeof Locale)[number];
 
 // Mirrors XpEntry.reason, a String column so new reasons need no migration.

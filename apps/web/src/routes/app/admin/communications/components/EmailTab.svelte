@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Locale } from "@loomkeep/shared";
+  import { Locale } from "@loomkeep/shared";
   import {
     getAdminEmailPreview,
     getAdminEmailTemplates,
@@ -20,8 +20,6 @@
   import { m } from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
   import { createLatestEmailPreviewRequest } from "./email-preview";
-
-  const emailLocales: Locale[] = ["fr", "en"];
 
   const templatesQuery = createApiQuery(() => ({
     key: keys.admin.emailTemplates(),
@@ -179,7 +177,7 @@
         <span class="text-dim text-xs font-semibold"
           >{m.common_language()}</span>
         <div class="flex gap-1">
-          {#each emailLocales as locale (locale)}
+          {#each Locale as locale (locale)}
             <button
               type="button"
               class="chip"

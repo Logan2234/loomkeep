@@ -471,4 +471,171 @@ export const MAIL_COPY = {
       eyebrow: "New version",
     },
   },
+  it: {
+    reportsDigest: {
+      subject: (count) =>
+        `${count} ${count === 1 ? "segnalazione" : "segnalazioni"} in attesa di moderazione`,
+      heading: "Segnalazioni in attesa di moderazione",
+      sentence: (count) =>
+        `${count} ${count === 1 ? "segnalazione è" : "segnalazioni sono"} in attesa di moderazione su Loomkeep.`,
+      button: "Apri la coda di moderazione",
+    },
+    quotaAlert: {
+      subject: (provider, percent) =>
+        `Quota ${provider}: ${percent}% usato oggi`,
+      heading: "Quota del fornitore",
+      sentence: (provider, percent, count, limit) =>
+        `${provider} ha raggiunto il ${percent}% della sua quota giornaliera: ${count} chiamate su ${limit}.`,
+      exhausted:
+        "Le prossime chiamate potrebbero essere rifiutate fino al cambio di giorno (mezzanotte UTC).",
+      button: "Apri i servizi",
+    },
+    jobAlert: {
+      failedSubject: (job) => `Il job ${job} non è riuscito`,
+      recoveredSubject: (job) => `Il job ${job} funziona di nuovo`,
+      heading: "Job pianificati",
+      failed: (job) => `Il job ${job} è appena fallito:`,
+      recovered: (job) => `Il job ${job} funziona di nuovo.`,
+      onlyOnce:
+        "Non riceverai altre email per i suoi prossimi errori, solo quando tornerà a funzionare.",
+      button: "Apri i job",
+    },
+    moderation: {
+      comment: {
+        measure: "la rimozione di uno dei tuoi commenti",
+        subject: "Uno dei tuoi commenti è stato rimosso",
+      },
+      review: {
+        measure: "la rimozione di una delle tue recensioni",
+        subject: "Una delle tue recensioni è stata rimossa",
+      },
+      account: {
+        measure: "l'eliminazione del tuo account Loomkeep",
+        subject: "Il tuo account Loomkeep è stato eliminato",
+      },
+      illegalBasis: "riteniamo questo contenuto manifestamente illecito",
+      tosBasis: (clause) =>
+        `questo contenuto o comportamento viola i nostri Termini di servizio (${clause})`,
+      intro: (measure) =>
+        `Abbiamo preso una misura di moderazione riguardante il tuo account: ${measure}.`,
+      factsLabel: "Fatti considerati",
+      basisLabel: "Motivazione",
+      humanDecision:
+        "Questa decisione è stata presa da un moderatore, non da un sistema automatico.",
+      appeal:
+        "Puoi contestarla rispondendo direttamente a questa email o scrivendo a contact@loomkeep.app.",
+    },
+    inactivity: {
+      subject: "Il tuo account Loomkeep verrà eliminato per inattività",
+      heading: "Il tuo account verrà eliminato a breve",
+      intro: "Il tuo account Loomkeep è inattivo da 24 mesi.",
+      policy: (date) =>
+        `In base alla nostra politica di conservazione dei dati, verrà eliminato definitivamente il ${date}, a meno che tu non acceda prima di allora.`,
+      text: (date) =>
+        `Il tuo account Loomkeep è inattivo da 24 mesi. In base alla nostra politica di conservazione dei dati, verrà eliminato definitivamente il ${date}, a meno che tu non acceda prima di allora.\n\nPer conservarlo, basta accedere una volta:`,
+      button: "Accedi",
+      hint: "Basta accedere una volta per annullare l'eliminazione.",
+    },
+    passwordReset: {
+      subject: "Reimposta la tua password Loomkeep",
+      heading: "Reimposta la password",
+      intro:
+        "È stato richiesto un link per reimpostare la password del tuo account Loomkeep.",
+      button: "Reimposta la mia password",
+      expiry:
+        "Questo link scade tra 1 ora. Se non l'hai richiesto tu, ignora questa email.",
+    },
+    passwordChanged: {
+      subject: "La tua password Loomkeep è stata cambiata",
+      heading: "Password cambiata",
+      intro: "La password del tuo account Loomkeep è appena stata cambiata.",
+      warning:
+        "Se non sei stato tu, il tuo account potrebbe essere compromesso: reimposta subito la password.",
+      button: "Reimposta la mia password",
+    },
+    newDevice: {
+      subject: "Nuovo accesso al tuo account Loomkeep",
+      heading: "Nuovo accesso rilevato",
+      unknownDevice: "Dispositivo sconosciuto",
+      intro: (device, ip) =>
+        `È appena avvenuto un accesso al tuo account Loomkeep da un dispositivo non riconosciuto: ${device}${ip}.`,
+      warning:
+        "Se non sei stato tu, cambia subito la password e disconnetti gli altri dispositivi da Impostazioni > Sicurezza.",
+      button: "Apri le impostazioni di sicurezza",
+    },
+    emailChangedOld: {
+      subject: "L'email del tuo account Loomkeep è cambiata",
+      heading: "Indirizzo email cambiato",
+      intro: (email) =>
+        `L'indirizzo email del tuo account Loomkeep è stato cambiato in ${email}.`,
+      warning:
+        "Se non sei stato tu, il tuo account potrebbe essere compromesso: contattaci subito.",
+      button: "Contattaci",
+    },
+    emailChangedNew: {
+      subject: "Questo indirizzo è ora collegato al tuo account Loomkeep",
+      heading: "Indirizzo email confermato",
+      intro: (email) =>
+        `Questo indirizzo è ora l'email di accesso del tuo account Loomkeep (prima era ${email}).`,
+    },
+    emailChangeCode: {
+      subject: "Conferma il tuo nuovo indirizzo email Loomkeep",
+      heading: "Conferma il tuo indirizzo email",
+      intro: "Ecco il tuo codice di conferma:",
+      expiry:
+        "Questo codice scade tra 15 minuti. Se non l'hai richiesto tu, ignora questa email.",
+    },
+    mfaCode: {
+      subject: "Il tuo codice di accesso Loomkeep",
+      heading: "Il tuo codice di accesso",
+      intro: "Ecco il tuo codice di accesso:",
+      expiry:
+        "Questo codice scade tra 10 minuti. Se non hai provato ad accedere, ignora questa email e controlla la tua password.",
+    },
+    welcome: {
+      subject: "Benvenuto su Loomkeep",
+      intro: (name) =>
+        `Benvenuto ${name}! Il tuo account Loomkeep è stato creato.`,
+      button: "Apri Loomkeep",
+    },
+    verifyEmail: {
+      subject: "Conferma il tuo indirizzo email Loomkeep",
+      heading: "Conferma il tuo indirizzo email",
+      intro:
+        "Conferma il tuo indirizzo email cliccando sul pulsante qui sotto.",
+      button: "Conferma la mia email",
+      expiry: "Questo link scade tra 24 ore.",
+    },
+    invitation: {
+      subject: (inviter) =>
+        inviter
+          ? `${inviter} ti ha invitato su Loomkeep`
+          : "Sei invitato su Loomkeep",
+      heading: "Un posto ti aspetta su Loomkeep",
+      intro: (inviter) =>
+        `${inviter ? `${inviter} ti ha invitato` : "Sei invitato"} a unirti a Loomkeep per seguire le tue serie, film, anime, giochi, libri e album. Crea il tuo account con il pulsante qui sotto.`,
+      button: "Crea il mio account",
+      expiry: (date) =>
+        `Questo invito è valido fino al ${date}. Se non te lo aspettavi, ignora semplicemente questa email.`,
+    },
+    episodeDigest: {
+      today: "oggi",
+      thisWeek: "questa settimana",
+      oneSubject: (title) => `Nuovo episodio: ${title}`,
+      oneIntro: (period) => `Un episodio ti aspetta ${period}.`,
+      severalSubject: (count, period) => `${count} nuovi episodi ${period}`,
+      severalIntro: (period) => `Ecco cosa esce ${period}.`,
+      manySubject: (count, period) => `${count} uscite ${period}`,
+      manyIntro: (count, period) =>
+        `Un programma fitto: ${count} episodi escono ${period}.`,
+      preferences: "Gestisci le mie notifiche",
+    },
+    newsletter: {
+      reason: "Ricevi questa email perché ti sei iscritto agli aggiornamenti.",
+      preferences: "Gestisci le mie preferenze",
+      unsubscribe: "Disiscriviti",
+      button: "Vedi le novità",
+      eyebrow: "Nuova versione",
+    },
+  },
 } satisfies Record<CopyLocale, MailCopy>;

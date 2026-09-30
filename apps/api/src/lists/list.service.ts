@@ -656,10 +656,7 @@ export class ListService {
       select: AUTHOR_SELECT,
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.ListMemberUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     if (target.id === userId) {
       throw new AppException(

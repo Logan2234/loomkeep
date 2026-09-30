@@ -257,5 +257,9 @@
   "common_image_large": "Enlarged image",
   "common_camera_unavailable": "Camera access denied or unavailable.",
   "common_saved": "Saved",
-  "common_transparency": "Transparency"
+  "common_transparency": "Transparency",
+  "common_pending": "Pending",
+  "common_security_key": "Security key",
+  "common_this_week": "This week",
+  "common_you": "You"
 }

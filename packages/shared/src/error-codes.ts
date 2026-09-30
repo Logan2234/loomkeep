@@ -45,7 +45,6 @@ export const ErrorCode = {
   AdminReportNotFound: "admin.report_not_found",
   AdminCannotSelfDemote: "admin.cannot_self_demote",
   AdminCannotSelfDelete: "admin.cannot_self_delete",
-  AdminUserNotFound: "admin.user_not_found",
   AdminForbidden: "admin.forbidden",
   AdminBackupNotFound: "admin.backup_not_found",
   AdminBackupNotOrphan: "admin.backup_not_orphan",
@@ -73,7 +72,6 @@ export const ErrorCode = {
   ListItemAlreadyExists: "lists.item_already_exists",
   ListReorderMismatch: "lists.reorder_mismatch",
   ListStale: "lists.stale",
-  ListMemberUserNotFound: "lists.member_user_not_found",
   ListCannotAddSelf: "lists.cannot_add_self",
   ListMemberAlreadyEditor: "lists.member_already_editor",
   ListMemberNotFriend: "lists.member_not_friend",
@@ -101,7 +99,6 @@ export const ErrorCode = {
   ReviewCannotVoteSelf: "reviews.cannot_vote_self",
 
   // social
-  SocialUserNotFound: "social.user_not_found",
   SocialCannotFollowSelf: "social.cannot_follow_self",
   SocialGhostPublicOnly: "social.ghost_public_only",
   SocialUnblockFirst: "social.unblock_first",
@@ -161,6 +158,7 @@ export const ErrorCode = {
   UserAdultContentDisabled: "user.adult_content_disabled",
   UserCsvExportUnavailable: "user.csv_export_unavailable",
   UserAccountNotFound: "user.account_not_found",
+  UserNotFound: "user.not_found",
   UserDomainDisabled: "user.domain_disabled",
   UserAvatarNotFound: "user.avatar_not_found",
   UserPremiumRequired: "user.premium_required",

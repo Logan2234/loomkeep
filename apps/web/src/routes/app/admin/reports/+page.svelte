@@ -43,7 +43,7 @@
 
   const reduced = prefersReducedMotion();
   const STATUS_OPTIONS = [
-    { label: m.report_status_pending(), value: "PENDING" },
+    { label: m.common_pending(), value: "PENDING" },
     ...(Object.keys(REPORT_STATUS_LABELS) as ReportStatus[])
       .filter((s) => s !== "PENDING")
       .map((s) => ({ label: REPORT_STATUS_LABELS[s], value: s })),
@@ -158,7 +158,7 @@
       ? [
           {
             value: formatNumber(summary.pending),
-            label: m.report_status_pending(),
+            label: m.common_pending(),
             alert: summary.pending > 0,
           },
           {

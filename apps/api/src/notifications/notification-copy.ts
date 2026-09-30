@@ -75,6 +75,38 @@ const COPY = {
     },
     securityKey: "Security key",
   },
+  it: {
+    adminTestPush:
+      "Questa è una notifica di prova inviata dal pannello di amministrazione.",
+    adminBroadcastPush:
+      "Messaggio inviato a tutti gli account dal pannello di amministrazione.",
+    reportResolution: {
+      title: "La tua segnalazione è stata esaminata",
+      resolved: "È stata presa una misura in seguito alla tua segnalazione.",
+      dismissed: "Non è stato dato seguito alla tua segnalazione.",
+    },
+    follow: {
+      followed: "ti segue",
+      requested: "vuole seguirti",
+      accepted: "ha accettato la tua richiesta",
+    },
+    commentReactions: {
+      title: "Il tuo commento sta ricevendo reazioni",
+      body: (count: number) => `${count} reazioni`,
+    },
+    listEditorAdded: (listTitle: string) =>
+      `ti ha aggiunto come editor di “${listTitle}”`,
+    listItemAdded: (itemTitle: string | null, listTitle: string) =>
+      itemTitle
+        ? `ha aggiunto “${itemTitle}” a “${listTitle}”`
+        : `ha aggiunto un elemento a “${listTitle}”`,
+    moderation: {
+      commentRemoved: "Uno dei tuoi commenti è stato rimosso",
+      reviewRemoved: "Una delle tue recensioni è stata rimossa",
+      other: "È stata presa una misura sul tuo account",
+    },
+    securityKey: "Chiave di sicurezza",
+  },
 } satisfies Record<CopyLocale, NotificationCopy>;
 
 export interface NotificationCopy {

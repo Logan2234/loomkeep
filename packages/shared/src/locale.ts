@@ -5,6 +5,7 @@ import { Locale } from "./enums";
 const LOCALE_REGIONS: Partial<Record<Locale, string>> = {
   fr: "fr-FR",
   en: "en-US",
+  it: "it-IT",
 };
 
 /** "fr" → "fr-FR"; no locale, or one Loomkeep doesn't ship → "en-US". */

@@ -49,7 +49,7 @@
     onSuccess: async (result) => {
       confirmingRegenerate = false;
       await navigator.clipboard.writeText(calendarUrl(result.token));
-      toast.success(m.calendar_link_regenerated());
+      toast.success(m.subscription_link_regenerated());
     },
   }));
 
@@ -131,7 +131,7 @@
           <Icon name={copied === "atom" ? "check" : "link"} class="h-4 w-4" />
           {copied === "atom"
             ? m.common_link_copied()
-            : m.calendar_feed_copy_atom()}
+            : m.subscription_copy_atom()}
         </button>
       </div>
     </div>

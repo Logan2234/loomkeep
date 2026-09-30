@@ -145,7 +145,7 @@
         value={email || null}
         valueMode="email"
         label={m.admin_communications_choose_account()}
-        searchPlaceholder={m.admin_communications_account_search()}
+        searchPlaceholder={m.admin_user_search_placeholder()}
         onChange={(value) => (email = value ?? "")} />
     </div>
 

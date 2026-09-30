@@ -64,7 +64,7 @@
             <div class="flex items-center gap-2">
               <Icon name="flag" class="text-accent h-4 w-4" />
               <h2 class="font-display text-sm font-bold tracking-tight">
-                {m.gamification_onboarding_checklist_title()}
+                {m.gamification_premiere_seance_name()}
               </h2>
             </div>
             <button

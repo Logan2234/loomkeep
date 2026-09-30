@@ -245,7 +245,7 @@
         </h3>
         {#if social.contributionStreakDays > 0}
           <span class="text-dim text-xs"
-            >{m.stats_social_current_streak_label()}
+            >{m.gamification_current_streak_label()}
             <b class="text-fg"
               >{m.common_day_count_short({
                 days: social.contributionStreakDays,

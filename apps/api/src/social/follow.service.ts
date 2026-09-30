@@ -50,25 +50,16 @@ export class FollowService {
       select: { id: true, profileAccess: true },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     if (target.id !== viewerId) {
       if (target.profileAccess === ProfileAccess.GHOST) {
-        throw new AppException(
-          HttpStatus.NOT_FOUND,
-          ErrorCode.SocialUserNotFound,
-        );
+        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
       }
 
       const blocked = await this.blocks.isBlocked(target.id, viewerId);
       if (blocked)
-        throw new AppException(
-          HttpStatus.NOT_FOUND,
-          ErrorCode.SocialUserNotFound,
-        );
+        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     }
 
     return target;
@@ -285,10 +276,7 @@ export class FollowService {
       select: { id: true },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     if (target.id === viewerId) {
       throw new AppException(
@@ -349,10 +337,7 @@ export class FollowService {
       select: { id: true },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     await this.prisma.block.deleteMany({
       where: { blockerId: viewerId, blockedId: target.id },
     });
@@ -368,10 +353,7 @@ export class FollowService {
       select: { id: true, profileAccess: true },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     const relation = await this.visibility.getRelation(viewerId, target);
     return this.visibility.toRelationshipDto(relation);
   }
