@@ -87,6 +87,18 @@ const ENUM_DESCRIPTIONS: Record<string, string> = {
   GAMES: "Video games.",
   BOOKS: "Books.",
   MUSIC: "Albums.",
+  "auth.invalid_api_key":
+    "The key is missing, malformed, unknown, expired or revoked.",
+  "auth.api_key_forbidden": "The key wasn't granted this resource.",
+  "api.disabled": "The instance has turned its public API off.",
+  "api.rate_limited": "Too many requests: wait `Retry-After` seconds.",
+  "validation.failed": "A parameter is invalid; `details` names it.",
+  "user.domain_disabled": "That domain is turned off for the account.",
+  "library.entry_not_found": "No such entry in the account's library.",
+  "lists.not_found": "No such list, or one the account can't edit.",
+  "gamification.feature_disabled":
+    "Gamification is turned off on this instance.",
+  "internal.error": "Something broke on the server; `requestId` helps find it.",
 };
 
 /**
