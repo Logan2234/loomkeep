@@ -1,4 +1,6 @@
-/* Loomkeep's "Séance" identity (apps/web/DESIGN.md) on Starlight's tokens. */
+/* Loomkeep's "Séance" identity (apps/web/DESIGN.md) on Starlight's tokens:
+   dark is "la salle" (lights off, the screen glows), light "le programme"
+   (paper). */
 @import "@fontsource-variable/bricolage-grotesque";
 @import "@fontsource-variable/hanken-grotesk";
 @import "@fontsource/space-mono";
@@ -7,8 +9,8 @@
   --sl-font: "Hanken Grotesk Variable", system-ui, sans-serif;
   --sl-font-mono: "Space Mono", ui-monospace, monospace;
   --sl-color-accent-low: #2b2413;
-  --sl-color-accent: #f5b841;
-  --sl-color-accent-high: #fbe3b0;
+  --sl-color-accent: #c48f2a;
+  --sl-color-accent-high: #f5b841;
   --sl-color-white: #ececea;
   --sl-color-gray-1: #d6d7d9;
   --sl-color-gray-2: #b4b8c1;
@@ -17,6 +19,12 @@
   --sl-color-gray-5: #2a2e38;
   --sl-color-gray-6: #15171c;
   --sl-color-black: #0c0d10;
+  /* Starlight puts the darkest accent on its amber fills; Séance's ink. */
+  --sl-color-text-invert: #1a1406;
+
+  --lk-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --lk-fast: 180ms;
+  --lk-glow: rgb(245 184 65 / 0.16);
 }
 
 :root[data-theme="light"] {
@@ -30,8 +38,12 @@
   --sl-color-gray-4: #a39a85;
   --sl-color-gray-5: #d3c7a8;
   --sl-color-gray-6: #edeae3;
-  --sl-color-gray-7: #f7f5f3;
-  --sl-color-black: #ffffff;
+  /* Paper for the page, white for what sits on it (the header). */
+  --sl-color-gray-7: #ffffff;
+  --sl-color-black: #f7f5f3;
+  --sl-color-text-invert: #ffffff;
+
+  --lk-glow: rgb(142 98 11 / 0.1);
 }
 
 h1,
@@ -39,4 +51,162 @@ h2,
 h3,
 .site-title {
   font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
+}
+
+/* Timecode: metadata reads as mono. */
+footer time,
+.sl-badge {
+  font-family: var(--sl-font-mono);
+  letter-spacing: 0.04em;
+}
+
+/* Marquee cartouche: badges are amber plates, the warning ones excepted. */
+.sl-badge:not(.caution, .danger) {
+  background-color: var(--sl-color-text-accent);
+  border-color: transparent;
+  border-radius: 0.25rem;
+  color: var(--sl-color-text-invert);
+  text-transform: uppercase;
+}
+
+.timecode-404 {
+  color: var(--sl-color-text-accent);
+  font-family: var(--sl-font-mono);
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+/* Letterbox hairlines framing the home page's hero. */
+.hero {
+  border-block: 1px solid var(--sl-color-hairline-light);
+  position: relative;
+}
+
+/* The projector: the logo glows in the dark room. */
+:root:not([data-theme="light"]) .hero:has(img) {
+  background: radial-gradient(
+    ellipse 40% 60% at 75% 50%,
+    var(--lk-glow),
+    transparent 70%
+  );
+}
+
+:root:not([data-theme="light"]) .hero img {
+  filter: drop-shadow(0 0 3rem var(--lk-glow));
+}
+
+.sl-markdown-content a:not(.sl-link-button, .sl-link-card a) {
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 0.2em;
+}
+
+.sl-markdown-content a:not(.sl-link-button, .sl-link-card a):hover {
+  text-decoration-color: currentColor;
+}
+
+.sl-link-card:hover {
+  border-color: var(--sl-color-text-accent);
+  box-shadow: 0 0.75rem 2rem -1.25rem var(--lk-glow);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A short cross-fade between pages, without any script. */
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: var(--lk-fast);
+    animation-timing-function: var(--lk-ease);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .sidebar-content a,
+  .starlight-sidebar-topics a,
+  .starlight-sidebar-topics-icon,
+  starlight-toc a,
+  header a,
+  footer a,
+  .sl-link-button,
+  .sl-markdown-content a {
+    transition:
+      color var(--lk-fast) var(--lk-ease),
+      background-color var(--lk-fast) var(--lk-ease),
+      border-color var(--lk-fast) var(--lk-ease),
+      text-decoration-color var(--lk-fast) var(--lk-ease);
+  }
+
+  .sl-link-card {
+    transition:
+      border-color var(--lk-fast) var(--lk-ease),
+      box-shadow var(--lk-fast) var(--lk-ease),
+      transform var(--lk-fast) var(--lk-ease);
+  }
+
+  .sl-link-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .sl-link-button:active {
+    transform: scale(0.97);
+  }
+
+  /* Sidebar groups open and close rather than jump (Chromium; elsewhere they
+     simply switch). */
+  :root {
+    interpolate-size: allow-keywords;
+  }
+
+  .sidebar-content details::details-content {
+    block-size: 0;
+    overflow-y: clip;
+    transition:
+      block-size var(--lk-fast) var(--lk-ease),
+      content-visibility var(--lk-fast) allow-discrete;
+  }
+
+  .sidebar-content details[open]::details-content {
+    block-size: auto;
+  }
+
+  /* The home page comes up like the house lights going down. */
+  .hero .copy,
+  .hero img,
+  .card-grid > * {
+    animation: lk-rise 0.6s var(--lk-ease) both;
+  }
+
+  .hero img {
+    animation-delay: 80ms;
+  }
+
+  .card-grid > :nth-child(1) {
+    animation-delay: 160ms;
+  }
+  .card-grid > :nth-child(2) {
+    animation-delay: 210ms;
+  }
+  .card-grid > :nth-child(3) {
+    animation-delay: 260ms;
+  }
+  .card-grid > :nth-child(4) {
+    animation-delay: 310ms;
+  }
+  .card-grid > :nth-child(5) {
+    animation-delay: 360ms;
+  }
+  .card-grid > :nth-child(n + 6) {
+    animation-delay: 410ms;
+  }
+}
+
+@keyframes lk-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
 }

@@ -17,8 +17,10 @@ const MORE = {
   ],
 };
 
+const SITE = "https://docs.loomkeep.app";
+
 export default defineConfig({
-  site: "https://docs.loomkeep.app",
+  site: SITE,
   // Only SVGs here: nothing to optimise, and no need for Sharp.
   image: { service: passthroughImageService() },
   integrations: [
@@ -30,6 +32,14 @@ export default defineConfig({
       favicon: "/favicon.svg",
       head: [
         { tag: "meta", attrs: { name: "theme-color", content: "#0c0d10" } },
+        {
+          tag: "meta",
+          attrs: { property: "og:image", content: `${SITE}/og.png` },
+        },
+        {
+          tag: "meta",
+          attrs: { name: "twitter:card", content: "summary_large_image" },
+        },
       ],
       customCss: ["./src/styles/seance.css"],
       // English only for now; a `fr` entry is all another language needs.
@@ -47,9 +57,31 @@ export default defineConfig({
       },
       lastUpdated: true,
       expressiveCode: {
+        // Vesper's amber-on-black is close to Séance's dark room.
+        themes: ["vesper", "github-light"],
         styleOverrides: {
           borderRadius: "0.5rem",
+          borderColor: ({ theme }) =>
+            theme.type === "dark" ? "#2a2e38" : "#d3c7a8",
+          codeBackground: ({ theme }) =>
+            theme.type === "dark" ? "#15171c" : "#ffffff",
           codeFontFamily: "var(--sl-font-mono)",
+          uiFontFamily: "var(--sl-font)",
+          frames: {
+            shadowColor: "transparent",
+            editorTabBarBackground: ({ theme }) =>
+              theme.type === "dark" ? "#0c0d10" : "#edeae3",
+            editorActiveTabBackground: ({ theme }) =>
+              theme.type === "dark" ? "#15171c" : "#ffffff",
+            editorActiveTabIndicatorTopColor: ({ theme }) =>
+              theme.type === "dark" ? "#f5b841" : "#8e620b",
+            terminalTitlebarBackground: ({ theme }) =>
+              theme.type === "dark" ? "#0c0d10" : "#edeae3",
+            terminalTitlebarBorderBottomColor: ({ theme }) =>
+              theme.type === "dark" ? "#2a2e38" : "#d3c7a8",
+            terminalBackground: ({ theme }) =>
+              theme.type === "dark" ? "#15171c" : "#ffffff",
+          },
         },
       },
       plugins: [
@@ -169,7 +201,7 @@ export default defineConfig({
             },
           ],
           // The home page is the way into every topic, not part of one.
-          { exclude: ["/"] },
+          { exclude: ["/", "/404"] },
         ),
       ],
     }),

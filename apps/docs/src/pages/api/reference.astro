@@ -79,6 +79,19 @@ const hiddenClients = {
       .docs-bar a:hover {
         color: #f5b841;
       }
+      @media (prefers-reduced-motion: no-preference) {
+        @view-transition {
+          navigation: auto;
+        }
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+          animation-duration: 180ms;
+          animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .docs-bar a {
+          transition: color 180ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+      }
       .docs-bar strong {
         color: #ececea;
       }
@@ -158,6 +171,19 @@ const hiddenClients = {
             --scalar-color-3: #6b7280;
             --scalar-color-accent: #f5b841;
             --scalar-background-accent: #2b2413;
+            --scalar-link-color: #f5b841;
+            --scalar-link-color-hover: #ffd27a;
+            --scalar-color-blue: #f5b841;
+            --scalar-color-green: #5bd6a0;
+            --scalar-color-red: #f0647c;
+            --scalar-color-orange: #ffa552;
+            --scalar-color-yellow: #f5b841;
+            --scalar-button-1: #f5b841;
+            --scalar-button-1-color: #1a1406;
+            --scalar-button-1-hover: #ffc75a;
+            --scalar-sidebar-item-active-background: #f5b841;
+            --scalar-sidebar-color-active: #1a1406;
+            --scalar-sidebar-item-hover-background: #1e2128;
           }
           .light-mode {
             --scalar-background-1: #f7f5f3;
@@ -169,6 +195,32 @@ const hiddenClients = {
             --scalar-color-3: #8a8070;
             --scalar-color-accent: #8e620b;
             --scalar-background-accent: #f6ebd2;
+            --scalar-link-color: #8e620b;
+            --scalar-link-color-hover: #4a3306;
+            --scalar-color-blue: #8e620b;
+            --scalar-color-green: #257e58;
+            --scalar-color-red: #c73c57;
+            --scalar-color-orange: #ab590d;
+            --scalar-color-yellow: #8e620b;
+            --scalar-button-1: #1c1712;
+            --scalar-button-1-color: #ffffff;
+            --scalar-button-1-hover: #2e2820;
+            --scalar-sidebar-item-active-background: #8e620b;
+            --scalar-sidebar-color-active: #ffffff;
+            --scalar-sidebar-item-hover-background: #edeae3;
+          }
+          .light-mode, .dark-mode {
+            --scalar-radius: 0.375rem;
+            --scalar-radius-lg: 0.5rem;
+          }
+          @media (prefers-reduced-motion: no-preference) {
+            .light-mode a, .light-mode button,
+            .dark-mode a, .dark-mode button {
+              transition:
+                color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 180ms cubic-bezier(0.22, 1, 0.36, 1);
+            }
           }
         `,
       }}
