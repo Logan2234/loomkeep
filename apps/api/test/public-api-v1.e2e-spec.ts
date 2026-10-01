@@ -7,8 +7,8 @@ import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
 /**
  * The public API read through a key, against a small library spread over
- * three domains: the cross-domain list, its normalised phases, and the
- * scope each resource demands.
+ * three domains: the cross-domain list, its normalised phases, the history,
+ * title languages, and the scope each resource demands.
  */
 describe("Public API v1 (e2e)", () => {
   let app: INestApplication<App>;
@@ -43,7 +43,10 @@ describe("Public API v1 (e2e)", () => {
 
     await prisma.user.update({
       where: { id: userId },
-      data: { enabledDomains: ["MEDIA", "GAMES", "BOOKS", "MUSIC"] },
+      data: {
+        enabledDomains: ["MEDIA", "GAMES", "BOOKS", "MUSIC"],
+        locale: "en",
+      },
     });
 
     // createE2eApp only clears users and media: games and books from a
@@ -66,13 +69,23 @@ describe("Public API v1 (e2e)", () => {
         },
       },
     });
-    await prisma.libraryEntry.create({
+    await prisma.mediaItemTranslation.create({
+      data: { mediaItemId: movie.id, locale: "fr", title: "Premier Contact" },
+    });
+    // Seen once on an unknown date (an import), then rewatched.
+    const movieEntry = await prisma.libraryEntry.create({
       data: {
         userId,
         mediaItemId: movie.id,
         status: "COMPLETED",
         favorite: true,
         createdAt: new Date(Date.now() - 3 * DAY),
+      },
+    });
+    await prisma.movieReplay.create({
+      data: {
+        libraryEntryId: movieEntry.id,
+        finishedAt: new Date("2026-09-10T20:00:00Z"),
       },
     });
     const game = await prisma.gameItem.create({
@@ -82,13 +95,24 @@ describe("Public API v1 (e2e)", () => {
         externalIds: { create: { source: "IGDB", externalId: "113112" } },
       },
     });
-    await prisma.gameEntry.create({
+    const gameEntry = await prisma.gameEntry.create({
       data: {
         userId,
         gameItemId: game.id,
         status: "PLAYING",
         playtimeMinutes: 90,
         createdAt: new Date(Date.now() - 2 * DAY),
+      },
+    });
+    const playthrough = await prisma.gamePlaythrough.create({
+      data: { gameEntryId: gameEntry.id, number: 1, status: "ACTIVE" },
+    });
+    await prisma.gameSession.create({
+      data: {
+        gameEntryId: gameEntry.id,
+        playthroughId: playthrough.id,
+        durationMinutes: 90,
+        occurredAt: new Date("2026-09-20T18:00:00Z"),
       },
     });
     const book = await prisma.bookItem.create({
@@ -102,13 +126,24 @@ describe("Public API v1 (e2e)", () => {
         },
       },
     });
-    await prisma.bookEntry.create({
+    const bookEntry = await prisma.bookEntry.create({
       data: {
         userId,
         bookItemId: book.id,
         status: "READING",
         currentPage: 120,
         createdAt: new Date(Date.now() - DAY),
+      },
+    });
+    await prisma.bookSession.create({
+      data: {
+        bookEntryId: bookEntry.id,
+        durationMinutes: 40,
+        pagesRead: 20,
+        startPage: 100,
+        endPage: 120,
+        notes: "Arrakis",
+        occurredAt: new Date("2026-09-30T21:00:00Z"),
       },
     });
 
@@ -212,8 +247,96 @@ describe("Public API v1 (e2e)", () => {
     expect(profile.body.username).toBeTruthy();
   });
 
+  it("merges the dated history of every domain, newest first", async () => {
+    const res = await get("/api/v1/history").expect(200);
+
+    expect(res.body.total).toBe(3);
+    expect(
+      res.body.items.map((e: { type: string; date: string }) => [
+        e.type,
+        e.date,
+      ]),
+    ).toEqual([
+      ["BOOK_SESSION", "2026-09-30T21:00:00.000Z"],
+      ["GAME_SESSION", "2026-09-20T18:00:00.000Z"],
+      ["MOVIE_WATCHED", "2026-09-10T20:00:00.000Z"],
+    ]);
+    expect(res.body.items[0]).toMatchObject({
+      work: { title: "Dune" },
+      durationMinutes: 40,
+      pages: { read: 20, from: 100, to: 120 },
+      notes: "Arrakis",
+    });
+    expect(res.body.items[1].cycle).toBe(1);
+    expect(res.body.items[2].cycle).toBe(2);
+  });
+
+  it("windows the history by date, a bare end date included", async () => {
+    const september = await get(
+      "/api/v1/history?from=2026-09-10&to=2026-09-20",
+    ).expect(200);
+    expect(september.body.items.map((e: { type: string }) => e.type)).toEqual([
+      "GAME_SESSION",
+      "MOVIE_WATCHED",
+    ]);
+
+    const games = await get("/api/v1/history?domain=GAMES").expect(200);
+    expect(games.body.total).toBe(1);
+
+    const paged = await get("/api/v1/history?limit=2&page=2").expect(200);
+    expect(paged.body.items.map((e: { type: string }) => e.type)).toEqual([
+      "MOVIE_WATCHED",
+    ]);
+
+    await get("/api/v1/history?from=2026-09-20&to=2026-09-10").expect(400);
+    await get("/api/v1/history?from=yesterday").expect(400);
+  });
+
+  it("keeps an entry's undated viewings in its own history", async () => {
+    const list = await get("/api/v1/library?domain=MEDIA").expect(200);
+    const id = list.body.items[0].id as string;
+
+    const res = await get(`/api/v1/library/${id}/history`).expect(200);
+    expect(
+      res.body.items.map((e: { cycle: number; date: string | null }) => [
+        e.cycle,
+        e.date,
+      ]),
+    ).toEqual([
+      [2, "2026-09-10T20:00:00.000Z"],
+      [1, null],
+    ]);
+    await get("/api/v1/library/not-an-entry/history").expect(404);
+  });
+
+  it("translates video titles into the asked or the account's language", async () => {
+    const french = await get("/api/v1/library?domain=MEDIA&lang=fr").expect(
+      200,
+    );
+    expect(french.body.items[0].work.title).toBe("Premier Contact");
+
+    const history = await get("/api/v1/history?domain=MEDIA&lang=fr").expect(
+      200,
+    );
+    expect(history.body.items[0].work.title).toBe("Premier Contact");
+
+    const id = french.body.items[0].id as string;
+    const { id: userId } = (
+      await request(http).get("/api/users/me").set("Cookie", session)
+    ).body as { id: string };
+    await prisma.user.update({ where: { id: userId }, data: { locale: "fr" } });
+    const byAccount = await get(`/api/v1/library/${id}`).expect(200);
+    const forced = await get(`/api/v1/library/${id}?lang=en`).expect(200);
+    await prisma.user.update({ where: { id: userId }, data: { locale: "en" } });
+
+    expect(byAccount.body.work.title).toBe("Premier Contact");
+    expect(forced.body.work.title).toBe("Arrival");
+    await get("/api/v1/library?lang=de").expect(400);
+  });
+
   it("holds each resource behind its own scope", async () => {
     await get("/api/v1/library", libraryKey).expect(200);
+    await get("/api/v1/history", libraryKey).expect(200);
     await get("/api/v1/lists", libraryKey).expect(403);
     await get("/api/v1/stats/summary", libraryKey).expect(403);
     await get("/api/v1/export", libraryKey).expect(403);

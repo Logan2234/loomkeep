@@ -111,6 +111,42 @@ export interface ApiV1CalendarEpisodeDto {
   work: ApiV1WorkDto;
 }
 
+export const API_V1_HISTORY_EVENT_TYPES = [
+  "EPISODE_WATCHED",
+  "MOVIE_WATCHED",
+  "GAME_SESSION",
+  "GAME_COMPLETED",
+  "BOOK_SESSION",
+  "BOOK_FINISHED",
+  "ALBUM_LISTENED",
+] as const;
+export type ApiV1HistoryEventType = (typeof API_V1_HISTORY_EVENT_TYPES)[number];
+
+/** One dated moment of consumption: an episode or film seen, a session, a finish. */
+export interface ApiV1HistoryEventDto {
+  id: string;
+  type: ApiV1HistoryEventType;
+  /** Null when the date isn't known (often an import): such events only show in an entry's own history. */
+  date: string | null;
+  /** The library entry the event belongs to. */
+  entryId: string;
+  work: ApiV1WorkDto;
+  /** EPISODE_WATCHED only. */
+  episode: {
+    seasonNumber: number;
+    episodeNumber: number;
+    title: string | null;
+  } | null;
+  /** Viewing (films), playthrough (games) or reading (books) number, 1 for the first; null otherwise. */
+  cycle: number | null;
+  /** A session's length, or the episode's or film's runtime; null when unknown. */
+  durationMinutes: number | null;
+  /** BOOK_SESSION only. */
+  pages: { read: number; from: number | null; to: number | null } | null;
+  /** The session's own notes. */
+  notes: string | null;
+}
+
 export interface ApiV1DomainStatsDto {
   domain: StatsDomain;
   total: number;

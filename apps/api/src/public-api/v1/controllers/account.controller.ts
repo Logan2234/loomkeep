@@ -22,7 +22,7 @@ import { NotificationService } from "../../../notifications/notification.service
 import { ReviewService } from "../../../reviews/review.service";
 import { DataExportService } from "../../../users/data-export.service";
 import { UserDataExportResponseDto } from "../../../users/dto/data-export/user-data-export-response.dto";
-import { ReviewsQueryDto } from "../dto/queries.dto";
+import { LangQueryDto, ReviewsQueryDto } from "../dto/queries.dto";
 import {
   ApiV1AchievementResponseDto,
   ApiV1ListDetailResponseDto,
@@ -37,6 +37,7 @@ import { ListsV1Service } from "../lists-v1.service";
 import { toTarget, webUrl } from "../mappers";
 import { ProfileV1Service } from "../profile-v1.service";
 import { StatsV1Service } from "../stats-v1.service";
+import { WorkTitlesService } from "../work-titles.service";
 
 const REVIEW_TARGETS: Record<StatsDomain, ReviewTargetType[]> = {
   MEDIA: ["MEDIA", "SEASON", "EPISODE"],
@@ -66,8 +67,9 @@ export class ListsV1Controller {
   get(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
+    @Query() query: LangQueryDto,
   ): Promise<ApiV1ListDetailDto> {
-    return this.lists.get(user.sub, id);
+    return this.lists.get(user.sub, id, query.lang);
   }
 }
 
@@ -96,6 +98,7 @@ export class ReviewsV1Controller {
   constructor(
     config: ConfigService,
     private readonly reviews: ReviewService,
+    private readonly titles: WorkTitlesService,
   ) {
     this.webOrigin = webOriginOf(config);
   }
@@ -109,7 +112,7 @@ export class ReviewsV1Controller {
   ): Promise<ApiV1ReviewDto[]> {
     const reviews = await this.reviews.listMine(user.sub);
     const targets = query.domain ? REVIEW_TARGETS[query.domain] : null;
-    return reviews
+    const items = reviews
       .filter((review) => !targets || targets.includes(review.targetType))
       .map((review) => ({
         id: review.id,
@@ -126,6 +129,11 @@ export class ReviewsV1Controller {
           this.webOrigin,
         ),
       }));
+    await this.titles.translateTargets(
+      await this.titles.languageFor(user.sub, query.lang),
+      items.map((review) => review.target),
+    );
+    return items;
   }
 }
 

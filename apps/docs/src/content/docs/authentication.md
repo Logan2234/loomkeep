@@ -16,17 +16,17 @@ and revoke them in **Settings › Integrations**.
 
 A key only reaches the resources it was granted, all read-only for now:
 
-| Scope                | Endpoints                                         |
-| -------------------- | ------------------------------------------------- |
-| _(any key)_          | `GET /v1/me`                                      |
-| `library:read`       | `GET /v1/library`, `GET /v1/library/{id}`         |
-| `lists:read`         | `GET /v1/lists`, `GET /v1/lists/{id}`             |
-| `calendar:read`      | `GET /v1/calendar`                                |
-| `stats:read`         | `GET /v1/stats/summary`                           |
-| `reviews:read`       | `GET /v1/reviews`                                 |
-| `profile:read`       | `GET /v1/profile`, `GET /v1/profile/achievements` |
-| `notifications:read` | `GET /v1/notifications`                           |
-| `export:read`        | `GET /v1/export`                                  |
+| Scope                | Endpoints                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| _(any key)_          | `GET /v1/me`                                                                                 |
+| `library:read`       | `GET /v1/library`, `GET /v1/library/{id}`, `GET /v1/library/{id}/history`, `GET /v1/history` |
+| `lists:read`         | `GET /v1/lists`, `GET /v1/lists/{id}`                                                        |
+| `calendar:read`      | `GET /v1/calendar`                                                                           |
+| `stats:read`         | `GET /v1/stats/summary`                                                                      |
+| `reviews:read`       | `GET /v1/reviews`                                                                            |
+| `profile:read`       | `GET /v1/profile`, `GET /v1/profile/achievements`                                            |
+| `notifications:read` | `GET /v1/notifications`                                                                      |
+| `export:read`        | `GET /v1/export`                                                                             |
 
 A key never reaches anything outside `/v1`: it can't change your password,
 your two-factor authentication, your devices or your keys, nor delete your

@@ -2,6 +2,8 @@ import type {
   ApiV1AchievementDto,
   ApiV1CalendarEpisodeDto,
   ApiV1DomainStatsDto,
+  ApiV1HistoryEventDto,
+  ApiV1HistoryEventType,
   ApiV1LibraryEntryDto,
   ApiV1ListDetailDto,
   ApiV1ListDto,
@@ -24,6 +26,7 @@ import type {
   StatsDomain,
 } from "@loomkeep/shared";
 import {
+  API_V1_HISTORY_EVENT_TYPES,
   ListKind as ListKindValues,
   ListVisibility as ListVisibilityValues,
   MediaType as MediaTypeValues,
@@ -83,6 +86,45 @@ export class ApiV1LibraryEntryResponseDto implements ApiV1LibraryEntryDto {
 export class ApiV1LibraryPageResponseDto implements PagedResult<ApiV1LibraryEntryDto> {
   @ApiProperty({ type: ApiV1LibraryEntryResponseDto, isArray: true })
   items!: ApiV1LibraryEntryResponseDto[];
+
+  hasMore!: boolean;
+  total!: number;
+}
+
+class ApiV1HistoryEpisodeResponseDto {
+  seasonNumber!: number;
+  episodeNumber!: number;
+  title!: string | null;
+}
+
+class ApiV1HistoryPagesResponseDto {
+  read!: number;
+  from!: number | null;
+  to!: number | null;
+}
+
+export class ApiV1HistoryEventResponseDto implements ApiV1HistoryEventDto {
+  id!: string;
+  @ApiProperty({ enum: API_V1_HISTORY_EVENT_TYPES })
+  type!: ApiV1HistoryEventType;
+
+  date!: string | null;
+  entryId!: string;
+  work!: ApiV1WorkResponseDto;
+  @ApiProperty({ type: ApiV1HistoryEpisodeResponseDto, nullable: true })
+  episode!: ApiV1HistoryEpisodeResponseDto | null;
+
+  cycle!: number | null;
+  durationMinutes!: number | null;
+  @ApiProperty({ type: ApiV1HistoryPagesResponseDto, nullable: true })
+  pages!: ApiV1HistoryPagesResponseDto | null;
+
+  notes!: string | null;
+}
+
+export class ApiV1HistoryPageResponseDto implements PagedResult<ApiV1HistoryEventDto> {
+  @ApiProperty({ type: ApiV1HistoryEventResponseDto, isArray: true })
+  items!: ApiV1HistoryEventResponseDto[];
 
   hasMore!: boolean;
   total!: number;

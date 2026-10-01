@@ -31,6 +31,26 @@ across domains, which is also what `?phase=` filters on:
 | `DONE`        | `COMPLETED`, `UP_TO_DATE` | `COMPLETED` | `READ`    | `LISTENED`  |
 | `DROPPED`     | `DROPPED`                 | `DROPPED`   | `DROPPED` | —           |
 
+## Languages
+
+Film and series titles follow the account's language (Settings › Appearance),
+or `?lang=` (`en`, `fr`, `it`) on any endpoint that returns works. A title
+nobody has opened in that language yet stays in English. Anime keep their
+AniList title, and games, books and albums their catalogue's single title.
+Any other `lang` is a `400`.
+
+## History
+
+`GET /v1/history` lists what happened, newest first: episodes and films seen,
+game and reading sessions, games, books and albums finished. `from` and `to`
+narrow it to a window: `to=2026-09-30` includes that whole day. Each event
+carries `cycle`, the viewing, playthrough or reading it belongs to (2 for a
+first rewatch).
+
+Imports often bring viewings without a date. Those can't fall in a window,
+so they only show in their entry's own history,
+`GET /v1/library/{id}/history`, last and with a null `date`.
+
 ## Errors
 
 Errors share one shape. `code` is stable and meant for your code; `message`
