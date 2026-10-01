@@ -61,6 +61,27 @@ export default defineConfig({
         starlightSidebarTopics(
           [
             {
+              label: "Guide",
+              link: "/guide/",
+              icon: "open-book",
+              items: [
+                {
+                  label: "Using Loomkeep",
+                  items: [
+                    { label: "Key concepts", link: "/guide/" },
+                    "guide/install",
+                    "guide/security",
+                    "guide/your-data",
+                  ],
+                },
+                {
+                  label: "Importing",
+                  items: [{ autogenerate: { directory: "guide/imports" } }],
+                },
+                MORE,
+              ],
+            },
+            {
               label: "API",
               link: "/api/",
               icon: "puzzle",
