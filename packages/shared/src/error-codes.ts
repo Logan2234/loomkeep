@@ -39,6 +39,7 @@ export const ErrorCode = {
   ApiKeyNotFound: "api_key.not_found",
   ApiKeyLimitReached: "api_key.limit_reached",
   ApiKeyExpiryInPast: "api_key.expiry_in_past",
+  ApiRateLimited: "api.rate_limited",
 
   // admin
   AdminCacheItemNotFound: "admin.cache_item_not_found",

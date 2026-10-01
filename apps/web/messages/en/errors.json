@@ -198,5 +198,6 @@
   "apierr_auth_api_key_forbidden": "This API key has no access to this resource.",
   "apierr_api_key_not_found": "This API key no longer exists.",
   "apierr_api_key_limit_reached": "You've reached the maximum number of API keys. Revoke one to create another.",
-  "apierr_api_key_expiry_in_past": "The expiration date must be in the future."
+  "apierr_api_key_expiry_in_past": "The expiration date must be in the future.",
+  "apierr_api_rate_limited": "Too many API requests: try again in a moment."
 }

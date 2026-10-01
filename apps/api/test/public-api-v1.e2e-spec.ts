@@ -46,6 +46,15 @@ describe("Public API v1 (e2e)", () => {
       data: { enabledDomains: ["MEDIA", "GAMES", "BOOKS", "MUSIC"] },
     });
 
+    // createE2eApp only clears users and media: games and books from a
+    // previous run would collide on their external ids.
+    await prisma.gameItem.deleteMany({
+      where: { externalIds: { some: { externalId: "113112" } } },
+    });
+    await prisma.bookItem.deleteMany({
+      where: { externalIds: { some: { externalId: "OL893415W" } } },
+    });
+
     const DAY = 86_400_000;
     const movie = await prisma.mediaItem.create({
       data: {
@@ -208,5 +217,24 @@ describe("Public API v1 (e2e)", () => {
     await get("/api/v1/lists", libraryKey).expect(403);
     await get("/api/v1/stats/summary", libraryKey).expect(403);
     await get("/api/v1/export", libraryKey).expect(403);
+  });
+
+  // Last: it spends the account's whole budget for the minute.
+  it("meters the account per minute and says so in the headers", async () => {
+    const me = await get("/api/v1/me").expect(200);
+    expect(me.body.rateLimit).toEqual({ perMinute: 60 });
+    expect(me.headers["x-ratelimit-limit"]).toBe("60");
+
+    let refused: request.Response | undefined;
+
+    for (let i = 0; i < 61 && !refused; i++) {
+      const res = await get("/api/v1/me", libraryKey);
+      if (res.status === 429) refused = res;
+    }
+
+    expect(refused?.body.code).toBe("api.rate_limited");
+    expect(Number(refused?.headers["retry-after"])).toBeGreaterThan(0);
+    // The budget is the account's, shared by every key.
+    await get("/api/v1/me").expect(429);
   });
 });

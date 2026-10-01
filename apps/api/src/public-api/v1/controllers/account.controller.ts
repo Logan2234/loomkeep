@@ -12,14 +12,9 @@ import type {
 } from "@loomkeep/shared";
 import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import {
-  ApiBearerAuth,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
-import { AllowApiKey } from "../../../api-keys/api-key-access.decorator";
+import { ApiOkResponse, ApiOperation } from "@nestjs/swagger";
+import { SkipThrottle, Throttle } from "@nestjs/throttler";
+import { PublicApi } from "../../../api-keys/public-api.decorator";
 import type { JwtPayload } from "../../../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../../../auth/decorators/current-user.decorator";
 import { GamificationFeatureGuard } from "../../../gamification/gamification-feature.guard";
@@ -50,9 +45,7 @@ const REVIEW_TARGETS: Record<StatsDomain, ReviewTargetType[]> = {
   MUSIC: ["MUSIC"],
 };
 
-@ApiTags("Lists")
-@ApiBearerAuth()
-@AllowApiKey("lists")
+@PublicApi("Lists", "lists")
 @Controller({ path: "lists", version: "1" })
 export class ListsV1Controller {
   constructor(private readonly lists: ListsV1Service) {}
@@ -78,9 +71,7 @@ export class ListsV1Controller {
   }
 }
 
-@ApiTags("Stats")
-@ApiBearerAuth()
-@AllowApiKey("stats")
+@PublicApi("Stats", "stats")
 @Controller({ path: "stats", version: "1" })
 export class StatsV1Controller {
   constructor(private readonly stats: StatsV1Service) {}
@@ -97,9 +88,7 @@ export class StatsV1Controller {
   }
 }
 
-@ApiTags("Reviews")
-@ApiBearerAuth()
-@AllowApiKey("reviews")
+@PublicApi("Reviews", "reviews")
 @Controller({ path: "reviews", version: "1" })
 export class ReviewsV1Controller {
   private readonly webOrigin: string;
@@ -140,9 +129,7 @@ export class ReviewsV1Controller {
   }
 }
 
-@ApiTags("Profile")
-@ApiBearerAuth()
-@AllowApiKey("profile")
+@PublicApi("Profile", "profile")
 @Controller({ path: "profile", version: "1" })
 export class ProfileV1Controller {
   constructor(private readonly profile: ProfileV1Service) {}
@@ -172,9 +159,7 @@ export class ProfileV1Controller {
   }
 }
 
-@ApiTags("Notifications")
-@ApiBearerAuth()
-@AllowApiKey("notifications")
+@PublicApi("Notifications", "notifications")
 @Controller({ path: "notifications", version: "1" })
 export class NotificationsV1Controller {
   private readonly webOrigin: string;
@@ -206,14 +191,13 @@ export class NotificationsV1Controller {
   }
 }
 
-@ApiTags("Export")
-@ApiBearerAuth()
-@AllowApiKey("export")
+@PublicApi("Export", "export")
 @Controller({ path: "export", version: "1" })
 export class ExportV1Controller {
   constructor(private readonly dataExport: DataExportService) {}
 
   /** Same pace as the in-app export: a full snapshot, once an hour. */
+  @SkipThrottle({ default: false })
   @Throttle({ default: { limit: 1, ttl: 3_600_000 } })
   @Get()
   @ApiOperation({

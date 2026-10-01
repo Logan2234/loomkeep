@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { getApiKeys, revokeApiKey } from "$lib/api/client";
+  import { getApiKeyQuota, getApiKeys, revokeApiKey } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
@@ -30,6 +30,11 @@
     fetch: getApiKeys,
   }));
   const apiKeys = $derived(apiKeysQuery.data ?? []);
+  const quotaQuery = createApiQuery(() => ({
+    key: keys.apiKeys.quota(),
+    fetch: getApiKeyQuota,
+  }));
+  const quota = $derived(quotaQuery.data);
 
   let creating = $state(false);
   let recipe = $state<Recipe | null>(null);
@@ -73,7 +78,18 @@
     <h2 class="font-display text-lg font-bold">
       {m.settings_api_keys_title()}
     </h2>
-    <Banner variant="info">{m.settings_api_keys_info()}</Banner>
+    <Banner variant="info">
+      {m.settings_api_keys_info()}
+      {#if quota}
+        <br />
+        {m.settings_api_keys_limit({ count: quota.perMinute })}
+        {#if quota.premiumPerMinute}
+          {m.settings_api_keys_limit_premium({
+            count: quota.premiumPerMinute,
+          })}
+        {/if}
+      {/if}
+    </Banner>
 
     {#if apiKeysQuery.loading}
       <CardRowSkeleton count={2} />

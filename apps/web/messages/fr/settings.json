@@ -449,5 +449,7 @@
   "settings_api_keys_recipe_releases_name": "Sorties du jour",
   "settings_api_keys_recipe_releases_desc": "Les épisodes du jour, pour un agenda, un bot ou la domotique.",
   "settings_api_keys_recipe_script_name": "Script personnel",
-  "settings_api_keys_recipe_script_desc": "Lire ta bibliothèque, tes listes et tes stats."
+  "settings_api_keys_recipe_script_desc": "Lire ta bibliothèque, tes listes et tes stats.",
+  "settings_api_keys_limit": "Limite : {count} requêtes par minute, toutes tes clés confondues.",
+  "settings_api_keys_limit_premium": "Premium la monte à {count}."
 }

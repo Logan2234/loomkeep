@@ -61,6 +61,7 @@ const MESSAGES = {
   [ErrorCode.ApiKeyNotFound]: () => m.apierr_api_key_not_found(),
   [ErrorCode.ApiKeyLimitReached]: () => m.apierr_api_key_limit_reached(),
   [ErrorCode.ApiKeyExpiryInPast]: () => m.apierr_api_key_expiry_in_past(),
+  [ErrorCode.ApiRateLimited]: () => m.apierr_api_rate_limited(),
   [ErrorCode.AdminCacheItemNotFound]: () =>
     m.apierr_admin_cache_item_not_found(),
   [ErrorCode.AdminCacheResyncFailed]: () =>

@@ -449,5 +449,7 @@
   "settings_api_keys_recipe_releases_name": "Today's releases",
   "settings_api_keys_recipe_releases_desc": "Today's episodes, for a calendar, a bot or home automation.",
   "settings_api_keys_recipe_script_name": "Personal script",
-  "settings_api_keys_recipe_script_desc": "Read your library, lists and stats."
+  "settings_api_keys_recipe_script_desc": "Read your library, lists and stats.",
+  "settings_api_keys_limit": "Limit: {count} requests per minute, across all your keys.",
+  "settings_api_keys_limit_premium": "Premium raises it to {count}."
 }

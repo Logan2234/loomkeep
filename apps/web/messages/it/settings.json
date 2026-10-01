@@ -449,5 +449,7 @@
   "settings_api_keys_recipe_releases_name": "Uscite del giorno",
   "settings_api_keys_recipe_releases_desc": "Gli episodi del giorno, per un'agenda, un bot o la domotica.",
   "settings_api_keys_recipe_script_name": "Script personale",
-  "settings_api_keys_recipe_script_desc": "Leggi la tua libreria, le tue liste e le tue statistiche."
+  "settings_api_keys_recipe_script_desc": "Leggi la tua libreria, le tue liste e le tue statistiche.",
+  "settings_api_keys_limit": "Limite: {count} richieste al minuto, per tutte le tue chiavi insieme.",
+  "settings_api_keys_limit_premium": "Premium la porta a {count}."
 }
