@@ -61,6 +61,8 @@ const MESSAGES = {
   [ErrorCode.ApiKeyNotFound]: () => m.apierr_api_key_not_found(),
   [ErrorCode.ApiKeyLimitReached]: () => m.apierr_api_key_limit_reached(),
   [ErrorCode.ApiKeyExpiryInPast]: () => m.apierr_api_key_expiry_in_past(),
+  [ErrorCode.ApiRateLimited]: () => m.apierr_api_rate_limited(),
+  [ErrorCode.ApiDisabled]: () => m.apierr_api_disabled(),
   [ErrorCode.AdminCacheItemNotFound]: () =>
     m.apierr_admin_cache_item_not_found(),
   [ErrorCode.AdminCacheResyncFailed]: () =>
@@ -121,6 +123,8 @@ const MESSAGES = {
     m.apierr_admin_smtp_not_configured(),
   [ErrorCode.AdminUnknownJob]: () => m.apierr_admin_unknown_job(),
   [ErrorCode.AdminAccountNotFound]: () => m.apierr_admin_account_not_found(),
+  [ErrorCode.AdminSettingLockedByEnv]: () =>
+    m.apierr_admin_setting_locked_by_env(),
   [ErrorCode.AdminReportNotFound]: () => m.apierr_admin_report_not_found(),
   [ErrorCode.AdminCannotSelfDemote]: () => m.apierr_admin_cannot_self_demote(),
   [ErrorCode.AdminCannotSelfDelete]: () => m.apierr_admin_cannot_self_delete(),

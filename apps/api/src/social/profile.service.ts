@@ -15,7 +15,6 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { ACHIEVEMENTS } from "../gamification/achievements/registry";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { PrismaService } from "../prisma/prisma.service";
@@ -57,7 +56,6 @@ export class ProfileService {
     private readonly visibility: VisibilityService,
     private readonly follow: FollowService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
   ) {}
 
   /** Builds a user's profile as seen by `viewerId`, or 404 if not reachable. */
@@ -158,7 +156,7 @@ export class ProfileService {
     // target's own `hideProgression` preference off. `UserScore` is only
     // read when gamification is actually on, so a self-hoster running with
     // it off never pays that query.
-    const gamificationEnabled = isGamificationEnabled(this.config, this.flags);
+    const gamificationEnabled = isGamificationEnabled(this.config);
     const xpVisible =
       relation.isSelf || (activityVisible && !target.hideProgression);
 

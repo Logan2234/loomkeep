@@ -6,7 +6,6 @@ import type { Socket } from "socket.io";
 import { afterEach, beforeEach, vi } from "vitest";
 import { setAuthCookies } from "../auth/auth-cookies";
 import { SessionCacheService } from "../auth/session-cache.service";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { MetricsService } from "../metrics/metrics.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { EventsGateway } from "./events.gateway";
@@ -38,12 +37,6 @@ function makeConfig(): ConfigService {
   return {
     getOrThrow: vi.fn().mockReturnValue("access-secret"),
   } as unknown as ConfigService;
-}
-
-function makeFlags(): FeatureFlagsService {
-  return {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
 }
 
 function makeMetrics(): MetricsService {
@@ -81,14 +74,12 @@ describe("EventsGateway.handleConnection", () => {
       listMember: { findUnique: vi.fn() },
       refreshToken: { findUnique: vi.fn().mockResolvedValue({ id: "sid-1" }) },
     } as unknown as PrismaService;
-    const flags = makeFlags();
     const sessionCache = new SessionCacheService();
     const metrics = makeMetrics();
     const gateway = new EventsGateway(
       jwtService,
       makeConfig(),
       prisma,
-      flags,
       sessionCache,
       metrics,
     );
@@ -178,7 +169,6 @@ describe("EventsGateway.handleConnection", () => {
       jwtService,
       makeConfig(),
       prisma,
-      makeFlags(),
       new SessionCacheService(),
       makeMetrics(),
     );
@@ -208,7 +198,6 @@ describe("EventsGateway.handleConnection", () => {
       jwtService,
       makeConfig(),
       prisma,
-      makeFlags(),
       new SessionCacheService(),
       metrics,
     );
@@ -248,7 +237,6 @@ describe("EventsGateway.disconnectSession", () => {
       {} as JwtService,
       makeConfig(),
       {} as PrismaService,
-      makeFlags(),
       new SessionCacheService(),
       makeMetrics(),
     );
@@ -272,14 +260,10 @@ describe("EventsGateway.handleJoinComments", () => {
       getOrThrow: vi.fn(),
       get: vi.fn(() => (socialEnabled ? "true" : "false")),
     } as unknown as ConfigService;
-    const flags = {
-      isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-    } as unknown as FeatureFlagsService;
     return new EventsGateway(
       {} as JwtService,
       config,
       prisma,
-      flags,
       new SessionCacheService(),
       makeMetrics(),
     );
@@ -408,14 +392,10 @@ describe("EventsGateway.handleJoinList", () => {
       getOrThrow: vi.fn(),
       get: vi.fn(() => (opts.socialEnabled !== false ? "true" : "false")),
     } as unknown as ConfigService;
-    const flags = {
-      isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-    } as unknown as FeatureFlagsService;
     return new EventsGateway(
       {} as JwtService,
       config,
       prisma,
-      flags,
       new SessionCacheService(),
       makeMetrics(),
     );
@@ -481,7 +461,6 @@ describe("EventsGateway.evictFromList", () => {
       {} as JwtService,
       makeConfig(),
       {} as PrismaService,
-      makeFlags(),
       new SessionCacheService(),
       makeMetrics(),
     );

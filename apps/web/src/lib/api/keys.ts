@@ -76,6 +76,7 @@ export const keys = {
   },
   apiKeys: {
     all: () => ["api-keys", "all"] as const,
+    quota: () => ["api-keys", "quota"] as const,
   },
   sessionTimer: {
     current: () => ["session-timer"] as const,
@@ -195,6 +196,7 @@ export const keys = {
   },
   admin: {
     overview: () => ["admin", "overview"] as const,
+    instanceSettings: () => ["admin", "instance-settings"] as const,
     reportsPendingCount: () => ["admin", "reports-pending-count"] as const,
     newsletterSends: () => ["admin", "newsletter-sends"] as const,
     schema: () => ["admin", "schema"] as const,

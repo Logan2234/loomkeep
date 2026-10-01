@@ -39,9 +39,10 @@
     "nestjs"
   ],
   "scripts": {
-    "dev": "pnpm build:package && pnpm --parallel --filter \"./apps/*\" dev",
+    "dev": "pnpm build:package && pnpm --parallel --filter \"./apps/*\" --filter \"!@loomkeep/docs\" dev",
+    "dev:docs": "pnpm --filter @loomkeep/docs dev",
     "build:package": "pnpm --filter \"./packages/*\" build",
-    "build": "pnpm build:package && pnpm --filter \"./apps/*\" build",
+    "build": "pnpm build:package && pnpm --filter \"./apps/*\" --filter \"!@loomkeep/docs\" build",
     "generate": "pnpm build:package && pnpm --filter @loomkeep/api exec prisma generate && pnpm --filter @loomkeep/api build && pnpm --filter @loomkeep/api generate:openapi && pnpm --filter @loomkeep/web generate:api-types",
     "test": "pnpm --recursive --no-bail test",
     "lint": "pnpm --recursive --no-bail lint",

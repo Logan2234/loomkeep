@@ -3,7 +3,6 @@ import type { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { EventsGateway } from "../../events/events.gateway";
-import type { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
 import type { JobRunService } from "../../jobs/job-run.service";
 import type { PrismaService } from "../../prisma/prisma.service";
 import type { XpService } from "../xp.service";
@@ -46,14 +45,6 @@ function makeConfig(values: Record<string, string> = {}): ConfigService {
   } as unknown as ConfigService;
 }
 
-// No Unleash client configured in tests — isEnabled always returns whatever
-// fallback the caller passed, same convention as xp.service.spec.ts.
-function makeFlags(): FeatureFlagsService {
-  return {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
-}
-
 function makeService(configValues: Record<string, string> = {}) {
   const prisma = {
     userAchievement: {
@@ -79,22 +70,14 @@ function makeService(configValues: Record<string, string> = {}) {
     $transaction: vi.fn().mockResolvedValue([]),
   } as unknown as PrismaService;
   const config = makeConfig({ GAMIFICATION_ENABLED: "true", ...configValues });
-  const flags = makeFlags();
   const xp = { award: vi.fn() } as unknown as XpService;
   const jobRuns = {
     record: vi.fn((_key: string, fn: () => Promise<unknown>) => fn()),
   } as unknown as JobRunService;
   const events = { emitToUser: vi.fn() } as unknown as EventsGateway;
 
-  const service = new AchievementService(
-    prisma,
-    config,
-    flags,
-    xp,
-    jobRuns,
-    events,
-  );
-  return { service, prisma, config, flags, xp, jobRuns, events };
+  const service = new AchievementService(prisma, config, xp, jobRuns, events);
+  return { service, prisma, config, xp, jobRuns, events };
 }
 
 describe("AchievementService.evaluate", () => {

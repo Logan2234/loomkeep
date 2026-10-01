@@ -143,7 +143,6 @@
   "auth_forgot_password_action": "Send the link",
   "auth_reset_password_confirm_placeholder": "Confirm the password",
   "auth_reset_password_mismatch": "Passwords don't match",
-  "auth_reset_password_requirements_unmet": "Password doesn't meet the requirements above",
   "link_invalid_missing_token": "Invalid link: no token found in the URL.",
   "auth_verify_email_title": "Email verification",
   "auth_verify_email_pending": "Verifying…",
@@ -1164,5 +1163,8 @@
   "quick_add_done_status_lists": "Status: {status}. Lists: {lists}.",
   "quick_add_back_hint": "Your phone's back button takes you back to the app you shared from.",
   "quick_add_undo": "Undo adding",
-  "quick_add_undone": "Addition undone"
+  "quick_add_undone": "Addition undone",
+  "notif_api_keys_review_title": "Review your API keys",
+  "notif_api_keys_review_one": "Your password changed, but your API key stays valid.",
+  "notif_api_keys_review_many": "Your password changed, but your {count} API keys stay valid."
 }

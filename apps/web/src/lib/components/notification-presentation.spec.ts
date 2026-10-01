@@ -163,3 +163,20 @@ describe("list item added notification", () => {
     ).toBe(m.notif_list_item_added_generic({ list: "SF" }));
   });
 });
+
+describe("API keys review notification", () => {
+  it("renders the active key count in the reader's language", () => {
+    const review = (count: number) => ({
+      ...notification("API_KEYS_REVIEW", null, "Vérifie tes clés API"),
+      data: { count },
+    });
+
+    expect(notificationText(review(1))).toEqual({
+      title: m.notif_api_keys_review_title(),
+      body: m.notif_api_keys_review_one(),
+    });
+    expect(notificationText(review(3)).body).toBe(
+      m.notif_api_keys_review_many({ count: "3" }),
+    );
+  });
+});

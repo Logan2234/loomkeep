@@ -1,4 +1,8 @@
-import type { ApiKeyDto, CreatedApiKeyDto } from "@loomkeep/shared";
+import type {
+  ApiKeyDto,
+  ApiKeyQuotaDto,
+  CreatedApiKeyDto,
+} from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -13,6 +17,8 @@ import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { ApiKeysService } from "./api-keys.service";
+import { ApiRateLimitService } from "./api-rate-limit.service";
+import { ApiKeyQuotaResponseDto } from "./dto/api-key-quota-response.dto";
 import { ApiKeyResponseDto } from "./dto/api-key-response.dto";
 import { CreateApiKeyRequestDto } from "./dto/create-api-key.dto";
 import { CreatedApiKeyResponseDto } from "./dto/created-api-key-response.dto";
@@ -23,12 +29,21 @@ import { CreatedApiKeyResponseDto } from "./dto/created-api-key-response.dto";
  */
 @Controller("api-keys")
 export class ApiKeysController {
-  constructor(private readonly apiKeys: ApiKeysService) {}
+  constructor(
+    private readonly apiKeys: ApiKeysService,
+    private readonly rateLimit: ApiRateLimitService,
+  ) {}
 
   @Get()
   @ApiOkResponse({ type: ApiKeyResponseDto, isArray: true })
   list(@CurrentUser() user: JwtPayload): Promise<ApiKeyDto[]> {
     return this.apiKeys.list(user.sub);
+  }
+
+  @Get("quota")
+  @ApiOkResponse({ type: ApiKeyQuotaResponseDto })
+  quota(@CurrentUser() user: JwtPayload): Promise<ApiKeyQuotaDto> {
+    return this.rateLimit.quota(user.sub);
   }
 
   @Post()
@@ -38,6 +53,12 @@ export class ApiKeysController {
     @Body() dto: CreateApiKeyRequestDto,
   ): Promise<CreatedApiKeyDto> {
     return this.apiKeys.create(user.sub, dto);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete()
+  async revokeAll(@CurrentUser() user: JwtPayload): Promise<void> {
+    await this.apiKeys.revokeAll(user.sub);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -328,8 +328,13 @@ export const revokeOtherSessions = (): Promise<void> =>
 
 export const getApiKeys = () => typedRequest("/api-keys");
 
+export const getApiKeyQuota = () => typedRequest("/api-keys/quota");
+
 export const createApiKey = (body: CreateApiKeyDto) =>
   typedRequest("/api-keys", { method: "POST", body });
+
+export const revokeAllApiKeys = (): Promise<void> =>
+  typedRequest("/api-keys", { method: "DELETE" });
 
 export const revokeApiKey = (id: string): Promise<void> =>
   typedRequest("/api-keys/{id}", { method: "DELETE", params: { id } });
