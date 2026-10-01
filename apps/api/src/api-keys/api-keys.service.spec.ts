@@ -64,7 +64,7 @@ describe("ApiKeysService", () => {
         expiresAt: null,
       });
 
-      expect(secret).toMatch(/^lk_[A-Za-z0-9_-]{43}$/);
+      expect(secret).toMatch(/^lk_[0-9A-Za-z]{49}$/);
       const { data } = prisma.apiKey.create.mock.calls[0][0];
       expect(data.tokenHash).toBe(hashApiKey(secret));
       expect(JSON.stringify(data)).not.toContain(secret);

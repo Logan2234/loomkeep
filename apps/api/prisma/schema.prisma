@@ -1328,6 +1328,7 @@ enum SecurityEventType {
   MFA_CHALLENGE_LOCKED
   API_KEY_CREATED
   API_KEY_REVOKED
+  API_KEY_LEAKED
 }
 
 // One sensitive account action, for the admin "Sécurité" page. userId is

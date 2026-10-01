@@ -12,6 +12,10 @@ Authorization: Bearer lk_…
 Keys start with `lk_`, which makes a leaked one easy to spot. Create, review
 and revoke them in **Settings › Integrations**.
 
+A key is `lk_` followed by 49 letters and digits, the last six being a
+checksum of the rest (`lk_[0-9A-Za-z]{49}`). A string that fails the checksum
+is refused straight away, with a `401`.
+
 ## Scopes
 
 A key only reaches the resources it was granted, all read-only for now:
@@ -41,6 +45,17 @@ A key nobody has used for a year is deleted.
 Revoking a key takes effect immediately. Changing your password does **not**
 revoke your keys: you are reminded of the active ones instead, so you can
 revoke them if the change wasn't yours.
+
+## If a key leaks
+
+On loomkeep.app, GitHub's secret scanning looks for Loomkeep keys in public
+repositories, gists, issues and npm packages, and reports each one it finds.
+A reported key is revoked at once, and you get an email saying where it was
+found, plus a notification. Remove it from there, history included, then
+create a new key.
+
+A self-hosted instance isn't covered: GitHub reports keys to loomkeep.app
+only. Revoke a leaked key yourself in **Settings › Integrations**.
 
 ## Errors
 

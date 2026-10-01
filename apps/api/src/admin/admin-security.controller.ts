@@ -38,6 +38,7 @@ const SECURITY_EVENT_TYPES: SecurityEventType[] = [
   "MFA_CHALLENGE_LOCKED",
   "API_KEY_CREATED",
   "API_KEY_REVOKED",
+  "API_KEY_LEAKED",
 ];
 
 /** Sensitive account actions log (registration, deletion, credential changes, failed logins). */

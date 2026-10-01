@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ApiKeyAuthService, hashApiKey } from "./api-key-auth.service";
+import { generateApiKeySecret } from "./api-key-format";
+
+const SECRET = generateApiKeySecret();
 
 const ROW = {
   id: "key-1",
@@ -27,9 +30,7 @@ describe("ApiKeyAuthService", () => {
     const prisma = makePrisma();
     const service = new ApiKeyAuthService(prisma as unknown as PrismaService);
 
-    await expect(
-      service.authenticate("lk_secret", "203.0.113.7"),
-    ).resolves.toEqual({
+    await expect(service.authenticate(SECRET, "203.0.113.7")).resolves.toEqual({
       keyId: "key-1",
       userId: "user-1",
       email: "alice@example.com",
@@ -38,7 +39,7 @@ describe("ApiKeyAuthService", () => {
     });
     expect(prisma.apiKey.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { tokenHash: hashApiKey("lk_secret") },
+        where: { tokenHash: hashApiKey(SECRET) },
       }),
     );
   });
@@ -49,8 +50,18 @@ describe("ApiKeyAuthService", () => {
     );
 
     await expect(
-      service.authenticate("lk_nope", undefined),
+      service.authenticate(generateApiKeySecret(), undefined),
     ).resolves.toBeNull();
+  });
+
+  it("turns down a malformed key without a database lookup", async () => {
+    const prisma = makePrisma();
+    const service = new ApiKeyAuthService(prisma as unknown as PrismaService);
+
+    await expect(
+      service.authenticate(`${SECRET.slice(0, -1)}!`, undefined),
+    ).resolves.toBeNull();
+    expect(prisma.apiKey.findUnique).not.toHaveBeenCalled();
   });
 
   it("returns null once the key has expired", async () => {
@@ -61,17 +72,15 @@ describe("ApiKeyAuthService", () => {
       }) as unknown as PrismaService,
     );
 
-    await expect(
-      service.authenticate("lk_secret", undefined),
-    ).resolves.toBeNull();
+    await expect(service.authenticate(SECRET, undefined)).resolves.toBeNull();
   });
 
   it("records the last use at most once a minute", async () => {
     const prisma = makePrisma();
     const service = new ApiKeyAuthService(prisma as unknown as PrismaService);
 
-    await service.authenticate("lk_secret", "203.0.113.7");
-    await service.authenticate("lk_secret", "203.0.113.7");
+    await service.authenticate(SECRET, "203.0.113.7");
+    await service.authenticate(SECRET, "203.0.113.7");
     expect(prisma.apiKey.updateMany).toHaveBeenCalledTimes(1);
     expect(prisma.apiKey.updateMany).toHaveBeenCalledWith({
       where: { id: "key-1" },
@@ -82,7 +91,7 @@ describe("ApiKeyAuthService", () => {
     });
 
     vi.advanceTimersByTime(60_000);
-    await service.authenticate("lk_secret", "203.0.113.8");
+    await service.authenticate(SECRET, "203.0.113.8");
     expect(prisma.apiKey.updateMany).toHaveBeenCalledTimes(2);
   });
 
@@ -90,14 +99,12 @@ describe("ApiKeyAuthService", () => {
     const prisma = makePrisma();
     const service = new ApiKeyAuthService(prisma as unknown as PrismaService);
 
-    await service.authenticate("lk_secret", undefined);
-    await service.authenticate("lk_secret", undefined);
+    await service.authenticate(SECRET, undefined);
+    await service.authenticate(SECRET, undefined);
     expect(prisma.apiKey.findUnique).toHaveBeenCalledTimes(1);
 
     service.invalidate("key-1");
     prisma.apiKey.findUnique.mockResolvedValue(null);
-    await expect(
-      service.authenticate("lk_secret", undefined),
-    ).resolves.toBeNull();
+    await expect(service.authenticate(SECRET, undefined)).resolves.toBeNull();
   });
 });

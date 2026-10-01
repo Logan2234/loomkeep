@@ -98,6 +98,8 @@ export const NotificationType = {
   REPORT_RESOLVED: "REPORT_RESOLVED",
   /** The password changed while API keys are active: worth a look. `data.count`. */
   API_KEYS_REVIEW: "API_KEYS_REVIEW",
+  /** A key found in public by GitHub's secret scanning was revoked. `data.name`, `data.foundAt`. */
+  API_KEY_LEAKED: "API_KEY_LEAKED",
 } as const;
 export type NotificationType =
   (typeof NotificationType)[keyof typeof NotificationType];
@@ -345,6 +347,8 @@ export const SecurityEventType = {
   MFA_CHALLENGE_LOCKED: "MFA_CHALLENGE_LOCKED",
   API_KEY_CREATED: "API_KEY_CREATED",
   API_KEY_REVOKED: "API_KEY_REVOKED",
+  // Revoked automatically: GitHub's secret scanning found the key in public.
+  API_KEY_LEAKED: "API_KEY_LEAKED",
 } as const;
 export type SecurityEventType =
   (typeof SecurityEventType)[keyof typeof SecurityEventType];

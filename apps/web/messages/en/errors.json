@@ -201,5 +201,6 @@
   "apierr_api_key_expiry_in_past": "The expiration date must be in the future.",
   "apierr_api_rate_limited": "Too many API requests: try again in a moment.",
   "apierr_api_disabled": "The public API is turned off on this instance.",
+  "apierr_secret_scanning_unauthorized": "Secret scanning alert not signed by GitHub.",
   "apierr_admin_setting_locked_by_env": "This setting is pinned by an environment variable."
 }

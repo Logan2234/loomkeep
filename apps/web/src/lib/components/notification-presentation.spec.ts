@@ -164,6 +164,20 @@ describe("list item added notification", () => {
   });
 });
 
+describe("API key leaked notification", () => {
+  it("names the revoked key in the reader's language", () => {
+    expect(
+      notificationText({
+        ...notification("API_KEY_LEAKED", null, "Clé API révoquée"),
+        data: { name: "Homepage" },
+      }),
+    ).toEqual({
+      title: m.notif_api_key_leaked_title(),
+      body: m.notif_api_key_leaked_body({ name: "Homepage" }),
+    });
+  });
+});
+
 describe("API keys review notification", () => {
   it("renders the active key count in the reader's language", () => {
     const review = (count: number) => ({

@@ -79,6 +79,14 @@ export function notificationText(n: NotificationDto): {
       };
     }
 
+    case NotificationType.API_KEY_LEAKED:
+      return {
+        title: m.notif_api_key_leaked_title(),
+        body: m.notif_api_key_leaked_body({
+          name: typeof n.data.name === "string" ? n.data.name : "",
+        }),
+      };
+
     case NotificationType.MODERATION_ACTION:
       return {
         title:
