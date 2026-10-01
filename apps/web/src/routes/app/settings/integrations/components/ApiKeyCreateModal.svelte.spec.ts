@@ -6,6 +6,7 @@ import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { RECIPES } from "../api-key-form";
 import ApiKeyCreateModal from "./ApiKeyCreateModal.svelte";
 
 const SECRET = "lk_test-secret-for-the-modal";
@@ -37,8 +38,8 @@ beforeEach(() => {
   );
 });
 
-function renderModal() {
-  const props = $state({ onclose: vi.fn() });
+function renderModal(recipe: (typeof RECIPES)[number] | null = null) {
+  const props = $state({ onclose: vi.fn(), recipe });
   renderWithQuery(ApiKeyCreateModal, props);
   return { props, user: userEvent.setup() };
 }
@@ -88,6 +89,25 @@ describe("ApiKeyCreateModal", () => {
       name: m.settings_api_keys_detail_key(),
     });
     expect(secret.value).toBe(SECRET);
+  });
+
+  it("starts from a recipe's name and resources, then shows a matching example", async () => {
+    const backup = RECIPES.find((recipe) => recipe.id === "backup")!;
+    const { user } = renderModal(backup);
+
+    expect(screen.getByRole<HTMLInputElement>("textbox").value).toBe(
+      m.settings_api_keys_recipe_backup_name(),
+    );
+    expect(
+      screen.getByRole<HTMLInputElement>("checkbox", {
+        name: `${m.settings_api_keys_resource_export()} — ${m.settings_api_keys_read()}`,
+      }).checked,
+    ).toBe(true);
+
+    await user.click(submit());
+
+    await waitFor(() => expect(sent?.scopes).toEqual(["export:read"]));
+    expect(await screen.findByText(/\/v1\/export/)).toBeTruthy();
   });
 
   it("checks every resource at once", async () => {

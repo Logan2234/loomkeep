@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { expiresAtFor, expiryState, minCustomDate } from "./api-key-form";
+import {
+  exampleSnippets,
+  expiresAtFor,
+  expiryState,
+  minCustomDate,
+} from "./api-key-form";
 
 const NOW = new Date(2026, 9, 1, 12, 0, 0);
 
@@ -38,5 +43,20 @@ describe("expiryState", () => {
     [inDays(-1), "expired"],
   ] as const)("classifies %s as %s", (expiresAt, state) => {
     expect(expiryState({ expiresAt }, NOW)).toBe(state);
+  });
+});
+
+describe("exampleSnippets", () => {
+  it("calls the first endpoint the key can read", () => {
+    const snippets = exampleSnippets("https://loomkeep.app/api", "lk_x", [
+      "calendar:read",
+      "stats:read",
+    ]);
+
+    expect(snippets.curl).toBe(
+      'curl -H "Authorization: Bearer lk_x" \\n  "https://loomkeep.app/api/v1/calendar"',
+    );
+    expect(snippets.Python).toContain('"https://loomkeep.app/api/v1/calendar"');
+    expect(snippets.JavaScript).toContain('Authorization: "Bearer lk_x"');
   });
 });

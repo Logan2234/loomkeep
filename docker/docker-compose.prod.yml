@@ -21,8 +21,6 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       # Caddy is the single trusted hop; API/web ports are not host-published.
       TRUST_PROXY_HOPS: "1"
-      # Public instance — turn social features on.
-      SOCIAL_ENABLED: "true"
 
   caddy:
     image: caddy:2-alpine

@@ -6,8 +6,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Public } from "../auth/decorators/public.decorator";
 import { isRegistrationEnabled } from "../auth/registration.config";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { isGamificationEnabled } from "../gamification/gamification.config";
+import { instanceSetting } from "../instance-settings/instance-settings.store";
 import { isSocialEnabled } from "../social/social.config";
 import { PublicConfigResponseDto } from "./dto/public-config-response.dto";
 
@@ -15,10 +15,7 @@ import { PublicConfigResponseDto } from "./dto/public-config-response.dto";
 @Public()
 @Controller("config")
 export class PublicConfigController {
-  constructor(
-    private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
-  ) {}
+  constructor(private readonly config: ConfigService) {}
 
   @Get()
   @ApiOkResponse({ type: PublicConfigResponseDto })
@@ -27,9 +24,10 @@ export class PublicConfigController {
     const { version } = JSON.parse(raw) as { version: string };
 
     return {
-      socialEnabled: isSocialEnabled(this.config, this.flags),
-      gamificationEnabled: isGamificationEnabled(this.config, this.flags),
-      registrationEnabled: isRegistrationEnabled(this.config, this.flags),
+      socialEnabled: isSocialEnabled(this.config),
+      gamificationEnabled: isGamificationEnabled(this.config),
+      registrationEnabled: isRegistrationEnabled(this.config),
+      publicApiEnabled: instanceSetting(this.config, "publicApiEnabled"),
       erdEnabled: this.config.get<string>("NODE_ENV") === "development",
       adminMfaEnforced: this.config.get<string>("NODE_ENV") === "production",
       version,

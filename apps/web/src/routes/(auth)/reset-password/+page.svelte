@@ -26,11 +26,6 @@
     event.preventDefault();
     localError = null;
 
-    if (!isPasswordValid(newPassword)) {
-      localError = m.auth_reset_password_requirements_unmet();
-      return;
-    }
-
     if (newPassword !== confirmPassword) {
       localError = m.auth_reset_password_mismatch();
       return;
@@ -81,7 +76,7 @@
         <button
           type="submit"
           class="btn btn-primary"
-          disabled={resetMut.loading}>
+          disabled={resetMut.loading || !isPasswordValid(newPassword)}>
           {resetMut.loading ? m.common_save_loading() : m.common_reset()}
         </button>
       </form>

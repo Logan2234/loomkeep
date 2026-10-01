@@ -3,7 +3,6 @@ import type { Prisma } from "@prisma/client";
 import { type Mock, vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { EventsGateway } from "../events/events.gateway";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
 import { notificationCopy } from "../notifications/notification-copy";
@@ -45,9 +44,6 @@ const AUTHOR = {
 // resolves to `false` (config unset, flag fallback false), matching the
 // deployment default.
 const CONFIG = { get: vi.fn() } as unknown as ConfigService;
-const FLAGS = {
-  isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-} as unknown as FeatureFlagsService;
 
 function relation(over: Partial<ViewerRelation> = {}): ViewerRelation {
   return {
@@ -186,7 +182,6 @@ function make(
       notifications,
       xp,
       CONFIG,
-      FLAGS,
       achievements,
       blocks,
       events,

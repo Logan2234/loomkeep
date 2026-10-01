@@ -16,8 +16,14 @@ class ApiV1MeKeyResponseDto {
   expiresAt!: string | null;
 }
 
+class ApiV1RateLimitResponseDto {
+  perMinute!: number;
+}
+
 export class ApiV1MeResponseDto implements ApiV1MeDto {
   user!: ApiV1MeUserResponseDto;
   @ApiProperty({ type: ApiV1MeKeyResponseDto, nullable: true })
   apiKey!: ApiV1MeKeyResponseDto | null;
+
+  rateLimit!: ApiV1RateLimitResponseDto;
 }

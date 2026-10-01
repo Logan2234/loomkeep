@@ -198,5 +198,8 @@
   "apierr_auth_api_key_forbidden": "Questa chiave API non ha accesso a questa risorsa.",
   "apierr_api_key_not_found": "Questa chiave API non esiste più.",
   "apierr_api_key_limit_reached": "Hai raggiunto il numero massimo di chiavi API. Revocane una per crearne un'altra.",
-  "apierr_api_key_expiry_in_past": "La data di scadenza deve essere nel futuro."
+  "apierr_api_key_expiry_in_past": "La data di scadenza deve essere nel futuro.",
+  "apierr_api_rate_limited": "Troppe richieste all'API: riprova tra un attimo.",
+  "apierr_api_disabled": "L'API pubblica è disattivata su questa istanza.",
+  "apierr_admin_setting_locked_by_env": "Questa impostazione è fissata da una variabile d'ambiente."
 }

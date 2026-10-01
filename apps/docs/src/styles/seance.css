@@ -1,0 +1,42 @@
+/* Loomkeep's "Séance" identity (apps/web/DESIGN.md) on Starlight's tokens. */
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/hanken-grotesk";
+@import "@fontsource/space-mono";
+
+:root {
+  --sl-font: "Hanken Grotesk Variable", system-ui, sans-serif;
+  --sl-font-mono: "Space Mono", ui-monospace, monospace;
+  --sl-color-accent-low: #2b2413;
+  --sl-color-accent: #f5b841;
+  --sl-color-accent-high: #fbe3b0;
+  --sl-color-white: #ececea;
+  --sl-color-gray-1: #d6d7d9;
+  --sl-color-gray-2: #b4b8c1;
+  --sl-color-gray-3: #9aa0ae;
+  --sl-color-gray-4: #5d6270;
+  --sl-color-gray-5: #2a2e38;
+  --sl-color-gray-6: #15171c;
+  --sl-color-black: #0c0d10;
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent-low: #f6ebd2;
+  --sl-color-accent: #8e620b;
+  --sl-color-accent-high: #4a3306;
+  --sl-color-white: #1c1712;
+  --sl-color-gray-1: #2e2820;
+  --sl-color-gray-2: #4a4338;
+  --sl-color-gray-3: #6b6354;
+  --sl-color-gray-4: #a39a85;
+  --sl-color-gray-5: #d3c7a8;
+  --sl-color-gray-6: #edeae3;
+  --sl-color-gray-7: #f7f5f3;
+  --sl-color-black: #ffffff;
+}
+
+h1,
+h2,
+h3,
+.site-title {
+  font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
+}

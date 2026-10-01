@@ -1,11 +1,15 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { getApiKeys, revokeApiKey } from "$lib/api/client";
+  import {
+    getApiKeyQuota,
+    getApiKeys,
+    revokeAllApiKeys,
+    revokeApiKey,
+  } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -20,24 +24,39 @@
   import type { ApiKeyDto } from "@loomkeep/shared";
   import { flashAnchor } from "../flash-anchor";
   import SettingsSection from "../components/SettingsSection.svelte";
-  import { expiryState } from "./api-key-form";
+  import { expiryState, RECIPES, type Recipe } from "./api-key-form";
   import ApiKeyCreateModal from "./components/ApiKeyCreateModal.svelte";
+  import ApiKeyListSkeleton from "./components/ApiKeyListSkeleton.svelte";
   import ApiKeyRow from "./components/ApiKeyRow.svelte";
+  import { RECIPE_LABELS } from "./recipes";
 
   const apiKeysQuery = createApiQuery(() => ({
     key: keys.apiKeys.all(),
     fetch: getApiKeys,
   }));
   const apiKeys = $derived(apiKeysQuery.data ?? []);
+  const quotaQuery = createApiQuery(() => ({
+    key: keys.apiKeys.quota(),
+    fetch: getApiKeyQuota,
+  }));
+  const quota = $derived(quotaQuery.data);
 
   let creating = $state(false);
+  let recipe = $state<Recipe | null>(null);
   let revoking = $state<ApiKeyDto | null>(null);
+  let revokingAll = $state(false);
   let subscription = $state<"calendar" | "activity" | null>(null);
 
   const revokeMut = createApiMutation(() => ({
     mutate: (id: string) => revokeApiKey(id),
     invalidates: [keys.apiKeys.all()],
     onSuccess: () => (revoking = null),
+  }));
+
+  const revokeAllMut = createApiMutation(() => ({
+    mutate: revokeAllApiKeys,
+    invalidates: [keys.apiKeys.all()],
+    onSuccess: () => (revokingAll = false),
   }));
 
   const eeLock = useEeLock();
@@ -71,10 +90,25 @@
     <h2 class="font-display text-lg font-bold">
       {m.settings_api_keys_title()}
     </h2>
-    <Banner variant="info">{m.settings_api_keys_info()}</Banner>
+    <Banner variant="info">
+      {m.settings_api_keys_info()}
+      {#if quota}
+        <br />
+        {m.settings_api_keys_limit({ count: quota.perMinute })}
+        {#if quota.premiumPerMinute}
+          {m.settings_api_keys_limit_premium({
+            count: quota.premiumPerMinute,
+          })}
+        {/if}
+      {/if}
+    </Banner>
+
+    {#if !appConfig.publicApiEnabled}
+      <Banner variant="warning">{m.settings_api_keys_api_disabled()}</Banner>
+    {/if}
 
     {#if apiKeysQuery.loading}
-      <CardRowSkeleton count={2} />
+      <ApiKeyListSkeleton />
     {:else if apiKeysQuery.error}
       <p class="text-danger text-sm">{apiKeysQuery.error}</p>
     {:else if apiKeys.length === 0}
@@ -90,7 +124,13 @@
         </button>
       </EmptyState>
     {:else}
-      <div class="flex justify-end">
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm text-danger"
+          onclick={() => (revokingAll = true)}>
+          {m.settings_api_keys_revoke_all()}
+        </button>
         <button
           type="button"
           class="btn btn-primary btn-sm"
@@ -105,6 +145,30 @@
         {/each}
       </div>
     {/if}
+
+    <div class="mt-3 flex flex-col gap-2">
+      <h3 class="text-sm font-semibold">
+        {m.settings_api_keys_recipes_title()}
+        <span class="text-dim font-normal"
+          >· {m.settings_api_keys_recipes_hint()}</span>
+      </h3>
+      <div class="grid gap-2 sm:grid-cols-3">
+        {#each RECIPES as item (item.id)}
+          <button
+            type="button"
+            class="card hover:border-accent/60 flex flex-col gap-0.5 p-3 text-left transition-colors motion-reduce:transition-none"
+            onclick={() => {
+              recipe = item;
+              creating = true;
+            }}>
+            <span class="text-sm font-semibold"
+              >{RECIPE_LABELS[item.id].name()}</span>
+            <span class="text-dim text-xs"
+              >{RECIPE_LABELS[item.id].description()}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
   </section>
 
   <section
@@ -153,7 +217,12 @@
 </SettingsSection>
 
 {#if creating}
-  <ApiKeyCreateModal onclose={() => (creating = false)} />
+  <ApiKeyCreateModal
+    {recipe}
+    onclose={() => {
+      creating = false;
+      recipe = null;
+    }} />
 {/if}
 
 {#if revoking}
@@ -172,6 +241,17 @@
     busy={revokeMut.loading}
     onConfirm={() => revoking && revokeMut.mutate(revoking.id)}
     onCancel={() => (revoking = null)} />
+{/if}
+
+{#if revokingAll}
+  <ConfirmationModal
+    title={m.settings_api_keys_revoke_all_title()}
+    message={m.settings_api_keys_revoke_all_body()}
+    confirmLabel={m.settings_api_keys_revoke_all()}
+    danger
+    busy={revokeAllMut.loading}
+    onConfirm={() => revokeAllMut.mutate()}
+    onCancel={() => (revokingAll = false)} />
 {/if}
 
 {#if subscription === "calendar"}

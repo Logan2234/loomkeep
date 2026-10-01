@@ -1,6 +1,7 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
+import { InstanceSettingsService } from "./../src/instance-settings/instance-settings.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
 /**
@@ -63,6 +64,25 @@ describe("API keys (e2e)", () => {
   it("refuses the key on internal routes, key management included", async () => {
     await withKey("/api/users/me").expect(403);
     await withKey("/api/api-keys").expect(403);
+  });
+
+  it("answers api.disabled while the instance has the API turned off", async () => {
+    const settings = app.get(InstanceSettingsService);
+    await settings.update({ publicApiEnabled: false });
+
+    try {
+      const res = await withKey("/api/v1/me").expect(403);
+      expect(res.body.code).toBe("api.disabled");
+      await request(http)
+        .post("/api/api-keys")
+        .set("Cookie", session)
+        .send({ name: "Off", scopes: ["library:read"], expiresAt: null })
+        .expect(403);
+    } finally {
+      await settings.update({ publicApiEnabled: true });
+    }
+
+    await withKey("/api/v1/me").expect(200);
   });
 
   it("rejects an unknown key", async () => {

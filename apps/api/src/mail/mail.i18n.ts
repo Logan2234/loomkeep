@@ -67,6 +67,8 @@ export interface MailCopy {
     intro: string;
     warning: string;
     button: string;
+    /** Only when API keys are still active: they survive a password change. */
+    apiKeys: (count: number) => string;
   };
   newDevice: {
     subject: string;
@@ -81,6 +83,13 @@ export interface MailCopy {
     heading: string;
     intro: (name: string) => string;
     warning: string;
+    button: string;
+  };
+  apiKeyExpiring: {
+    subject: (name: string) => string;
+    heading: string;
+    intro: (name: string, date: string) => string;
+    hint: string;
     button: string;
   };
   emailChangedOld: {
@@ -228,6 +237,10 @@ export const MAIL_COPY = {
       warning:
         "Si tu n'es pas à l'origine de cette action, ton compte est peut-être compromis : réinitialise immédiatement ton mot de passe.",
       button: "Réinitialiser mon mot de passe",
+      apiKeys: (count) =>
+        count === 1
+          ? "Ton compte a une clé API active : elle reste valable après ce changement. Si ce n'est pas toi qui as changé le mot de passe, révoque-la depuis Réglages > Intégrations."
+          : `Ton compte a ${count} clés API actives : elles restent valables après ce changement. Si ce n'est pas toi qui as changé le mot de passe, révoque-les depuis Réglages > Intégrations.`,
     },
     newDevice: {
       subject: "Nouvelle connexion à ton compte Loomkeep",
@@ -247,6 +260,14 @@ export const MAIL_COPY = {
       warning:
         "Si tu n'es pas à l'origine de cette clé, révoque-la tout de suite depuis Réglages > Intégrations, puis change ton mot de passe.",
       button: "Voir mes clés API",
+    },
+    apiKeyExpiring: {
+      subject: (name) => `Ta clé API « ${name} » expire bientôt`,
+      heading: "Clé API bientôt expirée",
+      intro: (name, date) =>
+        `Ta clé API « ${name} » expire le ${date}. Passé cette date, les outils qui l'utilisent n'auront plus accès à ton compte.`,
+      hint: "Si tu t'en sers encore, crée une nouvelle clé et remplace-la dans tes outils. Sinon, tu n'as rien à faire.",
+      button: "Gérer mes clés API",
     },
     emailChangedOld: {
       subject: "L'email de ton compte Loomkeep a changé",
@@ -402,6 +423,10 @@ export const MAIL_COPY = {
       warning:
         "If you did not do this, your account may be compromised: reset your password immediately.",
       button: "Reset my password",
+      apiKeys: (count) =>
+        count === 1
+          ? "Your account has one active API key: it stays valid after this change. If you didn't change the password, revoke it from Settings > Integrations."
+          : `Your account has ${count} active API keys: they stay valid after this change. If you didn't change the password, revoke them from Settings > Integrations.`,
     },
     newDevice: {
       subject: "New sign-in to your Loomkeep account",
@@ -421,6 +446,14 @@ export const MAIL_COPY = {
       warning:
         "If you did not create this key, revoke it right away from Settings > Integrations, then change your password.",
       button: "View my API keys",
+    },
+    apiKeyExpiring: {
+      subject: (name) => `Your API key "${name}" expires soon`,
+      heading: "API key expiring soon",
+      intro: (name, date) =>
+        `Your API key "${name}" expires on ${date}. After that, the tools using it will lose access to your account.`,
+      hint: "If you still use it, create a new key and swap it in your tools. Otherwise, there's nothing to do.",
+      button: "Manage my API keys",
     },
     emailChangedOld: {
       subject: "Your Loomkeep account email has changed",
@@ -577,6 +610,10 @@ export const MAIL_COPY = {
       warning:
         "Se non sei stato tu, il tuo account potrebbe essere compromesso: reimposta subito la password.",
       button: "Reimposta la mia password",
+      apiKeys: (count) =>
+        count === 1
+          ? "Il tuo account ha una chiave API attiva: resta valida dopo questo cambio. Se non hai cambiato tu la password, revocala da Impostazioni > Integrazioni."
+          : `Il tuo account ha ${count} chiavi API attive: restano valide dopo questo cambio. Se non hai cambiato tu la password, revocale da Impostazioni > Integrazioni.`,
     },
     newDevice: {
       subject: "Nuovo accesso al tuo account Loomkeep",
@@ -596,6 +633,14 @@ export const MAIL_COPY = {
       warning:
         "Se non l'hai creata tu, revocala subito da Impostazioni > Integrazioni, poi cambia la password.",
       button: "Vedi le mie chiavi API",
+    },
+    apiKeyExpiring: {
+      subject: (name) => `La tua chiave API «${name}» scade presto`,
+      heading: "Chiave API in scadenza",
+      intro: (name, date) =>
+        `La tua chiave API «${name}» scade il ${date}. Dopo quella data, gli strumenti che la usano non avranno più accesso al tuo account.`,
+      hint: "Se la usi ancora, crea una nuova chiave e sostituiscila nei tuoi strumenti. Altrimenti non devi fare nulla.",
+      button: "Gestisci le mie chiavi API",
     },
     emailChangedOld: {
       subject: "L'email del tuo account Loomkeep è cambiata",
