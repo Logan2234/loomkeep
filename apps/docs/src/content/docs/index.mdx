@@ -8,8 +8,8 @@ hero:
   image:
     file: ../../assets/logo.svg
   actions:
-    - text: API quick start
-      link: /api/
+    - text: Read the guide
+      link: /guide/
       icon: right-arrow
     - text: Open Loomkeep
       link: https://loomkeep.app
@@ -21,13 +21,33 @@ import { CardGrid, LinkCard } from "@astrojs/starlight/components";
 
 <CardGrid>
   <LinkCard
+    title="Guide"
+    description="Key concepts, importing from TV Time, Trakt, Goodreads and more, account security and your data."
+    href="/guide/"
+  />
+  <LinkCard
+    title="Self-hosting"
+    description="Run your own instance with Docker: installation, configuration, HTTPS, backups and optional services."
+    href="/self-hosting/"
+  />
+  <LinkCard
     title="Public API"
     description="Read your library, history, lists and stats from your own scripts and tools, with a personal API key."
     href="/api/"
   />
   <LinkCard
+    title="API recipes"
+    description="Ready-made uses: a Homepage widget, a Home Assistant sensor, nightly backups, a weekly digest."
+    href="/api/recipes/homepage/"
+  />
+  <LinkCard
     title="API reference"
     description="Every endpoint, its parameters and responses, with a console to try them."
     href="/api/reference/"
+  />
+  <LinkCard
+    title="Project"
+    description="Who makes Loomkeep, how to contribute, its architecture, security and licenses."
+    href="/project/"
   />
 </CardGrid>

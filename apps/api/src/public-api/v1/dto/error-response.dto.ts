@@ -4,6 +4,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 /** The codes the public API can answer with; the rest are the web app's. */
 const API_V1_ERROR_CODES = [
+  ErrorCode.AuthMissingAccessToken,
   ErrorCode.AuthInvalidApiKey,
   ErrorCode.AuthApiKeyForbidden,
   ErrorCode.ApiDisabled,

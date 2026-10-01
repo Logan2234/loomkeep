@@ -1,45 +1,74 @@
 ---
-title: Introduction
-sidebar:
-  label: Quick start
-description: Read your Loomkeep account from scripts and tools with a personal API key.
+title: Quick start
+description: Create a personal API key and read your Loomkeep account in a few minutes.
 ---
 
+import { Aside, Steps, TabItem, Tabs } from "@astrojs/starlight/components";
+
 The Loomkeep API gives read access to your own account: your library across
-video, games, books and music, your lists, upcoming episodes, stats, reviews,
-profile, notifications and a full data export.
+video, games, books and music, your history, lists, upcoming episodes, stats,
+reviews, profile, notifications and a full data export. It is plain JSON over
+HTTPS, and every request carries a personal API key you create yourself.
 
-It is a plain JSON API over HTTPS, authenticated with a personal API key you
-create yourself. Each key only reaches the resources you grant it, and you can
-revoke it at any time.
+<Steps>
 
-## Base URL
+1. **Create a key.** In Loomkeep, open **Settings › Integrations** and create
+   an API key. Grant it only the resources your tool needs, then copy it: it
+   is shown once.
 
-```
-https://loomkeep.app/api/v1
-```
+2. **Check it.** `GET /v1/me` works with any key and says which account and
+   key you are using, and your rate limit.
 
-On a self-hosted instance, use your own address: `https://<your-instance>/api/v1`.
-Each instance also serves the exact contract it runs at
-`/api/v1/openapi.json`.
+   <Tabs syncKey="language">
+     <TabItem label="curl">
+       ```sh
+       curl -H "Authorization: Bearer $LOOMKEEP_API_KEY" \
+         https://loomkeep.app/api/v1/me
+       ```
+     </TabItem>
+     <TabItem label="JavaScript">
+       ```js
+       const res = await fetch("https://loomkeep.app/api/v1/me", {
+         headers: { Authorization: `Bearer ${process.env.LOOMKEEP_API_KEY}` },
+       });
+       console.log(await res.json());
+       ```
+     </TabItem>
+     <TabItem label="Python">
+       ```python
+       import os
+       import requests
 
-## Quick start
+       res = requests.get(
+           "https://loomkeep.app/api/v1/me",
+           headers={"Authorization": f"Bearer {os.environ['LOOMKEEP_API_KEY']}"},
+       )
+       print(res.json())
+       ```
+     </TabItem>
+   </Tabs>
 
-1. In Loomkeep, open **Settings › Integrations** and create an API key. Give it
-   the resources your tool needs, then copy it: it is only shown once.
-2. Call the API with the key in the `Authorization` header:
+3. **Read your library.** With `library:read`, `GET /v1/library` lists what
+   you track, newest first. Keep what is under way with `?phase=IN_PROGRESS`:
 
    ```sh
-   curl -H "Authorization: Bearer lk_…" https://loomkeep.app/api/v1/me
+   curl -H "Authorization: Bearer $LOOMKEEP_API_KEY" \
+     "https://loomkeep.app/api/v1/library?phase=IN_PROGRESS&limit=5"
    ```
 
-   `/v1/me` works with any key and tells you which account and key you are
-   using, and your rate limit.
+4. **Go further.** Every endpoint is in the [reference](/api/reference/),
+   where you can try them with your key. The [recipes](/api/recipes/homepage/)
+   show ready-made uses.
 
-3. Browse the [API reference](/api/reference/) for every endpoint, or try them from
-   there with your key.
+</Steps>
+
+<Aside type="tip" title="Self-hosted?">
+  Use your own address: `https://<your-instance>/api/v1`. Each instance also
+  serves the exact contract it runs at `/api/v1/openapi.json`.
+</Aside>
 
 ## Next
 
-- [Authentication](/api/authentication/): keys, scopes, expiration.
-- [Conventions](/api/conventions/): pagination, statuses, errors and rate limits.
+- [Authentication](/api/authentication/): keys, scopes and their lifetime.
+- [Concepts](/api/concepts/): works, entries, statuses and history.
+- [Conventions](/api/conventions/): formats, pagination and languages.
