@@ -82,6 +82,45 @@ export default defineConfig({
               ],
             },
             {
+              label: "Self-hosting",
+              link: "/self-hosting/",
+              icon: "laptop",
+              items: [
+                {
+                  label: "Getting started",
+                  items: [
+                    { label: "Overview", link: "/self-hosting/" },
+                    "self-hosting/installation",
+                    "self-hosting/catalogues",
+                    "self-hosting/email-and-push",
+                    "self-hosting/https",
+                  ],
+                },
+                {
+                  label: "Running it",
+                  items: [
+                    "self-hosting/configuration",
+                    "self-hosting/instance-settings",
+                    "self-hosting/administration",
+                    "self-hosting/upgrades-and-backups",
+                    "self-hosting/premium",
+                    "self-hosting/troubleshooting",
+                  ],
+                },
+                {
+                  label: "Optional services",
+                  items: [
+                    {
+                      autogenerate: {
+                        directory: "self-hosting/optional-services",
+                      },
+                    },
+                  ],
+                },
+                MORE,
+              ],
+            },
+            {
               label: "API",
               link: "/api/",
               icon: "puzzle",

@@ -1,0 +1,84 @@
+---
+title: Installation
+description: Run Loomkeep with Docker Compose and create the first account.
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+<Steps>
+
+1. **Get the compose files.** They live in the repository, next to the
+   example configuration:
+
+   ```sh
+   git clone https://github.com/Logan2234/loomkeep.git
+   cd loomkeep
+   cp .env.example .env
+   ```
+
+2. **Fill in `.env`.** At least:
+
+   | Variable                                   | Value                                                        |
+   | ------------------------------------------ | ------------------------------------------------------------ |
+   | `POSTGRES_USER`, `POSTGRES_DB`             | Any name, e.g. `loomkeep`.                                   |
+   | `POSTGRES_PASSWORD`                        | A long random password.                                      |
+   | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`  | Two different values from `openssl rand -hex 32`.            |
+   | `MFA_ENCRYPTION_KEY`                       | `openssl rand -base64 32`. Needed in production, and never to be changed once someone uses two-factor authentication. |
+   | `TMDB_API_TOKEN`                           | Your TMDB token: see [Catalogue keys](/self-hosting/catalogues/). |
+   | `BACKUP_ENCRYPTION_PUBLIC_KEY`             | The public key backups are encrypted for: see [Backups](/self-hosting/upgrades-and-backups/#backups). |
+   | `ADMIN_EMAIL`                              | The email you will sign up with: that account becomes the administrator. |
+
+   Every other variable is optional: see [Configuration](/self-hosting/configuration/).
+
+3. **Start it.** Always from the repository's root:
+
+   ```sh
+   docker compose -f docker/docker-compose.yml pull
+   docker compose -f docker/docker-compose.yml up -d
+   ```
+
+   The API applies its database migrations on its own as it starts.
+
+4. **Create your account.** Open `http://localhost:8080` and sign up with
+   `ADMIN_EMAIL`: **Admin** appears in your menu.
+
+</Steps>
+
+<Aside title="On a NAS or another machine">
+  Point the two addresses at that machine in `.env`, for instance
+  `PUBLIC_API_URL=http://nas.local:3000/api` and
+  `WEB_ORIGIN=http://nas.local:8080`, then run the two commands again.
+</Aside>
+
+## Ports
+
+The base setup publishes the web app on port **8080** and the API on
+**3000**, both over plain HTTP. That's fine on a home network; for anything
+reachable from the internet, or to install the app on a phone, use
+[a domain with HTTPS](/self-hosting/https/) instead, which publishes only
+80 and 443.
+
+## Adding overrides
+
+Every optional piece (HTTPS, monitoring…) is one more compose file. Rather
+than chaining `-f` flags, list them in `COMPOSE_FILE` in `.env`, separated by
+colons:
+
+```sh
+COMPOSE_FILE=docker/docker-compose.yml:docker/docker-compose.prod.yml
+```
+
+Compose reads it on its own, so from then on the commands are just:
+
+```sh
+docker compose pull
+docker compose up -d
+```
+
+## Next
+
+- [Catalogue keys](/self-hosting/catalogues/) for games, ratings, Steam and
+  Simkl.
+- [Email and push](/self-hosting/email-and-push/).
+- [Instance settings](/self-hosting/instance-settings/): close sign-ups once
+  your accounts exist.
