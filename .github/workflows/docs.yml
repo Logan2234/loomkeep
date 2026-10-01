@@ -1,0 +1,75 @@
+name: Docs
+
+# docs.loomkeep.app (apps/docs): Starlight guides plus the Scalar reference
+# rendered from the public API's own OpenAPI document (openapi-v1.json, made by
+# the same reusable job as the web's typed client). Built on every PR touching
+# it so a broken build shows up there; deployed to GitHub Pages from main.
+on:
+  pull_request:
+    paths:
+      - apps/docs/**
+      - apps/api/src/public-api/**
+      - apps/api/src/api-keys/**
+      - packages/shared/src/dto/api-v1.ts
+      - packages/shared/src/dto/api-key.ts
+      - .github/workflows/docs.yml
+      - .github/workflows/generate-openapi-artifact.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/docs/**
+      - apps/api/src/public-api/**
+      - apps/api/src/api-keys/**
+      - packages/shared/src/dto/api-v1.ts
+      - packages/shared/src/dto/api-key.ts
+      - .github/workflows/docs.yml
+      - .github/workflows/generate-openapi-artifact.yml
+  workflow_dispatch:
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  openapi-artifact:
+    uses: ./.github/workflows/generate-openapi-artifact.yml
+
+  build:
+    needs: openapi-artifact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Download OpenAPI documents
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: openapi-json
+          path: apps/api
+      - run: pnpm --filter @loomkeep/docs build
+      - name: Upload the site for Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: apps/docs/dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

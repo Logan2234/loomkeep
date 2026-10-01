@@ -25,6 +25,7 @@ import { GamesModule } from "./games/games.module";
 import { GamificationModule } from "./gamification/gamification.module";
 import { HealthModule } from "./health/health.module";
 import { ImportModule } from "./import/import.module";
+import { InstanceSettingsModule } from "./instance-settings/instance-settings.module";
 import { LibraryModule } from "./library/library.module";
 import { LinksModule } from "./links/links.module";
 import { ListsModule } from "./lists/list.module";
@@ -62,6 +63,7 @@ import { UsersModule } from "./users/users.module";
     PrismaModule,
     CommonModule,
     FeatureFlagsModule,
+    InstanceSettingsModule,
     SessionCacheModule,
     ApiKeyAuthModule,
     RuntimeConfigModule,

@@ -8,6 +8,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import nodemailer, { Transporter } from "nodemailer";
 import { resolveCopyLocale } from "../common/copy-locale.util";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
+import { primaryWebOrigin } from "../common/web-origin.util";
 import { MAIL_COPY } from "./mail.i18n";
 
 /** A provider reaching one of its daily-quota alert thresholds. */
@@ -380,6 +381,15 @@ export class MailService {
       build: (locale, v) =>
         this.buildNewDeviceLogin(locale, v.deviceLabel, v.ip || null),
     },
+    apiKeyExpiring: {
+      label: "Clé API bientôt expirée",
+      fields: [
+        { key: "name", label: "Nom de la clé", default: "Script perso" },
+        { key: "expiresAt", label: "Expiration", default: "2027-01-31" },
+      ],
+      build: (locale, v) =>
+        this.buildApiKeyExpiring(locale, v.name, new Date(v.expiresAt)),
+    },
     apiKeyCreated: {
       label: "Clé API créée",
       fields: [
@@ -444,7 +454,7 @@ export class MailService {
   constructor(private readonly quota: QuotaTrackerService) {
     const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } =
       process.env;
-    this.webOrigin = process.env.WEB_ORIGIN ?? "http://localhost:5173";
+    this.webOrigin = primaryWebOrigin(process.env.WEB_ORIGIN);
     this.from = SMTP_FROM ?? "Loomkeep <noreply@loomkeep.app>";
     this.umamiLinksBaseUrl = process.env.UMAMI_LINKS_BASE_URL || undefined;
 
@@ -559,11 +569,14 @@ export class MailService {
     });
   }
 
-  async sendPasswordChanged(recipient: MailRecipient): Promise<void> {
+  async sendPasswordChanged(
+    recipient: MailRecipient,
+    activeApiKeys = 0,
+  ): Promise<void> {
     const locale = resolveCopyLocale(recipient.locale);
     await this.send({
       to: recipient.email,
-      ...this.buildPasswordChanged(locale),
+      ...this.buildPasswordChanged(locale, activeApiKeys),
     });
   }
 
@@ -587,6 +600,18 @@ export class MailService {
     await this.send({
       to: recipient.email,
       ...this.buildApiKeyCreated(locale, name),
+    });
+  }
+
+  async sendApiKeyExpiring(
+    recipient: MailRecipient,
+    name: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    const locale = resolveCopyLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildApiKeyExpiring(locale, name, expiresAt),
     });
   }
 
@@ -932,8 +957,12 @@ export class MailService {
     };
   }
 
-  private buildPasswordChanged(locale: Locale): TemplateBody {
+  private buildPasswordChanged(
+    locale: Locale,
+    activeApiKeys = 0,
+  ): TemplateBody {
     const copy = MAIL_COPY[resolveCopyLocale(locale)].passwordChanged;
+    const apiKeys = activeApiKeys > 0 ? copy.apiKeys(activeApiKeys) : null;
     // The old password no longer works, so a link into the app (which needs
     // a session) would be a dead end for the "it wasn't me" case — the
     // account may already be compromised. The reset flow works regardless,
@@ -943,12 +972,13 @@ export class MailService {
       `${this.webOrigin}/forgot-password`;
     return {
       subject: copy.subject,
-      text: `${copy.intro} ${copy.warning}\n\n${url}`,
+      text: `${copy.intro} ${copy.warning}${apiKeys ? `\n\n${apiKeys}` : ""}\n\n${url}`,
       html: this.wrapEmail(
         locale,
         copy.heading,
         `<p>${escapeHtml(copy.intro)}</p>
          <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.warning)}</p>
+         ${apiKeys ? `<p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(apiKeys)}</p>` : ""}
          ${this.button(url, copy.button)}`,
       ),
     };
@@ -996,6 +1026,30 @@ ${url}`,
         copy.heading,
         `<p>${escapeHtml(copy.intro(name))}</p>
          <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.warning)}</p>
+         ${this.button(url, copy.button)}`,
+      ),
+    };
+  }
+
+  private buildApiKeyExpiring(
+    locale: Locale,
+    name: string,
+    expiresAt: Date,
+  ): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].apiKeyExpiring;
+    const date = new Intl.DateTimeFormat(
+      regionalLocale(resolveCopyLocale(locale)),
+      { dateStyle: "long", timeZone: "UTC" },
+    ).format(expiresAt);
+    const url = `${this.webOrigin}/app/settings/integrations`;
+    return {
+      subject: copy.subject(name),
+      text: `${copy.intro(name, date)} ${copy.hint}\n\n${url}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(name, date))}</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.hint)}</p>
          ${this.button(url, copy.button)}`,
       ),
     };

@@ -18,6 +18,7 @@ import { ConfigService } from "@nestjs/config";
 import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { randomInt } from "node:crypto";
+import { ApiKeysService } from "../api-keys/api-keys.service";
 import { BCRYPT_ROUNDS, hashToken, toUserDto } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
 import { HibpService } from "../common/hibp.service";
@@ -71,6 +72,7 @@ export class UsersService {
     private readonly accountDeletion: AccountDeletionService,
     private readonly xp: XpService,
     private readonly events: EventsGateway,
+    private readonly apiKeys: ApiKeysService,
   ) {}
 
   async getMe(userId: string): Promise<UserDto> {
@@ -565,10 +567,10 @@ export class UsersService {
       }),
       this.prisma.refreshToken.deleteMany({ where: { userId } }),
     ]);
-    await this.mail.sendPasswordChanged({
-      email: current.email,
-      locale: current.locale,
-    });
+    await this.mail.sendPasswordChanged(
+      { email: current.email, locale: current.locale },
+      await this.apiKeys.reviewAfterPasswordChange(userId),
+    );
     await this.security.record({
       type: "PASSWORD_CHANGED",
       userId,

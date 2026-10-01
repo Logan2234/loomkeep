@@ -1,11 +1,15 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { getApiKeyQuota, getApiKeys, revokeApiKey } from "$lib/api/client";
+  import {
+    getApiKeyQuota,
+    getApiKeys,
+    revokeAllApiKeys,
+    revokeApiKey,
+  } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -22,6 +26,7 @@
   import SettingsSection from "../components/SettingsSection.svelte";
   import { expiryState, RECIPES, type Recipe } from "./api-key-form";
   import ApiKeyCreateModal from "./components/ApiKeyCreateModal.svelte";
+  import ApiKeyListSkeleton from "./components/ApiKeyListSkeleton.svelte";
   import ApiKeyRow from "./components/ApiKeyRow.svelte";
   import { RECIPE_LABELS } from "./recipes";
 
@@ -39,12 +44,19 @@
   let creating = $state(false);
   let recipe = $state<Recipe | null>(null);
   let revoking = $state<ApiKeyDto | null>(null);
+  let revokingAll = $state(false);
   let subscription = $state<"calendar" | "activity" | null>(null);
 
   const revokeMut = createApiMutation(() => ({
     mutate: (id: string) => revokeApiKey(id),
     invalidates: [keys.apiKeys.all()],
     onSuccess: () => (revoking = null),
+  }));
+
+  const revokeAllMut = createApiMutation(() => ({
+    mutate: revokeAllApiKeys,
+    invalidates: [keys.apiKeys.all()],
+    onSuccess: () => (revokingAll = false),
   }));
 
   const eeLock = useEeLock();
@@ -91,8 +103,12 @@
       {/if}
     </Banner>
 
+    {#if !appConfig.publicApiEnabled}
+      <Banner variant="warning">{m.settings_api_keys_api_disabled()}</Banner>
+    {/if}
+
     {#if apiKeysQuery.loading}
-      <CardRowSkeleton count={2} />
+      <ApiKeyListSkeleton />
     {:else if apiKeysQuery.error}
       <p class="text-danger text-sm">{apiKeysQuery.error}</p>
     {:else if apiKeys.length === 0}
@@ -108,7 +124,13 @@
         </button>
       </EmptyState>
     {:else}
-      <div class="flex justify-end">
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm text-danger"
+          onclick={() => (revokingAll = true)}>
+          {m.settings_api_keys_revoke_all()}
+        </button>
         <button
           type="button"
           class="btn btn-primary btn-sm"
@@ -219,6 +241,17 @@
     busy={revokeMut.loading}
     onConfirm={() => revoking && revokeMut.mutate(revoking.id)}
     onCancel={() => (revoking = null)} />
+{/if}
+
+{#if revokingAll}
+  <ConfirmationModal
+    title={m.settings_api_keys_revoke_all_title()}
+    message={m.settings_api_keys_revoke_all_body()}
+    confirmLabel={m.settings_api_keys_revoke_all()}
+    danger
+    busy={revokeAllMut.loading}
+    onConfirm={() => revokeAllMut.mutate()}
+    onCancel={() => (revokingAll = false)} />
 {/if}
 
 {#if subscription === "calendar"}

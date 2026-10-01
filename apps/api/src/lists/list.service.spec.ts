@@ -1,7 +1,6 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { EventsGateway } from "../events/events.gateway";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
 import { notificationCopy } from "../notifications/notification-copy";
@@ -63,12 +62,6 @@ function fakeNotifications(): NotificationService {
   } as unknown as NotificationService;
 }
 
-function fakeFlags(): FeatureFlagsService {
-  return {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
-}
-
 function relation(over: Partial<ViewerRelation> = {}): ViewerRelation {
   return {
     isSelf: false,
@@ -125,7 +118,6 @@ describe("ListService.getForViewer — own-visibility gate", () => {
       visibility,
       activity,
       fakeConfig(),
-      fakeFlags(),
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
@@ -245,7 +237,6 @@ describe("ListService.listForUser — editor lists on a profile", () => {
       visibility,
       {} as ActivityService,
       fakeConfig(),
-      fakeFlags(),
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
@@ -297,7 +288,6 @@ describe("ListService.addItem", () => {
       {} as VisibilityService,
       activity,
       fakeConfig(),
-      fakeFlags(),
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
@@ -390,7 +380,6 @@ describe("ListService.addItem notifications", () => {
       {} as VisibilityService,
       { emit: vi.fn() } as unknown as ActivityService,
       fakeConfig(opts.socialEnabled ?? true),
-      fakeFlags(),
       notifications,
       stubXp(),
       stubAchievements(),
@@ -529,7 +518,6 @@ describe("ListService collaborative detail", () => {
       visibility,
       {} as ActivityService,
       fakeConfig(),
-      fakeFlags(),
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
@@ -588,7 +576,6 @@ describe("ListService list mutes and member candidates", () => {
       {} as VisibilityService,
       {} as ActivityService,
       fakeConfig(),
-      fakeFlags(),
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
@@ -655,7 +642,6 @@ describe("ListService.reorder", () => {
       {} as VisibilityService,
       {} as ActivityService,
       fakeConfig(),
-      fakeFlags(),
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
@@ -738,7 +724,6 @@ describe("ListService.canEdit (via getEditable)", () => {
       {} as VisibilityService,
       {} as ActivityService,
       fakeConfig(opts.socialEnabled ?? true),
-      fakeFlags(),
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
@@ -812,7 +797,6 @@ describe("ListService member management — owner only", () => {
       {} as VisibilityService,
       {} as ActivityService,
       fakeConfig(),
-      fakeFlags(),
       notifications,
       stubXp(),
       stubAchievements(),
@@ -898,7 +882,6 @@ describe("ListService.reassignOwnedListsOnAccountDeletion", () => {
       {} as VisibilityService,
       {} as ActivityService,
       fakeConfig(),
-      fakeFlags(),
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
@@ -956,7 +939,6 @@ describe("ListService — activity emission on create/share", () => {
       {} as VisibilityService,
       activity,
       fakeConfig(),
-      fakeFlags(),
       fakeNotifications(),
       stubXp(),
       achievements,
@@ -1037,7 +1019,6 @@ describe("ListService — Figurant can't share a list", () => {
       {} as VisibilityService,
       activity,
       fakeConfig(),
-      fakeFlags(),
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
@@ -1085,7 +1066,6 @@ describe("ListService — XP wiring", () => {
       {} as VisibilityService,
       { emit: vi.fn() } as unknown as ActivityService,
       fakeConfig(),
-      fakeFlags(),
       fakeNotifications(),
       xp,
       stubAchievements(),

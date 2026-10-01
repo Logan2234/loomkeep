@@ -18,7 +18,6 @@ import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import {
   ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,
@@ -77,7 +76,6 @@ export class ReviewService {
     private readonly activity: ActivityService,
     private readonly xp: XpService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
     private readonly achievements: AchievementService,
   ) {}
 
@@ -655,7 +653,7 @@ export class ReviewService {
       .map((r) => r.user?.id)
       .filter((id): id is string => !!id);
     const uniqueAuthorIds = [...new Set(authorIds)];
-    const gamificationEnabled = isGamificationEnabled(this.config, this.flags);
+    const gamificationEnabled = isGamificationEnabled(this.config);
     const [voteMap, xpMap] = await Promise.all([
       this.voteInfoBatch(
         rows.map((r) => r.id),
@@ -869,7 +867,7 @@ export class ReviewService {
       toUserSummaryDto(user),
       userId,
       xpMap,
-      isGamificationEnabled(this.config, this.flags),
+      isGamificationEnabled(this.config),
       new Map([[userId, user.hideProgression]]),
     );
   }

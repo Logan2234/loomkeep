@@ -1,14 +1,24 @@
 import { afterEach, beforeEach, vi } from "vitest";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import type { InstanceSettingsService } from "../instance-settings/instance-settings.service";
 import { ApiRateLimitService } from "./api-rate-limit.service";
 
-function setup({ premiumOffered = false, premium = false } = {}) {
+const LIMITS = { apiRateLimitFree: 60, apiRateLimitPremium: 300 };
+
+function setup({
+  premiumOffered = false,
+  premium = false,
+  limits = LIMITS,
+} = {}) {
   const entitlements = { hasPremium: vi.fn().mockResolvedValue(premium) };
   const flags = { isEnabled: vi.fn().mockReturnValue(premiumOffered) };
   const service = new ApiRateLimitService(
     entitlements as unknown as EntitlementService,
     flags as unknown as FeatureFlagsService,
+    {
+      get: (key: keyof typeof LIMITS) => limits[key],
+    } as unknown as InstanceSettingsService,
   );
   return { service, entitlements };
 }
@@ -36,6 +46,18 @@ describe("ApiRateLimitService", () => {
     expect(await service.consume("user-1")).toMatchObject({
       allowed: true,
       remaining: 59,
+    });
+  });
+
+  it("follows the limits set for the instance", async () => {
+    const { service } = setup({
+      premiumOffered: true,
+      limits: { apiRateLimitFree: 10, apiRateLimitPremium: 50 },
+    });
+
+    expect(await service.quota("user-1")).toEqual({
+      perMinute: 10,
+      premiumPerMinute: 50,
     });
   });
 

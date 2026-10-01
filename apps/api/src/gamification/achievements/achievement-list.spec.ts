@@ -1,7 +1,6 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { EventsGateway } from "../../events/events.gateway";
-import type { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
 import type { JobRunService } from "../../jobs/job-run.service";
 import type { PrismaService } from "../../prisma/prisma.service";
 import type { XpService } from "../xp.service";
@@ -71,14 +70,10 @@ function makeService(configValues: Record<string, string> = {}) {
         })[key],
     ),
   } as unknown as ConfigService;
-  const flags = {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
 
   const service = new AchievementService(
     prisma,
     config,
-    flags,
     {} as unknown as XpService,
     {} as unknown as JobRunService,
     { emitToUser: vi.fn() } as unknown as EventsGateway,

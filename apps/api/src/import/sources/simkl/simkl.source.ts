@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { AppException } from "../../../common/app.exception";
 import { QuotaTrackerService } from "../../../common/quota-tracker.service";
+import { primaryWebOrigin } from "../../../common/web-origin.util";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";
@@ -63,8 +64,9 @@ export class SimklImportSource extends MediaImportSource<SimklParsed> {
     const clientSecret = this.configService.getOrThrow<string>(
       "SIMKL_CLIENT_SECRET",
     );
-    const webOrigin =
-      this.configService.get<string>("WEB_ORIGIN") ?? "http://localhost:5173";
+    const webOrigin = primaryWebOrigin(
+      this.configService.get<string>("WEB_ORIGIN"),
+    );
 
     this.quota.record("simkl");
     const response = await fetch(`${SIMKL_API}/oauth/token`, {

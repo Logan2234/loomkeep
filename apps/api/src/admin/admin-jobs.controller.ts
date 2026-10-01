@@ -8,6 +8,7 @@ import {
   Post,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
+import { ApiKeyLifecycleService } from "../api-keys/api-key-lifecycle.service";
 import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
@@ -45,6 +46,7 @@ export class AdminJobsController {
     private readonly inactiveAccount: InactiveAccountService,
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
+    private readonly apiKeyLifecycle: ApiKeyLifecycleService,
   ) {}
 
   /** Every known scheduled job, with its recent run history. */
@@ -78,6 +80,8 @@ export class AdminJobsController {
       [JOB_KEYS.GAMIFICATION_RECONCILE]: () => this.xp.runReconcileJob(),
       [JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP]: () =>
         this.achievements.runAchievementsSweepJob(),
+      [JOB_KEYS.API_KEYS_MAINTENANCE]: () =>
+        this.apiKeyLifecycle.runMaintenance(),
     };
   }
 

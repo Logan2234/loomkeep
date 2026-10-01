@@ -1,7 +1,6 @@
 import type { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { vi } from "vitest";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -26,9 +25,6 @@ function stubAchievements(): AchievementService {
 // resolves to `false` (config unset, flag fallback false), matching the
 // deployment default.
 const CONFIG = { get: vi.fn() } as unknown as ConfigService;
-const FLAGS = {
-  isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-} as unknown as FeatureFlagsService;
 
 const VIEWER = "viewer";
 
@@ -92,7 +88,6 @@ function make(rows: unknown[], relations: Record<string, ViewerRelation>) {
     activity,
     stubXp(),
     CONFIG,
-    FLAGS,
     stubAchievements(),
   );
 }
@@ -242,7 +237,6 @@ function makeForWrite(
     activity,
     xp,
     CONFIG,
-    FLAGS,
     achievements,
   );
   return { svc, revisionCreate, upsert, xp, achievements, activity };
@@ -384,7 +378,6 @@ function makeForVoting(opts: {
     {} as unknown as ActivityService,
     xp,
     CONFIG,
-    FLAGS,
     achievements,
   );
   return { svc, upsert, deleteMany, xp, achievements };
@@ -597,7 +590,6 @@ describe("ReviewService.adminRemove", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       xp,
       CONFIG,
-      FLAGS,
       stubAchievements(),
     );
 
@@ -628,7 +620,6 @@ describe("ReviewService.adminRemove", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       xp,
       CONFIG,
-      FLAGS,
       stubAchievements(),
     );
 
@@ -652,7 +643,6 @@ describe("ReviewService.adminRemove", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       xp,
       CONFIG,
-      FLAGS,
       stubAchievements(),
     );
 
@@ -735,7 +725,6 @@ describe("ReviewService.listMine — target links", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       stubXp(),
       CONFIG,
-      FLAGS,
       stubAchievements(),
     );
 
