@@ -3,3 +3,4 @@ dist/
 # Copied in by scripts/copy-assets.mjs before every dev/build.
 public/openapi-v1.json
 public/scalar/
+public/fonts/
