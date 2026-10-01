@@ -10,7 +10,7 @@ const DOCS_URL = "https://docs.loomkeep.app";
 const DESCRIPTION = `Read a Loomkeep account from your own scripts and tools: its library, history, lists, calendar and stats.
 
 Every request carries a personal API key, created in **Settings › Integrations**, as \`Authorization: Bearer lk_…\`.
-New here? Start with the [quick start](${DOCS_URL}/), then [authentication](${DOCS_URL}/authentication/) and the [conventions](${DOCS_URL}/conventions/) every endpoint shares.`;
+New here? Start with the [quick start](${DOCS_URL}/api/), then [authentication](${DOCS_URL}/api/authentication/) and the [conventions](${DOCS_URL}/api/conventions/) every endpoint shares.`;
 
 const TAGS: { name: string; description: string }[] = [
   {
@@ -87,6 +87,18 @@ const ENUM_DESCRIPTIONS: Record<string, string> = {
   GAMES: "Video games.",
   BOOKS: "Books.",
   MUSIC: "Albums.",
+  "auth.missing_access_token": "No `Authorization: Bearer` header at all.",
+  "auth.invalid_api_key": "The key is malformed, unknown, expired or revoked.",
+  "auth.api_key_forbidden": "The key wasn't granted this resource.",
+  "api.disabled": "The instance has turned its public API off.",
+  "api.rate_limited": "Too many requests: wait `Retry-After` seconds.",
+  "validation.failed": "A parameter is invalid; `details` names it.",
+  "user.domain_disabled": "That domain is turned off for the account.",
+  "library.entry_not_found": "No such entry in the account's library.",
+  "lists.not_found": "No such list, or one the account can't edit.",
+  "gamification.feature_disabled":
+    "Gamification is turned off on this instance.",
+  "internal.error": "Something broke on the server; `requestId` helps find it.",
 };
 
 /**
@@ -105,7 +117,7 @@ export function buildPublicApiDocument(
     .setTitle("Loomkeep API")
     .setDescription(DESCRIPTION)
     .setVersion(version)
-    .setExternalDoc("Guides", DOCS_URL)
+    .setExternalDoc("Guides", `${DOCS_URL}/api/`)
     .setLicense("AGPL-3.0", "https://www.gnu.org/licenses/agpl-3.0.html")
     .addBearerAuth({
       type: "http",

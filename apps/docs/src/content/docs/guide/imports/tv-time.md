@@ -1,0 +1,21 @@
+---
+title: TV Time
+description: Films, series and anime, from TV Time's GDPR export.
+sidebar:
+  order: 1
+---
+
+TV Time has no export button: its data comes through the **GDPR request**
+it has to answer.
+
+**What comes in:** your series with every episode watched and when, your
+films, and your watchlist.
+
+1. Ask for your data on [TV Time's GDPR page](https://gdpr.tvtime.com/gdpr/self-service).
+   TV Time emails you a link to a `.zip` file.
+2. In Loomkeep, open **Settings › Import › TV Time** and drop the `.zip` as it
+   is, without unzipping it.
+3. Review and import: see [how an import works](/guide/imports/#how-an-import-works).
+
+Loomkeep matches TV Time's shows through their TVDB ids, so series land on
+the right title even when names differ.

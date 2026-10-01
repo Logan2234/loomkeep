@@ -1,0 +1,36 @@
+---
+title: Importing
+description: Bring your history from another app, and how an import works.
+sidebar:
+  order: 0
+---
+
+Loomkeep imports your history from the apps you used before, from
+**Settings › Import**. Each source has its own page:
+
+| Domain               | Sources                                                                                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Films, series, anime | [TV Time](/guide/imports/tv-time/), [Trakt](/guide/imports/trakt/), [Simkl](/guide/imports/simkl/), [MyAnimeList](/guide/imports/myanimelist/) |
+| Games                | [Steam](/guide/imports/steam/)                                                                                                                 |
+| Books                | [Goodreads](/guide/imports/goodreads/), [StoryGraph](/guide/imports/storygraph/), [Babelio](/guide/imports/babelio/)                           |
+
+On their way: Letterboxd, Kitsu, Backloggd, LibraryThing, BookWyrm.
+
+## How an import works
+
+1. **You give Loomkeep your data**: a file exported from the other app, or a
+   connection to your account there (Simkl), or your profile (Steam).
+2. **Loomkeep analyses it** without writing anything: each title is matched
+   to its catalogue, through the ids the export carries when it has some, by
+   title and year otherwise.
+3. **You review it**, grouped by status. Titles you already track are marked;
+   a title that couldn't be matched can be searched and matched by hand.
+   Untick whatever you don't want.
+4. **You import.** Nothing is written before this step.
+
+By default, an import **adds** to your library and keeps what you already
+had. **Overwrite my data** first deletes your library and history for that
+domain, then imports: use it to start over from a single source.
+
+**Settings › Import › Import history** lists your past imports and how they
+went.

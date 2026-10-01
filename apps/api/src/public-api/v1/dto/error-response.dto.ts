@@ -1,4 +1,21 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
+import type { ApiErrorBody } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+
+/** The codes the public API can answer with; the rest are the web app's. */
+const API_V1_ERROR_CODES = [
+  ErrorCode.AuthMissingAccessToken,
+  ErrorCode.AuthInvalidApiKey,
+  ErrorCode.AuthApiKeyForbidden,
+  ErrorCode.ApiDisabled,
+  ErrorCode.ApiRateLimited,
+  ErrorCode.ValidationFailed,
+  ErrorCode.UserDomainDisabled,
+  ErrorCode.LibraryEntryNotFound,
+  ErrorCode.ListNotFound,
+  ErrorCode.GamificationFeatureDisabled,
+  ErrorCode.InternalError,
+];
 
 class ApiV1ValidationDetailResponseDto {
   /**
@@ -14,18 +31,21 @@ class ApiV1ValidationDetailResponseDto {
   constraint!: string;
 }
 
-export class ApiV1ErrorResponseDto {
+export class ApiV1ErrorResponseDto implements ApiErrorBody {
   /**
    * The HTTP status, repeated.
    * @example 401
    */
   statusCode!: number;
 
-  /**
-   * Stable error code, meant for your code: see the Errors guide.
-   * @example "auth.invalid_api_key"
-   */
-  code!: string | null;
+  @ApiProperty({
+    enum: API_V1_ERROR_CODES,
+    nullable: true,
+    description:
+      "Stable error code, meant for your code: see the Errors guide.",
+    example: "auth.invalid_api_key",
+  })
+  code!: ErrorCode | null;
 
   /**
    * A hint for humans; may change.
