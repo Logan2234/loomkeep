@@ -87,8 +87,8 @@ const ENUM_DESCRIPTIONS: Record<string, string> = {
   GAMES: "Video games.",
   BOOKS: "Books.",
   MUSIC: "Albums.",
-  "auth.invalid_api_key":
-    "The key is missing, malformed, unknown, expired or revoked.",
+  "auth.missing_access_token": "No `Authorization: Bearer` header at all.",
+  "auth.invalid_api_key": "The key is malformed, unknown, expired or revoked.",
   "auth.api_key_forbidden": "The key wasn't granted this resource.",
   "api.disabled": "The instance has turned its public API off.",
   "api.rate_limited": "Too many requests: wait `Retry-After` seconds.",

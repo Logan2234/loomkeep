@@ -59,8 +59,5 @@ only. Revoke a leaked key yourself in **Settings › Integrations**.
 
 ## Errors
 
-| Status | Code                     | Meaning                                     |
-| ------ | ------------------------ | ------------------------------------------- |
-| `401`  | `auth.invalid_api_key`   | The key is unknown, expired or revoked.     |
-| `403`  | `auth.api_key_forbidden` | The key wasn't granted this resource.       |
-| `403`  | `api.disabled`           | The instance has its public API turned off. |
+A missing or bad key is a `401`, a key without the scope an endpoint needs is
+a `403` (`auth.api_key_forbidden`). Every code is in [Errors](/api/errors/).

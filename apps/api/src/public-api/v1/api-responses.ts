@@ -39,7 +39,7 @@ export const ApiV1CommonErrors = () =>
   applyDecorators(
     ApiUnauthorizedResponse({
       description:
-        "The key is missing, malformed, unknown, expired or revoked (`auth.invalid_api_key`).",
+        "No `Authorization: Bearer` header (`auth.missing_access_token`), or a key that is malformed, unknown, expired or revoked (`auth.invalid_api_key`).",
       ...error(401, "auth.invalid_api_key"),
     }),
     ApiForbiddenResponse({

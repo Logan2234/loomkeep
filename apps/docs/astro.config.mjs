@@ -2,6 +2,20 @@ import starlight from "@astrojs/starlight";
 import { defineConfig, passthroughImageService } from "astro/config";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightLlmsTxt from "starlight-llms-txt";
+import starlightSidebarTopics from "starlight-sidebar-topics";
+
+// Repeated at the bottom of every topic's sidebar.
+const MORE = {
+  label: "More",
+  collapsed: true,
+  items: [
+    { label: "Open Loomkeep", link: "https://loomkeep.app" },
+    { label: "Status", link: "https://status.loomkeep.app" },
+    { label: "Changelog", link: "https://feedback.loomkeep.app/changelog" },
+    { label: "Roadmap", link: "https://feedback.loomkeep.app/roadmap" },
+    { label: "Feedback", link: "https://feedback.loomkeep.app" },
+  ],
+};
 
 export default defineConfig({
   site: "https://docs.loomkeep.app",
@@ -40,32 +54,48 @@ export default defineConfig({
       },
       plugins: [
         // The reference is an Astro page of its own, outside Starlight's.
-        starlightLinksValidator({ exclude: ["/api/reference/"] }),
+        starlightLinksValidator({
+          exclude: ({ link }) => link.startsWith("/api/reference/"),
+        }),
         starlightLlmsTxt(),
-      ],
-      sidebar: [
-        {
-          label: "API",
-          items: [
-            { label: "Quick start", link: "/api/" },
-            { label: "Authentication", link: "/api/authentication/" },
-            { label: "Conventions", link: "/api/conventions/" },
-            { label: "Reference", link: "/api/reference/" },
-          ],
-        },
-        {
-          label: "More",
-          items: [
-            { label: "Open Loomkeep", link: "https://loomkeep.app" },
-            { label: "Status", link: "https://status.loomkeep.app" },
+        starlightSidebarTopics(
+          [
             {
-              label: "Changelog",
-              link: "https://feedback.loomkeep.app/changelog",
+              label: "API",
+              link: "/api/",
+              icon: "puzzle",
+              items: [
+                {
+                  label: "Get started",
+                  items: [
+                    { label: "Quick start", link: "/api/" },
+                    "api/authentication",
+                    "api/concepts",
+                    "api/conventions",
+                  ],
+                },
+                {
+                  label: "Recipes",
+                  items: [{ autogenerate: { directory: "api/recipes" } }],
+                },
+                {
+                  label: "Going further",
+                  items: [
+                    "api/errors",
+                    "api/rate-limits",
+                    "api/security",
+                    "api/feeds",
+                    "api/versioning",
+                  ],
+                },
+                { label: "Reference", link: "/api/reference/" },
+                MORE,
+              ],
             },
-            { label: "Roadmap", link: "https://feedback.loomkeep.app/roadmap" },
-            { label: "Feedback", link: "https://feedback.loomkeep.app" },
           ],
-        },
+          // The home page is the way into every topic, not part of one.
+          { exclude: ["/"] },
+        ),
       ],
     }),
   ],

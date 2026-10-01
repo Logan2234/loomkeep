@@ -1,6 +1,6 @@
 ---
 title: Conventions
-description: Formats, pagination, statuses, errors and rate limits shared by every endpoint.
+description: Formats, pagination, sorting, languages and CORS, shared by every endpoint.
 ---
 
 ## Formats
@@ -18,72 +18,32 @@ default), and answer:
 { "items": [], "hasMore": false, "total": 0 }
 ```
 
-## Statuses
+Keep asking for the next `page` while `hasMore` is true. Deep pages of a
+cross-domain list cost more to build; to copy everything at once, use
+[`GET /v1/export`](/api/reference/#tag/export) instead.
 
-Each domain has its own statuses (`WATCHING`, `PLAYING`, `TO_READ`,
-`LISTENED`…). Library entries keep that `status` and add a `phase`, the same
-across domains, which is also what `?phase=` filters on:
+## Sorting
 
-| Phase         | Video                     | Games       | Books     | Music       |
-| ------------- | ------------------------- | ----------- | --------- | ----------- |
-| `PLANNED`     | `PLANNED`                 | `BACKLOG`   | `TO_READ` | `TO_LISTEN` |
-| `IN_PROGRESS` | `WATCHING`                | `PLAYING`   | `READING` | —           |
-| `DONE`        | `COMPLETED`, `UP_TO_DATE` | `COMPLETED` | `READ`    | `LISTENED`  |
-| `DROPPED`     | `DROPPED`                 | `DROPPED`   | `DROPPED` | —           |
+`GET /v1/library` sorts with `sort` (`added`, `title`, `rating` or
+`finished`) and `order`. `desc`, the default, keeps each sort's natural
+order: newest first, best rated first, A to Z for titles. `asc` reverses it.
 
 ## Languages
 
-Film and series titles follow the account's language (Settings › Appearance),
-or `?lang=` (`en`, `fr`, `it`) on any endpoint that returns works. A title
-nobody has opened in that language yet stays in English. Anime keep their
-AniList title, and games, books and albums their catalogue's single title.
-Any other `lang` is a `400`.
-
-## History
-
-`GET /v1/history` lists what happened, newest first: episodes and films seen,
-game and reading sessions, games, books and albums finished. `from` and `to`
-narrow it to a window: `to=2026-09-30` includes that whole day. Each event
-carries `cycle`, the viewing, playthrough or reading it belongs to (2 for a
-first rewatch).
-
-Imports often bring viewings without a date. Those can't fall in a window,
-so they only show in their entry's own history,
-`GET /v1/library/{id}/history`, last and with a null `date`.
-
-## Errors
-
-Errors share one shape. `code` is stable and meant for your code; `message`
-is a hint for humans and may change.
-
-```json
-{
-  "statusCode": 403,
-  "code": "auth.api_key_forbidden",
-  "message": "auth.api_key_forbidden"
-}
-```
-
-A `400` on invalid query parameters also lists the offending fields in
-`details`.
-
-## Rate limits
-
-Each account has a budget of requests per minute, shared by all its keys:
-60 by default, more with Premium where it is offered. Every response says
-where you stand:
-
-| Header                  | Meaning                               |
-| ----------------------- | ------------------------------------- |
-| `X-RateLimit-Limit`     | Requests allowed per minute.          |
-| `X-RateLimit-Remaining` | Requests left in the current minute.  |
-| `X-RateLimit-Reset`     | Seconds until the minute starts over. |
-
-Past the limit, the API answers `429` with the code `api.rate_limited` and a
-`Retry-After` header. `GET /v1/export` is also limited to once an hour per
-account, answered the same way.
+Film and series titles follow the account's language (Settings ›
+Appearance), or `?lang=` (`en`, `fr`, `it`) on any endpoint that returns
+works. A title nobody has opened in that language yet stays in English.
+Anime keep their AniList title, and games, books and albums their
+catalogue's single title. Any other `lang` is a `400`.
 
 ## CORS
 
 The API accepts requests from any origin, without cookies: a key is the only
 way in, so it can be called from a browser page as well as from a server.
+Mind where the key ends up, though: see [Security](/api/security/).
+
+## Errors and limits
+
+Errors share one shape, described with every code in
+[Errors](/api/errors/). Each account has a budget of requests per minute:
+see [Rate limits](/api/rate-limits/).
