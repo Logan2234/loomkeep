@@ -1,8 +1,8 @@
 import type { ApiKeyQuotaDto } from "@loomkeep/shared";
-import { API_RATE_LIMITS } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import { InstanceSettingsService } from "../instance-settings/instance-settings.service";
 
 const WINDOW_MS = 60_000;
 // How long a resolved plan is trusted: an upgrade takes effect within a minute.
@@ -33,6 +33,7 @@ export class ApiRateLimitService {
   constructor(
     private readonly entitlements: EntitlementService,
     private readonly flags: FeatureFlagsService,
+    private readonly settings: InstanceSettingsService,
   ) {}
 
   async consume(userId: string): Promise<RateLimitResult> {
@@ -57,11 +58,11 @@ export class ApiRateLimitService {
 
   async quota(userId: string): Promise<ApiKeyQuotaDto> {
     const perMinute = await this.limitFor(userId);
-    const upgradable =
-      this.premiumOffered() && perMinute < API_RATE_LIMITS.premium;
+    const premiumLimit = this.settings.get("apiRateLimitPremium");
+    const upgradable = this.premiumOffered() && perMinute < premiumLimit;
     return {
       perMinute,
-      premiumPerMinute: upgradable ? API_RATE_LIMITS.premium : null,
+      premiumPerMinute: upgradable ? premiumLimit : null,
     };
   }
 
@@ -73,7 +74,9 @@ export class ApiRateLimitService {
     // quota for everyone: the free limit is the instance's default.
     const premium =
       this.premiumOffered() && (await this.entitlements.hasPremium(userId));
-    const limit = premium ? API_RATE_LIMITS.premium : API_RATE_LIMITS.free;
+    const limit = this.settings.get(
+      premium ? "apiRateLimitPremium" : "apiRateLimitFree",
+    );
     this.plans.set(userId, { limit, until: Date.now() + PLAN_TTL_MS });
     return limit;
   }

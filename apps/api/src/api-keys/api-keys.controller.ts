@@ -56,6 +56,12 @@ export class ApiKeysController {
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete()
+  async revokeAll(@CurrentUser() user: JwtPayload): Promise<void> {
+    await this.apiKeys.revokeAll(user.sub);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(":id")
   async revoke(
     @CurrentUser() user: JwtPayload,

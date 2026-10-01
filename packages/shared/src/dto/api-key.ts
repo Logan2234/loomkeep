@@ -31,12 +31,6 @@ export const API_KEY_NAME_MAX_LENGTH = 60;
  */
 export const MAX_API_KEYS_PER_USER = 100;
 
-/**
- * Requests per minute on the public API, per account (every key and session
- * together). Premium raises it once the `premium-features` flag is on.
- */
-export const API_RATE_LIMITS = { free: 60, premium: 300 } as const;
-
 export interface ApiKeyQuotaDto {
   perMinute: number;
   /** What premium would raise it to; null when there's nothing to upgrade to. */

@@ -6,7 +6,6 @@ import { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { localDay } from "../common/local-day.util";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -33,7 +32,6 @@ export class XpService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
     private readonly jobRuns: JobRunService,
   ) {}
 
@@ -49,7 +47,7 @@ export class XpService {
    * Returns the total only — the level is derived client-side by `levelForXp`.
    */
   async myXp(userId: string): Promise<number | null> {
-    if (!isGamificationEnabled(this.config, this.flags)) return null;
+    if (!isGamificationEnabled(this.config)) return null;
 
     const score = await this.prisma.userScore.findUnique({
       where: { userId },
@@ -172,11 +170,10 @@ export class XpService {
     sourceId: string,
     amountOverride?: number,
   ): Promise<boolean> {
-    if (!isGamificationEnabled(this.config, this.flags)) return false;
+    if (!isGamificationEnabled(this.config)) return false;
 
     const rule = XP_RULES[reason];
-    if (rule.socialGated && !isSocialEnabled(this.config, this.flags))
-      return false;
+    if (rule.socialGated && !isSocialEnabled(this.config)) return false;
     // ADMIN_ADJUSTMENT has no fixed amount; callers write its signed value
     // directly instead of using this registry-driven path.
     const amount = amountOverride ?? rule.amount;

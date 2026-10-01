@@ -96,6 +96,8 @@ export const NotificationType = {
   MODERATION_ACTION: "MODERATION_ACTION",
   /** DSA art. 16(5): a report you filed has been resolved or dismissed. */
   REPORT_RESOLVED: "REPORT_RESOLVED",
+  /** The password changed while API keys are active: worth a look. `data.count`. */
+  API_KEYS_REVIEW: "API_KEYS_REVIEW",
 } as const;
 export type NotificationType =
   (typeof NotificationType)[keyof typeof NotificationType];

@@ -414,7 +414,7 @@
   "settings_api_keys_expiration_custom": "Data…",
   "settings_api_keys_expiration_never": "Mai",
   "settings_api_keys_expiration_date": "Data di scadenza",
-  "settings_api_keys_never_warning": "Una chiave senza scadenza resta valida finché non la revochi, anche se dimenticata in un vecchio script. Meglio una durata.",
+  "settings_api_keys_never_warning": "Una chiave senza scadenza resta valida finché non la revochi, anche se dimenticata in un vecchio script. Meglio una durata: verrai avvisato prima della fine.",
   "settings_api_keys_create_submit": "Crea la chiave",
   "settings_api_keys_creating": "Creazione…",
   "settings_api_keys_created_title": "Chiave creata",
@@ -451,5 +451,10 @@
   "settings_api_keys_recipe_script_name": "Script personale",
   "settings_api_keys_recipe_script_desc": "Leggi la tua libreria, le tue liste e le tue statistiche.",
   "settings_api_keys_limit": "Limite: {count} richieste al minuto, per tutte le tue chiavi insieme.",
-  "settings_api_keys_limit_premium": "Premium la porta a {count}."
+  "settings_api_keys_limit_premium": "Premium la porta a {count}.",
+  "settings_api_keys_revoke_all": "Revoca tutte",
+  "settings_api_keys_revoke_all_title": "Revocare tutte le chiavi API?",
+  "settings_api_keys_revoke_all_body": "Tutti gli strumenti che usano una delle tue chiavi perdono subito l'accesso. L'azione è definitiva.",
+  "settings_api_keys_expiry_mail": "Ti avviseremo via email 7 giorni prima della scadenza.",
+  "settings_api_keys_api_disabled": "L'API pubblica è disattivata su questa istanza: le tue chiavi per ora non funzionano."
 }

@@ -11,6 +11,7 @@ class AppConfig {
   socialEnabled = $state(false);
   gamificationEnabled = $state(false);
   registrationEnabled = $state(false);
+  publicApiEnabled = $state(false);
   erdEnabled = $state(false);
   adminMfaEnforced = $state(true);
   version = $state("");

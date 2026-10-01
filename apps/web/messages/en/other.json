@@ -1164,5 +1164,8 @@
   "quick_add_done_status_lists": "Status: {status}. Lists: {lists}.",
   "quick_add_back_hint": "Your phone's back button takes you back to the app you shared from.",
   "quick_add_undo": "Undo adding",
-  "quick_add_undone": "Addition undone"
+  "quick_add_undone": "Addition undone",
+  "notif_api_keys_review_title": "Review your API keys",
+  "notif_api_keys_review_one": "Your password changed, but your API key stays valid.",
+  "notif_api_keys_review_many": "Your password changed, but your {count} API keys stay valid."
 }

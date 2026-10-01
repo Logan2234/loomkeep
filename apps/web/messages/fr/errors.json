@@ -199,5 +199,7 @@
   "apierr_api_key_not_found": "Cette clé API n'existe plus.",
   "apierr_api_key_limit_reached": "Tu as atteint le nombre maximum de clés API. Révoques-en une pour en créer une autre.",
   "apierr_api_key_expiry_in_past": "La date d'expiration doit être dans le futur.",
-  "apierr_api_rate_limited": "Trop de requêtes vers l'API : réessaie dans un instant."
+  "apierr_api_rate_limited": "Trop de requêtes vers l'API : réessaie dans un instant.",
+  "apierr_api_disabled": "L'API publique est désactivée sur cette instance.",
+  "apierr_admin_setting_locked_by_env": "Ce réglage est fixé par une variable d'environnement."
 }

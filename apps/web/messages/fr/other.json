@@ -1164,5 +1164,8 @@
   "quick_add_done_status_lists": "Statut : {status}. Listes : {lists}.",
   "quick_add_back_hint": "Le bouton retour de ton téléphone te ramène à l'appli d'où tu as partagé.",
   "quick_add_undo": "Annuler l'ajout",
-  "quick_add_undone": "Ajout annulé"
+  "quick_add_undone": "Ajout annulé",
+  "notif_api_keys_review_title": "Vérifie tes clés API",
+  "notif_api_keys_review_one": "Ton mot de passe a changé, mais ta clé API reste valable.",
+  "notif_api_keys_review_many": "Ton mot de passe a changé, mais tes {count} clés API restent valables."
 }

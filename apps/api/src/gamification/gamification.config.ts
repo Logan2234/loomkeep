@@ -1,20 +1,11 @@
-import { ConfigService } from "@nestjs/config";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import type { ConfigService } from "@nestjs/config";
+import { instanceSetting } from "../instance-settings/instance-settings.store";
 
 /**
- * Whether the gamification system (XP ledger, levels, achievements — G1+) is
- * enabled on this deployment. Exact copy of `isSocialEnabled`'s pattern:
- * Unleash is authoritative once a `GAMIFICATION_ENABLED` flag exists there,
- * the runtime env var is the fallback (off unless literally "true") — a
- * single Docker image serves both self-host (off) and the hosted build,
- * which sets the env var to enable it. See `PublicConfigDto.gamificationEnabled`.
+ * Whether gamification (XP, levels, achievements, leaderboard) is enabled on
+ * this instance: Admin › Settings, unless the `GAMIFICATION_ENABLED` env var
+ * pins it (see InstanceSettingsService). Off by default.
  */
-export function isGamificationEnabled(
-  config: ConfigService,
-  flags: FeatureFlagsService,
-): boolean {
-  return flags.isEnabled(
-    "GAMIFICATION_ENABLED",
-    config.get<string>("GAMIFICATION_ENABLED") === "true",
-  );
+export function isGamificationEnabled(config: ConfigService): boolean {
+  return instanceSetting(config, "gamificationEnabled");
 }

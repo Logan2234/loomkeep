@@ -7,7 +7,6 @@ import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
-import { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
 import { ListService } from "../../lists/list.service";
 import { isSocialEnabled } from "../../social/social.config";
 import { webOriginOf } from "./library-v1.service";
@@ -23,14 +22,13 @@ export class ListsV1Service {
 
   constructor(
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
     private readonly lists: ListService,
   ) {
     this.webOrigin = webOriginOf(config);
   }
 
   async list(userId: string): Promise<ApiV1ListDto[]> {
-    const social = isSocialEnabled(this.config, this.flags);
+    const social = isSocialEnabled(this.config);
     const lists = await this.lists.listEditable(userId);
     return lists
       .filter((list) => social || list.role === "OWNER")
@@ -43,7 +41,7 @@ export class ListsV1Service {
 
     if (
       (role !== "OWNER" && role !== "EDITOR") ||
-      (role === "EDITOR" && !isSocialEnabled(this.config, this.flags))
+      (role === "EDITOR" && !isSocialEnabled(this.config))
     ) {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
     }

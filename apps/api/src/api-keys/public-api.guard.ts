@@ -8,14 +8,26 @@ import {
 import type { FastifyReply } from "fastify";
 import type { AuthenticatedRequest } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { InstanceSettingsService } from "../instance-settings/instance-settings.service";
 import { ApiRateLimitService } from "./api-rate-limit.service";
 
-/** Spends one request of the account's public API budget, and says so in the headers. */
+/**
+ * In front of every public API route: refuses everything while the instance
+ * has the API turned off, then spends one request of the account's budget
+ * and says so in the headers.
+ */
 @Injectable()
-export class ApiRateLimitGuard implements CanActivate {
-  constructor(private readonly rateLimit: ApiRateLimitService) {}
+export class PublicApiGuard implements CanActivate {
+  constructor(
+    private readonly settings: InstanceSettingsService,
+    private readonly rateLimit: ApiRateLimitService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    if (!this.settings.get("publicApiEnabled")) {
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ApiDisabled);
+    }
+
     const http = context.switchToHttp();
     const user = http.getRequest<AuthenticatedRequest>().user;
     if (!user) return true;

@@ -5,10 +5,10 @@ import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { createHash } from "node:crypto";
 import { vi, type Mock } from "vitest";
+import type { ApiKeysService } from "../api-keys/api-keys.service";
 import { AppException } from "../common/app.exception";
 import type { HibpService } from "../common/hibp.service";
 import type { EventsGateway } from "../events/events.gateway";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
@@ -146,10 +146,6 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     isPasswordPwned: vi.fn().mockResolvedValue(false),
   } as unknown as HibpService;
 
-  const flags = {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
-
   const mfa = {
     validateTotpCode: vi.fn(),
     verifyRecoveryCode: vi.fn().mockResolvedValue(false),
@@ -166,6 +162,10 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     claim: vi.fn(),
   } as unknown as InvitationService;
 
+  const apiKeys = {
+    reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+  } as unknown as ApiKeysService;
+
   const service = new AuthService(
     prisma,
     jwtService,
@@ -174,12 +174,12 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     security,
     turnstile,
     hibp,
-    flags,
     mfa,
     webauthn,
     sessionCache,
     events,
     invitations,
+    apiKeys,
   );
 
   return {
@@ -191,7 +191,6 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     security,
     turnstile,
     hibp,
-    flags,
     mfa,
     webauthn,
     sessionCache,
@@ -1169,10 +1168,13 @@ describe("AuthService.resetPassword", () => {
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { userId: "user-1" },
     });
-    expect(mail.sendPasswordChanged).toHaveBeenCalledWith({
-      email: user.email,
-      locale: user.locale,
-    });
+    expect(mail.sendPasswordChanged).toHaveBeenCalledWith(
+      {
+        email: user.email,
+        locale: user.locale,
+      },
+      0,
+    );
     expect(security.record).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "PASSWORD_RESET",

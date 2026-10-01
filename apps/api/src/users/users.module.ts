@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { AuthModule } from "../auth/auth.module";
 import { EntitlementModule } from "../entitlements/entitlement.module";
 import { EventsModule } from "../events/events.module";
@@ -22,6 +23,7 @@ import { UsersService } from "./users.service";
 
 @Module({
   imports: [
+    ApiKeysModule,
     AuthModule,
     MailModule,
     SecurityModule,

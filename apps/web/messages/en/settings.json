@@ -414,7 +414,7 @@
   "settings_api_keys_expiration_custom": "Date…",
   "settings_api_keys_expiration_never": "Never",
   "settings_api_keys_expiration_date": "Expiration date",
-  "settings_api_keys_never_warning": "A key without an expiration stays valid until you revoke it, even when forgotten in an old script. Prefer a duration.",
+  "settings_api_keys_never_warning": "A key without an expiration stays valid until you revoke it, even when forgotten in an old script. Prefer a duration: you'll be warned before it ends.",
   "settings_api_keys_create_submit": "Create key",
   "settings_api_keys_creating": "Creating…",
   "settings_api_keys_created_title": "Key created",
@@ -451,5 +451,10 @@
   "settings_api_keys_recipe_script_name": "Personal script",
   "settings_api_keys_recipe_script_desc": "Read your library, lists and stats.",
   "settings_api_keys_limit": "Limit: {count} requests per minute, across all your keys.",
-  "settings_api_keys_limit_premium": "Premium raises it to {count}."
+  "settings_api_keys_limit_premium": "Premium raises it to {count}.",
+  "settings_api_keys_revoke_all": "Revoke all",
+  "settings_api_keys_revoke_all_title": "Revoke every API key?",
+  "settings_api_keys_revoke_all_body": "Every tool using one of your keys loses access immediately. This can't be undone.",
+  "settings_api_keys_expiry_mail": "We'll email you 7 days before it expires.",
+  "settings_api_keys_api_disabled": "The public API is turned off on this instance: your keys don't work for now."
 }

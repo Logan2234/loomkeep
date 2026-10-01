@@ -40,6 +40,7 @@ export const ErrorCode = {
   ApiKeyLimitReached: "api_key.limit_reached",
   ApiKeyExpiryInPast: "api_key.expiry_in_past",
   ApiRateLimited: "api.rate_limited",
+  ApiDisabled: "api.disabled",
 
   // admin
   AdminCacheItemNotFound: "admin.cache_item_not_found",
@@ -51,6 +52,7 @@ export const ErrorCode = {
   AdminUnknownJob: "admin.unknown_job",
   AdminAccountNotFound: "admin.account_not_found",
   AdminReportNotFound: "admin.report_not_found",
+  AdminSettingLockedByEnv: "admin.setting_locked_by_env",
   AdminCannotSelfDemote: "admin.cannot_self_demote",
   AdminCannotSelfDelete: "admin.cannot_self_delete",
   AdminForbidden: "admin.forbidden",
