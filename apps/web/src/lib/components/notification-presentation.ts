@@ -67,6 +67,18 @@ export function notificationText(n: NotificationDto): {
               ? m.notif_report_dismissed()
               : null,
       };
+
+    case NotificationType.API_KEYS_REVIEW: {
+      const count = typeof n.data.count === "number" ? n.data.count : 1;
+      return {
+        title: m.notif_api_keys_review_title(),
+        body:
+          count === 1
+            ? m.notif_api_keys_review_one()
+            : m.notif_api_keys_review_many({ count: formatNumber(count) }),
+      };
+    }
+
     case NotificationType.MODERATION_ACTION:
       return {
         title:

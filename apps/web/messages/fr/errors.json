@@ -193,5 +193,13 @@
   "apierr_admin_invitation_not_found": "Invitation introuvable.",
   "apierr_admin_invitation_email_registered": "Un compte existe déjà avec cette adresse e-mail.",
   "apierr_admin_invitation_already_pending": "Une invitation est déjà en attente pour cette adresse : génère-lui un nouveau lien depuis l'onglet Invitations.",
-  "apierr_admin_invitation_not_renewable": "Cette invitation est révoquée ou déjà utilisée : crée-en une nouvelle."
+  "apierr_admin_invitation_not_renewable": "Cette invitation est révoquée ou déjà utilisée : crée-en une nouvelle.",
+  "apierr_auth_invalid_api_key": "Clé API invalide, expirée ou révoquée.",
+  "apierr_auth_api_key_forbidden": "Cette clé API n'a pas accès à cette ressource.",
+  "apierr_api_key_not_found": "Cette clé API n'existe plus.",
+  "apierr_api_key_limit_reached": "Tu as atteint le nombre maximum de clés API. Révoques-en une pour en créer une autre.",
+  "apierr_api_key_expiry_in_past": "La date d'expiration doit être dans le futur.",
+  "apierr_api_rate_limited": "Trop de requêtes vers l'API : réessaie dans un instant.",
+  "apierr_api_disabled": "L'API publique est désactivée sur cette instance.",
+  "apierr_admin_setting_locked_by_env": "Ce réglage est fixé par une variable d'environnement."
 }

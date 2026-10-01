@@ -143,7 +143,6 @@
   "auth_forgot_password_action": "Invia il link",
   "auth_reset_password_confirm_placeholder": "Conferma la password",
   "auth_reset_password_mismatch": "Le password non coincidono",
-  "auth_reset_password_requirements_unmet": "La password non rispetta i requisiti qui sopra",
   "link_invalid_missing_token": "Link non valido: nessun token trovato nell'URL.",
   "auth_verify_email_title": "Verifica dell'email",
   "auth_verify_email_pending": "Verifica…",
@@ -1164,5 +1163,8 @@
   "quick_add_done_status_lists": "Stato: {status}. Liste: {lists}.",
   "quick_add_back_hint": "Il tasto indietro del telefono ti riporta all'app da cui hai condiviso.",
   "quick_add_undo": "Annulla l'aggiunta",
-  "quick_add_undone": "Aggiunta annullata"
+  "quick_add_undone": "Aggiunta annullata",
+  "notif_api_keys_review_title": "Controlla le tue chiavi API",
+  "notif_api_keys_review_one": "La tua password è cambiata, ma la tua chiave API resta valida.",
+  "notif_api_keys_review_many": "La tua password è cambiata, ma le tue {count} chiavi API restano valide."
 }

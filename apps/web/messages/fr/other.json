@@ -143,7 +143,6 @@
   "auth_forgot_password_action": "Envoyer le lien",
   "auth_reset_password_confirm_placeholder": "Confirmer le mot de passe",
   "auth_reset_password_mismatch": "Les mots de passe ne correspondent pas",
-  "auth_reset_password_requirements_unmet": "Le mot de passe ne respecte pas les exigences ci-dessus",
   "link_invalid_missing_token": "Lien invalide : aucun token trouvé dans l'URL.",
   "auth_verify_email_title": "Vérification de l'email",
   "auth_verify_email_pending": "Vérification en cours…",
@@ -1164,5 +1163,8 @@
   "quick_add_done_status_lists": "Statut : {status}. Listes : {lists}.",
   "quick_add_back_hint": "Le bouton retour de ton téléphone te ramène à l'appli d'où tu as partagé.",
   "quick_add_undo": "Annuler l'ajout",
-  "quick_add_undone": "Ajout annulé"
+  "quick_add_undone": "Ajout annulé",
+  "notif_api_keys_review_title": "Vérifie tes clés API",
+  "notif_api_keys_review_one": "Ton mot de passe a changé, mais ta clé API reste valable.",
+  "notif_api_keys_review_many": "Ton mot de passe a changé, mais tes {count} clés API restent valables."
 }

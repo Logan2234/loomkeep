@@ -1,6 +1,5 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PublicConfigController } from "./public-config.controller";
 
 vi.mock("node:fs/promises", () => ({
@@ -12,14 +11,9 @@ function makeController(env: Record<string, string | undefined>) {
     get: vi.fn((key: string) => env[key]),
   } as unknown as ConfigService;
 
-  const flags = {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
-
   return {
-    controller: new PublicConfigController(config, flags),
+    controller: new PublicConfigController(config),
     config,
-    flags,
   };
 }
 
@@ -30,6 +24,17 @@ describe("PublicConfigController", () => {
     process.env.GIT_SHA = ORIGINAL_GIT_SHA;
   });
 
+  it('reports publicApiEnabled=false only when PUBLIC_API_ENABLED is "false"', async () => {
+    const off = makeController({ PUBLIC_API_ENABLED: "false" });
+    await expect(off.controller.get()).resolves.toMatchObject({
+      publicApiEnabled: false,
+    });
+    const unset = makeController({});
+    await expect(unset.controller.get()).resolves.toMatchObject({
+      publicApiEnabled: true,
+    });
+  });
+
   it('reports socialEnabled=true only when SOCIAL_ENABLED is exactly "true"', async () => {
     delete process.env.GIT_SHA;
     const { controller } = makeController({ SOCIAL_ENABLED: "true" });
@@ -37,6 +42,7 @@ describe("PublicConfigController", () => {
       socialEnabled: true,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -51,6 +57,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       gamificationEnabled: true,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -65,6 +72,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -79,6 +87,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -93,6 +102,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: false,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -107,6 +117,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -121,6 +132,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: true,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -135,6 +147,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: true,
       version: "9.9.9",
@@ -149,6 +162,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",

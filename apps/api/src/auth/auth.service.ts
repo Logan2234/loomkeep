@@ -22,11 +22,11 @@ import {
   randomUUID,
   timingSafeEqual,
 } from "node:crypto";
+import { ApiKeysService } from "../api-keys/api-keys.service";
 import { AppException } from "../common/app.exception";
 import { normalizeEmail } from "../common/email.util";
 import { HibpService } from "../common/hibp.service";
 import { EventsGateway } from "../events/events.gateway";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
@@ -87,12 +87,12 @@ export class AuthService {
     private readonly security: SecurityEventService,
     private readonly turnstile: TurnstileService,
     private readonly hibp: HibpService,
-    private readonly flags: FeatureFlagsService,
     private readonly mfa: MfaService,
     private readonly webauthn: WebauthnService,
     private readonly sessionCache: SessionCacheService,
     private readonly events: EventsGateway,
     private readonly invitations: InvitationService,
+    private readonly apiKeys: ApiKeysService,
   ) {}
 
   async register(
@@ -107,7 +107,7 @@ export class AuthService {
       ? await this.invitations.findRedeemableFor(dto.inviteToken, dto.email)
       : null;
 
-    if (!invitation && !isRegistrationEnabled(this.configService, this.flags)) {
+    if (!invitation && !isRegistrationEnabled(this.configService)) {
       throw new AppException(
         HttpStatus.FORBIDDEN,
         ErrorCode.AuthRegistrationDisabled,
@@ -880,10 +880,10 @@ export class AuthService {
     const ids = sessions.map((s) => s.id);
     this.sessionCache.invalidateAll(ids);
     ids.forEach((id) => this.events.disconnectSession(id));
-    await this.mail.sendPasswordChanged({
-      email: stored.user.email,
-      locale: stored.user.locale,
-    });
+    await this.mail.sendPasswordChanged(
+      { email: stored.user.email, locale: stored.user.locale },
+      await this.apiKeys.reviewAfterPasswordChange(stored.userId),
+    );
     await this.security.record({
       type: "PASSWORD_RESET",
       userId: stored.userId,

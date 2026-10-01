@@ -8,7 +8,6 @@ import type {
 import { FollowStatus, ReportStatus, ReviewVoteValue } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { isSocialEnabled } from "../social/social.config";
 import {
@@ -42,11 +41,10 @@ export class AdminSocialStatsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
   ) {}
 
   async getSection(): Promise<AdminSocialSectionDto> {
-    if (!isSocialEnabled(this.config, this.flags)) return { enabled: false };
+    if (!isSocialEnabled(this.config)) return { enabled: false };
     return { enabled: true, ...(await this.getStats()) };
   }
 

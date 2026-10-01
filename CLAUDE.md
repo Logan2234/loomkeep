@@ -6,7 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Loomkeep — self-hosted media tracker (series, movies, anime, games, books,
 music, and more to come), open-core under AGPL-3.0. pnpm monorepo: `apps/api`
-(NestJS + Prisma + PostgreSQL), `apps/web` (SvelteKit PWA), `packages/shared`
+(NestJS + Prisma + PostgreSQL), `apps/web` (SvelteKit PWA), `apps/docs`
+(docs.loomkeep.app: Astro Starlight guides + a Scalar reference rendered from
+the public API's `openapi-v1.json`, deployed to GitHub Pages by `docs.yml`),
+`packages/shared`
 (DTOs/enums — consumed from its built `dist/`, so run `pnpm build:package` after any change
 there). Catalogs are queried live (TMDB/AniList/IGDB/Open Library/
 MusicBrainz) and nothing is persisted until a user tracks an item — see
@@ -22,6 +25,7 @@ see "Feature flags & entitlements".
 pnpm dev                                       # api on :3000 + web on :5173 (parallel)
 pnpm test                                      # runs all tests
 pnpm build:package                             # REQUIRED after any change in packages/shared
+pnpm dev:docs                                  # docs site on :4321 (needs apps/api built + generate:openapi first)
 
 # API
 pnpm --filter @loomkeep/api exec vitest src/catalog/providers/tmdb.provider.spec.ts   # single test file
@@ -105,9 +109,12 @@ fix does.
   (`isEnabled(flag, default)`) so an unconfigured flag never locks out a
   feature. Web's default gating path is `liveFlags.isEnabled("MY_FLAG")`
   (`apps/web/src/lib/feature-flags-live.svelte.ts`) — reactive, no reload.
-  Exception: an on-by-default flag (`SOCIAL_ENABLED`, `REGISTRATION_ENABLED`)
-  can't use that path — the Frontend API only reports _enabled_ flags — so
-  those stay relayed through `GET /api/config` instead.
+  Flags are for rollouts and kill switches. Permanent instance configuration
+  (social, gamification, registration, public API and its quotas) lives in
+  the `InstanceSettings` table instead, edited from Admin › Settings and read
+  through `instanceSetting()` / `isSocialEnabled()` & co.; an env var of the
+  same name (`INSTANCE_SETTING_ENV`) wins and locks the setting in the admin
+  page. The web reads them from `GET /api/config`.
 - Premium is a seam, not sold yet: enforcement points call
   `EntitlementService.isEffectivelyPremium()`, not the raw `hasPremium()` —
   it's `true` for everyone until the `premium-features` Unleash flag is on
@@ -137,8 +144,11 @@ fix does.
   `(verification)` layouts only, never the root). Tokens live in
   encrypted (AES-256-GCM), `HttpOnly`/`SameSite=Strict` cookies
   (`Secure` in production) set by `apps/api/src/auth/auth-cookies.ts` —
-  never in localStorage, and `JwtAuthGuard` reads only that cookie,
-  rejecting an `Authorization: Bearer` header outright. Auto-refresh-and-
+  never in localStorage, and `JwtAuthGuard` reads only that cookie for a
+  session. The one exception is a personal API key (`Authorization: Bearer
+lk_…`), accepted only on routes marked `@AllowApiKey()` — the versioned
+  public API (`apps/api/src/public-api`, `/api/v1`); every other route
+  refuses keys by default, and internal routes stay unversioned. Auto-refresh-and-
   retry on 401 lives in `src/lib/api/core.ts` (`src/lib/api/client.ts` is
   now just a re-export barrel). The API itself emits `/app`-prefixed paths
   (push/email links) — grep `/app/` in `apps/api/src` before renaming a
@@ -214,8 +224,8 @@ fix does.
 
 ### Social
 
-Gated behind `SOCIAL_ENABLED` (off by default self-host, on for the hosted
-VPS) — `SocialFeatureGuard` 404s (never 403) when disabled, so a self-host
+Gated behind the `socialEnabled` instance setting (off by default
+self-host, pinned on for the hosted VPS by `SOCIAL_ENABLED`) — `SocialFeatureGuard` 404s (never 403) when disabled, so a self-host
 install doesn't advertise the surface exists. `Follow` is the one
 relationship primitive (friend = reciprocal accepted follow). Details:
 [apps/api/src/social/README.md](apps/api/src/social/README.md).

@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { AuthModule } from "../auth/auth.module";
 import { BooksModule } from "../books/books.module";
 import { CatalogModule } from "../catalog/catalog.module";
@@ -21,6 +22,7 @@ import { AdminCacheController } from "./admin-cache.controller";
 import { AdminCatalogueStatsService } from "./admin-catalogue-stats.service";
 import { AdminEmailsController } from "./admin-emails.controller";
 import { AdminImportsController } from "./admin-imports.controller";
+import { AdminInstanceSettingsController } from "./admin-instance-settings.controller";
 import { AdminInvitationsController } from "./admin-invitations.controller";
 import { AdminJobsController } from "./admin-jobs.controller";
 import { AdminOverviewService } from "./admin-overview.service";
@@ -41,6 +43,7 @@ import { QuotaAlertService } from "./quota-alert.service";
 
 @Module({
   imports: [
+    ApiKeysModule,
     MailModule,
     NotificationModule,
     AuthModule,
@@ -59,6 +62,7 @@ import { QuotaAlertService } from "./quota-alert.service";
     GamificationModule,
   ],
   controllers: [
+    AdminInstanceSettingsController,
     AdminSystemController,
     AdminSecurityController,
     AdminJobsController,

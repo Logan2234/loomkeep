@@ -51,6 +51,8 @@
       m.admin_security_mfa_recovery_codes_regenerated(),
     MFA_RECOVERY_CODE_USED: m.admin_security_mfa_recovery_code_used(),
     MFA_CHALLENGE_LOCKED: m.admin_security_mfa_challenge_locked(),
+    API_KEY_CREATED: m.admin_security_api_key_created(),
+    API_KEY_REVOKED: m.admin_security_api_key_revoked(),
   };
 
   const TYPE_COLORS: Record<SecurityEventType, string> = {
@@ -73,6 +75,8 @@
     MFA_RECOVERY_CODES_REGENERATED: "border-accent/40 bg-accent/10 text-accent",
     MFA_RECOVERY_CODE_USED: "border-warning/40 bg-warning/10 text-warning",
     MFA_CHALLENGE_LOCKED: "border-danger/40 bg-danger/10 text-danger",
+    API_KEY_CREATED: "border-accent/40 bg-accent/10 text-accent",
+    API_KEY_REVOKED: "border-warning/40 bg-warning/10 text-warning",
   };
 
   const TYPE_OPTIONS = [

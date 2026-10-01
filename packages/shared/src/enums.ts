@@ -96,6 +96,8 @@ export const NotificationType = {
   MODERATION_ACTION: "MODERATION_ACTION",
   /** DSA art. 16(5): a report you filed has been resolved or dismissed. */
   REPORT_RESOLVED: "REPORT_RESOLVED",
+  /** The password changed while API keys are active: worth a look. `data.count`. */
+  API_KEYS_REVIEW: "API_KEYS_REVIEW",
 } as const;
 export type NotificationType =
   (typeof NotificationType)[keyof typeof NotificationType];
@@ -341,6 +343,8 @@ export const SecurityEventType = {
   // A pending MfaLoginChallenge was deleted for exceeding MAX_MFA_CHALLENGE_ATTEMPTS —
   // the 2nd-factor equivalent of LOGIN_FAILED's brute-force signal.
   MFA_CHALLENGE_LOCKED: "MFA_CHALLENGE_LOCKED",
+  API_KEY_CREATED: "API_KEY_CREATED",
+  API_KEY_REVOKED: "API_KEY_REVOKED",
 } as const;
 export type SecurityEventType =
   (typeof SecurityEventType)[keyof typeof SecurityEventType];

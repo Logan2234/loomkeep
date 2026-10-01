@@ -193,5 +193,13 @@
   "apierr_admin_invitation_not_found": "Invito non trovato.",
   "apierr_admin_invitation_email_registered": "Esiste già un account con questo indirizzo email.",
   "apierr_admin_invitation_already_pending": "C'è già un invito in attesa per questo indirizzo: genera un nuovo link dalla scheda Inviti.",
-  "apierr_admin_invitation_not_renewable": "Questo invito è stato revocato o già usato: creane uno nuovo."
+  "apierr_admin_invitation_not_renewable": "Questo invito è stato revocato o già usato: creane uno nuovo.",
+  "apierr_auth_invalid_api_key": "Chiave API non valida, scaduta o revocata.",
+  "apierr_auth_api_key_forbidden": "Questa chiave API non ha accesso a questa risorsa.",
+  "apierr_api_key_not_found": "Questa chiave API non esiste più.",
+  "apierr_api_key_limit_reached": "Hai raggiunto il numero massimo di chiavi API. Revocane una per crearne un'altra.",
+  "apierr_api_key_expiry_in_past": "La data di scadenza deve essere nel futuro.",
+  "apierr_api_rate_limited": "Troppe richieste all'API: riprova tra un attimo.",
+  "apierr_api_disabled": "L'API pubblica è disattivata su questa istanza.",
+  "apierr_admin_setting_locked_by_env": "Questa impostazione è fissata da una variabile d'ambiente."
 }

@@ -406,9 +406,11 @@ docker compose up -d
 
 Adds [Unleash](https://www.getunleash.io/) (open-source feature flag
 service), reachable at `flags.<DOMAIN>` via Caddy. Backs the deployment-wide
-flags the api reads at runtime (`SOCIAL_ENABLED`, `REGISTRATION_ENABLED`, and
-the per-domain `MAINTENANCE_<DOMAIN>` flags) instead of a baked-in env var, so
-they can be flipped from Unleash's UI without a redeploy. Shares the app's
+flags the api reads at runtime (the per-domain `MAINTENANCE_<DOMAIN>` flags,
+`premium-features`) instead of a baked-in env var, so they can be flipped from
+Unleash's UI without a redeploy. Permanent instance configuration (social,
+gamification, registration, public API) isn't a flag: it lives in Admin >
+Settings, backed by the `InstanceSettings` table. Shares the app's
 own Postgres instance rather than running a dedicated database container —
 see the top comment in `docker-compose.unleash.yml` for the one-time manual
 step required on an already-running instance. Gated by Unleash's own login
@@ -436,20 +438,15 @@ the web's origin to be allowed in Unleash's **Admin settings > Access control
 One limitation to design around: the Frontend API only reports _enabled_
 flags, so it can't tell "flag not created yet in Unleash" apart from
 "explicitly off" — fine for a kill-switch-style flag (off by default), not
-for one that should default to _on_ until disabled. `SOCIAL_ENABLED`/
-`REGISTRATION_ENABLED` need that on-by-default fallback, so they stay
-relayed through `GET /api/config` instead (bootstrap-only, refreshed on the
-next page load) — see `isSocialEnabled`/`isRegistrationEnabled` for that
-pattern if a future flag needs the same.
+for one that should default to _on_ until disabled. Instance settings that
+default to on (registration, the public API) are relayed through
+`GET /api/config` instead (bootstrap-only, refreshed on the next page load).
 
-**Migrating `SOCIAL_ENABLED`/`REGISTRATION_ENABLED` onto Unleash on an
-already-running instance**: Unleash creates a new flag **disabled** by
-default. Before that flag exists and is turned on in Unleash, `isEnabled()`
-still falls back to the env var (see `FeatureFlagsService`) — safe. But once
-you create `SOCIAL_ENABLED` (or `REGISTRATION_ENABLED`) in Unleash's UI, it
-becomes authoritative immediately, even OFF by default — so create it and
-flip it on in Unleash _before_ removing the env var from `.env`, not after,
-or the feature goes dark for however long that gap lasts.
+**Instance settings no longer read Unleash**: `SOCIAL_ENABLED`,
+`GAMIFICATION_ENABLED` and `REGISTRATION_ENABLED` flags created in Unleash
+are ignored. The setting comes from Admin > Settings, unless the env var of
+the same name is set, in which case the env var wins and the admin page
+shows the setting as locked.
 
 **Cloudflare Access in front of `flags.<DOMAIN>` (same gotcha as
 Grafana/UptimeRobot above, worse impact):** putting the whole Unleash app

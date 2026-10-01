@@ -22,7 +22,6 @@ import {
 } from "../auth/jwt.constants";
 import { SessionCacheService } from "../auth/session-cache.service";
 import { isSessionLive } from "../auth/session-live.util";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import {
   MetricsService,
   type WsRejectionReason,
@@ -70,7 +69,7 @@ function classifyRejection(error: unknown): WsRejectionReason {
  * endpoints enforce.
  *
  * Deliberately depends on nothing but the globally-registered PrismaService/
- * ConfigService/JwtService/FeatureFlagsService/SessionCacheService, plus one
+ * ConfigService/JwtService/SessionCacheService, plus one
  * real import (MetricsModule, a leaf module with no dependency of its own):
  * every domain module that needs to emit (notifications, reports,
  * gamification, comments, lists, import) imports this module
@@ -130,7 +129,6 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
-    private readonly flags: FeatureFlagsService,
     private readonly sessionCache: SessionCacheService,
     private readonly metrics: MetricsService,
   ) {}
@@ -225,7 +223,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody()
     { targetType, targetId }: { targetType: string; targetId: string },
   ): Promise<void> {
-    if (!isSocialEnabled(this.config, this.flags)) return;
+    if (!isSocialEnabled(this.config)) return;
     await client.join(commentsRoom(targetType, targetId));
 
     const userId = client.data.userId as string | undefined;
@@ -277,7 +275,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
     if (!list) return false;
     if (list.userId === userId) return true;
-    if (!isSocialEnabled(this.config, this.flags)) return false;
+    if (!isSocialEnabled(this.config)) return false;
 
     const member = await this.prisma.listMember.findUnique({
       where: { listId_userId: { listId, userId } },

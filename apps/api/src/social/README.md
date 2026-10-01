@@ -5,9 +5,10 @@ Covers `apps/api/src/social/`, plus the adjacent `reviews/`, `comments/`, and
 
 ## Feature flag
 
-Gated behind the runtime `SOCIAL_ENABLED` env var, read by the web via
+Gated behind the `socialEnabled` instance setting (Admin › Settings, or the
+`SOCIAL_ENABLED` env var, which wins when set), read by the web via
 `GET /api/config` (`RuntimeConfigModule`) — self-host defaults to off, the
-public VPS build turns it on (see `docker/docker-compose.prod.yml`).
+public VPS build pins it on (see `docker/docker-compose.prod.yml`).
 `SocialFeatureGuard` 404s every social route when off (never 403 — a
 self-host install shouldn't even advertise the surface exists).
 
