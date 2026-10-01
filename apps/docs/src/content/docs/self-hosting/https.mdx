@@ -1,0 +1,86 @@
+---
+title: Domain & HTTPS
+description: Serve Loomkeep on your own domain with automatic HTTPS, optionally behind Cloudflare.
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+Installing the app on a phone and push notifications only work over HTTPS.
+The `docker-compose.prod.yml` override puts [Caddy](https://caddyserver.com)
+in front of Loomkeep: it serves the app and the API on one domain, and gets
+and renews a Let's Encrypt certificate on its own.
+
+<Steps>
+
+1. **Point your domain at the server**: an `A` record (and `AAAA` with IPv6)
+   to its public IP. Open ports **80** and **443**, in the server's firewall
+   and, on a VPS, in the provider's network firewall too. Port 80 is needed
+   for the certificate, then redirects to 443.
+
+2. **Set the domain** in `.env`. The API and web addresses follow from it:
+
+   ```sh
+   DOMAIN=loomkeep.example.com
+   ```
+
+3. **Add the override** to `COMPOSE_FILE`, then restart:
+
+   ```sh
+   COMPOSE_FILE=docker/docker-compose.yml:docker/docker-compose.prod.yml
+   ```
+
+   ```sh
+   docker compose pull
+   docker compose up -d
+   ```
+
+4. **Open `https://<DOMAIN>`.** The first request can take a few seconds
+   while Caddy gets the certificate. If it doesn't come up,
+   `docker compose logs caddy` says why: most often DNS not propagated yet, or
+   a port still blocked.
+
+</Steps>
+
+The override stops publishing ports 3000 and 8080: only Caddy is reachable.
+It also tells the API to trust the one proxy in front of it, so rate limits
+and logs see visitors' real addresses.
+
+## Behind Cloudflare (optional)
+
+With your DNS on Cloudflare, proxying the domain (orange cloud) hides the
+server's IP and adds free DDoS protection. In Cloudflare's dashboard:
+
+- **SSL/TLS** mode: **Full (strict)**, since Caddy already has a real
+  certificate.
+- **Always Use HTTPS**: on.
+- Proxy every subdomain the stack serves, not only the main one.
+
+## Bot protection on sign-up (optional)
+
+[Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile/) adds
+an invisible challenge to the sign-up form, without proxying. Create a
+**Managed** widget for your domain in Cloudflare's dashboard, then set
+`PUBLIC_TURNSTILE_SITE_KEY` (public) and `TURNSTILE_SECRET_KEY` (private).
+Left empty, there is no challenge.
+
+## Using another reverse proxy
+
+Already running Traefik, nginx or another proxy? Skip the override: keep the
+base setup's two ports, route your domain's `/api` to port 3000 and the rest
+to port 8080, then set in `.env`:
+
+```sh
+PUBLIC_API_URL=https://loomkeep.example.com/api
+WEB_ORIGIN=https://loomkeep.example.com
+```
+
+So that rate limits and logs see visitors' real addresses rather than your
+proxy's, tell the API to trust it, in a small override of your own, for
+instance `docker/docker-compose.proxy.yml`, added to `COMPOSE_FILE`:
+
+```yaml
+services:
+  api:
+    environment:
+      TRUST_PROXY_HOPS: "1"
+```

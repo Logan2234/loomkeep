@@ -44,6 +44,7 @@
     MFA_CHALLENGE_LOCKED: m.settings_activity_event_mfa_challenge_locked(),
     API_KEY_CREATED: m.settings_activity_event_api_key_created(),
     API_KEY_REVOKED: m.settings_activity_event_api_key_revoked(),
+    API_KEY_LEAKED: m.settings_activity_event_api_key_leaked(),
   };
 
   // What might not have been the account owner stands out from their own
@@ -52,6 +53,7 @@
     "LOGIN_FAILED",
     "MFA_CHALLENGE_LOCKED",
     "MFA_RECOVERY_CODE_USED",
+    "API_KEY_LEAKED",
   ]);
 
   function iconFor(type: SecurityEventType): IconName {

@@ -135,8 +135,10 @@ export async function createE2eApp(): Promise<E2eApp> {
     .useValue(stubs.anilist)
     .compile();
 
+  // rawBody: signed webhooks are verified over the exact bytes, as in main.ts.
   const app = moduleFixture.createNestApplication<NestFastifyApplication>(
     new FastifyAdapter(),
+    { rawBody: true },
   );
   registerRequestContext(app);
   app.setGlobalPrefix("api");

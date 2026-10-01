@@ -334,6 +334,14 @@ describe("Public API v1 (e2e)", () => {
     await get("/api/v1/library?lang=de").expect(400);
   });
 
+  it("exports once an hour, then says when to come back", async () => {
+    await get("/api/v1/export").expect(200);
+    const again = await get("/api/v1/export").expect(429);
+
+    expect(again.body.code).toBe("api.rate_limited");
+    expect(Number(again.headers["retry-after"])).toBeGreaterThan(3000);
+  });
+
   it("holds each resource behind its own scope", async () => {
     await get("/api/v1/library", libraryKey).expect(200);
     await get("/api/v1/history", libraryKey).expect(200);

@@ -1166,5 +1166,7 @@
   "quick_add_undone": "Addition undone",
   "notif_api_keys_review_title": "Review your API keys",
   "notif_api_keys_review_one": "Your password changed, but your API key stays valid.",
-  "notif_api_keys_review_many": "Your password changed, but your {count} API keys stay valid."
+  "notif_api_keys_review_many": "Your password changed, but your {count} API keys stay valid.",
+  "notif_api_key_leaked_title": "API key revoked",
+  "notif_api_key_leaked_body": "Your key \"{name}\" was found in public on GitHub. It no longer works: create a new one."
 }

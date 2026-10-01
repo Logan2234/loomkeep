@@ -444,6 +444,7 @@
   "settings_subscription_links_activity_formats": "Atom",
   "settings_activity_event_api_key_created": "API key created",
   "settings_activity_event_api_key_revoked": "API key revoked",
+  "settings_activity_event_api_key_leaked": "API key found in public and revoked",
   "settings_api_keys_recipes_title": "Recipes",
   "settings_api_keys_recipes_hint": "A ready-made key, with the access it needs.",
   "settings_api_keys_recipe_backup_name": "Automatic backup",

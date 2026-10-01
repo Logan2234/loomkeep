@@ -397,6 +397,19 @@ export class MailService {
       ],
       build: (locale, v) => this.buildApiKeyCreated(locale, v.name),
     },
+    apiKeyLeaked: {
+      label: "Clé API trouvée en public",
+      fields: [
+        { key: "name", label: "Nom de la clé", default: "Script perso" },
+        {
+          key: "foundAt",
+          label: "Où elle a été trouvée",
+          default: "https://github.com/octocat/dotfiles/blob/main/.env",
+        },
+      ],
+      build: (locale, v) =>
+        this.buildApiKeyLeaked(locale, v.name, v.foundAt || null),
+    },
     inactivityWarning: {
       label: "Relance compte inactif",
       fields: [
@@ -612,6 +625,18 @@ export class MailService {
     await this.send({
       to: recipient.email,
       ...this.buildApiKeyExpiring(locale, name, expiresAt),
+    });
+  }
+
+  async sendApiKeyLeaked(
+    recipient: MailRecipient,
+    name: string,
+    foundAt: string | null,
+  ): Promise<void> {
+    const locale = resolveCopyLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildApiKeyLeaked(locale, name, foundAt),
     });
   }
 
@@ -1049,6 +1074,30 @@ ${url}`,
         locale,
         copy.heading,
         `<p>${escapeHtml(copy.intro(name, date))}</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.hint)}</p>
+         ${this.button(url, copy.button)}`,
+      ),
+    };
+  }
+
+  private buildApiKeyLeaked(
+    locale: Locale,
+    name: string,
+    foundAt: string | null,
+  ): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].apiKeyLeaked;
+    const url = `${this.webOrigin}/app/settings/integrations`;
+    const where = foundAt ? `${copy.foundAt} ${foundAt}` : null;
+    return {
+      subject: copy.subject(name),
+      text: [copy.intro(name), where, copy.hint, url]
+        .filter(Boolean)
+        .join("\n\n"),
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(name))}</p>
+         ${where ? `<p style="overflow-wrap:anywhere;">${escapeHtml(where)}</p>` : ""}
          <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.hint)}</p>
          ${this.button(url, copy.button)}`,
       ),

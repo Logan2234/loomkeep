@@ -92,6 +92,14 @@ export interface MailCopy {
     hint: string;
     button: string;
   };
+  apiKeyLeaked: {
+    subject: (name: string) => string;
+    heading: string;
+    intro: (name: string) => string;
+    foundAt: string;
+    hint: string;
+    button: string;
+  };
   emailChangedOld: {
     subject: string;
     heading: string;
@@ -267,6 +275,15 @@ export const MAIL_COPY = {
       intro: (name, date) =>
         `Ta clé API « ${name} » expire le ${date}. Passé cette date, les outils qui l'utilisent n'auront plus accès à ton compte.`,
       hint: "Si tu t'en sers encore, crée une nouvelle clé et remplace-la dans tes outils. Sinon, tu n'as rien à faire.",
+      button: "Gérer mes clés API",
+    },
+    apiKeyLeaked: {
+      subject: (name) => `Ta clé API « ${name} » a été révoquée`,
+      heading: "Clé API trouvée en public",
+      intro: (name) =>
+        `Ta clé API « ${name} » a été trouvée en public sur GitHub. Nous l'avons révoquée : elle ne donne plus accès à ton compte.`,
+      foundAt: "Où elle a été trouvée :",
+      hint: "Retire-la de là où elle a été publiée, y compris de l'historique du dépôt, puis crée une nouvelle clé pour tes outils. Si tu ne reconnais pas cette clé, change ton mot de passe.",
       button: "Gérer mes clés API",
     },
     emailChangedOld: {
@@ -455,6 +472,15 @@ export const MAIL_COPY = {
       hint: "If you still use it, create a new key and swap it in your tools. Otherwise, there's nothing to do.",
       button: "Manage my API keys",
     },
+    apiKeyLeaked: {
+      subject: (name) => `Your API key "${name}" was revoked`,
+      heading: "API key found in public",
+      intro: (name) =>
+        `Your API key "${name}" was found in public on GitHub. We revoked it: it no longer gives access to your account.`,
+      foundAt: "Where it was found:",
+      hint: "Remove it from where it was published, repository history included, then create a new key for your tools. If you don't recognise this key, change your password.",
+      button: "Manage my API keys",
+    },
     emailChangedOld: {
       subject: "Your Loomkeep account email has changed",
       heading: "Email address changed",
@@ -640,6 +666,15 @@ export const MAIL_COPY = {
       intro: (name, date) =>
         `La tua chiave API «${name}» scade il ${date}. Dopo quella data, gli strumenti che la usano non avranno più accesso al tuo account.`,
       hint: "Se la usi ancora, crea una nuova chiave e sostituiscila nei tuoi strumenti. Altrimenti non devi fare nulla.",
+      button: "Gestisci le mie chiavi API",
+    },
+    apiKeyLeaked: {
+      subject: (name) => `La tua chiave API «${name}» è stata revocata`,
+      heading: "Chiave API trovata in pubblico",
+      intro: (name) =>
+        `La tua chiave API «${name}» è stata trovata in pubblico su GitHub. L'abbiamo revocata: non dà più accesso al tuo account.`,
+      foundAt: "Dove è stata trovata:",
+      hint: "Rimuovila da dove è stata pubblicata, compresa la cronologia del repository, poi crea una nuova chiave per i tuoi strumenti. Se non riconosci questa chiave, cambia la password.",
       button: "Gestisci le mie chiavi API",
     },
     emailChangedOld: {
