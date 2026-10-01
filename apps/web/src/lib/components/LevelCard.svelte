@@ -72,7 +72,7 @@
       {m.common_level()} <span class="text-accent">{progress.level}</span>
     </p>
     <p class="text-dim font-mono text-[12.5px]">
-      {m.profile_level_progress({
+      {m.gamification_level_progress({
         xpInLevel: progress.xpInLevel,
         xpForLevel: xpForCurrentLevel,
         xpToNext: progress.xpToNext,

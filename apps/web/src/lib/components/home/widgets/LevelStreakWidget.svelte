@@ -67,12 +67,12 @@
         height="h-2" />
       <p class="timecode truncate text-[0.65rem]">
         {roomy
-          ? m.profile_level_progress({
+          ? m.gamification_level_progress({
               xpInLevel: progress.xpInLevel,
               xpForLevel: levelSpan,
               xpToNext: progress.xpToNext,
             })
-          : m.home_level_xp({
+          : m.gamification_level_xp({
               xpInLevel: progress.xpInLevel,
               xpForLevel: levelSpan,
             })}
@@ -81,7 +81,7 @@
   {:else}
     <p
       class="text-dim flex h-full items-center justify-center text-center text-sm">
-      {m.home_level_streak_empty()}
+      {m.gamification_level_streak_empty()}
     </p>
   {/if}
 </WidgetShell>

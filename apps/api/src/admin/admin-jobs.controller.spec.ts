@@ -17,6 +17,7 @@ function makeController() {
     { scan: vi.fn() } as never,
     { runReconcileJob: vi.fn() } as never,
     { runAchievementsSweepJob: vi.fn() } as never,
+    { runMaintenance: vi.fn() } as never,
   );
   return { controller, scanAll };
 }

@@ -27,6 +27,7 @@ const SHIPPED = {
   "admin-invitations": "2026-09-27",
   "library-views": "2026-09-28",
   "quick-add": "2026-09-29",
+  integrations: "2026-10-01",
 };
 
 type FeatureBadgeKey = keyof typeof SHIPPED;

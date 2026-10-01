@@ -56,6 +56,13 @@ const MESSAGES = {
   [ErrorCode.AuthInvitationExpired]: () => m.apierr_auth_invitation_expired(),
   [ErrorCode.AuthInvitationEmailMismatch]: () =>
     m.apierr_auth_invitation_email_mismatch(),
+  [ErrorCode.AuthInvalidApiKey]: () => m.apierr_auth_invalid_api_key(),
+  [ErrorCode.AuthApiKeyForbidden]: () => m.apierr_auth_api_key_forbidden(),
+  [ErrorCode.ApiKeyNotFound]: () => m.apierr_api_key_not_found(),
+  [ErrorCode.ApiKeyLimitReached]: () => m.apierr_api_key_limit_reached(),
+  [ErrorCode.ApiKeyExpiryInPast]: () => m.apierr_api_key_expiry_in_past(),
+  [ErrorCode.ApiRateLimited]: () => m.apierr_api_rate_limited(),
+  [ErrorCode.ApiDisabled]: () => m.apierr_api_disabled(),
   [ErrorCode.AdminCacheItemNotFound]: () =>
     m.apierr_admin_cache_item_not_found(),
   [ErrorCode.AdminCacheResyncFailed]: () =>
@@ -116,10 +123,11 @@ const MESSAGES = {
     m.apierr_admin_smtp_not_configured(),
   [ErrorCode.AdminUnknownJob]: () => m.apierr_admin_unknown_job(),
   [ErrorCode.AdminAccountNotFound]: () => m.apierr_admin_account_not_found(),
+  [ErrorCode.AdminSettingLockedByEnv]: () =>
+    m.apierr_admin_setting_locked_by_env(),
   [ErrorCode.AdminReportNotFound]: () => m.apierr_admin_report_not_found(),
   [ErrorCode.AdminCannotSelfDemote]: () => m.apierr_admin_cannot_self_demote(),
   [ErrorCode.AdminCannotSelfDelete]: () => m.apierr_admin_cannot_self_delete(),
-  [ErrorCode.AdminUserNotFound]: () => m.apierr_admin_user_not_found(),
   [ErrorCode.AdminForbidden]: () => m.apierr_admin_forbidden(),
   [ErrorCode.AdminBackupNotFound]: () => m.apierr_admin_backup_not_found(),
   [ErrorCode.AdminBackupNotOrphan]: () => m.apierr_admin_backup_not_orphan(),
@@ -152,8 +160,6 @@ const MESSAGES = {
   [ErrorCode.ListItemAlreadyExists]: () => m.apierr_lists_item_already_exists(),
   [ErrorCode.ListReorderMismatch]: () => m.apierr_lists_reorder_mismatch(),
   [ErrorCode.ListStale]: () => m.apierr_lists_stale(),
-  [ErrorCode.ListMemberUserNotFound]: () =>
-    m.apierr_lists_member_user_not_found(),
   [ErrorCode.ListCannotAddSelf]: () => m.apierr_lists_cannot_add_self(),
   [ErrorCode.ListMemberAlreadyEditor]: () =>
     m.apierr_lists_member_already_editor(),
@@ -179,7 +185,6 @@ const MESSAGES = {
     m.apierr_reviews_unknown_target_type(),
   [ErrorCode.ReviewNotFound]: () => m.apierr_reviews_not_found(),
   [ErrorCode.ReviewCannotVoteSelf]: () => m.apierr_reviews_cannot_vote_self(),
-  [ErrorCode.SocialUserNotFound]: () => m.apierr_social_user_not_found(),
   [ErrorCode.SocialCannotFollowSelf]: () =>
     m.apierr_social_cannot_follow_self(),
   [ErrorCode.SocialGhostPublicOnly]: () => m.apierr_social_ghost_public_only(),
@@ -201,6 +206,7 @@ const MESSAGES = {
   [ErrorCode.UserCsvExportUnavailable]: () =>
     m.apierr_user_csv_export_unavailable(),
   [ErrorCode.UserAccountNotFound]: () => m.apierr_user_account_not_found(),
+  [ErrorCode.UserNotFound]: () => m.apierr_user_not_found(),
   [ErrorCode.UserDomainDisabled]: () => m.apierr_user_domain_disabled(),
   [ErrorCode.UserAvatarNotFound]: () => m.apierr_user_avatar_not_found(),
   [ErrorCode.UserPremiumRequired]: () => m.apierr_user_premium_required(),

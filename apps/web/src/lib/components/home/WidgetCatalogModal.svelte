@@ -35,7 +35,7 @@
   const reduced = prefersReducedMotion();
 </script>
 
-<Modal title={m.home_editor_catalog_title()} wide {onclose}>
+<Modal title={m.home_editor_add()} wide {onclose}>
   <p class="text-dim -mt-2 mb-5 text-sm">{m.home_catalog_intro()}</p>
 
   <div class="space-y-6">

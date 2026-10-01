@@ -28,6 +28,9 @@ export interface PublicConfigDto {
    */
   registrationEnabled: boolean;
 
+  /** Whether the public API (`/api/v1`) answers; off, keys can't be created either. */
+  publicApiEnabled: boolean;
+
   /**
    * Whether the admin "Schéma" page (DB ERD) has content to
    * show. The underlying `docs/erd.md` is dev-only

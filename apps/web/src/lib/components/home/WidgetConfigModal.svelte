@@ -79,7 +79,7 @@
     { value: "ANIME", label: m.media_anime() },
   ];
   const SCOPES: { value: LeaderboardScope; label: string }[] = [
-    { value: "friends", label: m.gamification_leaderboard_tab_friends() },
+    { value: "friends", label: m.common_friends() },
     { value: "global", label: m.gamification_leaderboard_tab_global() },
   ];
   const PERIODS: { value: LeaderboardPeriod; label: string }[] = [
@@ -125,10 +125,7 @@
   </p>
 {/snippet}
 
-<Modal
-  title={m.home_editor_configure_title({ name: def.title() })}
-  wide
-  {onclose}>
+<Modal title={m.home_editor_configure({ name: def.title() })} wide {onclose}>
   <div class="space-y-5">
     {#if widget.type === "quickLinks"}
       <QuickLinksConfig bind:links />

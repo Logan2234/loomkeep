@@ -618,6 +618,7 @@ model User {
   entries                    LibraryEntry[]
   episodeWatches             EpisodeWatch[]
   refreshTokens              RefreshToken[]
+  apiKeys                    ApiKey[]
   devices                    UserDevice[]
   mfaRecoveryCodes           MfaRecoveryCode[]
   mfaLoginChallenges         MfaLoginChallenge[]
@@ -1170,6 +1171,45 @@ model RefreshToken {
   @@index([userId])
 }
 
+// Instance-wide settings, edited from Admin › Settings. A single row (id 1).
+// An env var named in INSTANCE_SETTING_ENV (@loomkeep/shared), when set,
+// overrides its column and locks it in the admin page.
+model InstanceSettings {
+  id                  Int      @id @default(1)
+  socialEnabled       Boolean  @default(false)
+  gamificationEnabled Boolean  @default(false)
+  registrationEnabled Boolean  @default(true)
+  publicApiEnabled    Boolean  @default(true)
+  apiRateLimitFree    Int      @default(60)
+  apiRateLimitPremium Int      @default(300)
+  updatedAt           DateTime @updatedAt
+}
+
+// A personal API key for the public API (/api/v1). Only the SHA-256 of the
+// secret is stored, like RefreshToken; the secret itself is shown once.
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  tokenHash  String    @unique
+  // Last characters of the secret, to tell keys apart in the settings list.
+  suffix     String
+  // `<resource>:read` strings (see API_KEY_SCOPES in @loomkeep/shared).
+  scopes     String[]
+  // Null for a key that never expires.
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  lastUsedIp String?
+  // Set once the "expires in 7 days" email went out, so it's sent only once.
+  expiryNotifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 // Hashes of already-rotated refresh tokens. A replay identifies the durable
 // session family and revokes it without retaining any bearer token in clear.
 model ConsumedRefreshToken {
@@ -1286,6 +1326,8 @@ enum SecurityEventType {
   MFA_RECOVERY_CODES_REGENERATED
   MFA_RECOVERY_CODE_USED
   MFA_CHALLENGE_LOCKED
+  API_KEY_CREATED
+  API_KEY_REVOKED
 }
 
 // One sensitive account action, for the admin "Sécurité" page. userId is

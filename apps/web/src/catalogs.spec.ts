@@ -1,11 +1,42 @@
+import { Locale } from "@loomkeep/shared";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parse } from "svelte/compiler";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-const locales = ["fr", "en"] as const;
-const names = ["common", "other", "errors", "gamification", "admin"] as const;
+const settings: { baseLocale: string; locales: string[] } = JSON.parse(
+  readFileSync(
+    new URL("../project.inlang/settings.json", import.meta.url),
+    "utf8",
+  ),
+);
+// fr and en are written with every change; any other locale is translated
+// afterwards and may lag behind, falling back to English key by key —
+// checked here as soon as its folder exists, before it ships.
+const locales = readdirSync(new URL("../messages", import.meta.url), {
+  withFileTypes: true,
+})
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name);
+const names = [
+  "common",
+  "other",
+  "errors",
+  "gamification",
+  "admin",
+  "settings",
+  "site",
+] as const;
+// A key with one of these prefixes lives in that file and nowhere else.
+const prefixHomes: [string, (typeof names)[number]][] = [
+  ["common_", "common"],
+  ["settings_", "settings"],
+  ["landing_", "site"],
+  ["transparency_", "site"],
+  ["gamification_", "gamification"],
+  ["admin_", "admin"],
+];
 const catalogs = Object.fromEntries(
   locales.map((locale) => [
     locale,
@@ -37,8 +68,11 @@ describe("message catalogs", () => {
           .map((match) => match[1])
           .filter((key) => key !== "$schema");
         expect(rawKeys.length, name).toBe(new Set(rawKeys).size);
-        for (const key of rawKeys)
+        for (const key of rawKeys) {
           expect(key.startsWith("common_"), key).toBe(name === "common");
+          const home = prefixHomes.find(([prefix]) => key.startsWith(prefix));
+          if (home) expect(name, key).toBe(home[1]);
+        }
         for (const value of Object.values(messages))
           expect(typeof value).toBe("string");
         keys.push(...rawKeys);
@@ -47,6 +81,33 @@ describe("message catalogs", () => {
       expect(keys.length).toBe(new Set(keys).size);
     },
   );
+
+  it("ships the same locales in Paraglide and in the shared Locale list", () => {
+    expect([...settings.locales].sort()).toEqual([...Locale].sort());
+    for (const locale of settings.locales) expect(locales).toContain(locale);
+    expect(settings.baseLocale).toBe("en");
+  });
+
+  it("translates only English keys, with their parameters, in other locales", () => {
+    const parameters = (message: string) =>
+      [...new Set(message.match(/\{\w+\}/g) ?? [])].sort();
+
+    for (const locale of locales) {
+      for (const name of names) {
+        const en = catalogs.en[name].messages;
+
+        for (const [key, message] of Object.entries(
+          catalogs[locale][name].messages,
+        )) {
+          expect(en[key], `${locale}/${name}: ${key}`).toBeTypeOf("string");
+          if (message.trim())
+            expect(parameters(message), `${locale}: ${key}`).toEqual(
+              parameters(en[key]),
+            );
+        }
+      }
+    }
+  });
 
   it("keeps the same keys and parameters in both locales and files", () => {
     const parameters = (message: string) =>
@@ -63,7 +124,7 @@ describe("message catalogs", () => {
     }
   });
 
-  it("does not duplicate generic common messages in other", () => {
+  it("does not duplicate generic common messages in other catalogs", () => {
     const pairs = new Map(
       Object.entries(catalogs.fr.common.messages).map(([key, fr]) => [
         JSON.stringify([fr, catalogs.en.common.messages[key]]),
@@ -73,19 +134,21 @@ describe("message catalogs", () => {
     expect(pairs.size, "duplicate generic messages within common").toBe(
       Object.keys(catalogs.fr.common.messages).length,
     );
-    const duplicates = Object.entries(catalogs.fr.other.messages).flatMap(
-      ([key, fr]) => {
-        const commonKey = pairs.get(
-          JSON.stringify([fr, catalogs.en.other.messages[key]]),
-        );
-        return commonKey ? [`${key} duplicates ${commonKey}`] : [];
-      },
-    );
+    const duplicates = names
+      .filter((name) => name !== "common")
+      .flatMap((name) =>
+        Object.entries(catalogs.fr[name].messages).flatMap(([key, fr]) => {
+          const commonKey = pairs.get(
+            JSON.stringify([fr, catalogs.en[name].messages[key]]),
+          );
+          return commonKey ? [`${key} duplicates ${commonKey}`] : [];
+        }),
+      );
     expect(duplicates).toEqual([]);
   });
 
   it("keeps reusable interface labels in common", () => {
-    for (const locale of locales) {
+    for (const locale of ["fr", "en"]) {
       const common = catalogs[locale].common.messages;
 
       for (const key of [

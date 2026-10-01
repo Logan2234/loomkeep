@@ -15,6 +15,7 @@
   import { DOMAINS } from "$lib/constants/domains";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { isFeatureNew } from "$lib/feature-badges";
+  import { languageName } from "$lib/locales";
   import { m } from "$lib/paraglide/messages.js";
   import { theme } from "$lib/theme.svelte";
   import { DigestCadence } from "@loomkeep/shared";
@@ -80,11 +81,6 @@
     [DigestCadence.DAILY]: m.settings_communications_cadence_daily(),
   };
 
-  const LOCALE_LABELS: Record<string, string> = {
-    fr: m.common_language_fr(),
-    en: m.common_language_en(),
-  };
-
   const contentPreview = $derived.by(() => {
     if (!auth.user?.birthDate) return m.settings_preview_birthdate_missing();
     return auth.user.allowAdultContent
@@ -118,7 +114,7 @@
       : undefined,
     content: contentPreview,
     appearance: auth.user
-      ? `${theme.mode === "dark" ? m.common_theme_dark() : m.common_theme_light()} · ${LOCALE_LABELS[auth.user.locale] ?? auth.user.locale}`
+      ? `${theme.mode === "dark" ? m.common_theme_dark() : m.common_theme_light()} · ${languageName(auth.user.locale)}`
       : undefined,
     domains: auth.user
       ? m.settings_preview_domains({

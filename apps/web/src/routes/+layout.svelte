@@ -4,11 +4,11 @@
   import { bootstrap } from "$lib/bootstrap.svelte";
   import NewsBanner from "$lib/components/NewsBanner.svelte";
   import Toast from "$lib/components/Toast.svelte";
-  import { toIntlLocale } from "$lib/constants/language-to-locale";
   import { layout } from "$lib/layout.svelte";
   import { navStyle } from "$lib/navStyle.svelte";
   import { m } from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
+  import { regionalLocale } from "@loomkeep/shared";
   import { queryClient } from "$lib/queryClient";
   import { accessibility } from "$lib/accessibility.svelte";
   import { theme } from "$lib/theme.svelte";
@@ -56,7 +56,7 @@
   <meta property="og:image" content="{page.url.origin}/pwa-512.png" />
   <meta
     property="og:locale"
-    content={toIntlLocale(getLocale()).replace("-", "_")} />
+    content={regionalLocale(getLocale()).replace("-", "_")} />
   <meta name="twitter:card" content="summary" />
 
   <link rel="preconnect" href={env.PUBLIC_API_URL} />

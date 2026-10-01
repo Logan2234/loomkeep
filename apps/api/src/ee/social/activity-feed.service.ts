@@ -4,6 +4,10 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { randomBytes } from "node:crypto";
 import { AppException } from "../../common/app.exception";
+import {
+  type CopyLocale,
+  resolveCopyLocale,
+} from "../../common/copy-locale.util";
 import { EntitlementService } from "../../entitlements/entitlement.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ActivityService } from "../../social/activity.service";
@@ -12,72 +16,90 @@ import { type ReleaseFeed } from "../calendar/feed.util";
 /** A feed reader keeps what it already fetched: this only caps one fetch. */
 const ACTIVITY_FEED_MAX_ENTRIES = 50;
 
-const FEED_COPY: Record<string, { title: string; description: string }> = {
+interface ActivityFeedCopy {
+  title: string;
+  description: string;
+  /** Short verbs for entry titles, by activity type. */
+  verbs: Record<string, string>;
+  seasonFinished: (season: number, title: string) => string;
+  progress: (count: number, title: string) => string;
+}
+
+/**
+ * Duplicated wording from `apps/web/src/lib/activity-phrase.ts`, which can't
+ * be imported here (Paraglide compiles messages for the SvelteKit app only).
+ */
+const FEED_COPY = {
   fr: {
     title: "Loomkeep · Activité",
     description: "Le journal d'activité public de ce compte.",
+    verbs: {
+      ADDED: "Ajouté",
+      STARTED: "Commencé",
+      FINISHED: "Terminé",
+      DROPPED: "Abandonné",
+      REWATCHED: "Relancé",
+      FAVORITED: "Mis en favori",
+      REVIEWED: "Noté",
+      LIST_CREATED: "Liste créée",
+      LIST_ITEM_ADDED: "Ajout à une liste",
+      LIST_SHARED: "Liste partagée",
+    },
+    seasonFinished: (season, title) => `Saison ${season} terminée · ${title}`,
+    progress: (count, title) => `Épisode(s) vu(s) (${count}) · ${title}`,
   },
   en: {
     title: "Loomkeep · Activity",
     description: "This account's public activity log.",
+    verbs: {
+      ADDED: "Added",
+      STARTED: "Started",
+      FINISHED: "Finished",
+      DROPPED: "Dropped",
+      REWATCHED: "Rewatched",
+      FAVORITED: "Favorited",
+      REVIEWED: "Rated",
+      LIST_CREATED: "List created",
+      LIST_ITEM_ADDED: "Added to a list",
+      LIST_SHARED: "List shared",
+    },
+    seasonFinished: (season, title) => `Season ${season} finished · ${title}`,
+    progress: (count, title) => `Episode(s) watched (${count}) · ${title}`,
   },
-};
-
-/**
- * Short verbs for the feed entry titles — duplicated wording from
- * `apps/web/src/lib/activity-phrase.ts`, which can't be imported here
- * (Paraglide compiles messages for the SvelteKit app only). Same
- * duplication trade-off as `FEED_COPY` above and the calendar feed's own
- * copy.
- */
-const ACTIVITY_VERBS: Record<string, Record<string, string>> = {
-  fr: {
-    ADDED: "Ajouté",
-    STARTED: "Commencé",
-    FINISHED: "Terminé",
-    DROPPED: "Abandonné",
-    REWATCHED: "Relancé",
-    FAVORITED: "Mis en favori",
-    REVIEWED: "Noté",
-    LIST_CREATED: "Liste créée",
-    LIST_ITEM_ADDED: "Ajout à une liste",
-    LIST_SHARED: "Liste partagée",
+  it: {
+    title: "Loomkeep · Attività",
+    description: "Il registro pubblico delle attività di questo account.",
+    verbs: {
+      ADDED: "Aggiunto",
+      STARTED: "Iniziato",
+      FINISHED: "Finito",
+      DROPPED: "Abbandonato",
+      REWATCHED: "Rivisto",
+      FAVORITED: "Tra i preferiti",
+      REVIEWED: "Votato",
+      LIST_CREATED: "Lista creata",
+      LIST_ITEM_ADDED: "Aggiunto a una lista",
+      LIST_SHARED: "Lista condivisa",
+    },
+    seasonFinished: (season, title) => `Stagione ${season} finita · ${title}`,
+    progress: (count, title) => `Episodi visti (${count}) · ${title}`,
   },
-  en: {
-    ADDED: "Added",
-    STARTED: "Started",
-    FINISHED: "Finished",
-    DROPPED: "Dropped",
-    REWATCHED: "Rewatched",
-    FAVORITED: "Favorited",
-    REVIEWED: "Rated",
-    LIST_CREATED: "List created",
-    LIST_ITEM_ADDED: "Added to a list",
-    LIST_SHARED: "List shared",
-  },
-};
+} satisfies Record<CopyLocale, ActivityFeedCopy>;
 
 /** A short, localized entry title, e.g. "Terminé · Breaking Bad". */
-function entryTitle(event: ActivityEventDto, locale: string): string {
-  const lang = locale === "fr" ? "fr" : "en";
-
+function entryTitle(event: ActivityEventDto, copy: ActivityFeedCopy): string {
   if (
     event.type === "SEASON_FINISHED" &&
     typeof event.data.seasonNumber === "number"
   ) {
-    return lang === "fr"
-      ? `Saison ${event.data.seasonNumber} terminée · ${event.title}`
-      : `Season ${event.data.seasonNumber} finished · ${event.title}`;
+    return copy.seasonFinished(event.data.seasonNumber, event.title);
   }
 
   if (event.type === "PROGRESS") {
-    return lang === "fr"
-      ? `Épisode(s) vu(s) (${event.count}) · ${event.title}`
-      : `Episode(s) watched (${event.count}) · ${event.title}`;
+    return copy.progress(event.count, event.title);
   }
 
-  const verb =
-    ACTIVITY_VERBS[lang][event.type] ?? ACTIVITY_VERBS[lang].FINISHED;
+  const verb = copy.verbs[event.type] ?? copy.verbs.FINISHED;
   return `${verb} · ${event.title}`;
 }
 
@@ -115,7 +137,7 @@ export class ActivityFeedService {
     const webOrigin = (this.config.get<string>("WEB_ORIGIN") ?? "")
       .split(",")[0]
       .trim();
-    const copy = FEED_COPY[user.locale] ?? FEED_COPY.en;
+    const copy: ActivityFeedCopy = FEED_COPY[resolveCopyLocale(user.locale)];
     const profileLink = `${webOrigin}/app/u/${user.username}`;
 
     return {
@@ -125,7 +147,7 @@ export class ActivityFeedService {
       link: profileLink,
       entries: timeline.items.map((event) => ({
         id: `urn:loomkeep:activity-event:${event.id}`,
-        title: entryTitle(event, user.locale),
+        title: entryTitle(event, copy),
         link: event.href ? `${webOrigin}${event.href}` : profileLink,
         airDate: new Date(event.createdAt),
       })),

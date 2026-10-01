@@ -81,8 +81,6 @@
   "common_terms": "Terms of service",
   "common_see": "See",
   "common_see_more": "See more",
-  "common_language_fr": "Français",
-  "common_language_en": "English",
   "common_error": "Error",
   "common_password_show": "Show password",
   "common_password_hide": "Hide password",
@@ -259,5 +257,9 @@
   "common_image_large": "Enlarged image",
   "common_camera_unavailable": "Camera access denied or unavailable.",
   "common_saved": "Saved",
-  "common_transparency": "Transparency"
+  "common_transparency": "Transparency",
+  "common_pending": "Pending",
+  "common_security_key": "Security key",
+  "common_this_week": "This week",
+  "common_you": "You"
 }

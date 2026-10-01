@@ -236,7 +236,7 @@
             {m.gamification_bubble_level_reached()}
           </span>
           <span class="font-display text-fg truncate text-base font-bold">
-            {m.gamification_bubble_level_title({ level: current.level })}
+            {m.gamification_level({ level: current.level })}
           </span>
           <!-- No XP line here: the level *is* the XP, restating it would
                say the same thing twice. -->

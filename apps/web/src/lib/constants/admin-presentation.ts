@@ -104,6 +104,7 @@ const JOB_LABELS = {
   "gamification.reconcile": () => m.admin_job_gamification_reconcile(),
   "gamification.achievementsSweep": () =>
     m.admin_job_gamification_achievements_sweep(),
+  "apiKeys.maintenance": () => m.admin_job_api_keys_maintenance(),
 };
 
 export function adminJobLabel(key: string): string {
@@ -142,6 +143,8 @@ export function adminJobSchedule(key: string): string | null {
       return m.admin_job_daily_at({ time: "04:00" });
     case "gamification.achievementsSweep":
       return m.admin_job_daily_at({ time: "05:00" });
+    case "apiKeys.maintenance":
+      return m.admin_job_daily_at({ time: "06:00" });
     default:
       return null;
   }
@@ -163,6 +166,8 @@ const TEMPLATE_LABELS = {
   jobAlert: () => m.admin_template_job_alert(),
   quotaAlert: () => m.admin_template_quota_alert(),
   newDeviceLogin: () => m.admin_security_new_device(),
+  apiKeyCreated: () => m.admin_security_api_key_created(),
+  apiKeyExpiring: () => m.admin_template_api_key_expiring(),
   inactivityWarning: () => m.admin_template_inactivity(),
   moderationDecision: () => m.admin_template_moderation(),
 };
@@ -190,6 +195,8 @@ const FIELD_LABELS = {
   jobKey: () => m.admin_template_job(),
   status: () => m.common_status(),
   error: () => m.common_error(),
+  name: () => m.common_name(),
+  expiresAt: () => m.settings_api_keys_expiration(),
 };
 
 export function adminTemplateLabel(key: string): string {

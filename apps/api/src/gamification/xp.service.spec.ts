@@ -2,7 +2,6 @@ import { XpReason } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { XpService } from "./xp.service";
@@ -18,15 +17,6 @@ function makeConfig(values: Record<string, string> = {}): ConfigService {
   return {
     get: vi.fn((key: string) => values[key]),
   } as unknown as ConfigService;
-}
-
-// No Unleash client configured in tests — isEnabled always returns whatever
-// fallback the caller passed, exactly like the real FeatureFlagsService with
-// no UNLEASH_API_URL set.
-function makeFlags(): FeatureFlagsService {
-  return {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
 }
 
 function makeService(configValues: Record<string, string> = {}) {
@@ -53,13 +43,12 @@ function makeService(configValues: Record<string, string> = {}) {
     (fn: (tx: PrismaService) => unknown) => fn(prisma),
   );
   const config = makeConfig({ GAMIFICATION_ENABLED: "true", ...configValues });
-  const flags = makeFlags();
   const jobRuns = {
     record: vi.fn((_key: string, fn: () => Promise<unknown>) => fn()),
   } as unknown as JobRunService;
 
-  const service = new XpService(prisma, config, flags, jobRuns);
-  return { service, prisma, config, flags, jobRuns };
+  const service = new XpService(prisma, config, jobRuns);
+  return { service, prisma, config, jobRuns };
 }
 
 describe("XpService.award", () => {

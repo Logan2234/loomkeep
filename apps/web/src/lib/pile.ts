@@ -22,9 +22,9 @@ const PHRASE: Record<StatsDomain, (amount: string) => string> = {
 };
 
 const TILE_LABEL: Record<StatsDomain, () => string> = {
-  [Domain.MEDIA]: () => m.pile_tile_to_watch(),
-  [Domain.GAMES]: () => m.pile_tile_to_play(),
-  [Domain.BOOKS]: () => m.pile_tile_to_read(),
+  [Domain.MEDIA]: () => m.media_status_planned(),
+  [Domain.GAMES]: () => m.game_status_backlog(),
+  [Domain.BOOKS]: () => m.book_status_to_read(),
   [Domain.MUSIC]: () => m.pile_tile_to_listen(),
 };
 

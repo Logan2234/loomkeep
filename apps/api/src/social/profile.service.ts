@@ -15,7 +15,6 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { ACHIEVEMENTS } from "../gamification/achievements/registry";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { PrismaService } from "../prisma/prisma.service";
@@ -57,7 +56,6 @@ export class ProfileService {
     private readonly visibility: VisibilityService,
     private readonly follow: FollowService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
   ) {}
 
   /** Builds a user's profile as seen by `viewerId`, or 404 if not reachable. */
@@ -80,20 +78,14 @@ export class ProfileService {
       },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     const relation = await this.visibility.getRelation(viewerId, target);
     const visibility = resolveProfileVisibility(target.profileAccess, relation);
 
     if (visibility === "hidden") {
       // GHOST or a block in either direction: the profile must not exist.
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     }
 
     if (visibility === "locked") {
@@ -164,7 +156,7 @@ export class ProfileService {
     // target's own `hideProgression` preference off. `UserScore` is only
     // read when gamification is actually on, so a self-hoster running with
     // it off never pays that query.
-    const gamificationEnabled = isGamificationEnabled(this.config, this.flags);
+    const gamificationEnabled = isGamificationEnabled(this.config);
     const xpVisible =
       relation.isSelf || (activityVisible && !target.hideProgression);
 
@@ -293,18 +285,12 @@ export class ProfileService {
       select: { id: true, profileAccess: true },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     const relation = await this.visibility.getRelation(viewerId, target);
     const visibility = resolveProfileVisibility(target.profileAccess, relation);
     if (visibility === "hidden")
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     if (visibility === "locked") return null;
     return target;
   }
@@ -343,18 +329,12 @@ export class ProfileService {
       select: { id: true, profileAccess: true },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     const relation = await this.visibility.getRelation(viewerId, target);
     const visibility = resolveProfileVisibility(target.profileAccess, relation);
     if (visibility === "hidden")
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     if (visibility === "locked") return null;
     return target.id;
   }

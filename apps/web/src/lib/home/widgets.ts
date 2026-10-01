@@ -75,7 +75,7 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
   thisWeek: {
     type: "thisWeek",
     icon: "calendar",
-    title: () => m.home_this_week(),
+    title: () => m.common_this_week(),
     description: () => m.home_widget_this_week_description(),
     min: { w: 3, h: 3 },
     max: { w: 8, h: 10 },
@@ -212,8 +212,8 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
   friendsPodium: {
     type: "friendsPodium",
     icon: "crown",
-    title: () => m.home_widget_friends_podium_title(),
-    description: () => m.home_widget_friends_podium_description(),
+    title: () => m.gamification_widget_friends_podium_title(),
+    description: () => m.gamification_widget_friends_podium_description(),
     min: { w: 3, h: 4 },
     max: { w: 6, h: 6 },
     initial: { w: 3, h: 5 },
@@ -223,8 +223,8 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
   levelStreak: {
     type: "levelStreak",
     icon: "flame",
-    title: () => m.home_widget_level_streak_title(),
-    description: () => m.home_widget_level_streak_description(),
+    title: () => m.gamification_widget_level_streak_title(),
+    description: () => m.gamification_widget_level_streak_description(),
     min: { w: 3, h: 3 },
     max: { w: 4, h: 3 },
     initial: { w: 3, h: 3 },

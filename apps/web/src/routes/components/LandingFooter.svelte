@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
   import {
@@ -9,8 +10,9 @@
     ROADMAP_URL,
   } from "$lib/constants/external-links";
   import { m } from "$lib/paraglide/messages.js";
+  import { languageOptions } from "$lib/locales";
   import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
-  import { Locale } from "@loomkeep/shared";
+  import type { Locale } from "@loomkeep/shared";
 
   const COLUMNS: {
     title: string;
@@ -151,22 +153,11 @@
     <div
       class="border-border text-dim mt-6 flex flex-wrap items-center justify-between gap-4 border-t py-3 text-xs">
       <p>{m.landing_footer_signature()}</p>
-      <div
-        class="border-border flex items-center gap-1 rounded-lg border p-0.5"
-        role="group"
-        aria-label={m.common_language()}>
-        {#each Locale as locale (locale)}
-          <button
-            type="button"
-            onclick={() => setLocale(locale)}
-            aria-pressed={getLocale() === locale}
-            class="rounded-md px-2 py-1 font-mono uppercase transition-colors"
-            class:bg-surface-2={getLocale() === locale}
-            class:text-fg={getLocale() === locale}>
-            {locale}
-          </button>
-        {/each}
-      </div>
+      <Combobox
+        label={m.common_language()}
+        options={languageOptions()}
+        values={[getLocale()]}
+        onChange={([next]) => setLocale(next as Locale)} />
     </div>
   </div>
 </footer>

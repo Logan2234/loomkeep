@@ -106,7 +106,7 @@ const APP_DESTINATIONS: AppDestination[] = [
   {
     id: "leaderboard",
     href: "/app/leaderboard",
-    label: () => m.nav_leaderboard(),
+    label: () => m.gamification_leaderboard_title(),
     icon: "crown",
     social: true,
     gamification: true,

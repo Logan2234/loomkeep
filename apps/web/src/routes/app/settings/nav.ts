@@ -110,7 +110,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "mfa-webauthn",
-            label: m.settings_mfa_webauthn_label(),
+            label: m.common_security_key(),
             keywords: [
               "webauthn",
               "passkey",
@@ -149,6 +149,26 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
             id: "sessions-revoke-all",
             label: m.settings_sessions_disconnect_all(),
             keywords: ["revoke", "deconnexion"],
+          },
+        ],
+      },
+      {
+        slug: "integrations",
+        label: m.settings_integrations_title(),
+        icon: "key",
+        description: m.settings_integrations_description(),
+        keywords: ["api", "token", "jeton", "integration", "script"],
+        newBadgeKey: "integrations",
+        entries: [
+          {
+            id: "api-keys",
+            label: m.settings_api_keys_title(),
+            keywords: ["api key", "cle", "token", "bearer"],
+          },
+          {
+            id: "subscription-links",
+            label: m.settings_subscription_links_title(),
+            keywords: ["ics", "calendrier", "calendar", "atom", "rss", "flux"],
           },
         ],
       },

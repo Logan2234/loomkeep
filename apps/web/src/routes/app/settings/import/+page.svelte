@@ -100,10 +100,10 @@
           {#if lastRunOk}
             ·
             {lastRun.itemCount > 1
-              ? m.settings_import_last_run_items_many({
+              ? m.settings_import_history_items_many({
                   count: lastRun.itemCount,
                 })
-              : m.settings_import_last_run_items_one({
+              : m.settings_import_history_items_one({
                   count: lastRun.itemCount,
                 })}
           {/if}

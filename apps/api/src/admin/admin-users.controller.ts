@@ -332,7 +332,7 @@ export class AdminUsersController {
     });
 
     if (!user) {
-      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.AdminUserNotFound);
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     }
 
     return { xp: await this.xp.adjust(userId, dto.amount) };
@@ -466,7 +466,7 @@ export class AdminUsersController {
     });
 
     if (!user) {
-      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.AdminUserNotFound);
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     }
 
     await this.authService.requestPasswordReset(user.email);
@@ -498,7 +498,7 @@ export class AdminUsersController {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.AdminUserNotFound);
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     }
 
     // Recorded before the delete so the FK (onDelete: SetNull) still resolves;

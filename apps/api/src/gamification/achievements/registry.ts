@@ -401,7 +401,7 @@ export async function checkWellRounded(
 }
 
 // MediaItem.genres is denormalised from TMDB at whatever locale was active
-// when the item was first cached (tmdb.provider.ts's tmdbLanguage — "fr" or
+// when the item was first cached (regionalLocale, via tmdb.provider.ts — "fr" or
 // "en"), so a single library can mix "Horror" and "Horreur" across items.
 // Match both rather than assuming one locale.
 const HORROR_GENRES = ["Horror", "Horreur"];

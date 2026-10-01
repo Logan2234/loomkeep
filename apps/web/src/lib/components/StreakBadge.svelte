@@ -86,10 +86,10 @@
   // real sentence once translated.
   const title = $derived.by(() => {
     if (!days) return "";
-    if (atRisk) return m.streak_at_risk();
+    if (atRisk) return m.gamification_streak_at_risk();
     return days === 1
-      ? m.streak_days_one({ days })
-      : m.streak_days_many({ days });
+      ? m.gamification_streak_days_one({ days })
+      : m.gamification_streak_days_many({ days });
   });
 </script>
 

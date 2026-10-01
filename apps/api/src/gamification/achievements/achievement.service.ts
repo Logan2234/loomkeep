@@ -12,7 +12,6 @@ import { Cron } from "@nestjs/schedule";
 import { Prisma } from "@prisma/client";
 import { AppException } from "../../common/app.exception";
 import { EventsGateway } from "../../events/events.gateway";
-import { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
 import { JOB_KEYS } from "../../jobs/job-keys";
 import { JobRunService } from "../../jobs/job-run.service";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -39,7 +38,6 @@ export class AchievementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
     private readonly xp: XpService,
     private readonly jobRuns: JobRunService,
     private readonly events: EventsGateway,
@@ -52,9 +50,9 @@ export class AchievementService {
    * No-ops entirely when gamification is off.
    */
   async evaluate(userId: string, keys?: string[]): Promise<void> {
-    if (!isGamificationEnabled(this.config, this.flags)) return;
+    if (!isGamificationEnabled(this.config)) return;
 
-    const socialEnabled = isSocialEnabled(this.config, this.flags);
+    const socialEnabled = isSocialEnabled(this.config);
     const definitions = (
       keys
         ? keys
@@ -148,7 +146,7 @@ export class AchievementService {
    * (userId, key) makes a second call a no-op that never re-credits XP.
    */
   async markVersionLinkClicked(userId: string): Promise<void> {
-    if (!isGamificationEnabled(this.config, this.flags)) return;
+    if (!isGamificationEnabled(this.config)) return;
 
     const definition = ACHIEVEMENTS.curious_cat;
     const already = await this.prisma.userAchievement.findUnique({
@@ -171,9 +169,9 @@ export class AchievementService {
    * is never even run, since nothing about it may reach the client.
    */
   async list(userId: string): Promise<AchievementDto[]> {
-    if (!isGamificationEnabled(this.config, this.flags)) return [];
+    if (!isGamificationEnabled(this.config)) return [];
 
-    const socialEnabled = isSocialEnabled(this.config, this.flags);
+    const socialEnabled = isSocialEnabled(this.config);
     const [unlockedRows, equippedKeys, rarityRows] = await Promise.all([
       this.prisma.userAchievement.findMany({
         where: { userId },
@@ -339,7 +337,7 @@ export class AchievementService {
    * rather than an error when gamification is off.
    */
   async pending(userId: string): Promise<PendingAchievementDto[]> {
-    if (!isGamificationEnabled(this.config, this.flags)) return [];
+    if (!isGamificationEnabled(this.config)) return [];
 
     const rows = await this.prisma.userAchievement.findMany({
       where: { userId, displayedAt: null },

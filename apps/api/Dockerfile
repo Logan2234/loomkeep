@@ -1,6 +1,6 @@
 FROM node:26-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS build
 
-RUN npm install -g corepack@0.36.0 && corepack enable && corepack prepare pnpm@11.25.0 --activate
+RUN npm install -g corepack@0.36.0 && corepack enable && corepack prepare pnpm@12.8.1 --activate
 WORKDIR /app
 
 # Manifests first for layer caching (all workspace manifests are required

@@ -60,8 +60,7 @@
         {isNotFound ? m.error_404_cta_home() : m.common_back_home()}
       </a>
       {#if isNotFound && auth.isLoggedIn}
-        <a href="/app/search" class="btn btn-ghost"
-          >{m.error_404_cta_search()}</a>
+        <a href="/app/search" class="btn btn-ghost">{m.search_title_cta()}</a>
       {/if}
     </div>
   </div>

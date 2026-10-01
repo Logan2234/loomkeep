@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { API_KEY_PREFIX, ErrorCode } from "@loomkeep/shared";
 import {
   CanActivate,
   ExecutionContext,
@@ -8,6 +8,11 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
+import {
+  API_KEY_ACCESS_KEY,
+  type ApiKeyAccess,
+} from "../../api-keys/api-key-access.decorator";
+import { ApiKeyAuthService } from "../../api-keys/api-key-auth.service";
 import { AppException } from "../../common/app.exception";
 import { PrismaService } from "../../prisma/prisma.service";
 import { readAccessCookie } from "../auth-cookies";
@@ -24,7 +29,11 @@ import {
 import { SessionCacheService } from "../session-cache.service";
 import { isSessionLive } from "../session-live.util";
 
-/** Global guard: every route requires an HttpOnly access-token cookie unless marked @Public(). */
+/**
+ * Global guard: every route requires an HttpOnly access-token cookie unless
+ * marked @Public(). Without a cookie, an `Authorization: Bearer lk_…` API key
+ * is accepted, but only on routes marked @AllowApiKey().
+ */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
@@ -33,6 +42,7 @@ export class JwtAuthGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
     private readonly sessionCache: SessionCacheService,
+    private readonly apiKeys: ApiKeyAuthService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -56,6 +66,17 @@ export class JwtAuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const token = readAccessCookie(request);
+
+    const authorization = request.headers.authorization;
+
+    if (!token && authorization?.startsWith("Bearer ")) {
+      await this.authenticateApiKey(
+        context,
+        request,
+        authorization.slice("Bearer ".length),
+      );
+      return true;
+    }
 
     if (!token) {
       throw new AppException(
@@ -90,6 +111,45 @@ export class JwtAuthGuard implements CanActivate {
 
     request.user = payload;
     return true;
+  }
+
+  private async authenticateApiKey(
+    context: ExecutionContext,
+    request: AuthenticatedRequest,
+    secret: string,
+  ): Promise<void> {
+    const principal = secret.startsWith(API_KEY_PREFIX)
+      ? await this.apiKeys.authenticate(secret, request.ip)
+      : null;
+
+    if (!principal) {
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidApiKey,
+      );
+    }
+
+    const access = this.reflector.getAllAndOverride<ApiKeyAccess | undefined>(
+      API_KEY_ACCESS_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    const granted =
+      access !== undefined &&
+      (access.resource === null ||
+        principal.scopes.includes(`${access.resource}:read`));
+
+    if (!granted) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.AuthApiKeyForbidden,
+      );
+    }
+
+    request.user = {
+      sub: principal.userId,
+      email: principal.email,
+      apiKeyId: principal.keyId,
+    };
   }
 
   /**

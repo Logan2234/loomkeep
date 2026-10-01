@@ -7,7 +7,7 @@ import type {
 } from "@loomkeep/shared";
 
 export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
-  PENDING: m.report_status_pending(),
+  PENDING: m.common_pending(),
   RESOLVED: m.report_status_resolved(),
   DISMISSED: m.report_status_dismissed(),
 };

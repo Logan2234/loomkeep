@@ -1,4 +1,4 @@
-import { Locale, type Locale as LocaleCode } from "@loomkeep/shared";
+import type { CopyLocale } from "../common/copy-locale.util";
 
 type ModerationVariant = {
   measure: string;
@@ -67,6 +67,8 @@ export interface MailCopy {
     intro: string;
     warning: string;
     button: string;
+    /** Only when API keys are still active: they survive a password change. */
+    apiKeys: (count: number) => string;
   };
   newDevice: {
     subject: string;
@@ -74,6 +76,20 @@ export interface MailCopy {
     unknownDevice: string;
     intro: (device: string, ip: string) => string;
     warning: string;
+    button: string;
+  };
+  apiKeyCreated: {
+    subject: string;
+    heading: string;
+    intro: (name: string) => string;
+    warning: string;
+    button: string;
+  };
+  apiKeyExpiring: {
+    subject: (name: string) => string;
+    heading: string;
+    intro: (name: string, date: string) => string;
+    hint: string;
     button: string;
   };
   emailChangedOld: {
@@ -221,6 +237,10 @@ export const MAIL_COPY = {
       warning:
         "Si tu n'es pas à l'origine de cette action, ton compte est peut-être compromis : réinitialise immédiatement ton mot de passe.",
       button: "Réinitialiser mon mot de passe",
+      apiKeys: (count) =>
+        count === 1
+          ? "Ton compte a une clé API active : elle reste valable après ce changement. Si ce n'est pas toi qui as changé le mot de passe, révoque-la depuis Réglages > Intégrations."
+          : `Ton compte a ${count} clés API actives : elles restent valables après ce changement. Si ce n'est pas toi qui as changé le mot de passe, révoque-les depuis Réglages > Intégrations.`,
     },
     newDevice: {
       subject: "Nouvelle connexion à ton compte Loomkeep",
@@ -231,6 +251,23 @@ export const MAIL_COPY = {
       warning:
         "Si ce n'est pas toi, change ton mot de passe immédiatement et déconnecte les autres appareils depuis Réglages > Sécurité.",
       button: "Ouvrir mes réglages de sécurité",
+    },
+    apiKeyCreated: {
+      subject: "Nouvelle clé API sur ton compte Loomkeep",
+      heading: "Clé API créée",
+      intro: (name) =>
+        `Une clé API nommée « ${name} » vient d'être créée sur ton compte Loomkeep. Elle permet à un outil de lire ton compte sans ton mot de passe.`,
+      warning:
+        "Si tu n'es pas à l'origine de cette clé, révoque-la tout de suite depuis Réglages > Intégrations, puis change ton mot de passe.",
+      button: "Voir mes clés API",
+    },
+    apiKeyExpiring: {
+      subject: (name) => `Ta clé API « ${name} » expire bientôt`,
+      heading: "Clé API bientôt expirée",
+      intro: (name, date) =>
+        `Ta clé API « ${name} » expire le ${date}. Passé cette date, les outils qui l'utilisent n'auront plus accès à ton compte.`,
+      hint: "Si tu t'en sers encore, crée une nouvelle clé et remplace-la dans tes outils. Sinon, tu n'as rien à faire.",
+      button: "Gérer mes clés API",
     },
     emailChangedOld: {
       subject: "L'email de ton compte Loomkeep a changé",
@@ -386,6 +423,10 @@ export const MAIL_COPY = {
       warning:
         "If you did not do this, your account may be compromised: reset your password immediately.",
       button: "Reset my password",
+      apiKeys: (count) =>
+        count === 1
+          ? "Your account has one active API key: it stays valid after this change. If you didn't change the password, revoke it from Settings > Integrations."
+          : `Your account has ${count} active API keys: they stay valid after this change. If you didn't change the password, revoke them from Settings > Integrations.`,
     },
     newDevice: {
       subject: "New sign-in to your Loomkeep account",
@@ -396,6 +437,23 @@ export const MAIL_COPY = {
       warning:
         "If this wasn't you, change your password immediately and sign out other devices from Settings > Security.",
       button: "Open security settings",
+    },
+    apiKeyCreated: {
+      subject: "New API key on your Loomkeep account",
+      heading: "API key created",
+      intro: (name) =>
+        `An API key named "${name}" was just created on your Loomkeep account. It lets a tool read your account without your password.`,
+      warning:
+        "If you did not create this key, revoke it right away from Settings > Integrations, then change your password.",
+      button: "View my API keys",
+    },
+    apiKeyExpiring: {
+      subject: (name) => `Your API key "${name}" expires soon`,
+      heading: "API key expiring soon",
+      intro: (name, date) =>
+        `Your API key "${name}" expires on ${date}. After that, the tools using it will lose access to your account.`,
+      hint: "If you still use it, create a new key and swap it in your tools. Otherwise, there's nothing to do.",
+      button: "Manage my API keys",
     },
     emailChangedOld: {
       subject: "Your Loomkeep account email has changed",
@@ -471,12 +529,192 @@ export const MAIL_COPY = {
       eyebrow: "New version",
     },
   },
-} satisfies Record<LocaleCode, MailCopy>;
-
-export function resolveMailLocale(locale: string | undefined): LocaleCode {
-  return Locale.includes(locale as LocaleCode) ? (locale as LocaleCode) : "fr";
-}
-
-export function dateLocale(locale: LocaleCode): string {
-  return locale === "fr" ? "fr-FR" : "en-US";
-}
+  it: {
+    reportsDigest: {
+      subject: (count) =>
+        `${count} ${count === 1 ? "segnalazione" : "segnalazioni"} in attesa di moderazione`,
+      heading: "Segnalazioni in attesa di moderazione",
+      sentence: (count) =>
+        `${count} ${count === 1 ? "segnalazione è" : "segnalazioni sono"} in attesa di moderazione su Loomkeep.`,
+      button: "Apri la coda di moderazione",
+    },
+    quotaAlert: {
+      subject: (provider, percent) =>
+        `Quota ${provider}: ${percent}% usato oggi`,
+      heading: "Quota del fornitore",
+      sentence: (provider, percent, count, limit) =>
+        `${provider} ha raggiunto il ${percent}% della sua quota giornaliera: ${count} chiamate su ${limit}.`,
+      exhausted:
+        "Le prossime chiamate potrebbero essere rifiutate fino al cambio di giorno (mezzanotte UTC).",
+      button: "Apri i servizi",
+    },
+    jobAlert: {
+      failedSubject: (job) => `Il job ${job} non è riuscito`,
+      recoveredSubject: (job) => `Il job ${job} funziona di nuovo`,
+      heading: "Job pianificati",
+      failed: (job) => `Il job ${job} è appena fallito:`,
+      recovered: (job) => `Il job ${job} funziona di nuovo.`,
+      onlyOnce:
+        "Non riceverai altre email per i suoi prossimi errori, solo quando tornerà a funzionare.",
+      button: "Apri i job",
+    },
+    moderation: {
+      comment: {
+        measure: "la rimozione di uno dei tuoi commenti",
+        subject: "Uno dei tuoi commenti è stato rimosso",
+      },
+      review: {
+        measure: "la rimozione di una delle tue recensioni",
+        subject: "Una delle tue recensioni è stata rimossa",
+      },
+      account: {
+        measure: "l'eliminazione del tuo account Loomkeep",
+        subject: "Il tuo account Loomkeep è stato eliminato",
+      },
+      illegalBasis: "riteniamo questo contenuto manifestamente illecito",
+      tosBasis: (clause) =>
+        `questo contenuto o comportamento viola i nostri Termini di servizio (${clause})`,
+      intro: (measure) =>
+        `Abbiamo preso una misura di moderazione riguardante il tuo account: ${measure}.`,
+      factsLabel: "Fatti considerati",
+      basisLabel: "Motivazione",
+      humanDecision:
+        "Questa decisione è stata presa da un moderatore, non da un sistema automatico.",
+      appeal:
+        "Puoi contestarla rispondendo direttamente a questa email o scrivendo a contact@loomkeep.app.",
+    },
+    inactivity: {
+      subject: "Il tuo account Loomkeep verrà eliminato per inattività",
+      heading: "Il tuo account verrà eliminato a breve",
+      intro: "Il tuo account Loomkeep è inattivo da 24 mesi.",
+      policy: (date) =>
+        `In base alla nostra politica di conservazione dei dati, verrà eliminato definitivamente il ${date}, a meno che tu non acceda prima di allora.`,
+      text: (date) =>
+        `Il tuo account Loomkeep è inattivo da 24 mesi. In base alla nostra politica di conservazione dei dati, verrà eliminato definitivamente il ${date}, a meno che tu non acceda prima di allora.\n\nPer conservarlo, basta accedere una volta:`,
+      button: "Accedi",
+      hint: "Basta accedere una volta per annullare l'eliminazione.",
+    },
+    passwordReset: {
+      subject: "Reimposta la tua password Loomkeep",
+      heading: "Reimposta la password",
+      intro:
+        "È stato richiesto un link per reimpostare la password del tuo account Loomkeep.",
+      button: "Reimposta la mia password",
+      expiry:
+        "Questo link scade tra 1 ora. Se non l'hai richiesto tu, ignora questa email.",
+    },
+    passwordChanged: {
+      subject: "La tua password Loomkeep è stata cambiata",
+      heading: "Password cambiata",
+      intro: "La password del tuo account Loomkeep è appena stata cambiata.",
+      warning:
+        "Se non sei stato tu, il tuo account potrebbe essere compromesso: reimposta subito la password.",
+      button: "Reimposta la mia password",
+      apiKeys: (count) =>
+        count === 1
+          ? "Il tuo account ha una chiave API attiva: resta valida dopo questo cambio. Se non hai cambiato tu la password, revocala da Impostazioni > Integrazioni."
+          : `Il tuo account ha ${count} chiavi API attive: restano valide dopo questo cambio. Se non hai cambiato tu la password, revocale da Impostazioni > Integrazioni.`,
+    },
+    newDevice: {
+      subject: "Nuovo accesso al tuo account Loomkeep",
+      heading: "Nuovo accesso rilevato",
+      unknownDevice: "Dispositivo sconosciuto",
+      intro: (device, ip) =>
+        `È appena avvenuto un accesso al tuo account Loomkeep da un dispositivo non riconosciuto: ${device}${ip}.`,
+      warning:
+        "Se non sei stato tu, cambia subito la password e disconnetti gli altri dispositivi da Impostazioni > Sicurezza.",
+      button: "Apri le impostazioni di sicurezza",
+    },
+    apiKeyCreated: {
+      subject: "Nuova chiave API sul tuo account Loomkeep",
+      heading: "Chiave API creata",
+      intro: (name) =>
+        `Sul tuo account Loomkeep è appena stata creata una chiave API chiamata «${name}». Permette a uno strumento di leggere il tuo account senza la tua password.`,
+      warning:
+        "Se non l'hai creata tu, revocala subito da Impostazioni > Integrazioni, poi cambia la password.",
+      button: "Vedi le mie chiavi API",
+    },
+    apiKeyExpiring: {
+      subject: (name) => `La tua chiave API «${name}» scade presto`,
+      heading: "Chiave API in scadenza",
+      intro: (name, date) =>
+        `La tua chiave API «${name}» scade il ${date}. Dopo quella data, gli strumenti che la usano non avranno più accesso al tuo account.`,
+      hint: "Se la usi ancora, crea una nuova chiave e sostituiscila nei tuoi strumenti. Altrimenti non devi fare nulla.",
+      button: "Gestisci le mie chiavi API",
+    },
+    emailChangedOld: {
+      subject: "L'email del tuo account Loomkeep è cambiata",
+      heading: "Indirizzo email cambiato",
+      intro: (email) =>
+        `L'indirizzo email del tuo account Loomkeep è stato cambiato in ${email}.`,
+      warning:
+        "Se non sei stato tu, il tuo account potrebbe essere compromesso: contattaci subito.",
+      button: "Contattaci",
+    },
+    emailChangedNew: {
+      subject: "Questo indirizzo è ora collegato al tuo account Loomkeep",
+      heading: "Indirizzo email confermato",
+      intro: (email) =>
+        `Questo indirizzo è ora l'email di accesso del tuo account Loomkeep (prima era ${email}).`,
+    },
+    emailChangeCode: {
+      subject: "Conferma il tuo nuovo indirizzo email Loomkeep",
+      heading: "Conferma il tuo indirizzo email",
+      intro: "Ecco il tuo codice di conferma:",
+      expiry:
+        "Questo codice scade tra 15 minuti. Se non l'hai richiesto tu, ignora questa email.",
+    },
+    mfaCode: {
+      subject: "Il tuo codice di accesso Loomkeep",
+      heading: "Il tuo codice di accesso",
+      intro: "Ecco il tuo codice di accesso:",
+      expiry:
+        "Questo codice scade tra 10 minuti. Se non hai provato ad accedere, ignora questa email e controlla la tua password.",
+    },
+    welcome: {
+      subject: "Benvenuto su Loomkeep",
+      intro: (name) =>
+        `Benvenuto ${name}! Il tuo account Loomkeep è stato creato.`,
+      button: "Apri Loomkeep",
+    },
+    verifyEmail: {
+      subject: "Conferma il tuo indirizzo email Loomkeep",
+      heading: "Conferma il tuo indirizzo email",
+      intro:
+        "Conferma il tuo indirizzo email cliccando sul pulsante qui sotto.",
+      button: "Conferma la mia email",
+      expiry: "Questo link scade tra 24 ore.",
+    },
+    invitation: {
+      subject: (inviter) =>
+        inviter
+          ? `${inviter} ti ha invitato su Loomkeep`
+          : "Sei invitato su Loomkeep",
+      heading: "Un posto ti aspetta su Loomkeep",
+      intro: (inviter) =>
+        `${inviter ? `${inviter} ti ha invitato` : "Sei invitato"} a unirti a Loomkeep per seguire le tue serie, film, anime, giochi, libri e album. Crea il tuo account con il pulsante qui sotto.`,
+      button: "Crea il mio account",
+      expiry: (date) =>
+        `Questo invito è valido fino al ${date}. Se non te lo aspettavi, ignora semplicemente questa email.`,
+    },
+    episodeDigest: {
+      today: "oggi",
+      thisWeek: "questa settimana",
+      oneSubject: (title) => `Nuovo episodio: ${title}`,
+      oneIntro: (period) => `Un episodio ti aspetta ${period}.`,
+      severalSubject: (count, period) => `${count} nuovi episodi ${period}`,
+      severalIntro: (period) => `Ecco cosa esce ${period}.`,
+      manySubject: (count, period) => `${count} uscite ${period}`,
+      manyIntro: (count, period) =>
+        `Un programma fitto: ${count} episodi escono ${period}.`,
+      preferences: "Gestisci le mie notifiche",
+    },
+    newsletter: {
+      reason: "Ricevi questa email perché ti sei iscritto agli aggiornamenti.",
+      preferences: "Gestisci le mie preferenze",
+      unsubscribe: "Disiscriviti",
+      button: "Vedi le novità",
+      eyebrow: "Nuova versione",
+    },
+  },
+} satisfies Record<CopyLocale, MailCopy>;

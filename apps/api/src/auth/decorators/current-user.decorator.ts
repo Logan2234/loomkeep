@@ -7,6 +7,8 @@ export interface JwtPayload {
   email: string;
   /** Stable server-side session ID. */
   sid?: string;
+  /** Set instead of `sid` when the request carried an API key. */
+  apiKeyId?: string;
 }
 
 export interface AuthenticatedRequest extends FastifyRequest {

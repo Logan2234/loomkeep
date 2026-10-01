@@ -3,7 +3,12 @@ import type {
   MediaExtrasDto,
   WatchProviderDto,
 } from "@loomkeep/shared";
-import { CatalogSource, MediaSummaryDto, MediaType } from "@loomkeep/shared";
+import {
+  CatalogSource,
+  MediaSummaryDto,
+  MediaType,
+  regionalLocale,
+} from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { fetchJson } from "../../common/http.util";
@@ -15,7 +20,6 @@ import type {
   ProviderSeason,
 } from "./provider.types";
 import {
-  tmdbLanguage,
   toCastDetail,
   toExtras,
   toMovieDetails,
@@ -127,7 +131,7 @@ export class TmdbProvider implements CatalogProvider {
       query,
       page: String(page),
       include_adult: "true",
-      language: tmdbLanguage(lang),
+      language: regionalLocale(lang),
     };
 
     const [movies, series] = await Promise.all([
@@ -215,7 +219,7 @@ export class TmdbProvider implements CatalogProvider {
   ): Promise<ProviderMediaDetails> {
     const movie = await this.get<TmdbMovieDetails>(`/movie/${sourceId}`, {
       append_to_response: "external_ids",
-      language: tmdbLanguage(lang),
+      language: regionalLocale(lang),
     });
 
     return toMovieDetails(movie);
@@ -227,7 +231,7 @@ export class TmdbProvider implements CatalogProvider {
   ): Promise<ProviderMediaDetails> {
     const tv = await this.get<TmdbTvDetails>(`/tv/${sourceId}`, {
       append_to_response: "external_ids",
-      language: tmdbLanguage(lang),
+      language: regionalLocale(lang),
     });
 
     // Episode lists live on per-season endpoints.
@@ -260,7 +264,7 @@ export class TmdbProvider implements CatalogProvider {
       // TMDB's /images endpoint defaults to the request's language, filtering
       // out most backdrops; an empty language keeps the full (unfiltered) set.
       include_image_language: "null",
-      language: tmdbLanguage(lang),
+      language: regionalLocale(lang),
     });
 
     // IMDb / Rotten Tomatoes / Metacritic from OMDb (via the IMDb id).

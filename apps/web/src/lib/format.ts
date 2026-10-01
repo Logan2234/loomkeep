@@ -1,10 +1,10 @@
 import { auth } from "$lib/auth.svelte";
-import { toIntlLocale } from "$lib/constants/language-to-locale";
 import { m } from "$lib/paraglide/messages.js";
 import { getLocale, isLocale } from "$lib/paraglide/runtime.js";
+import { regionalLocale } from "@loomkeep/shared";
 
 const resolveLocale = (locale?: string) =>
-  locale ?? toIntlLocale(auth.user?.locale ?? getLocale());
+  locale ?? regionalLocale(auth.user?.locale ?? getLocale());
 
 function messageLocale(locale: string) {
   const language = new Intl.Locale(locale).language;

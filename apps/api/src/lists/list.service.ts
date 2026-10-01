@@ -19,7 +19,6 @@ import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { EventsGateway } from "../events/events.gateway";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_LIST_CREATED } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
@@ -74,7 +73,6 @@ export class ListService {
     private readonly visibility: VisibilityService,
     private readonly activity: ActivityService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
     private readonly notifications: NotificationService,
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
@@ -472,7 +470,7 @@ export class ListService {
     actorId: string,
     item: ListItemDto,
   ): Promise<void> {
-    if (!isSocialEnabled(this.config, this.flags)) return;
+    if (!isSocialEnabled(this.config)) return;
 
     const members = await this.prisma.listMember.findMany({
       where: { listId: list.id },
@@ -656,10 +654,7 @@ export class ListService {
       select: AUTHOR_SELECT,
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.ListMemberUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     if (target.id === userId) {
       throw new AppException(
@@ -825,7 +820,7 @@ export class ListService {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
     if (row.userId === userId) return { row, role: "OWNER" };
 
-    if (isSocialEnabled(this.config, this.flags)) {
+    if (isSocialEnabled(this.config)) {
       const member = await this.prisma.listMember.findUnique({
         where: { listId_userId: { listId: id, userId } },
       });

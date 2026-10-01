@@ -362,6 +362,7 @@ describe("MailService template gallery", () => {
         "emailChangedNew",
         "emailChangeCode",
         "newDeviceLogin",
+        "apiKeyCreated",
       ]),
     );
   });
@@ -375,6 +376,18 @@ describe("MailService template gallery", () => {
     expect(preview).not.toBeNull();
     expect(preview?.subject).toContain("Bienvenue");
     expect(preview?.html).toContain("Loomkeep");
+  });
+
+  it("links to the first web origin when WEB_ORIGIN lists several", () => {
+    process.env.WEB_ORIGIN = "http://localhost:5173,https://dev.loomkeep.app";
+    const service = new MailService(quota);
+
+    const preview = service.renderTemplatePreview("apiKeyCreated");
+
+    expect(preview?.html).toContain(
+      'href="http://localhost:5173/app/settings/integrations"',
+    );
+    expect(preview?.text).not.toContain(",https://");
   });
 
   it("renders the same template in the requested locale", () => {

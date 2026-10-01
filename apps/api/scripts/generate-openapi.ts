@@ -19,8 +19,13 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { enableApiVersioning } from "../src/common/api-versioning";
 
 const DIST_APP_MODULE = join(__dirname, "../dist/src/app.module.js");
+const DIST_PUBLIC_API_DOCUMENT = join(
+  __dirname,
+  "../dist/src/public-api/openapi.js",
+);
 
 async function main() {
   if (!existsSync(DIST_APP_MODULE)) {
@@ -36,6 +41,7 @@ async function main() {
     logger: false,
   });
   app.setGlobalPrefix("api");
+  enableApiVersioning(app);
 
   const document = SwaggerModule.createDocument(
     app,
@@ -50,6 +56,23 @@ async function main() {
   writeFileSync(
     join(__dirname, "../openapi.json"),
     JSON.stringify(document, null, 2) + "\n",
+  );
+
+  // The public API's own contract, for the docs site (apps/docs): v1 routes
+  // only, pointed at the hosted instance its "Try it" console calls.
+  const { buildPublicApiDocument } = await import(
+    pathToFileURL(DIST_PUBLIC_API_DOCUMENT).href
+  );
+  writeFileSync(
+    join(__dirname, "../openapi-v1.json"),
+    JSON.stringify(
+      buildPublicApiDocument(app, "1", {
+        url: "https://loomkeep.app",
+        description: "Loomkeep",
+      }),
+      null,
+      2,
+    ) + "\n",
   );
 
   await app.close();

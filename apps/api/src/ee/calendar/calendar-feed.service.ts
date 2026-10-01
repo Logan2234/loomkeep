@@ -4,6 +4,10 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { randomBytes } from "node:crypto";
 import { AppException } from "../../common/app.exception";
+import {
+  type CopyLocale,
+  resolveCopyLocale,
+} from "../../common/copy-locale.util";
 import { canonicalExternalId } from "../../common/external-id.util";
 import { EntitlementService } from "../../entitlements/entitlement.service";
 import { LibraryService } from "../../library/library.service";
@@ -17,7 +21,7 @@ const RELEASES_WINDOW_DAYS = 30;
 /** A feed reader keeps what it already fetched: this only caps one fetch. */
 const RELEASES_MAX_ENTRIES = 100;
 
-const FEED_COPY: Record<string, { title: string; description: string }> = {
+const FEED_COPY = {
   fr: {
     title: "Loomkeep · Épisodes sortis",
     description: "Les derniers épisodes sortis des séries que tu suis.",
@@ -26,7 +30,11 @@ const FEED_COPY: Record<string, { title: string; description: string }> = {
     title: "Loomkeep · New episodes",
     description: "The latest episodes of the shows you follow.",
   },
-};
+  it: {
+    title: "Loomkeep · Episodi usciti",
+    description: "Gli ultimi episodi usciti delle serie che segui.",
+  },
+} satisfies Record<CopyLocale, { title: string; description: string }>;
 
 /**
  * The release calendar as an `.ics` subscription, and the episodes already
@@ -84,7 +92,7 @@ export class CalendarFeedService {
     const webOrigin = (this.config.get<string>("WEB_ORIGIN") ?? "")
       .split(",")[0]
       .trim();
-    const copy = FEED_COPY[user.locale] ?? FEED_COPY.en;
+    const copy = FEED_COPY[resolveCopyLocale(user.locale)];
 
     return {
       id: `urn:loomkeep:releases:${user.id}`,

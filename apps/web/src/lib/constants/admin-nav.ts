@@ -41,6 +41,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     match: (p) => p.startsWith("/app/admin/stats"),
   },
   {
+    href: "/app/admin/settings",
+    label: m.admin_settings_title(),
+    description: m.admin_nav_settings_description(),
+    icon: "gear",
+    match: (p) => p.startsWith("/app/admin/settings"),
+  },
+  {
     href: "/app/admin/jobs",
     label: m.admin_jobs_title(),
     description: m.admin_nav_jobs_description(),
@@ -138,6 +145,7 @@ export const ADMIN_NAV_GROUPS = [
     label: m.admin_group_system(),
     items: itemsFor([
       "/app/admin/services",
+      "/app/admin/settings",
       "/app/admin/jobs",
       "/app/admin/stats",
     ]),

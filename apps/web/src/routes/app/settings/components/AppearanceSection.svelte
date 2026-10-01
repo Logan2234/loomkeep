@@ -9,6 +9,7 @@
   import { updateMe } from "$lib/api/auth";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
+  import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
   import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
@@ -20,6 +21,7 @@
   import { isDomainEnabled } from "$lib/domains";
   import { useEeLock } from "$lib/ee/license.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
+  import { languageOptions } from "$lib/locales";
   import type { MobileDestination } from "$lib/navigation";
   import {
     DEFAULT_BOTTOM_SHORTCUTS,
@@ -43,10 +45,7 @@
   const MIN = 3;
   const MAX = 7;
 
-  const LOCALE_OPTIONS: { label: string; value: Locale }[] = [
-    { label: m.common_language_fr(), value: "fr" },
-    { label: m.common_language_en(), value: "en" },
-  ];
+  const LOCALE_OPTIONS = languageOptions();
 
   const MOTION_OPTIONS: { label: string; value: MotionPreference }[] = [
     { label: m.common_system(), value: "system" },
@@ -168,11 +167,11 @@
       <div
         class:pointer-events-none={saveLocaleMut.loading}
         class:opacity-50={saveLocaleMut.loading}>
-        <SegmentedControl
+        <Combobox
           label={m.common_language()}
           options={LOCALE_OPTIONS}
-          value={auth.user?.locale ?? getLocale()}
-          onChange={saveLocale} />
+          values={[auth.user?.locale ?? getLocale()]}
+          onChange={([next]) => saveLocale(next as Locale)} />
       </div>
     </div>
 
