@@ -7,11 +7,6 @@ export default defineConfig({
   site: "https://docs.loomkeep.app",
   // Only SVGs here: nothing to optimise, and no need for Sharp.
   image: { service: passthroughImageService() },
-  // The API guides lived at the root before the docs covered the whole product.
-  redirects: {
-    "/authentication/": "/api/authentication/",
-    "/conventions/": "/api/conventions/",
-  },
   integrations: [
     starlight({
       title: "Loomkeep Docs",
