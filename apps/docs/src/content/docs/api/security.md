@@ -42,6 +42,5 @@ changed it, revoke them all with **Revoke all**.
 
 ## Reporting a vulnerability
 
-Found a security issue in Loomkeep itself? Don't open a public issue: write
-to the address in the repository's
-[security policy](https://github.com/Logan2234/loomkeep/security/policy).
+Found a security issue in Loomkeep itself? Don't open a public issue:
+report it privately, as [Security](/project/security/) explains.
