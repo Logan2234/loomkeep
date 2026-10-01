@@ -9,9 +9,9 @@ import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
 import { IsIn, IsInt, IsOptional, Max, Min } from "class-validator";
 
-export const API_V1_MAX_LIMIT = 100;
+const API_V1_MAX_LIMIT = 100;
 
-export class PageQueryDto {
+class PageQueryDto {
   @ApiPropertyOptional({ minimum: 1, default: 1 })
   @IsOptional()
   @Type(() => Number)

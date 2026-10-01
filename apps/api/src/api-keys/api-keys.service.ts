@@ -154,7 +154,7 @@ export class ApiKeysService {
 }
 
 /** Keys still able to authenticate: never-expiring, or not expired yet. */
-export function activeKeysWhere(userId: string, now = new Date()) {
+function activeKeysWhere(userId: string, now = new Date()) {
   return {
     userId,
     OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],

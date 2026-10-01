@@ -6,7 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Loomkeep — self-hosted media tracker (series, movies, anime, games, books,
 music, and more to come), open-core under AGPL-3.0. pnpm monorepo: `apps/api`
-(NestJS + Prisma + PostgreSQL), `apps/web` (SvelteKit PWA), `packages/shared`
+(NestJS + Prisma + PostgreSQL), `apps/web` (SvelteKit PWA), `apps/docs`
+(docs.loomkeep.app: Astro Starlight guides + a Scalar reference rendered from
+the public API's `openapi-v1.json`, deployed to GitHub Pages by `docs.yml`),
+`packages/shared`
 (DTOs/enums — consumed from its built `dist/`, so run `pnpm build:package` after any change
 there). Catalogs are queried live (TMDB/AniList/IGDB/Open Library/
 MusicBrainz) and nothing is persisted until a user tracks an item — see
@@ -22,6 +25,7 @@ see "Feature flags & entitlements".
 pnpm dev                                       # api on :3000 + web on :5173 (parallel)
 pnpm test                                      # runs all tests
 pnpm build:package                             # REQUIRED after any change in packages/shared
+pnpm dev:docs                                  # docs site on :4321 (needs apps/api built + generate:openapi first)
 
 # API
 pnpm --filter @loomkeep/api exec vitest src/catalog/providers/tmdb.provider.spec.ts   # single test file

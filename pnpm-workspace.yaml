@@ -6,6 +6,12 @@ allowBuilds:
   "@prisma/client": true
   "@prisma/engines": true
   "@swc/core": true
+  # Astro (apps/docs) bundles through esbuild; its postinstall only re-checks
+  # the platform binary the optional dependency already installed.
+  esbuild: false
+  # Pulled in by @scalar/api-reference (apps/docs), whose prebuilt standalone
+  # bundle is all the docs copy; vue-demi's Vue 2/3 switch never runs there.
+  vue-demi: false
   # prisma-erd-generator pulls puppeteer, but the .md ERD target never launches
   # a browser, so we skip its Chromium download. @scarf/scarf is opt-in analytics.
   "@scarf/scarf": false
@@ -109,3 +115,10 @@ overrides:
   tmp@<0.2.6: ^0.2.6
   uuid@<11.1.1: ^11.1.1
   qs@<6.16.0: ^6.16.0
+# @nestjs/platform-fastify imports rxjs without declaring it, so it used
+# whichever rxjs pnpm hoisted — rxjs 6 once apps/docs joined the workspace,
+# which crashes the API at boot. Declared here, it gets the app's rxjs 7.
+packageExtensions:
+  "@nestjs/platform-fastify":
+    peerDependencies:
+      rxjs: ^7.1.0
