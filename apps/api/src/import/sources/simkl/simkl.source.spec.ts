@@ -32,7 +32,7 @@ function mockFetchByUrl(routes: Record<string, unknown>): Mock {
   return fn;
 }
 
-function makeService() {
+function makeService(env: Record<string, string> = {}) {
   const prisma = {
     season: { findMany: vi.fn().mockResolvedValue([]) },
     episodeWatch: {
@@ -64,7 +64,7 @@ function makeService() {
   };
   const config = {
     getOrThrow: vi.fn().mockReturnValue("simkl-client-id"),
-    get: vi.fn().mockReturnValue(undefined),
+    get: vi.fn((key: string) => env[key]),
   };
   const quota = { record: vi.fn() };
   const matchResolver = new MediaMatchResolver(tmdb as never);
@@ -201,6 +201,23 @@ describe("SimklImportSource (via ImportJobService)", () => {
 
     expect(job.status).toBe("failed");
     expect(job.error).toMatch(/token exchange failed/i);
+  });
+
+  it("sends the first web origin as the redirect URI when WEB_ORIGIN lists several", async () => {
+    const { service } = makeService({
+      WEB_ORIGIN: "http://localhost:5173,https://dev.loomkeep.app",
+    });
+    const fetchMock = mockFetchByUrl({ "oauth/token": 400 });
+
+    const started = await service.startAnalyze("u1", "simkl", {
+      input: "code",
+    });
+    await runToEnd(service, "u1", started.id);
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body)).redirect_uri).toBe(
+      "http://localhost:5173/app/settings/import/simkl/callback",
+    );
   });
 
   it("commit writes episode watches and library entries", async () => {

@@ -8,6 +8,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import nodemailer, { Transporter } from "nodemailer";
 import { resolveCopyLocale } from "../common/copy-locale.util";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
+import { primaryWebOrigin } from "../common/web-origin.util";
 import { MAIL_COPY } from "./mail.i18n";
 
 /** A provider reaching one of its daily-quota alert thresholds. */
@@ -453,7 +454,7 @@ export class MailService {
   constructor(private readonly quota: QuotaTrackerService) {
     const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } =
       process.env;
-    this.webOrigin = process.env.WEB_ORIGIN ?? "http://localhost:5173";
+    this.webOrigin = primaryWebOrigin(process.env.WEB_ORIGIN);
     this.from = SMTP_FROM ?? "Loomkeep <noreply@loomkeep.app>";
     this.umamiLinksBaseUrl = process.env.UMAMI_LINKS_BASE_URL || undefined;
 
