@@ -3,10 +3,13 @@ import type {
   ApiV1TargetDto,
   ApiV1WorkDto,
   BookEntryDto,
+  BookItemDto,
   GameEntryDto,
+  GameItemDto,
   LibraryEntryDto,
   MediaItemDto,
   MusicEntryDto,
+  MusicItemDto,
   ReviewTargetSummaryDto,
   ReviewTargetType,
 } from "@loomkeep/shared";
@@ -23,7 +26,10 @@ export function webUrl(webOrigin: string, path: string): string {
 }
 
 export function mediaWork(
-  media: MediaItemDto,
+  media: Pick<
+    MediaItemDto,
+    "id" | "type" | "title" | "posterUrl" | "canonicalSource" | "sourceId"
+  >,
   webOrigin: string,
 ): ApiV1WorkDto {
   return {
@@ -39,6 +45,66 @@ export function mediaWork(
       webOrigin,
       `/app/media/${media.type.toLowerCase()}/${media.sourceId}`,
     ),
+  };
+}
+
+export function gameWork(
+  game: Pick<
+    GameItemDto,
+    "id" | "title" | "coverUrl" | "canonicalSource" | "sourceId"
+  >,
+  webOrigin: string,
+): ApiV1WorkDto {
+  return {
+    id: game.id,
+    domain: "GAMES",
+    type: null,
+    title: game.title,
+    creators: [],
+    coverUrl: game.coverUrl,
+    source: game.canonicalSource,
+    sourceId: game.sourceId,
+    url: webUrl(webOrigin, `/app/games/${game.sourceId}`),
+  };
+}
+
+export function bookWork(
+  book: Pick<
+    BookItemDto,
+    "id" | "title" | "authors" | "coverUrl" | "canonicalSource" | "sourceId"
+  >,
+  webOrigin: string,
+): ApiV1WorkDto {
+  return {
+    id: book.id,
+    domain: "BOOKS",
+    type: null,
+    title: book.title,
+    creators: book.authors,
+    coverUrl: book.coverUrl,
+    source: book.canonicalSource,
+    sourceId: book.sourceId,
+    url: webUrl(webOrigin, `/app/books/${book.sourceId}`),
+  };
+}
+
+export function albumWork(
+  album: Pick<
+    MusicItemDto,
+    "id" | "title" | "artists" | "coverUrl" | "canonicalSource" | "sourceId"
+  >,
+  webOrigin: string,
+): ApiV1WorkDto {
+  return {
+    id: album.id,
+    domain: "MUSIC",
+    type: null,
+    title: album.title,
+    creators: album.artists,
+    coverUrl: album.coverUrl,
+    source: album.canonicalSource,
+    sourceId: album.sourceId,
+    url: webUrl(webOrigin, `/app/music/${album.sourceId}`),
   };
 }
 
@@ -80,7 +146,6 @@ export function fromGameEntry(
   entry: GameEntryDto,
   webOrigin: string,
 ): ApiV1LibraryEntryDto {
-  const game = entry.game;
   return {
     ...common(entry),
     domain: "GAMES",
@@ -90,17 +155,7 @@ export function fromGameEntry(
       entry.playtimeMinutes > 0
         ? { current: entry.playtimeMinutes, total: null, unit: "minutes" }
         : null,
-    work: {
-      id: game.id,
-      domain: "GAMES",
-      type: null,
-      title: game.title,
-      creators: [],
-      coverUrl: game.coverUrl,
-      source: game.canonicalSource,
-      sourceId: game.sourceId,
-      url: webUrl(webOrigin, `/app/games/${game.sourceId}`),
-    },
+    work: gameWork(entry.game, webOrigin),
   };
 }
 
@@ -119,17 +174,7 @@ export function fromBookEntry(
       total: entry.referencePageCount ?? book.pageCount,
       unit: "pages",
     },
-    work: {
-      id: book.id,
-      domain: "BOOKS",
-      type: null,
-      title: book.title,
-      creators: book.authors,
-      coverUrl: book.coverUrl,
-      source: book.canonicalSource,
-      sourceId: book.sourceId,
-      url: webUrl(webOrigin, `/app/books/${book.sourceId}`),
-    },
+    work: bookWork(book, webOrigin),
   };
 }
 
@@ -137,24 +182,13 @@ export function fromMusicEntry(
   entry: MusicEntryDto,
   webOrigin: string,
 ): ApiV1LibraryEntryDto {
-  const album = entry.album;
   return {
     ...common(entry),
     domain: "MUSIC",
     status: entry.status,
     phase: bucketizeMusicStatus(entry.status),
     progress: null,
-    work: {
-      id: album.id,
-      domain: "MUSIC",
-      type: null,
-      title: album.title,
-      creators: album.artists,
-      coverUrl: album.coverUrl,
-      source: album.canonicalSource,
-      sourceId: album.sourceId,
-      url: webUrl(webOrigin, `/app/music/${album.sourceId}`),
-    },
+    work: albumWork(entry.album, webOrigin),
   };
 }
 

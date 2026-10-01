@@ -1,12 +1,13 @@
-// The instance is French-first: with nothing better to go on, offers are France's.
-const FALLBACK_REGION = "FR";
+// The interface is English-first: with nothing better to go on, offers are
+// those of en-US, the region English formats with (see LOCALE_REGIONS).
+const FALLBACK_REGION = "US";
 
 const REGION_RE = /^[A-Z]{2}$/;
 
 /**
  * The country whose streaming offers to show: the one the user picked, else
  * the country of their browser's preferred language ("fr-BE" → BE), else
- * France. A bare language ("fr", "en") names no country, so it falls back too
+ * the United States. A bare language ("fr", "en") names no country, so it falls back too
  * rather than guessing one ("en" could as well be GB as US).
  */
 export function resolveWatchRegion(

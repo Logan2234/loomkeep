@@ -9,6 +9,9 @@ import { ApiKeysController } from "./api-keys.controller";
 import { ApiKeysService } from "./api-keys.service";
 import { ApiRateLimitService } from "./api-rate-limit.service";
 import { PublicApiGuard } from "./public-api.guard";
+import { GithubPublicKeysService } from "./secret-scanning/github-public-keys.service";
+import { GithubSignatureGuard } from "./secret-scanning/github-signature.guard";
+import { SecretScanningController } from "./secret-scanning/secret-scanning.controller";
 
 @Module({
   imports: [
@@ -18,9 +21,11 @@ import { PublicApiGuard } from "./public-api.guard";
     NotificationModule,
     JobsModule,
   ],
-  controllers: [ApiKeysController],
+  controllers: [ApiKeysController, SecretScanningController],
   providers: [
     ApiKeysService,
+    GithubPublicKeysService,
+    GithubSignatureGuard,
     ApiKeyLifecycleService,
     ApiRateLimitService,
     PublicApiGuard,

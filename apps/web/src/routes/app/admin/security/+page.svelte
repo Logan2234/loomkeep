@@ -53,6 +53,7 @@
     MFA_CHALLENGE_LOCKED: m.admin_security_mfa_challenge_locked(),
     API_KEY_CREATED: m.admin_security_api_key_created(),
     API_KEY_REVOKED: m.admin_security_api_key_revoked(),
+    API_KEY_LEAKED: m.admin_security_api_key_leaked(),
   };
 
   const TYPE_COLORS: Record<SecurityEventType, string> = {
@@ -77,6 +78,7 @@
     MFA_CHALLENGE_LOCKED: "border-danger/40 bg-danger/10 text-danger",
     API_KEY_CREATED: "border-accent/40 bg-accent/10 text-accent",
     API_KEY_REVOKED: "border-warning/40 bg-warning/10 text-warning",
+    API_KEY_LEAKED: "border-danger/40 bg-danger/10 text-danger",
   };
 
   const TYPE_OPTIONS = [

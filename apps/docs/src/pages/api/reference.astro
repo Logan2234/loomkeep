@@ -1,0 +1,242 @@
+---
+import "../../styles/fonts.css";
+import { ScalarComponent } from "@scalar/astro";
+
+// Snippet languages offered: curl, JavaScript and Node fetch, Python
+// requests, Go and PHP Guzzle. Everything else is hidden.
+const hiddenClients = {
+  c: true,
+  clojure: true,
+  csharp: true,
+  dart: true,
+  fsharp: true,
+  http: true,
+  java: true,
+  js: ["axios", "jquery", "ofetch", "xhr"],
+  julia: true,
+  kotlin: true,
+  node: ["axios", "ofetch", "undici"],
+  objc: true,
+  ocaml: true,
+  php: ["curl", "laravel"],
+  powershell: true,
+  python: ["python3", "aiohttp", "httpx_sync", "httpx_async"],
+  r: true,
+  ruby: true,
+  rust: true,
+  shell: ["httpie", "wget"],
+  swift: true,
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0c0d10" />
+    <meta
+      name="description"
+      content="Every endpoint of the Loomkeep public API, with a console to try them."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link
+      rel="preload"
+      href="/fonts/hanken-grotesk-latin-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/space-mono-latin-400-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <title>API reference · Loomkeep Docs</title>
+    <script is:inline>
+      // Scalar reads its colour mode from this key: hand it the guides'
+      // choice (Starlight's key), its own toggle being hidden.
+      try {
+        const choice = localStorage.getItem("starlight-theme");
+        localStorage.setItem(
+          "colorMode",
+          choice === "dark" || choice === "light" ? choice : "system",
+        );
+      } catch {
+        // Storage blocked: Scalar falls back to the system preference.
+      }
+    </script>
+    <style is:global>
+      :root {
+        --scalar-custom-header-height: 44px;
+      }
+      .docs-bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        height: var(--scalar-custom-header-height);
+        padding: 0 1rem;
+        background: #0c0d10;
+        border-bottom: 1px solid #2a2e38;
+        font: 600 14px/1 "Hanken Grotesk Variable", system-ui, sans-serif;
+      }
+      .docs-bar a {
+        color: #9aa0ae;
+        text-decoration: none;
+      }
+      .docs-bar a:hover {
+        color: #f5b841;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        @view-transition {
+          navigation: auto;
+        }
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+          animation-duration: 180ms;
+          animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .docs-bar a {
+          transition: color 180ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+      }
+      .docs-bar strong {
+        color: #ececea;
+      }
+      .docs-bar a,
+      .docs-bar strong {
+        white-space: nowrap;
+      }
+      .docs-bar .app {
+        margin-left: auto;
+      }
+      @media (max-width: 30em) {
+        .docs-bar .app {
+          display: none;
+        }
+      }
+      .light-mode .docs-bar {
+        background: #ffffff;
+        border-bottom-color: #d3c7a8;
+      }
+      .light-mode .docs-bar a {
+        color: #6b6354;
+      }
+      .light-mode .docs-bar a:hover {
+        color: #8e620b;
+      }
+      .light-mode .docs-bar strong {
+        color: #1c1712;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="docs-bar" aria-label="Documentation">
+      <strong>Loomkeep Docs</strong>
+      <a href="/api/">Guides</a>
+      <a href="/api/reference/" aria-current="page">API reference</a>
+      <a class="app" href="https://loomkeep.app">Open Loomkeep ↗</a>
+    </nav>
+    <ScalarComponent
+      renderMode="client"
+      configuration={{
+        url: "/openapi-v1.json",
+        // Served from public/ (see scripts/copy-assets.mjs), and no web
+        // fonts from Scalar's own CDN either: nothing loads from a third party.
+        cdn: "/scalar/standalone.js",
+        withDefaultFonts: false,
+        // Scalar's hosted extras (AI chat, MCP, sharing and deploy toolbar,
+        // usage telemetry) all talk to scalar.com: off.
+        agent: { disabled: true },
+        mcp: { disabled: true },
+        showToolbar: "never",
+        showDeveloperTools: "never",
+        telemetry: false,
+        authentication: { preferredSecurityScheme: "bearer" },
+        // Each schema is already shown inline in the responses using it.
+        hideModels: true,
+        defaultOpenAllTags: true,
+        orderSchemaPropertiesBy: "preserve",
+        orderRequiredPropertiesFirst: true,
+        defaultHttpClient: { targetKey: "shell", clientKey: "curl" },
+        hiddenClients,
+        documentDownloadType: "json",
+        hideDarkModeToggle: true,
+        favicon: "/favicon.svg",
+        theme: "none",
+        customCss: `
+          .light-mode, .dark-mode {
+            --scalar-font: "Hanken Grotesk Variable", system-ui, sans-serif;
+            --scalar-font-code: "Space Mono", ui-monospace, monospace;
+          }
+          .dark-mode {
+            --scalar-background-1: #0c0d10;
+            --scalar-background-2: #15171c;
+            --scalar-background-3: #1e2128;
+            --scalar-border-color: #2a2e38;
+            --scalar-color-1: #ececea;
+            --scalar-color-2: #9aa0ae;
+            --scalar-color-3: #6b7280;
+            --scalar-color-accent: #f5b841;
+            --scalar-background-accent: #2b2413;
+            --scalar-link-color: #f5b841;
+            --scalar-link-color-hover: #ffd27a;
+            --scalar-color-blue: #f5b841;
+            --scalar-color-green: #5bd6a0;
+            --scalar-color-red: #f0647c;
+            --scalar-color-orange: #ffa552;
+            --scalar-color-yellow: #f5b841;
+            --scalar-button-1: #f5b841;
+            --scalar-button-1-color: #1a1406;
+            --scalar-button-1-hover: #ffc75a;
+            --scalar-sidebar-item-active-background: #f5b841;
+            --scalar-sidebar-color-active: #1a1406;
+            --scalar-sidebar-item-hover-background: #1e2128;
+          }
+          .light-mode {
+            --scalar-background-1: #f7f5f3;
+            --scalar-background-2: #ffffff;
+            --scalar-background-3: #edeae3;
+            --scalar-border-color: #d3c7a8;
+            --scalar-color-1: #1c1712;
+            --scalar-color-2: #6b6354;
+            --scalar-color-3: #8a8070;
+            --scalar-color-accent: #8e620b;
+            --scalar-background-accent: #f6ebd2;
+            --scalar-link-color: #8e620b;
+            --scalar-link-color-hover: #4a3306;
+            --scalar-color-blue: #8e620b;
+            --scalar-color-green: #257e58;
+            --scalar-color-red: #c73c57;
+            --scalar-color-orange: #ab590d;
+            --scalar-color-yellow: #8e620b;
+            --scalar-button-1: #1c1712;
+            --scalar-button-1-color: #ffffff;
+            --scalar-button-1-hover: #2e2820;
+            --scalar-sidebar-item-active-background: #8e620b;
+            --scalar-sidebar-color-active: #ffffff;
+            --scalar-sidebar-item-hover-background: #edeae3;
+          }
+          .light-mode, .dark-mode {
+            --scalar-radius: 0.375rem;
+            --scalar-radius-lg: 0.5rem;
+          }
+          @media (prefers-reduced-motion: no-preference) {
+            .light-mode a, .light-mode button,
+            .dark-mode a, .dark-mode button {
+              transition:
+                color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 180ms cubic-bezier(0.22, 1, 0.36, 1);
+            }
+          }
+        `,
+      }}
+    />
+  </body>
+</html>

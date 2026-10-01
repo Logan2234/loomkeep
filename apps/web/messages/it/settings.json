@@ -444,6 +444,7 @@
   "settings_subscription_links_activity_formats": "Atom",
   "settings_activity_event_api_key_created": "Chiave API creata",
   "settings_activity_event_api_key_revoked": "Chiave API revocata",
+  "settings_activity_event_api_key_leaked": "Chiave API trovata in pubblico e revocata",
   "settings_api_keys_recipes_title": "Ricette",
   "settings_api_keys_recipes_hint": "Una chiave pronta all'uso, con gli accessi necessari.",
   "settings_api_keys_recipe_backup_name": "Backup automatico",

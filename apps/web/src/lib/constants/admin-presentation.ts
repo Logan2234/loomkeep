@@ -168,6 +168,7 @@ const TEMPLATE_LABELS = {
   newDeviceLogin: () => m.admin_security_new_device(),
   apiKeyCreated: () => m.admin_security_api_key_created(),
   apiKeyExpiring: () => m.admin_template_api_key_expiring(),
+  apiKeyLeaked: () => m.admin_template_api_key_leaked(),
   inactivityWarning: () => m.admin_template_inactivity(),
   moderationDecision: () => m.admin_template_moderation(),
 };

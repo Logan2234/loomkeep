@@ -27,23 +27,47 @@ import { DataExportVisibilitySettingResponseDto } from "./data-export-visibility
 import { DataExportWatchResponseDto } from "./data-export-watch-response.dto";
 
 class DataExportFollowsResponseDto {
+  /** Accounts followed. */
   following!: DataExportFollowResponseDto[];
+
+  /** Accounts following this one. */
   followers!: DataExportFollowResponseDto[];
 }
 
 class DataExportBlocksResponseDto {
+  /** Accounts blocked. */
   blocking!: DataExportBlockResponseDto[];
 }
 
 export class UserDataExportResponseDto implements UserDataExportDto {
+  /**
+   * When the export was made.
+   * @example "2026-09-30T21:00:00.000Z"
+   */
   exportedAt!: string;
+
+  /** The account itself and its settings. */
   account!: UserResponseDto;
+
+  /** Films, series and anime tracked. */
   library!: DataExportEntryResponseDto[];
+
+  /** Every episode viewing, rewatches included. */
   episodeWatches!: DataExportWatchResponseDto[];
+
+  /** Games tracked, with their sessions. */
   games!: DataExportGameEntryResponseDto[];
+
+  /** Books tracked, with their sessions. */
   books!: DataExportBookEntryResponseDto[];
+
+  /** Albums tracked. */
   music!: DataExportMusicEntryResponseDto[];
 
+  /**
+   * Reserved for a future domain; always empty.
+   * @example []
+   */
   // `never[]` (always empty — the domain isn't shipped yet) makes the
   // swagger plugin mistake the property for a self-reference and throw a
   // "circular dependency" error at generation time — an explicit primitive
@@ -51,26 +75,67 @@ export class UserDataExportResponseDto implements UserDataExportDto {
   @ApiProperty({ type: [String] })
   podcasts!: never[];
 
+  /**
+   * Reserved for a future domain; always empty.
+   * @example []
+   */
   @ApiProperty({ type: [String] })
   boardGames!: never[];
 
+  /** Notifications received. */
   notifications!: DataExportNotificationResponseDto[];
+
+  /** Reviews and ratings written. */
   reviews!: DataExportReviewResponseDto[];
+
+  /** Votes on other reviews. */
   reviewVotes!: DataExportReviewVoteResponseDto[];
+
+  /** Comments posted. */
   comments!: DataExportCommentResponseDto[];
+
+  /** Reactions to comments. */
   commentReactions!: DataExportCommentReactionResponseDto[];
+
+  /** Lists owned. */
   lists!: DataExportListResponseDto[];
+
+  /** Lists the account can edit without owning them. */
   listMemberships!: DataExportListMembershipResponseDto[];
+
+  /** Follows, both ways. */
   follows!: DataExportFollowsResponseDto;
+
+  /** Accounts blocked. */
   blocks!: DataExportBlocksResponseDto;
+
+  /** Reports filed. */
   reports!: DataExportReportResponseDto[];
+
+  /** Moderation decisions taken about the account's content. */
   moderationDecisions!: DataExportModerationDecisionResponseDto[];
+
+  /** The account's security log. */
   securityEvents!: DataExportSecurityEventResponseDto[];
+
+  /** Devices signed in from. */
   devices!: DataExportDeviceResponseDto[];
+
+  /** Who sees what, per domain. */
   visibilitySettings!: DataExportVisibilitySettingResponseDto[];
+
+  /** The account's plan. */
   entitlement!: DataExportEntitlementResponseDto;
+
+  /** Paid subscriptions, if any. */
   subscriptions!: DataExportSubscriptionResponseDto[];
+
+  /** Yearly reading goals. */
   readingGoals!: DataExportReadingGoalResponseDto[];
+
+  /** Imports run. */
   importRuns!: DataExportImportRunResponseDto[];
+
+  /** Saved library views. */
   savedViews!: SavedViewResponseDto[];
 }

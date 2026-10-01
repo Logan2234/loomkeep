@@ -2,6 +2,7 @@ import type { ApiKeyScope } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { createHash } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
+import { isWellFormedApiKey } from "./api-key-format";
 
 // Same trade-off as SessionCacheService: spares a query on every request,
 // while revoke() evicts the key explicitly so it stops working at once.
@@ -20,7 +21,7 @@ export interface ApiKeyPrincipal {
 }
 
 /**
- * A plain SHA-256, like RefreshToken: the secret is 32 random bytes, so a
+ * A plain SHA-256, like RefreshToken: the secret holds 256 random bits, so a
  * slow password hash would add nothing but latency to every API request.
  * CodeQL's `js/insufficient-password-hash` flags it as a password — a false
  * positive, same reasoning as `secretsMatch` (common/secret-compare.util.ts).
@@ -45,6 +46,8 @@ export class ApiKeyAuthService {
     secret: string,
     ip: string | undefined,
   ): Promise<ApiKeyPrincipal | null> {
+    if (!isWellFormedApiKey(secret)) return null;
+
     const principal = await this.lookup(hashApiKey(secret));
     if (!principal) return null;
     if (principal.expiresAt && principal.expiresAt <= new Date()) return null;

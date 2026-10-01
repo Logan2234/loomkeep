@@ -5,6 +5,7 @@ import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { InstanceSettingsService } from "../instance-settings/instance-settings.service";
 
 const WINDOW_MS = 60_000;
+const EXPORT_WINDOW_MS = 3_600_000;
 // How long a resolved plan is trusted: an upgrade takes effect within a minute.
 const PLAN_TTL_MS = 60_000;
 
@@ -37,23 +38,15 @@ export class ApiRateLimitService {
   ) {}
 
   async consume(userId: string): Promise<RateLimitResult> {
-    const limit = await this.limitFor(userId);
-    const now = Date.now();
-    let window = this.windows.get(userId);
+    return this.spend(userId, await this.limitFor(userId), WINDOW_MS);
+  }
 
-    if (!window || now - window.start >= WINDOW_MS) {
-      window = { start: now, count: 0 };
-      this.windows.set(userId, window);
-    }
-
-    const allowed = window.count < limit;
-    if (allowed) window.count++;
-    return {
-      allowed,
-      limit,
-      remaining: limit - window.count,
-      resetIn: Math.ceil((window.start + WINDOW_MS - now) / 1000),
-    };
+  /**
+   * The full export's own pace, once an hour per account, on top of the
+   * per-minute budget: it is by far the heaviest read.
+   */
+  consumeExport(userId: string): RateLimitResult {
+    return this.spend(`export:${userId}`, 1, EXPORT_WINDOW_MS);
   }
 
   async quota(userId: string): Promise<ApiKeyQuotaDto> {
@@ -79,6 +72,25 @@ export class ApiRateLimitService {
     );
     this.plans.set(userId, { limit, until: Date.now() + PLAN_TTL_MS });
     return limit;
+  }
+
+  private spend(key: string, limit: number, windowMs: number): RateLimitResult {
+    const now = Date.now();
+    let window = this.windows.get(key);
+
+    if (!window || now - window.start >= windowMs) {
+      window = { start: now, count: 0 };
+      this.windows.set(key, window);
+    }
+
+    const allowed = window.count < limit;
+    if (allowed) window.count++;
+    return {
+      allowed,
+      limit,
+      remaining: limit - window.count,
+      resetIn: Math.ceil((window.start + windowMs - now) / 1000),
+    };
   }
 
   private premiumOffered(): boolean {

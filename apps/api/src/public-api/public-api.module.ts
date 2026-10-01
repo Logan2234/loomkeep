@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { BooksModule } from "../books/books.module";
+import { CatalogModule } from "../catalog/catalog.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { LibraryModule } from "../library/library.module";
@@ -20,14 +21,18 @@ import {
 } from "./v1/controllers/account.controller";
 import {
   CalendarV1Controller,
+  HistoryV1Controller,
   LibraryV1Controller,
 } from "./v1/controllers/library.controller";
+import { ExportRateLimitGuard } from "./v1/export-rate-limit.guard";
+import { HistoryV1Service } from "./v1/history-v1.service";
 import { LibraryV1Service } from "./v1/library-v1.service";
 import { ListsV1Service } from "./v1/lists-v1.service";
 import { MeV1Controller } from "./v1/me.controller";
 import { MeV1Service } from "./v1/me.service";
 import { ProfileV1Service } from "./v1/profile-v1.service";
 import { StatsV1Service } from "./v1/stats-v1.service";
+import { WorkTitlesService } from "./v1/work-titles.service";
 
 /**
  * The versioned public API (`/api/v1`), the only surface API keys reach.
@@ -42,6 +47,7 @@ import { StatsV1Service } from "./v1/stats-v1.service";
     GamesModule,
     BooksModule,
     MusicModule,
+    CatalogModule,
     ListsModule,
     StatsModule,
     ReviewsModule,
@@ -52,6 +58,7 @@ import { StatsV1Service } from "./v1/stats-v1.service";
     MeV1Controller,
     LibraryV1Controller,
     CalendarV1Controller,
+    HistoryV1Controller,
     ListsV1Controller,
     StatsV1Controller,
     ReviewsV1Controller,
@@ -65,6 +72,9 @@ import { StatsV1Service } from "./v1/stats-v1.service";
     ListsV1Service,
     StatsV1Service,
     ProfileV1Service,
+    HistoryV1Service,
+    WorkTitlesService,
+    ExportRateLimitGuard,
   ],
 })
 export class PublicApiModule {}

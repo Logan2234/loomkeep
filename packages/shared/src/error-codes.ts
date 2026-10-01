@@ -41,6 +41,7 @@ export const ErrorCode = {
   ApiKeyExpiryInPast: "api_key.expiry_in_past",
   ApiRateLimited: "api.rate_limited",
   ApiDisabled: "api.disabled",
+  SecretScanningUnauthorized: "api.secret_scanning_unauthorized",
 
   // admin
   AdminCacheItemNotFound: "admin.cache_item_not_found",

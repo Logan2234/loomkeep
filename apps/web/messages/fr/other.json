@@ -1166,5 +1166,7 @@
   "quick_add_undone": "Ajout annulé",
   "notif_api_keys_review_title": "Vérifie tes clés API",
   "notif_api_keys_review_one": "Ton mot de passe a changé, mais ta clé API reste valable.",
-  "notif_api_keys_review_many": "Ton mot de passe a changé, mais tes {count} clés API restent valables."
+  "notif_api_keys_review_many": "Ton mot de passe a changé, mais tes {count} clés API restent valables.",
+  "notif_api_key_leaked_title": "Clé API révoquée",
+  "notif_api_key_leaked_body": "Ta clé « {name} » a été trouvée en public sur GitHub. Elle ne fonctionne plus : crée-en une nouvelle."
 }

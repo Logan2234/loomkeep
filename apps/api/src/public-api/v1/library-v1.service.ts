@@ -3,6 +3,7 @@ import type {
   ApiV1LibraryEntryDto,
   ApiV1LibrarySort,
   ApiV1Phase,
+  Locale,
   PagedResult,
   StatsDomain,
 } from "@loomkeep/shared";
@@ -39,6 +40,7 @@ import {
   fromMusicEntry,
   mediaWork,
 } from "./mappers";
+import { WorkTitlesService } from "./work-titles.service";
 
 export interface LibraryV1Query {
   domain?: StatsDomain;
@@ -48,6 +50,7 @@ export interface LibraryV1Query {
   order: "asc" | "desc";
   page: number;
   limit: number;
+  lang?: Locale;
 }
 
 // Each domain's statuses and how they normalise, so a phase filter can be
@@ -85,6 +88,7 @@ export class LibraryV1Service {
     private readonly games: GameLibraryService,
     private readonly books: BookLibraryService,
     private readonly music: MusicLibraryService,
+    private readonly titles: WorkTitlesService,
   ) {
     this.webOrigin = webOriginOf(config);
   }
@@ -99,13 +103,8 @@ export class LibraryV1Service {
     userId: string,
     query: LibraryV1Query,
   ): Promise<PagedResult<ApiV1LibraryEntryDto>> {
-    const enabled = await this.enabledDomains(userId);
-
-    if (query.domain && !enabled.includes(query.domain)) {
-      await this.domainGate.assertEnabled(userId, query.domain);
-    }
-
-    const domains = query.domain ? [query.domain] : enabled;
+    const domains = await this.domainsFor(userId, query.domain);
+    const lang = await this.titles.languageFor(userId, query.lang);
     const single = domains.length === 1;
     const window = query.page * query.limit;
 
@@ -122,6 +121,7 @@ export class LibraryV1Service {
           favorite: query.favorite,
           sort: query.sort,
           order: query.order,
+          lang,
           page: single ? query.page : 1,
           limit: single ? query.limit : window,
         });
@@ -135,7 +135,7 @@ export class LibraryV1Service {
     const merged = pages
       .flatMap((page) => page.items)
       .sort((a, b) => {
-        const c = compareEntries(query.sort, a, b);
+        const c = compareEntries(query.sort, a, b, lang);
         return query.order === "asc" ? -c : c;
       });
     return {
@@ -145,7 +145,35 @@ export class LibraryV1Service {
     };
   }
 
-  async get(userId: string, id: string): Promise<ApiV1LibraryEntryDto> {
+  async get(
+    userId: string,
+    id: string,
+    lang: Locale | undefined,
+  ): Promise<ApiV1LibraryEntryDto> {
+    const entry = await this.entryOf(userId, id);
+    await this.titles.translateWorks(
+      await this.titles.languageFor(userId, lang),
+      [entry.work],
+    );
+    return entry;
+  }
+
+  /** The domains a cross-domain read covers: one asked for, else every enabled one. */
+  async domainsFor(
+    userId: string,
+    domain: StatsDomain | undefined,
+  ): Promise<StatsDomain[]> {
+    const enabled = await this.enabledDomains(userId);
+
+    if (domain && !enabled.includes(domain)) {
+      await this.domainGate.assertEnabled(userId, domain);
+    }
+
+    return domain ? [domain] : enabled;
+  }
+
+  /** Which domain a library entry id belongs to; 404 when it isn't the caller's. */
+  async entryDomain(userId: string, id: string): Promise<StatsDomain> {
     const where = { id, userId };
     const [media, game, book, album] = await Promise.all([
       this.prisma.libraryEntry.findFirst({ where, select: { id: true } }),
@@ -170,7 +198,14 @@ export class LibraryV1Service {
       );
     }
 
-    switch (domain) {
+    return domain;
+  }
+
+  private async entryOf(
+    userId: string,
+    id: string,
+  ): Promise<ApiV1LibraryEntryDto> {
+    switch (await this.entryDomain(userId, id)) {
       case "MEDIA":
         return fromMediaEntry(
           await this.media.getEntry(userId, id),
@@ -198,14 +233,14 @@ export class LibraryV1Service {
   async calendar(
     userId: string,
     days: number,
+    lang: Locale | undefined,
   ): Promise<ApiV1CalendarEpisodeDto[]> {
     await this.domainGate.assertEnabled(userId, "MEDIA");
     const end = new Date();
     end.setHours(0, 0, 0, 0);
     end.setDate(end.getDate() + days);
 
-    const episodes = await this.media.getCalendar(userId);
-    return episodes
+    const episodes = (await this.media.getCalendar(userId))
       .filter((episode) => new Date(episode.airDate) < end)
       .map((episode) => ({
         airDate: episode.airDate,
@@ -215,6 +250,11 @@ export class LibraryV1Service {
         episodesBehind: episode.episodesBehind,
         work: mediaWork(episode.mediaItem, this.webOrigin),
       }));
+    await this.titles.translateWorks(
+      await this.titles.languageFor(userId, lang),
+      episodes.map((episode) => episode.work),
+    );
+    return episodes;
   }
 
   private async enabledDomains(userId: string): Promise<StatsDomain[]> {
@@ -275,10 +315,11 @@ export function compareEntries(
   sort: ApiV1LibrarySort,
   a: ApiV1LibraryEntryDto,
   b: ApiV1LibraryEntryDto,
+  locale?: string,
 ): number {
   switch (sort) {
     case "title":
-      return compareTitles(a.work.title, b.work.title);
+      return compareTitles(a.work.title, b.work.title, locale);
     case "rating":
       return (b.rating ?? -1) - (a.rating ?? -1);
     case "finished":

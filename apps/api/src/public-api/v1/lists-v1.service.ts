@@ -2,6 +2,7 @@ import type {
   ApiV1ListDetailDto,
   ApiV1ListDto,
   ListDto,
+  Locale,
 } from "@loomkeep/shared";
 import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
@@ -11,6 +12,7 @@ import { ListService } from "../../lists/list.service";
 import { isSocialEnabled } from "../../social/social.config";
 import { webOriginOf } from "./library-v1.service";
 import { toTarget } from "./mappers";
+import { WorkTitlesService } from "./work-titles.service";
 
 /**
  * The caller's own lists, plus the ones shared with them as an editor —
@@ -23,6 +25,7 @@ export class ListsV1Service {
   constructor(
     private readonly config: ConfigService,
     private readonly lists: ListService,
+    private readonly titles: WorkTitlesService,
   ) {
     this.webOrigin = webOriginOf(config);
   }
@@ -35,7 +38,11 @@ export class ListsV1Service {
       .map((list) => toList(list, list.role, list.itemCount));
   }
 
-  async get(userId: string, id: string): Promise<ApiV1ListDetailDto> {
+  async get(
+    userId: string,
+    id: string,
+    lang: Locale | undefined,
+  ): Promise<ApiV1ListDetailDto> {
     const list = await this.lists.getEditable(userId, id);
     const role = list.viewerRole;
 
@@ -46,20 +53,22 @@ export class ListsV1Service {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
     }
 
-    return {
-      ...toList(list, role, list.items.length),
-      items: list.items.map((item) => ({
-        id: item.id,
-        position: item.position,
-        addedAt: item.addedAt,
-        target: toTarget(
-          item.targetType,
-          item.targetId,
-          item.target,
-          this.webOrigin,
-        ),
-      })),
-    };
+    const items = list.items.map((item) => ({
+      id: item.id,
+      position: item.position,
+      addedAt: item.addedAt,
+      target: toTarget(
+        item.targetType,
+        item.targetId,
+        item.target,
+        this.webOrigin,
+      ),
+    }));
+    await this.titles.translateTargets(
+      await this.titles.languageFor(userId, lang),
+      items.map((item) => item.target),
+    );
+    return { ...toList(list, role, list.items.length), items };
   }
 }
 
