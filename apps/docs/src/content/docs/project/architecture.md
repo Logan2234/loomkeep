@@ -54,7 +54,7 @@ personal API keys, only on its own routes. See
 
 The API answers errors with stable codes (`auth.invalid_api_key`), never
 with sentences: the web app turns each code into text in the reader's
-language. The interface is French first, with English and Italian, all
+language. The interface is English first, with French and Italian, all
 through translation catalogs.
 
 ## Configuration

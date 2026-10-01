@@ -64,7 +64,7 @@ overview.
    `pre-push` type-checks. Continuous integration then runs every test, the
    end-to-end suite and security scans.
 6. **Write text through the translation catalogs**: the interface is
-   French-first, and no visible string is written straight into a component.
+   English-first, and no visible string is written straight into a component.
 
 Commit messages are short, imperative, in English, and start with an emoji:
 

@@ -45,6 +45,18 @@ alone**, no password. Turn it on in **Settings › Two-factor authentication**.
 Sensitive changes, like turning off a security method, ask for your
 password again.
 
+## Considered
+
+Not planned yet, but considered:
+
+- **Signing in with your own identity provider** (OpenID Connect: Authelia,
+  Authentik, Keycloak…), mostly for self-hosted instances.
+- **Confirming it's you again** before the most sensitive actions, like
+  creating an API key or changing your email, even within a session.
+
+Vote for them or suggest others on the
+[feature requests board](https://feedback.loomkeep.app/board/feature-requests).
+
 ## API keys and subscription links
 
 API keys and calendar or feed links read your account without a password.

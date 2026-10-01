@@ -22,10 +22,8 @@ parameter never changes meaning.
 ## Breaking changes
 
 A change that can't be made by adding goes into a new version, `/api/v2`,
-which then lives alongside v1 for a while. Before v1 goes away, its retirement
-is announced in the [changelog](https://feedback.loomkeep.app/changelog) at
-least six months ahead, and its responses carry `Deprecation` and `Sunset`
-headers saying when.
+which then lives alongside v1 for a while. Retiring v1 would be announced
+beforehand in the [changelog](https://feedback.loomkeep.app/changelog).
 
 ## Following changes
 

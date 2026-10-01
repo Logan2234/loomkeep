@@ -72,6 +72,7 @@ export default defineConfig({
                     "guide/install",
                     "guide/security",
                     "guide/your-data",
+                    "guide/faq",
                   ],
                 },
                 {
@@ -162,6 +163,7 @@ export default defineConfig({
                 "project/architecture",
                 "project/security",
                 "project/license",
+                "project/translating",
                 MORE,
               ],
             },

@@ -1,0 +1,75 @@
+---
+title: Translating
+description: Improve a translation or add a new language to Loomkeep, through a pull request.
+---
+
+Loomkeep's interface is written in English first, then translated: French
+and Italian today. Translations come in through pull requests on GitHub.
+Read [Contributing](/project/contributing/) first for the setup and the
+workflow.
+
+## Where the text lives
+
+Every visible string of the web app is in `apps/web/messages/<language>/`,
+in seven JSON files (`common`, `other`, `errors`, `gamification`, `admin`,
+`settings`, `site`). English (`en`) is the source; each other language has
+the same files and the same keys.
+
+A missing key falls back to English, key by key: a partial translation never
+breaks the app, it just shows English where it isn't done yet.
+
+## Improving an existing language
+
+Find the key whose text shows in the app (search the English file for the
+English wording), fix its value in your language's file, and open a pull
+request. To catch up with new features, compare your language's keys with
+English and translate the missing ones.
+
+## Adding a language
+
+1. **Translate the catalogs**: copy `apps/web/messages/en/` to
+   `apps/web/messages/<code>/` and translate the values.
+2. **Declare the language** in two lists, which a test keeps equal:
+   `locales` in `apps/web/project.inlang/settings.json`, and `Locale` in
+   `packages/shared/src/enums.ts`.
+3. **Add its region** (`de: "de-DE"`) to `LOCALE_REGIONS` in
+   `packages/shared/src/locale.ts`, for dates and numbers.
+4. **Optionally, translate emails and notifications**: add the code to
+   `COPY_LOCALES` in `apps/api/src/common/copy-locale.util.ts`, and the
+   compiler lists every table missing it. Without this step, emails and
+   notifications in that language arrive in English.
+
+The language then shows up in every language picker, in its own name.
+
+## Rules
+
+- **Keep every key and every `{placeholder}` exactly**: a test rejects a
+  translation whose placeholders differ from English.
+- **Talk to people informally**, like the English and French copy do (_tu_
+  in French): pick your language's equivalent.
+- **Some keys are fragments** of a sentence stitched around a link or an
+  icon (keys ending in `_prefix`, `_suffix`, `_intro`…). Check where they are
+  used before moving words around.
+- **Keep some text in English, as is**: the catalogues' attribution notices
+  their terms require, and names of third-party menus (Goodreads'
+  "My Books → Import and export").
+- **Keep the product's words consistent** across files: the same term for
+  the library, the statuses, the ghost privacy mode, everywhere.
+
+## Testing your translation
+
+```sh
+pnpm --filter @loomkeep/web generate:paraglide
+pnpm --filter @loomkeep/web exec vitest run src/catalogs.spec.ts
+pnpm dev
+```
+
+Then switch to your language in **Settings › Appearance** and browse the
+home page, a library, a title's page and the settings.
+
+## What isn't translated
+
+- **Legal pages** stay in French: that version is the binding one.
+- **Catalogue data**: only TMDB answers in your language (films and series
+  titles and overviews). IGDB, AniList and Open Library are English only.
+- **This documentation** is in English for now.
