@@ -143,7 +143,6 @@
   "auth_forgot_password_action": "Invia il link",
   "auth_reset_password_confirm_placeholder": "Conferma la password",
   "auth_reset_password_mismatch": "Le password non coincidono",
-  "auth_reset_password_requirements_unmet": "La password non rispetta i requisiti qui sopra",
   "link_invalid_missing_token": "Link non valido: nessun token trovato nell'URL.",
   "auth_verify_email_title": "Verifica dell'email",
   "auth_verify_email_pending": "Verifica…",

@@ -143,7 +143,6 @@
   "auth_forgot_password_action": "Send the link",
   "auth_reset_password_confirm_placeholder": "Confirm the password",
   "auth_reset_password_mismatch": "Passwords don't match",
-  "auth_reset_password_requirements_unmet": "Password doesn't meet the requirements above",
   "link_invalid_missing_token": "Invalid link: no token found in the URL.",
   "auth_verify_email_title": "Email verification",
   "auth_verify_email_pending": "Verifying…",
