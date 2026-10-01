@@ -80,7 +80,8 @@ where you stand:
 | `X-RateLimit-Reset`     | Seconds until the minute starts over. |
 
 Past the limit, the API answers `429` with the code `api.rate_limited` and a
-`Retry-After` header. `GET /v1/export` is also limited to once an hour.
+`Retry-After` header. `GET /v1/export` is also limited to once an hour per
+account, answered the same way.
 
 ## CORS
 

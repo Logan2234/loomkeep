@@ -13,7 +13,6 @@ import type {
 import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiOperation, ApiParam } from "@nestjs/swagger";
-import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { PublicApi } from "../../../api-keys/public-api.decorator";
 import type { JwtPayload } from "../../../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../../../auth/decorators/current-user.decorator";
@@ -37,6 +36,7 @@ import {
   ApiV1ReviewResponseDto,
   ApiV1StatsSummaryResponseDto,
 } from "../dto/responses.dto";
+import { ExportRateLimitGuard } from "../export-rate-limit.guard";
 import { webOriginOf } from "../library-v1.service";
 import { ListsV1Service } from "../lists-v1.service";
 import { toTarget, webUrl } from "../mappers";
@@ -237,14 +237,12 @@ export class NotificationsV1Controller {
 export class ExportV1Controller {
   constructor(private readonly dataExport: DataExportService) {}
 
-  /** Same pace as the in-app export: a full snapshot, once an hour. */
-  @SkipThrottle({ default: false })
-  @Throttle({ default: { limit: 1, ttl: 3_600_000 } })
+  @UseGuards(ExportRateLimitGuard)
   @Get()
   @ApiOperation({
     summary: "Full data export",
     description:
-      "Everything the account holds, in the same format as Settings › Export: a backup, or a way to move elsewhere. Once an hour: a second call within the hour gets a `429`.",
+      "Everything the account holds, in the same format as Settings › Export: a backup, or a way to move elsewhere. Once an hour per account: a second call within the hour gets a `429` (`api.rate_limited`) and a `Retry-After`.",
   })
   @ApiV1OkResponse({ type: UserDataExportResponseDto })
   export(@CurrentUser() user: JwtPayload): Promise<UserDataExportDto> {
