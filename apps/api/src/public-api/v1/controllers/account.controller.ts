@@ -12,7 +12,7 @@ import type {
 } from "@loomkeep/shared";
 import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { ApiOkResponse, ApiOperation } from "@nestjs/swagger";
+import { ApiOperation, ApiParam } from "@nestjs/swagger";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { PublicApi } from "../../../api-keys/public-api.decorator";
 import type { JwtPayload } from "../../../auth/decorators/current-user.decorator";
@@ -22,6 +22,11 @@ import { NotificationService } from "../../../notifications/notification.service
 import { ReviewService } from "../../../reviews/review.service";
 import { DataExportService } from "../../../users/data-export.service";
 import { UserDataExportResponseDto } from "../../../users/dto/data-export/user-data-export-response.dto";
+import {
+  ApiV1BadRequest,
+  ApiV1NotFound,
+  ApiV1OkResponse,
+} from "../api-responses";
 import { LangQueryDto, ReviewsQueryDto } from "../dto/queries.dto";
 import {
   ApiV1AchievementResponseDto,
@@ -56,14 +61,28 @@ export class ListsV1Controller {
     summary: "List lists",
     description: "The caller's lists, plus the ones shared with them.",
   })
-  @ApiOkResponse({ type: ApiV1ListResponseDto, isArray: true })
+  @ApiV1OkResponse({ type: ApiV1ListResponseDto, isArray: true })
   list(@CurrentUser() user: JwtPayload): Promise<ApiV1ListDto[]> {
     return this.lists.list(user.sub);
   }
 
   @Get(":id")
-  @ApiOperation({ summary: "Get a list and its items" })
-  @ApiOkResponse({ type: ApiV1ListDetailResponseDto })
+  @ApiOperation({
+    summary: "Get a list and its items",
+    description:
+      "A list the caller owns or edits, with every item in order. Items can be works, seasons or episodes.",
+  })
+  @ApiParam({
+    name: "id",
+    description: "A list id, from `GET /v1/lists`.",
+    example: "cm1q2w3e4r5t6y7u8i9o0p1a",
+  })
+  @ApiV1NotFound(
+    "lists.not_found",
+    "No such list, or one the caller can't edit.",
+  )
+  @ApiV1BadRequest()
+  @ApiV1OkResponse({ type: ApiV1ListDetailResponseDto })
   get(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
@@ -84,7 +103,7 @@ export class StatsV1Controller {
     description:
       "Counts per domain and normalised status, time spent, and this year's reading goal.",
   })
-  @ApiOkResponse({ type: ApiV1StatsSummaryResponseDto })
+  @ApiV1OkResponse({ type: ApiV1StatsSummaryResponseDto })
   summary(@CurrentUser() user: JwtPayload): Promise<ApiV1StatsSummaryDto> {
     return this.stats.summary(user.sub);
   }
@@ -104,8 +123,13 @@ export class ReviewsV1Controller {
   }
 
   @Get()
-  @ApiOperation({ summary: "List the caller's reviews and ratings" })
-  @ApiOkResponse({ type: ApiV1ReviewResponseDto, isArray: true })
+  @ApiOperation({
+    summary: "List the caller's reviews and ratings",
+    description:
+      "Every review and rating the caller wrote, on works, seasons and episodes. Narrow it to one domain with `domain`.",
+  })
+  @ApiV1BadRequest()
+  @ApiV1OkResponse({ type: ApiV1ReviewResponseDto, isArray: true })
   async list(
     @CurrentUser() user: JwtPayload,
     @Query() query: ReviewsQueryDto,
@@ -148,7 +172,7 @@ export class ProfileV1Controller {
     description:
       "`progression` is null when gamification is off on this instance.",
   })
-  @ApiOkResponse({ type: ApiV1ProfileResponseDto })
+  @ApiV1OkResponse({ type: ApiV1ProfileResponseDto })
   get(@CurrentUser() user: JwtPayload): Promise<ApiV1ProfileDto> {
     return this.profile.get(user.sub);
   }
@@ -157,9 +181,14 @@ export class ProfileV1Controller {
   @UseGuards(GamificationFeatureGuard)
   @ApiOperation({
     summary: "The caller's achievements",
-    description: "404 when gamification is off on this instance.",
+    description:
+      "Every achievement, unlocked or not, with the progress made towards the locked ones. Secret ones stay hidden until unlocked.",
   })
-  @ApiOkResponse({ type: ApiV1AchievementResponseDto, isArray: true })
+  @ApiV1NotFound(
+    "gamification.feature_disabled",
+    "Gamification is turned off on this instance.",
+  )
+  @ApiV1OkResponse({ type: ApiV1AchievementResponseDto, isArray: true })
   achievements(
     @CurrentUser() user: JwtPayload,
   ): Promise<ApiV1AchievementDto[]> {
@@ -180,8 +209,12 @@ export class NotificationsV1Controller {
   }
 
   @Get()
-  @ApiOperation({ summary: "The caller's notification bell" })
-  @ApiOkResponse({ type: ApiV1NotificationsResponseDto })
+  @ApiOperation({
+    summary: "The caller's notification bell",
+    description:
+      "The most recent notifications, newest first, with how many are still unread.",
+  })
+  @ApiV1OkResponse({ type: ApiV1NotificationsResponseDto })
   async list(@CurrentUser() user: JwtPayload): Promise<ApiV1NotificationsDto> {
     const feed = await this.notifications.feed(user.sub);
     return {
@@ -211,9 +244,9 @@ export class ExportV1Controller {
   @ApiOperation({
     summary: "Full data export",
     description:
-      "Everything the account holds, in the same format as Settings › Export. Once an hour.",
+      "Everything the account holds, in the same format as Settings › Export: a backup, or a way to move elsewhere. Once an hour: a second call within the hour gets a `429`.",
   })
-  @ApiOkResponse({ type: UserDataExportResponseDto })
+  @ApiV1OkResponse({ type: UserDataExportResponseDto })
   export(@CurrentUser() user: JwtPayload): Promise<UserDataExportDto> {
     return this.dataExport.buildExport(user.sub);
   }

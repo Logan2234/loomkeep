@@ -90,19 +90,74 @@ export class UpdateSavedViewBody implements UpdateSavedViewDto {
 }
 
 export class SavedViewFiltersResponseDto implements SavedViewFiltersDto {
+  /**
+   * Text search.
+   * @example "dune"
+   */
   q?: string;
+
+  /**
+   * The domain's own statuses kept.
+   * @example ["WATCHING", "PLANNED"]
+   */
   statuses?: string[];
+
+  /**
+   * Only favourites.
+   * @example true
+   */
   favorite?: boolean;
+
+  /**
+   * Video types kept.
+   * @example ["SERIES"]
+   */
   types?: MediaType[];
+
+  /**
+   * The list's sort key.
+   * @example "recent"
+   */
   sort?: string;
+
+  /**
+   * Ascending or descending.
+   * @example "desc"
+   */
   order?: "asc" | "desc";
 }
 
 export class SavedViewResponseDto implements SavedViewDto {
+  /**
+   * The view's id.
+   * @example "cm1q2w3e4r5t6y7u8i9o0p1a"
+   */
   id!: string;
+
+  /**
+   * The view's name.
+   * @example "Comfort shows"
+   */
   name!: string;
+
+  /**
+   * The library the view filters.
+   * @example "MEDIA"
+   */
   domain!: SavedViewDomain;
+
+  /** The filters it saves. */
   filters!: SavedViewFiltersResponseDto;
+
+  /**
+   * When it was created.
+   * @example "2026-03-14T09:26:53.000Z"
+   */
   createdAt!: string;
+
+  /**
+   * When it last changed.
+   * @example "2026-09-30T21:00:00.000Z"
+   */
   updatedAt!: string;
 }

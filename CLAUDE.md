@@ -8,7 +8,9 @@ Loomkeep — self-hosted media tracker (series, movies, anime, games, books,
 music, and more to come), open-core under AGPL-3.0. pnpm monorepo: `apps/api`
 (NestJS + Prisma + PostgreSQL), `apps/web` (SvelteKit PWA), `apps/docs`
 (docs.loomkeep.app: Astro Starlight guides + a Scalar reference rendered from
-the public API's `openapi-v1.json`, deployed to GitHub Pages by `docs.yml`),
+the public API's `openapi-v1.json`, deployed to GitHub Pages by `docs.yml` —
+every field of a public DTO needs a JSDoc description and `@example`, read by
+the Swagger plugin's `introspectComments`; `generate:openapi` fails on a gap),
 `packages/shared`
 (DTOs/enums — consumed from its built `dist/`, so run `pnpm build:package` after any change
 there). Catalogs are queried live (TMDB/AniList/IGDB/Open Library/
