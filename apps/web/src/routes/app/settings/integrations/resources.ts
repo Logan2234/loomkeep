@@ -39,7 +39,7 @@ export const RESOURCE_LABELS: Record<
   },
 };
 
-export function scopeResource(scope: ApiKeyScope): ApiKeyResource {
+function scopeResource(scope: ApiKeyScope): ApiKeyResource {
   return scope.split(":")[0] as ApiKeyResource;
 }
 

@@ -348,6 +348,8 @@
   "settings_privacy_view_public_profile": "Vedi il profilo pubblico",
   "settings_empty_devices_title": "Nessun altro dispositivo collegato",
   "settings_empty_devices_body": "Questa è l'unica sessione attualmente collegata al tuo account.",
+  "settings_empty_security_keys_title": "Nessuna chiave di sicurezza aggiunta",
+  "settings_empty_security_keys_body": "Aggiungi una chiave per usarla con l'autenticazione a due fattori e l'accesso senza password.",
   "settings_preview_mfa_totp": "App di autenticazione attiva",
   "settings_preview_mfa_off": "Nessun metodo attivo",
   "settings_preview_domains": "{count} su {total} attivi",
