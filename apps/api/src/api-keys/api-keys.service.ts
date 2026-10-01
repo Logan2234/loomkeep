@@ -15,6 +15,7 @@ import type { ApiKey } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { InstanceSettingsService } from "../instance-settings/instance-settings.service";
 import { MailService } from "../mail/mail.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
@@ -120,10 +121,12 @@ export class ApiKeysService {
     });
 
     if (count > 0) {
+      const copy = (await this.notifications.copyFor(userId)).apiKeys;
       await this.notifications.create({
         userId,
         type: NotificationType.API_KEYS_REVIEW,
-        title: "Vérifie tes clés API",
+        title: copy.reviewTitle,
+        body: copy.reviewBody(count),
         url: "/app/settings/integrations",
         data: { count },
       });
@@ -151,10 +154,12 @@ export class ApiKeysService {
       userId: key.userId,
       detail: key.name,
     });
+    const copy = notificationCopy(key.user.locale).apiKeys;
     await this.notifications.create({
       userId: key.userId,
       type: NotificationType.API_KEY_LEAKED,
-      title: "Clé API révoquée",
+      title: copy.leakedTitle,
+      body: copy.leakedBody(key.name),
       url: "/app/settings/integrations",
       data: { name: key.name, foundAt },
     });

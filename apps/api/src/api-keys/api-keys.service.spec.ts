@@ -2,6 +2,7 @@ import { MAX_API_KEYS_PER_USER } from "@loomkeep/shared";
 import { afterEach, beforeEach, vi } from "vitest";
 import type { InstanceSettingsService } from "../instance-settings/instance-settings.service";
 import type { MailService } from "../mail/mail.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
@@ -28,6 +29,16 @@ function setup({ count = 0, existing = true, apiEnabled = true } = {}) {
       findFirst: vi
         .fn()
         .mockResolvedValue(existing ? { name: "Script perso" } : null),
+      findUnique: vi.fn().mockResolvedValue(
+        existing
+          ? {
+              id: "key-1",
+              userId: "user-1",
+              name: "Homepage",
+              user: { email: "alice@example.com", locale: "it" },
+            }
+          : null,
+      ),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       findMany: vi.fn().mockResolvedValue([
         { id: "key-1", name: "Script perso" },
@@ -37,8 +48,11 @@ function setup({ count = 0, existing = true, apiEnabled = true } = {}) {
   };
   const auth = { invalidate: vi.fn() };
   const security = { record: vi.fn() };
-  const mail = { sendApiKeyCreated: vi.fn() };
-  const notifications = { create: vi.fn() };
+  const mail = { sendApiKeyCreated: vi.fn(), sendApiKeyLeaked: vi.fn() };
+  const notifications = {
+    create: vi.fn(),
+    copyFor: vi.fn().mockResolvedValue(notificationCopy("en")),
+  };
   const service = new ApiKeysService(
     prisma as unknown as PrismaService,
     auth as unknown as ApiKeyAuthService,
@@ -169,6 +183,8 @@ describe("ApiKeysService", () => {
         expect.objectContaining({
           userId: "user-1",
           type: "API_KEYS_REVIEW",
+          title: "Check your API keys",
+          body: "Your password changed, but your 2 API keys stay valid.",
           url: "/app/settings/integrations",
           data: { count: 2 },
         }),
@@ -181,6 +197,38 @@ describe("ApiKeysService", () => {
       await expect(service.reviewAfterPasswordChange("user-1")).resolves.toBe(
         0,
       );
+      expect(notifications.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("revokeLeaked", () => {
+    it("revokes the key and tells its owner in their own language", async () => {
+      const { service, prisma, auth, security, notifications, mail } = setup();
+
+      await expect(
+        service.revokeLeaked("lk_leaked", "https://github.com/o/r"),
+      ).resolves.toBe(true);
+      expect(prisma.apiKey.deleteMany).toHaveBeenCalledWith({
+        where: { id: "key-1" },
+      });
+      expect(auth.invalidate).toHaveBeenCalledWith("key-1");
+      expect(security.record).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "API_KEY_LEAKED", detail: "Homepage" }),
+      );
+      expect(notifications.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "API_KEY_LEAKED",
+          title: "Chiave API revocata",
+          data: { name: "Homepage", foundAt: "https://github.com/o/r" },
+        }),
+      );
+      expect(mail.sendApiKeyLeaked).toHaveBeenCalled();
+    });
+
+    it("leaves a key that isn't ours alone", async () => {
+      const { service, notifications } = setup({ existing: false });
+
+      await expect(service.revokeLeaked("lk_other", null)).resolves.toBe(false);
       expect(notifications.create).not.toHaveBeenCalled();
     });
   });
