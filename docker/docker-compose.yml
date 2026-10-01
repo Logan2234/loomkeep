@@ -40,6 +40,15 @@ services:
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET in .env}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in .env}
       MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      # Instance settings: empty leaves each one to Admin > Instance settings,
+      # a value overrides and locks it there (see .env.example).
+      SOCIAL_ENABLED: ${SOCIAL_ENABLED:-}
+      GAMIFICATION_ENABLED: ${GAMIFICATION_ENABLED:-}
+      REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-}
+      PUBLIC_API_ENABLED: ${PUBLIC_API_ENABLED:-}
+      API_RATE_LIMIT_FREE: ${API_RATE_LIMIT_FREE:-}
+      API_RATE_LIMIT_PREMIUM: ${API_RATE_LIMIT_PREMIUM:-}
       TMDB_API_TOKEN: ${TMDB_API_TOKEN:-}
       OMDB_API_KEY: ${OMDB_API_KEY:-}
       TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID:-}

@@ -10,10 +10,10 @@ describe("resolveWatchRegion", () => {
     expect(resolveWatchRegion(undefined, "en-gb")).toBe("GB");
   });
 
-  it("falls back to France when the preferred language names no country", () => {
-    expect(resolveWatchRegion(undefined, "en,en-US;q=0.9")).toBe("FR");
-    expect(resolveWatchRegion(undefined, undefined)).toBe("FR");
-    expect(resolveWatchRegion(undefined, "zh-Hant-TW")).toBe("FR");
+  it("falls back to the United States when the preferred language names no country", () => {
+    expect(resolveWatchRegion(undefined, "en,en-US;q=0.9")).toBe("US");
+    expect(resolveWatchRegion(undefined, undefined)).toBe("US");
+    expect(resolveWatchRegion(undefined, "zh-Hant-TW")).toBe("US");
   });
 
   it("ignores a malformed pick", () => {

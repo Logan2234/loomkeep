@@ -1,9 +1,10 @@
 import type { ApiV1MeDto } from "@loomkeep/shared";
 import { Controller, Get } from "@nestjs/common";
-import { ApiOkResponse, ApiOperation } from "@nestjs/swagger";
+import { ApiOperation } from "@nestjs/swagger";
 import { PublicApi } from "../../api-keys/public-api.decorator";
 import type { JwtPayload } from "../../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../../auth/decorators/current-user.decorator";
+import { ApiV1OkResponse } from "./api-responses";
 import { ApiV1MeResponseDto } from "./me-response.dto";
 import { MeV1Service } from "./me.service";
 
@@ -15,9 +16,10 @@ export class MeV1Controller {
   @Get()
   @ApiOperation({
     summary: "The account and key in use",
-    description: "Any valid key can call it, whatever it was granted.",
+    description:
+      "Who the key belongs to, what it can read, when it expires, and the account's request budget. Any valid key can call it, whatever it was granted: a quick way to check a key.",
   })
-  @ApiOkResponse({ type: ApiV1MeResponseDto })
+  @ApiV1OkResponse({ type: ApiV1MeResponseDto })
   get(@CurrentUser() user: JwtPayload): Promise<ApiV1MeDto> {
     return this.me.get(user.sub, user.apiKeyId);
   }

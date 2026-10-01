@@ -61,6 +61,20 @@ describe("ApiRateLimitService", () => {
     });
   });
 
+  it("lets each account export once an hour", () => {
+    const { service } = setup();
+
+    expect(service.consumeExport("user-1").allowed).toBe(true);
+    expect(service.consumeExport("user-1")).toMatchObject({
+      allowed: false,
+      resetIn: 3600,
+    });
+    expect(service.consumeExport("user-2").allowed).toBe(true);
+
+    vi.advanceTimersByTime(3_600_000);
+    expect(service.consumeExport("user-1").allowed).toBe(true);
+  });
+
   it("counts each account on its own", async () => {
     const { service } = setup();
 

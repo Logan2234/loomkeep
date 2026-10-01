@@ -44,6 +44,16 @@ const COPY = {
     },
     /** Default name for a security key enrolled without one. */
     securityKey: "Clé de sécurité",
+    apiKeys: {
+      reviewTitle: "Vérifie tes clés API",
+      reviewBody: (count: number) =>
+        count === 1
+          ? "Ton mot de passe a changé, mais ta clé API reste valable."
+          : `Ton mot de passe a changé, mais tes ${count} clés API restent valables.`,
+      leakedTitle: "Clé API révoquée",
+      leakedBody: (name: string) =>
+        `Ta clé « ${name} » a été trouvée en public sur GitHub. Elle ne fonctionne plus : crée-en une nouvelle.`,
+    },
   },
   en: {
     adminTestPush: "This is a test notification sent from the admin panel.",
@@ -74,6 +84,16 @@ const COPY = {
       other: "Action has been taken on your account",
     },
     securityKey: "Security key",
+    apiKeys: {
+      reviewTitle: "Check your API keys",
+      reviewBody: (count: number) =>
+        count === 1
+          ? "Your password changed, but your API key stays valid."
+          : `Your password changed, but your ${count} API keys stay valid.`,
+      leakedTitle: "API key revoked",
+      leakedBody: (name: string) =>
+        `Your key "${name}" was found in public on GitHub. It no longer works: create a new one.`,
+    },
   },
   it: {
     adminTestPush:
@@ -106,6 +126,16 @@ const COPY = {
       other: "È stata presa una misura sul tuo account",
     },
     securityKey: "Chiave di sicurezza",
+    apiKeys: {
+      reviewTitle: "Controlla le tue chiavi API",
+      reviewBody: (count: number) =>
+        count === 1
+          ? "La tua password è cambiata, ma la tua chiave API resta valida."
+          : `La tua password è cambiata, ma le tue ${count} chiavi API restano valide.`,
+      leakedTitle: "Chiave API revocata",
+      leakedBody: (name: string) =>
+        `La tua chiave «${name}» è stata trovata in pubblico su GitHub. Non funziona più: creane una nuova.`,
+    },
   },
 } satisfies Record<CopyLocale, NotificationCopy>;
 
@@ -123,6 +153,12 @@ export interface NotificationCopy {
     other: string;
   };
   securityKey: string;
+  apiKeys: {
+    reviewTitle: string;
+    reviewBody: (count: number) => string;
+    leakedTitle: string;
+    leakedBody: (name: string) => string;
+  };
 }
 
 export function notificationCopy(locale: string | undefined): NotificationCopy {

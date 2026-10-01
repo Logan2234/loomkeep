@@ -64,7 +64,7 @@ const MESSAGES = {
   [ErrorCode.ApiRateLimited]: () => m.apierr_api_rate_limited(),
   [ErrorCode.ApiDisabled]: () => m.apierr_api_disabled(),
   [ErrorCode.SecretScanningUnauthorized]: () =>
-    m.apierr_secret_scanning_unauthorized(),
+    m.apierr_api_secret_scanning_unauthorized(),
   [ErrorCode.AdminCacheItemNotFound]: () =>
     m.apierr_admin_cache_item_not_found(),
   [ErrorCode.AdminCacheResyncFailed]: () =>

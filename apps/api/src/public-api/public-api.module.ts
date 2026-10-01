@@ -24,6 +24,7 @@ import {
   HistoryV1Controller,
   LibraryV1Controller,
 } from "./v1/controllers/library.controller";
+import { ExportRateLimitGuard } from "./v1/export-rate-limit.guard";
 import { HistoryV1Service } from "./v1/history-v1.service";
 import { LibraryV1Service } from "./v1/library-v1.service";
 import { ListsV1Service } from "./v1/lists-v1.service";
@@ -73,6 +74,7 @@ import { WorkTitlesService } from "./v1/work-titles.service";
     ProfileV1Service,
     HistoryV1Service,
     WorkTitlesService,
+    ExportRateLimitGuard,
   ],
 })
 export class PublicApiModule {}
