@@ -9,9 +9,9 @@ import { ApiKeyAuthService } from "./api-key-auth.service";
 
 const DAY_MS = 86_400_000;
 /** How far ahead of its expiration a key's owner is warned. */
-export const EXPIRY_WARNING_DAYS = 7;
+const EXPIRY_WARNING_DAYS = 7;
 /** A key nobody has used for this long is deleted. */
-export const UNUSED_KEY_DAYS = 365;
+const UNUSED_KEY_DAYS = 365;
 
 /**
  * The daily pass over API keys: warns before a key expires, and deletes the
