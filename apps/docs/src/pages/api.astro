@@ -1,0 +1,96 @@
+---
+import "@fontsource-variable/hanken-grotesk";
+import "@fontsource/space-mono";
+import { ScalarComponent } from "@scalar/astro";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>API reference · Loomkeep API</title>
+    <style is:global>
+      :root {
+        --scalar-custom-header-height: 44px;
+      }
+      .docs-bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        height: var(--scalar-custom-header-height);
+        padding: 0 1rem;
+        background: #0c0d10;
+        border-bottom: 1px solid #2a2e38;
+        font: 600 14px/1 "Hanken Grotesk Variable", system-ui, sans-serif;
+      }
+      .docs-bar a {
+        color: #9aa0ae;
+        text-decoration: none;
+      }
+      .docs-bar a:hover {
+        color: #f5b841;
+      }
+      .docs-bar strong {
+        color: #ececea;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="docs-bar" aria-label="Documentation">
+      <strong>Loomkeep API</strong>
+      <a href="/">Guides</a>
+      <a href="/api/" aria-current="page">API reference</a>
+    </nav>
+    <ScalarComponent
+      renderMode="client"
+      configuration={{
+        url: "/openapi-v1.json",
+        // Served from public/ (see scripts/copy-assets.mjs), and no web
+        // fonts from Scalar's own CDN either: nothing loads from a third party.
+        cdn: "/scalar/standalone.js",
+        withDefaultFonts: false,
+        // Scalar's hosted extras (AI chat, MCP, sharing and deploy toolbar,
+        // usage telemetry) all talk to scalar.com: off.
+        agent: { disabled: true },
+        mcp: { disabled: true },
+        showToolbar: "never",
+        showDeveloperTools: "never",
+        telemetry: false,
+        authentication: { preferredSecurityScheme: "bearer" },
+        theme: "none",
+        customCss: `
+          .light-mode, .dark-mode {
+            --scalar-font: "Hanken Grotesk Variable", system-ui, sans-serif;
+            --scalar-font-code: "Space Mono", ui-monospace, monospace;
+          }
+          .dark-mode {
+            --scalar-background-1: #0c0d10;
+            --scalar-background-2: #15171c;
+            --scalar-background-3: #1e2128;
+            --scalar-border-color: #2a2e38;
+            --scalar-color-1: #ececea;
+            --scalar-color-2: #9aa0ae;
+            --scalar-color-3: #6b7280;
+            --scalar-color-accent: #f5b841;
+            --scalar-background-accent: #2b2413;
+          }
+          .light-mode {
+            --scalar-background-1: #f7f5f3;
+            --scalar-background-2: #ffffff;
+            --scalar-background-3: #edeae3;
+            --scalar-border-color: #d3c7a8;
+            --scalar-color-1: #1c1712;
+            --scalar-color-2: #6b6354;
+            --scalar-color-3: #8a8070;
+            --scalar-color-accent: #8e620b;
+            --scalar-background-accent: #f6ebd2;
+          }
+        `,
+      }}
+    />
+  </body>
+</html>

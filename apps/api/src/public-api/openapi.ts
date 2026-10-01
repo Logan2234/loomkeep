@@ -13,16 +13,25 @@ export const PUBLIC_API_DOCUMENT_PATH = "/api/v1/openapi.json";
 export function buildPublicApiDocument(
   app: INestApplication,
   version: string,
+  /** Where requests go; none means the instance serving the document. */
+  server?: { url: string; description: string },
 ): OpenAPIObject {
+  const builder = new DocumentBuilder();
+  if (server) builder.addServer(server.url, server.description);
   return SwaggerModule.createDocument(
     app,
-    new DocumentBuilder()
+    builder
       .setTitle("Loomkeep API")
       .setDescription(
         "Read access to a Loomkeep account with a personal API key (Settings › Integrations), sent as `Authorization: Bearer lk_…`.",
       )
       .setVersion(version)
-      .addBearerAuth({ type: "http", scheme: "bearer" })
+      .addBearerAuth({
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "lk_…",
+        description: "A personal API key, from Settings › Integrations.",
+      })
       .build(),
     { include: [PublicApiModule] },
   );
