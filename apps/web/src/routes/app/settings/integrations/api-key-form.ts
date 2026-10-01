@@ -1,13 +1,6 @@
 import type { ApiKeyDto } from "@loomkeep/shared";
 
-export const EXPIRATION_CHOICES = [
-  "30",
-  "90",
-  "365",
-  "custom",
-  "never",
-] as const;
-export type ExpirationChoice = (typeof EXPIRATION_CHOICES)[number];
+export type ExpirationChoice = "30" | "90" | "365" | "custom" | "never";
 export const DEFAULT_EXPIRATION: ExpirationChoice = "90";
 
 /** Below this, a key's expiration is flagged in the list. */
