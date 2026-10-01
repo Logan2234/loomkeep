@@ -1,0 +1,28 @@
+---
+// Starlight's header icons, preceded by a plain link back to the app: the
+// docs' one way into Loomkeep itself, worded rather than an icon.
+import Default from "@astrojs/starlight/components/SocialIcons.astro";
+---
+
+<a href="https://loomkeep.app" class="app-link">Open Loomkeep ↗</a>
+<Default />
+
+<style>
+  .app-link {
+    color: var(--sl-color-white);
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .app-link:hover {
+    color: var(--sl-color-accent);
+  }
+
+  @media (max-width: 50em) {
+    .app-link {
+      display: none;
+    }
+  }
+</style>

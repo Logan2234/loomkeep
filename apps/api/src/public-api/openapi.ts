@@ -10,7 +10,7 @@ const DOCS_URL = "https://docs.loomkeep.app";
 const DESCRIPTION = `Read a Loomkeep account from your own scripts and tools: its library, history, lists, calendar and stats.
 
 Every request carries a personal API key, created in **Settings › Integrations**, as \`Authorization: Bearer lk_…\`.
-New here? Start with the [quick start](${DOCS_URL}/), then [authentication](${DOCS_URL}/authentication/) and the [conventions](${DOCS_URL}/conventions/) every endpoint shares.`;
+New here? Start with the [quick start](${DOCS_URL}/api/), then [authentication](${DOCS_URL}/api/authentication/) and the [conventions](${DOCS_URL}/api/conventions/) every endpoint shares.`;
 
 const TAGS: { name: string; description: string }[] = [
   {
@@ -105,7 +105,7 @@ export function buildPublicApiDocument(
     .setTitle("Loomkeep API")
     .setDescription(DESCRIPTION)
     .setVersion(version)
-    .setExternalDoc("Guides", DOCS_URL)
+    .setExternalDoc("Guides", `${DOCS_URL}/api/`)
     .setLicense("AGPL-3.0", "https://www.gnu.org/licenses/agpl-3.0.html")
     .addBearerAuth({
       type: "http",

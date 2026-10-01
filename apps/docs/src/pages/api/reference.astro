@@ -2,6 +2,32 @@
 import "@fontsource-variable/hanken-grotesk";
 import "@fontsource/space-mono";
 import { ScalarComponent } from "@scalar/astro";
+
+// Snippet languages offered: curl, JavaScript and Node fetch, Python
+// requests, Go and PHP Guzzle. Everything else is hidden.
+const hiddenClients = {
+  c: true,
+  clojure: true,
+  csharp: true,
+  dart: true,
+  fsharp: true,
+  http: true,
+  java: true,
+  js: ["axios", "jquery", "ofetch", "xhr"],
+  julia: true,
+  kotlin: true,
+  node: ["axios", "ofetch", "undici"],
+  objc: true,
+  ocaml: true,
+  php: ["curl", "laravel"],
+  powershell: true,
+  python: ["python3", "aiohttp", "httpx_sync", "httpx_async"],
+  r: true,
+  ruby: true,
+  rust: true,
+  shell: ["httpie", "wget"],
+  swift: true,
+};
 ---
 
 <!doctype html>
@@ -9,7 +35,26 @@ import { ScalarComponent } from "@scalar/astro";
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>API reference · Loomkeep API</title>
+    <meta name="theme-color" content="#0c0d10" />
+    <meta
+      name="description"
+      content="Every endpoint of the Loomkeep public API, with a console to try them."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>API reference · Loomkeep Docs</title>
+    <script is:inline>
+      // Scalar reads its colour mode from this key: hand it the guides'
+      // choice (Starlight's key), its own toggle being hidden.
+      try {
+        const choice = localStorage.getItem("starlight-theme");
+        localStorage.setItem(
+          "colorMode",
+          choice === "dark" || choice === "light" ? choice : "system",
+        );
+      } catch {
+        // Storage blocked: Scalar falls back to the system preference.
+      }
+    </script>
     <style is:global>
       :root {
         --scalar-custom-header-height: 44px;
@@ -37,13 +82,39 @@ import { ScalarComponent } from "@scalar/astro";
       .docs-bar strong {
         color: #ececea;
       }
+      .docs-bar a,
+      .docs-bar strong {
+        white-space: nowrap;
+      }
+      .docs-bar .app {
+        margin-left: auto;
+      }
+      @media (max-width: 30em) {
+        .docs-bar .app {
+          display: none;
+        }
+      }
+      .light-mode .docs-bar {
+        background: #ffffff;
+        border-bottom-color: #d3c7a8;
+      }
+      .light-mode .docs-bar a {
+        color: #6b6354;
+      }
+      .light-mode .docs-bar a:hover {
+        color: #8e620b;
+      }
+      .light-mode .docs-bar strong {
+        color: #1c1712;
+      }
     </style>
   </head>
   <body>
     <nav class="docs-bar" aria-label="Documentation">
-      <strong>Loomkeep API</strong>
-      <a href="/">Guides</a>
-      <a href="/api/" aria-current="page">API reference</a>
+      <strong>Loomkeep Docs</strong>
+      <a href="/api/">Guides</a>
+      <a href="/api/reference/" aria-current="page">API reference</a>
+      <a class="app" href="https://loomkeep.app">Open Loomkeep ↗</a>
     </nav>
     <ScalarComponent
       renderMode="client"
@@ -61,6 +132,16 @@ import { ScalarComponent } from "@scalar/astro";
         showDeveloperTools: "never",
         telemetry: false,
         authentication: { preferredSecurityScheme: "bearer" },
+        // Each schema is already shown inline in the responses using it.
+        hideModels: true,
+        defaultOpenAllTags: true,
+        orderSchemaPropertiesBy: "preserve",
+        orderRequiredPropertiesFirst: true,
+        defaultHttpClient: { targetKey: "shell", clientKey: "curl" },
+        hiddenClients,
+        documentDownloadType: "json",
+        hideDarkModeToggle: true,
+        favicon: "/favicon.svg",
         theme: "none",
         customCss: `
           .light-mode, .dark-mode {

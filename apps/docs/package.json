@@ -16,6 +16,8 @@
     "@fontsource/space-mono": "^5.3.0",
     "@scalar/api-reference": "^1.72.2",
     "@scalar/astro": "^0.4.24",
-    "astro": "^7.3.5"
+    "astro": "^7.3.5",
+    "starlight-links-validator": "^0.26.0",
+    "starlight-llms-txt": "^0.12.0"
   }
 }

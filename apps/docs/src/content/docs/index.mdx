@@ -1,43 +1,33 @@
 ---
-title: Introduction
-description: Read your Loomkeep account from scripts and tools with a personal API key.
+title: Home
+description: Everything about Loomkeep, the self-hosted tracker for series, films, anime, games, books and music.
+template: splash
+hero:
+  title: Loomkeep Docs
+  tagline: Track what you watch, play, read and listen to — on loomkeep.app or on your own server.
+  image:
+    file: ../../assets/logo.svg
+  actions:
+    - text: API quick start
+      link: /api/
+      icon: right-arrow
+    - text: Open Loomkeep
+      link: https://loomkeep.app
+      icon: external
+      variant: minimal
 ---
 
-The Loomkeep API gives read access to your own account: your library across
-video, games, books and music, your lists, upcoming episodes, stats, reviews,
-profile, notifications and a full data export.
+import { CardGrid, LinkCard } from "@astrojs/starlight/components";
 
-It is a plain JSON API over HTTPS, authenticated with a personal API key you
-create yourself. Each key only reaches the resources you grant it, and you can
-revoke it at any time.
-
-## Base URL
-
-```
-https://loomkeep.app/api/v1
-```
-
-On a self-hosted instance, use your own address: `https://<your-instance>/api/v1`.
-Each instance also serves the exact contract it runs at
-`/api/v1/openapi.json`.
-
-## Quick start
-
-1. In Loomkeep, open **Settings › Integrations** and create an API key. Give it
-   the resources your tool needs, then copy it: it is only shown once.
-2. Call the API with the key in the `Authorization` header:
-
-   ```sh
-   curl -H "Authorization: Bearer lk_…" https://loomkeep.app/api/v1/me
-   ```
-
-   `/v1/me` works with any key and tells you which account and key you are
-   using, and your rate limit.
-
-3. Browse the [API reference](/api/) for every endpoint, or try them from
-   there with your key.
-
-## Next
-
-- [Authentication](/authentication/): keys, scopes, expiration.
-- [Conventions](/conventions/): pagination, statuses, errors and rate limits.
+<CardGrid>
+  <LinkCard
+    title="Public API"
+    description="Read your library, history, lists and stats from your own scripts and tools, with a personal API key."
+    href="/api/"
+  />
+  <LinkCard
+    title="API reference"
+    description="Every endpoint, its parameters and responses, with a console to try them."
+    href="/api/reference/"
+  />
+</CardGrid>
