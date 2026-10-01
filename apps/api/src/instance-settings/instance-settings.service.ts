@@ -25,12 +25,20 @@ export class InstanceSettingsService implements OnModuleInit {
     private readonly config: ConfigService,
   ) {}
 
+  /**
+   * The row is created on the first boot that has this table, from what the
+   * env vars said then: an instance moving its configuration from `.env` to
+   * the admin page can then drop the vars without anything changing.
+   */
   async onModuleInit(): Promise<void> {
-    const row = await this.prisma.instanceSettings.upsert({
+    const existing = await this.prisma.instanceSettings.findUnique({
       where: { id: 1 },
-      create: {},
-      update: {},
     });
+    const row =
+      existing ??
+      (await this.prisma.instanceSettings.create({
+        data: { id: 1, ...this.toDto().values },
+      }));
     setStoredInstanceSettings(toValues(row));
   }
 

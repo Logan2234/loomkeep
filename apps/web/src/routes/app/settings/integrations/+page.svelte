@@ -10,7 +10,6 @@
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -27,6 +26,7 @@
   import SettingsSection from "../components/SettingsSection.svelte";
   import { expiryState, RECIPES, type Recipe } from "./api-key-form";
   import ApiKeyCreateModal from "./components/ApiKeyCreateModal.svelte";
+  import ApiKeyListSkeleton from "./components/ApiKeyListSkeleton.svelte";
   import ApiKeyRow from "./components/ApiKeyRow.svelte";
   import { RECIPE_LABELS } from "./recipes";
 
@@ -108,7 +108,7 @@
     {/if}
 
     {#if apiKeysQuery.loading}
-      <CardRowSkeleton count={2} />
+      <ApiKeyListSkeleton />
     {:else if apiKeysQuery.error}
       <p class="text-danger text-sm">{apiKeysQuery.error}</p>
     {:else if apiKeys.length === 0}
