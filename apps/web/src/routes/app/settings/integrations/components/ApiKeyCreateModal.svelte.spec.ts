@@ -8,7 +8,7 @@ import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ApiKeyCreateModal from "./ApiKeyCreateModal.svelte";
 
-const SECRET = "lk_x7Qp2mRk8vTz4NcW1bYh6JdL3sFa0Ge5aBcDeFgHiJk";
+const SECRET = "lk_test-secret-for-the-modal";
 
 let sent: CreateApiKeyDto | null;
 
