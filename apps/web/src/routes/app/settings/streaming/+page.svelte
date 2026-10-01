@@ -176,7 +176,7 @@
 
       <p class="timecode text-dim text-micro mt-4">
         {m.media_watch_attribution({
-          region: formatRegion(catalog?.region ?? picked ?? "FR"),
+          region: formatRegion(catalog?.region ?? picked ?? "US"),
         })}
       </p>
     </section>
