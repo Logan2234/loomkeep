@@ -152,6 +152,19 @@ export default defineConfig({
                 MORE,
               ],
             },
+            {
+              label: "Project",
+              link: "/project/",
+              icon: "heart",
+              items: [
+                { label: "About", link: "/project/" },
+                "project/contributing",
+                "project/architecture",
+                "project/security",
+                "project/license",
+                MORE,
+              ],
+            },
           ],
           // The home page is the way into every topic, not part of one.
           { exclude: ["/"] },
