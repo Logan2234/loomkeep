@@ -19,6 +19,12 @@ export interface ApiKeyPrincipal {
   expiresAt: Date | null;
 }
 
+/**
+ * A plain SHA-256, like RefreshToken: the secret is 32 random bytes, so a
+ * slow password hash would add nothing but latency to every API request.
+ * CodeQL's `js/insufficient-password-hash` flags it as a password — a false
+ * positive, same reasoning as `secretsMatch` (common/secret-compare.util.ts).
+ */
 export function hashApiKey(secret: string): string {
   return createHash("sha256").update(secret).digest("hex");
 }

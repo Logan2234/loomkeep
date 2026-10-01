@@ -348,6 +348,8 @@
   "settings_privacy_view_public_profile": "View public profile",
   "settings_empty_devices_title": "No other connected device",
   "settings_empty_devices_body": "This is the only session currently connected to your account.",
+  "settings_empty_security_keys_title": "No security key added",
+  "settings_empty_security_keys_body": "Add a key to use it for two-factor and passwordless sign-in.",
   "settings_preview_mfa_totp": "Authenticator app on",
   "settings_preview_mfa_off": "No method enabled",
   "settings_preview_domains": "{count} of {total} on",
