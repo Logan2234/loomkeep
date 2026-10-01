@@ -40,6 +40,21 @@ export default defineConfig({
           tag: "meta",
           attrs: { name: "twitter:card", content: "summary_large_image" },
         },
+        // Fetched before the stylesheet asks for them: see fonts.css.
+        ...[
+          "bricolage-grotesque-latin-wght-normal",
+          "hanken-grotesk-latin-wght-normal",
+          "space-mono-latin-400-normal",
+        ].map((font) => ({
+          tag: "link",
+          attrs: {
+            rel: "preload",
+            href: `/fonts/${font}.woff2`,
+            as: "font",
+            type: "font/woff2",
+            crossorigin: true,
+          },
+        })),
       ],
       customCss: ["./src/styles/seance.css"],
       // English only for now; a `fr` entry is all another language needs.

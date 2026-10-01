@@ -1,6 +1,5 @@
 ---
-import "@fontsource-variable/hanken-grotesk";
-import "@fontsource/space-mono";
+import "../../styles/fonts.css";
 import { ScalarComponent } from "@scalar/astro";
 
 // Snippet languages offered: curl, JavaScript and Node fetch, Python
@@ -41,6 +40,20 @@ const hiddenClients = {
       content="Every endpoint of the Loomkeep public API, with a console to try them."
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link
+      rel="preload"
+      href="/fonts/hanken-grotesk-latin-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/space-mono-latin-400-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <title>API reference · Loomkeep Docs</title>
     <script is:inline>
       // Scalar reads its colour mode from this key: hand it the guides'

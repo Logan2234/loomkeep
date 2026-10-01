@@ -1,9 +1,7 @@
 /* Loomkeep's "Séance" identity (apps/web/DESIGN.md) on Starlight's tokens:
    dark is "la salle" (lights off, the screen glows), light "le programme"
    (paper). */
-@import "@fontsource-variable/bricolage-grotesque";
-@import "@fontsource-variable/hanken-grotesk";
-@import "@fontsource/space-mono";
+@import "./fonts.css";
 
 :root {
   --sl-font: "Hanken Grotesk Variable", system-ui, sans-serif;
