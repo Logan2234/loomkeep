@@ -334,6 +334,33 @@ describe("MailService", () => {
     expect(html).toContain("🐛 Fixes");
     expect(html).not.toContain(":sparkles:");
   });
+
+  it("renders the new changelog section emoji aliases in HTML and plain text", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
+
+    const service = new MailService(quota);
+    await service.sendNewsletter(
+      { email: "alice@example.com", locale: "en" },
+      "Loomkeep",
+      "## :electric_plug: API and integrations\n\n## :books: Documentation\n\n## :house: Self-hosting and administration",
+      "",
+      "unsub-token-123",
+    );
+
+    const { html, text } = sendMail.mock.calls[0][0];
+
+    for (const content of [html, text]) {
+      expect(content).toContain("🔌 API and integrations");
+      expect(content).toContain("📚 Documentation");
+      expect(content).toContain("🏠 Self-hosting and administration");
+      expect(content).not.toMatch(/:(electric_plug|books|house):/);
+    }
+  });
 });
 
 describe("MailService template gallery", () => {

@@ -12,6 +12,102 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.10.0 — Customizable libraries, tracking sessions, and the public API
+
+- **The home page is an account-persisted widget grid.** `User.homeLayout`
+  stores a 12-column layout edited from Settings > Appearance, with drag,
+  resize, widget settings and mobile stacking. A null layout derives the
+  default from enabled domains. Widgets include quick search, favorites,
+  lists and saved library views, dormant shows, a daily watchlist pick,
+  "on this day", reading goals, notes and social/gamification summaries.
+- **Libraries gain display modes and bulk editing.** Table, wall and
+  compact layouts share the same filtering and sorting; display mode and
+  visible columns persist per device. Rows support inline status,
+  ownership and rating actions. Bulk endpoints accept explicit ids or the
+  current filters, reuse single-entry lifecycle operations for XP and
+  activity consistency, and expose selection controls with keyboard
+  navigation and a timed undo before deletion. Named saved views retain
+  filters and order, can feed a home widget, and are included in exports.
+- **Games and books now keep dated sessions and tracking cycles.** Manual
+  sessions and timers record duration, reading progress and notes, with
+  editable history and weekly summaries. `GamePlaythrough` and
+  `BookReading` separate successive playthroughs and rereads; deliberately
+  history-only sessions retain a null cycle relation. Tracking panels and
+  resume controls share the resulting session-based presentation.
+- **Remaining-work estimates use richer catalogue data.** Episode runtime,
+  overview and still are persisted from TMDB; watch-time calculations use
+  the episode length, title average, then domain default. Series with no
+  provider average use the median of known episode lengths. IGDB completion
+  estimates are stored only with at least three submissions, and stale
+  tracked games refresh through a six-hourly job. Library pile endpoints
+  follow the active filters and count unwatched aired episodes, remaining
+  game time, book pages or album duration. Book refreshes backfill ISBNs;
+  anime format distinguishes films for migration exports.
+- **Discovery and the release calendar became more personal.** Regional
+  streaming-provider preferences prioritize selected services without
+  hiding other offers, including free and ad-supported tiers. The calendar
+  adds a weekly overview, filters, tonight's cards and episode backlog.
+  Per-series alert muting leaves calendar entries visible and prevents
+  muted episodes from resurfacing in a later digest. Shared or pasted
+  catalogue links resolve to a quick-add panel; supported ids are parsed
+  without fetching arbitrary URLs, and Loomkeep links resolve within the
+  current instance.
+- **Social progression and data portability expand.** Achievement rarity
+  is snapshotted per tier among eligible active members, with minimum
+  population and holder thresholds to avoid identifying individuals.
+  `SEASON_FINISHED` records a season's actual completion transition.
+  A token-protected, entitlement-checked Atom feed exposes the owner's
+  activity. Migration exports produce Letterboxd diary/watchlist CSVs and
+  Goodreads-compatible book CSVs, including optional reviews but never
+  private notes.
+- **A scoped, read-only public API is available under `/api/v1`.** Personal
+  keys are hashed at rest and accepted only on explicitly opted-in routes.
+  Public DTOs cover libraries and history, calendar, lists, statistics,
+  reviews, profile, achievements, notifications and the complete export.
+  Account-level request quotas span all keys, return rate-limit headers
+  and typed 429 responses, and limit the full export once per hour.
+  Key creation/revocation enters the security log; maintenance warns before
+  expiry and removes keys unused for a year. Checksummed keys reported by
+  signed GitHub secret-scanning alerts are revoked and their owners notified.
+  Public API CORS permits bearer-key requests from other origins while
+  internal routes retain their existing cookie/origin rules.
+- **Operators gain invitations and persistent instance settings.** Closed
+  registration accepts address-bound or multi-seat invitations, redeemed
+  atomically during account creation and manageable from the admin UI.
+  `InstanceSettings` centralizes social, gamification, registration, public
+  API availability and quotas; initial values come from the environment,
+  whose overrides still take priority and lock the corresponding controls.
+  Job failures and recovery notify admins without repeating every failure,
+  and the services page covers more instance dependencies. Docker now
+  forwards `ADMIN_EMAIL` and instance-setting variables to the API.
+  A social-gated public transparency page reports moderation by year.
+- **Documentation now has its own site at `docs.loomkeep.app`.** Starlight
+  hosts user, import, security, self-hosting and contributor guides; Scalar
+  renders the v1-only OpenAPI reference with descriptions, examples,
+  response errors and quota headers. Generation rejects undocumented
+  public fields. The site includes integration recipes, link validation,
+  theme/reduced-motion support and GitHub Pages deployment. Scalar assets
+  are served locally with hosted extras disabled, and an rxjs peer
+  declaration fixes API startup after the docs joined the workspace.
+- **Italian joins the shipped locales across web and API copy.** Language
+  pickers derive from the supported-locale list, API copy uses a shared
+  fallback rule, and catalogue tests enforce locale and file consistency.
+  Settings, site, admin and gamification messages were reorganized and
+  duplicate/dead keys removed; Italian covers emails, notifications and
+  feeds as well as the interface.
+- **Component tests and accessibility fixes harden the web UI.** A Vitest
+  happy-dom project exercises components through Testing Library, MSW and
+  a reactive navigation fake. It caught spaced-code paste truncation,
+  saved-view selection loss, unsafe login redirect prefix checks and a
+  tooltip that ignored reduced motion. Shared components improve focus,
+  keyboard behavior, semantics and long-content layouts. Library lists
+  rank light rows before loading a page, push applicable filtering/sorting
+  into SQL, escape literal search wildcards and aggregate media progress.
+  Email and Simkl links now use the first configured web origin.
+  Newsletter rendering recognizes the new `electric_plug`, `books` and
+  `house` aliases in HTML and plain text; dependency and CI updates round
+  out the release.
+
 ## 1.9.0 — Real-time push, the open-core `ee/` split, and passkeys
 
 - **Real-time push over WebSocket.** A single socket.io `EventsGateway`

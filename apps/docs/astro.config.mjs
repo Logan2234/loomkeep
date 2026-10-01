@@ -71,6 +71,10 @@ export default defineConfig({
         baseUrl: "https://github.com/Logan2234/loomkeep/edit/main/apps/docs/",
       },
       lastUpdated: true,
+      disable404Route: false,
+      defaultLocale: "en",
+      pagefind: false,
+      pagination: true,
       expressiveCode: {
         // Vesper's amber-on-black is close to Séance's dark room.
         themes: ["vesper", "github-light"],

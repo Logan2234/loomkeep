@@ -66,11 +66,14 @@ const QUACKBACK_EMOJI_ALIASES: Record<string, string> = {
   sparkles: "✨",
   wrench: "🔧",
   bug: "🐛",
+  electric_plug: "🔌",
+  books: "📚",
+  house: "🏠",
 };
 
 function renderQuackbackEmojiAliases(text: string): string {
   return text.replace(
-    /:(sparkles|wrench|bug):/g,
+    /:(sparkles|wrench|bug|electric_plug|books|house):/g,
     (_match, name: string) => QUACKBACK_EMOJI_ALIASES[name],
   );
 }

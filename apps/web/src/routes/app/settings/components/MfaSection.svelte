@@ -16,7 +16,6 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
@@ -487,15 +486,6 @@
                   </div>
                 {/each}
               </div>
-            {:else}
-              <EmptyState class="px-4 py-5 text-left">
-                <p class="font-semibold">
-                  {m.settings_empty_security_keys_title()}
-                </p>
-                <p class="mt-1 text-sm">
-                  {m.settings_empty_security_keys_body()}
-                </p>
-              </EmptyState>
             {/if}
           </SettingRow>
 
