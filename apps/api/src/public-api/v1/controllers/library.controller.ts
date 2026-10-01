@@ -4,13 +4,8 @@ import type {
   PagedResult,
 } from "@loomkeep/shared";
 import { Controller, Get, Param, Query } from "@nestjs/common";
-import {
-  ApiBearerAuth,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from "@nestjs/swagger";
-import { AllowApiKey } from "../../../api-keys/api-key-access.decorator";
+import { ApiOkResponse, ApiOperation } from "@nestjs/swagger";
+import { PublicApi } from "../../../api-keys/public-api.decorator";
 import type { JwtPayload } from "../../../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../../../auth/decorators/current-user.decorator";
 import { DEFAULT_PAGE_SIZE } from "../../../common/pagination.util";
@@ -22,9 +17,7 @@ import {
 } from "../dto/responses.dto";
 import { LibraryV1Service } from "../library-v1.service";
 
-@ApiTags("Library")
-@ApiBearerAuth()
-@AllowApiKey("library")
+@PublicApi("Library", "library")
 @Controller({ path: "library", version: "1" })
 export class LibraryV1Controller {
   constructor(private readonly library: LibraryV1Service) {}
@@ -62,9 +55,7 @@ export class LibraryV1Controller {
   }
 }
 
-@ApiTags("Calendar")
-@ApiBearerAuth()
-@AllowApiKey("calendar")
+@PublicApi("Calendar", "calendar")
 @Controller({ path: "calendar", version: "1" })
 export class CalendarV1Controller {
   constructor(private readonly library: LibraryV1Service) {}

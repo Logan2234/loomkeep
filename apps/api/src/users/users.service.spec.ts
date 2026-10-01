@@ -4,6 +4,7 @@ import type { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { vi, type Mock } from "vitest";
+import type { ApiKeysService } from "../api-keys/api-keys.service";
 import { hashToken } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
 import type { HibpService } from "../common/hibp.service";
@@ -65,6 +66,9 @@ describe("UsersService — email change", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
@@ -292,6 +296,9 @@ describe("UsersService — updateMe mobile nav shortcuts", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
@@ -351,6 +358,9 @@ describe("UsersService — home layout", () => {
       {} as unknown as AccountDeletionService,
       {} as unknown as XpService,
       {} as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
@@ -428,6 +438,9 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   }
 
@@ -527,6 +540,9 @@ describe("UsersService — uploadAvatar", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       events,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
@@ -666,6 +682,9 @@ describe("UsersService — changePassword", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
@@ -720,10 +739,13 @@ describe("UsersService — changePassword", () => {
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { userId },
     });
-    expect(mail.sendPasswordChanged).toHaveBeenCalledWith({
-      email: "alice@example.com",
-      locale: "fr",
-    });
+    expect(mail.sendPasswordChanged).toHaveBeenCalledWith(
+      {
+        email: "alice@example.com",
+        locale: "fr",
+      },
+      0,
+    );
   });
 });
 
@@ -762,6 +784,9 @@ describe("UsersService — deleteAccount", () => {
       accountDeletion,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
@@ -824,6 +849,9 @@ describe("UsersService — deletionSummary", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
@@ -884,6 +912,9 @@ describe("UsersService.getMyEntitlement", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   }
 

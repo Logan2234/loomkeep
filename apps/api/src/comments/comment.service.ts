@@ -20,7 +20,6 @@ import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { resolveWorkHref, workTargetExists } from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_COMMENT_POSTED } from "../gamification/achievements/registry";
 import { isGamificationEnabled } from "../gamification/gamification.config";
@@ -111,7 +110,6 @@ export class CommentService {
     private readonly notifications: NotificationService,
     private readonly xp: XpService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
     private readonly achievements: AchievementService,
     private readonly blocks: BlockService,
     private readonly events: EventsGateway,
@@ -904,7 +902,7 @@ export class CommentService {
             ),
             viewerId,
             xpMap,
-            isGamificationEnabled(this.config, this.flags),
+            isGamificationEnabled(this.config),
             hideProgressionByUser,
           )
         : null,

@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
+import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { MailModule } from "../mail/mail.module";
@@ -18,6 +19,7 @@ import { WebauthnService } from "./webauthn.service";
   // SessionCacheService comes from the global SessionCacheModule (see there
   // for why it isn't declared here directly).
   imports: [
+    ApiKeysModule,
     JwtModule.register({ global: true }),
     MailModule,
     SecurityModule,

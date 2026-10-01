@@ -1,6 +1,8 @@
 import { MAX_API_KEYS_PER_USER } from "@loomkeep/shared";
 import { afterEach, beforeEach, vi } from "vitest";
+import type { InstanceSettingsService } from "../instance-settings/instance-settings.service";
 import type { MailService } from "../mail/mail.service";
+import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
 import type { ApiKeyAuthService } from "./api-key-auth.service";
@@ -9,7 +11,7 @@ import { ApiKeysService } from "./api-keys.service";
 
 const NOW = new Date("2026-10-01T12:00:00Z");
 
-function setup({ count = 0, existing = true } = {}) {
+function setup({ count = 0, existing = true, apiEnabled = true } = {}) {
   const prisma = {
     apiKey: {
       count: vi.fn().mockResolvedValue(count),
@@ -27,18 +29,25 @@ function setup({ count = 0, existing = true } = {}) {
         .fn()
         .mockResolvedValue(existing ? { name: "Script perso" } : null),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      findMany: vi.fn().mockResolvedValue([
+        { id: "key-1", name: "Script perso" },
+        { id: "key-2", name: "Sauvegarde" },
+      ]),
     },
   };
   const auth = { invalidate: vi.fn() };
   const security = { record: vi.fn() };
   const mail = { sendApiKeyCreated: vi.fn() };
+  const notifications = { create: vi.fn() };
   const service = new ApiKeysService(
     prisma as unknown as PrismaService,
     auth as unknown as ApiKeyAuthService,
     security as unknown as SecurityEventService,
     mail as unknown as MailService,
+    notifications as unknown as NotificationService,
+    { get: () => apiEnabled } as unknown as InstanceSettingsService,
   );
-  return { service, prisma, auth, security, mail };
+  return { service, prisma, auth, security, mail, notifications };
 }
 
 describe("ApiKeysService", () => {
@@ -101,6 +110,19 @@ describe("ApiKeysService", () => {
       expect(prisma.apiKey.create).not.toHaveBeenCalled();
     });
 
+    it("refuses new keys while the instance has the API turned off", async () => {
+      const { service, prisma } = setup({ apiEnabled: false });
+
+      await expect(
+        service.create("user-1", {
+          name: "Script perso",
+          scopes: ["library:read"],
+          expiresAt: null,
+        }),
+      ).rejects.toMatchObject({ code: "api.disabled" });
+      expect(prisma.apiKey.create).not.toHaveBeenCalled();
+    });
+
     it("stops at the safety cap", async () => {
       const { service, prisma } = setup({ count: MAX_API_KEYS_PER_USER });
 
@@ -112,6 +134,54 @@ describe("ApiKeysService", () => {
         }),
       ).rejects.toMatchObject({ code: "api_key.limit_reached" });
       expect(prisma.apiKey.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("revokeAll", () => {
+    it("deletes every key of the caller and evicts each from the auth cache", async () => {
+      const { service, prisma, auth, security } = setup();
+
+      await service.revokeAll("user-1");
+
+      expect(prisma.apiKey.deleteMany).toHaveBeenCalledWith({
+        where: { userId: "user-1" },
+      });
+      expect(auth.invalidate).toHaveBeenCalledWith("key-1");
+      expect(auth.invalidate).toHaveBeenCalledWith("key-2");
+      expect(security.record).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("reviewAfterPasswordChange", () => {
+    it("asks for a review in the bell while active keys remain", async () => {
+      const { service, prisma, notifications } = setup({ count: 2 });
+
+      await expect(service.reviewAfterPasswordChange("user-1")).resolves.toBe(
+        2,
+      );
+      expect(prisma.apiKey.count).toHaveBeenCalledWith({
+        where: {
+          userId: "user-1",
+          OR: [{ expiresAt: null }, { expiresAt: { gt: NOW } }],
+        },
+      });
+      expect(notifications.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: "user-1",
+          type: "API_KEYS_REVIEW",
+          url: "/app/settings/integrations",
+          data: { count: 2 },
+        }),
+      );
+    });
+
+    it("stays silent without an active key", async () => {
+      const { service, notifications } = setup({ count: 0 });
+
+      await expect(service.reviewAfterPasswordChange("user-1")).resolves.toBe(
+        0,
+      );
+      expect(notifications.create).not.toHaveBeenCalled();
     });
   });
 

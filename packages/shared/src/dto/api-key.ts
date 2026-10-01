@@ -31,6 +31,12 @@ export const API_KEY_NAME_MAX_LENGTH = 60;
  */
 export const MAX_API_KEYS_PER_USER = 100;
 
+export interface ApiKeyQuotaDto {
+  perMinute: number;
+  /** What premium would raise it to; null when there's nothing to upgrade to. */
+  premiumPerMinute: number | null;
+}
+
 export interface ApiKeyDto {
   id: string;
   name: string;
@@ -70,4 +76,5 @@ export interface ApiV1MeDto {
     scopes: ApiKeyScope[];
     expiresAt: string | null;
   } | null;
+  rateLimit: { perMinute: number };
 }

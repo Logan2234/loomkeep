@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { BooksModule } from "../books/books.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
@@ -35,6 +36,7 @@ import { StatsV1Service } from "./v1/stats-v1.service";
  */
 @Module({
   imports: [
+    ApiKeysModule,
     UsersModule,
     LibraryModule,
     GamesModule,

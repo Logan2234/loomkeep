@@ -221,10 +221,16 @@
               min={minCustomDate()}
               aria-label={m.settings_api_keys_expiration_date()}
               bind:value={customDate} />
-          {:else if expiration === "never"}
+          {/if}
+          {#if expiration === "never"}
             <Banner variant="warning">
               {m.settings_api_keys_never_warning()}
             </Banner>
+          {:else}
+            <p class="text-dim flex items-center gap-1.5 text-xs">
+              <Icon name="mail" class="h-3.5 w-3.5 shrink-0" />
+              {m.settings_api_keys_expiry_mail()}
+            </p>
           {/if}
           <FieldError message={createMut.fieldErrors.expiresAt} />
         </div>

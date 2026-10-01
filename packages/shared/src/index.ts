@@ -18,6 +18,7 @@ export * from "./dto/game";
 export * from "./dto/gamification";
 export * from "./dto/home-layout";
 export * from "./dto/import";
+export * from "./dto/instance-settings";
 export * from "./dto/library";
 export * from "./dto/link";
 export * from "./dto/list";

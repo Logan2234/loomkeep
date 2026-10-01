@@ -2,6 +2,9 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignore": [".github/pa11y/sarif-reporter.js"],
   "workspaces": {
+    ".": {
+      "ignoreDependencies": ["rxjs"]
+    },
     "apps/api": {
       "entry": ["src/main.ts", "test/**/*.e2e-spec.ts"],
       "ignoreDependencies": ["pino-pretty"]

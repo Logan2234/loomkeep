@@ -18,6 +18,7 @@ import type {
   SendAdminTestPushRequestDto,
   SendTestEmailRequestDto,
   TrendPeriod,
+  UpdateInstanceSettingsDto,
 } from "@loomkeep/shared";
 import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
@@ -90,6 +91,12 @@ export const getAdminSocialActivityTrend = (period: TrendPeriod) =>
 export const getAdminSystemStats = () => typedRequest("/admin/stats/system");
 
 export const getAdminJobs = () => typedRequest("/admin/jobs");
+
+export const getAdminInstanceSettings = () =>
+  typedRequest("/admin/instance-settings");
+
+export const updateAdminInstanceSettings = (body: UpdateInstanceSettingsDto) =>
+  typedRequest("/admin/instance-settings", { method: "PATCH", body });
 
 /** Safe to retry: admin jobs are idempotent. */
 export const runAdminJob = (key: string): Promise<void> =>

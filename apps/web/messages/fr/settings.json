@@ -416,7 +416,7 @@
   "settings_api_keys_expiration_custom": "Date…",
   "settings_api_keys_expiration_never": "Jamais",
   "settings_api_keys_expiration_date": "Date d'expiration",
-  "settings_api_keys_never_warning": "Une clé sans expiration reste valable tant que tu ne la révoques pas, même oubliée dans un vieux script. Préfère une durée.",
+  "settings_api_keys_never_warning": "Une clé sans expiration reste valable tant que tu ne la révoques pas, même oubliée dans un vieux script. Préfère une durée : tu seras prévenu avant la fin.",
   "settings_api_keys_create_submit": "Créer la clé",
   "settings_api_keys_creating": "Création…",
   "settings_api_keys_created_title": "Clé créée",
@@ -451,5 +451,12 @@
   "settings_api_keys_recipe_releases_name": "Sorties du jour",
   "settings_api_keys_recipe_releases_desc": "Les épisodes du jour, pour un agenda, un bot ou la domotique.",
   "settings_api_keys_recipe_script_name": "Script personnel",
-  "settings_api_keys_recipe_script_desc": "Lire ta bibliothèque, tes listes et tes stats."
+  "settings_api_keys_recipe_script_desc": "Lire ta bibliothèque, tes listes et tes stats.",
+  "settings_api_keys_limit": "Limite : {count} requêtes par minute, toutes tes clés confondues.",
+  "settings_api_keys_limit_premium": "Premium la monte à {count}.",
+  "settings_api_keys_revoke_all": "Tout révoquer",
+  "settings_api_keys_revoke_all_title": "Révoquer toutes les clés API ?",
+  "settings_api_keys_revoke_all_body": "Tous les outils qui utilisent une de tes clés perdent l'accès immédiatement. Cette action est définitive.",
+  "settings_api_keys_expiry_mail": "Un e-mail te préviendra 7 jours avant l'expiration.",
+  "settings_api_keys_api_disabled": "L'API publique est désactivée sur cette instance : tes clés ne fonctionnent pas pour l'instant."
 }

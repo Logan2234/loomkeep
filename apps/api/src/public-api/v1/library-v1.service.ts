@@ -20,6 +20,7 @@ import { BookLibraryService } from "../../books/book-library.service";
 import { AppException } from "../../common/app.exception";
 import type { ListEntriesFilters } from "../../common/entry-lifecycle.util";
 import { compareTitles, timeMs } from "../../common/sort.util";
+import { primaryWebOrigin } from "../../common/web-origin.util";
 import { GameLibraryService } from "../../games/game-library.service";
 import { LibraryService } from "../../library/library.service";
 import { MusicLibraryService } from "../../music/music-library.service";
@@ -287,12 +288,6 @@ export function compareEntries(
   }
 }
 
-/** WEB_ORIGIN may list several origins; links point at the first. */
 export function webOriginOf(config: ConfigService): string {
-  return (
-    (config.get<string>("WEB_ORIGIN") ?? "")
-      .split(",")[0]
-      ?.trim()
-      .replace(/\/$/, "") || "http://localhost:5173"
-  );
+  return primaryWebOrigin(config.get<string>("WEB_ORIGIN"));
 }

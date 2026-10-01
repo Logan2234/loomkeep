@@ -1,7 +1,6 @@
 import { VisibilityAudience } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { FollowService } from "./follow.service";
 import { ProfileService } from "./profile.service";
@@ -41,11 +40,8 @@ function make(
   } as unknown as FollowService;
   // Not exercised by these tests (only getProfile reads gamification config).
   const config = { get: vi.fn() } as unknown as ConfigService;
-  const flags = {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
   return {
-    svc: new ProfileService(prisma, visibility, follow, config, flags),
+    svc: new ProfileService(prisma, visibility, follow, config),
     follow,
   };
 }
@@ -145,15 +141,15 @@ describe("ProfileService.getProfile xp", () => {
     } as unknown as VisibilityService;
 
     const follow = {} as unknown as FollowService;
-    const config = { get: vi.fn() } as unknown as ConfigService;
-    const flags = {
-      isEnabled: vi.fn(
-        (_name: string, fallback: boolean) =>
-          opts.gamificationEnabled ?? fallback,
+    const config = {
+      get: vi.fn((key: string) =>
+        key === "GAMIFICATION_ENABLED" && opts.gamificationEnabled
+          ? "true"
+          : undefined,
       ),
-    } as unknown as FeatureFlagsService;
+    } as unknown as ConfigService;
 
-    return new ProfileService(prisma, visibility, follow, config, flags);
+    return new ProfileService(prisma, visibility, follow, config);
   }
 
   it("returns 0 xp (not null) for a brand-new account with no UserScore row", async () => {
@@ -238,11 +234,8 @@ describe("ProfileService.getProfile xp", () => {
     } as unknown as VisibilityService;
     const follow = {} as unknown as FollowService;
     const config = { get: vi.fn() } as unknown as ConfigService;
-    const flags = {
-      isEnabled: vi.fn(() => false),
-    } as unknown as FeatureFlagsService;
 
-    const svc = new ProfileService(prisma, visibility, follow, config, flags);
+    const svc = new ProfileService(prisma, visibility, follow, config);
     const profile = await svc.getProfile("target", "alice");
 
     expect(profile.xp).toBeNull();

@@ -20,6 +20,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "path";
 import { AppModule } from "./app.module";
 import { enableApiVersioning } from "./common/api-versioning";
+import { corsOptionsFor } from "./common/cors";
 import { registerRequestContext } from "./common/request-context";
 import { ValidationException } from "./common/validation.exception";
 import { MetricsService } from "./metrics/metrics.service";
@@ -86,21 +87,16 @@ async function bootstrap() {
       // the exact bytes Quackback sent (populates request.rawBody).
       rawBody: true,
       snapshot: false,
-      cors: {
-        // Comma-separated so multiple origins can be allowed at once.
-        origin: webOrigin.split(",").map((o) => o.trim()),
-        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allowedHeaders: ["Content-Type"],
-        optionsSuccessStatus: 204,
-        maxAge: 3600,
-        credentials: true,
-        // Retry-After is unreadable from JS on a cross-origin response
-        // unless exposed: without it a 429 can only say "try again soon".
-        exposedHeaders: ["Content-Disposition", "Retry-After"],
-        preflightContinue: false,
-      },
     },
   );
+
+  // Comma-separated so multiple origins can be allowed at once; the public
+  // API gets its own, open policy (see corsOptionsFor).
+  const webOrigins = webOrigin.split(",").map((o) => o.trim());
+  app.enableCors({
+    delegator: (request, callback) =>
+      callback(null, corsOptionsFor(request.url, webOrigins)),
+  });
 
   // EventsGateway (WebSocket real-time push) rides socket.io regardless of
   // the HTTP adapter being Fastify — IoAdapter attaches to the underlying

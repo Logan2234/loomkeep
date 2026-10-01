@@ -1171,6 +1171,20 @@ model RefreshToken {
   @@index([userId])
 }
 
+// Instance-wide settings, edited from Admin › Settings. A single row (id 1).
+// An env var named in INSTANCE_SETTING_ENV (@loomkeep/shared), when set,
+// overrides its column and locks it in the admin page.
+model InstanceSettings {
+  id                  Int      @id @default(1)
+  socialEnabled       Boolean  @default(false)
+  gamificationEnabled Boolean  @default(false)
+  registrationEnabled Boolean  @default(true)
+  publicApiEnabled    Boolean  @default(true)
+  apiRateLimitFree    Int      @default(60)
+  apiRateLimitPremium Int      @default(300)
+  updatedAt           DateTime @updatedAt
+}
+
 // A personal API key for the public API (/api/v1). Only the SHA-256 of the
 // secret is stored, like RefreshToken; the secret itself is shown once.
 model ApiKey {
@@ -1186,11 +1200,14 @@ model ApiKey {
   expiresAt  DateTime?
   lastUsedAt DateTime?
   lastUsedIp String?
+  // Set once the "expires in 7 days" email went out, so it's sent only once.
+  expiryNotifiedAt DateTime?
   createdAt  DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expiresAt])
 }
 
 // Hashes of already-rotated refresh tokens. A replay identifies the durable
