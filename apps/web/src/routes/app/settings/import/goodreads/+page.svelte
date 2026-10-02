@@ -11,6 +11,5 @@
       rel="noopener noreferrer"
       class="link-accent">{m.settings_import_goodreads_intro()}</a>
     {m.settings_import_goodreads_hint()}
-    <code class="text-fg">.csv</code>
   {/snippet}
 </ImportWizard>
