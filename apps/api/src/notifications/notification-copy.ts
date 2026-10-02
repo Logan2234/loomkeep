@@ -45,18 +45,25 @@ const COPY = {
     /** Default name for a security key enrolled without one. */
     securityKey: "Clé de sécurité",
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
-      const when = period === "daily" ? "aujourd'hui" : "cette semaine";
-      const [a, b] = titles;
-      if (titles.length === 1)
-        return [`${a} sort ${when} !`, `Ça y est, ${a} est de retour ${when}.`];
-      if (titles.length === 2)
+      const when = period === "daily" ? "aujourd'hui" : "ces 7 derniers jours";
+      const shows = [...new Set(titles)];
+      const [a, b] = shows;
+      if (shows.length === 1)
+        return titles.length === 1
+          ? [
+              `Nouvel épisode de ${a}, sorti ${when}.`,
+              `${a} est de retour : un épisode est sorti ${when}.`,
+            ]
+          : [`${titles.length} nouveaux épisodes de ${a}, sortis ${when}.`];
+      if (shows.length === 2)
         return [
-          `${a} et ${b} sortent ${when}`,
-          `Double sortie ${when} : ${a} et ${b}`,
+          `Nouveaux épisodes ${when} : ${a} et ${b}.`,
+          `Double sortie ${when} : ${a} et ${b}.`,
         ];
+      const others = shows.length - 2;
       return [
-        `${titles.length} sorties t'attendent ${when}`,
-        `${a}, ${b} et ${titles.length - 2} autre(s) sortent ${when}`,
+        `${titles.length} épisodes sont sortis ${when}.`,
+        `Nouveaux épisodes ${when} : ${a}, ${b} et ${others === 1 ? "une autre série" : `${others} autres séries`}.`,
       ];
     },
     apiKeys: {
@@ -100,18 +107,25 @@ const COPY = {
     },
     securityKey: "Security key",
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
-      const when = period === "daily" ? "today" : "this week";
-      const [a, b] = titles;
-      if (titles.length === 1)
-        return [`${a} is out ${when}!`, `There it is: ${a} is back ${when}.`];
-      if (titles.length === 2)
+      const when = period === "daily" ? "today" : "in the last 7 days";
+      const shows = [...new Set(titles)];
+      const [a, b] = shows;
+      if (shows.length === 1)
+        return titles.length === 1
+          ? [
+              `New episode of ${a}, out ${when}.`,
+              `${a} is back: a new episode came out ${when}.`,
+            ]
+          : [`${titles.length} new episodes of ${a}, out ${when}.`];
+      if (shows.length === 2)
         return [
-          `${a} and ${b} are out ${when}`,
-          `Double release ${when}: ${a} and ${b}`,
+          `New episodes ${when}: ${a} and ${b}.`,
+          `Double release ${when}: ${a} and ${b}.`,
         ];
+      const others = shows.length - 2;
       return [
-        `${titles.length} releases are waiting for you ${when}`,
-        `${a}, ${b} and ${titles.length - 2} more are out ${when}`,
+        `${titles.length} episodes came out ${when}.`,
+        `New episodes ${when}: ${a}, ${b} and ${others === 1 ? "one other show" : `${others} other shows`}.`,
       ];
     },
     apiKeys: {
@@ -157,18 +171,25 @@ const COPY = {
     },
     securityKey: "Chiave di sicurezza",
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
-      const when = period === "daily" ? "oggi" : "questa settimana";
-      const [a, b] = titles;
-      if (titles.length === 1)
-        return [`${a} esce ${when}!`, `Ci siamo: ${a} torna ${when}.`];
-      if (titles.length === 2)
+      const when = period === "daily" ? "oggi" : "negli ultimi 7 giorni";
+      const shows = [...new Set(titles)];
+      const [a, b] = shows;
+      if (shows.length === 1)
+        return titles.length === 1
+          ? [
+              `Nuovo episodio di ${a}, uscito ${when}.`,
+              `Torna ${a}: un nuovo episodio è uscito ${when}.`,
+            ]
+          : [`${titles.length} nuovi episodi di ${a}, usciti ${when}.`];
+      if (shows.length === 2)
         return [
-          `${a} e ${b} escono ${when}`,
-          `Doppia uscita ${when}: ${a} e ${b}`,
+          `Nuovi episodi ${when}: ${a} e ${b}.`,
+          `Doppia uscita ${when}: ${a} e ${b}.`,
         ];
+      const others = shows.length - 2;
       return [
-        `${titles.length} uscite ti aspettano ${when}`,
-        `${a}, ${b} e altri ${titles.length - 2} escono ${when}`,
+        `${titles.length} episodi sono usciti ${when}.`,
+        `Nuovi episodi ${when}: ${a}, ${b} e ${others === 1 ? "un'altra serie" : `altre ${others} serie`}.`,
       ];
     },
     apiKeys: {
@@ -200,7 +221,10 @@ export interface NotificationCopy {
     other: string;
   };
   securityKey: string;
-  /** The digest push's possible bodies; the service picks one at random. */
+  /**
+   * The digest push's possible bodies, one picked at random. `titles` holds
+   * one entry per episode, so a show with several appears several times.
+   */
   episodeDigestPush: (period: DigestPeriod, titles: string[]) => string[];
   apiKeys: {
     reviewTitle: string;

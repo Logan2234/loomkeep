@@ -1235,7 +1235,7 @@ ${url}`,
    * DRAFT WORDING — needs Logan's sign-off before any real send goes out
    * (see the notification-digest feature plan). Three tiers by item count
    * (1 / 2-4 / 5+) rather than one gabarit per event type, `period` only
-   * changes the "aujourd'hui"/"cette semaine" framing.
+   * changes the "aujourd'hui"/"ces 7 derniers jours" framing.
    */
   private buildEpisodeDigest(
     locale: Locale,
