@@ -1,4 +1,5 @@
 import type {
+  AlertPrefs,
   DigestCadence,
   Domain,
   ListVisibility,
@@ -24,6 +25,7 @@ import {
   IsDateString,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -58,6 +60,11 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   @IsOptional()
   @IsBoolean()
   notifyNewsletter?: boolean;
+
+  // Checked against ALERTS by UsersService (mergeAlertPrefs), not here.
+  @IsOptional()
+  @IsObject()
+  alertPrefs?: AlertPrefs;
 
   // Not validated against the IANA database (no bundled tz-data source of
   // truth) — an invalid value just means the digest cron's Intl.DateTimeFormat

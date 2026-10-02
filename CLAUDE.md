@@ -261,6 +261,13 @@ relationship primitive (friend = reciprocal accepted follow). Details:
   every `apps/web` UI change.
 - Visual identity ("Séance" — fonts, palette, nav pattern):
   `apps/web/DESIGN.md`.
+- Every alert Loomkeep sends — bell (`Notification` row), web push, email —
+  is declared once in `ALERTS` (`packages/shared/src/alerts.ts`): its
+  channels, which ones each account can switch (stored in
+  `User.alertPrefs`), and their defaults. `NotificationService` pushes from
+  it, Settings › Communications and the docs' Notifications page are drawn
+  from it, and tests fail on a `NotificationType` or mail template missing
+  from it. A new alert starts there.
 - Shipping something a user will notice → add a `"Nouveau"` badge entry
   (`apps/web/src/lib/feature-badges.ts`'s `SHIPPED` map, `{ key:
 shippedISODate }`) at its point of discovery — it fades on its own after

@@ -1,3 +1,4 @@
+export * from "./alerts";
 export * from "./device-label";
 export * from "./dto/account-deletion";
 export * from "./dto/activity";

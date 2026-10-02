@@ -1,3 +1,4 @@
+import type { AlertPrefs } from "../alerts";
 import {
   DigestCadence,
   Domain,
@@ -27,6 +28,8 @@ export interface UserDto {
   notifyPush: DigestCadence;
   /** Opt-in to the release newsletter (separate from notifyEmail's episode digest). */
   notifyNewsletter: boolean;
+  /** Per-alert channel choices that differ from the defaults. See `ALERTS`. */
+  alertPrefs: AlertPrefs;
   /** IANA timezone (e.g. "Europe/Paris"), used to time the digest at a local hour. */
   timezone: string;
   /** Whether the account's email has been confirmed via the verification link (informational only). */
@@ -116,6 +119,8 @@ export interface UpdateUserRequestDto {
   notifyEmail?: DigestCadence;
   notifyPush?: DigestCadence;
   notifyNewsletter?: boolean;
+  /** Merged into the stored choices: `{ COMMENT_REPLY: { push: true } }`. */
+  alertPrefs?: AlertPrefs;
   /** IANA timezone (e.g. "Europe/Paris"). */
   timezone?: string;
   /** Content domains to keep visible; must list at least one. See `Domain`. */

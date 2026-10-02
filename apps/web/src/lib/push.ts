@@ -48,6 +48,15 @@ export async function enablePush(): Promise<boolean> {
   return true;
 }
 
+/** Whether this device is currently subscribed to Web Push. */
+export async function isPushEnabledHere(): Promise<boolean> {
+  if (!isPushSupported() || Notification.permission !== "granted") {
+    return false;
+  }
+  const registration = await navigator.serviceWorker.ready;
+  return (await registration.pushManager.getSubscription()) !== null;
+}
+
 /** Unsubscribes this device locally and on the API. */
 export async function disablePush(): Promise<void> {
   if (!isPushSupported()) return;

@@ -3,6 +3,8 @@ import {
   type Domain,
   ErrorCode,
   type MyReviewDto,
+  NotificationType,
+  REVIEW_VOTE_NOTIFY_THRESHOLD,
   type ReviewDto,
   type ReviewRevisionDto,
   type ReviewTargetSummaryDto,
@@ -18,6 +20,7 @@ import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
+import { resolveWorkHref } from "../common/work-href.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import {
   ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,
@@ -27,6 +30,7 @@ import { isGamificationEnabled } from "../gamification/gamification.config";
 import { fetchXpByUser, withXp } from "../gamification/xp-lookup.util";
 import { wordCount } from "../gamification/xp-verifiers";
 import { XpService } from "../gamification/xp.service";
+import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
@@ -77,6 +81,7 @@ export class ReviewService {
     private readonly xp: XpService,
     private readonly config: ConfigService,
     private readonly achievements: AchievementService,
+    private readonly notifications: NotificationService,
   ) {}
 
   /**
@@ -196,7 +201,7 @@ export class ReviewService {
   ): Promise<{ score: number; myVote: ReviewVoteValue }> {
     const review = await this.prisma.review.findUnique({
       where: { id: reviewId },
-      select: { userId: true },
+      select: { userId: true, targetType: true, targetId: true },
     });
     if (!review)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
@@ -232,12 +237,36 @@ export class ReviewService {
         review.userId,
         ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,
       );
+      await this.maybeNotifyVoteThreshold(reviewId, review.userId, review);
     } else {
       await this.xp.revokeBySource("ReviewVote", [voteRow.id]);
     }
 
     const info = await this.voteInfo(reviewId, viewerId);
     return { score: info.score, myVote: value };
+  }
+
+  /** Tells the author once, when the upvotes reach the threshold, as comment reactions do. */
+  private async maybeNotifyVoteThreshold(
+    reviewId: string,
+    authorId: string,
+    target: { targetType: string; targetId: string },
+  ): Promise<void> {
+    const count = await this.prisma.reviewVote.count({
+      where: { reviewId, value: ReviewVoteValue.UP },
+    });
+    if (count !== REVIEW_VOTE_NOTIFY_THRESHOLD) return;
+
+    const copy = (await this.notifications.copyFor(authorId)).reviewVotes;
+    await this.notifications.create({
+      userId: authorId,
+      type: NotificationType.REVIEW_VOTES,
+      title: copy.title,
+      body: copy.body(count),
+      url: await resolveWorkHref(this.prisma, target.targetType, target.targetId),
+      dedupeKey: `review-votes:${reviewId}:${count}`,
+      data: { count },
+    });
   }
 
   async unvote(viewerId: string, reviewId: string): Promise<{ score: number }> {

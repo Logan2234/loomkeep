@@ -19,6 +19,9 @@ import type { MfaService } from "./mfa.service";
 import { SessionCacheService } from "./session-cache.service";
 import type { TurnstileService } from "./turnstile.service";
 import type { WebauthnService } from "./webauthn.service";
+import type { AdminAlertService } from "../notifications/admin-alert.service";
+import { notificationCopy } from "../notifications/notification-copy";
+import type { NotificationService } from "../notifications/notification.service";
 
 /** Login tests here all use non-MFA accounts, so the result is always the AuthResult branch. */
 function asAuthResult(
@@ -166,6 +169,14 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
   } as unknown as ApiKeysService;
 
+  const notifications = {
+    create: vi.fn(),
+    copyFor: vi.fn(async () => notificationCopy("en")),
+  } as unknown as NotificationService;
+  const adminAlerts = {
+    notify: vi.fn().mockResolvedValue(0),
+  } as unknown as AdminAlertService;
+
   const service = new AuthService(
     prisma,
     jwtService,
@@ -180,6 +191,8 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     events,
     invitations,
     apiKeys,
+    notifications,
+    adminAlerts,
   );
 
   return {
@@ -196,6 +209,8 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     sessionCache,
     events,
     invitations,
+    notifications,
+    adminAlerts,
   };
 }
 
@@ -257,6 +272,32 @@ describe("AuthService.register with an invitation", () => {
     expect(prisma.userToken.create).not.toHaveBeenCalled();
     expect(mail.sendVerifyEmail).not.toHaveBeenCalled();
     expect(mail.sendWelcome).toHaveBeenCalled();
+  });
+
+  it("tells the inviter and the administrators that someone joined", async () => {
+    const { service, prisma, invitations, notifications, adminAlerts } =
+      makeService();
+    (invitations.findRedeemableFor as Mock).mockResolvedValue({
+      id: "inv-1",
+      email: null,
+      createdById: "alice",
+    });
+    withFreshAccount(prisma);
+
+    await service.register(dto);
+
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "alice",
+        type: "INVITATION_ACCEPTED",
+        title: "Bob",
+        body: "joined Loomkeep through your invitation",
+      }),
+    );
+    expect(adminAlerts.notify).toHaveBeenCalledWith(
+      "ADMIN_NEW_USER",
+      expect.anything(),
+    );
   });
 
   it("creates no account when the invitation can't be redeemed", async () => {

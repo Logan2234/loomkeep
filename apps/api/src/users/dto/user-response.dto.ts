@@ -1,4 +1,5 @@
 import type {
+  AlertPrefs,
   DigestCadence,
   Domain,
   ListVisibility,
@@ -65,6 +66,12 @@ export class UserResponseDto implements UserDto {
    * @example true
    */
   notifyNewsletter!: boolean;
+
+  /**
+   * Per-alert channel choices that differ from the defaults.
+   * @example { "COMMENT_REPLY": { "push": true } }
+   */
+  alertPrefs!: AlertPrefs;
 
   /**
    * IANA time zone, for dates and digests.

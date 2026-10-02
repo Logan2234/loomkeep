@@ -8,6 +8,11 @@ import type {
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { currentRequest } from "../common/request-context";
+import { MailService } from "../mail/mail.service";
+import {
+  SECURITY_ALERT_EVENTS,
+  type SecurityAlertEvent,
+} from "../mail/mail.i18n";
 import { PrismaService } from "../prisma/prisma.service";
 import { rankFailedTargets, sinceDaysAgo } from "./login-failure.util";
 
@@ -19,6 +24,9 @@ const TARGETS_WINDOW_DAYS = 7;
 
 /** How long an event is kept, for the account owner and the admin alike. */
 const RETENTION_DAYS = 365;
+
+/** A locked second factor emails at most once per this window: an attacker retrying mustn't flood the inbox. */
+const LOCKED_ALERT_WINDOW_MS = 60 * 60 * 1000;
 
 export interface RecordSecurityEventParams {
   type: SecurityEventType;
@@ -43,10 +51,16 @@ export interface ListSecurityEventsParams {
 export class SecurityEventService {
   private readonly logger = new Logger(SecurityEventService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mail: MailService,
+  ) {}
 
   async record(params: RecordSecurityEventParams): Promise<void> {
     const request = currentRequest();
+    const alert = params.userId
+      ? await this.alertFor(params.type, params.userId)
+      : null;
 
     await this.prisma.securityEvent.create({
       data: {
@@ -58,6 +72,42 @@ export class SecurityEventService {
         ip: request?.ip,
       },
     });
+
+    if (alert) await this.mail.sendSecurityAlert(alert.recipient, alert.event);
+  }
+
+  /**
+   * Whom to email about this event, if anyone. Changes to how the account
+   * signs in reach its owner by email, the one channel an intruder holding
+   * the session can't dismiss. Checked before the event is written, so the
+   * once-an-hour limit doesn't count the event itself.
+   */
+  private async alertFor(
+    type: SecurityEventType,
+    userId: string,
+  ): Promise<{
+    recipient: { email: string; locale: string };
+    event: SecurityAlertEvent;
+  } | null> {
+    const event = SECURITY_ALERT_EVENTS.find((e) => e === type);
+    if (!event) return null;
+
+    if (event === "MFA_CHALLENGE_LOCKED") {
+      const recent = await this.prisma.securityEvent.count({
+        where: {
+          userId,
+          type: event,
+          createdAt: { gt: new Date(Date.now() - LOCKED_ALERT_WINDOW_MS) },
+        },
+      });
+      if (recent > 0) return null;
+    }
+
+    const recipient = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, locale: true },
+    });
+    return recipient ? { recipient, event } : null;
   }
 
   /**

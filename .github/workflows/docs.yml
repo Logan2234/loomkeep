@@ -12,6 +12,7 @@ on:
       - apps/api/src/api-keys/**
       - packages/shared/src/dto/api-v1.ts
       - packages/shared/src/dto/api-key.ts
+      - packages/shared/src/alerts.ts
       - .github/workflows/docs.yml
       - .github/workflows/generate-openapi-artifact.yml
   push:
@@ -22,6 +23,7 @@ on:
       - apps/api/src/api-keys/**
       - packages/shared/src/dto/api-v1.ts
       - packages/shared/src/dto/api-key.ts
+      - packages/shared/src/alerts.ts
       - .github/workflows/docs.yml
       - .github/workflows/generate-openapi-artifact.yml
   workflow_dispatch:

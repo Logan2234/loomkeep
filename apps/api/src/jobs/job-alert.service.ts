@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import * as Sentry from "@sentry/node";
-import { type MailRecipient, MailService } from "../mail/mail.service";
-import { PrismaService } from "../prisma/prisma.service";
+import { MailService } from "../mail/mail.service";
+import { AdminAlertService } from "../notifications/admin-alert.service";
 import type { JobKey } from "./job-keys";
 
 /**
@@ -15,36 +15,41 @@ export class JobAlertService {
   private readonly logger = new Logger(JobAlertService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
     private readonly mail: MailService,
+    private readonly adminAlerts: AdminAlertService,
   ) {}
 
   async jobFailed(jobKey: JobKey, error: Error): Promise<void> {
     Sentry.captureException(error, { tags: { jobKey } });
-    await this.emailAdmins(jobKey, (admin) =>
-      this.mail.sendJobAlert(admin, {
-        jobKey,
-        error: error.message.split("\n")[0],
+    await this.alertAdmins(jobKey, {
+      email: (admin) =>
+        this.mail.sendJobAlert(admin, {
+          jobKey,
+          error: error.message.split("\n")[0],
+        }),
+      push: (copy) => ({
+        ...copy.adminAlerts.jobFailed(jobKey),
+        url: "/app/admin/jobs",
       }),
-    );
+    });
   }
 
   async jobRecovered(jobKey: JobKey): Promise<void> {
-    await this.emailAdmins(jobKey, (admin) =>
-      this.mail.sendJobAlert(admin, { jobKey, error: null }),
-    );
+    await this.alertAdmins(jobKey, {
+      email: (admin) => this.mail.sendJobAlert(admin, { jobKey, error: null }),
+      push: (copy) => ({
+        ...copy.adminAlerts.jobRecovered(jobKey),
+        url: "/app/admin/jobs",
+      }),
+    });
   }
 
-  private async emailAdmins(
+  private async alertAdmins(
     jobKey: JobKey,
-    send: (admin: MailRecipient) => Promise<void>,
+    send: Parameters<AdminAlertService["notify"]>[1],
   ): Promise<void> {
     try {
-      const admins = await this.prisma.user.findMany({
-        where: { role: "ADMIN" },
-        select: { email: true, locale: true },
-      });
-      await Promise.all(admins.map(send));
+      await this.adminAlerts.notify("ADMIN_JOB_FAILED", send);
     } catch (err) {
       this.logger.error(`Job alert for ${jobKey} failed`, err);
     }

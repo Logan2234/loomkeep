@@ -102,6 +102,7 @@ export class InactiveAccountService {
     for (const user of candidates) {
       await this.accountDeletion.deleteAccount(
         user.id,
+        "inactive",
         `Suppression automatique pour inactivité (>${DELETE_AFTER_MONTHS} mois)`,
       );
       this.logger.log(`Compte ${user.id} supprimé pour inactivité`);

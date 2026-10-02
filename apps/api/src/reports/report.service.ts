@@ -20,6 +20,7 @@ import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { notificationCopy } from "../notifications/notification-copy";
+import { AdminAlertService } from "../notifications/admin-alert.service";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
@@ -66,6 +67,7 @@ export class ReportService {
     private readonly jobRuns: JobRunService,
     private readonly notifications: NotificationService,
     private readonly events: EventsGateway,
+    private readonly adminAlerts: AdminAlertService,
   ) {}
 
   /**
@@ -396,21 +398,13 @@ export class ReportService {
     const pending = await this.pendingCount();
     if (pending === 0) return 0;
 
-    const admins = await this.prisma.user.findMany({
-      where: { role: "ADMIN" },
-      select: { email: true, locale: true },
+    return this.adminAlerts.notify("ADMIN_REPORTS_PENDING", {
+      email: (admin) => this.mail.sendReportsDigest(admin, pending),
+      push: (copy) => ({
+        ...copy.adminAlerts.reportsPending(pending),
+        url: "/app/admin/reports",
+      }),
     });
-
-    await Promise.all(
-      admins.map((a) =>
-        this.mail.sendReportsDigest(
-          { email: a.email, locale: a.locale },
-          pending,
-        ),
-      ),
-    );
-
-    return admins.length;
   }
 
   private async resolveTarget(

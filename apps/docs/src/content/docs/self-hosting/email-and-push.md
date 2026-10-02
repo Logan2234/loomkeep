@@ -9,8 +9,9 @@ outside the app.
 ## Email
 
 Email carries password resets, email address confirmations, security alerts
-(a sign-in from a new device, an API key created) and new-episode digests.
-Fill in the `SMTP_*` variables:
+(a sign-in from a new device, two-factor authentication turned off, an API key
+created), new-episode digests and the administrators' alerts. The full list is
+in [Notifications](/guide/notifications/). Fill in the `SMTP_*` variables:
 
 | Variable    | Value                                              |
 | ----------- | -------------------------------------------------- |
@@ -31,7 +32,8 @@ be reset: the reset link, even one an administrator sends, goes by email.
 
 ## Push notifications
 
-Push alerts people about new episodes even with the app closed. Generate a
+Push alerts people about new episodes, replies and the like even with the
+app closed. Generate a
 key pair once:
 
 ```sh

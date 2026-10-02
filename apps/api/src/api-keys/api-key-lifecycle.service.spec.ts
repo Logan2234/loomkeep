@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { MailService } from "../mail/mail.service";
+import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
 import type { ApiKeyAuthService } from "./api-key-auth.service";
@@ -22,14 +23,16 @@ function setup(rows: object[]) {
   const mail = { sendApiKeyExpiring: vi.fn() };
   const security = { record: vi.fn() };
   const auth = { invalidate: vi.fn() };
+  const notifications = { create: vi.fn() };
   const service = new ApiKeyLifecycleService(
     prisma as unknown as PrismaService,
     mail as unknown as MailService,
     security as unknown as SecurityEventService,
     auth as unknown as ApiKeyAuthService,
     {} as JobRunService,
+    notifications as unknown as NotificationService,
   );
-  return { service, prisma, mail, security, auth };
+  return { service, prisma, mail, security, auth, notifications };
 }
 
 describe("ApiKeyLifecycleService", () => {
@@ -64,6 +67,30 @@ describe("ApiKeyLifecycleService", () => {
         where: { id: "key-1" },
         data: { expiryNotifiedAt: NOW },
       });
+    });
+
+    it("puts the warning in the bell too, next to the other key alerts", async () => {
+      const { service, notifications } = setup([
+        {
+          id: "key-1",
+          userId: "u1",
+          name: "Script perso",
+          expiresAt: daysFromNow(6),
+          createdAt: daysFromNow(-84),
+          user: USER,
+        },
+      ]);
+
+      await service.warnExpiring(NOW);
+
+      expect(notifications.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: "u1",
+          type: "API_KEY_EXPIRING",
+          title: "Clé API bientôt expirée",
+          dedupeKey: "api-key-expiring:key-1",
+        }),
+      );
     });
 
     it("stays quiet about a key created for less than a week", async () => {

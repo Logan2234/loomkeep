@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { EventsModule } from "../events/events.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { MailModule } from "../mail/mail.module";
+import { AdminAlertModule } from "../notifications/admin-alert.module";
 import { NotificationModule } from "../notifications/notification.module";
 import { ModerationDecisionService } from "./moderation-decision.service";
 import { ReportService } from "./report.service";
@@ -18,7 +19,13 @@ import { TransparencyService } from "./transparency.service";
 // notice needed) and the art. 17 statement of reasons
 // (ModerationDecisionService, email + in-app).
 @Module({
-  imports: [MailModule, JobsModule, NotificationModule, EventsModule],
+  imports: [
+    MailModule,
+    JobsModule,
+    NotificationModule,
+    EventsModule,
+    AdminAlertModule,
+  ],
   controllers: [TransparencyController],
   providers: [ReportService, ModerationDecisionService, TransparencyService],
   exports: [ReportService, ModerationDecisionService],

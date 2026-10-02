@@ -1,8 +1,10 @@
 import {
+  type AlertPrefs,
   Domain,
   ErrorCode,
   HOME_GRID_COLUMNS,
   LEGAL_VERSION,
+  mergeAlertPrefs,
   UserDto,
   UsernameAvailabilityDto,
   XpReason,
@@ -312,6 +314,7 @@ export class UsersService {
         birthDate: true,
         allowAdultContent: true,
         notifyNewsletter: true,
+        alertPrefs: true,
       },
     });
 
@@ -366,6 +369,18 @@ export class UsersService {
       );
     }
 
+    const alertPrefs = dto.alertPrefs
+      ? mergeAlertPrefs(current.alertPrefs as AlertPrefs, dto.alertPrefs)
+      : undefined;
+    if (alertPrefs === null) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ValidationFailed,
+        undefined,
+        "alertPrefs names an alert or channel that has no setting",
+      );
+    }
+
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -375,6 +390,7 @@ export class UsersService {
         notifyEmail: dto.notifyEmail,
         notifyPush: dto.notifyPush,
         notifyNewsletter: dto.notifyNewsletter,
+        alertPrefs,
         newsletterOptInAt,
         timezone: dto.timezone,
         enabledDomains: dto.enabledDomains,
@@ -662,6 +678,7 @@ export class UsersService {
 
     await this.accountDeletion.deleteAccount(
       userId,
+      "self",
       "Suppression demandée par l'utilisateur",
       userAgent,
     );
