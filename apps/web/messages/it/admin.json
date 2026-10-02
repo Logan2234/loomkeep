@@ -654,8 +654,6 @@
   "admin_template_occurred_at": "Data e ora dell’evento (ISO 8601)",
   "admin_template_decision_id": "Riferimento della decisione",
   "admin_template_decided_at": "Data e ora della decisione (ISO 8601)",
-  "admin_template_group_account": "Account",
-  "admin_template_group_security": "Sicurezza",
   "admin_template_group_updates": "Novità e uscite",
   "admin_template_group_moderation": "Moderazione",
   "admin_template_group_admin": "Amministrazione",

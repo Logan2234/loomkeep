@@ -213,7 +213,7 @@ const FIELD_LABELS = {
 
 const TEMPLATE_GROUPS = [
   {
-    label: () => m.admin_template_group_account(),
+    label: () => m.common_account(),
     keys: [
       "welcome",
       "invitation",
@@ -224,7 +224,7 @@ const TEMPLATE_GROUPS = [
     ],
   },
   {
-    label: () => m.admin_template_group_security(),
+    label: () => m.common_security(),
     keys: [
       "passwordResetLink",
       "passwordChanged",

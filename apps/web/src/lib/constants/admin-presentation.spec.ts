@@ -60,8 +60,8 @@ describe("admin presentation", () => {
         groups.flatMap((group) => group.items.map(({ key }) => key)),
       ).toEqual(keys);
       expect(groups.map(({ label }) => label)).toEqual([
-        m.admin_template_group_account(),
-        m.admin_template_group_security(),
+        m.common_account(),
+        m.common_security(),
         m.admin_template_group_updates(),
         m.admin_template_group_moderation(),
         m.admin_template_group_admin(),
