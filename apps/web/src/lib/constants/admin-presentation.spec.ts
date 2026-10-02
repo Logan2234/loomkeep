@@ -10,6 +10,7 @@ import {
   adminServiceLabel,
   adminTemplateFieldLabel,
   adminTemplateLabel,
+  groupAdminEmailTemplates,
   groupAdminServices,
 } from "./admin-presentation";
 
@@ -25,6 +26,71 @@ const service = (area: ServiceArea): ServiceStatusDto => ({
 });
 
 describe("admin presentation", () => {
+  it.each(["fr", "en", "it"] as const)(
+    "localizes and groups the complete email gallery in %s",
+    (locale) => {
+      overwriteGetLocale(() => locale);
+      const keys = [
+        "welcome",
+        "invitation",
+        "verifyEmail",
+        "emailChangeCode",
+        "inactivityWarning",
+        "accountDeleted",
+        "passwordResetLink",
+        "passwordChanged",
+        "emailChangedOld",
+        "emailChangedNew",
+        "mfaEmailCode",
+        "newDeviceLogin",
+        "securityAlert",
+        "apiKeyCreated",
+        "apiKeyExpiring",
+        "apiKeyLeaked",
+        "newsletter",
+        "episodeDigest",
+        "moderationDecision",
+        "adminNewUser",
+        "quotaAlert",
+        "jobAlert",
+        "reportsDigest",
+      ];
+      const groups = groupAdminEmailTemplates(keys.map((key) => ({ key })));
+      expect(
+        groups.flatMap((group) => group.items.map(({ key }) => key)),
+      ).toEqual(keys);
+      expect(groups.map(({ label }) => label)).toEqual([
+        m.admin_template_group_account(),
+        m.admin_template_group_security(),
+        m.admin_template_group_updates(),
+        m.admin_template_group_moderation(),
+        m.admin_template_group_admin(),
+      ]);
+      for (const key of keys) expect(adminTemplateLabel(key)).not.toBe(key);
+
+      for (const key of [
+        "inviter",
+        "event",
+        "reason",
+        "foundAt",
+        "occurredAt",
+        "decisionId",
+        "decidedAt",
+        "name",
+        "expiresAt",
+      ]) {
+        expect(adminTemplateFieldLabel(key)).not.toBe(key);
+      }
+
+      expect(groupAdminEmailTemplates([{ key: "futureTemplate" }])).toEqual([
+        {
+          label: m.admin_template_group_other(),
+          items: [{ key: "futureTemplate" }],
+        },
+      ]);
+      expect(groupAdminEmailTemplates([])).toEqual([]);
+    },
+  );
   it("disables every job action while one job is running", () => {
     expect(adminJobButtonState(null, "backup.run")).toEqual({
       disabled: false,

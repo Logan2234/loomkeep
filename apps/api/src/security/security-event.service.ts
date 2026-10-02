@@ -56,7 +56,8 @@ export class SecurityEventService {
     private readonly mail: MailService,
   ) {}
 
-  async record(params: RecordSecurityEventParams): Promise<void> {
+  async record(params: RecordSecurityEventParams): Promise<Date> {
+    const occurredAt = new Date();
     const request = currentRequest();
     const alert = params.userId
       ? await this.alertFor(params.type, params.userId)
@@ -64,6 +65,7 @@ export class SecurityEventService {
 
     await this.prisma.securityEvent.create({
       data: {
+        createdAt: occurredAt,
         type: params.type,
         userId: params.userId ?? null,
         identifier: params.identifier,
@@ -73,7 +75,13 @@ export class SecurityEventService {
       },
     });
 
-    if (alert) await this.mail.sendSecurityAlert(alert.recipient, alert.event);
+    if (alert)
+      await this.mail.sendSecurityAlert(
+        alert.recipient,
+        alert.event,
+        occurredAt,
+      );
+    return occurredAt;
   }
 
   /**

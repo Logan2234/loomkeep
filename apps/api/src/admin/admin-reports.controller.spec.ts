@@ -80,7 +80,7 @@ function makeController(
 
   const moderationDecisions = {
     record: vi.fn(),
-    recordForReportInTransaction: vi.fn().mockResolvedValue(undefined),
+    recordForReportInTransaction: vi.fn().mockResolvedValue(DECISION),
     sendEmail: vi.fn().mockResolvedValue(undefined),
     publishForReport: vi.fn(),
   } as unknown as ModerationDecisionService;
@@ -101,6 +101,11 @@ function makeController(
     moderationDecisions,
   };
 }
+
+const DECISION = {
+  id: "decision-1",
+  decidedAt: new Date("2026-10-03T10:15:00Z"),
+};
 
 const ADMIN = { sub: "admin1" } as never;
 
@@ -125,6 +130,7 @@ describe("AdminReportsController.takeDown", () => {
     expect(moderationDecisions.record).not.toHaveBeenCalled();
     expect(moderationDecisions.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({ reportId: "r1" }),
+      DECISION,
     );
   });
 
@@ -306,6 +312,7 @@ describe("AdminReportsController.takeDown", () => {
     ).resolves.toBeUndefined();
     expect(moderationDecisions.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({ reportId: "r1" }),
+      DECISION,
     );
   });
 

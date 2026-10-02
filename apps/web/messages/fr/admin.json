@@ -642,5 +642,22 @@
   "admin_settings_rate_premium": "Limite premium",
   "admin_settings_rate_hint": "Requêtes par minute et par compte, toutes clés confondues.",
   "admin_settings_locked": "Fixé par {env}",
-  "admin_settings_saved": "Réglage enregistré"
+  "admin_settings_saved": "Réglage enregistré",
+  "admin_template_invitation": "Invitation à s’inscrire",
+  "admin_template_security_alert": "Alerte de sécurité",
+  "admin_template_account_deleted": "Compte supprimé",
+  "admin_template_admin_new_user": "Nouvelle inscription (admin)",
+  "admin_template_inviter": "Invité par",
+  "admin_template_event": "Événement de sécurité",
+  "admin_template_reason": "Raison (self ou inactive)",
+  "admin_template_found_at": "Où la clé a été trouvée",
+  "admin_template_occurred_at": "Date et heure de l’événement (ISO 8601)",
+  "admin_template_decision_id": "Référence de la décision",
+  "admin_template_decided_at": "Date et heure de la décision (ISO 8601)",
+  "admin_template_group_account": "Compte",
+  "admin_template_group_security": "Sécurité",
+  "admin_template_group_updates": "Nouveautés et sorties",
+  "admin_template_group_moderation": "Modération",
+  "admin_template_group_admin": "Administration",
+  "admin_template_group_other": "Autres"
 }

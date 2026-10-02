@@ -536,17 +536,18 @@ export class UsersService {
       }),
       this.prisma.emailChangeRequest.deleteMany({ where: { userId } }),
     ]);
-    await this.mail.sendEmailChanged(
-      current.email,
-      stored.newEmail,
-      current.locale,
-    );
-    await this.security.record({
+    const occurredAt = await this.security.record({
       type: "EMAIL_CHANGED",
       userId,
       detail: `${current.email} → ${stored.newEmail}`,
       userAgent,
     });
+    await this.mail.sendEmailChanged(
+      current.email,
+      stored.newEmail,
+      current.locale,
+      occurredAt,
+    );
     return toUserDto(user);
   }
 
@@ -584,15 +585,16 @@ export class UsersService {
       }),
       this.prisma.refreshToken.deleteMany({ where: { userId } }),
     ]);
-    await this.mail.sendPasswordChanged(
-      { email: current.email, locale: current.locale },
-      await this.apiKeys.reviewAfterPasswordChange(userId),
-    );
-    await this.security.record({
+    const occurredAt = await this.security.record({
       type: "PASSWORD_CHANGED",
       userId,
       userAgent,
     });
+    await this.mail.sendPasswordChanged(
+      { email: current.email, locale: current.locale },
+      await this.apiKeys.reviewAfterPasswordChange(userId),
+      occurredAt,
+    );
   }
 
   /**

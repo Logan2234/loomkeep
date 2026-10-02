@@ -24,6 +24,7 @@ import { corsOptionsFor } from "./common/cors";
 import { registerRequestContext } from "./common/request-context";
 import { ValidationException } from "./common/validation.exception";
 import { MetricsService } from "./metrics/metrics.service";
+import { registerNewsletterFormParser } from "./newsletter/newsletter-form-parser";
 import {
   buildPublicApiDocument,
   PUBLIC_API_DOCUMENT_PATH,
@@ -112,6 +113,7 @@ async function bootstrap() {
   // CSP stays off: Swagger UI (dev-only, below) needs inline scripts/styles,
   // and the API otherwise only serves JSON.
   await app.register(helmet, { contentSecurityPolicy: false });
+  registerNewsletterFormParser(app.getHttpAdapter().getInstance());
 
   // Browsers post CSP violation reports under their own media types, neither
   // of which Fastify parses by default — without this the collector answers

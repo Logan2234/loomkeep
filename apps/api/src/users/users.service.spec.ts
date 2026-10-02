@@ -46,7 +46,9 @@ describe("UsersService — email change", () => {
       sendEmailChangeCode: vi.fn(),
       sendEmailChanged: vi.fn(),
     } as unknown as MailService;
-    const security = { record: vi.fn() };
+    const security = {
+      record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+    };
     const dataExport = { buildExport: vi.fn() };
     const csvExport = { buildCsv: vi.fn() };
     service = new UsersService(
@@ -186,6 +188,7 @@ describe("UsersService — email change", () => {
         "old@example.com",
         "new@example.com",
         "fr",
+        new Date("2026-10-03T10:15:00Z"),
       );
     });
 
@@ -282,7 +285,9 @@ describe("UsersService — updateMe mobile nav shortcuts", () => {
     service = new UsersService(
       prisma,
       {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -424,7 +429,9 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
     service = new UsersService(
       prisma,
       {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -526,7 +533,9 @@ describe("UsersService — uploadAvatar", () => {
     service = new UsersService(
       prisma,
       {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -670,7 +679,9 @@ describe("UsersService — changePassword", () => {
     service = new UsersService(
       prisma,
       mail,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -745,6 +756,7 @@ describe("UsersService — changePassword", () => {
         locale: "fr",
       },
       0,
+      new Date("2026-10-03T10:15:00Z"),
     );
   });
 });
@@ -772,7 +784,9 @@ describe("UsersService — deleteAccount", () => {
     service = new UsersService(
       prisma,
       {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -836,7 +850,9 @@ describe("UsersService — deletionSummary", () => {
     service = new UsersService(
       prisma,
       {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -903,7 +919,9 @@ describe("UsersService.getMyEntitlement", () => {
     return new UsersService(
       {} as unknown as PrismaService,
       {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,

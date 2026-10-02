@@ -14,6 +14,7 @@
   import {
     adminTemplateLabel,
     adminTemplateFieldLabel,
+    groupAdminEmailTemplates,
   } from "$lib/constants/admin-presentation";
   import { debounce } from "$lib/debounce";
   import { languageName } from "$lib/locales";
@@ -26,6 +27,7 @@
     fetch: getAdminEmailTemplates,
   }));
   const templates = $derived(templatesQuery.data?.templates ?? null);
+  const templateGroups = $derived(groupAdminEmailTemplates(templates ?? []));
   const smtpConfigured = $derived(templatesQuery.data?.smtpConfigured ?? false);
   const emailLoading = $derived(templatesQuery.loading);
   const emailLoadError = $derived(templatesQuery.error);
@@ -149,79 +151,122 @@
         <Combobox
           label={m.admin_communications_template()}
           searchable
-          options={templates.map((t) => ({
-            label: adminTemplateLabel(t.key),
-            value: t.key,
-          }))}
+          options={templateGroups.flatMap((group) =>
+            group.items.map((t) => ({
+              label: adminTemplateLabel(t.key),
+              value: t.key,
+              group: group.label,
+            })),
+          )}
           values={selectedKey ? [selectedKey] : []}
           onChange={(v) => v[0] && selectTemplate(v[0])} />
       </div>
 
       <!-- Desktop: the full vertical list. -->
-      <nav class="hidden gap-1 md:flex md:flex-col">
-        {#each templates as t (t.key)}
-          <button
-            onclick={() => selectTemplate(t.key)}
-            class="rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors {selectedKey ===
-            t.key
-              ? 'bg-accent/15 text-accent'
-              : 'text-dim hover:bg-surface-2 hover:text-fg'}">
-            {adminTemplateLabel(t.key)}
-          </button>
+      <nav
+        aria-label={m.admin_communications_template()}
+        class="hidden space-y-5 md:block">
+        {#each templateGroups as group (group.label)}
+          <section>
+            <h3 class="text-dim mb-2 px-3 text-xs font-semibold">
+              {group.label}
+            </h3>
+            <div class="flex flex-col gap-1">
+              {#each group.items as t (t.key)}
+                <button
+                  onclick={() => selectTemplate(t.key)}
+                  aria-current={selectedKey === t.key ? "true" : undefined}
+                  class="rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors {selectedKey ===
+                  t.key
+                    ? 'bg-accent/15 text-accent'
+                    : 'text-dim hover:bg-surface-2 hover:text-fg'}">
+                  {adminTemplateLabel(t.key)}
+                </button>
+              {/each}
+            </div>
+          </section>
         {/each}
       </nav>
     </div>
 
     <div class="min-w-0 space-y-4">
-      <div class="flex items-center gap-3">
-        <span class="text-dim text-xs font-semibold"
-          >{m.common_language()}</span>
-        <div class="flex gap-1">
-          {#each Locale as locale (locale)}
-            <button
-              type="button"
-              class="chip"
-              class:chip-on={emailLocale === locale}
-              onclick={() => {
-                emailLocale = locale;
-                void loadPreview();
-              }}>
-              {languageName(locale)}
-            </button>
-          {/each}
-        </div>
+      <div class="card space-y-4 p-4">
+        <Combobox
+          label={m.common_language()}
+          options={Locale.map((locale) => ({
+            label: languageName(locale),
+            value: locale,
+          }))}
+          values={[emailLocale]}
+          onChange={(values) => {
+            const locale = Locale.find((locale) => locale === values[0]);
+            if (!locale) return;
+            emailLocale = locale;
+            sendTestEmailMut.reset();
+            void loadPreview();
+          }} />
+
+        {#if selectedTemplate && selectedTemplate.fields.length > 0}
+          <div class="border-border grid gap-3 border-t pt-4 sm:grid-cols-2">
+            {#each selectedTemplate.fields as f (f.key)}
+              <div class={f.multiline ? "sm:col-span-2" : ""}>
+                <label
+                  for="field-{f.key}"
+                  class="text-dim mb-1 block text-xs font-semibold">
+                  {adminTemplateFieldLabel(f.key)}
+                </label>
+                {#if f.multiline}
+                  <textarea
+                    id="field-{f.key}"
+                    name={f.key}
+                    value={fieldValues[f.key] ?? f.default}
+                    oninput={(e) => onFieldInput(f.key, e.currentTarget.value)}
+                    rows="4"
+                    class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm"
+                  ></textarea>
+                {:else}
+                  <input
+                    id="field-{f.key}"
+                    type="text"
+                    name={f.key}
+                    value={fieldValues[f.key] ?? f.default}
+                    oninput={(e) => onFieldInput(f.key, e.currentTarget.value)}
+                    class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
+                {/if}
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
 
-      {#if selectedTemplate && selectedTemplate.fields.length > 0}
-        <div class="card grid gap-3 p-4 sm:grid-cols-2">
-          {#each selectedTemplate.fields as f (f.key)}
-            <div class={f.multiline ? "sm:col-span-2" : ""}>
-              <label
-                for="field-{f.key}"
-                class="text-dim mb-1 block text-xs font-semibold">
-                {adminTemplateFieldLabel(f.key)}
-              </label>
-              {#if f.multiline}
-                <textarea
-                  id="field-{f.key}"
-                  name={f.key}
-                  value={fieldValues[f.key] ?? f.default}
-                  oninput={(e) => onFieldInput(f.key, e.currentTarget.value)}
-                  rows="4"
-                  class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm"
-                ></textarea>
-              {:else}
-                <input
-                  id="field-{f.key}"
-                  type="text"
-                  name={f.key}
-                  value={fieldValues[f.key] ?? f.default}
-                  oninput={(e) => onFieldInput(f.key, e.currentTarget.value)}
-                  class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
-              {/if}
-            </div>
-          {/each}
-        </div>
+      <div class="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+        <input
+          type="email"
+          name="testTo"
+          autocomplete="email"
+          enterkeyhint="send"
+          bind:value={testTo}
+          placeholder={m.admin_communications_recipient_placeholder()}
+          aria-label={m.admin_communications_recipient_placeholder()}
+          disabled={!smtpConfigured}
+          class="border-border bg-surface min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm disabled:opacity-50" />
+        <button
+          onclick={sendTestEmail}
+          disabled={!smtpConfigured || !testTo || sendTestEmailMut.loading}
+          class="btn btn-primary shrink-0">
+          {sendTestEmailMut.loading
+            ? m.common_sending()
+            : m.admin_communications_send_test()}
+        </button>
+      </div>
+
+      {#if sendResult}
+        <p
+          class="rounded-lg border px-4 py-3 text-sm {sendResult.ok
+            ? 'border-success/40 bg-success/10 text-success'
+            : 'border-danger/40 bg-danger/10 text-danger'}">
+          {sendResult.message}
+        </p>
       {/if}
 
       <div class="flex items-center justify-between gap-2">
@@ -296,35 +341,6 @@
           </div>
         {/if}
       </div>
-
-      <div class="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-        <input
-          type="email"
-          name="testTo"
-          autocomplete="email"
-          enterkeyhint="send"
-          bind:value={testTo}
-          placeholder={m.admin_communications_recipient_placeholder()}
-          disabled={!smtpConfigured}
-          class="border-border bg-surface min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm disabled:opacity-50" />
-        <button
-          onclick={sendTestEmail}
-          disabled={!smtpConfigured || !testTo || sendTestEmailMut.loading}
-          class="btn btn-primary shrink-0">
-          {sendTestEmailMut.loading
-            ? m.common_sending()
-            : m.admin_communications_send_test()}
-        </button>
-      </div>
-
-      {#if sendResult}
-        <p
-          class="rounded-lg border px-4 py-3 text-sm {sendResult.ok
-            ? 'border-success/40 bg-success/10 text-success'
-            : 'border-danger/40 bg-danger/10 text-danger'}">
-          {sendResult.message}
-        </p>
-      {/if}
     </div>
   </div>
 {/if}

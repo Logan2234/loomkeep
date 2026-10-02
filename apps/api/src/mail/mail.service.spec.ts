@@ -2,6 +2,7 @@ import { ALERTS, type AlertDefinition } from "@loomkeep/shared";
 import nodemailer from "nodemailer";
 import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../common/quota-tracker.service";
+import { MAIL_COPY } from "./mail.i18n";
 import { MailService } from "./mail.service";
 
 vi.mock("nodemailer");
@@ -14,6 +15,8 @@ describe("MailService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env = { ...ORIGINAL_ENV };
+    delete process.env.MAIL_SUPPORT_ADDRESS;
+    delete process.env.PUBLIC_API_URL;
   });
 
   afterAll(() => {
@@ -33,6 +36,162 @@ describe("MailService", () => {
 
     expect(nodemailer.createTransport).not.toHaveBeenCalled();
   });
+
+  it.each(["fr", "en", "it"] as const)(
+    "provides a safe localized preheader for every template in %s",
+    (locale) => {
+      const service = new MailService(quota);
+
+      for (const { key } of service.listTemplates()) {
+        const preview = service.renderTemplatePreview(key, locale, {
+          code: "secret-code",
+          token: "secret-token",
+          content: "private-content",
+        })!;
+        const preheader = preview.html.match(
+          /class="email-preheader"[^>]*>([^<]+)<\/div>/,
+        )?.[1];
+        expect(preheader, key).toBe(MAIL_COPY[locale].preheaders[key]);
+        expect(preheader, key).toBeTruthy();
+        expect(preheader, key).not.toMatch(
+          /secret-code|secret-token|private-content/,
+        );
+        expect(preview.html).toContain("mso-hide:all");
+      }
+    },
+  );
+
+  it.each(["fr", "en", "it"] as const)(
+    "renders the supplied security event date with an explicit UTC time in %s",
+    (locale) => {
+      const service = new MailService(quota);
+      const occurredAt = "2024-05-12T10:15:00Z";
+      const date = new Intl.DateTimeFormat(
+        { fr: "fr-FR", en: "en-US", it: "it-IT" }[locale],
+        { dateStyle: "long", timeStyle: "long", timeZone: "UTC" },
+      ).format(new Date(occurredAt));
+
+      for (const key of [
+        "passwordChanged",
+        "emailChangedOld",
+        "emailChangedNew",
+        "newDeviceLogin",
+        "apiKeyCreated",
+        "apiKeyLeaked",
+        "securityAlert",
+      ]) {
+        const preview = service.renderTemplatePreview(key, locale, {
+          occurredAt,
+        })!;
+        expect(preview.text, key).toContain(
+          MAIL_COPY[locale].layout.eventAt(date),
+        );
+        expect(preview.html, key).toContain("2024");
+        expect(preview.text, key).toMatch(/UTC/);
+      }
+    },
+  );
+
+  it("uses the configured support mailbox in contacts and Reply-To, with a moderation reference", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+    process.env.MAIL_SUPPORT_ADDRESS = "support@instance.example";
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(nodemailer.createTransport).mockReturnValue({
+      sendMail,
+    } as never);
+    const service = new MailService(quota);
+
+    for (const key of [
+      "welcome",
+      "emailChangedOld",
+      "emailChangedNew",
+      "moderationDecision",
+    ]) {
+      await service.sendTemplateTest(
+        key,
+        { email: "recipient@example.com", locale: "fr" },
+        { decisionId: "decision-42", decidedAt: "2024-05-12T10:15:00Z" },
+      );
+    }
+
+    for (const [mail] of sendMail.mock.calls) {
+      expect(mail.replyTo).toBe("support@instance.example");
+      expect(mail.html).toContain("mailto:support@instance.example");
+      expect(mail.html).not.toContain("contact@loomkeep.app");
+    }
+
+    const moderation = sendMail.mock.calls.at(-1)![0];
+    expect(moderation.text).toContain("decision-42");
+    expect(moderation.text).toContain("2024");
+    expect(moderation.html).toContain("Contacter la modération");
+    expect(moderation.html).toMatch(
+      /mailto:support@instance.example\?subject=[^"]*decision-42/,
+    );
+    expect(moderation.subject).not.toContain("[Admin]");
+  });
+
+  it("sends RFC 8058 headers only for newsletters, pointing directly at the HTTPS API", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+    process.env.PUBLIC_API_URL = "https://api.instance.example/api/";
+    process.env.UMAMI_LINKS_BASE_URL = "https://tracking.example";
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(nodemailer.createTransport).mockReturnValue({
+      sendMail,
+    } as never);
+    const service = new MailService(quota);
+    await service.sendNewsletter(
+      { email: "recipient@example.com", locale: "fr" },
+      "Title",
+      "Content",
+      "",
+      "a&b=+/",
+    );
+    expect(sendMail.mock.calls[0][0].headers).toEqual({
+      "List-Unsubscribe":
+        "<https://api.instance.example/api/newsletter/unsubscribe/one-click?token=a%26b%3D%2B%2F>",
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    });
+
+    for (const { key } of service
+      .listTemplates()
+      .filter(({ key }) => key !== "newsletter")) {
+      await service.sendTemplateTest(key, {
+        email: "recipient@example.com",
+        locale: "en",
+      });
+    }
+
+    expect(
+      sendMail.mock.calls
+        .slice(1)
+        .every(([mail]) => mail.headers === undefined),
+    ).toBe(true);
+  });
+
+  it("keeps the newsletter footer without one-click headers on an HTTP API", () => {
+    process.env.PUBLIC_API_URL = "http://localhost:3000/api";
+    const preview = new MailService(quota).renderTemplatePreview("newsletter")!;
+    expect(preview.headers).toBeUndefined();
+    expect(preview.html).toContain("/unsubscribe?token=");
+  });
+
+  it.each(["fr", "en", "it"])(
+    "describes scheduled inactivity deletion without claiming it is imminent in %s",
+    (locale) => {
+      const preview = new MailService(quota).renderTemplatePreview(
+        "inactivityWarning",
+        locale,
+        { deletionDate: "2027-10-03" },
+      )!;
+      expect(preview.html).not.toMatch(/bientôt|soon|presto/i);
+      expect(preview.text).toContain("2027");
+      expect(preview.text).toContain("24");
+    },
+  );
 
   it("sends through the configured transport when SMTP is set", async () => {
     process.env.SMTP_HOST = "smtp.example.com";
@@ -167,7 +326,7 @@ describe("MailService", () => {
     );
 
     const { html } = sendMail.mock.calls[0][0];
-    expect(html).toContain("https://loomkeep.example/app/settings/securite");
+    expect(html).toContain("https://loomkeep.example/app/settings/security");
   });
 
   it("links email-changed (old address) to a mailto contact, not the app", async () => {
@@ -479,9 +638,9 @@ describe("MailService template gallery", () => {
       status: "SUCCESS",
     });
 
-    expect(failed?.subject).toBe("Échec du job backup.run");
+    expect(failed?.subject).toBe("[Admin] Échec du job backup.run");
     expect(failed?.html).toContain("&lt;script&gt;boom&lt;/script&gt;");
-    expect(recovered?.subject).toBe("Job backup.run rétabli");
+    expect(recovered?.subject).toBe("[Admin] Job backup.run rétabli");
     expect(recovered?.text).not.toContain("boom");
   });
 
@@ -529,6 +688,136 @@ describe("MailService template gallery", () => {
   it("returns null for an unknown template key", () => {
     const service = new MailService(quota);
     expect(service.renderTemplatePreview("does-not-exist")).toBeNull();
+  });
+
+  it.each(["fr", "en", "it"])(
+    "keeps admin subjects and links distinct in %s",
+    (locale) => {
+      process.env.WEB_ORIGIN = "https://loomkeep.example";
+      process.env.UMAMI_LINKS_BASE_URL = "https://stats.example/q";
+      const service = new MailService(quota);
+
+      for (const key of [
+        "quotaAlert",
+        "jobAlert",
+        "reportsDigest",
+        "adminNewUser",
+      ]) {
+        const preview = service.renderTemplatePreview(key, locale)!;
+        expect(preview.subject, key).toMatch(/^\[Admin\] /);
+        expect(preview.html, key).toContain('href="https://loomkeep.example"');
+        expect(preview.html, key).toContain(
+          'href="https://loomkeep.example/app/admin"',
+        );
+        expect(preview.html, key).not.toContain("https://stats.example");
+        expect(preview.text, key).not.toContain("https://stats.example");
+      }
+
+      expect(
+        service.renderTemplatePreview("moderationDecision", locale)?.subject,
+      ).not.toMatch(/^\[Admin\]/);
+    },
+  );
+
+  it.each([
+    ["apiKeyCreated", "secu-api-creee"],
+    ["apiKeyExpiring", "secu-api-expiration"],
+    ["apiKeyLeaked", "secu-api-fuite"],
+    ["securityAlert", "secu-alerte"],
+    ["inactivityWarning", "compte-inactivite"],
+  ])("tracks user actions in %s", (key, slug) => {
+    process.env.UMAMI_LINKS_BASE_URL = "https://stats.example/q";
+    const preview = new MailService(quota).renderTemplatePreview(key)!;
+    expect(preview.html).toContain(`href="https://stats.example/q/${slug}"`);
+    expect(preview.text).toContain(`https://stats.example/q/${slug}`);
+    expect(preview.html).toContain(
+      'href="https://stats.example/q/header-site"',
+    );
+    expect(preview.html).toContain(
+      'href="https://stats.example/q/footer-site"',
+    );
+  });
+
+  it("places communication controls once in the relevant footer", () => {
+    process.env.WEB_ORIGIN = "https://loomkeep.example";
+    delete process.env.UMAMI_LINKS_BASE_URL;
+    const service = new MailService(quota);
+    const newsletter = service.renderTemplatePreview("newsletter")!.html;
+    const digest = service.renderTemplatePreview("episodeDigest")!.html;
+    const classic = service.renderTemplatePreview("welcome")!.html;
+    const footer = (html: string) =>
+      html.slice(html.indexOf('class="email-footer"'));
+    expect(footer(newsletter)).toContain("/unsubscribe?token=preview-token");
+    expect(footer(newsletter)).toContain("/app/settings/communications");
+    expect(
+      newsletter.match(/href="[^"]*\/app\/settings\/communications"/g),
+    ).toHaveLength(1);
+    expect(footer(digest)).toContain("/app/settings/communications");
+    expect(digest).not.toContain("/unsubscribe");
+    expect(classic).not.toContain("/unsubscribe");
+    expect(footer(classic)).toContain("mailto:contact@loomkeep.app");
+  });
+
+  it.each(["passwordResetLink", "verifyEmail", "invitation"])(
+    "offers a direct fallback link for %s",
+    (key) => {
+      process.env.WEB_ORIGIN = "https://loomkeep.example";
+      process.env.UMAMI_LINKS_BASE_URL = "https://stats.example/q";
+      const preview = new MailService(quota).renderTemplatePreview(key, "en")!;
+      expect(preview.html).toContain("If the button does not work");
+      const tokenLinks = preview.html.match(
+        /href="[^"]*(?:token|invite)=[^"]*"/g,
+      )!;
+      expect(tokenLinks).toHaveLength(2);
+      expect(tokenLinks.every((link) => !link.includes("stats.example"))).toBe(
+        true,
+      );
+    },
+  );
+
+  it.each(["passwordResetLink", "verifyEmail"])(
+    "preserves the token in both links for %s",
+    (key) => {
+      process.env.WEB_ORIGIN = "https://loomkeep.example";
+      const preview = new MailService(quota).renderTemplatePreview(key, "fr", {
+        token: "a&b=+/<test>",
+      })!;
+      expect(
+        preview.html.match(/token=a%26b%3D%2B%2F%3Ctest%3E/g),
+      ).toHaveLength(3);
+      expect(preview.text).toContain("token=a%26b%3D%2B%2F%3Ctest%3E");
+    },
+  );
+
+  it.each(["fr", "en", "it"])(
+    "renders the shared layout for every template in %s",
+    (locale) => {
+      const service = new MailService(quota);
+
+      for (const { key } of service.listTemplates()) {
+        const html = service.renderTemplatePreview(key, locale)!.html;
+        expect(html, key).toContain('class="email-header"');
+        expect(html, key).toContain('class="email-footer"');
+        expect(html, key).not.toContain("undefined");
+      }
+    },
+  );
+
+  it.each([
+    ["fr", "Ne partage jamais ce code"],
+    ["en", "Never share this code"],
+    ["it", "Non condividere mai questo codice"],
+  ])("includes code safety instructions in %s", (locale, instruction) => {
+    const service = new MailService(quota);
+
+    for (const key of ["emailChangeCode", "mfaEmailCode"]) {
+      const preview = service.renderTemplatePreview(key, locale)!;
+      expect(preview.html).toContain(instruction);
+      expect(preview.text).toContain(instruction);
+    }
+
+    const changed = service.renderTemplatePreview("emailChangedNew", locale)!;
+    expect(changed.text).toContain("mailto:contact@loomkeep.app");
   });
 
   it("sends a rendered template to the given address", async () => {

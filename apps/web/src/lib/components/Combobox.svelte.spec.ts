@@ -12,7 +12,12 @@ const GENRES = [
 ];
 
 type Props = {
-  options?: typeof GENRES;
+  options?: Array<{
+    label: string;
+    value: string;
+    disabled?: boolean;
+    group?: string;
+  }>;
   values?: string[];
   multiselect?: boolean;
   searchable?: boolean;
@@ -44,6 +49,24 @@ const activeOption = () =>
   document.getElementById(trigger().getAttribute("aria-activedescendant")!);
 
 describe("Combobox", () => {
+  it("keeps grouped options searchable and keyboard-selectable without selecting headings", async () => {
+    const { props, user } = renderCombobox({
+      searchable: true,
+      options: [
+        { label: "Welcome", value: "welcome", group: "Account" },
+        { label: "Security alert", value: "security", group: "Security" },
+        { label: "Admin alert", value: "admin", group: "Administration" },
+      ],
+    });
+    await user.click(screen.getByRole("button", { name: "Genre" }));
+    expect(within(listbox()).getAllByRole("option")).toHaveLength(3);
+    await user.type(screen.getByRole("combobox"), "alert");
+    expect(within(listbox()).getAllByRole("option")).toHaveLength(2);
+    expect(option("Security: Security alert")).toBeTruthy();
+    expect(option("Administration: Admin alert")).toBeTruthy();
+    await user.keyboard("{ArrowDown}{Enter}");
+    expect(props.onChange).toHaveBeenCalledWith(["admin"]);
+  });
   describe("single choice", () => {
     it("names the trigger after its label, then after the pick", () => {
       const { unmount } = renderCombobox();

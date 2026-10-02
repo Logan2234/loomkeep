@@ -26,6 +26,38 @@ function makeService({ recentLocks = 0 } = {}) {
 }
 
 describe("SecurityEventService.record", () => {
+  it("keeps the persisted event time when sending the alert is delayed", async () => {
+    vi.useFakeTimers();
+
+    try {
+      const occurredAt = new Date("2026-10-03T10:15:00Z");
+      vi.setSystemTime(occurredAt);
+      const { service, prisma, mail } = makeService();
+      vi.mocked(prisma.securityEvent.create).mockImplementationOnce(
+        async () => {
+          vi.setSystemTime(new Date("2026-10-03T10:20:00Z"));
+          return {} as never;
+        },
+      );
+      const result = await service.record({
+        type: "MFA_TOTP_DISABLED",
+        userId: "u1",
+      });
+      expect(result).toEqual(occurredAt);
+      expect(prisma.securityEvent.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ createdAt: occurredAt }),
+        }),
+      );
+      expect(mail.sendSecurityAlert).toHaveBeenCalledWith(
+        { email: "alice@example.com", locale: "en" },
+        "MFA_TOTP_DISABLED",
+        occurredAt,
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it("emails the owner when two-factor authentication is turned off", async () => {
     const { service, mail } = makeService();
 
@@ -34,6 +66,7 @@ describe("SecurityEventService.record", () => {
     expect(mail.sendSecurityAlert).toHaveBeenCalledWith(
       { email: "alice@example.com", locale: "en" },
       "MFA_TOTP_DISABLED",
+      expect.any(Date),
     );
   });
 
@@ -63,6 +96,7 @@ describe("SecurityEventService.record", () => {
 
     expect(prisma.securityEvent.create).toHaveBeenCalledWith({
       data: {
+        createdAt: expect.any(Date),
         type: "LOGIN_FAILED",
         userId: null,
         identifier: "nobody@example.com",
@@ -80,7 +114,10 @@ describe("SecurityEventService.record", () => {
     await new Promise<void>((resolve) =>
       handleRequest(
         { ip: "203.0.113.7", headers: { "user-agent": "Firefox" } },
-        () => void service.record({ type: "PASSWORD_CHANGED" }).then(resolve),
+        () =>
+          void service
+            .record({ type: "PASSWORD_CHANGED" })
+            .then(() => resolve()),
       ),
     );
 
