@@ -642,5 +642,20 @@
   "admin_settings_rate_premium": "Limite premium",
   "admin_settings_rate_hint": "Richieste al minuto per account, per tutte le sue chiavi insieme.",
   "admin_settings_locked": "Impostato da {env}",
-  "admin_settings_saved": "Impostazione salvata"
+  "admin_settings_saved": "Impostazione salvata",
+  "admin_template_invitation": "Invito a registrarsi",
+  "admin_template_security_alert": "Avviso di sicurezza",
+  "admin_template_account_deleted": "Account eliminato",
+  "admin_template_admin_new_user": "Nuova registrazione (admin)",
+  "admin_template_inviter": "Invitato da",
+  "admin_template_event": "Evento di sicurezza",
+  "admin_template_reason": "Motivo (self o inactive)",
+  "admin_template_found_at": "Dove è stata trovata la chiave",
+  "admin_template_occurred_at": "Data e ora dell’evento (ISO 8601)",
+  "admin_template_decision_id": "Riferimento della decisione",
+  "admin_template_decided_at": "Data e ora della decisione (ISO 8601)",
+  "admin_template_group_updates": "Novità e uscite",
+  "admin_template_group_moderation": "Moderazione",
+  "admin_template_group_admin": "Amministrazione",
+  "admin_template_group_other": "Altri"
 }

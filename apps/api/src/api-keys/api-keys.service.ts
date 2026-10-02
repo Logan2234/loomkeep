@@ -83,12 +83,12 @@ export class ApiKeysService {
       include: { user: { select: { email: true, locale: true } } },
     });
 
-    await this.security.record({
+    const occurredAt = await this.security.record({
       type: "API_KEY_CREATED",
       userId,
       detail: name,
     });
-    await this.mail.sendApiKeyCreated(key.user, name);
+    await this.mail.sendApiKeyCreated(key.user, name, occurredAt);
 
     return { apiKey: toApiKeyDto(key), secret };
   }
@@ -149,7 +149,7 @@ export class ApiKeysService {
 
     await this.prisma.apiKey.deleteMany({ where: { id: key.id } });
     this.auth.invalidate(key.id);
-    await this.security.record({
+    const occurredAt = await this.security.record({
       type: "API_KEY_LEAKED",
       userId: key.userId,
       detail: key.name,
@@ -163,7 +163,7 @@ export class ApiKeysService {
       url: "/app/settings/integrations",
       data: { name: key.name, foundAt },
     });
-    await this.mail.sendApiKeyLeaked(key.user, key.name, foundAt);
+    await this.mail.sendApiKeyLeaked(key.user, key.name, foundAt, occurredAt);
     return true;
   }
 

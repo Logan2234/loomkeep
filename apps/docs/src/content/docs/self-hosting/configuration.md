@@ -43,7 +43,7 @@ see [Catalogue keys](/self-hosting/catalogues/).
 
 ## Email and push
 
-`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`,
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `MAIL_SUPPORT_ADDRESS`,
 `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`: see
 [Email and push](/self-hosting/email-and-push/).
 

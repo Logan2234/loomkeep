@@ -23,6 +23,24 @@ type ModerationVariant = {
 };
 
 export interface MailCopy {
+  preheaders: Record<string, string>;
+  layout: {
+    tagline: string;
+    contact: string;
+    shortContact: string;
+    fallback: string;
+    codeSafety: string;
+    unexpectedVerification: string;
+    seriesReason: string;
+    newsletterReason: string;
+    preferences: string;
+    unsubscribe: string;
+    adminReason: (host: string) => string;
+    adminLink: string;
+    eventAt: (date: string) => string;
+    appealReason: string;
+    appealLink: string;
+  };
   reportsDigest: {
     subject: (count: number) => string;
     heading: string;
@@ -61,6 +79,8 @@ export interface MailCopy {
     basisLabel: string;
     humanDecision: string;
     appeal: string;
+    reference: (id: string) => string;
+    decidedAt: (date: string) => string;
   };
   inactivity: {
     subject: string;
@@ -128,6 +148,7 @@ export interface MailCopy {
     subject: string;
     heading: string;
     intro: (email: string) => string;
+    warning: string;
   };
   emailChangeCode: {
     subject: string;
@@ -203,6 +224,58 @@ export interface MailCopy {
 
 export const MAIL_COPY = {
   fr: {
+    preheaders: {
+      welcome: "Ton compte est prêt. Retrouve ta bibliothèque sur Loomkeep.",
+      verifyEmail: "Confirme ton adresse email pour activer ton compte.",
+      invitation: "Tu es invité à rejoindre cette instance Loomkeep.",
+      passwordResetLink:
+        "Choisis un nouveau mot de passe à l’aide de ton lien personnel.",
+      passwordChanged:
+        "Ton mot de passe a changé. Vérifie que cette action vient de toi.",
+      emailChangedOld: "L’adresse de connexion de ton compte a changé.",
+      emailChangedNew: "Cette adresse est désormais associée à ton compte.",
+      emailChangeCode:
+        "Utilise ton code personnel pour confirmer ta nouvelle adresse.",
+      mfaEmailCode: "Utilise ton code personnel pour terminer ta connexion.",
+      newsletter: "Découvre les dernières nouveautés de Loomkeep.",
+      episodeDigest: "Retrouve les nouvelles sorties des séries que tu suis.",
+      quotaAlert: "Un fournisseur approche de sa limite quotidienne d’appels.",
+      jobAlert: "Consulte l’état d’une tâche planifiée de ton instance.",
+      reportsDigest: "Des signalements attendent une décision de modération.",
+      newDeviceLogin:
+        "Un nouvel appareil s’est connecté. Vérifie cette activité.",
+      apiKeyExpiring: "Renouvelle ta clé API avant son expiration.",
+      apiKeyCreated: "Une nouvelle clé API a été créée sur ton compte.",
+      apiKeyLeaked: "Une clé API exposée publiquement a été révoquée.",
+      securityAlert:
+        "Une modification de sécurité ou une tentative de connexion concerne ton compte.",
+      accountDeleted: "La suppression de ton compte Loomkeep est confirmée.",
+      adminNewUser: "Un nouveau compte a été créé sur ton instance.",
+      inactivityWarning:
+        "Consulte la date de suppression prévue et reconnecte-toi pour conserver ton compte.",
+      moderationDecision:
+        "Consulte la décision, ses motifs et la procédure de contestation.",
+    },
+    layout: {
+      tagline: "Ta bibliothèque culturelle",
+      contact: "Nous contacter",
+      shortContact: "Contact",
+      fallback:
+        "Si le bouton ne fonctionne pas, copie ce lien dans ton navigateur :",
+      codeSafety:
+        "Ne partage jamais ce code. Loomkeep ne te le demandera jamais par email ou par téléphone.",
+      unexpectedVerification:
+        "Si tu n'as pas créé de compte Loomkeep, ignore cet email.",
+      seriesReason: "Tu suis ces séries sur Loomkeep.",
+      newsletterReason: "Tu es abonné aux nouveautés.",
+      preferences: "Préférences",
+      unsubscribe: "Se désinscrire",
+      adminReason: (host) => `Administration de ${host}`,
+      adminLink: "Ouvrir l’administration",
+      eventAt: (date) => `Date de l’événement : ${date}`,
+      appealReason: "Tu peux contester cette décision.",
+      appealLink: "Contacter la modération",
+    },
     reportsDigest: {
       subject: (count) =>
         `${count} ${count > 1 ? "signalements" : "signalement"} en attente de modération`,
@@ -255,10 +328,12 @@ export const MAIL_COPY = {
         "Cette décision a été prise par un modérateur, pas par un système automatisé.",
       appeal:
         "Tu peux la contester en répondant directement à cet e-mail ou en écrivant à contact@loomkeep.app.",
+      reference: (id) => `Référence de la décision : ${id}`,
+      decidedAt: (date) => `Décision prise le ${date}`,
     },
     inactivity: {
       subject: "Ton compte Loomkeep sera supprimé pour inactivité",
-      heading: "Ton compte sera bientôt supprimé",
+      heading: "Suppression programmée de ton compte",
       intro: "Ton compte Loomkeep est inactif depuis 24 mois.",
       policy: (date) =>
         `Conformément à notre politique de conservation des données, il sera définitivement supprimé le ${date} si tu ne te reconnectes pas avant cette date.`,
@@ -384,6 +459,8 @@ export const MAIL_COPY = {
       heading: "Adresse email confirmée",
       intro: (email) =>
         `Cette adresse est désormais l'email de connexion de ton compte Loomkeep (précédemment ${email}).`,
+      warning:
+        "Si tu n'as pas demandé ce changement ou ne reconnais pas ce compte, contacte-nous immédiatement.",
     },
     emailChangeCode: {
       subject: "Confirme ta nouvelle adresse email Loomkeep",
@@ -445,6 +522,55 @@ export const MAIL_COPY = {
     },
   },
   en: {
+    preheaders: {
+      welcome: "Your account is ready. Open your library on Loomkeep.",
+      verifyEmail: "Confirm your email address to activate your account.",
+      invitation: "You are invited to join this Loomkeep instance.",
+      passwordResetLink: "Choose a new password using your personal link.",
+      passwordChanged:
+        "Your password changed. Check that you requested this action.",
+      emailChangedOld: "Your account’s sign-in email address has changed.",
+      emailChangedNew: "This address is now associated with your account.",
+      emailChangeCode:
+        "Use your personal code to confirm your new email address.",
+      mfaEmailCode: "Use your personal code to complete your sign-in.",
+      newsletter: "Discover the latest Loomkeep news.",
+      episodeDigest: "Catch up on new releases from the series you follow.",
+      quotaAlert: "A provider is approaching its daily request limit.",
+      jobAlert: "Check the status of a scheduled task on your instance.",
+      reportsDigest: "Reports are awaiting a moderation decision.",
+      newDeviceLogin: "A new device signed in. Check this activity.",
+      apiKeyExpiring: "Renew your API key before it expires.",
+      apiKeyCreated: "A new API key was created on your account.",
+      apiKeyLeaked: "A publicly exposed API key has been revoked.",
+      securityAlert:
+        "A security change or sign-in attempt concerns your account.",
+      accountDeleted: "Your Loomkeep account deletion is confirmed.",
+      adminNewUser: "A new account was created on your instance.",
+      inactivityWarning:
+        "Check the scheduled deletion date and sign in to keep your account.",
+      moderationDecision: "Read the decision, its reasons and how to appeal.",
+    },
+    layout: {
+      tagline: "Your cultural library",
+      contact: "Contact us",
+      shortContact: "Contact",
+      fallback:
+        "If the button does not work, copy this link into your browser:",
+      codeSafety:
+        "Never share this code. Loomkeep will never ask for it by email or phone.",
+      unexpectedVerification:
+        "If you did not create a Loomkeep account, ignore this email.",
+      seriesReason: "You follow these series on Loomkeep.",
+      newsletterReason: "You are subscribed to our news.",
+      preferences: "Preferences",
+      unsubscribe: "Unsubscribe",
+      adminReason: (host) => `Administration of ${host}`,
+      adminLink: "Open administration",
+      eventAt: (date) => `Event date: ${date}`,
+      appealReason: "You can appeal this decision.",
+      appealLink: "Contact moderation",
+    },
     reportsDigest: {
       subject: (count) =>
         `${count} ${count === 1 ? "report" : "reports"} awaiting moderation`,
@@ -497,10 +623,12 @@ export const MAIL_COPY = {
         "This decision was made by a moderator, not by an automated system.",
       appeal:
         "You can appeal it by replying directly to this email or by writing to contact@loomkeep.app.",
+      reference: (id) => `Decision reference: ${id}`,
+      decidedAt: (date) => `Decision made on ${date}`,
     },
     inactivity: {
       subject: "Your Loomkeep account will be deleted due to inactivity",
-      heading: "Your account will be deleted soon",
+      heading: "Scheduled deletion of your account",
       intro: "Your Loomkeep account has been inactive for 24 months.",
       policy: (date) =>
         `Under our data retention policy, it will be permanently deleted on ${date} unless you sign in before then.`,
@@ -624,6 +752,8 @@ export const MAIL_COPY = {
       heading: "Email address confirmed",
       intro: (email) =>
         `This address is now the sign-in email for your Loomkeep account (previously ${email}).`,
+      warning:
+        "If you did not request this change or do not recognize this account, contact us immediately.",
     },
     emailChangeCode: {
       subject: "Confirm your new Loomkeep email address",
@@ -685,6 +815,60 @@ export const MAIL_COPY = {
     },
   },
   it: {
+    preheaders: {
+      welcome: "Il tuo account è pronto. Apri la tua biblioteca su Loomkeep.",
+      verifyEmail: "Conferma il tuo indirizzo email per attivare l’account.",
+      invitation: "Sei invitato a unirti a questa istanza Loomkeep.",
+      passwordResetLink:
+        "Scegli una nuova password usando il tuo link personale.",
+      passwordChanged:
+        "La tua password è cambiata. Verifica di aver richiesto questa azione.",
+      emailChangedOld:
+        "L’indirizzo email di accesso del tuo account è cambiato.",
+      emailChangedNew: "Questo indirizzo è ora associato al tuo account.",
+      emailChangeCode:
+        "Usa il tuo codice personale per confermare il nuovo indirizzo email.",
+      mfaEmailCode: "Usa il tuo codice personale per completare l’accesso.",
+      newsletter: "Scopri le ultime novità di Loomkeep.",
+      episodeDigest: "Scopri le nuove uscite delle serie che segui.",
+      quotaAlert:
+        "Un fornitore si sta avvicinando al limite giornaliero di richieste.",
+      jobAlert:
+        "Controlla lo stato di un’attività pianificata della tua istanza.",
+      reportsDigest:
+        "Alcune segnalazioni attendono una decisione di moderazione.",
+      newDeviceLogin:
+        "Un nuovo dispositivo ha effettuato l’accesso. Verifica questa attività.",
+      apiKeyExpiring: "Rinnova la tua chiave API prima della scadenza.",
+      apiKeyCreated: "È stata creata una nuova chiave API sul tuo account.",
+      apiKeyLeaked: "Una chiave API esposta pubblicamente è stata revocata.",
+      securityAlert:
+        "Una modifica di sicurezza o un tentativo di accesso riguarda il tuo account.",
+      accountDeleted: "L’eliminazione del tuo account Loomkeep è confermata.",
+      adminNewUser: "È stato creato un nuovo account sulla tua istanza.",
+      inactivityWarning:
+        "Controlla la data di eliminazione prevista e accedi per conservare l’account.",
+      moderationDecision: "Leggi la decisione, i motivi e come contestarla.",
+    },
+    layout: {
+      tagline: "La tua biblioteca culturale",
+      contact: "Contattaci",
+      shortContact: "Contatti",
+      fallback: "Se il pulsante non funziona, copia questo link nel browser:",
+      codeSafety:
+        "Non condividere mai questo codice. Loomkeep non te lo chiederà mai via email o telefono.",
+      unexpectedVerification:
+        "Se non hai creato un account Loomkeep, ignora questa email.",
+      seriesReason: "Segui queste serie su Loomkeep.",
+      newsletterReason: "Sei iscritto alle novità.",
+      preferences: "Preferenze",
+      unsubscribe: "Annulla l’iscrizione",
+      adminReason: (host) => `Amministrazione di ${host}`,
+      adminLink: "Apri l’amministrazione",
+      eventAt: (date) => `Data dell’evento: ${date}`,
+      appealReason: "Puoi contestare questa decisione.",
+      appealLink: "Contatta la moderazione",
+    },
     reportsDigest: {
       subject: (count) =>
         `${count} ${count === 1 ? "segnalazione" : "segnalazioni"} in attesa di moderazione`,
@@ -737,10 +921,12 @@ export const MAIL_COPY = {
         "Questa decisione è stata presa da un moderatore, non da un sistema automatico.",
       appeal:
         "Puoi contestarla rispondendo direttamente a questa email o scrivendo a contact@loomkeep.app.",
+      reference: (id) => `Riferimento della decisione: ${id}`,
+      decidedAt: (date) => `Decisione presa il ${date}`,
     },
     inactivity: {
       subject: "Il tuo account Loomkeep verrà eliminato per inattività",
-      heading: "Il tuo account verrà eliminato a breve",
+      heading: "Eliminazione programmata del tuo account",
       intro: "Il tuo account Loomkeep è inattivo da 24 mesi.",
       policy: (date) =>
         `In base alla nostra politica di conservazione dei dati, verrà eliminato definitivamente il ${date}, a meno che tu non acceda prima di allora.`,
@@ -867,6 +1053,8 @@ export const MAIL_COPY = {
       heading: "Indirizzo email confermato",
       intro: (email) =>
         `Questo indirizzo è ora l'email di accesso del tuo account Loomkeep (prima era ${email}).`,
+      warning:
+        "Se non hai richiesto questa modifica o non riconosci questo account, contattaci subito.",
     },
     emailChangeCode: {
       subject: "Conferma il tuo nuovo indirizzo email Loomkeep",

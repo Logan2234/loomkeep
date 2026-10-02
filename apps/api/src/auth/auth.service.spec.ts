@@ -138,7 +138,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
   } as unknown as MailService;
 
   const security = {
-    record: vi.fn(),
+    record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
   } as unknown as SecurityEventService;
 
   const turnstile = {
@@ -697,6 +697,7 @@ describe("AuthService.login", () => {
       { email: user.email, locale: user.locale },
       "Chrome · Windows",
       "203.0.113.42",
+      new Date("2026-10-03T10:15:00Z"),
     );
     expect(security.record).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1215,6 +1216,7 @@ describe("AuthService.resetPassword", () => {
         locale: user.locale,
       },
       0,
+      new Date("2026-10-03T10:15:00Z"),
     );
     expect(security.record).toHaveBeenCalledWith(
       expect.objectContaining({

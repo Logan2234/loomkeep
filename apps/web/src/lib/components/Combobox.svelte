@@ -9,7 +9,12 @@
     type ListNavigationCommand,
   } from "./list-navigation";
 
-  type Option = { label: string; value: string; disabled?: boolean };
+  type Option = {
+    label: string;
+    value: string;
+    disabled?: boolean;
+    group?: string;
+  };
 
   let {
     label,
@@ -286,10 +291,18 @@
       class="overflow-y-auto">
       {#each visibleOptions as o, index (o.value)}
         {@const on = values.includes(o.value)}
+        {#if o.group && (index === 0 || visibleOptions[index - 1].group !== o.group)}
+          <div
+            aria-hidden="true"
+            class="text-dim border-border mt-1 border-t px-3 pt-3 pb-1 text-xs font-semibold">
+            {o.group}
+          </div>
+        {/if}
         <button
           id={`${listboxId}-option-${index}`}
           type="button"
           role="option"
+          aria-label={o.group ? `${o.group}: ${o.label}` : undefined}
           aria-selected={on}
           aria-disabled={o.disabled ? "true" : undefined}
           tabindex="-1"

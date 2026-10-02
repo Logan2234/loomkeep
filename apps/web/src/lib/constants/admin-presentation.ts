@@ -153,6 +153,10 @@ export function adminJobSchedule(key: string): string | null {
 // Gallery controls only: generated email bodies and sample values belong to the backend.
 const TEMPLATE_LABELS = {
   welcome: () => m.common_welcome(),
+  invitation: () => m.admin_template_invitation(),
+  securityAlert: () => m.admin_template_security_alert(),
+  accountDeleted: () => m.admin_template_account_deleted(),
+  adminNewUser: () => m.admin_template_admin_new_user(),
   verifyEmail: () => m.admin_template_verify_email(),
   passwordResetLink: () => m.admin_template_reset_link(),
   passwordChanged: () => m.admin_template_password_changed(),
@@ -198,7 +202,73 @@ const FIELD_LABELS = {
   error: () => m.common_error(),
   name: () => m.common_name(),
   expiresAt: () => m.settings_api_keys_expiration(),
+  inviter: () => m.admin_template_inviter(),
+  event: () => m.admin_template_event(),
+  reason: () => m.admin_template_reason(),
+  foundAt: () => m.admin_template_found_at(),
+  occurredAt: () => m.admin_template_occurred_at(),
+  decisionId: () => m.admin_template_decision_id(),
+  decidedAt: () => m.admin_template_decided_at(),
 };
+
+const TEMPLATE_GROUPS = [
+  {
+    label: () => m.common_account(),
+    keys: [
+      "welcome",
+      "invitation",
+      "verifyEmail",
+      "emailChangeCode",
+      "inactivityWarning",
+      "accountDeleted",
+    ],
+  },
+  {
+    label: () => m.common_security(),
+    keys: [
+      "passwordResetLink",
+      "passwordChanged",
+      "emailChangedOld",
+      "emailChangedNew",
+      "mfaEmailCode",
+      "newDeviceLogin",
+      "securityAlert",
+      "apiKeyCreated",
+      "apiKeyExpiring",
+      "apiKeyLeaked",
+    ],
+  },
+  {
+    label: () => m.admin_template_group_updates(),
+    keys: ["newsletter", "episodeDigest"],
+  },
+  {
+    label: () => m.admin_template_group_moderation(),
+    keys: ["moderationDecision"],
+  },
+  {
+    label: () => m.admin_template_group_admin(),
+    keys: ["adminNewUser", "quotaAlert", "jobAlert", "reportsDigest"],
+  },
+];
+
+export function groupAdminEmailTemplates<T extends { key: string }>(
+  templates: T[],
+) {
+  const groups = TEMPLATE_GROUPS.map((group) => ({
+    label: group.label(),
+    items: group.keys.flatMap((key) =>
+      templates.filter((template) => template.key === key),
+    ),
+  }));
+  const knownKeys = TEMPLATE_GROUPS.flatMap((group) => group.keys);
+  const others = templates.filter(
+    (template) => !knownKeys.includes(template.key),
+  );
+  if (others.length)
+    groups.push({ label: m.admin_template_group_other(), items: others });
+  return groups.filter((group) => group.items.length > 0);
+}
 
 export function adminTemplateLabel(key: string): string {
   return Object.hasOwn(TEMPLATE_LABELS, key)

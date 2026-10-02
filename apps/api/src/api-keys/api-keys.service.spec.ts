@@ -47,7 +47,7 @@ function setup({ count = 0, existing = true, apiEnabled = true } = {}) {
     },
   };
   const auth = { invalidate: vi.fn() };
-  const security = { record: vi.fn() };
+  const security = { record: vi.fn().mockResolvedValue(NOW) };
   const mail = { sendApiKeyCreated: vi.fn(), sendApiKeyLeaked: vi.fn() };
   const notifications = {
     create: vi.fn(),
@@ -108,6 +108,7 @@ describe("ApiKeysService", () => {
       expect(mail.sendApiKeyCreated).toHaveBeenCalledWith(
         { email: "alice@example.com", locale: "fr" },
         "Script perso",
+        NOW,
       );
     });
 

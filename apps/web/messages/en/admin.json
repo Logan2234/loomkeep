@@ -642,5 +642,20 @@
   "admin_settings_rate_premium": "Premium limit",
   "admin_settings_rate_hint": "Requests per minute per account, across all its keys.",
   "admin_settings_locked": "Set by {env}",
-  "admin_settings_saved": "Setting saved"
+  "admin_settings_saved": "Setting saved",
+  "admin_template_invitation": "Registration invitation",
+  "admin_template_security_alert": "Security alert",
+  "admin_template_account_deleted": "Account deleted",
+  "admin_template_admin_new_user": "New registration (admin)",
+  "admin_template_inviter": "Invited by",
+  "admin_template_event": "Security event",
+  "admin_template_reason": "Reason (self or inactive)",
+  "admin_template_found_at": "Where the key was found",
+  "admin_template_occurred_at": "Event date and time (ISO 8601)",
+  "admin_template_decision_id": "Decision reference",
+  "admin_template_decided_at": "Decision date and time (ISO 8601)",
+  "admin_template_group_updates": "News and releases",
+  "admin_template_group_moderation": "Moderation",
+  "admin_template_group_admin": "Administration",
+  "admin_template_group_other": "Other"
 }

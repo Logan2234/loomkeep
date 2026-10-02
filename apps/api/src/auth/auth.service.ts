@@ -652,16 +652,17 @@ export class AuthService {
     const tokens = await this.startSession(promoted, userAgent);
 
     if (isNewDevice) {
-      await this.mail.sendNewDeviceLogin(
-        { email: promoted.email, locale: promoted.locale },
-        deviceLabel(userAgent),
-        ip ?? null,
-      );
-      await this.security.record({
+      const occurredAt = await this.security.record({
         type: "NEW_DEVICE_LOGIN",
         userId: promoted.id,
         userAgent,
       });
+      await this.mail.sendNewDeviceLogin(
+        { email: promoted.email, locale: promoted.locale },
+        deviceLabel(userAgent),
+        ip ?? null,
+        occurredAt,
+      );
     }
 
     return { user: toUserDto(promoted), tokens };
@@ -933,15 +934,16 @@ export class AuthService {
     const ids = sessions.map((s) => s.id);
     this.sessionCache.invalidateAll(ids);
     ids.forEach((id) => this.events.disconnectSession(id));
-    await this.mail.sendPasswordChanged(
-      { email: stored.user.email, locale: stored.user.locale },
-      await this.apiKeys.reviewAfterPasswordChange(stored.userId),
-    );
-    await this.security.record({
+    const occurredAt = await this.security.record({
       type: "PASSWORD_RESET",
       userId: stored.userId,
       userAgent,
     });
+    await this.mail.sendPasswordChanged(
+      { email: stored.user.email, locale: stored.user.locale },
+      await this.apiKeys.reviewAfterPasswordChange(stored.userId),
+      occurredAt,
+    );
   }
 
   /**

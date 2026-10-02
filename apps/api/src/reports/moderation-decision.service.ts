@@ -32,6 +32,11 @@ export interface RecordModerationDecisionInput {
   reportId?: string | null;
 }
 
+export interface ModerationDecisionIdentity {
+  id: string;
+  decidedAt: Date;
+}
+
 /**
  * DSA art. 17: persists the "statement of reasons" for a restrictive measure
  * and notifies the sanctioned user. Report takedowns persist the decision
@@ -47,11 +52,12 @@ export class ModerationDecisionService {
   ) {}
 
   async record(input: RecordModerationDecisionInput): Promise<void> {
-    await this.prisma.moderationDecision.create({
+    const decision = await this.prisma.moderationDecision.create({
       data: this.decisionData(input),
+      select: { id: true, decidedAt: true },
     });
 
-    await this.sendEmail(input);
+    await this.sendEmail(input, decision);
 
     if (input.measure !== ModerationMeasure.ACCOUNT_DELETED) {
       const copy = await this.notifications.copyFor(input.subjectUserId);
@@ -68,9 +74,10 @@ export class ModerationDecisionService {
   async recordForReportInTransaction(
     tx: Prisma.TransactionClient,
     input: RecordModerationDecisionInput & { reportId: string },
-  ): Promise<void> {
-    await tx.moderationDecision.create({
+  ): Promise<ModerationDecisionIdentity> {
+    const decision = await tx.moderationDecision.create({
       data: this.decisionData(input),
+      select: { id: true, decidedAt: true },
     });
     const copy = await this.notifications.copyFor(input.subjectUserId);
     await this.notifications.createInTransaction(tx, {
@@ -81,6 +88,7 @@ export class ModerationDecisionService {
       url: "/app/settings",
       dedupeKey: `moderation:${input.reportId}`,
     });
+    return decision;
   }
 
   publishForReport(userId: string): void {
@@ -90,7 +98,10 @@ export class ModerationDecisionService {
     );
   }
 
-  sendEmail(input: RecordModerationDecisionInput): Promise<void> {
+  sendEmail(
+    input: RecordModerationDecisionInput,
+    decision: ModerationDecisionIdentity,
+  ): Promise<void> {
     return this.mail.sendModerationDecision(
       { email: input.subjectEmail, locale: input.subjectLocale },
       {
@@ -98,6 +109,8 @@ export class ModerationDecisionService {
         reasonText: input.reasonText,
         legalBasis: input.legalBasis,
         tosClause: input.tosClause,
+        decisionId: decision.id,
+        decidedAt: decision.decidedAt,
       },
     );
   }

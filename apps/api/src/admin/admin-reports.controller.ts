@@ -35,6 +35,7 @@ import { ReportResponseDto } from "../reports/dto/report-response.dto";
 import { ResolveReportBody } from "../reports/dto/resolve-report.dto";
 import {
   ModerationDecisionService,
+  type ModerationDecisionIdentity,
   type RecordModerationDecisionInput,
 } from "../reports/moderation-decision.service";
 import { REPORT_PAGE_SIZE, ReportService } from "../reports/report.service";
@@ -187,6 +188,7 @@ export class AdminReportsController {
       let notice:
         (RecordModerationDecisionInput & { reportId: string }) | null = null;
       let notifiedAuthorId: string | null = null;
+      let decision: ModerationDecisionIdentity | null = null;
 
       if (removal?.authorId) {
         const author = await tx.user.findUnique({
@@ -212,10 +214,11 @@ export class AdminReportsController {
             decidedById: user.sub,
             reportId: id,
           };
-          await this.moderationDecisions.recordForReportInTransaction(
-            tx,
-            notice,
-          );
+          decision =
+            await this.moderationDecisions.recordForReportInTransaction(
+              tx,
+              notice,
+            );
           notifiedAuthorId = removal.authorId;
         }
       }
@@ -226,7 +229,7 @@ export class AdminReportsController {
         id,
         "RESOLVED",
       );
-      return { removal, reporterId, notice, notifiedAuthorId };
+      return { removal, reporterId, notice, notifiedAuthorId, decision };
     });
 
     try {
@@ -249,10 +252,12 @@ export class AdminReportsController {
       );
     }
 
-    if (committed.notice) {
-      void this.moderationDecisions.sendEmail(committed.notice).catch((err) => {
-        this.logger.warn("A moderation email could not be sent", err);
-      });
+    if (committed.notice && committed.decision) {
+      void this.moderationDecisions
+        .sendEmail(committed.notice, committed.decision)
+        .catch((err) => {
+          this.logger.warn("A moderation email could not be sent", err);
+        });
     }
   }
 

@@ -65,6 +65,9 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: "${SMTP_FROM:-Loomkeep <noreply@loomkeep.app>}"
+      MAIL_SUPPORT_ADDRESS: ${MAIL_SUPPORT_ADDRESS:-contact@loomkeep.app}
+      # Public HTTPS API URL for newsletter one-click unsubscribe headers.
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000/api}
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
       LOG_LEVEL: ${LOG_LEVEL:-}
       # Empty = TurnstileService.verify() always passes — see https://docs.loomkeep.app/self-hosting/cloudflare/.
