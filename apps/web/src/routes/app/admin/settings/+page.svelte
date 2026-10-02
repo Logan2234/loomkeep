@@ -12,6 +12,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Switch from "$lib/components/Switch.svelte";
+  import { DOCS_URL } from "$lib/constants/external-links";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import {
@@ -112,7 +113,18 @@
     icon="gear"
     title={m.admin_settings_title()}
     subtitle={m.admin_settings_subtitle()}
-    back="/app/admin" />
+    back="/app/admin">
+    {#snippet actions()}
+      <a
+        href={`${DOCS_URL}/self-hosting/instance-settings/`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn btn-ghost shrink-0">
+        <Icon name="book-open" class="h-4 w-4" />
+        {m.admin_docs_link()}
+      </a>
+    {/snippet}
+  </PageHeader>
 
   {#if saveMut.error}
     <Banner variant="error" class="mt-4">{saveMut.error}</Banner>

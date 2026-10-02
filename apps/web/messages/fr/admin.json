@@ -626,6 +626,7 @@
   "admin_template_api_key_leaked": "Clé API trouvée en public",
   "admin_settings_title": "Réglages de l'instance",
   "admin_settings_subtitle": "Ce qui est ouvert à tous les comptes. Une variable d'environnement définie l'emporte sur ces réglages.",
+  "admin_docs_link": "Documentation",
   "admin_nav_settings_description": "Fonctionnalités et API publique de l'instance.",
   "admin_settings_features": "Fonctionnalités",
   "admin_settings_features_hint": "Prend effet au prochain chargement de l'appli pour chaque visiteur.",

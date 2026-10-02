@@ -263,6 +263,7 @@
   "premium_locked": "Premium members only",
   "import_free_quota": "1 free import",
   "import_free_quota_used": "Free import already used for this domain — go premium to re-import.",
+  "import_export_guide_link": "Step-by-step guide",
   "import_free_quota_reminder": "Your free account includes one import per domain. Make it count.",
   "home_greeting_morning": "Good morning",
   "home_greeting_afternoon": "Good afternoon",

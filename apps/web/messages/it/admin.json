@@ -626,6 +626,7 @@
   "admin_template_api_key_leaked": "Chiave API trovata in pubblico",
   "admin_settings_title": "Impostazioni dell'istanza",
   "admin_settings_subtitle": "Ciò che è aperto a tutti gli account. Una variabile d'ambiente impostata ha la precedenza su queste impostazioni.",
+  "admin_docs_link": "Documentazione",
   "admin_nav_settings_description": "Funzionalità e API pubblica dell'istanza.",
   "admin_settings_features": "Funzionalità",
   "admin_settings_features_hint": "Ha effetto al prossimo caricamento dell'app per ogni visitatore.",

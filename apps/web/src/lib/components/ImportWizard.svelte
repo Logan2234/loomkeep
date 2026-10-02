@@ -487,6 +487,16 @@
     {#if intro}
       <div class="text-dim mb-6 max-w-xl text-sm">{@render intro()}</div>
     {/if}
+    {#if descriptor.guide}
+      <a
+        href={descriptor.guide}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-accent -mt-4 mb-6 flex w-fit items-center gap-1 text-sm">
+        {m.import_export_guide_link()}
+        <Icon name="external" class="h-3.5 w-3.5" />
+      </a>
+    {/if}
 
     {#if isFileInput}
       <label

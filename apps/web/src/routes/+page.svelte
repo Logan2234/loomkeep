@@ -6,7 +6,11 @@
   import Icon from "$lib/components/Icon.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { FEEDBACK_URL, GITHUB_REPO_URL } from "$lib/constants/external-links";
+  import {
+    DOCS_URL,
+    FEEDBACK_URL,
+    GITHUB_REPO_URL,
+  } from "$lib/constants/external-links";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { theme } from "$lib/theme.svelte";
@@ -788,6 +792,14 @@
               class="btn btn-ghost">
               {m.landing_source_cta()}
             </a>
+            <a
+              href={`${DOCS_URL}/self-hosting/installation/`}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-umami-event="cta-name-selfhost-guide"
+              class="btn btn-ghost">
+              {m.landing_selfhost_guide_cta()}
+            </a>
           </div>
         </div>
 
@@ -837,6 +849,15 @@
             class="btn btn-ghost btn-lg">
             <Icon name="shield" class="h-4 w-4" />
             {m.landing_source_cta()}
+          </a>
+          <a
+            href={`${DOCS_URL}/self-hosting/installation/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-umami-event="cta-final-selfhost-guide"
+            class="btn btn-ghost btn-lg">
+            <Icon name="book-open" class="h-4 w-4" />
+            {m.landing_selfhost_guide_cta()}
           </a>
         </div>
       </div>

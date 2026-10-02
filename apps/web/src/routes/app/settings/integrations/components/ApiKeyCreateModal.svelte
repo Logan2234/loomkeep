@@ -8,6 +8,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import SegmentedControl from "$lib/components/SegmentedControl.svelte";
+  import { DOCS_URL } from "$lib/constants/external-links";
   import { m } from "$lib/paraglide/messages.js";
   import {
     API_KEY_NAME_MAX_LENGTH,
@@ -26,7 +27,7 @@
     type ExpirationChoice,
     type Recipe,
   } from "../api-key-form";
-  import { RECIPE_LABELS } from "../recipes";
+  import { RECIPE_GUIDES, RECIPE_LABELS } from "../recipes";
   import { RESOURCE_LABELS } from "../resources";
 
   let {
@@ -285,6 +286,20 @@
               language
             ]}</pre>
         </div>
+        <p class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <a
+            href={`${DOCS_URL}/api/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link-accent">{m.settings_api_keys_getting_started()}</a>
+          {#if initial}
+            <a
+              href={RECIPE_GUIDES[initial.id]}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="link-accent">{m.settings_api_keys_recipe_guide()}</a>
+          {/if}
+        </p>
       </div>
     {/if}
   </AnimatedHeight>

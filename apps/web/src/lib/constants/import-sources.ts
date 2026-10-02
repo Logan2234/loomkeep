@@ -1,3 +1,4 @@
+import { DOCS_URL } from "$lib/constants/external-links";
 import { m } from "$lib/paraglide/messages";
 import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
 import { Domain, type ImportSource } from "@loomkeep/shared";
@@ -11,6 +12,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       href: "/app/settings/import/tvtime",
       input: { type: "zip", accept: ".zip" },
       noun: { one: m.library_title_one(), many: m.library_title_many() },
+      guide: `${DOCS_URL}/guide/imports/tv-time/`,
     },
     trakt: {
       domain: Domain.MEDIA,
@@ -19,6 +21,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       href: "/app/settings/import/trakt",
       input: { type: "zip", accept: ".zip" },
       noun: { one: m.library_title_one(), many: m.library_title_many() },
+      guide: `${DOCS_URL}/guide/imports/trakt/`,
     },
     letterboxd: {
       domain: Domain.MEDIA,
@@ -33,6 +36,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       input: { type: "xml", accept: ".xml,application/xml,text/xml" },
       noun: { one: m.library_title_one(), many: m.library_title_many() },
       newBadgeKey: "myanimelist",
+      guide: `${DOCS_URL}/guide/imports/myanimelist/`,
     },
     simkl: {
       domain: Domain.MEDIA,
@@ -57,6 +61,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
         placeholder: m.import_source_steam_placeholder(),
       },
       noun: { one: m.common_game(), many: m.common_games() },
+      guide: `${DOCS_URL}/guide/imports/steam/`,
     },
     backloggd: {
       domain: Domain.GAMES,
@@ -70,6 +75,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       href: "/app/settings/import/storygraph",
       input: { type: "csv", accept: ".csv,text/csv" },
       noun: { one: m.common_book(), many: m.common_books() },
+      guide: `${DOCS_URL}/guide/imports/storygraph/`,
     },
     goodreads: {
       domain: Domain.BOOKS,
@@ -78,6 +84,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       href: "/app/settings/import/goodreads",
       input: { type: "csv", accept: ".csv,text/csv" },
       noun: { one: m.common_book(), many: m.common_books() },
+      guide: `${DOCS_URL}/guide/imports/goodreads/`,
     },
     babelio: {
       domain: Domain.BOOKS,
@@ -91,6 +98,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       },
       noun: { one: m.common_book(), many: m.common_books() },
       newBadgeKey: "babelio",
+      guide: `${DOCS_URL}/guide/imports/babelio/`,
     },
     librarything: {
       domain: Domain.BOOKS,
