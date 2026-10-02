@@ -626,6 +626,7 @@
   "admin_template_api_key_leaked": "API key found in public",
   "admin_settings_title": "Instance settings",
   "admin_settings_subtitle": "What's open to every account. A set environment variable overrides these settings.",
+  "admin_docs_link": "Documentation",
   "admin_nav_settings_description": "The instance's features and public API.",
   "admin_settings_features": "Features",
   "admin_settings_features_hint": "Takes effect the next time each visitor loads the app.",

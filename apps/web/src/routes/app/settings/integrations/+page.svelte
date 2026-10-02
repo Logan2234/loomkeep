@@ -16,6 +16,7 @@
   import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { DOCS_URL } from "$lib/constants/external-links";
   import CalendarSubscribeModal from "$lib/ee/calendar/CalendarSubscribeModal.svelte";
   import { useEeLock } from "$lib/ee/license.svelte";
   import ActivityFeedSubscribeModal from "$lib/ee/social/ActivityFeedSubscribeModal.svelte";
@@ -92,6 +93,11 @@
     </h2>
     <Banner variant="info">
       {m.settings_api_keys_info()}
+      <a
+        href={`${DOCS_URL}/api/`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-accent">{m.settings_api_keys_docs_link()}</a>
       {#if quota}
         <br />
         {m.settings_api_keys_limit({ count: quota.perMinute })}

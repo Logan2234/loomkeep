@@ -16,4 +16,6 @@ export type ImportSourceDescriptor = {
     many: string;
   };
   newBadgeKey?: string;
+  /** The docs page walking through this source's import. */
+  guide?: string;
 };

@@ -15,7 +15,7 @@
   import StatsSectionError from "./stats/components/StatsSectionError.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
-  import { GITHUB_REPO_URL } from "$lib/constants/external-links";
+  import { DOCS_URL, GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { formatNumber, formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import { useReportsPendingCount } from "$lib/reports-pending.svelte";
@@ -119,7 +119,18 @@
     title={m.admin_dashboard_title()}
     subtitle={m.admin_dashboard_subtitle({
       name: auth.user?.displayName ?? "",
-    })} />
+    })}>
+    {#snippet actions()}
+      <a
+        href={`${DOCS_URL}/self-hosting/administration/`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn btn-ghost shrink-0">
+        <Icon name="book-open" class="h-4 w-4" />
+        {m.admin_docs_link()}
+      </a>
+    {/snippet}
+  </PageHeader>
 
   <!-- The 4 numbers worth a glance before diving in — each links straight to its page. -->
   <div

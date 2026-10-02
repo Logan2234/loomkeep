@@ -635,7 +635,16 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         label: `${m.common_help()} & ${m.common_feedback()}`,
         icon: "question",
         description: m.settings_help_body(),
-        keywords: ["aide", "help", "bug", "idee", "roadmap", "changelog"],
+        keywords: [
+          "aide",
+          "help",
+          "bug",
+          "idee",
+          "roadmap",
+          "changelog",
+          "documentation",
+          "faq",
+        ],
         legacyHash: "aide",
         entries: [
           {
@@ -657,6 +666,21 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
             id: "help-changelog",
             label: m.settings_help_changelog(),
             keywords: ["changelog"],
+          },
+          {
+            id: "help-docs",
+            label: m.settings_help_docs(),
+            keywords: ["documentation", "docs", "guide", "api", "self-host"],
+          },
+          {
+            id: "help-faq",
+            label: m.settings_help_faq(),
+            keywords: ["faq", "questions"],
+          },
+          {
+            id: "help-status",
+            label: m.settings_help_status(),
+            keywords: ["status", "statut", "uptime", "panne", "outage"],
           },
           {
             id: "help-chat",

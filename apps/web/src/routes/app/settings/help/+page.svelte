@@ -3,9 +3,11 @@
   import Icon from "$lib/components/Icon.svelte";
   import {
     CHANGELOG_URL,
+    DOCS_URL,
     FEEDBACK_BUG_REPORTS_URL,
     FEEDBACK_FEATURE_REQUESTS_URL,
     ROADMAP_URL,
+    STATUS_URL,
   } from "$lib/constants/external-links";
   import { m } from "$lib/paraglide/messages";
   import SettingsSection from "../components/SettingsSection.svelte";
@@ -35,6 +37,24 @@
       href: CHANGELOG_URL,
       icon: "list" as const,
       label: m.settings_help_changelog(),
+    },
+    {
+      anchor: "help-docs",
+      href: `${DOCS_URL}/guide/`,
+      icon: "book-open" as const,
+      label: m.settings_help_docs(),
+    },
+    {
+      anchor: "help-faq",
+      href: `${DOCS_URL}/guide/faq/`,
+      icon: "question" as const,
+      label: m.settings_help_faq(),
+    },
+    {
+      anchor: "help-status",
+      href: STATUS_URL,
+      icon: "activity" as const,
+      label: m.settings_help_status(),
     },
   ];
 

@@ -4,6 +4,7 @@
   import { appConfig } from "$lib/config.svelte";
   import {
     CHANGELOG_URL,
+    DOCS_URL,
     FEEDBACK_BUG_REPORTS_URL,
     FEEDBACK_URL,
     GITHUB_REPO_URL,
@@ -45,6 +46,18 @@
           external: true,
           event: "footer-changelog",
         },
+        {
+          label: m.landing_footer_link_docs(),
+          href: DOCS_URL,
+          external: true,
+          event: "footer-docs",
+        },
+        {
+          label: m.landing_footer_link_api(),
+          href: `${DOCS_URL}/api/`,
+          external: true,
+          event: "footer-api",
+        },
       ],
     },
     {
@@ -70,7 +83,7 @@
         },
         {
           label: m.landing_footer_link_selfhost(),
-          href: GITHUB_REPO_URL,
+          href: `${DOCS_URL}/self-hosting/`,
           external: true,
           event: "footer-selfhost",
         },
