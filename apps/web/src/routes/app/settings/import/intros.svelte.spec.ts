@@ -66,7 +66,7 @@ describe("import intros", () => {
   it.each(INTROS)(
     "%s reads as its link, then its hint",
     (_name, page, link, rest) => {
-      renderWithQuery(page);
+      renderWithQuery(page, {});
 
       const anchor = screen.getByRole("link", { name: link });
       const intro = anchor.parentElement!.textContent!.replace(/\s+/g, " ");
