@@ -53,11 +53,14 @@
     property="og:title"
     content="{m.common_loomkeep()} — {m.landing_meta_tagline()}" />
   <meta property="og:description" content={m.landing_meta_description()} />
-  <meta property="og:image" content="{page.url.origin}/pwa-512.png" />
+  <meta property="og:image" content="{page.url.origin}/og.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:image:alt" content={m.landing_meta_description()} />
   <meta
     property="og:locale"
     content={regionalLocale(getLocale()).replace("-", "_")} />
-  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:card" content="summary_large_image" />
 
   <link rel="preconnect" href={env.PUBLIC_API_URL} />
   <link rel="canonical" href={page.url.href} />
