@@ -44,6 +44,21 @@ const COPY = {
     },
     /** Default name for a security key enrolled without one. */
     securityKey: "Clé de sécurité",
+    episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
+      const when = period === "daily" ? "aujourd'hui" : "cette semaine";
+      const [a, b] = titles;
+      if (titles.length === 1)
+        return [`${a} sort ${when} !`, `Ça y est, ${a} est de retour ${when}.`];
+      if (titles.length === 2)
+        return [
+          `${a} et ${b} sortent ${when}`,
+          `Double sortie ${when} : ${a} et ${b}`,
+        ];
+      return [
+        `${titles.length} sorties t'attendent ${when}`,
+        `${a}, ${b} et ${titles.length - 2} autre(s) sortent ${when}`,
+      ];
+    },
     apiKeys: {
       reviewTitle: "Vérifie tes clés API",
       reviewBody: (count: number) =>
@@ -84,6 +99,21 @@ const COPY = {
       other: "Action has been taken on your account",
     },
     securityKey: "Security key",
+    episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
+      const when = period === "daily" ? "today" : "this week";
+      const [a, b] = titles;
+      if (titles.length === 1)
+        return [`${a} is out ${when}!`, `There it is: ${a} is back ${when}.`];
+      if (titles.length === 2)
+        return [
+          `${a} and ${b} are out ${when}`,
+          `Double release ${when}: ${a} and ${b}`,
+        ];
+      return [
+        `${titles.length} releases are waiting for you ${when}`,
+        `${a}, ${b} and ${titles.length - 2} more are out ${when}`,
+      ];
+    },
     apiKeys: {
       reviewTitle: "Check your API keys",
       reviewBody: (count: number) =>
@@ -126,6 +156,21 @@ const COPY = {
       other: "È stata presa una misura sul tuo account",
     },
     securityKey: "Chiave di sicurezza",
+    episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
+      const when = period === "daily" ? "oggi" : "questa settimana";
+      const [a, b] = titles;
+      if (titles.length === 1)
+        return [`${a} esce ${when}!`, `Ci siamo: ${a} torna ${when}.`];
+      if (titles.length === 2)
+        return [
+          `${a} e ${b} escono ${when}`,
+          `Doppia uscita ${when}: ${a} e ${b}`,
+        ];
+      return [
+        `${titles.length} uscite ti aspettano ${when}`,
+        `${a}, ${b} e altri ${titles.length - 2} escono ${when}`,
+      ];
+    },
     apiKeys: {
       reviewTitle: "Controlla le tue chiavi API",
       reviewBody: (count: number) =>
@@ -138,6 +183,8 @@ const COPY = {
     },
   },
 } satisfies Record<CopyLocale, NotificationCopy>;
+
+export type DigestPeriod = "daily" | "weekly";
 
 export interface NotificationCopy {
   adminTestPush: string;
@@ -153,6 +200,8 @@ export interface NotificationCopy {
     other: string;
   };
   securityKey: string;
+  /** The digest push's possible bodies; the service picks one at random. */
+  episodeDigestPush: (period: DigestPeriod, titles: string[]) => string[];
   apiKeys: {
     reviewTitle: string;
     reviewBody: (count: number) => string;

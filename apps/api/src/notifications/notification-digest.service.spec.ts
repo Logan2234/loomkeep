@@ -152,6 +152,26 @@ describe("NotificationDigestService.runDigests", () => {
     vi.useRealTimers();
   });
 
+  it("writes the push digest in the recipient's language", async () => {
+    const day18hParis = new Date("2026-08-25T16:00:00.000Z");
+    vi.useFakeTimers().setSystemTime(day18hParis);
+    vi.spyOn(Math, "random").mockReturnValue(0);
+
+    const { service, push } = makeService({
+      notifyPush: DigestCadence.DAILY,
+      isPremium: true,
+    });
+    await service.runDigests();
+
+    expect(push.sendToUser).toHaveBeenCalledWith(
+      "u1",
+      expect.objectContaining({ body: "Severance is out today!" }),
+    );
+
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
   it("does not send outside the due window", async () => {
     const noon = new Date("2026-08-24T10:00:00.000Z");
     vi.useFakeTimers().setSystemTime(noon);

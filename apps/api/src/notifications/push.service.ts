@@ -31,14 +31,15 @@ export class PushService {
   private readonly enabled: boolean;
 
   constructor(private readonly prisma: PrismaService) {
-    const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = process.env;
-    this.enabled = Boolean(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY);
+    const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } = process.env;
+    const subject = vapidSubject();
+    this.enabled = Boolean(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && subject);
 
     if (this.enabled) {
-      webpush.setVapidDetails(
-        VAPID_SUBJECT ?? "mailto:loganwi322.dev@gmail.com",
-        VAPID_PUBLIC_KEY!,
-        VAPID_PRIVATE_KEY!,
+      webpush.setVapidDetails(subject!, VAPID_PUBLIC_KEY!, VAPID_PRIVATE_KEY!);
+    } else if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+      this.logger.warn(
+        "VAPID_SUBJECT not set and WEB_ORIGIN isn't HTTPS — push notifications are disabled",
       );
     } else {
       // Self-host without HTTPS/VAPID configured: push is a no-op, in-app stays available.
@@ -154,4 +155,14 @@ export class PushService {
       }),
     );
   }
+}
+
+/**
+ * Who push services contact about this instance: VAPID_SUBJECT, else the
+ * instance's own site, which the spec accepts as long as it's HTTPS.
+ */
+function vapidSubject(): string | null {
+  if (process.env.VAPID_SUBJECT) return process.env.VAPID_SUBJECT;
+  const origin = process.env.WEB_ORIGIN?.split(",")[0].trim();
+  return origin?.startsWith("https://") ? origin : null;
 }
