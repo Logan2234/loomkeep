@@ -342,14 +342,14 @@ export const MAIL_COPY = {
     },
     episodeDigest: {
       today: "aujourd'hui",
-      thisWeek: "cette semaine",
+      thisWeek: "ces 7 derniers jours",
       oneSubject: (title) => `Nouvel épisode : ${title}`,
       oneIntro: (period) => `Un épisode t'attend ${period}.`,
       severalSubject: (count, period) => `${count} nouveaux épisodes ${period}`,
-      severalIntro: (period) => `Voici ce qui sort ${period}.`,
+      severalIntro: (period) => `Voici ce qui est sorti ${period}.`,
       manySubject: (count, period) => `${count} sorties ${period}`,
       manyIntro: (count, period) =>
-        `Grosse fournée : ${count} épisodes sortent ${period}.`,
+        `Grosse fournée : ${count} épisodes sont sortis ${period}.`,
       preferences: "Gérer mes notifications",
     },
     newsletter: {
@@ -537,14 +537,14 @@ export const MAIL_COPY = {
     },
     episodeDigest: {
       today: "today",
-      thisWeek: "this week",
+      thisWeek: "in the last 7 days",
       oneSubject: (title) => `New episode: ${title}`,
       oneIntro: (period) => `An episode is waiting for you ${period}.`,
       severalSubject: (count, period) => `${count} new episodes ${period}`,
-      severalIntro: (period) => `Here's what's coming out ${period}.`,
+      severalIntro: (period) => `Here's what came out ${period}.`,
       manySubject: (count, period) => `${count} releases ${period}`,
       manyIntro: (count, period) =>
-        `A packed lineup: ${count} episodes are coming out ${period}.`,
+        `A packed lineup: ${count} episodes came out ${period}.`,
       preferences: "Manage my notifications",
     },
     newsletter: {
@@ -734,14 +734,14 @@ export const MAIL_COPY = {
     },
     episodeDigest: {
       today: "oggi",
-      thisWeek: "questa settimana",
+      thisWeek: "negli ultimi 7 giorni",
       oneSubject: (title) => `Nuovo episodio: ${title}`,
       oneIntro: (period) => `Un episodio ti aspetta ${period}.`,
       severalSubject: (count, period) => `${count} nuovi episodi ${period}`,
-      severalIntro: (period) => `Ecco cosa esce ${period}.`,
+      severalIntro: (period) => `Ecco cosa è uscito ${period}.`,
       manySubject: (count, period) => `${count} uscite ${period}`,
       manyIntro: (count, period) =>
-        `Un programma fitto: ${count} episodi escono ${period}.`,
+        `Un programma fitto: ${count} episodi sono usciti ${period}.`,
       preferences: "Gestisci le mie notifiche",
     },
     newsletter: {
