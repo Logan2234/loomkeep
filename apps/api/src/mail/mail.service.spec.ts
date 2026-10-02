@@ -1,3 +1,4 @@
+import { ALERTS, type AlertDefinition } from "@loomkeep/shared";
 import nodemailer from "nodemailer";
 import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../common/quota-tracker.service";
@@ -392,6 +393,32 @@ describe("MailService template gallery", () => {
         "apiKeyCreated",
       ]),
     );
+  });
+
+  it("has every template listed in the alerts registry", () => {
+    const service = new MailService(quota);
+    const registered = Object.values(ALERTS).map(
+      (alert: AlertDefinition) => alert.mailTemplate,
+    );
+
+    for (const { key } of service.listTemplates()) {
+      expect(registered, key).toContain(key);
+    }
+  });
+
+  it("tells a locked second factor apart: the password is known", () => {
+    const service = new MailService(quota);
+
+    const locked = service.renderTemplatePreview("securityAlert", "en", {
+      event: "MFA_CHALLENGE_LOCKED",
+    });
+    const disabled = service.renderTemplatePreview("securityAlert", "en", {
+      event: "MFA_TOTP_DISABLED",
+    });
+
+    expect(locked?.text).toContain("probably knows your password");
+    expect(disabled?.text).toContain("was turned off");
+    expect(disabled?.text).not.toContain("probably knows your password");
   });
 
   it("renders a preview without sending anything", async () => {

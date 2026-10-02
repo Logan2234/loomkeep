@@ -1,23 +1,58 @@
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { vi, type Mock } from "vitest";
 import { registerRequestContext } from "../common/request-context";
+import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "./security-event.service";
 
-function makeService() {
+function makeService({ recentLocks = 0 } = {}) {
   const prisma = {
     securityEvent: {
       create: vi.fn(),
+      count: vi.fn().mockResolvedValue(recentLocks),
       findMany: vi.fn().mockResolvedValue([]),
       updateMany: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    user: {
+      findUnique: vi
+        .fn()
+        .mockResolvedValue({ email: "alice@example.com", locale: "en" }),
+    },
   } as unknown as PrismaService;
+  const mail = { sendSecurityAlert: vi.fn() } as unknown as MailService;
 
-  return { service: new SecurityEventService(prisma), prisma };
+  return { service: new SecurityEventService(prisma, mail), prisma, mail };
 }
 
 describe("SecurityEventService.record", () => {
+  it("emails the owner when two-factor authentication is turned off", async () => {
+    const { service, mail } = makeService();
+
+    await service.record({ type: "MFA_TOTP_DISABLED", userId: "u1" });
+
+    expect(mail.sendSecurityAlert).toHaveBeenCalledWith(
+      { email: "alice@example.com", locale: "en" },
+      "MFA_TOTP_DISABLED",
+    );
+  });
+
+  it("emails nothing for an event that isn't a change to how one signs in", async () => {
+    const { service, mail } = makeService();
+
+    await service.record({ type: "MFA_WEBAUTHN_RENAMED", userId: "u1" });
+
+    expect(mail.sendSecurityAlert).not.toHaveBeenCalled();
+  });
+
+  it("emails a locked second factor once an hour, however many tries follow", async () => {
+    const { service, mail } = makeService({ recentLocks: 1 });
+
+    await service.record({ type: "MFA_CHALLENGE_LOCKED", userId: "u1" });
+
+    expect(mail.sendSecurityAlert).not.toHaveBeenCalled();
+  });
+
   it("persists the event, defaulting a missing userId to null", async () => {
     const { service, prisma } = makeService();
 

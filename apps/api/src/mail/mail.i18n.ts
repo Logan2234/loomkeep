@@ -1,4 +1,21 @@
+import type { SecurityEventType } from "@loomkeep/shared";
 import type { CopyLocale } from "../common/copy-locale.util";
+
+/** The security events that email the account's owner (see SecurityEventService). */
+export const SECURITY_ALERT_EVENTS = [
+  "MFA_TOTP_ENABLED",
+  "MFA_TOTP_DISABLED",
+  "MFA_EMAIL_ENABLED",
+  "MFA_EMAIL_DISABLED",
+  "MFA_WEBAUTHN_ADDED",
+  "MFA_WEBAUTHN_REMOVED",
+  "MFA_PASSWORDLESS_ENABLED",
+  "MFA_PASSWORDLESS_DISABLED",
+  "MFA_RECOVERY_CODES_REGENERATED",
+  "MFA_RECOVERY_CODE_USED",
+  "MFA_CHALLENGE_LOCKED",
+] as const satisfies readonly SecurityEventType[];
+export type SecurityAlertEvent = (typeof SECURITY_ALERT_EVENTS)[number];
 
 type ModerationVariant = {
   measure: string;
@@ -161,6 +178,27 @@ export interface MailCopy {
     button: string;
     eyebrow: string;
   };
+  securityAlert: {
+    subject: string;
+    heading: string;
+    events: Record<SecurityAlertEvent, string>;
+    hint: string;
+    lockedHint: string;
+    button: string;
+  };
+  accountDeleted: {
+    subject: string;
+    heading: string;
+    self: string;
+    inactive: string;
+    outro: string;
+  };
+  adminNewUser: {
+    subject: (name: string) => string;
+    heading: string;
+    intro: (name: string) => string;
+    button: string;
+  };
 }
 
 export const MAIL_COPY = {
@@ -285,6 +323,51 @@ export const MAIL_COPY = {
       foundAt: "Où elle a été trouvée :",
       hint: "Retire-la de là où elle a été publiée, y compris de l'historique du dépôt, puis crée une nouvelle clé pour tes outils. Si tu ne reconnais pas cette clé, change ton mot de passe.",
       button: "Gérer mes clés API",
+    },
+    securityAlert: {
+      subject: "Activité de sécurité sur ton compte Loomkeep",
+      heading: "Sécurité de ton compte",
+      events: {
+        MFA_TOTP_ENABLED:
+          "La double authentification par application a été activée sur ton compte.",
+        MFA_TOTP_DISABLED:
+          "La double authentification par application a été désactivée sur ton compte.",
+        MFA_EMAIL_ENABLED:
+          "La double authentification par e-mail a été activée sur ton compte.",
+        MFA_EMAIL_DISABLED:
+          "La double authentification par e-mail a été désactivée sur ton compte.",
+        MFA_WEBAUTHN_ADDED: "Une clé de sécurité a été ajoutée à ton compte.",
+        MFA_WEBAUTHN_REMOVED: "Une clé de sécurité a été retirée de ton compte.",
+        MFA_PASSWORDLESS_ENABLED:
+          "La connexion sans mot de passe a été activée sur ton compte.",
+        MFA_PASSWORDLESS_DISABLED:
+          "La connexion sans mot de passe a été désactivée sur ton compte.",
+        MFA_RECOVERY_CODES_REGENERATED:
+          "De nouveaux codes de secours ont été créés pour ton compte : les anciens ne fonctionnent plus.",
+        MFA_RECOVERY_CODE_USED:
+          "Un code de secours vient de servir à se connecter à ton compte.",
+        MFA_CHALLENGE_LOCKED:
+          "Quelqu'un a saisi ton mot de passe correctement, puis a échoué plusieurs fois au second facteur. La connexion a été bloquée.",
+      },
+      hint: "Si c'est toi, tu n'as rien à faire. Sinon, change ton mot de passe tout de suite et vérifie tes réglages de sécurité.",
+      lockedHint:
+        "Ton mot de passe est sans doute connu de quelqu'un d'autre : change-le tout de suite.",
+      button: "Voir mes réglages de sécurité",
+    },
+    accountDeleted: {
+      subject: "Ton compte Loomkeep a été supprimé",
+      heading: "Compte supprimé",
+      self: "Comme tu l'as demandé, ton compte Loomkeep et ta bibliothèque ont été supprimés.",
+      inactive:
+        "Ton compte Loomkeep n'avait pas servi depuis trois ans : comme annoncé, il a été supprimé avec ta bibliothèque.",
+      outro:
+        "Merci d'avoir utilisé Loomkeep. Tu peux recréer un compte quand tu veux.",
+    },
+    adminNewUser: {
+      subject: (name) => `Nouvelle inscription : ${name}`,
+      heading: "Nouvelle inscription",
+      intro: (name) => `${name} vient de créer un compte sur ton instance.`,
+      button: "Voir les comptes",
     },
     emailChangedOld: {
       subject: "L'email de ton compte Loomkeep a changé",
@@ -481,6 +564,51 @@ export const MAIL_COPY = {
       hint: "Remove it from where it was published, repository history included, then create a new key for your tools. If you don't recognise this key, change your password.",
       button: "Manage my API keys",
     },
+    securityAlert: {
+      subject: "Security activity on your Loomkeep account",
+      heading: "Your account's security",
+      events: {
+        MFA_TOTP_ENABLED:
+          "Two-factor authentication with an app was turned on for your account.",
+        MFA_TOTP_DISABLED:
+          "Two-factor authentication with an app was turned off for your account.",
+        MFA_EMAIL_ENABLED:
+          "Two-factor authentication by email was turned on for your account.",
+        MFA_EMAIL_DISABLED:
+          "Two-factor authentication by email was turned off for your account.",
+        MFA_WEBAUTHN_ADDED: "A security key was added to your account.",
+        MFA_WEBAUTHN_REMOVED: "A security key was removed from your account.",
+        MFA_PASSWORDLESS_ENABLED:
+          "Passwordless sign-in was turned on for your account.",
+        MFA_PASSWORDLESS_DISABLED:
+          "Passwordless sign-in was turned off for your account.",
+        MFA_RECOVERY_CODES_REGENERATED:
+          "New recovery codes were created for your account: the old ones no longer work.",
+        MFA_RECOVERY_CODE_USED:
+          "A recovery code was just used to sign in to your account.",
+        MFA_CHALLENGE_LOCKED:
+          "Someone entered your password correctly, then failed the second factor several times. The sign-in was blocked.",
+      },
+      hint: "If this was you, there's nothing to do. If not, change your password right away and check your security settings.",
+      lockedHint:
+        "Someone else probably knows your password: change it right away.",
+      button: "Open my security settings",
+    },
+    accountDeleted: {
+      subject: "Your Loomkeep account was deleted",
+      heading: "Account deleted",
+      self: "As you asked, your Loomkeep account and your library were deleted.",
+      inactive:
+        "Your Loomkeep account hadn't been used for three years: as announced, it was deleted along with your library.",
+      outro:
+        "Thanks for using Loomkeep. You can create a new account whenever you like.",
+    },
+    adminNewUser: {
+      subject: (name) => `New account: ${name}`,
+      heading: "New account",
+      intro: (name) => `${name} just signed up on your instance.`,
+      button: "See the accounts",
+    },
     emailChangedOld: {
       subject: "Your Loomkeep account email has changed",
       heading: "Email address changed",
@@ -676,6 +804,53 @@ export const MAIL_COPY = {
       foundAt: "Dove è stata trovata:",
       hint: "Rimuovila da dove è stata pubblicata, compresa la cronologia del repository, poi crea una nuova chiave per i tuoi strumenti. Se non riconosci questa chiave, cambia la password.",
       button: "Gestisci le mie chiavi API",
+    },
+    securityAlert: {
+      subject: "Attività di sicurezza sul tuo account Loomkeep",
+      heading: "La sicurezza del tuo account",
+      events: {
+        MFA_TOTP_ENABLED:
+          "L'autenticazione a due fattori tramite app è stata attivata sul tuo account.",
+        MFA_TOTP_DISABLED:
+          "L'autenticazione a due fattori tramite app è stata disattivata sul tuo account.",
+        MFA_EMAIL_ENABLED:
+          "L'autenticazione a due fattori via email è stata attivata sul tuo account.",
+        MFA_EMAIL_DISABLED:
+          "L'autenticazione a due fattori via email è stata disattivata sul tuo account.",
+        MFA_WEBAUTHN_ADDED:
+          "Una chiave di sicurezza è stata aggiunta al tuo account.",
+        MFA_WEBAUTHN_REMOVED:
+          "Una chiave di sicurezza è stata rimossa dal tuo account.",
+        MFA_PASSWORDLESS_ENABLED:
+          "L'accesso senza password è stato attivato sul tuo account.",
+        MFA_PASSWORDLESS_DISABLED:
+          "L'accesso senza password è stato disattivato sul tuo account.",
+        MFA_RECOVERY_CODES_REGENERATED:
+          "Sono stati creati nuovi codici di recupero per il tuo account: quelli vecchi non funzionano più.",
+        MFA_RECOVERY_CODE_USED:
+          "Un codice di recupero è appena servito per accedere al tuo account.",
+        MFA_CHALLENGE_LOCKED:
+          "Qualcuno ha inserito correttamente la tua password, poi ha fallito più volte il secondo fattore. L'accesso è stato bloccato.",
+      },
+      hint: "Se sei stato tu, non devi fare nulla. Altrimenti cambia subito la password e controlla le impostazioni di sicurezza.",
+      lockedHint:
+        "Probabilmente qualcun altro conosce la tua password: cambiala subito.",
+      button: "Apri le impostazioni di sicurezza",
+    },
+    accountDeleted: {
+      subject: "Il tuo account Loomkeep è stato eliminato",
+      heading: "Account eliminato",
+      self: "Come hai chiesto, il tuo account Loomkeep e la tua libreria sono stati eliminati.",
+      inactive:
+        "Il tuo account Loomkeep non veniva usato da tre anni: come annunciato, è stato eliminato insieme alla tua libreria.",
+      outro:
+        "Grazie per aver usato Loomkeep. Puoi creare un nuovo account quando vuoi.",
+    },
+    adminNewUser: {
+      subject: (name) => `Nuova iscrizione: ${name}`,
+      heading: "Nuova iscrizione",
+      intro: (name) => `${name} ha appena creato un account sulla tua istanza.`,
+      button: "Vedi gli account",
     },
     emailChangedOld: {
       subject: "L'email del tuo account Loomkeep è cambiata",

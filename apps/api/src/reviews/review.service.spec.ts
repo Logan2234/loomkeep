@@ -1,3 +1,5 @@
+import { notificationCopy } from "../notifications/notification-copy";
+import type { NotificationService } from "../notifications/notification.service";
 import type { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { vi } from "vitest";
@@ -66,6 +68,13 @@ function relation(over: Partial<ViewerRelation>): ViewerRelation {
   };
 }
 
+function stubNotifications(): NotificationService {
+  return {
+    create: vi.fn(),
+    copyFor: vi.fn(async () => notificationCopy("en")),
+  } as unknown as NotificationService;
+}
+
 function make(rows: unknown[], relations: Record<string, ViewerRelation>) {
   const prisma = {
     review: { findMany: vi.fn().mockResolvedValue(rows) },
@@ -89,6 +98,7 @@ function make(rows: unknown[], relations: Record<string, ViewerRelation>) {
     stubXp(),
     CONFIG,
     stubAchievements(),
+    stubNotifications(),
   );
 }
 
@@ -238,6 +248,7 @@ function makeForWrite(
     xp,
     CONFIG,
     achievements,
+    stubNotifications(),
   );
   return { svc, revisionCreate, upsert, xp, achievements, activity };
 }
@@ -354,6 +365,7 @@ function makeForVoting(opts: {
   reviewOwnerId: string;
   grouped?: { reviewId: string; value: string; _count: { _all: number } }[];
   existingVote?: { id: string; value: string } | null;
+  upvotes?: number;
 }) {
   const upsert = vi.fn().mockResolvedValue({ id: "vote-1" });
   const deleteMany = vi.fn().mockResolvedValue({ count: 1 });
@@ -368,10 +380,13 @@ function makeForVoting(opts: {
       findUnique,
       groupBy: vi.fn().mockResolvedValue(opts.grouped ?? []),
       findMany: vi.fn().mockResolvedValue([]),
+      count: vi.fn().mockResolvedValue(opts.upvotes ?? 1),
     },
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
   } as unknown as PrismaService;
   const xp = stubXp();
   const achievements = stubAchievements();
+  const notifications = stubNotifications();
   const svc = new ReviewService(
     prisma,
     {} as unknown as VisibilityService,
@@ -379,8 +394,9 @@ function makeForVoting(opts: {
     xp,
     CONFIG,
     achievements,
+    notifications,
   );
-  return { svc, upsert, deleteMany, xp, achievements };
+  return { svc, upsert, deleteMany, xp, achievements, notifications };
 }
 
 describe("ReviewService.vote", () => {
@@ -404,6 +420,29 @@ describe("ReviewService.vote", () => {
     });
     await downSvc.vote("voter", "r1", "DOWN" as never);
     expect(downAchievements.evaluate).not.toHaveBeenCalled();
+  });
+
+  it("tells the author once the upvotes reach the threshold", async () => {
+    const { svc, notifications } = makeForVoting({
+      reviewOwnerId: "author",
+      upvotes: 10,
+    });
+    await svc.vote("voter", "r1", "UP" as never);
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "author",
+        type: "REVIEW_VOTES",
+        body: "10 upvotes",
+        dedupeKey: "review-votes:r1:10",
+      }),
+    );
+
+    const { svc: quiet, notifications: none } = makeForVoting({
+      reviewOwnerId: "author",
+      upvotes: 11,
+    });
+    await quiet.vote("voter", "r1", "UP" as never);
+    expect(none.create).not.toHaveBeenCalled();
   });
 
   it("upserts the vote and returns the resulting score", async () => {
@@ -591,6 +630,7 @@ describe("ReviewService.adminRemove", () => {
       xp,
       CONFIG,
       stubAchievements(),
+    stubNotifications(),
     );
 
     await svc.adminRemove("rev1", tx);
@@ -621,6 +661,7 @@ describe("ReviewService.adminRemove", () => {
       xp,
       CONFIG,
       stubAchievements(),
+    stubNotifications(),
     );
 
     await expect(svc.adminRemove("rev1")).resolves.toEqual({
@@ -644,6 +685,7 @@ describe("ReviewService.adminRemove", () => {
       xp,
       CONFIG,
       stubAchievements(),
+    stubNotifications(),
     );
 
     await expect(svc.adminRemove("missing")).rejects.toThrow();
@@ -726,6 +768,7 @@ describe("ReviewService.listMine — target links", () => {
       stubXp(),
       CONFIG,
       stubAchievements(),
+    stubNotifications(),
     );
 
     const hrefs = (await svc.listMine(VIEWER)).map((r) => r.target?.href);

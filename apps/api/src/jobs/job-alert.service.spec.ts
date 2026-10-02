@@ -1,6 +1,8 @@
 import * as Sentry from "@sentry/node";
 import { vi } from "vitest";
 import type { MailService } from "../mail/mail.service";
+import { AdminAlertService } from "../notifications/admin-alert.service";
+import type { PushService } from "../notifications/push.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { JobAlertService } from "./job-alert.service";
 import { JOB_KEYS } from "./job-keys";
@@ -18,8 +20,11 @@ function make() {
   };
   const mail = { sendJobAlert: vi.fn().mockResolvedValue(undefined) };
   const service = new JobAlertService(
-    prisma as unknown as PrismaService,
     mail as unknown as MailService,
+    new AdminAlertService(
+      prisma as unknown as PrismaService,
+      { sendToUser: vi.fn() } as unknown as PushService,
+    ),
   );
   return { service, prisma, mail };
 }

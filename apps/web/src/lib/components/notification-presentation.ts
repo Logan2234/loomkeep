@@ -1,6 +1,11 @@
 import { formatNumber } from "$lib/format";
 import { m } from "$lib/paraglide/messages.js";
-import { NotificationType, type NotificationDto } from "@loomkeep/shared";
+import {
+  IMPORT_SOURCE_NAMES,
+  type ImportSource,
+  NotificationType,
+  type NotificationDto,
+} from "@loomkeep/shared";
 
 /** Localize interface wording; actor names and user-authored content stay intact. */
 export function notificationText(n: NotificationDto): {
@@ -49,6 +54,13 @@ export function notificationText(n: NotificationDto): {
       const list = typeof n.data.listTitle === "string" ? n.data.listTitle : "";
       const item =
         typeof n.data.itemTitle === "string" ? n.data.itemTitle : null;
+      const count = typeof n.data.count === "number" ? n.data.count : 1;
+      if (count > 1) {
+        return {
+          title: n.title,
+          body: m.notif_list_items_added({ count: formatNumber(count), list }),
+        };
+      }
       return {
         title: n.title,
         body: item
@@ -86,6 +98,39 @@ export function notificationText(n: NotificationDto): {
           name: typeof n.data.name === "string" ? n.data.name : "",
         }),
       };
+
+    case NotificationType.API_KEY_EXPIRING:
+      return {
+        title: m.notif_api_key_expiring_title(),
+        body: m.notif_api_key_expiring_body({
+          name: typeof n.data.name === "string" ? n.data.name : "",
+        }),
+      };
+
+    case NotificationType.IMPORT_FINISHED: {
+      const id = typeof n.data.source === "string" ? n.data.source : "";
+      const source = IMPORT_SOURCE_NAMES[id as ImportSource] ?? id;
+      return n.data.failed === true
+        ? {
+            title: m.notif_import_failed_title({ source }),
+            body: m.notif_import_failed_body(),
+          }
+        : {
+            title: m.notif_import_finished_title({ source }),
+            body: m.notif_import_finished_body(),
+          };
+    }
+
+    case NotificationType.INVITATION_ACCEPTED:
+      return { title: n.title, body: m.notif_invitation_accepted_body() };
+
+    case NotificationType.REVIEW_VOTES: {
+      const count = typeof n.data.count === "number" ? n.data.count : 0;
+      return {
+        title: m.notif_review_votes_title(),
+        body: m.notif_review_votes_body({ count: formatNumber(count) }),
+      };
+    }
 
     case NotificationType.MODERATION_ACTION:
       return {

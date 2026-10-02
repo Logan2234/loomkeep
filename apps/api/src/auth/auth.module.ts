@@ -4,6 +4,8 @@ import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { MailModule } from "../mail/mail.module";
+import { AdminAlertModule } from "../notifications/admin-alert.module";
+import { NotificationModule } from "../notifications/notification.module";
 import { SecurityModule } from "../security/security.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
@@ -25,6 +27,8 @@ import { WebauthnService } from "./webauthn.service";
     SecurityModule,
     GamificationModule,
     EventsModule,
+    NotificationModule,
+    AdminAlertModule,
   ],
   controllers: [AuthController, SessionsController, VerificationController],
   providers: [

@@ -6,6 +6,7 @@ import type { EventsGateway } from "../events/events.gateway";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "./notification.service";
+import type { PushService } from "./push.service";
 
 // Runs `fn` straight through without touching the DB, for services under test
 // that don't exercise job-recording behaviour themselves.
@@ -14,6 +15,8 @@ const jobRunsStub = {
 } as unknown as JobRunService;
 
 const eventsStub = { emitToUser: vi.fn() } as unknown as EventsGateway;
+
+const pushStub = { sendToUser: vi.fn() } as unknown as PushService;
 
 describe("NotificationService.scanAll", () => {
   const AIRED = new Date();
@@ -62,7 +65,12 @@ describe("NotificationService.scanAll", () => {
         createMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
     } as unknown as PrismaService;
-    const service = new NotificationService(prisma, jobRunsStub, eventsStub);
+    const service = new NotificationService(
+      prisma,
+      jobRunsStub,
+      eventsStub,
+      pushStub,
+    );
     return { service, prisma };
   }
 
@@ -197,7 +205,12 @@ describe("NotificationService.scan", () => {
         createMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     } as unknown as PrismaService;
-    const service = new NotificationService(prisma, jobRunsStub, eventsStub);
+    const service = new NotificationService(
+      prisma,
+      jobRunsStub,
+      eventsStub,
+      pushStub,
+    );
     return { service, prisma };
   }
 
@@ -248,7 +261,12 @@ describe("NotificationService — bell feed (read = deleted)", () => {
         deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     } as unknown as PrismaService;
-    const service = new NotificationService(prisma, jobRunsStub, eventsStub);
+    const service = new NotificationService(
+      prisma,
+      jobRunsStub,
+      eventsStub,
+      pushStub,
+    );
     return { service, prisma };
   }
 
@@ -354,9 +372,10 @@ describe("NotificationService.create — realtime push", () => {
       notification: {
         createMany: vi.fn().mockResolvedValue({ count: createManyCount }),
       },
+      user: { findUnique: vi.fn().mockResolvedValue(null) },
     } as unknown as PrismaService;
     const events = { emitToUser: vi.fn() } as unknown as EventsGateway;
-    const service = new NotificationService(prisma, jobRunsStub, events);
+    const service = new NotificationService(prisma, jobRunsStub, events, pushStub);
     return { service, events, prisma };
   }
 
@@ -407,5 +426,108 @@ describe("NotificationService.create — realtime push", () => {
     expect(events.emitToUser).not.toHaveBeenCalled();
     service.publishCreated("u1", NotificationType.REPORT_RESOLVED);
     expect(events.emitToUser).toHaveBeenCalledWith("u1", "notification");
+  });
+});
+
+describe("NotificationService push", () => {
+  function makeService(user: { locale: string; alertPrefs: unknown } | null) {
+    const prisma = {
+      notification: {
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      user: { findUnique: vi.fn().mockResolvedValue(user) },
+    } as unknown as PrismaService;
+    const push = { sendToUser: vi.fn() } as unknown as PushService;
+    const service = new NotificationService(
+      prisma,
+      jobRunsStub,
+      eventsStub,
+      push,
+    );
+    return { service, push };
+  }
+
+  const reply = {
+    userId: "u1",
+    type: NotificationType.COMMENT_REPLY,
+    title: "Alice",
+    body: "Totally agree",
+    url: "/app/media/series/42",
+  };
+
+  it("pushes a reply to someone who turned that push on, saying why", async () => {
+    const { service, push } = makeService({
+      locale: "en",
+      alertPrefs: { COMMENT_REPLY: { push: true } },
+    });
+
+    await service.create(reply);
+
+    expect(push.sendToUser).toHaveBeenCalledWith("u1", {
+      title: "Alice replied to you",
+      body: "Totally agree",
+      url: "/app/media/series/42",
+    });
+  });
+
+  it("keeps it to the bell by default", async () => {
+    const { service, push } = makeService({ locale: "en", alertPrefs: {} });
+
+    await service.create(reply);
+
+    expect(push.sendToUser).not.toHaveBeenCalled();
+  });
+
+  it("never pushes a kind that has no push", async () => {
+    const { service, push } = makeService({
+      locale: "en",
+      alertPrefs: { COMMENT_REACTIONS: { push: true } },
+    });
+
+    await service.create({
+      ...reply,
+      type: NotificationType.COMMENT_REACTIONS,
+    });
+
+    expect(push.sendToUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("NotificationService.createOrGroup", () => {
+  it("rewrites the unread entry with the new total instead of adding one", async () => {
+    const prisma = {
+      notification: {
+        findUnique: vi.fn().mockResolvedValue({ id: "n1", data: { count: 2 } }),
+        update: vi.fn(),
+        createMany: vi.fn(),
+      },
+    } as unknown as PrismaService;
+    const service = new NotificationService(
+      prisma,
+      jobRunsStub,
+      eventsStub,
+      pushStub,
+    );
+
+    await service.createOrGroup(
+      {
+        userId: "u1",
+        type: NotificationType.LIST_ITEM_ADDED,
+        title: "Bob",
+        body: "added Dune",
+        dedupeKey: "list-items:l1:bob",
+      },
+      (count) => ({ body: `added ${count} titles`, data: { listTitle: "L" } }),
+    );
+
+    expect(prisma.notification.createMany).not.toHaveBeenCalled();
+    expect(prisma.notification.update).toHaveBeenCalledWith({
+      where: { id: "n1" },
+      data: {
+        body: "added 3 titles",
+        data: { listTitle: "L", count: 3 },
+        createdAt: expect.any(Date),
+      },
+    });
   });
 });

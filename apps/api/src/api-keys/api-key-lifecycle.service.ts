@@ -1,8 +1,11 @@
+import { NotificationType } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
+import { notificationCopy } from "../notifications/notification-copy";
+import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { ApiKeyAuthService } from "./api-key-auth.service";
@@ -25,6 +28,7 @@ export class ApiKeyLifecycleService {
     private readonly security: SecurityEventService,
     private readonly auth: ApiKeyAuthService,
     private readonly jobRuns: JobRunService,
+    private readonly notifications: NotificationService,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_6AM)
@@ -62,6 +66,16 @@ export class ApiKeyLifecycleService {
 
       if (lifetime > EXPIRY_WARNING_DAYS * DAY_MS) {
         await this.mail.sendApiKeyExpiring(key.user, key.name, expiresAt);
+        const copy = notificationCopy(key.user.locale).apiKeys;
+        await this.notifications.create({
+          userId: key.userId,
+          type: NotificationType.API_KEY_EXPIRING,
+          title: copy.expiringTitle,
+          body: copy.expiringBody(key.name),
+          url: "/app/settings/integrations",
+          dedupeKey: `api-key-expiring:${key.id}`,
+          data: { name: key.name, expiresAt: expiresAt.toISOString() },
+        });
         warned++;
       }
 

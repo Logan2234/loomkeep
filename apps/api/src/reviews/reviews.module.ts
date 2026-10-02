@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { NotificationModule } from "../notifications/notification.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { ReportsModule } from "../reports/reports.module";
 import { SocialModule } from "../social/social.module";
@@ -12,7 +13,12 @@ import { ReviewService } from "./review.service";
 // ActivityService for feed emission. ReportsModule backs the "report this
 // review" endpoint.
 @Module({
-  imports: [SocialModule, GamificationModule, ReportsModule],
+  imports: [
+    SocialModule,
+    GamificationModule,
+    ReportsModule,
+    NotificationModule,
+  ],
   controllers: [ReviewController],
   providers: [ReviewService],
   exports: [ReviewService, SocialModule],

@@ -5,6 +5,8 @@ import type { MailService } from "../mail/mail.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ReportService } from "./report.service";
+import { AdminAlertService } from "../notifications/admin-alert.service";
+import type { PushService } from "../notifications/push.service";
 
 function make(
   overrides: Partial<Record<string, Partial<Record<string, Mock>>>> = {},
@@ -59,7 +61,14 @@ function make(
   } as unknown as EventsGateway;
 
   return {
-    svc: new ReportService(prisma, mail, jobRuns, notifications, events),
+    svc: new ReportService(
+      prisma,
+      mail,
+      jobRuns,
+      notifications,
+      events,
+      new AdminAlertService(prisma, { sendToUser: vi.fn() } as unknown as PushService),
+    ),
     prisma,
     mail,
     notifications,

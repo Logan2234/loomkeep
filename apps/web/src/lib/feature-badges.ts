@@ -28,6 +28,7 @@ const SHIPPED = {
   "library-views": "2026-09-28",
   "quick-add": "2026-09-29",
   integrations: "2026-10-01",
+  "alert-settings": "2026-10-02",
 };
 
 type FeatureBadgeKey = keyof typeof SHIPPED;

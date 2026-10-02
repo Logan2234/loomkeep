@@ -1,0 +1,106 @@
+---
+// Drawn from the registry the API delivers from and the settings page is
+// built on (packages/shared/src/alerts.ts), so this page can't drift from
+// what Loomkeep actually sends. A new alert fails the build until it gets a
+// label here.
+import {
+  ALERTS,
+  type AlertDefinition,
+  type AlertGroup,
+  type AlertRule,
+} from "../../../../packages/shared/src/alerts";
+
+interface Props {
+  group: AlertGroup;
+}
+
+const LABELS: Record<string, string> = {
+  COMMENT_REPLY: "A reply to your comment",
+  COMMENT_MENTION: "A mention in a comment",
+  FOLLOW_REQUEST: "A request to follow your private profile",
+  FOLLOW: "A new follower",
+  FOLLOW_ACCEPTED: "Your follow request accepted",
+  LIST_MEMBER_ADDED: "Being added as an editor of a list",
+  LIST_ITEM_ADDED: "Titles added to a list you share (grouped per editor)",
+  INVITATION_ACCEPTED: "Someone joining through your invitation",
+  IMPORT_FINISHED: "An import finished while the app was closed",
+  COMMENT_REACTIONS: "Your comment reaching 10 reactions",
+  REVIEW_VOTES: "Your review reaching 10 upvotes",
+  NEW_EPISODE: "New episodes of the shows you follow (a summary)",
+  MODERATION_ACTION: "A moderation decision about your content",
+  REPORT_RESOLVED: "A report you filed was reviewed",
+  API_KEYS_REVIEW: "Your password changed while API keys are active",
+  API_KEY_EXPIRING: "An API key expiring within a week",
+  API_KEY_LEAKED: "An API key found in public and revoked",
+  WELCOME: "Welcome, after signing up",
+  VERIFY_EMAIL: "Confirming your email address",
+  INVITATION: "An invitation to join an instance",
+  INACTIVITY_WARNING: "Your account unused for two years",
+  ACCOUNT_DELETED: "Your account deleted",
+  NEWSLETTER: "What's new in each release",
+  ADMIN_BROADCAST: "A message from the instance's administrators",
+  PASSWORD_RESET: "A password reset link",
+  PASSWORD_CHANGED: "Your password changed",
+  EMAIL_CHANGE_CODE: "A code to confirm a new email address",
+  EMAIL_CHANGED: "Your email address changed (to the old one)",
+  EMAIL_CHANGED_NEW_ADDRESS: "Your email address changed (to the new one)",
+  MFA_EMAIL_CODE: "A sign-in code by email",
+  NEW_DEVICE_LOGIN: "A sign-in from a new device",
+  SECURITY_SETTINGS_CHANGED:
+    "Two-factor authentication, a security key or passwordless sign-in turned on or off, new recovery codes",
+  RECOVERY_CODE_USED: "A recovery code used to sign in",
+  SECOND_FACTOR_LOCKED:
+    "A sign-in blocked after the right password and several wrong second factors",
+  API_KEY_CREATED: "An API key created",
+  ADMIN_REPORTS_PENDING: "Reports waiting for a decision (daily)",
+  ADMIN_JOB_FAILED: "A scheduled job failing, then working again",
+  ADMIN_QUOTA: "A catalogue reaching 80% and 100% of its daily quota",
+  ADMIN_NEW_USER: "A new account",
+};
+
+const CELL: Record<AlertRule, string> = {
+  always: "Always",
+  on: "On, can be turned off",
+  off: "Off, can be turned on",
+  cadence: "Weekly or daily, your choice",
+  "opt-in": "If you subscribe",
+};
+
+const { group } = Astro.props;
+const rows = Object.entries(ALERTS as Record<string, AlertDefinition>)
+  .filter(([, alert]) => alert.group === group)
+  .map(([key, alert]) => {
+    const label = LABELS[key];
+    if (!label) throw new Error(`AlertTable: no label for the alert ${key}`);
+    return {
+      key,
+      label,
+      bell: alert.bell ? CELL[alert.bell] : "—",
+      push: alert.push ? CELL[alert.push] : "—",
+      email: alert.email ? CELL[alert.email] : "—",
+    };
+  });
+---
+
+<table>
+  <thead>
+    <tr>
+      <th>When</th>
+      <th>Bell</th>
+      <th>Push</th>
+      <th>Email</th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      rows.map((row) => (
+        <tr>
+          <td>{row.label}</td>
+          <td>{row.bell}</td>
+          <td>{row.push}</td>
+          <td>{row.email}</td>
+        </tr>
+      ))
+    }
+  </tbody>
+</table>

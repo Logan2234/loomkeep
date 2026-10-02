@@ -1169,5 +1169,15 @@
   "notif_api_keys_review_one": "Ton mot de passe a changé, mais ta clé API reste valable.",
   "notif_api_keys_review_many": "Ton mot de passe a changé, mais tes {count} clés API restent valables.",
   "notif_api_key_leaked_title": "Clé API révoquée",
-  "notif_api_key_leaked_body": "Ta clé « {name} » a été trouvée en public sur GitHub. Elle ne fonctionne plus : crée-en une nouvelle."
+  "notif_api_key_leaked_body": "Ta clé « {name} » a été trouvée en public sur GitHub. Elle ne fonctionne plus : crée-en une nouvelle.",
+  "notif_list_items_added": "A ajouté {count} titres à « {list} »",
+  "notif_api_key_expiring_title": "Clé API bientôt expirée",
+  "notif_api_key_expiring_body": "Ta clé « {name} » expire dans moins d'une semaine.",
+  "notif_import_finished_title": "Import {source} terminé",
+  "notif_import_failed_title": "Import {source} interrompu",
+  "notif_import_finished_body": "Le résultat t'attend dans tes réglages.",
+  "notif_import_failed_body": "Il n'a pas pu aller au bout. Les détails sont dans tes réglages.",
+  "notif_invitation_accepted_body": "A rejoint Loomkeep grâce à ton invitation",
+  "notif_review_votes_title": "Ta critique est appréciée",
+  "notif_review_votes_body": "{count} votes positifs"
 }

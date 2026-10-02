@@ -3,13 +3,22 @@
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
+  import Icon from "$lib/components/Icon.svelte";
   import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import Switch from "$lib/components/Switch.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import { disablePush, enablePush, isPushSupported } from "$lib/push";
-  import { DigestCadence } from "@loomkeep/shared";
+  import {
+    disablePush,
+    enablePush,
+    isPushEnabledHere,
+    isPushSupported,
+  } from "$lib/push";
+  import { type AlertKey, DigestCadence } from "@loomkeep/shared";
+  import { onMount } from "svelte";
   import SettingRow from "../components/SettingRow.svelte";
   import SettingsSection from "../components/SettingsSection.svelte";
+  import AlertGrid from "./AlertGrid.svelte";
 
   const dailyLocked = $derived(auth.isPremiumLocked);
 
@@ -51,6 +60,10 @@
     mutate: (cadence: DigestCadence) => updateMe({ notifyEmail: cadence }),
   }));
 
+  const pushCadenceMut = createApiMutation(() => ({
+    mutate: (cadence: DigestCadence) => updateMe({ notifyPush: cadence }),
+  }));
+
   function setCadence(
     key: "notifyEmail" | "notifyPush",
     cadence: DigestCadence,
@@ -58,16 +71,19 @@
     if (!auth.user || cadence === auth.user[key]) return;
     if (cadence === DigestCadence.DAILY && dailyLocked) return;
 
-    // Push cadence also controls the live browser subscription.
-    if (key === "notifyPush") {
-      togglePushSubscription(cadence);
-      return;
-    }
-
-    emailCadenceMut.mutate(cadence);
+    if (key === "notifyPush") pushCadenceMut.mutate(cadence);
+    else emailCadenceMut.mutate(cadence);
   }
 
   const pushSupported = isPushSupported();
+
+  // Push is per device (each browser holds its own subscription), while
+  // which alerts it carries is per account: this switch only says whether
+  // *this* device receives them.
+  let pushHere = $state(false);
+  onMount(() => {
+    void isPushEnabledHere().then((enabled) => (pushHere = enabled));
+  });
 
   // "denied" (no browser permission) isn't an API failure — it's a plain
   // returned outcome, not a throw, so a genuine ApiError from
@@ -77,26 +93,25 @@
   let pushPermissionError = $state<string | null>(null);
 
   const pushMut = createApiMutation(() => ({
-    mutate: async (cadence: DigestCadence): Promise<"ok" | "denied"> => {
-      if (cadence === DigestCadence.DISABLED) {
+    mutate: async (enabled: boolean): Promise<"ok" | "denied"> => {
+      if (!enabled) {
         await disablePush();
-      } else {
-        const ok = await enablePush();
-        if (!ok) return "denied";
+        return "ok";
       }
-      await updateMe({ notifyPush: cadence });
-      return "ok";
+      return (await enablePush()) ? "ok" : "denied";
     },
-    onSuccess: (result) => {
+    onSuccess: (result, enabled) => {
       if (result === "denied") {
         pushPermissionError = m.notifications_push_error();
+        return;
       }
+      pushHere = enabled;
     },
   }));
 
-  function togglePushSubscription(cadence: DigestCadence) {
+  function togglePushHere(enabled: boolean) {
     pushPermissionError = null;
-    pushMut.mutate(cadence);
+    pushMut.mutate(enabled);
   }
 
   const newsletterMut = createApiMutation(() => ({
@@ -107,56 +122,151 @@
     if (!auth.user) return;
     newsletterMut.mutate(!auth.user.notifyNewsletter);
   }
+
+  // The third value marks a social alert: those only exist while the
+  // instance has social features on.
+  const ACTIVITY_ALERTS: [AlertKey, string, boolean][] = [
+    ["COMMENT_REPLY", m.settings_alert_comment_reply(), true],
+    ["COMMENT_MENTION", m.settings_alert_comment_mention(), true],
+    ["FOLLOW_REQUEST", m.settings_alert_follow_request(), true],
+    ["FOLLOW", m.settings_alert_follow(), true],
+    ["FOLLOW_ACCEPTED", m.settings_alert_follow_accepted(), true],
+    ["LIST_MEMBER_ADDED", m.settings_alert_list_member_added(), true],
+    ["LIST_ITEM_ADDED", m.settings_alert_list_item_added(), true],
+    ["INVITATION_ACCEPTED", m.settings_alert_invitation_accepted(), false],
+    ["IMPORT_FINISHED", m.settings_alert_import_finished(), false],
+    ["COMMENT_REACTIONS", m.settings_alert_comment_reactions(), true],
+    ["REVIEW_VOTES", m.settings_alert_review_votes(), true],
+  ];
+
+  const activityAlerts = $derived(
+    ACTIVITY_ALERTS.filter(
+      ([, , social]) => !social || appConfig.socialEnabled,
+    ).map(([key, label]) => ({
+      key,
+      label,
+      hint:
+        key === "IMPORT_FINISHED"
+          ? m.settings_alert_import_finished_hint()
+          : undefined,
+    })),
+  );
+
+  const ADMIN_ALERTS: { key: AlertKey; label: string }[] = [
+    {
+      key: "ADMIN_REPORTS_PENDING",
+      label: m.settings_alert_admin_reports_pending(),
+    },
+    { key: "ADMIN_JOB_FAILED", label: m.settings_alert_admin_job_failed() },
+    { key: "ADMIN_QUOTA", label: m.settings_alert_admin_quota() },
+    { key: "ADMIN_NEW_USER", label: m.settings_alert_admin_new_user() },
+  ];
+
+  const pushOffHint = $derived(
+    pushSupported && !pushHere
+      ? m.settings_communications_push_off_hint()
+      : null,
+  );
 </script>
 
 <SettingsSection slug="communications">
   {#if auth.user}
     {@const user = auth.user}
-    <section class="card p-5 md:p-6">
-      <div class="divide-border divide-y">
-        <SettingRow
-          anchor="timezone"
-          label={m.common_timezone()}
-          description={m.settings_communications_timezone_desc()}
-          mutation={timezoneMut}>
-          {#snippet control()}
-            <Combobox
-              label={m.common_timezone()}
-              options={TIMEZONE_OPTIONS}
-              values={[user.timezone]}
-              searchable
-              onChange={setTimezone} />
-          {/snippet}
-        </SettingRow>
+    <div class="space-y-3">
+      <section class="card p-5 md:p-6">
+        <div class="divide-border divide-y">
+          <SettingRow
+            anchor="push"
+            label={m.common_push_notifications()}
+            description={pushSupported
+              ? m.settings_communications_push_desc()
+              : m.notifications_push_unsupported()}
+            mutation={pushMut}
+            error={pushPermissionError}>
+            {#snippet control()}
+              <Switch
+                label={m.common_push_notifications()}
+                checked={pushHere}
+                disabled={!pushSupported || pushMut.loading}
+                onChange={togglePushHere} />
+            {/snippet}
+          </SettingRow>
 
-        <SettingRow
-          anchor="email-digest"
-          label={m.common_email()}
-          description={m.settings_communications_email_desc()}
-          mutation={emailCadenceMut}>
-          {#snippet control()}
-            <SegmentedControl
-              options={cadenceOptions(false)}
-              value={user.notifyEmail}
-              onChange={(v) => setCadence("notifyEmail", v)} />
-          {/snippet}
-        </SettingRow>
-        <SettingRow
-          anchor="push"
-          label={m.common_push_notifications()}
-          description={pushSupported
-            ? m.settings_communications_push_desc()
-            : m.notifications_push_unsupported()}
-          mutation={pushMut}
-          error={pushPermissionError}>
-          {#snippet control()}
-            <SegmentedControl
-              options={cadenceOptions(!pushSupported || pushMut.loading)}
-              value={user.notifyPush}
-              onChange={(v) => setCadence("notifyPush", v)} />
-          {/snippet}
-        </SettingRow>
+          <SettingRow
+            anchor="timezone"
+            label={m.common_timezone()}
+            description={m.settings_communications_timezone_desc()}
+            mutation={timezoneMut}>
+            {#snippet control()}
+              <Combobox
+                label={m.common_timezone()}
+                options={TIMEZONE_OPTIONS}
+                values={[user.timezone]}
+                searchable
+                onChange={setTimezone} />
+            {/snippet}
+          </SettingRow>
+        </div>
+      </section>
 
+      <section class="card p-5 md:p-6">
+        <p class="font-semibold">
+          {m.settings_communications_releases_title()}
+        </p>
+        <p class="text-dim mt-1 text-sm">
+          {m.settings_communications_releases_desc()}
+        </p>
+        <div class="divide-border mt-2 divide-y">
+          <SettingRow
+            anchor="email-digest"
+            label={m.common_email()}
+            description={m.settings_communications_email_desc()}
+            mutation={emailCadenceMut}>
+            {#snippet control()}
+              <SegmentedControl
+                options={cadenceOptions(false)}
+                value={user.notifyEmail}
+                onChange={(v) => setCadence("notifyEmail", v)} />
+            {/snippet}
+          </SettingRow>
+          <SettingRow
+            anchor="push-digest"
+            label={m.settings_communications_push()}
+            description={m.settings_communications_push_digest_desc()}
+            mutation={pushCadenceMut}>
+            {#snippet control()}
+              <SegmentedControl
+                options={cadenceOptions(!pushSupported)}
+                value={user.notifyPush}
+                onChange={(v) => setCadence("notifyPush", v)} />
+            {/snippet}
+          </SettingRow>
+        </div>
+      </section>
+
+      <section class="card p-5 md:p-6">
+        <AlertGrid
+          anchor="activity-alerts"
+          title={m.common_activity()}
+          description={m.settings_communications_activity_desc()}
+          alerts={activityAlerts}
+          columns={["bell", "push"]}
+          hint={pushOffHint} />
+      </section>
+
+      {#if auth.isAdmin}
+        <section class="card p-5 md:p-6">
+          <AlertGrid
+            anchor="admin-alerts"
+            title={m.settings_communications_admin_title()}
+            description={m.settings_communications_admin_desc()}
+            alerts={ADMIN_ALERTS}
+            columns={["email", "push"]}
+            hint={pushOffHint} />
+        </section>
+      {/if}
+
+      <section class="card p-5 md:p-6">
         <SettingRow
           anchor="newsletter"
           label={m.common_newsletter()}
@@ -169,7 +279,11 @@
               onChange={toggleNewsletter} />
           {/snippet}
         </SettingRow>
-      </div>
-    </section>
+        <p class="text-dim mt-3 flex items-start gap-2 text-xs">
+          <Icon name="shield" class="mt-px h-4 w-4 shrink-0" />
+          {m.settings_communications_security_note()}
+        </p>
+      </section>
+    </div>
   {/if}
 </SettingsSection>

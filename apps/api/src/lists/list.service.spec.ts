@@ -5,7 +5,6 @@ import type { AchievementService } from "../gamification/achievements/achievemen
 import type { XpService } from "../gamification/xp.service";
 import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
-import type { PushService } from "../notifications/push.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ActivityService } from "../social/activity.service";
 import type { FollowService } from "../social/follow.service";
@@ -40,12 +39,6 @@ function stubFollow(friendIds: string[] = ["friend"]): FollowService {
   } as unknown as FollowService;
 }
 
-function stubPush(): PushService {
-  return {
-    sendToUser: vi.fn().mockResolvedValue(undefined),
-  } as unknown as PushService;
-}
-
 const VIEWER = "viewer";
 
 /** SOCIAL_ENABLED="true" unless overridden — most tests exercise the social-on path. */
@@ -58,6 +51,7 @@ function fakeConfig(socialEnabled = true): ConfigService {
 function fakeNotifications(): NotificationService {
   return {
     create: vi.fn(),
+    createOrGroup: vi.fn(),
     copyFor: () => notificationCopy("fr"),
   } as unknown as NotificationService;
 }
@@ -123,7 +117,6 @@ describe("ListService.getForViewer — own-visibility gate", () => {
       stubAchievements(),
       stubEvents(),
       stubFollow(),
-      stubPush(),
     );
   }
 
@@ -242,7 +235,6 @@ describe("ListService.listForUser — editor lists on a profile", () => {
       stubAchievements(),
       stubEvents(),
       stubFollow(),
-      stubPush(),
     );
     return { svc };
   }
@@ -293,7 +285,6 @@ describe("ListService.addItem", () => {
       stubAchievements(),
       events,
       stubFollow(),
-      stubPush(),
     );
     return { svc, create, activity, events };
   }
@@ -357,9 +348,9 @@ describe("ListService.addItem notifications", () => {
         findMany: vi.fn(({ where }: { where: { id: { in: string[] } } }) =>
           Promise.resolve(
             [
-              { id: "owner", locale: "fr", notifyPush: "WEEKLY" },
-              { id: "ed2", locale: "fr", notifyPush: "WEEKLY" },
-              { id: "ed3", locale: "en", notifyPush: "DISABLED" },
+              { id: "owner", locale: "fr" },
+              { id: "ed2", locale: "fr" },
+              { id: "ed3", locale: "en" },
             ].filter((u) => where.id.in.includes(u.id)),
           ),
         ),
@@ -374,7 +365,6 @@ describe("ListService.addItem notifications", () => {
       mediaItem: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
     const notifications = fakeNotifications();
-    const push = stubPush();
     const svc = new ListService(
       prisma,
       {} as VisibilityService,
@@ -385,9 +375,8 @@ describe("ListService.addItem notifications", () => {
       stubAchievements(),
       stubEvents(),
       stubFollow(),
-      push,
     );
-    return { svc, notifications, push, prisma };
+    return { svc, notifications, prisma };
   }
 
   const add = (svc: ListService) =>
@@ -396,9 +385,9 @@ describe("ListService.addItem notifications", () => {
   type Sent = { userId: string; body: string };
 
   function sent(notifications: NotificationService): Sent[] {
-    return (notifications.create as ReturnType<typeof vi.fn>).mock.calls.map(
-      (call) => call[0] as Sent,
-    );
+    return (
+      notifications.createOrGroup as ReturnType<typeof vi.fn>
+    ).mock.calls.map((call) => call[0] as Sent);
   }
 
   function recipients(notifications: NotificationService): string[] {
@@ -427,20 +416,23 @@ describe("ListService.addItem notifications", () => {
     expect(bodies.ed3).toBe("added an item to “Top 10”");
   });
 
-  it("pushes only to those who turned push on", async () => {
-    const { svc, push } = make();
+  it("folds one editor's additions into a single entry per list", async () => {
+    const { svc, notifications } = make();
     await add(svc);
-    const pushed = (push.sendToUser as ReturnType<typeof vi.fn>).mock.calls.map(
-      (call) => call[0] as string,
-    );
-    expect(pushed.sort()).toEqual(["ed2", "owner"]);
+    const [call] = (
+      notifications.createOrGroup as ReturnType<typeof vi.fn>
+    ).mock.calls.filter((c) => (c[0] as Sent).userId === "owner");
+    expect(call[0]).toMatchObject({ dedupeKey: "list-items:l1:ed1" });
+    expect(call[1](3)).toMatchObject({
+      body: "a ajouté 3 titres à « Top 10 »",
+    });
   });
 
   it("notifies nobody while Social is off", async () => {
     const { svc, notifications } = make({ socialEnabled: false });
     // canEdit refuses an editor with Social off, so the owner adds it here.
     await svc.addItem("owner", "l1", { targetType: "MEDIA", targetId: "m1" });
-    expect(notifications.create).not.toHaveBeenCalled();
+    expect(notifications.createOrGroup).not.toHaveBeenCalled();
   });
 });
 
@@ -523,7 +515,6 @@ describe("ListService collaborative detail", () => {
       stubAchievements(),
       stubEvents(),
       stubFollow(),
-      stubPush(),
     );
   }
 
@@ -581,7 +572,6 @@ describe("ListService list mutes and member candidates", () => {
       stubAchievements(),
       stubEvents(),
       stubFollow(["a", "b"]),
-      stubPush(),
     );
     return { svc, prisma };
   }
@@ -647,7 +637,6 @@ describe("ListService.reorder", () => {
       stubAchievements(),
       events,
       stubFollow(),
-      stubPush(),
     );
     return { svc, listItemUpdate, listUpdateMany, events };
   }
@@ -729,7 +718,6 @@ describe("ListService.canEdit (via getEditable)", () => {
       stubAchievements(),
       stubEvents(),
       stubFollow(),
-      stubPush(),
     );
   }
 
@@ -802,7 +790,6 @@ describe("ListService member management — owner only", () => {
       stubAchievements(),
       events,
       stubFollow(),
-      stubPush(),
     );
     return { svc, create, notifications, events, prisma };
   }
@@ -887,7 +874,6 @@ describe("ListService.reassignOwnedListsOnAccountDeletion", () => {
       stubAchievements(),
       stubEvents(),
       stubFollow(),
-      stubPush(),
     );
     return { svc, listUpdate, listMemberDelete };
   }
@@ -944,7 +930,6 @@ describe("ListService — activity emission on create/share", () => {
       achievements,
       events,
       stubFollow(),
-      stubPush(),
     );
     return { svc, activity, achievements, events };
   }
@@ -1024,7 +1009,6 @@ describe("ListService — Figurant can't share a list", () => {
       stubAchievements(),
       stubEvents(),
       stubFollow(),
-      stubPush(),
     );
     return { svc, create, update };
   }
@@ -1071,7 +1055,6 @@ describe("ListService — XP wiring", () => {
       stubAchievements(),
       stubEvents(),
       stubFollow(),
-      stubPush(),
     );
 
     await svc.create("u1", { title: "Top 10", kind: "RANKED" as never });

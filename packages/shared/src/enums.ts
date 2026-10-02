@@ -100,6 +100,14 @@ export const NotificationType = {
   API_KEYS_REVIEW: "API_KEYS_REVIEW",
   /** A key found in public by GitHub's secret scanning was revoked. `data.name`, `data.foundAt`. */
   API_KEY_LEAKED: "API_KEY_LEAKED",
+  /** A key expires within a week. `data.name`, `data.expiresAt`. */
+  API_KEY_EXPIRING: "API_KEY_EXPIRING",
+  /** An import finished while its owner wasn't in the app. `data.source`, `data.failed`. */
+  IMPORT_FINISHED: "IMPORT_FINISHED",
+  /** Someone joined the instance through your invitation. */
+  INVITATION_ACCEPTED: "INVITATION_ACCEPTED",
+  /** Your review crossed the upvote notification threshold. `data.count`. */
+  REVIEW_VOTES: "REVIEW_VOTES",
 } as const;
 export type NotificationType =
   (typeof NotificationType)[keyof typeof NotificationType];
@@ -510,6 +518,9 @@ export const COMMENT_TEXT_MAX_LENGTH = 500;
 
 /** How many reactions on one comment trigger the aggregated notification. */
 export const COMMENT_REACTION_NOTIFY_THRESHOLD = 10;
+
+/** How many upvotes on one review trigger the aggregated notification. */
+export const REVIEW_VOTE_NOTIFY_THRESHOLD = 10;
 
 /**
  * What a report targets. COMMENT is the only kind produced today; REVIEW/USER

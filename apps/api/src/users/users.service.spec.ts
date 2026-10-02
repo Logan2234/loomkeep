@@ -805,6 +805,7 @@ describe("UsersService — deleteAccount", () => {
 
     expect(accountDeletion.deleteAccount).toHaveBeenCalledWith(
       userId,
+      "self",
       expect.any(String),
       undefined,
     );
