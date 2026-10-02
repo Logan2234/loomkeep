@@ -3,6 +3,7 @@ import { defineConfig, passthroughImageService } from "astro/config";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightLlmsTxt from "starlight-llms-txt";
 import starlightSidebarTopics from "starlight-sidebar-topics";
+import { umamiScript } from "./src/analytics.mjs";
 
 // Repeated at the bottom of every topic's sidebar.
 const MORE = {
@@ -55,6 +56,7 @@ export default defineConfig({
             crossorigin: true,
           },
         })),
+        ...(umamiScript ? [{ tag: "script", attrs: umamiScript }] : []),
       ],
       customCss: ["./src/styles/seance.css"],
       // English only for now; a `fr` entry is all another language needs.
