@@ -14,8 +14,9 @@ its URL:
 | Activity (Atom)        | Your activity feed, when the instance has social features on | Any feed reader                                  |
 
 Find them in **Settings › Integrations**, or from the calendar page and your
-profile. They belong to Loomkeep's premium edition; every account has them
-while premium isn't offered.
+profile; [Calendar & feeds](/guide/calendar-and-feeds/) shows how to add them
+to each app. They belong to Loomkeep's premium edition; every account has
+them while premium isn't offered.
 
 ## Keeping them private
 

@@ -49,12 +49,14 @@ see [Catalogue keys](/self-hosting/catalogues/).
 
 ## Security and logs
 
-| Variable                                            | What it is                                                                                                         |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Optional bot protection on sign-up: see [Domain & HTTPS](/self-hosting/https/#bot-protection-on-sign-up-optional). |
-| `LOG_LEVEL`                                         | `fatal`, `error`, `warn`, `info` (default), `debug`, `trace` or `silent`.                                          |
-| `IMAGE_TAG`                                         | Pins the images to a release instead of `latest`: see [Upgrades](/self-hosting/upgrades-and-backups/).             |
+| Variable                                            | What it is                                                                                                   |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Optional bot protection on sign-up: see [Behind Cloudflare](/self-hosting/cloudflare/#turnstile-on-sign-up). |
+| `LOG_LEVEL`                                         | `fatal`, `error`, `warn`, `info` (default), `debug`, `trace` or `silent`.                                    |
+| `IMAGE_TAG`                                         | Pins the images to a release instead of `latest`: see [Upgrades](/self-hosting/upgrades-and-backups/).       |
 
+:::tip
 Empty optional variables simply turn their feature off: an import without
 its key is greyed out, email without SMTP is skipped, and so on. Nothing
 else breaks.
+:::

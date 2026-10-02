@@ -4,7 +4,7 @@
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 #
 # Point the domain's A/AAAA record at the VPS and open ports 80+443 first
-# (see README "Public hosting (VPS)").
+# (see https://docs.loomkeep.app/self-hosting/https/).
 services:
   web:
     ports: !reset []

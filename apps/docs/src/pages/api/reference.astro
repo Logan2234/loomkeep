@@ -1,32 +1,6 @@
 ---
 import "../../styles/fonts.css";
 import { ScalarComponent } from "@scalar/astro";
-
-// Snippet languages offered: curl, JavaScript and Node fetch, Python
-// requests, Go and PHP Guzzle. Everything else is hidden.
-const hiddenClients = {
-  c: true,
-  clojure: true,
-  csharp: true,
-  dart: true,
-  fsharp: true,
-  http: true,
-  java: true,
-  js: ["axios", "jquery", "ofetch", "xhr"],
-  julia: true,
-  kotlin: true,
-  node: ["axios", "ofetch", "undici"],
-  objc: true,
-  ocaml: true,
-  php: ["curl", "laravel"],
-  powershell: true,
-  python: ["python3", "aiohttp", "httpx_sync", "httpx_async"],
-  r: true,
-  ruby: true,
-  rust: true,
-  shell: ["httpie", "wget"],
-  swift: true,
-};
 ---
 
 <!doctype html>
@@ -164,7 +138,6 @@ const hiddenClients = {
         orderSchemaPropertiesBy: "preserve",
         orderRequiredPropertiesFirst: true,
         defaultHttpClient: { targetKey: "shell", clientKey: "curl" },
-        hiddenClients,
         documentDownloadType: "json",
         hideDarkModeToggle: true,
         favicon: "/favicon.svg",

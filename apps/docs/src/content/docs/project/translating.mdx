@@ -3,6 +3,8 @@ title: Translating
 description: Improve a translation or add a new language to Loomkeep, through a pull request.
 ---
 
+import { Steps } from "@astrojs/starlight/components";
+
 Loomkeep's interface is written in English first, then translated: French
 and Italian today. Translations come in through pull requests on GitHub.
 Read [Contributing](/project/contributing/) first for the setup and the
@@ -27,6 +29,8 @@ English and translate the missing ones.
 
 ## Adding a language
 
+<Steps>
+
 1. **Translate the catalogs**: copy `apps/web/messages/en/` to
    `apps/web/messages/<code>/` and translate the values.
 2. **Declare the language** in two lists, which a test keeps equal:
@@ -38,6 +42,8 @@ English and translate the missing ones.
    `COPY_LOCALES` in `apps/api/src/common/copy-locale.util.ts`, and the
    compiler lists every table missing it. Without this step, emails and
    notifications in that language arrive in English.
+
+</Steps>
 
 The language then shows up in every language picker, in its own name.
 

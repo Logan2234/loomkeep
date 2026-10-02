@@ -19,7 +19,7 @@ export const PROVIDER_DAILY_QUOTAS = {
   steam: 100_000,
   // Limited to 1,000 requests/day.
   simkl: 1000,
-  // https://www.brevo.com free plan: 300 emails/day (see README "Email").
+  // https://www.brevo.com free plan: 300 emails/day.
   smtp: 300,
 } as const;
 

@@ -3,6 +3,8 @@ title: Rate limits
 description: How many requests an account can make, how to tell where you stand, and how to stay well within it.
 ---
 
+import { TabItem, Tabs } from "@astrojs/starlight/components";
+
 ## The budget
 
 Each account has a budget of requests per minute, **shared by all its keys**:
@@ -24,6 +26,52 @@ Every response says how much is left:
 
 Past the limit, the API answers `429` with the code `api.rate_limited` and a
 `Retry-After` header, in seconds. The hourly export answers the same way.
+
+## Handling a 429
+
+Wait as long as `Retry-After` says, then try once more:
+
+<Tabs syncKey="language">
+  <TabItem label="JavaScript">
+    ```js
+    async function loomkeep(path) {
+      const url = `https://loomkeep.app/api/v1${path}`;
+      const headers = { Authorization: `Bearer ${process.env.LOOMKEEP_API_KEY}` };
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const res = await fetch(url, { headers });
+        if (res.status !== 429) {
+          if (!res.ok) throw new Error((await res.json()).code);
+          return res.json();
+        }
+        const seconds = Number(res.headers.get("Retry-After") ?? 60);
+        await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+      }
+      throw new Error("api.rate_limited");
+    }
+    ```
+  </TabItem>
+  <TabItem label="Python">
+    ```python
+    import os
+    import time
+
+    import requests
+
+    def loomkeep(path):
+        url = f"https://loomkeep.app/api/v1{path}"
+        headers = {"Authorization": f"Bearer {os.environ['LOOMKEEP_API_KEY']}"}
+
+        for _ in range(3):
+            res = requests.get(url, headers=headers)
+            if res.status_code != 429:
+                res.raise_for_status()
+                return res.json()
+            time.sleep(int(res.headers.get("Retry-After", 60)))
+        raise RuntimeError("api.rate_limited")
+    ```
+  </TabItem>
+</Tabs>
 
 ## Staying well within it
 

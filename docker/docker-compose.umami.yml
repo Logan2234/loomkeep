@@ -1,6 +1,7 @@
 # Umami: lightweight, self-hosted, cookie-less analytics for the public
-# landing page — see root README "Analytics" and docker/README.md § "Access
-# control per public subdomain" / § "Shared Postgres for add-ons". NOT
+# landing page — setup: https://docs.loomkeep.app/self-hosting/optional-services/analytics/
+# See also docker/README.md § "Access control per public subdomain" and
+# § "Shared Postgres for add-ons". NOT
 # covered by the app's own pg_dump-based backup job — accepted since
 # analytics data is low-stakes and re-collectable.
 #

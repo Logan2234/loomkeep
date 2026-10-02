@@ -3,14 +3,16 @@ title: Self-hosting
 description: What running your own Loomkeep instance takes, and what you are responsible for.
 ---
 
+import { Steps } from "@astrojs/starlight/components";
+
 Loomkeep is open source (AGPL-3.0): you can run your own instance, for
 yourself, your family or anyone, with your data in your own database. It is
 the same code as loomkeep.app.
 
 ## What you need
 
-- **A machine running Docker** with Docker Compose v2: a home server, a NAS,
-  or a small VPS.
+- **An x86-64 machine running Docker** with Docker Compose v2: a home
+  server, a NAS, or a small VPS. ARM isn't supported yet.
 - **A TMDB API token**, free, for films and series. The other catalogues are
   optional or need no key: see [Catalogue keys](/self-hosting/catalogues/).
 - **For phones**: a domain name and HTTPS. Installing the app on a phone and
@@ -18,7 +20,8 @@ the same code as loomkeep.app.
   [Domain & HTTPS](/self-hosting/https/).
 
 Email (password resets, alerts) and push notifications are optional:
-everything else works without them.
+everything else works without them. Memory, disk and supported machines are
+in [Requirements](/self-hosting/requirements/).
 
 ## How it is packaged
 
@@ -31,11 +34,12 @@ and more, each switched on by adding one file to a list.
 ## Your responsibility
 
 Opening your instance to other people makes you responsible for their data:
-under the GDPR, you are its data controller. Loomkeep's own legal notices
-and privacy policy only cover loomkeep.app. You need your own; the privacy
-policy's section on self-hosted instances is a starting point to adapt.
+under the GDPR, you are its data controller. Before giving anyone an
+account, read [Opening it to others](/self-hosting/opening-up/).
 
 ## Where to start
+
+<Steps>
 
 1. [Install](/self-hosting/installation/) Loomkeep and create your account.
 2. Add your [catalogue keys](/self-hosting/catalogues/), then
@@ -44,3 +48,5 @@ policy's section on self-hosted instances is a starting point to adapt.
    phone, will use it.
 4. Choose what's open in [instance settings](/self-hosting/instance-settings/),
    and set up [backups](/self-hosting/upgrades-and-backups/).
+
+</Steps>

@@ -151,8 +151,9 @@ const COLOR_TEXT = "#17181C";
 const COLOR_ACCENT = "#A56A15";
 const COLOR_MUTED = "#8A8880";
 
-// Umami Link slugs (see root README "Analytics") — fixed naming, created
-// once in the Umami dashboard, not per-deployment config. "Voir" (new
+// Umami Link slugs (see UMAMI_LINKS_BASE_URL in .env.example) — fixed
+// naming, created once in the Umami dashboard, not per-deployment config.
+// "Voir" (new
 // episode) and "Se désinscrire" (newsletter) have no slug here: both carry a
 // per-notification/per-recipient value in their destination, and a Link is
 // always one fixed URL.

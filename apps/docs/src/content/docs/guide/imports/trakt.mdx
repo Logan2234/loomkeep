@@ -5,13 +5,19 @@ sidebar:
   order: 2
 ---
 
+import { Steps } from "@astrojs/starlight/components";
+
 **What comes in:** your watch history, films and series, and your
 watchlist.
+
+<Steps>
 
 1. On Trakt, open [Settings › Data](https://trakt.tv/settings/data) and
    export your data. The export is free, unlike Trakt's API.
 2. In Loomkeep, open **Settings › Import › Trakt** and drop the `.zip`.
 3. Review and import: see [how an import works](/guide/imports/#how-an-import-works).
+
+</Steps>
 
 Trakt's export carries each title's TMDB, TVDB and IMDb ids, so most titles
 match exactly.

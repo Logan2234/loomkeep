@@ -46,9 +46,9 @@ pnpm generate
 pnpm dev        # api on :3000, web on :5173
 ```
 
-Full self-hosting instructions (Docker, add-ons, SSO...) are in the
-[README](README.md) — that setup is for _running_ Loomkeep, this one is for
-_working on it_.
+Full self-hosting instructions (Docker, add-ons, SSO...) are on
+[docs.loomkeep.app](https://docs.loomkeep.app/self-hosting/) — that setup is
+for _running_ Loomkeep, this one is for _working on it_.
 
 ## Making a change
 

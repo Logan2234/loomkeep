@@ -40,13 +40,4 @@ agreement lets the project ship their code under both licenses above.
 ## Catalogue data
 
 Titles, covers and details come from catalogues with licenses of their own,
-which stay in force:
-
-| Catalogue                                  | Terms                                               |
-| ------------------------------------------ | --------------------------------------------------- |
-| [TMDB](https://www.themoviedb.org)         | TMDB's terms of use                                 |
-| [AniList](https://anilist.co)              | AniList's terms of use                              |
-| [IGDB](https://www.igdb.com)               | IGDB's terms of use                                 |
-| [Open Library](https://openlibrary.org)    | Catalogue data under CC0                            |
-| [MusicBrainz](https://musicbrainz.org)     | Core data under CC0, the rest under CC BY-NC-SA 3.0 |
-| [OMDb](https://www.omdbapi.com) (optional) | CC BY-NC 4.0                                        |
+which stay in force: see [Data sources & credits](/project/credits/).

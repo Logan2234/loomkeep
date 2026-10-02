@@ -41,7 +41,7 @@ jobs:
             # glitchtip, ...) is NOT hardcoded here — it comes from COMPOSE_FILE
             # in the VPS's own .env (Compose reads that automatically). Adding a
             # new optional add-on later means editing .env on the VPS, not this
-            # workflow. See .env.example / README "Self-hosting" for the format.
+            # workflow. See COMPOSE_FILE in .env.example for the format.
             #
             # IMAGE_TAG pins docker-compose.yml's api/web `image:` to the
             # exact images the CI docker-push job built and pushed to GHCR

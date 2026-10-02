@@ -2,7 +2,8 @@
  * The site-wide news banner, driven by the `NEWS_BANNER` Unleash flag: the
  * flag switches it on and off (a kill switch, like every other live flag), and
  * the JSON payload of its variant says what to show, where and when. The
- * operator guide is in docker/README.md ("News banner").
+ * operator guide is at
+ * https://docs.loomkeep.app/self-hosting/optional-services/feature-flags/#the-news-banner.
  *
  * `key` picks one of the translated templates below, whose `data` only fills
  * in its values, so the banner stays in the reader's language. The one

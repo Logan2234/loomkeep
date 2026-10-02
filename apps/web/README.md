@@ -3,7 +3,7 @@
 SvelteKit PWA front-end for Loomkeep — talks to `@loomkeep/api` over HTTP,
 ships no server-side logic of its own beyond serving the app
 (`export const ssr = false`, see below). For the project as a whole (what
-Loomkeep is, self-hosting, Docker), see the [root README](../../README.md).
+Loomkeep is, self-hosting, Docker), see [docs.loomkeep.app](https://docs.loomkeep.app).
 For day-to-day dev conventions shared with the API, see the root
 [CLAUDE.md](../../CLAUDE.md).
 
@@ -17,11 +17,9 @@ For day-to-day dev conventions shared with the API, see the root
 - **PWA**: `@vite-pwa/sveltekit` with a custom service worker (`src/sw.ts`,
   `injectManifest` strategy) so Web Push `push` events can be handled
   alongside offline app-shell precaching.
-- **`@tanstack/svelte-query`** for data fetching/caching where a mutation
-  needs to invalidate data shown in more than one component (see
-  `CommentThread.svelte` for the reference usage) — most of the app still
-  calls the `src/lib/api/*` request wrappers directly from a component's own
-  `$effect`/`$state`.
+- **`@tanstack/svelte-query`** for every API call, through the
+  `createApiQuery`/`createApiMutation`/`createApiInfiniteQuery` helpers in
+  `src/lib/api/` (see the root CLAUDE.md).
 - **`@loomkeep/shared`** (workspace package) for DTOs/enums shared with the
   API — consumed from its built `dist/`, so `pnpm build:package` at the repo
   root after editing it.
@@ -54,28 +52,18 @@ src/
 
 ## Commands
 
+Setting up the whole repository is in the
+[contributing guide](https://docs.loomkeep.app/project/contributing/). This package's own:
+
 ```sh
-pnpm --filter @loomkeep/web dev        # dev server on :5173 (run `pnpm dev` at
-                                        # the repo root to start api + web together)
-pnpm --filter @loomkeep/web build      # production build (adapter-node output)
-pnpm --filter @loomkeep/web preview    # serve the production build locally
-pnpm --filter @loomkeep/web check      # svelte-check — type errors in .svelte files
-pnpm --filter @loomkeep/web lint       # eslint (formatting is a lint rule, see root CLAUDE.md)
-pnpm --filter @loomkeep/web lint:fix   # eslint --fix
-pnpm --filter @loomkeep/web clean      # removes build/
-pnpm --filter @loomkeep/web clean:dev  # clean + removes node_modules and .svelte-kit
+pnpm --filter @loomkeep/web exec vitest --project unit        # plain *.spec.ts, in Node
+pnpm --filter @loomkeep/web exec vitest --project component   # *.svelte.spec.ts, in happy-dom
+pnpm --filter @loomkeep/web generate:paraglide                # after editing messages/
+pnpm --filter @loomkeep/web generate:api-types                # after the API's OpenAPI document changes
 ```
-
-There is currently no automated test suite for this app (no `*.spec.ts`
-under `src/`) — `check` (type-checking) and `lint` are the only gates;
-end-to-end coverage lives in `@loomkeep/api`'s `test:e2e`, which drives the
-API directly rather than through the UI.
-
-(`prepare` — `svelte-kit sync` — runs automatically on `pnpm install`; no
-need to call it directly.)
 
 ## Environment
 
-`PUBLIC_API_URL` and `PUBLIC_GLITCHTIP_WEB_DSN` (optional, error reporting)
-are the only env vars this app reads, both via `$env/dynamic/public`. See
-the root `.env.example` for the full list used across the Docker stack.
+`PUBLIC_API_URL` and the optional `PUBLIC_*` keys (GlitchTip, Umami,
+Turnstile, Unleash, Simkl…) are read through `$env/dynamic/public`, at server start:
+see [Configuration](https://docs.loomkeep.app/self-hosting/configuration/).
