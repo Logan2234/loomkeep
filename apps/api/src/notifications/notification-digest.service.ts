@@ -7,10 +7,10 @@ import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { type DigestPeriod, notificationCopy } from "./notification-copy";
 import { PushService } from "./push.service";
 
 type Channel = "email" | "push";
-type Period = "daily" | "weekly";
 
 interface DigestItem {
   title: string;
@@ -18,42 +18,13 @@ interface DigestItem {
   url: string;
 }
 
-/**
- * DRAFT WORDING — needs Logan's sign-off before any real send goes out (see
- * the notification-digest feature plan). One random pick per send so the
- * same user doesn't see the exact same sentence every day.
- */
-const PUSH_VARIANTS: Record<
-  "one" | "two" | "many",
-  ((period: Period, items: DigestItem[]) => string)[]
-> = {
-  one: [
-    (period, items) => `${items[0].title} sort ${periodLabel(period)} !`,
-    (period, items) =>
-      `Ça y est, ${items[0].title} est de retour ${periodLabel(period)}.`,
-  ],
-  two: [
-    (period, items) =>
-      `${items[0].title} et ${items[1].title} sortent ${periodLabel(period)}`,
-    (period, items) =>
-      `Double sortie ${periodLabel(period)} : ${items[0].title} et ${items[1].title}`,
-  ],
-  many: [
-    (period, items) =>
-      `${items.length} sorties t'attendent ${periodLabel(period)}`,
-    (period, items) =>
-      `${items[0].title}, ${items[1].title} et ${items.length - 2} autre(s) sortent ${periodLabel(period)}`,
-  ],
-};
-
-function periodLabel(period: Period): string {
-  return period === "daily" ? "aujourd'hui" : "cette semaine";
-}
-
-function pushBody(period: Period, items: DigestItem[]): string {
-  const tier = items.length === 1 ? "one" : items.length === 2 ? "two" : "many";
-  const variants = PUSH_VARIANTS[tier];
-  return variants[Math.floor(Math.random() * variants.length)](period, items);
+/** Varied so the same user doesn't read the same sentence at every send. */
+function pushBody(locale: string, period: DigestPeriod, items: DigestItem[]) {
+  const variants = notificationCopy(locale).episodeDigestPush(
+    period,
+    items.map((item) => item.title),
+  );
+  return variants[Math.floor(Math.random() * variants.length)];
 }
 
 /**
@@ -197,7 +168,7 @@ export class NotificationDigestService {
       body: n.body ?? "",
       url: n.url ?? "/app/calendar",
     }));
-    const period: Period =
+    const period: DigestPeriod =
       effective === DigestCadence.DAILY ? "daily" : "weekly";
 
     if (channel === "email") {
@@ -209,7 +180,7 @@ export class NotificationDigestService {
     } else {
       await this.push.sendToUser(user.id, {
         title: "Loomkeep",
-        body: pushBody(period, items),
+        body: pushBody(user.locale, period, items),
         url: items.length === 1 ? items[0].url : "/app/calendar",
       });
     }
