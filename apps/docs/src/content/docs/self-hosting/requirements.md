@@ -16,19 +16,19 @@ Each [optional service](/self-hosting/optional-services/) adds its own
 containers on top; monitoring, with Grafana, Loki and Prometheus, is by far
 the heaviest.
 
-## Architecture: x86-64 only, for now
+## Architecture
 
-The images are built for **x86-64** (`amd64`) only. That covers most VPSs,
-mini PCs, Unraid servers, and NAS models with an Intel or AMD processor:
-check yours in its specifications.
+The images are built for **x86-64** (`amd64`) and **64-bit ARM** (`arm64`);
+Docker pulls the right one on its own. That covers VPSs and ARM cloud
+servers, mini PCs, NAS models, Apple Silicon Macs, and a Raspberry Pi 4 or 5
+running a 64-bit system.
 
-**ARM machines aren't supported yet**: Raspberry Pi, ARM-based NAS models,
-ARM cloud servers. Docker Desktop on an Apple Silicon Mac runs the images
-through emulation, which works for trying Loomkeep but is slower.
+32-bit ARM (`armv7`, older Raspberry Pis or a 32-bit system) isn't
+supported.
 
 ## Systems
 
-Anything that runs Docker Compose on x86-64 works the same way: a Linux
+Anything that runs Docker Compose works the same way: a Linux
 server, a NAS with a Docker app, or Docker Desktop on Windows and macOS for
 a try. The [installation](/self-hosting/installation/) needs a shell on it,
 to clone the repository and run two commands.
