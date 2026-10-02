@@ -33,6 +33,26 @@ export type ImportSource =
   | "spotify"
   | "boardgamegeek";
 
+/** Each source's own name, for text the API writes (a finished-import alert). */
+export const IMPORT_SOURCE_NAMES: Record<ImportSource, string> = {
+  tvtime: "TV Time",
+  trakt: "Trakt",
+  letterboxd: "Letterboxd",
+  myanimelist: "MyAnimeList",
+  simkl: "Simkl",
+  kitsu: "Kitsu",
+  steam: "Steam",
+  backloggd: "Backloggd",
+  storygraph: "The StoryGraph",
+  goodreads: "Goodreads",
+  babelio: "Babelio",
+  librarything: "LibraryThing",
+  bookwyrm: "Bookwyrm",
+  opml: "OPML",
+  spotify: "Spotify",
+  boardgamegeek: "BoardGameGeek",
+};
+
 /** A catalogue title a source item resolved to (auto or via manual search). */
 export interface ImportMatch {
   /** Catalogue source enum value (TMDB / ANILIST / OPEN_LIBRARY / IGDB). */

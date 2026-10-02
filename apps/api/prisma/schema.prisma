@@ -489,6 +489,9 @@ model User {
   // Opt-in to the release newsletter (sent automatically when a changelog
   // entry is published on Quackback — see NewsletterService) — separate
   // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
+  // Per-alert channel choices that differ from the default, keyed like
+  // ALERTS in packages/shared/src/alerts.ts: { COMMENT_REPLY: { push: true } }.
+  alertPrefs                    Json               @default("{}")
   notifyNewsletter              Boolean            @default(false)
   // Proof-of-consent timestamp (GDPR art. 7(1)): set the moment
   // notifyNewsletter flips false → true, left untouched afterwards — including

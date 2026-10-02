@@ -1,13 +1,17 @@
 import { DOCS_URL } from "$lib/constants/external-links";
 import { m } from "$lib/paraglide/messages";
 import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
-import { Domain, type ImportSource } from "@loomkeep/shared";
+import {
+  Domain,
+  IMPORT_SOURCE_NAMES,
+  type ImportSource,
+} from "@loomkeep/shared";
 
 export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
   {
     tvtime: {
       domain: Domain.MEDIA,
-      label: "TV Time",
+      label: IMPORT_SOURCE_NAMES.tvtime,
       description: m.import_source_tvtime_description(),
       href: "/app/settings/import/tvtime",
       input: { type: "zip", accept: ".zip" },
@@ -16,7 +20,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     },
     trakt: {
       domain: Domain.MEDIA,
-      label: "Trakt",
+      label: IMPORT_SOURCE_NAMES.trakt,
       description: m.import_source_trakt_description(),
       href: "/app/settings/import/trakt",
       input: { type: "zip", accept: ".zip" },
@@ -25,12 +29,12 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     },
     letterboxd: {
       domain: Domain.MEDIA,
-      label: "Letterboxd",
+      label: IMPORT_SOURCE_NAMES.letterboxd,
       description: m.import_source_letterboxd_description() as string,
     } as ImportSourceDescriptor,
     myanimelist: {
       domain: Domain.MEDIA,
-      label: "MyAnimeList",
+      label: IMPORT_SOURCE_NAMES.myanimelist,
       description: m.import_source_myanimelist_description(),
       href: "/app/settings/import/myanimelist",
       input: { type: "xml", accept: ".xml,application/xml,text/xml" },
@@ -40,7 +44,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     },
     simkl: {
       domain: Domain.MEDIA,
-      label: "Simkl",
+      label: IMPORT_SOURCE_NAMES.simkl,
       description: m.import_source_simkl_description(),
       href: "/app/settings/import/simkl",
       input: { type: "oauth" },
@@ -48,12 +52,12 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     },
     kitsu: {
       domain: Domain.MEDIA,
-      label: "Kitsu",
+      label: IMPORT_SOURCE_NAMES.kitsu,
       description: m.import_source_anime_description() as string,
     } as ImportSourceDescriptor,
     steam: {
       domain: Domain.GAMES,
-      label: "Steam",
+      label: IMPORT_SOURCE_NAMES.steam,
       description: m.import_source_steam_description(),
       href: "/app/settings/import/steam",
       input: {
@@ -65,12 +69,12 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     },
     backloggd: {
       domain: Domain.GAMES,
-      label: "Backloggd",
+      label: IMPORT_SOURCE_NAMES.backloggd,
       description: m.import_source_backloggd_description() as string,
     } as ImportSourceDescriptor,
     storygraph: {
       domain: Domain.BOOKS,
-      label: "The StoryGraph",
+      label: IMPORT_SOURCE_NAMES.storygraph,
       description: m.import_source_books_csv_description(),
       href: "/app/settings/import/storygraph",
       input: { type: "csv", accept: ".csv,text/csv" },
@@ -79,7 +83,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     },
     goodreads: {
       domain: Domain.BOOKS,
-      label: "Goodreads",
+      label: IMPORT_SOURCE_NAMES.goodreads,
       description: m.import_source_books_csv_description(),
       href: "/app/settings/import/goodreads",
       input: { type: "csv", accept: ".csv,text/csv" },
@@ -88,7 +92,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     },
     babelio: {
       domain: Domain.BOOKS,
-      label: "Babelio",
+      label: IMPORT_SOURCE_NAMES.babelio,
       description: m.import_source_books_csv_description(),
       href: "/app/settings/import/babelio",
       input: {
@@ -102,27 +106,27 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     },
     librarything: {
       domain: Domain.BOOKS,
-      label: "LibraryThing",
+      label: IMPORT_SOURCE_NAMES.librarything,
       description: m.import_source_books_description() as string,
     } as ImportSourceDescriptor,
     bookwyrm: {
       domain: Domain.BOOKS,
-      label: "Bookwyrm",
+      label: IMPORT_SOURCE_NAMES.bookwyrm,
       description: m.import_source_books_description() as string,
     } as ImportSourceDescriptor,
     opml: {
       domain: Domain.PODCASTS,
-      label: "OPML",
+      label: IMPORT_SOURCE_NAMES.opml,
       description: m.import_source_opml_description() as string,
     } as ImportSourceDescriptor,
     spotify: {
       domain: Domain.PODCASTS,
-      label: "Spotify",
+      label: IMPORT_SOURCE_NAMES.spotify,
       description: m.import_source_spotify_description() as string,
     } as ImportSourceDescriptor,
     boardgamegeek: {
       domain: Domain.BOARDGAMES,
-      label: "BoardGameGeek",
+      label: IMPORT_SOURCE_NAMES.boardgamegeek,
       description: m.import_source_boardgamegeek_description() as string,
     } as ImportSourceDescriptor,
   };

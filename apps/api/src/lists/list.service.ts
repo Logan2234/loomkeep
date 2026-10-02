@@ -14,7 +14,7 @@ import {
   type UserSummaryDto,
   XpReason,
 } from "@loomkeep/shared";
-import { HttpStatus, Injectable, Logger } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
@@ -24,7 +24,6 @@ import { ACHIEVEMENT_KEYS_ON_LIST_CREATED } from "../gamification/achievements/r
 import { XpService } from "../gamification/xp.service";
 import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
-import { PushService } from "../notifications/push.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { FollowService } from "../social/follow.service";
@@ -78,10 +77,7 @@ export class ListService {
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
     private readonly follow: FollowService,
-    private readonly push: PushService,
   ) {}
-
-  private readonly logger = new Logger(ListService.name);
 
   private toDto(row: ListRow, author: UserSummaryDto): ListDto {
     return {
@@ -461,9 +457,8 @@ export class ListService {
 
   /**
    * Tells the list's other collaborators — the owner and every editor, minus
-   * whoever added it and whoever muted the list — in the app and by push.
-   * Push only reaches those who turned it on: switching it off in the
-   * communications settings also unsubscribes their devices.
+   * whoever added it and whoever muted the list. Whether it's pushed too is
+   * each one's LIST_ITEM_ADDED setting (see NotificationService).
    */
   private async notifyItemAdded(
     list: ListRow,
@@ -488,43 +483,38 @@ export class ListService {
     const muted = new Set(mutes.map((m) => m.userId));
     const recipients = await this.prisma.user.findMany({
       where: { id: { in: others.filter((id) => !muted.has(id)) } },
-      select: { id: true, locale: true, notifyPush: true },
+      select: { id: true, locale: true },
     });
     if (recipients.length === 0) return;
 
     const actor = await this.author(actorId);
     const itemTitle = item.target?.title ?? null;
     const url = `/app/lists/${list.id}`;
+    const actorData = {
+      actorUsername: actor.username,
+      actorDisplayName: actor.displayName,
+      listTitle: list.title,
+    };
 
+    // One unread entry per editor and list: a busy editor adding twenty
+    // titles shows up once, as "added 20 titles", not twenty times.
     for (const recipient of recipients) {
-      const body = notificationCopy(recipient.locale).listItemAdded(
-        itemTitle,
-        list.title,
-      );
-      await this.notifications.create({
-        userId: recipient.id,
-        type: NotificationType.LIST_ITEM_ADDED,
-        title: actor.displayName,
-        body,
-        url,
-        dedupeKey: `list-item:${item.id}:${recipient.id}`,
-        data: {
-          actorUsername: actor.username,
-          actorDisplayName: actor.displayName,
-          listTitle: list.title,
-          itemTitle,
+      const copy = notificationCopy(recipient.locale);
+      await this.notifications.createOrGroup(
+        {
+          userId: recipient.id,
+          type: NotificationType.LIST_ITEM_ADDED,
+          title: actor.displayName,
+          body: copy.listItemAdded(itemTitle, list.title),
+          url,
+          dedupeKey: `list-items:${list.id}:${actorId}`,
+          data: { ...actorData, itemTitle },
         },
-      });
-
-      if (recipient.notifyPush !== "DISABLED") {
-        // Not awaited: the item is saved, and a slow or failing push service
-        // must not hold up or fail the editor's request.
-        this.push
-          .sendToUser(recipient.id, { title: actor.displayName, body, url })
-          .catch((err: unknown) =>
-            this.logger.error(`List push failed for ${recipient.id}`, err),
-          );
-      }
+        (count) => ({
+          body: copy.listItemsAdded(count, list.title),
+          data: actorData,
+        }),
+      );
     }
   }
 

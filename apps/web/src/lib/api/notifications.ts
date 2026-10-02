@@ -17,6 +17,10 @@ export const markNotificationRead = (id: string): Promise<void> =>
 export const getPushPublicKey = () =>
   typedRequest("/notifications/push/public-key", { withAuth: false });
 
+/** How many of the account's devices receive push. */
+export const getPushDeviceCount = () =>
+  typedRequest("/notifications/push/devices/count");
+
 export const subscribePush = (
   body: PushSubscriptionRequestDto,
 ): Promise<void> =>

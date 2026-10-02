@@ -5,6 +5,7 @@ import { EntitlementModule } from "../entitlements/entitlement.module";
 import { EventsModule } from "../events/events.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
+import { NotificationModule } from "../notifications/notification.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
 import { ImportJobService } from "./import-job.service";
@@ -38,6 +39,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     EntitlementModule,
     GamificationModule,
     EventsModule,
+    NotificationModule,
   ],
   controllers: [ImportController],
   providers: [

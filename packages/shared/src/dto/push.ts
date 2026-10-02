@@ -10,3 +10,8 @@ export interface PushSubscriptionRequestDto {
 export interface PushPublicKeyDto {
   publicKey: string;
 }
+
+/** How many devices of the account receive push (Settings › Communications). */
+export interface PushDeviceCountDto {
+  count: number;
+}

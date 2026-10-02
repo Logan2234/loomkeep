@@ -336,6 +336,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(userRoom(userId)).emit(event, payload);
   }
 
+  /** Whether the account has the app open somewhere right now. */
+  async isOnline(userId: string): Promise<boolean> {
+    const sockets = await this.server.in(userRoom(userId)).fetchSockets();
+    return sockets.length > 0;
+  }
+
   emitReportsCount(): void {
     this.server.to(ADMIN_REPORTS_ROOM).emit(RealtimeEvent.REPORTS_COUNT);
   }

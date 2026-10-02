@@ -1,0 +1,73 @@
+---
+title: Notifications
+description: What Loomkeep tells you about, and whether it does so in the app, by push or by email.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+import AlertTable from "../../../components/AlertTable.astro";
+
+Loomkeep reaches you three ways:
+
+- **The bell**, in the app. Opening an entry, or clearing them all, removes
+  it.
+- **Push**, on your phone or computer, even with the app closed. It is
+  turned on per device, in **Settings › Communications**.
+- **Email**, for what must reach you wherever you are, starting with
+  anything about your account's security.
+
+What goes where is chosen in **Settings › Communications**. The tables below
+list every alert, generated from the same list the app sends from.
+
+<Aside title="Push on a phone">
+  On iPhone and iPad, push only works once Loomkeep is [installed on the home
+  screen](/guide/install/). On every device, push has to be turned on in each
+  browser or installed app you use.
+</Aside>
+
+## Activity
+
+What someone else did that concerns you. Everything lands in the bell, and
+you choose what also comes as a push. On a new account those pushes start off;
+accounts created before October 2026 had them all turned on.
+
+<AlertTable group="activity" />
+
+Reactions and upvotes stay in the bell: a count going up isn't worth a
+notification on your phone.
+
+## New episodes
+
+New episodes aren't in the bell: the calendar and **Up next** already show
+them. Instead, a summary of what came out goes by email, by push, or both,
+weekly (Monday morning) or daily (in the evening, a premium feature to come).
+
+<AlertTable group="releases" />
+
+## Your account
+
+<AlertTable group="account" />
+
+## Security
+
+Security alerts always go by email, which someone using your session can't
+dismiss the way a bell entry is cleared. If you receive one for something you
+didn't do, change your password and check **Settings › Security**.
+
+<AlertTable group="security" />
+
+## Announcements
+
+<AlertTable group="announcements" />
+
+## Administrators
+
+Only an instance's administrators receive these. Email starts on and push
+off; both can be switched in **Settings › Communications**.
+
+<AlertTable group="admin" />
+
+## On a self-hosted instance
+
+Email and push depend on how the instance is set up: without an SMTP server,
+no email goes out, and without push keys, no push. The bell always works. See
+[Email and push](/self-hosting/email-and-push/).

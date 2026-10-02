@@ -24,6 +24,7 @@ export type IconName =
   | "bell"
   | "bell-off"
   | "monitor"
+  | "smartphone"
   | "plus"
   | "minus"
   | "trash"

@@ -8,8 +8,14 @@ import type {
   WebauthnLoginOptionsResponseDto,
   WebauthnMfaOptionsResponseDto,
 } from "@loomkeep/shared";
-import { deviceLabel, ErrorCode, LEGAL_VERSION } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import {
+  type AlertPrefs,
+  deviceLabel,
+  ErrorCode,
+  LEGAL_VERSION,
+  NotificationType,
+} from "@loomkeep/shared";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { Prisma, type User } from "@prisma/client";
@@ -28,8 +34,11 @@ import { normalizeEmail } from "../common/email.util";
 import { HibpService } from "../common/hibp.service";
 import { EventsGateway } from "../events/events.gateway";
 import { MailService } from "../mail/mail.service";
+import { AdminAlertService } from "../notifications/admin-alert.service";
+import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
+import { isSocialEnabled } from "../social/social.config";
 import { avatarUrl } from "../users/avatar.util";
 import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
 import type { JwtPayload } from "./decorators/current-user.decorator";
@@ -79,6 +88,8 @@ type LoginResult =
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -93,6 +104,8 @@ export class AuthService {
     private readonly events: EventsGateway,
     private readonly invitations: InvitationService,
     private readonly apiKeys: ApiKeysService,
+    private readonly notifications: NotificationService,
+    private readonly adminAlerts: AdminAlertService,
   ) {}
 
   async register(
@@ -212,12 +225,52 @@ export class AuthService {
     });
     // Seed this device so it isn't flagged as "new" on the user's next login.
     await this.recordDevice(user.id, userAgent);
+    await this.announceArrival(user, invitation?.createdById ?? null);
 
     const promoted = await this.ensureAdminRole(user);
     return {
       user: toUserDto(promoted),
       tokens: await this.startSession(promoted, userAgent),
     };
+  }
+
+  /**
+   * Tells whoever sent the invitation, and the administrators, that someone
+   * joined. Best-effort: the account exists either way.
+   */
+  private async announceArrival(
+    user: User,
+    inviterId: string | null,
+  ): Promise<void> {
+    try {
+      if (inviterId) {
+        const copy = await this.notifications.copyFor(inviterId);
+        await this.notifications.create({
+          userId: inviterId,
+          type: NotificationType.INVITATION_ACCEPTED,
+          title: user.displayName,
+          body: copy.invitationAccepted,
+          url: isSocialEnabled(this.configService)
+            ? `/app/u/${user.username}`
+            : null,
+          dedupeKey: `invitation-accepted:${user.id}`,
+          data: {
+            actorUsername: user.username,
+            actorDisplayName: user.displayName,
+          },
+        });
+      }
+
+      await this.adminAlerts.notify("ADMIN_NEW_USER", {
+        email: (admin) => this.mail.sendAdminNewUser(admin, user.displayName),
+        push: (copy) => ({
+          ...copy.adminAlerts.newUser(user.displayName),
+          url: "/app/admin/users",
+        }),
+      });
+    } catch (err) {
+      this.logger.error(`Arrival alerts failed for ${user.id}`, err);
+    }
   }
 
   /** Consumes an email-verification link. Informational only — nothing is gated on it. */
@@ -1079,6 +1132,7 @@ export function toUserDto(user: User): UserDto {
     notifyEmail: user.notifyEmail as UserDto["notifyEmail"],
     notifyPush: user.notifyPush as UserDto["notifyPush"],
     notifyNewsletter: user.notifyNewsletter,
+    alertPrefs: user.alertPrefs as AlertPrefs,
     timezone: user.timezone,
     emailVerified: user.emailVerified,
     role: user.role,

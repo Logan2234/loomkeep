@@ -45,19 +45,69 @@ const COPY = {
     /** Default name for a security key enrolled without one. */
     securityKey: "Clé de sécurité",
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
-      const when = period === "daily" ? "aujourd'hui" : "cette semaine";
-      const [a, b] = titles;
-      if (titles.length === 1)
-        return [`${a} sort ${when} !`, `Ça y est, ${a} est de retour ${when}.`];
-      if (titles.length === 2)
+      const when = period === "daily" ? "aujourd'hui" : "ces 7 derniers jours";
+      const shows = [...new Set(titles)];
+      const [a, b] = shows;
+      if (shows.length === 1)
+        return titles.length === 1
+          ? [
+              `Nouvel épisode de ${a}, sorti ${when}.`,
+              `${a} est de retour : un épisode est sorti ${when}.`,
+            ]
+          : [`${titles.length} nouveaux épisodes de ${a}, sortis ${when}.`];
+      if (shows.length === 2)
         return [
-          `${a} et ${b} sortent ${when}`,
-          `Double sortie ${when} : ${a} et ${b}`,
+          `Nouveaux épisodes ${when} : ${a} et ${b}.`,
+          `Double sortie ${when} : ${a} et ${b}.`,
         ];
+      const others = shows.length - 2;
       return [
-        `${titles.length} sorties t'attendent ${when}`,
-        `${a}, ${b} et ${titles.length - 2} autre(s) sortent ${when}`,
+        `${titles.length} épisodes sont sortis ${when}.`,
+        `Nouveaux épisodes ${when} : ${a}, ${b} et ${others === 1 ? "une autre série" : `${others} autres séries`}.`,
       ];
+    },
+    pushTitle: {
+      commentReply: (actor: string) => `${actor} t'a répondu`,
+      commentMention: (actor: string) => `${actor} t'a mentionné`,
+    },
+    listItemsAdded: (count: number, listTitle: string) =>
+      `a ajouté ${count} titres à « ${listTitle} »`,
+    invitationAccepted: "a rejoint Loomkeep grâce à ton invitation",
+    reviewVotes: {
+      title: "Ta critique est appréciée",
+      body: (count: number) => `${count} votes positifs`,
+    },
+    importFinished: {
+      title: (source: string) => `Import ${source} terminé`,
+      failedTitle: (source: string) => `Import ${source} interrompu`,
+      body: "Le résultat t'attend dans tes réglages.",
+      failedBody:
+        "Il n'a pas pu aller au bout. Les détails sont dans tes réglages.",
+    },
+    adminAlerts: {
+      reportsPending: (count: number) => ({
+        title: "Signalements en attente",
+        body:
+          count === 1
+            ? "1 signalement attend une décision."
+            : `${count} signalements attendent une décision.`,
+      }),
+      jobFailed: (job: string) => ({
+        title: "Tâche planifiée en échec",
+        body: `« ${job} » a échoué.`,
+      }),
+      jobRecovered: (job: string) => ({
+        title: "Tâche planifiée rétablie",
+        body: `« ${job} » fonctionne de nouveau.`,
+      }),
+      quota: (provider: string, percent: number) => ({
+        title: "Quota d'un catalogue",
+        body: `${provider} a atteint ${percent} % de son quota du jour.`,
+      }),
+      newUser: (name: string) => ({
+        title: "Nouvelle inscription",
+        body: `${name} vient de créer un compte.`,
+      }),
     },
     apiKeys: {
       reviewTitle: "Vérifie tes clés API",
@@ -65,6 +115,9 @@ const COPY = {
         count === 1
           ? "Ton mot de passe a changé, mais ta clé API reste valable."
           : `Ton mot de passe a changé, mais tes ${count} clés API restent valables.`,
+      expiringTitle: "Clé API bientôt expirée",
+      expiringBody: (name: string) =>
+        `Ta clé « ${name} » expire dans moins d'une semaine.`,
       leakedTitle: "Clé API révoquée",
       leakedBody: (name: string) =>
         `Ta clé « ${name} » a été trouvée en public sur GitHub. Elle ne fonctionne plus : crée-en une nouvelle.`,
@@ -100,19 +153,68 @@ const COPY = {
     },
     securityKey: "Security key",
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
-      const when = period === "daily" ? "today" : "this week";
-      const [a, b] = titles;
-      if (titles.length === 1)
-        return [`${a} is out ${when}!`, `There it is: ${a} is back ${when}.`];
-      if (titles.length === 2)
+      const when = period === "daily" ? "today" : "in the last 7 days";
+      const shows = [...new Set(titles)];
+      const [a, b] = shows;
+      if (shows.length === 1)
+        return titles.length === 1
+          ? [
+              `New episode of ${a}, out ${when}.`,
+              `${a} is back: a new episode came out ${when}.`,
+            ]
+          : [`${titles.length} new episodes of ${a}, out ${when}.`];
+      if (shows.length === 2)
         return [
-          `${a} and ${b} are out ${when}`,
-          `Double release ${when}: ${a} and ${b}`,
+          `New episodes ${when}: ${a} and ${b}.`,
+          `Double release ${when}: ${a} and ${b}.`,
         ];
+      const others = shows.length - 2;
       return [
-        `${titles.length} releases are waiting for you ${when}`,
-        `${a}, ${b} and ${titles.length - 2} more are out ${when}`,
+        `${titles.length} episodes came out ${when}.`,
+        `New episodes ${when}: ${a}, ${b} and ${others === 1 ? "one other show" : `${others} other shows`}.`,
       ];
+    },
+    pushTitle: {
+      commentReply: (actor: string) => `${actor} replied to you`,
+      commentMention: (actor: string) => `${actor} mentioned you`,
+    },
+    listItemsAdded: (count: number, listTitle: string) =>
+      `added ${count} titles to “${listTitle}”`,
+    invitationAccepted: "joined Loomkeep through your invitation",
+    reviewVotes: {
+      title: "People like your review",
+      body: (count: number) => `${count} upvotes`,
+    },
+    importFinished: {
+      title: (source: string) => `${source} import finished`,
+      failedTitle: (source: string) => `${source} import stopped`,
+      body: "The result is waiting in your settings.",
+      failedBody: "It couldn't finish. The details are in your settings.",
+    },
+    adminAlerts: {
+      reportsPending: (count: number) => ({
+        title: "Reports waiting",
+        body:
+          count === 1
+            ? "1 report is waiting for a decision."
+            : `${count} reports are waiting for a decision.`,
+      }),
+      jobFailed: (job: string) => ({
+        title: "Scheduled job failing",
+        body: `“${job}” failed.`,
+      }),
+      jobRecovered: (job: string) => ({
+        title: "Scheduled job back",
+        body: `“${job}” works again.`,
+      }),
+      quota: (provider: string, percent: number) => ({
+        title: "Catalogue quota",
+        body: `${provider} reached ${percent}% of today's quota.`,
+      }),
+      newUser: (name: string) => ({
+        title: "New account",
+        body: `${name} just signed up.`,
+      }),
     },
     apiKeys: {
       reviewTitle: "Check your API keys",
@@ -120,6 +222,9 @@ const COPY = {
         count === 1
           ? "Your password changed, but your API key stays valid."
           : `Your password changed, but your ${count} API keys stay valid.`,
+      expiringTitle: "API key expiring soon",
+      expiringBody: (name: string) =>
+        `Your key "${name}" expires in less than a week.`,
       leakedTitle: "API key revoked",
       leakedBody: (name: string) =>
         `Your key "${name}" was found in public on GitHub. It no longer works: create a new one.`,
@@ -157,19 +262,69 @@ const COPY = {
     },
     securityKey: "Chiave di sicurezza",
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
-      const when = period === "daily" ? "oggi" : "questa settimana";
-      const [a, b] = titles;
-      if (titles.length === 1)
-        return [`${a} esce ${when}!`, `Ci siamo: ${a} torna ${when}.`];
-      if (titles.length === 2)
+      const when = period === "daily" ? "oggi" : "negli ultimi 7 giorni";
+      const shows = [...new Set(titles)];
+      const [a, b] = shows;
+      if (shows.length === 1)
+        return titles.length === 1
+          ? [
+              `Nuovo episodio di ${a}, uscito ${when}.`,
+              `Torna ${a}: un nuovo episodio è uscito ${when}.`,
+            ]
+          : [`${titles.length} nuovi episodi di ${a}, usciti ${when}.`];
+      if (shows.length === 2)
         return [
-          `${a} e ${b} escono ${when}`,
-          `Doppia uscita ${when}: ${a} e ${b}`,
+          `Nuovi episodi ${when}: ${a} e ${b}.`,
+          `Doppia uscita ${when}: ${a} e ${b}.`,
         ];
+      const others = shows.length - 2;
       return [
-        `${titles.length} uscite ti aspettano ${when}`,
-        `${a}, ${b} e altri ${titles.length - 2} escono ${when}`,
+        `${titles.length} episodi sono usciti ${when}.`,
+        `Nuovi episodi ${when}: ${a}, ${b} e ${others === 1 ? "un'altra serie" : `altre ${others} serie`}.`,
       ];
+    },
+    pushTitle: {
+      commentReply: (actor: string) => `${actor} ti ha risposto`,
+      commentMention: (actor: string) => `${actor} ti ha menzionato`,
+    },
+    listItemsAdded: (count: number, listTitle: string) =>
+      `ha aggiunto ${count} titoli a “${listTitle}”`,
+    invitationAccepted: "si è unito a Loomkeep grazie al tuo invito",
+    reviewVotes: {
+      title: "La tua recensione piace",
+      body: (count: number) => `${count} voti positivi`,
+    },
+    importFinished: {
+      title: (source: string) => `Importazione ${source} completata`,
+      failedTitle: (source: string) => `Importazione ${source} interrotta`,
+      body: "Il risultato ti aspetta nelle impostazioni.",
+      failedBody:
+        "Non è riuscita ad arrivare in fondo. I dettagli sono nelle impostazioni.",
+    },
+    adminAlerts: {
+      reportsPending: (count: number) => ({
+        title: "Segnalazioni in attesa",
+        body:
+          count === 1
+            ? "1 segnalazione attende una decisione."
+            : `${count} segnalazioni attendono una decisione.`,
+      }),
+      jobFailed: (job: string) => ({
+        title: "Attività pianificata non riuscita",
+        body: `“${job}” non è riuscita.`,
+      }),
+      jobRecovered: (job: string) => ({
+        title: "Attività pianificata ripristinata",
+        body: `“${job}” funziona di nuovo.`,
+      }),
+      quota: (provider: string, percent: number) => ({
+        title: "Quota di un catalogo",
+        body: `${provider} ha raggiunto il ${percent}% della quota giornaliera.`,
+      }),
+      newUser: (name: string) => ({
+        title: "Nuova iscrizione",
+        body: `${name} ha appena creato un account.`,
+      }),
     },
     apiKeys: {
       reviewTitle: "Controlla le tue chiavi API",
@@ -177,6 +332,9 @@ const COPY = {
         count === 1
           ? "La tua password è cambiata, ma la tua chiave API resta valida."
           : `La tua password è cambiata, ma le tue ${count} chiavi API restano valide.`,
+      expiringTitle: "Chiave API in scadenza",
+      expiringBody: (name: string) =>
+        `La tua chiave «${name}» scade tra meno di una settimana.`,
       leakedTitle: "Chiave API revocata",
       leakedBody: (name: string) =>
         `La tua chiave «${name}» è stata trovata in pubblico su GitHub. Non funziona più: creane una nuova.`,
@@ -185,6 +343,11 @@ const COPY = {
 } satisfies Record<CopyLocale, NotificationCopy>;
 
 export type DigestPeriod = "daily" | "weekly";
+
+interface PushText {
+  title: string;
+  body: string;
+}
 
 export interface NotificationCopy {
   adminTestPush: string;
@@ -200,11 +363,36 @@ export interface NotificationCopy {
     other: string;
   };
   securityKey: string;
-  /** The digest push's possible bodies; the service picks one at random. */
+  /**
+   * The digest push's possible bodies, one picked at random. `titles` holds
+   * one entry per episode, so a show with several appears several times.
+   */
   episodeDigestPush: (period: DigestPeriod, titles: string[]) => string[];
+  pushTitle: {
+    commentReply: (actor: string) => string;
+    commentMention: (actor: string) => string;
+  };
+  listItemsAdded: (count: number, listTitle: string) => string;
+  invitationAccepted: string;
+  reviewVotes: { title: string; body: (count: number) => string };
+  importFinished: {
+    title: (source: string) => string;
+    failedTitle: (source: string) => string;
+    body: string;
+    failedBody: string;
+  };
+  adminAlerts: {
+    reportsPending: (count: number) => PushText;
+    jobFailed: (job: string) => PushText;
+    jobRecovered: (job: string) => PushText;
+    quota: (provider: string, percent: number) => PushText;
+    newUser: (name: string) => PushText;
+  };
   apiKeys: {
     reviewTitle: string;
     reviewBody: (count: number) => string;
+    expiringTitle: string;
+    expiringBody: (name: string) => string;
     leakedTitle: string;
     leakedBody: (name: string) => string;
   };

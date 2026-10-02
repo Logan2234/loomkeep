@@ -124,6 +124,7 @@ export default defineConfig({
                     { label: "Key concepts", link: "/guide/" },
                     "guide/install",
                     "guide/calendar-and-feeds",
+                    "guide/notifications",
                     "guide/security",
                     "guide/your-data",
                     "guide/free-and-premium",

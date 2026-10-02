@@ -193,4 +193,29 @@ describe("API keys review notification", () => {
       m.notif_api_keys_review_many({ count: "3" }),
     );
   });
+
+  it("speaks of several titles once an editor's additions are grouped", () => {
+    const added = {
+      ...notification("LIST_ITEM_ADDED", "a ajouté 4 titres à « Top »"),
+      data: { listTitle: "Top", count: 4 },
+    };
+
+    expect(notificationText(added).body).toBe(
+      m.notif_list_items_added({ count: "4", list: "Top" }),
+    );
+  });
+
+  it("names the import's source and whether it went through", () => {
+    const finished = (failed: boolean) => ({
+      ...notification("IMPORT_FINISHED", null, "Import TV Time terminé"),
+      data: { source: "tvtime", failed },
+    });
+
+    expect(notificationText(finished(false)).title).toBe(
+      m.notif_import_finished_title({ source: "TV Time" }),
+    );
+    expect(notificationText(finished(true)).title).toBe(
+      m.notif_import_failed_title({ source: "TV Time" }),
+    );
+  });
 });

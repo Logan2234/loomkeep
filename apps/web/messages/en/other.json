@@ -1169,5 +1169,15 @@
   "notif_api_keys_review_one": "Your password changed, but your API key stays valid.",
   "notif_api_keys_review_many": "Your password changed, but your {count} API keys stay valid.",
   "notif_api_key_leaked_title": "API key revoked",
-  "notif_api_key_leaked_body": "Your key \"{name}\" was found in public on GitHub. It no longer works: create a new one."
+  "notif_api_key_leaked_body": "Your key \"{name}\" was found in public on GitHub. It no longer works: create a new one.",
+  "notif_list_items_added": "Added {count} titles to “{list}”",
+  "notif_api_key_expiring_title": "API key expiring soon",
+  "notif_api_key_expiring_body": "Your key \"{name}\" expires in less than a week.",
+  "notif_import_finished_title": "{source} import finished",
+  "notif_import_failed_title": "{source} import stopped",
+  "notif_import_finished_body": "The result is waiting in your settings.",
+  "notif_import_failed_body": "It couldn't finish. The details are in your settings.",
+  "notif_invitation_accepted_body": "Joined Loomkeep through your invitation",
+  "notif_review_votes_title": "People like your review",
+  "notif_review_votes_body": "{count} upvotes"
 }

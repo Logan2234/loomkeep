@@ -11,7 +11,13 @@ import type {
   ImportSource,
   PagedResult,
 } from "@loomkeep/shared";
-import { Domain, ErrorCode, XpReason } from "@loomkeep/shared";
+import {
+  Domain,
+  ErrorCode,
+  IMPORT_SOURCE_NAMES,
+  NotificationType,
+  XpReason,
+} from "@loomkeep/shared";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
@@ -21,6 +27,8 @@ import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_IMPORT_COMPLETED } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
+import { notificationCopy } from "../notifications/notification-copy";
+import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   IMPORT_SOURCES,
@@ -72,6 +80,7 @@ export class ImportJobService {
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
+    private readonly notifications: NotificationService,
   ) {
     this.sources = new Map(sources.map((s) => [s.id, s]));
   }
@@ -502,6 +511,39 @@ export class ImportJobService {
       // Unthrottled: the final status change is rare (once per job) and the
       // client needs it precisely, unlike the tick stream above.
       this.emitProgress(job);
+    }
+
+    if (job.kind === "commit") await this.notifyIfAway(job);
+  }
+
+  /**
+   * A long import keeps running after its owner closes the app: they get a
+   * bell entry (and a push, if they want one) to come back to. Someone still
+   * in the app sees the wizard finish and needs neither.
+   */
+  private async notifyIfAway(job: JobRecord): Promise<void> {
+    try {
+      if (await this.events.isOnline(job.userId)) return;
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: job.userId },
+        select: { locale: true },
+      });
+      const copy = notificationCopy(user?.locale).importFinished;
+      const source = IMPORT_SOURCE_NAMES[job.sourceId];
+      const failed = job.status === "failed";
+
+      await this.notifications.create({
+        userId: job.userId,
+        type: NotificationType.IMPORT_FINISHED,
+        title: failed ? copy.failedTitle(source) : copy.title(source),
+        body: failed ? copy.failedBody : copy.body,
+        url: "/app/settings/import",
+        dedupeKey: `import:${job.id}`,
+        data: { source: job.sourceId, failed },
+      });
+    } catch (err) {
+      this.logger.error(`Import notification failed for job ${job.id}`, err);
     }
   }
 

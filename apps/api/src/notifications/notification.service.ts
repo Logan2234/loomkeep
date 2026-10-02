@@ -1,10 +1,13 @@
 import {
+  type AlertPrefs,
   DigestCadence,
   ErrorCode,
   type MediaType,
   type NotificationDto,
   type NotificationFeedDto,
   NotificationType,
+  isAlertEnabled,
+  isAlertToggleable,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
@@ -15,11 +18,12 @@ import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
-import { notificationCopy } from "./notification-copy";
+import { type NotificationCopy, notificationCopy } from "./notification-copy";
 import {
   type NewEpisodeNotification,
   selectNewEpisodeNotifications,
 } from "./notification.util";
+import { PushService } from "./push.service";
 
 /** How far back a scan looks, so following an old show never floods the feed. */
 const WINDOW_DAYS = 14;
@@ -59,6 +63,7 @@ export class NotificationService {
     private readonly prisma: PrismaService,
     private readonly jobRuns: JobRunService,
     private readonly events: EventsGateway,
+    private readonly push: PushService,
   ) {}
 
   /**
@@ -371,6 +376,70 @@ export class NotificationService {
   async create(input: CreateNotificationInput): Promise<void> {
     if (await this.createInTransaction(this.prisma, input)) {
       this.publishCreated(input.userId, input.type);
+      await this.pushIfWanted(input);
+    }
+  }
+
+  /**
+   * Like {@link create}, but folds into the recipient's unread row with the
+   * same `dedupeKey` rather than adding another: `regroup` rewrites it for
+   * the new total, and the row moves back to the top. Only the first one
+   * pushes.
+   */
+  async createOrGroup(
+    input: CreateNotificationInput & { dedupeKey: string },
+    regroup: (count: number) => Pick<CreateNotificationInput, "body" | "data">,
+  ): Promise<void> {
+    const existing = await this.prisma.notification.findUnique({
+      where: {
+        userId_dedupeKey: { userId: input.userId, dedupeKey: input.dedupeKey },
+      },
+      select: { id: true, data: true },
+    });
+
+    if (!existing) return this.create(input);
+
+    const previous = (existing.data ?? {}) as Record<string, unknown>;
+    const count = (typeof previous.count === "number" ? previous.count : 1) + 1;
+    const { body, data } = regroup(count);
+
+    await this.prisma.notification.update({
+      where: { id: existing.id },
+      data: {
+        body: body ?? null,
+        data: { ...(data ?? {}), count } as Prisma.InputJsonValue,
+        createdAt: new Date(),
+      },
+    });
+    this.publishCreated(input.userId, input.type);
+  }
+
+  /** Pushes a new bell entry too, when the recipient chose to for its kind. */
+  private async pushIfWanted(input: CreateNotificationInput): Promise<void> {
+    if (!isAlertToggleable(input.type, "push")) return;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: input.userId },
+      select: { locale: true, alertPrefs: true },
+    });
+
+    if (
+      !user ||
+      !isAlertEnabled(user.alertPrefs as AlertPrefs, input.type, "push")
+    ) {
+      return;
+    }
+
+    try {
+      await this.push.sendToUser(input.userId, {
+        title: pushTitle(input, notificationCopy(user.locale)),
+        body: input.body ?? "",
+        url: input.url ?? "/app",
+      });
+    } catch (err) {
+      // The bell entry is saved: a push service failing mustn't fail the
+      // action that caused it.
+      this.logger.error(`Push failed for ${input.userId}`, err);
     }
   }
 
@@ -447,6 +516,21 @@ export class NotificationService {
         ErrorCode.NotificationNotFound,
       );
     }
+  }
+}
+
+/** A comment's bell entry is titled with its author alone: the push says why. */
+function pushTitle(
+  input: CreateNotificationInput,
+  copy: NotificationCopy,
+): string {
+  switch (input.type) {
+    case NotificationType.COMMENT_REPLY:
+      return copy.pushTitle.commentReply(input.title);
+    case NotificationType.COMMENT_MENTION:
+      return copy.pushTitle.commentMention(input.title);
+    default:
+      return input.title;
   }
 }
 

@@ -165,7 +165,33 @@ describe("NotificationDigestService.runDigests", () => {
 
     expect(push.sendToUser).toHaveBeenCalledWith(
       "u1",
-      expect.objectContaining({ body: "Severance is out today!" }),
+      expect.objectContaining({ body: "New episode of Severance, out today." }),
+    );
+
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it("names each show once and speaks of the past week on Monday", async () => {
+    const monday9amParis = new Date("2026-08-24T07:00:00.000Z");
+    vi.useFakeTimers().setSystemTime(monday9amParis);
+    vi.spyOn(Math, "random").mockReturnValue(0);
+
+    const { service, push } = makeService({
+      notifyEmail: DigestCadence.DISABLED,
+      notifyPush: DigestCadence.WEEKLY,
+      pending: [
+        pendingRow,
+        { ...pendingRow, id: "n2", dedupeKey: "episode:ep2" },
+      ],
+    });
+    await service.runDigests();
+
+    expect(push.sendToUser).toHaveBeenCalledWith(
+      "u1",
+      expect.objectContaining({
+        body: "2 new episodes of Severance, out in the last 7 days.",
+      }),
     );
 
     vi.restoreAllMocks();

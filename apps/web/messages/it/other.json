@@ -1169,5 +1169,15 @@
   "notif_api_keys_review_one": "La tua password è cambiata, ma la tua chiave API resta valida.",
   "notif_api_keys_review_many": "La tua password è cambiata, ma le tue {count} chiavi API restano valide.",
   "notif_api_key_leaked_title": "Chiave API revocata",
-  "notif_api_key_leaked_body": "La tua chiave «{name}» è stata trovata in pubblico su GitHub. Non funziona più: creane una nuova."
+  "notif_api_key_leaked_body": "La tua chiave «{name}» è stata trovata in pubblico su GitHub. Non funziona più: creane una nuova.",
+  "notif_list_items_added": "Ha aggiunto {count} titoli a “{list}”",
+  "notif_api_key_expiring_title": "Chiave API in scadenza",
+  "notif_api_key_expiring_body": "La tua chiave «{name}» scade tra meno di una settimana.",
+  "notif_import_finished_title": "Importazione {source} completata",
+  "notif_import_failed_title": "Importazione {source} interrotta",
+  "notif_import_finished_body": "Il risultato ti aspetta nelle impostazioni.",
+  "notif_import_failed_body": "Non è riuscita ad arrivare in fondo. I dettagli sono nelle impostazioni.",
+  "notif_invitation_accepted_body": "Si è unito a Loomkeep grazie al tuo invito",
+  "notif_review_votes_title": "La tua recensione piace",
+  "notif_review_votes_body": "{count} voti positivi"
 }

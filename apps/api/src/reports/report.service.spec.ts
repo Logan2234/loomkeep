@@ -2,7 +2,9 @@ import { type Mock, vi } from "vitest";
 import type { EventsGateway } from "../events/events.gateway";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { MailService } from "../mail/mail.service";
+import { AdminAlertService } from "../notifications/admin-alert.service";
 import type { NotificationService } from "../notifications/notification.service";
+import type { PushService } from "../notifications/push.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ReportService } from "./report.service";
 
@@ -59,7 +61,16 @@ function make(
   } as unknown as EventsGateway;
 
   return {
-    svc: new ReportService(prisma, mail, jobRuns, notifications, events),
+    svc: new ReportService(
+      prisma,
+      mail,
+      jobRuns,
+      notifications,
+      events,
+      new AdminAlertService(prisma, {
+        sendToUser: vi.fn(),
+      } as unknown as PushService),
+    ),
     prisma,
     mail,
     notifications,

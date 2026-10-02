@@ -509,9 +509,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         slug: "communications",
         label: m.settings_section_communications(),
         icon: "bell",
-        description: m.settings_communications_email_desc(),
-        keywords: ["notifications", "emails", "alertes"],
-        newBadgeKey: "notification-digest",
+        description: m.settings_communications_description(),
+        keywords: ["notifications", "emails", "alertes", "cloche", "push"],
+        newBadgeKey: "alert-settings",
         legacyHash: "communications",
         entries: [
           {
@@ -527,7 +527,22 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           {
             id: "push",
             label: m.common_push_notifications(),
-            keywords: ["push", "alerte", "notification"],
+            keywords: ["push", "alerte", "notification", "appareil"],
+          },
+          {
+            id: "push-digest",
+            label: m.settings_communications_releases_title(),
+            keywords: ["push", "episodes", "sorties", "digest"],
+          },
+          {
+            id: "activity-alerts",
+            label: m.common_activity(),
+            keywords: ["reponses", "mentions", "abonnes", "listes", "import"],
+          },
+          {
+            id: "admin-alerts",
+            label: m.settings_communications_admin_title(),
+            keywords: ["signalements", "taches", "quota", "inscription"],
           },
           {
             id: "newsletter",

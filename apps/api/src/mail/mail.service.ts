@@ -9,7 +9,11 @@ import nodemailer, { Transporter } from "nodemailer";
 import { resolveCopyLocale } from "../common/copy-locale.util";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
 import { primaryWebOrigin } from "../common/web-origin.util";
-import { MAIL_COPY } from "./mail.i18n";
+import {
+  MAIL_COPY,
+  SECURITY_ALERT_EVENTS,
+  type SecurityAlertEvent,
+} from "./mail.i18n";
 
 /** A provider reaching one of its daily-quota alert thresholds. */
 export interface QuotaAlert {
@@ -414,6 +418,38 @@ export class MailService {
       build: (locale, v) =>
         this.buildApiKeyLeaked(locale, v.name, v.foundAt || null),
     },
+    securityAlert: {
+      label: "Alerte de sécurité",
+      fields: [
+        {
+          key: "event",
+          label: "Événement (MFA_TOTP_DISABLED, MFA_CHALLENGE_LOCKED…)",
+          default: "MFA_TOTP_DISABLED",
+        },
+      ],
+      build: (locale, v) =>
+        this.buildSecurityAlert(
+          locale,
+          SECURITY_ALERT_EVENTS.find((event) => event === v.event) ??
+            "MFA_TOTP_DISABLED",
+        ),
+    },
+    accountDeleted: {
+      label: "Compte supprimé",
+      fields: [
+        { key: "reason", label: "Raison (self ou inactive)", default: "self" },
+      ],
+      build: (locale, v) =>
+        this.buildAccountDeleted(
+          locale,
+          v.reason === "inactive" ? "inactive" : "self",
+        ),
+    },
+    adminNewUser: {
+      label: "Nouvelle inscription (admins)",
+      fields: [{ key: "name", label: "Nom affiché", default: "Alice" }],
+      build: (locale, v) => this.buildAdminNewUser(locale, v.name),
+    },
     inactivityWarning: {
       label: "Relance compte inactif",
       fields: [
@@ -641,6 +677,39 @@ export class MailService {
     await this.send({
       to: recipient.email,
       ...this.buildApiKeyLeaked(locale, name, foundAt),
+    });
+  }
+
+  async sendSecurityAlert(
+    recipient: MailRecipient,
+    event: SecurityAlertEvent,
+  ): Promise<void> {
+    const locale = resolveCopyLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildSecurityAlert(locale, event),
+    });
+  }
+
+  async sendAccountDeleted(
+    recipient: MailRecipient,
+    reason: "self" | "inactive",
+  ): Promise<void> {
+    const locale = resolveCopyLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildAccountDeleted(locale, reason),
+    });
+  }
+
+  async sendAdminNewUser(
+    recipient: MailRecipient,
+    displayName: string,
+  ): Promise<void> {
+    const locale = resolveCopyLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildAdminNewUser(locale, displayName),
     });
   }
 
@@ -1109,6 +1178,59 @@ ${url}`,
     };
   }
 
+  private buildSecurityAlert(
+    locale: Locale,
+    event: SecurityAlertEvent,
+  ): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].securityAlert;
+    const url = `${this.webOrigin}/app/settings/security`;
+    const hint = event === "MFA_CHALLENGE_LOCKED" ? copy.lockedHint : copy.hint;
+    return {
+      subject: copy.subject,
+      text: `${copy.events[event]} ${hint}\n\n${url}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.events[event])}</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(hint)}</p>
+         ${this.button(url, copy.button)}`,
+      ),
+    };
+  }
+
+  private buildAccountDeleted(
+    locale: Locale,
+    reason: "self" | "inactive",
+  ): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].accountDeleted;
+    const intro = reason === "inactive" ? copy.inactive : copy.self;
+    return {
+      subject: copy.subject,
+      text: `${intro}\n\n${copy.outro}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(intro)}</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.outro)}</p>`,
+      ),
+    };
+  }
+
+  private buildAdminNewUser(locale: Locale, displayName: string): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].adminNewUser;
+    const url = `${this.webOrigin}/app/admin/users`;
+    return {
+      subject: copy.subject(displayName),
+      text: `${copy.intro(displayName)}\n\n${url}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(displayName))}</p>
+         ${this.button(url, copy.button)}`,
+      ),
+    };
+  }
+
   private buildEmailChangedOld(locale: Locale, newEmail: string): TemplateBody {
     const copy = MAIL_COPY[resolveCopyLocale(locale)].emailChangedOld;
     // The account's login email has already changed (and possibly the
@@ -1235,7 +1357,7 @@ ${url}`,
    * DRAFT WORDING — needs Logan's sign-off before any real send goes out
    * (see the notification-digest feature plan). Three tiers by item count
    * (1 / 2-4 / 5+) rather than one gabarit per event type, `period` only
-   * changes the "aujourd'hui"/"cette semaine" framing.
+   * changes the "aujourd'hui"/"ces 7 derniers jours" framing.
    */
   private buildEpisodeDigest(
     locale: Locale,

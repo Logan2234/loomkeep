@@ -97,8 +97,11 @@
   id={anchor}
   use:flashAnchor={{ anchor: anchor ?? "", hash: page.url.hash }}
   class="py-4 first:pt-0 last:pb-0">
-  <div class="flex items-start justify-between gap-4">
-    <div class="flex min-w-0 items-start gap-3">
+  <!-- The text keeps a readable width: a control too wide to sit beside it
+       (a segmented control, a combobox, on a phone) drops below instead of
+       squeezing it to a word per line. -->
+  <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+    <div class="flex min-w-0 flex-1 basis-56 items-start gap-3">
       {#if icon}
         <Icon name={icon} class="text-dim mt-0.5 h-5 w-5 shrink-0" />
       {/if}
@@ -118,7 +121,7 @@
       </div>
     </div>
     {#if control}
-      <div class="flex shrink-0 flex-col items-end gap-2.5">
+      <div class="ml-auto flex shrink-0 flex-col items-end gap-2.5">
         {@render control()}
         <SavedIndicator state={saveState} />
       </div>
