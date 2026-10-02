@@ -43,7 +43,7 @@
   "settings_section_communications": "Communications",
   "settings_communications_timezone_desc": "Utilisé pour caler l'heure d'envoi de tes résumés d'épisodes.",
   "settings_communications_email_desc": "Reçois le résumé par email.",
-  "settings_communications_push_desc": "Sur cet appareil. Chaque téléphone ou navigateur s'active à part.",
+  "settings_communications_push_desc": "Sur cet appareil seulement : chaque téléphone ou navigateur s'active à part. Les choix plus bas valent pour tous tes appareils.",
   "settings_communications_newsletter_desc": "Un email à chaque nouvelle version, avec les nouveautés du moment.",
   "settings_communications_cadence_disabled": "Désactivé",
   "settings_communications_cadence_weekly": "Hebdo",
@@ -468,7 +468,6 @@
   "settings_communications_push": "Push",
   "settings_communications_always": "Toujours",
   "settings_communications_security_note": "Les alertes de sécurité (connexions, mot de passe, clés API) arrivent toujours par email.",
-  "settings_communications_push_off_hint": "Le push est coupé sur cet appareil : active-le plus haut pour les recevoir.",
   "settings_alert_comment_reply": "Réponses à tes commentaires",
   "settings_alert_comment_mention": "Mentions",
   "settings_alert_follow_request": "Demandes d'abonnement",
@@ -485,5 +484,13 @@
   "settings_alert_admin_job_failed": "Tâche planifiée en échec",
   "settings_alert_admin_quota": "Quota d'un catalogue",
   "settings_alert_admin_new_user": "Nouvelle inscription",
-  "settings_communications_description": "Ce que tu reçois, et où : la cloche, le push et l'email."
+  "settings_communications_description": "Ce que tu reçois, et où : la cloche, le push et l'email.",
+  "settings_communications_push_elsewhere_one": "Le push arrive sur 1 autre appareil, pas sur celui-ci.",
+  "settings_communications_push_elsewhere_many": "Le push arrive sur {count} autres appareils, pas sur celui-ci.",
+  "settings_communications_push_none": "Aucun appareil ne reçoit le push : ces choix attendent qu'un appareil l'active.",
+  "settings_communications_push_enable_here": "Activer ici aussi",
+  "settings_communications_push_enable": "Activer sur cet appareil",
+  "settings_alert_group_comments": "Commentaires et critiques",
+  "settings_alert_group_follows": "Abonnements",
+  "settings_alert_group_account": "Ton compte"
 }

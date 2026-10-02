@@ -83,7 +83,11 @@ function makeService(env: Record<string, string> = {}) {
     { isEffectivelyPremium: vi.fn().mockResolvedValue(true) } as never,
     { award: vi.fn(), awardMany: vi.fn(), revokeBySource: vi.fn() } as never, // XpService stub
     { evaluate: vi.fn() } as never, // AchievementService stub
-    { emitToUser: vi.fn() } as never, // EventsGateway stub
+    {
+      emitToUser: vi.fn(),
+      isOnline: vi.fn().mockResolvedValue(true),
+    } as never, // EventsGateway stub
+    { create: vi.fn() } as never, // NotificationService stub
   );
   return { prisma, mediaItemService, tmdb, service };
 }

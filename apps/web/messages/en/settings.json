@@ -43,7 +43,7 @@
   "settings_section_communications": "Communications",
   "settings_communications_timezone_desc": "Used to time your episode digests.",
   "settings_communications_email_desc": "Get the summary by email.",
-  "settings_communications_push_desc": "On this device. Each phone or browser is turned on separately.",
+  "settings_communications_push_desc": "On this device only: each phone or browser is turned on separately. The choices below apply to all your devices.",
   "settings_communications_newsletter_desc": "An email for every new release, with what's new.",
   "settings_communications_cadence_disabled": "Off",
   "settings_communications_cadence_weekly": "Weekly",
@@ -468,7 +468,6 @@
   "settings_communications_push": "Push",
   "settings_communications_always": "Always",
   "settings_communications_security_note": "Security alerts (sign-ins, password, API keys) always arrive by email.",
-  "settings_communications_push_off_hint": "Push is off on this device: turn it on above to get these.",
   "settings_alert_comment_reply": "Replies to your comments",
   "settings_alert_comment_mention": "Mentions",
   "settings_alert_follow_request": "Follow requests",
@@ -485,5 +484,13 @@
   "settings_alert_admin_job_failed": "Scheduled job failing",
   "settings_alert_admin_quota": "Catalogue quota",
   "settings_alert_admin_new_user": "New account",
-  "settings_communications_description": "What reaches you, and where: the bell, push and email."
+  "settings_communications_description": "What reaches you, and where: the bell, push and email.",
+  "settings_communications_push_elsewhere_one": "Push reaches 1 other device, not this one.",
+  "settings_communications_push_elsewhere_many": "Push reaches {count} other devices, not this one.",
+  "settings_communications_push_none": "No device receives push: these choices wait for one to turn it on.",
+  "settings_communications_push_enable_here": "Turn on here too",
+  "settings_communications_push_enable": "Turn on for this device",
+  "settings_alert_group_comments": "Comments and reviews",
+  "settings_alert_group_follows": "Follows",
+  "settings_alert_group_account": "Your account"
 }

@@ -96,6 +96,10 @@ export class PushService {
     });
   }
 
+  countSubscriptions(userId: string): Promise<number> {
+    return this.prisma.pushSubscription.count({ where: { userId } });
+  }
+
   /** Sends to every device the user has subscribed on; prunes dead subscriptions. */
   async sendToUser(userId: string, payload: PushPayload): Promise<void> {
     await this.sendToUserDetailed(userId, payload);

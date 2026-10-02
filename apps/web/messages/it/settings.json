@@ -43,7 +43,7 @@
   "settings_section_communications": "Comunicazioni",
   "settings_communications_timezone_desc": "Serve a programmare i riepiloghi degli episodi.",
   "settings_communications_email_desc": "Ricevi il riepilogo via email.",
-  "settings_communications_push_desc": "Su questo dispositivo. Ogni telefono o browser si attiva a parte.",
+  "settings_communications_push_desc": "Solo su questo dispositivo: ogni telefono o browser si attiva a parte. Le scelte qui sotto valgono per tutti i tuoi dispositivi.",
   "settings_communications_newsletter_desc": "Un'email a ogni nuova versione, con le novità.",
   "settings_communications_cadence_disabled": "Disattivato",
   "settings_communications_cadence_weekly": "Settimanale",
@@ -468,7 +468,6 @@
   "settings_communications_push": "Push",
   "settings_communications_always": "Sempre",
   "settings_communications_security_note": "Gli avvisi di sicurezza (accessi, password, chiavi API) arrivano sempre via email.",
-  "settings_communications_push_off_hint": "Il push è disattivato su questo dispositivo: attivalo qui sopra per riceverli.",
   "settings_alert_comment_reply": "Risposte ai tuoi commenti",
   "settings_alert_comment_mention": "Menzioni",
   "settings_alert_follow_request": "Richieste di follow",
@@ -485,5 +484,13 @@
   "settings_alert_admin_job_failed": "Attività pianificata non riuscita",
   "settings_alert_admin_quota": "Quota di un catalogo",
   "settings_alert_admin_new_user": "Nuova iscrizione",
-  "settings_communications_description": "Cosa ti arriva, e dove: la campanella, il push e l'email."
+  "settings_communications_description": "Cosa ti arriva, e dove: la campanella, il push e l'email.",
+  "settings_communications_push_elsewhere_one": "Il push arriva su 1 altro dispositivo, non su questo.",
+  "settings_communications_push_elsewhere_many": "Il push arriva su {count} altri dispositivi, non su questo.",
+  "settings_communications_push_none": "Nessun dispositivo riceve il push: queste scelte aspettano che uno lo attivi.",
+  "settings_communications_push_enable_here": "Attiva anche qui",
+  "settings_communications_push_enable": "Attiva su questo dispositivo",
+  "settings_alert_group_comments": "Commenti e recensioni",
+  "settings_alert_group_follows": "Follow",
+  "settings_alert_group_account": "Il tuo account"
 }

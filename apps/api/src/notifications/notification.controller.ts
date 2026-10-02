@@ -1,4 +1,8 @@
-import type { NotificationFeedDto, PushPublicKeyDto } from "@loomkeep/shared";
+import type {
+  NotificationFeedDto,
+  PushDeviceCountDto,
+  PushPublicKeyDto,
+} from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -16,6 +20,7 @@ import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
 import { NotificationFeedResponseDto } from "./dto/notification-feed-response.dto";
+import { PushDeviceCountResponseDto } from "./dto/push-device-count-response.dto";
 import { PushPublicKeyResponseDto } from "./dto/push-public-key-response.dto";
 import { PushSubscriptionDto } from "./dto/push-subscription.dto";
 import { NotificationService } from "./notification.service";
@@ -33,6 +38,15 @@ export class NotificationController {
   @ApiOkResponse({ type: PushPublicKeyResponseDto })
   publicKey(): PushPublicKeyDto {
     return { publicKey: this.push.publicKey() };
+  }
+
+  /** The account's push choices apply to every device: this says whether any receives them. */
+  @Get("push/devices/count")
+  @ApiOkResponse({ type: PushDeviceCountResponseDto })
+  async pushDeviceCount(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<PushDeviceCountDto> {
+    return { count: await this.push.countSubscriptions(user.sub) };
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -33,10 +33,18 @@ const props = {
   title: "Activity",
   description: "",
   columns: ["bell", "push"] as ("bell" | "push")[],
-  alerts: [
-    { key: "COMMENT_REPLY" as const, label: "Replies" },
-    { key: "FOLLOW" as const, label: "New followers" },
-    { key: "COMMENT_REACTIONS" as const, label: "Reactions" },
+  groups: [
+    {
+      label: "Comments",
+      alerts: [
+        { key: "COMMENT_REPLY" as const, label: "Replies" },
+        { key: "COMMENT_REACTIONS" as const, label: "Reactions" },
+      ],
+    },
+    {
+      label: "Follows",
+      alerts: [{ key: "FOLLOW" as const, label: "New followers" }],
+    },
   ],
 };
 
@@ -70,5 +78,20 @@ describe("AlertGrid", () => {
     await waitFor(() =>
       expect(patched).toEqual({ alertPrefs: { FOLLOW: { push: true } } }),
     );
+  });
+
+  it("names each section for the rows under it", () => {
+    renderWithQuery(AlertGrid, props);
+
+    expect(screen.getByRole("rowheader", { name: "Comments" })).toBeTruthy();
+    expect(screen.getByRole("rowheader", { name: "Follows" })).toBeTruthy();
+  });
+
+  it("keeps the push choices but locks them while no device receives push", () => {
+    renderWithQuery(AlertGrid, { ...props, pushBlocked: true });
+
+    const replies = pushSwitch("Replies")!;
+    expect(replies.disabled).toBe(true);
+    expect(replies.getAttribute("aria-checked")).toBe("true");
   });
 });

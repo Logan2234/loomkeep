@@ -140,6 +140,7 @@ export const keys = {
   },
   notifications: {
     feed: () => ["notifications", "feed"] as const,
+    pushDevices: () => ["notifications", "push-devices"] as const,
   },
   social: {
     followRequests: () => ["social", "follow-requests"] as const,

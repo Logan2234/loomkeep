@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { updateMe } from "$lib/api/client";
+  import { getPushDeviceCount, updateMe } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -14,11 +16,11 @@
     isPushEnabledHere,
     isPushSupported,
   } from "$lib/push";
-  import { type AlertKey, DigestCadence } from "@loomkeep/shared";
+  import { DigestCadence } from "@loomkeep/shared";
   import { onMount } from "svelte";
   import SettingRow from "../components/SettingRow.svelte";
   import SettingsSection from "../components/SettingsSection.svelte";
-  import AlertGrid from "./AlertGrid.svelte";
+  import AlertGrid, { type AlertGroupRows } from "./AlertGrid.svelte";
 
   const dailyLocked = $derived(auth.isPremiumLocked);
 
@@ -92,7 +94,21 @@
   // mutation's own .error instead of being conflated with this one.
   let pushPermissionError = $state<string | null>(null);
 
+  // The account's push choices apply to every device it's on: what matters
+  // for them is whether any device receives push, not just this one.
+  const deviceCountQuery = createApiQuery(() => ({
+    key: keys.notifications.pushDevices(),
+    fetch: getPushDeviceCount,
+  }));
+  const otherDevices = $derived(
+    Math.max(0, (deviceCountQuery.data?.count ?? 0) - (pushHere ? 1 : 0)),
+  );
+  const pushBlocked = $derived(
+    deviceCountQuery.data !== undefined && !pushHere && otherDevices === 0,
+  );
+
   const pushMut = createApiMutation(() => ({
+    invalidates: [keys.notifications.pushDevices()],
     mutate: async (enabled: boolean): Promise<"ok" | "denied"> => {
       if (!enabled) {
         await disablePush();
@@ -123,50 +139,88 @@
     newsletterMut.mutate(!auth.user.notifyNewsletter);
   }
 
-  // The third value marks a social alert: those only exist while the
-  // instance has social features on.
-  const ACTIVITY_ALERTS: [AlertKey, string, boolean][] = [
-    ["COMMENT_REPLY", m.settings_alert_comment_reply(), true],
-    ["COMMENT_MENTION", m.settings_alert_comment_mention(), true],
-    ["FOLLOW_REQUEST", m.settings_alert_follow_request(), true],
-    ["FOLLOW", m.settings_alert_follow(), true],
-    ["FOLLOW_ACCEPTED", m.settings_alert_follow_accepted(), true],
-    ["LIST_MEMBER_ADDED", m.settings_alert_list_member_added(), true],
-    ["LIST_ITEM_ADDED", m.settings_alert_list_item_added(), true],
-    ["INVITATION_ACCEPTED", m.settings_alert_invitation_accepted(), false],
-    ["IMPORT_FINISHED", m.settings_alert_import_finished(), false],
-    ["COMMENT_REACTIONS", m.settings_alert_comment_reactions(), true],
-    ["REVIEW_VOTES", m.settings_alert_review_votes(), true],
-  ];
+  const social = (rows: AlertGroupRows["alerts"]) =>
+    appConfig.socialEnabled ? rows : [];
 
-  const activityAlerts = $derived(
-    ACTIVITY_ALERTS.filter(
-      ([, , social]) => !social || appConfig.socialEnabled,
-    ).map(([key, label]) => ({
-      key,
-      label,
-      hint:
-        key === "IMPORT_FINISHED"
-          ? m.settings_alert_import_finished_hint()
-          : undefined,
-    })),
+  const activityGroups = $derived(
+    (
+      [
+        {
+          label: m.settings_alert_group_comments(),
+          alerts: social([
+            {
+              key: "COMMENT_REPLY",
+              label: m.settings_alert_comment_reply(),
+            },
+            {
+              key: "COMMENT_MENTION",
+              label: m.settings_alert_comment_mention(),
+            },
+            {
+              key: "COMMENT_REACTIONS",
+              label: m.settings_alert_comment_reactions(),
+            },
+            { key: "REVIEW_VOTES", label: m.settings_alert_review_votes() },
+          ]),
+        },
+        {
+          label: m.settings_alert_group_follows(),
+          alerts: social([
+            {
+              key: "FOLLOW_REQUEST",
+              label: m.settings_alert_follow_request(),
+            },
+            { key: "FOLLOW", label: m.settings_alert_follow() },
+            {
+              key: "FOLLOW_ACCEPTED",
+              label: m.settings_alert_follow_accepted(),
+            },
+          ]),
+        },
+        {
+          label: m.common_lists(),
+          alerts: social([
+            {
+              key: "LIST_MEMBER_ADDED",
+              label: m.settings_alert_list_member_added(),
+            },
+            {
+              key: "LIST_ITEM_ADDED",
+              label: m.settings_alert_list_item_added(),
+            },
+          ]),
+        },
+        {
+          label: m.settings_alert_group_account(),
+          alerts: [
+            {
+              key: "INVITATION_ACCEPTED",
+              label: m.settings_alert_invitation_accepted(),
+            },
+            {
+              key: "IMPORT_FINISHED",
+              label: m.settings_alert_import_finished(),
+              hint: m.settings_alert_import_finished_hint(),
+            },
+          ],
+        },
+      ] satisfies AlertGroupRows[]
+    ).filter((group) => group.alerts.length > 0),
   );
 
-  const ADMIN_ALERTS: { key: AlertKey; label: string }[] = [
+  const adminGroups: AlertGroupRows[] = [
     {
-      key: "ADMIN_REPORTS_PENDING",
-      label: m.settings_alert_admin_reports_pending(),
+      alerts: [
+        {
+          key: "ADMIN_REPORTS_PENDING",
+          label: m.settings_alert_admin_reports_pending(),
+        },
+        { key: "ADMIN_JOB_FAILED", label: m.settings_alert_admin_job_failed() },
+        { key: "ADMIN_QUOTA", label: m.settings_alert_admin_quota() },
+        { key: "ADMIN_NEW_USER", label: m.settings_alert_admin_new_user() },
+      ],
     },
-    { key: "ADMIN_JOB_FAILED", label: m.settings_alert_admin_job_failed() },
-    { key: "ADMIN_QUOTA", label: m.settings_alert_admin_quota() },
-    { key: "ADMIN_NEW_USER", label: m.settings_alert_admin_new_user() },
   ];
-
-  const pushOffHint = $derived(
-    pushSupported && !pushHere
-      ? m.settings_communications_push_off_hint()
-      : null,
-  );
 </script>
 
 <SettingsSection slug="communications">
@@ -249,9 +303,43 @@
           anchor="activity-alerts"
           title={m.common_activity()}
           description={m.settings_communications_activity_desc()}
-          alerts={activityAlerts}
+          groups={activityGroups}
           columns={["bell", "push"]}
-          hint={pushOffHint} />
+          {pushBlocked}>
+          {#snippet notice()}
+            {#if pushSupported && !pushHere && deviceCountQuery.data}
+              <div
+                class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2.5 text-xs
+                  {pushBlocked
+                  ? 'border-accent/40 bg-accent/10'
+                  : 'border-border bg-surface-2'}">
+                <Icon
+                  name={pushBlocked ? "bell-off" : "smartphone"}
+                  class="h-4 w-4 shrink-0 {pushBlocked
+                    ? 'text-accent'
+                    : 'text-dim'}" />
+                <span class="min-w-0 flex-1 basis-52">
+                  {pushBlocked
+                    ? m.settings_communications_push_none()
+                    : otherDevices === 1
+                      ? m.settings_communications_push_elsewhere_one()
+                      : m.settings_communications_push_elsewhere_many({
+                          count: otherDevices,
+                        })}
+                </span>
+                <button
+                  type="button"
+                  class="btn btn-sm {pushBlocked ? 'btn-primary' : 'btn-ghost'}"
+                  disabled={pushMut.loading}
+                  onclick={() => togglePushHere(true)}>
+                  {pushBlocked
+                    ? m.settings_communications_push_enable()
+                    : m.settings_communications_push_enable_here()}
+                </button>
+              </div>
+            {/if}
+          {/snippet}
+        </AlertGrid>
       </section>
 
       {#if auth.isAdmin}
@@ -260,9 +348,9 @@
             anchor="admin-alerts"
             title={m.settings_communications_admin_title()}
             description={m.settings_communications_admin_desc()}
-            alerts={ADMIN_ALERTS}
+            groups={adminGroups}
             columns={["email", "push"]}
-            hint={pushOffHint} />
+            {pushBlocked} />
         </section>
       {/if}
 
