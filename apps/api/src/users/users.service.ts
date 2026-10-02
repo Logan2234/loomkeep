@@ -1,5 +1,4 @@
 import {
-  type AlertPrefs,
   Domain,
   ErrorCode,
   HOME_GRID_COLUMNS,
@@ -9,6 +8,7 @@ import {
   UsernameAvailabilityDto,
   XpReason,
   type AccountDeletionSummaryDto,
+  type AlertPrefs,
   type CsvExportDto,
   type EntitlementDto,
   type SocialProfileDto,
@@ -372,6 +372,7 @@ export class UsersService {
     const alertPrefs = dto.alertPrefs
       ? mergeAlertPrefs(current.alertPrefs as AlertPrefs, dto.alertPrefs)
       : undefined;
+
     if (alertPrefs === null) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,

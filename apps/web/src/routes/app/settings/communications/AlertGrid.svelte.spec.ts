@@ -20,7 +20,10 @@ beforeEach(() => {
   server.use(
     http.patch(apiUrl("/users/me"), async ({ request }) => {
       patched = (await request.json()) as UpdateUserRequestDto;
-      return HttpResponse.json({ ...auth.user, alertPrefs: patched.alertPrefs });
+      return HttpResponse.json({
+        ...auth.user,
+        alertPrefs: patched.alertPrefs,
+      });
     }),
   );
 });

@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
-import { AdminAlertModule } from "../notifications/admin-alert.module";
 import { MailModule } from "../mail/mail.module";
+import { AdminAlertModule } from "../notifications/admin-alert.module";
 import { JobAlertService } from "./job-alert.service";
 import { JobRunService } from "./job-run.service";
 

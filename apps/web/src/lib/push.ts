@@ -53,6 +53,7 @@ export async function isPushEnabledHere(): Promise<boolean> {
   if (!isPushSupported() || Notification.permission !== "granted") {
     return false;
   }
+
   const registration = await navigator.serviceWorker.ready;
   return (await registration.pushManager.getSubscription()) !== null;
 }

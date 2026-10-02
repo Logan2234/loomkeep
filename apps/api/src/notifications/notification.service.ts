@@ -422,6 +422,7 @@ export class NotificationService {
       where: { id: input.userId },
       select: { locale: true, alertPrefs: true },
     });
+
     if (
       !user ||
       !isAlertEnabled(user.alertPrefs as AlertPrefs, input.type, "push")

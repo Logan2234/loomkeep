@@ -79,7 +79,6 @@ export class ListService {
     private readonly follow: FollowService,
   ) {}
 
-
   private toDto(row: ListRow, author: UserSummaryDto): ListDto {
     return {
       id: row.id,

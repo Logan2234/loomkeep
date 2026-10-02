@@ -1,10 +1,10 @@
-import { notificationCopy } from "../notifications/notification-copy";
-import type { NotificationService } from "../notifications/notification.service";
 import type { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
+import { notificationCopy } from "../notifications/notification-copy";
+import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ActivityService } from "../social/activity.service";
 import type { VisibilityService } from "../social/visibility.service";
@@ -630,7 +630,7 @@ describe("ReviewService.adminRemove", () => {
       xp,
       CONFIG,
       stubAchievements(),
-    stubNotifications(),
+      stubNotifications(),
     );
 
     await svc.adminRemove("rev1", tx);
@@ -661,7 +661,7 @@ describe("ReviewService.adminRemove", () => {
       xp,
       CONFIG,
       stubAchievements(),
-    stubNotifications(),
+      stubNotifications(),
     );
 
     await expect(svc.adminRemove("rev1")).resolves.toEqual({
@@ -685,7 +685,7 @@ describe("ReviewService.adminRemove", () => {
       xp,
       CONFIG,
       stubAchievements(),
-    stubNotifications(),
+      stubNotifications(),
     );
 
     await expect(svc.adminRemove("missing")).rejects.toThrow();
@@ -768,7 +768,7 @@ describe("ReviewService.listMine — target links", () => {
       stubXp(),
       CONFIG,
       stubAchievements(),
-    stubNotifications(),
+      stubNotifications(),
     );
 
     const hrefs = (await svc.listMine(VIEWER)).map((r) => r.target?.href);

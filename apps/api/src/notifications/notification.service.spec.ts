@@ -375,7 +375,12 @@ describe("NotificationService.create — realtime push", () => {
       user: { findUnique: vi.fn().mockResolvedValue(null) },
     } as unknown as PrismaService;
     const events = { emitToUser: vi.fn() } as unknown as EventsGateway;
-    const service = new NotificationService(prisma, jobRunsStub, events, pushStub);
+    const service = new NotificationService(
+      prisma,
+      jobRunsStub,
+      events,
+      pushStub,
+    );
     return { service, events, prisma };
   }
 

@@ -10,6 +10,9 @@ import { AppException } from "../common/app.exception";
 import type { HibpService } from "../common/hibp.service";
 import type { EventsGateway } from "../events/events.gateway";
 import type { MailService } from "../mail/mail.service";
+import type { AdminAlertService } from "../notifications/admin-alert.service";
+import { notificationCopy } from "../notifications/notification-copy";
+import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
 import type { AuthResult } from "./auth.service";
@@ -19,9 +22,6 @@ import type { MfaService } from "./mfa.service";
 import { SessionCacheService } from "./session-cache.service";
 import type { TurnstileService } from "./turnstile.service";
 import type { WebauthnService } from "./webauthn.service";
-import type { AdminAlertService } from "../notifications/admin-alert.service";
-import { notificationCopy } from "../notifications/notification-copy";
-import type { NotificationService } from "../notifications/notification.service";
 
 /** Login tests here all use non-MFA accounts, so the result is always the AuthResult branch. */
 function asAuthResult(

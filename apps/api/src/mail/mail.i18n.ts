@@ -337,7 +337,8 @@ export const MAIL_COPY = {
         MFA_EMAIL_DISABLED:
           "La double authentification par e-mail a été désactivée sur ton compte.",
         MFA_WEBAUTHN_ADDED: "Une clé de sécurité a été ajoutée à ton compte.",
-        MFA_WEBAUTHN_REMOVED: "Une clé de sécurité a été retirée de ton compte.",
+        MFA_WEBAUTHN_REMOVED:
+          "Une clé de sécurité a été retirée de ton compte.",
         MFA_PASSWORDLESS_ENABLED:
           "La connexion sans mot de passe a été activée sur ton compte.",
         MFA_PASSWORDLESS_DISABLED:

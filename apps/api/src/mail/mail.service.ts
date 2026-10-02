@@ -1184,8 +1184,7 @@ ${url}`,
   ): TemplateBody {
     const copy = MAIL_COPY[resolveCopyLocale(locale)].securityAlert;
     const url = `${this.webOrigin}/app/settings/security`;
-    const hint =
-      event === "MFA_CHALLENGE_LOCKED" ? copy.lockedHint : copy.hint;
+    const hint = event === "MFA_CHALLENGE_LOCKED" ? copy.lockedHint : copy.hint;
     return {
       subject: copy.subject,
       text: `${copy.events[event]} ${hint}\n\n${url}`,

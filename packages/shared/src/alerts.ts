@@ -1,5 +1,3 @@
-import { NotificationType } from "./enums";
-
 /**
  * How an alert reaches someone on one channel:
  * - `always`: sent whenever it happens, with no setting;
@@ -10,13 +8,6 @@ import { NotificationType } from "./enums";
  * A channel left out never carries the alert.
  */
 export type AlertRule = "always" | "on" | "off" | "cadence" | "opt-in";
-
-export const AlertChannel = {
-  BELL: "bell",
-  PUSH: "push",
-  EMAIL: "email",
-} as const;
-export type AlertChannel = (typeof AlertChannel)[keyof typeof AlertChannel];
 
 export const AlertGroup = {
   ACTIVITY: "activity",
@@ -280,9 +271,7 @@ export function isAlertToggleable(
   key: AlertKey,
   channel: "push" | "email",
 ): boolean {
-  const rule: AlertRule | undefined = (ALERTS[key] as AlertDefinition)[
-    channel
-  ];
+  const rule: AlertRule | undefined = (ALERTS[key] as AlertDefinition)[channel];
   return rule === "on" || rule === "off";
 }
 
@@ -292,9 +281,7 @@ export function isAlertEnabled(
   key: AlertKey,
   channel: "push" | "email",
 ): boolean {
-  const rule: AlertRule | undefined = (ALERTS[key] as AlertDefinition)[
-    channel
-  ];
+  const rule: AlertRule | undefined = (ALERTS[key] as AlertDefinition)[channel];
   if (rule === "always") return true;
   if (rule !== "on" && rule !== "off") return false;
   return prefs?.[key]?.[channel] ?? rule === "on";
@@ -316,6 +303,7 @@ export function mergeAlertPrefs(
     if (!(key in ALERTS) || typeof channels !== "object" || !channels) {
       return null;
     }
+
     for (const [channel, value] of Object.entries(channels)) {
       if (
         (channel !== "push" && channel !== "email") ||
@@ -324,6 +312,7 @@ export function mergeAlertPrefs(
       ) {
         return null;
       }
+
       merged[key] = { ...merged[key], [channel]: value };
     }
   }

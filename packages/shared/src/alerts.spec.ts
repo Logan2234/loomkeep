@@ -17,6 +17,7 @@ describe("ALERTS", () => {
 
   it("only puts notification types in the bell", () => {
     const types: string[] = Object.values(NotificationType);
+
     for (const [key, alert] of Object.entries(ALERTS)) {
       if ((alert as AlertDefinition).bell) expect(types).toContain(key);
     }
@@ -27,7 +28,11 @@ describe("isAlertEnabled", () => {
   it("follows the default until the account chose", () => {
     expect(isAlertEnabled({}, "COMMENT_REPLY", "push")).toBe(false);
     expect(
-      isAlertEnabled({ COMMENT_REPLY: { push: true } }, "COMMENT_REPLY", "push"),
+      isAlertEnabled(
+        { COMMENT_REPLY: { push: true } },
+        "COMMENT_REPLY",
+        "push",
+      ),
     ).toBe(true);
     expect(isAlertEnabled({}, "ADMIN_JOB_FAILED", "email")).toBe(true);
     expect(
@@ -73,7 +78,9 @@ describe("mergeAlertPrefs", () => {
 
   it("refuses an alert, a channel or a value it can't store", () => {
     expect(mergeAlertPrefs({}, { NOPE: { push: true } })).toBeNull();
-    expect(mergeAlertPrefs({}, { API_KEY_LEAKED: { email: false } })).toBeNull();
+    expect(
+      mergeAlertPrefs({}, { API_KEY_LEAKED: { email: false } }),
+    ).toBeNull();
     expect(mergeAlertPrefs({}, { COMMENT_REPLY: { bell: false } })).toBeNull();
     expect(mergeAlertPrefs({}, { COMMENT_REPLY: { push: "yes" } })).toBeNull();
   });

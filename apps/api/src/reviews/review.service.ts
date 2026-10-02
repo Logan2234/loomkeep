@@ -263,7 +263,11 @@ export class ReviewService {
       type: NotificationType.REVIEW_VOTES,
       title: copy.title,
       body: copy.body(count),
-      url: await resolveWorkHref(this.prisma, target.targetType, target.targetId),
+      url: await resolveWorkHref(
+        this.prisma,
+        target.targetType,
+        target.targetId,
+      ),
       dedupeKey: `review-votes:${reviewId}:${count}`,
       data: { count },
     });

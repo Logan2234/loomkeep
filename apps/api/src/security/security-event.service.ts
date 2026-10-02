@@ -8,11 +8,11 @@ import type {
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { currentRequest } from "../common/request-context";
-import { MailService } from "../mail/mail.service";
 import {
   SECURITY_ALERT_EVENTS,
   type SecurityAlertEvent,
 } from "../mail/mail.i18n";
+import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { rankFailedTargets, sinceDaysAgo } from "./login-failure.util";
 

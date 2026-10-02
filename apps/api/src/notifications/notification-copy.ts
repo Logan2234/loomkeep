@@ -81,7 +81,8 @@ const COPY = {
       title: (source: string) => `Import ${source} terminé`,
       failedTitle: (source: string) => `Import ${source} interrompu`,
       body: "Le résultat t'attend dans tes réglages.",
-      failedBody: "Il n'a pas pu aller au bout. Les détails sont dans tes réglages.",
+      failedBody:
+        "Il n'a pas pu aller au bout. Les détails sont dans tes réglages.",
     },
     adminAlerts: {
       reportsPending: (count: number) => ({
@@ -297,7 +298,8 @@ const COPY = {
       title: (source: string) => `Importazione ${source} completata`,
       failedTitle: (source: string) => `Importazione ${source} interrotta`,
       body: "Il risultato ti aspetta nelle impostazioni.",
-      failedBody: "Non è riuscita ad arrivare in fondo. I dettagli sono nelle impostazioni.",
+      failedBody:
+        "Non è riuscita ad arrivare in fondo. I dettagli sono nelle impostazioni.",
     },
     adminAlerts: {
       reportsPending: (count: number) => ({

@@ -262,8 +262,7 @@ export class AuthService {
       }
 
       await this.adminAlerts.notify("ADMIN_NEW_USER", {
-        email: (admin) =>
-          this.mail.sendAdminNewUser(admin, user.displayName),
+        email: (admin) => this.mail.sendAdminNewUser(admin, user.displayName),
         push: (copy) => ({
           ...copy.adminAlerts.newUser(user.displayName),
           url: "/app/admin/users",

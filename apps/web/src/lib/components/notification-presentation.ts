@@ -2,8 +2,8 @@ import { formatNumber } from "$lib/format";
 import { m } from "$lib/paraglide/messages.js";
 import {
   IMPORT_SOURCE_NAMES,
-  type ImportSource,
   NotificationType,
+  type ImportSource,
   type NotificationDto,
 } from "@loomkeep/shared";
 
@@ -55,12 +55,14 @@ export function notificationText(n: NotificationDto): {
       const item =
         typeof n.data.itemTitle === "string" ? n.data.itemTitle : null;
       const count = typeof n.data.count === "number" ? n.data.count : 1;
+
       if (count > 1) {
         return {
           title: n.title,
           body: m.notif_list_items_added({ count: formatNumber(count), list }),
         };
       }
+
       return {
         title: n.title,
         body: item

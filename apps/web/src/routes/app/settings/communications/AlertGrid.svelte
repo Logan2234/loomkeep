@@ -72,7 +72,8 @@
             {#if (ALERTS[alert.key] as AlertDefinition).bell}
               <span title={m.settings_communications_always()}>
                 <Icon name="check" class="text-dim h-4 w-4" />
-                <span class="sr-only">{m.settings_communications_always()}</span>
+                <span class="sr-only"
+                  >{m.settings_communications_always()}</span>
               </span>
             {/if}
           {:else if isAlertToggleable(alert.key, column)}
