@@ -57,7 +57,7 @@ export class UserResponseDto implements UserDto {
 
   /**
    * How often new-episode push notifications are sent.
-   * @example "NEW_EPISODE"
+   * @example "WEEKLY"
    */
   notifyPush!: DigestCadence;
 
