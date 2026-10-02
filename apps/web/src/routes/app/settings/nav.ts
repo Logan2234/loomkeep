@@ -574,7 +574,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           "simkl",
           "letterboxd",
           "kitsu",
-          "backloggd",
           "librarything",
           "bookwyrm",
           "opml",

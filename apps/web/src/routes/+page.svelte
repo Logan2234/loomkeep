@@ -284,7 +284,6 @@
     { name: "Letterboxd", what: m.landing_import_todo_letterboxd_what },
     { name: "Serializd", what: m.landing_import_todo_serializd_what },
     { name: "IMDb", what: m.landing_import_todo_imdb_what },
-    { name: "Backloggd", what: m.landing_import_todo_backloggd_what },
     { name: "Last.fm", what: m.landing_import_todo_lastfm_what },
     { name: "RateYourMusic", what: m.landing_import_todo_rym_what },
     { name: "Babelio", what: m.landing_import_todo_babelio_what },
