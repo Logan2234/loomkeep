@@ -10,6 +10,7 @@ function document(overrides: Partial<OpenAPIObject> = {}): OpenAPIObject {
     paths: {
       "/api/v1/library": {
         get: {
+          operationId: "listEntries",
           tags: ["Library"],
           summary: "List entries",
           description: "Every tracked work.",
@@ -56,6 +57,7 @@ describe("undocumentedParts", () => {
         paths: {
           "/api/v1/library": {
             get: {
+              operationId: "listEntries",
               tags: ["Library"],
               parameters: [{ name: "page", in: "query" }],
               responses: {},
@@ -71,6 +73,31 @@ describe("undocumentedParts", () => {
       "GET /api/v1/library: parameter page",
       "tag Library: description",
     ]);
+  });
+
+  it("asks for an operationId of its own, not Nest's generated one", () => {
+    const named = (operationId?: string) =>
+      undocumentedParts(
+        document({
+          paths: {
+            "/api/v1/library": {
+              get: {
+                ...(operationId ? { operationId } : {}),
+                tags: ["Library"],
+                summary: "List entries",
+                description: "Every tracked work.",
+                responses: {},
+              },
+            },
+          },
+        }),
+      );
+
+    expect(named()).toEqual(["GET /api/v1/library: operationId"]);
+    expect(named("LibraryV1Controller_list_v1")).toEqual([
+      "GET /api/v1/library: operationId",
+    ]);
+    expect(named("listEntries")).toEqual([]);
   });
 
   it("asks for an example on plain values only", () => {

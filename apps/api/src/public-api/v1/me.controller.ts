@@ -15,6 +15,7 @@ export class MeV1Controller {
 
   @Get()
   @ApiOperation({
+    operationId: "getMe",
     summary: "The account and key in use",
     description:
       "Who the key belongs to, what it can read, when it expires, and the account's request budget. Any valid key can call it, whatever it was granted: a quick way to check a key.",
