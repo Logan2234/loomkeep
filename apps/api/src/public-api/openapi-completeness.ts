@@ -3,10 +3,13 @@ import type { OpenAPIObject } from "@nestjs/swagger";
 type Schema = Record<string, unknown>;
 
 const PLAIN_TYPES = new Set(["string", "number", "integer", "boolean"]);
+// Generated clients name their methods after it: `listLibraryEntries`, not
+// Nest's default `LibraryV1Controller_list_v1`.
+const OPERATION_ID = /^[a-z][A-Za-z]*$/;
 
 /**
- * What the published API reference must never lack: a summary and a
- * description on every operation, a description on every parameter and tag,
+ * What the published API reference must never lack: an operationId of its
+ * own, a summary and a description on every operation, a description on every parameter and tag,
  * and on every schema property — plus an example on every property holding
  * plain values. Run by `generate:openapi`, the one place the Swagger
  * plugin's output exists (descriptions come from the DTOs' JSDoc).
@@ -26,6 +29,11 @@ export function undocumentedParts(document: OpenAPIObject): string[] {
       }
 
       const where = `${method.toUpperCase()} ${path}`;
+
+      if (!OPERATION_ID.test(operation.operationId ?? "")) {
+        gaps.push(`${where}: operationId`);
+      }
+
       if (!operation.summary) gaps.push(`${where}: summary`);
       if (!operation.description) gaps.push(`${where}: description`);
 

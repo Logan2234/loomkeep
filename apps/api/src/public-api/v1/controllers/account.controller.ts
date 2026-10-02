@@ -58,6 +58,7 @@ export class ListsV1Controller {
 
   @Get()
   @ApiOperation({
+    operationId: "listLists",
     summary: "List lists",
     description: "The caller's lists, plus the ones shared with them.",
   })
@@ -68,6 +69,7 @@ export class ListsV1Controller {
 
   @Get(":id")
   @ApiOperation({
+    operationId: "getList",
     summary: "Get a list and its items",
     description:
       "A list the caller owns or edits, with every item in order. Items can be works, seasons or episodes.",
@@ -99,6 +101,7 @@ export class StatsV1Controller {
 
   @Get("summary")
   @ApiOperation({
+    operationId: "getStatsSummary",
     summary: "Stats summary",
     description:
       "Counts per domain and normalised status, time spent, and this year's reading goal.",
@@ -124,6 +127,7 @@ export class ReviewsV1Controller {
 
   @Get()
   @ApiOperation({
+    operationId: "listReviews",
     summary: "List the caller's reviews and ratings",
     description:
       "Every review and rating the caller wrote, on works, seasons and episodes. Narrow it to one domain with `domain`.",
@@ -168,6 +172,7 @@ export class ProfileV1Controller {
 
   @Get()
   @ApiOperation({
+    operationId: "getProfile",
     summary: "The caller's profile and progression",
     description:
       "`progression` is null when gamification is off on this instance.",
@@ -180,6 +185,7 @@ export class ProfileV1Controller {
   @Get("achievements")
   @UseGuards(GamificationFeatureGuard)
   @ApiOperation({
+    operationId: "listAchievements",
     summary: "The caller's achievements",
     description:
       "Every achievement, unlocked or not, with the progress made towards the locked ones. Secret ones stay hidden until unlocked.",
@@ -210,6 +216,7 @@ export class NotificationsV1Controller {
 
   @Get()
   @ApiOperation({
+    operationId: "getNotifications",
     summary: "The caller's notification bell",
     description:
       "The most recent notifications, newest first, with how many are still unread.",
@@ -240,6 +247,7 @@ export class ExportV1Controller {
   @UseGuards(ExportRateLimitGuard)
   @Get()
   @ApiOperation({
+    operationId: "exportData",
     summary: "Full data export",
     description:
       "Everything the account holds, in the same format as Settings › Export: a backup, or a way to move elsewhere. Once an hour per account: a second call within the hour gets a `429` (`api.rate_limited`) and a `Retry-After`.",

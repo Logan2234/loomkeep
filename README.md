@@ -30,7 +30,7 @@
   <a href="https://github.com/Logan2234/loomkeep/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/Logan2234/loomkeep"></a>
 </p>
 
-![Loomkeep's home screen](apps/web/static/pwa-screenshot-app-desktop.png)
+![A title's page in Loomkeep: progress, rating and what's next](.github/assets/screenshot.webp)
 
 ## What it does
 

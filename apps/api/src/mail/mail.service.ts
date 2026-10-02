@@ -775,12 +775,13 @@ export class MailService {
    * automatic purge). Sent regardless of `notifyEmail` — this is a retention
    * notice, not a marketing/feature email.
    */
+  /** Resolves false when the email didn't go out (no SMTP, or it failed). */
   async sendInactivityWarning(
     recipient: MailRecipient,
     deletionDate: Date,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const locale = resolveCopyLocale(recipient.locale);
-    await this.send({
+    return this.send({
       to: recipient.email,
       ...this.buildInactivityWarning(locale, deletionDate),
     });
@@ -1460,8 +1461,8 @@ ${url}`,
     text,
     html,
     replyTo,
-  }: SendArgs): Promise<void> {
-    if (!this.transporter) return;
+  }: SendArgs): Promise<boolean> {
+    if (!this.transporter) return false;
 
     try {
       this.quota.record("smtp");
@@ -1473,8 +1474,10 @@ ${url}`,
         html,
         ...(replyTo ? { replyTo } : {}),
       });
+      return true;
     } catch (err) {
       this.logger.error(`Failed to send email to ${to}`, err);
+      return false;
     }
   }
 }

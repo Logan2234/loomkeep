@@ -23,8 +23,9 @@ policy is a starting point to adapt; it is in French.
 - **[A domain with HTTPS](/self-hosting/https/)**: people will want the app
   on their phone, which needs it.
 - **[Email](/self-hosting/email-and-push/)**: without SMTP, nobody can reset
-  a forgotten password, and inactive accounts are deleted without the
-  warning reaching anyone (see [Scheduled jobs](/self-hosting/scheduled-jobs/#worth-knowing)).
+  a forgotten password, and dormant accounts are never cleaned up, since
+  the warning before deletion can't go out (see
+  [Scheduled jobs](/self-hosting/scheduled-jobs/#worth-knowing)).
 - **[Backups](/self-hosting/upgrades-and-backups/#backups)**, copied off the
   server, and restored once to be sure they work.
 - **Two-factor authentication** for every administrator. With the HTTPS
@@ -50,8 +51,8 @@ a daily email while some are pending. Someone has to look at them: see
 
 ## What happens on its own
 
-- **Inactive accounts** are warned after two years without use, and deleted
-  after three.
+- **Inactive accounts** are warned by email after two years without use,
+  and deleted after three.
 - **API keys** unused for a year are deleted.
 - **The security log** keeps a year of sign-ins and sensitive actions.
 

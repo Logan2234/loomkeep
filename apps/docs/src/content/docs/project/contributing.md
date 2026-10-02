@@ -75,6 +75,7 @@ Commit messages are short, imperative, in English, and start with an emoji:
 | ♻️    | A refactor                  |
 | 📝    | Docs, comments, tests       |
 | ⚡    | Performance, build, tooling |
+| 🔖    | A version bump              |
 
 ## Pull requests
 

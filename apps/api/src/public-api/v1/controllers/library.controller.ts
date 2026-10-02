@@ -41,6 +41,7 @@ export class LibraryV1Controller {
 
   @Get()
   @ApiOperation({
+    operationId: "listLibraryEntries",
     summary: "List library entries",
     description:
       "Every tracked work across the enabled domains, or one domain with `domain`. Filter by normalised status with `phase`, sort with `sort` and `order`. Asking for a domain turned off for the account is a `403` (`user.domain_disabled`).",
@@ -65,6 +66,7 @@ export class LibraryV1Controller {
 
   @Get(":id")
   @ApiOperation({
+    operationId: "getLibraryEntry",
     summary: "Get one library entry",
     description:
       "One entry, whatever its domain: its status, rating, progress and work.",
@@ -90,6 +92,7 @@ export class LibraryV1Controller {
 
   @Get(":id/history")
   @ApiOperation({
+    operationId: "listEntryHistory",
     summary: "One entry's history",
     description:
       "Every viewing, session and finish of this entry, newest first. Undated ones (often from an import) come last, with a null `date`.",
@@ -125,6 +128,7 @@ export class HistoryV1Controller {
 
   @Get()
   @ApiOperation({
+    operationId: "listHistory",
     summary: "Consumption history",
     description:
       "Episodes and films seen, game and reading sessions, finished games, books and albums, across the enabled domains, newest first. Only dated events: an undated one shows in its entry's own history.",
@@ -152,6 +156,7 @@ export class CalendarV1Controller {
 
   @Get()
   @ApiOperation({
+    operationId: "listUpcomingEpisodes",
     summary: "Upcoming episodes",
     description:
       "Episodes airing from today on, for the shows being followed (60 at most).",

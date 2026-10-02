@@ -1,96 +1,31 @@
 # Contributing to Loomkeep
 
-Thanks for taking the time to contribute! Loomkeep is maintained solo
-([@Logan2234](https://github.com/Logan2234)) as a side project, so response
-times can vary — but PRs and issues are genuinely welcome.
+Thanks for taking the time! Loomkeep is maintained by one person
+([@Logan2234](https://github.com/Logan2234)) on their spare time, so answers
+can take a few days, but pull requests and issues are welcome.
 
-## Before you file something
+## Where things go
 
-- **Feature idea or a bug in the app itself** (UI, sync, watch tracking...)?
-  That goes on [feedback.loomkeep.app](https://feedback.loomkeep.app), not
-  GitHub Issues — the **Feature Requests** and **Bug Reports** boards there
-  are public and votable.
-- **Bug in self-hosting/deployment** (Docker, migrations, reverse proxy)?
-  [Open a GitHub issue](https://github.com/Logan2234/loomkeep/issues/new/choose)
-  with the _Self-hosting / deployment bug_ template.
-- **Anything about the codebase itself** (a contribution question, CI, docs)?
-  Same place, _Other_ template.
-- **Security vulnerability?** Don't open a public issue — see
+- **A feature idea or a bug in the app** goes on
+  [feedback.loomkeep.app](https://feedback.loomkeep.app): its boards are
+  public and votable.
+- **A problem running your own instance** (Docker, migrations, reverse
+  proxy): a [GitHub issue](https://github.com/Logan2234/loomkeep/issues/new/choose),
+  _Self-hosting / deployment bug_ template.
+- **A question about the code**, CI or the docs: a GitHub issue, _Other_
+  template.
+- **A security vulnerability**: never a public issue, see
   [SECURITY.md](SECURITY.md).
 
-## Project layout
+## Working on the code
 
-pnpm workspace, 100% TypeScript:
+The [contributing guide](https://docs.loomkeep.app/project/contributing/)
+sets up a development environment and explains how changes are made, tested
+and reviewed. [Architecture](https://docs.loomkeep.app/project/architecture/)
+gives the overview, and [`CLAUDE.md`](CLAUDE.md) the details, whether you're
+a person or a coding agent. To translate Loomkeep, see
+[Translating](https://docs.loomkeep.app/project/translating/).
 
-| Path              | What                                                       |
-| ----------------- | ---------------------------------------------------------- |
-| `apps/api`        | NestJS + Prisma + PostgreSQL                               |
-| `apps/web`        | SvelteKit PWA                                              |
-| `packages/shared` | DTOs/enums shared by both, consumed from its built `dist/` |
-
-[`CLAUDE.md`](CLAUDE.md) is the deep-dive architecture doc (data model,
-auth, feature flags, i18n, conventions) — worth a skim before a non-trivial
-change, whether you're a human or an AI coding agent.
-
-## Local setup
-
-```sh
-pnpm i
-docker run -d --name loomkeep-dev-db -e POSTGRES_USER=loomkeep \
-  -e POSTGRES_PASSWORD=loomkeep -e POSTGRES_DB=loomkeep \
-  -p 5433:5432 postgres:18-alpine
-cp .env.example .env
-cp apps/api/.env.example apps/api/.env
-pnpm --filter @loomkeep/api exec prisma migrate dev
-pnpm generate
-pnpm dev        # api on :3000, web on :5173
-```
-
-Full self-hosting instructions (Docker, add-ons, SSO...) are on
-[docs.loomkeep.app](https://docs.loomkeep.app/self-hosting/) — that setup is
-for _running_ Loomkeep, this one is for _working on it_.
-
-## Making a change
-
-1. Branch off `main`, `feat/`, `fix/`, `chore/` prefixes are required.
-2. Match the existing style rather than introducing a new one: read the
-   surrounding code before writing yours, and check `apps/web/DESIGN.md` for
-   anything UI-facing.
-3. Keep changes surgical — a bug fix doesn't need a drive-by refactor of
-   nearby code, and vice versa. If you spot something else worth fixing,
-   mention it in the PR description rather than folding it in.
-4. Every non-trivial feature needs at least one test; a bug fix needs a
-   regression test that fails before the fix and passes after.
-5. `pre-commit` (lint-staged) and `pre-push` (typecheck) hooks run
-   automatically — don't skip them (`--no-verify`). CI runs the full test
-   suite, e2e, and a few security/quality scans (CodeQL, Trivy, pa11y) on
-   every PR.
-
-### Commit messages
-
-Imperative, English, one emoji prefix per the summary line:
-
-| Emoji | Code         | For                         |
-| ----- | ------------ | --------------------------- |
-| ✨    | `:sparkles:` | A new feature               |
-| 🐛    | `:bug:`      | A bug fix                   |
-| ♻️    | `:recycle:`  | A refactor                  |
-| 📝    | `:memo:`     | Docs, comments, tests       |
-| ⚡    | `:zap:`      | Performance, build, tooling |
-| 🔖    | `:bookmark:` | A version bump              |
-
-## Opening a pull request
-
-Target `main`. The PR template asks for the essentials — fill it in, it's
-short on purpose. Draft PRs are fine if you want early feedback.
-
-## License
-
-AGPL-3.0.
-
-Before your first pull request can be merged, you need to sign the
-[Contributor License Agreement](CLA.md): CLA Assistant asks you to, in a
-comment on the pull request, and it only takes a click. You keep the
-copyright on your code; the agreement lets the project also ship it under
-other licenses — the premium features are under a commercial license, and
-without it a contribution to the AGPL core could never be combined with them.
+Before your first pull request is merged, you sign the
+[Contributor License Agreement](CLA.md) with one click, when CLA Assistant
+asks in a comment. You keep the copyright on your code.

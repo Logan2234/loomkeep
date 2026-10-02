@@ -28,7 +28,7 @@ To be alerted when a job stops running, see
 
 ## Worth knowing
 
-**Inactive accounts are deleted** three years after their last use. The
-warning a year before goes by email: without
-[SMTP](/self-hosting/email-and-push/), it can't reach anyone, and the account
-is deleted all the same. Set up email before opening your instance to others.
+**Inactive accounts are deleted** three years after their last use, only
+once a warning email has actually gone out. Without
+[SMTP](/self-hosting/email-and-push/), no warning can be sent, so no account
+is ever deleted for inactivity. A failed send is retried the next day.
