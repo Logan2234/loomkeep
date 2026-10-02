@@ -66,20 +66,28 @@ export class InactiveAccountService {
       select: { id: true, email: true, locale: true, lastActiveAt: true },
     });
 
+    let warned = 0;
+
     for (const user of candidates) {
       // lastActiveAt can't be null here — it's filtered by `lte` above.
       const deletionDate = addMonths(user.lastActiveAt!, DELETE_AFTER_MONTHS);
-      await this.mail.sendInactivityWarning(
+      const sent = await this.mail.sendInactivityWarning(
         { email: user.email, locale: user.locale },
         deletionDate,
       );
+      // Deletion requires a recorded warning: one that never reached the
+      // person (no SMTP, or a failed send) must not count, so the account
+      // stays until a warning actually goes out.
+      if (!sent) continue;
+
       await this.prisma.user.update({
         where: { id: user.id },
         data: { inactivityWarningSentAt: new Date() },
       });
+      warned++;
     }
 
-    return candidates.length;
+    return warned;
   }
 
   private async deleteInactiveAccounts(): Promise<number> {

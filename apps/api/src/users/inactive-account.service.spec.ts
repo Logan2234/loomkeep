@@ -13,7 +13,7 @@ function makeService() {
     },
   } as unknown as PrismaService;
   const mail = {
-    sendInactivityWarning: vi.fn(),
+    sendInactivityWarning: vi.fn().mockResolvedValue(true),
   } as unknown as MailService;
   const accountDeletion = {
     deleteAccount: vi.fn(),
@@ -65,6 +65,26 @@ describe("InactiveAccountService.scan", () => {
       data: { inactivityWarningSentAt: expect.any(Date) },
     });
     expect(result).toEqual({ warned: 1, deleted: 0 });
+  });
+
+  it("doesn't mark an account as warned when the email didn't go out", async () => {
+    const { service, prisma, mail } = makeService();
+    (mail.sendInactivityWarning as Mock).mockResolvedValue(false);
+    (prisma.user.findMany as Mock)
+      .mockResolvedValueOnce([
+        {
+          id: "user-1",
+          email: "alice@example.com",
+          locale: "en",
+          lastActiveAt: new Date("2024-01-01T00:00:00.000Z"),
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.scan();
+
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(result).toEqual({ warned: 0, deleted: 0 });
   });
 
   it("deletes accounts inactive for 36+ months that were already warned", async () => {
