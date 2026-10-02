@@ -51,7 +51,11 @@ describe("MailService", () => {
         const preheader = preview.html.match(
           /class="email-preheader"[^>]*>([^<]+)<\/div>/,
         )?.[1];
-        expect(preheader, key).toBe(MAIL_COPY[locale].preheaders[key]);
+        expect(preheader, key).toBe(
+          MAIL_COPY[locale].preheaders[
+            key as keyof typeof MAIL_COPY.fr.preheaders
+          ],
+        );
         expect(preheader, key).toBeTruthy();
         expect(preheader, key).not.toMatch(
           /secret-code|secret-token|private-content/,

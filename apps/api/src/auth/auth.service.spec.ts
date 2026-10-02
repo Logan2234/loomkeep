@@ -683,7 +683,6 @@ describe("AuthService.login", () => {
       { identifier: "alice@example.com", password: "correct-password" },
       "Mozilla/5.0 (Windows NT 10.0) Chrome/140.0 Safari/537.36",
       "203.0.113.42",
-      new Date("2026-10-03T10:15:00Z"),
     );
 
     expect(prisma.userDevice.create).toHaveBeenCalledWith(

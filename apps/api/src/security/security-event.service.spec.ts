@@ -33,12 +33,10 @@ describe("SecurityEventService.record", () => {
       const occurredAt = new Date("2026-10-03T10:15:00Z");
       vi.setSystemTime(occurredAt);
       const { service, prisma, mail } = makeService();
-      vi.mocked(prisma.securityEvent.create).mockImplementationOnce(
-        async () => {
-          vi.setSystemTime(new Date("2026-10-03T10:20:00Z"));
-          return {} as never;
-        },
-      );
+      (prisma.securityEvent.create as Mock).mockImplementationOnce(async () => {
+        vi.setSystemTime(new Date("2026-10-03T10:20:00Z"));
+        return {};
+      });
       const result = await service.record({
         type: "MFA_TOTP_DISABLED",
         userId: "u1",
