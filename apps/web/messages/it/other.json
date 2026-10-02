@@ -647,7 +647,6 @@
   "import_source_opml_description": "Iscrizioni esportate da Apple Podcasts, Pocket Casts…",
   "import_source_books_description": "Libreria e cronologia di lettura.",
   "import_source_books_csv_description": "Libreria, stati e voti (esportazione CSV).",
-  "import_source_backloggd_description": "Backlog e giochi finiti.",
   "import_source_steam_placeholder": "76561198… o steamcommunity.com/id/nomeutente",
   "import_source_steam_description": "Libreria e tempo di gioco.",
   "import_steam_sync_action": "Aggiorna da Steam",

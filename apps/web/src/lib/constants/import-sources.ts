@@ -67,11 +67,6 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       noun: { one: m.common_game(), many: m.common_games() },
       guide: `${DOCS_URL}/guide/imports/steam/`,
     },
-    backloggd: {
-      domain: Domain.GAMES,
-      label: IMPORT_SOURCE_NAMES.backloggd,
-      description: m.import_source_backloggd_description() as string,
-    } as ImportSourceDescriptor,
     storygraph: {
       domain: Domain.BOOKS,
       label: IMPORT_SOURCE_NAMES.storygraph,

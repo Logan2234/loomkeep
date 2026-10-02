@@ -12,7 +12,6 @@ These sources are planned. Each will get its own page once it ships.
 | ------------- | ----------- | ------------------------------------------------------- |
 | Letterboxd    | Films       | Diary, ratings and watchlist (ZIP export)               |
 | Kitsu         | Anime       | Anime list, matched through MyAnimeList and AniList ids |
-| Backloggd     | Games       | Backlog and completed games                             |
 | LibraryThing  | Books       | Library and reading history                             |
 | BookWyrm      | Books       | Library and reading history                             |
 | Spotify       | Podcasts    | Followed podcasts                                       |

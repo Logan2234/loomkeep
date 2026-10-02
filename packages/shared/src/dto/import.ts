@@ -23,7 +23,6 @@ export type ImportSource =
   | "simkl"
   | "kitsu"
   | "steam"
-  | "backloggd"
   | "storygraph"
   | "goodreads"
   | "babelio"
@@ -42,7 +41,6 @@ export const IMPORT_SOURCE_NAMES: Record<ImportSource, string> = {
   simkl: "Simkl",
   kitsu: "Kitsu",
   steam: "Steam",
-  backloggd: "Backloggd",
   storygraph: "The StoryGraph",
   goodreads: "Goodreads",
   babelio: "Babelio",

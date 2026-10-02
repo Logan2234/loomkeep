@@ -8,7 +8,6 @@ export class ImportAvailabilityResponseDto implements ImportAvailabilityDto {
   simkl?: boolean;
   kitsu?: boolean;
   steam?: boolean;
-  backloggd?: boolean;
   storygraph?: boolean;
   goodreads?: boolean;
   babelio?: boolean;
