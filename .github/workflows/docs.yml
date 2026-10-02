@@ -57,6 +57,9 @@ jobs:
           name: openapi-json
           path: apps/api
       - run: pnpm --filter @loomkeep/docs build
+        env:
+          UMAMI_SCRIPT_URL: ${{ vars.DOCS_UMAMI_SCRIPT_URL }}
+          UMAMI_WEBSITE_ID: ${{ vars.DOCS_UMAMI_WEBSITE_ID }}
       - name: Upload the site for Pages
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

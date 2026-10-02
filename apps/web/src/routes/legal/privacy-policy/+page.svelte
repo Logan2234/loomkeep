@@ -13,7 +13,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 24/09/2026</em></p>
+    <p><em>Dernière mise à jour : 02/10/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -362,13 +362,14 @@
     </p>
     <h3>Mesure d'audience</h3>
     <p>
-      La page d'accueil publique de Loomkeep utilise <strong>Umami</strong>, un
-      outil de mesure d'audience auto-hébergé, sans cookie ni identifiant
-      persistant : le visiteur n'est pas suivi individuellement d'une visite à
-      l'autre, seules des statistiques agrégées et anonymes sont produites
-      (nombre de visites, pages consultées, clics sur certains boutons,
-      provenance approximative). Umami est hébergé sur la même infrastructure
-      que Loomkeep ; aucune donnée n'est transmise à un tiers.
+      La page d'accueil publique de Loomkeep et sa documentation
+      (docs.loomkeep.app) utilisent <strong>Umami</strong>, un outil de mesure
+      d'audience auto-hébergé, sans cookie ni identifiant persistant : le
+      visiteur n'est pas suivi individuellement d'une visite à l'autre, seules
+      des statistiques agrégées et anonymes sont produites (nombre de visites,
+      pages consultées, clics sur certains boutons, provenance approximative).
+      Umami est hébergé sur la même infrastructure que Loomkeep ; aucune donnée
+      n'est transmise à un tiers.
     </p>
     <p>
       Les liens présents dans les e-mails envoyés par Loomkeep passent par un
