@@ -5,12 +5,18 @@ sidebar:
   order: 7
 ---
 
+import { Steps } from "@astrojs/starlight/components";
+
 **What comes in:** your books with their status, rating, review, dates and
 how many times you read them.
+
+<Steps>
 
 1. On The StoryGraph, open [Manage Account › Export StoryGraph Library](https://app.thestorygraph.com/user-export).
 2. In Loomkeep, open **Settings › Import › StoryGraph** and drop the `.csv`.
 3. Review and import: see [how an import works](/guide/imports/#how-an-import-works).
+
+</Steps>
 
 Books are matched to Open Library, by ISBN when the export has one, by title
 and author otherwise.

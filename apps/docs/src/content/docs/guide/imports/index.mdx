@@ -5,6 +5,8 @@ sidebar:
   order: 0
 ---
 
+import { Steps } from "@astrojs/starlight/components";
+
 Loomkeep imports your history from the apps you used before, from
 **Settings › Import**. Each source has its own page:
 
@@ -18,6 +20,8 @@ On their way: Letterboxd, Kitsu, Backloggd, LibraryThing, BookWyrm.
 
 ## How an import works
 
+<Steps>
+
 1. **You give Loomkeep your data**: a file exported from the other app, or a
    connection to your account there (Simkl), or your profile (Steam).
 2. **Loomkeep analyses it** without writing anything: each title is matched
@@ -27,6 +31,8 @@ On their way: Letterboxd, Kitsu, Backloggd, LibraryThing, BookWyrm.
    a title that couldn't be matched can be searched and matched by hand.
    Untick whatever you don't want.
 4. **You import.** Nothing is written before this step.
+
+</Steps>
 
 By default, an import **adds** to your library and keeps what you already
 had. **Overwrite my data** first deletes your library and history for that

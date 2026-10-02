@@ -40,8 +40,8 @@
 #
 # This override is specific to loomkeep.app's own Cloudflare account —
 # self-hosters without Cloudflare keep using plain DNS + Caddy's automatic
-# HTTPS, with docker-compose.authelia.yml for SSO instead (see this
-# directory's own README, "Single sign-on").
+# HTTPS, with docker-compose.authelia.yml for SSO instead (see
+# https://docs.loomkeep.app/self-hosting/optional-services/sso-and-dashboard/).
 services:
   cloudflared:
     # Pin to a specific tag before deploying — check

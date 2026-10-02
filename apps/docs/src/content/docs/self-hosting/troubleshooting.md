@@ -69,5 +69,7 @@ Include:
   removed** first;
 - what you expected, what happened, and how to reproduce it.
 
-Found a security issue? Don't open a public issue: follow the
+:::caution[Found a security issue?]
+Don't open a public issue: follow the
 [security policy](https://github.com/Logan2234/loomkeep/security/policy).
+:::

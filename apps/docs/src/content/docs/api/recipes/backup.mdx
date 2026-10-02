@@ -5,10 +5,14 @@ sidebar:
   order: 3
 ---
 
+import { Steps } from "@astrojs/starlight/components";
+
 `GET /v1/export` returns everything your account holds, in the same format
 as **Settings › Export**. Saved every night, it is a backup you control.
 
 **Key:** `export:read`. The export runs **once an hour** at most.
+
+<Steps>
 
 1. Create the key in **Settings › Integrations**, and save this script as
    `~/bin/loomkeep-backup.sh`:
@@ -36,6 +40,8 @@ as **Settings › Export**. Saved every night, it is a backup you control.
    LOOMKEEP_API_KEY=lk_…
    0 3 * * * $HOME/bin/loomkeep-backup.sh
    ```
+
+</Steps>
 
 `--fail` makes curl exit with an error on a `4xx` or `5xx`, so cron mails you
 when a backup fails instead of saving an error as your backup.

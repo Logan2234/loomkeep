@@ -1,0 +1,85 @@
+---
+title: Behind Cloudflare
+description: Proxy your instance through Cloudflare, protect sign-up with Turnstile, and gate the admin tools with Cloudflare Access.
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+None of this is required: Loomkeep works the same with plain DNS. With your
+domain's DNS on Cloudflare, its free plan adds a few layers worth having on
+an instance open to the internet. Each section stands alone.
+
+## Proxying the domain
+
+Proxied (orange cloud), Cloudflare hides your server's IP address and
+absorbs attacks before they reach it. In Cloudflare's dashboard:
+
+<Steps>
+
+1. **SSL/TLS › Overview**: mode **Full (strict)**. Caddy already has a real
+   certificate; **Flexible** would talk to your server in plain HTTP.
+
+2. **SSL/TLS › Edge Certificates**: turn on **Always Use HTTPS**.
+
+3. **DNS**: proxy every name the stack serves, not only the main one
+   (`grafana.`, `errors.`, `auth.`…). WebSockets go through on their own.
+
+4. Optionally, a **cache rule** for `/_app/immutable/*`: the web app's
+   build files, whose names change with their content, can be cached at
+   Cloudflare's edge for good.
+
+</Steps>
+
+Nothing to change on Loomkeep's side: with the
+[HTTPS override](/self-hosting/https/), the API already trusts the one proxy
+in front of it, Caddy, which passes on visitors' real addresses.
+
+Keep your provider's firewall limited to ports 22, 80 and 443, not only the
+server's own: Docker can open ports around `ufw`.
+
+## Turnstile on sign-up
+
+[Turnstile](https://www.cloudflare.com/products/turnstile/) adds a mostly
+invisible challenge to the sign-up form, against bots creating accounts. It
+needs a Cloudflare account, but not the proxy.
+
+<Steps>
+
+1. In Cloudflare's dashboard, **Turnstile › Add widget**: type **Managed**,
+   with your instance's domain.
+
+2. Copy the **site key** to `PUBLIC_TURNSTILE_SITE_KEY` (public, read by the
+   browser) and the **secret key** to `TURNSTILE_SECRET_KEY` (private, read
+   by the API). Restart.
+
+</Steps>
+
+Left empty, there is no challenge.
+
+## Cloudflare Access
+
+[Cloudflare Access](https://www.cloudflare.com/zero-trust/products/access/)
+asks for a login, through GitHub, Google or a one-time code, before a request
+reaches your server. It suits the [optional services](/self-hosting/optional-services/)'
+admin tools: Grafana, GlitchTip, Portainer, Homepage. It replaces
+[Authelia](/self-hosting/optional-services/sso-and-dashboard/) if you'd
+rather not run it; Loomkeep itself stays outside, since its accounts have
+their own login.
+
+Create one **self-hosted application** per name, with a policy allowing only
+you. Then make room for what must get through without a login:
+
+| Name               | Let through                                  | Because                                                                                                                       |
+| ------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `flags.<DOMAIN>`   | `/api/client/*` and `/api/frontend/*`, to everyone | The API and every visitor's browser read flags there, with tokens of their own. Blocked, every flag falls back to its default. |
+| `grafana.<DOMAIN>` | `/api/health`, to your uptime monitor's addresses | Otherwise the monitor only sees Access's login page, and reports Grafana up when it is down.                                  |
+| `stats.<DOMAIN>`   | Don't put Umami behind Access                | Visitors' browsers load its script and send it their visits.                                                                  |
+
+In Access, "let through" is a second application on that path, with a
+**Bypass** policy. Keep each bypass to its path, and to the monitor's
+[published addresses](https://uptimerobot.com/locations) for Grafana.
+
+<Aside>
+  With Cloudflare in front, [Umami](/self-hosting/optional-services/analytics/)
+  needs Cloudflare's visitor location headers to place visitors on the map.
+</Aside>

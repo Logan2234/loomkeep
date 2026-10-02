@@ -216,9 +216,10 @@ lk_…`), accepted only on routes marked `@AllowApiKey()` — the versioned
   `context: ..` resolves against the compose file's location, not repo root.
   `deploy.yml` redeploys on every successful CI run on `main` — which
   override files get combined comes from `COMPOSE_FILE` in the VPS's own
-  `.env`, not the workflow. See [docker/README.md](docker/README.md) for
-  the add-on stack (observability, Authelia SSO, Portainer, GlitchTip,
-  Umami, Unleash, Homepage).
+  `.env`, not the workflow. The add-on stack (observability, Authelia SSO,
+  Portainer, GlitchTip, Umami, Unleash, Homepage) is documented for
+  self-hosters in `apps/docs` (Self-hosting › Optional services);
+  [docker/README.md](docker/README.md) keeps how loomkeep.app itself runs.
 - `nestjs-pino` structured JSON logging; `Authorization`/`Cookie`/
   `Set-Cookie` redacted, request bodies never logged. `AllExceptionsFilter`
   also reports to GlitchTip when `GLITCHTIP_API_DSN`/`PUBLIC_GLITCHTIP_WEB_DSN`

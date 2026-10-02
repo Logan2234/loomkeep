@@ -5,11 +5,15 @@ sidebar:
   order: 2
 ---
 
+import { Steps } from "@astrojs/starlight/components";
+
 Home Assistant's [RESTful integration](https://www.home-assistant.io/integrations/rest/)
 turns any JSON API into sensors. This one counts the episodes airing today
 for the shows you follow.
 
 **Key:** `calendar:read`.
+
+<Steps>
 
 1. Create the key in **Settings › Integrations**, then store it in
    `secrets.yaml`, with its `Bearer ` prefix:
@@ -34,6 +38,8 @@ for the shows you follow.
    ```
 
 3. Restart Home Assistant: `sensor.loomkeep_episodes_today` appears.
+
+</Steps>
 
 ## Announce them
 

@@ -1,6 +1,6 @@
-# Single sign-on portal (Authelia) for every dashboard in this stack. See
-# docker/README.md § "Single sign-on" and § "Access control per public
-# subdomain".
+# Single sign-on portal (Authelia) for every dashboard in this stack. Setup:
+# https://docs.loomkeep.app/self-hosting/optional-services/sso-and-dashboard/
+# How it fits: docker/README.md § "Access control per public subdomain".
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.authelia.yml up -d --build
 #

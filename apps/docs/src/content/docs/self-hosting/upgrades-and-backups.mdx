@@ -3,6 +3,8 @@ title: Upgrades & backups
 description: Keep your instance up to date, back it up, and restore it.
 ---
 
+import { Aside, Steps } from "@astrojs/starlight/components";
+
 ## Upgrading
 
 From the repository's root:
@@ -41,6 +43,8 @@ Loomkeep backs its database up **every night at 3 a.m.** on its own, keeping
 the last seven. Each dump is encrypted before it touches the disk, for a key only
 you hold:
 
+<Steps>
+
 1. On **your own machine**, not the server, create a key pair with
    [age](https://age-encryption.org):
 
@@ -52,6 +56,8 @@ you hold:
    in `.env`.
 3. Keep `loomkeep-backup-key.txt` somewhere safe and separate, like a
    password manager. **Without it, no backup can ever be read.**
+
+</Steps>
 
 **Admin › Backup** lists the backups, makes one on demand, downloads or
 deletes them, and restores one, which replaces the whole database.
@@ -65,6 +71,8 @@ its header explains how to adapt it.
 
 ### Restoring
 
+<Steps>
+
 1. Decrypt the dump on your machine:
 
    ```sh
@@ -73,8 +81,12 @@ its header explains how to adapt it.
 
 2. Restore it from **Admin › Backup**.
 
-Try it once while nothing is wrong: a backup nobody has restored is a hope,
-not a backup.
+</Steps>
+
+<Aside type="tip">
+  Try it once while nothing is wrong: a backup nobody has restored is a hope,
+  not a backup.
+</Aside>
 
 ## Users' own exports
 

@@ -20,7 +20,7 @@ build/
 docker/authelia/configuration.yml
 docker/authelia/users_database.yml
 # Stray keygen output if the RSA keypair command is ever run without
-# deleting its output afterwards (see README "Single sign-on").
+# deleting its output afterwards (see the docs' "Single sign-on & dashboard").
 docker/authelia/private.pem
 docker/authelia/public.pem
 

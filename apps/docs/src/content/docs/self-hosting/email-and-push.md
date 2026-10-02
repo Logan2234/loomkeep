@@ -46,7 +46,9 @@ and set:
 | `VAPID_PRIVATE_KEY` | The private key.                                     |
 | `VAPID_SUBJECT`     | A way to reach you, e.g. `mailto:admin@example.com`. |
 
+:::caution
 Keep the same keys afterwards: new ones unsubscribe every device.
+:::
 
 Push needs HTTPS on a real device: see [Domain & HTTPS](/self-hosting/https/).
 **Admin › Communications** sends a test notification.

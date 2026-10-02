@@ -1,0 +1,90 @@
+---
+title: Calendar & feeds
+description: See upcoming episodes in your own calendar app, and follow releases or your activity in a feed reader.
+---
+
+import { Aside, Steps, TabItem, Tabs } from "@astrojs/starlight/components";
+
+Loomkeep gives you private links that other apps subscribe to. They refresh
+on their own: new episodes show up without importing anything again.
+
+| Link              | What it holds                                     | Where to find it                                                                       |
+| ----------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Calendar**      | Upcoming episodes of the shows you follow         | **Add to my calendar** on the calendar page, or **Settings › Integrations**            |
+| **Release feed**  | Episodes out over the last 30 days, RSS or Atom   | The same window, under the calendar link                                               |
+| **Activity feed** | Your activity: additions, progress, reviews, lists | **Activity feed** on your profile, or **Settings › Integrations**, when social is on   |
+
+<Aside type="note" title="A premium feature to come">
+  These links will be part of Loomkeep's premium plan. Until it launches,
+  every account has them: see [Free and premium](/guide/free-and-premium/).
+</Aside>
+
+## Adding your calendar
+
+Copy the calendar link from Loomkeep, then subscribe to it in your app.
+Subscribe rather than import: an imported file never updates.
+
+<Tabs syncKey="calendar-app">
+  <TabItem label="Google Calendar">
+    <Steps>
+
+    1. On a computer, open [Google Calendar](https://calendar.google.com).
+    2. Next to **Other calendars**, choose **+**, then **From URL**.
+    3. Paste the link and choose **Add calendar**.
+
+    </Steps>
+
+    It then appears on your phone too. Google refreshes subscriptions every
+    few hours, so a new episode can take a while to show up.
+
+  </TabItem>
+  <TabItem label="Apple Calendar">
+    <Steps>
+
+    1. On a Mac, choose **File › New Calendar Subscription**. On an iPhone or
+       iPad, open **Settings › Calendar › Calendar Accounts › Add Account ›
+       Other › Add Subscribed Calendar** (under **Settings › Apps** in recent
+       versions).
+    2. Paste the link.
+    3. On a Mac, set **Auto-refresh** to every hour or every day.
+
+    </Steps>
+
+  </TabItem>
+  <TabItem label="Outlook">
+    <Steps>
+
+    1. In [Outlook on the web](https://outlook.live.com/calendar/), choose
+       **Add calendar**, then **Subscribe from web**.
+    2. Paste the link, give it a name, and choose **Import**.
+
+    </Steps>
+
+  </TabItem>
+  <TabItem label="Thunderbird">
+    <Steps>
+
+    1. In the calendar, choose **New Calendar**, then **On the Network**.
+    2. Paste the link as the location, and follow the steps.
+
+    </Steps>
+
+  </TabItem>
+</Tabs>
+
+## Following a feed
+
+Paste the release or activity link into a feed reader: Feedly, FreshRSS,
+Inoreader, NetNewsWire, Thunderbird… Pick **RSS** or **Atom** for the
+release feed, whichever your reader prefers; the activity feed is Atom.
+
+## Keeping them private
+
+Anyone with one of these links can read what it holds, without signing in.
+Don't share them. If one leaks, **regenerate** it from the same place: the
+old link stops working at once, and every app subscribed to it needs the new
+one. The calendar and release feed share one link: regenerating one
+regenerates both.
+
+For scripts and dashboards that need more than these views, see the
+[API](/api/).

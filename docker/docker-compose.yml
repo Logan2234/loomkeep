@@ -67,7 +67,7 @@ services:
       SMTP_FROM: "${SMTP_FROM:-Loomkeep <noreply@loomkeep.app>}"
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
       LOG_LEVEL: ${LOG_LEVEL:-}
-      # Empty = TurnstileService.verify() always passes — see README "Bot protection".
+      # Empty = TurnstileService.verify() always passes — see https://docs.loomkeep.app/self-hosting/cloudflare/.
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       BACKUP_DIR: /data/backups
       BACKUP_ENCRYPTION_PUBLIC_KEY: ${BACKUP_ENCRYPTION_PUBLIC_KEY:?set BACKUP_ENCRYPTION_PUBLIC_KEY in .env}

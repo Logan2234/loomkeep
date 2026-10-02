@@ -45,23 +45,10 @@ The override stops publishing ports 3000 and 8080: only Caddy is reachable.
 It also tells the API to trust the one proxy in front of it, so rate limits
 and logs see visitors' real addresses.
 
-## Behind Cloudflare (optional)
+## Behind Cloudflare
 
-With your DNS on Cloudflare, proxying the domain (orange cloud) hides the
-server's IP and adds free DDoS protection. In Cloudflare's dashboard:
-
-- **SSL/TLS** mode: **Full (strict)**, since Caddy already has a real
-  certificate.
-- **Always Use HTTPS**: on.
-- Proxy every subdomain the stack serves, not only the main one.
-
-## Bot protection on sign-up (optional)
-
-[Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile/) adds
-an invisible challenge to the sign-up form, without proxying. Create a
-**Managed** widget for your domain in Cloudflare's dashboard, then set
-`PUBLIC_TURNSTILE_SITE_KEY` (public) and `TURNSTILE_SECRET_KEY` (private).
-Left empty, there is no challenge.
+Proxying through Cloudflare, a challenge on the sign-up form, a login in
+front of the admin tools: see [Behind Cloudflare](/self-hosting/cloudflare/).
 
 ## Using another reverse proxy
 

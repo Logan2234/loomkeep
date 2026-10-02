@@ -4,7 +4,8 @@ description: What the premium edition is, and what it means for a self-hosted in
 ---
 
 **There is no premium offer yet.** Until there is, every feature works on
-every instance, for every account, without a key or a payment.
+every instance, for every account, without a key or a payment. What will
+differ is listed in [Free and premium](/guide/free-and-premium/).
 
 ## How it will work
 

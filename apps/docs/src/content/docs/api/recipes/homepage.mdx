@@ -5,10 +5,14 @@ sidebar:
   order: 1
 ---
 
+import { Steps } from "@astrojs/starlight/components";
+
 [Homepage](https://gethomepage.dev) shows any JSON API through its
 `customapi` widget. This one shows what you track and how far along you are.
 
 **Key:** `stats:read`.
+
+<Steps>
 
 1. Create the key in **Settings › Integrations**, then give it to Homepage as
    an environment variable, so it stays out of your configuration files:
@@ -45,6 +49,8 @@ sidebar:
                  label: Favourites
                  format: number
    ```
+
+</Steps>
 
 On a self-hosted instance, replace `https://loomkeep.app` with your own
 address. If Homepage runs next to Loomkeep in the same Docker network, it can
