@@ -21,10 +21,13 @@
   <a href="https://github.com/Logan2234/loomkeep/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Logan2234/loomkeep/ci.yml?branch=main&label=CI"></a>
   <a href="https://codecov.io/gh/Logan2234/loomkeep"><img alt="Coverage" src="https://codecov.io/gh/Logan2234/loomkeep/graph/badge.svg"></a>
   <a href="https://github.com/Logan2234/loomkeep/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://img.shields.io/github/actions/workflow/status/Logan2234/loomkeep/codeql.yml?branch=main&label=CodeQL"></a>
+  <a href="https://github.com/Logan2234/loomkeep/actions/workflows/trivy.yml"><img alt="Trivy" src="https://img.shields.io/github/actions/workflow/status/Logan2234/loomkeep/trivy.yml?branch=main&label=Trivy"></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/Logan2234/loomkeep"><img alt="OpenSSF Scorecard" src="https://api.securityscorecards.dev/projects/github.com/Logan2234/loomkeep/badge"></a>
   <a href="https://stats.uptimerobot.com/3nvxkigZ8T"><img alt="Uptime" src="https://badge.uptimerobot.com/psp/e1c67613d49507a70212caebf47e783d.svg?style=logo&theme=dark"></a>
+  <a href="https://healthchecks.io/"><img alt="Healthchecks.io" src="https://healthchecks.io/badge/e006c4d6-231b-434f-8357-4fa7ab/CWqULdZN.svg"></a>
   <a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/github/package-json/v/Logan2234/loomkeep"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Logan2234/loomkeep"></a>
+  <a href="https://github.com/Logan2234/loomkeep/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/Logan2234/loomkeep"></a>
 </p>
 
 ![Loomkeep's home screen](apps/web/static/pwa-screenshot-app-desktop.png)
