@@ -27,7 +27,7 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Logan2234/loomkeep"></a>
 </p>
 
-![Loomkeep's home screen](apps/web/static/pwa-screenshot-app-desktop.png)
+![A title's page in Loomkeep: progress, rating and what's next](.github/assets/screenshot.webp)
 
 ## What it does
 
