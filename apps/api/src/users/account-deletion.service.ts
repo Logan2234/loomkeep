@@ -46,6 +46,25 @@ export class AccountDeletionService {
       userAgent,
     });
     await this.security.forgetIps(userId);
+    // What survives the account (SetNull) must not name the person: an email
+    // change logs "old → new", a passkey or key name can be a first name, an
+    // import summary or error can quote an external profile.
+    await this.prisma.securityEvent.updateMany({
+      where: { userId, type: { not: "USER_DELETED" } },
+      data: { detail: null },
+    });
+    await this.prisma.importRun.updateMany({
+      where: { userId },
+      data: { summary: null, error: null },
+    });
+
+    if (account) {
+      await this.prisma.invitation.updateMany({
+        where: { email: { equals: account.email, mode: "insensitive" } },
+        data: { email: null },
+      });
+    }
+
     await this.lists.reassignOwnedListsOnAccountDeletion(userId);
 
     // Other members' notifications name the actor by username: left behind,

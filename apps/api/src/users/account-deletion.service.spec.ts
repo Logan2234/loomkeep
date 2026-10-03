@@ -17,6 +17,9 @@ function makeService() {
       }),
     },
     notification: { deleteMany: vi.fn() },
+    securityEvent: { updateMany: vi.fn() },
+    invitation: { updateMany: vi.fn() },
+    importRun: { updateMany: vi.fn() },
   } as unknown as PrismaService;
   const lists = {
     reassignOwnedListsOnAccountDeletion: vi.fn(),
@@ -109,6 +112,27 @@ describe("AccountDeletionService.deleteAccount", () => {
         userId: { not: "user-1" },
         data: { path: ["actorUsername"], equals: "alice" },
       },
+    });
+  });
+
+  it("strips what still identifies the person from the records kept", async () => {
+    const { service, prisma } = makeService();
+
+    await service.deleteAccount("user-1", "self", "Suppression demandée");
+
+    // An email change logs "old → new"; a passkey or key name can be a name.
+    expect(prisma.securityEvent.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", type: { not: "USER_DELETED" } },
+      data: { detail: null },
+    });
+    expect(prisma.invitation.updateMany).toHaveBeenCalledWith({
+      where: { email: { equals: "alice@example.com", mode: "insensitive" } },
+      data: { email: null },
+    });
+    // A summary or an error can quote an external profile (a Steam id…).
+    expect(prisma.importRun.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      data: { summary: null, error: null },
     });
   });
 
