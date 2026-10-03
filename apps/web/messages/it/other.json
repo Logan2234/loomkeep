@@ -1209,5 +1209,12 @@
   "list_moderating_back": "Torna alle segnalazioni",
   "auth_suspended_title": "Il tuo account è disattivato",
   "auth_suspended_body": "Verrà riattivato il {date}. I motivi di questa decisione ti sono stati inviati per email.",
-  "auth_suspended_contact": "Per contestarla, rispondi a quella email o scrivi a"
+  "auth_suspended_contact": "Per contestarla, rispondi a quella email o scrivi a",
+  "add_to_list_search": "Cerca o crea una lista",
+  "add_to_list_create": "Crea «{title}» con quest'opera",
+  "add_to_list_shared": "Condivise con me",
+  "add_to_list_empty": "Scrivi un nome per creare la tua prima lista.",
+  "lists_visibility_private_hint": "Tu e i tuoi editor, nessun altro.",
+  "lists_visibility_friends_hint": "I tuoi amici la vedono sul tuo profilo.",
+  "lists_visibility_public_hint": "Chiunque su questa istanza può vederla."
 }
