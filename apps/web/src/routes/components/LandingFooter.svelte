@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { updateMe } from "$lib/api/auth";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
@@ -14,6 +17,18 @@
   import { languageOptions } from "$lib/locales";
   import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
   import type { Locale } from "@loomkeep/shared";
+
+  // Signed in, initAuth re-applies the account's locale on every load, so the
+  // choice is saved there too — or the page would switch back mid-visit.
+  const saveLocaleMut = createApiMutation(() => ({
+    mutate: (next: Locale) => updateMe({ locale: next }),
+    onSuccess: (_data, next) => setLocale(next),
+  }));
+
+  function chooseLocale(next: Locale) {
+    if (auth.isLoggedIn) saveLocaleMut.mutate(next);
+    else setLocale(next);
+  }
 
   const COLUMNS: {
     title: string;
@@ -170,7 +185,7 @@
         label={m.common_language()}
         options={languageOptions()}
         values={[getLocale()]}
-        onChange={([next]) => setLocale(next as Locale)} />
+        onChange={([next]) => chooseLocale(next as Locale)} />
     </div>
   </div>
 </footer>
