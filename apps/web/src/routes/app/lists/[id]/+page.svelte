@@ -523,6 +523,7 @@
 {#if managingMembers && list}
   <ListMembersModal
     listId={list.id}
+    owner={list.author}
     onClose={() => (managingMembers = false)} />
 {/if}
 

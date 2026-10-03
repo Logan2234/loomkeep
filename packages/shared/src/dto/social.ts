@@ -34,6 +34,16 @@ export interface UserSummaryDto {
   xp?: number;
 }
 
+/** An account in someone's followers/following, seen from the viewer. */
+export interface ConnectionDto extends UserSummaryDto {
+  /** The viewer follows this account. */
+  following: boolean;
+  /** The viewer asked to follow this (PRIVATE) account; not accepted yet. */
+  requested: boolean;
+  /** A friend of the viewer — the same rule as `RelationshipDto.isFriend`. */
+  isFriend: boolean;
+}
+
 /** Live counts of what a switch to Figurant mode would immediately affect. */
 export interface GhostSwitchImpactDto {
   followersToRemove: number;
