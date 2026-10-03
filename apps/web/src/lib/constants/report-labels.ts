@@ -3,7 +3,9 @@ import type {
   ModerationLegalBasis,
   ReportCategory,
   ReportMotif,
+  ReportProfilePart,
   ReportStatus,
+  ReportTargetType,
 } from "@loomkeep/shared";
 
 export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
@@ -31,6 +33,7 @@ export const REPORT_CATEGORY_ORDER: ReportCategory[] = [
   "MISINFORMATION",
   "STOLEN_CONTENT",
   "MISLEADING_REVIEW",
+  "NONCOMPLIANT_ACCOUNT",
   "OTHER",
 ];
 
@@ -47,6 +50,7 @@ export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
   MISINFORMATION: m.report_category_misinformation(),
   STOLEN_CONTENT: m.report_category_stolen(),
   MISLEADING_REVIEW: m.report_category_misleading_review(),
+  NONCOMPLIANT_ACCOUNT: m.report_category_noncompliant(),
   OTHER: m.common_other(),
 };
 
@@ -63,6 +67,7 @@ export const REPORT_CATEGORY_HINTS: Record<ReportCategory, string> = {
   MISINFORMATION: m.report_false_information(),
   STOLEN_CONTENT: m.report_hint_stolen(),
   MISLEADING_REVIEW: m.report_hint_misleading_review(),
+  NONCOMPLIANT_ACCOUNT: m.report_hint_noncompliant(),
   OTHER: m.report_hint_other(),
 };
 
@@ -71,6 +76,9 @@ export const REPORT_MOTIF_LABELS: Record<ReportMotif, string> = {
   SPAM_SUSPICIOUS_LINK: m.report_motif_spam_link(),
   SPAM_REPEATED: m.report_motif_spam_repeated(),
   ILLEGAL_PIRACY_LINK: m.report_motif_illegal_link(),
+  ILLEGAL_TERRORISM: m.report_motif_illegal_terrorism(),
+  ILLEGAL_DEFAMATION: m.report_motif_illegal_defamation(),
+  ILLEGAL_OTHER: m.report_motif_illegal_other(),
   HARASSMENT_INSULTS: m.report_motif_harassment_insults(),
   HARASSMENT_THREATS: m.report_motif_harassment_threats(),
   HARASSMENT_STALKING: m.report_motif_harassment_stalking(),
@@ -84,11 +92,50 @@ export const REPORT_MOTIF_LABELS: Record<ReportMotif, string> = {
   MINOR_ENDANGERMENT_SOLICITATION: m.report_motif_minor_solicitation(),
   SPOILER_UNTAGGED: m.report_motif_spoiler(),
   IMPERSONATION_REAL_PERSON: m.report_motif_impersonation_person(),
-  IMPERSONATION_FAKE_ACCOUNT: m.report_motif_impersonation_fake(),
   MISINFORMATION_FALSE_FACT: m.report_false_information(),
   STOLEN_CONTENT_PLAGIARIZED: m.report_motif_stolen(),
+  STOLEN_CONTENT_IMAGE: m.report_motif_stolen_image(),
   MISLEADING_REVIEW_MANIPULATION: m.report_motif_misleading_review(),
   MISLEADING_REVIEW_OFF_TOPIC: m.report_motif_misleading_off_topic(),
+  ACCOUNT_BOT: m.report_motif_account_bot(),
+  ACCOUNT_UNDERAGE: m.report_motif_account_underage(),
+  ACCOUNT_BAN_EVASION: m.report_motif_account_ban_evasion(),
+  ACCOUNT_MANIPULATION: m.report_motif_account_manipulation(),
+};
+
+/** The "what's wrong?" step of a profile report, in display order. */
+export const REPORT_PROFILE_PARTS: {
+  value: ReportProfilePart;
+  label: string;
+  hint: string;
+}[] = [
+  {
+    value: "NAME",
+    label: m.common_name(),
+    hint: m.report_part_name_hint(),
+  },
+  {
+    value: "PHOTO",
+    label: m.report_part_photo(),
+    hint: m.report_part_photo_hint(),
+  },
+  { value: "BIO", label: m.common_bio(), hint: m.report_part_bio_hint() },
+  {
+    value: "BEHAVIOUR",
+    label: m.report_part_behaviour(),
+    hint: m.report_part_behaviour_hint(),
+  },
+];
+
+export const REPORT_PROFILE_PART_LABELS = Object.fromEntries(
+  REPORT_PROFILE_PARTS.map((part) => [part.value, part.label]),
+) as Record<ReportProfilePart, string>;
+
+export const REPORT_TARGET_LABELS: Record<ReportTargetType, string> = {
+  COMMENT: m.report_target_comment(),
+  REVIEW: m.report_target_review(),
+  USER: m.report_target_user(),
+  LIST: m.report_target_list(),
 };
 
 export const MODERATION_LEGAL_BASIS_LABELS: Record<
@@ -111,6 +158,10 @@ export function defaultModerationBasis(category: ReportCategory | null): {
 } {
   if (category === "ILLEGAL_CONTENT" || category === "MINOR_ENDANGERMENT") {
     return { legalBasis: "ILLEGAL_CONTENT", tosClause: "" };
+  }
+
+  if (category === "NONCOMPLIANT_ACCOUNT") {
+    return { legalBasis: "TOS_BREACH", tosClause: m.moderation_terms_abuse() };
   }
 
   return { legalBasis: "TOS_BREACH", tosClause: m.moderation_terms_conduct() };

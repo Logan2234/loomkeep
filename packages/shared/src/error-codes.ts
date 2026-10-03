@@ -14,6 +14,8 @@ export const ErrorCode = {
   AuthInvalidVerificationToken: "auth.invalid_verification_token",
   AuthAlreadyVerified: "auth.already_verified",
   AuthInvalidCredentials: "auth.invalid_credentials",
+  /** A moderation suspension is in force; `params.until` is its ISO end. */
+  AuthAccountSuspended: "auth.account_suspended",
   AuthInvalidMfaChallenge: "auth.invalid_mfa_challenge",
   AuthMfaTooManyAttempts: "auth.mfa_too_many_attempts",
   AuthMfaInvalidCode: "auth.mfa_invalid_code",

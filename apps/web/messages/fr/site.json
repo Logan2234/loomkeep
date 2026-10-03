@@ -163,5 +163,11 @@
   "transparency_unavailable": "Cette instance ne publie pas de bilan de modération.",
   "transparency_appeal_prefix": "Pour contester une décision, réponds à l'e-mail qui te l'a notifiée ou écris à",
   "transparency_appeal_middle": ". Le détail de la procédure figure au",
-  "transparency_appeal_terms_link": "§9 des conditions d'utilisation"
+  "transparency_appeal_terms_link": "§9 des conditions d'utilisation",
+  "transparency_measure_list_removed": "Liste supprimée",
+  "transparency_measure_list_edited": "Liste modifiée",
+  "transparency_measure_avatar": "Photo de profil retirée",
+  "transparency_measure_bio": "Bio effacée",
+  "transparency_measure_display_name": "Nom affiché changé",
+  "transparency_measure_suspended": "Compte désactivé"
 }

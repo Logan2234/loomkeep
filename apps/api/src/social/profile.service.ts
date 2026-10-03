@@ -26,6 +26,7 @@ import {
   mostActiveYear,
 } from "../stats/video-temporal.util";
 import { avatarUrl } from "../users/avatar.util";
+import { isSuspended } from "../users/suspension.util";
 import { FollowService } from "./follow.service";
 import { earliest, latest } from "./profile-stats.util";
 import { SOCIAL_DOMAINS } from "./social.constants";
@@ -75,9 +76,10 @@ export class ProfileService {
         avatarUpdatedAt: true,
         hideProgression: true,
         equippedBadgeKeys: true,
+        suspendedUntil: true,
       },
     });
-    if (!target)
+    if (!target || isSuspended(target))
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     const relation = await this.visibility.getRelation(viewerId, target);
@@ -282,9 +284,9 @@ export class ProfileService {
   ): Promise<{ id: string; profileAccess: string } | null> {
     const target = await this.prisma.user.findUnique({
       where: { username },
-      select: { id: true, profileAccess: true },
+      select: { id: true, profileAccess: true, suspendedUntil: true },
     });
-    if (!target)
+    if (!target || isSuspended(target))
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     const relation = await this.visibility.getRelation(viewerId, target);
@@ -293,6 +295,25 @@ export class ProfileService {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     if (visibility === "locked") return null;
     return target;
+  }
+
+  /**
+   * The id of a profile the viewer may report: anything they can reach, a
+   * locked private preview included (its name and photo are on show). 404s
+   * when the profile must stay hidden.
+   */
+  async reportTargetId(viewerId: string, username: string): Promise<string> {
+    const target = await this.prisma.user.findUnique({
+      where: { username },
+      select: { id: true, profileAccess: true, suspendedUntil: true },
+    });
+    if (!target || isSuspended(target))
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+
+    const relation = await this.visibility.getRelation(viewerId, target);
+    if (resolveProfileVisibility(target.profileAccess, relation) === "hidden")
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+    return target.id;
   }
 
   /**
@@ -326,9 +347,9 @@ export class ProfileService {
   ): Promise<string | null> {
     const target = await this.prisma.user.findUnique({
       where: { username },
-      select: { id: true, profileAccess: true },
+      select: { id: true, profileAccess: true, suspendedUntil: true },
     });
-    if (!target)
+    if (!target || isSuspended(target))
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     const relation = await this.visibility.getRelation(viewerId, target);

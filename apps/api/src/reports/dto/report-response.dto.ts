@@ -2,6 +2,7 @@ import type {
   ReportCategory,
   ReportDto,
   ReportMotif,
+  ReportProfilePart,
   ReportStatus,
   ReportTargetType,
 } from "@loomkeep/shared";
@@ -14,6 +15,7 @@ export class ReportResponseDto implements ReportDto {
   targetId!: string;
   category!: ReportCategory | null;
   motif!: ReportMotif | null;
+  profilePart!: ReportProfilePart | null;
   reason!: string | null;
   status!: ReportStatus;
   createdAt!: string;

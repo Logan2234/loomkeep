@@ -3,9 +3,13 @@
   import { page } from "$app/state";
   import { adminFilterHref } from "$lib/admin-filter-url";
   import {
+    deleteAdminUser,
     getAdminReports,
     getAdminReportsSummary,
+    recordAdminListEdit,
+    removeAdminReportedList,
     resolveAdminReport,
+    takeAdminProfileMeasures,
     takeDownAdminReport,
   } from "$lib/api/client";
   import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
@@ -26,8 +30,10 @@
     MODERATION_LEGAL_BASIS_LABELS,
     REPORT_CATEGORY_LABELS,
     REPORT_MOTIF_LABELS,
+    REPORT_PROFILE_PART_LABELS,
     REPORT_STATUS_COLORS,
     REPORT_STATUS_LABELS,
+    REPORT_TARGET_LABELS,
   } from "$lib/constants/report-labels";
   import { formatDateTime, formatNumber } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
@@ -107,19 +113,72 @@
   }));
 
   // DSA art. 17: the admin must state the facts and legal basis before a
-  // takedown fires the notice — prefilled from the report, editable.
+  // measure fires the notice — prefilled from the report, editable. One modal
+  // for every measure; `decisionMode` picks what it applies.
+  type DecisionMode = "take-down" | "list-remove" | "list-edit" | "profile";
   let takeDownTarget = $state<ReportDto | null>(null);
+  let decisionMode = $state<DecisionMode>("take-down");
   let takeDownReasonText = $state("");
   let takeDownLegalBasis = $state<ModerationLegalBasis>("TOS_BREACH");
   let takeDownTosClause = $state("");
 
+  // Profile measures combine freely; deleting the account excludes them all.
+  const SUSPEND_PRESETS = ["7", "30", "90"] as const;
+  let removeAvatar = $state(false);
+  let clearBio = $state(false);
+  let changeName = $state(false);
+  let newDisplayName = $state("");
+  let suspend = $state(false);
+  let suspendFor = $state<(typeof SUSPEND_PRESETS)[number] | "custom">("7");
+  let suspendDate = $state("");
+  let deleteAccount = $state(false);
+
+  const suspendUntil = $derived.by(() => {
+    if (!suspend) return null;
+    if (suspendFor !== "custom")
+      return new Date(Date.now() + Number(suspendFor) * 86_400_000);
+    const end = suspendDate ? new Date(`${suspendDate}T00:00`) : null;
+    return end && end.getTime() > Date.now() ? end : null;
+  });
+  const profileMeasureChosen = $derived(
+    deleteAccount ||
+      removeAvatar ||
+      clearBio ||
+      (changeName && newDisplayName.trim().length > 0) ||
+      suspendUntil !== null,
+  );
+
+  function applyDecision(r: ReportDto): Promise<void> {
+    const reason = {
+      reasonText: takeDownReasonText,
+      legalBasis: takeDownLegalBasis,
+      tosClause: takeDownTosClause,
+    };
+    switch (decisionMode) {
+      case "list-remove":
+        return removeAdminReportedList(r.id, reason);
+      case "list-edit":
+        return recordAdminListEdit(r.id, reason);
+      case "profile":
+        if (deleteAccount) {
+          return deleteAdminUser(r.targetId, reason).then(() =>
+            resolveAdminReport(r.id, "RESOLVED"),
+          );
+        }
+        return takeAdminProfileMeasures(r.id, {
+          ...reason,
+          removeAvatar,
+          clearBio,
+          displayName: changeName ? newDisplayName.trim() : undefined,
+          suspendUntil: suspendUntil?.toISOString(),
+        });
+      default:
+        return takeDownAdminReport(r.id, reason);
+    }
+  }
+
   const takeDownMut = createApiMutation(() => ({
-    mutate: (id: string) =>
-      takeDownAdminReport(id, {
-        reasonText: takeDownReasonText,
-        legalBasis: takeDownLegalBasis,
-        tosClause: takeDownTosClause,
-      }),
+    mutate: (r: ReportDto) => applyDecision(r),
     onSuccess: () => {
       takeDownTarget = null;
     },
@@ -131,8 +190,17 @@
     coveredFields: ["reasonText", "legalBasis", "tosClause"],
   }));
 
-  function openTakeDown(r: ReportDto) {
+  function openTakeDown(r: ReportDto, mode: DecisionMode = "take-down") {
     takeDownTarget = r;
+    decisionMode = mode;
+    removeAvatar = r.profilePart === "PHOTO";
+    clearBio = r.profilePart === "BIO";
+    changeName = r.profilePart === "NAME";
+    newDisplayName = r.target?.label ?? "";
+    suspend = false;
+    suspendFor = "7";
+    suspendDate = "";
+    deleteAccount = false;
     takeDownReasonText =
       r.reason ??
       (r.motif
@@ -151,7 +219,7 @@
   // its own row-keyed pending state.
   const rowBusy = (id: string): boolean =>
     (resolveMut.loading && resolveMut.variables?.id === id) ||
-    (takeDownMut.loading && takeDownMut.variables === id);
+    (takeDownMut.loading && takeDownMut.variables?.id === id);
 
   const kpis = $derived(
     summary
@@ -294,7 +362,12 @@
               ]}">
               {REPORT_STATUS_LABELS[r.status]}
             </span>
-            <span class="text-dim text-xs">{r.targetType}</span>
+            <span class="text-dim text-xs">
+              {REPORT_TARGET_LABELS[r.targetType]}
+              {#if r.profilePart}
+                · {REPORT_PROFILE_PART_LABELS[r.profilePart]}
+              {/if}
+            </span>
             {#if r.category}
               <span class="chip text-xs">
                 {REPORT_CATEGORY_LABELS[r.category]}
@@ -350,6 +423,31 @@
                   onclick={() => openTakeDown(r)}>
                   {m.admin_reports_remove_content()}
                 </button>
+              {:else if r.targetType === "USER" && r.target}
+                <button
+                  class="btn btn-danger btn-sm"
+                  disabled={rowBusy(r.id)}
+                  onclick={() => openTakeDown(r, "profile")}>
+                  {m.admin_reports_take_measure()}
+                </button>
+              {:else if r.targetType === "LIST" && r.target}
+                {#if r.target.href}
+                  <a class="btn btn-ghost btn-sm" href={r.target.href}>
+                    {m.admin_reports_list_open()}
+                  </a>
+                {/if}
+                <button
+                  class="btn btn-primary btn-sm"
+                  disabled={rowBusy(r.id)}
+                  onclick={() => openTakeDown(r, "list-edit")}>
+                  {m.admin_reports_list_record_edit()}
+                </button>
+                <button
+                  class="btn btn-danger btn-sm"
+                  disabled={rowBusy(r.id)}
+                  onclick={() => openTakeDown(r, "list-remove")}>
+                  {m.admin_reports_list_remove()}
+                </button>
               {/if}
               <button
                 class="btn btn-primary btn-sm"
@@ -385,12 +483,133 @@
 </div>
 
 {#if takeDownTarget}
+  {@const target = takeDownTarget}
   <Modal
-    title={m.admin_reports_remove_title()}
+    title={decisionMode === "profile"
+      ? m.admin_reports_measure_title({
+          username: target.target?.targetOwnerUsername ?? "",
+        })
+      : decisionMode === "list-remove"
+        ? m.admin_reports_list_remove()
+        : decisionMode === "list-edit"
+          ? m.admin_reports_list_record_edit()
+          : m.admin_reports_remove_title()}
     onclose={() => (takeDownTarget = null)}>
-    <p class="text-dim text-sm">
-      {m.admin_reports_remove_description()}
-    </p>
+    {#if decisionMode === "profile"}
+      {#if target.profilePart}
+        <p class="text-dim text-sm">
+          {m.admin_reports_reported_part({
+            part: REPORT_PROFILE_PART_LABELS[target.profilePart],
+          })}
+          {#if target.category}
+            · {REPORT_CATEGORY_LABELS[target.category]}
+            {#if target.motif}· {REPORT_MOTIF_LABELS[target.motif]}{/if}
+          {/if}
+        </p>
+      {/if}
+      <div class="border-border mt-3 divide-y rounded-lg border px-3">
+        {@render measureRow(
+          "measure-avatar",
+          m.admin_reports_measure_avatar(),
+          m.admin_reports_measure_avatar_hint(),
+          () => removeAvatar,
+          (v) => (removeAvatar = v),
+        )}
+        {@render measureRow(
+          "measure-bio",
+          m.admin_reports_measure_bio(),
+          null,
+          () => clearBio,
+          (v) => (clearBio = v),
+        )}
+        {@render measureRow(
+          "measure-name",
+          m.admin_reports_measure_name(),
+          m.admin_reports_measure_name_hint(),
+          () => changeName,
+          (v) => (changeName = v),
+        )}
+        {#if changeName && !deleteAccount}
+          <div class="border-none pb-2.5 pl-7">
+            <input
+              id="measure-name-value"
+              class="input text-sm"
+              maxlength={50}
+              aria-label={m.admin_reports_measure_name_label()}
+              placeholder={m.admin_reports_measure_name_label()}
+              bind:value={newDisplayName} />
+          </div>
+        {/if}
+        {@render measureRow(
+          "measure-suspend",
+          m.admin_reports_measure_suspend(),
+          m.admin_reports_measure_suspend_hint(),
+          () => suspend,
+          (v) => (suspend = v),
+        )}
+        {#if suspend && !deleteAccount}
+          <div
+            class="flex flex-wrap items-center gap-2 border-none pb-2.5 pl-7">
+            {#each SUSPEND_PRESETS as days (days)}
+              <button
+                type="button"
+                class="chip"
+                class:chip-on={suspendFor === days}
+                aria-pressed={suspendFor === days}
+                onclick={() => (suspendFor = days)}>
+                {m.admin_reports_suspend_days({ count: days })}
+              </button>
+            {/each}
+            <button
+              type="button"
+              class="chip"
+              class:chip-on={suspendFor === "custom"}
+              aria-pressed={suspendFor === "custom"}
+              onclick={() => (suspendFor = "custom")}>
+              {m.admin_reports_suspend_custom()}
+            </button>
+            {#if suspendFor === "custom"}
+              <input
+                id="measure-suspend-date"
+                type="date"
+                class="input w-auto text-sm"
+                aria-label={m.admin_reports_suspend_end()}
+                bind:value={suspendDate} />
+            {/if}
+          </div>
+        {/if}
+        <label class="flex cursor-pointer items-start gap-2.5 py-2.5">
+          <input
+            id="measure-delete"
+            type="checkbox"
+            class="accent-danger mt-0.5 h-4 w-4 shrink-0"
+            bind:checked={deleteAccount} />
+          <span>
+            <span class="text-danger block text-sm font-semibold">
+              {m.admin_reports_measure_delete()}
+            </span>
+            <span class="text-dim block text-xs">
+              {m.admin_reports_measure_delete_hint()}
+            </span>
+          </span>
+        </label>
+      </div>
+      {#if suspendUntil && !deleteAccount}
+        <p class="bg-surface-2 text-dim mt-3 rounded-lg px-3 py-2 text-xs">
+          {m.admin_reports_suspend_effects({
+            date: formatDateTime(suspendUntil),
+          })}
+        </p>
+      {/if}
+    {:else}
+      <p class="text-dim text-sm">
+        {decisionMode === "list-remove"
+          ? m.admin_reports_list_remove_description()
+          : decisionMode === "list-edit"
+            ? m.admin_reports_list_edit_description()
+            : m.admin_reports_remove_description()}
+      </p>
+    {/if}
 
     <label class="mt-4 block text-sm font-semibold" for="takedown-reason">
       {m.admin_moderation_facts()}
@@ -451,11 +670,53 @@
       </button>
       <button
         type="button"
-        class="btn btn-danger"
-        disabled={takeDownMut.loading || !takeDownReasonText.trim()}
-        onclick={() => takeDownMut.mutate(takeDownTarget!.id)}>
-        {takeDownMut.loading ? m.admin_reports_removing() : m.common_remove()}
+        class="btn {decisionMode === 'list-edit' ||
+        (decisionMode === 'profile' && !deleteAccount)
+          ? 'btn-primary'
+          : 'btn-danger'}"
+        disabled={takeDownMut.loading ||
+          !takeDownReasonText.trim() ||
+          (decisionMode === "profile" && !profileMeasureChosen)}
+        onclick={() => takeDownMut.mutate(target)}>
+        {#if takeDownMut.loading}
+          {decisionMode === "take-down"
+            ? m.admin_reports_removing()
+            : m.common_loading()}
+        {:else if decisionMode === "profile"}
+          {deleteAccount ? m.admin_reports_measure_delete() : m.common_apply()}
+        {:else if decisionMode === "list-edit"}
+          {m.admin_reports_record()}
+        {:else if decisionMode === "list-remove"}
+          {m.common_delete()}
+        {:else}
+          {m.common_remove()}
+        {/if}
       </button>
     </div>
   </Modal>
 {/if}
+
+{#snippet measureRow(
+  id: string,
+  label: string,
+  hint: string | null,
+  get: () => boolean,
+  set: (value: boolean) => void,
+)}
+  <label
+    class="flex cursor-pointer items-start gap-2.5 py-2.5 {deleteAccount
+      ? 'opacity-50'
+      : ''}">
+    <input
+      {id}
+      type="checkbox"
+      class="accent-accent mt-0.5 h-4 w-4 shrink-0"
+      disabled={deleteAccount}
+      checked={get() && !deleteAccount}
+      onchange={(e) => set(e.currentTarget.checked)} />
+    <span>
+      <span class="block text-sm font-semibold">{label}</span>
+      {#if hint}<span class="text-dim block text-xs">{hint}</span>{/if}
+    </span>
+  </label>
+{/snippet}

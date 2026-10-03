@@ -71,9 +71,9 @@ describe("ModerationDecisionService.record", () => {
     expect(mail.sendModerationDecision).toHaveBeenCalledWith(
       { email: "alice@example.com", locale: "en" },
       expect.objectContaining({
-        decisionId: DECISION.id,
+        decisionIds: [DECISION.id],
         decidedAt: DECISION.decidedAt,
-        measure: "COMMENT_REMOVED",
+        measures: ["COMMENT_REMOVED"],
         reasonText: "Insultes répétées.",
         legalBasis: "TOS_BREACH",
         tosClause: "§7 — Règles de conduite",
@@ -135,9 +135,9 @@ describe("ModerationDecisionService report notice", () => {
     expect(mail.sendModerationDecision).toHaveBeenCalledWith(
       { email: "alice@example.com", locale: "en" },
       expect.objectContaining({
-        decisionId: DECISION.id,
+        decisionIds: [DECISION.id],
         decidedAt: DECISION.decidedAt,
-        measure: "COMMENT_REMOVED",
+        measures: ["COMMENT_REMOVED"],
         reasonText: "Insultes répétées.",
         legalBasis: "TOS_BREACH",
         tosClause: "§7 — Règles de conduite",

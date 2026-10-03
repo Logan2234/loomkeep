@@ -163,5 +163,11 @@
   "transparency_unavailable": "Questa istanza non pubblica un resoconto della moderazione.",
   "transparency_appeal_prefix": "Per contestare una decisione, rispondi all'email che te l'ha notificata o scrivi a",
   "transparency_appeal_middle": ". La procedura completa è descritta nella",
-  "transparency_appeal_terms_link": "sezione 9 dei termini di servizio"
+  "transparency_appeal_terms_link": "sezione 9 dei termini di servizio",
+  "transparency_measure_list_removed": "Lista eliminata",
+  "transparency_measure_list_edited": "Lista modificata",
+  "transparency_measure_avatar": "Foto profilo rimossa",
+  "transparency_measure_bio": "Bio cancellata",
+  "transparency_measure_display_name": "Nome visualizzato modificato",
+  "transparency_measure_suspended": "Account disattivato"
 }

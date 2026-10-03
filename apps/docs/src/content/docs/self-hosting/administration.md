@@ -39,10 +39,21 @@ create a **shareable link** to send yourself.
 
 ## Moderation
 
-When social features are on, members can report comments and reviews.
-Reports land in **Admin › Reports**: remove the content, or dismiss the
-report. The person who reported is told the outcome; the author of removed
-content gets the reason.
+When social features are on, members can report comments, reviews, lists
+and profiles. Reports land in **Admin › Reports**, where you can:
+
+- remove a comment or a review;
+- delete a reported list, or open it, edit it like its owner would (title,
+  description, works, visibility), then record the change;
+- on a profile, remove the picture, clear the bio, change the display name
+  or suspend the account for a set time, together if needed, or delete the
+  account.
+
+A suspended account can't sign in, its profile can't be reached, and it gets
+no email or push until the date set; it comes back on its own, or earlier
+from **Admin › Users**. Dismissing a report changes nothing. The person who
+reported is told the outcome; the person a measure targets gets one email
+naming every measure and the reason.
 
 ## Maintenance
 

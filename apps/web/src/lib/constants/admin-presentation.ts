@@ -191,6 +191,7 @@ const FIELD_LABELS = {
   ip: () => m.common_ip_address(),
   deletionDate: () => m.admin_template_deletion_date(),
   measure: () => m.admin_template_measure(),
+  suspendedUntil: () => m.admin_template_suspended_until(),
   legalBasis: () => m.admin_template_basis(),
   reasonText: () => m.admin_moderation_facts(),
   tosClause: () => m.admin_moderation_terms_clause(),

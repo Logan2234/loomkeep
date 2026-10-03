@@ -173,6 +173,7 @@ describe("JwtAuthGuard", () => {
       email: "alice@example.com",
       scopes: ["library:read"],
       expiresAt: null,
+      suspendedUntil: null,
     };
 
     function makeGuard(

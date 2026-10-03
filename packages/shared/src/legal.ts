@@ -5,4 +5,4 @@
  * `UserDto.acceptedTermsVersion` no longer matches are prompted to
  * re-accept before continuing to use the app.
  */
-export const LEGAL_VERSION = "2026-08-16";
+export const LEGAL_VERSION = "2026-10-03";

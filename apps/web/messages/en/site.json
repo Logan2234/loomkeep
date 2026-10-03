@@ -163,5 +163,11 @@
   "transparency_unavailable": "This instance doesn't publish a moderation record.",
   "transparency_appeal_prefix": "To appeal a decision, reply to the email that notified you or write to",
   "transparency_appeal_middle": ". The full procedure is described in",
-  "transparency_appeal_terms_link": "section 9 of the terms of service"
+  "transparency_appeal_terms_link": "section 9 of the terms of service",
+  "transparency_measure_list_removed": "List deleted",
+  "transparency_measure_list_edited": "List edited",
+  "transparency_measure_avatar": "Profile picture removed",
+  "transparency_measure_bio": "Bio removed",
+  "transparency_measure_display_name": "Display name changed",
+  "transparency_measure_suspended": "Account suspended"
 }

@@ -103,6 +103,12 @@ describe("summarizeMeasures", () => {
       byMeasure: [
         { measure: "COMMENT_REMOVED", count: 1 },
         { measure: "REVIEW_REMOVED", count: 0 },
+        { measure: "LIST_REMOVED", count: 0 },
+        { measure: "LIST_EDITED", count: 0 },
+        { measure: "AVATAR_REMOVED", count: 0 },
+        { measure: "BIO_CLEARED", count: 0 },
+        { measure: "DISPLAY_NAME_CHANGED", count: 0 },
+        { measure: "ACCOUNT_SUSPENDED", count: 0 },
         { measure: "ACCOUNT_DELETED", count: 1 },
       ],
       byLegalBasis: [

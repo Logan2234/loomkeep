@@ -39,7 +39,11 @@ export interface ListDto {
  * The current user's relationship to a list: full control (OWNER), granted
  * edit access via ListMember (EDITOR), or read-only (VIEWER).
  */
-export type ListViewerRole = "OWNER" | "EDITOR" | "VIEWER";
+/**
+ * MODERATOR: an admin on a list with a pending report against it — can edit
+ * it like its owner (visibility included) before recording the decision.
+ */
+export type ListViewerRole = "OWNER" | "EDITOR" | "MODERATOR" | "VIEWER";
 
 /** A list plus its items, ordered by `position` — the single-list view. */
 export interface ListDetailDto extends ListDto {

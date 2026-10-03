@@ -107,7 +107,7 @@
     </p>
     <p>
       Si Loomkeep détecte ou est informé qu'un compte a été créé en violation de
-      cette condition, le compte peut être suspendu ou supprimé.
+      cette condition, le compte peut être désactivé ou supprimé.
     </p>
     <h2>4. Compte et sécurité</h2>
     <p>
@@ -255,8 +255,9 @@
       ou de mauvaise foi peut engager la responsabilité de son auteur.
     </p>
     <p>
-      Loomkeep peut proposer une fonctionnalité permettant de signaler certains
-      contenus ou comportements.
+      Depuis l'application, tout utilisateur peut signaler un commentaire, une
+      critique, une liste ou le profil d'un autre utilisateur, en indiquant le
+      motif du signalement.
     </p>
     <p>
       Les signalements peuvent être examinés afin de déterminer si une action
@@ -267,19 +268,39 @@
     </p>
     <ul>
       <li>laisser le contenu en ligne ;</li>
-      <li>retirer le contenu concerné ;</li>
+      <li>retirer le commentaire ou la critique concernés ;</li>
+      <li>
+        supprimer une liste, ou en modifier le titre, la description, les œuvres
+        ou la visibilité ;
+      </li>
+      <li>
+        retirer la photo de profil, effacer la bio ou changer le nom affiché
+        d'un compte (le nom d'utilisateur, qui sert à se connecter, reste
+        inchangé) ;
+      </li>
+      <li>
+        désactiver le compte pour une durée déterminée : pendant la
+        désactivation, il est impossible de s'y connecter, son profil n'est plus
+        accessible aux autres utilisateurs et il ne reçoit ni e-mail ni
+        notification, hors communications liées à la modération ; ses
+        commentaires, critiques et listes restent visibles, et le compte est
+        réactivé automatiquement à la date prévue ;
+      </li>
       <li>supprimer le compte à l'origine du contenu ou du comportement.</li>
     </ul>
+    <p>
+      Plusieurs de ces mesures peuvent être prises ensemble lorsque la situation
+      le justifie.
+    </p>
     <p>
       Les mesures prises peuvent être immédiates lorsqu'elles sont nécessaires
       notamment pour des raisons de sécurité, de protection des utilisateurs ou
       en présence d'un contenu manifestement illicite.
     </p>
     <p>
-      Lorsqu'une mesure de retrait de contenu ou de suppression de compte est
-      prise, l'utilisateur concerné en est informé par email et, lorsque son
-      compte existe encore, par notification dans l'application. Cette
-      notification précise :
+      Lorsqu'une de ces mesures est prise, l'utilisateur concerné en est informé
+      par email et, lorsque son compte existe encore, par notification dans
+      l'application. Cette notification précise :
     </p>
     <ul>
       <li>la nature de la mesure prise ;</li>
@@ -303,9 +324,10 @@
     </p>
     <p>
       Loomkeep conserve les informations relatives aux signalements et aux
-      mesures de modération (y compris, le cas échéant, une copie du contenu
-      retiré) afin d'assurer la sécurité du service, de prévenir les abus, de
-      répondre aux contestations et de respecter ses obligations légales.
+      mesures de modération (y compris, le cas échéant, une copie du texte
+      retiré ou modifié) afin d'assurer la sécurité du service, de prévenir les
+      abus, de répondre aux contestations et de respecter ses obligations
+      légales.
     </p>
     <h2>10. Manipulation et abus du service</h2>
     <p>

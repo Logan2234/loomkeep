@@ -1,12 +1,15 @@
 import {
   ErrorCode,
   NotificationType,
-  REPORT_CATEGORY_MOTIFS,
+  REPORT_MOTIFS_REQUIRING_REASON,
+  REPORT_PROFILE_PART_CATEGORIES,
   isReportCategoryAllowed,
+  reportMotifsFor,
   type PagedResult,
   type ReportCategory,
   type ReportDto,
   type ReportMotif,
+  type ReportProfilePart,
   type ReportTargetSummaryDto,
   type ReportTargetType,
 } from "@loomkeep/shared";
@@ -34,6 +37,7 @@ type ReportRow = {
   targetId: string;
   category: string | null;
   motif: string | null;
+  profilePart: string | null;
   reason: string | null;
   status: string;
   createdAt: Date;
@@ -73,9 +77,11 @@ export class ReportService {
   /**
    * Files a report against a polymorphic target. Fire-and-forget from the
    * caller's POV. OTHER requires a non-empty `reason` (it has no motif to
-   * fall back on); every other category requires a `motif` that actually
-   * belongs to it — REPORT_CATEGORY_MOTIFS is the single source of truth for
-   * that pairing, shared with the picker UI.
+   * fall back on), and so does a motif in REPORT_MOTIFS_REQUIRING_REASON;
+   * every other category requires a `motif` that actually belongs to it for
+   * this target — reportMotifsFor() is the single source of truth for that
+   * pairing, shared with the picker UI. A USER report also names the part of
+   * the profile it's about, which must allow the category.
    *
    * DSA art. 16(4)'s receipt confirmation is the caller's own success toast
    * (e.g. CommentThread.svelte) — synchronous with submission, nothing "without
@@ -89,8 +95,14 @@ export class ReportService {
     category: ReportCategory,
     motif?: ReportMotif,
     reason?: string,
+    profilePart?: ReportProfilePart,
   ): Promise<void> {
-    if (!isReportCategoryAllowed(category, targetType)) {
+    const partAllows =
+      targetType !== "USER" ||
+      (profilePart !== undefined &&
+        REPORT_PROFILE_PART_CATEGORIES[profilePart].includes(category));
+
+    if (!isReportCategoryAllowed(category, targetType) || !partAllows) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.ReportInvalidMotif,
@@ -108,18 +120,31 @@ export class ReportService {
           "A detail is required for the 'Other' category",
         );
       }
-    } else if (!motif || !REPORT_CATEGORY_MOTIFS[category].includes(motif)) {
+    } else if (
+      !motif ||
+      !reportMotifsFor(category, targetType).includes(motif)
+    ) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.ReportInvalidMotif,
         undefined,
         "Invalid motif for this category",
       );
+    } else if (
+      REPORT_MOTIFS_REQUIRING_REASON.includes(motif) &&
+      !reason?.trim()
+    ) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ReportReasonRequired,
+        undefined,
+        "A detail is required for this motif",
+      );
     }
 
-    const ownerId = await this.reportableContentOwner(targetType, targetId);
+    const ownerIds = await this.reportableContentOwners(targetType, targetId);
 
-    if (ownerId === reporterId) {
+    if (ownerIds.includes(reporterId)) {
       throw new AppException(
         HttpStatus.FORBIDDEN,
         ErrorCode.ReportCannotReportOwnContent,
@@ -142,6 +167,7 @@ export class ReportService {
         targetId,
         category,
         motif: category === "OTHER" ? null : motif,
+        ...(targetType === "USER" && { profilePart }),
         reason: reason?.trim() || null,
       },
     });
@@ -150,14 +176,14 @@ export class ReportService {
   }
 
   /**
-   * The author of a reportable piece of content (null once their account is
-   * gone), 404ing when the content itself no longer exists. `undefined` for
-   * target types filed without an ownership check (USER, LIST).
+   * Who may not report a piece of content because it's theirs — its author,
+   * the profile's own account, or a list's owner and editors — 404ing when
+   * the content itself no longer exists.
    */
-  private async reportableContentOwner(
+  private async reportableContentOwners(
     targetType: ReportTargetType,
     targetId: string,
-  ): Promise<string | null | undefined> {
+  ): Promise<string[]> {
     if (targetType === "COMMENT") {
       const comment = await this.prisma.comment.findUnique({
         where: { id: targetId },
@@ -168,7 +194,7 @@ export class ReportService {
         throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
       }
 
-      return comment.authorId;
+      return comment.authorId ? [comment.authorId] : [];
     }
 
     if (targetType === "REVIEW") {
@@ -181,10 +207,32 @@ export class ReportService {
         throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
       }
 
-      return review.userId;
+      return review.userId ? [review.userId] : [];
     }
 
-    return undefined;
+    if (targetType === "LIST") {
+      const list = await this.prisma.list.findUnique({
+        where: { id: targetId },
+        select: { userId: true, members: { select: { userId: true } } },
+      });
+
+      if (!list) {
+        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
+      }
+
+      return [list.userId, ...list.members.map((m) => m.userId)];
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: targetId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+    }
+
+    return [user.id];
   }
 
   async pendingCount(): Promise<number> {
@@ -301,21 +349,25 @@ export class ReportService {
 
   /**
    * Reports filed against a user: directly (targetType USER) or against a
-   * comment or review they authored. Lists aren't covered — no filing UI
-   * exists for them yet (see resolveTarget). Not paginated: an admin-drawer
+   * comment, review or list of theirs. Not paginated: an admin-drawer
    * shortcut, not the moderation queue itself.
    */
   async listAgainstUser(userId: string): Promise<ReportDto[]> {
-    const [authoredCommentIds, authoredReviewIds] = await Promise.all([
-      this.prisma.comment.findMany({
-        where: { authorId: userId },
-        select: { id: true },
-      }),
-      this.prisma.review.findMany({
-        where: { userId },
-        select: { id: true },
-      }),
-    ]);
+    const [authoredCommentIds, authoredReviewIds, ownedListIds] =
+      await Promise.all([
+        this.prisma.comment.findMany({
+          where: { authorId: userId },
+          select: { id: true },
+        }),
+        this.prisma.review.findMany({
+          where: { userId },
+          select: { id: true },
+        }),
+        this.prisma.list.findMany({
+          where: { userId },
+          select: { id: true },
+        }),
+      ]);
 
     const rows = await this.prisma.report.findMany({
       where: {
@@ -328,6 +380,10 @@ export class ReportService {
           {
             targetType: "REVIEW",
             targetId: { in: authoredReviewIds.map((r) => r.id) },
+          },
+          {
+            targetType: "LIST",
+            targetId: { in: ownedListIds.map((l) => l.id) },
           },
         ],
       },
@@ -351,6 +407,7 @@ export class ReportService {
         targetId: r.targetId,
         category: r.category as ReportCategory | null,
         motif: r.motif as ReportMotif | null,
+        profilePart: r.profilePart as ReportProfilePart | null,
         reason: r.reason,
         status: r.status as ReportDto["status"],
         createdAt: r.createdAt.toISOString(),
@@ -443,11 +500,11 @@ export class ReportService {
     if (targetType === "USER") {
       const user = await this.prisma.user.findUnique({
         where: { id: targetId },
-        select: { username: true },
+        select: { username: true, displayName: true },
       });
       if (!user) return null;
       return {
-        label: "Profil utilisateur",
+        label: user.displayName,
         href: `/app/u/${user.username}`,
         targetOwnerUsername: user.username,
       };

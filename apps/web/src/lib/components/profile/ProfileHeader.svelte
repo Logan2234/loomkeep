@@ -3,6 +3,7 @@
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import CountFlash from "$lib/components/CountFlash.svelte";
+  import Dropdown from "$lib/components/Dropdown.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import StreakBadge from "$lib/components/StreakBadge.svelte";
   import { appConfig } from "$lib/config.svelte";
@@ -20,6 +21,7 @@
     memberSince,
     onToggleFollow,
     onToggleBlock,
+    onReport,
     onSignOut,
     onOpenAvatarZoom,
     onOpenAvatarModal,
@@ -38,6 +40,7 @@
     memberSince: string;
     onToggleFollow: () => void;
     onToggleBlock: () => void;
+    onReport: () => void;
     onSignOut: () => void;
     onOpenAvatarZoom: () => void;
     onOpenAvatarModal: () => void;
@@ -151,15 +154,47 @@
               {followLabel}
             </button>
           {/if}
-          <button
-            class="btn btn-ghost"
-            disabled={busy}
-            title={m.common_block()}
-            aria-label={m.common_block()}
-            onclick={onToggleBlock}>
-            {m.common_block()}
-          </button>
         {/if}
+        <Dropdown placement="bottom-end" role="menu" class="min-w-44">
+          {#snippet trigger({ open, toggle, onkeydown })}
+            <button
+              type="button"
+              class="btn btn-ghost px-3"
+              aria-label={m.common_more_actions()}
+              title={m.common_more_actions()}
+              aria-haspopup="menu"
+              aria-expanded={open}
+              {onkeydown}
+              onclick={toggle}>
+              <Icon name="dots-horizontal" class="h-4 w-4" />
+            </button>
+          {/snippet}
+          {#snippet children({ close })}
+            {#if !rel?.blocking}
+              <button
+                role="menuitem"
+                class="menu-item"
+                disabled={busy}
+                onclick={() => {
+                  close();
+                  onToggleBlock();
+                }}>
+                <Icon name="eye-off" class="h-4 w-4" />
+                {m.common_block()}
+              </button>
+            {/if}
+            <button
+              role="menuitem"
+              class="menu-item menu-item-danger"
+              onclick={() => {
+                close();
+                onReport();
+              }}>
+              <Icon name="flag" class="h-4 w-4" />
+              {m.common_report()}
+            </button>
+          {/snippet}
+        </Dropdown>
       </div>
     {:else if rel?.isSelf && publicView}
       <a

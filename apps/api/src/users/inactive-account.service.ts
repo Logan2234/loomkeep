@@ -5,6 +5,7 @@ import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AccountDeletionService } from "./account-deletion.service";
+import { notSuspended } from "./suspension.util";
 
 /** Relance à 24 mois d'inactivité, suppression à 36 mois. */
 const WARNING_AFTER_MONTHS = 24;
@@ -62,6 +63,9 @@ export class InactiveAccountService {
       where: {
         lastActiveAt: { lte: monthsAgo(WARNING_AFTER_MONTHS) },
         inactivityWarningSentAt: null,
+        // A suspended account can't sign in to prove it's still used; the
+        // warning (and so the deletion, which requires it) waits for the end.
+        ...notSuspended(),
       },
       select: { id: true, email: true, locale: true, lastActiveAt: true },
     });

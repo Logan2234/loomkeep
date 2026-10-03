@@ -8,6 +8,7 @@ import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
+import { notSuspended } from "../users/suspension.util";
 import { ApiKeyAuthService } from "./api-key-auth.service";
 
 const DAY_MS = 86_400_000;
@@ -52,6 +53,7 @@ export class ApiKeyLifecycleService {
       where: {
         expiresAt: { gt: now, lte: horizon },
         expiryNotifiedAt: null,
+        user: notSuspended(now),
       },
       include: { user: { select: { email: true, locale: true } } },
     });

@@ -9,6 +9,7 @@
     removeListItem,
     removeListMember,
     reorderListItems,
+    reportList,
   } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
@@ -17,12 +18,14 @@
   import Avatar from "$lib/components/Avatar.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
+  import Dropdown from "$lib/components/Dropdown.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import FocusOverlay from "$lib/components/FocusOverlay.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import ListFormModal from "$lib/components/ListFormModal.svelte";
   import ListMembersModal from "$lib/components/ListMembersModal.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import ReportModal from "$lib/components/ReportModal.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { joinRealtimeRoom, onRealtimeEvent } from "$lib/realtime/socket";
@@ -104,8 +107,18 @@
   );
 
   const role = $derived(list?.viewerRole ?? "VIEWER");
-  const canEditList = $derived(role === "OWNER" || role === "EDITOR");
+  const canEditList = $derived(role !== "VIEWER");
   const isOwner = $derived(role === "OWNER");
+  const isModerator = $derived(role === "MODERATOR");
+
+  let reporting = $state(false);
+  const reportMut = createApiMutation(() => ({
+    mutate: (report: Parameters<typeof reportList>[1]) =>
+      reportList(list!.id, report),
+    successToast: m.list_reported(),
+    errorToast: true,
+    onSuccess: () => (reporting = false),
+  }));
   let removingId = $state<string | null>(null);
   let reordering = $state(false);
 
@@ -291,6 +304,13 @@
   </div>
 {:else if list}
   <div class="mx-auto max-w-3xl px-4 py-6 md:py-8">
+    {#if isModerator}
+      <Banner variant="info" class="mb-5">
+        {m.list_moderating()}
+        <a href="/app/admin/reports" class="link-accent">
+          {m.list_moderating_back()}</a>
+      </Banner>
+    {/if}
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="min-w-0">
         <h1 class="font-display text-3xl font-extrabold tracking-tight">
@@ -329,7 +349,7 @@
             {m.list_members_title()}
           </button>
         {/if}
-        {#if canEditList && list.collaborative && appConfig.socialEnabled}
+        {#if (role === "OWNER" || role === "EDITOR") && list.collaborative && appConfig.socialEnabled}
           {@const label = list.notificationsMuted
             ? m.list_unmute()
             : m.list_mute()}
@@ -357,6 +377,35 @@
             onclick={leaveList}>
             {m.list_leave()}
           </button>
+        {/if}
+        {#if role === "VIEWER" && appConfig.socialEnabled}
+          <Dropdown placement="bottom-end" role="menu" class="min-w-44">
+            {#snippet trigger({ open, toggle, onkeydown })}
+              <button
+                type="button"
+                class="btn btn-ghost px-3"
+                aria-label={m.common_more_actions()}
+                title={m.common_more_actions()}
+                aria-haspopup="menu"
+                aria-expanded={open}
+                {onkeydown}
+                onclick={toggle}>
+                <Icon name="dots-horizontal" class="h-4 w-4" />
+              </button>
+            {/snippet}
+            {#snippet children({ close })}
+              <button
+                role="menuitem"
+                class="menu-item menu-item-danger"
+                onclick={() => {
+                  close();
+                  reporting = true;
+                }}>
+                <Icon name="flag" class="h-4 w-4" />
+                {m.common_report()}
+              </button>
+            {/snippet}
+          </Dropdown>
         {/if}
       </div>
     </div>
@@ -444,10 +493,19 @@
   <ListFormModal
     {list}
     defaultVisibility={auth.user?.defaultListVisibility ?? "PRIVATE"}
-    canManage={isOwner}
+    canManage={isOwner || isModerator}
+    canDelete={isOwner}
     onClose={() => (editing = false)}
     onSaved={handleSaved}
     onDeleted={handleDeleted} />
+{/if}
+
+{#if reporting && list}
+  <ReportModal
+    title={m.list_report_title()}
+    targetType="LIST"
+    onClose={() => (reporting = false)}
+    onSubmit={(report) => reportMut.mutate(report)} />
 {/if}
 
 {#if managingMembers && list}

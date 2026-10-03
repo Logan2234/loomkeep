@@ -55,6 +55,9 @@ describe("ApiKeyLifecycleService", () => {
           where: {
             expiresAt: { gt: NOW, lte: daysFromNow(7) },
             expiryNotifiedAt: null,
+            user: {
+              OR: [{ suspendedUntil: null }, { suspendedUntil: { lte: NOW } }],
+            },
           },
         }),
       );

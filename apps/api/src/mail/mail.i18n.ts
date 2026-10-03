@@ -71,7 +71,17 @@ export interface MailCopy {
   moderation: {
     comment: ModerationVariant;
     review: ModerationVariant;
+    listRemoved: ModerationVariant;
+    listEdited: ModerationVariant;
+    avatar: ModerationVariant;
+    bio: ModerationVariant;
+    displayName: ModerationVariant;
+    suspended: { measure: (until: string) => string; subject: string };
     account: ModerationVariant;
+    /** Subject when one decision applies several measures at once. */
+    severalSubject: string;
+    /** Joins the last two measures of a list ("A, B and C"). */
+    and: string;
     illegalBasis: string;
     tosBasis: (clause: string) => string;
     intro: (measure: string) => string;
@@ -313,6 +323,32 @@ export const MAIL_COPY = {
         measure: "le retrait d'une de tes critiques",
         subject: "Une de tes critiques a été retirée",
       },
+      listRemoved: {
+        measure: "la suppression d'une de tes listes",
+        subject: "Une de tes listes a été supprimée",
+      },
+      listEdited: {
+        measure: "la modification d'une de tes listes",
+        subject: "Une de tes listes a été modifiée",
+      },
+      avatar: {
+        measure: "le retrait de ta photo de profil",
+        subject: "Ta photo de profil a été retirée",
+      },
+      bio: {
+        measure: "l'effacement de ta bio",
+        subject: "Ta bio a été effacée",
+      },
+      displayName: {
+        measure: "le changement de ton nom affiché",
+        subject: "Ton nom affiché a été changé",
+      },
+      suspended: {
+        measure: (until) => `la désactivation de ton compte jusqu'au ${until}`,
+        subject: "Ton compte Loomkeep est désactivé",
+      },
+      severalSubject: "Des mesures ont été prises sur ton compte Loomkeep",
+      and: "et",
       account: {
         measure: "la suppression de ton compte Loomkeep",
         subject: "Ton compte Loomkeep a été supprimé",
@@ -608,6 +644,32 @@ export const MAIL_COPY = {
         measure: "the removal of one of your reviews",
         subject: "One of your reviews has been removed",
       },
+      listRemoved: {
+        measure: "the deletion of one of your lists",
+        subject: "One of your lists has been deleted",
+      },
+      listEdited: {
+        measure: "changes to one of your lists",
+        subject: "One of your lists has been edited",
+      },
+      avatar: {
+        measure: "the removal of your profile picture",
+        subject: "Your profile picture has been removed",
+      },
+      bio: {
+        measure: "the removal of your bio",
+        subject: "Your bio has been removed",
+      },
+      displayName: {
+        measure: "a change to your display name",
+        subject: "Your display name has been changed",
+      },
+      suspended: {
+        measure: (until) => `the suspension of your account until ${until}`,
+        subject: "Your Loomkeep account is suspended",
+      },
+      severalSubject: "Measures have been taken on your Loomkeep account",
+      and: "and",
       account: {
         measure: "the deletion of your Loomkeep account",
         subject: "Your Loomkeep account has been deleted",
@@ -906,6 +968,33 @@ export const MAIL_COPY = {
         measure: "la rimozione di una delle tue recensioni",
         subject: "Una delle tue recensioni è stata rimossa",
       },
+      listRemoved: {
+        measure: "l'eliminazione di una delle tue liste",
+        subject: "Una delle tue liste è stata eliminata",
+      },
+      listEdited: {
+        measure: "la modifica di una delle tue liste",
+        subject: "Una delle tue liste è stata modificata",
+      },
+      avatar: {
+        measure: "la rimozione della tua foto profilo",
+        subject: "La tua foto profilo è stata rimossa",
+      },
+      bio: {
+        measure: "la cancellazione della tua bio",
+        subject: "La tua bio è stata cancellata",
+      },
+      displayName: {
+        measure: "la modifica del tuo nome visualizzato",
+        subject: "Il tuo nome visualizzato è stato modificato",
+      },
+      suspended: {
+        measure: (until) =>
+          `la disattivazione del tuo account fino al ${until}`,
+        subject: "Il tuo account Loomkeep è disattivato",
+      },
+      severalSubject: "Sono state prese delle misure sul tuo account Loomkeep",
+      and: "e",
       account: {
         measure: "l'eliminazione del tuo account Loomkeep",
         subject: "Il tuo account Loomkeep è stato eliminato",

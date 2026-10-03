@@ -16,6 +16,7 @@ import type { NotificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { isSuspended } from "../users/suspension.util";
 import { BlockService } from "./block.service";
 import { VisibilityService } from "./visibility.service";
 import { computeIsFriend } from "./visibility.util";
@@ -47,9 +48,9 @@ export class FollowService {
   private async resolveTarget(viewerId: string, username: string) {
     const target = await this.prisma.user.findUnique({
       where: { username },
-      select: { id: true, profileAccess: true },
+      select: { id: true, profileAccess: true, suspendedUntil: true },
     });
-    if (!target)
+    if (!target || isSuspended(target))
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     if (target.id !== viewerId) {

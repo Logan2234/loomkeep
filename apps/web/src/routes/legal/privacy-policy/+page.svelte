@@ -13,7 +13,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 02/10/2026</em></p>
+    <p><em>Dernière mise à jour : 03/10/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -134,7 +134,10 @@
       <li>listes ;</li>
       <li>événements d'activité ;</li>
       <li>paramètres de visibilité ;</li>
-      <li>signalements.</li>
+      <li>
+        signalements (y compris, pour un profil, la partie signalée : nom,
+        photo, bio ou comportement) et décisions de modération.
+      </li>
     </ul>
     <p>
       La visibilité de certaines de ces informations dépend des fonctionnalités
@@ -529,6 +532,15 @@
             ><td>Contenus sociaux</td><td
               >Selon leur statut et les paramètres de visibilité, jusqu'à leur
               suppression ou celle du compte</td
+            ></tr>
+          <tr
+            ><td>Signalements et décisions de modération</td><td
+              >Le temps de traiter le signalement, puis de répondre à une
+              éventuelle contestation et aux obligations légales. Une décision
+              garde une copie du texte retiré ou modifié (commentaire, critique,
+              bio, nom affiché, titre et description d'une liste), jamais
+              l'image d'une photo de profil retirée. Elle subsiste après la
+              suppression du compte concerné</td
             ></tr>
           <tr
             ><td>Journal de sécurité et d'imports</td><td
