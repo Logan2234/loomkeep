@@ -618,11 +618,12 @@ describe("Loomkeep API (e2e)", () => {
       .send({ currentPassword: victim.password })
       .expect(204);
 
-    // The row is gone: the (still-valid) JWT now resolves to no user…
+    // Every session went with the account: the access token, though not
+    // expired yet, no longer gets in…
     await request(http)
       .get("/api/users/me")
       .set("Cookie", victimCookies)
-      .expect(404);
+      .expect(401);
     // …and the credentials no longer authenticate.
     await request(http)
       .post("/api/auth/login")
