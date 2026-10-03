@@ -313,9 +313,17 @@
     {/if}
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="min-w-0">
-        <h1 class="font-display text-3xl font-extrabold tracking-tight">
-          {list.title}
-        </h1>
+        <div class="flex items-start gap-2 text-3xl">
+          <a
+            href="/app/lists"
+            class="text-dim hover:text-fg -ml-1 flex h-lh shrink-0 items-center transition-all hover:-translate-x-0.5 hover:scale-105 active:scale-90"
+            aria-label={m.common_back()}>
+            <Icon name="chevron-left" class="h-6 w-6" />
+          </a>
+          <h1 class="font-display min-w-0 font-extrabold tracking-tight">
+            {list.title}
+          </h1>
+        </div>
         <p class="text-dim mt-1 flex flex-wrap items-center gap-x-2 text-sm">
           <span class="timecode uppercase">{KIND_LABEL[list.kind]}</span>
           {#if appConfig.socialEnabled}

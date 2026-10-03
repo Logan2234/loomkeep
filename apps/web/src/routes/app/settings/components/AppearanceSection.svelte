@@ -35,6 +35,7 @@
   } from "$lib/navStyle.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { flashAnchor } from "../flash-anchor";
+  import SettingRow from "./SettingRow.svelte";
   import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
   import { type Locale } from "@loomkeep/shared";
   import { dndzone } from "svelte-dnd-action";
@@ -154,25 +155,21 @@
       </div>
     </div>
 
-    <div
-      id="language"
-      use:flashAnchor={{ anchor: "language", hash: page.url.hash }}
-      class="p-5 md:p-6">
-      <p class="flex items-center gap-2 font-semibold">
-        {m.common_language()}
-      </p>
-      <p class="text-dim mt-1 mb-3 text-sm">
-        {m.settings_language_description()}
-      </p>
-      <div
-        class:pointer-events-none={saveLocaleMut.loading}
-        class:opacity-50={saveLocaleMut.loading}>
-        <Combobox
-          label={m.common_language()}
-          options={LOCALE_OPTIONS}
-          values={[auth.user?.locale ?? getLocale()]}
-          onChange={([next]) => saveLocale(next as Locale)} />
-      </div>
+    <div class="p-5 md:p-6">
+      <SettingRow
+        label={m.common_language()}
+        description={m.settings_language_description()}
+        anchor="language"
+        mutation={saveLocaleMut}>
+        {#snippet control()}
+          <Combobox
+            label={m.common_language()}
+            options={LOCALE_OPTIONS}
+            values={[auth.user?.locale ?? getLocale()]}
+            disabled={saveLocaleMut.loading}
+            onChange={([next]) => saveLocale(next as Locale)} />
+        {/snippet}
+      </SettingRow>
     </div>
 
     <div

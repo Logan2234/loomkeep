@@ -7,11 +7,18 @@
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
+  import Combobox from "$lib/components/Combobox.svelte";
+  import Icon from "$lib/components/Icon.svelte";
   import { formatRegion } from "$lib/format";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { createWatchProviderToggle } from "$lib/watch-provider-toggle.svelte";
   import type { WatchProviderDto } from "@loomkeep/shared";
+  import { flip } from "svelte/animate";
+  import { fade, slide } from "svelte/transition";
   import { flashAnchor } from "../flash-anchor";
+
+  const reduced = prefersReducedMotion();
 
   // Enough to hold the services most people have, one tap away.
   const FEATURED_COUNT = 20;
@@ -28,6 +35,21 @@
       .map((code) => ({ code, name: formatRegion(code) }))
       .sort((a, b) => a.name.localeCompare(b.name)),
   );
+  const regionChoices = $derived([
+    {
+      value: "",
+      label:
+        picked === null && catalog
+          ? m.settings_streaming_region_auto({
+              region: formatRegion(catalog.region),
+            })
+          : m.settings_streaming_region_auto_plain(),
+    },
+    ...regionOptions.map((option) => ({
+      value: option.code,
+      label: option.name,
+    })),
+  ]);
 
   const regionMut = createApiMutation(() => ({
     mutate: (watchRegion: string | null) => updateMe({ watchRegion }),
@@ -49,6 +71,7 @@
     ),
   );
 
+  let showMore = $state(false);
   let search = $state("");
   const normalize = (value: string) =>
     value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -95,31 +118,18 @@
       use:flashAnchor={{ anchor: "streaming-region", hash: page.url.hash }}
       class="card flex flex-wrap items-center justify-between gap-3 p-5 md:p-6">
       <div class="min-w-0">
-        <label for="watch-region" class="font-semibold">
-          {m.settings_streaming_region_label()}
-        </label>
+        <p class="font-semibold">{m.settings_streaming_region_label()}</p>
         <p class="text-dim mt-1 max-w-xl text-sm">
           {m.settings_streaming_region_body()}
         </p>
       </div>
-      <select
-        id="watch-region"
-        class="input w-auto"
-        value={picked ?? ""}
+      <Combobox
+        label={m.settings_streaming_region_label()}
+        options={regionChoices}
+        values={[picked ?? ""]}
+        searchable
         disabled={!catalog || regionMut.loading}
-        onchange={(event) =>
-          regionMut.mutate(event.currentTarget.value || null)}>
-        <option value="">
-          {picked === null && catalog
-            ? m.settings_streaming_region_auto({
-                region: formatRegion(catalog.region),
-              })
-            : m.settings_streaming_region_auto_plain()}
-        </option>
-        {#each regionOptions as option (option.code)}
-          <option value={option.code}>{option.name}</option>
-        {/each}
-      </select>
+        onChange={([code]) => regionMut.mutate(code || null)} />
       {#if regionMut.error}
         <p class="text-danger w-full text-sm">{regionMut.error}</p>
       {/if}
@@ -150,23 +160,41 @@
         </div>
 
         {#if rest.length > 0}
-          <details class="border-border mt-4 border-t pt-3">
-            <summary class="text-accent cursor-pointer text-sm font-semibold">
+          <div class="border-border mt-4 border-t pt-3">
+            <button
+              type="button"
+              class="text-accent inline-flex items-center gap-1 text-sm font-semibold"
+              aria-expanded={showMore}
+              onclick={() => (showMore = !showMore)}>
+              <Icon
+                name="chevron-right"
+                class="h-4 w-4 transition-transform {showMore
+                  ? 'rotate-90'
+                  : ''}" />
               {m.settings_streaming_more({ count: rest.length })}
-            </summary>
-            <input
-              type="search"
-              class="input mt-3 w-full"
-              placeholder={m.settings_streaming_search_placeholder()}
-              aria-label={m.settings_streaming_search_placeholder()}
-              bind:value={search} />
-            <div
-              class="mt-3 grid grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2">
-              {#each matchingRest as provider (provider.id)}
-                {@render tile(provider)}
-              {/each}
-            </div>
-          </details>
+            </button>
+            {#if showMore}
+              <div transition:slide={{ duration: reduced ? 0 : 220 }}>
+                <input
+                  type="search"
+                  class="input mt-3 w-full"
+                  placeholder={m.settings_streaming_search_placeholder()}
+                  aria-label={m.settings_streaming_search_placeholder()}
+                  bind:value={search} />
+                <div
+                  class="mt-3 grid grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2">
+                  {#each matchingRest as provider (provider.id)}
+                    <div
+                      class="grid"
+                      animate:flip={{ duration: reduced ? 0 : 220 }}
+                      in:fade={{ duration: reduced ? 0 : 160 }}>
+                      {@render tile(provider)}
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </div>
         {/if}
       {/if}
 
