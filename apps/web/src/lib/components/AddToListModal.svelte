@@ -17,7 +17,7 @@
     MyListDto,
   } from "@loomkeep/shared";
   import { flip } from "svelte/animate";
-  import { slide } from "svelte/transition";
+  import { fade, slide } from "svelte/transition";
   import Icon from "./Icon.svelte";
   import ListCoverGrid from "./ListCoverGrid.svelte";
   import Modal from "./Modal.svelte";
@@ -157,7 +157,7 @@
 {/snippet}
 
 {#snippet group(title: string, items: MyListDto[])}
-  <section>
+  <section in:fade={{ duration: reduced ? 0 : 160 }}>
     <h3 class="timecode text-micro px-2 pt-3 pb-1 tracking-wide uppercase">
       {title}
     </h3>
@@ -170,7 +170,7 @@
 {/snippet}
 
 <Modal title={m.add_to_list_button()} onclose={onClose}>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-4">
     <div class="relative">
       <Icon
         name="search"
@@ -200,7 +200,7 @@
           type="button"
           class="bg-accent/8 hover:bg-accent/14 flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left font-semibold transition-colors"
           disabled={createMut.loading}
-          transition:slide={{ duration: reduced ? 0 : 180 }}
+          in:slide={{ duration: reduced ? 0 : 180 }}
           onclick={create}>
           <span
             class="bg-accent text-accent-fg grid h-9 w-9 shrink-0 place-items-center rounded-md">
