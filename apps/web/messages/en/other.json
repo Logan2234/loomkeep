@@ -1208,5 +1208,6 @@
   "list_moderating": "You're editing this list as a moderator. Once you're done, record the decision from the report queue.",
   "list_moderating_back": "Back to reports",
   "auth_suspended_title": "Your account is suspended",
-  "auth_suspended_body": "It will be reactivated on {date}. The reasons for this decision were sent to you by email; to appeal it, just reply to that email."
+  "auth_suspended_body": "It will be reactivated on {date}. The reasons for this decision were sent to you by email.",
+  "auth_suspended_contact": "To appeal it, reply to that email or write to"
 }

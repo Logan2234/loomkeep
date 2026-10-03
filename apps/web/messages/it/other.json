@@ -1208,5 +1208,6 @@
   "list_moderating": "Stai modificando questa lista come moderatore. Al termine, registra la decisione dalla coda delle segnalazioni.",
   "list_moderating_back": "Torna alle segnalazioni",
   "auth_suspended_title": "Il tuo account è disattivato",
-  "auth_suspended_body": "Verrà riattivato il {date}. I motivi di questa decisione ti sono stati inviati per email: per contestarla, rispondi a quella email."
+  "auth_suspended_body": "Verrà riattivato il {date}. I motivi di questa decisione ti sono stati inviati per email.",
+  "auth_suspended_contact": "Per contestarla, rispondi a quella email o scrivi a"
 }

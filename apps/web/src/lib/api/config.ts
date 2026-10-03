@@ -18,6 +18,7 @@ export async function initConfig(): Promise<void> {
     appConfig.adminMfaEnforced = config.adminMfaEnforced;
     appConfig.version = config.version;
     appConfig.gitSha = config.gitSha;
+    appConfig.supportEmail = config.supportEmail;
   } catch {
     appConfig.socialEnabled = false;
     appConfig.gamificationEnabled = false;

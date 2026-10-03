@@ -1208,5 +1208,6 @@
   "list_moderating": "Tu modifies cette liste en tant que modérateur. Une fois les changements faits, enregistre la décision depuis la file des signalements.",
   "list_moderating_back": "Retour aux signalements",
   "auth_suspended_title": "Ton compte est désactivé",
-  "auth_suspended_body": "Il sera réactivé le {date}. Les raisons de cette décision t'ont été envoyées par email : pour la contester, réponds simplement à cet email."
+  "auth_suspended_body": "Il sera réactivé le {date}. Les raisons de cette décision t'ont été envoyées par email.",
+  "auth_suspended_contact": "Pour la contester, réponds à cet email ou écris à"
 }

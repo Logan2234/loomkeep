@@ -18,9 +18,13 @@
   import { appConfig } from "$lib/config.svelte";
   import { Cooldown } from "$lib/cooldown.svelte";
   import { formatDateTime } from "$lib/format";
+  import { prefersReducedMotion } from "$lib/motion";
   import { normalizeCodeInput } from "$lib/one-time-code";
   import { m } from "$lib/paraglide/messages.js";
   import { ErrorCode, type MfaMethod } from "@loomkeep/shared";
+  import { fly } from "svelte/transition";
+
+  const reduced = prefersReducedMotion();
 
   let identifier = $state("");
   let password = $state("");
@@ -212,13 +216,22 @@
       {#if suspendedUntil !== null && (loginMut.error || passwordlessMut.error)}
         <div
           role="alert"
-          class="border-danger rounded-lg border border-l-4 p-3">
+          class="border-danger rounded-lg border border-l-4 p-3"
+          in:fly={{ y: reduced ? 0 : -6, duration: reduced ? 0 : 200 }}>
           <p class="font-semibold">{m.auth_suspended_title()}</p>
           <p class="text-dim mt-1 text-sm">
             {m.auth_suspended_body({
               date: suspendedUntil ? formatDateTime(suspendedUntil) : "",
             })}
           </p>
+          {#if appConfig.supportEmail}
+            <p class="text-dim mt-2 text-sm">
+              {m.auth_suspended_contact()}
+              <a
+                href="mailto:{appConfig.supportEmail}"
+                class="link-accent text-sm">{appConfig.supportEmail}</a>
+            </p>
+          {/if}
         </div>
       {:else if loginMut.error}
         <Banner variant="error">{loginMut.error}</Banner>

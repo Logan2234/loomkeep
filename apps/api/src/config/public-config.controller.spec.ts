@@ -47,6 +47,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "contact@loomkeep.app",
     });
   });
 
@@ -62,6 +63,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "contact@loomkeep.app",
     });
   });
 
@@ -77,6 +79,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "contact@loomkeep.app",
     });
   });
 
@@ -92,6 +95,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "contact@loomkeep.app",
     });
   });
 
@@ -107,6 +111,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "contact@loomkeep.app",
     });
   });
 
@@ -122,6 +127,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "contact@loomkeep.app",
     });
   });
 
@@ -137,6 +143,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "contact@loomkeep.app",
     });
   });
 
@@ -152,6 +159,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: true,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "contact@loomkeep.app",
     });
   });
 
@@ -167,6 +175,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "a1b2c3d",
+      supportEmail: "contact@loomkeep.app",
     });
   });
 });

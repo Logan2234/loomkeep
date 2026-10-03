@@ -21,6 +21,7 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
@@ -44,8 +45,9 @@
     ReportDto,
     ReportStatus,
   } from "@loomkeep/shared";
+  import type { Snippet } from "svelte";
   import { flip } from "svelte/animate";
-  import { fade } from "svelte/transition";
+  import { fade, fly, slide } from "svelte/transition";
 
   const reduced = prefersReducedMotion();
   const STATUS_OPTIONS = [
@@ -123,13 +125,19 @@
   let takeDownTosClause = $state("");
 
   // Profile measures combine freely; deleting the account excludes them all.
-  const SUSPEND_PRESETS = ["7", "30", "90"] as const;
+  const SUSPEND_OPTIONS = [
+    ...(["7", "30", "90"] as const).map((days) => ({
+      value: days,
+      label: m.admin_reports_suspend_days({ count: days }),
+    })),
+    { value: "custom" as const, label: m.admin_reports_suspend_custom() },
+  ];
   let removeAvatar = $state(false);
   let clearBio = $state(false);
   let changeName = $state(false);
   let newDisplayName = $state("");
   let suspend = $state(false);
-  let suspendFor = $state<(typeof SUSPEND_PRESETS)[number] | "custom">("7");
+  let suspendFor = $state<(typeof SUSPEND_OPTIONS)[number]["value"]>("7");
   let suspendDate = $state("");
   let deleteAccount = $state(false);
 
@@ -152,7 +160,9 @@
     const reason = {
       reasonText: takeDownReasonText,
       legalBasis: takeDownLegalBasis,
-      tosClause: takeDownTosClause,
+      // Only a terms breach names a clause; illegality stands on its own.
+      tosClause:
+        takeDownLegalBasis === "TOS_BREACH" ? takeDownTosClause : undefined,
     };
     switch (decisionMode) {
       case "list-remove":
@@ -507,7 +517,8 @@
           {/if}
         </p>
       {/if}
-      <div class="border-border mt-3 divide-y rounded-lg border px-3">
+      <div
+        class="border-border divide-border mt-3 divide-y rounded-lg border px-3">
         {@render measureRow(
           "measure-avatar",
           m.admin_reports_measure_avatar(),
@@ -528,56 +539,16 @@
           m.admin_reports_measure_name_hint(),
           () => changeName,
           (v) => (changeName = v),
+          nameInput,
         )}
-        {#if changeName && !deleteAccount}
-          <div class="border-none pb-2.5 pl-7">
-            <input
-              id="measure-name-value"
-              class="input text-sm"
-              maxlength={50}
-              aria-label={m.admin_reports_measure_name_label()}
-              placeholder={m.admin_reports_measure_name_label()}
-              bind:value={newDisplayName} />
-          </div>
-        {/if}
         {@render measureRow(
           "measure-suspend",
           m.admin_reports_measure_suspend(),
           m.admin_reports_measure_suspend_hint(),
           () => suspend,
           (v) => (suspend = v),
+          suspendPicker,
         )}
-        {#if suspend && !deleteAccount}
-          <div
-            class="flex flex-wrap items-center gap-2 border-none pb-2.5 pl-7">
-            {#each SUSPEND_PRESETS as days (days)}
-              <button
-                type="button"
-                class="chip"
-                class:chip-on={suspendFor === days}
-                aria-pressed={suspendFor === days}
-                onclick={() => (suspendFor = days)}>
-                {m.admin_reports_suspend_days({ count: days })}
-              </button>
-            {/each}
-            <button
-              type="button"
-              class="chip"
-              class:chip-on={suspendFor === "custom"}
-              aria-pressed={suspendFor === "custom"}
-              onclick={() => (suspendFor = "custom")}>
-              {m.admin_reports_suspend_custom()}
-            </button>
-            {#if suspendFor === "custom"}
-              <input
-                id="measure-suspend-date"
-                type="date"
-                class="input w-auto text-sm"
-                aria-label={m.admin_reports_suspend_end()}
-                bind:value={suspendDate} />
-            {/if}
-          </div>
-        {/if}
         <label class="flex cursor-pointer items-start gap-2.5 py-2.5">
           <input
             id="measure-delete"
@@ -595,7 +566,9 @@
         </label>
       </div>
       {#if suspendUntil && !deleteAccount}
-        <p class="bg-surface-2 text-dim mt-3 rounded-lg px-3 py-2 text-xs">
+        <p
+          class="bg-surface-2 text-dim mt-3 rounded-lg px-3 py-2 text-xs"
+          transition:slide={{ duration: reduced ? 0 : 180 }}>
           {m.admin_reports_suspend_effects({
             date: formatDateTime(suspendUntil),
           })}
@@ -621,6 +594,7 @@
       rows="3"
       class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
       placeholder={m.admin_reports_reason_placeholder()}></textarea>
+    {@render fieldError(takeDownMut.fieldErrors.reasonText)}
 
     <span class="mt-3 block text-sm font-semibold">
       {m.admin_moderation_basis()}
@@ -636,6 +610,7 @@
       )}
       values={[takeDownLegalBasis]}
       onChange={(v) => (takeDownLegalBasis = v[0] as ModerationLegalBasis)} />
+    {@render fieldError(takeDownMut.fieldErrors.legalBasis)}
 
     {#if takeDownLegalBasis === "TOS_BREACH"}
       <label class="mt-3 block text-sm font-semibold" for="takedown-clause">
@@ -648,16 +623,11 @@
         bind:value={takeDownTosClause}
         class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
         placeholder={m.moderation_terms_conduct()} />
+      {@render fieldError(takeDownMut.fieldErrors.tosClause)}
     {/if}
 
     {#if takeDownMut.error}
       <Banner variant="error" class="mt-3">{takeDownMut.error}</Banner>
-    {:else if takeDownMut.fieldErrors.reasonText || takeDownMut.fieldErrors.legalBasis || takeDownMut.fieldErrors.tosClause}
-      <Banner variant="error" class="mt-3">
-        {takeDownMut.fieldErrors.reasonText ??
-          takeDownMut.fieldErrors.legalBasis ??
-          takeDownMut.fieldErrors.tosClause}
-      </Banner>
     {/if}
 
     <div class="mt-5 flex justify-end gap-2">
@@ -702,21 +672,71 @@
   hint: string | null,
   get: () => boolean,
   set: (value: boolean) => void,
+  extra: Snippet | null = null,
 )}
-  <label
-    class="flex cursor-pointer items-start gap-2.5 py-2.5 {deleteAccount
-      ? 'opacity-50'
-      : ''}">
-    <input
-      {id}
-      type="checkbox"
-      class="accent-accent mt-0.5 h-4 w-4 shrink-0"
-      disabled={deleteAccount}
-      checked={get() && !deleteAccount}
-      onchange={(e) => set(e.currentTarget.checked)} />
-    <span>
-      <span class="block text-sm font-semibold">{label}</span>
-      {#if hint}<span class="text-dim block text-xs">{hint}</span>{/if}
-    </span>
-  </label>
+  <div class="py-2.5">
+    <label
+      class="flex cursor-pointer items-start gap-2.5 {deleteAccount
+        ? 'opacity-50'
+        : ''}">
+      <input
+        {id}
+        type="checkbox"
+        class="accent-accent mt-0.5 h-4 w-4 shrink-0"
+        disabled={deleteAccount}
+        checked={get() && !deleteAccount}
+        onchange={(e) => set(e.currentTarget.checked)} />
+      <span>
+        <span class="block text-sm font-semibold">{label}</span>
+        {#if hint}<span class="text-dim block text-xs">{hint}</span>{/if}
+      </span>
+    </label>
+    <!-- The row's own input sits inside it, under its label: the divider
+         stays above the whole row instead of cutting it in two. -->
+    {#if extra && get() && !deleteAccount}
+      <div
+        class="pt-2.5 pl-6.5"
+        transition:slide={{ duration: reduced ? 0 : 180 }}>
+        {@render extra()}
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet nameInput()}
+  <input
+    id="measure-name-value"
+    class="input text-sm"
+    maxlength={50}
+    aria-label={m.admin_reports_measure_name_label()}
+    placeholder={m.admin_reports_measure_name_label()}
+    bind:value={newDisplayName} />
+{/snippet}
+
+{#snippet suspendPicker()}
+  <SegmentedControl
+    label={m.admin_reports_suspend_end()}
+    options={SUSPEND_OPTIONS}
+    value={suspendFor}
+    onChange={(v) => (suspendFor = v)} />
+  {#if suspendFor === "custom"}
+    <div class="pt-2" transition:slide={{ duration: reduced ? 0 : 180 }}>
+      <input
+        id="measure-suspend-date"
+        type="date"
+        class="input w-auto text-sm"
+        aria-label={m.admin_reports_suspend_end()}
+        bind:value={suspendDate} />
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet fieldError(message: string | undefined)}
+  {#if message}
+    <p
+      class="text-danger mt-1 text-xs"
+      transition:fly={{ y: reduced ? 0 : -4, duration: reduced ? 0 : 160 }}>
+      {message}
+    </p>
+  {/if}
 {/snippet}

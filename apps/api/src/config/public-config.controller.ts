@@ -35,6 +35,9 @@ export class PublicConfigController {
       // CI-built image (pnpm dev, or any docker compose run against a
       // locally-tagged image rather than one pulled from GHCR).
       gitSha: (process.env.GIT_SHA ?? "unknown").slice(0, 7),
+      supportEmail:
+        this.config.get<string>("MAIL_SUPPORT_ADDRESS")?.trim() ||
+        "contact@loomkeep.app",
     };
   }
 }
