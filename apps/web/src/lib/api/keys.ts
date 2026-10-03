@@ -53,6 +53,8 @@ export const keys = {
       ["media", "detail", type, sourceId] as const,
     extras: (source: string, sourceId: string, region: string | null) =>
       ["media", "extras", source, sourceId, region] as const,
+    saga: (type: string, sourceId: string) =>
+      ["media", "saga", type, sourceId] as const,
   },
   calendar: {
     upcoming: () => ["calendar", "upcoming"] as const,

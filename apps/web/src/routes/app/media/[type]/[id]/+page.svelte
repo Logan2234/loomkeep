@@ -49,6 +49,7 @@
   import { slide } from "svelte/transition";
   import ActionBar from "./components/ActionBar.svelte";
   import CastSection from "./components/CastSection.svelte";
+  import SagaSection from "./components/SagaSection.svelte";
   import EpisodesSection from "./components/EpisodesSection.svelte";
   import WhereToWatch from "./components/WhereToWatch.svelte";
 
@@ -775,6 +776,10 @@
         cast={extras.cast}
         source={type === "ANIME" ? "anilist" : "tmdb"} />
     {/if}
+
+    {#key id}
+      <SagaSection {type} sourceId={id} entryStatus={entry?.status ?? null} />
+    {/key}
 
     {#if extras && extras.relations.length > 0}
       <RelatedCarousel

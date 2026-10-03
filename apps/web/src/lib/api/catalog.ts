@@ -42,3 +42,10 @@ export function getMediaDetail(type: MediaType, sourceId: string) {
     query: { lang: getLocale() },
   });
 }
+
+export function getMediaSaga(type: MediaType, sourceId: string) {
+  return typedRequest("/media/{type}/{id}/saga", {
+    params: { type: type.toLowerCase(), id: sourceId },
+    query: { lang: getLocale() },
+  });
+}
