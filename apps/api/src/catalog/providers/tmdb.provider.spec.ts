@@ -145,7 +145,7 @@ describe("TmdbProvider", () => {
   it("captures dated releases by country and release type", async () => {
     mockFetchByUrl({
       "/movie/27205": {
-        ...fixture("tmdb-movie-details.json"),
+        ...(fixture("tmdb-movie-details.json") as Record<string, unknown>),
         release_dates: {
           results: [
             {

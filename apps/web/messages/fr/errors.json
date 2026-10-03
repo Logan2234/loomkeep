@@ -204,5 +204,5 @@
   "apierr_api_secret_scanning_unauthorized": "Alerte de secret scanning non signée par GitHub.",
   "apierr_admin_setting_locked_by_env": "Ce réglage est fixé par une variable d'environnement.",
   "apierr_auth_account_suspended": "Ton compte est désactivé.",
-  "error_library_movie_not_released": "Ce film n’est pas encore sorti : le suivi, les notes et les critiques seront disponibles à sa première sortie publique."
+  "apierr_library_movie_not_released": "Ce film n’est pas encore sorti : le suivi, les notes et les critiques seront disponibles à sa première sortie publique."
 }

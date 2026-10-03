@@ -73,6 +73,8 @@ const MESSAGES = {
   [ErrorCode.EeUnlicensed]: () => m.apierr_ee_unlicensed(),
   [ErrorCode.LibraryEpisodeNotAired]: () =>
     m.apierr_library_episode_not_aired(),
+  [ErrorCode.LibraryMovieNotReleased]: () =>
+    m.apierr_library_movie_not_released(),
   [ErrorCode.LibraryCalendarUnavailable]: () =>
     m.apierr_library_calendar_unavailable(),
   [ErrorCode.LibraryEpisodeNotFound]: () =>
