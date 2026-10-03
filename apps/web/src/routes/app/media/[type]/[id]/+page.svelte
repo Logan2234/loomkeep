@@ -23,6 +23,7 @@
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
   import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
@@ -42,8 +43,8 @@
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { timeLeftToWatch } from "$lib/pile";
-  import type { EntryStatus, MediaType } from "@loomkeep/shared";
-  import { isDormant } from "@loomkeep/shared";
+  import type { MediaType } from "@loomkeep/shared";
+  import { isDormant, isGhost } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
   import ActionBar from "./components/ActionBar.svelte";
@@ -78,37 +79,6 @@
     SPRING: m.media_season_spring(),
     SUMMER: m.media_season_summer(),
     FALL: m.media_season_fall(),
-  };
-
-  // Effective-status badge: label + chip styling. Statuses are derived server
-  // side; here we only present them.
-  const STATUS_META: Record<EntryStatus, { label: string; cls: string }> = {
-    PLANNED: { label: m.media_status_planned(), cls: "bg-white/15 text-white" },
-    WATCHING: {
-      label: m.library_status_in_progress(),
-      cls: "bg-accent text-accent-fg",
-    },
-    UP_TO_DATE: {
-      label: m.media_status_caught_up(),
-      cls: "border border-success text-success",
-    },
-    COMPLETED: {
-      label: m.library_status_completed(),
-      cls: "bg-success/80 text-white",
-    },
-    DROPPED: {
-      label: m.library_status_dropped(),
-      cls: "border border-danger text-danger",
-    },
-  };
-
-  // Surfaced as a tooltip on the status badge, so each state's meaning is clear.
-  const STATUS_DESC: Record<EntryStatus, string> = {
-    PLANNED: m.media_status_planned_hint(),
-    WATCHING: m.media_status_watching_hint(),
-    UP_TO_DATE: m.media_status_caught_up_hint(),
-    COMPLETED: m.media_status_completed_hint(),
-    DROPPED: m.library_status_dropped_description(),
   };
 
   // Brand-ish colors per rating source (no official logos — those are
@@ -286,6 +256,7 @@
       : null,
   );
   const dormant = $derived(entry ? isDormant(entry) : false);
+  const ghost = $derived(entry ? isGhost(entry) : false);
   const pct = $derived(
     entry?.progress && entry.progress.totalEpisodes > 0
       ? Math.round(
@@ -420,18 +391,15 @@
             {TYPE_LABELS[detail.type]}
           </span>
           {#if entry}
-            <span
-              title={STATUS_DESC[entry.status]}
-              class="rounded-full px-2.5 py-0.5 text-xs font-bold {STATUS_META[
-                entry.status
-              ].cls}">
-              {STATUS_META[entry.status].label}
-            </span>
+            <TrackingStatusBadge domain="MEDIA" status={entry.status} onImage />
             {#if dormant}
               <span
-                title={m.media_dormant_hint()}
-                class="rounded-full border border-white/30 px-2.5 py-0.5 text-xs font-bold text-white">
-                {m.media_paused_badge()}
+                title={ghost ? m.media_ghost_hint() : m.media_dormant_hint()}
+                class="inline-flex items-center gap-1.5 rounded-full border border-white/30 px-2.5 py-1 text-xs font-bold text-white">
+                <Icon
+                  name={ghost ? "ghost" : "hourglass"}
+                  class="h-3.5 w-3.5" />
+                {ghost ? m.media_status_ghost() : m.media_status_paused()}
               </span>
             {/if}
           {/if}

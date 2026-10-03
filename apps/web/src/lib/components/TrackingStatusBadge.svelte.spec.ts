@@ -23,4 +23,24 @@ describe("TrackingStatusBadge", () => {
     expect(screen.getByText(m.library_status_completed())).toBeTruthy();
     expect(container.querySelector('[data-status-icon="check"]')).toBeTruthy();
   });
+
+  it("marks a caught-up series with a calendar, waiting for the next episode", () => {
+    const { container } = render(TrackingStatusBadge, {
+      props: { domain: "MEDIA", status: "UP_TO_DATE" },
+    });
+
+    expect(screen.getByText(m.media_status_caught_up())).toBeTruthy();
+    expect(
+      container.querySelector('[data-status-icon="calendar"]'),
+    ).toBeTruthy();
+  });
+
+  it("gives an album still to hear a note", () => {
+    const { container } = render(TrackingStatusBadge, {
+      props: { domain: "MUSIC", status: "TO_LISTEN" },
+    });
+
+    expect(screen.getByText(m.music_status_to_listen())).toBeTruthy();
+    expect(container.querySelector('[data-status-icon="music"]')).toBeTruthy();
+  });
 });
