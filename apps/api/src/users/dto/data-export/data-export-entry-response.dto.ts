@@ -93,4 +93,10 @@ export class DataExportEntryResponseDto implements DataExportEntry {
    * @example "2026-03-14T09:26:53.000Z"
    */
   createdAt!: string;
+
+  /**
+   * When each rewatch of a film ended.
+   * @example ["2026-03-01T20:00:00.000Z"]
+   */
+  replays!: string[];
 }

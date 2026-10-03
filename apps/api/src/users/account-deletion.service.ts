@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { AuthService } from "../auth/auth.service";
 import { ListService } from "../lists/list.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -18,6 +19,7 @@ export class AccountDeletionService {
     private readonly lists: ListService,
     private readonly security: SecurityEventService,
     private readonly mail: MailService,
+    private readonly auth: AuthService,
   ) {}
 
   async deleteAccount(
@@ -26,10 +28,14 @@ export class AccountDeletionService {
     detail: string,
     userAgent?: string,
   ): Promise<void> {
-    const recipient = await this.prisma.user.findUnique({
+    const account = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true, locale: true },
+      select: { email: true, locale: true, username: true },
     });
+
+    // Evicts the session cache and closes the sockets too: the cascade alone
+    // would leave a still-valid access token working for a few more seconds.
+    await this.auth.revokeAllSessions(userId);
 
     // Recorded before the delete so the FK (onDelete: SetNull) still resolves;
     // the row itself survives the account's removal — see SecurityEvent.
@@ -40,11 +46,47 @@ export class AccountDeletionService {
       userAgent,
     });
     await this.security.forgetIps(userId);
+    // What survives the account (SetNull) must not name the person: an email
+    // change logs "old → new", a passkey or key name can be a first name, an
+    // import summary or error can quote an external profile.
+    await this.prisma.securityEvent.updateMany({
+      where: { userId, type: { not: "USER_DELETED" } },
+      data: { detail: null },
+    });
+    await this.prisma.importRun.updateMany({
+      where: { userId },
+      data: { summary: null, error: null },
+    });
+
+    if (account) {
+      await this.prisma.invitation.updateMany({
+        where: { email: { equals: account.email, mode: "insensitive" } },
+        data: { email: null },
+      });
+    }
+
     await this.lists.reassignOwnedListsOnAccountDeletion(userId);
+
+    // Other members' notifications name the actor by username: left behind,
+    // they'd point at a missing profile — or at whoever takes the name next.
+    if (account) {
+      await this.prisma.notification.deleteMany({
+        where: {
+          userId: { not: userId },
+          data: { path: ["actorUsername"], equals: account.username },
+        },
+      });
+    }
+
     await this.prisma.user.delete({ where: { id: userId } });
 
     // The confirmation the GDPR erasure calls for; the address is used one
     // last time, after the account it belonged to is gone.
-    if (recipient) await this.mail.sendAccountDeleted(recipient, reason);
+    if (account) {
+      await this.mail.sendAccountDeleted(
+        { email: account.email, locale: account.locale },
+        reason,
+      );
+    }
   }
 }

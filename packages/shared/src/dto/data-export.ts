@@ -29,6 +29,7 @@ import type {
   ReviewVoteValue,
   SecurityEventType,
   SessionSource,
+  TrackingCycleStatus,
   VisibilityAudience,
   VisibilityFacet,
 } from "../enums";
@@ -52,6 +53,8 @@ export interface DataExportEntry {
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string;
+  /** When each rewatch of a film ended. */
+  replays: string[];
 }
 
 export interface DataExportWatch {
@@ -84,6 +87,14 @@ export interface DataExportGameEntry {
   createdAt: string;
   /** Completed replays beyond the first, oldest first. */
   replays: string[];
+  /** Every playthrough, the first and the unfinished ones included. */
+  playthroughs: {
+    number: number;
+    status: TrackingCycleStatus;
+    startedAt: string | null;
+    finishedAt: string | null;
+    trackedMinutes: number;
+  }[];
   sessions: {
     playthroughNumber: number | null;
     durationMinutes: number;
@@ -117,6 +128,18 @@ export interface DataExportBookEntry {
   createdAt: string;
   /** Completed rereads beyond the first, oldest first. */
   replays: string[];
+  /** Every reading, the first and the unfinished ones included. */
+  readings: {
+    number: number;
+    status: TrackingCycleStatus;
+    editionKey: string | null;
+    referencePageCount: number | null;
+    currentPage: number;
+    pagesRead: number;
+    trackedMinutes: number;
+    startedAt: string | null;
+    finishedAt: string | null;
+  }[];
   sessions: {
     readingNumber: number | null;
     durationMinutes: number;
@@ -262,6 +285,92 @@ export interface DataExportSecurityEvent {
   createdAt: string;
 }
 
+/** What `account` doesn't carry: consents, account history, the photo itself. */
+export interface DataExportAccountRecord {
+  termsAcceptedAt: string | null;
+  ageCertifiedAt: string | null;
+  newsletterOptInAt: string | null;
+  lastActiveAt: string | null;
+  suspendedUntil: string | null;
+  equippedBadgeKeys: string[];
+  avatar: { mimeType: string; base64: string } | null;
+  /** An email change asked for and not confirmed yet. */
+  pendingEmailChange: { newEmail: string; expiresAt: string } | null;
+  /** The invitation the account signed up with. */
+  invitation: { label: string | null; invitedBy: string | null } | null;
+}
+
+/** A work this account added to a list it doesn't own. */
+export interface DataExportListItemAdded {
+  listTitle: string;
+  listOwnerUsername: string;
+  targetType: ReviewTargetType;
+  targetId: string;
+  addedAt: string;
+}
+
+/** The session timer running when the export was made. */
+export interface DataExportSessionTimer {
+  domain: Domain;
+  /** The game or book it times. */
+  title: string | null;
+  startedAt: string;
+  pausedAt: string | null;
+  accumulatedSeconds: number;
+}
+
+/** A signed-in session — never its token. */
+export interface DataExportSession {
+  userAgent: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+}
+
+/** A shared list whose notifications are muted. */
+export interface DataExportListMute {
+  listTitle: string;
+  mutedAt: string;
+}
+
+export interface DataExportActivity {
+  type: string;
+  domain: string;
+  title: string;
+  href: string | null;
+  createdAt: string;
+}
+
+export interface DataExportProgression {
+  xp: number;
+  xpEntries: { reason: string; amount: number; createdAt: string }[];
+  achievements: { key: string; unlockedAt: string }[];
+}
+
+/** A personal API key — never its secret. */
+export interface DataExportApiKey {
+  name: string;
+  suffix: string;
+  scopes: string[];
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+}
+
+/** A passkey — never its key material. */
+export interface DataExportPasskey {
+  name: string;
+  deviceType: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+/** A browser that receives push notifications — never its endpoint or keys. */
+export interface DataExportPushSubscription {
+  userAgent: string | null;
+  createdAt: string;
+}
+
 export interface DataExportDevice {
   deviceKey: string;
   userAgent: string | null;
@@ -316,6 +425,7 @@ export interface UserDataExportDto {
   /** ISO datetime the export was produced. */
   exportedAt: string;
   account: UserDto;
+  accountRecord: DataExportAccountRecord;
   library: DataExportEntry[];
   episodeWatches: DataExportWatch[];
   games: DataExportGameEntry[];
@@ -352,6 +462,15 @@ export interface UserDataExportDto {
   importRuns: DataExportImportRun[];
   /** With their ids: a home widget of `account.homeLayout` refers to one by it. */
   savedViews: SavedViewDto[];
+  activity: DataExportActivity[];
+  progression: DataExportProgression;
+  apiKeys: DataExportApiKey[];
+  passkeys: DataExportPasskey[];
+  pushSubscriptions: DataExportPushSubscription[];
+  listItemsAdded: DataExportListItemAdded[];
+  sessionTimer: DataExportSessionTimer | null;
+  sessions: DataExportSession[];
+  listMutes: DataExportListMute[];
 }
 
 /**

@@ -600,64 +600,192 @@ export class UsersService {
   /**
    * Live preview of what deleting the account would do, for the confirmation
    * modal — every category is always present, even at 0 rows, so the summary
-   * reads as exhaustive. Mirrors the `onDelete` behaviour in schema.prisma:
-   * most owned rows cascade away, Review/Comment/Report are detached
-   * (SetNull) instead since their content is visible to other users.
+   * reads as exhaustive. Mirrors the `onDelete` behaviour in schema.prisma and
+   * AccountDeletionService: owned rows cascade away; what other members can
+   * see (reviews, comments, items added to their lists) is detached
+   * (SetNull) instead; lists with editors change hands.
    */
   async deletionSummary(userId: string): Promise<AccountDeletionSummaryDto> {
+    const own = { userId };
     const [
+      sessions,
+      user,
       library,
-      watchHistory,
+      episodeWatches,
+      movieRewatches,
       games,
+      gamePlaythroughs,
+      gameSessions,
       books,
+      bookReadings,
+      bookSessions,
+      readingGoals,
+      sessionTimers,
       music,
-      lists,
-      notifications,
-      followers,
-      following,
+      soloLists,
+      listMemberships,
+      listMutes,
+      follows,
       blocks,
+      reviewVotes,
+      commentReactions,
+      notifications,
       activity,
+      achievements,
+      savedViews,
+      visibilitySettings,
+      devices,
+      apiKeys,
+      passkeys,
+      recoveryCodes,
+      pushSubscriptions,
+      emailChanges,
+      emailedLinks,
+      premiumPlans,
+      subscriptions,
       reviews,
+      reviewRevisions,
       comments,
+      listItemsAdded,
       reports,
+      imports,
+      securityEvents,
+      moderationDecisions,
+      removedContentCopies,
+      sharedLists,
     ] = await Promise.all([
-      this.prisma.libraryEntry.count({ where: { userId } }),
-      this.prisma.episodeWatch.count({ where: { userId } }),
-      this.prisma.gameEntry.count({ where: { userId } }),
-      this.prisma.bookEntry.count({ where: { userId } }),
-      this.prisma.musicEntry.count({ where: { userId } }),
-      // A list with editors isn't deleted, ownership is transferred instead
-      // (see deleteAccount) — only count lists that will actually cascade.
+      this.prisma.refreshToken.count({ where: own }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { mfaTotpEnabled: true, mfaEmailEnabled: true },
+      }),
+      this.prisma.libraryEntry.count({ where: own }),
+      this.prisma.episodeWatch.count({ where: own }),
+      this.prisma.movieReplay.count({ where: { libraryEntry: own } }),
+      this.prisma.gameEntry.count({ where: own }),
+      this.prisma.gamePlaythrough.count({ where: { gameEntry: own } }),
+      this.prisma.gameSession.count({ where: { gameEntry: own } }),
+      this.prisma.bookEntry.count({ where: own }),
+      this.prisma.bookReading.count({ where: { bookEntry: own } }),
+      this.prisma.bookSession.count({ where: { bookEntry: own } }),
+      this.prisma.readingGoal.count({ where: own }),
+      this.prisma.sessionTimer.count({ where: own }),
+      this.prisma.musicEntry.count({ where: own }),
       this.prisma.list.count({ where: { userId, members: { none: {} } } }),
-      this.prisma.notification.count({ where: { userId } }),
-      this.prisma.follow.count({ where: { followeeId: userId } }),
-      this.prisma.follow.count({ where: { followerId: userId } }),
+      this.prisma.listMember.count({ where: own }),
+      this.prisma.listNotificationMute.count({ where: own }),
+      this.prisma.follow.count({
+        where: { OR: [{ followerId: userId }, { followeeId: userId }] },
+      }),
       this.prisma.block.count({
         where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
       }),
-      this.prisma.activityEvent.count({ where: { userId } }),
-      this.prisma.review.count({ where: { userId } }),
+      this.prisma.reviewVote.count({ where: own }),
+      this.prisma.commentReaction.count({ where: own }),
+      this.prisma.notification.count({ where: own }),
+      this.prisma.activityEvent.count({ where: own }),
+      this.prisma.userAchievement.count({ where: own }),
+      this.prisma.savedView.count({ where: own }),
+      this.prisma.visibilitySetting.count({ where: own }),
+      this.prisma.userDevice.count({ where: own }),
+      this.prisma.apiKey.count({ where: own }),
+      this.prisma.webauthnCredential.count({ where: own }),
+      this.prisma.mfaRecoveryCode.count({ where: own }),
+      this.prisma.pushSubscription.count({ where: own }),
+      this.prisma.emailChangeRequest.count({ where: own }),
+      this.prisma.userToken.count({ where: own }),
+      this.prisma.userEntitlement.count({
+        where: { userId, plan: "PREMIUM" },
+      }),
+      this.prisma.subscription.count({ where: own }),
+      this.prisma.review.count({ where: own }),
+      this.prisma.reviewRevision.count({ where: { review: own } }),
       this.prisma.comment.count({ where: { authorId: userId } }),
+      // Items in the account's own solo lists go with those lists.
+      this.prisma.listItem.count({
+        where: {
+          addedById: userId,
+          NOT: { list: { userId, members: { none: {} } } },
+        },
+      }),
       this.prisma.report.count({ where: { reporterId: userId } }),
+      this.prisma.importRun.count({ where: own }),
+      this.prisma.securityEvent.count({ where: own }),
+      this.prisma.moderationDecision.count({
+        where: { subjectUserId: userId },
+      }),
+      this.prisma.moderationDecision.count({
+        where: { subjectUserId: userId, contentSnapshot: { not: null } },
+      }),
+      this.prisma.list.findMany({
+        where: { userId, members: { some: {} } },
+        orderBy: { title: "asc" },
+        select: {
+          title: true,
+          members: {
+            orderBy: { createdAt: "asc" },
+            take: 1,
+            select: { user: { select: { displayName: true } } },
+          },
+        },
+      }),
     ]);
 
+    const twoFactor =
+      Number(user?.mfaTotpEnabled ?? false) +
+      Number(user?.mfaEmailEnabled ?? false) +
+      recoveryCodes;
+
     return {
+      sessions,
       deleted: [
         { category: "LIBRARY", count: library },
-        { category: "WATCH_HISTORY", count: watchHistory },
+        { category: "EPISODE_WATCHES", count: episodeWatches },
+        { category: "MOVIE_REWATCHES", count: movieRewatches },
         { category: "GAMES", count: games },
+        { category: "GAME_PLAYTHROUGHS", count: gamePlaythroughs },
+        { category: "GAME_SESSIONS", count: gameSessions },
         { category: "BOOKS", count: books },
+        { category: "BOOK_READINGS", count: bookReadings },
+        { category: "BOOK_SESSIONS", count: bookSessions },
+        { category: "READING_GOALS", count: readingGoals },
+        { category: "SESSION_TIMER", count: sessionTimers },
         { category: "MUSIC", count: music },
-        { category: "LISTS", count: lists },
-        { category: "NOTIFICATIONS", count: notifications },
-        { category: "FOLLOWS", count: followers + following },
+        { category: "LISTS", count: soloLists },
+        { category: "LIST_MEMBERSHIPS", count: listMemberships },
+        { category: "LIST_MUTES", count: listMutes },
+        { category: "FOLLOWS", count: follows },
         { category: "BLOCKS", count: blocks },
+        { category: "REACTIONS", count: reviewVotes + commentReactions },
+        { category: "NOTIFICATIONS", count: notifications },
         { category: "ACTIVITY", count: activity },
+        { category: "PROGRESSION", count: achievements },
+        { category: "SAVED_VIEWS", count: savedViews },
+        { category: "VISIBILITY_SETTINGS", count: visibilitySettings },
+        { category: "DEVICES", count: devices },
+        { category: "API_KEYS", count: apiKeys },
+        { category: "PASSKEYS", count: passkeys },
+        { category: "TWO_FACTOR", count: twoFactor },
+        { category: "PUSH_SUBSCRIPTIONS", count: pushSubscriptions },
+        { category: "PENDING_REQUESTS", count: emailChanges + emailedLinks },
+        { category: "PREMIUM", count: premiumPlans + subscriptions },
       ],
       anonymized: [
         { category: "REVIEWS", count: reviews },
+        { category: "REVIEW_REVISIONS", count: reviewRevisions },
         { category: "COMMENTS", count: comments },
+        { category: "LIST_ITEMS_ADDED", count: listItemsAdded },
         { category: "REPORTS", count: reports },
+        { category: "IMPORTS", count: imports },
+      ],
+      transferredLists: sharedLists.map((list) => ({
+        title: list.title,
+        newOwner: list.members[0].user.displayName,
+      })),
+      kept: [
+        { category: "SECURITY_EVENTS", count: securityEvents },
+        { category: "MODERATION_DECISIONS", count: moderationDecisions },
+        { category: "REMOVED_CONTENT_COPIES", count: removedContentCopies },
       ],
     };
   }
