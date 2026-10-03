@@ -223,16 +223,29 @@ describe("AnilistProvider", () => {
             relations: {
               edges: [
                 {
+                  relationType: "SIDE_STORY",
                   node: {
                     id: 999,
                     type: "ANIME",
-                    title: { romaji: "Sequel", english: null },
+                    title: { romaji: "Side story", english: null },
                     seasonYear: 2024,
                     coverImage: {},
                     isAdult: false,
                   },
                 },
                 {
+                  relationType: "SEQUEL",
+                  node: {
+                    id: 998,
+                    type: "ANIME",
+                    title: { romaji: "Sequel", english: null },
+                    seasonYear: 2026,
+                    coverImage: {},
+                    isAdult: false,
+                  },
+                },
+                {
+                  relationType: "ADAPTATION",
                   node: {
                     id: 1,
                     type: "MANGA",
@@ -279,7 +292,8 @@ describe("AnilistProvider", () => {
           characterPhotoUrl: "https://example.com/character.jpg",
         },
       ]);
-      // The manga source is filtered out; only the anime sequel remains.
+      // The manga source is filtered out, and the sequel goes to the saga
+      // block: only the side story remains.
       expect(extras.relations).toHaveLength(1);
       expect(extras.relations[0].sourceId).toBe("999");
     });
@@ -312,6 +326,126 @@ describe("AnilistProvider", () => {
       expect(extras.directors).toEqual([]);
       expect(extras.studios).toEqual([]);
       expect(extras.relations).toEqual([]);
+    });
+  });
+
+  describe("getSaga", () => {
+    const work = (
+      id: number,
+      year: number | null,
+      extra: Record<string, unknown> = {},
+    ) => ({
+      id,
+      type: "ANIME",
+      title: { romaji: `Work ${id}`, english: null },
+      format: "TV",
+      episodes: 12,
+      status: year ? "FINISHED" : "NOT_YET_RELEASED",
+      startDate: { year, month: 4, day: 1 },
+      coverImage: {},
+      isAdult: false,
+      ...extra,
+    });
+    const edge = (relationType: string, node: object) => ({
+      relationType,
+      node,
+    });
+
+    function mockFetchSequence(bodies: unknown[]): ReturnType<typeof vi.fn> {
+      const fn = vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify(bodies.shift()), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        ),
+      );
+      global.fetch = fn as unknown as typeof fetch;
+      return fn;
+    }
+
+    it("walks prequels and sequels out from the viewed work, oldest first, leaving side stories out", async () => {
+      // Viewing season 2: season 1 before it, season 3 after, then an
+      // announced season 4 and a side story that stays out of the saga.
+      const fetchMock = mockFetchSequence([
+        {
+          data: {
+            Page: {
+              media: [
+                work(2, 2017, {
+                  relations: {
+                    edges: [
+                      edge("PREQUEL", work(1, 2013)),
+                      edge("SEQUEL", work(3, 2018)),
+                      edge("SIDE_STORY", work(50, 2014)),
+                    ],
+                  },
+                }),
+              ],
+            },
+          },
+        },
+        {
+          data: {
+            Page: {
+              media: [
+                work(1, 2013, {
+                  relations: { edges: [edge("SEQUEL", work(2, 2017))] },
+                }),
+                work(3, 2018, {
+                  relations: {
+                    edges: [
+                      edge("PREQUEL", work(2, 2017)),
+                      edge("SEQUEL", work(4, null)),
+                    ],
+                  },
+                }),
+              ],
+            },
+          },
+        },
+        {
+          data: {
+            Page: {
+              media: [
+                work(4, null, {
+                  relations: { edges: [edge("PREQUEL", work(3, 2018))] },
+                }),
+              ],
+            },
+          },
+        },
+      ]);
+
+      const saga = await provider.getSaga("2");
+
+      expect(saga?.key).toBe("ANILIST:1");
+      expect(saga?.title).toBe("Work 1");
+      expect(saga?.members.map((m) => [m.sourceId, m.upcoming])).toEqual([
+        ["1", false],
+        ["2", false],
+        ["3", false],
+        ["4", true],
+      ]);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    });
+
+    it("finds no saga for a work without prequel or sequel", async () => {
+      mockFetchSequence([
+        {
+          data: {
+            Page: {
+              media: [
+                work(7, 2020, {
+                  relations: { edges: [edge("SPIN_OFF", work(8, 2021))] },
+                }),
+              ],
+            },
+          },
+        },
+      ]);
+
+      expect(await provider.getSaga("7")).toBeNull();
     });
   });
 

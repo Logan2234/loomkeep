@@ -1604,6 +1604,9 @@ model MediaItem {
   runtimeMin      Int?
   // 18+ title (TMDB `adult` movies, AniList hentai). Restricted per-account.
   isAdult         Boolean       @default(false)
+  // The saga it belongs to (TMDB collection or AniList main line, e.g.
+  // "TMDB:10194"), set when its saga is first read (see SagaService).
+  sagaKey         String?
   metadata        Json          @default("{}")
   lastSyncedAt    DateTime      @default(now())
   createdAt       DateTime      @default(now())
@@ -1615,6 +1618,7 @@ model MediaItem {
   translations MediaItemTranslation[]
 
   @@index([lastSyncedAt])
+  @@index([sagaKey])
 }
 
 // Locale-specific title/overview/genres, for a locale other than whatever

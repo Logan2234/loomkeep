@@ -344,6 +344,47 @@ describe("TmdbProvider", () => {
     ]);
   });
 
+  describe("getSaga", () => {
+    it("lists a film's collection in release order, an unreleased part marked upcoming", async () => {
+      mockFetchByUrl({
+        "/movie/438631": { id: 438631, belongs_to_collection: { id: 726871 } },
+        "/collection/726871": {
+          id: 726871,
+          name: "Dune - Saga",
+          parts: [
+            {
+              id: 1170608,
+              title: "Dune : Troisième partie",
+              release_date: "2999-12-18",
+            },
+            {
+              id: 693134,
+              title: "Dune : Deuxième partie",
+              release_date: "2024-02-27",
+            },
+            { id: 438631, title: "Dune", release_date: "2021-09-15" },
+          ],
+        },
+      });
+
+      const saga = await provider.getSaga("438631", "fr");
+
+      expect(saga?.key).toBe("TMDB:726871");
+      expect(saga?.title).toBe("Dune - Saga");
+      expect(saga?.members.map((m) => [m.sourceId, m.upcoming])).toEqual([
+        ["438631", false],
+        ["693134", false],
+        ["1170608", true],
+      ]);
+    });
+
+    it("finds no saga for a film outside any collection", async () => {
+      mockFetchByUrl({ "/movie/1": { id: 1, belongs_to_collection: null } });
+
+      expect(await provider.getSaga("1")).toBeNull();
+    });
+  });
+
   describe("getExtras", () => {
     it("lists the asked region's offers by kind, with provider ids and one entry per service", async () => {
       const netflix = {

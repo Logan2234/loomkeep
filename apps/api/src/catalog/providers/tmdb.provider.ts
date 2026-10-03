@@ -1,6 +1,7 @@
 import type {
   CastDetailDto,
   MediaExtrasDto,
+  MediaSagaDto,
   WatchProviderDto,
 } from "@loomkeep/shared";
 import {
@@ -23,11 +24,13 @@ import {
   toCastDetail,
   toExtras,
   toMovieDetails,
+  toMovieSagaMember,
   toMovieSummary,
   toTvDetails,
   toTvSeason,
   toTvSummary,
   toWatchProviders,
+  type TmdbCollection,
   type TmdbExtras,
   type TmdbFindResult,
   type TmdbMovieDetails,
@@ -213,6 +216,28 @@ export class TmdbProvider implements CatalogProvider {
     return tv ? toTvSummary(tv) : null;
   }
 
+  /** The collection a film belongs to, in release order. Null when none. */
+  async getSaga(sourceId: string, lang?: string): Promise<MediaSagaDto | null> {
+    const language = regionalLocale(lang);
+    const movie = await this.get<TmdbMovieDetails>(`/movie/${sourceId}`, {
+      language,
+    });
+    const collectionId = movie.belongs_to_collection?.id;
+    if (!collectionId) return null;
+
+    const collection = await this.get<TmdbCollection>(
+      `/collection/${collectionId}`,
+      { language },
+    );
+    const today = new Date().toISOString().slice(0, 10);
+    const members = (collection.parts ?? [])
+      .map((part) => toMovieSagaMember(part, today))
+      .sort(byRelease);
+    if (members.length < 2) return null;
+
+    return { key: `TMDB:${collection.id}`, title: collection.name, members };
+  }
+
   private async getMovieDetails(
     sourceId: string,
     lang?: string,
@@ -309,4 +334,15 @@ export class TmdbProvider implements CatalogProvider {
       },
     );
   }
+}
+
+// Oldest first; a film with no date yet is an announcement and goes last.
+function byRelease(
+  a: { releaseDate: string | null },
+  b: { releaseDate: string | null },
+): number {
+  if (a.releaseDate === b.releaseDate) return 0;
+  if (!a.releaseDate) return 1;
+  if (!b.releaseDate) return -1;
+  return a.releaseDate < b.releaseDate ? -1 : 1;
 }

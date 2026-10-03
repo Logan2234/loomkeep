@@ -1,4 +1,8 @@
-import type { CastDetailDto, MediaExtrasDto } from "@loomkeep/shared";
+import type {
+  CastDetailDto,
+  MediaExtrasDto,
+  SagaMemberDto,
+} from "@loomkeep/shared";
 import {
   CatalogSource,
   MediaSource,
@@ -63,12 +67,26 @@ export interface AnilistExtras {
     }[];
   };
   relations?: {
-    edges?: { node: AnilistMedia | null }[];
+    edges?: AnilistRelationEdge[];
   };
   recommendations?: {
     nodes?: { mediaRecommendation?: AnilistMedia | null }[];
   };
 }
+
+export interface AnilistRelationEdge {
+  /** SEQUEL, PREQUEL, SIDE_STORY, SPIN_OFF, ALTERNATIVE… */
+  relationType?: string | null;
+  node: AnilistMedia | null;
+}
+
+/** A franchise node, with the works it links to. */
+export interface AnilistFranchiseMedia extends AnilistMedia {
+  relations?: { edges?: AnilistRelationEdge[] };
+}
+
+/** Relations that continue the story itself: the saga's main line. */
+export const MAIN_LINE_RELATIONS = new Set(["SEQUEL", "PREQUEL"]);
 
 export interface AnilistStaff {
   name: { full?: string | null };
@@ -89,6 +107,17 @@ export function toSummary(media: AnilistMedia): MediaSummaryDto {
     year: media.seasonYear ?? null,
     posterUrl: media.coverImage?.extraLarge ?? media.coverImage?.large ?? null,
     isAdult: media.isAdult ?? false,
+  };
+}
+
+export function toSagaMember(media: AnilistMedia): SagaMemberDto {
+  return {
+    ...toSummary(media),
+    releaseDate: toIsoDate(media.startDate),
+    format: media.format ?? null,
+    episodes: media.episodes ?? null,
+    upcoming: media.status === "NOT_YET_RELEASED",
+    status: null,
   };
 }
 
@@ -171,8 +200,10 @@ export function toExtras(
     format: media?.format ?? null,
     season: media?.season ?? null,
     // Only anime-type relations: AniList also links manga/light-novel
-    // sources, which have no page of their own in Loomkeep.
+    // sources, which have no page of their own in Loomkeep. Prequels and
+    // sequels belong to the saga block instead: these are the side works.
     relations: (media?.relations?.edges ?? [])
+      .filter((e) => !MAIN_LINE_RELATIONS.has(e.relationType ?? ""))
       .map((e) => e.node)
       .filter((n): n is AnilistMedia => n?.type === "ANIME")
       .map((n) => toSummary(n)),
