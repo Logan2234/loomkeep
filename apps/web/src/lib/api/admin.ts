@@ -26,7 +26,7 @@ import { typedRequest } from "./generated/typed-request";
 export interface ModerationReasonBody {
   reasonText: string;
   legalBasis: ModerationLegalBasis;
-  tosClause: string;
+  tosClause?: string;
 }
 
 export const getAdminServices = () => typedRequest("/admin/services");

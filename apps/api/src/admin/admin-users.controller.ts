@@ -536,7 +536,7 @@ export class AdminUsersController {
       subjectUsername: user.username,
       legalBasis: body.legalBasis,
       reasonText: body.reasonText,
-      tosClause: body.tosClause,
+      tosClause: body.tosClause ?? "",
       decidedById: admin.sub,
     });
 
