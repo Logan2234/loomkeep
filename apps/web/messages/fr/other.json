@@ -1209,5 +1209,12 @@
   "list_moderating_back": "Retour aux signalements",
   "auth_suspended_title": "Ton compte est désactivé",
   "auth_suspended_body": "Il sera réactivé le {date}. Les raisons de cette décision t'ont été envoyées par email.",
-  "auth_suspended_contact": "Pour la contester, réponds à cet email ou écris à"
+  "auth_suspended_contact": "Pour la contester, réponds à cet email ou écris à",
+  "add_to_list_search": "Chercher ou créer une liste",
+  "add_to_list_create": "Créer « {title} » avec cette œuvre",
+  "add_to_list_shared": "Partagées avec moi",
+  "add_to_list_empty": "Tape un nom pour créer ta première liste.",
+  "lists_visibility_private_hint": "Toi et tes éditeurs, personne d'autre.",
+  "lists_visibility_friends_hint": "Tes amis la voient sur ton profil.",
+  "lists_visibility_public_hint": "Tout le monde sur l'instance peut la voir."
 }

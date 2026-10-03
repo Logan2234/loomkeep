@@ -1209,5 +1209,12 @@
   "list_moderating_back": "Back to reports",
   "auth_suspended_title": "Your account is suspended",
   "auth_suspended_body": "It will be reactivated on {date}. The reasons for this decision were sent to you by email.",
-  "auth_suspended_contact": "To appeal it, reply to that email or write to"
+  "auth_suspended_contact": "To appeal it, reply to that email or write to",
+  "add_to_list_search": "Find or create a list",
+  "add_to_list_create": "Create “{title}” with this work",
+  "add_to_list_shared": "Shared with me",
+  "add_to_list_empty": "Type a name to create your first list.",
+  "lists_visibility_private_hint": "You and your editors, no one else.",
+  "lists_visibility_friends_hint": "Your friends see it on your profile.",
+  "lists_visibility_public_hint": "Anyone on this instance can see it."
 }
