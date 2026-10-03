@@ -1229,5 +1229,13 @@
   "list_members_owner": "Propriétaire",
   "list_members_since": "Éditeur depuis le {date}",
   "list_members_added": "Ajouté",
-  "list_members_remove_confirm": "Retirer {name} ? Ses ajouts restent dans la liste."
+  "list_members_remove_confirm": "Retirer {name} ? Ses ajouts restent dans la liste.",
+  "reviews_sort_best": "Mieux notées",
+  "reviews_sort_label": "Trier les critiques",
+  "reviews_filter_domain": "Filtrer par domaine",
+  "reviews_page_average": "moyenne {average}/10",
+  "reviews_page_public": "{count} publiques",
+  "reviews_search": "Chercher une œuvre",
+  "reviews_no_match": "Aucune critique ne correspond à ces filtres.",
+  "reviews_selection_done": "Terminé"
 }

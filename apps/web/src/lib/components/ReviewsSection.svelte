@@ -78,6 +78,14 @@
 
   let editing = $state(false);
   let reportingId = $state<string | null>(null);
+  const reportingSubject = $derived.by(() => {
+    const review = allReviews.find((r) => r.id === reportingId);
+    if (!review) return undefined;
+    return {
+      title: review.author?.displayName ?? m.reviews_report_title(),
+      detail: review.text,
+    };
+  });
   let arrangement = $state<ReviewArrangement>("useful");
 
   // `listForTarget` always includes the viewer's own review — keep the
@@ -301,6 +309,7 @@
   <ReportModal
     title={m.reviews_report_title()}
     targetType="REVIEW"
+    subject={reportingSubject}
     onClose={() => (reportingId = null)}
     onSubmit={submitReport} />
 {/if}

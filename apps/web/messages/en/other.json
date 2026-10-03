@@ -1229,5 +1229,13 @@
   "list_members_owner": "Owner",
   "list_members_since": "Editor since {date}",
   "list_members_added": "Added",
-  "list_members_remove_confirm": "Remove {name}? What they added stays in the list."
+  "list_members_remove_confirm": "Remove {name}? What they added stays in the list.",
+  "reviews_sort_best": "Highest rated",
+  "reviews_sort_label": "Sort reviews",
+  "reviews_filter_domain": "Filter by domain",
+  "reviews_page_average": "average {average}/10",
+  "reviews_page_public": "{count} public",
+  "reviews_search": "Search a work",
+  "reviews_no_match": "No review matches these filters.",
+  "reviews_selection_done": "Done"
 }

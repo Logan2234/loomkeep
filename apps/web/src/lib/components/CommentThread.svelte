@@ -292,6 +292,16 @@
   let revealed = $state<Set<string>>(new Set());
   let confirmDeleteId = $state<string | null>(null);
   let reportingId = $state<string | null>(null);
+  const reportingSubject = $derived.by(() => {
+    const comment = [...comments, ...comments.flatMap(repliesOf)].find(
+      (c) => c.id === reportingId,
+    );
+    if (!comment) return undefined;
+    return {
+      title: comment.author?.displayName ?? m.comment_report_title(),
+      detail: comment.text,
+    };
+  });
 
   // Long-press focus (touch): centers the pressed comment in a focused
   // reading mode without making the full panel difficult to scan.
@@ -1001,6 +1011,7 @@
   <ReportModal
     title={m.comment_report_title()}
     targetType="COMMENT"
+    subject={reportingSubject}
     onClose={() => (reportingId = null)}
     onSubmit={submitReport} />
 {/if}

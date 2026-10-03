@@ -1229,5 +1229,13 @@
   "list_members_owner": "Proprietario",
   "list_members_since": "Editor dal {date}",
   "list_members_added": "Aggiunto",
-  "list_members_remove_confirm": "Rimuovere {name}? Le sue aggiunte restano nella lista."
+  "list_members_remove_confirm": "Rimuovere {name}? Le sue aggiunte restano nella lista.",
+  "reviews_sort_best": "Voto più alto",
+  "reviews_sort_label": "Ordina le recensioni",
+  "reviews_filter_domain": "Filtra per dominio",
+  "reviews_page_average": "media {average}/10",
+  "reviews_page_public": "{count} pubbliche",
+  "reviews_search": "Cerca un'opera",
+  "reviews_no_match": "Nessuna recensione corrisponde a questi filtri.",
+  "reviews_selection_done": "Fatto"
 }
