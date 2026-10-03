@@ -14,6 +14,34 @@ class DataExportAvatarResponseDto {
   base64!: string;
 }
 
+class DataExportPendingEmailChangeResponseDto {
+  /**
+   * The address asked for.
+   * @example "alice@new.example"
+   */
+  newEmail!: string;
+
+  /**
+   * When the confirmation code stops working.
+   * @example "2026-10-04T00:00:00.000Z"
+   */
+  expiresAt!: string;
+}
+
+class DataExportInvitationResponseDto {
+  /**
+   * The label the inviter gave it.
+   * @example "Club ciné"
+   */
+  label!: string | null;
+
+  /**
+   * Who sent it.
+   * @example "Logan"
+   */
+  invitedBy!: string | null;
+}
+
 export class DataExportAccountRecordResponseDto implements DataExportAccountRecord {
   /**
    * When the terms of service were last accepted.
@@ -53,4 +81,10 @@ export class DataExportAccountRecordResponseDto implements DataExportAccountReco
 
   /** The profile photo, when one was uploaded. */
   avatar!: DataExportAvatarResponseDto | null;
+
+  /** An email change asked for and not confirmed yet. */
+  pendingEmailChange!: DataExportPendingEmailChangeResponseDto | null;
+
+  /** The invitation the account signed up with. */
+  invitation!: DataExportInvitationResponseDto | null;
 }

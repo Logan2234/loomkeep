@@ -72,6 +72,12 @@ function makeService() {
     apiKey: { findMany: vi.fn().mockResolvedValue([]) },
     webauthnCredential: { findMany: vi.fn().mockResolvedValue([]) },
     pushSubscription: { findMany: vi.fn().mockResolvedValue([]) },
+    sessionTimer: { findUnique: vi.fn().mockResolvedValue(null) },
+    refreshToken: { findMany: vi.fn().mockResolvedValue([]) },
+    emailChangeRequest: { findFirst: vi.fn().mockResolvedValue(null) },
+    invitation: { findFirst: vi.fn().mockResolvedValue(null) },
+    listItem: { findMany: vi.fn().mockResolvedValue([]) },
+    listNotificationMute: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   // Ratings live in Review now; the export projects them but these tests don't
   // assert the value, so an empty projection is enough.
@@ -113,7 +119,15 @@ describe("DataExportService.buildExport", () => {
           canonicalSource: "IGDB",
           externalIds: [{ source: "IGDB", externalId: "1234" }],
         },
-        playthroughs: [{ finishedAt: new Date("2026-03-01T00:00:00.000Z") }],
+        playthroughs: [
+          {
+            number: 2,
+            status: "COMPLETED",
+            startedAt: null,
+            finishedAt: new Date("2026-03-01T00:00:00.000Z"),
+            trackedMinutes: 0,
+          },
+        ],
         sessions: [
           {
             durationMinutes: 45,
@@ -489,5 +503,184 @@ describe("DataExportService.buildExport", () => {
     ]);
     expect(JSON.stringify(data)).not.toContain("secret-hash");
     expect(JSON.stringify(data)).not.toContain("irrelevant");
+  });
+
+  it("exports every cycle, sessions, pending changes and what was added to other lists", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as Mock).mockResolvedValue(makeUser());
+    (prisma.gameEntry.findMany as Mock).mockResolvedValue([
+      {
+        gameItemId: "g1",
+        gameItem: {
+          title: "Hades",
+          canonicalSource: "IGDB",
+          externalIds: [{ source: "IGDB", externalId: "113112" }],
+        },
+        status: "PLAYING",
+        notes: null,
+        favorite: false,
+        platform: null,
+        ownershipStatus: null,
+        startedAt: null,
+        finishedAt: null,
+        createdAt: new Date("2026-02-01T00:00:00.000Z"),
+        playthroughs: [
+          {
+            number: 1,
+            status: "COMPLETED",
+            startedAt: new Date("2026-02-01T00:00:00.000Z"),
+            finishedAt: new Date("2026-03-01T00:00:00.000Z"),
+            trackedMinutes: 600,
+          },
+          {
+            number: 2,
+            status: "IN_PROGRESS",
+            startedAt: new Date("2026-04-01T00:00:00.000Z"),
+            finishedAt: null,
+            trackedMinutes: 90,
+          },
+        ],
+        sessions: [],
+      },
+    ]);
+    (prisma.bookEntry.findMany as Mock).mockResolvedValue([
+      {
+        bookItemId: "b1",
+        bookItem: {
+          title: "Dune",
+          canonicalSource: "OPEN_LIBRARY",
+          externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
+        },
+        status: "READING",
+        notes: null,
+        favorite: false,
+        startedAt: null,
+        finishedAt: null,
+        createdAt: new Date("2026-02-01T00:00:00.000Z"),
+        readings: [
+          {
+            number: 1,
+            status: "IN_PROGRESS",
+            editionKey: "OL2M",
+            referencePageCount: 600,
+            currentPage: 212,
+            pagesRead: 212,
+            trackedMinutes: 300,
+            startedAt: new Date("2026-02-01T00:00:00.000Z"),
+            finishedAt: null,
+          },
+        ],
+        sessions: [],
+      },
+    ]);
+    (prisma.listItem.findMany as Mock).mockResolvedValue([
+      {
+        targetType: "MEDIA",
+        targetId: "m1",
+        addedAt: new Date("2026-05-01T00:00:00.000Z"),
+        list: { title: "À voir ensemble", user: { username: "camille" } },
+      },
+    ]);
+    (prisma.sessionTimer.findUnique as Mock).mockResolvedValue({
+      domain: "GAMES",
+      startedAt: new Date("2026-10-03T20:00:00.000Z"),
+      pausedAt: null,
+      accumulatedSeconds: 1200,
+      gameEntry: { gameItem: { title: "Hades" } },
+      bookEntry: null,
+    });
+    (prisma.refreshToken.findMany as Mock).mockResolvedValue([
+      {
+        userAgent: "Firefox",
+        tokenHash: "secret-hash",
+        createdAt: new Date("2026-09-01T00:00:00.000Z"),
+        lastUsedAt: new Date("2026-10-03T00:00:00.000Z"),
+        expiresAt: new Date("2026-11-01T00:00:00.000Z"),
+      },
+    ]);
+    (prisma.emailChangeRequest.findFirst as Mock).mockResolvedValue({
+      newEmail: "alice@new.example",
+      expiresAt: new Date("2026-10-04T00:00:00.000Z"),
+    });
+    (prisma.invitation.findFirst as Mock).mockResolvedValue({
+      label: "Club ciné",
+      createdBy: { displayName: "Logan" },
+    });
+    (prisma.listNotificationMute.findMany as Mock).mockResolvedValue([
+      {
+        createdAt: new Date("2026-06-01T00:00:00.000Z"),
+        list: { title: "À voir ensemble" },
+      },
+    ]);
+
+    const data = await service.buildExport("user-1");
+
+    expect(data.games[0].playthroughs).toEqual([
+      {
+        number: 1,
+        status: "COMPLETED",
+        startedAt: "2026-02-01T00:00:00.000Z",
+        finishedAt: "2026-03-01T00:00:00.000Z",
+        trackedMinutes: 600,
+      },
+      {
+        number: 2,
+        status: "IN_PROGRESS",
+        startedAt: "2026-04-01T00:00:00.000Z",
+        finishedAt: null,
+        trackedMinutes: 90,
+      },
+    ]);
+    // `replays` keeps its meaning: completed cycles beyond the first.
+    expect(data.games[0].replays).toEqual([]);
+    expect(data.books[0].readings).toEqual([
+      {
+        number: 1,
+        status: "IN_PROGRESS",
+        editionKey: "OL2M",
+        referencePageCount: 600,
+        currentPage: 212,
+        pagesRead: 212,
+        trackedMinutes: 300,
+        startedAt: "2026-02-01T00:00:00.000Z",
+        finishedAt: null,
+      },
+    ]);
+    expect(data.listItemsAdded).toEqual([
+      {
+        listTitle: "À voir ensemble",
+        listOwnerUsername: "camille",
+        targetType: "MEDIA",
+        targetId: "m1",
+        addedAt: "2026-05-01T00:00:00.000Z",
+      },
+    ]);
+    expect(data.sessionTimer).toEqual({
+      domain: "GAMES",
+      title: "Hades",
+      startedAt: "2026-10-03T20:00:00.000Z",
+      pausedAt: null,
+      accumulatedSeconds: 1200,
+    });
+    expect(data.sessions).toEqual([
+      {
+        userAgent: "Firefox",
+        createdAt: "2026-09-01T00:00:00.000Z",
+        lastUsedAt: "2026-10-03T00:00:00.000Z",
+        expiresAt: "2026-11-01T00:00:00.000Z",
+      },
+    ]);
+    expect(data.accountRecord.pendingEmailChange).toEqual({
+      newEmail: "alice@new.example",
+      expiresAt: "2026-10-04T00:00:00.000Z",
+    });
+    expect(data.accountRecord.invitation).toEqual({
+      label: "Club ciné",
+      invitedBy: "Logan",
+    });
+    expect(data.listMutes).toEqual([
+      { listTitle: "À voir ensemble", mutedAt: "2026-06-01T00:00:00.000Z" },
+    ]);
+    expect(JSON.stringify(data)).not.toContain("secret-hash");
   });
 });

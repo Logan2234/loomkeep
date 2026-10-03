@@ -15,7 +15,9 @@ import { DataExportEntryResponseDto } from "./data-export-entry-response.dto";
 import { DataExportFollowResponseDto } from "./data-export-follow-response.dto";
 import { DataExportGameEntryResponseDto } from "./data-export-game-entry-response.dto";
 import { DataExportImportRunResponseDto } from "./data-export-import-run-response.dto";
+import { DataExportListItemAddedResponseDto } from "./data-export-list-item-added-response.dto";
 import { DataExportListMembershipResponseDto } from "./data-export-list-membership-response.dto";
+import { DataExportListMuteResponseDto } from "./data-export-list-mute-response.dto";
 import { DataExportListResponseDto } from "./data-export-list-response.dto";
 import { DataExportModerationDecisionResponseDto } from "./data-export-moderation-decision-response.dto";
 import { DataExportMusicEntryResponseDto } from "./data-export-music-entry-response.dto";
@@ -28,6 +30,8 @@ import { DataExportReportResponseDto } from "./data-export-report-response.dto";
 import { DataExportReviewResponseDto } from "./data-export-review-response.dto";
 import { DataExportReviewVoteResponseDto } from "./data-export-review-vote-response.dto";
 import { DataExportSecurityEventResponseDto } from "./data-export-security-event-response.dto";
+import { DataExportSessionResponseDto } from "./data-export-session-response.dto";
+import { DataExportSessionTimerResponseDto } from "./data-export-session-timer-response.dto";
 import { DataExportSubscriptionResponseDto } from "./data-export-subscription-response.dto";
 import { DataExportVisibilitySettingResponseDto } from "./data-export-visibility-setting-response.dto";
 import { DataExportWatchResponseDto } from "./data-export-watch-response.dto";
@@ -162,4 +166,16 @@ export class UserDataExportResponseDto implements UserDataExportDto {
 
   /** Browsers receiving push notifications, without their endpoint. */
   pushSubscriptions!: DataExportPushSubscriptionResponseDto[];
+
+  /** Works added to lists the account doesn't own. */
+  listItemsAdded!: DataExportListItemAddedResponseDto[];
+
+  /** The session timer running when the export was made. */
+  sessionTimer!: DataExportSessionTimerResponseDto | null;
+
+  /** Signed-in sessions, without their token. */
+  sessions!: DataExportSessionResponseDto[];
+
+  /** Shared lists whose notifications are muted. */
+  listMutes!: DataExportListMuteResponseDto[];
 }

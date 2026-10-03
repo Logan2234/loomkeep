@@ -91,10 +91,7 @@ export class DataExportService {
         where: { userId },
         include: {
           gameItem: { include: { externalIds: true } },
-          playthroughs: {
-            where: { status: "COMPLETED", number: { gt: 1 } },
-            orderBy: { number: "asc" },
-          },
+          playthroughs: { orderBy: { number: "asc" } },
           sessions: {
             orderBy: { occurredAt: "asc" },
             include: { playthrough: { select: { number: true } } },
@@ -106,10 +103,7 @@ export class DataExportService {
         where: { userId },
         include: {
           bookItem: { include: { externalIds: true } },
-          readings: {
-            where: { status: "COMPLETED", number: { gt: 1 } },
-            orderBy: { number: "asc" },
-          },
+          readings: { orderBy: { number: "asc" } },
           sessions: {
             orderBy: { occurredAt: "asc" },
             include: { reading: { select: { number: true } } },
@@ -223,6 +217,12 @@ export class DataExportService {
       apiKeyRows,
       passkeyRows,
       pushRows,
+      listItemAddedRows,
+      timer,
+      sessionRows,
+      pendingEmailChange,
+      invitation,
+      muteRows,
     ] = await Promise.all([
       this.prisma.activityEvent.findMany({
         where: { userId },
@@ -275,6 +275,53 @@ export class DataExportService {
         where: { userId },
         orderBy: { createdAt: "asc" },
         select: { userAgent: true, createdAt: true },
+      }),
+      this.prisma.listItem.findMany({
+        where: { addedById: userId, list: { userId: { not: userId } } },
+        orderBy: { addedAt: "asc" },
+        select: {
+          targetType: true,
+          targetId: true,
+          addedAt: true,
+          list: {
+            select: { title: true, user: { select: { username: true } } },
+          },
+        },
+      }),
+      this.prisma.sessionTimer.findUnique({
+        where: { userId },
+        select: {
+          domain: true,
+          startedAt: true,
+          pausedAt: true,
+          accumulatedSeconds: true,
+          gameEntry: { select: { gameItem: { select: { title: true } } } },
+          bookEntry: { select: { bookItem: { select: { title: true } } } },
+        },
+      }),
+      this.prisma.refreshToken.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+        select: {
+          userAgent: true,
+          createdAt: true,
+          lastUsedAt: true,
+          expiresAt: true,
+        },
+      }),
+      this.prisma.emailChangeRequest.findFirst({
+        where: { userId, expiresAt: { gt: new Date() } },
+        orderBy: { createdAt: "desc" },
+        select: { newEmail: true, expiresAt: true },
+      }),
+      this.prisma.invitation.findFirst({
+        where: { redeemedBy: { some: { id: userId } } },
+        select: { label: true, createdBy: { select: { displayName: true } } },
+      }),
+      this.prisma.listNotificationMute.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+        select: { createdAt: true, list: { select: { title: true } } },
       }),
     ]);
 
@@ -331,6 +378,18 @@ export class DataExportService {
                 base64: Buffer.from(user.avatar).toString("base64"),
               }
             : null,
+        pendingEmailChange: pendingEmailChange
+          ? {
+              newEmail: pendingEmailChange.newEmail,
+              expiresAt: pendingEmailChange.expiresAt.toISOString(),
+            }
+          : null,
+        invitation: invitation
+          ? {
+              label: invitation.label,
+              invitedBy: invitation.createdBy?.displayName ?? null,
+            }
+          : null,
       },
       library: entries.map((entry) => ({
         media: {
@@ -389,9 +448,14 @@ export class DataExportService {
         startedAt: entry.startedAt?.toISOString() ?? null,
         finishedAt: entry.finishedAt?.toISOString() ?? null,
         createdAt: entry.createdAt.toISOString(),
-        replays: entry.playthroughs.flatMap((playthrough) =>
-          playthrough.finishedAt ? [playthrough.finishedAt.toISOString()] : [],
-        ),
+        replays: laterCompletions(entry.playthroughs),
+        playthroughs: entry.playthroughs.map((playthrough) => ({
+          number: playthrough.number,
+          status: playthrough.status,
+          startedAt: playthrough.startedAt?.toISOString() ?? null,
+          finishedAt: playthrough.finishedAt?.toISOString() ?? null,
+          trackedMinutes: playthrough.trackedMinutes,
+        })),
         sessions: entry.sessions.map((session) => ({
           durationMinutes: session.durationMinutes,
           notes: session.notes,
@@ -425,9 +489,18 @@ export class DataExportService {
         startedAt: entry.startedAt?.toISOString() ?? null,
         finishedAt: entry.finishedAt?.toISOString() ?? null,
         createdAt: entry.createdAt.toISOString(),
-        replays: entry.readings.flatMap((reading) =>
-          reading.finishedAt ? [reading.finishedAt.toISOString()] : [],
-        ),
+        replays: laterCompletions(entry.readings),
+        readings: entry.readings.map((reading) => ({
+          number: reading.number,
+          status: reading.status,
+          editionKey: reading.editionKey,
+          referencePageCount: reading.referencePageCount,
+          currentPage: reading.currentPage,
+          pagesRead: reading.pagesRead,
+          trackedMinutes: reading.trackedMinutes,
+          startedAt: reading.startedAt?.toISOString() ?? null,
+          finishedAt: reading.finishedAt?.toISOString() ?? null,
+        })),
         sessions: entry.sessions.map((session) => ({
           durationMinutes: session.durationMinutes,
           pagesRead: session.pagesRead,
@@ -663,6 +736,35 @@ export class DataExportService {
         userAgent: subscription.userAgent,
         createdAt: subscription.createdAt.toISOString(),
       })),
+      listItemsAdded: listItemAddedRows.map((item) => ({
+        listTitle: item.list.title,
+        listOwnerUsername: item.list.user.username,
+        targetType: item.targetType as ReviewTargetType,
+        targetId: item.targetId,
+        addedAt: item.addedAt.toISOString(),
+      })),
+      sessionTimer: timer
+        ? {
+            domain: timer.domain,
+            title:
+              timer.gameEntry?.gameItem.title ??
+              timer.bookEntry?.bookItem.title ??
+              null,
+            startedAt: timer.startedAt.toISOString(),
+            pausedAt: timer.pausedAt?.toISOString() ?? null,
+            accumulatedSeconds: timer.accumulatedSeconds,
+          }
+        : null,
+      sessions: sessionRows.map((session) => ({
+        userAgent: session.userAgent,
+        createdAt: session.createdAt.toISOString(),
+        lastUsedAt: session.lastUsedAt.toISOString(),
+        expiresAt: session.expiresAt.toISOString(),
+      })),
+      listMutes: muteRows.map((mute) => ({
+        listTitle: mute.list.title,
+        mutedAt: mute.createdAt.toISOString(),
+      })),
     };
   }
 
@@ -726,4 +828,15 @@ export class DataExportService {
 
     return map;
   }
+}
+
+/** Completion dates of the cycles after the first: the export's `replays`. */
+function laterCompletions(
+  cycles: { number: number; status: string; finishedAt: Date | null }[],
+): string[] {
+  return cycles.flatMap((cycle) =>
+    cycle.number > 1 && cycle.status === "COMPLETED" && cycle.finishedAt
+      ? [cycle.finishedAt.toISOString()]
+      : [],
+  );
 }

@@ -4,6 +4,7 @@ import type {
   GameSource,
   GameStatus,
   SessionSource,
+  TrackingCycleStatus,
 } from "@loomkeep/shared";
 
 class DataExportGameExternalIdResponseDto {
@@ -79,6 +80,38 @@ class DataExportGameSessionResponseDto {
    * @example "2026-09-30T21:00:00.000Z"
    */
   createdAt!: string;
+}
+
+class DataExportPlaythroughResponseDto {
+  /**
+   * Its rank among the game's playthroughs.
+   * @example 1
+   */
+  number!: number;
+
+  /**
+   * Where it stands.
+   * @example "COMPLETED"
+   */
+  status!: TrackingCycleStatus;
+
+  /**
+   * When it began.
+   * @example "2026-02-01T20:00:00.000Z"
+   */
+  startedAt!: string | null;
+
+  /**
+   * When it ended.
+   * @example "2026-03-01T22:30:00.000Z"
+   */
+  finishedAt!: string | null;
+
+  /**
+   * Time logged in sessions, in minutes.
+   * @example 600
+   */
+  trackedMinutes!: number;
 }
 
 export class DataExportGameEntryResponseDto implements DataExportGameEntry {
@@ -171,4 +204,7 @@ export class DataExportGameEntryResponseDto implements DataExportGameEntry {
 
   /** Play sessions, oldest first. */
   sessions!: DataExportGameSessionResponseDto[];
+
+  /** Every playthrough, the first and the unfinished ones included. */
+  playthroughs!: DataExportPlaythroughResponseDto[];
 }

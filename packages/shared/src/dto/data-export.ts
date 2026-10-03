@@ -29,6 +29,7 @@ import type {
   ReviewVoteValue,
   SecurityEventType,
   SessionSource,
+  TrackingCycleStatus,
   VisibilityAudience,
   VisibilityFacet,
 } from "../enums";
@@ -86,6 +87,14 @@ export interface DataExportGameEntry {
   createdAt: string;
   /** Completed replays beyond the first, oldest first. */
   replays: string[];
+  /** Every playthrough, the first and the unfinished ones included. */
+  playthroughs: {
+    number: number;
+    status: TrackingCycleStatus;
+    startedAt: string | null;
+    finishedAt: string | null;
+    trackedMinutes: number;
+  }[];
   sessions: {
     playthroughNumber: number | null;
     durationMinutes: number;
@@ -119,6 +128,18 @@ export interface DataExportBookEntry {
   createdAt: string;
   /** Completed rereads beyond the first, oldest first. */
   replays: string[];
+  /** Every reading, the first and the unfinished ones included. */
+  readings: {
+    number: number;
+    status: TrackingCycleStatus;
+    editionKey: string | null;
+    referencePageCount: number | null;
+    currentPage: number;
+    pagesRead: number;
+    trackedMinutes: number;
+    startedAt: string | null;
+    finishedAt: string | null;
+  }[];
   sessions: {
     readingNumber: number | null;
     durationMinutes: number;
@@ -273,6 +294,43 @@ export interface DataExportAccountRecord {
   suspendedUntil: string | null;
   equippedBadgeKeys: string[];
   avatar: { mimeType: string; base64: string } | null;
+  /** An email change asked for and not confirmed yet. */
+  pendingEmailChange: { newEmail: string; expiresAt: string } | null;
+  /** The invitation the account signed up with. */
+  invitation: { label: string | null; invitedBy: string | null } | null;
+}
+
+/** A work this account added to a list it doesn't own. */
+export interface DataExportListItemAdded {
+  listTitle: string;
+  listOwnerUsername: string;
+  targetType: ReviewTargetType;
+  targetId: string;
+  addedAt: string;
+}
+
+/** The session timer running when the export was made. */
+export interface DataExportSessionTimer {
+  domain: Domain;
+  /** The game or book it times. */
+  title: string | null;
+  startedAt: string;
+  pausedAt: string | null;
+  accumulatedSeconds: number;
+}
+
+/** A signed-in session — never its token. */
+export interface DataExportSession {
+  userAgent: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+}
+
+/** A shared list whose notifications are muted. */
+export interface DataExportListMute {
+  listTitle: string;
+  mutedAt: string;
 }
 
 export interface DataExportActivity {
@@ -409,6 +467,10 @@ export interface UserDataExportDto {
   apiKeys: DataExportApiKey[];
   passkeys: DataExportPasskey[];
   pushSubscriptions: DataExportPushSubscription[];
+  listItemsAdded: DataExportListItemAdded[];
+  sessionTimer: DataExportSessionTimer | null;
+  sessions: DataExportSession[];
+  listMutes: DataExportListMute[];
 }
 
 /**

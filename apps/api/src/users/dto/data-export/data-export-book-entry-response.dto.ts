@@ -4,6 +4,7 @@ import type {
   BookStatus,
   DataExportBookEntry,
   SessionSource,
+  TrackingCycleStatus,
 } from "@loomkeep/shared";
 
 class DataExportBookExternalIdResponseDto {
@@ -105,6 +106,62 @@ class DataExportBookSessionResponseDto {
   createdAt!: string;
 }
 
+class DataExportReadingResponseDto {
+  /**
+   * Its rank among the book's readings.
+   * @example 1
+   */
+  number!: number;
+
+  /**
+   * Where it stands.
+   * @example "IN_PROGRESS"
+   */
+  status!: TrackingCycleStatus;
+
+  /**
+   * The edition read, as an Open Library edition key.
+   * @example "OL26242482M"
+   */
+  editionKey!: string | null;
+
+  /**
+   * That edition's page count.
+   * @example 600
+   */
+  referencePageCount!: number | null;
+
+  /**
+   * The page reached.
+   * @example 212
+   */
+  currentPage!: number;
+
+  /**
+   * Pages read in this reading.
+   * @example 212
+   */
+  pagesRead!: number;
+
+  /**
+   * Time logged in sessions, in minutes.
+   * @example 300
+   */
+  trackedMinutes!: number;
+
+  /**
+   * When it began.
+   * @example "2026-02-01T20:00:00.000Z"
+   */
+  startedAt!: string | null;
+
+  /**
+   * When it ended.
+   * @example "2026-03-01T22:30:00.000Z"
+   */
+  finishedAt!: string | null;
+}
+
 export class DataExportBookEntryResponseDto implements DataExportBookEntry {
   /** The book. */
   book!: DataExportBookEntryBookResponseDto;
@@ -195,4 +252,7 @@ export class DataExportBookEntryResponseDto implements DataExportBookEntry {
 
   /** Reading sessions, oldest first. */
   sessions!: DataExportBookSessionResponseDto[];
+
+  /** Every reading, the first and the unfinished ones included. */
+  readings!: DataExportReadingResponseDto[];
 }
