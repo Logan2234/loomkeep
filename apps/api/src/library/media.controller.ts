@@ -1,6 +1,13 @@
 import type { MediaDetailDto } from "@loomkeep/shared";
 import { ErrorCode, MediaType } from "@loomkeep/shared";
-import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Headers,
+  HttpStatus,
+  Param,
+  Query,
+} from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -26,12 +33,14 @@ export class MediaController {
     @Param("type") typeParam: string,
     @Param("id") id: string,
     @Query("lang") lang?: string,
+    @Headers("accept-language") acceptLanguage?: string,
   ): Promise<MediaDetailDto> {
     return this.libraryService.getMediaDetail(
       user.sub,
       parseType(typeParam),
       id,
       safeLang(lang),
+      acceptLanguage,
     );
   }
 }

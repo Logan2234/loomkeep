@@ -46,6 +46,7 @@ export interface TmdbMovieDetails extends TmdbMovieResult {
   status?: string | null;
   runtime?: number | null;
   external_ids?: TmdbExternalIds;
+  release_dates?: { results?: TmdbReleaseDatesResult[] };
 }
 
 export interface TmdbTvDetails extends TmdbTvResult {
@@ -74,6 +75,8 @@ interface TmdbVideo {
 
 interface TmdbReleaseDate {
   certification?: string;
+  release_date?: string;
+  type?: number;
 }
 
 interface TmdbReleaseDatesResult {
@@ -231,6 +234,19 @@ export function toMovieDetails(movie: TmdbMovieDetails): ProviderMediaDetails {
     status: movie.status ?? null,
     format: null,
     releaseDate: movie.release_date || null,
+    movieReleaseDates: (movie.release_dates?.results ?? []).flatMap((country) =>
+      country.release_dates.flatMap((release) =>
+        release.release_date && release.type
+          ? [
+              {
+                country: country.iso_3166_1,
+                date: release.release_date.slice(0, 10),
+                type: release.type,
+              },
+            ]
+          : [],
+      ),
+    ),
     runtimeMin: movie.runtime ?? null,
     externalIds: toExternalIds(String(movie.id), movie.external_ids),
     seasons: [],

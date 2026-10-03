@@ -276,7 +276,7 @@ export const MAIL_COPY = {
         "Ne partage jamais ce code. Loomkeep ne te le demandera jamais par email ou par téléphone.",
       unexpectedVerification:
         "Si tu n'as pas créé de compte Loomkeep, ignore cet email.",
-      seriesReason: "Tu suis ces séries sur Loomkeep.",
+      seriesReason: "Tu suis ces titres ou leurs sorties sur Loomkeep.",
       newsletterReason: "Tu es abonné aux nouveautés.",
       preferences: "Préférences",
       unsubscribe: "Se désinscrire",
@@ -540,13 +540,13 @@ export const MAIL_COPY = {
     episodeDigest: {
       today: "aujourd'hui",
       thisWeek: "ces 7 derniers jours",
-      oneSubject: (title) => `Nouvel épisode : ${title}`,
-      oneIntro: (period) => `Un épisode t'attend ${period}.`,
-      severalSubject: (count, period) => `${count} nouveaux épisodes ${period}`,
+      oneSubject: (title) => `Nouvelle sortie : ${title}`,
+      oneIntro: (period) => `Une nouvelle sortie t'attend ${period}.`,
+      severalSubject: (count, period) => `${count} nouvelles sorties ${period}`,
       severalIntro: (period) => `Voici ce qui est sorti ${period}.`,
       manySubject: (count, period) => `${count} sorties ${period}`,
       manyIntro: (count, period) =>
-        `Grosse fournée : ${count} épisodes sont sortis ${period}.`,
+        `Grosse fournée : ${count} nouvelles sorties ${period}.`,
       preferences: "Gérer mes notifications",
     },
     newsletter: {
@@ -597,7 +597,7 @@ export const MAIL_COPY = {
         "Never share this code. Loomkeep will never ask for it by email or phone.",
       unexpectedVerification:
         "If you did not create a Loomkeep account, ignore this email.",
-      seriesReason: "You follow these series on Loomkeep.",
+      seriesReason: "You follow these titles or their releases on Loomkeep.",
       newsletterReason: "You are subscribed to our news.",
       preferences: "Preferences",
       unsubscribe: "Unsubscribe",
@@ -859,13 +859,13 @@ export const MAIL_COPY = {
     episodeDigest: {
       today: "today",
       thisWeek: "in the last 7 days",
-      oneSubject: (title) => `New episode: ${title}`,
-      oneIntro: (period) => `An episode is waiting for you ${period}.`,
-      severalSubject: (count, period) => `${count} new episodes ${period}`,
+      oneSubject: (title) => `New release: ${title}`,
+      oneIntro: (period) => `A new release is waiting for you ${period}.`,
+      severalSubject: (count, period) => `${count} new releases ${period}`,
       severalIntro: (period) => `Here's what came out ${period}.`,
       manySubject: (count, period) => `${count} releases ${period}`,
       manyIntro: (count, period) =>
-        `A packed lineup: ${count} episodes came out ${period}.`,
+        `A packed lineup: ${count} new releases ${period}.`,
       preferences: "Manage my notifications",
     },
     newsletter: {
@@ -921,7 +921,7 @@ export const MAIL_COPY = {
         "Non condividere mai questo codice. Loomkeep non te lo chiederà mai via email o telefono.",
       unexpectedVerification:
         "Se non hai creato un account Loomkeep, ignora questa email.",
-      seriesReason: "Segui queste serie su Loomkeep.",
+      seriesReason: "Segui questi titoli o le loro uscite su Loomkeep.",
       newsletterReason: "Sei iscritto alle novità.",
       preferences: "Preferenze",
       unsubscribe: "Annulla l’iscrizione",
@@ -1188,13 +1188,13 @@ export const MAIL_COPY = {
     episodeDigest: {
       today: "oggi",
       thisWeek: "negli ultimi 7 giorni",
-      oneSubject: (title) => `Nuovo episodio: ${title}`,
-      oneIntro: (period) => `Un episodio ti aspetta ${period}.`,
-      severalSubject: (count, period) => `${count} nuovi episodi ${period}`,
+      oneSubject: (title) => `Nuova uscita: ${title}`,
+      oneIntro: (period) => `Una nuova uscita ti aspetta ${period}.`,
+      severalSubject: (count, period) => `${count} nuove uscite ${period}`,
       severalIntro: (period) => `Ecco cosa è uscito ${period}.`,
       manySubject: (count, period) => `${count} uscite ${period}`,
       manyIntro: (count, period) =>
-        `Un programma fitto: ${count} episodi sono usciti ${period}.`,
+        `Un programma fitto: ${count} nuove uscite ${period}.`,
       preferences: "Gestisci le mie notifiche",
     },
     newsletter: {

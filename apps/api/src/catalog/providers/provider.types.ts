@@ -35,6 +35,7 @@ export interface ProviderMediaDetails {
   /** AniList release format ("TV", "MOVIE", "OVA"…); null for TMDB. */
   format: string | null;
   releaseDate: string | null;
+  movieReleaseDates?: import("@loomkeep/shared").MovieReleaseDate[];
   /** Average minutes per episode (series/anime) or the film's runtime; null if unknown. */
   runtimeMin: number | null;
   externalIds: ProviderExternalId[];

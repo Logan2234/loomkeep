@@ -54,10 +54,19 @@ describe("NotificationService.scanAll", () => {
       libraryEntry: {
         findMany: vi
           .fn()
-          .mockResolvedValue(
-            over.entries ?? [
-              { userId: "u1", mediaItemId: "m1", createdAt: TRACKED_SINCE },
-            ],
+          .mockImplementation(
+            (args: { where: { movieReleaseReminderAt?: unknown } }) =>
+              Promise.resolve(
+                args.where.movieReleaseReminderAt
+                  ? []
+                  : (over.entries ?? [
+                      {
+                        userId: "u1",
+                        mediaItemId: "m1",
+                        createdAt: TRACKED_SINCE,
+                      },
+                    ]),
+              ),
           ),
       },
       notification: {
@@ -92,7 +101,7 @@ describe("NotificationService.scanAll", () => {
     const created = await service.scanAll();
 
     expect(created).toBe(0);
-    expect(prisma.libraryEntry.findMany).not.toHaveBeenCalled();
+    expect(prisma.libraryEntry.findMany).toHaveBeenCalledOnce();
     expect(prisma.notification.createMany).not.toHaveBeenCalled();
   });
 
@@ -101,7 +110,7 @@ describe("NotificationService.scanAll", () => {
 
     await service.scanAll();
 
-    const where = (prisma.libraryEntry.findMany as Mock).mock.calls[0][0].where;
+    const where = (prisma.libraryEntry.findMany as Mock).mock.calls[1][0].where;
     expect(where.status).toEqual({ not: "DROPPED" });
     expect(where.user.enabledDomains).toEqual({ has: "MEDIA" });
     expect(where.user.OR).toEqual([
@@ -192,6 +201,7 @@ describe("NotificationService.scan", () => {
     notifyEmail: DigestCadence = DigestCadence.DISABLED,
   ) {
     const prisma = {
+      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
       user: {
         findUnique: vi.fn().mockResolvedValue({
           notifyPush,
@@ -280,6 +290,7 @@ describe("NotificationService — bell feed (read = deleted)", () => {
           type: {
             notIn: [
               NotificationType.NEW_EPISODE,
+              NotificationType.NEW_MOVIE,
               NotificationType.FOLLOW_REQUEST,
             ],
           },
@@ -358,6 +369,7 @@ describe("NotificationService — bell feed (read = deleted)", () => {
         type: {
           notIn: [
             NotificationType.NEW_EPISODE,
+            NotificationType.NEW_MOVIE,
             NotificationType.FOLLOW_REQUEST,
           ],
         },

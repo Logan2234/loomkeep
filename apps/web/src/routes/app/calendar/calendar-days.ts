@@ -1,12 +1,14 @@
 import type { CalendarEntryDto } from "@loomkeep/shared";
 
-export type CalendarFilter = "all" | "series" | "anime" | "muted";
+export type CalendarFilter = "all" | "series" | "anime" | "movie" | "muted";
 
 export function matchesFilter(
   entry: CalendarEntryDto,
   filter: CalendarFilter,
 ): boolean {
   switch (filter) {
+    case "movie":
+      return entry.mediaItem.type === "MOVIE";
     case "series":
       return entry.mediaItem.type === "SERIES";
     case "anime":
@@ -62,7 +64,13 @@ export function groupByDay(
   }
 
   for (const entry of entries) {
-    const date = startOfDay(new Date(entry.airDate));
+    const date = startOfDay(
+      new Date(
+        entry.mediaItem.type === "MOVIE"
+          ? `${entry.airDate.slice(0, 10)}T00:00:00`
+          : entry.airDate,
+      ),
+    );
     const key = dayKey(date);
     let day = days.get(key);
 

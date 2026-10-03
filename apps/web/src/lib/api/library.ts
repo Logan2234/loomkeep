@@ -68,6 +68,7 @@ export const updateLibraryEntry = (
       | "ownershipStatus"
       | "ownershipSource"
       | "episodeAlertsMuted"
+      | "movieReleaseAlertsEnabled"
     >
   >,
 ) =>

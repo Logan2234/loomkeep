@@ -20,7 +20,17 @@ interface DigestItem {
 }
 
 /** Varied so the same user doesn't read the same sentence at every send. */
-function pushBody(locale: string, period: DigestPeriod, items: DigestItem[]) {
+function pushBody(
+  locale: string,
+  period: DigestPeriod,
+  items: DigestItem[],
+  hasMovies: boolean,
+) {
+  if (hasMovies)
+    return notificationCopy(locale).releaseDigestPush(
+      period,
+      items.map((item) => item.title),
+    );
   const variants = notificationCopy(locale).episodeDigestPush(
     period,
     items.map((item) => item.title),
@@ -30,7 +40,7 @@ function pushBody(locale: string, period: DigestPeriod, items: DigestItem[]) {
 
 /**
  * Delivers the "new episode" digest at each user's local hour, cadenced
- * independently per channel (email/push). Content is whatever `NEW_EPISODE`
+ * independently per channel (email/push). Content is whatever `NEW_EPISODE` / `NEW_MOVIE`
  * ledger rows (created by `NotificationService.scan()`) haven't been
  * digested yet on that channel — no date-window recomputation needed, just
  * `[channel]DigestedAt IS NULL`.
@@ -136,7 +146,9 @@ export class NotificationDigestService {
     const pending = await this.prisma.notification.findMany({
       where: {
         userId: user.id,
-        type: NotificationType.NEW_EPISODE,
+        type: {
+          in: [NotificationType.NEW_EPISODE, NotificationType.NEW_MOVIE],
+        },
         ...(channel === "email"
           ? { emailDigestedAt: null }
           : { pushDigestedAt: null }),
@@ -150,8 +162,26 @@ export class NotificationDigestService {
     // rows are still marked digested below, so an episode that aired while
     // muted never resurfaces once the user unmutes.
     const muted = await this.mutedEpisodeIds(user.id, pending);
-    const deliverable = pending.filter(
-      (n) => !muted.has(episodeIdOf(n.dedupeKey)),
+    const movieIds = pending.flatMap((n) =>
+      n.dedupeKey?.startsWith("movie:") ? [n.dedupeKey.slice(6)] : [],
+    );
+    const activeMovies =
+      movieIds.length === 0
+        ? []
+        : await this.prisma.libraryEntry.findMany({
+            where: {
+              userId: user.id,
+              mediaItemId: { in: movieIds },
+              movieReleaseReminderAt: { not: null },
+              status: { not: "DROPPED" },
+            },
+            select: { mediaItemId: true },
+          });
+    const activeMovieIds = new Set(activeMovies.map((e) => e.mediaItemId));
+    const deliverable = pending.filter((n) =>
+      n.dedupeKey?.startsWith("movie:")
+        ? activeMovieIds.has(n.dedupeKey.slice(6))
+        : !muted.has(episodeIdOf(n.dedupeKey)),
     );
 
     const now = new Date();
@@ -186,7 +216,12 @@ export class NotificationDigestService {
     } else {
       await this.push.sendToUser(user.id, {
         title: "Loomkeep",
-        body: pushBody(user.locale, period, items),
+        body: pushBody(
+          user.locale,
+          period,
+          items,
+          deliverable.some((n) => n.dedupeKey?.startsWith("movie:")),
+        ),
         url: items.length === 1 ? items[0].url : "/app/calendar",
       });
     }

@@ -242,6 +242,8 @@ export class MediaItemService {
       backdropUrl: details.backdropUrl,
       genres: details.genres,
       status: details.status,
+      releaseDate: details.releaseDate,
+      movieReleaseDates: details.movieReleaseDates ?? [],
       runtimeMin: details.runtimeMin,
       seasons: details.seasons.map((season) => ({
         id: null,
@@ -281,6 +283,7 @@ export class MediaItemService {
 
     if (
       existingRef &&
+      (type !== "MOVIE" || existingRef.mediaItem.movieReleaseDates !== null) &&
       Date.now() - existingRef.mediaItem.lastSyncedAt.getTime() < SYNC_TTL_MS
     ) {
       return existingRef.mediaItem;
@@ -507,6 +510,9 @@ export class MediaItemService {
       backdropUrl: details.backdropUrl,
       overview: details.overview,
       releaseDate: details.releaseDate ? new Date(details.releaseDate) : null,
+      movieReleaseDates: (details.movieReleaseDates ?? []).map((r) => ({
+        ...r,
+      })),
       status: details.status,
       format: details.format,
       genres: details.genres,

@@ -23,6 +23,19 @@ function entry(overrides: Partial<CalendarEntryDto> = {}): CalendarEntryDto {
 }
 
 describe("buildCalendarIcs", () => {
+  it("renders a local movie release with a stable UID and no episode code", () => {
+    const movie = entry({
+      seasonNumber: null,
+      episodeNumber: null,
+      releaseRegion: "FR",
+      releaseType: "cinema",
+    });
+    movie.mediaItem.type = "MOVIE";
+    const ics = buildCalendarIcs([movie]);
+    expect(ics).toContain("SUMMARY:Severance\r\n");
+    expect(ics).toContain("UID:media-1-movie-FR@loomkeep.app");
+    expect(ics).not.toContain("SnullEnull");
+  });
   it("wraps an empty feed in a valid VCALENDAR", () => {
     const ics = buildCalendarIcs([]);
     expect(ics).toContain("BEGIN:VCALENDAR");

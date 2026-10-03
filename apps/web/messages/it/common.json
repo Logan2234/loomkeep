@@ -261,5 +261,17 @@
   "common_pending": "In attesa",
   "common_security_key": "Chiave di sicurezza",
   "common_this_week": "Questa settimana",
-  "common_you": "Tu"
+  "common_you": "Tu",
+  "media_upcoming": "In arrivo",
+  "media_release_expected": "Uscita prevista il",
+  "media_release_released": "Uscito il",
+  "media_release_cinema": "Al cinema",
+  "media_release_digital": "Uscita digitale",
+  "media_release_local_unknown": "Data di uscita locale da confermare",
+  "media_movie_reminder_enable": "Avvisami all’uscita",
+  "media_movie_reminder_cancel": "Disattiva il promemoria di uscita",
+  "media_movie_reminder_active": "Promemoria attivo",
+  "media_movie_reminder_enabled_toast": "Promemoria attivato: il film apparirà nei tuoi riepiloghi delle uscite.",
+  "media_movie_reminder_disabled_toast": "Promemoria di uscita disattivato.",
+  "media_movie_reminder_channels_disabled": "Attiva i riepiloghi delle uscite via e-mail o push per ricevere questo promemoria."
 }

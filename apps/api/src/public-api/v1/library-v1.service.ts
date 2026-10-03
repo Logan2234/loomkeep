@@ -242,14 +242,20 @@ export class LibraryV1Service {
 
     const episodes = (await this.media.getCalendar(userId))
       .filter((episode) => new Date(episode.airDate) < end)
-      .map((episode) => ({
-        airDate: episode.airDate,
-        seasonNumber: episode.seasonNumber,
-        episodeNumber: episode.episodeNumber,
-        episodeTitle: episode.episodeTitle,
-        episodesBehind: episode.episodesBehind,
-        work: mediaWork(episode.mediaItem, this.webOrigin),
-      }));
+      .flatMap((episode) =>
+        episode.seasonNumber === null || episode.episodeNumber === null
+          ? []
+          : [
+              {
+                airDate: episode.airDate,
+                seasonNumber: episode.seasonNumber,
+                episodeNumber: episode.episodeNumber,
+                episodeTitle: episode.episodeTitle,
+                episodesBehind: episode.episodesBehind,
+                work: mediaWork(episode.mediaItem, this.webOrigin),
+              },
+            ],
+      );
     await this.titles.translateWorks(
       await this.titles.languageFor(userId, lang),
       episodes.map((episode) => episode.work),

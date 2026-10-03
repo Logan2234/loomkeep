@@ -18,6 +18,7 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
+import { assertMovieReleased } from "../catalog/movie-release.util";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { resolveWorkHref } from "../common/work-href.util";
@@ -320,6 +321,8 @@ export class ReviewService {
     targetId: string,
     dto: UpsertReviewDto,
   ): Promise<ReviewDto> {
+    if (targetType === ReviewTargetType.MEDIA)
+      await assertMovieReleased(this.prisma, targetId);
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: { defaultReviewVisibility: true },
@@ -786,6 +789,9 @@ export class ReviewService {
     targetId: string,
     rating: number | null,
   ): Promise<void> {
+    if (rating !== null && targetType === ReviewTargetType.MEDIA)
+      await assertMovieReleased(this.prisma, targetId);
+
     if (rating === null) {
       // Looked up before the delete so revokeBySource still has the id to
       // work with afterwards — this is the "structural deletion" case (see

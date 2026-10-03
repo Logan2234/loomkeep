@@ -6,8 +6,10 @@ export class CalendarEntryResponseDto implements CalendarEntryDto {
   entryId!: string;
   episodeAlertsMuted!: boolean;
   episodesBehind!: number;
-  seasonNumber!: number;
-  episodeNumber!: number;
+  seasonNumber!: number | null;
+  episodeNumber!: number | null;
+  releaseRegion?: string;
+  releaseType?: "cinema" | "digital";
   episodeTitle!: string | null;
   airDate!: string;
 }

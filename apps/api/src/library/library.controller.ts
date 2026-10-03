@@ -15,6 +15,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -122,8 +123,11 @@ export class LibraryController {
 
   @Get("calendar")
   @ApiOkResponse({ type: CalendarEntryResponseDto, isArray: true })
-  getCalendar(@CurrentUser() user: JwtPayload): Promise<CalendarEntryDto[]> {
-    return this.libraryService.getCalendar(user.sub);
+  getCalendar(
+    @CurrentUser() user: JwtPayload,
+    @Headers("accept-language") acceptLanguage?: string,
+  ): Promise<CalendarEntryDto[]> {
+    return this.libraryService.getCalendar(user.sub, acceptLanguage);
   }
 
   @Get("entries/:id")
@@ -141,8 +145,14 @@ export class LibraryController {
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
     @Body() dto: UpdateEntryDto,
+    @Headers("accept-language") acceptLanguage?: string,
   ): Promise<LibraryEntryDto> {
-    return this.libraryService.updateEntry(user.sub, entryId, dto);
+    return this.libraryService.updateEntry(
+      user.sub,
+      entryId,
+      dto,
+      acceptLanguage,
+    );
   }
 
   /** One change applied to many entries (UX-04), with a single update's side effects on each. */

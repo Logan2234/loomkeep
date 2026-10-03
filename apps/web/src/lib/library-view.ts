@@ -77,6 +77,7 @@ export function writeLibraryColumns(
 
 /** What the table, compact and wall modes show of an entry, whatever its domain. */
 export interface LibraryItemView {
+  upcoming?: boolean;
   href: string;
   title: string;
   /** Type, authors or artists, shown under the title. */

@@ -1,6 +1,7 @@
 const NEW_BADGE_DAYS = 21;
 
 const SHIPPED = {
+  "movie-releases": "2026-10-03",
   "notification-digest": "2026-08-25",
   "nav-styles": "2026-08-26",
   mfa: "2026-08-26",

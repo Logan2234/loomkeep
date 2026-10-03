@@ -42,6 +42,7 @@ export * from "./error-codes";
 export * from "./legal";
 export * from "./level";
 export * from "./locale";
+export * from "./movie-release";
 export * from "./password";
 export * from "./realtime";
 export * from "./runtime";

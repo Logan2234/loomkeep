@@ -34,6 +34,31 @@ function withLists(membership: Record<string, string> = {}) {
 }
 
 describe("QuickAddPanel", () => {
+  it("does not offer seen for an upcoming movie", async () => {
+    withLists();
+    server.use(
+      http.get(apiUrl("/media/movie/95396"), () =>
+        HttpResponse.json({
+          ...mediaDetail("MOVIE"),
+          movieRelease: {
+            upcoming: true,
+            publicDate: "2099-01-01",
+            localDate: null,
+            localType: null,
+            region: "FR",
+          },
+        }),
+      ),
+    );
+    renderWithQuery(QuickAddPanel, {
+      href: "/app/media/movie/95396",
+      link: "https://www.themoviedb.org/movie/95396",
+    });
+    await screen.findByRole("button", { name: m.media_status_planned() });
+    expect(
+      screen.queryByRole("button", { name: m.quick_add_seen() }),
+    ).toBeNull();
+  });
   it("adds an untracked work to watch in one tap, and undoes it with its lists", async () => {
     let tracked = false;
     const calls: string[] = [];

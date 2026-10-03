@@ -154,7 +154,7 @@
       </button>
     {/snippet}
     {#snippet children({ close })}
-      {#each edit!.statusOptions as option (option.value)}
+      {#each edit!.statusOptions.filter((option) => !item.upcoming || option.value !== "COMPLETED") as option (option.value)}
         <button
           role="menuitem"
           class="menu-item"
@@ -216,7 +216,10 @@
      where there's none yet, a pen next to it where there is one — both only
      on row hover, the cell reading as plain text otherwise. -->
 {#snippet ratingEdit(entry: T, item: LibraryItemView)}
-  {#if item.rating === null}
+  {#if item.upcoming}
+    <span class="text-dim"
+      >{item.rating === null ? "—" : `★ ${item.rating}`}</span>
+  {:else if item.rating === null}
     <!-- Both labels share one grid cell, so the column keeps its width. -->
     <button
       type="button"
