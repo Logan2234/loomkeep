@@ -17,9 +17,9 @@ import { AppException } from "../common/app.exception";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { PrismaService } from "../prisma/prisma.service";
 
-/** The statuses each library filters on — media adds its derived DORMANT. */
+/** The statuses each library filters on — media adds its derived DORMANT and GHOST. */
 const STATUSES: Record<SavedViewDomain, readonly string[]> = {
-  MEDIA: [...Object.values(EntryStatus), "DORMANT"],
+  MEDIA: [...Object.values(EntryStatus), "DORMANT", "GHOST"],
   GAMES: Object.values(GameStatus),
   BOOKS: Object.values(BookStatus),
   MUSIC: Object.values(MusicStatus),

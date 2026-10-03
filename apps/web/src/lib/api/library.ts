@@ -13,7 +13,7 @@ import { typedRequest } from "./generated/typed-request";
 export interface ListLibraryFilters {
   query?: string;
   favorite?: boolean;
-  /** Includes the synthetic "DORMANT" status alongside real `EntryStatus` values. */
+  /** Includes the synthetic "DORMANT" and "GHOST" statuses alongside real `EntryStatus` values. */
   statuses?: string[];
   types?: MediaType[];
   sort?: string;

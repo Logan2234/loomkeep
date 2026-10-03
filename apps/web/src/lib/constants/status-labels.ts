@@ -29,6 +29,14 @@ export const MEDIA_STATUS_META: Record<
   },
 };
 
+export const MEDIA_STATUS_DESC: Record<EntryStatus, string> = {
+  PLANNED: m.media_status_planned_hint(),
+  WATCHING: m.media_status_watching_hint(),
+  UP_TO_DATE: m.media_status_caught_up_hint(),
+  COMPLETED: m.media_status_completed_hint(),
+  DROPPED: m.library_status_dropped_description(),
+};
+
 export const BOOK_STATUS_LABELS: Record<BookStatus, string> = {
   TO_READ: m.book_status_to_read(),
   READING: m.book_status_reading(),

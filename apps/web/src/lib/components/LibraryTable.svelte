@@ -76,13 +76,19 @@
     void goto(href);
   }
 
+  function pausedLabel(item: LibraryItemView): string {
+    return item.progress?.ghost
+      ? m.media_status_ghost()
+      : m.media_status_paused();
+  }
+
   function rowMeta(item: LibraryItemView): string {
     return joinMeta(
       compact ? item.subtitle : null,
       item.status.label,
       item.rating !== null ? `★ ${item.rating}` : null,
       item.progress?.label,
-      item.progress?.paused ? m.media_status_paused() : null,
+      item.progress?.paused ? pausedLabel(item) : null,
     );
   }
 </script>
@@ -389,7 +395,7 @@
                       {#if item.progress.paused}
                         <span
                           class="border-border text-dim rounded border px-1 font-mono text-[0.65rem] whitespace-nowrap">
-                          {m.media_status_paused()}
+                          {pausedLabel(item)}
                         </span>
                       {/if}
                     </div>

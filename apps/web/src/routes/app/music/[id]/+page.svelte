@@ -15,6 +15,7 @@
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
   import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
@@ -190,13 +191,7 @@
                 {detail.albumType ?? m.music_album()}
               </span>
               {#if entry}
-                <span
-                  title={STATUS_DESC[entry.status]}
-                  class="rounded-full px-2.5 py-0.5 text-xs font-bold {STATUS_META[
-                    entry.status
-                  ].cls}">
-                  {STATUS_META[entry.status].label}
-                </span>
+                <TrackingStatusBadge domain="MUSIC" status={entry.status} />
               {/if}
             </div>
             <h1

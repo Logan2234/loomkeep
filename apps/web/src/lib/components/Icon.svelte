@@ -269,6 +269,11 @@
     <path d="M6 3h12M6 21h12" />
     <path
       d="M7 3c0 4.5 4 6 5 8-1 2-5 3.5-5 8h10c0-4.5-4-6-5-8 1-2 5-3.5 5-8Z" />
+  {:else if name === "ghost"}
+    <path
+      d="M5 20v-9a7 7 0 0 1 14 0v9l-2.3-1.6-2.4 1.6-2.3-1.6-2.3 1.6-2.4-1.6Z" />
+    <circle cx="9.5" cy="11" r="1.1" fill="currentColor" stroke="none" />
+    <circle cx="14.5" cy="11" r="1.1" fill="currentColor" stroke="none" />
   {:else if name === "timer"}
     <circle cx="12" cy="13" r="8" />
     <path d="M12 9v4l2.5 1.5M9 2h6M12 2v3M18.5 6.5l1.5-1.5" />

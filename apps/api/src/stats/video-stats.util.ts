@@ -3,7 +3,7 @@ import type {
   VideoTypeSplitDto,
   WatchStaleness,
 } from "@loomkeep/shared";
-import { DORMANT_AFTER_DAYS } from "@loomkeep/shared";
+import { DORMANT_AFTER_DAYS, GHOST_AFTER_DAYS } from "@loomkeep/shared";
 
 export interface TypeSplitInput {
   type: MediaType;
@@ -52,9 +52,6 @@ export function lastWatchedPerMediaItem(
 
   return result;
 }
-
-/** A WATCHING series/anime untouched this many days is a "ghost". */
-export const GHOST_AFTER_DAYS = 180;
 
 // Mutually exclusive with the shared `isDormant` window: 30-180 days is
 // "paused", 180+ is "ghost" — `lastTouched` must already be known (a series

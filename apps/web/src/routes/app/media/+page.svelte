@@ -9,6 +9,7 @@
     LibraryLoadParams,
     PileLoadParams,
   } from "$lib/components/LibraryBrowser.svelte";
+  import Icon from "$lib/components/Icon.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
@@ -27,13 +28,19 @@
   } from "$lib/library-view";
   import { m } from "$lib/paraglide/messages";
   import type { LibraryEntryDto, MediaType } from "@loomkeep/shared";
-  import { Domain, isDormant, MEDIA_BULK_STATUSES } from "@loomkeep/shared";
+  import {
+    Domain,
+    isDormant,
+    isGhost,
+    MEDIA_BULK_STATUSES,
+  } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
     { label: m.library_status_in_progress(), value: "WATCHING" },
     { label: m.media_status_planned(), value: "PLANNED" },
     { label: m.library_status_completed(), value: "COMPLETED" },
     { label: m.media_status_paused(), value: "DORMANT" },
+    { label: m.media_status_ghost(), value: "GHOST" },
     { label: m.library_status_dropped(), value: "DROPPED" },
   ];
 
@@ -87,6 +94,7 @@
           percent: pct(entry),
           label: `${entry.progress.watchedEpisodes} / ${entry.progress.totalEpisodes} ${m.media_episode_short()}`,
           paused: isDormant(entry),
+          ghost: isGhost(entry),
         }
       : null,
   });
@@ -232,7 +240,12 @@
           <span class="timecode text-xs">
             {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes}
             {m.media_episode_short()}
-            {#if isDormant(entry)}
+            {#if isGhost(entry)}
+              <span class="text-dim inline-flex items-center gap-1"
+                >· <Icon
+                  name="ghost"
+                  class="h-3 w-3" />{m.media_status_ghost()}</span>
+            {:else if isDormant(entry)}
               <span class="text-dim">{m.media_paused_suffix()}</span>
             {/if}
           </span>

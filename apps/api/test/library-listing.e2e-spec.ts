@@ -166,7 +166,7 @@ describe("Library listing (e2e)", () => {
     await show("Dark", {
       episodes: 10,
       watched: 3,
-      lastWatched: daysAgo(90),
+      lastWatched: daysAgo(200),
       rating: 8,
       added: daysAgo(200),
       started: daysAgo(120),
@@ -536,6 +536,7 @@ describe("Library listing (e2e)", () => {
         { types: ["SERIES", "ANIME"] },
         { statuses: ["WATCHING"] },
         { statuses: ["DORMANT"] },
+        { statuses: ["GHOST"] },
         { statuses: ["PLANNED"] },
         { statuses: ["COMPLETED", "UP_TO_DATE"] },
         { statuses: ["DROPPED"] },

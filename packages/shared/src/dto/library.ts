@@ -78,6 +78,19 @@ export function isDormant(
   return elapsedMs > DORMANT_AFTER_DAYS * 24 * 60 * 60 * 1000;
 }
 
+/** A dormant series/anime left alone this many days is a "ghost". */
+export const GHOST_AFTER_DAYS = 180;
+
+/** Whether a dormant entry has gone untouched long enough to be a ghost. */
+export function isGhost(
+  entry: Pick<LibraryEntryDto, "status" | "lastWatchedAt">,
+  now: Date = new Date(),
+): boolean {
+  if (entry.status !== "WATCHING" || !entry.lastWatchedAt) return false;
+  const elapsedMs = now.getTime() - new Date(entry.lastWatchedAt).getTime();
+  return elapsedMs >= GHOST_AFTER_DAYS * 24 * 60 * 60 * 1000;
+}
+
 /** The next episode to watch (first released, unwatched regular episode). */
 export interface NextEpisodeDto {
   episodeId: string;

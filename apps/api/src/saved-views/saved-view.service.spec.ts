@@ -86,16 +86,19 @@ describe("SavedViewService", () => {
     });
   });
 
-  it("keeps media's derived DORMANT status and its types", async () => {
+  it("keeps media's derived DORMANT and GHOST statuses and its types", async () => {
     const { service } = makeService();
 
     const view = await service.create("user-1", {
       name: "En pause",
       domain: "MEDIA",
-      filters: { statuses: ["DORMANT"], types: ["SERIES"] },
+      filters: { statuses: ["DORMANT", "GHOST"], types: ["SERIES"] },
     });
 
-    expect(view.filters).toEqual({ statuses: ["DORMANT"], types: ["SERIES"] });
+    expect(view.filters).toEqual({
+      statuses: ["DORMANT", "GHOST"],
+      types: ["SERIES"],
+    });
   });
 
   it("refuses a free account one view past its quota", async () => {

@@ -90,7 +90,13 @@ export interface LibraryItemView {
   reviewTarget: { type: ReviewTargetType; id: string };
   rating: number | null;
   favorite: boolean;
-  progress: { percent: number; label: string; paused: boolean } | null;
+  progress: {
+    percent: number;
+    label: string;
+    paused: boolean;
+    /** Paused for so long it's a ghost — media only. */
+    ghost?: boolean;
+  } | null;
 }
 
 /**
