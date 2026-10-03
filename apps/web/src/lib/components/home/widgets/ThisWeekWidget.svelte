@@ -33,7 +33,11 @@
   };
   // A tall widget reaches past this week, where a weekday alone would be
   // ambiguous.
-  function dayShort(iso: string): string {
+  function dayShort(entry: CalendarEntryDto): string {
+    const iso =
+      entry.mediaItem.type === "MOVIE"
+        ? `${entry.airDate.slice(0, 10)}T00:00:00`
+        : entry.airDate;
     const day = new Date(iso);
     day.setHours(0, 0, 0, 0);
     const today = new Date();
@@ -43,7 +47,13 @@
     if (diff === 1) return m.common_tomorrow();
     return formatDate(iso, diff < 7 ? WEEKDAY_SHORT : DAY_MONTH);
   }
-  const keyOf = (e: CalendarEntryDto) => e.mediaItem.id + epCode(e);
+  function releaseLabel(entry: CalendarEntryDto): string {
+    const { seasonNumber, episodeNumber } = entry;
+    return seasonNumber === null || episodeNumber === null
+      ? `${entry.releaseType === "cinema" ? m.media_release_cinema() : m.media_release_digital()} · ${entry.releaseRegion}`
+      : epCode({ seasonNumber, episodeNumber });
+  }
+  const keyOf = (e: CalendarEntryDto) => e.mediaItem.id + releaseLabel(e);
 </script>
 
 <WidgetShell
@@ -83,11 +93,11 @@
               <p class="font-display truncate text-sm font-semibold">
                 {e.mediaItem.title}
               </p>
-              <p class="timecode text-xs">{epCode(e)}</p>
+              <p class="timecode text-xs">{releaseLabel(e)}</p>
             </div>
             <span
               class="border-accent/40 text-accent timecode shrink-0 rounded-md border px-1.5 py-0.5 text-[0.65rem]">
-              {dayShort(e.airDate)}
+              {dayShort(e)}
             </span>
           </a>
         </li>

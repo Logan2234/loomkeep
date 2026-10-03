@@ -55,9 +55,14 @@ export function buildCalendarIcs(entries: CalendarEntryDto[]): string {
   ];
 
   for (const entry of entries) {
+    const movie = entry.mediaItem.type === "MOVIE";
     const code = `S${String(entry.seasonNumber).padStart(2, "0")}E${String(entry.episodeNumber).padStart(2, "0")}`;
-    const summary = `${entry.mediaItem.title} ${code}`;
-    const uid = `${entry.mediaItem.id}-${entry.seasonNumber}-${entry.episodeNumber}@loomkeep.app`;
+    const summary = movie
+      ? entry.mediaItem.title
+      : `${entry.mediaItem.title} ${code}`;
+    const uid = movie
+      ? `${entry.mediaItem.id}-movie-${entry.releaseRegion}@loomkeep.app`
+      : `${entry.mediaItem.id}-${entry.seasonNumber}-${entry.episodeNumber}@loomkeep.app`;
 
     lines.push(
       "BEGIN:VEVENT",

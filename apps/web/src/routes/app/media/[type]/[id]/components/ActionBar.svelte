@@ -19,6 +19,8 @@
   let {
     entry,
     isMovie,
+    upcoming = false,
+    onToggleMovieAlerts = () => {},
     saving,
     nextEpisode,
     continuing,
@@ -36,6 +38,8 @@
   }: {
     entry: LibraryEntryDto | null;
     isMovie: boolean;
+    upcoming?: boolean;
+    onToggleMovieAlerts?: () => void;
     saving: boolean;
     nextEpisode: NextEpisodeDto | null;
     continuing: boolean;
@@ -99,6 +103,30 @@
               ).padStart(2, "0")}
             </b>
           </div>
+        {:else if isMovie && upcoming}
+          <button
+            type="button"
+            class="grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50 {entry.movieReleaseAlertsEnabled
+              ? 'bg-accent text-accent-fg'
+              : 'border-border text-dim border'}"
+            disabled={saving}
+            aria-pressed={!!entry.movieReleaseAlertsEnabled}
+            aria-label={entry.movieReleaseAlertsEnabled
+              ? m.media_movie_reminder_cancel()
+              : m.media_movie_reminder_enable()}
+            title={entry.movieReleaseAlertsEnabled
+              ? m.media_movie_reminder_cancel()
+              : m.media_movie_reminder_enable()}
+            onclick={onToggleMovieAlerts}>
+            <Icon
+              name={entry.movieReleaseAlertsEnabled ? "bell" : "bell-off"}
+              class="h-5 w-5" />
+          </button>
+          <span class="text-sm"
+            >{entry.movieReleaseAlertsEnabled
+              ? m.media_movie_reminder_active()
+              : m.media_movie_reminder_enable()}</span>
+          {#if isFeatureNew("movie-releases")}<NewBadge />{/if}
         {:else if isMovie}
           <button
             type="button"
@@ -170,6 +198,20 @@
             </button>
           {/snippet}
           {#snippet children({ close })}
+            {#if isMovie && entry.movieReleaseAlertsEnabled && !upcoming}
+              <button
+                role="menuitem"
+                type="button"
+                class="menu-item"
+                onclick={() => {
+                  close();
+                  onToggleMovieAlerts();
+                }}>
+                <Icon
+                  name="bell-off"
+                  class="h-4 w-4" />{m.media_movie_reminder_cancel()}
+              </button>
+            {/if}
             {#if !isMovie}
               <button
                 role="menuitem"

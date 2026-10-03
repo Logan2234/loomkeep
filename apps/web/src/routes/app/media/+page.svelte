@@ -79,11 +79,16 @@
     updateLibraryEntry(entry.id, { favorite: next });
 
   const itemView = (entry: LibraryEntryDto): LibraryItemView => ({
+    upcoming: entry.mediaItem.upcoming,
     href: mediaHref(entry),
     title: entry.mediaItem.title,
     subtitle: TYPE_LABELS[entry.mediaItem.type],
     imageUrl: entry.mediaItem.posterUrl,
-    status: { value: entry.status, ...MEDIA_STATUS_META[entry.status] },
+    status: {
+      value: entry.status,
+      ...MEDIA_STATUS_META[entry.status],
+      ...(entry.mediaItem.upcoming ? { label: m.media_upcoming() } : {}),
+    },
     ownership: entry.ownershipStatus,
     ownershipSource: entry.ownershipSource,
     reviewTarget: { type: "MEDIA", id: entry.mediaItem.id },
@@ -251,7 +256,9 @@
           </span>
         {:else}
           <span class="timecode text-xs">
-            {STATUS_LABELS[entry.status]}{#if entry.rating !== null}
+            {entry.mediaItem.upcoming
+              ? m.media_upcoming()
+              : STATUS_LABELS[entry.status]}{#if entry.rating !== null}
               · ★ {entry.rating}{/if}
           </span>
         {/if}

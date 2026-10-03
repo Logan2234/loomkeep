@@ -48,6 +48,10 @@ const COPY = {
     },
     /** Default name for a security key enrolled without one. */
     securityKey: "Clé de sécurité",
+    releaseDigestPush: (period: DigestPeriod, titles: string[]) =>
+      `${titles.length === 1 ? "Nouvelle sortie" : `${titles.length} nouvelles sorties`} ${period === "daily" ? "aujourd'hui" : "ces 7 derniers jours"} : ${[...new Set(titles)].slice(0, 3).join(", ")}.`,
+    movieRelease: (type: "cinema" | "digital", region: string) =>
+      `${type === "cinema" ? "Sortie au cinéma" : "Sortie numérique"} · ${region}`,
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
       const when = period === "daily" ? "aujourd'hui" : "ces 7 derniers jours";
       const shows = [...new Set(titles)];
@@ -160,6 +164,10 @@ const COPY = {
       other: "Action has been taken on your account",
     },
     securityKey: "Security key",
+    releaseDigestPush: (period: DigestPeriod, titles: string[]) =>
+      `${titles.length === 1 ? "New release" : `${titles.length} new releases`} ${period === "daily" ? "today" : "in the last 7 days"}: ${[...new Set(titles)].slice(0, 3).join(", ")}.`,
+    movieRelease: (type: "cinema" | "digital", region: string) =>
+      `${type === "cinema" ? "Cinema release" : "Digital release"} · ${region}`,
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
       const when = period === "daily" ? "today" : "in the last 7 days";
       const shows = [...new Set(titles)];
@@ -273,6 +281,10 @@ const COPY = {
       other: "È stata presa una misura sul tuo account",
     },
     securityKey: "Chiave di sicurezza",
+    releaseDigestPush: (period: DigestPeriod, titles: string[]) =>
+      `${titles.length === 1 ? "Nuova uscita" : `${titles.length} nuove uscite`} ${period === "daily" ? "oggi" : "negli ultimi 7 giorni"}: ${[...new Set(titles)].slice(0, 3).join(", ")}.`,
+    movieRelease: (type: "cinema" | "digital", region: string) =>
+      `${type === "cinema" ? "Uscita al cinema" : "Uscita digitale"} · ${region}`,
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
       const when = period === "daily" ? "oggi" : "negli ultimi 7 giorni";
       const shows = [...new Set(titles)];
@@ -384,6 +396,8 @@ export interface NotificationCopy {
    * one entry per episode, so a show with several appears several times.
    */
   episodeDigestPush: (period: DigestPeriod, titles: string[]) => string[];
+  releaseDigestPush: (period: DigestPeriod, titles: string[]) => string;
+  movieRelease: (type: "cinema" | "digital", region: string) => string;
   pushTitle: {
     commentReply: (actor: string) => string;
     commentMention: (actor: string) => string;

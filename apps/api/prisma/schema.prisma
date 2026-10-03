@@ -1591,6 +1591,8 @@ model MediaItem {
   backdropUrl     String?
   overview        String?
   releaseDate     DateTime?
+  // Null identifies cached movies whose regional release dates have not been fetched yet.
+  movieReleaseDates Json?
   // Airing status as reported by the source (free-form: "Returning Series", "FINISHED"…).
   status          String?
   // AniList release format ("TV", "MOVIE", "OVA"…); null for TMDB titles, whose
@@ -1707,6 +1709,9 @@ model LibraryEntry {
   // Series/anime only: skip this show in the new-episode push/email digest.
   // It stays in the release calendar — only the alerts are silenced.
   episodeAlertsMuted Boolean              @default(false)
+  movieReleaseReminderAt DateTime?
+  // A scheduled reminder has no browser language to resolve an automatic country from.
+  movieReleaseRegion String?
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 

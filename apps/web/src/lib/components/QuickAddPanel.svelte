@@ -68,7 +68,11 @@
   let pickedStatus = $state<string | null>(null);
   let pickedLists = $state<string[] | null>(null);
 
-  const offered = $derived(domain.statuses.map((s) => s.value));
+  const offered = $derived(
+    domain.statuses
+      .filter((s) => !view?.upcoming || s.value === "PLANNED")
+      .map((s) => s.value),
+  );
   const status = $derived(
     pickedStatus ??
       (view?.entryId

@@ -250,6 +250,21 @@
     detail ? joinMeta(TYPE_LABELS[detail.type], detail.year) : "",
   );
   const isMovie = $derived(detail?.type === "MOVIE");
+  let today = $state(new Date().toISOString().slice(0, 10));
+  $effect(() => {
+    const timer = setInterval(
+      () => (today = new Date().toISOString().slice(0, 10)),
+      60_000,
+    );
+    return () => clearInterval(timer);
+  });
+  const upcoming = $derived(
+    isMovie &&
+      !!detail?.movieRelease &&
+      (detail.movieRelease.publicDate
+        ? detail.movieRelease.publicDate > today
+        : detail.movieRelease.upcoming),
+  );
   const timeLeft = $derived(
     detail && entry?.progress && !isMovie
       ? timeLeftToWatch(detail.type, detail.runtimeMin, detail.seasons)
@@ -324,6 +339,16 @@
         : m.media_episode_alerts_unmuted_toast({ title: detail?.title ?? "" }),
     errorToast: true,
   }));
+  const movieAlertsMut = createApiMutation(() => ({
+    mutate: (enabled: boolean) =>
+      updateLibraryEntry(entry!.id, { movieReleaseAlertsEnabled: enabled }),
+    invalidates: [detailKey, keys.calendar.upcoming()],
+    successToast: (_, enabled) =>
+      enabled
+        ? m.media_movie_reminder_enabled_toast()
+        : m.media_movie_reminder_disabled_toast(),
+    errorToast: true,
+  }));
 </script>
 
 <svelte:head>
@@ -390,7 +415,13 @@
             class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur">
             {TYPE_LABELS[detail.type]}
           </span>
-          {#if entry}
+          {#if upcoming}
+            <span
+              class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold text-white backdrop-blur"
+              ><Icon
+                name="calendar"
+                class="h-3.5 w-3.5" />{m.media_upcoming()}</span>
+          {:else if entry}
             <TrackingStatusBadge domain="MEDIA" status={entry.status} onImage />
             {#if dormant}
               <span
@@ -443,9 +474,24 @@
           {/if}
         </p>
 
-        {#if entry || (extras && extras.ratings.length > 0)}
+        {#if isMovie && detail.movieRelease}
+          <p class="timecode mt-2 text-sm text-white/80">
+            {#if detail.movieRelease.localDate}
+              {detail.movieRelease.localDate > today
+                ? m.media_release_expected()
+                : m.media_release_released()}
+              {formatDate(`${detail.movieRelease.localDate}T12:00:00`)} ·
+              {detail.movieRelease.localType === "cinema"
+                ? m.media_release_cinema()
+                : m.media_release_digital()} · {detail.movieRelease.region}
+            {:else}{m.media_release_local_unknown()} · {detail.movieRelease
+                .region}{/if}
+          </p>
+        {/if}
+
+        {#if (entry && !upcoming) || (extras && extras.ratings.length > 0)}
           <div class="mt-2.5 flex flex-wrap gap-1.5">
-            {#if entry}
+            {#if entry && !upcoming}
               <MyRatingBadge
                 targetType="MEDIA"
                 targetId={entry.mediaItem.id}
@@ -487,9 +533,12 @@
   <div bind:this={heroEnd}></div>
 
   <ActionBar
+    {upcoming}
+    onToggleMovieAlerts={() =>
+      movieAlertsMut.mutate(!entry?.movieReleaseAlertsEnabled)}
     {entry}
     {isMovie}
-    {saving}
+    saving={saving || movieAlertsMut.loading}
     {compact}
     title={detail.title}
     nextEpisode={entry?.progress?.nextEpisode ?? null}
@@ -517,6 +566,12 @@
   </ActionBar>
 
   <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
+    {#if upcoming && entry?.movieReleaseAlertsEnabled && auth.user?.notifyEmail === "DISABLED" && auth.user?.notifyPush === "DISABLED"}
+      <p class="text-dim mt-4 text-sm">
+        <a href="/app/settings/communications" class="text-accent underline"
+          >{m.media_movie_reminder_channels_disabled()}</a>
+      </p>
+    {/if}
     {#if entry?.progress}
       <div class="mt-6 max-w-sm">
         <ProgressBar value={pct} label={m.common_progress()} />
@@ -575,7 +630,7 @@
       </div>
     {/if}
 
-    {#if entry}
+    {#if entry && !upcoming}
       <!-- Set-once settings, not day-to-day actions — tucked away closed by
            default rather than living in the action bar above. -->
       <div
@@ -706,7 +761,7 @@
         onError={(m) => (episodesError = m)} />
     {/if}
 
-    {#if entry}
+    {#if entry && !upcoming}
       <ReviewsSection
         targetType="MEDIA"
         targetId={entry.mediaItem.id}

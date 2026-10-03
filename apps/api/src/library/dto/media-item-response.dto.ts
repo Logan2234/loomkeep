@@ -1,6 +1,7 @@
 import type { CatalogSource, MediaItemDto, MediaType } from "@loomkeep/shared";
 
 export class MediaItemResponseDto implements MediaItemDto {
+  upcoming?: boolean;
   id!: string;
   type!: MediaType;
   title!: string;

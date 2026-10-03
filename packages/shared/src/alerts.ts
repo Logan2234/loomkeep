@@ -111,6 +111,12 @@ export const ALERTS = {
     email: "cadence",
     mailTemplate: "episodeDigest",
   },
+  NEW_MOVIE: {
+    group: AlertGroup.RELEASES,
+    push: "cadence",
+    email: "cadence",
+    mailTemplate: "episodeDigest",
+  },
 
   // Your account: things to know about, settings or not.
   MODERATION_ACTION: {

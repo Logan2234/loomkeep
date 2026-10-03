@@ -63,6 +63,7 @@ export function quickAddTarget(href: string): QuickAddTarget | null {
 }
 
 interface QuickAddView {
+  upcoming?: boolean;
   title: string;
   posterUrl: string | null;
   /** Kind, year and creator, as far as the source knows them. */
@@ -144,6 +145,7 @@ function mediaDomain(type: MediaType, id: string): QuickAddDomain {
         entryId: d.entry?.id ?? null,
         itemId: d.entry?.mediaItem.id ?? null,
         status: d.entry?.status ?? null,
+        upcoming: d.movieRelease?.upcoming,
         progress: null,
       };
     },

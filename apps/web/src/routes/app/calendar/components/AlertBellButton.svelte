@@ -9,17 +9,23 @@
     muted,
     disabled = false,
     onToggle,
+    movie = false,
   }: {
     title: string;
     muted: boolean;
     disabled?: boolean;
     onToggle: () => void;
+    movie?: boolean;
   } = $props();
 
   const label = $derived(
-    muted
-      ? m.calendar_unmute_series({ title })
-      : m.calendar_mute_series({ title }),
+    movie
+      ? muted
+        ? m.media_movie_reminder_enable()
+        : m.media_movie_reminder_cancel()
+      : muted
+        ? m.calendar_unmute_series({ title })
+        : m.calendar_mute_series({ title }),
   );
 </script>
 

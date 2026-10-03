@@ -218,7 +218,7 @@ export class TmdbProvider implements CatalogProvider {
     lang?: string,
   ): Promise<ProviderMediaDetails> {
     const movie = await this.get<TmdbMovieDetails>(`/movie/${sourceId}`, {
-      append_to_response: "external_ids",
+      append_to_response: "external_ids,release_dates",
       language: regionalLocale(lang),
     });
 

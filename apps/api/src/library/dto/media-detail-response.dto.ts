@@ -5,6 +5,7 @@ import type {
 } from "@loomkeep/shared";
 import { LibraryEntryResponseDto } from "./library-entry-response.dto";
 import { MediaDetailSeasonResponseDto } from "./media-detail-season-response.dto";
+import { MovieReleaseResponseDto } from "./movie-release-response.dto";
 
 export class MediaDetailResponseDto implements MediaDetailDto {
   source!: CatalogSource;
@@ -19,6 +20,8 @@ export class MediaDetailResponseDto implements MediaDetailDto {
   backdropUrl!: string | null;
   genres!: string[];
   airingStatus!: string | null;
+  releaseDate!: string | null;
+  movieRelease!: MovieReleaseResponseDto | null;
   airingFinished!: boolean;
   runtimeMin!: number | null;
   seasons!: MediaDetailSeasonResponseDto[];

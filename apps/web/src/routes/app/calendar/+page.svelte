@@ -48,8 +48,18 @@
   // Muting is per show, not per episode: flipping one row flips every
   // upcoming episode of that series, since they all share the entry.
   const alertsMut = createApiMutation(() => ({
-    mutate: (args: { entryId: string; muted: boolean; title: string }) =>
-      updateLibraryEntry(args.entryId, { episodeAlertsMuted: args.muted }),
+    mutate: (args: {
+      entryId: string;
+      muted: boolean;
+      title: string;
+      movie: boolean;
+    }) =>
+      updateLibraryEntry(
+        args.entryId,
+        args.movie
+          ? { movieReleaseAlertsEnabled: !args.muted }
+          : { episodeAlertsMuted: args.muted },
+      ),
     onSuccess: (_, { entryId, muted }) =>
       queryClient.setQueryData<CalendarEntryDto[]>(
         keys.calendar.upcoming(),
@@ -58,10 +68,14 @@
             e.entryId === entryId ? { ...e, episodeAlertsMuted: muted } : e,
           ),
       ),
-    successToast: (_, { muted, title }) =>
-      muted
-        ? m.media_episode_alerts_muted_toast({ title })
-        : m.media_episode_alerts_unmuted_toast({ title }),
+    successToast: (_, { muted, title, movie }) =>
+      movie
+        ? muted
+          ? m.media_movie_reminder_disabled_toast()
+          : m.media_movie_reminder_enabled_toast()
+        : muted
+          ? m.media_episode_alerts_muted_toast({ title })
+          : m.media_episode_alerts_unmuted_toast({ title }),
     errorToast: true,
   }));
 
@@ -70,6 +84,7 @@
       entryId: e.entryId,
       muted: !e.episodeAlertsMuted,
       title: e.mediaItem.title,
+      movie: e.mediaItem.type === "MOVIE",
     });
   }
 
@@ -92,6 +107,10 @@
     {
       value: "anime",
       label: `${m.calendar_filter_anime()} (${showCount("anime")})`,
+    },
+    {
+      value: "movie",
+      label: `${m.media_movie()} (${showCount("movie")})`,
     },
     {
       value: "muted",
@@ -138,7 +157,9 @@
   const dayId = (day: CalendarDay) => `calendar-${day.key}`;
 
   const code = (e: CalendarEntryDto) =>
-    `S${String(e.seasonNumber).padStart(2, "0")}E${String(e.episodeNumber).padStart(2, "0")}`;
+    e.mediaItem.type === "MOVIE"
+      ? `${e.releaseType === "cinema" ? m.media_release_cinema() : m.media_release_digital()} · ${e.releaseRegion}`
+      : `S${String(e.seasonNumber).padStart(2, "0")}E${String(e.episodeNumber).padStart(2, "0")}`;
   const href = (e: CalendarEntryDto) =>
     `/app/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`;
   const rowKey = (e: CalendarEntryDto) => e.mediaItem.id + code(e);
@@ -312,6 +333,7 @@
                       </a>
                       <div class="absolute top-3 right-3">
                         <AlertBellButton
+                          movie={e.mediaItem.type === "MOVIE"}
                           title={e.mediaItem.title}
                           muted={e.episodeAlertsMuted}
                           disabled={alertsMut.loading}
@@ -359,6 +381,7 @@
                         </span>
                       {/if}
                       <AlertBellButton
+                        movie={e.mediaItem.type === "MOVIE"}
                         title={e.mediaItem.title}
                         muted={e.episodeAlertsMuted}
                         disabled={alertsMut.loading}

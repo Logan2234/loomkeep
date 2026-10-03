@@ -142,6 +142,35 @@ describe("TmdbProvider", () => {
     });
   });
 
+  it("captures dated releases by country and release type", async () => {
+    mockFetchByUrl({
+      "/movie/27205": {
+        ...(fixture("tmdb-movie-details.json") as Record<string, unknown>),
+        release_dates: {
+          results: [
+            {
+              iso_3166_1: "US",
+              release_dates: [
+                { release_date: "2026-12-15T00:00:00.000Z", type: 1 },
+              ],
+            },
+            {
+              iso_3166_1: "FR",
+              release_dates: [
+                { release_date: "2026-12-16T00:00:00.000Z", type: 3 },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    const details = await provider.getDetails("27205", MediaType.MOVIE);
+    expect(details.movieReleaseDates).toEqual([
+      { country: "US", date: "2026-12-15", type: 1 },
+      { country: "FR", date: "2026-12-16", type: 3 },
+    ]);
+  });
+
   it("resolves a TVDB series id to a TMDB summary via /find", async () => {
     mockFetchByUrl({
       "/find/81189": {

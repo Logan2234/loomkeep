@@ -79,6 +79,7 @@ export type DigestCadence = (typeof DigestCadence)[keyof typeof DigestCadence];
  */
 export const NotificationType = {
   NEW_EPISODE: "NEW_EPISODE",
+  NEW_MOVIE: "NEW_MOVIE",
   /** Someone started following you (public profile). */
   FOLLOW: "FOLLOW",
   /** Someone asked to follow your private profile. */

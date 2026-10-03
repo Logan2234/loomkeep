@@ -80,6 +80,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       .mockResolvedValueOnce({});
 
     const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
       libraryEntry: { findUnique, update },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       episodeWatch: {
@@ -129,6 +130,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
     });
 
     const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
       libraryEntry: { findUnique, update },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       episodeWatch: {
@@ -455,6 +457,7 @@ describe("LibraryService — XP wiring", () => {
       .mockResolvedValue(entryRow({ status: "COMPLETED", type: "MOVIE" }));
     const count = vi.fn().mockResolvedValue(1);
     const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
       libraryEntry: { findUnique, upsert, count },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       episodeWatch: {
@@ -513,6 +516,7 @@ describe("LibraryService — XP wiring", () => {
       .fn()
       .mockResolvedValue(entryRow({ status: "COMPLETED", type: "MOVIE" }));
     const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
       libraryEntry: { findUnique, update },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       episodeWatch: {
@@ -556,6 +560,7 @@ describe("LibraryService — XP wiring", () => {
       .mockResolvedValueOnce({ status: "PLANNED", finishedAt: null });
     const upsert = vi.fn().mockResolvedValue(entryRow({ status: "PLANNED" }));
     const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
       libraryEntry: { findUnique, upsert, count: vi.fn() },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       episodeWatch: {
@@ -617,6 +622,7 @@ describe("LibraryService — XP wiring", () => {
           .mockResolvedValue(entryRow({ status: "COMPLETED" })),
       },
       mediaItem: {
+        findUnique: vi.fn().mockResolvedValue(null),
         findUniqueOrThrow: vi.fn().mockResolvedValue({ type: "MOVIE" }),
       },
       movieReplay: {
@@ -988,6 +994,7 @@ describe("LibraryService.getPile", () => {
 describe("LibraryService.bulkUpdate", () => {
   function serviceWith(entries: object[], seasons: object[]) {
     const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
       libraryEntry: {
         findMany: vi
           .fn()

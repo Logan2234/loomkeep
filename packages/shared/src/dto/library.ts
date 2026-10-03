@@ -25,6 +25,8 @@ export interface MediaItemDto {
    * identity used to address the media page (`/media/{type}/{sourceId}`).
    */
   sourceId: string;
+  /** Derived movie availability; absent on older responses. */
+  upcoming?: boolean;
 }
 
 export interface LibraryEntryDto {
@@ -51,6 +53,7 @@ export interface LibraryEntryDto {
   ownershipSource: string | null;
   /** Series/anime: left out of the new-episode push/email digest (still in the calendar). */
   episodeAlertsMuted: boolean;
+  movieReleaseAlertsEnabled?: boolean;
   /** Completed rewatches beyond the first, movies only, most recent first. */
   replays: MovieReplayDto[];
 }
@@ -143,21 +146,23 @@ export interface EntryEpisodesResponseDto {
   seasons: SeasonWithWatchesDto[];
 }
 
-/** An upcoming episode of a tracked series/anime (release calendar). */
+/** An upcoming episode or local movie release from the user's library. */
 export interface CalendarEntryDto {
   mediaItem: MediaItemDto;
   /** The user's library entry for the show — the target for muting its alerts. */
   entryId: string;
-  /** Mirrors `LibraryEntryDto.episodeAlertsMuted`: the whole show, not this episode. */
+  /** Show-level mute; for movies, true means the user has not opted into a release reminder. */
   episodeAlertsMuted: boolean;
   /**
    * The show's regular episodes aired before today that the user hasn't
    * watched — the backlog to catch up on before this one.
    */
   episodesBehind: number;
-  seasonNumber: number;
-  episodeNumber: number;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
   episodeTitle: string | null;
+  releaseRegion?: string;
+  releaseType?: "cinema" | "digital";
   /** ISO air date (always in the future for the calendar feed). */
   airDate: string;
 }

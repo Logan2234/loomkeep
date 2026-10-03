@@ -24,6 +24,8 @@ import {
   isGhost,
   isRuntimeKnown,
   MediaType,
+  movieReleaseDates,
+  movieReleaseInfo,
   ReviewTargetType,
   runtimeFor,
   XpReason,
@@ -37,6 +39,8 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { MediaItemService } from "../catalog/media-item.service";
+import { assertMovieReleased } from "../catalog/movie-release.util";
+import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { AppException } from "../common/app.exception";
 import {
   addToList,
@@ -219,6 +223,13 @@ export class LibraryService {
       dto.sourceId,
       dto.type,
     );
+
+    if (
+      dto.status === "COMPLETED" ||
+      (dto.rating !== null && dto.rating !== undefined)
+    ) {
+      await assertMovieReleased(this.prisma, mediaItem.id);
+    }
 
     const before = await this.prisma.libraryEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId: mediaItem.id } },
@@ -670,8 +681,38 @@ export class LibraryService {
     userId: string,
     entryId: string,
     dto: UpdateEntryDto,
+    acceptLanguage?: string,
   ): Promise<LibraryEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
+    const owned = await this.assertEntryOwnership(userId, entryId);
+
+    if (
+      dto.status === "COMPLETED" ||
+      (dto.rating !== null && dto.rating !== undefined) ||
+      (dto.startedAt !== null && dto.startedAt !== undefined) ||
+      (dto.finishedAt !== null && dto.finishedAt !== undefined)
+    ) {
+      await assertMovieReleased(this.prisma, owned.mediaItemId);
+    }
+
+    let reminder: {
+      movieReleaseReminderAt?: Date | null;
+      movieReleaseRegion?: string | null;
+    } = {};
+
+    if (dto.movieReleaseAlertsEnabled !== undefined) {
+      const user = await this.prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { watchRegion: true },
+      });
+      reminder = {
+        movieReleaseReminderAt: dto.movieReleaseAlertsEnabled
+          ? (owned.movieReleaseReminderAt ?? new Date())
+          : null,
+        movieReleaseRegion: dto.movieReleaseAlertsEnabled
+          ? resolveWatchRegion(user.watchRegion ?? undefined, acceptLanguage)
+          : null,
+      };
+    }
 
     const before = await this.prisma.libraryEntry.findUnique({
       where: { id: entryId },
@@ -682,6 +723,7 @@ export class LibraryService {
       where: { id: entryId },
       data: {
         status: dto.status,
+        ...reminder,
         notes: dto.notes,
         favorite: dto.favorite,
         startedAt:
@@ -1351,13 +1393,16 @@ export class LibraryService {
   }
 
   /**
-   * Upcoming episodes (air date today or later) of the series/anime the user
+   * Upcoming local movie releases and episodes (air date today or later) of the series/anime the user
    * tracks, excluding dropped ones — the release calendar. Shows with muted
    * alerts stay listed: muting only silences the digest. Each carries the
    * show's backlog (`episodesBehind`), counted up to the start of today so
    * an episode airing today is never its own backlog.
    */
-  async getCalendar(userId: string): Promise<CalendarEntryDto[]> {
+  async getCalendar(
+    userId: string,
+    acceptLanguage?: string,
+  ): Promise<CalendarEntryDto[]> {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
@@ -1397,7 +1442,7 @@ export class LibraryService {
       startOfToday,
     );
 
-    return episodes.map((episode) => ({
+    const episodeEntries: CalendarEntryDto[] = episodes.map((episode) => ({
       mediaItem: toMediaItemDto(episode.season.mediaItem),
       entryId: episode.season.mediaItem.entries[0].id,
       episodeAlertsMuted:
@@ -1409,6 +1454,50 @@ export class LibraryService {
       // airDate is guaranteed non-null by the `gte` filter above.
       airDate: episode.airDate!.toISOString(),
     }));
+    const movies = await this.prisma.libraryEntry.findMany({
+      where: {
+        userId,
+        status: { not: "DROPPED" },
+        mediaItem: { type: "MOVIE" },
+      },
+      include: { mediaItem: { include: { externalIds: true } } },
+    });
+    if (movies.length === 0) return episodeEntries;
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { watchRegion: true },
+    });
+    const today = new Date().toISOString().slice(0, 10);
+    const movieEntries: CalendarEntryDto[] = movies.flatMap((entry) => {
+      const region = resolveWatchRegion(
+        user.watchRegion ?? entry.movieReleaseRegion ?? undefined,
+        acceptLanguage,
+      );
+      const release = movieReleaseInfo(
+        movieReleaseDates(entry.mediaItem.movieReleaseDates),
+        entry.mediaItem.status,
+        region,
+      );
+      if (!release.localDate || release.localDate < today || !release.localType)
+        return [];
+      return [
+        {
+          mediaItem: toMediaItemDto(entry.mediaItem),
+          entryId: entry.id,
+          episodeAlertsMuted: !entry.movieReleaseReminderAt,
+          episodesBehind: 0,
+          seasonNumber: null,
+          episodeNumber: null,
+          episodeTitle: null,
+          airDate: `${release.localDate}T00:00:00.000Z`,
+          releaseRegion: region,
+          releaseType: release.localType,
+        },
+      ];
+    });
+    return [...episodeEntries, ...movieEntries].sort((a, b) =>
+      a.airDate.localeCompare(b.airDate),
+    );
   }
 
   /**
@@ -1760,6 +1849,9 @@ export class LibraryService {
       ownershipStatus: entry.ownershipStatus,
       ownershipSource: entry.ownershipSource,
       episodeAlertsMuted: entry.episodeAlertsMuted,
+      ...(entry.movieReleaseReminderAt
+        ? { movieReleaseAlertsEnabled: true }
+        : {}),
       replays: entry.replays.map(toReplayDto),
     };
   }
@@ -1786,6 +1878,8 @@ export class LibraryService {
         ErrorCode.LibraryReplayNotMovie,
       );
     }
+
+    await assertMovieReleased(this.prisma, entry.mediaItemId);
 
     const replay = await this.prisma.movieReplay.create({
       data: {
@@ -1836,6 +1930,7 @@ export class LibraryService {
     type: MediaType,
     sourceId: string,
     lang?: string,
+    acceptLanguage?: string,
   ): Promise<MediaDetailDto> {
     const source: CatalogSource = type === "ANIME" ? "ANILIST" : "TMDB";
 
@@ -1851,6 +1946,14 @@ export class LibraryService {
     });
 
     if (ref) {
+      if (type === "MOVIE" && ref.mediaItem.movieReleaseDates === null) {
+        ref.mediaItem = await this.mediaItemService.upsertFromSource(
+          source,
+          sourceId,
+          type,
+        );
+      }
+
       const detail = await this.mediaDetailFromCache(
         userId,
         source,
@@ -1858,6 +1961,7 @@ export class LibraryService {
         ref.mediaItem,
         type,
         lang,
+        acceptLanguage,
       );
       const allowAdult = await this.ageGate.allowsAdultContent(userId);
       this.ageGate.assertAdultAllowed(detail.isAdult, allowAdult);
@@ -1872,6 +1976,8 @@ export class LibraryService {
     );
     const allowAdult = await this.ageGate.allowsAdultContent(userId);
     this.ageGate.assertAdultAllowed(details.isAdult, allowAdult);
+    const region =
+      type === "MOVIE" ? await this.movieRegion(userId, acceptLanguage) : "US";
     return {
       source,
       sourceId,
@@ -1884,6 +1990,15 @@ export class LibraryService {
       overview: details.overview,
       genres: details.genres,
       airingStatus: details.status,
+      releaseDate: details.releaseDate ?? null,
+      movieRelease:
+        type === "MOVIE"
+          ? movieReleaseInfo(
+              details.movieReleaseDates ?? [],
+              details.status,
+              region,
+            )
+          : null,
       airingFinished: normalizeAiringFinished(details.status),
       runtimeMin: details.runtimeMin,
       isAdult: details.isAdult,
@@ -1913,6 +2028,7 @@ export class LibraryService {
     media: MediaItem,
     type: MediaType,
     lang: string | undefined,
+    acceptLanguage?: string,
   ): Promise<MediaDetailDto> {
     // Only fetched/created when `lang` isn't the base row's own (English)
     // language — see the note on MediaItemService.translationFor.
@@ -1973,6 +2089,15 @@ export class LibraryService {
       overview: translation?.overview ?? media.overview,
       genres: translation?.genres ?? media.genres,
       airingStatus: media.status,
+      releaseDate: media.releaseDate?.toISOString().slice(0, 10) ?? null,
+      movieRelease:
+        type === "MOVIE"
+          ? movieReleaseInfo(
+              movieReleaseDates(media.movieReleaseDates),
+              media.status,
+              await this.movieRegion(userId, acceptLanguage),
+            )
+          : null,
       airingFinished: normalizeAiringFinished(media.status),
       runtimeMin: media.runtimeMin,
       isAdult: media.isAdult,
@@ -1998,6 +2123,17 @@ export class LibraryService {
       entry,
     };
   }
+
+  private async movieRegion(
+    userId: string,
+    acceptLanguage?: string,
+  ): Promise<string> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { watchRegion: true },
+    });
+    return resolveWatchRegion(user.watchRegion ?? undefined, acceptLanguage);
+  }
 }
 
 function toMediaItemDto(
@@ -2011,6 +2147,14 @@ function toMediaItemDto(
     posterUrl: media.posterUrl,
     canonicalSource: media.canonicalSource,
     sourceId: canonicalExternalId(media, media.externalIds),
+    ...(media.type === "MOVIE" &&
+    movieReleaseInfo(
+      movieReleaseDates(media.movieReleaseDates),
+      media.status,
+      "US",
+    ).upcoming
+      ? { upcoming: true }
+      : {}),
   };
 }
 

@@ -175,6 +175,8 @@ interface SeasonDto {
 
 /** Full media details, fetched live from the source (seasons included for series/anime). */
 export interface MediaDetailsDto extends MediaSummaryDto {
+  releaseDate?: string | null;
+  movieReleaseDates?: import("../movie-release").MovieReleaseDate[];
   overview: string | null;
   backdropUrl: string | null;
   genres: string[];
@@ -219,6 +221,7 @@ export interface MediaDetailDto extends Omit<
   originalTitle: string | null;
   /** Raw airing status from the source (e.g. "Ended", "RELEASING"). */
   airingStatus: string | null;
+  movieRelease?: import("../movie-release").MovieReleaseInfo | null;
   /** Normalised: the show has finished airing (no more episodes coming). */
   airingFinished: boolean;
   seasons: MediaDetailSeasonDto[];

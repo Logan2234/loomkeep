@@ -215,6 +215,7 @@ function makeForWrite(
   const upsert = vi.fn().mockResolvedValue(row);
   const revisionCreate = vi.fn().mockResolvedValue({});
   const prisma = {
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
     review: {
       findUnique: vi
         .fn()

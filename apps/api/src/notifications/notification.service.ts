@@ -8,10 +8,13 @@ import {
   NotificationType,
   isAlertEnabled,
   isAlertToggleable,
+  movieReleaseDates,
+  movieReleaseInfo,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { type Notification, Prisma } from "@prisma/client";
+import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { EventsGateway } from "../events/events.gateway";
@@ -33,6 +36,7 @@ const FEED_LIMIT = 50;
 /** Kinds excluded from the bell feed: NEW_EPISODE (push/email only) and FOLLOW_REQUEST (superseded by the live, actionable `Follow` list). */
 const FEED_EXCLUDED_TYPES: NotificationType[] = [
   NotificationType.NEW_EPISODE,
+  NotificationType.NEW_MOVIE,
   NotificationType.FOLLOW_REQUEST,
 ];
 
@@ -112,6 +116,7 @@ export class NotificationService {
    * want the narrow query.
    */
   private async runScanAll(): Promise<number> {
+    const moviesCreated = await this.scanMovies();
     const now = new Date();
     const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000);
 
@@ -144,7 +149,7 @@ export class NotificationService {
 
     if (episodes.length === 0) {
       this.logger.debug("No episode aired in the window, nothing to scan");
-      return 0;
+      return moviesCreated;
     }
 
     // Who tracks those media — the digest and domain gates are the same ones
@@ -168,7 +173,7 @@ export class NotificationService {
 
     if (entries.length === 0) {
       this.logger.debug("No tracked entry for the aired episodes");
-      return 0;
+      return moviesCreated;
     }
 
     // Dedup is per (user, episode): keyed on dedupeKey alone, which is
@@ -236,7 +241,7 @@ export class NotificationService {
       this.logger.debug(
         `Scanned ${episodes.length} aired episode(s), nothing new`,
       );
-      return 0;
+      return moviesCreated;
     }
 
     await this.prisma.notification.createMany({
@@ -247,7 +252,83 @@ export class NotificationService {
       `Created ${rows.length} notification(s) across ${users.size} user(s)`,
     );
 
-    return rows.length;
+    return rows.length + moviesCreated;
+  }
+
+  private async scanMovies(userId?: string): Promise<number> {
+    const now = new Date();
+    const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    const today = now.toISOString().slice(0, 10);
+    const entries = await this.prisma.libraryEntry.findMany({
+      where: {
+        userId,
+        movieReleaseReminderAt: { not: null },
+        status: { not: "DROPPED" },
+        mediaItem: { type: "MOVIE" },
+        user: {
+          enabledDomains: { has: "MEDIA" },
+          OR: [
+            { notifyPush: { not: DigestCadence.DISABLED } },
+            { notifyEmail: { not: DigestCadence.DISABLED } },
+          ],
+        },
+      },
+      include: {
+        mediaItem: { include: { externalIds: true } },
+        user: { select: { watchRegion: true, locale: true } },
+      },
+    });
+    const rows: Prisma.NotificationCreateManyInput[] = entries.flatMap(
+      (entry) => {
+        const region = resolveWatchRegion(
+          entry.user.watchRegion ?? entry.movieReleaseRegion ?? undefined,
+          undefined,
+        );
+        const release = movieReleaseInfo(
+          movieReleaseDates(entry.mediaItem.movieReleaseDates),
+          entry.mediaItem.status,
+          region,
+          now,
+        );
+        if (
+          !entry.movieReleaseReminderAt ||
+          !release.localDate ||
+          release.localDate <= since ||
+          release.localDate > today ||
+          release.localDate <
+            entry.movieReleaseReminderAt.toISOString().slice(0, 10)
+        )
+          return [];
+        const body = notificationCopy(entry.user.locale).movieRelease(
+          release.localType!,
+          region,
+        );
+        return [
+          {
+            userId: entry.userId,
+            type: NotificationType.NEW_MOVIE,
+            title: entry.mediaItem.title,
+            body,
+            url: `/app/media/movie/${canonicalExternalId(entry.mediaItem, entry.mediaItem.externalIds)}`,
+            dedupeKey: `movie:${entry.mediaItemId}`,
+            data: {
+              airDate: `${release.localDate}T00:00:00.000Z`,
+              mediaItemId: entry.mediaItemId,
+              region,
+              releaseType: release.localType,
+            },
+          },
+        ];
+      },
+    );
+    if (rows.length === 0) return 0;
+    const created = await this.prisma.notification.createMany({
+      data: rows,
+      skipDuplicates: true,
+    });
+    return created.count;
   }
 
   /** The ledger rows one user's newly-aired episodes turn into. */
@@ -296,6 +377,8 @@ export class NotificationService {
     // stay available.
     if (!user.enabledDomains.includes("MEDIA")) return 0;
 
+    const moviesCreated = await this.scanMovies(userId);
+
     const now = new Date();
     const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000);
 
@@ -325,7 +408,7 @@ export class NotificationService {
       },
     });
 
-    if (episodes.length === 0) return 0;
+    if (episodes.length === 0) return moviesCreated;
 
     const existing = await this.prisma.notification.findMany({
       where: {
@@ -359,14 +442,14 @@ export class NotificationService {
       { since, now, alreadyNotified },
     );
 
-    if (toCreate.length === 0) return 0;
+    if (toCreate.length === 0) return moviesCreated;
 
     await this.prisma.notification.createMany({
       data: this.episodeNotificationRows(userId, toCreate),
       skipDuplicates: true,
     });
 
-    return toCreate.length;
+    return toCreate.length + moviesCreated;
   }
 
   /**

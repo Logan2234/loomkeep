@@ -68,6 +68,42 @@ beforeEach(() => {
 });
 
 describe("calendar page", () => {
+  it("shows a movie release and toggles its opt-in instead of episode muting", async () => {
+    serveCalendar([
+      upcoming("movie-1", "Future movie", 0, 1, {
+        mediaItem: {
+          id: "m1",
+          type: "MOVIE",
+          title: "Future movie",
+          posterUrl: null,
+          canonicalSource: "TMDB",
+          sourceId: "1",
+        },
+        seasonNumber: null,
+        episodeNumber: null,
+        episodeAlertsMuted: true,
+        releaseRegion: "FR",
+        releaseType: "cinema",
+      }),
+    ]);
+    renderWithQuery(CalendarPage, {});
+    const button = await screen.findByRole("button", {
+      name: m.media_movie_reminder_enable(),
+    });
+    expect(screen.getByText(`${m.media_release_cinema()} · FR`)).toBeTruthy();
+    expect(screen.queryByText("SnullEnull")).toBeNull();
+    await userEvent.setup().click(button);
+    await waitFor(() =>
+      expect(patched).toEqual([
+        { id: "movie-1", body: { movieReleaseAlertsEnabled: true } },
+      ]),
+    );
+    expect(
+      await screen.findByRole("button", {
+        name: m.media_movie_reminder_cancel(),
+      }),
+    ).toBeTruthy();
+  });
   it("mutes the whole series from any one of its episodes", async () => {
     renderWithQuery(CalendarPage, {});
     const user = userEvent.setup();
