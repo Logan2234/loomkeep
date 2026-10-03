@@ -838,10 +838,16 @@ describe("UsersService — deletionSummary", () => {
       episodeWatch: { count: vi.fn().mockResolvedValue(0) },
       movieReplay: { count: vi.fn().mockResolvedValue(0) },
       gameEntry: { count: vi.fn().mockResolvedValue(0) },
+      gamePlaythrough: { count: vi.fn().mockResolvedValue(0) },
+      gameSession: { count: vi.fn().mockResolvedValue(0) },
       bookEntry: { count: vi.fn().mockResolvedValue(0) },
+      bookReading: { count: vi.fn().mockResolvedValue(0) },
+      bookSession: { count: vi.fn().mockResolvedValue(0) },
       readingGoal: { count: vi.fn().mockResolvedValue(0) },
+      sessionTimer: { count: vi.fn().mockResolvedValue(0) },
       musicEntry: { count: vi.fn().mockResolvedValue(0) },
       listMember: { count: vi.fn().mockResolvedValue(0) },
+      listNotificationMute: { count: vi.fn().mockResolvedValue(0) },
       follow: { count: vi.fn().mockResolvedValue(0) },
       block: { count: vi.fn().mockResolvedValue(0) },
       reviewVote: { count: vi.fn().mockResolvedValue(0) },
@@ -850,16 +856,29 @@ describe("UsersService — deletionSummary", () => {
       activityEvent: { count: vi.fn().mockResolvedValue(0) },
       userAchievement: { count: vi.fn().mockResolvedValue(0) },
       savedView: { count: vi.fn().mockResolvedValue(0) },
+      visibilitySetting: { count: vi.fn().mockResolvedValue(0) },
       userDevice: { count: vi.fn().mockResolvedValue(0) },
       apiKey: { count: vi.fn().mockResolvedValue(0) },
       webauthnCredential: { count: vi.fn().mockResolvedValue(0) },
+      mfaRecoveryCode: { count: vi.fn().mockResolvedValue(0) },
+      pushSubscription: { count: vi.fn().mockResolvedValue(0) },
+      emailChangeRequest: { count: vi.fn().mockResolvedValue(0) },
+      userToken: { count: vi.fn().mockResolvedValue(0) },
+      userEntitlement: { count: vi.fn().mockResolvedValue(0) },
+      subscription: { count: vi.fn().mockResolvedValue(0) },
       review: { count: vi.fn().mockResolvedValue(0) },
+      reviewRevision: { count: vi.fn().mockResolvedValue(0) },
       comment: { count: vi.fn().mockResolvedValue(0) },
       listItem: { count: vi.fn().mockResolvedValue(0) },
       report: { count: vi.fn().mockResolvedValue(0) },
       importRun: { count: vi.fn().mockResolvedValue(0) },
       securityEvent: { count: vi.fn().mockResolvedValue(0) },
       moderationDecision: { count: vi.fn().mockResolvedValue(0) },
+      user: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ mfaTotpEnabled: false, mfaEmailEnabled: false }),
+      },
       list: {
         count: vi.fn().mockResolvedValue(0),
         findMany: vi.fn().mockResolvedValue([]),
@@ -895,13 +914,20 @@ describe("UsersService — deletionSummary", () => {
 
     expect(summary.deleted.map((r) => r.category)).toEqual([
       "LIBRARY",
-      "WATCH_HISTORY",
+      "EPISODE_WATCHES",
+      "MOVIE_REWATCHES",
       "GAMES",
+      "GAME_PLAYTHROUGHS",
+      "GAME_SESSIONS",
       "BOOKS",
+      "BOOK_READINGS",
+      "BOOK_SESSIONS",
       "READING_GOALS",
+      "SESSION_TIMER",
       "MUSIC",
       "LISTS",
       "LIST_MEMBERSHIPS",
+      "LIST_MUTES",
       "FOLLOWS",
       "BLOCKS",
       "REACTIONS",
@@ -909,10 +935,18 @@ describe("UsersService — deletionSummary", () => {
       "ACTIVITY",
       "PROGRESSION",
       "SAVED_VIEWS",
-      "SIGN_IN",
+      "VISIBILITY_SETTINGS",
+      "DEVICES",
+      "API_KEYS",
+      "PASSKEYS",
+      "TWO_FACTOR",
+      "PUSH_SUBSCRIPTIONS",
+      "PENDING_REQUESTS",
+      "PREMIUM",
     ]);
     expect(summary.anonymized.map((r) => r.category)).toEqual([
       "REVIEWS",
+      "REVIEW_REVISIONS",
       "COMMENTS",
       "LIST_ITEMS_ADDED",
       "REPORTS",
@@ -921,6 +955,7 @@ describe("UsersService — deletionSummary", () => {
     expect(summary.kept.map((r) => r.category)).toEqual([
       "SECURITY_EVENTS",
       "MODERATION_DECISIONS",
+      "REMOVED_CONTENT_COPIES",
     ]);
     expect(summary.transferredLists).toEqual([]);
     expect(
@@ -930,15 +965,18 @@ describe("UsersService — deletionSummary", () => {
     ).toBe(true);
   });
 
-  it("counts episode views and film rewatches together as watch history", async () => {
-    (prisma.episodeWatch.count as Mock).mockResolvedValueOnce(40);
-    (prisma.movieReplay.count as Mock).mockResolvedValueOnce(2);
+  it("counts each second factor and each recovery code", async () => {
+    (prisma.user.findUnique as Mock).mockResolvedValueOnce({
+      mfaTotpEnabled: true,
+      mfaEmailEnabled: false,
+    });
+    (prisma.mfaRecoveryCode.count as Mock).mockResolvedValueOnce(8);
 
     const summary = await service.deletionSummary(userId);
 
     expect(
-      summary.deleted.find((r) => r.category === "WATCH_HISTORY")?.count,
-    ).toBe(42);
+      summary.deleted.find((r) => r.category === "TWO_FACTOR")?.count,
+    ).toBe(9);
   });
 
   it("names the editor each shared list passes to", async () => {

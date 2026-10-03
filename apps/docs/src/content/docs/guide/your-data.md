@@ -10,12 +10,12 @@ time, and delete it for good.
 
 All from **Settings › Export**:
 
-| Export                      | What it holds                                                                                                                                                                                    | When to use it                                     |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- |
-| **Complete archive** (JSON) | Everything: profile and photo, settings and consents, every library, history (film rewatches included), sessions, reviews, comments, lists, follows, activity, XP and achievements, security log | A full backup, or to keep your data before leaving |
-| **One library** (CSV)       | One domain as a flat table, one title per row                                                                                                                                                    | A spreadsheet, or another app that imports CSV     |
-| **For Letterboxd** (CSV)    | Your films seen, rewatches included, and your watchlist                                                                                                                                          | Moving your films to Letterboxd                    |
-| **For Goodreads** (CSV)     | Your books with their shelves and rereads; abandoned books on a "did-not-finish" shelf                                                                                                           | Moving your books to Goodreads                     |
+| Export                      | What it holds                                                                                                                                                                                                                                                                               | When to use it                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| **Complete archive** (JSON) | Everything: profile and photo, settings and consents, every library, history (film rewatches included), every playthrough and reading with their sessions, reviews, comments, lists and what you added to others', follows, activity, XP and achievements, signed-in sessions, security log | A full backup, or to keep your data before leaving |
+| **One library** (CSV)       | One domain as a flat table, one title per row                                                                                                                                                                                                                                               | A spreadsheet, or another app that imports CSV     |
+| **For Letterboxd** (CSV)    | Your films seen, rewatches included, and your watchlist                                                                                                                                                                                                                                     | Moving your films to Letterboxd                    |
+| **For Goodreads** (CSV)     | Your books with their shelves and rereads; abandoned books on a "did-not-finish" shelf                                                                                                                                                                                                      | Moving your books to Goodreads                     |
 
 The complete archive lists your API keys, passkeys and the browsers that get
 your notifications, but never their secrets: no key, no password hash, no
@@ -38,17 +38,22 @@ deleted and what stays:
 
 - **Right away**: every session is closed; API keys and passkeys stop
   working.
-- **Deleted**: your profile, libraries, history, lists only you edit,
-  follows, blocks, votes and reactions, notifications, activity, XP and
-  achievements, saved views, devices and settings. Notifications other
-  members got about you go too.
-- **Kept without your name**: your reviews, comments, the works you added to
-  other members' lists, your reports and your import history, shown as from
-  a "Deleted user", so what others took part in still makes sense.
+- **Deleted**: your profile, libraries, history, playthroughs, readings and
+  their sessions, a running timer, lists only you edit, follows, blocks,
+  votes and reactions, notifications, activity, XP and achievements, saved
+  views, settings, devices, API keys, passkeys, two-factor methods and
+  recovery codes, push subscriptions and any premium plan. Notifications
+  other members got about you go too.
+- **Kept without your name**: your reviews and their earlier versions,
+  comments, the works you added to other members' lists, your reports and
+  your import history (without its details), shown as from a "Deleted
+  user", so what others took part in still makes sense.
 - **Handed over**: a list you edit with others passes to its earliest
   editor instead of disappearing.
-- **Kept by the instance**: the security log (without IP addresses) and any
-  moderation decision about you, without your identity. Backups erase
+- **Kept by the instance**: the security log, stripped of IP addresses and
+  of details such as a former email address or a device name, and any
+  moderation decision about you — with the copy of a comment it removed —
+  without your identity. An invitation sent to your address forgets it. Backups erase
   themselves within 30 days and are never used to bring an account back.
 
 There is no undo: export first if you might want your data back.

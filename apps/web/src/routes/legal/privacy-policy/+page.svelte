@@ -619,8 +619,10 @@
       plusieurs est transférée à son plus ancien éditeur ; les notifications
       reçues par d'autres membres à propos du compte sont effacées ; les
       décisions de modération le concernant sont conservées sans son identité,
-      au titre de l'obligation de transparence. Toutes les sessions sont fermées
-      immédiatement.
+      au titre de l'obligation de transparence. Le détail des événements de
+      sécurité conservés (ancienne adresse e-mail, nom d'un appareil) et des
+      imports est effacé, de même que l'adresse e-mail des invitations reçues.
+      Toutes les sessions sont fermées immédiatement.
     </p>
     <p>
       Le journal de sécurité et d'imports (créations de compte, changements

@@ -22,13 +22,20 @@
 
   const DELETED_LABELS: Record<AccountDeletionDeletedCategory, string> = {
     LIBRARY: m.settings_delete_account_library_media(),
-    WATCH_HISTORY: m.settings_delete_account_watch_history(),
+    EPISODE_WATCHES: m.settings_delete_account_watch_history(),
+    MOVIE_REWATCHES: m.settings_delete_account_movie_rewatches(),
     GAMES: m.settings_delete_account_games(),
+    GAME_PLAYTHROUGHS: m.settings_delete_account_game_playthroughs(),
+    GAME_SESSIONS: m.settings_delete_account_game_sessions(),
     BOOKS: m.settings_delete_account_books(),
+    BOOK_READINGS: m.settings_delete_account_book_readings(),
+    BOOK_SESSIONS: m.settings_delete_account_book_sessions(),
     READING_GOALS: m.settings_delete_account_reading_goals(),
+    SESSION_TIMER: m.settings_delete_account_session_timer(),
     MUSIC: m.settings_delete_account_music(),
     LISTS: m.settings_delete_account_lists(),
     LIST_MEMBERSHIPS: m.settings_delete_account_list_memberships(),
+    LIST_MUTES: m.settings_delete_account_list_mutes(),
     FOLLOWS: m.settings_delete_account_follows(),
     BLOCKS: m.settings_delete_account_blocks(),
     REACTIONS: m.settings_delete_account_reactions(),
@@ -36,11 +43,71 @@
     ACTIVITY: m.common_activity_feed(),
     PROGRESSION: m.settings_delete_account_progression(),
     SAVED_VIEWS: m.settings_delete_account_saved_views(),
-    SIGN_IN: m.settings_delete_account_sign_in(),
+    VISIBILITY_SETTINGS: m.settings_delete_account_visibility_settings(),
+    DEVICES: m.settings_delete_account_devices(),
+    API_KEYS: m.settings_delete_account_api_keys(),
+    PASSKEYS: m.settings_delete_account_passkeys(),
+    TWO_FACTOR: m.settings_delete_account_two_factor(),
+    PUSH_SUBSCRIPTIONS: m.settings_delete_account_push_subscriptions(),
+    PENDING_REQUESTS: m.settings_delete_account_pending_requests(),
+    PREMIUM: m.settings_delete_account_premium(),
   };
+
+  // The erased rows read better in three groups than in one list of thirty.
+  const DELETED_GROUPS: {
+    title: string;
+    categories: AccountDeletionDeletedCategory[];
+  }[] = [
+    {
+      title: m.settings_delete_account_group_library(),
+      categories: [
+        "LIBRARY",
+        "EPISODE_WATCHES",
+        "MOVIE_REWATCHES",
+        "GAMES",
+        "GAME_PLAYTHROUGHS",
+        "GAME_SESSIONS",
+        "BOOKS",
+        "BOOK_READINGS",
+        "BOOK_SESSIONS",
+        "READING_GOALS",
+        "SESSION_TIMER",
+        "MUSIC",
+      ],
+    },
+    {
+      title: m.settings_delete_account_group_social(),
+      categories: [
+        "LISTS",
+        "LIST_MEMBERSHIPS",
+        "LIST_MUTES",
+        "FOLLOWS",
+        "BLOCKS",
+        "REACTIONS",
+        "NOTIFICATIONS",
+        "ACTIVITY",
+      ],
+    },
+    {
+      title: m.settings_delete_account_group_account(),
+      categories: [
+        "PROGRESSION",
+        "SAVED_VIEWS",
+        "VISIBILITY_SETTINGS",
+        "DEVICES",
+        "API_KEYS",
+        "PASSKEYS",
+        "TWO_FACTOR",
+        "PUSH_SUBSCRIPTIONS",
+        "PENDING_REQUESTS",
+        "PREMIUM",
+      ],
+    },
+  ];
 
   const ANONYMIZED_LABELS: Record<AccountDeletionAnonymizedCategory, string> = {
     REVIEWS: m.settings_delete_account_reviews(),
+    REVIEW_REVISIONS: m.settings_delete_account_review_revisions(),
     COMMENTS: m.common_comments(),
     LIST_ITEMS_ADDED: m.settings_delete_account_list_items_added(),
     REPORTS: m.settings_delete_account_reports(),
@@ -50,6 +117,7 @@
   const KEPT_LABELS: Record<AccountDeletionKeptCategory, string> = {
     SECURITY_EVENTS: m.settings_delete_account_security_events(),
     MODERATION_DECISIONS: m.settings_delete_account_moderation_decisions(),
+    REMOVED_CONTENT_COPIES: m.settings_delete_account_removed_content_copies(),
   };
 
   type Step =
@@ -157,12 +225,23 @@
 {/snippet}
 
 {#snippet deletedBody()}
-  {@render counts(
-    (summary?.deleted ?? []).map((row) => ({
-      label: DELETED_LABELS[row.category],
-      count: row.count,
-    })),
-  )}
+  <div class="flex flex-col gap-3">
+    {#each DELETED_GROUPS as group (group.title)}
+      <div>
+        <p class="timecode text-micro mb-1 tracking-wide uppercase">
+          {group.title}
+        </p>
+        {@render counts(
+          (summary?.deleted ?? [])
+            .filter((row) => group.categories.includes(row.category))
+            .map((row) => ({
+              label: DELETED_LABELS[row.category],
+              count: row.count,
+            })),
+        )}
+      </div>
+    {/each}
+  </div>
 {/snippet}
 
 {#snippet anonymizedBody()}

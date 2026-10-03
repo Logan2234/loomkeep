@@ -1,13 +1,20 @@
 /** Rows hard-deleted (cascade) when the account is removed. */
 export type AccountDeletionDeletedCategory =
   | "LIBRARY"
-  | "WATCH_HISTORY"
+  | "EPISODE_WATCHES"
+  | "MOVIE_REWATCHES"
   | "GAMES"
+  | "GAME_PLAYTHROUGHS"
+  | "GAME_SESSIONS"
   | "BOOKS"
+  | "BOOK_READINGS"
+  | "BOOK_SESSIONS"
   | "READING_GOALS"
+  | "SESSION_TIMER"
   | "MUSIC"
   | "LISTS"
   | "LIST_MEMBERSHIPS"
+  | "LIST_MUTES"
   | "FOLLOWS"
   | "BLOCKS"
   | "REACTIONS"
@@ -15,15 +22,27 @@ export type AccountDeletionDeletedCategory =
   | "ACTIVITY"
   | "PROGRESSION"
   | "SAVED_VIEWS"
-  | "SIGN_IN";
+  | "VISIBILITY_SETTINGS"
+  | "DEVICES"
+  | "API_KEYS"
+  | "PASSKEYS"
+  | "TWO_FACTOR"
+  | "PUSH_SUBSCRIPTIONS"
+  | "PENDING_REQUESTS"
+  | "PREMIUM";
 
 /** Rows detached from the account (SetNull) but kept — content survives, identity doesn't. */
 export type AccountDeletionAnonymizedCategory =
-  "REVIEWS" | "COMMENTS" | "LIST_ITEMS_ADDED" | "REPORTS" | "IMPORTS";
+  | "REVIEWS"
+  | "REVIEW_REVISIONS"
+  | "COMMENTS"
+  | "LIST_ITEMS_ADDED"
+  | "REPORTS"
+  | "IMPORTS";
 
 /** Records the instance keeps past the account, for legal or moderation reasons. */
 export type AccountDeletionKeptCategory =
-  "SECURITY_EVENTS" | "MODERATION_DECISIONS";
+  "SECURITY_EVENTS" | "MODERATION_DECISIONS" | "REMOVED_CONTENT_COPIES";
 
 interface AccountDeletionCategoryCount<T extends string> {
   category: T;
