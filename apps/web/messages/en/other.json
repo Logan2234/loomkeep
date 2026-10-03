@@ -1216,5 +1216,13 @@
   "add_to_list_empty": "Type a name to create your first list.",
   "lists_visibility_private_hint": "You and your editors, no one else.",
   "lists_visibility_friends_hint": "Your friends see it on your profile.",
-  "lists_visibility_public_hint": "Anyone on this instance can see it."
+  "lists_visibility_public_hint": "Anyone on this instance can see it.",
+  "reviews_sort_best": "Highest rated",
+  "reviews_sort_label": "Sort reviews",
+  "reviews_filter_domain": "Filter by domain",
+  "reviews_page_average": "average {average}/10",
+  "reviews_page_public": "{count} public",
+  "reviews_search": "Search a work",
+  "reviews_no_match": "No review matches these filters.",
+  "reviews_selection_done": "Done"
 }

@@ -1216,5 +1216,13 @@
   "add_to_list_empty": "Tape un nom pour créer ta première liste.",
   "lists_visibility_private_hint": "Toi et tes éditeurs, personne d'autre.",
   "lists_visibility_friends_hint": "Tes amis la voient sur ton profil.",
-  "lists_visibility_public_hint": "Tout le monde sur l'instance peut la voir."
+  "lists_visibility_public_hint": "Tout le monde sur l'instance peut la voir.",
+  "reviews_sort_best": "Mieux notées",
+  "reviews_sort_label": "Trier les critiques",
+  "reviews_filter_domain": "Filtrer par domaine",
+  "reviews_page_average": "moyenne {average}/10",
+  "reviews_page_public": "{count} publiques",
+  "reviews_search": "Chercher une œuvre",
+  "reviews_no_match": "Aucune critique ne correspond à ces filtres.",
+  "reviews_selection_done": "Terminé"
 }

@@ -1216,5 +1216,13 @@
   "add_to_list_empty": "Scrivi un nome per creare la tua prima lista.",
   "lists_visibility_private_hint": "Tu e i tuoi editor, nessun altro.",
   "lists_visibility_friends_hint": "I tuoi amici la vedono sul tuo profilo.",
-  "lists_visibility_public_hint": "Chiunque su questa istanza può vederla."
+  "lists_visibility_public_hint": "Chiunque su questa istanza può vederla.",
+  "reviews_sort_best": "Voto più alto",
+  "reviews_sort_label": "Ordina le recensioni",
+  "reviews_filter_domain": "Filtra per dominio",
+  "reviews_page_average": "media {average}/10",
+  "reviews_page_public": "{count} pubbliche",
+  "reviews_search": "Cerca un'opera",
+  "reviews_no_match": "Nessuna recensione corrisponde a questi filtri.",
+  "reviews_selection_done": "Fatto"
 }
