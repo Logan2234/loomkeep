@@ -21,6 +21,7 @@ import {
   episodeRuntimeFor,
   ErrorCode,
   isDormant,
+  isGhost,
   isRuntimeKnown,
   MediaType,
   ReviewTargetType,
@@ -123,9 +124,10 @@ const MEDIA_STATUS_SORT_ORDER: EntryStatus[] = [
 ];
 
 /**
- * `statuses` accepts "DORMANT" alongside real `EntryStatus` values — see
- * `isDormant`. `lang` drives `MediaItemService.translatedTitles` here, on top
- * of the collation it drives everywhere.
+ * `statuses` accepts "DORMANT" and "GHOST" alongside real `EntryStatus`
+ * values — see `isDormant` and `isGhost`. `lang` drives
+ * `MediaItemService.translatedTitles` here, on top of the collation it drives
+ * everywhere.
  */
 export interface ListEntriesFilters extends SharedListEntriesFilters {
   types?: MediaType[];
@@ -623,12 +625,15 @@ export class LibraryService {
       });
     };
 
-    // "DORMANT" is a synthetic refinement of WATCHING (see isDormant).
+    // "DORMANT" and "GHOST" are synthetic refinements of WATCHING.
+    const matches = (row: MediaRow, s: string) =>
+      s === "DORMANT"
+        ? isDormant(row)
+        : s === "GHOST"
+          ? isGhost(row)
+          : row.status === s;
     const keep = (row: MediaRow) =>
-      (statuses.length === 0 ||
-        statuses.some((s) =>
-          s === "DORMANT" ? isDormant(row) : row.status === s,
-        )) &&
+      (statuses.length === 0 || statuses.some((s) => matches(row, s))) &&
       (!q || row.mediaItem.title.toLowerCase().includes(q));
 
     return { rows, keep };

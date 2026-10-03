@@ -74,6 +74,7 @@ export type IconName =
   | "hourglass"
   | "timer"
   | "mask"
+  | "ghost"
   | "footprint"
   | "shooting-star"
   | "circle-arrow"

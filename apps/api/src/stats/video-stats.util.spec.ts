@@ -1,8 +1,8 @@
+import { GHOST_AFTER_DAYS } from "@loomkeep/shared";
 import {
   classifyStaleness,
   computeTypeSplit,
   countCompletedSeasons,
-  GHOST_AFTER_DAYS,
   lastWatchedPerMediaItem,
 } from "./video-stats.util";
 

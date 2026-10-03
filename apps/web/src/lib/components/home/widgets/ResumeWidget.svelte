@@ -7,6 +7,7 @@
   import type { BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
   import type { LibraryEntryDto } from "@loomkeep/shared";
+  import { isGhost } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
@@ -29,12 +30,14 @@
   }));
 
   // The most recently left aside first: the likeliest to be picked up again.
+  // Ghosts stay in the library's own filter: months-old shows crowd out the
+  // ones you'd actually resume.
   const lastWatched = (e: LibraryEntryDto) =>
     e.lastWatchedAt ? new Date(e.lastWatchedAt).getTime() : 0;
   const dormant = $derived(
-    [...(dormantQuery.data ?? [])].sort(
-      (a, b) => lastWatched(b) - lastWatched(a),
-    ),
+    (dormantQuery.data ?? [])
+      .filter((e) => !isGhost(e))
+      .sort((a, b) => lastWatched(b) - lastWatched(a)),
   );
 
   const DAY_MS = 86_400_000;

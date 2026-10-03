@@ -618,6 +618,9 @@ exports[`Library listing (e2e) > filters, sorts both ways and pages the media li
   "{"statuses":["DROPPED"]}": [
     "Lost",
   ],
+  "{"statuses":["GHOST"]}": [
+    "Dark",
+  ],
   "{"statuses":["PLANNED"]}": [
     "Frieren",
     "Dune",
