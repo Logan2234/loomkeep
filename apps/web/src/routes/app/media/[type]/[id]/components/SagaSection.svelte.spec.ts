@@ -1,5 +1,6 @@
 import { m } from "$lib/paraglide/messages.js";
 import { apiUrl, server } from "$lib/test/msw";
+import { goto } from "$lib/test/navigation.svelte";
 import { renderWithQuery } from "$lib/test/render";
 import { toast } from "$lib/toast.svelte";
 import type {
@@ -11,8 +12,10 @@ import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { flushSync } from "svelte";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import SagaSection from "./SagaSection.svelte";
+
+vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
 
 const work = (
   sourceId: string,
@@ -80,6 +83,27 @@ describe("SagaSection", () => {
     expect(screen.getByText(m.media_saga_here())).toBeTruthy();
   });
 
+  it("colours each segment by status and makes the others links to their work", async () => {
+    serveSaga({
+      ...titans,
+      members: titans.members.map((x) =>
+        x.sourceId === "5" ? { ...x, status: "DROPPED" } : x,
+      ),
+    });
+
+    renderSaga();
+
+    const segment = await screen.findByRole("link", {
+      name: "05 · The Final Season",
+    });
+    expect(segment.getAttribute("href")).toBe("/app/media/anime/5");
+    expect(segment.querySelector(".bg-danger")).toBeTruthy();
+    const here = document.querySelector(
+      '[data-saga-segment][aria-current="true"]',
+    );
+    expect(here?.querySelector(".bg-accent")).toBeTruthy();
+  });
+
   it("shows the works around the current one until the whole saga is asked for", async () => {
     serveSaga(titans);
     const user = userEvent.setup();
@@ -96,7 +120,15 @@ describe("SagaSection", () => {
       }),
     );
 
-    expect(within(list).getAllByRole("listitem")).toHaveLength(7);
+    await waitFor(() =>
+      expect(within(list).getAllByRole("listitem")).toHaveLength(7),
+    );
+
+    await user.click(screen.getByRole("button", { name: m.common_see_less() }));
+
+    await waitFor(() =>
+      expect(within(list).getAllByRole("listitem")).toHaveLength(5),
+    );
   });
 
   it("adds an untracked work to the watchlist", async () => {
@@ -138,11 +170,16 @@ describe("SagaSection", () => {
     props.entryStatus = "COMPLETED";
     flushSync();
 
-    expect(toast.items.map((t) => [t.message, t.action?.label])).toEqual([
-      [
-        m.media_saga_next_toast({ title: "The Final Season" }),
-        m.media_saga_next_add(),
-      ],
+    const [offer] = toast.items;
+    expect(offer.message).toBe(
+      m.media_saga_next_toast({ title: "The Final Season" }),
+    );
+    expect(offer.actions.map((a) => a.label)).toEqual([
+      m.media_saga_next_add(),
+      m.media_saga_next_open(),
     ]);
+
+    toast.selectAction(offer.id, 1);
+    expect(goto).toHaveBeenCalledWith("/app/media/anime/5");
   });
 });

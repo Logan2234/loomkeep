@@ -771,12 +771,6 @@
         workImageUrl={detail.posterUrl} />
     {/if}
 
-    {#if extras}
-      <CastSection
-        cast={extras.cast}
-        source={type === "ANIME" ? "anilist" : "tmdb"} />
-    {/if}
-
     {#key id}
       <SagaSection {type} sourceId={id} entryStatus={entry?.status ?? null} />
     {/key}
@@ -801,6 +795,12 @@
           cover: s.posterUrl,
           title: s.title,
         }))} />
+    {/if}
+
+    {#if extras}
+      <CastSection
+        cast={extras.cast}
+        source={type === "ANIME" ? "anilist" : "tmdb"} />
     {/if}
   </div>
 
