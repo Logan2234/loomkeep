@@ -74,7 +74,7 @@ export interface AnilistExtras {
   };
 }
 
-export interface AnilistRelationEdge {
+interface AnilistRelationEdge {
   /** SEQUEL, PREQUEL, SIDE_STORY, SPIN_OFF, ALTERNATIVE… */
   relationType?: string | null;
   node: AnilistMedia | null;

@@ -378,6 +378,13 @@ describe("TmdbProvider", () => {
       ]);
     });
 
+    it("never puts a non-numeric id into a TMDB path", async () => {
+      mockFetchByUrl({});
+
+      expect(await provider.getSaga("../account")).toBeNull();
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
     it("finds no saga for a film outside any collection", async () => {
       mockFetchByUrl({ "/movie/1": { id: 1, belongs_to_collection: null } });
 

@@ -218,6 +218,9 @@ export class TmdbProvider implements CatalogProvider {
 
   /** The collection a film belongs to, in release order. Null when none. */
   async getSaga(sourceId: string, lang?: string): Promise<MediaSagaDto | null> {
+    // The id comes straight from the page's URL: anything but digits could
+    // reach another TMDB endpoint with our token.
+    if (!/^\d+$/.test(sourceId)) return null;
     const language = regionalLocale(lang);
     const movie = await this.get<TmdbMovieDetails>(`/movie/${sourceId}`, {
       language,
