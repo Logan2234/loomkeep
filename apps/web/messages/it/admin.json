@@ -659,7 +659,7 @@
   "admin_template_group_admin": "Amministrazione",
   "admin_template_group_other": "Altri",
   "admin_reports_take_measure": "Prendi una misura",
-  "admin_reports_measure_title": "Misure contro @{username}",
+  "admin_reports_measure_title": "Misure contro {username}",
   "admin_reports_reported_part": "Segnalato per: {part}",
   "admin_reports_measure_avatar": "Rimuovi la foto",
   "admin_reports_measure_avatar_hint": "Sostituita dalle iniziali.",

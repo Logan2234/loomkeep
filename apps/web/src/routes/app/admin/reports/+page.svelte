@@ -487,7 +487,7 @@
   <Modal
     title={decisionMode === "profile"
       ? m.admin_reports_measure_title({
-          username: target.target?.targetOwnerUsername ?? "",
+          username: `@${target.target?.targetOwnerUsername ?? ""}`,
         })
       : decisionMode === "list-remove"
         ? m.admin_reports_list_remove()

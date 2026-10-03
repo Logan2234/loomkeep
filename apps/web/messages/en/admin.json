@@ -659,7 +659,7 @@
   "admin_template_group_admin": "Administration",
   "admin_template_group_other": "Other",
   "admin_reports_take_measure": "Take a measure",
-  "admin_reports_measure_title": "Measures against @{username}",
+  "admin_reports_measure_title": "Measures against {username}",
   "admin_reports_reported_part": "Reported for: {part}",
   "admin_reports_measure_avatar": "Remove the picture",
   "admin_reports_measure_avatar_hint": "Replaced by the initials.",
