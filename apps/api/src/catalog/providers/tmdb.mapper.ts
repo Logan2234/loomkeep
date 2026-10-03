@@ -3,6 +3,7 @@ import type {
   MediaExtrasDto,
   MediaSummaryDto,
   RatingDto,
+  SagaMemberDto,
   WatchProviderDto,
 } from "@loomkeep/shared";
 import { CatalogSource, MediaSource, MediaType } from "@loomkeep/shared";
@@ -47,6 +48,13 @@ export interface TmdbMovieDetails extends TmdbMovieResult {
   runtime?: number | null;
   external_ids?: TmdbExternalIds;
   release_dates?: { results?: TmdbReleaseDatesResult[] };
+  belongs_to_collection?: { id: number } | null;
+}
+
+export interface TmdbCollection {
+  id: number;
+  name: string;
+  parts?: TmdbMovieResult[];
 }
 
 export interface TmdbTvDetails extends TmdbTvResult {
@@ -183,6 +191,22 @@ export function toMovieSummary(movie: TmdbMovieResult): MediaSummaryDto {
     year: movie.release_date ? Number(movie.release_date.slice(0, 4)) : null,
     posterUrl: movie.poster_path ? `${IMG}/w500${movie.poster_path}` : null,
     isAdult: movie.adult ?? false,
+  };
+}
+
+/** A film of a collection; one not out yet, or with no date at all, is upcoming. */
+export function toMovieSagaMember(
+  movie: TmdbMovieResult,
+  today: string,
+): SagaMemberDto {
+  const releaseDate = movie.release_date || null;
+  return {
+    ...toMovieSummary(movie),
+    releaseDate,
+    format: null,
+    episodes: null,
+    upcoming: !releaseDate || releaseDate > today,
+    status: null,
   };
 }
 

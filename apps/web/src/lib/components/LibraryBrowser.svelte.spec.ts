@@ -325,10 +325,37 @@ describe("LibraryBrowser", () => {
     await waitFor(() => expect(screen.queryByText("Dune")).toBeNull());
     expect(bulk.remove).not.toHaveBeenCalled();
 
-    toast.items.at(-1)!.action!.onSelect();
+    toast.items.at(-1)!.actions[0].onSelect();
 
     expect(await screen.findByText("Dune")).toBeTruthy();
     expect(bulk.remove).not.toHaveBeenCalled();
+  });
+
+  it("takes the undo toast away once the removal goes through, even held open", async () => {
+    const user = userEvent.setup();
+    const bulk = bulkActions();
+    const { unmount } = renderBrowser(
+      vi.fn(async () => pageOf([DUNE, HYPERION])),
+      undefined,
+      bulk,
+    );
+    await screen.findByText("Dune");
+
+    await startSelecting(user);
+    await user.click(screen.getByRole("button", { name: "Dune" }));
+    await user.click(screen.getByRole("button", { name: m.common_remove() }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(
+      within(dialog).getByRole("button", { name: m.common_remove() }),
+    );
+    const undo = toast.items.at(-1)!;
+    toast.pause(undo.id);
+
+    // Leaving the page confirms the removal, as the delay running out does.
+    unmount();
+
+    await waitFor(() => expect(bulk.remove).toHaveBeenCalledOnce());
+    expect(toast.items.map((t) => t.id)).not.toContain(undo.id);
   });
 
   it("renders the mode picked in the display menu, remembered for this library", async () => {

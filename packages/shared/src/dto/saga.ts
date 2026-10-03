@@ -1,0 +1,31 @@
+import type { EntryStatus } from "../enums";
+import type { MediaSummaryDto } from "./catalog";
+
+/** One work of a saga, in viewing order. */
+export interface SagaMemberDto extends MediaSummaryDto {
+  /** ISO date of its (first) release, when the source knows it. */
+  releaseDate: string | null;
+  /** AniList release format ("TV", "MOVIE", "OVA"…); null for a TMDB film. */
+  format: string | null;
+  episodes: number | null;
+  /** Announced but not out yet: shown, never counted in the progress. */
+  upcoming: boolean;
+  /** The viewer's effective library status, null when not tracked. */
+  status: EntryStatus | null;
+}
+
+/**
+ * A film's TMDB collection, or an anime's main line on AniList (the chain of
+ * prequels and sequels — side stories stay in the related works).
+ */
+export interface MediaSagaDto {
+  /** Stable id of the saga, e.g. `TMDB:10194` or `ANILIST:16498`. */
+  key: string;
+  title: string;
+  members: SagaMemberDto[];
+}
+
+export interface MediaSagaResponseDto {
+  /** Null when the work belongs to no saga of two works or more. */
+  saga: MediaSagaDto | null;
+}

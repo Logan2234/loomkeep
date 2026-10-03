@@ -18,6 +18,7 @@
   import { browser } from "$app/environment";
   import { auth } from "$lib/auth.svelte";
   import { layout } from "$lib/layout.svelte";
+  import { toast } from "$lib/toast.svelte";
 
   // Defines window.Quackback (a queue-based stub the real SDK replaces once
   // it loads) and injects the script tag, exactly once per page load.
@@ -48,9 +49,12 @@
   // shell rather than a width query of its own: a phone in landscape is over
   // 800px wide, so `(min-width: 768px)` put the launcher straight on top of
   // the tab bar. The feedback board stays reachable from Settings > Help.
+  // Toasts stack in the same corner, so the launcher steps aside while any
+  // is showing.
   $effect(() => {
     if (!browser || !auth.isLoggedIn) return;
-    const hidden = layout.compact || layout.openSidePanels > 0;
+    const hidden =
+      layout.compact || layout.openSidePanels > 0 || toast.items.length > 0;
     window.Quackback?.(hidden ? "hideLauncher" : "showLauncher");
   });
 </script>

@@ -1,4 +1,8 @@
-import type { CastDetailDto, MediaExtrasDto } from "@loomkeep/shared";
+import type {
+  CastDetailDto,
+  MediaExtrasDto,
+  MediaSagaDto,
+} from "@loomkeep/shared";
 import {
   CatalogSource,
   ErrorCode,
@@ -11,11 +15,14 @@ import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
 import {
+  MAIN_LINE_RELATIONS,
   toCastDetail,
   toExtras,
   toMediaDetails,
+  toSagaMember,
   toSummary,
   type AnilistExtras,
+  type AnilistFranchiseMedia,
   type AnilistMedia,
   type AnilistStaff,
 } from "./anilist.mapper";
@@ -109,6 +116,7 @@ const EXTRAS_QUERY = `
       }
       relations {
         edges {
+          relationType(version: 2)
           node {
             id
             type
@@ -156,6 +164,41 @@ const STAFF_QUERY = `
     }
   }
 `;
+
+const FRANCHISE_FIELDS = `
+  id
+  type
+  title { romaji english }
+  seasonYear
+  format
+  episodes
+  status
+  startDate { year month day }
+  coverImage { large }
+  isAdult
+`;
+
+// One hop of the franchise graph per request: AniList only returns a work's
+// direct relations, so the main line is walked from the viewed work outwards.
+const FRANCHISE_QUERY = `
+  query ($ids: [Int]) {
+    Page(perPage: 50) {
+      media(id_in: $ids, type: ANIME) {
+        ${FRANCHISE_FIELDS}
+        relations {
+          edges {
+            relationType(version: 2)
+            node { ${FRANCHISE_FIELDS} }
+          }
+        }
+      }
+    }
+  }
+`;
+
+// Long franchises (One Piece films, Gundam) stop growing past this many hops
+// rather than holding the page on a dozen throttled requests.
+const MAX_FRANCHISE_HOPS = 8;
 
 /** Anime, from AniList (GraphQL, no API key needed for public queries). */
 @Injectable()
@@ -228,6 +271,56 @@ export class AnilistProvider implements CatalogProvider {
     return toExtras(data.Media, sourceId, watchRegion);
   }
 
+  /**
+   * The main line an anime belongs to: every work reachable through
+   * prequel/sequel links, oldest first. Null when it stands alone.
+   */
+  async getSaga(sourceId: string): Promise<MediaSagaDto | null> {
+    const found = new Map<number, AnilistMedia>();
+    let frontier = [Number(sourceId)];
+
+    for (let hop = 0; hop < MAX_FRANCHISE_HOPS && frontier.length > 0; hop++) {
+      const data = await this.query<{
+        Page: { media: AnilistFranchiseMedia[] };
+      }>(FRANCHISE_QUERY, { ids: frontier });
+      const next: number[] = [];
+
+      for (const media of data.Page.media) {
+        found.set(media.id, media);
+
+        for (const edge of media.relations?.edges ?? []) {
+          const node = edge.node;
+
+          if (
+            !node ||
+            node.type !== "ANIME" ||
+            !MAIN_LINE_RELATIONS.has(edge.relationType ?? "") ||
+            found.has(node.id) ||
+            next.includes(node.id)
+          ) {
+            continue;
+          }
+
+          found.set(node.id, node);
+          next.push(node.id);
+        }
+      }
+
+      frontier = next;
+    }
+
+    if (found.size < 2) return null;
+
+    const members = [...found.values()]
+      .map((media) => toSagaMember(media))
+      .sort(byRelease);
+    return {
+      key: `ANILIST:${members[0].sourceId}`,
+      title: members[0].title,
+      members,
+    };
+  }
+
   /** Live detail of an AniList staff member (voice actor) for the cast modal. */
   async getPerson(id: string): Promise<CastDetailDto> {
     const data = await this.query<{ Staff: AnilistStaff | null }>(STAFF_QUERY, {
@@ -292,4 +385,18 @@ export class AnilistProvider implements CatalogProvider {
 
     return body.data;
   }
+}
+
+// Oldest first; a work with no date yet is an announcement and goes last.
+function byRelease(
+  a: { releaseDate: string | null; sourceId: string },
+  b: { releaseDate: string | null; sourceId: string },
+): number {
+  if (a.releaseDate !== b.releaseDate) {
+    if (!a.releaseDate) return 1;
+    if (!b.releaseDate) return -1;
+    return a.releaseDate < b.releaseDate ? -1 : 1;
+  }
+
+  return Number(a.sourceId) - Number(b.sourceId);
 }

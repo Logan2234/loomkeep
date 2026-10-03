@@ -561,8 +561,12 @@
       hidden.clear();
       hideAll = false;
     };
+    // The toast can outlive the delay (held open while hovered): once the
+    // removal goes through, its "Cancel" would only fake an undo.
+    let undoToast = -1;
     const commit = async () => {
       pendingRemoval = null;
+      toast.dismiss(undoToast);
       try {
         await bulk!.remove(target);
         await queryClient.invalidateQueries({ queryKey: ["library"] });
@@ -573,20 +577,22 @@
       }
     };
     pendingRemoval = { timer: setTimeout(commit, UNDO_DELAY_MS), commit };
-    toast.show(
+    undoToast = toast.show(
       count === 1
         ? m.library_bulk_removed_one({ count })
         : m.library_bulk_removed_many({ count }),
       "info",
       UNDO_DELAY_MS,
-      {
-        label: m.common_cancel(),
-        onSelect: () => {
-          if (pendingRemoval) clearTimeout(pendingRemoval.timer);
-          pendingRemoval = null;
-          restore();
+      [
+        {
+          label: m.common_cancel(),
+          onSelect: () => {
+            if (pendingRemoval) clearTimeout(pendingRemoval.timer);
+            pendingRemoval = null;
+            restore();
+          },
         },
-      },
+      ],
     );
   }
 

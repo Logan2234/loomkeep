@@ -1578,6 +1578,71 @@ export class LibraryService {
    * their last viewing of any episode (specials included) — the counts
    * computeProgressBatch derives, without loading every episode and watch.
    */
+  /**
+   * The viewer's effective status for each of these catalogue works they
+   * track, keyed by source id — the same derivation as the library list.
+   */
+  async statusesBySourceId(
+    userId: string,
+    source: CatalogSource,
+    type: MediaType,
+    sourceIds: string[],
+  ): Promise<Map<string, EntryStatus>> {
+    const externalId = {
+      source: source as DbExternalSource,
+      type,
+      externalId: { in: sourceIds },
+    };
+    const entries = await this.prisma.libraryEntry.findMany({
+      where: { userId, mediaItem: { externalIds: { some: externalId } } },
+      select: {
+        status: true,
+        mediaItemId: true,
+        mediaItem: {
+          select: {
+            type: true,
+            status: true,
+            externalIds: {
+              where: { source: externalId.source, type },
+              select: { externalId: true },
+            },
+          },
+        },
+      },
+    });
+    const counts = await this.progressCounts(
+      userId,
+      entries.map((e) => e.mediaItemId),
+    );
+
+    const statuses = new Map<string, EntryStatus>();
+
+    for (const entry of entries) {
+      const sourceId = entry.mediaItem.externalIds[0]?.externalId;
+      if (!sourceId) continue;
+      const count = counts.get(entry.mediaItemId);
+      const progress =
+        count && count.total > 0
+          ? {
+              watchedEpisodes: count.watched,
+              totalEpisodes: count.total,
+              nextEpisode: null,
+            }
+          : null;
+      statuses.set(
+        sourceId,
+        deriveStatus(
+          entry.mediaItem.type,
+          progress,
+          normalizeAiringFinished(entry.mediaItem.status),
+          entry.status,
+        ),
+      );
+    }
+
+    return statuses;
+  }
+
   private async progressCounts(
     userId: string,
     mediaItemIds: string[],

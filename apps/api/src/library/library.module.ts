@@ -8,6 +8,7 @@ import { UsersModule } from "../users/users.module";
 import { LibraryController } from "./library.controller";
 import { LibraryService } from "./library.service";
 import { MediaController } from "./media.controller";
+import { SagaService } from "./saga.service";
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { MediaController } from "./media.controller";
     EventsModule,
   ],
   controllers: [LibraryController, MediaController],
-  providers: [LibraryService],
+  providers: [LibraryService, SagaService],
   exports: [LibraryService],
 })
 export class LibraryModule {}
