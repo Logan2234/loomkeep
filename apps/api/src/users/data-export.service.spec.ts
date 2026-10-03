@@ -65,6 +65,13 @@ function makeService() {
     gameItem: { findMany: vi.fn().mockResolvedValue([]) },
     bookItem: { findMany: vi.fn().mockResolvedValue([]) },
     musicItem: { findMany: vi.fn().mockResolvedValue([]) },
+    activityEvent: { findMany: vi.fn().mockResolvedValue([]) },
+    xpEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    userScore: { findUnique: vi.fn().mockResolvedValue(null) },
+    userAchievement: { findMany: vi.fn().mockResolvedValue([]) },
+    apiKey: { findMany: vi.fn().mockResolvedValue([]) },
+    webauthnCredential: { findMany: vi.fn().mockResolvedValue([]) },
+    pushSubscription: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   // Ratings live in Review now; the export projects them but these tests don't
   // assert the value, so an empty projection is enough.
@@ -360,5 +367,127 @@ describe("DataExportService.buildExport", () => {
         updatedAt: "2026-09-02T00:00:00.000Z",
       },
     ]);
+  });
+
+  it("leaves nothing out: rewatches, consents, photo, activity, progression and sign-in methods", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as Mock).mockResolvedValue(
+      makeUser({
+        acceptedTermsAt: new Date("2026-01-01T00:00:00.000Z"),
+        certifiedAgeAt: new Date("2026-01-01T00:00:00.000Z"),
+        avatar: Buffer.from("png-bytes"),
+        avatarMimeType: "image/png",
+        equippedBadgeKeys: ["first_review"],
+      }),
+    );
+    (prisma.libraryEntry.findMany as Mock).mockResolvedValue([
+      {
+        mediaItem: {
+          type: "MOVIE",
+          title: "Dune",
+          canonicalSource: "TMDB",
+          externalIds: [{ source: "TMDB", externalId: "438631" }],
+        },
+        status: "COMPLETED",
+        notes: null,
+        favorite: false,
+        startedAt: null,
+        finishedAt: null,
+        createdAt: new Date("2026-02-01T00:00:00.000Z"),
+        replays: [{ finishedAt: new Date("2026-03-01T20:00:00.000Z") }],
+      },
+    ]);
+    (prisma.activityEvent.findMany as Mock).mockResolvedValue([
+      {
+        type: "COMPLETED",
+        domain: "MEDIA",
+        title: "Dune",
+        href: "/app/media/movie/438631",
+        createdAt: new Date("2026-02-01T00:00:00.000Z"),
+      },
+    ]);
+    (prisma.userScore.findUnique as Mock).mockResolvedValue({ xp: 120 });
+    (prisma.xpEntry.findMany as Mock).mockResolvedValue([
+      {
+        reason: "REVIEW",
+        amount: 20,
+        createdAt: new Date("2026-02-02T00:00:00.000Z"),
+      },
+    ]);
+    (prisma.userAchievement.findMany as Mock).mockResolvedValue([
+      { key: "first_review", unlockedAt: new Date("2026-02-02T00:00:00.000Z") },
+    ]);
+    (prisma.apiKey.findMany as Mock).mockResolvedValue([
+      {
+        name: "Script",
+        suffix: "a1b2",
+        scopes: ["library:read"],
+        tokenHash: "secret-hash",
+        createdAt: new Date("2026-02-03T00:00:00.000Z"),
+        lastUsedAt: null,
+        expiresAt: null,
+      },
+    ]);
+    (prisma.webauthnCredential.findMany as Mock).mockResolvedValue([
+      {
+        name: "iPhone",
+        deviceType: "multiDevice",
+        publicKey: Buffer.from("key"),
+        createdAt: new Date("2026-02-04T00:00:00.000Z"),
+        lastUsedAt: null,
+      },
+    ]);
+
+    const data = await service.buildExport("user-1");
+
+    expect(data.library[0].replays).toEqual(["2026-03-01T20:00:00.000Z"]);
+    expect(data.accountRecord).toMatchObject({
+      termsAcceptedAt: "2026-01-01T00:00:00.000Z",
+      ageCertifiedAt: "2026-01-01T00:00:00.000Z",
+      equippedBadgeKeys: ["first_review"],
+      avatar: {
+        mimeType: "image/png",
+        base64: Buffer.from("png-bytes").toString("base64"),
+      },
+    });
+    expect(data.activity).toEqual([
+      {
+        type: "COMPLETED",
+        domain: "MEDIA",
+        title: "Dune",
+        href: "/app/media/movie/438631",
+        createdAt: "2026-02-01T00:00:00.000Z",
+      },
+    ]);
+    expect(data.progression).toEqual({
+      xp: 120,
+      xpEntries: [
+        { reason: "REVIEW", amount: 20, createdAt: "2026-02-02T00:00:00.000Z" },
+      ],
+      achievements: [
+        { key: "first_review", unlockedAt: "2026-02-02T00:00:00.000Z" },
+      ],
+    });
+    // Secrets stay out: the key's hash, the passkey's public key.
+    expect(data.apiKeys).toEqual([
+      {
+        name: "Script",
+        suffix: "a1b2",
+        scopes: ["library:read"],
+        createdAt: "2026-02-03T00:00:00.000Z",
+        lastUsedAt: null,
+        expiresAt: null,
+      },
+    ]);
+    expect(data.passkeys).toEqual([
+      {
+        name: "iPhone",
+        deviceType: "multiDevice",
+        createdAt: "2026-02-04T00:00:00.000Z",
+        lastUsedAt: null,
+      },
+    ]);
+    expect(JSON.stringify(data)).not.toContain("secret-hash");
+    expect(JSON.stringify(data)).not.toContain("irrelevant");
   });
 });

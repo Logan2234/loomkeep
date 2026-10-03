@@ -2,6 +2,9 @@ import type { UserDataExportDto } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
 import { SavedViewResponseDto } from "../../../saved-views/dto/saved-view.dto";
 import { UserResponseDto } from "../user-response.dto";
+import { DataExportAccountRecordResponseDto } from "./data-export-account-record-response.dto";
+import { DataExportActivityResponseDto } from "./data-export-activity-response.dto";
+import { DataExportApiKeyResponseDto } from "./data-export-api-key-response.dto";
 import { DataExportBlockResponseDto } from "./data-export-block-response.dto";
 import { DataExportBookEntryResponseDto } from "./data-export-book-entry-response.dto";
 import { DataExportCommentReactionResponseDto } from "./data-export-comment-reaction-response.dto";
@@ -17,6 +20,9 @@ import { DataExportListResponseDto } from "./data-export-list-response.dto";
 import { DataExportModerationDecisionResponseDto } from "./data-export-moderation-decision-response.dto";
 import { DataExportMusicEntryResponseDto } from "./data-export-music-entry-response.dto";
 import { DataExportNotificationResponseDto } from "./data-export-notification-response.dto";
+import { DataExportPasskeyResponseDto } from "./data-export-passkey-response.dto";
+import { DataExportProgressionResponseDto } from "./data-export-progression-response.dto";
+import { DataExportPushSubscriptionResponseDto } from "./data-export-push-subscription-response.dto";
 import { DataExportReadingGoalResponseDto } from "./data-export-reading-goal-response.dto";
 import { DataExportReportResponseDto } from "./data-export-report-response.dto";
 import { DataExportReviewResponseDto } from "./data-export-review-response.dto";
@@ -48,6 +54,9 @@ export class UserDataExportResponseDto implements UserDataExportDto {
 
   /** The account itself and its settings. */
   account!: UserResponseDto;
+
+  /** Consents, account history and the profile photo. */
+  accountRecord!: DataExportAccountRecordResponseDto;
 
   /** Films, series and anime tracked. */
   library!: DataExportEntryResponseDto[];
@@ -138,4 +147,19 @@ export class UserDataExportResponseDto implements UserDataExportDto {
 
   /** Saved library views. */
   savedViews!: SavedViewResponseDto[];
+
+  /** The account's activity feed. */
+  activity!: DataExportActivityResponseDto[];
+
+  /** Level, XP history and achievements. */
+  progression!: DataExportProgressionResponseDto;
+
+  /** Personal API keys, without their secret. */
+  apiKeys!: DataExportApiKeyResponseDto[];
+
+  /** Passkeys, without their key material. */
+  passkeys!: DataExportPasskeyResponseDto[];
+
+  /** Browsers receiving push notifications, without their endpoint. */
+  pushSubscriptions!: DataExportPushSubscriptionResponseDto[];
 }

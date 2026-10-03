@@ -52,6 +52,8 @@ export interface DataExportEntry {
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string;
+  /** When each rewatch of a film ended. */
+  replays: string[];
 }
 
 export interface DataExportWatch {
@@ -262,6 +264,55 @@ export interface DataExportSecurityEvent {
   createdAt: string;
 }
 
+/** What `account` doesn't carry: consents, account history, the photo itself. */
+export interface DataExportAccountRecord {
+  termsAcceptedAt: string | null;
+  ageCertifiedAt: string | null;
+  newsletterOptInAt: string | null;
+  lastActiveAt: string | null;
+  suspendedUntil: string | null;
+  equippedBadgeKeys: string[];
+  avatar: { mimeType: string; base64: string } | null;
+}
+
+export interface DataExportActivity {
+  type: string;
+  domain: string;
+  title: string;
+  href: string | null;
+  createdAt: string;
+}
+
+export interface DataExportProgression {
+  xp: number;
+  xpEntries: { reason: string; amount: number; createdAt: string }[];
+  achievements: { key: string; unlockedAt: string }[];
+}
+
+/** A personal API key — never its secret. */
+export interface DataExportApiKey {
+  name: string;
+  suffix: string;
+  scopes: string[];
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+}
+
+/** A passkey — never its key material. */
+export interface DataExportPasskey {
+  name: string;
+  deviceType: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+/** A browser that receives push notifications — never its endpoint or keys. */
+export interface DataExportPushSubscription {
+  userAgent: string | null;
+  createdAt: string;
+}
+
 export interface DataExportDevice {
   deviceKey: string;
   userAgent: string | null;
@@ -316,6 +367,7 @@ export interface UserDataExportDto {
   /** ISO datetime the export was produced. */
   exportedAt: string;
   account: UserDto;
+  accountRecord: DataExportAccountRecord;
   library: DataExportEntry[];
   episodeWatches: DataExportWatch[];
   games: DataExportGameEntry[];
@@ -352,6 +404,11 @@ export interface UserDataExportDto {
   importRuns: DataExportImportRun[];
   /** With their ids: a home widget of `account.homeLayout` refers to one by it. */
   savedViews: SavedViewDto[];
+  activity: DataExportActivity[];
+  progression: DataExportProgression;
+  apiKeys: DataExportApiKey[];
+  passkeys: DataExportPasskey[];
+  pushSubscriptions: DataExportPushSubscription[];
 }
 
 /**

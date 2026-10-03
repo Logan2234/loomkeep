@@ -68,7 +68,10 @@ export class DataExportService {
     ] = await Promise.all([
       this.prisma.libraryEntry.findMany({
         where: { userId },
-        include: { mediaItem: { include: { externalIds: true } } },
+        include: {
+          mediaItem: { include: { externalIds: true } },
+          replays: { orderBy: { finishedAt: "asc" } },
+        },
         orderBy: { createdAt: "asc" },
       }),
       this.prisma.episodeWatch.findMany({
@@ -210,6 +213,71 @@ export class DataExportService {
       }),
     ]);
 
+    // Selected field by field: the key hash, the passkey's public key and the
+    // push endpoint are credentials, not personal data to hand over.
+    const [
+      activityRows,
+      score,
+      xpRows,
+      achievementRows,
+      apiKeyRows,
+      passkeyRows,
+      pushRows,
+    ] = await Promise.all([
+      this.prisma.activityEvent.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+        select: {
+          type: true,
+          domain: true,
+          title: true,
+          href: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.userScore.findUnique({
+        where: { userId },
+        select: { xp: true },
+      }),
+      this.prisma.xpEntry.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+        select: { reason: true, amount: true, createdAt: true },
+      }),
+      this.prisma.userAchievement.findMany({
+        where: { userId },
+        orderBy: { unlockedAt: "asc" },
+        select: { key: true, unlockedAt: true },
+      }),
+      this.prisma.apiKey.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+        select: {
+          name: true,
+          suffix: true,
+          scopes: true,
+          createdAt: true,
+          lastUsedAt: true,
+          expiresAt: true,
+        },
+      }),
+      this.prisma.webauthnCredential.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+        select: {
+          name: true,
+          deviceType: true,
+          createdAt: true,
+          lastUsedAt: true,
+        },
+      }),
+      this.prisma.pushSubscription.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+        select: { userAgent: true, createdAt: true },
+      }),
+    ]);
+
     const reviewTargetTitles = await this.resolveReviewTargetTitles([
       ...reviewRows.map((r) => ({
         targetType: r.targetType,
@@ -249,6 +317,21 @@ export class DataExportService {
     return {
       exportedAt: new Date().toISOString(),
       account: toUserDto(user),
+      accountRecord: {
+        termsAcceptedAt: user.acceptedTermsAt?.toISOString() ?? null,
+        ageCertifiedAt: user.certifiedAgeAt?.toISOString() ?? null,
+        newsletterOptInAt: user.newsletterOptInAt?.toISOString() ?? null,
+        lastActiveAt: user.lastActiveAt?.toISOString() ?? null,
+        suspendedUntil: user.suspendedUntil?.toISOString() ?? null,
+        equippedBadgeKeys: user.equippedBadgeKeys ?? [],
+        avatar:
+          user.avatar && user.avatarMimeType
+            ? {
+                mimeType: user.avatarMimeType,
+                base64: Buffer.from(user.avatar).toString("base64"),
+              }
+            : null,
+      },
       library: entries.map((entry) => ({
         media: {
           type: entry.mediaItem.type,
@@ -267,6 +350,7 @@ export class DataExportService {
         startedAt: entry.startedAt?.toISOString() ?? null,
         finishedAt: entry.finishedAt?.toISOString() ?? null,
         createdAt: entry.createdAt.toISOString(),
+        replays: entry.replays.map((replay) => replay.finishedAt.toISOString()),
       })),
       episodeWatches: watches.map((watch) => {
         const media = watch.episode.season.mediaItem;
@@ -541,6 +625,43 @@ export class DataExportService {
         filters: v.filters as SavedViewFiltersDto,
         createdAt: v.createdAt.toISOString(),
         updatedAt: v.updatedAt.toISOString(),
+      })),
+      activity: activityRows.map((event) => ({
+        type: event.type,
+        domain: event.domain,
+        title: event.title,
+        href: event.href,
+        createdAt: event.createdAt.toISOString(),
+      })),
+      progression: {
+        xp: score?.xp ?? 0,
+        xpEntries: xpRows.map((entry) => ({
+          reason: entry.reason,
+          amount: entry.amount,
+          createdAt: entry.createdAt.toISOString(),
+        })),
+        achievements: achievementRows.map((achievement) => ({
+          key: achievement.key,
+          unlockedAt: achievement.unlockedAt.toISOString(),
+        })),
+      },
+      apiKeys: apiKeyRows.map((key) => ({
+        name: key.name,
+        suffix: key.suffix,
+        scopes: key.scopes,
+        createdAt: key.createdAt.toISOString(),
+        lastUsedAt: key.lastUsedAt?.toISOString() ?? null,
+        expiresAt: key.expiresAt?.toISOString() ?? null,
+      })),
+      passkeys: passkeyRows.map((passkey) => ({
+        name: passkey.name,
+        deviceType: passkey.deviceType,
+        createdAt: passkey.createdAt.toISOString(),
+        lastUsedAt: passkey.lastUsedAt?.toISOString() ?? null,
+      })),
+      pushSubscriptions: pushRows.map((subscription) => ({
+        userAgent: subscription.userAgent,
+        createdAt: subscription.createdAt.toISOString(),
       })),
     };
   }
