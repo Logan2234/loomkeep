@@ -59,7 +59,7 @@ it("shows local movie releases alongside episode codes in the home calendar", as
 
   expect(
     await screen.findByText(`${m.media_release_cinema()} · FR`),
-  ).toBeInTheDocument();
-  expect(screen.getByText("S01E02")).toBeInTheDocument();
-  expect(screen.queryByText("SnullEnull")).not.toBeInTheDocument();
+  ).toBeTruthy();
+  expect(screen.getByText("S01E02")).toBeTruthy();
+  expect(screen.queryByText("SnullEnull")).toBeNull();
 });
