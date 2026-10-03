@@ -42,21 +42,38 @@ async function openModal(data: AccountDeletionSummaryDto) {
   return { user, dialog: screen.getByRole("dialog") };
 }
 
+const stepButton = (dialog: HTMLElement, title: string) =>
+  within(dialog).getByRole("button", { name: new RegExp(title) });
+
 describe("Account deletion timeline", () => {
-  it("details what gets erased, and what stays without the name", async () => {
+  it("starts with every step closed, and opens one at a time", async () => {
     const { user, dialog } = await openModal(summary());
 
+    expect(
+      within(dialog)
+        .queryAllByRole("button", { expanded: true })
+        .filter((b) => b.closest("ol")),
+    ).toHaveLength(0);
+    expect(within(dialog).queryByText("412")).toBeNull();
+
+    await user.click(
+      stepButton(dialog, m.settings_delete_account_deleted_title()),
+    );
     expect(
       within(dialog).getByText(m.settings_delete_account_progression()),
     ).toBeTruthy();
     expect(within(dialog).getByText("412")).toBeTruthy();
 
     await user.click(
-      within(dialog).getByRole("button", {
-        name: new RegExp(m.settings_delete_account_anonymized_title()),
-      }),
+      stepButton(dialog, m.settings_delete_account_anonymized_title()),
     );
     expect(within(dialog).getByText("37")).toBeTruthy();
+    expect(
+      stepButton(
+        dialog,
+        m.settings_delete_account_deleted_title(),
+      ).getAttribute("aria-expanded"),
+    ).toBe("false");
   });
 
   it("only mentions handed-over lists when there are some", async () => {

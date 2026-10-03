@@ -18,7 +18,6 @@
     AccountDeletionKeptCategory,
   } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
-  import { SvelteSet } from "svelte/reactivity";
   import { slide } from "svelte/transition";
 
   const DELETED_LABELS: Record<AccountDeletionDeletedCategory, string> = {
@@ -60,7 +59,8 @@
 
   let showModal = $state(false);
   let deletePasswordInput = $state("");
-  const open = new SvelteSet<Step>(["deleted"]);
+  // An accordion: every step starts closed, and opening one closes the other.
+  let openStep = $state<Step | null>(null);
 
   const summaryQuery = createApiQuery(() => ({
     key: keys.account.deletionSummary(),
@@ -72,6 +72,7 @@
 
   function openDeleteModal() {
     deletePasswordInput = "";
+    openStep = null;
     deleteMut.reset();
     showModal = true;
   }
@@ -81,8 +82,7 @@
   }
 
   function toggle(step: Step) {
-    if (open.has(step)) open.delete(step);
-    else open.add(step);
+    openStep = openStep === step ? null : step;
   }
 
   const deleteMut = createApiMutation(() => ({
@@ -117,7 +117,7 @@
   tone: string,
   body: Snippet,
 )}
-  {@const isOpen = open.has(key)}
+  {@const isOpen = openStep === key}
   <li class="relative">
     <span
       class="bg-surface absolute top-3.5 -left-[1.35rem] h-2.5 w-2.5 rounded-full border-2 transition-colors {tone} {isOpen
