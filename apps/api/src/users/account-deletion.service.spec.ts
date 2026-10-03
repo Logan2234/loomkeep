@@ -1,4 +1,5 @@
 import { vi, type Mock } from "vitest";
+import type { AuthService } from "../auth/auth.service";
 import type { ListService } from "../lists/list.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -9,10 +10,13 @@ function makeService() {
   const prisma = {
     user: {
       delete: vi.fn(),
-      findUnique: vi
-        .fn()
-        .mockResolvedValue({ email: "alice@example.com", locale: "en" }),
+      findUnique: vi.fn().mockResolvedValue({
+        email: "alice@example.com",
+        locale: "en",
+        username: "alice",
+      }),
     },
+    notification: { deleteMany: vi.fn() },
   } as unknown as PrismaService;
   const lists = {
     reassignOwnedListsOnAccountDeletion: vi.fn(),
@@ -24,8 +28,16 @@ function makeService() {
 
   const mail = { sendAccountDeleted: vi.fn() } as unknown as MailService;
 
-  const service = new AccountDeletionService(prisma, lists, security, mail);
-  return { service, prisma, lists, security, mail };
+  const auth = { revokeAllSessions: vi.fn() } as unknown as AuthService;
+
+  const service = new AccountDeletionService(
+    prisma,
+    lists,
+    security,
+    mail,
+    auth,
+  );
+  return { service, prisma, lists, security, mail, auth };
 }
 
 describe("AccountDeletionService.deleteAccount", () => {
@@ -67,6 +79,37 @@ describe("AccountDeletionService.deleteAccount", () => {
       where: { id: "user-1" },
     });
     expect(calls).toEqual(["record", "forget-ips", "reassign", "delete"]);
+  });
+
+  it("cuts every session before the account goes", async () => {
+    const { service, prisma, auth } = makeService();
+    const calls: string[] = [];
+    (auth.revokeAllSessions as Mock).mockImplementation(async () => {
+      calls.push("revoke");
+    });
+    (prisma.user.delete as Mock).mockImplementation(async () => {
+      calls.push("delete");
+    });
+
+    await service.deleteAccount("user-1", "self", "Suppression demandée");
+
+    expect(auth.revokeAllSessions).toHaveBeenCalledWith("user-1");
+    expect(calls).toEqual(["revoke", "delete"]);
+  });
+
+  it("removes other members' notifications about the account", async () => {
+    const { service, prisma } = makeService();
+
+    await service.deleteAccount("user-1", "self", "Suppression demandée");
+
+    // They name the actor by username: left behind, they'd point at a missing
+    // profile — or at whoever takes the username next.
+    expect(prisma.notification.deleteMany).toHaveBeenCalledWith({
+      where: {
+        userId: { not: "user-1" },
+        data: { path: ["actorUsername"], equals: "alice" },
+      },
+    });
   });
 
   it("confirms the deletion by email, once the account is gone", async () => {
