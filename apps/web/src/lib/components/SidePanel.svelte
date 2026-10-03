@@ -5,7 +5,7 @@
   import { layout } from "$lib/layout.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
-  import type { Snippet } from "svelte";
+  import { onMount, type Snippet } from "svelte";
   import { fly } from "svelte/transition";
 
   let {
@@ -29,6 +29,13 @@
 
   const reduced = prefersReducedMotion();
 
+  onMount(() => {
+    layout.openSidePanels += 1;
+    return () => {
+      layout.openSidePanels -= 1;
+    };
+  });
+
   function handleKeydown(event: KeyboardEvent) {
     if (event.key !== "Escape" || event.defaultPrevented) return;
     // A nested modal owns Escape; the panel remains available beneath it.
@@ -41,6 +48,7 @@
 
 <div use:portal use:scrollLock class="contents">
   <button
+    data-dialog-backdrop
     class="fixed inset-0 cursor-default {backdropClass}"
     style="z-index: {zIndex}"
     aria-label={m.common_close()}

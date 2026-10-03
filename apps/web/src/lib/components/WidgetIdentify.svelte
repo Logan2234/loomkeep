@@ -50,6 +50,7 @@
   // the tab bar. The feedback board stays reachable from Settings > Help.
   $effect(() => {
     if (!browser || !auth.isLoggedIn) return;
-    window.Quackback?.(layout.compact ? "hideLauncher" : "showLauncher");
+    const hidden = layout.compact || layout.openSidePanels > 0;
+    window.Quackback?.(hidden ? "hideLauncher" : "showLauncher");
   });
 </script>
