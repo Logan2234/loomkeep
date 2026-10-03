@@ -4,7 +4,10 @@
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { ListDto, ListKind, ListVisibility } from "@loomkeep/shared";
+  import { prefersReducedMotion } from "$lib/motion";
+  import { fade } from "svelte/transition";
   import Modal from "./Modal.svelte";
+  import SegmentedControl from "./SegmentedControl.svelte";
 
   // Shared "create/edit a list" modal. RANKED/COLLECTION share the same
   // storage (items + position), so the kind can be switched freely even with
@@ -37,6 +40,37 @@
     list?.visibility ?? defaultVisibility,
   );
   let confirmingDelete = $state(false);
+
+  const reduced = prefersReducedMotion();
+
+  const KINDS: { value: ListKind; label: string; hint: string }[] = [
+    {
+      value: "COLLECTION",
+      label: m.lists_kind_collection(),
+      hint: m.lists_collection_hint(),
+    },
+    {
+      value: "RANKED",
+      label: m.lists_kind_ranked(),
+      hint: m.lists_ranked_hint(),
+    },
+  ];
+
+  const VISIBILITY_OPTIONS: {
+    value: ListVisibility;
+    label: string;
+    icon: "lock" | "users" | "globe";
+  }[] = [
+    { value: "PRIVATE", label: m.common_private(), icon: "lock" },
+    { value: "FRIENDS", label: m.common_friends(), icon: "users" },
+    { value: "PUBLIC", label: m.common_public(), icon: "globe" },
+  ];
+
+  const VISIBILITY_HINT: Record<ListVisibility, string> = {
+    PRIVATE: m.lists_visibility_private_hint(),
+    FRIENDS: m.lists_visibility_friends_hint(),
+    PUBLIC: m.lists_visibility_public_hint(),
+  };
 
   const saveMut = createApiMutation(() => ({
     mutate: () =>
@@ -125,25 +159,50 @@
         class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
         {m.common_type()}
       </span>
-      <div class="flex gap-2">
-        <button
-          type="button"
-          class="chip"
-          class:chip-on={kind === "COLLECTION"}
-          onclick={() => (kind = "COLLECTION")}>
-          {m.lists_kind_collection()}
-        </button>
-        <button
-          type="button"
-          class="chip"
-          class:chip-on={kind === "RANKED"}
-          onclick={() => (kind = "RANKED")}>
-          {m.lists_kind_ranked()}
-        </button>
+      <div class="grid grid-cols-2 gap-2" role="group">
+        {#each KINDS as option (option.value)}
+          {@const on = kind === option.value}
+          <button
+            type="button"
+            aria-pressed={on}
+            class="group flex flex-col gap-2.5 rounded-xl border p-3 text-left transition-[border-color,box-shadow,background-color] {on
+              ? 'border-accent ring-accent bg-accent/5 ring-1'
+              : 'border-border hover:border-dim'}"
+            onclick={() => (kind = option.value)}>
+            <span
+              class="bg-surface-2 flex h-14 gap-1.5 rounded-lg p-2"
+              class:flex-col={option.value === "RANKED"}
+              class:justify-center={option.value === "RANKED"}
+              aria-hidden="true">
+              {#if option.value === "COLLECTION"}
+                {#each Array(4) as _, i (i)}
+                  <span
+                    class="flex-1 rounded-sm transition-colors {on
+                      ? 'bg-accent/45'
+                      : 'bg-dim/30'}"></span>
+                {/each}
+              {:else}
+                {#each [80, 62, 45] as width, i (i)}
+                  <span class="flex items-center gap-1.5">
+                    <span
+                      class="timecode text-accent w-2 text-[0.6rem] font-bold"
+                      >{i + 1}</span>
+                    <span
+                      class="h-1.5 rounded-sm transition-colors {on
+                        ? 'bg-accent/45'
+                        : 'bg-dim/30'}"
+                      style="width: {width}%"></span>
+                  </span>
+                {/each}
+              {/if}
+            </span>
+            <span>
+              <span class="block text-sm font-semibold">{option.label}</span>
+              <span class="text-dim block text-xs">{option.hint}</span>
+            </span>
+          </button>
+        {/each}
       </div>
-      <p class="text-dim mt-1 text-xs">
-        {kind === "RANKED" ? m.lists_ranked_hint() : m.lists_collection_hint()}
-      </p>
     </div>
 
     {#if appConfig.socialEnabled && canManage}
@@ -152,29 +211,19 @@
           class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
           {m.common_visible_to()}
         </span>
-        <div class="flex gap-2">
-          <button
-            type="button"
-            class="chip"
-            class:chip-on={visibility === "PRIVATE"}
-            onclick={() => (visibility = "PRIVATE")}>
-            {m.common_private()}
-          </button>
-          <button
-            type="button"
-            class="chip"
-            class:chip-on={visibility === "FRIENDS"}
-            onclick={() => (visibility = "FRIENDS")}>
-            {m.common_friends()}
-          </button>
-          <button
-            type="button"
-            class="chip"
-            class:chip-on={visibility === "PUBLIC"}
-            onclick={() => (visibility = "PUBLIC")}>
-            {m.common_public()}
-          </button>
-        </div>
+        <SegmentedControl
+          class="w-full [&>*]:flex-1 [&>*]:justify-center"
+          label={m.common_visible_to()}
+          options={VISIBILITY_OPTIONS}
+          value={visibility}
+          onChange={(next) => (visibility = next)} />
+        {#key visibility}
+          <p
+            class="text-dim mt-1.5 text-xs"
+            in:fade={{ duration: reduced ? 0 : 160 }}>
+            {VISIBILITY_HINT[visibility]}
+          </p>
+        {/key}
       </div>
     {/if}
 
