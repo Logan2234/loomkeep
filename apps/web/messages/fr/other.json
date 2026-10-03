@@ -1238,5 +1238,17 @@
   "reviews_page_public": "{count} publiques",
   "reviews_search": "Chercher une œuvre",
   "reviews_no_match": "Aucune critique ne correspond à ces filtres.",
-  "reviews_selection_done": "Terminé"
+  "reviews_selection_done": "Terminé",
+  "media_upcoming": "À venir",
+  "media_release_expected": "Sortie prévue le",
+  "media_release_released": "Sorti le",
+  "media_release_cinema": "Au cinéma",
+  "media_release_digital": "En numérique",
+  "media_release_local_unknown": "Date de sortie locale à confirmer",
+  "media_movie_reminder_enable": "M’avertir à la sortie",
+  "media_movie_reminder_cancel": "Désactiver le rappel de sortie",
+  "media_movie_reminder_active": "Rappel activé",
+  "media_movie_reminder_enabled_toast": "Rappel activé : le film rejoindra tes résumés de sortie.",
+  "media_movie_reminder_disabled_toast": "Rappel de sortie désactivé.",
+  "media_movie_reminder_channels_disabled": "Active les résumés de sortie par e-mail ou push pour recevoir ce rappel."
 }

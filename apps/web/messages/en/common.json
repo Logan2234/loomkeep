@@ -261,17 +261,5 @@
   "common_pending": "Pending",
   "common_security_key": "Security key",
   "common_this_week": "This week",
-  "common_you": "You",
-  "media_upcoming": "Upcoming",
-  "media_release_expected": "Expected release on",
-  "media_release_released": "Released on",
-  "media_release_cinema": "In cinemas",
-  "media_release_digital": "Digital release",
-  "media_release_local_unknown": "Local release date to be confirmed",
-  "media_movie_reminder_enable": "Notify me on release",
-  "media_movie_reminder_cancel": "Turn off release reminder",
-  "media_movie_reminder_active": "Reminder enabled",
-  "media_movie_reminder_enabled_toast": "Reminder enabled: this movie will appear in your release summaries.",
-  "media_movie_reminder_disabled_toast": "Release reminder disabled.",
-  "media_movie_reminder_channels_disabled": "Enable release summaries by email or push to receive this reminder."
+  "common_you": "You"
 }
