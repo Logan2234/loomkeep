@@ -466,7 +466,9 @@
   .comment-mention-editor:empty::before {
     content: attr(data-placeholder);
     position: absolute;
-    inset: 0 auto auto 0;
+    /* Same padding as the editor, so the hint sits where typed text starts. */
+    inset: 0;
+    padding: inherit;
     color: color-mix(in srgb, var(--fg) 68%, var(--dim));
     pointer-events: none;
   }

@@ -26,6 +26,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminInvitationLinkDto,
+    AdminInvitationRedeemerDto,
     AdminUserDto,
     AdminUserFilter,
     PagedResult,
@@ -190,6 +191,20 @@
     });
   }
 
+  // The account may sit outside the loaded page: filtering the accounts tab
+  // on its username loads it, and the drawer follows once it's listed.
+  function openRedeemer(user: AdminInvitationRedeemerDto) {
+    queryFilterDebounce.cancel();
+    selectedId = user.id;
+    const updates: Record<string, string | null> = {
+      tab: null,
+      q: user.username,
+      filter: null,
+    };
+    for (const key of ADMIN_USER_ADVANCED_KEYS) updates[key] = null;
+    void goto(adminFilterHref(page.url, updates), { noScroll: true });
+  }
+
   function closeDrawer() {
     selectedId = null;
   }
@@ -290,7 +305,8 @@
     {#if tab === "invitations"}
       <InvitationsPanel
         onInvite={() => openInvite()}
-        onRenewed={(link) => openInvite(link)} />
+        onRenewed={(link) => openInvite(link)}
+        onOpenUser={openRedeemer} />
     {:else}
       <div class="mb-4 flex flex-wrap items-center gap-2">
         <input

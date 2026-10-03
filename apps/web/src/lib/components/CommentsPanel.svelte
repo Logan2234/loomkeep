@@ -147,7 +147,7 @@
   <SidePanel
     onclose={closePanel}
     zIndex={ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX}
-    backdropClass="bg-transparent touch-pan-y"
+    backdropClass="touch-pan-y"
     labelledby="comments-panel-title">
     <header
       class="border-border flex shrink-0 items-start gap-3 border-b px-5 py-4">

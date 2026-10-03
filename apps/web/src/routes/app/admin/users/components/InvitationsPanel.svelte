@@ -18,6 +18,7 @@
   import type {
     AdminInvitationDto,
     AdminInvitationLinkDto,
+    AdminInvitationRedeemerDto,
     AdminInvitationStatus,
     PagedResult,
   } from "@loomkeep/shared";
@@ -27,10 +28,12 @@
   let {
     onInvite,
     onRenewed,
+    onOpenUser,
   }: {
     onInvite: () => void;
     /** A fresh link was minted — the page shows it in the invite modal. */
     onRenewed: (link: AdminInvitationLinkDto) => void;
+    onOpenUser: (user: AdminInvitationRedeemerDto) => void;
   } = $props();
 
   const reduced = prefersReducedMotion();
@@ -210,27 +213,24 @@
           </p>
 
           {#if invitation.redeemedBy.length > 0}
-            <div
-              class="mt-2 flex items-center gap-2"
+            <ul
+              class="mt-2 flex flex-wrap items-center gap-1"
               aria-label={m.admin_invitations_redeemed_by()}>
-              <div class="flex -space-x-2">
-                {#each invitation.redeemedBy.slice(0, 5) as user (user.id)}
-                  <span
-                    class="ring-surface rounded-full ring-2"
-                    title={user.displayName}>
+              {#each invitation.redeemedBy as user (user.id)}
+                <li>
+                  <button
+                    type="button"
+                    class="text-dim hover:text-fg hover:bg-surface-2 inline-flex items-center gap-1.5 rounded-full py-0.5 pr-2.5 pl-0.5 text-xs font-semibold transition-colors"
+                    onclick={() => onOpenUser(user)}>
                     <Avatar
                       seed={user.username}
                       url={user.avatarUrl}
-                      size={24} />
-                  </span>
-                {/each}
-              </div>
-              <span class="text-dim truncate text-xs">
-                {invitation.redeemedBy
-                  .map((user) => user.displayName)
-                  .join(", ")}
-              </span>
-            </div>
+                      size={20} />
+                    {user.displayName}
+                  </button>
+                </li>
+              {/each}
+            </ul>
           {/if}
         </div>
 

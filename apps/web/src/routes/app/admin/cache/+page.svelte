@@ -409,8 +409,7 @@
   <SidePanel
     onclose={closeDrawer}
     labelledby="cache-drawer-title"
-    desktopClass="max-w-sm"
-    backdropClass="bg-black/60">
+    desktopClass="max-w-sm">
     <div class="flex h-full flex-col overflow-y-auto p-5">
       <h2 id="cache-drawer-title" class="sr-only">
         {detail?.title ?? m.common_detail()}

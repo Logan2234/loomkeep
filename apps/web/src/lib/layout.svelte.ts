@@ -24,6 +24,12 @@ class LayoutState {
   /** True while the compact (mobile) shell should be mounted. */
   compact = $state(true);
 
+  /**
+   * Side panels currently open. The feedback launcher hides while one is,
+   * since it sits at the browser's maximum z-index and no panel can cover it.
+   */
+  openSidePanels = $state(0);
+
   init(): void {
     if (!browser) return;
 
