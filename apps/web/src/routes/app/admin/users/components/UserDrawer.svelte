@@ -275,8 +275,7 @@
 <SidePanel
   onclose={onClose}
   labelledby="drawer-title"
-  zIndex={ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX}
-  backdropClass="bg-black/60">
+  zIndex={ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX}>
   <div class="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
     <div class="mb-4 flex items-start justify-between gap-2">
       <div class="flex min-w-0 items-center gap-3">

@@ -6,7 +6,7 @@
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { onMount, type Snippet } from "svelte";
-  import { fly } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
 
   let {
     onclose,
@@ -15,7 +15,7 @@
     zIndex = 50,
     panelClass = "",
     desktopClass = "max-w-xl",
-    backdropClass = "bg-transparent",
+    backdropClass = "",
   }: {
     onclose: () => void;
     children: Snippet;
@@ -24,6 +24,7 @@
     panelClass?: string;
     /** Applied only outside the compact shell so phone panels stay full screen. */
     desktopClass?: string;
+    /** Extra classes for the dimmed backdrop. */
     backdropClass?: string;
   } = $props();
 
@@ -49,7 +50,8 @@
 <div use:portal use:scrollLock class="contents">
   <button
     data-dialog-backdrop
-    class="fixed inset-0 cursor-default {backdropClass}"
+    class="fixed inset-0 cursor-default bg-black/60 {backdropClass}"
+    transition:fade={{ duration: reduced ? 0 : 200 }}
     style="z-index: {zIndex}"
     aria-label={m.common_close()}
     onclick={onclose}></button>
