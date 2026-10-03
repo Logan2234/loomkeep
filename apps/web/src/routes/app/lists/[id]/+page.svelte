@@ -512,6 +512,10 @@
   <ReportModal
     title={m.list_report_title()}
     targetType="LIST"
+    subject={{
+      title: list.title,
+      detail: m.list_owned_by_editor({ name: list.author.displayName }),
+    }}
     onClose={() => (reporting = false)}
     onSubmit={(report) => reportMut.mutate(report)} />
 {/if}

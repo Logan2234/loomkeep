@@ -454,6 +454,9 @@
   <ReportModal
     title={m.profile_report_title()}
     targetType="USER"
+    subject={profile
+      ? { title: profile.displayName, detail: `@${profile.username}` }
+      : undefined}
     onClose={() => (reporting = false)}
     onSubmit={(report) =>
       reportMut.mutate({ ...report, profilePart: report.profilePart! })} />

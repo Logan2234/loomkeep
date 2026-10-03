@@ -12,34 +12,39 @@ function renderModal(targetType: "USER" | "LIST") {
   return { onSubmit, user: userEvent.setup() };
 }
 
-const part = (name: string) =>
+const part = (name: string) => screen.getByRole("button", { name });
+const category = (name: string) =>
   screen.getByRole("button", { name: new RegExp(`^${name}`) });
 
 describe("ReportModal", () => {
   it("asks which part of a profile is wrong before offering categories", async () => {
     const { user } = renderModal("USER");
 
-    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(
+      screen.queryByRole("button", {
+        name: new RegExp(`^${m.report_category_violence()}`),
+      }),
+    ).toBeNull();
 
     await user.click(part(m.report_part_photo()));
-    await user.click(screen.getByRole("combobox"));
 
-    expect(
-      screen.getByRole("option", { name: m.report_category_violence() }),
-    ).toBeTruthy();
+    expect(category(m.report_category_violence())).toBeTruthy();
   });
 
   it("only offers the categories that can happen on the chosen part", async () => {
     const { user } = renderModal("USER");
 
     await user.click(part(m.common_name()));
-    await user.click(screen.getByRole("combobox"));
 
     expect(
-      screen.queryByRole("option", { name: m.report_category_violence() }),
+      screen.queryByRole("button", {
+        name: new RegExp(`^${m.report_category_violence()}`),
+      }),
     ).toBeNull();
     expect(
-      screen.queryByRole("option", { name: m.report_category_noncompliant() }),
+      screen.queryByRole("button", {
+        name: new RegExp(`^${m.report_category_noncompliant()}`),
+      }),
     ).toBeNull();
   });
 
@@ -47,10 +52,7 @@ describe("ReportModal", () => {
     const { user, onSubmit } = renderModal("USER");
 
     await user.click(part(m.report_part_behaviour()));
-    await user.click(screen.getByRole("combobox"));
-    await user.click(
-      screen.getByRole("option", { name: m.report_category_noncompliant() }),
-    );
+    await user.click(category(m.report_category_noncompliant()));
     await user.click(
       screen.getByRole("radio", { name: m.report_motif_account_bot() }),
     );
@@ -67,10 +69,7 @@ describe("ReportModal", () => {
   it("requires the law at stake for another offence", async () => {
     const { user } = renderModal("LIST");
 
-    await user.click(screen.getByRole("combobox"));
-    await user.click(
-      screen.getByRole("option", { name: m.report_category_illegal() }),
-    );
+    await user.click(category(m.report_category_illegal()));
     await user.click(
       screen.getByRole("radio", { name: m.report_motif_illegal_other() }),
     );
