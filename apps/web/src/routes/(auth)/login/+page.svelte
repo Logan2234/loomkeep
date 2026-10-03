@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import {
+    ApiError,
     login,
     loginWithPasskey,
     resendMfaEmailCode,
@@ -16,9 +17,14 @@
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { Cooldown } from "$lib/cooldown.svelte";
+  import { formatDateTime } from "$lib/format";
+  import { prefersReducedMotion } from "$lib/motion";
   import { normalizeCodeInput } from "$lib/one-time-code";
   import { m } from "$lib/paraglide/messages.js";
-  import type { MfaMethod } from "@loomkeep/shared";
+  import { ErrorCode, type MfaMethod } from "@loomkeep/shared";
+  import { fly } from "svelte/transition";
+
+  const reduced = prefersReducedMotion();
 
   let identifier = $state("");
   let password = $state("");
@@ -30,6 +36,16 @@
   let selectedMethod = $state<MfaMethod>("totp");
   let codeInput = $state("");
   const resendCooldown = new Cooldown();
+
+  // The API only reveals a suspension once the credentials are proven, and
+  // sends its end date along — shown here instead of the generic error.
+  let suspendedUntil = $state<string | null>(null);
+  function noteSuspension(err: unknown) {
+    suspendedUntil =
+      err instanceof ApiError && err.code === ErrorCode.AuthAccountSuspended
+        ? String(err.params?.until ?? "")
+        : null;
+  }
 
   // Only follow redirectTo when it stays on this site — anything else could
   // be an open-redirect vector (e.g. redirectTo=https://evil.example). The
@@ -51,6 +67,7 @@
   const loginMut = createApiMutation(() => ({
     mutate: () => login({ identifier, password }),
     coveredFields: ["identifier"],
+    onError: noteSuspension,
     onSuccess: (result) => {
       if (result.mfaRequired) {
         challengeId = result.challengeId;
@@ -124,6 +141,7 @@
 
   const passwordlessMut = createApiMutation(() => ({
     mutate: () => loginWithPasskey(identifier.trim()),
+    onError: noteSuspension,
     onSuccess: () =>
       goto(safeRedirect(page.url.searchParams.get("redirectTo"))),
   }));
@@ -195,7 +213,29 @@
         <a href="/forgot-password" class="link-accent text-sm"
           >{m.auth_forgot_password()}</a>
       </p>
-      {#if loginMut.error}<Banner variant="error">{loginMut.error}</Banner>{/if}
+      {#if suspendedUntil !== null && (loginMut.error || passwordlessMut.error)}
+        <div
+          role="alert"
+          class="border-danger rounded-lg border border-l-4 p-3"
+          in:fly={{ y: reduced ? 0 : -6, duration: reduced ? 0 : 200 }}>
+          <p class="font-semibold">{m.auth_suspended_title()}</p>
+          <p class="text-dim mt-1 text-sm">
+            {m.auth_suspended_body({
+              date: suspendedUntil ? formatDateTime(suspendedUntil) : "",
+            })}
+          </p>
+          {#if appConfig.supportEmail}
+            <p class="text-dim mt-2 text-sm">
+              {m.auth_suspended_contact()}
+              <a
+                href="mailto:{appConfig.supportEmail}"
+                class="link-accent text-sm">{appConfig.supportEmail}</a>
+            </p>
+          {/if}
+        </div>
+      {:else if loginMut.error}
+        <Banner variant="error">{loginMut.error}</Banner>
+      {/if}
       <button type="submit" class="btn btn-primary" disabled={loginMut.loading}>
         {loginMut.loading ? m.auth_login_action_loading() : m.common_login()}
       </button>
@@ -209,7 +249,7 @@
           ? m.auth_mfa_webauthn_waiting()
           : m.auth_passwordless_login()}
       </button>
-      {#if passwordlessMut.error}
+      {#if passwordlessMut.error && suspendedUntil === null}
         <Banner variant="error">{passwordlessMut.error}</Banner>
       {/if}
       {#if appConfig.registrationEnabled}

@@ -26,7 +26,7 @@ import { typedRequest } from "./generated/typed-request";
 export interface ModerationReasonBody {
   reasonText: string;
   legalBasis: ModerationLegalBasis;
-  tosClause: string;
+  tosClause?: string;
 }
 
 export const getAdminServices = () => typedRequest("/admin/services");
@@ -270,6 +270,13 @@ export const sendAdminUserPasswordReset = (userId: string): Promise<void> =>
     params: { userId },
   });
 
+/** Lifts a moderation suspension before its end date. */
+export const reactivateAdminUser = (userId: string): Promise<void> =>
+  typedRequest("/admin/users/{userId}/reactivate", {
+    method: "POST",
+    params: { userId },
+  });
+
 /** Permanently deletes an account and all its data. Irreversible. */
 export const deleteAdminUser = (
   userId: string,
@@ -450,4 +457,42 @@ export const takeDownAdminReport = (
     method: "POST",
     params: { id },
     body: reason,
+  });
+
+/** Deletes a reported list for everyone and notifies its owner (DSA art. 17). */
+export const removeAdminReportedList = (
+  id: string,
+  reason: ModerationReasonBody,
+): Promise<void> =>
+  typedRequest("/admin/reports/{id}/list-removal", {
+    method: "POST",
+    params: { id },
+    body: reason,
+  });
+
+/** Records the decision for a reported list the admin already edited from its page. */
+export const recordAdminListEdit = (
+  id: string,
+  reason: ModerationReasonBody,
+): Promise<void> =>
+  typedRequest("/admin/reports/{id}/list-edited", {
+    method: "POST",
+    params: { id },
+    body: reason,
+  });
+
+/** Photo, bio, display name and suspension measures on a reported profile, in one decision. */
+export const takeAdminProfileMeasures = (
+  id: string,
+  body: ModerationReasonBody & {
+    removeAvatar?: boolean;
+    clearBio?: boolean;
+    displayName?: string;
+    suspendUntil?: string;
+  },
+): Promise<void> =>
+  typedRequest("/admin/reports/{id}/profile-measures", {
+    method: "POST",
+    params: { id },
+    body,
   });

@@ -11,6 +11,7 @@
     getAdminUserReportsAgainst,
     getAdminUserReviews,
     getAdminUserSessions,
+    reactivateAdminUser,
     resendAdminUserVerification,
     revokeAdminUserSession,
     revokeAllAdminUserSessions,
@@ -32,7 +33,7 @@
   import { ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX } from "$lib/components/overlay-layers";
   import SidePanel from "$lib/components/SidePanel.svelte";
   import { downloadBlob } from "$lib/download";
-  import { formatDate, formatNumber } from "$lib/format";
+  import { formatDate, formatDateTime, formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import {
@@ -225,6 +226,12 @@
     errorToast: true,
   }));
 
+  const reactivateMut = createApiMutation(() => ({
+    mutate: () => reactivateAdminUser(user.id),
+    invalidates: [usersKey],
+    errorToast: true,
+  }));
+
   const resetMut = createApiMutation(() => ({
     mutate: () => sendAdminUserPasswordReset(user.id),
     successToast: m.admin_users_reset_link_sent(),
@@ -328,6 +335,24 @@
           {/if}
         </span>
       </p>
+    {/if}
+
+    {#if user.suspendedUntil}
+      <div
+        class="border-danger/40 bg-danger/10 text-danger mb-4 flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs">
+        <span>
+          {m.admin_users_suspended_until({
+            date: formatDateTime(user.suspendedUntil),
+          })}
+        </span>
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm"
+          disabled={reactivateMut.loading}
+          onclick={() => reactivateMut.mutate()}>
+          {m.admin_users_reactivate()}
+        </button>
+      </div>
     {/if}
 
     {#if user.inactivityWarningSentAt}

@@ -1,5 +1,5 @@
 import { ModerationLegalBasis } from "@loomkeep/shared";
-import { IsIn, IsString, MinLength } from "class-validator";
+import { IsIn, IsString, MinLength, ValidateIf } from "class-validator";
 
 /**
  * The DSA art. 17 "facts and legal basis" an admin must supply when taking a
@@ -15,7 +15,12 @@ export class ModerationReasonBody {
   @IsIn([ModerationLegalBasis.ILLEGAL_CONTENT, ModerationLegalBasis.TOS_BREACH])
   legalBasis!: ModerationLegalBasis;
 
+  /** The CGU clause breached — only asked for a TOS_BREACH measure. */
+  @ValidateIf(
+    (body: ModerationReasonBody) =>
+      body.legalBasis === ModerationLegalBasis.TOS_BREACH,
+  )
   @IsString()
   @MinLength(1)
-  tosClause!: string;
+  tosClause?: string;
 }

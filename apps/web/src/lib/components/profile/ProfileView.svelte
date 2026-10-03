@@ -9,6 +9,7 @@
     getUserFollowing,
     getUserLists,
     logout,
+    reportUser,
     unblockUser,
     unfollowUser,
   } from "$lib/api/client";
@@ -31,6 +32,7 @@
   import ProfileListsSection from "$lib/components/profile/ProfileListsSection.svelte";
   import ProfileStatsCard from "$lib/components/profile/ProfileStatsCard.svelte";
   import ProfileReviews from "$lib/components/ProfileReviews.svelte";
+  import ReportModal from "$lib/components/ReportModal.svelte";
   import ScanProfileModal from "$lib/components/ScanProfileModal.svelte";
   import ShareProfileModal from "$lib/components/ShareProfileModal.svelte";
   import { appConfig } from "$lib/config.svelte";
@@ -195,6 +197,15 @@
     followMut.loading || unblockMut.loading || blockMut.loading,
   );
 
+  let reporting = $state(false);
+  const reportMut = createApiMutation(() => ({
+    mutate: (report: Parameters<typeof reportUser>[1]) =>
+      reportUser(profile!.username, report),
+    successToast: m.profile_reported(),
+    errorToast: true,
+    onSuccess: () => (reporting = false),
+  }));
+
   function toggleFollow() {
     if (!profile) return;
     followMut.mutate();
@@ -357,6 +368,7 @@
         {memberSince}
         onToggleFollow={toggleFollow}
         onToggleBlock={toggleBlock}
+        onReport={() => (reporting = true)}
         onSignOut={signOut}
         onOpenAvatarZoom={() => (avatarZoomed = true)}
         onOpenAvatarModal={() => (avatarModalOpen = true)}
@@ -436,6 +448,15 @@
     {busy}
     onConfirm={confirmBlockUser}
     onCancel={() => (confirmBlock = false)} />
+{/if}
+
+{#if reporting && profile}
+  <ReportModal
+    title={m.profile_report_title()}
+    targetType="USER"
+    onClose={() => (reporting = false)}
+    onSubmit={(report) =>
+      reportMut.mutate({ ...report, profilePart: report.profilePart! })} />
 {/if}
 
 {#if shareModalOpen && profile}

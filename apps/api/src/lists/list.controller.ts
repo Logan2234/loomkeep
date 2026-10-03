@@ -22,12 +22,15 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 import {
   CurrentUser,
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
+import { CreateReportBody } from "../reports/dto/create-report.dto";
+import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import { AddListItemBody } from "./dto/add-list-item.dto";
 import { AddListMemberBody } from "./dto/add-list-member.dto";
@@ -45,7 +48,10 @@ const LIST_ITEM_TARGET_TYPES: string[] = ["MEDIA", "GAME", "BOOK", "MUSIC"];
 
 @Controller("lists")
 export class ListController {
-  constructor(private readonly lists: ListService) {}
+  constructor(
+    private readonly lists: ListService,
+    private readonly reports: ReportService,
+  ) {}
 
   // Owned + editor lists — feeds "Ajouter à une liste" on a work's page, so an
   // editor can add to a shared list, not just their own.
@@ -243,5 +249,26 @@ export class ListController {
     if (!list)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
     return list;
+  }
+
+  @Post(":id/report")
+  @UseGuards(SocialFeatureGuard)
+  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  async report(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: CreateReportBody,
+  ): Promise<void> {
+    // Only a list the reporter can actually see — never confirms a private one exists.
+    if (!(await this.lists.getForViewer(user.sub, id)))
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
+    await this.reports.create(
+      user.sub,
+      "LIST",
+      id,
+      body.category,
+      body.motif,
+      body.reason,
+    );
   }
 }

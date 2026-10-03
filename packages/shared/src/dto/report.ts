@@ -3,6 +3,7 @@ import type {
   ModerationMeasure,
   ReportCategory,
   ReportMotif,
+  ReportProfilePart,
   ReportStatus,
   ReportTargetType,
 } from "../enums";
@@ -13,7 +14,7 @@ export interface ReportTargetSummaryDto {
   /** A short excerpt/label — comment text, review text, or a username. */
   label: string;
   href: string | null;
-  /** Username of whoever owns the target (comment author, reported user, list owner) — null for REVIEW (not wired yet). */
+  /** Username of whoever owns the target (comment or review author, reported user, list owner). */
   targetOwnerUsername: string | null;
 }
 
@@ -25,6 +26,8 @@ export interface ReportDto {
   category: ReportCategory | null;
   /** Null for the OTHER category (and on pre-picker reports). */
   motif: ReportMotif | null;
+  /** USER reports only: the part of the profile the report is about. */
+  profilePart: ReportProfilePart | null;
   reason: string | null;
   status: ReportStatus;
   createdAt: string;

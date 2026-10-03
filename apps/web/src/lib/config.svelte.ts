@@ -16,6 +16,7 @@ class AppConfig {
   adminMfaEnforced = $state(true);
   version = $state("");
   gitSha = $state("");
+  supportEmail = $state("");
 }
 
 export const appConfig = new AppConfig();

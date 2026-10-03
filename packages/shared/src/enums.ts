@@ -522,11 +522,7 @@ export const COMMENT_REACTION_NOTIFY_THRESHOLD = 10;
 /** How many upvotes on one review trigger the aggregated notification. */
 export const REVIEW_VOTE_NOTIFY_THRESHOLD = 10;
 
-/**
- * What a report targets. COMMENT is the only kind produced today; REVIEW/USER
- * are modelled now so reporting a review or a profile later needs no
- * migration, just a new emitter.
- */
+/** What a report targets. */
 export const ReportTargetType = {
   COMMENT: "COMMENT",
   REVIEW: "REVIEW",
@@ -545,14 +541,19 @@ export const ReportStatus = {
 export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus];
 
 /**
- * The two restrictive measures actually implemented (see ModerationDecision
- * and CGU §9) — comment removal and admin account deletion. Keep this in
- * lockstep with what the CGU list: DSA art. 14 requires the CGU to describe
- * exactly what the code can do, not more.
+ * The restrictive measures actually implemented (see ModerationDecision and
+ * CGU §9). Keep this in lockstep with what the CGU list: DSA art. 14 requires
+ * the CGU to describe exactly what the code can do, not more.
  */
 export const ModerationMeasure = {
   COMMENT_REMOVED: "COMMENT_REMOVED",
   REVIEW_REMOVED: "REVIEW_REMOVED",
+  LIST_REMOVED: "LIST_REMOVED",
+  LIST_EDITED: "LIST_EDITED",
+  AVATAR_REMOVED: "AVATAR_REMOVED",
+  BIO_CLEARED: "BIO_CLEARED",
+  DISPLAY_NAME_CHANGED: "DISPLAY_NAME_CHANGED",
+  ACCOUNT_SUSPENDED: "ACCOUNT_SUSPENDED",
   ACCOUNT_DELETED: "ACCOUNT_DELETED",
 } as const;
 export type ModerationMeasure =
@@ -571,10 +572,9 @@ export type ModerationLegalBasis =
 
 /**
  * Top-level reason bucket for a report, chosen before a precise ReportMotif.
- * Deliberately generic across every ReportTargetType (not comment-specific) —
- * COMMENT is the only target with a report button today, but the categories
- * were designed to also make sense for a future REVIEW/USER/LIST report.
- * OTHER skips the motif step: the free-text `reason` carries the detail.
+ * Shared by every ReportTargetType; REPORT_CATEGORY_TARGETS narrows the few
+ * that only make sense for some of them. OTHER skips the motif step: the
+ * free-text `reason` carries the detail.
  */
 export const ReportCategory = {
   SPAM: "SPAM",
@@ -589,6 +589,7 @@ export const ReportCategory = {
   MISINFORMATION: "MISINFORMATION",
   STOLEN_CONTENT: "STOLEN_CONTENT",
   MISLEADING_REVIEW: "MISLEADING_REVIEW",
+  NONCOMPLIANT_ACCOUNT: "NONCOMPLIANT_ACCOUNT",
   OTHER: "OTHER",
 } as const;
 export type ReportCategory =
@@ -600,6 +601,9 @@ export const ReportMotif = {
   SPAM_SUSPICIOUS_LINK: "SPAM_SUSPICIOUS_LINK",
   SPAM_REPEATED: "SPAM_REPEATED",
   ILLEGAL_PIRACY_LINK: "ILLEGAL_PIRACY_LINK",
+  ILLEGAL_TERRORISM: "ILLEGAL_TERRORISM",
+  ILLEGAL_DEFAMATION: "ILLEGAL_DEFAMATION",
+  ILLEGAL_OTHER: "ILLEGAL_OTHER",
   HARASSMENT_INSULTS: "HARASSMENT_INSULTS",
   HARASSMENT_THREATS: "HARASSMENT_THREATS",
   HARASSMENT_STALKING: "HARASSMENT_STALKING",
@@ -613,11 +617,15 @@ export const ReportMotif = {
   MINOR_ENDANGERMENT_SOLICITATION: "MINOR_ENDANGERMENT_SOLICITATION",
   SPOILER_UNTAGGED: "SPOILER_UNTAGGED",
   IMPERSONATION_REAL_PERSON: "IMPERSONATION_REAL_PERSON",
-  IMPERSONATION_FAKE_ACCOUNT: "IMPERSONATION_FAKE_ACCOUNT",
   MISINFORMATION_FALSE_FACT: "MISINFORMATION_FALSE_FACT",
   STOLEN_CONTENT_PLAGIARIZED: "STOLEN_CONTENT_PLAGIARIZED",
+  STOLEN_CONTENT_IMAGE: "STOLEN_CONTENT_IMAGE",
   MISLEADING_REVIEW_MANIPULATION: "MISLEADING_REVIEW_MANIPULATION",
   MISLEADING_REVIEW_OFF_TOPIC: "MISLEADING_REVIEW_OFF_TOPIC",
+  ACCOUNT_BOT: "ACCOUNT_BOT",
+  ACCOUNT_UNDERAGE: "ACCOUNT_UNDERAGE",
+  ACCOUNT_BAN_EVASION: "ACCOUNT_BAN_EVASION",
+  ACCOUNT_MANIPULATION: "ACCOUNT_MANIPULATION",
 } as const;
 export type ReportMotif = (typeof ReportMotif)[keyof typeof ReportMotif];
 
@@ -633,7 +641,12 @@ export const REPORT_CATEGORY_MOTIFS: Record<ReportCategory, ReportMotif[]> = {
     ReportMotif.SPAM_SUSPICIOUS_LINK,
     ReportMotif.SPAM_REPEATED,
   ],
-  ILLEGAL_CONTENT: [ReportMotif.ILLEGAL_PIRACY_LINK],
+  ILLEGAL_CONTENT: [
+    ReportMotif.ILLEGAL_PIRACY_LINK,
+    ReportMotif.ILLEGAL_TERRORISM,
+    ReportMotif.ILLEGAL_DEFAMATION,
+    ReportMotif.ILLEGAL_OTHER,
+  ],
   HARASSMENT: [
     ReportMotif.HARASSMENT_INSULTS,
     ReportMotif.HARASSMENT_THREATS,
@@ -652,28 +665,124 @@ export const REPORT_CATEGORY_MOTIFS: Record<ReportCategory, ReportMotif[]> = {
     ReportMotif.MINOR_ENDANGERMENT_SOLICITATION,
   ],
   SPOILER: [ReportMotif.SPOILER_UNTAGGED],
-  IMPERSONATION: [
-    ReportMotif.IMPERSONATION_REAL_PERSON,
-    ReportMotif.IMPERSONATION_FAKE_ACCOUNT,
-  ],
+  IMPERSONATION: [ReportMotif.IMPERSONATION_REAL_PERSON],
   MISINFORMATION: [ReportMotif.MISINFORMATION_FALSE_FACT],
-  STOLEN_CONTENT: [ReportMotif.STOLEN_CONTENT_PLAGIARIZED],
+  STOLEN_CONTENT: [
+    ReportMotif.STOLEN_CONTENT_PLAGIARIZED,
+    ReportMotif.STOLEN_CONTENT_IMAGE,
+  ],
   MISLEADING_REVIEW: [
     ReportMotif.MISLEADING_REVIEW_MANIPULATION,
     ReportMotif.MISLEADING_REVIEW_OFF_TOPIC,
   ],
+  NONCOMPLIANT_ACCOUNT: [
+    ReportMotif.ACCOUNT_BOT,
+    ReportMotif.ACCOUNT_UNDERAGE,
+    ReportMotif.ACCOUNT_BAN_EVASION,
+    ReportMotif.ACCOUNT_MANIPULATION,
+  ],
   OTHER: [],
 };
 
+/** Motifs whose free-text `reason` is mandatory, like the OTHER category's. */
+export const REPORT_MOTIFS_REQUIRING_REASON: ReportMotif[] = [
+  ReportMotif.ILLEGAL_OTHER,
+];
+
 /**
  * Categories that only make sense for some target types (a comment has no
- * rating to manipulate). Any category not listed applies to every target.
- * Shared by the picker UI and ReportService.create's validation.
+ * rating to manipulate, a list can't impersonate anyone). Any category not
+ * listed applies to every target. Shared by the picker UI and
+ * ReportService.create's validation.
  */
 const REPORT_CATEGORY_TARGETS: Partial<
   Record<ReportCategory, ReportTargetType[]>
 > = {
   MISLEADING_REVIEW: [ReportTargetType.REVIEW],
+  SPOILER: [
+    ReportTargetType.COMMENT,
+    ReportTargetType.REVIEW,
+    ReportTargetType.LIST,
+  ],
+  IMPERSONATION: [
+    ReportTargetType.COMMENT,
+    ReportTargetType.REVIEW,
+    ReportTargetType.USER,
+  ],
+  MISINFORMATION: [ReportTargetType.COMMENT, ReportTargetType.REVIEW],
+  NONCOMPLIANT_ACCOUNT: [ReportTargetType.USER],
+};
+
+/** Motifs narrower than their category: only lists and profiles carry an image. */
+const REPORT_MOTIF_TARGETS: Partial<Record<ReportMotif, ReportTargetType[]>> = {
+  STOLEN_CONTENT_IMAGE: [ReportTargetType.USER, ReportTargetType.LIST],
+};
+
+/** The motifs of `category` that apply to `targetType`, in picker order. */
+export function reportMotifsFor(
+  category: ReportCategory,
+  targetType: ReportTargetType,
+): ReportMotif[] {
+  return REPORT_CATEGORY_MOTIFS[category].filter(
+    (motif) => REPORT_MOTIF_TARGETS[motif]?.includes(targetType) ?? true,
+  );
+}
+
+/**
+ * The part of a profile a USER report is about, picked before the category:
+ * it narrows the categories to the ones that can happen there, and tells the
+ * moderator which measure fits.
+ */
+export const ReportProfilePart = {
+  NAME: "NAME",
+  PHOTO: "PHOTO",
+  BIO: "BIO",
+  BEHAVIOUR: "BEHAVIOUR",
+} as const;
+export type ReportProfilePart =
+  (typeof ReportProfilePart)[keyof typeof ReportProfilePart];
+
+export const REPORT_PROFILE_PART_CATEGORIES: Record<
+  ReportProfilePart,
+  ReportCategory[]
+> = {
+  NAME: [
+    "SPAM",
+    "ILLEGAL_CONTENT",
+    "HARASSMENT",
+    "HATE_SPEECH",
+    "SEXUAL_CONTENT",
+    "IMPERSONATION",
+    "OTHER",
+  ],
+  PHOTO: [
+    "ILLEGAL_CONTENT",
+    "HATE_SPEECH",
+    "SEXUAL_CONTENT",
+    "VIOLENCE",
+    "MINOR_ENDANGERMENT",
+    "IMPERSONATION",
+    "STOLEN_CONTENT",
+    "OTHER",
+  ],
+  BIO: [
+    "SPAM",
+    "ILLEGAL_CONTENT",
+    "HARASSMENT",
+    "HATE_SPEECH",
+    "SEXUAL_CONTENT",
+    "MINOR_ENDANGERMENT",
+    "STOLEN_CONTENT",
+    "OTHER",
+  ],
+  BEHAVIOUR: [
+    "SPAM",
+    "HARASSMENT",
+    "MINOR_ENDANGERMENT",
+    "IMPERSONATION",
+    "NONCOMPLIANT_ACCOUNT",
+    "OTHER",
+  ],
 };
 
 export function isReportCategoryAllowed(

@@ -2,6 +2,8 @@ import type {
   AddListMemberDto,
   CreateListDto,
   ListItemTargetType,
+  ReportCategory,
+  ReportMotif,
   UpdateListDto,
 } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
@@ -98,6 +100,16 @@ export const setListMuted = (listId: string, muted: boolean): Promise<void> =>
  */
 export const getList = (id: string) =>
   typedRequest("/lists/{id}", { params: { id } });
+
+export const reportList = (
+  id: string,
+  report: { category: ReportCategory; motif?: ReportMotif; reason?: string },
+): Promise<void> =>
+  typedRequest("/lists/{id}/report", {
+    method: "POST",
+    params: { id },
+    body: report,
+  });
 
 /** A user's lists visible to the viewer (social-gated). */
 export const getUserLists = (username: string) =>

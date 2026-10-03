@@ -9,4 +9,5 @@ export class PublicConfigResponseDto implements PublicConfigDto {
   adminMfaEnforced!: boolean;
   version!: string;
   gitSha!: string;
+  supportEmail!: string;
 }

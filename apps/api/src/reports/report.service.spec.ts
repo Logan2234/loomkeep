@@ -39,6 +39,11 @@ function make(
       findMany: vi.fn().mockResolvedValue([]),
       ...overrides.user,
     },
+    list: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
+      ...overrides.list,
+    },
     mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
     gameItem: { findUnique: vi.fn().mockResolvedValue(null) },
     bookItem: { findUnique: vi.fn().mockResolvedValue(null) },
@@ -297,6 +302,145 @@ describe("ReportService.create — category per target", () => {
       "MISLEADING_REVIEW_OFF_TOPIC" as never,
     );
     expect(prisma.report.create).toHaveBeenCalled();
+  });
+});
+
+describe("ReportService.create — profiles", () => {
+  const withUser = () =>
+    make({ user: { findUnique: vi.fn().mockResolvedValue({ id: "u2" }) } });
+
+  it("files a report on the part of the profile it is about", async () => {
+    const { svc, prisma } = withUser();
+    await svc.create(
+      "reporter1",
+      "USER" as never,
+      "u2",
+      "HATE_SPEECH" as never,
+      "HATE_RACISM" as never,
+      undefined,
+      "PHOTO" as never,
+    );
+    expect(prisma.report.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        targetType: "USER",
+        targetId: "u2",
+        profilePart: "PHOTO",
+      }),
+    });
+  });
+
+  it("requires the part of the profile", async () => {
+    const { svc, prisma } = withUser();
+    await expect(
+      svc.create(
+        "reporter1",
+        "USER" as never,
+        "u2",
+        "SPAM" as never,
+        "SPAM_PROMOTIONAL" as never,
+      ),
+    ).rejects.toThrow();
+    expect(prisma.report.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a category that can't happen on that part", async () => {
+    const { svc, prisma } = withUser();
+    await expect(
+      svc.create(
+        "reporter1",
+        "USER" as never,
+        "u2",
+        "VIOLENCE" as never,
+        "VIOLENCE_GRAPHIC" as never,
+        undefined,
+        "NAME" as never,
+      ),
+    ).rejects.toThrow();
+    expect(prisma.report.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects reporting one's own profile", async () => {
+    const { svc } = make({
+      user: { findUnique: vi.fn().mockResolvedValue({ id: "reporter1" }) },
+    });
+    await expect(
+      svc.create(
+        "reporter1",
+        "USER" as never,
+        "reporter1",
+        "NONCOMPLIANT_ACCOUNT" as never,
+        "ACCOUNT_BOT" as never,
+        undefined,
+        "BEHAVIOUR" as never,
+      ),
+    ).rejects.toMatchObject({ code: "reports.cannot_report_own_content" });
+  });
+});
+
+describe("ReportService.create — lists", () => {
+  const withList = () =>
+    make({
+      list: {
+        findUnique: vi.fn().mockResolvedValue({
+          userId: "owner",
+          members: [{ userId: "editor" }],
+        }),
+      },
+    });
+
+  it("files a report against someone else's list", async () => {
+    const { svc, prisma } = withList();
+    await svc.create(
+      "reporter1",
+      "LIST" as never,
+      "l1",
+      "SPOILER" as never,
+      "SPOILER_UNTAGGED" as never,
+    );
+    expect(prisma.report.create).toHaveBeenCalled();
+  });
+
+  it("won't let an editor report the list they edit", async () => {
+    const { svc, prisma } = withList();
+    await expect(
+      svc.create(
+        "editor",
+        "LIST" as never,
+        "l1",
+        "SPAM" as never,
+        "SPAM_PROMOTIONAL" as never,
+      ),
+    ).rejects.toMatchObject({ code: "reports.cannot_report_own_content" });
+    expect(prisma.report.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects impersonation, which a list can't do", async () => {
+    const { svc, prisma } = withList();
+    await expect(
+      svc.create(
+        "reporter1",
+        "LIST" as never,
+        "l1",
+        "IMPERSONATION" as never,
+        "IMPERSONATION_REAL_PERSON" as never,
+      ),
+    ).rejects.toThrow();
+    expect(prisma.report.create).not.toHaveBeenCalled();
+  });
+
+  it("requires the law at stake for another offence", async () => {
+    const { svc, prisma } = withList();
+    await expect(
+      svc.create(
+        "reporter1",
+        "LIST" as never,
+        "l1",
+        "ILLEGAL_CONTENT" as never,
+        "ILLEGAL_OTHER" as never,
+        "  ",
+      ),
+    ).rejects.toMatchObject({ code: "reports.reason_required" });
+    expect(prisma.report.create).not.toHaveBeenCalled();
   });
 });
 
@@ -649,10 +793,11 @@ describe("ReportService.list — reporterId filter", () => {
 });
 
 describe("ReportService.listAgainstUser", () => {
-  it("matches reports targeting the user directly or content they authored", async () => {
+  it("matches reports targeting the user directly or content of theirs", async () => {
     const { svc, prisma } = make({
       comment: { findMany: vi.fn().mockResolvedValue([{ id: "c1" }]) },
       review: { findMany: vi.fn().mockResolvedValue([{ id: "rev1" }]) },
+      list: { findMany: vi.fn().mockResolvedValue([{ id: "l1" }]) },
     });
     await svc.listAgainstUser("user1");
     expect(prisma.report.findMany).toHaveBeenCalledWith(
@@ -662,6 +807,7 @@ describe("ReportService.listAgainstUser", () => {
             { targetType: "USER", targetId: "user1" },
             { targetType: "COMMENT", targetId: { in: ["c1"] } },
             { targetType: "REVIEW", targetId: { in: ["rev1"] } },
+            { targetType: "LIST", targetId: { in: ["l1"] } },
           ],
         },
       }),

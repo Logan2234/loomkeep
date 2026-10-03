@@ -8,6 +8,7 @@ import type {
 } from "@loomkeep/shared";
 import { Domain } from "@loomkeep/shared";
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -17,6 +18,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 import {
   type JwtPayload,
   CurrentUser,
@@ -25,6 +27,8 @@ import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
+import { CreateReportBody } from "../reports/dto/create-report.dto";
+import { ReportService } from "../reports/report.service";
 import { ActivityService, FEED_PAGE_SIZE } from "./activity.service";
 import { ActivityEventResponseDto } from "./dto/activity-event-response.dto";
 import { FollowRequestResponseDto } from "./dto/follow-request-response.dto";
@@ -42,6 +46,7 @@ export class SocialController {
     private readonly follow: FollowService,
     private readonly profiles: ProfileService,
     private readonly activity: ActivityService,
+    private readonly reports: ReportService,
   ) {}
 
   /**
@@ -188,5 +193,24 @@ export class SocialController {
     @Param("username") username: string,
   ): Promise<RelationshipDto> {
     return this.follow.unblock(user.sub, username);
+  }
+
+  @Post("users/:username/report")
+  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  async reportUser(
+    @CurrentUser() user: JwtPayload,
+    @Param("username") username: string,
+    @Body() body: CreateReportBody,
+  ): Promise<void> {
+    const targetId = await this.profiles.reportTargetId(user.sub, username);
+    await this.reports.create(
+      user.sub,
+      "USER",
+      targetId,
+      body.category,
+      body.motif,
+      body.reason,
+      body.profilePart,
+    );
   }
 }

@@ -61,6 +61,7 @@ import { FollowService } from "../social/follow.service";
 import { avatarUrl } from "../users/avatar.util";
 import { DataExportService } from "../users/data-export.service";
 import { UserDataExportResponseDto } from "../users/dto/data-export/user-data-export-response.dto";
+import { isSuspended } from "../users/suspension.util";
 import { AdminOnly } from "./admin-only.decorator";
 import { AdjustAdminUserXpDto } from "./dto/adjust-admin-user-xp.dto";
 import { AdminUserCommentResponseDto } from "./dto/admin-user-comment-response.dto";
@@ -226,6 +227,7 @@ export class AdminUsersController {
         lastActiveAt: u.lastActiveAt?.toISOString() ?? null,
         inactivityWarningSentAt:
           u.inactivityWarningSentAt?.toISOString() ?? null,
+        suspendedUntil: isSuspended(u) ? u.suspendedUntil!.toISOString() : null,
         xp: u.score?.xp ?? 0,
         invitation: u.invitation
           ? {
@@ -449,6 +451,20 @@ export class AdminUsersController {
     await this.authService.revokeAllSessions(userId);
   }
 
+  /** Lifts a moderation suspension before its end date. */
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post("users/:userId/reactivate")
+  async reactivateUser(@Param("userId") userId: string): Promise<void> {
+    const { count } = await this.prisma.user.updateMany({
+      where: { id: userId },
+      data: { suspendedUntil: null },
+    });
+
+    if (count === 0) {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+    }
+  }
+
   /** Re-sends the account's email-verification link. No-op target: already-verified accounts 400. */
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("users/:userId/resend-verification")
@@ -520,7 +536,7 @@ export class AdminUsersController {
       subjectUsername: user.username,
       legalBasis: body.legalBasis,
       reasonText: body.reasonText,
-      tosClause: body.tosClause,
+      tosClause: body.tosClause ?? "",
       decidedById: admin.sub,
     });
 

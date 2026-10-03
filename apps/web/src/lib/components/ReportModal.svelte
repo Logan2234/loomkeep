@@ -4,21 +4,25 @@
     REPORT_CATEGORY_LABELS,
     REPORT_CATEGORY_ORDER,
     REPORT_MOTIF_LABELS,
+    REPORT_PROFILE_PARTS,
   } from "$lib/constants/report-labels";
   import { m } from "$lib/paraglide/messages.js";
   import {
-    REPORT_CATEGORY_MOTIFS,
+    REPORT_MOTIFS_REQUIRING_REASON,
+    REPORT_PROFILE_PART_CATEGORIES,
     isReportCategoryAllowed,
+    reportMotifsFor,
     type ReportCategory,
     type ReportMotif,
+    type ReportProfilePart,
     type ReportTargetType,
   } from "@loomkeep/shared";
   import Combobox from "./Combobox.svelte";
   import Modal from "./Modal.svelte";
 
-  // Category → motif → optional detail picker, shared by every reportable
-  // content type (comments, reviews). The caller files the report and owns
-  // the success/failure toast.
+  // (Profile part →) category → motif → detail picker, shared by every
+  // reportable content type. The caller files the report and owns the
+  // success/failure toast.
   let {
     title,
     targetType,
@@ -33,31 +37,61 @@
       category: ReportCategory;
       motif?: ReportMotif;
       reason?: string;
+      /** Set for a profile (USER) report only. */
+      profilePart?: ReportProfilePart;
     }) => void;
   } = $props();
 
+  const isProfile = $derived(targetType === "USER");
+
+  let profilePart = $state<ReportProfilePart | null>(null);
   let category = $state<ReportCategory | null>(null);
   let motif = $state<ReportMotif | null>(null);
   let reason = $state("");
 
   const categoryOptions = $derived(
-    REPORT_CATEGORY_ORDER.filter((c) =>
-      isReportCategoryAllowed(c, targetType),
-    ).map((c) => ({ label: REPORT_CATEGORY_LABELS[c], value: c })),
+    isProfile && !profilePart
+      ? []
+      : REPORT_CATEGORY_ORDER.filter(
+          (c) =>
+            isReportCategoryAllowed(c, targetType) &&
+            (!profilePart ||
+              REPORT_PROFILE_PART_CATEGORIES[profilePart].includes(c)),
+        ).map((c) => ({ label: REPORT_CATEGORY_LABELS[c], value: c })),
   );
   const motifOptions = $derived(
-    category ? REPORT_CATEGORY_MOTIFS[category] : [],
+    category ? reportMotifsFor(category, targetType) : [],
   );
-  const isOther = $derived(category === "OTHER");
+  const reasonRequired = $derived(
+    category === "OTHER" ||
+      (motif !== null && REPORT_MOTIFS_REQUIRING_REASON.includes(motif)),
+  );
+  const reasonPlaceholder = $derived(
+    category === "OTHER"
+      ? m.report_reason_placeholder()
+      : reasonRequired
+        ? m.report_law_placeholder()
+        : m.report_detail_placeholder(),
+  );
   const canSubmit = $derived(
-    category !== null && (isOther ? reason.trim().length > 0 : motif !== null),
+    category !== null &&
+      (category === "OTHER" || motif !== null) &&
+      (!reasonRequired || reason.trim().length > 0),
   );
+
+  function choosePart(next: ReportProfilePart) {
+    profilePart = next;
+    if (category && !REPORT_PROFILE_PART_CATEGORIES[next].includes(category)) {
+      category = null;
+      motif = null;
+    }
+  }
 
   function chooseCategory(next: ReportCategory) {
     category = next;
     // Skip the motif step entirely when the category only has one — nothing
     // to choose between, so pre-check it instead of showing a 1-item list.
-    const motifs = REPORT_CATEGORY_MOTIFS[next];
+    const motifs = reportMotifsFor(next, targetType);
     motif = motifs.length === 1 ? motifs[0] : null;
   }
 
@@ -67,24 +101,50 @@
       category,
       motif: motif ?? undefined,
       reason: reason.trim() || undefined,
+      profilePart: profilePart ?? undefined,
     });
   }
 </script>
 
 <Modal {title} onclose={onClose}>
   <div class="flex flex-col gap-3">
-    <div>
-      <Combobox
-        label={m.common_category()}
-        options={categoryOptions}
-        values={category ? [category] : []}
-        onChange={(v) => chooseCategory(v[0] as ReportCategory)} />
-      {#if category}
-        <p class="text-dim mt-1.5 text-xs">
-          {REPORT_CATEGORY_HINTS[category]}
-        </p>
-      {/if}
-    </div>
+    {#if isProfile}
+      <fieldset>
+        <legend class="mb-2 text-sm font-semibold">
+          {m.report_part_question()}
+        </legend>
+        <div class="grid grid-cols-2 gap-2">
+          {#each REPORT_PROFILE_PARTS as part (part.value)}
+            <button
+              type="button"
+              class="border-border hover:border-accent rounded-lg border p-2.5 text-left transition-colors {profilePart ===
+              part.value
+                ? 'border-accent ring-accent ring-1'
+                : ''}"
+              aria-pressed={profilePart === part.value}
+              onclick={() => choosePart(part.value)}>
+              <span class="block text-sm font-semibold">{part.label}</span>
+              <span class="text-dim block text-xs">{part.hint}</span>
+            </button>
+          {/each}
+        </div>
+      </fieldset>
+    {/if}
+
+    {#if categoryOptions.length > 0}
+      <div>
+        <Combobox
+          label={m.common_category()}
+          options={categoryOptions}
+          values={category ? [category] : []}
+          onChange={(v) => chooseCategory(v[0] as ReportCategory)} />
+        {#if category}
+          <p class="text-dim mt-1.5 text-xs">
+            {REPORT_CATEGORY_HINTS[category]}
+          </p>
+        {/if}
+      </div>
+    {/if}
 
     {#if motifOptions.length > 1}
       <ul class="divide-border flex flex-col divide-y">
@@ -109,14 +169,11 @@
     {#if category}
       <textarea
         name="reason"
-        aria-label={isOther
-          ? m.report_reason_placeholder()
-          : m.report_detail_placeholder()}
+        aria-label={reasonPlaceholder}
+        aria-required={reasonRequired}
         class="input min-h-20 resize-y text-sm"
         rows="3"
-        placeholder={isOther
-          ? m.report_reason_placeholder()
-          : m.report_detail_placeholder()}
+        placeholder={reasonPlaceholder}
         maxlength={500}
         bind:value={reason}></textarea>
     {/if}

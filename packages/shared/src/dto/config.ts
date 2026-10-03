@@ -60,4 +60,11 @@ export interface PublicConfigDto {
    * exact deployed source, per AGPL §13.
    */
   gitSha: string;
+
+  /**
+   * Where members reach this instance's moderation and support — the same
+   * address moderation emails reply to (`MAIL_SUPPORT_ADDRESS`, falling back
+   * to contact@loomkeep.app).
+   */
+  supportEmail: string;
 }

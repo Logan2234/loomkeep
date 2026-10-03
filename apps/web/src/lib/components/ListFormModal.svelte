@@ -13,6 +13,7 @@
     list = null,
     defaultVisibility = "PRIVATE",
     canManage = true,
+    canDelete = canManage,
     onClose,
     onSaved,
     onDeleted,
@@ -22,6 +23,8 @@
     /** False for an editor: can rename/describe the list, but not change its
      * visibility, delete it, or manage collaborators (owner-only). */
     canManage?: boolean;
+    /** A moderator manages visibility but deletes only through a decision. */
+    canDelete?: boolean;
     onClose: () => void;
     onSaved: (list: ListDto) => void;
     onDeleted?: () => void;
@@ -188,7 +191,7 @@
         onclick={save}>
         {m.common_save()}
       </button>
-      {#if list && canManage}
+      {#if list && canDelete}
         {#if confirmingDelete}
           <button class="btn btn-danger" disabled={busy} onclick={doDelete}>
             {m.common_confirm()}

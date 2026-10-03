@@ -7,6 +7,7 @@ import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { notSuspended } from "../users/suspension.util";
 import { type DigestPeriod, notificationCopy } from "./notification-copy";
 import { PushService } from "./push.service";
 
@@ -62,9 +63,14 @@ export class NotificationDigestService {
   private async run(): Promise<number> {
     const users = await this.prisma.user.findMany({
       where: {
-        OR: [
-          { notifyEmail: { not: DigestCadence.DISABLED } },
-          { notifyPush: { not: DigestCadence.DISABLED } },
+        AND: [
+          {
+            OR: [
+              { notifyEmail: { not: DigestCadence.DISABLED } },
+              { notifyPush: { not: DigestCadence.DISABLED } },
+            ],
+          },
+          notSuspended(),
         ],
       },
       select: {

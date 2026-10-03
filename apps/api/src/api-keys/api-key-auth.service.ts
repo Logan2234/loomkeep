@@ -2,6 +2,7 @@ import type { ApiKeyScope } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { createHash } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
+import { isSuspended } from "../users/suspension.util";
 import { isWellFormedApiKey } from "./api-key-format";
 
 // Same trade-off as SessionCacheService: spares a query on every request,
@@ -18,6 +19,8 @@ export interface ApiKeyPrincipal {
   email: string;
   scopes: ApiKeyScope[];
   expiresAt: Date | null;
+  /** The owner's moderation suspension, if any — see suspension.util.ts. */
+  suspendedUntil: Date | null;
 }
 
 /**
@@ -51,6 +54,7 @@ export class ApiKeyAuthService {
     const principal = await this.lookup(hashApiKey(secret));
     if (!principal) return null;
     if (principal.expiresAt && principal.expiresAt <= new Date()) return null;
+    if (isSuspended(principal)) return null;
 
     await this.touch(principal.keyId, ip);
     return principal;
@@ -75,7 +79,7 @@ export class ApiKeyAuthService {
         userId: true,
         scopes: true,
         expiresAt: true,
-        user: { select: { email: true } },
+        user: { select: { email: true, suspendedUntil: true } },
       },
     });
 
@@ -90,6 +94,7 @@ export class ApiKeyAuthService {
       email: key.user.email,
       scopes: key.scopes as ApiKeyScope[],
       expiresAt: key.expiresAt,
+      suspendedUntil: key.user.suspendedUntil,
     };
     this.cache.set(tokenHash, { principal, until: Date.now() + CACHE_TTL_MS });
     return principal;

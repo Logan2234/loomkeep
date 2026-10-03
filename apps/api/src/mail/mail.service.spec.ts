@@ -669,6 +669,22 @@ describe("MailService template gallery", () => {
     expect(preview?.subject).toBe("One of your reviews has been removed");
   });
 
+  it("names every measure of a combined profile decision, with the suspension end", () => {
+    const service = new MailService(quota);
+    const preview = service.renderTemplatePreview("moderationDecision", "en", {
+      measure: "AVATAR_REMOVED,BIO_CLEARED,ACCOUNT_SUSPENDED",
+      suspendedUntil: "2026-10-10T14:20:00Z",
+    });
+
+    expect(preview?.subject).toBe(
+      "Measures have been taken on your Loomkeep account",
+    );
+    expect(preview?.text).toContain(
+      "the removal of your profile picture, the removal of your bio and the suspension of your account until",
+    );
+    expect(preview?.text).toContain("2026");
+  });
+
   it("localizes dates but leaves newsletter copy as authored", () => {
     const service = new MailService(quota);
     const inactivity = service.renderTemplatePreview(

@@ -16,6 +16,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { EventsGateway } from "../events/events.gateway";
@@ -154,7 +155,7 @@ export class ListService {
   ): Promise<ListDto> {
     const { row: existing, role } = await this.canEdit(userId, id);
 
-    if (dto.visibility && role !== "OWNER") {
+    if (dto.visibility && role === "EDITOR") {
       throw new AppException(
         HttpStatus.FORBIDDEN,
         ErrorCode.ListOwnerOnlyVisibility,
@@ -165,7 +166,7 @@ export class ListService {
 
     if (visibility && visibility !== "PRIVATE") {
       const user = await this.prisma.user.findUniqueOrThrow({
-        where: { id: userId },
+        where: { id: existing.userId },
         select: { profileAccess: true },
       });
       // A Figurant can't share a list — clamp even if they already own one
@@ -187,6 +188,7 @@ export class ListService {
     });
 
     if (
+      role === "OWNER" &&
       dto.visibility &&
       dto.visibility !== "PRIVATE" &&
       existing.visibility === "PRIVATE"
@@ -217,6 +219,42 @@ export class ListService {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
 
     await this.xp.revokeBySource("List", [id]);
+  }
+
+  /**
+   * Moderation removal, whoever owns the list. Returns what the decision
+   * keeps as evidence once the list itself is gone.
+   */
+  async adminRemove(
+    id: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<{
+    ownerId: string;
+    title: string;
+    description: string | null;
+    itemCount: number;
+  }> {
+    const list = await tx.list.findUnique({
+      where: { id },
+      select: {
+        userId: true,
+        title: true,
+        description: true,
+        _count: { select: { items: true } },
+      },
+    });
+    if (!list)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
+
+    await tx.list.delete({ where: { id } });
+    await this.xp.revokeBySource("List", [id], tx);
+
+    return {
+      ownerId: list.userId,
+      title: list.title,
+      description: list.description,
+      itemCount: list._count.items,
+    };
   }
 
   /**
@@ -404,7 +442,10 @@ export class ListService {
     listId: string,
     dto: AddListItemBody,
   ): Promise<ListItemDto> {
-    const { row: list } = await this.canEdit(userId, listId);
+    const { row: list, role } = await this.canEdit(userId, listId);
+    // Moderation removes what a list shouldn't hold; it never adds to it.
+    if (role === "MODERATOR")
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ListForbidden);
 
     const dup = await this.prisma.listItem.findUnique({
       where: {
@@ -794,16 +835,17 @@ export class ListService {
   }
 
   /**
-   * Owner or editor. Membership only grants access while Social is on —
-   * ListMember rows can only be created through the social-gated add-member
-   * endpoint, so this is a defensive check, not an active feature gate.
+   * Owner, editor, or an admin moderating a reported list. Membership only
+   * grants access while Social is on — ListMember rows can only be created
+   * through the social-gated add-member endpoint, so this is a defensive
+   * check, not an active feature gate.
    */
   private async canEdit(
     userId: string,
     id: string,
   ): Promise<{
     row: ListRow;
-    role: Extract<ListViewerRole, "OWNER" | "EDITOR">;
+    role: Extract<ListViewerRole, "OWNER" | "EDITOR" | "MODERATOR">;
   }> {
     const row = await this.prisma.list.findUnique({ where: { id } });
     if (!row)
@@ -817,7 +859,30 @@ export class ListService {
       if (member) return { row, role: "EDITOR" };
     }
 
+    if (await this.isModeratorOf(userId, id)) return { row, role: "MODERATOR" };
+
     throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ListForbidden);
+  }
+
+  /**
+   * Only while a report is pending: an admin gets no standing access to
+   * private lists, just enough to fix the one being moderated.
+   */
+  private async isModeratorOf(
+    userId: string,
+    listId: string,
+  ): Promise<boolean> {
+    const [user, report] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      }),
+      this.prisma.report.findFirst({
+        where: { targetType: "LIST", targetId: listId, status: "PENDING" },
+        select: { id: true },
+      }),
+    ]);
+    return user?.role === "ADMIN" && report !== null;
   }
 
   private async detail(

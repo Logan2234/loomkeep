@@ -1,5 +1,8 @@
 import type {
   PagedResult,
+  ReportCategory,
+  ReportMotif,
+  ReportProfilePart,
   UpdateVisibilitySettingsDto,
   UserSummaryDto,
 } from "@loomkeep/shared";
@@ -43,6 +46,21 @@ export const unblockUser = (username: string) =>
   typedRequest("/social/users/{username}/block", {
     method: "DELETE",
     params: { username },
+  });
+
+export const reportUser = (
+  username: string,
+  report: {
+    profilePart: ReportProfilePart;
+    category: ReportCategory;
+    motif?: ReportMotif;
+    reason?: string;
+  },
+): Promise<void> =>
+  typedRequest("/social/users/{username}/report", {
+    method: "POST",
+    params: { username },
+    body: report,
   });
 
 export const getFollowRequests = () => typedRequest("/social/requests");

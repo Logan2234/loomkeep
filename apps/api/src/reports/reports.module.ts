@@ -9,10 +9,10 @@ import { ReportService } from "./report.service";
 import { TransparencyController } from "./transparency.controller";
 import { TransparencyService } from "./transparency.service";
 
-// Report is a polymorphic target (COMMENT and REVIEW today, USER later)
-// shared across features — its only controller serves the public transparency
-// figures; CommentsModule and ReviewsModule wire the filing endpoints,
-// AdminModule wires the moderation queue. MailModule/JobsModule are
+// Report is a polymorphic target (comments, reviews, profiles, lists) shared
+// across features — its only controller serves the public transparency
+// figures; the Comments, Reviews, Social and Lists modules wire the filing
+// endpoints, AdminModule wires the moderation queue. MailModule/JobsModule are
 // needed for ReportService's daily digest cron; NotificationModule for the
 // DSA art. 16(5) in-app resolution notice (ReportService — art. 16(4)'s
 // receipt confirmation is just the caller's own success toast, no backend

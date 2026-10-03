@@ -245,6 +245,7 @@ enum ReportCategory {
   MISINFORMATION
   STOLEN_CONTENT
   MISLEADING_REVIEW
+  NONCOMPLIANT_ACCOUNT
   OTHER
 }
 
@@ -257,6 +258,9 @@ enum ReportMotif {
   SPAM_SUSPICIOUS_LINK
   SPAM_REPEATED
   ILLEGAL_PIRACY_LINK
+  ILLEGAL_TERRORISM
+  ILLEGAL_DEFAMATION
+  ILLEGAL_OTHER
   HARASSMENT_INSULTS
   HARASSMENT_THREATS
   HARASSMENT_STALKING
@@ -270,11 +274,25 @@ enum ReportMotif {
   MINOR_ENDANGERMENT_SOLICITATION
   SPOILER_UNTAGGED
   IMPERSONATION_REAL_PERSON
-  IMPERSONATION_FAKE_ACCOUNT
   MISINFORMATION_FALSE_FACT
   STOLEN_CONTENT_PLAGIARIZED
+  STOLEN_CONTENT_IMAGE
   MISLEADING_REVIEW_MANIPULATION
   MISLEADING_REVIEW_OFF_TOPIC
+  ACCOUNT_BOT
+  ACCOUNT_UNDERAGE
+  ACCOUNT_BAN_EVASION
+  ACCOUNT_MANIPULATION
+}
+
+// The part of a profile a USER report is about (see ReportProfilePart in
+// packages/shared): narrows the picker's categories and points the moderator
+// at the matching measure.
+enum ReportProfilePart {
+  NAME
+  PHOTO
+  BIO
+  BEHAVIOUR
 }
 
 // A list's kind: RANKED shows explicit rank order (drag-to-reorder, "top 10"),
@@ -299,12 +317,18 @@ enum ReportStatus {
   DISMISSED
 }
 
-// The two restrictive measures actually implemented (see ModerationDecision) —
+// The restrictive measures actually implemented (see ModerationDecision) —
 // keep in lockstep with the CGU §9 sanctions list: the CGU must describe
 // exactly what the code can do, not more (DSA art. 14).
 enum ModerationMeasure {
   COMMENT_REMOVED
   REVIEW_REMOVED
+  LIST_REMOVED
+  LIST_EDITED
+  AVATAR_REMOVED
+  BIO_CLEARED
+  DISPLAY_NAME_CHANGED
+  ACCOUNT_SUSPENDED
   ACCOUNT_DELETED
 }
 
@@ -599,6 +623,11 @@ model User {
   // next bumped, so a returning user gets the full inactivity window again
   // instead of being deleted on the strength of a stale warning.
   inactivityWarningSentAt       DateTime?
+  // Moderation suspension: the account is suspended while this is in the
+  // future (login refused, profile unreachable, no email or push), and
+  // active again on its own once it passes. Null means never suspended or
+  // lifted early by an admin.
+  suspendedUntil                DateTime?
   // Invitation this account signed up through — null for an open
   // registration. "Invité par" is read through invitation.createdBy rather
   // than a second FK. SetNull: purging an invitation never touches accounts.
@@ -864,6 +893,8 @@ model Report {
   // neither. New submissions always set category (motif too, except OTHER).
   category     ReportCategory?
   motif        ReportMotif?
+  // USER reports only, always set for them.
+  profilePart  ReportProfilePart?
   reason       String?
   status       ReportStatus     @default(PENDING)
   createdAt    DateTime         @default(now())

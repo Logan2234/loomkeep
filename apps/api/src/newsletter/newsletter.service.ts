@@ -6,6 +6,7 @@ import { randomBytes } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { notSuspended } from "../users/suspension.util";
 
 const QUACKBACK_CHANGELOG_API_URL =
   "https://feedback.loomkeep.app/api/v1/changelog";
@@ -90,7 +91,7 @@ export class NewsletterService {
       contentHtml,
     );
     const recipients = await this.prisma.user.findMany({
-      where: { notifyNewsletter: true },
+      where: { notifyNewsletter: true, ...notSuspended() },
       select: {
         id: true,
         email: true,

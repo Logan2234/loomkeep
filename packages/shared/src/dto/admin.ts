@@ -321,6 +321,8 @@ export interface AdminUserDto {
   lastActiveAt: string | null;
   /** Set once the inactivity reminder email has been sent, null otherwise. */
   inactivityWarningSentAt: string | null;
+  /** End of a moderation suspension still in force, null otherwise. */
+  suspendedUntil: string | null;
   /** Total XP (`UserScore`), 0 before any gain. */
   xp: number;
   /** The invitation this account signed up through — null for an open registration. */

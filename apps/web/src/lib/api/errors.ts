@@ -24,6 +24,7 @@ const MESSAGES = {
     m.apierr_auth_invalid_verification_token(),
   [ErrorCode.AuthAlreadyVerified]: () => m.apierr_auth_already_verified(),
   [ErrorCode.AuthInvalidCredentials]: () => m.apierr_auth_invalid_credentials(),
+  [ErrorCode.AuthAccountSuspended]: () => m.apierr_auth_account_suspended(),
   [ErrorCode.AuthInvalidMfaChallenge]: () =>
     m.apierr_auth_invalid_mfa_challenge(),
   [ErrorCode.AuthMfaTooManyAttempts]: () =>

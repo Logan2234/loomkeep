@@ -18,6 +18,7 @@ import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { isSuspended } from "../users/suspension.util";
 import { type NotificationCopy, notificationCopy } from "./notification-copy";
 import {
   type NewEpisodeNotification,
@@ -420,11 +421,12 @@ export class NotificationService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: input.userId },
-      select: { locale: true, alertPrefs: true },
+      select: { locale: true, alertPrefs: true, suspendedUntil: true },
     });
 
     if (
       !user ||
+      isSuspended(user) ||
       !isAlertEnabled(user.alertPrefs as AlertPrefs, input.type, "push")
     ) {
       return;

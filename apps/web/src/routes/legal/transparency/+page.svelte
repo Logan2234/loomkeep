@@ -16,6 +16,12 @@
   const MEASURE_LABELS: Record<ModerationMeasure, string> = {
     COMMENT_REMOVED: m.transparency_measure_comment(),
     REVIEW_REMOVED: m.transparency_measure_review(),
+    LIST_REMOVED: m.transparency_measure_list_removed(),
+    LIST_EDITED: m.transparency_measure_list_edited(),
+    AVATAR_REMOVED: m.transparency_measure_avatar(),
+    BIO_CLEARED: m.transparency_measure_bio(),
+    DISPLAY_NAME_CHANGED: m.transparency_measure_display_name(),
+    ACCOUNT_SUSPENDED: m.transparency_measure_suspended(),
     ACCOUNT_DELETED: m.transparency_measure_account(),
   };
 

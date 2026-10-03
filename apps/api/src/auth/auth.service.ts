@@ -40,6 +40,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { isSocialEnabled } from "../social/social.config";
 import { avatarUrl } from "../users/avatar.util";
+import { assertNotSuspended, isSuspended } from "../users/suspension.util";
 import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { LoginDto } from "./dto/login.dto";
@@ -374,6 +375,8 @@ export class AuthService {
       );
     }
 
+    assertNotSuspended(user);
+
     const webauthnAllowed = await this.webauthn.hasCredentials(user.id);
 
     if (user.mfaTotpEnabled || user.mfaEmailEnabled || webauthnAllowed) {
@@ -646,6 +649,8 @@ export class AuthService {
     userAgent?: string,
     ip?: string,
   ): Promise<AuthResult> {
+    // Also covers passkey logins, which never go through the password check.
+    assertNotSuspended(user);
     const promoted = await this.ensureAdminRole(user);
     const isNewDevice = await this.recordDevice(promoted.id, userAgent);
     await this.touchActivity(promoted.id);
@@ -721,6 +726,11 @@ export class AuthService {
         HttpStatus.UNAUTHORIZED,
         ErrorCode.AuthInvalidRefreshToken,
       );
+    }
+
+    if (isSuspended(stored.user)) {
+      await this.prisma.refreshToken.deleteMany({ where: { id: stored.id } });
+      assertNotSuspended(stored.user);
     }
 
     const signed = await this.signTokens(stored.user, stored.id);

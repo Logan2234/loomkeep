@@ -1,5 +1,7 @@
 import { vi, type Mock } from "vitest";
+import type { AuthService } from "../auth/auth.service";
 import type { CommentService } from "../comments/comment.service";
+import type { ListService } from "../lists/list.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
 import type { ModerationDecisionService } from "../reports/moderation-decision.service";
@@ -69,6 +71,12 @@ function makeController(
     },
     user: {
       findMany: vi.fn().mockResolvedValue([]),
+      update: vi.fn().mockResolvedValue({}),
+      findUniqueOrThrow: vi.fn().mockResolvedValue({
+        email: "author@example.com",
+        locale: "fr",
+        username: "author1",
+      }),
       findUnique:
         overrides.findUniqueUser ??
         vi.fn().mockResolvedValue({
@@ -81,9 +89,26 @@ function makeController(
   const moderationDecisions = {
     record: vi.fn(),
     recordForReportInTransaction: vi.fn().mockResolvedValue(DECISION),
+    recordManyForReportInTransaction: vi.fn(
+      async (_tx: unknown, inputs: unknown[]) => inputs.map(() => DECISION),
+    ),
     sendEmail: vi.fn().mockResolvedValue(undefined),
+    sendNotice: vi.fn().mockResolvedValue(undefined),
     publishForReport: vi.fn(),
   } as unknown as ModerationDecisionService;
+
+  const lists = {
+    adminRemove: vi.fn().mockResolvedValue({
+      ownerId: "owner1",
+      title: "Liste",
+      description: null,
+      itemCount: 3,
+    }),
+  } as unknown as ListService;
+
+  const auth = {
+    revokeAllSessions: vi.fn().mockResolvedValue(undefined),
+  } as unknown as AuthService;
 
   const controller = new AdminReportsController(
     reports,
@@ -91,6 +116,8 @@ function makeController(
     reviews,
     prisma,
     moderationDecisions,
+    lists,
+    auth,
   );
   return {
     controller,
@@ -99,6 +126,8 @@ function makeController(
     reviews,
     prisma,
     moderationDecisions,
+    lists,
+    auth,
   };
 }
 
@@ -361,5 +390,104 @@ describe("AdminReportsController.summary", () => {
         { username: "mira", reports: 1 },
       ],
     });
+  });
+});
+
+describe("AdminReportsController.takeProfileMeasures", () => {
+  const PROFILE_REPORT = vi.fn().mockResolvedValue({
+    targetType: "USER",
+    targetId: "u1",
+    category: "HATE_SPEECH",
+    motif: "HATE_RACISM",
+    status: "PENDING",
+  });
+
+  it("records one decision per measure, sends one notice and ends the sessions of a suspended account", async () => {
+    const { controller, prisma, moderationDecisions, auth } = makeController({
+      findReport: PROFILE_REPORT,
+      findUniqueUser: vi
+        .fn()
+        .mockResolvedValue({ bio: "bio", displayName: "Tom" }),
+    });
+    const until = new Date(Date.now() + 7 * 86_400_000).toISOString();
+
+    await controller.takeProfileMeasures(ADMIN, "r1", {
+      ...REASON_BODY,
+      removeAvatar: true,
+      clearBio: true,
+      suspendUntil: until,
+    });
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      data: expect.objectContaining({
+        avatar: null,
+        bio: null,
+        suspendedUntil: new Date(until),
+      }),
+    });
+    const [, notices] = (
+      moderationDecisions.recordManyForReportInTransaction as Mock
+    ).mock.calls[0];
+    expect(notices.map((n: { measure: string }) => n.measure)).toEqual([
+      "AVATAR_REMOVED",
+      "BIO_CLEARED",
+      "ACCOUNT_SUSPENDED",
+    ]);
+    expect(moderationDecisions.sendNotice).toHaveBeenCalledOnce();
+    expect(auth.revokeAllSessions).toHaveBeenCalledWith("u1");
+  });
+
+  it("refuses a suspension that would already be over", async () => {
+    const { controller, prisma } = makeController({
+      findReport: PROFILE_REPORT,
+    });
+
+    await expect(
+      controller.takeProfileMeasures(ADMIN, "r1", {
+        ...REASON_BODY,
+        suspendUntil: new Date(Date.now() - 1000).toISOString(),
+      }),
+    ).rejects.toMatchObject({ code: "validation.failed" });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("won't apply profile measures to a report about something else", async () => {
+    const { controller, prisma } = makeController();
+
+    await expect(
+      controller.takeProfileMeasures(ADMIN, "r1", {
+        ...REASON_BODY,
+        clearBio: true,
+      }),
+    ).rejects.toMatchObject({ code: "admin.report_not_found" });
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("AdminReportsController.removeList", () => {
+  it("deletes the list and notifies its owner", async () => {
+    const { controller, lists, moderationDecisions, prisma } = makeController({
+      findReport: vi.fn().mockResolvedValue({
+        targetType: "LIST",
+        targetId: "l1",
+        category: "ILLEGAL_CONTENT",
+        motif: "ILLEGAL_PIRACY_LINK",
+        status: "PENDING",
+      }),
+    });
+
+    await controller.removeList(ADMIN, "r1", REASON_BODY);
+
+    expect(lists.adminRemove).toHaveBeenCalledWith("l1", prisma);
+    const [, notices] = (
+      moderationDecisions.recordManyForReportInTransaction as Mock
+    ).mock.calls[0];
+    expect(notices).toEqual([
+      expect.objectContaining({
+        measure: "LIST_REMOVED",
+        subjectUserId: "owner1",
+      }),
+    ]);
   });
 });

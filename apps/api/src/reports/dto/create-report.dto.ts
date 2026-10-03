@@ -1,4 +1,8 @@
-import { ReportCategory, ReportMotif } from "@loomkeep/shared";
+import {
+  ReportCategory,
+  ReportMotif,
+  ReportProfilePart,
+} from "@loomkeep/shared";
 import { IsIn, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class CreateReportBody {
@@ -14,4 +18,9 @@ export class CreateReportBody {
   @IsString()
   @MaxLength(500)
   reason?: string;
+
+  /** Required on a profile report — checked in ReportService.create. */
+  @IsOptional()
+  @IsIn(Object.values(ReportProfilePart))
+  profilePart?: ReportProfilePart;
 }

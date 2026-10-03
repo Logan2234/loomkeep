@@ -53,6 +53,10 @@ describe("InactiveAccountService.scan", () => {
       where: {
         lastActiveAt: { lte: expect.any(Date) },
         inactivityWarningSentAt: null,
+        OR: [
+          { suspendedUntil: null },
+          { suspendedUntil: { lte: expect.any(Date) } },
+        ],
       },
       select: { id: true, email: true, locale: true, lastActiveAt: true },
     });

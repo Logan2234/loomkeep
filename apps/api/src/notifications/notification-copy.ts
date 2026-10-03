@@ -40,6 +40,10 @@ const COPY = {
     moderation: {
       commentRemoved: "Un de tes commentaires a été retiré",
       reviewRemoved: "Une de tes critiques a été retirée",
+      listRemoved: "Une de tes listes a été supprimée",
+      listEdited: "Une de tes listes a été modifiée",
+      profileEdited: "Ton profil a été modifié par la modération",
+      suspended: "Ton compte a été désactivé",
       other: "Une mesure a été prise sur ton compte",
     },
     /** Default name for a security key enrolled without one. */
@@ -149,6 +153,10 @@ const COPY = {
     moderation: {
       commentRemoved: "One of your comments was removed",
       reviewRemoved: "One of your reviews was removed",
+      listRemoved: "One of your lists was deleted",
+      listEdited: "One of your lists was edited",
+      profileEdited: "Your profile was edited by moderation",
+      suspended: "Your account was suspended",
       other: "Action has been taken on your account",
     },
     securityKey: "Security key",
@@ -258,6 +266,10 @@ const COPY = {
     moderation: {
       commentRemoved: "Uno dei tuoi commenti è stato rimosso",
       reviewRemoved: "Una delle tue recensioni è stata rimossa",
+      listRemoved: "Una delle tue liste è stata eliminata",
+      listEdited: "Una delle tue liste è stata modificata",
+      profileEdited: "Il tuo profilo è stato modificato dalla moderazione",
+      suspended: "Il tuo account è stato disattivato",
       other: "È stata presa una misura sul tuo account",
     },
     securityKey: "Chiave di sicurezza",
@@ -360,6 +372,10 @@ export interface NotificationCopy {
   moderation: {
     commentRemoved: string;
     reviewRemoved: string;
+    listRemoved: string;
+    listEdited: string;
+    profileEdited: string;
+    suspended: string;
     other: string;
   };
   securityKey: string;

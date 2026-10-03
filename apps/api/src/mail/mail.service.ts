@@ -49,6 +49,29 @@ interface SendArgs {
 
 type TemplateBody = Omit<SendArgs, "to" | "replyTo">;
 
+/** One DSA art. 17 notice: every measure a single moderation decision applied. */
+export interface ModerationDecisionMail {
+  measures: ModerationMeasure[];
+  /** ACCOUNT_SUSPENDED only: when the account comes back. */
+  suspendedUntil?: Date | null;
+  reasonText: string;
+  legalBasis: ModerationLegalBasis;
+  tosClause: string;
+  /** One per measure, in the same order. */
+  decisionIds: string[];
+  decidedAt: Date;
+}
+
+/** The gallery's comma-separated measure field, unknown values dropped. */
+function galleryMeasures(raw: string): ModerationMeasure[] {
+  const known = Object.values(ModerationMeasure) as string[];
+  const measures = raw
+    .split(",")
+    .map((m) => m.trim())
+    .filter((m): m is ModerationMeasure => known.includes(m));
+  return measures.length > 0 ? measures : [ModerationMeasure.COMMENT_REMOVED];
+}
+
 type MailFooter =
   | { type: "classic" }
   | { type: "admin" }
@@ -545,8 +568,14 @@ export class MailService {
         },
         {
           key: "measure",
-          label: "Mesure (COMMENT_REMOVED, REVIEW_REMOVED ou ACCOUNT_DELETED)",
+          label:
+            "Mesures, séparées par des virgules (COMMENT_REMOVED, REVIEW_REMOVED, LIST_REMOVED, LIST_EDITED, AVATAR_REMOVED, BIO_CLEARED, DISPLAY_NAME_CHANGED, ACCOUNT_SUSPENDED ou ACCOUNT_DELETED)",
           default: "COMMENT_REMOVED",
+        },
+        {
+          key: "suspendedUntil",
+          label: "Fin de la désactivation (ACCOUNT_SUSPENDED)",
+          default: "2026-10-10T14:20:00Z",
         },
         {
           key: "legalBasis",
@@ -567,18 +596,15 @@ export class MailService {
       ],
       build: (locale, v) =>
         this.buildModerationDecision(locale, {
-          measure: Object.values(ModerationMeasure).includes(
-            v.measure as ModerationMeasure,
-          )
-            ? (v.measure as ModerationMeasure)
-            : ModerationMeasure.COMMENT_REMOVED,
+          measures: galleryMeasures(v.measure),
+          suspendedUntil: new Date(v.suspendedUntil),
           legalBasis:
             v.legalBasis === ModerationLegalBasis.ILLEGAL_CONTENT
               ? ModerationLegalBasis.ILLEGAL_CONTENT
               : ModerationLegalBasis.TOS_BREACH,
           reasonText: v.reasonText,
           tosClause: v.tosClause,
-          decisionId: v.decisionId,
+          decisionIds: [v.decisionId],
           decidedAt: new Date(v.decidedAt),
         }),
     },
@@ -954,14 +980,7 @@ export class MailService {
    */
   async sendModerationDecision(
     recipient: MailRecipient,
-    input: {
-      measure: ModerationMeasure;
-      reasonText: string;
-      legalBasis: ModerationLegalBasis;
-      tosClause: string;
-      decisionId: string;
-      decidedAt: Date;
-    },
+    input: ModerationDecisionMail,
   ): Promise<void> {
     await this.send({
       to: recipient.email,
@@ -1068,31 +1087,47 @@ export class MailService {
    * The five DSA art. 17 mentions: nature of the measure, facts invoked,
    * legal/contractual basis, non-automated character, redress. `tosClause`
    * is only meaningful when legalBasis is TOS_BREACH — ILLEGAL_CONTENT states
-   * the illegality ground instead.
+   * the illegality ground instead. Several measures taken on one report share
+   * one notice, which names each of them.
    */
   private buildModerationDecision(
     locale: Locale,
-    input: {
-      measure: ModerationMeasure;
-      reasonText: string;
-      legalBasis: ModerationLegalBasis;
-      tosClause: string;
-      decisionId: string;
-      decidedAt: Date;
-    },
+    input: ModerationDecisionMail,
   ): TemplateBody {
     const copy = MAIL_COPY[resolveCopyLocale(locale)].moderation;
-    const variant = {
-      [ModerationMeasure.COMMENT_REMOVED]: copy.comment,
-      [ModerationMeasure.REVIEW_REMOVED]: copy.review,
-      [ModerationMeasure.ACCOUNT_DELETED]: copy.account,
-    }[input.measure];
+    const until = input.suspendedUntil
+      ? this.formatEventDate(locale, input.suspendedUntil)
+      : "";
+    const variants = input.measures.map((measure) =>
+      measure === ModerationMeasure.ACCOUNT_SUSPENDED
+        ? {
+            measure: copy.suspended.measure(until),
+            subject: copy.suspended.subject,
+          }
+        : {
+            [ModerationMeasure.COMMENT_REMOVED]: copy.comment,
+            [ModerationMeasure.REVIEW_REMOVED]: copy.review,
+            [ModerationMeasure.LIST_REMOVED]: copy.listRemoved,
+            [ModerationMeasure.LIST_EDITED]: copy.listEdited,
+            [ModerationMeasure.AVATAR_REMOVED]: copy.avatar,
+            [ModerationMeasure.BIO_CLEARED]: copy.bio,
+            [ModerationMeasure.DISPLAY_NAME_CHANGED]: copy.displayName,
+            [ModerationMeasure.ACCOUNT_DELETED]: copy.account,
+          }[measure],
+    );
+    const subject =
+      variants.length === 1 ? variants[0].subject : copy.severalSubject;
+    const measures = variants.map((v) => v.measure);
+    const measureText =
+      measures.length > 1
+        ? `${measures.slice(0, -1).join(", ")} ${copy.and} ${measures.at(-1)}`
+        : measures[0];
     const basisText =
       input.legalBasis === ModerationLegalBasis.ILLEGAL_CONTENT
         ? copy.illegalBasis
         : copy.tosBasis(input.tosClause);
-    const intro = copy.intro(variant.measure);
-    const reference = copy.reference(input.decisionId);
+    const intro = copy.intro(measureText);
+    const reference = copy.reference(input.decisionIds.join(", "));
     const decidedAt = copy.decidedAt(
       this.formatEventDate(locale, input.decidedAt),
     );
@@ -1102,11 +1137,11 @@ export class MailService {
     );
 
     return {
-      subject: variant.subject,
+      subject,
       text: `${reference}\n${decidedAt}\n\n${intro}\n\n${copy.factsLabel}: ${input.reasonText}\n\n${copy.basisLabel}: ${basisText}.\n\n${copy.humanDecision}\n\n${appeal}`,
       html: this.wrapEmail(
         locale,
-        variant.subject,
+        subject,
         `<p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(reference)}<br>${escapeHtml(decidedAt)}</p>
          <p>${escapeHtml(intro)}</p>
          <p><strong>${escapeHtml(copy.factsLabel)}:</strong> ${escapeHtml(input.reasonText)}</p>
@@ -1115,7 +1150,7 @@ export class MailService {
          <p>${escapeHtml(appeal)}</p>`,
         {
           template: "moderationDecision",
-          footer: { type: "moderation", decisionId: input.decisionId },
+          footer: { type: "moderation", decisionId: input.decisionIds[0] },
         },
       ),
     };
