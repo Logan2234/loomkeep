@@ -36,6 +36,12 @@ export const unfollowUser = (username: string) =>
     params: { username },
   });
 
+export const removeFollower = (username: string) =>
+  typedRequest("/social/users/{username}/follower", {
+    method: "DELETE",
+    params: { username },
+  });
+
 export const blockUser = (username: string) =>
   typedRequest("/social/users/{username}/block", {
     method: "POST",

@@ -5,8 +5,6 @@
     followUser,
     getMyProfile,
     getProfile,
-    getUserFollowers,
-    getUserFollowing,
     getUserLists,
     logout,
     reportUser,
@@ -256,17 +254,6 @@
   // Followers/following modal, opened from the counts below.
   let connectionsKind = $state<"followers" | "following" | null>(null);
 
-  const connectionsQuery = createApiQuery(() => ({
-    key: keys.profile.connections(username, connectionsKind ?? "followers"),
-    fetch: () =>
-      connectionsKind === "followers"
-        ? getUserFollowers(username)
-        : getUserFollowing(username),
-    enabled: connectionsKind !== null,
-  }));
-  const connections = $derived(connectionsQuery.data ?? []);
-  const connectionsLoading = $derived(connectionsQuery.loading);
-
   function openConnections(kind: "followers" | "following") {
     connectionsKind = kind;
   }
@@ -433,9 +420,11 @@
 
 {#if connectionsKind}
   <ProfileConnectionsModal
+    {username}
     kind={connectionsKind}
-    {connections}
-    loading={connectionsLoading}
+    followerCount={profile?.followerCount ?? 0}
+    followingCount={profile?.followingCount ?? 0}
+    manage={!!selfManage}
     onClose={() => (connectionsKind = null)} />
 {/if}
 

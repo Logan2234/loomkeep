@@ -1216,5 +1216,18 @@
   "add_to_list_empty": "Type a name to create your first list.",
   "lists_visibility_private_hint": "You and your editors, no one else.",
   "lists_visibility_friends_hint": "Your friends see it on your profile.",
-  "lists_visibility_public_hint": "Anyone on this instance can see it."
+  "lists_visibility_public_hint": "Anyone on this instance can see it.",
+  "profile_connections_title": "Connections",
+  "profile_connections_search": "Search a name or @username",
+  "profile_connections_no_match": "No one matches “{query}”.",
+  "profile_connections_friend": "Friend",
+  "profile_connections_follow_back": "Follow back",
+  "profile_connections_unfollow": "Unfollow",
+  "profile_connections_remove": "Remove {name} from your followers",
+  "profile_connections_remove_confirm": "Remove {name} from your followers? They won't be told, and can follow you again.",
+  "list_members_team": "Team",
+  "list_members_owner": "Owner",
+  "list_members_since": "Editor since {date}",
+  "list_members_added": "Added",
+  "list_members_remove_confirm": "Remove {name}? What they added stays in the list."
 }
