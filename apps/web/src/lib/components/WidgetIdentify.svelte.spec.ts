@@ -1,5 +1,6 @@
 import { auth } from "$lib/auth.svelte";
 import { layout } from "$lib/layout.svelte";
+import { toast } from "$lib/toast.svelte";
 import type { UserDto } from "@loomkeep/shared";
 import { render } from "@testing-library/svelte";
 import { createRawSnippet, flushSync } from "svelte";
@@ -37,6 +38,19 @@ describe("WidgetIdentify", () => {
     expect(lastCommand()).toBe("hideLauncher");
 
     panel.unmount();
+    flushSync();
+    expect(lastCommand()).toBe("showLauncher");
+  });
+
+  it("hides the feedback launcher while a toast shares its corner", () => {
+    render(WidgetIdentify);
+    expect(lastCommand()).toBe("showLauncher");
+
+    const id = toast.show("Saved");
+    flushSync();
+    expect(lastCommand()).toBe("hideLauncher");
+
+    toast.dismiss(id);
     flushSync();
     expect(lastCommand()).toBe("showLauncher");
   });

@@ -579,14 +579,16 @@
         : m.library_bulk_removed_many({ count }),
       "info",
       UNDO_DELAY_MS,
-      {
-        label: m.common_cancel(),
-        onSelect: () => {
-          if (pendingRemoval) clearTimeout(pendingRemoval.timer);
-          pendingRemoval = null;
-          restore();
+      [
+        {
+          label: m.common_cancel(),
+          onSelect: () => {
+            if (pendingRemoval) clearTimeout(pendingRemoval.timer);
+            pendingRemoval = null;
+            restore();
+          },
         },
-      },
+      ],
     );
   }
 

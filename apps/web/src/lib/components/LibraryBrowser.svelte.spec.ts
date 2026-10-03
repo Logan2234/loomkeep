@@ -325,7 +325,7 @@ describe("LibraryBrowser", () => {
     await waitFor(() => expect(screen.queryByText("Dune")).toBeNull());
     expect(bulk.remove).not.toHaveBeenCalled();
 
-    toast.items.at(-1)!.action!.onSelect();
+    toast.items.at(-1)!.actions[0].onSelect();
 
     expect(await screen.findByText("Dune")).toBeTruthy();
     expect(bulk.remove).not.toHaveBeenCalled();
