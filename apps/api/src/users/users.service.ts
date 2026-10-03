@@ -600,64 +600,132 @@ export class UsersService {
   /**
    * Live preview of what deleting the account would do, for the confirmation
    * modal — every category is always present, even at 0 rows, so the summary
-   * reads as exhaustive. Mirrors the `onDelete` behaviour in schema.prisma:
-   * most owned rows cascade away, Review/Comment/Report are detached
-   * (SetNull) instead since their content is visible to other users.
+   * reads as exhaustive. Mirrors the `onDelete` behaviour in schema.prisma and
+   * AccountDeletionService: owned rows cascade away; what other members can
+   * see (reviews, comments, items added to their lists) is detached
+   * (SetNull) instead; lists with editors change hands.
    */
   async deletionSummary(userId: string): Promise<AccountDeletionSummaryDto> {
+    const own = { userId };
     const [
+      sessions,
       library,
-      watchHistory,
+      episodeWatches,
+      movieReplays,
       games,
       books,
+      readingGoals,
       music,
-      lists,
-      notifications,
-      followers,
-      following,
+      soloLists,
+      listMemberships,
+      follows,
       blocks,
+      reviewVotes,
+      commentReactions,
+      notifications,
       activity,
+      achievements,
+      savedViews,
+      devices,
+      apiKeys,
+      passkeys,
       reviews,
       comments,
+      listItemsAdded,
       reports,
+      imports,
+      securityEvents,
+      moderationDecisions,
+      sharedLists,
     ] = await Promise.all([
-      this.prisma.libraryEntry.count({ where: { userId } }),
-      this.prisma.episodeWatch.count({ where: { userId } }),
-      this.prisma.gameEntry.count({ where: { userId } }),
-      this.prisma.bookEntry.count({ where: { userId } }),
-      this.prisma.musicEntry.count({ where: { userId } }),
-      // A list with editors isn't deleted, ownership is transferred instead
-      // (see deleteAccount) — only count lists that will actually cascade.
+      this.prisma.refreshToken.count({ where: own }),
+      this.prisma.libraryEntry.count({ where: own }),
+      this.prisma.episodeWatch.count({ where: own }),
+      this.prisma.movieReplay.count({ where: { libraryEntry: own } }),
+      this.prisma.gameEntry.count({ where: own }),
+      this.prisma.bookEntry.count({ where: own }),
+      this.prisma.readingGoal.count({ where: own }),
+      this.prisma.musicEntry.count({ where: own }),
       this.prisma.list.count({ where: { userId, members: { none: {} } } }),
-      this.prisma.notification.count({ where: { userId } }),
-      this.prisma.follow.count({ where: { followeeId: userId } }),
-      this.prisma.follow.count({ where: { followerId: userId } }),
+      this.prisma.listMember.count({ where: own }),
+      this.prisma.follow.count({
+        where: { OR: [{ followerId: userId }, { followeeId: userId }] },
+      }),
       this.prisma.block.count({
         where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
       }),
-      this.prisma.activityEvent.count({ where: { userId } }),
-      this.prisma.review.count({ where: { userId } }),
+      this.prisma.reviewVote.count({ where: own }),
+      this.prisma.commentReaction.count({ where: own }),
+      this.prisma.notification.count({ where: own }),
+      this.prisma.activityEvent.count({ where: own }),
+      this.prisma.userAchievement.count({ where: own }),
+      this.prisma.savedView.count({ where: own }),
+      this.prisma.userDevice.count({ where: own }),
+      this.prisma.apiKey.count({ where: own }),
+      this.prisma.webauthnCredential.count({ where: own }),
+      this.prisma.review.count({ where: own }),
       this.prisma.comment.count({ where: { authorId: userId } }),
+      // Items in the account's own solo lists go with those lists.
+      this.prisma.listItem.count({
+        where: {
+          addedById: userId,
+          NOT: { list: { userId, members: { none: {} } } },
+        },
+      }),
       this.prisma.report.count({ where: { reporterId: userId } }),
+      this.prisma.importRun.count({ where: own }),
+      this.prisma.securityEvent.count({ where: own }),
+      this.prisma.moderationDecision.count({
+        where: { subjectUserId: userId },
+      }),
+      this.prisma.list.findMany({
+        where: { userId, members: { some: {} } },
+        orderBy: { title: "asc" },
+        select: {
+          title: true,
+          members: {
+            orderBy: { createdAt: "asc" },
+            take: 1,
+            select: { user: { select: { displayName: true } } },
+          },
+        },
+      }),
     ]);
 
     return {
+      sessions,
       deleted: [
         { category: "LIBRARY", count: library },
-        { category: "WATCH_HISTORY", count: watchHistory },
+        { category: "WATCH_HISTORY", count: episodeWatches + movieReplays },
         { category: "GAMES", count: games },
         { category: "BOOKS", count: books },
+        { category: "READING_GOALS", count: readingGoals },
         { category: "MUSIC", count: music },
-        { category: "LISTS", count: lists },
-        { category: "NOTIFICATIONS", count: notifications },
-        { category: "FOLLOWS", count: followers + following },
+        { category: "LISTS", count: soloLists },
+        { category: "LIST_MEMBERSHIPS", count: listMemberships },
+        { category: "FOLLOWS", count: follows },
         { category: "BLOCKS", count: blocks },
+        { category: "REACTIONS", count: reviewVotes + commentReactions },
+        { category: "NOTIFICATIONS", count: notifications },
         { category: "ACTIVITY", count: activity },
+        { category: "PROGRESSION", count: achievements },
+        { category: "SAVED_VIEWS", count: savedViews },
+        { category: "SIGN_IN", count: devices + apiKeys + passkeys },
       ],
       anonymized: [
         { category: "REVIEWS", count: reviews },
         { category: "COMMENTS", count: comments },
+        { category: "LIST_ITEMS_ADDED", count: listItemsAdded },
         { category: "REPORTS", count: reports },
+        { category: "IMPORTS", count: imports },
+      ],
+      transferredLists: sharedLists.map((list) => ({
+        title: list.title,
+        newOwner: list.members[0].user.displayName,
+      })),
+      kept: [
+        { category: "SECURITY_EVENTS", count: securityEvents },
+        { category: "MODERATION_DECISIONS", count: moderationDecisions },
       ],
     };
   }

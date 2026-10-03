@@ -833,19 +833,37 @@ describe("UsersService — deletionSummary", () => {
 
   beforeEach(() => {
     prisma = {
+      refreshToken: { count: vi.fn().mockResolvedValue(0) },
       libraryEntry: { count: vi.fn().mockResolvedValue(0) },
       episodeWatch: { count: vi.fn().mockResolvedValue(0) },
+      movieReplay: { count: vi.fn().mockResolvedValue(0) },
       gameEntry: { count: vi.fn().mockResolvedValue(0) },
       bookEntry: { count: vi.fn().mockResolvedValue(0) },
+      readingGoal: { count: vi.fn().mockResolvedValue(0) },
       musicEntry: { count: vi.fn().mockResolvedValue(0) },
-      list: { count: vi.fn().mockResolvedValue(0) },
-      notification: { count: vi.fn().mockResolvedValue(0) },
+      listMember: { count: vi.fn().mockResolvedValue(0) },
       follow: { count: vi.fn().mockResolvedValue(0) },
       block: { count: vi.fn().mockResolvedValue(0) },
+      reviewVote: { count: vi.fn().mockResolvedValue(0) },
+      commentReaction: { count: vi.fn().mockResolvedValue(0) },
+      notification: { count: vi.fn().mockResolvedValue(0) },
       activityEvent: { count: vi.fn().mockResolvedValue(0) },
+      userAchievement: { count: vi.fn().mockResolvedValue(0) },
+      savedView: { count: vi.fn().mockResolvedValue(0) },
+      userDevice: { count: vi.fn().mockResolvedValue(0) },
+      apiKey: { count: vi.fn().mockResolvedValue(0) },
+      webauthnCredential: { count: vi.fn().mockResolvedValue(0) },
       review: { count: vi.fn().mockResolvedValue(0) },
       comment: { count: vi.fn().mockResolvedValue(0) },
+      listItem: { count: vi.fn().mockResolvedValue(0) },
       report: { count: vi.fn().mockResolvedValue(0) },
+      importRun: { count: vi.fn().mockResolvedValue(0) },
+      securityEvent: { count: vi.fn().mockResolvedValue(0) },
+      moderationDecision: { count: vi.fn().mockResolvedValue(0) },
+      list: {
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
     } as unknown as PrismaService;
     service = new UsersService(
       prisma,
@@ -872,7 +890,7 @@ describe("UsersService — deletionSummary", () => {
     );
   });
 
-  it("returns every category, even at zero, split between deleted and anonymized", async () => {
+  it("returns every category, even at zero, split by what happens to it", async () => {
     const summary = await service.deletionSummary(userId);
 
     expect(summary.deleted.map((r) => r.category)).toEqual([
@@ -880,32 +898,62 @@ describe("UsersService — deletionSummary", () => {
       "WATCH_HISTORY",
       "GAMES",
       "BOOKS",
+      "READING_GOALS",
       "MUSIC",
       "LISTS",
-      "NOTIFICATIONS",
+      "LIST_MEMBERSHIPS",
       "FOLLOWS",
       "BLOCKS",
+      "REACTIONS",
+      "NOTIFICATIONS",
       "ACTIVITY",
+      "PROGRESSION",
+      "SAVED_VIEWS",
+      "SIGN_IN",
     ]);
     expect(summary.anonymized.map((r) => r.category)).toEqual([
       "REVIEWS",
       "COMMENTS",
+      "LIST_ITEMS_ADDED",
       "REPORTS",
+      "IMPORTS",
     ]);
-    expect(summary.deleted.every((r) => r.count === 0)).toBe(true);
-    expect(summary.anonymized.every((r) => r.count === 0)).toBe(true);
+    expect(summary.kept.map((r) => r.category)).toEqual([
+      "SECURITY_EVENTS",
+      "MODERATION_DECISIONS",
+    ]);
+    expect(summary.transferredLists).toEqual([]);
+    expect(
+      [...summary.deleted, ...summary.anonymized, ...summary.kept].every(
+        (r) => r.count === 0,
+      ),
+    ).toBe(true);
   });
 
-  it("sums both follow directions into a single FOLLOWS count", async () => {
-    (prisma.follow.count as Mock)
-      .mockResolvedValueOnce(3) // followers
-      .mockResolvedValueOnce(5); // following
+  it("counts episode views and film rewatches together as watch history", async () => {
+    (prisma.episodeWatch.count as Mock).mockResolvedValueOnce(40);
+    (prisma.movieReplay.count as Mock).mockResolvedValueOnce(2);
 
     const summary = await service.deletionSummary(userId);
 
-    expect(summary.deleted.find((r) => r.category === "FOLLOWS")?.count).toBe(
-      8,
-    );
+    expect(
+      summary.deleted.find((r) => r.category === "WATCH_HISTORY")?.count,
+    ).toBe(42);
+  });
+
+  it("names the editor each shared list passes to", async () => {
+    (prisma.list.findMany as Mock).mockResolvedValueOnce([
+      {
+        title: "À voir ensemble",
+        members: [{ user: { displayName: "Camille" } }],
+      },
+    ]);
+
+    const summary = await service.deletionSummary(userId);
+
+    expect(summary.transferredLists).toEqual([
+      { title: "À voir ensemble", newOwner: "Camille" },
+    ]);
   });
 });
 
