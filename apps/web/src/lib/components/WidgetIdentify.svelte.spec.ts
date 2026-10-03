@@ -9,11 +9,11 @@ import WidgetIdentify from "./WidgetIdentify.svelte";
 
 const body = createRawSnippet(() => ({ render: () => "<p>Discussion</p>" }));
 
-let quackback: ReturnType<typeof vi.fn>;
+let quackback: ReturnType<typeof vi.fn<(...args: unknown[]) => void>>;
 const lastCommand = () => quackback.mock.calls.at(-1)?.[0];
 
 beforeEach(() => {
-  quackback = vi.fn();
+  quackback = vi.fn<(...args: unknown[]) => void>();
   window.Quackback = quackback;
   layout.compact = false;
   auth.user = { id: "u1" } as UserDto;
