@@ -6,6 +6,7 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
+  import { flipChildren } from "$lib/actions/flipChildren";
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -15,7 +16,8 @@
   import { createWatchProviderToggle } from "$lib/watch-provider-toggle.svelte";
   import type { WatchProviderDto } from "@loomkeep/shared";
   import { flip } from "svelte/animate";
-  import { fade, slide } from "svelte/transition";
+  import { backOut } from "svelte/easing";
+  import { scale, slide } from "svelte/transition";
   import { flashAnchor } from "../flash-anchor";
 
   const reduced = prefersReducedMotion();
@@ -155,7 +157,16 @@
         <div
           class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2">
           {#each featured as provider (provider.id)}
-            {@render tile(provider)}
+            <div
+              class="grid"
+              animate:flip={{ duration: reduced ? 0 : 220 }}
+              in:scale={{
+                start: 0.6,
+                duration: reduced ? 0 : 260,
+                easing: backOut,
+              }}>
+              {@render tile(provider)}
+            </div>
           {/each}
         </div>
 
@@ -182,14 +193,10 @@
                   aria-label={m.settings_streaming_search_placeholder()}
                   bind:value={search} />
                 <div
-                  class="mt-3 grid grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2">
+                  class="relative mt-3 grid max-h-80 grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2 overflow-y-auto p-0.5"
+                  use:flipChildren={{ duration: reduced ? 0 : 220 }}>
                   {#each matchingRest as provider (provider.id)}
-                    <div
-                      class="grid"
-                      animate:flip={{ duration: reduced ? 0 : 220 }}
-                      in:fade={{ duration: reduced ? 0 : 160 }}>
-                      {@render tile(provider)}
-                    </div>
+                    {@render tile(provider)}
                   {/each}
                 </div>
               </div>
