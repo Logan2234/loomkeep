@@ -1,5 +1,6 @@
 import type {
   ActivityEventDto,
+  ConnectionDto,
   FollowRequestDto,
   PagedResult,
   RelationshipDto,
@@ -31,6 +32,7 @@ import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { ActivityService, FEED_PAGE_SIZE } from "./activity.service";
 import { ActivityEventResponseDto } from "./dto/activity-event-response.dto";
+import { ConnectionResponseDto } from "./dto/connection-response.dto";
 import { FollowRequestResponseDto } from "./dto/follow-request-response.dto";
 import { RelationshipResponseDto } from "./dto/relationship-response.dto";
 import { SocialProfileResponseDto } from "./dto/social-profile-response.dto";
@@ -132,21 +134,21 @@ export class SocialController {
 
   /** A user's followers (gated like their profile content). */
   @Get("users/:username/followers")
-  @ApiOkResponse({ type: UserSummaryResponseDto, isArray: true })
+  @ApiOkResponse({ type: ConnectionResponseDto, isArray: true })
   userFollowers(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,
-  ): Promise<UserSummaryDto[]> {
+  ): Promise<ConnectionDto[]> {
     return this.profiles.listFollowers(user.sub, username);
   }
 
   /** Accounts a user follows (gated like their profile content). */
   @Get("users/:username/following")
-  @ApiOkResponse({ type: UserSummaryResponseDto, isArray: true })
+  @ApiOkResponse({ type: ConnectionResponseDto, isArray: true })
   userFollowing(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,
-  ): Promise<UserSummaryDto[]> {
+  ): Promise<ConnectionDto[]> {
     return this.profiles.listFollowing(user.sub, username);
   }
 
@@ -175,6 +177,16 @@ export class SocialController {
     @Param("username") username: string,
   ): Promise<RelationshipDto> {
     return this.follow.unfollow(user.sub, username);
+  }
+
+  /** Removes this user from the caller's followers, without telling them. */
+  @Delete("users/:username/follower")
+  @ApiOkResponse({ type: RelationshipResponseDto })
+  removeFollower(
+    @CurrentUser() user: JwtPayload,
+    @Param("username") username: string,
+  ): Promise<RelationshipDto> {
+    return this.follow.removeFollower(user.sub, username);
   }
 
   @Post("users/:username/block")

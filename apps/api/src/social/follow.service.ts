@@ -1,4 +1,5 @@
 import {
+  type ConnectionDto,
   ErrorCode,
   type FollowRequestDto,
   NotificationType,
@@ -395,6 +396,68 @@ export class FollowService {
       hasMore,
       items: rows.slice(0, limit).map((row) => toUserSummaryDto(row.blocked)),
     };
+  }
+
+  /**
+   * Removes someone's follow (or pending request) on the viewer. Silent — no
+   * notification — and they can follow again. Idempotent.
+   */
+  async removeFollower(
+    viewerId: string,
+    username: string,
+  ): Promise<RelationshipDto> {
+    const follower = await this.prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+    if (!follower)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+
+    const existing = await this.prisma.follow.findUnique({
+      where: {
+        followerId_followeeId: {
+          followerId: follower.id,
+          followeeId: viewerId,
+        },
+      },
+      select: { status: true },
+    });
+    await this.prisma.follow.deleteMany({
+      where: { followerId: follower.id, followeeId: viewerId },
+    });
+
+    // A declined request leaves the viewer's own pending list too.
+    if (existing?.status === "PENDING") {
+      this.events.emitToUser(viewerId, "follow-request-changed");
+    }
+
+    return this.relationship(viewerId, username);
+  }
+
+  /** Tags listed accounts with where the viewer stands with each of them. */
+  async withViewerRelation(
+    viewerId: string,
+    users: UserSummaryDto[],
+  ): Promise<ConnectionDto[]> {
+    const [outgoing, friendIds] = await Promise.all([
+      this.prisma.follow.findMany({
+        where: {
+          followerId: viewerId,
+          followeeId: { in: users.map((u) => u.id) },
+        },
+        select: { followeeId: true, status: true },
+      }),
+      this.listFriendIds(viewerId),
+    ]);
+    const status = new Map(outgoing.map((f) => [f.followeeId, f.status]));
+    const friends = new Set(friendIds);
+
+    return users.map((user) => ({
+      ...user,
+      following: status.get(user.id) === "ACCEPTED",
+      requested: status.get(user.id) === "PENDING",
+      isFriend: friends.has(user.id),
+    }));
   }
 
   async listFollowers(userId: string): Promise<UserSummaryDto[]> {

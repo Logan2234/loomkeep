@@ -1216,5 +1216,18 @@
   "add_to_list_empty": "Scrivi un nome per creare la tua prima lista.",
   "lists_visibility_private_hint": "Tu e i tuoi editor, nessun altro.",
   "lists_visibility_friends_hint": "I tuoi amici la vedono sul tuo profilo.",
-  "lists_visibility_public_hint": "Chiunque su questa istanza può vederla."
+  "lists_visibility_public_hint": "Chiunque su questa istanza può vederla.",
+  "profile_connections_title": "Relazioni",
+  "profile_connections_search": "Cerca un nome o un @username",
+  "profile_connections_no_match": "Nessuno corrisponde a «{query}».",
+  "profile_connections_friend": "Amico",
+  "profile_connections_follow_back": "Segui anche tu",
+  "profile_connections_unfollow": "Smetti di seguire",
+  "profile_connections_remove": "Rimuovi {name} dai tuoi follower",
+  "profile_connections_remove_confirm": "Rimuovere {name} dai tuoi follower? Non riceverà alcun avviso e potrà seguirti di nuovo.",
+  "list_members_team": "Squadra",
+  "list_members_owner": "Proprietario",
+  "list_members_since": "Editor dal {date}",
+  "list_members_added": "Aggiunto",
+  "list_members_remove_confirm": "Rimuovere {name}? Le sue aggiunte restano nella lista."
 }
