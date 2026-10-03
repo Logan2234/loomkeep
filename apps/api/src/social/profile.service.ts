@@ -1,5 +1,6 @@
 import {
   type AchievementDto,
+  type ConnectionDto,
   Domain,
   episodeRuntimeFor,
   ErrorCode,
@@ -9,7 +10,6 @@ import {
   type ProfileDomainStatDto,
   type ReviewVisibility,
   type SocialProfileDto,
-  type UserSummaryDto,
   VisibilityFacet,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
@@ -324,18 +324,22 @@ export class ProfileService {
   async listFollowers(
     viewerId: string,
     username: string,
-  ): Promise<UserSummaryDto[]> {
+  ): Promise<ConnectionDto[]> {
     const targetId = await this.resolveConnectionsTarget(viewerId, username);
-    return targetId ? this.follow.listFollowers(targetId) : [];
+    if (!targetId) return [];
+    const followers = await this.follow.listFollowers(targetId);
+    return this.follow.withViewerRelation(viewerId, followers);
   }
 
   /** A user's followed accounts — same gating as {@link listFollowers}. */
   async listFollowing(
     viewerId: string,
     username: string,
-  ): Promise<UserSummaryDto[]> {
+  ): Promise<ConnectionDto[]> {
     const targetId = await this.resolveConnectionsTarget(viewerId, username);
-    return targetId ? this.follow.listFollowing(targetId) : [];
+    if (!targetId) return [];
+    const following = await this.follow.listFollowing(targetId);
+    return this.follow.withViewerRelation(viewerId, following);
   }
 
   // Resolves `username` to an id the viewer may see the connections of, or

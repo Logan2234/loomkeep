@@ -37,6 +37,9 @@ function make(
   const follow = {
     listFollowers: vi.fn().mockResolvedValue([{ id: "u1" }]),
     listFollowing: vi.fn().mockResolvedValue([{ id: "u2" }]),
+    withViewerRelation: vi.fn((_viewerId: string, users: unknown[]) =>
+      Promise.resolve(users),
+    ),
   } as unknown as FollowService;
   // Not exercised by these tests (only getProfile reads gamification config).
   const config = { get: vi.fn() } as unknown as ConfigService;

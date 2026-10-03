@@ -220,6 +220,95 @@ describe("FollowService.unfollow", () => {
   });
 });
 
+describe("FollowService.removeFollower", () => {
+  it("deletes their follow on the viewer and sends them nothing", async () => {
+    const { service, prisma, create, events } = makeService({
+      targetAccess: "PUBLIC",
+    });
+    (prisma.follow.findUnique as Mock).mockResolvedValue({
+      status: "ACCEPTED",
+    });
+
+    await service.removeFollower("viewer", "alice");
+
+    expect(prisma.follow.deleteMany).toHaveBeenCalledWith({
+      where: { followerId: "target", followeeId: "viewer" },
+    });
+    expect(create).not.toHaveBeenCalled();
+    expect(events.emitToUser).not.toHaveBeenCalled();
+  });
+
+  it("refreshes the viewer's own pending list when it declines a request", async () => {
+    const { service, prisma, events } = makeService({
+      targetAccess: "PUBLIC",
+    });
+    (prisma.follow.findUnique as Mock).mockResolvedValue({
+      status: "PENDING",
+    });
+
+    await service.removeFollower("viewer", "alice");
+
+    expect(events.emitToUser).toHaveBeenCalledWith(
+      "viewer",
+      "follow-request-changed",
+    );
+  });
+});
+
+describe("FollowService.withViewerRelation", () => {
+  it("tags each account with the viewer's follow and friendship", async () => {
+    const { service, prisma } = makeService({ targetAccess: "PUBLIC" });
+    const findMany = vi.fn(({ where }: { where: Record<string, unknown> }) => {
+      // The viewer's follows towards the listed accounts.
+      if (where.followeeId && typeof where.followeeId === "object") {
+        return Promise.resolve([
+          { followeeId: "camille", status: "ACCEPTED" },
+          { followeeId: "theo", status: "PENDING" },
+        ]);
+      }
+
+      // listFriendIds: the viewer's accepted follows, then their followers.
+      if (where.followerId === "viewer") {
+        return Promise.resolve([
+          { followeeId: "camille", followee: { profileAccess: "PUBLIC" } },
+        ]);
+      }
+
+      return Promise.resolve([
+        { followerId: "camille" },
+        { followerId: "jules" },
+      ]);
+    });
+    (prisma.follow as unknown as { findMany: Mock }).findMany = findMany;
+    const user = (id: string) => ({
+      id,
+      username: id,
+      displayName: id,
+      profileAccess: "PUBLIC" as const,
+      avatarUrl: null,
+    });
+
+    const tagged = await service.withViewerRelation("viewer", [
+      user("camille"),
+      user("theo"),
+      user("jules"),
+    ]);
+
+    expect(
+      tagged.map(({ id, following, requested, isFriend }) => ({
+        id,
+        following,
+        requested,
+        isFriend,
+      })),
+    ).toEqual([
+      { id: "camille", following: true, requested: false, isFriend: true },
+      { id: "theo", following: false, requested: true, isFriend: false },
+      { id: "jules", following: false, requested: false, isFriend: false },
+    ]);
+  });
+});
+
 describe("FollowService.block", () => {
   it("ends list editing both ways, since only friends can edit a list", async () => {
     // Viewer edits a list of the target's, and the target edits one of the
