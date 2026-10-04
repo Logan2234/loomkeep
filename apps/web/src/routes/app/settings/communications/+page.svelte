@@ -191,16 +191,6 @@
           ]),
         },
         {
-          label: m.settings_alert_group_releases(),
-          alerts: [
-            {
-              key: "SAGA_SEQUEL_ANNOUNCED",
-              label: m.settings_alert_saga_sequel(),
-              hint: m.settings_alert_saga_sequel_hint(),
-            },
-          ],
-        },
-        {
           label: m.settings_alert_group_account(),
           alerts: [
             {
@@ -217,6 +207,20 @@
       ] satisfies AlertGroupRows[]
     ).filter((group) => group.alerts.length > 0),
   );
+
+  // Its own matrix: the only release alert with a bell entry and an email
+  // to switch on, which the activity matrix (bell and push) has no column for.
+  const sagaGroups: AlertGroupRows[] = [
+    {
+      alerts: [
+        {
+          key: "SAGA_SEQUEL_ANNOUNCED",
+          label: m.settings_alert_saga_sequel(),
+          hint: m.settings_alert_saga_sequel_hint(),
+        },
+      ],
+    },
+  ];
 
   const adminGroups: AlertGroupRows[] = [
     {
@@ -305,6 +309,13 @@
                 onChange={(v) => setCadence("notifyPush", v)} />
             {/snippet}
           </SettingRow>
+          <AlertGrid
+            anchor="saga-alerts"
+            title={m.settings_communications_sagas_title()}
+            description={m.settings_communications_sagas_desc()}
+            groups={sagaGroups}
+            columns={["bell", "push", "email"]}
+            {pushBlocked} />
         </div>
       </section>
 

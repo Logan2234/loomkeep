@@ -166,6 +166,7 @@ const TEMPLATE_LABELS = {
   mfaEmailCode: () => m.admin_template_mfa_code(),
   newsletter: () => m.common_newsletter(),
   episodeDigest: () => m.admin_template_episode_digest(),
+  sagaSequel: () => m.admin_template_saga_sequel(),
   reportsDigest: () => m.admin_job_reports_digest(),
   jobAlert: () => m.admin_template_job_alert(),
   quotaAlert: () => m.admin_template_quota_alert(),
@@ -183,6 +184,8 @@ const FIELD_LABELS = {
   oldEmail: () => m.common_old_email(),
   code: () => m.common_code(),
   title: () => m.common_title(),
+  saga: () => m.media_saga_title(),
+  path: () => m.admin_template_path(),
   content: () => m.admin_template_content(),
   itemCount: () => m.admin_template_episode_count(),
   period: () => m.admin_template_period(),
@@ -241,7 +244,7 @@ const TEMPLATE_GROUPS = [
   },
   {
     label: () => m.admin_template_group_updates(),
-    keys: ["newsletter", "episodeDigest"],
+    keys: ["newsletter", "episodeDigest", "sagaSequel"],
   },
   {
     label: () => m.admin_template_group_moderation(),
