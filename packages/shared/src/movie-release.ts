@@ -52,3 +52,12 @@ export function movieReleaseInfo(
     region,
   };
 }
+
+/**
+ * An announced anime that hasn't started airing yet (AniList's own status).
+ * Like an unreleased film, it can be followed — shown as upcoming — but not
+ * completed, rated or reviewed until it airs.
+ */
+export function isAnimeUnaired(status: string | null | undefined): boolean {
+  return status === "NOT_YET_RELEASED";
+}

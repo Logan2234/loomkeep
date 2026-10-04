@@ -44,7 +44,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import { timeLeftToWatch } from "$lib/pile";
   import type { MediaType } from "@loomkeep/shared";
-  import { isDormant, isGhost } from "@loomkeep/shared";
+  import { isAnimeUnaired, isDormant, isGhost } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
   import ActionBar from "./components/ActionBar.svelte";
@@ -259,12 +259,15 @@
     );
     return () => clearInterval(timer);
   });
+  // Not out yet: an unreleased film or an announced anime. Either can be
+  // followed, but shows "À venir" and offers no review or "Mon suivi" panel.
   const upcoming = $derived(
-    isMovie &&
+    (isMovie &&
       !!detail?.movieRelease &&
       (detail.movieRelease.publicDate
         ? detail.movieRelease.publicDate > today
-        : detail.movieRelease.upcoming),
+        : detail.movieRelease.upcoming)) ||
+      (detail?.type === "ANIME" && isAnimeUnaired(detail.airingStatus)),
   );
   const timeLeft = $derived(
     detail && entry?.progress && !isMovie
@@ -468,7 +471,7 @@
           {#if extras?.format && extras.format !== "TV"}
             · {FORMAT_LABELS[extras.format] ?? extras.format}
           {/if}
-          {#if !isMovie && detail.seasons.length > 0}
+          {#if !isMovie && detail.seasons.some((s) => s.episodes.length > 0)}
             · {detail.airingFinished
               ? m.media_airing_finished()
               : m.media_airing()}
@@ -567,13 +570,13 @@
   </ActionBar>
 
   <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
-    {#if upcoming && entry?.movieReleaseAlertsEnabled && auth.user?.notifyEmail === "DISABLED" && auth.user?.notifyPush === "DISABLED"}
+    {#if isMovie && upcoming && entry?.movieReleaseAlertsEnabled && auth.user?.notifyEmail === "DISABLED" && auth.user?.notifyPush === "DISABLED"}
       <p class="text-dim mt-4 text-sm">
         <a href="/app/settings/communications" class="text-accent underline"
           >{m.media_movie_reminder_channels_disabled()}</a>
       </p>
     {/if}
-    {#if entry?.progress}
+    {#if entry?.progress && !upcoming}
       <div class="mt-6 max-w-sm">
         <ProgressBar value={pct} label={m.common_progress()} />
         <p class="timecode mt-1.5 text-sm">
