@@ -112,7 +112,8 @@ describe("AnilistProvider", () => {
     // The fixture carries no `duration`, so no per-episode runtime either.
     expect(season.episodes[0]).toEqual({
       number: 1,
-      title: "Episode 1 - The Journey's End",
+      // The "Episode N - " prefix is dropped: the number is shown alongside.
+      title: "The Journey's End",
       airDate: null,
       runtimeMin: null,
       overview: null,
@@ -166,6 +167,75 @@ describe("AnilistProvider", () => {
     expect(details.seasons[0].episodes.every((e) => e.runtimeMin === 24)).toBe(
       true,
     );
+  });
+
+  it("names episodes by the number in their streaming title, not their position", async () => {
+    mockFetch({
+      data: {
+        Media: {
+          id: 998,
+          title: { romaji: "Reversed Show", english: null },
+          description: null,
+          coverImage: {},
+          bannerImage: null,
+          genres: [],
+          status: "FINISHED",
+          format: "TV",
+          episodes: 4,
+          startDate: { year: 2026, month: 1, day: 5 },
+          nextAiringEpisode: null,
+          // Newest first, as AniList often returns them, one with no number.
+          streamingEpisodes: [
+            { title: "Episode 4 - Reunion" },
+            { title: "Episode 3 - Dirty Roads" },
+            { title: "Special Preview" },
+            { title: "Episode 1 - Light of Science" },
+          ],
+          duration: 24,
+        },
+      },
+    });
+
+    const details = await provider.getDetails("998");
+
+    expect(details.seasons[0].episodes.map((e) => e.title)).toEqual([
+      "Light of Science",
+      null,
+      "Dirty Roads",
+      "Reunion",
+    ]);
+  });
+
+  it("shifts a later cour's absolute episode numbers back to 1", async () => {
+    mockFetch({
+      data: {
+        Media: {
+          id: 997,
+          title: { romaji: "Second Cour", english: null },
+          description: null,
+          coverImage: {},
+          bannerImage: null,
+          genres: [],
+          status: "FINISHED",
+          format: "TV",
+          episodes: 2,
+          startDate: { year: 2026, month: 4, day: 5 },
+          nextAiringEpisode: null,
+          streamingEpisodes: [
+            { title: "Episode 14 - Second" },
+            { title: "Episode 13 - First" },
+          ],
+          duration: 24,
+        },
+      },
+    });
+
+    const details = await provider.getDetails("997");
+
+    expect(details.seasons[0].episodes.map((e) => e.title)).toEqual([
+      "First",
+      "Second",
+    ]);
   });
 
   describe("getExtras", () => {
