@@ -17,7 +17,7 @@ vi.mock("$lib/reports-pending.svelte", () => ({
 
 it("offers an overview destination and the pending reports badge in the admin menu", async () => {
   visit("/app/admin/users");
-  renderWithQuery(MenuSheet);
+  renderWithQuery(MenuSheet, {});
   window.dispatchEvent(new Event("mobile-menu-toggle"));
   const menu = await screen.findByRole("dialog");
   expect(

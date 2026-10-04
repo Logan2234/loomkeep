@@ -23,9 +23,7 @@ it("finds classes and icons, gives specimens direct links and offers generic sta
   await user.type(search, ".btn-danger");
   await waitFor(() =>
     expect(
-      screen
-        .getByRole("link", { name: ".btn", exact: true })
-        .getAttribute("href"),
+      screen.getByRole("link", { name: ".btn" }).getAttribute("href"),
     ).toBe("#specimen-btn"),
   );
   expect(screen.queryByRole("heading", { name: "PasswordInput" })).toBeNull();
@@ -36,9 +34,7 @@ it("finds classes and icons, gives specimens direct links and offers generic sta
   await user.clear(search);
   await user.type(search, "RankBars");
   expect(
-    screen
-      .getByRole("link", { name: "RankBars", exact: true })
-      .getAttribute("href"),
+    screen.getByRole("link", { name: "RankBars" }).getAttribute("href"),
   ).toBe("#specimen-rankbars");
   expect(container.querySelector("#specimen-cohorttable")).toBeNull();
   vi.unstubAllGlobals();
