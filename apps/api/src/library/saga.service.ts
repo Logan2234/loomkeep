@@ -1,32 +1,37 @@
-import type { CatalogSource, MediaSagaDto, MediaType } from "@loomkeep/shared";
+import type {
+  CatalogSource,
+  EntryStatus,
+  LibrarySagaDto,
+  LibrarySagaSort,
+  LibrarySagasDto,
+  MediaSagaDto,
+  MediaType,
+  SagaMemberDto,
+} from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
-import type { ExternalSource as DbExternalSource } from "@prisma/client";
-import { AnilistProvider } from "../catalog/providers/anilist.provider";
-import { TmdbProvider } from "../catalog/providers/tmdb.provider";
+import type { SagaMember } from "@prisma/client";
+import { SagaSyncService } from "../catalog/saga-sync.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AgeGateService } from "../users/age-gate.service";
 import { LibraryService } from "./library.service";
+import { sagaProgress } from "./saga-progress.util";
 
-// Same freshness as a cached MediaItem (see MediaItemService.refresh).
-const SAGA_TTL_MS = 24 * 60 * 60 * 1000;
-const MAX_CACHED_WORKS = 5000;
+export interface LibrarySagaFilters {
+  types?: MediaType[];
+  q?: string;
+  sort?: LibrarySagaSort;
+  order?: "asc" | "desc";
+}
 
 /**
- * The saga a film or an anime belongs to: its TMDB collection, or its AniList
- * main line. Walking an AniList franchise takes several throttled requests, so
- * a saga, once read, is kept a day for every one of its works.
+ * Sagas as the viewer sees them: the one on a work's page, and the ones in
+ * progress across their library.
  */
 @Injectable()
 export class SagaService {
-  private readonly cache = new Map<
-    string,
-    { fetchedAt: number; saga: MediaSagaDto | null }
-  >();
-
   constructor(
     private readonly prisma: PrismaService,
-    private readonly tmdb: TmdbProvider,
-    private readonly anilist: AnilistProvider,
+    private readonly sagas: SagaSyncService,
     private readonly library: LibraryService,
     private readonly ageGate: AgeGateService,
   ) {}
@@ -39,7 +44,7 @@ export class SagaService {
   ): Promise<MediaSagaDto | null> {
     if (type === "SERIES") return null;
 
-    const saga = await this.catalogSaga(type, sourceId, lang);
+    const saga = await this.sagas.read(type, sourceId, lang);
     if (!saga) return null;
 
     const allowAdult = await this.ageGate.allowsAdultContent(userId);
@@ -52,7 +57,7 @@ export class SagaService {
     const ids = members.map((m) => m.sourceId);
     const [statuses] = await Promise.all([
       this.library.statusesBySourceId(userId, source, type, ids),
-      this.rememberMembership(source, type, ids, saga.key),
+      this.sagas.rememberMembership(type, ids, saga.key),
     ]);
 
     return {
@@ -64,61 +69,134 @@ export class SagaService {
     };
   }
 
-  private async catalogSaga(
-    type: MediaType,
-    sourceId: string,
-    lang?: string,
-  ): Promise<MediaSagaDto | null> {
-    // AniList titles don't depend on the language asked for.
-    const langKey = type === "ANIME" ? "" : (lang ?? "");
-    const keyOf = (id: string) => `${type}:${id}:${langKey}`;
+  /**
+   * The sagas of the viewer's library, from what the refresh job saved: the
+   * ones in progress and the ones waiting on an announced sequel.
+   */
+  async listSagas(
+    userId: string,
+    filters: LibrarySagaFilters = {},
+  ): Promise<LibrarySagasDto> {
+    const entries = await this.prisma.libraryEntry.findMany({
+      where: {
+        userId,
+        mediaItem: {
+          sagaKey: { not: null },
+          type: filters.types?.length ? { in: filters.types } : undefined,
+        },
+      },
+      select: { updatedAt: true, mediaItem: { select: { sagaKey: true } } },
+    });
+    const lastActivity = new Map<string, Date>();
 
-    const cached = this.cache.get(keyOf(sourceId));
-
-    if (cached && Date.now() - cached.fetchedAt < SAGA_TTL_MS) {
-      return cached.saga;
+    for (const { updatedAt, mediaItem } of entries) {
+      const key = mediaItem.sagaKey!;
+      const last = lastActivity.get(key);
+      if (!last || updatedAt > last) lastActivity.set(key, updatedAt);
     }
 
-    const saga =
-      type === "ANIME"
-        ? await this.anilist.getSaga(sourceId)
-        : await this.tmdb.getSaga(sourceId, lang);
+    const q = filters.q?.trim().toLowerCase();
+    const sagas = await this.prisma.saga.findMany({
+      where: { key: { in: [...lastActivity.keys()] } },
+      include: { members: { orderBy: { position: "asc" } } },
+    });
+    const allowAdult = await this.ageGate.allowsAdultContent(userId);
+    const statuses = await this.statusesOf(
+      userId,
+      sagas.flatMap((saga) => saga.members),
+    );
 
-    const entry = { fetchedAt: Date.now(), saga };
+    const result: LibrarySagasDto = { inProgress: [], waiting: [] };
 
-    for (const id of saga ? saga.members.map((m) => m.sourceId) : [sourceId]) {
-      this.cache.delete(keyOf(id));
-      this.cache.set(keyOf(id), entry);
+    for (const saga of sagas) {
+      const members = saga.members
+        .filter((m) => allowAdult || !m.isAdult)
+        .map((m) => toMemberDto(m, statuses.get(`${m.type}:${m.sourceId}`)));
+
+      if (
+        q &&
+        !saga.title.toLowerCase().includes(q) &&
+        !members.some((m) => m.title.toLowerCase().includes(q))
+      ) {
+        continue;
+      }
+
+      const progress = sagaProgress(members);
+      if (progress.state === "none") continue;
+      result[progress.state].push({
+        key: saga.key,
+        title: saga.title,
+        members,
+        next: progress.next,
+        seen: progress.seen,
+        released: progress.released,
+        lastActivityAt: lastActivity.get(saga.key)!.toISOString(),
+      });
     }
 
-    // Maps iterate in insertion order: the first keys are the oldest.
-    for (const key of this.cache.keys()) {
-      if (this.cache.size <= MAX_CACHED_WORKS) break;
-      this.cache.delete(key);
+    const compare = sagaComparator(filters.sort ?? "recent");
+    const direction = filters.order === "asc" ? -1 : 1;
+
+    for (const list of [result.inProgress, result.waiting]) {
+      list.sort((a, b) => compare(a, b) * direction);
     }
 
-    return saga;
+    return result;
   }
 
-  /** Tags the tracked works of the saga, for library-wide uses to come. */
-  private async rememberMembership(
-    source: CatalogSource,
-    type: MediaType,
-    sourceIds: string[],
-    sagaKey: string,
-  ): Promise<void> {
-    await this.prisma.mediaItem.updateMany({
-      where: {
-        externalIds: {
-          some: {
-            source: source as DbExternalSource,
-            type,
-            externalId: { in: sourceIds },
-          },
-        },
-        OR: [{ sagaKey: null }, { sagaKey: { not: sagaKey } }],
-      },
-      data: { sagaKey },
-    });
+  private async statusesOf(
+    userId: string,
+    members: SagaMember[],
+  ): Promise<Map<string, EntryStatus>> {
+    const statuses = new Map<string, EntryStatus>();
+
+    for (const type of ["MOVIE", "ANIME"] as const) {
+      const ids = members.filter((m) => m.type === type).map((m) => m.sourceId);
+      if (ids.length === 0) continue;
+      const source: CatalogSource = type === "ANIME" ? "ANILIST" : "TMDB";
+      const byId = await this.library.statusesBySourceId(
+        userId,
+        source,
+        type,
+        ids,
+      );
+      for (const [id, status] of byId) statuses.set(`${type}:${id}`, status);
+    }
+
+    return statuses;
+  }
+}
+
+function toMemberDto(
+  m: SagaMember,
+  status: EntryStatus | undefined,
+): SagaMemberDto {
+  return {
+    source: m.source as CatalogSource,
+    sourceId: m.sourceId,
+    type: m.type as MediaType,
+    title: m.title,
+    year: m.releaseDate ? Number(m.releaseDate.slice(0, 4)) : null,
+    posterUrl: m.posterUrl,
+    isAdult: m.isAdult,
+    releaseDate: m.releaseDate,
+    format: m.format,
+    episodes: m.episodes,
+    upcoming: m.upcoming,
+    status: status ?? null,
+  };
+}
+
+/** Descending by default: most recent, Z to A, furthest along first. */
+function sagaComparator(
+  sort: LibrarySagaSort,
+): (a: LibrarySagaDto, b: LibrarySagaDto) => number {
+  switch (sort) {
+    case "title":
+      return (a, b) => b.title.localeCompare(a.title);
+    case "progress":
+      return (a, b) => b.seen / b.released - a.seen / a.released;
+    default:
+      return (a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt);
   }
 }

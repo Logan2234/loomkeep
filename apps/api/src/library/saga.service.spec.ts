@@ -1,7 +1,6 @@
 import type { MediaSagaDto, SagaMemberDto } from "@loomkeep/shared";
 import { vi } from "vitest";
-import type { AnilistProvider } from "../catalog/providers/anilist.provider";
-import type { TmdbProvider } from "../catalog/providers/tmdb.provider";
+import type { SagaSyncService } from "../catalog/saga-sync.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { AgeGateService } from "../users/age-gate.service";
 import type { LibraryService } from "./library.service";
@@ -33,9 +32,10 @@ const franchise: MediaSagaDto = {
 };
 
 function makeService(allowAdult = false) {
-  const prisma = { mediaItem: { updateMany: vi.fn().mockResolvedValue({}) } };
-  const anilist = { getSaga: vi.fn().mockResolvedValue(franchise) };
-  const tmdb = { getSaga: vi.fn().mockResolvedValue(null) };
+  const sagas = {
+    read: vi.fn().mockResolvedValue(franchise),
+    rememberMembership: vi.fn().mockResolvedValue(0),
+  };
   const library = {
     statusesBySourceId: vi
       .fn()
@@ -44,45 +44,42 @@ function makeService(allowAdult = false) {
   const ageGate = {
     allowsAdultContent: vi.fn().mockResolvedValue(allowAdult),
   };
+  const prisma = {
+    libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    saga: { findMany: vi.fn().mockResolvedValue([]) },
+  };
   const service = new SagaService(
     prisma as unknown as PrismaService,
-    tmdb as unknown as TmdbProvider,
-    anilist as unknown as AnilistProvider,
+    sagas as unknown as SagaSyncService,
     library as unknown as LibraryService,
     ageGate as unknown as AgeGateService,
   );
-  return { service, prisma, anilist, tmdb, library };
+  return { service, sagas, library, prisma };
 }
 
 describe("SagaService", () => {
   it("adds the viewer's status to each work and tags the tracked ones with the saga", async () => {
-    const { service, prisma, library } = makeService(true);
+    const { service, sagas, library } = makeService(true);
 
-    const saga = await service.getSaga("user-1", "ANIME", "2");
+    const saga = await service.getSaga("user-1", "ANIME", "2", "fr");
 
     expect(saga?.members.map((m) => [m.sourceId, m.status])).toEqual([
       ["1", "COMPLETED"],
       ["2", null],
       ["3", null],
     ]);
+    expect(sagas.read).toHaveBeenCalledWith("ANIME", "2", "fr");
     expect(library.statusesBySourceId).toHaveBeenCalledWith(
       "user-1",
       "ANILIST",
       "ANIME",
       ["1", "2", "3"],
     );
-    expect(prisma.mediaItem.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { sagaKey: "ANILIST:1" } }),
+    expect(sagas.rememberMembership).toHaveBeenCalledWith(
+      "ANIME",
+      ["1", "2", "3"],
+      "ANILIST:1",
     );
-  });
-
-  it("walks a franchise once for all of its works", async () => {
-    const { service, anilist } = makeService();
-
-    await service.getSaga("user-1", "ANIME", "2");
-    await service.getSaga("user-2", "ANIME", "1");
-
-    expect(anilist.getSaga).toHaveBeenCalledTimes(1);
   });
 
   it("leaves 18+ works out for an account that can't see them", async () => {
@@ -94,10 +91,66 @@ describe("SagaService", () => {
   });
 
   it("has no saga to offer for a series", async () => {
-    const { service, tmdb, anilist } = makeService();
+    const { service, sagas } = makeService();
 
     expect(await service.getSaga("user-1", "SERIES", "1399")).toBeNull();
-    expect(tmdb.getSaga).not.toHaveBeenCalled();
-    expect(anilist.getSaga).not.toHaveBeenCalled();
+    expect(sagas.read).not.toHaveBeenCalled();
+  });
+
+  it("lists the library's sagas in progress and waiting, most recently touched first", async () => {
+    const { service, prisma, library } = makeService(true);
+    const row = (sagaKey: string, sourceId: string, upcoming = false) => ({
+      sagaKey,
+      source: "TMDB",
+      sourceId,
+      type: "MOVIE",
+      position: Number(sourceId),
+      title: `Film ${sourceId}`,
+      posterUrl: null,
+      releaseDate: upcoming ? null : "2020-01-01",
+      format: null,
+      episodes: null,
+      isAdult: false,
+      upcoming,
+    });
+    prisma.libraryEntry.findMany.mockResolvedValue([
+      { updatedAt: new Date("2026-09-01"), mediaItem: { sagaKey: "TMDB:1" } },
+      { updatedAt: new Date("2026-10-01"), mediaItem: { sagaKey: "TMDB:2" } },
+      { updatedAt: new Date("2026-08-01"), mediaItem: { sagaKey: "TMDB:3" } },
+    ]);
+    prisma.saga.findMany.mockResolvedValue([
+      {
+        key: "TMDB:1",
+        title: "Alpha",
+        members: [row("TMDB:1", "11"), row("TMDB:1", "12")],
+      },
+      {
+        key: "TMDB:2",
+        title: "Beta",
+        members: [row("TMDB:2", "21"), row("TMDB:2", "22")],
+      },
+      {
+        key: "TMDB:3",
+        title: "Gamma",
+        members: [row("TMDB:3", "31"), row("TMDB:3", "32", true)],
+      },
+    ]);
+    library.statusesBySourceId.mockResolvedValue(
+      new Map([
+        ["11", "COMPLETED"],
+        ["21", "COMPLETED"],
+        ["31", "COMPLETED"],
+      ]),
+    );
+
+    const sagas = await service.listSagas("user-1");
+
+    expect(sagas.inProgress.map((s) => [s.title, s.next.sourceId])).toEqual([
+      ["Beta", "22"],
+      ["Alpha", "12"],
+    ]);
+    expect(sagas.waiting.map((s) => [s.title, s.next.sourceId])).toEqual([
+      ["Gamma", "32"],
+    ]);
   });
 });

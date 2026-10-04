@@ -18,6 +18,7 @@ import type {
   ProviderMediaDetails,
 } from "./providers/provider.types";
 import { TmdbProvider } from "./providers/tmdb.provider";
+import { SagaSyncService } from "./saga-sync.service";
 
 // A cached media referenced by users is refreshed at most once a day.
 const SYNC_TTL_MS = 24 * 60 * 60 * 1000;
@@ -62,12 +63,15 @@ export class MediaItemService {
     private readonly tmdbProvider: TmdbProvider,
     private readonly anilistProvider: AnilistProvider,
     private readonly jobRuns: JobRunService,
+    private readonly sagas: SagaSyncService,
   ) {}
 
   /**
    * Every 6h: re-sync tracked (non-dropped) media whose cache is stale, so
    * newly announced episodes reach the DB before the notification scan looks
    * for them. One upsert per distinct MediaItem, regardless of follower count.
+   * Films and anime get their saga re-read on the same pass, which is how a
+   * newly announced sequel is spotted.
    */
   @Cron(CronExpression.EVERY_6_HOURS)
   async refreshStale(): Promise<number> {
@@ -110,11 +114,20 @@ export class MediaItemService {
             sourceId,
             item.type as MediaType,
           );
-          return true;
         } catch (err) {
           this.logger.error(`Refresh failed for media ${item.id}`, err);
           return false;
         }
+
+        if (item.type !== "SERIES") {
+          try {
+            await this.sagas.sync(item.type as MediaType, sourceId);
+          } catch (err) {
+            this.logger.warn(`Saga sync failed for media ${item.id}`, err);
+          }
+        }
+
+        return true;
       },
     );
 
