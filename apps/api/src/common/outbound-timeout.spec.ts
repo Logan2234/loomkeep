@@ -47,7 +47,7 @@ describe("outbound request deadlines", () => {
 
         if (
           source === "Cover Art Archive" &&
-          String(url).includes("musicbrainz.org")
+          new URL(String(url)).hostname === "musicbrainz.org"
         ) {
           return Promise.resolve(
             Response.json({ id: "album", title: "Album", releases: [] }),
@@ -164,7 +164,7 @@ describe("outbound request deadlines", () => {
       const findBlockedCall = () =>
         fetchMock.mock.calls.find(([url]) =>
           source === "Cover Art Archive"
-            ? String(url).includes("coverartarchive.org")
+            ? new URL(String(url)).hostname === "coverartarchive.org"
             : source === "Simkl export"
               ? !String(url).endsWith("/oauth/token")
               : true,
