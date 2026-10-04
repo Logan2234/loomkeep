@@ -92,7 +92,7 @@ describe("admin presentation", () => {
       expect(groupAdminEmailTemplates([])).toEqual([]);
     },
   );
-  it("disables every job action while one job is running", () => {
+  it("disables only the job currently being launched", () => {
     expect(adminJobButtonState(null, "backup.run")).toEqual({
       disabled: false,
       running: false,
@@ -102,7 +102,7 @@ describe("admin presentation", () => {
       running: true,
     });
     expect(adminJobButtonState("backup.run", "reports.digest")).toEqual({
-      disabled: true,
+      disabled: false,
       running: false,
     });
   });

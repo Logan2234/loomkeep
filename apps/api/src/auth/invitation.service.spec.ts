@@ -353,3 +353,38 @@ describe("InvitationService.purgeDead", () => {
     });
   });
 });
+
+describe("InvitationService.list filters", () => {
+  it.each(["pending", "used", "expired", "revoked"] as const)(
+    "filters %s before paginating and searches email or label",
+    async (status) => {
+      const { service, prisma } = makeService();
+      (prisma.invitation.findMany as Mock).mockResolvedValue([]);
+      await service.list(
+        { page: 2, skip: 50, take: 50, limit: 50 },
+        { query: " Club ", status },
+      );
+      const args = (prisma.invitation.findMany as Mock).mock.calls[0][0];
+      expect(args.skip).toBe(50);
+      expect(args.take).toBe(51);
+      expect(args.where.AND[1]).toEqual({
+        OR: [
+          { email: { contains: "Club", mode: "insensitive" } },
+          { label: { contains: "Club", mode: "insensitive" } },
+        ],
+      });
+      const state = args.where.AND[0];
+
+      if (status === "revoked")
+        expect(state).toEqual({ revokedAt: { not: null } });
+      else {
+        expect(state.revokedAt).toBeNull();
+        expect(state.useCount).toEqual(
+          status === "used" ? { gte: "maxUses-ref" } : { lt: "maxUses-ref" },
+        );
+        if (status === "pending") expect(state.expiresAt).toEqual({ gt: NOW });
+        if (status === "expired") expect(state.expiresAt).toEqual({ lte: NOW });
+      }
+    },
+  );
+});

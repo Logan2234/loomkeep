@@ -43,7 +43,7 @@ export class BookItemService {
    * cache is older than a week. Dropped books included — the Goodreads export
    * still lists them, on a "did-not-finish" shelf.
    */
-  @Cron(CronExpression.EVERY_6_HOURS)
+  @Cron(CronExpression.EVERY_6_HOURS, { name: JOB_KEYS.BOOKS_REFRESH_STALE })
   async refreshStale(): Promise<number> {
     return this.jobRuns.record(
       JOB_KEYS.BOOKS_REFRESH_STALE,

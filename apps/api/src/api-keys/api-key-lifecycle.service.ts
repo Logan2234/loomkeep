@@ -32,7 +32,9 @@ export class ApiKeyLifecycleService {
     private readonly notifications: NotificationService,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_6AM)
+  @Cron(CronExpression.EVERY_DAY_AT_6AM, {
+    name: JOB_KEYS.API_KEYS_MAINTENANCE,
+  })
   async runMaintenance(): Promise<{ warned: number; deleted: number }> {
     return this.jobRuns.record(
       JOB_KEYS.API_KEYS_MAINTENANCE,

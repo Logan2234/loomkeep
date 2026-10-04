@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { adminFilterHref } from "$lib/admin-filter-url";
+  import Combobox from "$lib/components/Combobox.svelte";
+  import AdminFilterBar from "../../AdminFilterBar.svelte";
   import {
     getAdminInvitations,
     renewAdminInvitation,
@@ -38,14 +43,32 @@
 
   const reduced = prefersReducedMotion();
   let revoking = $state<AdminInvitationDto | null>(null);
+  let renewing = $state<AdminInvitationDto | null>(null);
 
+  const query = $derived(page.url.searchParams.get("invitationQ") ?? "");
+  const activeStatus = $derived(
+    page.url.searchParams.get("invitationStatus") ?? "",
+  );
+  const queryKey = $derived(
+    keys.admin.invitations({ query, status: activeStatus }),
+  );
+  function filter(updates: Record<string, string | null>) {
+    void goto(adminFilterHref(page.url, updates), {
+      replaceState: true,
+      noScroll: true,
+      keepFocus: true,
+    });
+  }
+  function resetFilters() {
+    filter({ invitationQ: null, invitationStatus: null });
+  }
   const invitationsQuery = createApiInfiniteQuery<
     PagedResult<AdminInvitationDto>,
     number,
     AdminInvitationDto
   >(() => ({
-    key: keys.admin.invitations(),
-    fetch: (page) => getAdminInvitations({ page }),
+    key: queryKey,
+    fetch: (page) => getAdminInvitations({ page, query, status: activeStatus }),
     getPageItems: (page) => page.items,
     initialPageParam: 1,
     getNextPageParam: (last, allPages) =>
@@ -57,7 +80,10 @@
     mutate: renewAdminInvitation,
     invalidates: [keys.admin.invitations()],
     errorToast: true,
-    onSuccess: (link) => onRenewed(link),
+    onSuccess: (link) => {
+      renewing = null;
+      onRenewed(link);
+    },
   }));
 
   const revokeMut = createApiMutation(() => ({
@@ -93,6 +119,20 @@
       dot: "bg-surface-2 text-dim",
     },
   };
+
+  const activeFilters = $derived([
+    ...(query
+      ? [{ label: query, remove: () => filter({ invitationQ: null }) }]
+      : []),
+    ...(activeStatus && activeStatus in STATUS
+      ? [
+          {
+            label: STATUS[activeStatus as AdminInvitationStatus].label(),
+            remove: () => filter({ invitationStatus: null }),
+          },
+        ]
+      : []),
+  ]);
 
   function dateLine(invitation: AdminInvitationDto): string | null {
     if (invitation.status === "revoked" && invitation.revokedAt) {
@@ -137,11 +177,35 @@
     invitation.status === "pending" || invitation.status === "expired";
 </script>
 
+<AdminFilterBar
+  count={invitations.length}
+  loading={invitationsQuery.loading}
+  error={!!invitationsQuery.error}
+  active={activeFilters}
+  onReset={resetFilters}>
+  <input
+    class="input min-w-0 flex-1"
+    type="search"
+    aria-label={m.admin_invitations_search()}
+    placeholder={m.admin_invitations_search()}
+    value={query}
+    oninput={(event) =>
+      filter({ invitationQ: event.currentTarget.value || null })} />
+  <Combobox
+    label={m.admin_all_statuses()}
+    values={activeStatus ? [activeStatus] : []}
+    options={[
+      { value: "", label: m.admin_all_statuses() },
+      ...Object.entries(STATUS).map(([value, state]) => ({
+        value,
+        label: state.label(),
+      })),
+    ]}
+    onChange={(values) => filter({ invitationStatus: values[0] || null })} />
+</AdminFilterBar>
 {#if invitationsQuery.error}
   <div transition:fade={{ duration: reduced ? 0 : 120 }}>
-    <AdminQueryError
-      message={invitationsQuery.error}
-      queryKey={keys.admin.invitations()} />
+    <AdminQueryError message={invitationsQuery.error} {queryKey} />
   </div>
 {:else if invitationsQuery.loading}
   <div
@@ -156,15 +220,23 @@
         <Icon name="send" class="h-5 w-5" />
       </div>
       <p class="font-display text-fg text-lg font-bold">
-        {m.admin_invitations_empty_title()}
+        {activeFilters.length
+          ? m.admin_no_matches()
+          : m.admin_invitations_empty_title()}
       </p>
       <p class="mx-auto mt-1 max-w-sm text-sm">
-        {m.admin_invitations_empty_body()}
+        {activeFilters.length
+          ? m.admin_invitations_filtered_empty()
+          : m.admin_invitations_empty_body()}
       </p>
-      <button type="button" class="btn btn-primary mt-5" onclick={onInvite}>
-        <Icon name="plus" class="h-4 w-4" />
-        {m.admin_invitations_invite()}
-      </button>
+      {#if activeFilters.length}<button
+          class="btn btn-ghost mt-5"
+          onclick={resetFilters}>{m.admin_filters_reset()}</button
+        >{:else}
+        <button type="button" class="btn btn-primary mt-5" onclick={onInvite}>
+          <Icon name="plus" class="h-4 w-4" />
+          {m.admin_invitations_invite()}
+        </button>{/if}
     </EmptyState>
   </div>
 {:else}
@@ -245,7 +317,9 @@
               type="button"
               class="btn btn-ghost btn-sm"
               disabled={renewMut.loading}
-              onclick={() => renewMut.mutate(invitation.id)}>
+              aria-label={m.admin_invitations_renew()}
+              title={m.admin_invitations_renew()}
+              onclick={() => (renewing = invitation)}>
               <Icon
                 name="refresh"
                 class="h-3.5 w-3.5 {renewMut.loading &&
@@ -288,10 +362,26 @@
 {#if revoking}
   <ConfirmationModal
     title={m.admin_invitations_revoke_title()}
-    message={m.admin_invitations_revoke_message()}
+    message={m.admin_invitations_revoke_identified({
+      invitation:
+        revoking.email ?? revoking.label ?? m.admin_invitations_shared_link(),
+    })}
     confirmLabel={m.admin_invitations_revoke()}
     danger
     busy={revokeMut.loading}
     onConfirm={() => revoking && revokeMut.mutate(revoking.id)}
     onCancel={() => (revoking = null)} />
+{/if}
+
+{#if renewing}
+  <ConfirmationModal
+    title={m.admin_invitations_renew_title()}
+    message={m.admin_invitations_renew_warning() +
+      (renewing.email
+        ? " " + m.admin_invitations_renew_email({ email: renewing.email })
+        : "")}
+    confirmLabel={m.admin_invitations_renew()}
+    busy={renewMut.loading}
+    onConfirm={() => renewing && renewMut.mutate(renewing.id)}
+    onCancel={() => (renewing = null)} />
 {/if}

@@ -327,7 +327,7 @@ export class XpService {
     return removed;
   }
 
-  @Cron("0 4 * * *")
+  @Cron("0 4 * * *", { name: JOB_KEYS.GAMIFICATION_RECONCILE })
   async runReconcileJob(): Promise<Record<string, number>> {
     return this.jobRuns.record(
       JOB_KEYS.GAMIFICATION_RECONCILE,

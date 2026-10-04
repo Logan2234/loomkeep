@@ -73,7 +73,7 @@ export class MediaItemService {
    * Films and anime get their saga re-read on the same pass, which is how a
    * newly announced sequel is spotted.
    */
-  @Cron(CronExpression.EVERY_6_HOURS)
+  @Cron(CronExpression.EVERY_6_HOURS, { name: JOB_KEYS.MEDIA_REFRESH_STALE })
   async refreshStale(): Promise<number> {
     return this.jobRuns.record(
       JOB_KEYS.MEDIA_REFRESH_STALE,

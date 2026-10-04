@@ -52,6 +52,45 @@ function fakeSource(id: ImportSource, requiredEnvKeys?: string[]): ImportReq {
 }
 
 describe("ImportJobService translatable failures", () => {
+  it("exposes an analysis only while it is running", async () => {
+    let finish!: () => void;
+    const source = fakeSource("steam");
+    source.buildPlan = () =>
+      new Promise((resolve) => {
+        finish = () =>
+          resolve({
+            groups: [],
+            counts: { total: 0, matched: 0, unresolved: 0, apiErrors: 0 },
+            searchDomain: Domain.MEDIA,
+          });
+      });
+    const service = new ImportJobService(
+      [source],
+      {} as PrismaService,
+      {} as ConfigService,
+      {
+        isEffectivelyPremium: vi.fn().mockResolvedValue(true),
+      } as unknown as EntitlementService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      stubNotifications(),
+    );
+
+    const analysis = await service.startAnalyze("u1", "steam", { input: "" });
+    expect(service.listRunningImports()).toEqual([
+      expect.objectContaining({
+        id: analysis.id,
+        status: "RUNNING",
+        phase: "analyze",
+      }),
+    ]);
+    finish();
+    await vi.waitFor(() =>
+      expect(service.listRunningImports()).toHaveLength(0),
+    );
+  });
+
   it.each([
     [
       new AppException(
@@ -294,6 +333,66 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
       parsed: {},
     });
   }
+
+  it("exposes a running commit, persists its selection and report, then removes the active entry", async () => {
+    let finish!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const report = {
+      overwrite: false,
+      tiles: [{ id: "movies" as const, label: "Movies", value: 1, sub: null }],
+    };
+    const { service, importRunCreate } = makeCommitService(async () => {
+      await pending;
+      return report;
+    });
+    seedAnalyzedJob(service, "analysis");
+    const jobMap = (
+      service as unknown as {
+        jobs: Map<string, { plan: { groups: unknown[] } }>;
+      }
+    ).jobs;
+    jobMap.get("analysis")!.plan.groups = [
+      {
+        items: [
+          { key: "a", title: "Selected", match: {} },
+          { key: "b", title: "Skipped", match: {} },
+          { key: "c", title: "Unmatched", match: null },
+        ],
+      },
+    ];
+    const job = service.commit("u1", "tvtime", "analysis", { include: ["a"] });
+    expect(service.listRunningImports()).toEqual([
+      expect.objectContaining({
+        id: job.id,
+        status: "RUNNING",
+        finishedAt: null,
+      }),
+    ]);
+    expect(service.runningImportDetails(job.id)?.items).toEqual([
+      { title: "Selected", state: "selected" },
+      { title: "Skipped", state: "ignored" },
+      { title: "Unmatched", state: "unresolved" },
+    ]);
+    finish();
+    await vi.waitFor(() =>
+      expect(service.listRunningImports()).toHaveLength(0),
+    );
+    expect(importRunCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: job.id,
+        details: {
+          items: [
+            { title: "Selected", state: "selected" },
+            { title: "Skipped", state: "ignored" },
+            { title: "Unmatched", state: "unresolved" },
+          ],
+          report,
+        },
+      }),
+    });
+  });
 
   it("awards IMPORT_COMPLETED once a commit succeeds, even with zero items imported", async () => {
     const { service, xp } = makeCommitService(async () => ({

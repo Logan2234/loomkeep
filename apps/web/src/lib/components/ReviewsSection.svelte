@@ -31,6 +31,7 @@
   import ReportModal from "./ReportModal.svelte";
   import ReviewCard from "./ReviewCard.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";
+  import SegmentedControl from "./SegmentedControl.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { untrack, type Snippet } from "svelte";
 
@@ -252,17 +253,15 @@
     {/if}
 
     {#if appConfig.socialEnabled && othersReviews.length > 0}
-      <div class="flex flex-wrap gap-1.5">
-        {#each ARRANGEMENTS as option (option.value)}
-          <button
-            type="button"
-            class="chip"
-            class:chip-on={arrangement === option.value}
-            aria-pressed={arrangement === option.value}
-            onclick={() => (arrangement = option.value)}>
-            {option.label()}
-          </button>
-        {/each}
+      <div class="max-w-full overflow-x-auto">
+        <SegmentedControl
+          label={m.reviews_sort_label()}
+          options={ARRANGEMENTS.map((option) => ({
+            value: option.value,
+            label: option.label(),
+          }))}
+          value={arrangement}
+          onChange={(value) => (arrangement = value)} />
       </div>
     {/if}
 

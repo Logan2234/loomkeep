@@ -52,6 +52,7 @@ import { UsersService } from "./users.service";
     DataExportService,
     CsvExportService,
     AccountDeletionService,
+    InactiveAccountService,
     EntitlementModule,
   ],
 })

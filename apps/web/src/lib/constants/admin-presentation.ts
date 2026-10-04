@@ -113,12 +113,35 @@ export function adminJobLabel(key: string): string {
     : key;
 }
 
+const JOB_DESCRIPTIONS = {
+  "notifications.scan": () => m.admin_job_notifications_scan_description(),
+  "notifications.digest": () => m.admin_job_notifications_digest_description(),
+  "media.refreshStale": () => m.admin_job_media_refresh_description(),
+  "games.refreshStale": () => m.admin_job_games_refresh_description(),
+  "books.refreshStale": () => m.admin_job_books_refresh_description(),
+  "reports.digest": () => m.admin_job_reports_digest_description(),
+  "backup.run": () => m.admin_job_backup_description(),
+  "users.inactiveAccountsScan": () =>
+    m.admin_job_inactive_accounts_description(),
+  "gamification.reconcile": () =>
+    m.admin_job_gamification_reconcile_description(),
+  "gamification.achievementsSweep": () =>
+    m.admin_job_gamification_achievements_sweep_description(),
+  "apiKeys.maintenance": () => m.admin_job_api_keys_maintenance_description(),
+};
+
+export function adminJobDescription(key: string): string | null {
+  return Object.hasOwn(JOB_DESCRIPTIONS, key)
+    ? JOB_DESCRIPTIONS[key as keyof typeof JOB_DESCRIPTIONS]()
+    : null;
+}
+
 export function adminJobButtonState(
   runningKey: string | null,
   jobKey: string,
 ): { disabled: boolean; running: boolean } {
   return {
-    disabled: runningKey !== null,
+    disabled: runningKey === jobKey,
     running: runningKey === jobKey,
   };
 }

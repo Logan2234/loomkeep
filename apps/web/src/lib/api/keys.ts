@@ -238,7 +238,10 @@ export const keys = {
       push: string;
       session: string;
     }) => ["admin", "users", filters] as const,
-    invitations: () => ["admin", "invitations"] as const,
+    invitations: (filters?: { query: string; status: string }) =>
+      filters
+        ? (["admin", "invitations", filters] as const)
+        : (["admin", "invitations"] as const),
     userSessions: (userId: string) =>
       ["admin", "user-sessions", userId] as const,
     userLibraryStats: (userId: string) =>
@@ -257,7 +260,10 @@ export const keys = {
       source: string;
       status: string;
       userId: string | null;
+      from?: string;
+      to?: string;
     }) => ["admin", "import-runs", filters] as const,
+    importDetail: (id: string) => ["admin", "import-detail", id] as const,
     importSummary: () => ["admin", "import-summary"] as const,
     reports: (filters: { status: string; reporterId: string | null }) =>
       ["admin", "reports", filters] as const,

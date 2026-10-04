@@ -19,6 +19,7 @@
   import ProviderMark from "$lib/components/ProviderMark.svelte";
   import RatingSlider from "$lib/components/RatingSlider.svelte";
   import RelativeTime from "$lib/components/RelativeTime.svelte";
+  import SectionRail from "$lib/components/SectionRail.svelte";
   import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import Wizard from "$lib/components/Wizard.svelte";
@@ -304,6 +305,20 @@
   const matchCount = $derived(
     SECTIONS.filter((section) => sectionMatches(section.id)).length,
   );
+  const sectionNavItems = $derived(
+    SECTIONS.flatMap((section, index) =>
+      sectionMatches(section.id)
+        ? [
+            {
+              id: section.id,
+              label: section.navLabel ?? section.label,
+              href: `#${section.id}`,
+              prefix: String(index + 1).padStart(2, "0"),
+            },
+          ]
+        : [],
+    ),
+  );
   $effect(() => {
     void componentSearch;
     const observer = new IntersectionObserver(
@@ -373,28 +388,14 @@
     placeholder={m.admin_components_search()}
     class="input mb-6" />
   {#if !matchCount}<EmptyState>{m.admin_no_matches()}</EmptyState>{/if}
-  <div class="lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
-    <aside
-      class="border-border mb-8 min-w-0 border-y py-3 lg:mb-0 lg:border-y-0 lg:border-r lg:py-0 lg:pr-6">
-      <nav
-        aria-label={m.admin_components_section_navigation()}
-        class="no-scrollbar flex gap-2 overflow-x-auto lg:sticky lg:top-6 lg:flex-col lg:gap-1 lg:overflow-visible">
-        {#each SECTIONS as section, index (section.id)}
-          {#if sectionMatches(section.id)}
-            <a
-              href={"#" + section.id}
-              aria-current={activeSection === section.id
-                ? "location"
-                : undefined}
-              class:component-section-active={activeSection === section.id}
-              class="component-section-link shrink-0 text-sm font-semibold">
-              <span class="timecode shrink-0 text-xs"
-                >{String(index + 1).padStart(2, "0")}</span>
-              <span>{section.navLabel ?? section.label}</span>
-            </a>
-          {/if}
-        {/each}
-      </nav>
+  <div class="lg:grid lg:grid-cols-[272px_minmax(0,1fr)] lg:gap-10">
+    <aside class="mb-8 min-w-0 lg:sticky lg:top-8 lg:mb-0 lg:self-start">
+      <SectionRail
+        label={m.admin_components_section_navigation()}
+        items={sectionNavItems}
+        activeId={sectionNavItems.some((item) => item.id === activeSection)
+          ? activeSection
+          : (sectionNavItems[0]?.id ?? "")} />
     </aside>
 
     <div class="space-y-14 md:space-y-18">
@@ -880,40 +881,3 @@
 {/snippet}
 
 {#snippet stress()}<StressShowcase />{/snippet}
-
-<style>
-  .component-section-link {
-    display: flex;
-    align-items: baseline;
-    gap: 0.65rem;
-    padding: 0.65rem 0.75rem;
-    border-bottom: 2px solid transparent;
-    color: var(--dim);
-    white-space: nowrap;
-    transition:
-      color 150ms,
-      background-color 150ms;
-  }
-
-  .component-section-link:hover {
-    color: var(--fg);
-    background: var(--surface-2);
-  }
-
-  .component-section-active {
-    color: var(--accent);
-    border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 8%, transparent);
-  }
-
-  @media (min-width: 64rem) {
-    .component-section-link {
-      border-bottom: 0;
-      border-left: 2px solid transparent;
-    }
-
-    .component-section-active {
-      border-left-color: var(--accent);
-    }
-  }
-</style>

@@ -399,7 +399,7 @@ export class AchievementService {
    * This is a full sweep without activity-based targeting. Revisit that if
    * the catalogue makes the loop expensive.
    */
-  @Cron("0 5 * * *")
+  @Cron("0 5 * * *", { name: JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP })
   async runAchievementsSweepJob(): Promise<string> {
     return this.jobRuns.record(
       JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP,

@@ -42,6 +42,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     NotificationModule,
   ],
   controllers: [ImportController],
+  exports: [ImportJobService],
   providers: [
     ImportJobService,
     MediaMatchResolver,

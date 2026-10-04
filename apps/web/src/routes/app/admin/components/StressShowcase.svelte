@@ -3,9 +3,17 @@
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import { m } from "$lib/paraglide/messages";
   let values = $state<string[]>([]);
-  let mode = $state("long");
+  type Mode = "long" | "empty" | "loading" | "error";
+  let mode = $state<Mode>("long");
+  const modes: { value: Mode; label: () => string }[] = [
+    { value: "long", label: m.common_details },
+    { value: "empty", label: m.admin_no_matches },
+    { value: "loading", label: m.common_loading },
+    { value: "error", label: m.common_error },
+  ];
   const options = Array.from({ length: 60 }, (_, index) => ({
     value: String(index),
     label: `${index + 1} · ${m.admin_components_sample_title_one().repeat(4)}`,
@@ -20,13 +28,15 @@
     {options}
     {values}
     onChange={(next) => (values = next)} />
-  <div class="flex flex-wrap gap-2">
-    {#each [{ value: "long", label: m.common_details() }, { value: "empty", label: m.admin_no_matches() }, { value: "loading", label: m.common_loading() }, { value: "error", label: m.common_error() }] as item (item.value)}<button
-        class="chip"
-        class:chip-on={mode === item.value}
-        aria-pressed={mode === item.value}
-        onclick={() => (mode = item.value)}>{item.label}</button
-      >{/each}
+  <div class="max-w-full overflow-x-auto">
+    <SegmentedControl
+      label={m.admin_components_stress()}
+      options={modes.map((option) => ({
+        value: option.value,
+        label: option.label(),
+      }))}
+      value={mode}
+      onChange={(value) => (mode = value)} />
   </div>
   {#if mode === "long"}<Banner variant="info"
       >{m.admin_components_banner_info().repeat(8)}</Banner>

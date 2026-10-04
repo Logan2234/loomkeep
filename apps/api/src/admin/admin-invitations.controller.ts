@@ -1,6 +1,7 @@
 import type {
   AdminInvitationDto,
   AdminInvitationLinkDto,
+  AdminInvitationStatus,
   PagedResult,
 } from "@loomkeep/shared";
 import {
@@ -36,9 +37,17 @@ export class AdminInvitationsController {
   list(
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Query("q") query?: string,
+    @Query("status") status?: string,
   ): Promise<PagedResult<AdminInvitationDto>> {
     return this.invitations.list(
       parsePageQuery(page, limit, DEFAULT_PAGE_SIZE),
+      {
+        query,
+        status: ["pending", "used", "expired", "revoked"].includes(status ?? "")
+          ? (status as AdminInvitationStatus)
+          : undefined,
+      },
     );
   }
 

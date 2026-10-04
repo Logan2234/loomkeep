@@ -1,6 +1,8 @@
 <script lang="ts">
   import AdminFilterBar from "../AdminFilterBar.svelte";
-  import AdminQueryError from "../AdminQueryError.svelte";
+  import Tooltip from "$lib/components/Tooltip.svelte";
+  import ImportDetailModal from "./ImportDetailModal.svelte";
+  import Banner from "$lib/components/Banner.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { adminFilterHref } from "$lib/admin-filter-url";
@@ -20,7 +22,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminImportRunDto,
-    JobStatus,
+    AdminImportStatus,
     PagedResult,
   } from "@loomkeep/shared";
 
@@ -41,14 +43,26 @@
     { label: m.admin_all_statuses(), value: "" },
     { label: m.admin_successful(), value: "SUCCESS" },
     { label: m.common_failure(), value: "FAILURE" },
+    { label: m.admin_jobs_running(), value: "RUNNING" },
   ];
-  const STATUS_LABELS: Record<JobStatus, string> = {
+  const STATUS_LABELS: Record<AdminImportStatus, string> = {
     SUCCESS: m.admin_successful(),
     FAILURE: m.common_failure(),
+    RUNNING: m.admin_jobs_running(),
   };
 
   const activeSource = $derived(page.url.searchParams.get("source") ?? "");
   const activeStatus = $derived(page.url.searchParams.get("status") ?? "");
+  let selectedRun = $state<string | null>(null);
+  const from = $derived(page.url.searchParams.get("from") ?? "");
+  const to = $derived(page.url.searchParams.get("to") ?? "");
+  function dateBoundary(value: string, inclusiveEnd = false) {
+    if (!value) return undefined;
+    const date = new Date(value + "T00:00:00");
+    if (Number.isNaN(date.getTime())) return undefined;
+    if (inclusiveEnd) date.setDate(date.getDate() + 1);
+    return date.toISOString();
+  }
   const accountId = $derived(page.url.searchParams.get("account") || null);
   function changeFilters(updates: Record<string, string | null>) {
     void goto(adminFilterHref(page.url, updates), {
@@ -57,9 +71,31 @@
     });
   }
   function resetFilters() {
-    changeFilters({ source: null, status: null, account: null });
+    changeFilters({
+      source: null,
+      status: null,
+      account: null,
+      from: null,
+      to: null,
+    });
   }
   const activeFilters = $derived([
+    ...(from
+      ? [
+          {
+            label: m.admin_date_from() + " " + from,
+            remove: () => changeFilters({ from: null }),
+          },
+        ]
+      : []),
+    ...(to
+      ? [
+          {
+            label: m.admin_date_to() + " " + to,
+            remove: () => changeFilters({ to: null }),
+          },
+        ]
+      : []),
     ...(activeSource
       ? [
           {
@@ -71,7 +107,8 @@
     ...(activeStatus
       ? [
           {
-            label: STATUS_LABELS[activeStatus as JobStatus] ?? activeStatus,
+            label:
+              STATUS_LABELS[activeStatus as AdminImportStatus] ?? activeStatus,
             remove: () => changeFilters({ status: null }),
           },
         ]
@@ -95,16 +132,21 @@
       source: activeSource,
       status: activeStatus,
       userId: accountId,
+      from,
+      to,
     }),
     fetch: (page) =>
       getAdminImportRuns({
         source: activeSource || undefined,
-        status: (activeStatus || undefined) as JobStatus | undefined,
+        status: (activeStatus || undefined) as AdminImportStatus | undefined,
         userId: accountId ?? undefined,
+        from: dateBoundary(from),
+        to: dateBoundary(to, true),
         page,
       }),
     getPageItems: (page) => page.items,
     initialPageParam: 1,
+    refetchInterval: 5000,
     getNextPageParam: (last, allPages) =>
       last.hasMore ? allPages.length + 1 : undefined,
   }));
@@ -157,6 +199,7 @@
   );
 
   function durationLabel(run: AdminImportRunDto): string {
+    if (!run.finishedAt) return m.admin_jobs_running();
     const ms =
       new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime();
     return formatDurationMs(ms);
@@ -170,9 +213,9 @@
     subtitle={m.admin_imports_subtitle()}
     back="/app/admin" />
 
-  {#if summaryQuery.error}<AdminQueryError
-      message={summaryQuery.error}
-      queryKey={keys.admin.importSummary()} />{/if}
+  {#if summaryQuery.error}<Banner variant="error" class="mb-4"
+      >{summaryQuery.error}</Banner
+    >{/if}
   {#if summary}
     <KpiStrip tiles={kpis} />
     {#if sourceBars.length > 0}
@@ -222,16 +265,26 @@
     <UserSelector
       value={accountId}
       onChange={(id) => changeFilters({ account: id })} />
+    <label class="text-dim flex items-center gap-2 text-sm"
+      >{m.admin_date_from()}<input
+        class="input"
+        type="date"
+        value={from}
+        max={to || undefined}
+        onchange={(event) =>
+          changeFilters({ from: event.currentTarget.value || null })} /></label>
+    <label class="text-dim flex items-center gap-2 text-sm"
+      >{m.admin_date_to()}<input
+        class="input"
+        type="date"
+        value={to}
+        min={from || undefined}
+        onchange={(event) =>
+          changeFilters({ to: event.currentTarget.value || null })} /></label>
   </AdminFilterBar>
 
   {#if error}
-    <AdminQueryError
-      message={error}
-      queryKey={keys.admin.importRuns({
-        source: activeSource,
-        status: activeStatus,
-        userId: accountId,
-      })} />
+    <Banner variant="error" class="mb-4">{error}</Banner>
   {:else if runsQuery.loading}
     <div class="space-y-2">
       {#each { length: 6 } as _, i (i)}
@@ -262,7 +315,9 @@
               class="rounded-full border px-2 py-0.5 text-xs font-bold {run.status ===
               'SUCCESS'
                 ? 'border-success/40 bg-success/10 text-success'
-                : 'border-danger/40 bg-danger/10 text-danger'}">
+                : run.status === 'RUNNING'
+                  ? 'border-accent/40 bg-accent/10 text-accent'
+                  : 'border-danger/40 bg-danger/10 text-danger'}">
               {STATUS_LABELS[run.status]}
             </span>
             <span class="text-fg font-semibold"
@@ -279,17 +334,27 @@
               <span class="text-dim text-sm">{run.identifier}</span>
             {/if}
             {#if run.overwrite}
-              <span
-                class="border-accent/40 bg-accent/10 text-accent rounded-full border px-2 py-0.5 text-xs font-bold">
-                {m.admin_imports_overwrite()}
-              </span>
+              <Tooltip text={m.admin_imports_overwrite_help()}
+                ><span
+                  class="border-accent/40 bg-accent/10 text-accent rounded-full border px-2 py-0.5 text-xs font-bold">
+                  {m.admin_imports_overwrite()}
+                </span></Tooltip>
             {/if}
             <span class="timecode ml-auto text-xs">
               {formatDateTime(run.startedAt)}
             </span>
           </div>
           <p class="text-dim mt-1.5 text-sm">
-            {#if run.status === "FAILURE"}
+            {#if run.status === "RUNNING"}
+              {run.phase === "analyze"
+                ? m.import_analyzing()
+                : run.progress?.total
+                  ? m.admin_imports_progress({
+                      done: run.progress.done,
+                      total: run.progress.total,
+                    })
+                  : m.admin_jobs_running()}
+            {:else if run.status === "FAILURE"}
               {run.error}
             {:else if run.summary}
               {run.summary}
@@ -298,6 +363,10 @@
             {/if}
             <span class="timecode">· {durationLabel(run)}</span>
           </p>
+          <button
+            class="btn btn-ghost btn-sm mt-3"
+            onclick={() => (selectedRun = run.id)}
+            >{m.admin_imports_details()}</button>
           {#if !run.userId}
             <p class="text-dim mt-1 text-xs italic">
               {m.admin_deleted_account()}
@@ -319,3 +388,7 @@
     {/if}
   {/if}
 </div>
+
+{#if selectedRun}<ImportDetailModal
+    id={selectedRun}
+    onclose={() => (selectedRun = null)} />{/if}

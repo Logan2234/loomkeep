@@ -13,7 +13,7 @@
     idPrefix,
     class: className = "",
   }: {
-    tabs: { value: T; label: string }[];
+    tabs: { value: T; label: string; disabled?: boolean }[];
     current: T;
     onSelect: (value: T) => void;
     /** Accessible name of the tab list. */
@@ -75,7 +75,8 @@
       id={idPrefix ? `${idPrefix}-${tab.value}-tab` : undefined}
       aria-controls={idPrefix ? `${idPrefix}-${tab.value}-panel` : undefined}
       aria-selected={current === tab.value}
-      class="shrink-0 border-b-2 border-transparent pb-2.5 text-sm font-bold whitespace-nowrap transition-colors duration-200 {current ===
+      disabled={tab.disabled}
+      class="shrink-0 border-b-2 border-transparent pb-2.5 text-sm font-bold whitespace-nowrap transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40 {current ===
       tab.value
         ? 'text-fg'
         : 'text-dim'}"

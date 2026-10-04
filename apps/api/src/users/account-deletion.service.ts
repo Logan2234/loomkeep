@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { AuthService } from "../auth/auth.service";
 import { ListService } from "../lists/list.service";
 import { MailService } from "../mail/mail.service";
@@ -55,7 +56,7 @@ export class AccountDeletionService {
     });
     await this.prisma.importRun.updateMany({
       where: { userId },
-      data: { summary: null, error: null },
+      data: { summary: null, error: null, details: Prisma.DbNull },
     });
 
     if (account) {

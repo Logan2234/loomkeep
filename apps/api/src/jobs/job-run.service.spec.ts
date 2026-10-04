@@ -1,3 +1,4 @@
+import type { SchedulerRegistry } from "@nestjs/schedule";
 import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { JobAlertService } from "./job-alert.service";
@@ -20,10 +21,13 @@ function makeService(previousStatus?: "SUCCESS" | "FAILURE") {
     jobRecovered: vi.fn().mockResolvedValue(undefined),
   };
 
+  const scheduler = { getCronJobs: vi.fn().mockReturnValue(new Map()) };
   return {
+    scheduler,
     service: new JobRunService(
       prisma as unknown as PrismaService,
       alerts as unknown as JobAlertService,
+      scheduler as unknown as SchedulerRegistry,
     ),
     prisma,
     alerts,
@@ -247,5 +251,148 @@ describe("JobRunService.record — admin alerts", () => {
 
     expect(alerts.jobRecovered).not.toHaveBeenCalled();
     expect(alerts.jobFailed).not.toHaveBeenCalled();
+  });
+});
+
+describe("JobRunService — live scheduler state", () => {
+  it("returns all 50 retained runs to the admin page", async () => {
+    const { service, prisma } = makeService();
+    const startedAt = new Date("2026-10-04T10:00:00Z");
+    prisma.jobRun.findMany.mockImplementation(async (args) =>
+      args.where.jobKey === JOB_KEYS.BACKUP
+        ? Array.from({ length: args.take }, (_, index) => ({
+            id: `run-${index}`,
+            jobKey: JOB_KEYS.BACKUP,
+            startedAt,
+            finishedAt: startedAt,
+            status: index === 0 ? "FAILURE" : "SUCCESS",
+            summary: null,
+            error: null,
+          }))
+        : [],
+    );
+
+    const backup = (await service.listJobs()).find(
+      (job) => job.key === JOB_KEYS.BACKUP,
+    );
+    expect(prisma.jobRun.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { jobKey: JOB_KEYS.BACKUP },
+        take: 50,
+      }),
+    );
+    expect(backup?.runs).toHaveLength(50);
+  });
+
+  it("shares active executions until every overlapping run has finished", async () => {
+    const { service } = makeService();
+    let finishFirst!: () => void;
+    let finishSecond!: () => void;
+    const first = service.record(
+      JOB_KEYS.BACKUP,
+      () =>
+        new Promise<void>((resolve) => {
+          finishFirst = resolve;
+        }),
+      () => "done",
+    );
+    const second = service.record(
+      JOB_KEYS.BACKUP,
+      () =>
+        new Promise<void>((resolve) => {
+          finishSecond = resolve;
+        }),
+      () => "done",
+    );
+    const current = async () =>
+      (await service.listJobs()).find((job) => job.key === JOB_KEYS.BACKUP)!;
+    expect((await current()).runningSince).toEqual(expect.any(String));
+    finishFirst();
+    await first;
+    expect((await current()).runningSince).toEqual(expect.any(String));
+    finishSecond();
+    await second;
+    expect((await current()).runningSince).toBeNull();
+  });
+
+  it("clears the running state after failure", async () => {
+    const { service } = makeService();
+    await expect(
+      service.record(
+        JOB_KEYS.BACKUP,
+        async () => {
+          throw new Error("failed");
+        },
+        () => "",
+      ),
+    ).rejects.toThrow("failed");
+    expect(
+      (await service.listJobs()).find((job) => job.key === JOB_KEYS.BACKUP)
+        ?.runningSince,
+    ).toBeNull();
+  });
+
+  it("returns the scheduler's zone and marks a missed scheduled slot", async () => {
+    const { service, prisma, scheduler } = makeService();
+    const last = new Date("2026-10-04T10:00:00Z");
+    const expected = {
+      toMillis: () => Date.now() - 120_000,
+      toUTC: () => ({ toISO: () => "2026-10-04T11:00:00Z" }),
+    };
+    const next = {
+      zoneName: "Europe/Paris",
+      toUTC: () => ({ toISO: () => "2026-10-04T12:00:00Z" }),
+    };
+    const cron = {
+      nextDate: vi.fn().mockReturnValue(next),
+      cronTime: {
+        timeZone: "Europe/Paris",
+        getNextDateFrom: vi.fn().mockReturnValue(expected),
+      },
+    };
+    scheduler.getCronJobs.mockReturnValue(new Map([[JOB_KEYS.BACKUP, cron]]));
+    prisma.jobRun.findMany.mockImplementation(async (args) =>
+      args.where.jobKey === JOB_KEYS.BACKUP
+        ? [
+            {
+              id: "run",
+              jobKey: JOB_KEYS.BACKUP,
+              startedAt: last,
+              finishedAt: last,
+              status: "SUCCESS",
+              summary: null,
+              error: null,
+            },
+          ]
+        : [],
+    );
+    const job = (await service.listJobs()).find(
+      (job) => job.key === JOB_KEYS.BACKUP,
+    )!;
+    expect(job).toMatchObject({
+      timeZone: "Europe/Paris",
+      nextRunAt: "2026-10-04T12:00:00Z",
+      overdueSince: "2026-10-04T11:00:00Z",
+      runningSince: null,
+    });
+    expect(cron.cronTime.getNextDateFrom).toHaveBeenCalledWith(
+      last,
+      "Europe/Paris",
+    );
+    let finish!: () => void;
+    const pending = service.record(
+      JOB_KEYS.BACKUP,
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+      () => "done",
+    );
+    expect(
+      (await service.listJobs()).find((job) => job.key === JOB_KEYS.BACKUP)
+        ?.overdueSince,
+    ).toBeNull();
+    finish();
+    await pending;
   });
 });

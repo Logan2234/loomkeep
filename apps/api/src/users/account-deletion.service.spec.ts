@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { AuthService } from "../auth/auth.service";
 import type { ListService } from "../lists/list.service";
@@ -132,7 +133,7 @@ describe("AccountDeletionService.deleteAccount", () => {
     // A summary or an error can quote an external profile (a Steam id…).
     expect(prisma.importRun.updateMany).toHaveBeenCalledWith({
       where: { userId: "user-1" },
-      data: { summary: null, error: null },
+      data: { summary: null, error: null, details: Prisma.DbNull },
     });
   });
 

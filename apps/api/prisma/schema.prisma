@@ -1421,6 +1421,8 @@ model ImportRun {
   // Items actually written (the user's kept selection), regardless of outcome.
   itemCount  Int
   overwrite  Boolean  @default(false)
+  // Selection and structured outcome for imports recorded after this column was added.
+  details    Json?
   // Human summary joined from the report's tiles; null on failure.
   summary    String?
   // Present only when status is "FAILURE".
