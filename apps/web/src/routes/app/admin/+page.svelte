@@ -1,6 +1,6 @@
 <script lang="ts">
   import { env } from "$env/dynamic/public";
-  import { createApiQuery } from "$lib/api/query.svelte";
+  import { adminAttentionData } from "$lib/admin-attention";
   import {
     getAdminBackupFiles,
     getAdminJobs,
@@ -8,19 +8,21 @@
     getAdminServices,
   } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import BetaBadge from "$lib/components/BetaBadge.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
-  import StatsSectionError from "./stats/components/StatsSectionError.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
+  import { adminJobLabel } from "$lib/constants/admin-presentation";
   import { DOCS_URL, GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { formatNumber, formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import { useReportsPendingCount } from "$lib/reports-pending.svelte";
   import type { ServiceStatusDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import StatsSectionError from "./stats/components/StatsSectionError.svelte";
 
   const queryClient = useQueryClient();
 
@@ -46,6 +48,11 @@
   const services = $derived(servicesQuery.data?.services ?? null);
   const jobs = $derived(jobsQuery.data);
   const backups = $derived(backupsQuery.data?.files);
+  const attention = $derived(
+    adminAttentionData(services, jobs, backupsQuery.data),
+  );
+  const loadingText = (loading: boolean) =>
+    loading ? m.common_loading() : m.common_unavailable();
 
   const usersTotal = $derived(overview?.accounts ?? null);
   const usersDeltaWeek = $derived(overview?.newAccountsThisWeek ?? null);
@@ -90,10 +97,10 @@
         ? formatRelative(jobsLastRunAt)
         : undefined,
       "/app/admin/backup":
-        backups && backups.length > 0
+        backups && attention.latest
           ? m.admin_backup_count_latest({
-              count: backups.length,
-              date: formatRelative(backups[0].createdAt),
+              count: attention.available.length,
+              date: formatRelative(attention.latest.createdAt),
             })
           : backups
             ? m.admin_no_backups()
@@ -102,11 +109,13 @@
         cacheTotal !== null
           ? m.common_item_count_many({ count: formatNumber(cacheTotal) })
           : undefined,
-      "/app/admin/reports": !reportsPending.available
-        ? undefined
-        : reportsPending.count > 0
-          ? m.admin_reports_pending_count({ count: reportsPending.count })
-          : m.admin_up_to_date(),
+      "/app/admin/reports": !appConfig.socialEnabled
+        ? m.common_disabled()
+        : !reportsPending.available
+          ? undefined
+          : reportsPending.count > 0
+            ? m.admin_reports_pending_count({ count: reportsPending.count })
+            : m.admin_up_to_date(),
     };
   });
 
@@ -117,6 +126,7 @@
   <PageHeader
     icon="shield"
     title={m.admin_dashboard_title()}
+    back="/app"
     subtitle={m.admin_dashboard_subtitle({
       name: auth.user?.displayName ?? "",
     })}>
@@ -132,9 +142,9 @@
     {/snippet}
   </PageHeader>
 
-  <!-- The 4 numbers worth a glance before diving in — each links straight to its page. -->
+  <!-- Each indicator links to its operational page. -->
   <div
-    class="border-border bg-border mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border sm:grid-cols-4">
+    class="border-border bg-border mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border sm:grid-cols-3 lg:grid-cols-5">
     <a
       href="/app/admin/users"
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
@@ -145,7 +155,9 @@
         {m.common_users()}
       </span>
       <span class="font-display text-2xl font-extrabold">
-        {usersTotal !== null ? formatNumber(usersTotal) : "—"}
+        {usersTotal !== null
+          ? formatNumber(usersTotal)
+          : loadingText(overviewQuery.loading)}
       </span>
       <span class="text-dim text-xs">
         {usersDeltaWeek !== null
@@ -169,7 +181,7 @@
       <span class="font-display text-2xl font-extrabold">
         {services
           ? `${servicesLive.length - servicesDegraded}/${servicesLive.length}`
-          : "—"}
+          : loadingText(servicesQuery.loading)}
       </span>
       <span
         class="text-xs {servicesDegraded > 0
@@ -193,12 +205,12 @@
             : jobsFailedRecent
               ? 'bg-danger'
               : 'bg-success'}"></span>
-        {m.admin_jobs_title()}
+        {m.admin_jobs_last_failure()}
       </span>
       <span class="font-display text-2xl font-extrabold">
         {jobsFailedRecent !== null
-          ? m.admin_failed_count({ count: jobsFailedRecent })
-          : "—"}
+          ? formatNumber(jobsFailedRecent)
+          : loadingText(jobsQuery.loading)}
       </span>
       <span
         class="text-xs {jobsFailedRecent
@@ -215,7 +227,8 @@
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
         <span
-          class="h-1.5 w-1.5 rounded-full {!reportsPending.available
+          class="h-1.5 w-1.5 rounded-full {!appConfig.socialEnabled ||
+          !reportsPending.available
             ? 'bg-dim'
             : reportsPending.count > 0
               ? 'bg-danger'
@@ -223,18 +236,48 @@
         {m.admin_social_reports_title()}
       </span>
       <span class="font-display text-2xl font-extrabold">
-        {reportsPending.available ? formatNumber(reportsPending.count) : "—"}
+        {!appConfig.socialEnabled
+          ? m.common_disabled()
+          : reportsPending.available
+            ? formatNumber(reportsPending.count)
+            : reportsPending.error
+              ? m.common_unavailable()
+              : m.common_loading()}
       </span>
       <span
         class="text-xs {reportsPending.count > 0
           ? 'text-danger font-semibold'
           : 'text-dim'}">
-        {!reportsPending.available
-          ? m.common_unavailable()
-          : reportsPending.count > 0
-            ? m.admin_moderation_pending()
-            : m.admin_up_to_date()}
+        {!appConfig.socialEnabled
+          ? m.admin_social_disabled()
+          : !reportsPending.available
+            ? reportsPending.error
+              ? m.common_unavailable()
+              : m.common_loading()
+            : reportsPending.count > 0
+              ? m.admin_moderation_pending()
+              : m.admin_up_to_date()}
       </span>
+    </a>
+
+    <a
+      href="/app/admin/backup"
+      class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
+      <span class="text-dim text-xs font-semibold"
+        >{m.admin_backup_title()}</span>
+      <span class="font-display text-xl font-extrabold"
+        >{backupsQuery.data
+          ? attention.latest
+            ? formatRelative(attention.latest.createdAt)
+            : m.admin_no_backups()
+          : loadingText(backupsQuery.loading)}</span>
+      <span class="text-dim text-xs"
+        >{backupsQuery.data
+          ? m.admin_backup_available({ count: attention.available.length })
+          : loadingText(backupsQuery.loading)}</span>
+      {#if attention.anomalies}<span class="text-warning text-xs"
+          >{m.admin_backup_anomalies({ count: attention.anomalies })}</span
+        >{/if}
     </a>
   </div>
 
@@ -278,7 +321,64 @@
     </div>
   {/if}
 
-  <div class="space-y-8">
+  <section class="card mb-8 p-5" aria-labelledby="admin-attention-title">
+    <h2 id="admin-attention-title" class="font-display mb-3 text-lg font-bold">
+      {m.admin_attention()}
+    </h2>
+    <ul class="divide-border divide-y">
+      {#each attention.degraded as service (service.key)}<li>
+          <a
+            class="hover:bg-surface-2 flex items-center justify-between gap-3 rounded py-3"
+            href={`/app/admin/services#service-${service.key}`}
+            ><span>{m.admin_services_title()} · {service.label}</span><Icon
+              name="chevron-right"
+              class="h-4 w-4" /></a>
+        </li>{/each}
+      {#each attention.failed as job (job.key)}<li>
+          <a
+            class="hover:bg-surface-2 flex items-center justify-between gap-3 rounded py-3"
+            href={`/app/admin/jobs#job-${job.key}`}
+            ><span>{adminJobLabel(job.key)} · {m.common_failure()}</span><Icon
+              name="chevron-right"
+              class="h-4 w-4" /></a>
+        </li>{/each}
+      {#if appConfig.socialEnabled && reportsPending.available && reportsPending.count > 0}<li>
+          <a
+            href="/app/admin/reports?status=PENDING"
+            class="hover:bg-surface-2 flex items-center justify-between gap-3 rounded py-3"
+            ><span
+              >{m.admin_reports_pending_count({
+                count: reportsPending.count,
+              })}</span
+            ><Icon name="chevron-right" class="h-4 w-4" /></a>
+        </li>{/if}
+      {#if backupsQuery.data && (attention.anomalies || !attention.latest)}<li>
+          <a
+            href="/app/admin/backup"
+            class="hover:bg-surface-2 flex items-center justify-between gap-3 rounded py-3"
+            ><span
+              >{attention.anomalies
+                ? m.admin_backup_anomalies({ count: attention.anomalies })
+                : m.admin_no_backups()}</span
+            ><Icon name="chevron-right" class="h-4 w-4" /></a>
+        </li>{/if}
+    </ul>
+    {#if overviewQuery.loading || servicesQuery.loading || jobsQuery.loading || backupsQuery.loading || (appConfig.socialEnabled && !reportsPending.available && !reportsPending.error)}<p
+        class="text-dim mt-3 text-sm"
+        role="status">
+        {m.common_loading()}
+      </p>
+    {:else if !attention.degraded.length && !attention.failed.length && !(appConfig.socialEnabled && reportsPending.count > 0) && !(backupsQuery.data && (attention.anomalies || !attention.latest))}<p
+        class="text-dim text-sm">
+        {m.admin_attention_empty()}
+      </p>{/if}
+    {#if servicesQuery.error || jobsQuery.error || backupsQuery.error || (appConfig.socialEnabled && reportsPending.error)}<p
+        class="text-warning mt-3 text-sm">
+        {m.admin_attention_partial()}
+      </p>{/if}
+  </section>
+
+  <div class="grid items-start gap-8 lg:grid-cols-2">
     {#each grouped as cat (cat.label)}
       <section>
         <h2
@@ -301,7 +401,7 @@
               <div class="min-w-0 flex-1">
                 <span class="text-fg flex items-center gap-2 font-semibold">
                   {item.label}
-                  {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
+                  {#if appConfig.socialEnabled && item.href === "/app/admin/reports" && reportsPending.count > 0}
                     <span
                       class="bg-accent text-accent-fg rounded-full px-1.5 py-0.5 text-[0.65rem] font-bold">
                       {reportsPending.count}

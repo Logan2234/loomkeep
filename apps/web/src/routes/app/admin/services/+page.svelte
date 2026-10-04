@@ -3,7 +3,8 @@
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
-  import Banner from "$lib/components/Banner.svelte";
+  import { scrollToAdminAnchor } from "$lib/admin-anchor";
+  import AdminQueryError from "../AdminQueryError.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
@@ -167,13 +168,13 @@
           queryClient.refetchQueries({ queryKey: keys.admin.services() })}
         disabled={loading}
         class="btn btn-ghost shrink-0">
-        {loading ? "…" : m.common_refresh()}
+        {loading ? m.common_loading() : m.common_refresh()}
       </button>
     {/snippet}
   </PageHeader>
 
   {#if error}
-    <Banner variant="error">{error}</Banner>
+    <AdminQueryError message={error} queryKey={keys.admin.services()} />
   {:else if loading && !services}
     <div class="animate-pulse">
       <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
@@ -249,7 +250,10 @@
             {#each group.items as s, i (s.key)}
               {@const h = health(s)}
               <div
-                class="bg-surface px-4 py-3 {i > 0
+                id={`service-${s.key}`}
+                use:scrollToAdminAnchor
+                class="target:ring-accent bg-surface scroll-mt-6 px-4 py-3 target:ring-2 {i >
+                0
                   ? 'border-border border-t'
                   : ''}">
                 <div class="flex items-center gap-3">

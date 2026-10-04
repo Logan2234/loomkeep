@@ -121,12 +121,12 @@
         label={m.admin_social_reports_resolved()} />
       <StatFigure
         value={stats.reports.medianResolutionHours === null
-          ? "—"
+          ? m.admin_metric_no_sample()
           : `${formatNumber(stats.reports.medianResolutionHours)} h`}
         label={m.admin_social_reports_median_delay()} />
       <StatFigure
         value={stats.reports.foundedPercent === null
-          ? "—"
+          ? m.admin_metric_no_sample()
           : `${stats.reports.foundedPercent} %`}
         label={m.admin_social_reports_founded_rate()} />
     </div>
@@ -171,7 +171,7 @@
     <div class="mt-3">
       <StatFigure
         value={contributorShare === null
-          ? "—"
+          ? m.admin_metric_no_sample()
           : `${contributorShare} % / ${100 - contributorShare} %`}
         label={m.admin_social_contributors_readers({
           contributors: formatNumber(stats.contributors),

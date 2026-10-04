@@ -548,7 +548,13 @@
               class="hover:bg-surface-2 flex w-full items-center justify-between px-3 py-2 text-left text-sm disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent">
               <span class="text-fg">{s.label}</span>
               <span class="text-dim text-xs font-semibold"
-                >{activityHasData(s.kind) ? activityCount(s.kind) : "—"}</span>
+                >{activityHasData(s.kind)
+                  ? activityCount(s.kind)
+                  : activityError(s.kind)
+                    ? m.common_unavailable()
+                    : activityLoading(s.kind)
+                      ? m.common_loading()
+                      : m.common_disabled()}</span>
             </button>
           </li>
         {/each}

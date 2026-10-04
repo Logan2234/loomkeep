@@ -54,7 +54,12 @@
         <a
           href={back}
           class="text-dim hover:text-fg -ml-1 flex h-lh shrink-0 items-center transition-all hover:-translate-x-0.5 hover:scale-105 active:scale-90"
-          aria-label={m.common_back()}>
+          aria-label={back === "/app/admin"
+            ? m.admin_back_to_overview()
+            : m.common_back()}
+          title={back === "/app/admin"
+            ? m.admin_back_to_overview()
+            : undefined}>
           <Icon name="chevron-left" class="h-6 w-6" />
         </a>
       {/if}

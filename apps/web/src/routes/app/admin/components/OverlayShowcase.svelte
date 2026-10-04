@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SidePanel from "$lib/components/SidePanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Drawer from "$lib/components/Drawer.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
@@ -10,6 +11,14 @@
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
 
+  let panelOpen = $state(false);
+  let nestedModalOpen = $state(false);
+  let modalLong = $state(false);
+  let modalError = $state(false);
+  let modalLoading = $state(false);
+  let modalTimer: ReturnType<typeof setTimeout>;
+  import { onDestroy } from "svelte";
+  onDestroy(() => clearTimeout(modalTimer));
   let modalOpen = $state(false);
   let confirmationOpen = $state(false);
   let drawerOpen = $state(false);
@@ -26,6 +35,8 @@
 </script>
 
 <div class="flex flex-wrap items-center gap-3">
+  <button class="btn btn-ghost" onclick={() => (panelOpen = true)}
+    >SidePanel + Modal</button>
   <button
     type="button"
     class="btn btn-primary"
@@ -136,14 +147,45 @@
     title={m.admin_components_modal_title()}
     onclose={() => (modalOpen = false)}>
     <p class="text-dim text-sm">{m.admin_components_modal_body()}</p>
-    <div class="mt-5 flex justify-end">
+    <div class="mt-4 flex flex-wrap gap-2">
       <button
-        type="button"
-        class="btn btn-primary"
-        onclick={() => (modalOpen = false)}>
-        {m.common_close()}
-      </button>
+        class="chip"
+        class:chip-on={modalLong}
+        onclick={() => (modalLong = !modalLong)}>{m.common_details()}</button>
+      <button
+        class="chip"
+        class:chip-on={modalError}
+        onclick={() => (modalError = !modalError)}>{m.common_error()}</button>
+      <button
+        class="chip"
+        class:chip-on={modalLoading}
+        onclick={() => {
+          clearTimeout(modalTimer);
+          modalLoading = true;
+          modalTimer = setTimeout(() => (modalLoading = false), 2000);
+        }}>{m.common_loading()}</button>
     </div>
+    {#if modalLong}<div class="mt-4 space-y-3">
+        {#each { length: 18 } as _, index (index)}<p class="text-dim text-sm">
+            {m.admin_components_modal_body().repeat(3)}
+          </p>{/each}
+      </div>{/if}
+    {#if modalError}<p role="alert" class="text-danger mt-3 text-sm">
+        {m.admin_components_banner_error()}
+      </p>{/if}
+    {#if modalLoading}<p role="status" class="text-dim mt-3">
+        {m.common_loading()}
+      </p>{/if}
+    {#snippet actions()}
+      <div class="flex justify-end">
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick={() => (modalOpen = false)}>
+          {m.common_close()}
+        </button>
+      </div>
+    {/snippet}
   </Modal>
 {/if}
 
@@ -208,3 +250,36 @@
     {m.common_close()}
   </button>
 {/snippet}
+
+{#if panelOpen}
+  <SidePanel
+    labelledby="stress-panel-title"
+    onclose={() => {
+      panelOpen = false;
+      nestedModalOpen = false;
+    }}>
+    <div
+      class="border-border flex items-center justify-between gap-3 border-b p-5">
+      <h2 id="stress-panel-title" class="font-display text-xl font-bold">
+        SidePanel
+      </h2>
+      <button class="btn btn-ghost" onclick={() => (panelOpen = false)}
+        >{m.common_close()}</button>
+    </div>
+    <div class="min-h-0 flex-1 overflow-auto p-5">
+      <button class="btn btn-primary" onclick={() => (nestedModalOpen = true)}
+        >{m.admin_components_open_modal()}</button>
+      <p class="text-dim mt-4">{m.admin_components_drawer_body().repeat(6)}</p>
+    </div>
+  </SidePanel>
+{/if}
+{#if nestedModalOpen && panelOpen}
+  <Modal
+    title={m.admin_components_modal_title()}
+    onclose={() => (nestedModalOpen = false)}
+    ><p>{m.admin_components_modal_body().repeat(4)}</p>
+    {#snippet actions()}<button
+        class="btn btn-primary"
+        onclick={() => (nestedModalOpen = false)}>{m.common_close()}</button
+      >{/snippet}</Modal>
+{/if}

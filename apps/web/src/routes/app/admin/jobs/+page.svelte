@@ -4,7 +4,8 @@
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
-  import Banner from "$lib/components/Banner.svelte";
+  import { scrollToAdminAnchor } from "$lib/admin-anchor";
+  import AdminQueryError from "../AdminQueryError.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
@@ -91,13 +92,13 @@
           queryClient.refetchQueries({ queryKey: keys.admin.jobs() })}
         disabled={loading}
         class="btn btn-ghost shrink-0">
-        {loading ? "…" : m.common_refresh()}
+        {loading ? m.common_loading() : m.common_refresh()}
       </button>
     {/snippet}
   </PageHeader>
 
   {#if error}
-    <Banner variant="error" class="mb-6">{error}</Banner>
+    <AdminQueryError message={error} queryKey={keys.admin.jobs()} />
   {/if}
 
   {#if loading && !jobs}
@@ -116,7 +117,10 @@
           job.key,
         )}
         {@const historyOpen = expandedJobs.includes(job.key)}
-        <section>
+        <section
+          use:scrollToAdminAnchor
+          id={`job-${job.key}`}
+          class="target:ring-accent scroll-mt-6 target:rounded-xl target:ring-2">
           <div class="mb-2 flex items-center justify-between gap-3">
             <div>
               <h2 class="text-fg font-semibold">{adminJobLabel(job.key)}</h2>
@@ -220,7 +224,9 @@
             </div>
           {/if}
         </section>
-      {/each}
+      {:else}<p class="card text-dim p-8 text-center">
+          {m.admin_no_data()}
+        </p>{/each}
     </div>
   {/if}
 </div>

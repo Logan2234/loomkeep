@@ -1,9 +1,13 @@
 <script lang="ts">
+  import AdminFilterBar from "../AdminFilterBar.svelte";
+  import AdminQueryError from "../AdminQueryError.svelte";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { adminFilterHref } from "$lib/admin-filter-url";
   import { getAdminImportRuns, getAdminImportSummary } from "$lib/api/client";
   import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
@@ -43,9 +47,44 @@
     FAILURE: m.common_failure(),
   };
 
-  let activeSource = $state("");
-  let activeStatus = $state("");
-  let accountId = $state<string | null>(null);
+  const activeSource = $derived(page.url.searchParams.get("source") ?? "");
+  const activeStatus = $derived(page.url.searchParams.get("status") ?? "");
+  const accountId = $derived(page.url.searchParams.get("account") || null);
+  function changeFilters(updates: Record<string, string | null>) {
+    void goto(adminFilterHref(page.url, updates), {
+      noScroll: true,
+      keepFocus: true,
+    });
+  }
+  function resetFilters() {
+    changeFilters({ source: null, status: null, account: null });
+  }
+  const activeFilters = $derived([
+    ...(activeSource
+      ? [
+          {
+            label: sourceLabel(activeSource),
+            remove: () => changeFilters({ source: null }),
+          },
+        ]
+      : []),
+    ...(activeStatus
+      ? [
+          {
+            label: STATUS_LABELS[activeStatus as JobStatus] ?? activeStatus,
+            remove: () => changeFilters({ status: null }),
+          },
+        ]
+      : []),
+    ...(accountId
+      ? [
+          {
+            label: m.common_account(),
+            remove: () => changeFilters({ account: null }),
+          },
+        ]
+      : []),
+  ]);
 
   const runsQuery = createApiInfiniteQuery<
     PagedResult<AdminImportRunDto>,
@@ -99,7 +138,7 @@
           {
             value:
               summary.successPercent === null
-                ? "—"
+                ? m.admin_metric_no_sample()
                 : String(summary.successPercent),
             unit: summary.successPercent === null ? undefined : "%",
             label: m.admin_success_rate(),
@@ -131,6 +170,9 @@
     subtitle={m.admin_imports_subtitle()}
     back="/app/admin" />
 
+  {#if summaryQuery.error}<AdminQueryError
+      message={summaryQuery.error}
+      queryKey={keys.admin.importSummary()} />{/if}
   {#if summary}
     <KpiStrip tiles={kpis} />
     {#if sourceBars.length > 0}
@@ -161,25 +203,36 @@
     </div>
   {/if}
 
-  <div class="mb-5 flex flex-wrap items-center gap-2">
+  <AdminFilterBar
+    count={runs.length}
+    loading={runsQuery.loading}
+    error={!!error}
+    active={activeFilters}
+    onReset={resetFilters}>
     <Combobox
       label={m.admin_imports_all_sources()}
       options={SOURCE_OPTIONS}
       values={activeSource ? [activeSource] : []}
-      onChange={(v) => (activeSource = v[0] ?? "")} />
+      onChange={(v) => changeFilters({ source: v[0] || null })} />
     <Combobox
       label={m.admin_all_statuses()}
       options={STATUS_OPTIONS}
       values={activeStatus ? [activeStatus] : []}
-      onChange={(v) => (activeStatus = v[0] ?? "")} />
-    <UserSelector value={accountId} onChange={(id) => (accountId = id)} />
-  </div>
+      onChange={(v) => changeFilters({ status: v[0] || null })} />
+    <UserSelector
+      value={accountId}
+      onChange={(id) => changeFilters({ account: id })} />
+  </AdminFilterBar>
 
   {#if error}
-    <Banner variant="error" class="mb-4">{error}</Banner>
-  {/if}
-
-  {#if runsQuery.loading}
+    <AdminQueryError
+      message={error}
+      queryKey={keys.admin.importRuns({
+        source: activeSource,
+        status: activeStatus,
+        userId: accountId,
+      })} />
+  {:else if runsQuery.loading}
     <div class="space-y-2">
       {#each { length: 6 } as _, i (i)}
         <div class="card animate-pulse p-3.5">
@@ -194,7 +247,12 @@
       {/each}
     </div>
   {:else if runs.length === 0}
-    <EmptyState>{m.admin_no_matching_imports()}</EmptyState>
+    <EmptyState
+      ><p>{activeFilters.length ? m.admin_no_matches() : m.admin_no_data()}</p>
+      {#if activeFilters.length}<button
+          class="btn btn-ghost mt-3"
+          onclick={resetFilters}>{m.admin_filters_reset()}</button
+        >{/if}</EmptyState>
   {:else}
     <ul class="space-y-2">
       {#each runs as run (run.id)}

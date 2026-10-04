@@ -8,7 +8,7 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
-  import Banner from "$lib/components/Banner.svelte";
+  import AdminQueryError from "../../AdminQueryError.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -139,7 +139,9 @@
 
 {#if invitationsQuery.error}
   <div transition:fade={{ duration: reduced ? 0 : 120 }}>
-    <Banner variant="error">{invitationsQuery.error}</Banner>
+    <AdminQueryError
+      message={invitationsQuery.error}
+      queryKey={keys.admin.invitations()} />
   </div>
 {:else if invitationsQuery.loading}
   <div

@@ -10,6 +10,7 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
+  import AdminQueryError from "../AdminQueryError.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -173,7 +174,7 @@
     <h2 class="font-display mb-3 text-lg font-bold">{m.admin_backups()}</h2>
 
     {#if loadError}
-      <Banner variant="error">{loadError}</Banner>
+      <AdminQueryError message={loadError} queryKey={keys.admin.backups()} />
     {:else if loading}
       <div transition:fade={{ duration: reduced ? 0 : 120 }} class="space-y-2">
         {#each { length: 3 } as _, i (i)}
@@ -328,16 +329,14 @@
 {/if}
 
 {#if showRestoreModal && pendingFile}
-  <Modal title={m.admin_backup_restore_title()} onclose={closeRestoreModal}>
+  <Modal
+    title={m.admin_backup_restore_title()}
+    onclose={closeRestoreModal}
+    dismissable={!restoreMut.loading}>
     {#if restoreDone}
       <Banner variant="info">
         {m.admin_backup_restored_hint()}
       </Banner>
-      <div class="mt-5 flex justify-end">
-        <button class="btn btn-primary" onclick={() => location.reload()}>
-          {m.common_reload()}
-        </button>
-      </div>
     {:else}
       <p class="text-dim text-sm">
         {m.admin_backup_selected_file()}
@@ -374,26 +373,36 @@
       {#if restoreMut.error}
         <Banner variant="error" class="mt-3">{restoreMut.error}</Banner>
       {/if}
-      <div class="mt-5 flex justify-end gap-2">
-        <button
-          type="button"
-          class="btn btn-ghost"
-          disabled={restoreMut.loading}
-          onclick={closeRestoreModal}>
-          {m.common_cancel()}
-        </button>
-        <button
-          type="button"
-          class="btn btn-danger"
-          disabled={restoreMut.loading ||
-            confirmText !== CONFIRM_PHRASE ||
-            !restorePasswordInput}
-          onclick={confirmRestore}>
-          {restoreMut.loading
-            ? m.admin_backup_restoring()
-            : m.admin_backup_restore_confirm()}
-        </button>
-      </div>
     {/if}
+    {#snippet actions()}
+      {#if restoreDone}
+        <div class="flex justify-end">
+          <button class="btn btn-primary" onclick={() => location.reload()}>
+            {m.common_reload()}
+          </button>
+        </div>
+      {:else}
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="btn btn-ghost"
+            disabled={restoreMut.loading}
+            onclick={closeRestoreModal}>
+            {m.common_cancel()}
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            disabled={restoreMut.loading ||
+              confirmText !== CONFIRM_PHRASE ||
+              !restorePasswordInput}
+            onclick={confirmRestore}>
+            {restoreMut.loading
+              ? m.admin_backup_restoring()
+              : m.admin_backup_restore_confirm()}
+          </button>
+        </div>
+      {/if}
+    {/snippet}
   </Modal>
 {/if}

@@ -69,7 +69,9 @@
               <!-- Only MEDIA has a refresh cron; the others have no notion of
                    staleness yet, hence the em dash rather than a fake 0 %. -->
               <td class="px-2 py-2 text-right font-mono tabular-nums">
-                {row.stalePercent === null ? "—" : `${row.stalePercent} %`}
+                {row.stalePercent === null
+                  ? m.admin_metric_no_sample()
+                  : `${row.stalePercent} %`}
               </td>
               <td class="w-24 px-2 py-2">
                 <Sparkline

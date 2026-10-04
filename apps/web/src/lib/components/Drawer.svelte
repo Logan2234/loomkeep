@@ -77,20 +77,17 @@
   let dragging = $state(false);
   let dragY = $state(0);
   let startY = 0;
+  let startX = 0;
   let panelHeight = 1;
+  let activePointer: number | null = null;
+  let gesture: "pending" | "scroll" | "drag" | null = null;
+  let gestureScroller: HTMLElement | null = null;
+  let gestureMoved = false;
 
-  // A `[data-drawer-scroll]` descendant declares `touch-pan-y` (see Modal/
-  // MenuSheet) so it can scroll natively — but that CSS is set once and
-  // applies regardless of actual scroll position, so a downward swipe
-  // starting at scrollTop 0 (nothing to scroll) still got contested between
-  // native panning and our pointer-drag below: the browser would fire
-  // pointercancel a frame or two in, snapping the sheet straight back to
-  // its resting position before the drag could register (confirmed: this is
-  // exactly why dragging only ever worked from the header/grabber, which has
-  // no `[data-drawer-scroll]` descendant to compete with). Toggling it to
-  // `touch-action: none` while at the top hands the whole gesture to our own
-  // pointer handlers instead; back to `pan-y` once scrolled away from the
-  // top, where native momentum scrolling should take over again.
+  // At the top, keep the gesture until its direction is known: downward
+  // dismisses the sheet, upward scrolls the content manually. Once away
+  // from the top, subsequent gestures use native scrolling and momentum.
+  // Changing touch-action cannot change ownership of an active gesture.
   $effect(() => {
     if (!panelEl) return;
     const scrollables = Array.from(
@@ -108,40 +105,85 @@
     return () => cleanups.forEach((fn) => fn());
   });
 
-  // Below this fraction of the panel's height (or past a velocity threshold),
+  // Beyond this fraction of the panel's height,
   // a released drag completes the close instead of snapping back.
   const CLOSE_FRACTION = 0.3;
 
   function onPointerDown(e: PointerEvent) {
-    if (closing || !dismissable) return;
+    if (closing || activePointer !== null) return;
+    gestureMoved = false;
     if (e.pointerType === "mouse" && e.button !== 0) return;
     if (!panelEl) return;
+    if (
+      e.pointerType !== "touch" &&
+      (e.target as Element).closest(
+        "button, a[href], input, select, textarea, [contenteditable='true'], [role='button']",
+      )
+    )
+      return;
     // A drag that starts over a scrollable descendant that isn't itself
     // scrolled to the top shouldn't hijack the gesture from that scroller.
-    const scrollable = (e.target as HTMLElement).closest(
+    const scrollable = (e.target as HTMLElement).closest<HTMLElement>(
       "[data-drawer-scroll]",
     );
     if (scrollable && scrollable.scrollTop > 0) return;
-    dragging = true;
+    if (!dismissable && !scrollable) return;
+    activePointer = e.pointerId;
+    gesture = "pending";
+    gestureScroller = scrollable;
     startY = e.clientY;
+    startX = e.clientX;
     panelHeight = panelEl.getBoundingClientRect().height || 1;
-    panelEl.setPointerCapture(e.pointerId);
   }
 
   function onPointerMove(e: PointerEvent) {
-    if (!dragging) return;
+    if (activePointer !== e.pointerId || !gesture) return;
+    const delta = e.clientY - startY;
+    if (gesture === "pending") {
+      if (Math.abs(delta) < 8) return;
+      if (Math.abs(e.clientX - startX) > Math.abs(delta)) {
+        cancelGesture();
+        return;
+      }
+      if (gestureScroller && delta < 0) {
+        gesture = "scroll";
+      } else if (dismissable && delta > 0) {
+        gesture = "drag";
+        dragging = true;
+      } else {
+        cancelGesture();
+        return;
+      }
+      gestureMoved = true;
+      panelEl?.setPointerCapture(e.pointerId);
+    }
     e.preventDefault();
-    dragY = Math.max(0, e.clientY - startY);
+    if (gesture === "scroll") {
+      gestureScroller!.scrollTop = Math.max(0, -delta);
+    } else {
+      dragY = Math.max(0, delta);
+    }
   }
 
-  function onPointerUp() {
-    if (!dragging) return;
+  function cancelGesture() {
+    activePointer = null;
+    gesture = null;
+    gestureScroller = null;
     dragging = false;
-    if (dragY / panelHeight > CLOSE_FRACTION) {
-      requestClose();
-    } else {
-      dragY = 0;
-    }
+    dragY = 0;
+  }
+
+  function onPointerUp(e: PointerEvent) {
+    if (activePointer !== e.pointerId) return;
+    const close = gesture === "drag" && dragY / panelHeight > CLOSE_FRACTION;
+    cancelGesture();
+    if (close) requestClose();
+  }
+
+  function onClickCapture(e: MouseEvent) {
+    if (!gestureMoved || e.detail === 0) return;
+    e.preventDefault();
+    e.stopPropagation();
   }
 </script>
 
@@ -190,7 +232,8 @@
     onpointerdown={onPointerDown}
     onpointermove={onPointerMove}
     onpointerup={onPointerUp}
-    onpointercancel={onPointerUp}>
+    onpointercancel={cancelGesture}
+    onclickcapture={onClickCapture}>
     <div class="shrink-0 pt-3 pb-1 select-none">
       {#if dismissable}
         <div class="bg-border mx-auto h-1 w-9 rounded-full"></div>

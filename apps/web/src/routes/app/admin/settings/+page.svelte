@@ -7,6 +7,7 @@
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
+  import AdminQueryError from "../AdminQueryError.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -133,7 +134,9 @@
   {#if settingsQuery.loading}
     <CardRowSkeleton count={4} />
   {:else if settingsQuery.error}
-    <Banner variant="error">{settingsQuery.error}</Banner>
+    <AdminQueryError
+      message={settingsQuery.error}
+      queryKey={keys.admin.instanceSettings()} />
   {:else if settings}
     <section class="mt-6 flex flex-col gap-3">
       <div>
