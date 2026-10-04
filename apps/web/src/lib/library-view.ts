@@ -6,6 +6,7 @@ import type {
   SavedViewDomain,
 } from "@loomkeep/shared";
 import { joinMeta } from "./format";
+import { readStorage, removeStorage, writeStorage } from "./local-storage";
 
 export const LIBRARY_VIEW_MODES = [
   "cards",
@@ -25,23 +26,15 @@ function isViewMode(value: string | null): value is LibraryViewMode {
 }
 
 export function readLibraryViewMode(domain: SavedViewDomain): LibraryViewMode {
-  try {
-    const stored = localStorage.getItem(storageKey(domain));
-    return isViewMode(stored) ? stored : "cards";
-  } catch {
-    return "cards";
-  }
+  const stored = readStorage(storageKey(domain));
+  return isViewMode(stored) ? stored : "cards";
 }
 
 export function writeLibraryViewMode(
   domain: SavedViewDomain,
   mode: LibraryViewMode,
 ): void {
-  try {
-    localStorage.setItem(storageKey(domain), mode);
-  } catch {
-    // Private browsing or blocked storage: the mode just won't be remembered.
-  }
+  writeStorage(storageKey(domain), mode);
 }
 
 const columnsKey = (domain: SavedViewDomain) =>
@@ -50,9 +43,7 @@ const columnsKey = (domain: SavedViewDomain) =>
 /** The table's visible column keys, or null when never customised (or unreadable). */
 export function readLibraryColumns(domain: SavedViewDomain): string[] | null {
   try {
-    const stored = JSON.parse(
-      localStorage.getItem(columnsKey(domain)) ?? "null",
-    );
+    const stored = JSON.parse(readStorage(columnsKey(domain)) ?? "null");
     return Array.isArray(stored) &&
       stored.every((key) => typeof key === "string")
       ? stored
@@ -67,12 +58,8 @@ export function writeLibraryColumns(
   domain: SavedViewDomain,
   keys: string[] | null,
 ): void {
-  try {
-    if (keys) localStorage.setItem(columnsKey(domain), JSON.stringify(keys));
-    else localStorage.removeItem(columnsKey(domain));
-  } catch {
-    // Private browsing or blocked storage: the choice just won't be remembered.
-  }
+  if (keys) writeStorage(columnsKey(domain), JSON.stringify(keys));
+  else removeStorage(columnsKey(domain));
 }
 
 /** What the table, compact and wall modes show of an entry, whatever its domain. */

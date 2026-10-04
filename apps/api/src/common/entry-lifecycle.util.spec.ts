@@ -28,6 +28,12 @@ import { DEFAULT_PAGE_SIZE } from "./pagination.util";
 
 type Row = { id: string; title: string; rank: number };
 
+it("caps library pages even when a service passes an unbounded numeric limit", async () => {
+  const { spec, sqlPage } = specOf([]);
+  await listEntryPage({ sort: "stored", page: 1, limit: 9999 }, spec);
+  expect(sqlPage).toHaveBeenCalledWith("desc", 0, 200);
+});
+
 const SORT_KEYS = ["rank", "title", "stored"] as const;
 type SortKey = (typeof SORT_KEYS)[number];
 

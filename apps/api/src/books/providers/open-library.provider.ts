@@ -4,6 +4,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
 import { chunk } from "../../common/array.util";
+import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import type {
   BookCatalogProvider,
@@ -470,20 +471,10 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     let id = sourceId;
 
     for (let hop = 0; hop <= MAX_REDIRECT_HOPS; hop++) {
-      let work: OpenLibraryWork;
-
-      try {
-        work = await this.get<OpenLibraryWork>(
-          `/works/${encodeURIComponent(id)}.json`,
-        );
-      } catch {
-        throw new AppException(
-          HttpStatus.NOT_FOUND,
-          ErrorCode.CatalogItemNotFound,
-          undefined,
-          "Book not found on Open Library",
-        );
-      }
+      const work = await this.get<OpenLibraryWork>(
+        `/works/${encodeURIComponent(id)}.json`,
+        "Book not found on Open Library",
+      );
 
       const target =
         work.type?.key === "/type/redirect" ? idFromKey(work.location) : null;
@@ -623,67 +614,31 @@ export class OpenLibraryProvider implements BookCatalogProvider {
    * (429 rate limit, 5xx) with backoff — a bulk import can fire hundreds of
    * calls in a burst; honours `Retry-After` when Open Library sends one.
    */
-  private async get<T>(path: string): Promise<T> {
+  private async get<T>(path: string, notFoundMessage?: string): Promise<T> {
     const contact =
       this.configService.get<string>("API_CONTACT") ??
       "self-hosted, no contact provided";
     const url = `${API_URL}${path}`;
 
-    let lastStatus = 0;
-
-    for (let attempt = 1; attempt <= GET_MAX_ATTEMPTS; attempt++) {
-      this.quota.record("openLibrary");
-      const response = await fetch(url, {
+    return fetchJson<T>(
+      url,
+      {
         headers: {
           Accept: "application/json",
           "User-Agent": `Loomkeep/1.0 (${contact})`,
         },
-      });
-
-      if (response.ok) return (await response.json()) as T;
-
-      lastStatus = response.status;
-      const transient = response.status === 429 || response.status >= 500;
-
-      if (transient && attempt < GET_MAX_ATTEMPTS) {
-        await sleep(retryDelayMs(response.headers.get("Retry-After"), attempt));
-        continue;
-      }
-
-      break;
-    }
-
-    throw new AppException(
-      HttpStatus.BAD_GATEWAY,
-      ErrorCode.CatalogProviderUnavailable,
-      undefined,
-      `Open Library request failed with status ${lastStatus}`,
+      },
+      {
+        sourceLabel: "Open Library",
+        notFoundMessage,
+        onAttempt: () => this.quota.record("openLibrary"),
+      },
     );
   }
 }
 
-const GET_MAX_ATTEMPTS = 3;
-
 // Merged works can chain (A → B → C). Bounded so a cycle can't spin forever.
 const MAX_REDIRECT_HOPS = 3;
-
-/** `Retry-After` (seconds) when one is sent; else exponential backoff. */
-function retryDelayMs(
-  retryAfterHeader: string | null,
-  attempt: number,
-): number {
-  const retryAfterSec = Number(retryAfterHeader);
-
-  if (Number.isFinite(retryAfterSec) && retryAfterSec > 0) {
-    return retryAfterSec * 1000;
-  }
-
-  return 500 * 2 ** (attempt - 1); // 500ms, then 1000ms.
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /** An Open Library series id. */
 const SERIES_KEY = /^OL\d+L$/;

@@ -136,6 +136,18 @@ function make(
       ...overrides.bookEntry,
     },
     block: {
+      findMany: vi
+        .fn()
+        .mockImplementation(() =>
+          Promise.resolve(
+            Object.entries(overrides.relations ?? {}).flatMap(([id, rel]) => [
+              ...(rel.blocking ? [{ blockerId: "viewer", blockedId: id }] : []),
+              ...(rel.blockedByTarget
+                ? [{ blockerId: id, blockedId: "viewer" }]
+                : []),
+            ]),
+          ),
+        ),
       findFirst: vi.fn().mockResolvedValue(null),
       ...overrides.block,
     },
@@ -279,6 +291,51 @@ describe("CommentService.list — Figurant pseudonym", () => {
 });
 
 describe("CommentService.list — blocking", () => {
+  it("filters repeated authors and both block directions in one query", async () => {
+    const { svc, prisma } = make({
+      comment: {
+        findMany: vi.fn().mockResolvedValue([
+          commentRow({
+            id: "c1",
+            authorId: "a",
+            author: { ...AUTHOR, id: "a" },
+          }),
+          commentRow({
+            id: "c2",
+            authorId: "b",
+            author: { ...AUTHOR, id: "b" },
+          }),
+          commentRow({
+            id: "c3",
+            authorId: "a",
+            author: { ...AUTHOR, id: "a" },
+          }),
+          commentRow({
+            id: "self",
+            authorId: "viewer",
+            author: { ...AUTHOR, id: "viewer" },
+          }),
+          commentRow({ id: "former", authorId: null, author: null }),
+        ]),
+      },
+      relations: {
+        a: relation({ blocking: true }),
+        b: relation({ blockedByTarget: true }),
+      },
+    });
+    const result = await svc.list("viewer", "MEDIA", "m1", 1);
+    expect(result.items.map((row) => row.id)).toEqual(["self", "former"]);
+    expect(prisma.block.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.block.findMany).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { blockerId: "viewer", blockedId: { in: ["a", "b"] } },
+          { blockedId: "viewer", blockerId: { in: ["a", "b"] } },
+        ],
+      },
+      select: { blockerId: true, blockedId: true },
+    });
+  });
   it("drops comments from a blocked author", async () => {
     const { svc } = make({
       comment: {

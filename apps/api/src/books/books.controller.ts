@@ -40,9 +40,10 @@ import {
   BulkEntriesTargetBody,
 } from "../common/dto/bulk-entries.dto";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
+import { parseListEntriesQuery } from "../common/entry-lifecycle.util";
 import { safeLang } from "../common/locale.util";
+import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
-import { toQueryArray } from "../common/query-array.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
@@ -122,7 +123,7 @@ export class BooksController {
     return this.bookSessionService.list(
       user.sub,
       entryId,
-      page ? Number(page) : 1,
+      parsePageQuery(page, undefined, DEFAULT_PAGE_SIZE).page,
     );
   }
 
@@ -170,14 +171,16 @@ export class BooksController {
   ): Promise<PagedResult<BookEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookLibraryService.listEntries(user.sub, {
-      q,
-      favorite: favorite === "true",
-      statuses: toQueryArray(status),
-      sort,
-      order: order === "asc" ? "asc" : "desc",
-      page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
-      lang: safeLang(lang),
+      ...parseListEntriesQuery({
+        q,
+        favorite,
+        status,
+        sort,
+        order,
+        page,
+        limit,
+        lang,
+      }),
     });
   }
 
@@ -230,10 +233,7 @@ export class BooksController {
   ): Promise<PileSummaryDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookLibraryService.getPile(user.sub, {
-      q,
-      favorite: favorite === "true",
-      statuses: toQueryArray(status),
-      lang: safeLang(lang),
+      ...parseListEntriesQuery({ q, favorite, status, lang }),
     });
   }
 

@@ -1,4 +1,5 @@
 import { browser } from "$app/environment";
+import { readStorage, writeStorage } from "$lib/local-storage";
 
 const STORAGE_KEY = "lk-theme";
 export const THEME_COLOR = { light: "#f7f5f3", dark: "#0c0d10" } as const;
@@ -14,7 +15,7 @@ class ThemeState {
   /** Reads the same source as the app.html boot script and syncs the store. */
   init(): void {
     if (!browser) return;
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = readStorage(STORAGE_KEY);
     const dark = saved
       ? saved === "dark"
       : matchMedia("(prefers-color-scheme: dark)").matches;
@@ -23,7 +24,7 @@ class ThemeState {
 
   toggle(): void {
     this.apply(this.mode === "dark" ? "light" : "dark");
-    if (browser) localStorage.setItem(STORAGE_KEY, this.mode);
+    if (browser) writeStorage(STORAGE_KEY, this.mode);
   }
 
   private apply(mode: Mode): void {

@@ -1,4 +1,5 @@
 import { browser } from "$app/environment";
+import { readStorage, writeStorage } from "$lib/local-storage";
 
 const MOTION_KEY = "lk-a11y-motion";
 const CONTRAST_KEY = "lk-a11y-contrast";
@@ -27,9 +28,9 @@ class AccessibilityState {
 
   init(): void {
     if (!browser) return;
-    this.motion = motionPreference(localStorage.getItem(MOTION_KEY));
-    this.contrast = contrastPreference(localStorage.getItem(CONTRAST_KEY));
-    this.density = densityPreference(localStorage.getItem(DENSITY_KEY));
+    this.motion = motionPreference(readStorage(MOTION_KEY));
+    this.contrast = contrastPreference(readStorage(CONTRAST_KEY));
+    this.density = densityPreference(readStorage(DENSITY_KEY));
     this.apply();
   }
 
@@ -52,7 +53,7 @@ class AccessibilityState {
   }
 
   private save(key: string, value: string): void {
-    if (browser) localStorage.setItem(key, value);
+    if (browser) writeStorage(key, value);
   }
 
   private apply(): void {

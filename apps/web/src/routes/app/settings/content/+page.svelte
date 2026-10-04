@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { localDateInput } from "$lib/date";
   import { updateMe } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
@@ -24,7 +25,7 @@
   let birthDate = $state(auth.user?.birthDate ?? "");
 
   // Today, formatted for the date input's `max` bound (no future birth dates).
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = localDateInput();
 
   const saveBirthDateMut = createApiMutation(() => ({
     mutate: () => updateMe({ birthDate: birthDate || null }),

@@ -33,9 +33,8 @@ import {
   BulkEntriesTargetBody,
 } from "../common/dto/bulk-entries.dto";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
-import { safeLang } from "../common/locale.util";
+import { parseListEntriesQuery } from "../common/entry-lifecycle.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
-import { toQueryArray } from "../common/query-array.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { DomainGateService } from "../users/domain-gate.service";
 import { BulkUpdateMusicEntriesBody } from "./dto/bulk-update-music-entries.dto";
@@ -92,14 +91,16 @@ export class MusicController {
   ): Promise<PagedResult<MusicEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.listEntries(user.sub, {
-      q,
-      favorite: favorite === "true",
-      statuses: toQueryArray(status),
-      sort,
-      order: order === "asc" ? "asc" : "desc",
-      page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
-      lang: safeLang(lang),
+      ...parseListEntriesQuery({
+        q,
+        favorite,
+        status,
+        sort,
+        order,
+        page,
+        limit,
+        lang,
+      }),
     });
   }
 
@@ -115,10 +116,7 @@ export class MusicController {
   ): Promise<PileSummaryDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.getPile(user.sub, {
-      q,
-      favorite: favorite === "true",
-      statuses: toQueryArray(status),
-      lang: safeLang(lang),
+      ...parseListEntriesQuery({ q, favorite, status, lang }),
     });
   }
 

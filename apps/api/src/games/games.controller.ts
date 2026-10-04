@@ -35,9 +35,9 @@ import {
   BulkEntriesTargetBody,
 } from "../common/dto/bulk-entries.dto";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
-import { safeLang } from "../common/locale.util";
+import { parseListEntriesQuery } from "../common/entry-lifecycle.util";
+import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
-import { toQueryArray } from "../common/query-array.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
@@ -106,7 +106,7 @@ export class GamesController {
     return this.gameSessionService.list(
       user.sub,
       entryId,
-      page ? Number(page) : 1,
+      parsePageQuery(page, undefined, DEFAULT_PAGE_SIZE).page,
     );
   }
 
@@ -154,14 +154,16 @@ export class GamesController {
   ): Promise<PagedResult<GameEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.listEntries(user.sub, {
-      q,
-      favorite: favorite === "true",
-      statuses: toQueryArray(status),
-      sort,
-      order: order === "asc" ? "asc" : "desc",
-      page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
-      lang: safeLang(lang),
+      ...parseListEntriesQuery({
+        q,
+        favorite,
+        status,
+        sort,
+        order,
+        page,
+        limit,
+        lang,
+      }),
     });
   }
 
@@ -177,10 +179,7 @@ export class GamesController {
   ): Promise<PileSummaryDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.getPile(user.sub, {
-      q,
-      favorite: favorite === "true",
-      statuses: toQueryArray(status),
-      lang: safeLang(lang),
+      ...parseListEntriesQuery({ q, favorite, status, lang }),
     });
   }
 

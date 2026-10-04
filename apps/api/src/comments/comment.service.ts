@@ -180,7 +180,7 @@ export class CommentService {
             .map(toDtoWithMask),
         );
         // Not block-filtered, unlike `replies` above: that would mean running
-        // every reply of every comment through getRelation just to subtract
+        // every reply of every comment through block lookups just to subtract
         // the few a block hides. The count can therefore read one or two high
         // for a viewer with blocks — the reply list itself stays correct.
         dto.replyCount = c._count?.replies ?? 0;
@@ -814,22 +814,11 @@ export class CommentService {
     viewerId: string,
     rows: CommentRow[],
   ): Promise<CommentRow[]> {
-    const visible: CommentRow[] = [];
-
-    for (const row of rows) {
-      if (row.authorId === viewerId || !row.author) {
-        visible.push(row);
-        continue;
-      }
-
-      const relation = await this.visibility.getRelation(viewerId, {
-        id: row.author.id,
-        profileAccess: row.author.profileAccess,
-      });
-      if (!relation.blocking && !relation.blockedByTarget) visible.push(row);
-    }
-
-    return visible;
+    const blockedIds = await this.blocks.blockedEitherWayIds(
+      viewerId,
+      rows.flatMap((row) => (row.author ? [row.author.id] : [])),
+    );
+    return rows.filter((row) => !row.author || !blockedIds.has(row.author.id));
   }
 
   private async loadReactions(

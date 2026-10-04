@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from "$app/environment";
+  import { readStorage, writeStorage } from "$lib/local-storage";
   import { goto } from "$app/navigation";
   import { navigating, page } from "$app/state";
   import { logout } from "$lib/api/auth";
@@ -20,7 +21,7 @@
   const reduced = prefersReducedMotion();
 
   let pinned = $state(
-    browser ? localStorage.getItem("lk-rail-pinned") === "true" : false,
+    browser ? readStorage("lk-rail-pinned") === "true" : false,
   );
   let hovered = $state(false);
 
@@ -65,7 +66,7 @@
   function togglePinned() {
     pinned = !pinned;
     if (browser) {
-      localStorage.setItem("lk-rail-pinned", pinned ? "true" : "false");
+      writeStorage("lk-rail-pinned", pinned ? "true" : "false");
     }
   }
 

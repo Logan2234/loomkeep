@@ -33,6 +33,7 @@ import {
   BulkEntriesTargetBody,
 } from "../common/dto/bulk-entries.dto";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
+import { parseListEntriesQuery } from "../common/entry-lifecycle.util";
 import { toQueryArray } from "../common/query-array.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { DomainGateService } from "../users/domain-gate.service";
@@ -74,15 +75,17 @@ export class LibraryController {
   ): Promise<PagedResult<LibraryEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.libraryService.listEntries(user.sub, {
-      q,
-      favorite: favorite === "true",
-      statuses: toQueryArray(status),
+      ...parseListEntriesQuery({
+        q,
+        favorite,
+        status,
+        sort,
+        order,
+        page,
+        limit,
+        lang,
+      }),
       types: toQueryArray(type) as MediaType[],
-      sort,
-      order: order === "asc" ? "asc" : "desc",
-      page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
-      lang: Locale.includes(lang as Locale) ? lang : undefined,
     });
   }
 
@@ -99,11 +102,8 @@ export class LibraryController {
   ): Promise<PileSummaryDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.libraryService.getPile(user.sub, {
-      q,
-      favorite: favorite === "true",
-      statuses: toQueryArray(status),
+      ...parseListEntriesQuery({ q, favorite, status, lang }),
       types: toQueryArray(type) as MediaType[],
-      lang: Locale.includes(lang as Locale) ? lang : undefined,
     });
   }
 

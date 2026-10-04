@@ -1048,21 +1048,24 @@ describe("OpenLibraryProvider", () => {
 
   it("chunks ISBN batches at 20 and reports a failed chunk without retrying it individually", async () => {
     const isbns = Array.from({ length: 25 }, (_, i) => `978000000000${i}`);
-    const fn = vi
-      .fn()
-      .mockImplementationOnce(() => Promise.reject(new Error("network down")))
-      .mockImplementationOnce(() =>
-        Promise.resolve(
-          new Response(JSON.stringify({ numFound: 0 }), { status: 200 }),
-        ),
-      );
+    const fn = vi.fn((input: RequestInfo | URL) => {
+      const query = new URL(String(input)).searchParams.get("q") ?? "";
+      return query.includes(isbns[0])
+        ? Promise.reject(new Error("network down"))
+        : Promise.resolve(
+            new Response(JSON.stringify({ numFound: 0 }), { status: 200 }),
+          );
+    });
     global.fetch = fn as unknown as typeof fetch;
 
     const { matches, failedIsbns } =
       await providerWith("k").searchByIsbns(isbns);
 
-    // 2 chunks (20 + 5) → 2 calls, not 25.
-    expect(fn).toHaveBeenCalledTimes(2);
+    // The failed chunk gets three HTTP attempts, never one call per ISBN.
+    expect(fn).toHaveBeenCalledTimes(4);
+    expect(fn.mock.calls.slice(0, 3).map(([url]) => String(url))).toEqual(
+      Array(3).fill(String(fn.mock.calls[0][0])),
+    );
     expect(matches.size).toBe(0);
     expect(failedIsbns).toEqual(isbns.slice(0, 20));
   });

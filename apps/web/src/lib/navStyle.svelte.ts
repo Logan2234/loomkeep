@@ -1,4 +1,5 @@
 import { browser } from "$app/environment";
+import { readStorage, writeStorage } from "$lib/local-storage";
 import { m } from "$lib/paraglide/messages";
 
 const STORAGE_KEY = "lk-nav-style";
@@ -35,7 +36,7 @@ class NavStyleState {
 
   init(): void {
     if (!browser) return;
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = readStorage(STORAGE_KEY);
 
     if (saved === "marquee" || saved === "dock" || saved === "board") {
       this.choice = saved;
@@ -44,7 +45,7 @@ class NavStyleState {
 
   set(style: NavStyle): void {
     this.choice = style;
-    if (browser) localStorage.setItem(STORAGE_KEY, style);
+    if (browser) writeStorage(STORAGE_KEY, style);
   }
 }
 

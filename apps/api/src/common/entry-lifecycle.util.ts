@@ -7,7 +7,9 @@ import type { PrismaService } from "../prisma/prisma.service";
 import { classifyStatusTransition } from "../social/activity-transition.util";
 import type { ActivityService } from "../social/activity.service";
 import { AppException } from "./app.exception";
-import { DEFAULT_PAGE_SIZE } from "./pagination.util";
+import { safeLang } from "./locale.util";
+import { DEFAULT_PAGE_SIZE, parsePageQuery } from "./pagination.util";
+import { toQueryArray } from "./query-array.util";
 
 /**
  * What the four library domains (media, books, games, music) share of their
@@ -40,6 +42,33 @@ export interface ListEntriesFilters {
   limit?: number;
   /** The signed-in user's locale, when known — drives alphabetical collation. */
   lang?: string;
+}
+
+export function parseListEntriesQuery(query: {
+  q?: string;
+  favorite?: string;
+  status?: string | string[];
+  sort?: string;
+  order?: string;
+  page?: string;
+  limit?: string;
+  lang?: string;
+}): ListEntriesFilters {
+  const { page, limit } = parsePageQuery(
+    query.page,
+    query.limit,
+    DEFAULT_PAGE_SIZE,
+  );
+  return {
+    q: query.q,
+    favorite: query.favorite === "true",
+    statuses: toQueryArray(query.status),
+    sort: query.sort,
+    order: query.order === "asc" ? "asc" : "desc",
+    page,
+    limit,
+    lang: safeLang(query.lang),
+  };
 }
 
 export interface EntryStatusChange {
@@ -174,10 +203,11 @@ export async function listEntryPage<
   const sort =
     spec.sortKeys.find((key) => key === filters.sort) ?? spec.defaultSort;
   const asc = filters.order === "asc";
-  const page = filters.page && filters.page > 0 ? filters.page : 1;
-  const limit =
-    filters.limit && filters.limit > 0 ? filters.limit : DEFAULT_PAGE_SIZE;
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = parsePageQuery(
+    filters.page?.toString(),
+    filters.limit?.toString(),
+    DEFAULT_PAGE_SIZE,
+  );
 
   const sqlSort =
     spec.keep || !spec.sqlSorts || !Object.hasOwn(spec.sqlSorts, sort)

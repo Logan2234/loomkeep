@@ -23,6 +23,7 @@ import {
   type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
 import { auth } from "../auth.svelte";
+import { removeStorage } from "../local-storage";
 import { getLocale, isLocale, setLocale } from "../paraglide/runtime.js";
 import { ApiError } from "./core";
 import { typedRequest } from "./generated/typed-request";
@@ -38,7 +39,7 @@ export async function initAuth(): Promise<boolean> {
   if (browser) {
     // Tokens written by previous releases are no longer used after the
     // HttpOnly-cookie migration, so remove the durable XSS-readable copy.
-    localStorage.removeItem("loomkeep.tokens");
+    removeStorage("loomkeep.tokens");
   }
 
   try {

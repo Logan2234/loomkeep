@@ -7,8 +7,8 @@ import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 
 /**
- * Single deletion path shared by the self-service `DELETE /users/me` flow and
- * InactiveAccountService's automatic purge — both need the same
+ * Single deletion path shared by self-service, administrative deletion and
+ * InactiveAccountService's automatic purge — all need the same
  * cascade behavior (owned lists with editors are reassigned rather than
  * cascade-deleted, see ListService.reassignOwnedListsOnAccountDeletion), just
  * with a different SecurityEvent detail for traceability.
@@ -25,7 +25,7 @@ export class AccountDeletionService {
 
   async deleteAccount(
     userId: string,
-    reason: "self" | "inactive",
+    reason: "self" | "inactive" | "admin",
     detail: string,
     userAgent?: string,
   ): Promise<void> {
@@ -82,8 +82,9 @@ export class AccountDeletionService {
     await this.prisma.user.delete({ where: { id: userId } });
 
     // The confirmation the GDPR erasure calls for; the address is used one
-    // last time, after the account it belonged to is gone.
-    if (account) {
+    // last time, after the account it belonged to is gone. Administrative
+    // deletions already sent their moderation notice before reaching here.
+    if (account && reason !== "admin") {
       await this.mail.sendAccountDeleted(
         { email: account.email, locale: account.locale },
         reason,
