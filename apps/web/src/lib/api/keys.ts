@@ -53,8 +53,8 @@ export const keys = {
       ["media", "detail", type, sourceId] as const,
     extras: (source: string, sourceId: string, region: string | null) =>
       ["media", "extras", source, sourceId, region] as const,
-    saga: (type: string, sourceId: string) =>
-      ["media", "saga", type, sourceId] as const,
+    saga: (type: string, sourceId: string, tracked: boolean) =>
+      ["media", "saga", type, sourceId, tracked] as const,
   },
   calendar: {
     upcoming: () => ["calendar", "upcoming"] as const,
@@ -159,6 +159,7 @@ export const keys = {
     domainCounts: () => ["library", "domain-counts"] as const,
     watching: () => ["library", "watching"] as const,
     plannedMovies: () => ["library", "planned-movies"] as const,
+    sagas: (filters: object) => ["library", "sagas", filters] as const,
     dormant: () => ["library", "dormant"] as const,
     browse: (
       domain: string,

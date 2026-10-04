@@ -2,6 +2,7 @@ import type {
   BulkEntriesTargetDto,
   BulkUpdateEntriesDto,
   LibraryEntryDto,
+  LibrarySagaSort,
   MEDIA_BULK_STATUSES,
   MediaOwnershipStatus,
   MediaType,
@@ -20,6 +21,24 @@ export interface ListLibraryFilters {
   order?: "asc" | "desc";
   page?: number;
 }
+
+export interface LibrarySagaFilters {
+  query?: string;
+  types?: MediaType[];
+  sort?: LibrarySagaSort;
+  order?: "asc" | "desc";
+}
+
+/** The library's sagas in progress, and the ones waiting on a sequel. */
+export const listLibrarySagas = (filters: LibrarySagaFilters = {}) =>
+  typedRequest("/library/sagas", {
+    query: {
+      q: filters.query || undefined,
+      type: filters.types,
+      sort: filters.sort,
+      order: filters.order,
+    },
+  });
 
 /** Tracked-item count per domain, the user's hidden domains included. */
 export const getLibraryDomainCounts = () =>

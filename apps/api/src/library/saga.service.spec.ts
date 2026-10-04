@@ -35,6 +35,7 @@ function makeService(allowAdult = false) {
   const sagas = {
     read: vi.fn().mockResolvedValue(franchise),
     rememberMembership: vi.fn().mockResolvedValue(0),
+    sync: vi.fn().mockResolvedValue(undefined),
   };
   const library = {
     statusesBySourceId: vi
@@ -80,6 +81,15 @@ describe("SagaService", () => {
       ["1", "2", "3"],
       "ANILIST:1",
     );
+  });
+
+  it("saves the saga at once when a work of it was just tracked", async () => {
+    const { service, sagas } = makeService(true);
+    sagas.rememberMembership.mockResolvedValue(1);
+
+    await service.getSaga("user-1", "ANIME", "2");
+
+    expect(sagas.sync).toHaveBeenCalledWith("ANIME", "2");
   });
 
   it("leaves 18+ works out for an account that can't see them", async () => {

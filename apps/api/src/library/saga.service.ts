@@ -8,7 +8,7 @@ import type {
   MediaType,
   SagaMemberDto,
 } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import type { SagaMember } from "@prisma/client";
 import { SagaSyncService } from "../catalog/saga-sync.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -29,6 +29,8 @@ export interface LibrarySagaFilters {
  */
 @Injectable()
 export class SagaService {
+  private readonly logger = new Logger(SagaService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly sagas: SagaSyncService,
@@ -55,10 +57,18 @@ export class SagaService {
 
     const source: CatalogSource = type === "ANIME" ? "ANILIST" : "TMDB";
     const ids = members.map((m) => m.sourceId);
-    const [statuses] = await Promise.all([
+    const [statuses, tagged] = await Promise.all([
       this.library.statusesBySourceId(userId, source, type, ids),
       this.sagas.rememberMembership(type, ids, saga.key),
     ]);
+
+    // A work just tracked joins the saga now rather than at the next refresh,
+    // so the library's sagas view shows it straight away.
+    if (tagged > 0) {
+      this.sagas
+        .sync(type, sourceId)
+        .catch((err) => this.logger.warn(`Saga sync failed: ${saga.key}`, err));
+    }
 
     return {
       ...saga,
