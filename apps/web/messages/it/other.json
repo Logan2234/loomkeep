@@ -721,6 +721,7 @@
   "game_release_reminder_enabled_toast": "Promemoria attivato: il gioco entrerà nei tuoi riepiloghi delle uscite.",
   "game_release_reminder_vague_hint": "Il promemoria partirà non appena la data sarà nota al giorno o al mese.",
   "game_upcoming_tracking_hint": "Sessioni, possesso e stato saranno disponibili all’uscita del gioco.",
+  "release_alerts_channels_off": "Non ricevi nessun riepilogo delle uscite: attivalo via email o push in Impostazioni › Comunicazioni.",
   "calendar_game_release": "Uscita del gioco",
   "calendar_game_this_month": "In uscita questo mese",
   "book_status_reset_to_read": "Rimetti tra i libri da leggere",

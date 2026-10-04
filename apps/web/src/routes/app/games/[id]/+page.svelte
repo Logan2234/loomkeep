@@ -10,7 +10,6 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
   import Banner from "$lib/components/Banner.svelte";
@@ -48,6 +47,8 @@
   import { isFeatureNew } from "$lib/feature-badges";
   import { joinMeta } from "$lib/format";
   import { gameReleaseLabel, isVagueRelease } from "$lib/game-release";
+  import { releaseDigestOff } from "$lib/release-alerts";
+  import Tooltip from "$lib/components/Tooltip.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import {
@@ -98,6 +99,8 @@
 
   const entry = $derived(detail?.entry ?? null);
   const upcoming = $derived(!!detail?.upcoming);
+  // With no release summary on, the reminder would change nothing.
+  const digestOff = $derived(releaseDigestOff());
   const reviewMeta = $derived(
     detail ? joinMeta(m.game_type(), detail.year) : "",
   );
@@ -531,28 +534,41 @@
         {/if}
       </div>
 
+      {#snippet bellButton(entry: GameEntryDto)}
+        <button
+          type="button"
+          class="grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50 {entry.releaseAlertsEnabled
+            ? 'bg-accent text-accent-fg'
+            : 'border-border text-dim border'}"
+          disabled={saving || digestOff}
+          aria-pressed={entry.releaseAlertsEnabled}
+          aria-label={entry.releaseAlertsEnabled
+            ? m.media_movie_reminder_cancel()
+            : m.media_movie_reminder_enable()}
+          title={digestOff
+            ? undefined
+            : entry.releaseAlertsEnabled
+              ? m.media_movie_reminder_cancel()
+              : m.media_movie_reminder_enable()}
+          onclick={() => releaseAlertsMut.mutate(!entry.releaseAlertsEnabled)}>
+          <Icon
+            name={entry.releaseAlertsEnabled ? "bell" : "bell-off"}
+            class="h-5 w-5" />
+        </button>
+      {/snippet}
+
       {#snippet releaseReminder(entry: GameEntryDto)}
         <div class="flex flex-col gap-3">
           <div class="flex items-center gap-3">
-            <button
-              type="button"
-              class="grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50 {entry.releaseAlertsEnabled
-                ? 'bg-accent text-accent-fg'
-                : 'border-border text-dim border'}"
-              disabled={saving}
-              aria-pressed={entry.releaseAlertsEnabled}
-              aria-label={entry.releaseAlertsEnabled
-                ? m.media_movie_reminder_cancel()
-                : m.media_movie_reminder_enable()}
-              title={entry.releaseAlertsEnabled
-                ? m.media_movie_reminder_cancel()
-                : m.media_movie_reminder_enable()}
-              onclick={() =>
-                releaseAlertsMut.mutate(!entry.releaseAlertsEnabled)}>
-              <Icon
-                name={entry.releaseAlertsEnabled ? "bell" : "bell-off"}
-                class="h-5 w-5" />
-            </button>
+            {#if digestOff}
+              <Tooltip
+                text={m.release_alerts_channels_off()}
+                class="inline-flex shrink-0">
+                {@render bellButton(entry)}
+              </Tooltip>
+            {:else}
+              {@render bellButton(entry)}
+            {/if}
             <div class="min-w-0 text-sm">
               <p>
                 {entry.releaseAlertsEnabled
@@ -567,7 +583,7 @@
               {/if}
             </div>
           </div>
-          {#if entry.releaseAlertsEnabled && auth.user?.notifyEmail === "DISABLED" && auth.user?.notifyPush === "DISABLED"}
+          {#if digestOff}
             <a
               href="/app/settings/communications"
               class="text-accent text-sm underline"

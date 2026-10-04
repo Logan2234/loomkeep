@@ -9,7 +9,7 @@ its URL:
 
 | Link                   | What it holds                                                | Open it in                                       |
 | ---------------------- | ------------------------------------------------------------ | ------------------------------------------------ |
-| Calendar (`.ics`)      | Upcoming episodes of the shows you follow                    | Google Calendar, Apple Calendar, Thunderbird…    |
+| Calendar (`.ics`)      | Upcoming episodes, movie and game releases you track         | Google Calendar, Apple Calendar, Thunderbird…    |
 | Releases (Atom or RSS) | Episodes already out, newest first                           | Any feed reader, or Home Assistant's feed sensor |
 | Activity (Atom)        | Your activity feed, when the instance has social features on | Any feed reader                                  |
 

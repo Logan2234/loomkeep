@@ -721,6 +721,7 @@
   "game_release_reminder_enabled_toast": "Reminder on: the game will join your release summaries.",
   "game_release_reminder_vague_hint": "The reminder goes off once the release is dated to a day or a month.",
   "game_upcoming_tracking_hint": "Sessions, ownership and status become available when the game comes out.",
+  "release_alerts_channels_off": "You get no release summary: turn it on by email or push in Settings › Communications.",
   "calendar_game_release": "Game release",
   "calendar_game_this_month": "Due out this month",
   "book_status_reset_to_read": "Move back to to-read list",

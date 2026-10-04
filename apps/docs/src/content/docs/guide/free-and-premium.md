@@ -18,7 +18,7 @@ already have: tracking, history, imports and exports stay free.
 | Music, and podcasts and board games once they arrive  | —              | ✓, in early access      |
 | [Imports](/guide/imports/)                            | One per domain | Unlimited               |
 | Saved library views                                   | 3              | 24                      |
-| New-episode digest                                    | Weekly         | Daily or weekly         |
+| Release digest                                        | Weekly         | Daily or weekly         |
 | [Stats](#advanced-stats)                              | ✓              | ✓, plus advanced stats  |
 | [Calendar and feed links](/guide/calendar-and-feeds/) | —              | ✓                       |
 | Navigation styles                                     | Marquee        | Marquee, Dock and Board |

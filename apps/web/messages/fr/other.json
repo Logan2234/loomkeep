@@ -721,6 +721,7 @@
   "game_release_reminder_enabled_toast": "Rappel activé : le jeu rejoindra tes résumés de sortie.",
   "game_release_reminder_vague_hint": "Le rappel partira dès que la date sera connue au jour ou au mois.",
   "game_upcoming_tracking_hint": "Sessions, possession et statut seront disponibles à la sortie du jeu.",
+  "release_alerts_channels_off": "Tu ne reçois aucun résumé de sorties : active-le par email ou push dans Réglages › Communications.",
   "calendar_game_release": "Sortie du jeu",
   "calendar_game_this_month": "Sortie prévue ce mois-ci",
   "book_status_reset_to_read": "Remettre à lire",

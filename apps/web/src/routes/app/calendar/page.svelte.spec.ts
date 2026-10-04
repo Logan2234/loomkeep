@@ -1,11 +1,12 @@
+import { auth } from "$lib/auth.svelte";
 import { m } from "$lib/paraglide/messages.js";
 import { apiUrl, server } from "$lib/test/msw";
 import { renderWithQuery } from "$lib/test/render";
-import type { CalendarEntryDto } from "@loomkeep/shared";
+import type { CalendarEntryDto, UserDto } from "@loomkeep/shared";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CalendarPage from "./+page.svelte";
 
 vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
@@ -66,6 +67,10 @@ beforeEach(() => {
       return HttpResponse.json({});
     }),
   );
+});
+
+afterEach(() => {
+  auth.user = null;
 });
 
 describe("calendar page", () => {
@@ -147,6 +152,22 @@ describe("calendar page", () => {
       ]),
     );
     expect(patched).toEqual([]);
+  });
+
+  it("greys the bells out while no release summary is on", async () => {
+    auth.user = {
+      id: "u1",
+      notifyEmail: "DISABLED",
+      notifyPush: "DISABLED",
+    } as UserDto;
+    renderWithQuery(CalendarPage, {});
+
+    const bells = await screen.findAllByRole("button", {
+      name: m.calendar_mute_series({ title: "Lanterns" }),
+    });
+    expect(bells.every((bell) => (bell as HTMLButtonElement).disabled)).toBe(
+      true,
+    );
   });
 
   it("mutes the whole series from any one of its episodes", async () => {
