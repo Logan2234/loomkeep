@@ -124,17 +124,16 @@ function itemsFor(hrefs: string[]): AdminNavItem[] {
 
 export const ADMIN_NAV_GROUPS = [
   {
-    label: m.admin_group_content(),
+    label: m.admin_group_pilotage(),
     items: itemsFor([
-      "/app/admin/cache",
-      "/app/admin/schema",
-      "/app/admin/components",
-      "/app/admin/backup",
-      "/app/admin/imports",
+      "/app/admin/services",
+      "/app/admin/jobs",
+      "/app/admin/stats",
+      "/app/admin/settings",
     ]),
   },
   {
-    label: m.admin_group_users(),
+    label: m.admin_group_people(),
     items: itemsFor([
       "/app/admin/users",
       "/app/admin/communications",
@@ -142,17 +141,20 @@ export const ADMIN_NAV_GROUPS = [
     ]),
   },
   {
-    label: m.admin_group_system(),
+    label: m.admin_group_moderation(),
+    items: itemsFor(["/app/admin/reports", "/app/admin/security"]),
+  },
+  {
+    label: m.admin_group_maintenance(),
     items: itemsFor([
-      "/app/admin/services",
-      "/app/admin/settings",
-      "/app/admin/jobs",
-      "/app/admin/stats",
+      "/app/admin/backup",
+      "/app/admin/imports",
+      "/app/admin/cache",
     ]),
   },
   {
-    label: m.admin_group_security(),
-    items: itemsFor(["/app/admin/security", "/app/admin/reports"]),
+    label: m.admin_group_development(),
+    items: itemsFor(["/app/admin/schema", "/app/admin/components"]),
   },
 ];
 

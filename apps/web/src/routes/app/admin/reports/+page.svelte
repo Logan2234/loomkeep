@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AdminFilterBar from "../AdminFilterBar.svelte";
+  import AdminQueryError from "../AdminQueryError.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { adminFilterHref } from "$lib/admin-filter-url";
@@ -73,6 +76,27 @@
     });
   }
 
+  function resetFilters() {
+    changeFilters({ status: null, reporter: null });
+  }
+  const activeFilters = $derived([
+    ...(activeStatus !== "PENDING"
+      ? [
+          {
+            label: REPORT_STATUS_LABELS[activeStatus],
+            remove: () => changeFilters({ status: null }),
+          },
+        ]
+      : []),
+    ...(reporterId
+      ? [
+          {
+            label: m.admin_reports_all_authors(),
+            remove: () => changeFilters({ reporter: null }),
+          },
+        ]
+      : []),
+  ]);
   const reportsKey = $derived(
     keys.admin.reports({ status: activeStatus, reporterId }),
   );
@@ -250,7 +274,7 @@
           {
             value:
               summary.medianResolutionHours === null
-                ? "—"
+                ? m.admin_metric_no_sample()
                 : String(summary.medianResolutionHours),
             unit: summary.medianResolutionHours === null ? undefined : "h",
             label: m.admin_social_reports_median_delay(),
@@ -258,7 +282,7 @@
           {
             value:
               summary.foundedPercent === null
-                ? "—"
+                ? m.admin_metric_no_sample()
                 : String(summary.foundedPercent),
             unit: summary.foundedPercent === null ? undefined : "%",
             label: m.admin_reports_upheld(),
@@ -282,6 +306,12 @@
     subtitle={m.admin_reports_subtitle()}
     back="/app/admin" />
 
+  {#if !appConfig.socialEnabled}<Banner variant="info" class="mb-4"
+      >{m.admin_social_disabled()}</Banner
+    >{/if}
+  {#if summaryQuery.error}<AdminQueryError
+      message={summaryQuery.error}
+      queryKey={keys.admin.reportsSummary()} />{/if}
   {#if summary}
     <KpiStrip tiles={kpis} />
     {#if reporterBars.length > 0}
@@ -315,7 +345,12 @@
     </div>
   {/if}
 
-  <div class="mb-5 flex flex-wrap items-center gap-2">
+  <AdminFilterBar
+    count={reports.length}
+    loading={reportsQuery.loading}
+    error={!!error}
+    active={activeFilters}
+    onReset={resetFilters}>
     <Combobox
       label={m.common_status()}
       options={STATUS_OPTIONS}
@@ -329,13 +364,11 @@
       label={m.admin_reports_all_authors()}
       searchPlaceholder={m.admin_reports_author_search()}
       onChange={(id) => changeFilters({ reporter: id })} />
-  </div>
+  </AdminFilterBar>
 
   {#if error}
-    <Banner variant="error" class="mb-4">{error}</Banner>
-  {/if}
-
-  {#if reportsQuery.loading}
+    <AdminQueryError message={error} queryKey={reportsKey} />
+  {:else if reportsQuery.loading}
     <div class="space-y-2">
       {#each { length: 4 } as _, i (i)}
         <div class="card animate-pulse p-3.5">
@@ -356,7 +389,16 @@
       {/each}
     </div>
   {:else if reports.length === 0}
-    <EmptyState>{m.admin_no_matching_reports()}</EmptyState>
+    <EmptyState
+      ><p>
+        {activeFilters.length
+          ? m.admin_no_matches()
+          : m.admin_no_matching_reports()}
+      </p>
+      {#if activeFilters.length}<button
+          class="btn btn-ghost mt-3"
+          onclick={resetFilters}>{m.admin_filters_reset()}</button
+        >{/if}</EmptyState>
   {:else}
     <ul class="space-y-2">
       {#each reports as r (r.id)}
@@ -630,39 +672,43 @@
       <Banner variant="error" class="mt-3">{takeDownMut.error}</Banner>
     {/if}
 
-    <div class="mt-5 flex justify-end gap-2">
-      <button
-        type="button"
-        class="btn btn-ghost"
-        disabled={takeDownMut.loading}
-        onclick={() => (takeDownTarget = null)}>
-        {m.common_cancel()}
-      </button>
-      <button
-        type="button"
-        class="btn {decisionMode === 'list-edit' ||
-        (decisionMode === 'profile' && !deleteAccount)
-          ? 'btn-primary'
-          : 'btn-danger'}"
-        disabled={takeDownMut.loading ||
-          !takeDownReasonText.trim() ||
-          (decisionMode === "profile" && !profileMeasureChosen)}
-        onclick={() => takeDownMut.mutate(target)}>
-        {#if takeDownMut.loading}
-          {decisionMode === "take-down"
-            ? m.admin_reports_removing()
-            : m.common_loading()}
-        {:else if decisionMode === "profile"}
-          {deleteAccount ? m.admin_reports_measure_delete() : m.common_apply()}
-        {:else if decisionMode === "list-edit"}
-          {m.admin_reports_record()}
-        {:else if decisionMode === "list-remove"}
-          {m.common_delete()}
-        {:else}
-          {m.common_remove()}
-        {/if}
-      </button>
-    </div>
+    {#snippet actions()}
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          class="btn btn-ghost"
+          disabled={takeDownMut.loading}
+          onclick={() => (takeDownTarget = null)}>
+          {m.common_cancel()}
+        </button>
+        <button
+          type="button"
+          class="btn {decisionMode === 'list-edit' ||
+          (decisionMode === 'profile' && !deleteAccount)
+            ? 'btn-primary'
+            : 'btn-danger'}"
+          disabled={takeDownMut.loading ||
+            !takeDownReasonText.trim() ||
+            (decisionMode === "profile" && !profileMeasureChosen)}
+          onclick={() => takeDownMut.mutate(target)}>
+          {#if takeDownMut.loading}
+            {decisionMode === "take-down"
+              ? m.admin_reports_removing()
+              : m.common_loading()}
+          {:else if decisionMode === "profile"}
+            {deleteAccount
+              ? m.admin_reports_measure_delete()
+              : m.common_apply()}
+          {:else if decisionMode === "list-edit"}
+            {m.admin_reports_record()}
+          {:else if decisionMode === "list-remove"}
+            {m.common_delete()}
+          {:else}
+            {m.common_remove()}
+          {/if}
+        </button>
+      </div>
+    {/snippet}
   </Modal>
 {/if}
 

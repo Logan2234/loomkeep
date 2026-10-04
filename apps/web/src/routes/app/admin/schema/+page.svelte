@@ -3,7 +3,7 @@
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
-  import Banner from "$lib/components/Banner.svelte";
+  import AdminQueryError from "../AdminQueryError.svelte";
   import MermaidDiagram from "$lib/components/MermaidDiagram.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -27,7 +27,7 @@
     class="mb-6" />
 
   {#if error}
-    <Banner variant="error">{error}</Banner>
+    <AdminQueryError message={error} queryKey={keys.admin.schema()} />
   {:else if loading && !data}
     <div class="card h-64 animate-pulse"></div>
   {:else if data?.erd}

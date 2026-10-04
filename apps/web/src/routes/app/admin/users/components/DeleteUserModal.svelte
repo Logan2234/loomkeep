@@ -119,7 +119,9 @@
           fieldErrors.tosClause}
       </Banner>
     {/if}
-    <div class="mt-5 flex justify-end gap-2">
+  </div>
+  {#snippet actions()}
+    <div class="flex justify-end gap-2">
       <button
         type="button"
         class="btn btn-ghost"
@@ -137,5 +139,5 @@
           : m.settings_delete_account_confirm()}
       </button>
     </div>
-  </div>
+  {/snippet}
 </Modal>

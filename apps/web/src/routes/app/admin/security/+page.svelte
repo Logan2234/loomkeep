@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AdminFilterBar from "../AdminFilterBar.svelte";
+  import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { adminFilterHref } from "$lib/admin-filter-url";
@@ -9,7 +11,6 @@
   import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
@@ -137,6 +138,32 @@
     getNextPageParam: (last, allPages) =>
       last.hasMore ? allPages.length + 1 : undefined,
   }));
+  function resetFilters() {
+    identifierDebounce.cancel();
+    void goto(adminFilterHref(page.url, { type: null, identifier: null }), {
+      noScroll: true,
+      keepFocus: true,
+    });
+  }
+  const activeFilters = $derived([
+    ...(activeType
+      ? [{ label: TYPE_LABELS[activeType], remove: () => changeType(null) }]
+      : []),
+    ...(identifierFilter
+      ? [
+          {
+            label: identifierFilter,
+            remove: () => {
+              identifierDebounce.cancel();
+              void goto(adminFilterHref(page.url, { identifier: null }), {
+                noScroll: true,
+                keepFocus: true,
+              });
+            },
+          },
+        ]
+      : []),
+  ]);
   const events = $derived(eventsQuery.data);
   const error = $derived(eventsQuery.error);
 
@@ -213,6 +240,9 @@
     subtitle={m.admin_security_subtitle()}
     back="/app/admin" />
 
+  {#if summaryQuery.error}<AdminQueryError
+      message={summaryQuery.error}
+      queryKey={keys.admin.securitySummary()} />{/if}
   {#if summary}
     <KpiStrip tiles={kpis} />
     {#if targetBars.length > 0}
@@ -247,29 +277,36 @@
     </div>
   {/if}
 
-  <div class="mb-4 flex flex-wrap items-center gap-2">
+  <AdminFilterBar
+    count={events.length}
+    loading={eventsQuery.loading}
+    error={!!error}
+    active={activeFilters}
+    onReset={resetFilters}>
     <Combobox
       label={m.admin_security_all_types()}
       options={TYPE_OPTIONS}
       values={activeType ? [activeType] : []}
       onChange={(v) => changeType((v[0] as SecurityEventType) || null)} />
-  </div>
-
-  <input
-    type="text"
-    name="identifier"
-    aria-label={m.admin_security_search()}
-    enterkeyhint="search"
-    bind:value={identifierInput}
-    oninput={onIdentifierInput}
-    placeholder={m.admin_security_search()}
-    class="border-border bg-surface mb-5 w-full rounded-lg border px-3 py-2 text-sm" />
+    <input
+      type="search"
+      name="identifier"
+      aria-label={m.admin_security_search()}
+      enterkeyhint="search"
+      bind:value={identifierInput}
+      oninput={onIdentifierInput}
+      placeholder={m.admin_security_search()}
+      class="input min-w-0 flex-1" />
+  </AdminFilterBar>
 
   {#if error}
-    <Banner variant="error" class="mb-4">{error}</Banner>
-  {/if}
-
-  {#if eventsQuery.loading}
+    <AdminQueryError
+      message={error}
+      queryKey={keys.admin.securityEvents({
+        type: activeType,
+        identifier: identifierFilter,
+      })} />
+  {:else if eventsQuery.loading}
     <div class="space-y-2">
       {#each { length: 6 } as _, i (i)}
         <div class="card animate-pulse p-3.5">
@@ -283,7 +320,12 @@
       {/each}
     </div>
   {:else if events.length === 0}
-    <EmptyState>{m.admin_no_matching_events()}</EmptyState>
+    <EmptyState
+      ><p>{activeFilters.length ? m.admin_no_matches() : m.admin_no_data()}</p>
+      {#if activeFilters.length}<button
+          class="btn btn-ghost mt-3"
+          onclick={resetFilters}>{m.admin_filters_reset()}</button
+        >{/if}</EmptyState>
   {:else}
     <ul class="space-y-2">
       {#each events as e (e.id)}

@@ -1,0 +1,44 @@
+<script lang="ts">
+  import Banner from "$lib/components/Banner.svelte";
+  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
+  import Combobox from "$lib/components/Combobox.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
+  import { m } from "$lib/paraglide/messages";
+  let values = $state<string[]>([]);
+  let mode = $state("long");
+  const options = Array.from({ length: 60 }, (_, index) => ({
+    value: String(index),
+    label: `${index + 1} · ${m.admin_components_sample_title_one().repeat(4)}`,
+  }));
+</script>
+
+<div class="space-y-4">
+  <Combobox
+    label={m.admin_components_stress()}
+    searchable
+    multiselect
+    {options}
+    {values}
+    onChange={(next) => (values = next)} />
+  <div class="flex flex-wrap gap-2">
+    {#each [{ value: "long", label: m.common_details() }, { value: "empty", label: m.admin_no_matches() }, { value: "loading", label: m.common_loading() }, { value: "error", label: m.common_error() }] as item (item.value)}<button
+        class="chip"
+        class:chip-on={mode === item.value}
+        aria-pressed={mode === item.value}
+        onclick={() => (mode = item.value)}>{item.label}</button
+      >{/each}
+  </div>
+  {#if mode === "long"}<Banner variant="info"
+      >{m.admin_components_banner_info().repeat(8)}</Banner>
+  {:else if mode === "empty"}<EmptyState>{m.admin_no_matches()}</EmptyState>
+  {:else if mode === "loading"}<div aria-label={m.common_loading()}>
+      {#each { length: 3 } as _, index (index)}<CardRowSkeleton />{/each}
+    </div>
+  {:else}<Banner variant="error"
+      ><div class="flex flex-wrap items-center justify-between gap-3">
+        <span>{m.admin_components_banner_error().repeat(4)}</span><button
+          class="btn btn-ghost btn-sm"
+          onclick={() => (mode = "loading")}>{m.common_retry()}</button>
+      </div></Banner
+    >{/if}
+</div>

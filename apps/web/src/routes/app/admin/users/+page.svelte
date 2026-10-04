@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AdminFilterBar from "../AdminFilterBar.svelte";
+  import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { adminFilterHref } from "$lib/admin-filter-url";
@@ -12,7 +14,6 @@
   import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
   import { keys } from "$lib/api/keys";
   import Avatar from "$lib/components/Avatar.svelte";
-  import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
@@ -308,98 +309,115 @@
         onRenewed={(link) => openInvite(link)}
         onOpenUser={openRedeemer} />
     {:else}
-      <div class="mb-4 flex flex-wrap items-center gap-2">
-        <input
-          type="text"
-          name="query"
-          aria-label={m.admin_users_search()}
-          enterkeyhint="search"
-          bind:value={query}
-          oninput={onQueryInput}
-          placeholder={m.admin_users_search()}
-          class="border-border bg-surface w-full max-w-xs rounded-lg border px-3 py-2 text-sm" />
-        <Combobox
-          label={m.common_filter()}
-          options={FILTERS}
-          values={[filter]}
-          onChange={(v) => changeFilter((v[0] as AdminUserFilter) ?? "all")} />
-      </div>
-
-      <div class="border-border mb-4 rounded-lg border">
-        <button
-          type="button"
-          class="text-fg flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold"
-          aria-expanded={advancedOpen}
-          aria-controls="admin-user-advanced-filters"
-          onclick={() => (advancedOpen = !advancedOpen)}>
-          <span class="flex flex-wrap items-center gap-2">
-            {m.admin_users_advanced_filters()}
-            {#if isFeatureNew("admin-user-filters")}
-              <NewBadge />
-            {/if}
-            {#if activeAdvanced.length > 0}
-              <span class="text-dim">({activeAdvanced.length})</span>
-            {/if}
-          </span>
-          <Icon
-            name="chevron-right"
-            class="h-4 w-4 shrink-0 transition-transform {advancedOpen
-              ? 'rotate-90'
-              : ''}" />
-        </button>
-        <div id="admin-user-advanced-filters">
-          {#if advancedOpen}
-            <div transition:slide={{ duration: reduced ? 0 : 180 }}>
-              <div
-                class="border-border grid gap-4 border-t px-4 py-4 sm:grid-cols-2 lg:grid-cols-4">
-                {#each DATE_FIELDS as field (field.key)}
-                  <label class="text-dim flex flex-col gap-1.5 text-sm">
-                    {field.label}
-                    <input
-                      type="date"
-                      value={advanced[field.key]}
-                      onchange={(event) =>
-                        changeAdvanced(field.key, event.currentTarget.value)}
-                      class="border-border bg-surface text-fg rounded-lg border px-3 py-2" />
-                  </label>
-                {/each}
-                {#each BINARY_FIELDS as field (field.key)}
-                  <div
-                    class="text-dim flex flex-col items-start gap-1.5 text-sm">
-                    <span>{field.label}</span>
-                    <Combobox
-                      label={field.label}
-                      options={BINARY_OPTIONS}
-                      values={[advanced[field.key]]}
-                      onChange={(values) =>
-                        changeAdvanced(field.key, values[0] ?? "")} />
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
+      <AdminFilterBar
+        count={users.length}
+        loading={usersQuery.loading || filtering}
+        error={!!error}
+        onReset={clearFilters}
+        active={[
+          ...(queryFilter
+            ? [
+                {
+                  label: queryFilter,
+                  remove: () => {
+                    queryFilterDebounce.cancel();
+                    void goto(adminFilterHref(page.url, { q: null }), {
+                      noScroll: true,
+                      keepFocus: true,
+                    });
+                  },
+                },
+              ]
+            : []),
+          ...(filter !== "all"
+            ? [
+                {
+                  label:
+                    FILTERS.find((item) => item.value === filter)?.label ??
+                    filter,
+                  remove: () => changeFilter("all"),
+                },
+              ]
+            : []),
+          ...activeAdvanced.map((item) => ({
+            label: `${item.label} : ${item.value}`,
+            remove: () => changeAdvanced(item.key, ""),
+          })),
+        ]}>
+        <div class="flex w-full flex-wrap items-center gap-2">
+          <input
+            type="text"
+            name="query"
+            aria-label={m.admin_users_search()}
+            enterkeyhint="search"
+            bind:value={query}
+            oninput={onQueryInput}
+            placeholder={m.admin_users_search()}
+            class="border-border bg-surface w-full max-w-xs rounded-lg border px-3 py-2 text-sm" />
+          <Combobox
+            label={m.common_filter()}
+            options={FILTERS}
+            values={[filter]}
+            onChange={(v) =>
+              changeFilter((v[0] as AdminUserFilter) ?? "all")} />
         </div>
-      </div>
 
-      {#if activeAdvanced.length > 0 || filter !== "all" || queryFilter}
-        <div
-          transition:slide={{ duration: reduced ? 0 : 150 }}
-          class="mb-4 flex flex-wrap items-center gap-2">
-          {#each activeAdvanced as item (item.key)}
-            <button
-              transition:fade={{ duration: reduced ? 0 : 120 }}
-              type="button"
-              class="border-border text-dim hover:text-fg rounded-full border px-3 py-1 text-xs transition-colors"
-              aria-label={m.admin_users_remove_filter({ filter: item.label })}
-              onclick={() => changeAdvanced(item.key, "")}>
-              {item.label} : {item.value} ×
-            </button>
-          {/each}
-          <button type="button" class="btn btn-ghost" onclick={clearFilters}>
-            {m.common_clear_filters()}
+        <div class="border-border w-full rounded-lg border">
+          <button
+            type="button"
+            class="text-fg flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold"
+            aria-expanded={advancedOpen}
+            aria-controls="admin-user-advanced-filters"
+            onclick={() => (advancedOpen = !advancedOpen)}>
+            <span class="flex flex-wrap items-center gap-2">
+              {m.admin_users_advanced_filters()}
+              {#if isFeatureNew("admin-user-filters")}
+                <NewBadge />
+              {/if}
+              {#if activeAdvanced.length > 0}
+                <span class="text-dim">({activeAdvanced.length})</span>
+              {/if}
+            </span>
+            <Icon
+              name="chevron-right"
+              class="h-4 w-4 shrink-0 transition-transform {advancedOpen
+                ? 'rotate-90'
+                : ''}" />
           </button>
+          <div id="admin-user-advanced-filters">
+            {#if advancedOpen}
+              <div transition:slide={{ duration: reduced ? 0 : 180 }}>
+                <div
+                  class="border-border grid gap-4 border-t px-4 py-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {#each DATE_FIELDS as field (field.key)}
+                    <label class="text-dim flex flex-col gap-1.5 text-sm">
+                      {field.label}
+                      <input
+                        type="date"
+                        value={advanced[field.key]}
+                        onchange={(event) =>
+                          changeAdvanced(field.key, event.currentTarget.value)}
+                        class="border-border bg-surface text-fg rounded-lg border px-3 py-2" />
+                    </label>
+                  {/each}
+                  {#each BINARY_FIELDS as field (field.key)}
+                    <div
+                      class="text-dim flex flex-col items-start gap-1.5 text-sm">
+                      <span>{field.label}</span>
+                      <Combobox
+                        label={field.label}
+                        options={BINARY_OPTIONS}
+                        values={[advanced[field.key]]}
+                        onChange={(values) =>
+                          changeAdvanced(field.key, values[0] ?? "")} />
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </div>
         </div>
-      {/if}
+      </AdminFilterBar>
 
       {#if filtering}
         <p
@@ -412,7 +430,7 @@
 
       {#if error}
         <div transition:fade={{ duration: reduced ? 0 : 120 }}>
-          <Banner variant="error">{error}</Banner>
+          <AdminQueryError message={error} queryKey={usersKey} />
         </div>
       {:else if usersQuery.loading}
         <div
@@ -515,6 +533,16 @@
               {query.trim() || filter !== "all" || activeAdvanced.length > 0
                 ? m.admin_users_empty_filter()
                 : m.admin_users_empty()}
+              <button
+                class="btn btn-ghost mx-auto mt-3 block"
+                onclick={queryFilter ||
+                filter !== "all" ||
+                activeAdvanced.length
+                  ? clearFilters
+                  : () => openInvite()}
+                >{queryFilter || filter !== "all" || activeAdvanced.length
+                  ? m.admin_filters_reset()
+                  : m.admin_invitations_invite()}</button>
             </p>
           {/if}
         </div>

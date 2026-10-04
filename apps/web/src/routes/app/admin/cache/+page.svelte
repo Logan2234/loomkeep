@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AdminFilterBar from "../AdminFilterBar.svelte";
+  import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { adminFilterHref } from "$lib/admin-filter-url";
@@ -14,7 +16,6 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -95,6 +96,34 @@
   const staleTotal = $derived(latestPage?.staleTotal ?? 0);
   const orphanTotal = $derived(latestPage?.orphanTotal ?? 0);
 
+  function resetFilters() {
+    changeFilters({ q: null, domain: null, sort: null, orphans: null });
+  }
+  const activeFilters = $derived([
+    ...(activeDomain !== "MEDIA"
+      ? [
+          {
+            label: DOMAINS[activeDomain].label,
+            remove: () => selectDomain("MEDIA"),
+          },
+        ]
+      : []),
+    ...(sort !== "stale"
+      ? [
+          {
+            label:
+              SORT_OPTIONS.find((item) => item.value === sort)?.label ?? sort,
+            remove: () => selectSort("stale"),
+          },
+        ]
+      : []),
+    ...(search
+      ? [{ label: search, remove: () => changeFilters({ q: null }) }]
+      : []),
+    ...(orphansOnly
+      ? [{ label: m.admin_cache_orphans_only(), remove: toggleOrphans }]
+      : []),
+  ]);
   function selectDomain(domain: Domain) {
     changeFilters({ domain: domain === "MEDIA" ? null : domain });
   }
@@ -211,61 +240,67 @@
     subtitle={m.admin_cache_subtitle()}
     back="/app/admin" />
 
-  <div class="mb-3 flex flex-wrap items-center gap-2">
-    {#each Object.entries(DOMAINS) as [id, d] (id)}
-      {#if d.comingSoon}
-        <!-- Planned domain: nothing in cache yet, tab is non-clickable. -->
-        <button
-          class="chip disabled:pointer-events-none disabled:opacity-40"
-          disabled
-          title={m.common_coming_soon()}>
-          <Icon name={d.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
-          {d.label}
-          <span
-            class="bg-surface-2 text-dim ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-bold">
-            {m.common_coming_soon()}
-          </span>
-        </button>
-      {:else}
-        <button
-          class="chip"
-          class:chip-on={activeDomain === id}
-          onclick={() => selectDomain(id as Domain)}>
-          <Icon name={d.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
-          {d.label}
-        </button>
-      {/if}
-    {/each}
-  </div>
-
-  <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-    <input
-      type="text"
-      name="query"
-      aria-label={m.admin_cache_search()}
-      enterkeyhint="search"
-      bind:value={searchInput}
-      oninput={onSearchInput}
-      placeholder={m.admin_cache_search()}
-      class="input sm:flex-1" />
-    <div class="flex items-center gap-2">
-      <span
-        class="text-dim hidden text-xs font-bold tracking-wider uppercase sm:inline">
-        {m.admin_cache_sort()}
-      </span>
-      <Combobox
-        label={m.admin_cache_sort()}
-        options={SORT_OPTIONS}
-        values={[sort]}
-        onChange={(v) => selectSort((v[0] as AdminCacheSort) ?? "stale")} />
+  <AdminFilterBar
+    count={items.length}
+    loading={cacheQuery.loading}
+    error={!!error}
+    active={activeFilters}
+    onReset={resetFilters}>
+    <div class="flex w-full flex-wrap items-center gap-2">
+      {#each Object.entries(DOMAINS) as [id, d] (id)}
+        {#if d.comingSoon}
+          <!-- Planned domain: nothing in cache yet, tab is non-clickable. -->
+          <button
+            class="chip disabled:pointer-events-none disabled:opacity-40"
+            disabled
+            title={m.common_coming_soon()}>
+            <Icon name={d.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
+            {d.label}
+            <span
+              class="bg-surface-2 text-dim ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-bold">
+              {m.common_coming_soon()}
+            </span>
+          </button>
+        {:else}
+          <button
+            class="chip"
+            class:chip-on={activeDomain === id}
+            onclick={() => selectDomain(id as Domain)}>
+            <Icon name={d.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
+            {d.label}
+          </button>
+        {/if}
+      {/each}
     </div>
-  </div>
 
+    <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+      <input
+        type="text"
+        name="query"
+        aria-label={m.admin_cache_search()}
+        enterkeyhint="search"
+        bind:value={searchInput}
+        oninput={onSearchInput}
+        placeholder={m.admin_cache_search()}
+        class="input sm:flex-1" />
+      <div class="flex items-center gap-2">
+        <span
+          class="text-dim hidden text-xs font-bold tracking-wider uppercase sm:inline">
+          {m.admin_cache_sort()}
+        </span>
+        <Combobox
+          label={m.admin_cache_sort()}
+          options={SORT_OPTIONS}
+          values={[sort]}
+          onChange={(v) => selectSort((v[0] as AdminCacheSort) ?? "stale")} />
+      </div>
+    </div>
+
+    <button class="chip" class:chip-on={orphansOnly} onclick={toggleOrphans}
+      >{m.admin_cache_orphans_only()}</button>
+  </AdminFilterBar>
   <!-- Bulk actions, scoped to the active domain. -->
   <div class="mb-5 flex flex-wrap items-center gap-2">
-    <button class="chip" class:chip-on={orphansOnly} onclick={toggleOrphans}>
-      {m.admin_cache_orphans_only()}
-    </button>
     <div class="ml-auto flex flex-wrap gap-2">
       <button
         onclick={() => bulkResyncMut.mutate()}
@@ -287,10 +322,8 @@
   </div>
 
   {#if error}
-    <Banner variant="error" class="mb-4">{error}</Banner>
-  {/if}
-
-  {#if cacheQuery.loading}
+    <AdminQueryError message={error} queryKey={cacheKey} />
+  {:else if cacheQuery.loading}
     <div class="space-y-2">
       {#each { length: 6 } as _, i (i)}
         <div class="card h-16 animate-pulse"></div>
@@ -298,7 +331,13 @@
     </div>
   {:else if items.length === 0}
     <EmptyState>
-      {orphansOnly ? m.admin_cache_empty_orphans() : m.admin_cache_empty()}
+      <p>
+        {search || orphansOnly ? m.admin_no_matches() : m.admin_cache_empty()}
+      </p>
+      {#if activeFilters.length}<button
+          class="btn btn-ghost mt-3"
+          onclick={resetFilters}>{m.admin_filters_reset()}</button
+        >{/if}
     </EmptyState>
   {:else}
     <p class="text-dim mb-2 text-xs">
@@ -430,7 +469,9 @@
             <Icon name="x" class="h-5 w-5" />
           </button>
         </div>
-        <Banner variant="error">{detailQuery.error}</Banner>
+        <AdminQueryError
+          message={detailQuery.error}
+          queryKey={keys.admin.cacheItem(selected.domain, selected.id)} />
       {:else if detail}
         <div class="mb-5 flex items-start justify-between gap-2">
           <div class="flex min-w-0 items-start gap-3">

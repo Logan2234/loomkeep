@@ -1,4 +1,11 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { adminFilterHref } from "$lib/admin-filter-url";
+  import { foldAdminSearch } from "$lib/admin-search";
+  import FieldError from "$lib/components/FieldError.svelte";
+  import AdminQueryError from "../../AdminQueryError.svelte";
   import { Locale } from "@loomkeep/shared";
   import {
     getAdminEmailPreview,
@@ -33,11 +40,36 @@
   const emailLoadError = $derived(templatesQuery.error);
 
   let selectedKey = $state<string | null>(null);
-  // Auto-select the first template once the list lands.
+  let templateSearch = $state("");
+  let previewWidth = $state<"phone" | "desktop">("desktop");
+  const filteredGroups = $derived(
+    templateGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          foldAdminSearch(
+            `${adminTemplateLabel(item.key)} ${item.key}`,
+          ).includes(foldAdminSearch(templateSearch).trim()),
+        ),
+      }))
+      .filter((group) => group.items.length > 0),
+  );
   $effect(() => {
-    if (selectedKey === null && templates && templates.length > 0) {
-      selectTemplate(templates[0].key);
-    }
+    if (!templates?.length) return;
+    const requested = page.url.searchParams.get("template");
+    const key =
+      templates.find((template) => template.key === requested)?.key ??
+      templates[0].key;
+    const requestedLocale = page.url.searchParams.get("locale");
+    const locale =
+      Locale.find((locale) => locale === requestedLocale) ?? getLocale();
+    untrack(() => {
+      if (locale !== emailLocale) {
+        emailLocale = locale;
+        if (selectedKey === key) void loadPreview();
+      }
+      if (selectedKey !== key) selectTemplate(key, false);
+    });
   });
   const selectedTemplate = $derived(
     templates?.find((t) => t.key === selectedKey) ?? null,
@@ -58,7 +90,7 @@
   let testTo = $state("");
   let emailLocale = $state<Locale>(getLocale());
 
-  function selectTemplate(key: string) {
+  function selectTemplate(key: string, updateUrl = true) {
     selectedKey = key;
     sendTestEmailMut.reset();
     const template = templates?.find((t) => t.key === key);
@@ -66,6 +98,11 @@
       (template?.fields ?? []).map((f) => [f.key, f.default]),
     );
     void loadPreview();
+    if (updateUrl)
+      void goto(
+        adminFilterHref(page.url, { template: key, locale: emailLocale }),
+        { replaceState: true, noScroll: true, keepFocus: true },
+      );
   }
 
   const debouncedLoadPreview = debounce(() => void loadPreview(), 300);
@@ -98,9 +135,15 @@
     await requestPreview(selectedKey, emailLocale, fieldValues);
   }
 
-  async function copyHtml() {
-    if (!previewHtml) return;
-    await navigator.clipboard.writeText(previewHtml);
+  async function copyPreview() {
+    const content = previewTab === "html" ? previewHtml : previewText;
+    if (!content) return;
+    try {
+      await navigator.clipboard.writeText(content);
+    } catch (error) {
+      previewError = resolveApiError(error);
+      return;
+    }
     copied = true;
     setTimeout(() => (copied = false), 1500);
   }
@@ -134,9 +177,13 @@
 </script>
 
 {#if emailLoadError}
-  <Banner variant="error">{emailLoadError}</Banner>
+  <AdminQueryError
+    message={emailLoadError}
+    queryKey={keys.admin.emailTemplates()} />
 {:else if emailLoading}
   <div class="card h-96 animate-pulse"></div>
+{:else if templates && templates.length === 0}
+  <p class="card text-dim p-8 text-center">{m.admin_no_data()}</p>
 {:else if templates}
   {#if !smtpConfigured}
     <Banner variant="warning" class="mb-6">
@@ -162,11 +209,17 @@
           onChange={(v) => v[0] && selectTemplate(v[0])} />
       </div>
 
+      <input
+        type="search"
+        class="input mb-3 hidden md:block"
+        aria-label={m.admin_communications_template()}
+        placeholder={m.common_search()}
+        bind:value={templateSearch} />
       <!-- Desktop: the full vertical list. -->
       <nav
         aria-label={m.admin_communications_template()}
         class="hidden space-y-5 md:block">
-        {#each templateGroups as group (group.label)}
+        {#each filteredGroups as group (group.label)}
           <section>
             <h3 class="text-dim mb-2 px-3 text-xs font-semibold">
               {group.label}
@@ -185,7 +238,7 @@
               {/each}
             </div>
           </section>
-        {/each}
+        {:else}<p class="text-dim p-3 text-sm">{m.admin_no_matches()}</p>{/each}
       </nav>
     </div>
 
@@ -204,6 +257,10 @@
             emailLocale = locale;
             sendTestEmailMut.reset();
             void loadPreview();
+            void goto(
+              adminFilterHref(page.url, { template: selectedKey, locale }),
+              { replaceState: true, noScroll: true, keepFocus: true },
+            );
           }} />
 
         {#if selectedTemplate && selectedTemplate.fields.length > 0}
@@ -239,17 +296,27 @@
         {/if}
       </div>
 
-      <div class="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-        <input
-          type="email"
-          name="testTo"
-          autocomplete="email"
-          enterkeyhint="send"
-          bind:value={testTo}
-          placeholder={m.admin_communications_recipient_placeholder()}
-          aria-label={m.admin_communications_recipient_placeholder()}
-          disabled={!smtpConfigured}
-          class="border-border bg-surface min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm disabled:opacity-50" />
+      <div class="card flex flex-col gap-3 p-4 sm:flex-row sm:items-start">
+        <div class="min-w-0 flex-1 space-y-3">
+          <input
+            type="email"
+            name="testTo"
+            autocomplete="email"
+            enterkeyhint="send"
+            bind:value={testTo}
+            placeholder={m.admin_communications_recipient_placeholder()}
+            aria-label={m.admin_communications_recipient_placeholder()}
+            disabled={!smtpConfigured}
+            aria-invalid={sendTestEmailMut.fieldErrors.to ? "true" : undefined}
+            aria-describedby={sendTestEmailMut.fieldErrors.to
+              ? "test-recipient-error"
+              : undefined}
+            oninput={() => sendTestEmailMut.reset()}
+            class="border-border bg-surface w-full min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm disabled:opacity-50" />
+          <FieldError
+            id="test-recipient-error"
+            message={sendTestEmailMut.fieldErrors.to} />
+        </div>
         <button
           onclick={sendTestEmail}
           disabled={!smtpConfigured || !testTo || sendTestEmailMut.loading}
@@ -269,7 +336,10 @@
         </p>
       {/if}
 
-      <div class="flex items-center justify-between gap-2">
+      {#if previewSubject}<p class="text-sm font-semibold break-words">
+          {m.admin_communications_subject({ subject: previewSubject })}
+        </p>{/if}
+      <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex gap-1">
           <button
             onclick={() => (previewTab = "html")}
@@ -289,15 +359,32 @@
           </button>
         </div>
         <button
-          onclick={copyHtml}
-          disabled={!previewHtml}
+          onclick={copyPreview}
+          disabled={previewLoading ||
+            !(previewTab === "html" ? previewHtml : previewText)}
           class="text-dim hover:bg-surface-2 hover:text-fg rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50">
           {copied
             ? `${m.common_copied()} !`
-            : m.admin_communications_copy_html()}
+            : previewTab === "html"
+              ? m.admin_communications_copy_html()
+              : m.admin_copy_text()}
         </button>
       </div>
 
+      {#if previewTab === "html"}<div
+          class="flex gap-2"
+          aria-label={m.admin_communications_email_preview()}>
+          <button
+            class="btn btn-ghost btn-sm"
+            aria-pressed={previewWidth === "phone"}
+            onclick={() => (previewWidth = "phone")}
+            >{m.admin_preview_phone()}</button
+          ><button
+            class="btn btn-ghost btn-sm"
+            aria-pressed={previewWidth === "desktop"}
+            onclick={() => (previewWidth = "desktop")}
+            >{m.admin_preview_desktop()}</button>
+        </div>{/if}
       {#if previewError}
         <Banner variant="error">
           <div class="flex items-center justify-between gap-2">
@@ -317,12 +404,12 @@
             title={m.admin_communications_email_preview()}
             sandbox=""
             srcdoc={previewHtml}
-            class="h-130 w-full border-0 bg-white"></iframe>
+            style:width={previewWidth === "phone" ? "375px" : "100%"}
+            style:max-width="100%"
+            class="mx-auto block h-130 border-0 bg-white"></iframe>
         {:else if previewTab === "text" && previewText}
           <pre
-            class="bg-surface text-fg h-130 overflow-auto p-4 text-xs whitespace-pre-wrap">{previewSubject
-              ? m.admin_communications_subject({ subject: previewSubject })
-              : ""}{previewText}</pre>
+            class="bg-surface text-fg h-130 overflow-auto p-4 text-xs whitespace-pre-wrap">{previewText}</pre>
         {:else if previewLoading}
           <div class="h-96 animate-pulse"></div>
         {:else}

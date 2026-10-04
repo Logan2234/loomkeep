@@ -9,6 +9,7 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
+  import AdminQueryError from "../../AdminQueryError.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
@@ -117,6 +118,12 @@
   const broadcastError = $derived(broadcastMut.error);
 </script>
 
+{#if pushSummaryQuery.error}<AdminQueryError
+    message={pushSummaryQuery.error}
+    queryKey={keys.admin.pushSummary()} />{:else if pushSummaryQuery.loading}<div
+    class="card mb-6 h-20 animate-pulse"
+    aria-label={m.common_loading()}>
+  </div>{/if}
 {#if pushSummary}
   <div class="max-w-xl">
     <KpiStrip tiles={pushKpis} />
@@ -183,7 +190,13 @@
       ></textarea>
     </div>
 
-    {#if !devicesLoading && devices && devices.length === 0}
+    {#if email && devicesQuery.error}<AdminQueryError
+        message={devicesQuery.error}
+        queryKey={keys.admin.pushDevices(email)} />
+    {:else if email && devicesLoading}<p role="status" class="text-dim text-sm">
+        {m.common_loading()}
+      </p>
+    {:else if !devicesLoading && devices && devices.length === 0}
       <Banner variant="warning">
         {m.admin_communications_no_devices_account()}
       </Banner>

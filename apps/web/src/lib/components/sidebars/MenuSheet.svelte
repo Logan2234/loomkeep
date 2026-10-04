@@ -18,6 +18,7 @@
   import { isFeatureNew } from "$lib/feature-badges";
   import { resolveMenuGroups } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
+  import { useReportsPendingCount } from "$lib/reports-pending.svelte";
   import type { ComponentProps } from "svelte";
 
   type IconName = ComponentProps<typeof Icon>["name"];
@@ -25,6 +26,7 @@
   let open = $state(false);
 
   const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
+  const reportsPending = useReportsPendingCount();
 
   const groups = $derived(
     resolveMenuGroups({
@@ -85,6 +87,12 @@
       {/if}
       <Icon name={dest.icon} class="text-accent h-6 w-6" />
       <span class="text-xs font-semibold">{dest.label}</span>
+      {#if dest.href === "/app/admin/reports" && appConfig.socialEnabled && reportsPending.available && reportsPending.count > 0}
+        <span
+          class="bg-accent text-accent-fg absolute top-2 right-2 rounded-full px-1.5 py-0.5 text-xs font-bold">
+          {reportsPending.count > 9 ? "9+" : reportsPending.count}
+        </span>
+      {/if}
     </a>
   {/if}
 {/snippet}
@@ -103,6 +111,14 @@
       data-drawer-scroll
       class="min-h-0 flex-1 touch-pan-y overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
       {#if inAdmin}
+        <div class="mt-2 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+          {@render tile({
+            href: "/app/admin",
+            label: m.common_overview(),
+            icon: "home",
+            match: (path) => path === "/app/admin",
+          })}
+        </div>
         {#each VISIBLE_ADMIN_NAV_GROUPS as group (group.label)}
           <section class="mt-4 first:mt-2">
             <div class="mb-2.5 flex items-center gap-3">

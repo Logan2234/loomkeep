@@ -139,7 +139,7 @@
         onclick={refresh}
         disabled={loading}
         class="btn btn-ghost shrink-0">
-        {loading ? "…" : m.common_refresh()}
+        {loading ? m.common_loading() : m.common_refresh()}
       </button>
     {/snippet}
   </PageHeader>
