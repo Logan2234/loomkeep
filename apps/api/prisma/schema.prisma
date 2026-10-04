@@ -1945,6 +1945,9 @@ model BookItem {
   // exposes no maturity rating, so this stays false for now — kept so the
   // per-account restriction still has a hook the day a source provides one.
   isAdult         Boolean    @default(false)
+  // Open Library series the work belongs to as a numbered volume ("OL326110L"):
+  // the saga the library's sagas view groups it under.
+  seriesKey       String?
   metadata        Json       @default("{}")
   lastSyncedAt    DateTime   @default(now())
   createdAt       DateTime   @default(now())
@@ -1952,6 +1955,8 @@ model BookItem {
 
   externalIds BookExternalId[]
   entries     BookEntry[]
+
+  @@index([seriesKey])
 }
 
 model BookExternalId {

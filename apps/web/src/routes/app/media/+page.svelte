@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { getLibraryPile, listLibrary } from "$lib/api/client";
   import {
@@ -13,11 +12,12 @@
   } from "$lib/components/LibraryBrowser.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
+  import SagasModeSwitch, {
+    sagasMode,
+  } from "$lib/components/saga/SagasModeSwitch.svelte";
   import SagasView from "./components/SagasView.svelte";
   import {
     MEDIA_OWNERSHIP_SOURCES,
@@ -188,17 +188,7 @@
     remove: bulkDeleteLibraryEntries,
   };
 
-  // The sagas view lives in the URL, so a link or "back" lands on it again.
-  const mode = $derived(
-    page.url.searchParams.get("vue") === "sagas" ? "sagas" : "works",
-  );
-
-  function setMode(next: "works" | "sagas") {
-    void goto(next === "sagas" ? "?vue=sagas" : page.url.pathname, {
-      keepFocus: true,
-      noScroll: true,
-    });
-  }
+  const mode = $derived(sagasMode(page.url));
 
   const load = (params: LibraryLoadParams) =>
     listLibrary({
@@ -221,17 +211,7 @@
 </script>
 
 {#snippet modeSwitch()}
-  <div class="flex items-center gap-2">
-    {#if isFeatureNew("library-sagas")}<NewBadge />{/if}
-    <SegmentedControl
-      label={m.media_view_label()}
-      options={[
-        { value: "works", label: m.common_works(), icon: "library" },
-        { value: "sagas", label: m.media_view_sagas(), icon: "list" },
-      ]}
-      value={mode}
-      onChange={setMode} />
-  </div>
+  <SagasModeSwitch isNew={isFeatureNew("library-sagas")} />
 {/snippet}
 
 {#if mode === "sagas"}

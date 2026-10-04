@@ -68,6 +68,8 @@ export interface BookDetailsDto extends BookSummaryDto {
   /** ISBN of the picked edition (English when available), when known. */
   isbn: string | null;
   series: string | null;
+  /** The Open Library series it's a numbered volume of, for its saga. */
+  seriesKey: string | null;
   /** Human-readable language of the picked edition, when known. */
   language: string | null;
   firstSentence: string | null;
