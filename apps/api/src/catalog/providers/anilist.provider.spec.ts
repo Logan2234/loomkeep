@@ -108,6 +108,8 @@ describe("AnilistProvider", () => {
     expect(details.seasons).toHaveLength(1);
     const [season] = details.seasons;
     expect(season.number).toBe(1);
+    // Named after the entry itself: sequels are separate AniList entries.
+    expect(season.title).toBe("Frieren: Beyond Journey's End");
     expect(season.episodes).toHaveLength(28);
     // The fixture carries no `duration`, so no per-episode runtime either.
     expect(season.episodes[0]).toEqual({

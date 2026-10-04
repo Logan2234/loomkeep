@@ -122,8 +122,9 @@ export function toSagaMember(media: AnilistMedia): SagaMemberDto {
 }
 
 export function toMediaDetails(media: AnilistMedia): ProviderMediaDetails {
+  const summary = toSummary(media);
   return {
-    summary: toSummary(media),
+    summary,
     overview: media.description ? stripHtml(media.description) : null,
     backdropUrl: media.bannerImage ?? null,
     genres: media.genres ?? [],
@@ -134,7 +135,12 @@ export function toMediaDetails(media: AnilistMedia): ProviderMediaDetails {
     externalIds: [
       { source: MediaSource.ANILIST, externalId: String(media.id) },
     ],
-    seasons: [{ number: 1, title: null, episodes: buildEpisodes(media) }],
+    // Each AniList entry is one cour/season of its own (sequels are separate
+    // entries, linked through the saga), so its single generated season
+    // carries the entry's own name rather than a misleading "Season 1".
+    seasons: [
+      { number: 1, title: summary.title, episodes: buildEpisodes(media) },
+    ],
   };
 }
 
