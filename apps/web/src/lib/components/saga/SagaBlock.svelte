@@ -204,7 +204,7 @@
           aria-current={here ? "true" : undefined}
           data-saga-segment
           class="saga-segment group relative flex h-4 flex-1 items-center"
-          style:animation-delay="{reduced ? 0 : i * 45}ms">
+          style:animation-delay={`${reduced ? 0 : i * 45}ms`}>
           {#if here}
             <span
               class="border-t-fg absolute -top-2.5 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[5px] border-t-[6px] border-x-transparent"

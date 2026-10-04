@@ -136,10 +136,10 @@
           class="saga-card absolute top-0 w-11 shadow-lg {member.seen
             ? 'brightness-75 saturate-50'
             : ''}"
-          style:left="{i * 0.75}rem"
+          style:left={`${i * 0.75}rem`}
           style:z-index={10 - i}
-          style:--spread="{i * 0.3}rem"
-          style:--tilt="{i * 2.5}deg">
+          style:--spread={`${i * 0.3}rem`}
+          style:--tilt={`${i * 2.5}deg`}>
           <Poster
             src={member.posterUrl}
             title={member.title}

@@ -86,14 +86,14 @@ const SEGMENT_COLORS: Record<EntryStatus, string> = {
 };
 
 /** A saga segment's fill: the work's status, faint when not tracked. */
-export const sagaSegmentClass = (x: SagaMemberDto) =>
+const sagaSegmentClass = (x: SagaMemberDto) =>
   x.status
     ? SEGMENT_COLORS[x.status]
     : x.upcoming
       ? "border-border border border-dashed"
       : "bg-surface-2";
 
-export const sagaMemberHref = (x: SagaMemberDto) =>
+const sagaMemberHref = (x: SagaMemberDto) =>
   `/app/media/${x.type.toLowerCase()}/${x.sourceId}`;
 
 const formats = (): Record<string, string> => ({
@@ -103,7 +103,7 @@ const formats = (): Record<string, string> => ({
 });
 
 /** Year · format · episodes, or the release date of an announced work. */
-export const sagaMemberMeta = (x: SagaMemberDto) =>
+const sagaMemberMeta = (x: SagaMemberDto) =>
   x.upcoming
     ? m.media_saga_upcoming_on({
         date: x.releaseDate ? formatDate(x.releaseDate) : "—",
