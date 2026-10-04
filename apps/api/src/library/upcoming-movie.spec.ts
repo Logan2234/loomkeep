@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 import { LibraryService } from "./library.service";
 
-function makeService() {
+function makeService(overrides: Record<string, unknown> = {}) {
   const movie = {
     id: "movie-1",
     type: "MOVIE",
@@ -12,6 +12,7 @@ function makeService() {
     canonicalSource: "TMDB",
     externalIds: [{ source: "TMDB", externalId: "1" }],
     posterUrl: null,
+    ...overrides,
   };
   const row = {
     id: "entry-1",
@@ -94,5 +95,38 @@ describe("unreleased movie tracking", () => {
       service.addReplay("user-1", "entry-1", {}),
     ).rejects.toMatchObject({ code: "library.movie_not_released" });
     expect(replayCreate).not.toHaveBeenCalled();
+  });
+});
+
+describe("unaired anime tracking", () => {
+  const anime = {
+    type: "ANIME",
+    status: "NOT_YET_RELEASED",
+    releaseDate: new Date("2099-01-10"),
+    movieReleaseDates: null,
+    canonicalSource: "ANILIST",
+    externalIds: [{ source: "ANILIST", externalId: "1" }],
+  };
+
+  it("rejects completing or rating it before writing the entry", async () => {
+    const { service, update } = makeService(anime);
+    await expect(
+      service.updateEntry("user-1", "entry-1", { status: "COMPLETED" }),
+    ).rejects.toMatchObject({ code: "library.anime_not_aired" });
+    await expect(
+      service.updateEntry("user-1", "entry-1", { rating: 8 }),
+    ).rejects.toMatchObject({ code: "library.anime_not_aired" });
+    expect(update).not.toHaveBeenCalled();
+  });
+  it("can still be followed, flagged as upcoming", async () => {
+    const { service, upsert } = makeService(anime);
+    const entry = await service.upsertEntry("user-1", {
+      source: "ANILIST",
+      sourceId: "1",
+      type: "ANIME",
+      status: "PLANNED",
+    });
+    expect(upsert).toHaveBeenCalled();
+    expect(entry.mediaItem.upcoming).toBe(true);
   });
 });

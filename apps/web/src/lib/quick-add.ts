@@ -33,6 +33,7 @@ import type {
   MediaType,
   MusicStatus,
 } from "@loomkeep/shared";
+import { isAnimeUnaired } from "@loomkeep/shared";
 
 /** A work page the quick-add panel can track, read from a resolved link's href. */
 export type QuickAddTarget =
@@ -145,7 +146,9 @@ function mediaDomain(type: MediaType, id: string): QuickAddDomain {
         entryId: d.entry?.id ?? null,
         itemId: d.entry?.mediaItem.id ?? null,
         status: d.entry?.status ?? null,
-        upcoming: d.movieRelease?.upcoming,
+        upcoming:
+          d.movieRelease?.upcoming ||
+          (type === "ANIME" && isAnimeUnaired(d.airingStatus)),
         progress: null,
       };
     },

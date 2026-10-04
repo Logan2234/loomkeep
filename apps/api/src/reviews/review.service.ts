@@ -18,7 +18,7 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
-import { assertMovieReleased } from "../catalog/movie-release.util";
+import { assertMediaReleased } from "../catalog/movie-release.util";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { resolveWorkHref } from "../common/work-href.util";
@@ -323,7 +323,7 @@ export class ReviewService {
     dto: UpsertReviewDto,
   ): Promise<ReviewDto> {
     if (targetType === ReviewTargetType.MEDIA)
-      await assertMovieReleased(this.prisma, targetId);
+      await assertMediaReleased(this.prisma, targetId);
     if (targetType === ReviewTargetType.GAME)
       await assertGameReleased(this.prisma, targetId);
     const user = await this.prisma.user.findUniqueOrThrow({
@@ -793,7 +793,7 @@ export class ReviewService {
     rating: number | null,
   ): Promise<void> {
     if (rating !== null && targetType === ReviewTargetType.MEDIA)
-      await assertMovieReleased(this.prisma, targetId);
+      await assertMediaReleased(this.prisma, targetId);
     if (rating !== null && targetType === ReviewTargetType.GAME)
       await assertGameReleased(this.prisma, targetId);
 

@@ -75,6 +75,9 @@ const MESSAGES = {
     m.apierr_library_episode_not_aired(),
   [ErrorCode.LibraryMovieNotReleased]: () =>
     m.apierr_library_movie_not_released(),
+  [ErrorCode.LibraryAnimeNotAired]: () => m.apierr_library_anime_not_aired(),
+  [ErrorCode.LibraryGameNotReleased]: () =>
+    m.apierr_library_game_not_released(),
   [ErrorCode.LibraryCalendarUnavailable]: () =>
     m.apierr_library_calendar_unavailable(),
   [ErrorCode.LibraryEpisodeNotFound]: () =>

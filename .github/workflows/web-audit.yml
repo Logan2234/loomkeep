@@ -16,6 +16,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Advisory: nobody acts on a Lighthouse score per PR, so it runs with the
+  # other audits rather than in CI, where it added ~3 minutes to every run.
+  # Audits a local `vite preview` build (.lighthouserc.json), so it needs
+  # neither the ephemeral stack below nor the OpenAPI document — the typed
+  # API client is type-only, and the Paraglide Vite plugin compiles its own
+  # messages.
+  lighthouse:
+    name: Lighthouse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:package
+      - name: Web production build
+        run: pnpm --filter @loomkeep/web build
+      - name: Lighthouse
+        run: pnpm exec lhci autorun
+        continue-on-error: true
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lighthouse-reports
+          path: lighthouse-results/
+
   audit:
     name: Web Audit (Pa11y + OWASP ZAP)
     runs-on: ubuntu-latest
