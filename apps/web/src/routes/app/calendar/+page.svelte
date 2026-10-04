@@ -68,13 +68,15 @@
       game: boolean;
     }) =>
       args.game
-        ? updateGameEntry(args.entryId, { releaseAlertsEnabled: !args.muted })
+        ? updateGameEntry(args.entryId, {
+            releaseAlertsEnabled: !args.muted,
+          }).then(() => undefined)
         : updateLibraryEntry(
             args.entryId,
             args.movie
               ? { movieReleaseAlertsEnabled: !args.muted }
               : { episodeAlertsMuted: args.muted },
-          ),
+          ).then(() => undefined),
     onSuccess: (_, { entryId, muted }) =>
       queryClient.setQueryData<CalendarEntryDto[]>(
         keys.calendar.upcoming(),

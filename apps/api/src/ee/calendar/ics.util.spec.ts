@@ -31,7 +31,7 @@ describe("buildCalendarIcs", () => {
       releaseRegion: "FR",
       releaseType: "cinema",
     });
-    movie.mediaItem.type = "MOVIE";
+    movie.mediaItem!.type = "MOVIE";
     const ics = buildCalendarIcs([movie]);
     expect(ics).toContain("SUMMARY:Severance\r\n");
     expect(ics).toContain("UID:media-1-movie-FR@loomkeep.app");
