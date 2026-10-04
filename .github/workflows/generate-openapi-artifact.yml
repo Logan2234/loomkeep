@@ -19,39 +19,65 @@ permissions:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:18
-        env:
-          POSTGRES_USER: loomkeep
-          POSTGRES_PASSWORD: loomkeep
-          POSTGRES_DB: loomkeep
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     env:
       DATABASE_URL: postgresql://loomkeep:loomkeep@localhost:5432/loomkeep?schema=public
       JWT_ACCESS_SECRET: ci-test-access-secret
       JWT_REFRESH_SECRET: ci-test-refresh-secret
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      # The document is a pure function of the API's sources (plus the shared
+      # package, the lockfile and the base tsconfig it compiles against), so
+      # a PR or push that leaves those alone reuses the one already built —
+      # ~10s instead of ~1m30 on a web-only change. Caches made on main are
+      # visible to every PR; a PR's own stay scoped to it.
+      - id: cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: apps/api/openapi*.json
+          key: openapi-${{ hashFiles('apps/api/**', 'packages/shared/**', 'pnpm-lock.yaml', 'tsconfig.base.json', '.github/workflows/generate-openapi-artifact.yml') }}
+      # Started by hand rather than as a `services:` container, which would
+      # boot (~30s) even on a cache hit.
+      - name: Start Postgres
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          docker run -d --name postgres -p 5432:5432 \
+            -e POSTGRES_USER=loomkeep -e POSTGRES_PASSWORD=loomkeep -e POSTGRES_DB=loomkeep \
+            postgres:18
+      - if: steps.cache.outputs.cache-hit != 'true'
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build:package
-      - run: pnpm --filter @loomkeep/api exec prisma generate
-      - run: pnpm --filter @loomkeep/api build
-      - run: pnpm --filter @loomkeep/api generate:openapi
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: pnpm build:package
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @loomkeep/api exec prisma generate
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @loomkeep/api build
+      - name: Wait for Postgres
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          for attempt in $(seq 1 30); do
+            docker exec postgres pg_isready -U loomkeep && exit 0
+            sleep 1
+          done
+          docker logs postgres >&2
+          exit 1
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @loomkeep/api generate:openapi
+      - if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: apps/api/openapi*.json
+          key: ${{ steps.cache.outputs.cache-primary-key }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: openapi-json
           # openapi-v1.json: the public API alone, for the docs site.
           path: apps/api/openapi*.json
           retention-days: 1
+          if-no-files-found: error
