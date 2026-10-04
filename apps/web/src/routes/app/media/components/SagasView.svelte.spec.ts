@@ -36,7 +36,7 @@ const work = (
 const saga = (
   title: string,
   members: SagaMemberDto[],
-  next: SagaMemberDto,
+  next: SagaMemberDto | null,
 ): LibrarySagaDto => ({
   key: `TMDB:${title}`,
   title,
@@ -45,6 +45,7 @@ const saga = (
   seen: members.filter((x) => x.status === "COMPLETED").length,
   released: members.filter((x) => !x.upcoming).length,
   lastActivityAt: "2026-10-01T00:00:00.000Z",
+  finishedAt: next ? null : "2026-09-20T00:00:00.000Z",
 });
 
 const dune2 = work("693134", "Dune : Deuxième partie");
@@ -68,6 +69,16 @@ const SAGAS: LibrarySagasDto = {
         spiderVerse3,
       ],
       spiderVerse3,
+    ),
+  ],
+  finished: [
+    saga(
+      "Le Seigneur des anneaux",
+      [
+        work("120", "La Communauté de l'anneau", { status: "COMPLETED" }),
+        work("121", "Les Deux Tours", { status: "DROPPED" }),
+      ],
+      null,
     ),
   ],
 };
@@ -105,6 +116,43 @@ describe("SagasView", () => {
     const waiting = screen.getByRole("list", { name: m.media_sagas_waiting() });
     expect(within(waiting).getByText("Spider-Verse")).toBeTruthy();
     expect(within(waiting).getByText(m.media_saga_upcoming())).toBeTruthy();
+  });
+
+  it("keeps the finished sagas folded until asked for", async () => {
+    serve();
+    const user = userEvent.setup();
+
+    renderWithQuery(SagasView, { modeSwitch });
+    await screen.findByText("Dune");
+    expect(screen.queryByText("Le Seigneur des anneaux")).toBeNull();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: m.media_sagas_show_finished({ count: 1 }),
+      }),
+    );
+
+    const finished = await screen.findByRole("list", {
+      name: m.media_sagas_finished(),
+    });
+    expect(within(finished).getByText("Le Seigneur des anneaux")).toBeTruthy();
+    expect(
+      within(finished).queryByRole("button", { name: /À voir|To watch/ }),
+    ).toBeNull();
+  });
+
+  it("offers no fold when no saga is finished", async () => {
+    serve({ ...SAGAS, finished: [] });
+
+    renderWithQuery(SagasView, { modeSwitch });
+    await screen.findByText("Dune");
+
+    expect(
+      screen.queryByRole("button", {
+        name: m.media_sagas_show_finished({ count: 0 }),
+      }),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { expanded: false })).toBeNull();
   });
 
   it("adds the next work of a saga to the watchlist", async () => {
@@ -154,7 +202,7 @@ describe("SagasView", () => {
   });
 
   it("says so when the library has no saga going", async () => {
-    serve({ inProgress: [], waiting: [] });
+    serve({ inProgress: [], waiting: [], finished: [] });
 
     renderWithQuery(SagasView, { modeSwitch });
 

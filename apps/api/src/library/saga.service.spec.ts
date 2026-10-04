@@ -128,6 +128,11 @@ describe("SagaService", () => {
       { updatedAt: new Date("2026-09-01"), mediaItem: { sagaKey: "TMDB:1" } },
       { updatedAt: new Date("2026-10-01"), mediaItem: { sagaKey: "TMDB:2" } },
       { updatedAt: new Date("2026-08-01"), mediaItem: { sagaKey: "TMDB:3" } },
+      {
+        updatedAt: new Date("2026-07-20"),
+        finishedAt: new Date("2026-07-15"),
+        mediaItem: { sagaKey: "TMDB:4" },
+      },
     ]);
     prisma.saga.findMany.mockResolvedValue([
       {
@@ -145,23 +150,33 @@ describe("SagaService", () => {
         title: "Gamma",
         members: [row("TMDB:3", "31"), row("TMDB:3", "32", true)],
       },
+      {
+        key: "TMDB:4",
+        title: "Delta",
+        members: [row("TMDB:4", "41"), row("TMDB:4", "42")],
+      },
     ]);
     library.statusesBySourceId.mockResolvedValue(
       new Map([
         ["11", "COMPLETED"],
         ["21", "COMPLETED"],
         ["31", "COMPLETED"],
+        ["41", "COMPLETED"],
+        ["42", "DROPPED"],
       ]),
     );
 
     const sagas = await service.listSagas("user-1");
 
-    expect(sagas.inProgress.map((s) => [s.title, s.next.sourceId])).toEqual([
+    expect(sagas.inProgress.map((s) => [s.title, s.next?.sourceId])).toEqual([
       ["Beta", "22"],
       ["Alpha", "12"],
     ]);
-    expect(sagas.waiting.map((s) => [s.title, s.next.sourceId])).toEqual([
+    expect(sagas.waiting.map((s) => [s.title, s.next?.sourceId])).toEqual([
       ["Gamma", "32"],
+    ]);
+    expect(sagas.finished.map((s) => [s.title, s.finishedAt])).toEqual([
+      ["Delta", "2026-07-15T00:00:00.000Z"],
     ]);
   });
 
@@ -223,7 +238,7 @@ describe("SagaService", () => {
 
     const result = await service.listSagas("user-1", { lang: "fr" });
 
-    expect(result.inProgress.map((s) => [s.title, s.next.title])).toEqual([
+    expect(result.inProgress.map((s) => [s.title, s.next?.title])).toEqual([
       ["Dune - Saga", "Dune : Deuxième partie"],
       ["Attack on Titan", "Saved 11"],
     ]);

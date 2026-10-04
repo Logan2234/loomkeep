@@ -44,12 +44,18 @@ describe("sagaProgress", () => {
     expect(result.state !== "none" && result.next.sourceId).toBe("3");
   });
 
-  it("leaves out a saga never started, and one done for good", () => {
+  it("finishes a saga once everything is seen or dropped and nothing is announced", () => {
+    expect(
+      sagaProgress([work("1", "COMPLETED"), work("2", "DROPPED")]),
+    ).toEqual({ state: "finished", next: null, seen: 1, released: 2 });
+  });
+
+  it("leaves out a saga never started, and one only ever dropped", () => {
     expect(sagaProgress([work("1", "PLANNED"), work("2", null)]).state).toBe(
       "none",
     );
     expect(
-      sagaProgress([work("1", "COMPLETED"), work("2", "UP_TO_DATE")]).state,
+      sagaProgress([work("1", "DROPPED"), work("2", "DROPPED")]).state,
     ).toBe("none");
   });
 });

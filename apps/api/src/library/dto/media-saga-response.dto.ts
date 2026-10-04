@@ -33,13 +33,15 @@ export class LibrarySagaResponseDto implements LibrarySagaDto {
   key!: string;
   title!: string;
   members!: SagaMemberResponseDto[];
-  next!: SagaMemberResponseDto;
+  next!: SagaMemberResponseDto | null;
   seen!: number;
   released!: number;
   lastActivityAt!: string;
+  finishedAt!: string | null;
 }
 
 export class LibrarySagasResponseDto implements LibrarySagasDto {
   inProgress!: LibrarySagaResponseDto[];
   waiting!: LibrarySagaResponseDto[];
+  finished!: LibrarySagaResponseDto[];
 }

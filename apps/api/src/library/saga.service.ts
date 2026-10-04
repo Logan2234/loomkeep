@@ -97,14 +97,24 @@ export class SagaService {
           type: filters.types?.length ? { in: filters.types } : undefined,
         },
       },
-      select: { updatedAt: true, mediaItem: { select: { sagaKey: true } } },
+      select: {
+        updatedAt: true,
+        finishedAt: true,
+        mediaItem: { select: { sagaKey: true } },
+      },
     });
     const lastActivity = new Map<string, Date>();
+    const lastFinished = new Map<string, Date>();
 
-    for (const { updatedAt, mediaItem } of entries) {
+    for (const { updatedAt, finishedAt, mediaItem } of entries) {
       const key = mediaItem.sagaKey!;
       const last = lastActivity.get(key);
       if (!last || updatedAt > last) lastActivity.set(key, updatedAt);
+      const finished = lastFinished.get(key);
+
+      if (finishedAt && (!finished || finishedAt > finished)) {
+        lastFinished.set(key, finishedAt);
+      }
     }
 
     const q = filters.q?.trim().toLowerCase();
@@ -121,7 +131,11 @@ export class SagaService {
       this.translations(sagas, filters.lang),
     ]);
 
-    const result: LibrarySagasDto = { inProgress: [], waiting: [] };
+    const result: LibrarySagasDto = {
+      inProgress: [],
+      waiting: [],
+      finished: [],
+    };
 
     for (const saga of sagas) {
       const translation = translated.get(saga.key);
@@ -154,13 +168,14 @@ export class SagaService {
         seen: progress.seen,
         released: progress.released,
         lastActivityAt: lastActivity.get(saga.key)!.toISOString(),
+        finishedAt: lastFinished.get(saga.key)?.toISOString() ?? null,
       });
     }
 
     const compare = sagaComparator(filters.sort ?? "recent");
     const direction = filters.order === "asc" ? -1 : 1;
 
-    for (const list of [result.inProgress, result.waiting]) {
+    for (const list of [result.inProgress, result.waiting, result.finished]) {
       list.sort((a, b) => compare(a, b) * direction);
     }
 

@@ -12,6 +12,7 @@
   import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
   import { debounce } from "$lib/debounce";
   import { prefersReducedMotion } from "$lib/motion";
+  import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { sagaMemberHref, sagaMemberMeta, sagaSegmentClass } from "$lib/saga";
   import type {
@@ -22,7 +23,9 @@
   } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
   import { cubicOut } from "svelte/easing";
-  import { fly, scale } from "svelte/transition";
+  import { fly, scale, slide } from "svelte/transition";
+
+  type Kind = "inProgress" | "waiting" | "finished";
 
   let { modeSwitch }: { modeSwitch: Snippet } = $props();
 
@@ -63,7 +66,11 @@
   }));
   const inProgress = $derived(sagasQuery.data?.inProgress ?? []);
   const waiting = $derived(sagasQuery.data?.waiting ?? []);
-  const total = $derived(inProgress.length + waiting.length);
+  const finished = $derived(sagasQuery.data?.finished ?? []);
+  const ongoing = $derived(inProgress.length + waiting.length);
+  const total = $derived(ongoing + finished.length);
+  // Folded by default: what's done shouldn't push aside what's left to see.
+  let showFinished = $state(false);
 
   const addMut = createApiMutation(() => ({
     mutate: (x: SagaMemberDto) =>
@@ -77,11 +84,14 @@
     errorToast: true,
   }));
 
-  // The posters up to the next work, last four: the run so far, ending on
-  // what comes next.
+  // The work a row leads to: what comes next, or the last one of a
+  // finished saga.
+  const focusOf = (saga: LibrarySagaDto) => saga.next ?? saga.members.at(-1)!;
+
+  // The posters up to that work, last four: the run so far, ending on it.
   const stackOf = (saga: LibrarySagaDto) => {
     const until = saga.members.indexOf(
-      saga.members.find((x) => x.sourceId === saga.next.sourceId)!,
+      saga.members.find((x) => x.sourceId === focusOf(saga).sourceId)!,
     );
     return saga.members.slice(Math.max(0, until - 3), until + 1);
   };
@@ -89,7 +99,8 @@
     x.status === "COMPLETED" || x.status === "UP_TO_DATE";
 </script>
 
-{#snippet sagaRow(saga: LibrarySagaDto, waitingOn: boolean)}
+{#snippet sagaRow(saga: LibrarySagaDto, kind: Kind)}
+  {@const focus = focusOf(saga)}
   <div
     role="listitem"
     class="group hover:bg-surface-2/60 relative grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-4 px-4 py-4 transition-colors sm:grid-cols-[7.5rem_minmax(0,1fr)_auto] sm:gap-5 sm:px-5">
@@ -116,12 +127,12 @@
       <p class="flex items-baseline gap-2">
         <!-- Stretched over the row: the row leads to the next work. -->
         <a
-          href={sagaMemberHref(saga.next)}
+          href={sagaMemberHref(focus)}
           class="font-display focus-visible:after:outline-accent truncate text-lg font-bold after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:-outline-offset-2">
           {saga.title}
         </a>
         <span class="timecode shrink-0 text-[0.65rem] uppercase">
-          {saga.next.type === "ANIME" ? m.media_anime() : m.media_movies()}
+          {focus.type === "ANIME" ? m.media_anime() : m.media_movies()}
         </span>
       </p>
       <div class="flex gap-0.5" aria-hidden="true">
@@ -133,10 +144,16 @@
         {/each}
       </div>
       <p class="text-dim truncate text-sm">
-        {waitingOn
-          ? m.media_sagas_next_release({ title: saga.next.title })
-          : m.media_sagas_next({ title: saga.next.title })}
-        <span class="timecode text-xs">· {sagaMemberMeta(saga.next)}</span>
+        {#if saga.next}
+          {kind === "waiting"
+            ? m.media_sagas_next_release({ title: saga.next.title })
+            : m.media_sagas_next({ title: saga.next.title })}
+          <span class="timecode text-xs">· {sagaMemberMeta(saga.next)}</span>
+        {:else if saga.finishedAt}
+          {m.media_sagas_finished_on({ date: formatDate(saga.finishedAt) })}
+        {:else}
+          {m.library_status_completed()}
+        {/if}
       </p>
     </div>
 
@@ -145,11 +162,13 @@
       <span class="font-mono text-xl font-bold tabular-nums">
         {saga.seen}<span class="text-dim">/{saga.released}</span>
       </span>
-      {#key saga.next.status}
+      {#key saga.next?.status}
         <div in:scale={{ start: 0.7, duration: ms(220), easing: cubicOut }}>
-          {#if saga.next.status}
+          {#if !saga.next}
+            <!-- Nothing left to add: the count says it all. -->
+          {:else if saga.next.status}
             <TrackingStatusBadge domain="MEDIA" status={saga.next.status} />
-          {:else if waitingOn}
+          {:else if kind === "waiting"}
             <span
               class="border-border text-dim inline-flex items-center gap-1.5 rounded-full border border-dashed px-2.5 py-1 text-xs font-bold">
               <Icon name="calendar" class="h-3.5 w-3.5" />
@@ -161,7 +180,7 @@
               class="btn btn-ghost btn-sm"
               aria-label={m.media_saga_add_label({ title: saga.next.title })}
               disabled={addMut.loading}
-              onclick={() => addMut.mutate(saga.next)}>
+              onclick={() => saga.next && addMut.mutate(saga.next)}>
               <Icon name="plus" class="h-3.5 w-3.5" />
               {m.media_status_planned()}
             </button>
@@ -176,7 +195,7 @@
   title: string,
   hint: string,
   sagas: LibrarySagaDto[],
-  waitingOn: boolean,
+  kind: Kind,
 )}
   {#if sagas.length > 0}
     <section
@@ -189,9 +208,13 @@
       <div
         role="list"
         aria-label={title}
-        class="card divide-border divide-y {waitingOn ? 'opacity-90' : ''}">
+        class="card divide-border divide-y {kind === 'waiting'
+          ? 'opacity-90'
+          : kind === 'finished'
+            ? 'opacity-75'
+            : ''}">
         {#each sagas as saga (saga.key)}
-          {@render sagaRow(saga, waitingOn)}
+          {@render sagaRow(saga, kind)}
         {/each}
       </div>
     </section>
@@ -267,24 +290,59 @@
         </div>
       {/each}
     </div>
-  {:else if total === 0}
-    <EmptyState>
-      {filtered ? m.media_sagas_empty_filtered() : m.media_sagas_empty()}
-    </EmptyState>
   {:else}
     <div class="flex flex-col gap-9">
+      {#if ongoing === 0}
+        <EmptyState>
+          {filtered ? m.media_sagas_empty_filtered() : m.media_sagas_empty()}
+        </EmptyState>
+      {/if}
       {@render section(
         m.media_sagas_in_progress(),
         m.media_sagas_in_progress_hint(),
         inProgress,
-        false,
+        "inProgress",
       )}
       {@render section(
         m.media_sagas_waiting(),
         m.media_sagas_waiting_hint(),
         waiting,
-        true,
+        "waiting",
       )}
+      {#if finished.length > 0}
+        <div class="flex flex-col gap-9">
+          <!-- Centred so it reads as something to unfold, kept quiet so it
+               doesn't compete with what's left to see. -->
+          <div class="flex items-center gap-3">
+            <span class="bg-border h-px flex-1" aria-hidden="true"></span>
+            <button
+              type="button"
+              class="text-dim hover:text-fg inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold transition-colors"
+              aria-expanded={showFinished}
+              onclick={() => (showFinished = !showFinished)}>
+              {showFinished
+                ? m.media_sagas_hide_finished()
+                : m.media_sagas_show_finished({ count: finished.length })}
+              <Icon
+                name="chevron-down"
+                class="h-3.5 w-3.5 transition-transform duration-200 {showFinished
+                  ? 'rotate-180'
+                  : ''}" />
+            </button>
+            <span class="bg-border h-px flex-1" aria-hidden="true"></span>
+          </div>
+          {#if showFinished}
+            <div transition:slide={{ duration: ms(260), easing: cubicOut }}>
+              {@render section(
+                m.media_sagas_finished(),
+                m.media_sagas_finished_hint(),
+                finished,
+                "finished",
+              )}
+            </div>
+          {/if}
+        </div>
+      {/if}
     </div>
   {/if}
 </div>

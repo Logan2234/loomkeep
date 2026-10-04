@@ -35,13 +35,18 @@ export interface LibrarySagaDto {
   key: string;
   title: string;
   members: SagaMemberDto[];
-  /** What's next: the first released work not seen, or else the announced one. */
-  next: SagaMemberDto;
+  /**
+   * What's next: the first released work not seen, or else the announced
+   * one. Null once the saga is finished.
+   */
+  next: SagaMemberDto | null;
   /** Finished (or caught-up) works, out of `released`. */
   seen: number;
   released: number;
   /** When the viewer last touched a work of the saga. */
   lastActivityAt: string;
+  /** When the viewer last finished a work of the saga, if ever. */
+  finishedAt: string | null;
 }
 
 export interface LibrarySagasDto {
@@ -49,6 +54,8 @@ export interface LibrarySagasDto {
   inProgress: LibrarySagaDto[];
   /** Everything released is seen, and a sequel is announced. */
   waiting: LibrarySagaDto[];
+  /** Everything seen or dropped, nothing announced. */
+  finished: LibrarySagaDto[];
 }
 
 export const LIBRARY_SAGA_SORTS = ["recent", "title", "progress"] as const;
