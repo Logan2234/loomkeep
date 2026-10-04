@@ -70,8 +70,14 @@ const DETAILS_QUERY = `
       duration
       startDate { year month day }
       nextAiringEpisode { episode }
-      streamingEpisodes { title }
+      streamingEpisodes { title url }
       isAdult
+      # Only to spot streaming episodes AniList copied across a franchise.
+      relations {
+        edges {
+          node { id type streamingEpisodes { url } }
+        }
+      }
     }
   }
 `;
@@ -226,7 +232,7 @@ export class AnilistProvider implements CatalogProvider {
   }
 
   async getDetails(sourceId: string): Promise<ProviderMediaDetails> {
-    const data = await this.query<{ Media: AnilistMedia | null }>(
+    const data = await this.query<{ Media: AnilistFranchiseMedia | null }>(
       DETAILS_QUERY,
       {
         id: Number(sourceId),

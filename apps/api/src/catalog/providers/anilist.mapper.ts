@@ -32,7 +32,7 @@ export interface AnilistMedia {
     day?: number | null;
   };
   nextAiringEpisode?: { episode: number } | null;
-  streamingEpisodes?: { title?: string | null }[];
+  streamingEpisodes?: { title?: string | null; url?: string | null }[];
   isAdult?: boolean;
 }
 
@@ -121,7 +121,9 @@ export function toSagaMember(media: AnilistMedia): SagaMemberDto {
   };
 }
 
-export function toMediaDetails(media: AnilistMedia): ProviderMediaDetails {
+export function toMediaDetails(
+  media: AnilistFranchiseMedia,
+): ProviderMediaDetails {
   const summary = toSummary(media);
   return {
     summary,
@@ -251,12 +253,14 @@ export function toCastDetail(staff: AnilistStaff): CastDetailDto {
  * for some titles, streaming episode names. Episodes are generated 1..N as a
  * single season, with names when available.
  */
-function buildEpisodes(media: AnilistMedia): ProviderEpisode[] {
+function buildEpisodes(media: AnilistFranchiseMedia): ProviderEpisode[] {
   const aired = media.nextAiringEpisode
     ? media.nextAiringEpisode.episode - 1
     : null;
   const count = media.episodes ?? aired ?? media.streamingEpisodes?.length ?? 0;
-  const titles = streamingTitlesByNumber(media.streamingEpisodes ?? [], count);
+  const titles = sharesStreamingEpisodes(media)
+    ? new Map<number, string>()
+    : streamingTitlesByNumber(media.streamingEpisodes ?? [], count);
 
   return Array.from({ length: count }, (_, index) => ({
     number: index + 1,
@@ -266,6 +270,28 @@ function buildEpisodes(media: AnilistMedia): ProviderEpisode[] {
     overview: null,
     stillUrl: null,
   }));
+}
+
+/**
+ * AniList fills streaming episodes from Crunchyroll, which lists a whole
+ * franchise as one series — so for some shows every season's entry carries
+ * the same episodes, all of them from one season (every Dr. STONE entry lists
+ * New World's). Those can't be told apart from the right ones on their own,
+ * so an entry sharing any streaming episode with a related anime gets no
+ * names at all rather than another season's.
+ */
+function sharesStreamingEpisodes(media: AnilistFranchiseMedia): boolean {
+  const urls = new Set(
+    (media.streamingEpisodes ?? []).flatMap(({ url }) => (url ? [url] : [])),
+  );
+  if (urls.size === 0) return false;
+
+  return (media.relations?.edges ?? []).some(
+    ({ node }) =>
+      node?.type === "ANIME" &&
+      node.id !== media.id &&
+      (node.streamingEpisodes ?? []).some(({ url }) => !!url && urls.has(url)),
+  );
 }
 
 // "Episode 16 - Medusa Mechanism" — the shape AniList's streaming episodes

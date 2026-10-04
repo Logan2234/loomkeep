@@ -208,6 +208,52 @@ describe("AnilistProvider", () => {
     ]);
   });
 
+  it("names no episode when a related anime carries the same streaming episodes", async () => {
+    // AniList copies one season's Crunchyroll episodes onto every entry of
+    // some franchises (every Dr. STONE season lists New World's).
+    const shared = [
+      { title: "Episode 2 - SCIENCE JOURNEY", url: "https://cr.example/2" },
+      { title: "Episode 1 - RYUSUI VS. SENKU", url: "https://cr.example/1" },
+    ];
+    mockFetch({
+      data: {
+        Media: {
+          id: 996,
+          title: { romaji: "Dr. STONE", english: null },
+          description: null,
+          coverImage: {},
+          bannerImage: null,
+          genres: [],
+          status: "FINISHED",
+          format: "TV",
+          episodes: 2,
+          startDate: { year: 2019, month: 7, day: 5 },
+          nextAiringEpisode: null,
+          streamingEpisodes: shared,
+          duration: 24,
+          relations: {
+            edges: [
+              {
+                node: {
+                  id: 995,
+                  type: "ANIME",
+                  streamingEpisodes: [{ url: "https://cr.example/1" }],
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const details = await provider.getDetails("996");
+
+    expect(details.seasons[0].episodes.map((e) => e.title)).toEqual([
+      null,
+      null,
+    ]);
+  });
+
   it("shifts a later cour's absolute episode numbers back to 1", async () => {
     mockFetch({
       data: {
