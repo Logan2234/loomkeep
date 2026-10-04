@@ -282,9 +282,14 @@ jobs:
     uses: ./.github/workflows/generate-openapi-artifact.yml
 
   # PR/manual-dispatch validation only — build without pushing, to catch a
-  # broken Dockerfile before merge. Skipped on a push to main: docker-push
-  # below builds the same images there (and pushes), so running this too
-  # would just build api/web a second time for nothing.
+  # broken Dockerfile before merge, then Trivy-scan the image just built.
+  # Skipped on a push to main: docker-push below builds the same images
+  # there (and pushes), and trivy.yml scans those pushed images afterwards.
+  # The scan rides here rather than in trivy.yml so a PR never builds an
+  # image twice. Advisory (exit-code 0): what blocks a PR is code scanning's
+  # own "Trivy" check, which compares the SARIF below with main's alerts in
+  # the same category, so it can fail on alerts this PR introduces without
+  # turning every PR red when a CVE lands in an unchanged base image.
   docker-build-images:
     needs: [changes, openapi-artifact]
     if: |
@@ -293,6 +298,9 @@ jobs:
       (needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true') &&
       !(github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     strategy:
       matrix:
         include:
@@ -316,8 +324,27 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: false
+          load: true
+          tags: loomkeep-${{ matrix.name }}:ci
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+      - name: scan ${{ matrix.name }} image
+        if: needs.changes.outputs[matrix.name] == 'true'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: loomkeep-${{ matrix.name }}:ci
+          format: sarif
+          output: trivy-${{ matrix.name }}.sarif
+          severity: CRITICAL,HIGH
+          exit-code: "0"
+      # Same category as trivy.yml's scan of main, which is what lets code
+      # scanning tell this PR's new alerts from the ones main already has.
+      - name: upload ${{ matrix.name }} scan
+        if: needs.changes.outputs[matrix.name] == 'true'
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: trivy-${{ matrix.name }}.sarif
+          category: trivy-${{ matrix.name }}
 
   # The status branch protection requires, and the reason the matrix above is
   # named `docker-build-images` rather than `docker-build`: a matrix job

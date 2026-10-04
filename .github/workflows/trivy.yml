@@ -1,75 +1,77 @@
 name: Trivy
 
+# Scans the api/web images CI already pushed to GHCR rather than building
+# its own: after every CI run on main (the exact SHA-tagged images the
+# deploy pulls), and weekly on `latest` — what's in production — to catch
+# new CVEs in an unchanged base image. PRs are scanned by ci.yml's
+# docker-build-images job, on the image it builds anyway; both upload to the
+# same trivy-api/trivy-web categories, so code scanning's PR check compares
+# a PR's alerts with main's.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
     branches: [main]
-  pull_request:
-    branches: [main]
+    types: [completed]
   schedule:
-    # Same cadence as codeql.yml: catches new CVEs in unchanged base images,
-    # not just ones introduced by a code change.
     - cron: "17 4 * * 1"
+  workflow_dispatch:
 
 concurrency:
-  group: trivy-${{ github.ref }}
+  group: trivy-${{ github.event_name }}
   cancel-in-progress: true
 
-# Workflow-level default, in case a future job here doesn't declare its own
-# block — the scan job below still sets the elevated scope it needs.
 permissions:
   contents: read
 
 jobs:
-  # apps/web/Dockerfile needs a static apps/api/openapi.json to generate its
-  # typed API client from (no live API reachable from inside `docker build`)
-  # — see ci.yml's identical need for the full reasoning. Shared with ci.yml
-  # as a reusable workflow rather than duplicated, since both need it as-is.
-  openapi-artifact:
-    uses: ./.github/workflows/generate-openapi-artifact.yml
-
   scan:
-    needs: openapi-artifact
+    # A failed CI run may not have pushed both images.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: read
       security-events: write
     strategy:
       matrix:
-        include:
-          - name: api
-            dockerfile: apps/api/Dockerfile
-          - name: web
-            dockerfile: apps/web/Dockerfile
+        name: [api, web]
     steps:
+      # At the commit CI built, so `git rev-parse --short` yields the same
+      # tag docker-push gave the images (same shallow checkout there).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Download OpenAPI document
-        if: matrix.name == 'web'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: openapi-json
-          path: apps/api
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
-      - name: build ${{ matrix.name }} image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - id: vars
+        # GHCR image paths must be lowercase; github.repository_owner
+        # preserves the account's actual casing (Logan2234).
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      # Trivy pulls the image with the credentials docker login stores.
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v3
         with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          push: false
-          load: true
-          tags: loomkeep-${{ matrix.name }}:ci
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: scan ${{ matrix.name }} image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: loomkeep-${{ matrix.name }}:ci
+          image-ref: ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}:${{ steps.vars.outputs.tag }}
           format: sarif
           output: trivy-${{ matrix.name }}.sarif
           severity: CRITICAL,HIGH
           # Advisory only, same as codeql.yml — findings land in the
-          # Security tab rather than blocking the build.
+          # Security tab rather than failing anything.
           exit-code: "0"
+      # Pinned to the scanned commit on main: a workflow_run's own
+      # GITHUB_SHA is main's tip when it starts, which may already be newer.
       - uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
         with:
           sarif_file: trivy-${{ matrix.name }}.sarif
           category: trivy-${{ matrix.name }}
+          ref: refs/heads/main
+          sha: ${{ github.event.workflow_run.head_sha || github.sha }}
