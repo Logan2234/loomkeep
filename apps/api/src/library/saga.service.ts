@@ -11,6 +11,7 @@ import type {
 import { Injectable, Logger } from "@nestjs/common";
 import type { SagaMember } from "@prisma/client";
 import { SagaSyncService } from "../catalog/saga-sync.service";
+import { mapWithConcurrency } from "../common/concurrency.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { AgeGateService } from "../users/age-gate.service";
 import { LibraryService } from "./library.service";
@@ -21,6 +22,7 @@ export interface LibrarySagaFilters {
   q?: string;
   sort?: LibrarySagaSort;
   order?: "asc" | "desc";
+  lang?: string;
 }
 
 /**
@@ -111,21 +113,32 @@ export class SagaService {
       include: { members: { orderBy: { position: "asc" } } },
     });
     const allowAdult = await this.ageGate.allowsAdultContent(userId);
-    const statuses = await this.statusesOf(
-      userId,
-      sagas.flatMap((saga) => saga.members),
-    );
+    const [statuses, translated] = await Promise.all([
+      this.statusesOf(
+        userId,
+        sagas.flatMap((saga) => saga.members),
+      ),
+      this.translations(sagas, filters.lang),
+    ]);
 
     const result: LibrarySagasDto = { inProgress: [], waiting: [] };
 
     for (const saga of sagas) {
+      const translation = translated.get(saga.key);
+      const titles = new Map(
+        translation?.members.map((m) => [m.sourceId, m.title]),
+      );
+      const title = translation?.title ?? saga.title;
       const members = saga.members
         .filter((m) => allowAdult || !m.isAdult)
-        .map((m) => toMemberDto(m, statuses.get(`${m.type}:${m.sourceId}`)));
+        .map((m) => ({
+          ...toMemberDto(m, statuses.get(`${m.type}:${m.sourceId}`)),
+          title: titles.get(m.sourceId) ?? m.title,
+        }));
 
       if (
         q &&
-        !saga.title.toLowerCase().includes(q) &&
+        !title.toLowerCase().includes(q) &&
         !members.some((m) => m.title.toLowerCase().includes(q))
       ) {
         continue;
@@ -135,7 +148,7 @@ export class SagaService {
       if (progress.state === "none") continue;
       result[progress.state].push({
         key: saga.key,
-        title: saga.title,
+        title,
         members,
         next: progress.next,
         seen: progress.seen,
@@ -152,6 +165,35 @@ export class SagaService {
     }
 
     return result;
+  }
+
+  /**
+   * Film sagas are saved in TMDB's base language; anime titles don't change
+   * with it. A translation is one collection request per saga and language a
+   * day, cached and shared — and a failed one just keeps the saved titles.
+   */
+  private async translations(
+    sagas: { key: string; members: SagaMember[] }[],
+    lang: string | undefined,
+  ): Promise<Map<string, MediaSagaDto>> {
+    const films = sagas.filter((saga) => saga.key.startsWith("TMDB:"));
+    if (!lang || lang === "en" || films.length === 0) return new Map();
+
+    const read = await mapWithConcurrency(films, 4, (saga) =>
+      this.sagas
+        .readCollection(
+          saga.key,
+          saga.members.map((m) => m.sourceId),
+          lang,
+        )
+        .catch(() => null),
+    );
+    return new Map(
+      films.flatMap((saga, i) => {
+        const translation = read[i];
+        return translation ? [[saga.key, translation] as const] : [];
+      }),
+    );
   }
 
   private async statusesOf(

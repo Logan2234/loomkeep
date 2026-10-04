@@ -37,6 +37,7 @@ export const listLibrarySagas = (filters: LibrarySagaFilters = {}) =>
       type: filters.types,
       sort: filters.sort,
       order: filters.order,
+      lang: getLocale(),
     },
   });
 

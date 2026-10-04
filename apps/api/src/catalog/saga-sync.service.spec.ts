@@ -46,7 +46,10 @@ function makeService({
     saga: { upsert: vi.fn((args: unknown) => args) },
     $transaction: vi.fn().mockResolvedValue([]),
   };
-  const tmdb = { getSaga: vi.fn().mockResolvedValue(saga) };
+  const tmdb = {
+    getSaga: vi.fn().mockResolvedValue(saga),
+    getCollection: vi.fn().mockResolvedValue(saga),
+  };
   const anilist = { getSaga: vi.fn().mockResolvedValue(saga) };
   const service = new SagaSyncService(
     prisma as unknown as PrismaService,
@@ -109,5 +112,15 @@ describe("SagaSyncService", () => {
     await service.sync("MOVIE", "1");
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("reads a saved film saga in another language once a day, by its collection", async () => {
+    const { service, tmdb } = makeService();
+
+    await service.readCollection("TMDB:726871", ["1", "2"], "fr");
+    await service.readCollection("TMDB:726871", ["1", "2"], "fr");
+
+    expect(tmdb.getCollection).toHaveBeenCalledOnce();
+    expect(tmdb.getCollection).toHaveBeenCalledWith("726871", "fr");
   });
 });

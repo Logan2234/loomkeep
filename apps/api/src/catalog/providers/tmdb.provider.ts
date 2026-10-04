@@ -228,9 +228,18 @@ export class TmdbProvider implements CatalogProvider {
     const collectionId = movie.belongs_to_collection?.id;
     if (!collectionId) return null;
 
+    return this.getCollection(String(collectionId), lang);
+  }
+
+  /** A collection's films in release order. Null under two films. */
+  async getCollection(
+    collectionId: string,
+    lang?: string,
+  ): Promise<MediaSagaDto | null> {
+    if (!/^\d+$/.test(collectionId)) return null;
     const collection = await this.get<TmdbCollection>(
       `/collection/${collectionId}`,
-      { language },
+      { language: regionalLocale(lang) },
     );
     const today = new Date().toISOString().slice(0, 10);
     const members = (collection.parts ?? [])

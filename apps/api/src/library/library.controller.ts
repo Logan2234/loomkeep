@@ -116,6 +116,7 @@ export class LibraryController {
     @Query("type") type?: string | string[],
     @Query("sort") sort?: string,
     @Query("order") order?: string,
+    @Query("lang") lang?: string,
   ): Promise<LibrarySagasDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.sagas.listSagas(user.sub, {
@@ -125,6 +126,7 @@ export class LibraryController {
       ),
       sort: LIBRARY_SAGA_SORTS.find((s) => s === sort),
       order: order === "asc" ? "asc" : "desc",
+      lang: Locale.includes(lang as Locale) ? lang : undefined,
     });
   }
 

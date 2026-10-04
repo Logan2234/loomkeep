@@ -38,7 +38,7 @@
   const SORTS: { label: string; value: LibrarySagaSort }[] = [
     { label: m.media_sagas_sort_recent(), value: "recent" },
     { label: m.common_title(), value: "title" },
-    { label: m.media_sagas_sort_progress(), value: "progress" },
+    { label: m.common_progress(), value: "progress" },
   ];
 
   let query = $state("");

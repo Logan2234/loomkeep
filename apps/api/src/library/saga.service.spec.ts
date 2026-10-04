@@ -36,6 +36,7 @@ function makeService(allowAdult = false) {
     read: vi.fn().mockResolvedValue(franchise),
     rememberMembership: vi.fn().mockResolvedValue(0),
     sync: vi.fn().mockResolvedValue(undefined),
+    readCollection: vi.fn().mockResolvedValue(null),
   };
   const library = {
     statusesBySourceId: vi
@@ -162,5 +163,75 @@ describe("SagaService", () => {
     expect(sagas.waiting.map((s) => [s.title, s.next.sourceId])).toEqual([
       ["Gamma", "32"],
     ]);
+  });
+
+  it("shows film sagas in the viewer's language, keeping the saved titles when that fails", async () => {
+    const { service, prisma, library, sagas } = makeService(true);
+    const row = (sagaKey: string, sourceId: string, type = "MOVIE") => ({
+      sagaKey,
+      source: type === "ANIME" ? "ANILIST" : "TMDB",
+      sourceId,
+      type,
+      position: 0,
+      title: `Saved ${sourceId}`,
+      posterUrl: null,
+      releaseDate: "2020-01-01",
+      format: null,
+      episodes: null,
+      isAdult: false,
+      upcoming: false,
+    });
+    prisma.libraryEntry.findMany.mockResolvedValue([
+      {
+        updatedAt: new Date("2026-10-01"),
+        mediaItem: { sagaKey: "TMDB:726871" },
+      },
+      {
+        updatedAt: new Date("2026-09-01"),
+        mediaItem: { sagaKey: "ANILIST:1" },
+      },
+    ]);
+    prisma.saga.findMany.mockResolvedValue([
+      {
+        key: "TMDB:726871",
+        title: "Dune Collection",
+        members: [row("TMDB:726871", "1"), row("TMDB:726871", "2")],
+      },
+      {
+        key: "ANILIST:1",
+        title: "Attack on Titan",
+        members: [
+          row("ANILIST:1", "10", "ANIME"),
+          row("ANILIST:1", "11", "ANIME"),
+        ],
+      },
+    ]);
+    library.statusesBySourceId.mockResolvedValue(
+      new Map([
+        ["1", "COMPLETED"],
+        ["10", "COMPLETED"],
+      ]),
+    );
+    sagas.readCollection.mockResolvedValue({
+      key: "TMDB:726871",
+      title: "Dune - Saga",
+      members: [
+        member("1", { title: "Dune" }),
+        member("2", { title: "Dune : Deuxième partie" }),
+      ],
+    });
+
+    const result = await service.listSagas("user-1", { lang: "fr" });
+
+    expect(result.inProgress.map((s) => [s.title, s.next.title])).toEqual([
+      ["Dune - Saga", "Dune : Deuxième partie"],
+      ["Attack on Titan", "Saved 11"],
+    ]);
+    expect(sagas.readCollection).toHaveBeenCalledOnce();
+    expect(sagas.readCollection).toHaveBeenCalledWith(
+      "TMDB:726871",
+      ["1", "2"],
+      "fr",
+    );
   });
 });

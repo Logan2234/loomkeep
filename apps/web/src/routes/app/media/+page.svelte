@@ -226,7 +226,7 @@
     <SegmentedControl
       label={m.media_view_label()}
       options={[
-        { value: "works", label: m.media_view_works(), icon: "library" },
+        { value: "works", label: m.common_works(), icon: "library" },
         { value: "sagas", label: m.media_view_sagas(), icon: "list" },
       ]}
       value={mode}

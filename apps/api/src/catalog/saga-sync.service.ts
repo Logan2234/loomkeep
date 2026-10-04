@@ -52,9 +52,50 @@ export class SagaSyncService {
         ? await this.anilist.getSaga(sourceId)
         : await this.tmdb.getSaga(sourceId, lang);
 
+    this.remember(
+      saga ? saga.members.map((m) => m.sourceId) : [sourceId],
+      keyOf,
+      saga,
+    );
+    return saga;
+  }
+
+  /**
+   * A saved TMDB saga in another language, for the library's sagas view: one
+   * collection request per saga and language a day, shared with the media
+   * pages through the same cache.
+   */
+  async readCollection(
+    sagaKey: string,
+    memberIds: string[],
+    lang: string,
+  ): Promise<MediaSagaDto | null> {
+    const keyOf = (id: string) => `MOVIE:${id}:${lang}`;
+    const cached = memberIds
+      .map((id) => this.cache.get(keyOf(id)))
+      .find((e) => e && Date.now() - e.fetchedAt < SAGA_TTL_MS);
+    if (cached) return cached.saga;
+
+    const saga = await this.tmdb.getCollection(
+      sagaKey.replace(/^TMDB:/, ""),
+      lang,
+    );
+    this.remember(
+      saga ? saga.members.map((m) => m.sourceId) : memberIds,
+      keyOf,
+      saga,
+    );
+    return saga;
+  }
+
+  private remember(
+    ids: string[],
+    keyOf: (id: string) => string,
+    saga: MediaSagaDto | null,
+  ): void {
     const entry = { fetchedAt: Date.now(), saga };
 
-    for (const id of saga ? saga.members.map((m) => m.sourceId) : [sourceId]) {
+    for (const id of ids) {
       this.cache.delete(keyOf(id));
       this.cache.set(keyOf(id), entry);
     }
@@ -64,8 +105,6 @@ export class SagaSyncService {
       if (this.cache.size <= MAX_CACHED_WORKS) break;
       this.cache.delete(key);
     }
-
-    return saga;
   }
 
   /**
