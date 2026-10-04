@@ -8,7 +8,9 @@
     upsertGameEntry,
   } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
+  import { auth } from "$lib/auth.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
   import Banner from "$lib/components/Banner.svelte";
@@ -41,14 +43,18 @@
     GAME_STATUS_META as STATUS_META,
     GAME_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { joinMeta } from "$lib/format";
+  import { gameReleaseLabel, isVagueRelease } from "$lib/game-release";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import {
     GAME_DIRECT_STATUS_TARGETS,
     getStatusCorrections,
   } from "$lib/status-corrections";
+  import type { GameEntryDto } from "@loomkeep/shared";
   import { slide } from "svelte/transition";
   import GameTimeToBeat from "./components/GameTimeToBeat.svelte";
 
@@ -91,6 +97,7 @@
   );
 
   const entry = $derived(detail?.entry ?? null);
+  const upcoming = $derived(!!detail?.upcoming);
   const reviewMeta = $derived(
     detail ? joinMeta(m.game_type(), detail.year) : "",
   );
@@ -151,7 +158,20 @@
     onRemoveSuccess: () => (confirmRemove = false),
   });
 
-  const saving = $derived(addMut.loading || patchMut.loading);
+  const releaseAlertsMut = createApiMutation(() => ({
+    mutate: (enabled: boolean) =>
+      updateGameEntry(entry!.id, { releaseAlertsEnabled: enabled }),
+    invalidates: [detailKey, keys.calendar.upcoming()],
+    successToast: (_, enabled) =>
+      enabled
+        ? m.game_release_reminder_enabled_toast()
+        : m.media_movie_reminder_disabled_toast(),
+    errorToast: true,
+  }));
+
+  const saving = $derived(
+    addMut.loading || patchMut.loading || releaseAlertsMut.loading,
+  );
   const statusCorrections = $derived(
     entry
       ? getStatusCorrections(
@@ -264,7 +284,13 @@
               {#each detail.ageRatingImageUrls as url (url)}
                 <img src={url} alt={m.game_age_rating()} class="h-6 rounded" />
               {/each}
-              {#if entry}
+              {#if upcoming}
+                <span
+                  class="bg-surface-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold">
+                  <Icon name="calendar" class="h-3.5 w-3.5" />
+                  {m.media_upcoming()}
+                </span>
+              {:else if entry}
                 <TrackingStatusBadge domain="GAMES" status={entry.status} />
               {/if}
             </div>
@@ -279,9 +305,18 @@
                 {detail.genres.slice(0, 3).join(", ")}
               {/if}
             </p>
-            {#if entry || detail.ratings.length > 0}
+            {#if upcoming}
+              {@const release = gameReleaseLabel(
+                detail.releaseDate,
+                detail.releaseDatePrecision,
+              )}
+              {#if release}
+                <p class="timecode mt-1 text-sm">{release}</p>
+              {/if}
+            {/if}
+            {#if (entry && !upcoming) || detail.ratings.length > 0}
               <div class="mt-2.5 flex flex-wrap gap-1.5">
-                {#if entry}
+                {#if entry && !upcoming}
                   <MyRatingBadge
                     targetType="GAME"
                     targetId={entry.game.id}
@@ -369,56 +404,65 @@
             onToggleFavorite={() =>
               patchMut.mutate({ favorite: !entry.favorite })}
             onRemove={() => (confirmRemove = true)}
-            actions={[
-              ...(entry.status === "PLAYING"
-                ? [
-                    {
-                      label: m.game_status_mark_completed(),
-                      icon: "check" as const,
-                      onSelect: () => patchMut.mutate({ status: "COMPLETED" }),
-                    },
-                    {
-                      label: m.game_status_drop(),
-                      icon: "archive" as const,
-                      onSelect: () => patchMut.mutate({ status: "DROPPED" }),
-                    },
-                  ]
-                : []),
-              ...(entry.status === "DROPPED"
-                ? [
-                    {
-                      label: m.game_status_resume(),
-                      icon: "refresh" as const,
-                      onSelect: () => patchMut.mutate({ status: "PLAYING" }),
-                    },
-                  ]
-                : []),
-              {
-                label:
-                  statusCorrections.length === 1
-                    ? m.game_status_reset_backlog()
-                    : m.tracking_correct_status(),
-                icon: "edit" as const,
-                separator: true,
-                onSelect: openStatusCorrection,
-              },
-            ]}
+            actions={upcoming
+              ? []
+              : [
+                  ...(entry.status === "PLAYING"
+                    ? [
+                        {
+                          label: m.game_status_mark_completed(),
+                          icon: "check" as const,
+                          onSelect: () =>
+                            patchMut.mutate({ status: "COMPLETED" }),
+                        },
+                        {
+                          label: m.game_status_drop(),
+                          icon: "archive" as const,
+                          onSelect: () =>
+                            patchMut.mutate({ status: "DROPPED" }),
+                        },
+                      ]
+                    : []),
+                  ...(entry.status === "DROPPED"
+                    ? [
+                        {
+                          label: m.game_status_resume(),
+                          icon: "refresh" as const,
+                          onSelect: () =>
+                            patchMut.mutate({ status: "PLAYING" }),
+                        },
+                      ]
+                    : []),
+                  {
+                    label:
+                      statusCorrections.length === 1
+                        ? m.game_status_reset_backlog()
+                        : m.tracking_correct_status(),
+                    icon: "edit" as const,
+                    separator: true,
+                    onSelect: openStatusCorrection,
+                  },
+                ]}
             targetType="GAME"
             targetId={entry.game.id}>
-            <GameSessionDock {entry} {detailKey} />
+            {#if upcoming}
+              {@render releaseReminder(entry)}
+            {:else}
+              <GameSessionDock {entry} {detailKey} />
 
-            <hr class="border-border" />
+              <hr class="border-border" />
 
-            <OwnershipField
-              status={entry.ownershipStatus}
-              source={entry.ownershipSource}
-              statusOptions={GAME_OWNERSHIP_STATUS_OPTIONS}
-              sourceOptionsByStatus={GAME_OWNERSHIP_SOURCES}
-              onChange={(status, source) =>
-                patchMut.mutate({
-                  ownershipStatus: status as typeof entry.ownershipStatus,
-                  ownershipSource: source,
-                })} />
+              <OwnershipField
+                status={entry.ownershipStatus}
+                source={entry.ownershipSource}
+                statusOptions={GAME_OWNERSHIP_STATUS_OPTIONS}
+                sourceOptionsByStatus={GAME_OWNERSHIP_SOURCES}
+                onChange={(status, source) =>
+                  patchMut.mutate({
+                    ownershipStatus: status as typeof entry.ownershipStatus,
+                    ownershipSource: source,
+                  })} />
+            {/if}
 
             <hr class="border-border" />
 
@@ -460,7 +504,7 @@
           {m.datasource_igdb_notice()}
         </a>
 
-        {#if entry}
+        {#if entry && !upcoming}
           <ReviewsSection
             targetType="GAME"
             targetId={entry.game.id}
@@ -478,7 +522,7 @@
             {/snippet}
           </ReviewsSection>
         {/if}
-        {#if appConfig.socialEnabled && detail.commentTargetId && !entry}
+        {#if appConfig.socialEnabled && detail.commentTargetId && (!entry || upcoming)}
           <CommentsPanel
             targetType="GAME"
             targetId={detail.commentTargetId}
@@ -486,6 +530,52 @@
             canParticipate={!!entry} />
         {/if}
       </div>
+
+      {#snippet releaseReminder(entry: GameEntryDto)}
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              class="grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50 {entry.releaseAlertsEnabled
+                ? 'bg-accent text-accent-fg'
+                : 'border-border text-dim border'}"
+              disabled={saving}
+              aria-pressed={entry.releaseAlertsEnabled}
+              aria-label={entry.releaseAlertsEnabled
+                ? m.media_movie_reminder_cancel()
+                : m.media_movie_reminder_enable()}
+              title={entry.releaseAlertsEnabled
+                ? m.media_movie_reminder_cancel()
+                : m.media_movie_reminder_enable()}
+              onclick={() =>
+                releaseAlertsMut.mutate(!entry.releaseAlertsEnabled)}>
+              <Icon
+                name={entry.releaseAlertsEnabled ? "bell" : "bell-off"}
+                class="h-5 w-5" />
+            </button>
+            <div class="min-w-0 text-sm">
+              <p>
+                {entry.releaseAlertsEnabled
+                  ? m.media_movie_reminder_active()
+                  : m.media_movie_reminder_enable()}
+                {#if isFeatureNew("game-releases")}<NewBadge />{/if}
+              </p>
+              {#if entry.releaseAlertsEnabled && isVagueRelease(detail?.releaseDatePrecision ?? null)}
+                <p class="text-dim text-xs">
+                  {m.game_release_reminder_vague_hint()}
+                </p>
+              {/if}
+            </div>
+          </div>
+          {#if entry.releaseAlertsEnabled && auth.user?.notifyEmail === "DISABLED" && auth.user?.notifyPush === "DISABLED"}
+            <a
+              href="/app/settings/communications"
+              class="text-accent text-sm underline"
+              >{m.media_movie_reminder_channels_disabled()}</a>
+          {/if}
+          <p class="text-dim text-xs">{m.game_upcoming_tracking_hint()}</p>
+        </div>
+      {/snippet}
 
       <!-- Side panels, desktop position: sidebar next to the main column. -->
       {#snippet sidePanels()}

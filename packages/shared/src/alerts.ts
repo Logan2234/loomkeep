@@ -117,6 +117,12 @@ export const ALERTS = {
     email: "cadence",
     mailTemplate: "episodeDigest",
   },
+  NEW_GAME: {
+    group: AlertGroup.RELEASES,
+    push: "cadence",
+    email: "cadence",
+    mailTemplate: "episodeDigest",
+  },
   // In the bell too: nothing else surfaces an announcement, which neither
   // the calendar nor "Up next" can show before there's a date.
   SAGA_SEQUEL_ANNOUNCED: {

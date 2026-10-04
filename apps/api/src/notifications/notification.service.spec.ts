@@ -52,6 +52,7 @@ describe("NotificationService.scanAll", () => {
         findMany: vi.fn().mockResolvedValue(over.episodes ?? [episodeRow()]),
       },
       sagaMember: { findMany: vi.fn().mockResolvedValue([]) },
+      gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       libraryEntry: {
         findMany: vi
           .fn()
@@ -204,6 +205,7 @@ describe("NotificationService.scan", () => {
   ) {
     const prisma = {
       libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       user: {
         findUnique: vi.fn().mockResolvedValue({
           notifyPush,
@@ -295,6 +297,7 @@ describe("NotificationService — bell feed (read = deleted)", () => {
             notIn: [
               NotificationType.NEW_EPISODE,
               NotificationType.NEW_MOVIE,
+              NotificationType.NEW_GAME,
               NotificationType.FOLLOW_REQUEST,
             ],
           },
@@ -374,6 +377,7 @@ describe("NotificationService — bell feed (read = deleted)", () => {
           notIn: [
             NotificationType.NEW_EPISODE,
             NotificationType.NEW_MOVIE,
+            NotificationType.NEW_GAME,
             NotificationType.FOLLOW_REQUEST,
           ],
         },

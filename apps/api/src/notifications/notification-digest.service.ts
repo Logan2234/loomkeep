@@ -24,9 +24,9 @@ function pushBody(
   locale: string,
   period: DigestPeriod,
   items: DigestItem[],
-  hasMovies: boolean,
+  hasReleases: boolean,
 ) {
-  if (hasMovies)
+  if (hasReleases)
     return notificationCopy(locale).releaseDigestPush(
       period,
       items.map((item) => item.title),
@@ -40,7 +40,7 @@ function pushBody(
 
 /**
  * Delivers the "new episode" digest at each user's local hour, cadenced
- * independently per channel (email/push). Content is whatever `NEW_EPISODE` / `NEW_MOVIE`
+ * independently per channel (email/push). Content is whatever `NEW_EPISODE` / `NEW_MOVIE` / `NEW_GAME`
  * ledger rows (created by `NotificationService.scan()`) haven't been
  * digested yet on that channel — no date-window recomputation needed, just
  * `[channel]DigestedAt IS NULL`.
@@ -61,7 +61,7 @@ export class NotificationDigestService {
    * Hourly: for each user, checks whether it's currently their local digest
    * hour on each channel (18h daily, Monday 9h weekly) and sends if so.
    */
-  @Cron(CronExpression.EVERY_HOUR)
+  @Cron(CronExpression.EVERY_HOUR, { name: JOB_KEYS.NOTIFICATIONS_DIGEST })
   async runDigests(): Promise<number> {
     return this.jobRuns.record(
       JOB_KEYS.NOTIFICATIONS_DIGEST,
@@ -147,7 +147,11 @@ export class NotificationDigestService {
       where: {
         userId: user.id,
         type: {
-          in: [NotificationType.NEW_EPISODE, NotificationType.NEW_MOVIE],
+          in: [
+            NotificationType.NEW_EPISODE,
+            NotificationType.NEW_MOVIE,
+            NotificationType.NEW_GAME,
+          ],
         },
         ...(channel === "email"
           ? { emailDigestedAt: null }
@@ -178,10 +182,28 @@ export class NotificationDigestService {
             select: { mediaItemId: true },
           });
     const activeMovieIds = new Set(activeMovies.map((e) => e.mediaItemId));
+    const gameIds = pending.flatMap((n) =>
+      n.dedupeKey?.startsWith("game:") ? [n.dedupeKey.slice(5)] : [],
+    );
+    const activeGames =
+      gameIds.length === 0
+        ? []
+        : await this.prisma.gameEntry.findMany({
+            where: {
+              userId: user.id,
+              gameItemId: { in: gameIds },
+              releaseReminderAt: { not: null },
+              status: { not: "DROPPED" },
+            },
+            select: { gameItemId: true },
+          });
+    const activeGameIds = new Set(activeGames.map((e) => e.gameItemId));
     const deliverable = pending.filter((n) =>
       n.dedupeKey?.startsWith("movie:")
         ? activeMovieIds.has(n.dedupeKey.slice(6))
-        : !muted.has(episodeIdOf(n.dedupeKey)),
+        : n.dedupeKey?.startsWith("game:")
+          ? activeGameIds.has(n.dedupeKey.slice(5))
+          : !muted.has(episodeIdOf(n.dedupeKey)),
     );
 
     const now = new Date();
@@ -220,7 +242,11 @@ export class NotificationDigestService {
           user.locale,
           period,
           items,
-          deliverable.some((n) => n.dedupeKey?.startsWith("movie:")),
+          deliverable.some(
+            (n) =>
+              n.dedupeKey?.startsWith("movie:") ||
+              n.dedupeKey?.startsWith("game:"),
+          ),
         ),
         url: items.length === 1 ? items[0].url : "/app/calendar",
       });

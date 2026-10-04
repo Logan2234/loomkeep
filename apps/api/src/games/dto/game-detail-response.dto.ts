@@ -1,4 +1,4 @@
-import type { GameDetailDto } from "@loomkeep/shared";
+import type { GameDetailDto, ReleaseDatePrecision } from "@loomkeep/shared";
 import { GameSource } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
 import { RatingResponseDto } from "../../catalog/dto/rating-response.dto";
@@ -22,6 +22,8 @@ export class GameDetailResponseDto implements GameDetailDto {
   genres!: string[];
   platforms!: string[];
   releaseDate!: string | null;
+  releaseDatePrecision!: ReleaseDatePrecision | null;
+  upcoming!: boolean;
   website!: string | null;
   similarGames!: GameSummaryResponseDto[];
   developers!: string[];

@@ -186,6 +186,7 @@ function gameDomain(id: string): QuickAddDomain {
         entryId: d.entry?.id ?? null,
         itemId: d.entry?.game.id ?? null,
         status: d.entry?.status ?? null,
+        upcoming: d.upcoming,
         progress: null,
       };
     },

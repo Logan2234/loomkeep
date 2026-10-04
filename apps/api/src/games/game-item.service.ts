@@ -1,4 +1,5 @@
 import type { GameDetailsDto, GameSource } from "@loomkeep/shared";
+import { isGameUpcoming } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { GameItem } from "@prisma/client";
@@ -40,7 +41,7 @@ export class GameItemService {
    * players submit theirs — before this, a game was only ever refreshed when
    * someone re-added it.
    */
-  @Cron(CronExpression.EVERY_6_HOURS)
+  @Cron(CronExpression.EVERY_6_HOURS, { name: JOB_KEYS.GAMES_REFRESH_STALE })
   async refreshStale(): Promise<number> {
     return this.jobRuns.record(
       JOB_KEYS.GAMES_REFRESH_STALE,
@@ -113,6 +114,11 @@ export class GameItemService {
       genres: details.genres,
       platforms: details.platforms,
       releaseDate: details.releaseDate,
+      releaseDatePrecision: details.releaseDatePrecision,
+      upcoming: isGameUpcoming(
+        details.releaseDate?.slice(0, 10) ?? null,
+        details.releaseDatePrecision,
+      ),
       website: details.website,
       similarGames: details.similarGames,
       developers: details.developers,
@@ -245,6 +251,7 @@ export class GameItemService {
       backdropUrl: details.backdropUrl,
       overview: details.overview,
       releaseDate: details.releaseDate ? new Date(details.releaseDate) : null,
+      releaseDatePrecision: details.releaseDatePrecision,
       genres: details.genres,
       platforms: details.platforms,
       timeToBeatHastilyMin: details.timeToBeat?.hastilyMin ?? null,

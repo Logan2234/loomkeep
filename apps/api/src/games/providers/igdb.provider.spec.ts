@@ -205,6 +205,7 @@ describe("IgdbProvider", () => {
       genres: ["Shooter", "Adventure"],
       platforms: ["PC (Microsoft Windows)", "PS4"],
       releaseDate: "2013-09-17T00:00:00.000Z",
+      releaseDatePrecision: null,
       website: "https://www.rockstargames.com/V/",
       similarGames: [],
       developers: [],
@@ -220,6 +221,74 @@ describe("IgdbProvider", () => {
       ageRatingImageUrls: [],
       multiplayerModes: [],
       timeToBeat: null,
+    });
+  });
+
+  // IGDB stamps a vague date at its period's end: "2028" is December 31st.
+  const stamp = (iso: string) => Date.parse(iso) / 1000;
+
+  it("dates a release to the first day of its period, with its precision", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 1,
+          name: "Kingdom Hearts IV",
+          first_release_date: stamp("2027-12-31"),
+          release_dates: [{ date: stamp("2027-12-31"), date_format: 6 }],
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("1");
+
+    expect(details).toMatchObject({
+      releaseDate: "2027-10-01T00:00:00.000Z",
+      releaseDatePrecision: "QUARTER",
+    });
+  });
+
+  it("keeps the earliest real date over a vaguer one that ends later", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 2,
+          name: "Gears of War: E-Day",
+          release_dates: [
+            { date: stamp("2026-12-31"), date_format: 2 },
+            { date: stamp("2026-10-06"), date_format: 0 },
+            { date: stamp("2026-11-01"), date_format: 1 },
+          ],
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("2");
+
+    expect(details).toMatchObject({
+      releaseDate: "2026-10-06T00:00:00.000Z",
+      releaseDatePrecision: "DAY",
+    });
+  });
+
+  it("marks a game announced without any date as TBD", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 3,
+          name: "Mass Effect: Corsair",
+          release_dates: [{ date_format: 7 }],
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("3");
+
+    expect(details).toMatchObject({
+      releaseDate: null,
+      releaseDatePrecision: "TBD",
     });
   });
 

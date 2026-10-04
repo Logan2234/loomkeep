@@ -11,6 +11,7 @@ function entry(overrides: Partial<CalendarEntryDto> = {}): CalendarEntryDto {
       canonicalSource: "TMDB",
       sourceId: "12345",
     },
+    game: null,
     entryId: "entry-1",
     episodeAlertsMuted: false,
     episodesBehind: 0,
@@ -56,9 +57,32 @@ describe("buildCalendarIcs", () => {
     expect(ics).toContain("DESCRIPTION:Cold Harbor");
   });
 
+  it("spans the whole month for a game dated to one", () => {
+    const ics = buildCalendarIcs([
+      entry({
+        mediaItem: null,
+        game: {
+          id: "game-1",
+          title: "Kingdom Hearts IV",
+          coverUrl: null,
+          canonicalSource: "IGDB",
+          sourceId: "113112",
+        },
+        seasonNumber: null,
+        episodeNumber: null,
+        releasePrecision: "MONTH",
+        airDate: "2026-11-01T00:00:00.000Z",
+      }),
+    ]);
+    expect(ics).toContain("UID:game-1-game@loomkeep.app");
+    expect(ics).toContain("DTSTART;VALUE=DATE:20261101");
+    expect(ics).toContain("DTEND;VALUE=DATE:20261201");
+    expect(ics).toContain("SUMMARY:Kingdom Hearts IV");
+  });
+
   it("escapes commas, semicolons and backslashes in text fields", () => {
     const ics = buildCalendarIcs([
-      entry({ mediaItem: { ...entry().mediaItem, title: "Foo; Bar, Baz\\" } }),
+      entry({ mediaItem: { ...entry().mediaItem!, title: "Foo; Bar, Baz\\" } }),
     ]);
     expect(ics).toContain("SUMMARY:Foo\\; Bar\\, Baz\\\\ S02E03");
   });

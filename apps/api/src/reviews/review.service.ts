@@ -22,6 +22,7 @@ import { assertMovieReleased } from "../catalog/movie-release.util";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { resolveWorkHref } from "../common/work-href.util";
+import { assertGameReleased } from "../games/game-release.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import {
   ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,
@@ -323,6 +324,8 @@ export class ReviewService {
   ): Promise<ReviewDto> {
     if (targetType === ReviewTargetType.MEDIA)
       await assertMovieReleased(this.prisma, targetId);
+    if (targetType === ReviewTargetType.GAME)
+      await assertGameReleased(this.prisma, targetId);
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: { defaultReviewVisibility: true },
@@ -791,6 +794,8 @@ export class ReviewService {
   ): Promise<void> {
     if (rating !== null && targetType === ReviewTargetType.MEDIA)
       await assertMovieReleased(this.prisma, targetId);
+    if (rating !== null && targetType === ReviewTargetType.GAME)
+      await assertGameReleased(this.prisma, targetId);
 
     if (rating === null) {
       // Looked up before the delete so revokeBySource still has the id to

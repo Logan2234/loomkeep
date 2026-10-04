@@ -30,6 +30,7 @@ function upcoming(
       canonicalSource: "TMDB",
       sourceId: `src-${entryId}`,
     },
+    game: null,
     entryId,
     episodeAlertsMuted: false,
     episodesBehind: 0,
@@ -104,6 +105,50 @@ describe("calendar page", () => {
       }),
     ).toBeTruthy();
   });
+  it("lists a game dated to a month and opts into its reminder on the game entry", async () => {
+    const gamePatches: { id: string; body: unknown }[] = [];
+    server.use(
+      http.patch(apiUrl("/games/entries/:id"), async ({ request, params }) => {
+        gamePatches.push({ id: String(params.id), body: await request.json() });
+        return HttpResponse.json({});
+      }),
+    );
+    serveCalendar([
+      upcoming("game-1", "Kingdom Hearts IV", 0, 1, {
+        mediaItem: null,
+        game: {
+          id: "g1",
+          title: "Kingdom Hearts IV",
+          coverUrl: null,
+          canonicalSource: "IGDB",
+          sourceId: "113112",
+        },
+        seasonNumber: null,
+        episodeNumber: null,
+        episodeAlertsMuted: true,
+        releasePrecision: "MONTH",
+      }),
+    ]);
+    renderWithQuery(CalendarPage, {});
+
+    const button = await screen.findByRole("button", {
+      name: m.media_movie_reminder_enable(),
+    });
+    expect(screen.getByText(m.calendar_game_this_month())).toBeTruthy();
+    expect(
+      screen
+        .getByRole("link", { name: /Kingdom Hearts IV/ })
+        .getAttribute("href"),
+    ).toBe("/app/games/113112");
+    await userEvent.setup().click(button);
+    await waitFor(() =>
+      expect(gamePatches).toEqual([
+        { id: "game-1", body: { releaseAlertsEnabled: true } },
+      ]),
+    );
+    expect(patched).toEqual([]);
+  });
+
   it("mutes the whole series from any one of its episodes", async () => {
     renderWithQuery(CalendarPage, {});
     const user = userEvent.setup();

@@ -35,4 +35,5 @@ export class GameEntryResponseDto implements GameEntryDto {
   playthroughs!: GamePlaythroughResponseDto[];
   ownershipStatus!: GameOwnershipStatus;
   ownershipSource!: string | null;
+  releaseAlertsEnabled!: boolean;
 }

@@ -18,6 +18,7 @@ function entry(
       canonicalSource: "TMDB",
       sourceId: "1",
     },
+    game: null,
     entryId: "e1",
     episodeAlertsMuted: false,
     episodesBehind: 0,
@@ -65,7 +66,7 @@ describe("groupByDay", () => {
 describe("matchesFilter", () => {
   const series = entry(at(1));
   const anime = entry(at(1), {
-    mediaItem: { ...series.mediaItem, type: "ANIME" },
+    mediaItem: { ...series.mediaItem!, type: "ANIME" },
   });
   const muted = entry(at(1), { episodeAlertsMuted: true });
 

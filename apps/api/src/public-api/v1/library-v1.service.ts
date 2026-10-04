@@ -243,7 +243,9 @@ export class LibraryV1Service {
     const episodes = (await this.media.getCalendar(userId))
       .filter((episode) => new Date(episode.airDate) < end)
       .flatMap((episode) =>
-        episode.seasonNumber === null || episode.episodeNumber === null
+        episode.seasonNumber === null ||
+        episode.episodeNumber === null ||
+        !episode.mediaItem
           ? []
           : [
               {

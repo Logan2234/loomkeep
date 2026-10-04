@@ -27,6 +27,7 @@ function makeService({
       ),
     },
     episode: { findMany: vi.fn().mockResolvedValue([]) },
+    gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
     notification: {
       createMany: vi.fn().mockResolvedValue({ count: 1 }),
     },

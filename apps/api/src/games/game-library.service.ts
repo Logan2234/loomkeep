@@ -12,6 +12,7 @@ import type {
 import {
   Domain,
   DORMANT_AFTER_DAYS,
+  GameOwnershipStatus,
   GameStatus,
   ReviewTargetType,
   TrackingCycleStatus,
@@ -20,8 +21,6 @@ import {
 import { Injectable } from "@nestjs/common";
 import type {
   GameStatus as DbGameStatus,
-  GameExternalId,
-  GameItem,
   GamePlaythrough,
   Prisma,
 } from "@prisma/client";
@@ -47,7 +46,6 @@ import {
   searchTerm,
   titleContains,
 } from "../common/entry-lifecycle.util";
-import { canonicalExternalId } from "../common/external-id.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
@@ -68,7 +66,9 @@ import { filterAdultContent } from "../users/age.util";
 import type { BulkUpdateGameEntriesBody } from "./dto/bulk-update-game-entries.dto";
 import { UpdateGameEntryDto } from "./dto/update-game-entry.dto";
 import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
+import { toGameItemDto } from "./game-item.mapper";
 import { GameItemService } from "./game-item.service";
+import { assertGameReleased, isGameItemUpcoming } from "./game-release.util";
 
 // Entries always need the game + its external IDs (canonical sourceId), plus
 // its playthrough history, most recent first.
@@ -222,6 +222,13 @@ export class GameLibraryService {
       dto.source,
       dto.sourceId,
     );
+
+    if (
+      (dto.status !== undefined && dto.status !== GameStatus.BACKLOG) ||
+      (dto.rating !== null && dto.rating !== undefined)
+    ) {
+      await assertGameReleased(this.prisma, gameItem.id);
+    }
 
     const before = await this.prisma.gameEntry.findUnique({
       where: { userId_gameItemId: { userId, gameItemId: gameItem.id } },
@@ -430,10 +437,24 @@ export class GameLibraryService {
         favorite: true,
         ownershipStatus: true,
         ownershipSource: true,
+        gameItem: {
+          select: { releaseDate: true, releaseDatePrecision: true },
+        },
       },
     });
-    return applyBulkUpdate(
-      entries.map((e) => ({ ...e, itemId: e.gameItemId })),
+    // An unreleased game in the selection is passed over, not the whole
+    // batch failed on it.
+    const waitsForRelease =
+      (dto.status !== undefined && dto.status !== GameStatus.BACKLOG) ||
+      (dto.ownershipStatus !== undefined &&
+        dto.ownershipStatus !== GameOwnershipStatus.NONE);
+    const held = waitsForRelease
+      ? entries.filter((e) => isGameItemUpcoming(e.gameItem))
+      : [];
+    const result = await applyBulkUpdate(
+      entries
+        .filter((e) => !held.includes(e))
+        .map((e) => ({ ...e, itemId: e.gameItemId })),
       dto,
       {
         update: (id, patch) =>
@@ -442,6 +463,7 @@ export class GameLibraryService {
           addToList(this.lists, userId, dto.listId!, "GAME", itemId),
       },
     );
+    return { ...result, skipped: result.skipped + held.length };
   }
 
   /** Removes every targeted entry, each through deleteEntry. */
@@ -526,7 +548,20 @@ export class GameLibraryService {
     entryId: string,
     dto: UpdateGameEntryDto,
   ): Promise<GameEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
+    const owned = await this.assertEntryOwnership(userId, entryId);
+
+    if (
+      (dto.status !== undefined && dto.status !== GameStatus.BACKLOG) ||
+      (dto.rating !== null && dto.rating !== undefined) ||
+      !!dto.playtimeMinutes ||
+      !!dto.startedAt ||
+      !!dto.finishedAt ||
+      (dto.ownershipStatus !== undefined &&
+        dto.ownershipStatus !== GameOwnershipStatus.NONE) ||
+      !!dto.ownershipSource
+    ) {
+      await assertGameReleased(this.prisma, owned.gameItemId);
+    }
 
     const before = await this.prisma.gameEntry.findUnique({
       where: { id: entryId },
@@ -555,6 +590,12 @@ export class GameLibraryService {
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,
+        releaseReminderAt:
+          dto.releaseAlertsEnabled === undefined
+            ? undefined
+            : dto.releaseAlertsEnabled
+              ? (owned.releaseReminderAt ?? new Date())
+              : null,
       },
       include: ENTRY_INCLUDE,
     });
@@ -783,18 +824,6 @@ export class GameLibraryService {
   }
 }
 
-function toGameItemDto(
-  game: GameItem & { externalIds: GameExternalId[] },
-): GameItemDto {
-  return {
-    id: game.id,
-    title: game.title,
-    coverUrl: game.coverUrl,
-    canonicalSource: game.canonicalSource,
-    sourceId: canonicalExternalId(game, game.externalIds),
-  };
-}
-
 function toEntryDto(entry: EntryWithGame, rating: number | null): GameEntryDto {
   return {
     id: entry.id,
@@ -814,6 +843,7 @@ function toEntryDto(entry: EntryWithGame, rating: number | null): GameEntryDto {
     playthroughs: entry.playthroughs.map(toPlaythroughDto),
     ownershipStatus: entry.ownershipStatus,
     ownershipSource: entry.ownershipSource,
+    releaseAlertsEnabled: entry.releaseReminderAt !== null,
   };
 }
 

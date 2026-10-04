@@ -4,13 +4,20 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import {
+    calendarCode,
+    calendarDayIso,
+    calendarHref,
+    calendarItemId,
+    calendarPoster,
+    calendarTitle,
+  } from "$lib/calendar-entry";
   import { formatDate } from "$lib/format";
   import { HOME_WIDGETS } from "$lib/home/widgets";
   import { bodyOf, rowsLayout, type BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
   import type { CalendarEntryDto } from "@loomkeep/shared";
   import WidgetShell from "../WidgetShell.svelte";
-  import { epCode, mediaHref } from "./media";
 
   let { size }: { size: BoxSize } = $props();
 
@@ -34,10 +41,7 @@
   // A tall widget reaches past this week, where a weekday alone would be
   // ambiguous.
   function dayShort(entry: CalendarEntryDto): string {
-    const iso =
-      entry.mediaItem.type === "MOVIE"
-        ? `${entry.airDate.slice(0, 10)}T00:00:00`
-        : entry.airDate;
+    const iso = calendarDayIso(entry);
     const day = new Date(iso);
     day.setHours(0, 0, 0, 0);
     const today = new Date();
@@ -47,13 +51,7 @@
     if (diff === 1) return m.common_tomorrow();
     return formatDate(iso, diff < 7 ? WEEKDAY_SHORT : DAY_MONTH);
   }
-  function releaseLabel(entry: CalendarEntryDto): string {
-    const { seasonNumber, episodeNumber } = entry;
-    return seasonNumber === null || episodeNumber === null
-      ? `${entry.releaseType === "cinema" ? m.media_release_cinema() : m.media_release_digital()} · ${entry.releaseRegion}`
-      : epCode({ seasonNumber, episodeNumber });
-  }
-  const keyOf = (e: CalendarEntryDto) => e.mediaItem.id + releaseLabel(e);
+  const keyOf = (e: CalendarEntryDto) => calendarItemId(e) + calendarCode(e);
 </script>
 
 <WidgetShell
@@ -81,19 +79,16 @@
       {#each shown as e (keyOf(e))}
         <li class="border-border border-b last:border-b-0">
           <a
-            href={mediaHref(e.mediaItem)}
+            href={calendarHref(e)}
             class="flex h-full min-h-14 items-center gap-3">
             <div class="w-8 shrink-0 overflow-hidden rounded-md">
-              <Poster
-                src={e.mediaItem.posterUrl}
-                title={e.mediaItem.title}
-                alt="" />
+              <Poster src={calendarPoster(e)} title={calendarTitle(e)} alt="" />
             </div>
             <div class="min-w-0 flex-1">
               <p class="font-display truncate text-sm font-semibold">
-                {e.mediaItem.title}
+                {calendarTitle(e)}
               </p>
-              <p class="timecode text-xs">{releaseLabel(e)}</p>
+              <p class="timecode text-xs">{calendarCode(e)}</p>
             </div>
             <span
               class="border-accent/40 text-accent timecode shrink-0 rounded-md border px-1.5 py-0.5 text-[0.65rem]">

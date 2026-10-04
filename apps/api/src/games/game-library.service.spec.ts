@@ -38,6 +38,7 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
     finishedAt: overrides.finishedAt ?? null,
     ownershipStatus: "NONE",
     ownershipSource: null,
+    releaseReminderAt: overrides.releaseReminderAt ?? null,
     createdAt: overrides.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
     updatedAt: new Date("2026-01-01T00:00:00.000Z"),
     playthroughs: [],
@@ -153,6 +154,11 @@ describe("GameLibraryService — XP wiring", () => {
         create: vi.fn().mockResolvedValue({ id: "playthrough-1", number: 1 }),
         update: vi.fn().mockResolvedValue({ id: "playthrough-1", number: 1 }),
       },
+      gameItem: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ releaseDate: null, releaseDatePrecision: null }),
+      },
     } as unknown as PrismaService;
     const xp = stubXp();
     const events = stubEvents();
@@ -188,6 +194,84 @@ describe("GameLibraryService — XP wiring", () => {
       "user-1",
       "onboarding-updated",
     );
+  });
+});
+
+describe("GameLibraryService — unreleased games", () => {
+  const unreleased = {
+    releaseDate: new Date("2099-03-01T00:00:00.000Z"),
+    releaseDatePrecision: "MONTH",
+  };
+
+  function makeService(gameItem = unreleased) {
+    const update = vi.fn().mockResolvedValue(makeRow());
+    const prisma = {
+      gameEntry: {
+        findUnique: vi.fn().mockResolvedValue(makeRow()),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { ...makeRow(), gameItemId: "game-1", gameItem },
+          ]),
+        update,
+      },
+      gameItem: { findUnique: vi.fn().mockResolvedValue(gameItem) },
+      gamePlaythrough: { findFirst: vi.fn().mockResolvedValue(null) },
+    } as unknown as PrismaService;
+    const service = new GameLibraryService(
+      prisma,
+      {} as GameItemService,
+      {} as AgeGateService,
+      {
+        getRating: vi.fn().mockResolvedValue(null),
+      } as unknown as import("../reviews/review.service").ReviewService,
+      {
+        emit: vi.fn(),
+      } as unknown as import("../social/activity.service").ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+    return { service, update };
+  }
+
+  it("refuses to start a game before its release", async () => {
+    const { service, update } = makeService();
+
+    await expect(
+      service.updateEntry("user-1", "entry-1", { status: "PLAYING" }),
+    ).rejects.toMatchObject({ code: "library.game_not_released" });
+    await expect(
+      service.updateEntry("user-1", "entry-1", { ownershipStatus: "DIGITAL" }),
+    ).rejects.toMatchObject({ code: "library.game_not_released" });
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("lets its player ask to be told of the release", async () => {
+    const { service, update } = makeService();
+
+    await service.updateEntry("user-1", "entry-1", {
+      releaseAlertsEnabled: true,
+    });
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ releaseReminderAt: expect.any(Date) }),
+      }),
+    );
+  });
+
+  it("passes over an unreleased game in a bulk status change", async () => {
+    const { service, update } = makeService();
+
+    const result = await service.bulkUpdate("user-1", {
+      ids: ["entry-1"],
+      status: "COMPLETED",
+    });
+
+    expect(result).toEqual({ updated: 0, skipped: 1 });
+    expect(update).not.toHaveBeenCalled();
   });
 });
 
