@@ -1,6 +1,11 @@
 import type { CalendarEntryDto } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
-import { groupByDay, matchesFilter, WEEK_DAYS } from "./calendar-days";
+import {
+  calendarBand,
+  groupByDay,
+  matchesFilter,
+  WEEK_DAYS,
+} from "./calendar-days";
 
 // Local noon, far from midnight so no timezone pushes it to another day.
 const NOW = new Date(2026, 8, 27, 12, 0, 0);
@@ -60,6 +65,15 @@ describe("groupByDay", () => {
 
     expect(days).toHaveLength(WEEK_DAYS + 1);
     expect(days.at(-1)).toMatchObject({ offset: 9, items: [later] });
+  });
+});
+
+describe("calendarBand", () => {
+  it("calls only the seven days after the strip next week", () => {
+    expect(calendarBand(6)).toBe("week");
+    expect(calendarBand(7)).toBe("nextWeek");
+    expect(calendarBand(13)).toBe("nextWeek");
+    expect(calendarBand(46)).toBe("later");
   });
 });
 

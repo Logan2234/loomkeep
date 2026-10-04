@@ -36,6 +36,7 @@
   import {
     type CalendarDay,
     type CalendarFilter,
+    calendarBand,
     groupByDay,
     matchesFilter,
     WEEK_DAYS,
@@ -274,9 +275,19 @@
                 {day.date.getDate()}
               </span>
               <span class="text-dim font-mono text-[0.6rem] sm:text-xs">
-                {day.items.length > 0
-                  ? m.calendar_strip_count({ count: day.items.length })
-                  : "—"}
+                {#if day.items.length > 0}
+                  <!-- A phone's tile only has room for the number. -->
+                  <span class="sm:hidden">{day.items.length}</span>
+                  <span class="hidden sm:inline">
+                    {day.items.length === 1
+                      ? m.calendar_strip_count_one()
+                      : m.calendar_strip_count_many({
+                          count: day.items.length,
+                        })}
+                  </span>
+                {:else}
+                  —
+                {/if}
               </span>
             </a>
           {/each}
@@ -284,10 +295,13 @@
 
         <div class="flex flex-col gap-6 md:gap-3">
           {#each days as day, i (day.key)}
-            {#if day.offset >= WEEK_DAYS && (i === 0 || days[i - 1].offset < WEEK_DAYS)}
+            {@const band = calendarBand(day.offset)}
+            {#if band !== "week" && (i === 0 || calendarBand(days[i - 1].offset) !== band)}
               <div class="flex items-center gap-3 pt-3">
                 <span class="timecode text-xs tracking-widest uppercase">
-                  {m.calendar_next_week()}
+                  {band === "nextWeek"
+                    ? m.calendar_next_week()
+                    : m.calendar_later()}
                 </span>
                 <div class="bg-border h-px flex-1"></div>
               </div>
@@ -298,7 +312,8 @@
               class="scroll-mt-6 md:grid md:grid-cols-[8rem_minmax(0,1fr)] md:gap-6 md:py-2">
               <div
                 class="border-border mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-2 md:mb-0 md:flex-col md:gap-0.5 md:border-0 md:pt-2 md:pb-0">
-                {#if day.offset === 0 && day.items.length > 0}
+                <!-- "Tonight" is when episodes air; a film or a game is out all day. -->
+                {#if day.offset === 0 && day.items.some((e) => !isReleaseReminder(e))}
                   <span
                     class="bg-accent text-accent-fg self-center rounded px-2 py-0.5 font-mono text-xs font-bold tracking-wider uppercase md:mb-1.5 md:self-start">
                     {m.calendar_tonight()}

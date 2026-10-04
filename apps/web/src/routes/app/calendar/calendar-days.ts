@@ -37,6 +37,15 @@ export interface CalendarDay {
 /** Days shown even when empty, so the first week reads as a continuous run. */
 export const WEEK_DAYS = 7;
 
+/**
+ * Which stretch a day falls in: the strip's seven days, the seven after them,
+ * or anything later — a release a month off isn't "next week".
+ */
+export function calendarBand(offset: number): "week" | "nextWeek" | "later" {
+  if (offset < WEEK_DAYS) return "week";
+  return offset < 2 * WEEK_DAYS ? "nextWeek" : "later";
+}
+
 const DAY_MS = 86_400_000;
 
 function startOfDay(date: Date): Date {

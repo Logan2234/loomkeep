@@ -42,8 +42,9 @@
   const plannedMoviesQuery = createApiQuery(() => ({
     key: keys.library.plannedMovies(),
     fetch: () =>
-      listLibrary({ statuses: ["PLANNED"], types: ["MOVIE"] }).then(
-        (r) => r.items,
+      listLibrary({ statuses: ["PLANNED"], types: ["MOVIE"] }).then((r) =>
+        // A film still to come can't be watched yet.
+        r.items.filter((e) => !e.mediaItem.upcoming),
       ),
     enabled: !!auth.user && wantsMovies,
   }));

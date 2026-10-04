@@ -255,7 +255,8 @@ export const MAIL_COPY = {
         "Utilise ton code personnel pour confirmer ta nouvelle adresse.",
       mfaEmailCode: "Utilise ton code personnel pour terminer ta connexion.",
       newsletter: "Découvre les dernières nouveautés de Loomkeep.",
-      episodeDigest: "Retrouve les nouvelles sorties des séries que tu suis.",
+      episodeDigest:
+        "Retrouve les nouvelles sorties de ce que tu suis : épisodes, films et jeux.",
       quotaAlert: "Un fournisseur approche de sa limite quotidienne d’appels.",
       jobAlert: "Consulte l’état d’une tâche planifiée de ton instance.",
       reportsDigest: "Des signalements attendent une décision de modération.",
@@ -587,7 +588,8 @@ export const MAIL_COPY = {
         "Use your personal code to confirm your new email address.",
       mfaEmailCode: "Use your personal code to complete your sign-in.",
       newsletter: "Discover the latest Loomkeep news.",
-      episodeDigest: "Catch up on new releases from the series you follow.",
+      episodeDigest:
+        "Catch up on new releases of what you follow: episodes, movies and games.",
       quotaAlert: "A provider is approaching its daily request limit.",
       jobAlert: "Check the status of a scheduled task on your instance.",
       reportsDigest: "Reports are awaiting a moderation decision.",
@@ -917,7 +919,8 @@ export const MAIL_COPY = {
         "Usa il tuo codice personale per confermare il nuovo indirizzo email.",
       mfaEmailCode: "Usa il tuo codice personale per completare l’accesso.",
       newsletter: "Scopri le ultime novità di Loomkeep.",
-      episodeDigest: "Scopri le nuove uscite delle serie che segui.",
+      episodeDigest:
+        "Scopri le nuove uscite di ciò che segui: episodi, film e giochi.",
       quotaAlert:
         "Un fornitore si sta avvicinando al limite giornaliero di richieste.",
       jobAlert:

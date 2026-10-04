@@ -18,7 +18,11 @@
 
   const plannedQuery = createApiQuery(() => ({
     key: keys.home.tonightPick(),
-    fetch: () => listLibrary({ statuses: ["PLANNED"] }).then((r) => r.items),
+    fetch: () =>
+      listLibrary({ statuses: ["PLANNED"] }).then((r) =>
+        // Nothing still to come can be watched tonight.
+        r.items.filter((e) => !e.mediaItem.upcoming),
+      ),
     enabled: !!auth.user,
   }));
 
