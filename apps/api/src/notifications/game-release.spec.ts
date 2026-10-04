@@ -77,10 +77,7 @@ describe("NotificationService · game releases", () => {
 
   it("stays quiet for a release dated before the reminder was set", async () => {
     const { service, prisma } = makeService([
-      tracked(
-        "DAY",
-        new Date(`${today}T00:00:00.000Z`.replace(today, "2999-01-01")),
-      ),
+      tracked("DAY", new Date("2999-01-01T00:00:00.000Z")),
     ]);
 
     await service.scanAll();
