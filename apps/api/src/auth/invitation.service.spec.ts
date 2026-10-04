@@ -361,7 +361,7 @@ describe("InvitationService.list filters", () => {
       const { service, prisma } = makeService();
       (prisma.invitation.findMany as Mock).mockResolvedValue([]);
       await service.list(
-        { skip: 50, take: 50, limit: 50 },
+        { page: 2, skip: 50, take: 50, limit: 50 },
         { query: " Club ", status },
       );
       const args = (prisma.invitation.findMany as Mock).mock.calls[0][0];

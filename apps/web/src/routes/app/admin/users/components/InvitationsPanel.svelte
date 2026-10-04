@@ -62,20 +62,6 @@
   function resetFilters() {
     filter({ invitationQ: null, invitationStatus: null });
   }
-  const activeFilters = $derived([
-    ...(query
-      ? [{ label: query, remove: () => filter({ invitationQ: null }) }]
-      : []),
-    ...(activeStatus && activeStatus in STATUS
-      ? [
-          {
-            label: STATUS[activeStatus as AdminInvitationStatus].label(),
-            remove: () => filter({ invitationStatus: null }),
-          },
-        ]
-      : []),
-  ]);
-
   const invitationsQuery = createApiInfiniteQuery<
     PagedResult<AdminInvitationDto>,
     number,
@@ -133,6 +119,20 @@
       dot: "bg-surface-2 text-dim",
     },
   };
+
+  const activeFilters = $derived([
+    ...(query
+      ? [{ label: query, remove: () => filter({ invitationQ: null }) }]
+      : []),
+    ...(activeStatus && activeStatus in STATUS
+      ? [
+          {
+            label: STATUS[activeStatus as AdminInvitationStatus].label(),
+            remove: () => filter({ invitationStatus: null }),
+          },
+        ]
+      : []),
+  ]);
 
   function dateLine(invitation: AdminInvitationDto): string | null {
     if (invitation.status === "revoked" && invitation.revokedAt) {

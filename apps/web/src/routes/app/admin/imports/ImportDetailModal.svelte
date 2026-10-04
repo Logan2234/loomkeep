@@ -19,7 +19,7 @@
   }));
   const run = $derived(query.data);
   type ItemState = "selected" | "ignored" | "unresolved";
-  let state = $state<ItemState>("selected");
+  let activeState = $state<ItemState>("selected");
   let visible = $state(100);
   const labels = {
     selected: m.admin_imports_selected,
@@ -34,10 +34,10 @@
     })),
   );
   const items = $derived(
-    run?.details?.items.filter((item) => item.state === state) ?? [],
+    run?.details?.items.filter((item) => item.state === activeState) ?? [],
   );
   function selectState(next: ItemState) {
-    state = next;
+    activeState = next;
     visible = 100;
   }
 </script>
@@ -108,11 +108,11 @@
       <Tabs
         class="my-3"
         {tabs}
-        current={state}
+        current={activeState}
         onSelect={selectState}
         label={m.common_status()}
         idPrefix="admin-import-detail" />
-      <TabPanels current={state} idPrefix="admin-import-detail">
+      <TabPanels current={activeState} idPrefix="admin-import-detail">
         <ul class="divide-border divide-y text-sm">
           {#each items.slice(0, visible) as item, i (i)}<li
               class="py-2 break-words">
