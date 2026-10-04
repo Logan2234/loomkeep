@@ -1,5 +1,5 @@
 import { type Mock, vi } from "vitest";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
+import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { MailService } from "../mail/mail.service";
@@ -480,7 +480,7 @@ describe("ReportService.list — target resolution", () => {
         ]),
       },
     });
-    const page = await svc.list(undefined, 1);
+    const page = await svc.list(undefined, parsePageQuery("1", "20", 20));
     expect(page.items[0].target?.targetOwnerUsername).toBe("troll");
     expect(page.items[0].target?.label).toContain("3/10");
     expect(page.items[0].target?.label).toContain("fake review");
@@ -520,7 +520,7 @@ describe("ReportService.list — target resolution", () => {
           .mockResolvedValue([reviewRow("rev1"), reviewRow("rev2")]),
       },
     });
-    const page = await svc.list(undefined, 1);
+    const page = await svc.list(undefined, parsePageQuery("1", "20", 20));
     expect(prisma.review.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.review.findUnique).not.toHaveBeenCalled();
     expect(page.items.map((i) => i.target?.label)).toEqual(["5/10", "5/10"]);
@@ -555,7 +555,7 @@ describe("ReportService.list — target resolution", () => {
         ]),
       },
     });
-    const page = await svc.list(undefined, 1);
+    const page = await svc.list(undefined, parsePageQuery("1", "20", 20));
     expect(page.items[0].target?.label).toContain("auteur supprimé");
     expect(page.items[0].target?.targetOwnerUsername).toBeNull();
   });
@@ -591,7 +591,7 @@ describe("ReportService.list — target resolution", () => {
         }),
       },
     });
-    const page = await svc.list(undefined, 1);
+    const page = await svc.list(undefined, parsePageQuery("1", "20", 20));
     expect(page.items[0].target?.targetOwnerUsername).toBe("spammer");
     expect(page.items[0].target?.label).toContain("this is spam");
   });
@@ -627,7 +627,7 @@ describe("ReportService.list — target resolution", () => {
         }),
       },
     });
-    const page = await svc.list(undefined, 1);
+    const page = await svc.list(undefined, parsePageQuery("1", "20", 20));
     expect(page.items[0].target?.label).toContain("commentaire supprimé");
   });
 });
@@ -776,7 +776,7 @@ describe("ReportService.resolve", () => {
 describe("ReportService.list — reporterId filter", () => {
   it("adds reporterId to the where clause when provided", async () => {
     const { svc, prisma } = make();
-    await svc.list("PENDING", 1, "reporter1");
+    await svc.list("PENDING", parsePageQuery("1", "20", 20), "reporter1");
     expect(prisma.report.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { status: "PENDING", reporterId: "reporter1" },
@@ -786,7 +786,7 @@ describe("ReportService.list — reporterId filter", () => {
 
   it("omits reporterId from the where clause when not provided", async () => {
     const { svc, prisma } = make();
-    await svc.list("PENDING", 1);
+    await svc.list("PENDING", parsePageQuery("1", "20", 20));
     expect(prisma.report.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { status: "PENDING" } }),
     );

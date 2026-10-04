@@ -5,6 +5,7 @@ import type {
 } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import type { MusicItem } from "@prisma/client";
+import { isCatalogFresh } from "../common/catalog-sync.util";
 import { PrismaService } from "../prisma/prisma.service";
 import type {
   MusicCatalogProvider,
@@ -13,7 +14,6 @@ import type {
 import { MusicBrainzProvider } from "./providers/musicbrainz.provider";
 
 // A cached album referenced by users is refreshed at most once a day.
-const SYNC_TTL_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class MusicItemService {
@@ -70,10 +70,7 @@ export class MusicItemService {
       include: { musicItem: true },
     });
 
-    if (
-      existingRef &&
-      Date.now() - existingRef.musicItem.lastSyncedAt.getTime() < SYNC_TTL_MS
-    ) {
+    if (existingRef && isCatalogFresh(existingRef.musicItem.lastSyncedAt)) {
       return existingRef.musicItem;
     }
 

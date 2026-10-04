@@ -18,7 +18,10 @@ import { type Notification, Prisma } from "@prisma/client";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { AppException } from "../common/app.exception";
 import { sinceDaysAgo, utcDateKey } from "../common/date.util";
-import { canonicalExternalId } from "../common/external-id.util";
+import {
+  CANONICAL_EXTERNAL_ID_SELECT,
+  canonicalExternalId,
+} from "../common/external-id.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
@@ -147,8 +150,7 @@ export class NotificationService {
               select: {
                 title: true,
                 type: true,
-                canonicalSource: true,
-                externalIds: { select: { source: true, externalId: true } },
+                ...CANONICAL_EXTERNAL_ID_SELECT,
               },
             },
           },

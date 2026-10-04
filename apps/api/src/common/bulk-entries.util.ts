@@ -84,13 +84,14 @@ export function applyBulkUpdate(
   dto: BulkUpdateEntriesDto,
   ops: {
     update: (id: string, patch: BulkEntryPatch) => Promise<unknown>;
-    addToList: (itemId: string) => Promise<boolean>;
+    addToList: (itemId: string, listId: string) => Promise<boolean>;
     /** Replaces the plain status write (media derives its status from viewings). */
     setStatus?: (entry: BulkEntryRow, status: string) => Promise<boolean>;
   },
 ): Promise<BulkEntriesResultDto> {
   return applyToEntries(entries, async (entry) => {
-    if (dto.listId !== undefined) return ops.addToList(entry.itemId);
+    if (dto.listId !== undefined)
+      return ops.addToList(entry.itemId, dto.listId);
 
     if (dto.status !== undefined) {
       if (entry.status === dto.status) return false;

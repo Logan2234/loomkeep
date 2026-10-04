@@ -356,8 +356,8 @@ export class MusicLibraryService {
       {
         update: (id, patch) =>
           this.updateEntry(userId, id, patch as UpdateMusicEntryDto),
-        addToList: (itemId) =>
-          addToList(this.lists, userId, dto.listId!, "MUSIC", itemId),
+        addToList: (itemId, listId) =>
+          addToList(this.lists, userId, listId, "MUSIC", itemId),
       },
     );
   }

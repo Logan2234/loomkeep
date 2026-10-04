@@ -91,9 +91,8 @@ export class AdminReportsController {
       STATUSES.includes(status as ReportStatus)
         ? (status as "PENDING" | "RESOLVED" | "DISMISSED")
         : undefined,
-      parsed.page,
+      parsed,
       reporterId,
-      parsed.limit,
     );
   }
 

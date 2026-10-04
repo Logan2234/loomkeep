@@ -1,13 +1,13 @@
-import type {
-  ActivityEventDto,
-  ConnectionDto,
-  FollowRequestDto,
-  PagedResult,
-  RelationshipDto,
-  SocialProfileDto,
-  UserSummaryDto,
+import {
+  type ActivityEventDto,
+  type ConnectionDto,
+  type FollowRequestDto,
+  type PagedResult,
+  type RelationshipDto,
+  type SocialProfileDto,
+  type UserSummaryDto,
+  Domain,
 } from "@loomkeep/shared";
-import { Domain } from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -67,8 +67,7 @@ export class SocialController {
     const parsed = parsePageQuery(page, limit, FEED_PAGE_SIZE);
     return this.activity.homeFeed(
       user.sub,
-      parsed.page,
-      parsed.limit,
+      parsed,
       domain
         ? parseEnumParam(domain, Object.values(Domain), "domain")
         : undefined,
@@ -91,12 +90,7 @@ export class SocialController {
     // A locked (private, unfollowed) profile exposes no activity.
     if (!target) return { items: [], hasMore: false };
     const parsed = parsePageQuery(page, limit, FEED_PAGE_SIZE);
-    return this.activity.profileTimeline(
-      user.sub,
-      target,
-      parsed.page,
-      parsed.limit,
-    );
+    return this.activity.profileTimeline(user.sub, target, parsed);
   }
 
   @Get("requests")
@@ -114,7 +108,7 @@ export class SocialController {
     @Query("limit") limit?: string,
   ): Promise<PagedResult<UserSummaryDto>> {
     const parsed = parsePageQuery(page, limit, DEFAULT_PAGE_SIZE);
-    return this.follow.listBlocked(user.sub, parsed.page, parsed.limit);
+    return this.follow.listBlocked(user.sub, parsed);
   }
 
   @Post("requests/:id/accept")

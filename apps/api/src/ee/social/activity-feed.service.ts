@@ -131,8 +131,12 @@ export class ActivityFeedService {
     const timeline = await this.activity.profileTimeline(
       user.id,
       { id: user.id, profileAccess: user.profileAccess },
-      1,
-      ACTIVITY_FEED_MAX_ENTRIES,
+      {
+        page: 1,
+        limit: ACTIVITY_FEED_MAX_ENTRIES,
+        skip: 0,
+        take: ACTIVITY_FEED_MAX_ENTRIES,
+      },
     );
 
     const webOrigin = primaryWebOrigin(this.config.get<string>("WEB_ORIGIN"));

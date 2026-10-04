@@ -105,8 +105,11 @@ export class AdvancedStatsService implements AdvancedStatsSource {
     }
 
     const sortedByRuntime = completedMovies
-      .filter((m) => m.runtimeMin !== null && m.runtimeMin > 0)
-      .sort((a, b) => b.runtimeMin! - a.runtimeMin!);
+      .filter(
+        (m): m is typeof m & { runtimeMin: number } =>
+          m.runtimeMin !== null && m.runtimeMin > 0,
+      )
+      .sort((a, b) => b.runtimeMin - a.runtimeMin);
     const longest = sortedByRuntime[0];
     const shortest = sortedByRuntime[sortedByRuntime.length - 1];
 
@@ -114,14 +117,14 @@ export class AdvancedStatsService implements AdvancedStatsSource {
       longestFilm: longest
         ? {
             title: longest.title,
-            minutes: longest.runtimeMin!,
+            minutes: longest.runtimeMin,
             href: longest.href,
           }
         : null,
       shortestFilm: shortest
         ? {
             title: shortest.title,
-            minutes: shortest.runtimeMin!,
+            minutes: shortest.runtimeMin,
             href: shortest.href,
           }
         : null,
@@ -192,10 +195,11 @@ export class AdvancedStatsService implements AdvancedStatsSource {
     if (!this.license.isActive()) return null;
 
     const readWithPages = entries.filter(
-      (e) => e.status === "READ" && e.pageCount !== null && e.pageCount > 0,
+      (e): e is typeof e & { pageCount: number } =>
+        e.status === "READ" && e.pageCount !== null && e.pageCount > 0,
     );
     const sortedByPages = [...readWithPages].sort(
-      (a, b) => b.pageCount! - a.pageCount!,
+      (a, b) => b.pageCount - a.pageCount,
     );
     const longest = sortedByPages[0];
     const shortest = sortedByPages[sortedByPages.length - 1];
@@ -206,7 +210,7 @@ export class AdvancedStatsService implements AdvancedStatsSource {
       for (const author of e.authors) {
         pagesByAuthor.set(
           author,
-          (pagesByAuthor.get(author) ?? 0) + e.pageCount!,
+          (pagesByAuthor.get(author) ?? 0) + e.pageCount,
         );
       }
     }
@@ -215,14 +219,14 @@ export class AdvancedStatsService implements AdvancedStatsSource {
       longestBook: longest
         ? {
             title: longest.title,
-            pages: longest.pageCount!,
+            pages: longest.pageCount,
             href: longest.href,
           }
         : null,
       shortestBook: shortest
         ? {
             title: shortest.title,
-            pages: shortest.pageCount!,
+            pages: shortest.pageCount,
             href: shortest.href,
           }
         : null,

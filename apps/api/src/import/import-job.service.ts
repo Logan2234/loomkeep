@@ -25,6 +25,7 @@ import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
+import { toPagedResult, type ParsedPage } from "../common/pagination.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
@@ -172,14 +173,14 @@ export class ImportJobService {
 
   async getHistory(
     userId: string,
-    page: number,
-    limit: number,
+    page: ParsedPage,
   ): Promise<PagedResult<ImportHistoryRunDto>> {
+    const { skip, take, limit } = page;
     const rows = await this.prisma.importRun.findMany({
       where: { userId },
       orderBy: { finishedAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
       select: {
         id: true,
         sourceId: true,
@@ -192,11 +193,11 @@ export class ImportJobService {
         finishedAt: true,
       },
     });
-    const hasMore = rows.length > limit;
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
 
     return {
       hasMore,
-      items: rows.slice(0, limit).map((run) => ({
+      items: pageRows.map((run) => ({
         id: run.id,
         sourceId: run.sourceId as ImportSource,
         domain: run.domain as Domain | null,

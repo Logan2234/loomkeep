@@ -94,13 +94,7 @@ export class CommentController {
     @Query("limit") limit?: string,
   ): Promise<PagedResult<CommentDto>> {
     const parsed = parsePageQuery(page, limit, COMMENT_PAGE_SIZE);
-    return this.comments.list(
-      user.sub,
-      parseTarget(type),
-      id,
-      parsed.page,
-      parsed.limit,
-    );
+    return this.comments.list(user.sub, parseTarget(type), id, parsed);
   }
 
   /**
@@ -122,7 +116,7 @@ export class CommentController {
     @Query("limit") limit?: string,
   ): Promise<PagedResult<CommentDto>> {
     const parsed = parsePageQuery(page, limit, COMMENT_PAGE_SIZE);
-    return this.comments.listReplies(user.sub, id, parsed.page, parsed.limit);
+    return this.comments.listReplies(user.sub, id, parsed);
   }
 
   // Anti-flood: comments (unlike reviews) have no per-target cap, so without a

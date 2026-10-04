@@ -43,7 +43,11 @@ import { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
-import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
+import {
+  DEFAULT_PAGE_SIZE,
+  parsePageQuery,
+  toPagedResult,
+} from "../common/pagination.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { GamificationFeatureGuard } from "../gamification/gamification-feature.guard";
 import { XpService } from "../gamification/xp.service";
@@ -203,8 +207,7 @@ export class AdminUsersController {
         },
       },
     });
-    const hasMore = rows.length > pageLimit;
-    const users = rows.slice(0, pageLimit);
+    const { items: users, hasMore } = toPagedResult(rows, pageLimit);
 
     // Same batched pattern — most accounts have no row yet (defaults to
     // FREE, see EntitlementService), so this is a lookup, not a per-user query.
@@ -267,10 +270,7 @@ export class AdminUsersController {
       skip: parsed.skip,
       take: parsed.take + 1,
     });
-    return {
-      items: rows.slice(0, parsed.limit),
-      hasMore: rows.length > parsed.limit,
-    };
+    return toPagedResult(rows, parsed.limit);
   }
 
   /**

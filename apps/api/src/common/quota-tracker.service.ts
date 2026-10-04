@@ -21,8 +21,14 @@ export const PROVIDER_DAILY_QUOTAS = {
 /** Shares of a daily quota that raise an alert, each at most once a day. */
 const QUOTA_ALERT_THRESHOLDS = [0.8, 1] as const;
 
+type QuotaProvider = keyof typeof PROVIDER_DAILY_QUOTAS;
+
+function isQuotaProvider(provider: string): provider is QuotaProvider {
+  return Object.hasOwn(PROVIDER_DAILY_QUOTAS, provider);
+}
+
 export interface QuotaThresholdReached {
-  provider: string;
+  provider: QuotaProvider;
   count: number;
   limit: number;
   /** Which alert threshold was just reached: 0.8 or 1. */
@@ -63,16 +69,17 @@ export class QuotaTrackerService {
         create: { provider, day, count: 1 },
         select: { count: true },
       })
-      .then(({ count }) => this.checkThresholds(provider, count))
+      .then(({ count }) => {
+        if (isQuotaProvider(provider)) this.checkThresholds(provider, count);
+      })
       .catch(() => {});
   }
 
   // Each counter value comes back from exactly one atomic increment, so
   // comparing for equality raises each threshold once per provider per day,
   // even under concurrent calls — and tomorrow's counter starts over.
-  private checkThresholds(provider: string, count: number): void {
-    const limit = (PROVIDER_DAILY_QUOTAS as Record<string, number>)[provider];
-    if (limit === undefined) return;
+  private checkThresholds(provider: QuotaProvider, count: number): void {
+    const limit = PROVIDER_DAILY_QUOTAS[provider];
 
     for (const threshold of QUOTA_ALERT_THRESHOLDS) {
       if (count !== Math.ceil(limit * threshold)) continue;

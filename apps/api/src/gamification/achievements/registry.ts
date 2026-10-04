@@ -192,7 +192,9 @@ async function movieWatchTimestamps(
   ]);
 
   return [
-    ...movieFirstWatches.map((w) => w.finishedAt!),
+    ...movieFirstWatches
+      .map((w) => w.finishedAt)
+      .filter((date): date is Date => date !== null),
     ...movieReplays.map((w) => w.finishedAt),
   ];
 }
@@ -483,7 +485,9 @@ export async function checkNewYearFinish(
     }),
   ]);
 
-  const dates = [...media, ...games, ...books].map((r) => r.finishedAt!);
+  const dates = [...media, ...games, ...books]
+    .map((r) => r.finishedAt)
+    .filter((date): date is Date => date !== null);
   const unlocked = dates.some((d) => {
     const day = localDay(user.timezone, d);
     return day !== null && day.endsWith("-01-01");

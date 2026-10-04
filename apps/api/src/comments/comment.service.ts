@@ -1,4 +1,9 @@
 import {
+  COMMENT_REACTION_NOTIFY_THRESHOLD,
+  ErrorCode,
+  NotificationType,
+  ProfileAccess,
+  XpReason,
   type AdminUserCommentDto,
   type CommentDto,
   type CommentEmote,
@@ -7,17 +12,17 @@ import {
   type CommentReactionSummaryDto,
   type CommentTargetType,
   type PagedResult,
-  COMMENT_REACTION_NOTIFY_THRESHOLD,
-  ErrorCode,
-  NotificationType,
-  ProfileAccess,
-  XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
+import {
+  DEFAULT_PAGE_SIZE,
+  parsePageQuery,
+  toPagedResult,
+  type ParsedPage,
+} from "../common/pagination.util";
 import { resolveWorkHref, workTargetExists } from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
@@ -128,17 +133,17 @@ export class CommentService {
     viewerId: string,
     targetType: CommentTargetType,
     targetId: string,
-    page = 1,
-    limit = DEFAULT_PAGE_SIZE,
+    page: ParsedPage = parsePageQuery(undefined, undefined, DEFAULT_PAGE_SIZE),
   ): Promise<PagedResult<CommentDto>> {
+    const { skip, take, limit } = page;
     const rows = (await this.prisma.comment.findMany({
       where: { targetType, targetId, parentId: null },
       // Newest first (YouTube-style) — a fresh comment is visible right away
       // instead of requiring "load more" clicks through the whole history.
       // Replies stay oldest-first (conversation order) — see below.
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
       include: {
         author: { select: AUTHOR_SELECT },
         mentions: { select: MENTION_SELECT },
@@ -158,8 +163,7 @@ export class CommentService {
       },
     })) as CommentRow[];
 
-    const hasMore = rows.length > limit;
-    const pageRows = rows.slice(0, limit);
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
     const visible = await this.filterBlocked(viewerId, pageRows);
 
     const previewRows = visible.flatMap((c) => c.replies ?? []);
@@ -200,22 +204,22 @@ export class CommentService {
   async listReplies(
     viewerId: string,
     parentId: string,
-    page = 1,
-    limit = DEFAULT_PAGE_SIZE,
+    page: ParsedPage = parsePageQuery(undefined, undefined, DEFAULT_PAGE_SIZE),
   ): Promise<PagedResult<CommentDto>> {
+    const { skip, take, limit } = page;
     const rows = (await this.prisma.comment.findMany({
       where: { parentId, deletedAt: null },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
       include: {
         author: { select: AUTHOR_SELECT },
         mentions: { select: MENTION_SELECT },
       },
     })) as CommentRow[];
 
-    const hasMore = rows.length > limit;
-    const visible = await this.filterBlocked(viewerId, rows.slice(0, limit));
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
+    const visible = await this.filterBlocked(viewerId, pageRows);
     const toDtoWithMask = await this.dtoMapper(viewerId, visible);
 
     return { items: await Promise.all(visible.map(toDtoWithMask)), hasMore };
@@ -245,8 +249,11 @@ export class CommentService {
     // comment on withXp).
     const hideProgressionByUser = new Map(
       rows
-        .filter((c) => c.author)
-        .map((c) => [c.author!.id, c.author!.hideProgression]),
+        .filter(
+          (c): c is typeof c & { author: NonNullable<typeof c.author> } =>
+            !!c.author,
+        )
+        .map((c) => [c.author.id, c.author.hideProgression]),
     );
 
     return (row) =>
@@ -987,8 +994,15 @@ export class CommentService {
     });
     const byId = new Map(
       candidates
-        .filter((candidate) => candidate.authorId && candidate.author)
-        .map((candidate) => [candidate.authorId!, candidate.author!]),
+        .filter(
+          (
+            candidate,
+          ): candidate is typeof candidate & {
+            authorId: string;
+            author: NonNullable<typeof candidate.author>;
+          } => !!candidate.authorId && !!candidate.author,
+        )
+        .map((candidate) => [candidate.authorId, candidate.author]),
     );
     const resolved: CommentMentionInputDto[] = [];
 

@@ -17,7 +17,11 @@ import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
+import {
+  DEFAULT_PAGE_SIZE,
+  toPagedResult,
+  type ParsedPage,
+} from "../common/pagination.util";
 import { resolveWorkHref } from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -261,23 +265,23 @@ export class ReportService {
 
   async list(
     status: "PENDING" | "RESOLVED" | "DISMISSED" | undefined,
-    page: number,
+    page: ParsedPage,
     reporterId?: string,
-    limit = DEFAULT_PAGE_SIZE,
   ): Promise<PagedResult<ReportDto>> {
+    const { skip, take, limit } = page;
     const rows = await this.prisma.report.findMany({
       where: {
         ...(status ? { status } : {}),
         ...(reporterId ? { reporterId } : {}),
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
       include: { reporter: { select: REPORTER_SELECT } },
     });
-    const hasMore = rows.length > limit;
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
 
-    return { items: await this.toDtos(rows.slice(0, limit)), hasMore };
+    return { items: await this.toDtos(pageRows), hasMore };
   }
 
   async resolve(

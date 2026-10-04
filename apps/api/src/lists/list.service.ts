@@ -17,8 +17,12 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
+import assert from "node:assert/strict";
 import { AppException } from "../common/app.exception";
-import { canonicalExternalId } from "../common/external-id.util";
+import {
+  CANONICAL_EXTERNAL_ID_SELECT,
+  canonicalExternalId,
+} from "../common/external-id.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_LIST_CREATED } from "../gamification/achievements/registry";
@@ -277,12 +281,16 @@ export class ListService {
     const authorById = new Map(authorIds.map((id, i) => [id, authors[i]]));
     const previews = await this.buildPreviews(rows);
 
-    return rows.map((r) => ({
-      ...this.toDto(r, authorById.get(r.userId)!),
-      itemCount: r._count.items,
-      previewImageUrls: previews.get(r.id) ?? [],
-      role: r.userId === userId ? ("OWNER" as const) : ("EDITOR" as const),
-    }));
+    return rows.map((r) => {
+      const author = authorById.get(r.userId);
+      assert(author, "Every list owner must have a resolved author");
+      return {
+        ...this.toDto(r, author),
+        itemCount: r._count.items,
+        previewImageUrls: previews.get(r.id) ?? [],
+        role: r.userId === userId ? ("OWNER" as const) : ("EDITOR" as const),
+      };
+    });
   }
 
   /**
@@ -392,13 +400,18 @@ export class ListService {
           ),
         ),
       );
-      visibleEditor = editorRows.filter((r) =>
-        resolveOwnVisibility(
+      visibleEditor = editorRows.filter((r) => {
+        const relation = ownerRelations.get(r.userId);
+        assert(
+          relation,
+          "Every editor list owner must have a resolved relation",
+        );
+        return resolveOwnVisibility(
           r.visibility as ListVisibility,
           r.user.profileAccess,
-          ownerRelations.get(r.userId)!,
-        ),
-      );
+          relation,
+        );
+      });
     }
 
     const rows = [...visibleOwn, ...visibleEditor].sort(
@@ -412,12 +425,16 @@ export class ListService {
     ]);
     const authorById = new Map(authorIds.map((id, i) => [id, authors[i]]));
 
-    return rows.map((r) => ({
-      ...this.toDto(r, authorById.get(r.userId)!),
-      itemCount: r._count.items,
-      previewImageUrls: previews.get(r.id) ?? [],
-      role: r.userId === user.id ? ("OWNER" as const) : ("EDITOR" as const),
-    }));
+    return rows.map((r) => {
+      const author = authorById.get(r.userId);
+      assert(author, "Every list owner must have a resolved author");
+      return {
+        ...this.toDto(r, author),
+        itemCount: r._count.items,
+        previewImageUrls: previews.get(r.id) ?? [],
+        role: r.userId === user.id ? ("OWNER" as const) : ("EDITOR" as const),
+      };
+    });
   }
 
   /** Which of the user's editable lists already contain this target, keyed by list id. */
@@ -985,10 +1002,6 @@ export class ListService {
     }
 
     const map = new Map<string, ReviewTargetSummaryDto>();
-    const canonicalExternalIdInclude = {
-      canonicalSource: true,
-      externalIds: { select: { source: true, externalId: true } },
-    } as const;
 
     const add = (
       type: string,
@@ -1018,7 +1031,7 @@ export class ListService {
           title: true,
           posterUrl: true,
           type: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -1045,7 +1058,7 @@ export class ListService {
           id: true,
           title: true,
           coverUrl: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -1068,7 +1081,7 @@ export class ListService {
           id: true,
           title: true,
           coverUrl: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -1091,7 +1104,7 @@ export class ListService {
           id: true,
           title: true,
           coverUrl: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
