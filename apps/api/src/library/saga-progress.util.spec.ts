@@ -30,7 +30,7 @@ describe("sagaProgress", () => {
     ]);
 
     expect(result).toMatchObject({ state: "inProgress", seen: 1, released: 3 });
-    expect(result.state !== "none" && result.next.sourceId).toBe("2");
+    expect(result.state !== "none" && result.next?.sourceId).toBe("2");
   });
 
   it("waits on the announced sequel once everything released is seen or dropped", () => {
@@ -41,7 +41,7 @@ describe("sagaProgress", () => {
     ]);
 
     expect(result).toMatchObject({ state: "waiting", seen: 1, released: 2 });
-    expect(result.state !== "none" && result.next.sourceId).toBe("3");
+    expect(result.state !== "none" && result.next?.sourceId).toBe("3");
   });
 
   it("finishes a saga once everything is seen or dropped and nothing is announced", () => {
