@@ -1183,6 +1183,7 @@
   "notif_api_key_expiring_title": "Chiave API in scadenza",
   "notif_api_key_expiring_body": "La tua chiave «{name}» scade tra meno di una settimana.",
   "notif_import_finished_title": "Importazione {source} completata",
+  "notif_saga_sequel_body": "Nuovo seguito annunciato · {saga}",
   "notif_import_failed_title": "Importazione {source} interrotta",
   "notif_import_finished_body": "Il risultato ti aspetta nelle impostazioni.",
   "notif_import_failed_body": "Non è riuscita ad arrivare in fondo. I dettagli sono nelle impostazioni.",

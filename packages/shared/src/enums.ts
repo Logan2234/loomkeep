@@ -105,6 +105,11 @@ export const NotificationType = {
   API_KEY_EXPIRING: "API_KEY_EXPIRING",
   /** An import finished while its owner wasn't in the app. `data.source`, `data.failed`. */
   IMPORT_FINISHED: "IMPORT_FINISHED",
+  /**
+   * A new work joined a saga you finished part of. `data.sagaKey`,
+   * `data.sagaTitle`.
+   */
+  SAGA_SEQUEL_ANNOUNCED: "SAGA_SEQUEL_ANNOUNCED",
   /** Someone joined the instance through your invitation. */
   INVITATION_ACCEPTED: "INVITATION_ACCEPTED",
   /** Your review crossed the upvote notification threshold. `data.count`. */

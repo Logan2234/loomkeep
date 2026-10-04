@@ -1183,6 +1183,7 @@
   "notif_api_key_expiring_title": "API key expiring soon",
   "notif_api_key_expiring_body": "Your key \"{name}\" expires in less than a week.",
   "notif_import_finished_title": "{source} import finished",
+  "notif_saga_sequel_body": "New sequel announced · {saga}",
   "notif_import_failed_title": "{source} import stopped",
   "notif_import_finished_body": "The result is waiting in your settings.",
   "notif_import_failed_body": "It couldn't finish. The details are in your settings.",

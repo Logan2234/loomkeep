@@ -20,6 +20,7 @@ import { canonicalExternalId } from "../common/external-id.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
+import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { isSuspended } from "../users/suspension.util";
 import { type NotificationCopy, notificationCopy } from "./notification-copy";
@@ -69,6 +70,7 @@ export class NotificationService {
     private readonly jobRuns: JobRunService,
     private readonly events: EventsGateway,
     private readonly push: PushService,
+    private readonly mail: MailService,
   ) {}
 
   /**
@@ -116,7 +118,8 @@ export class NotificationService {
    * want the narrow query.
    */
   private async runScanAll(): Promise<number> {
-    const moviesCreated = await this.scanMovies();
+    const moviesCreated =
+      (await this.scanMovies()) + (await this.scanSagaSequels());
     const now = new Date();
     const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000);
 
@@ -253,6 +256,101 @@ export class NotificationService {
     );
 
     return rows.length + moviesCreated;
+  }
+
+  /**
+   * Works the refresh job saw join a saga already saved (see SagaSyncService):
+   * tells everyone who finished part of that saga, unless they already track
+   * the new work. Each announcement goes out once.
+   */
+  private async scanSagaSequels(): Promise<number> {
+    const announced = await this.prisma.sagaMember.findMany({
+      where: { announcedAt: { not: null }, notifiedAt: null },
+      include: { saga: { select: { title: true } } },
+    });
+    let created = 0;
+
+    for (const work of announced) {
+      // An 18+ work would need each recipient's age gate: left unannounced.
+      const recipients = work.isAdult
+        ? []
+        : await this.prisma.libraryEntry.findMany({
+            where: {
+              finishedAt: { not: null },
+              status: { not: "DROPPED" },
+              mediaItem: { sagaKey: work.sagaKey },
+              user: {
+                enabledDomains: { has: "MEDIA" },
+                entries: {
+                  none: {
+                    mediaItem: {
+                      externalIds: {
+                        some: {
+                          source: work.source,
+                          type: work.type,
+                          externalId: work.sourceId,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            distinct: ["userId"],
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  locale: true,
+                  alertPrefs: true,
+                  suspendedUntil: true,
+                },
+              },
+            },
+          });
+      const url = `/app/media/${work.type.toLowerCase()}/${work.sourceId}`;
+
+      for (const { user } of recipients) {
+        await this.create({
+          userId: user.id,
+          type: NotificationType.SAGA_SEQUEL_ANNOUNCED,
+          title: work.title,
+          body: notificationCopy(user.locale).sagaSequel(work.saga.title),
+          url,
+          dedupeKey: `saga-sequel:${work.sagaKey}:${work.sourceId}`,
+          data: { sagaKey: work.sagaKey, sagaTitle: work.saga.title },
+        });
+        created++;
+
+        if (
+          !isSuspended(user) &&
+          isAlertEnabled(
+            user.alertPrefs as AlertPrefs,
+            NotificationType.SAGA_SEQUEL_ANNOUNCED,
+            "email",
+          )
+        ) {
+          try {
+            await this.mail.sendSagaSequel(
+              user,
+              work.title,
+              work.saga.title,
+              url,
+            );
+          } catch (err) {
+            this.logger.error(`Sequel email failed for ${user.id}`, err);
+          }
+        }
+      }
+
+      await this.prisma.sagaMember.update({
+        where: { id: work.id },
+        data: { notifiedAt: new Date() },
+      });
+    }
+
+    return created;
   }
 
   private async scanMovies(userId?: string): Promise<number> {

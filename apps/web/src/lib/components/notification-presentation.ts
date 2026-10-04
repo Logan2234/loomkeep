@@ -123,6 +123,14 @@ export function notificationText(n: NotificationDto): {
           };
     }
 
+    case NotificationType.SAGA_SEQUEL_ANNOUNCED:
+      return {
+        title: n.title,
+        body: m.notif_saga_sequel_body({
+          saga: typeof n.data.sagaTitle === "string" ? n.data.sagaTitle : "",
+        }),
+      };
+
     case NotificationType.INVITATION_ACCEPTED:
       return { title: n.title, body: m.notif_invitation_accepted_body() };
 

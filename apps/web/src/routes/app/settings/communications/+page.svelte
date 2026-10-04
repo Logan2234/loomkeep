@@ -191,6 +191,16 @@
           ]),
         },
         {
+          label: m.settings_alert_group_releases(),
+          alerts: [
+            {
+              key: "SAGA_SEQUEL_ANNOUNCED",
+              label: m.settings_alert_saga_sequel(),
+              hint: m.settings_alert_saga_sequel_hint(),
+            },
+          ],
+        },
+        {
           label: m.settings_alert_group_account(),
           alerts: [
             {

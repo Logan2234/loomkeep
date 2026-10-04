@@ -139,6 +139,13 @@ export interface MailCopy {
     hint: string;
     button: string;
   };
+  sagaSequel: {
+    subject: (title: string) => string;
+    heading: string;
+    intro: (title: string, saga: string) => string;
+    hint: string;
+    button: string;
+  };
   apiKeyLeaked: {
     subject: (name: string) => string;
     heading: string;
@@ -255,6 +262,7 @@ export const MAIL_COPY = {
       newDeviceLogin:
         "Un nouvel appareil s’est connecté. Vérifie cette activité.",
       apiKeyExpiring: "Renouvelle ta clé API avant son expiration.",
+      sagaSequel: "Une suite vient d’être annoncée dans une saga que tu suis.",
       apiKeyCreated: "Une nouvelle clé API a été créée sur ton compte.",
       apiKeyLeaked: "Une clé API exposée publiquement a été révoquée.",
       securityAlert:
@@ -426,6 +434,14 @@ export const MAIL_COPY = {
       hint: "Si tu t'en sers encore, crée une nouvelle clé et remplace-la dans tes outils. Sinon, tu n'as rien à faire.",
       button: "Gérer mes clés API",
     },
+    sagaSequel: {
+      subject: (title) => `Nouvelle suite annoncée : ${title}`,
+      heading: "Une suite est annoncée",
+      intro: (title, saga) =>
+        `« ${title} » vient de rejoindre la saga ${saga}, dont tu as déjà vu une partie.`,
+      hint: "Ajoute-la à ta bibliothèque pour la retrouver le moment venu.",
+      button: "Voir la fiche",
+    },
     apiKeyLeaked: {
       subject: (name) => `Ta clé API « ${name} » a été révoquée`,
       heading: "Clé API trouvée en public",
@@ -577,6 +593,7 @@ export const MAIL_COPY = {
       reportsDigest: "Reports are awaiting a moderation decision.",
       newDeviceLogin: "A new device signed in. Check this activity.",
       apiKeyExpiring: "Renew your API key before it expires.",
+      sagaSequel: "A sequel was just announced in a saga you follow.",
       apiKeyCreated: "A new API key was created on your account.",
       apiKeyLeaked: "A publicly exposed API key has been revoked.",
       securityAlert:
@@ -746,6 +763,14 @@ export const MAIL_COPY = {
       hint: "If you still use it, create a new key and swap it in your tools. Otherwise, there's nothing to do.",
       button: "Manage my API keys",
     },
+    sagaSequel: {
+      subject: (title) => `New sequel announced: ${title}`,
+      heading: "A sequel is announced",
+      intro: (title, saga) =>
+        `"${title}" just joined the ${saga} saga, part of which you've already watched.`,
+      hint: "Add it to your library to find it when the time comes.",
+      button: "Open its page",
+    },
     apiKeyLeaked: {
       subject: (name) => `Your API key "${name}" was revoked`,
       heading: "API key found in public",
@@ -902,6 +927,7 @@ export const MAIL_COPY = {
       newDeviceLogin:
         "Un nuovo dispositivo ha effettuato l’accesso. Verifica questa attività.",
       apiKeyExpiring: "Rinnova la tua chiave API prima della scadenza.",
+      sagaSequel: "È appena stato annunciato un seguito di una saga che segui.",
       apiKeyCreated: "È stata creata una nuova chiave API sul tuo account.",
       apiKeyLeaked: "Una chiave API esposta pubblicamente è stata revocata.",
       securityAlert:
@@ -1071,6 +1097,14 @@ export const MAIL_COPY = {
         `La tua chiave API «${name}» scade il ${date}. Dopo quella data, gli strumenti che la usano non avranno più accesso al tuo account.`,
       hint: "Se la usi ancora, crea una nuova chiave e sostituiscila nei tuoi strumenti. Altrimenti non devi fare nulla.",
       button: "Gestisci le mie chiavi API",
+    },
+    sagaSequel: {
+      subject: (title) => `Nuovo seguito annunciato: ${title}`,
+      heading: "È stato annunciato un seguito",
+      intro: (title, saga) =>
+        `«${title}» si è appena aggiunto alla saga ${saga}, di cui hai già visto una parte.`,
+      hint: "Aggiungilo alla tua libreria per ritrovarlo al momento giusto.",
+      button: "Apri la scheda",
     },
     apiKeyLeaked: {
       subject: (name) => `La tua chiave API «${name}» è stata revocata`,
