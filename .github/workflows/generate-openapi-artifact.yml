@@ -1,6 +1,6 @@
 name: Generate OpenAPI artifact
 
-# Reusable workflow, called from ci.yml. Runs the prisma
+# Reusable workflow, called from ci.yml and docs.yml. Runs the prisma
 # generate + API build + generate:openapi chain once (Prisma connects on
 # module init, hence Postgres) and uploads apps/api/openapi.json (plus
 # openapi-v1.json, the public API alone, for docs.yml) as an
