@@ -36,6 +36,10 @@ export const keys = {
       ["books", "sessions", entryId, page] as const,
   },
   games: {
+    // Keyed on whether the game is tracked: tracking it ties it to its series.
+    saga: (sourceId: string, tracked: boolean) =>
+      ["games", "saga", sourceId, tracked] as const,
+    sagas: (filters: object) => ["games", "sagas", filters] as const,
     playing: (sort: string) => ["games", "playing", sort] as const,
     detail: (source: string, sourceId: string) =>
       ["games", "detail", source, sourceId] as const,

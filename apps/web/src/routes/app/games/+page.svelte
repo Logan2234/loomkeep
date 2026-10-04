@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { getGamesPile, listGames } from "$lib/api/client";
   import {
     bulkDeleteGameEntries,
@@ -11,7 +12,12 @@
   } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
+  import SagasModeSwitch, {
+    sagasMode,
+  } from "$lib/components/saga/SagasModeSwitch.svelte";
   import GameSearchPanel from "$lib/components/search/GameSearchPanel.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
+  import GameSagasView from "./components/GameSagasView.svelte";
   import {
     GAME_OWNERSHIP_SOURCES,
     GAME_OWNERSHIP_STATUS_OPTIONS,
@@ -162,49 +168,62 @@
       favorite: params.favoritesOnly,
       statuses: params.statuses,
     });
+
+  const mode = $derived(sagasMode(page.url));
 </script>
 
-<LibraryBrowser
-  icon="gamepad"
-  title={m.common_Games()}
-  subtitle={(n) =>
-    n === 1
-      ? m.game_library_count_one({ count: n })
-      : m.game_library_count_many({ count: n })}
-  noun="jeu"
-  domain={Domain.GAMES}
-  {load}
-  {loadPile}
-  keyOf={(e) => e.id}
-  statusOptions={STATUS_OPTIONS}
-  sorts={SORTS}
-  defaultSort="added"
-  {itemView}
-  columns={COLUMNS}
-  bulk={BULK}
-  {setFavorite}>
-  {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
-    <GameSearchPanel {query} limit={10} {onResults} />
-  {/snippet}
-  {#snippet card(
-    entry: GameEntryDto,
-    onToggleFavorite: (next: boolean) => void,
-  )}
-    <PosterCard
-      href={`/app/games/${entry.game.sourceId}`}
-      src={entry.game.coverUrl}
-      title={entry.game.title}
-      favorite={entry.favorite}
-      {onToggleFavorite}>
-      {#snippet meta()}
-        <span class="timecode text-xs">
-          {entry.game.upcoming
-            ? m.media_upcoming()
-            : GAME_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
-            · ★ {entry.rating}{/if}{#if isSessionPaused(entry, "PLAYING")}
-            {m.media_paused_suffix()}{/if}
-        </span>
-      {/snippet}
-    </PosterCard>
-  {/snippet}
-</LibraryBrowser>
+{#snippet modeSwitch()}
+  <SagasModeSwitch isNew={isFeatureNew("game-sagas")} />
+{/snippet}
+
+{#if mode === "sagas"}
+  <GameSagasView {modeSwitch} />
+{:else}
+  <LibraryBrowser
+    icon="gamepad"
+    title={m.common_Games()}
+    subtitle={(n) =>
+      n === 1
+        ? m.game_library_count_one({ count: n })
+        : m.game_library_count_many({ count: n })}
+    noun="jeu"
+    domain={Domain.GAMES}
+    {load}
+    {loadPile}
+    keyOf={(e) => e.id}
+    statusOptions={STATUS_OPTIONS}
+    sorts={SORTS}
+    defaultSort="added"
+    {itemView}
+    columns={COLUMNS}
+    bulk={BULK}
+    {setFavorite}>
+    {#snippet headerActions()}
+      {@render modeSwitch()}
+    {/snippet}
+    {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
+      <GameSearchPanel {query} limit={10} {onResults} />
+    {/snippet}
+    {#snippet card(
+      entry: GameEntryDto,
+      onToggleFavorite: (next: boolean) => void,
+    )}
+      <PosterCard
+        href={`/app/games/${entry.game.sourceId}`}
+        src={entry.game.coverUrl}
+        title={entry.game.title}
+        favorite={entry.favorite}
+        {onToggleFavorite}>
+        {#snippet meta()}
+          <span class="timecode text-xs">
+            {entry.game.upcoming
+              ? m.media_upcoming()
+              : GAME_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
+              · ★ {entry.rating}{/if}{#if isSessionPaused(entry, "PLAYING")}
+              {m.media_paused_suffix()}{/if}
+          </span>
+        {/snippet}
+      </PosterCard>
+    {/snippet}
+  </LibraryBrowser>
+{/if}

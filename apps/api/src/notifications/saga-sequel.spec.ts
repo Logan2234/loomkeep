@@ -12,9 +12,20 @@ const DUNE_3 = {
   saga: { title: "Dune Collection" },
 };
 
+const WITCHER_4 = {
+  id: "gsm-4",
+  sagaKey: "IGDB:117",
+  sourceId: "194662",
+  title: "The Witcher IV",
+  isAdult: false,
+  saga: { title: "The Witcher" },
+};
+
 function makeService({
   announced = [DUNE_3] as unknown[],
   recipients = [] as unknown[],
+  announcedGames = [] as unknown[],
+  gameRecipients = [] as unknown[],
 } = {}) {
   const prisma = {
     sagaMember: {
@@ -27,7 +38,15 @@ function makeService({
       ),
     },
     episode: { findMany: vi.fn().mockResolvedValue([]) },
-    gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    gameEntry: {
+      findMany: vi.fn((args: { where: Record<string, unknown> }) =>
+        Promise.resolve(args.where.finishedAt ? gameRecipients : []),
+      ),
+    },
+    gameSagaMember: {
+      findMany: vi.fn().mockResolvedValue(announcedGames),
+      update: vi.fn().mockResolvedValue({}),
+    },
     notification: {
       createMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
@@ -124,6 +143,51 @@ describe("NotificationService · sequel announcements", () => {
               externalIds: {
                 some: { source: "TMDB", type: "MOVIE", externalId: "1170608" },
               },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("tells the players who finished a game of the series of a newly announced one", async () => {
+    const { service, prisma, push } = makeService({
+      announced: [],
+      announcedGames: [WITCHER_4],
+      gameRecipients: [fan("u2")],
+    });
+
+    await service.scanAll();
+
+    expect(prisma.notification.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [
+          expect.objectContaining({
+            userId: "u2",
+            type: "SAGA_SEQUEL_ANNOUNCED",
+            title: "The Witcher IV",
+            url: "/app/games/194662",
+            dedupeKey: "saga-sequel:IGDB:117:194662",
+          }),
+        ],
+      }),
+    );
+    expect(push.sendToUser).toHaveBeenCalledOnce();
+    expect(prisma.gameSagaMember.update).toHaveBeenCalledWith({
+      where: { id: "gsm-4" },
+      data: { notifiedAt: expect.any(Date) },
+    });
+    const query = prisma.gameEntry.findMany.mock.calls
+      .map(([args]) => args.where)
+      .find((where) => where.finishedAt);
+    expect(query).toMatchObject({
+      gameItem: { sagaKey: "IGDB:117" },
+      user: {
+        enabledDomains: { has: "GAMES" },
+        gameEntries: {
+          none: {
+            gameItem: {
+              externalIds: { some: { source: "IGDB", externalId: "194662" } },
             },
           },
         },

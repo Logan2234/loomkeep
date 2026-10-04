@@ -721,4 +721,96 @@ describe("IgdbProvider", () => {
     expect(String(url)).not.toContain("client_secret");
     expect(String((init as RequestInit).body)).toContain("client_secret=");
   });
+
+  describe("getSaga", () => {
+    const stamp = (iso: string) => Date.parse(iso) / 1000;
+    const game = (id: number, name: string, date?: string, type = 0) => ({
+      game: {
+        id,
+        name,
+        game_type: type,
+        first_release_date: date ? stamp(date) : undefined,
+        release_dates: date
+          ? [{ date: stamp(date), date_format: 0 }]
+          : [{ date_format: 7 }],
+      },
+    });
+
+    function mockIgdb(collections: Record<number, unknown[]>) {
+      const fn = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const body = String(init?.body ?? "");
+        let payload: unknown = TOKEN_RESPONSE;
+
+        if (url.includes("/collection_memberships")) {
+          const of = /where collection = (\d+)/.exec(body);
+          payload = of
+            ? collections[Number(of[1])]
+            : Object.keys(collections).map((id) => ({
+                collection: { id: Number(id) },
+              }));
+        }
+
+        return Promise.resolve(
+          new Response(JSON.stringify(payload), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      });
+      global.fetch = fn as unknown as typeof fetch;
+      return fn;
+    }
+
+    it("keeps the largest series' main games, in release order, the announced ones last", async () => {
+      mockIgdb({
+        18: [
+          {
+            ...game(2, "Assassin's Creed II", "2009-11-17"),
+            collection: { id: 18, name: "Assassin's Creed" },
+          },
+          game(1, "Assassin's Creed", "2007-11-13"),
+          game(3, "Assassin's Creed Hexe"),
+          // A remaster isn't a game of the series of its own.
+          game(4, "Assassin's Creed II Remastered", "2016-11-15", 9),
+        ],
+        12998: [
+          {
+            ...game(2, "Assassin's Creed II", "2009-11-17"),
+            collection: { id: 12998, name: "Assassin's Creed II" },
+          },
+          game(5, "Assassin's Creed Brotherhood", "2010-11-16"),
+        ],
+      });
+
+      const saga = await provider.getSaga("2");
+
+      expect(saga?.key).toBe("IGDB:18");
+      expect(saga?.title).toBe("Assassin's Creed");
+      expect(
+        saga?.members.map((m) => [
+          m.sourceId,
+          m.upcoming,
+          m.releaseDatePrecision,
+        ]),
+      ).toEqual([
+        ["1", false, "DAY"],
+        ["2", false, "DAY"],
+        ["3", true, "TBD"],
+      ]);
+    });
+
+    it("has no saga for a game that's no main game of a series", async () => {
+      mockIgdb({});
+
+      await expect(provider.getSaga("2")).resolves.toBeNull();
+    });
+
+    it("never queries IGDB with something other than a game id", async () => {
+      const fetch = mockIgdb({});
+
+      await expect(provider.getSaga("1; fields *")).resolves.toBeNull();
+      expect(fetch).not.toHaveBeenCalled();
+    });
+  });
 });

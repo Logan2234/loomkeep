@@ -5,6 +5,7 @@ import type {
   CreateGameSessionDto,
   GameOwnershipStatus,
   GameStatus,
+  LibrarySagaSort,
   UpdateGameEntryDto,
   UpdateGameSessionDto,
   UpsertGameEntryDto,
@@ -108,3 +109,25 @@ export const bulkUpdateGameEntries = (
 
 export const bulkDeleteGameEntries = (body: BulkEntriesTargetDto) =>
   typedRequest("/games/entries/bulk-delete", { method: "POST", body });
+
+/** The series a game is a main game of, each game with the player's status. */
+export const getGameSaga = (sourceId: string) =>
+  typedRequest("/games/{source}/{sourceId}/saga", {
+    params: { source: "igdb", sourceId },
+  });
+
+export interface GameSagaFilters {
+  query?: string;
+  sort?: LibrarySagaSort;
+  order?: "asc" | "desc";
+}
+
+/** The player's series: in progress, waiting on an announced game, finished. */
+export const listGameSagas = (filters: GameSagaFilters = {}) =>
+  typedRequest("/games/sagas", {
+    query: {
+      q: filters.query || undefined,
+      sort: filters.sort,
+      order: filters.order,
+    },
+  });

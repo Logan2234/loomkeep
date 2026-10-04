@@ -4,6 +4,7 @@
     ApiError,
     deleteGameEntry,
     getGameDetail,
+    getGameSaga,
     updateGameEntry,
     upsertGameEntry,
   } from "$lib/api/client";
@@ -57,6 +58,7 @@
   } from "$lib/status-corrections";
   import type { GameEntryDto } from "@loomkeep/shared";
   import { slide } from "svelte/transition";
+  import GameSagaSection from "./components/GameSagaSection.svelte";
   import GameTimeToBeat from "./components/GameTimeToBeat.svelte";
 
   // IGDB is the only game source today; the web route carries just the id.
@@ -98,6 +100,19 @@
   );
 
   const entry = $derived(detail?.entry ?? null);
+
+  // Read here rather than in the saga block: the franchise carousel leaves
+  // out the series' games, which the block already lists.
+  const sagaKey = $derived(keys.games.saga(id, entry !== null));
+  const sagaQuery = createApiQuery(() => ({
+    key: sagaKey,
+    fetch: () => getGameSaga(id).then((r) => r.saga),
+    enabled: !!id,
+    keepPreviousData: true,
+  }));
+  const sagaIds = $derived(
+    new Set(sagaQuery.data?.members.map((x) => x.sourceId)),
+  );
   const upcoming = $derived(!!detail?.upcoming);
   // With no release summary on, the reminder would change nothing.
   const digestOff = $derived(releaseDigestOff());
@@ -483,11 +498,22 @@
           </div>
         {/if}
 
+        {#if sagaQuery.data}
+          <GameSagaSection
+            saga={sagaQuery.data}
+            {sagaKey}
+            sourceId={detail.sourceId}
+            entryStatus={entry?.status ?? null} />
+        {/if}
+
         <RelatedCarousel
           title={detail.franchiseName
             ? m.game_franchise_title({ name: detail.franchiseName })
             : m.game_same_franchise()}
-          items={toCarouselItems(detail.franchiseGames, "/app/games")} />
+          items={toCarouselItems(
+            detail.franchiseGames.filter((g) => !sagaIds.has(g.sourceId)),
+            "/app/games",
+          )} />
 
         <RelatedCarousel
           title={m.media_similar_titles()}

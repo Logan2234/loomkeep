@@ -123,7 +123,8 @@ export class NotificationService {
     const moviesCreated =
       (await this.scanMovies()) +
       (await this.scanGames()) +
-      (await this.scanSagaSequels());
+      (await this.scanSagaSequels()) +
+      (await this.scanGameSagaSequels());
     const now = new Date();
     const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000);
 
@@ -313,40 +314,11 @@ export class NotificationService {
               },
             },
           });
-      const url = `/app/media/${work.type.toLowerCase()}/${work.sourceId}`;
-
-      for (const { user } of recipients) {
-        await this.create({
-          userId: user.id,
-          type: NotificationType.SAGA_SEQUEL_ANNOUNCED,
-          title: work.title,
-          body: notificationCopy(user.locale).sagaSequel(work.saga.title),
-          url,
-          dedupeKey: `saga-sequel:${work.sagaKey}:${work.sourceId}`,
-          data: { sagaKey: work.sagaKey, sagaTitle: work.saga.title },
-        });
-        created++;
-
-        if (
-          !isSuspended(user) &&
-          isAlertEnabled(
-            user.alertPrefs as AlertPrefs,
-            NotificationType.SAGA_SEQUEL_ANNOUNCED,
-            "email",
-          )
-        ) {
-          try {
-            await this.mail.sendSagaSequel(
-              user,
-              work.title,
-              work.saga.title,
-              url,
-            );
-          } catch (err) {
-            this.logger.error(`Sequel email failed for ${user.id}`, err);
-          }
-        }
-      }
+      created += await this.announceSequel(
+        { ...work, sagaTitle: work.saga.title },
+        recipients.map((r) => r.user),
+        `/app/media/${work.type.toLowerCase()}/${work.sourceId}`,
+      );
 
       await this.prisma.sagaMember.update({
         where: { id: work.id },
@@ -355,6 +327,112 @@ export class NotificationService {
     }
 
     return created;
+  }
+
+  /** The same alert for a game announced in a series: its finishers are told. */
+  private async scanGameSagaSequels(): Promise<number> {
+    const announced = await this.prisma.gameSagaMember.findMany({
+      where: { announcedAt: { not: null }, notifiedAt: null },
+      include: { saga: { select: { title: true } } },
+    });
+    let created = 0;
+
+    for (const game of announced) {
+      // An 18+ game would need each recipient's age gate: left unannounced.
+      const recipients = game.isAdult
+        ? []
+        : await this.prisma.gameEntry.findMany({
+            where: {
+              finishedAt: { not: null },
+              status: { not: "DROPPED" },
+              gameItem: { sagaKey: game.sagaKey },
+              user: {
+                enabledDomains: { has: "GAMES" },
+                gameEntries: {
+                  none: {
+                    gameItem: {
+                      externalIds: {
+                        some: { source: "IGDB", externalId: game.sourceId },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            distinct: ["userId"],
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  locale: true,
+                  alertPrefs: true,
+                  suspendedUntil: true,
+                },
+              },
+            },
+          });
+
+      created += await this.announceSequel(
+        { ...game, sagaTitle: game.saga.title },
+        recipients.map((r) => r.user),
+        `/app/games/${game.sourceId}`,
+      );
+
+      await this.prisma.gameSagaMember.update({
+        where: { id: game.id },
+        data: { notifiedAt: new Date() },
+      });
+    }
+
+    return created;
+  }
+
+  /** Rings, pushes and, when switched on, emails each finisher of the saga. */
+  private async announceSequel(
+    work: {
+      title: string;
+      sagaKey: string;
+      sourceId: string;
+      sagaTitle: string;
+    },
+    recipients: {
+      id: string;
+      email: string;
+      locale: string;
+      alertPrefs: unknown;
+      suspendedUntil: Date | null;
+    }[],
+    url: string,
+  ): Promise<number> {
+    for (const user of recipients) {
+      await this.create({
+        userId: user.id,
+        type: NotificationType.SAGA_SEQUEL_ANNOUNCED,
+        title: work.title,
+        body: notificationCopy(user.locale).sagaSequel(work.sagaTitle),
+        url,
+        dedupeKey: `saga-sequel:${work.sagaKey}:${work.sourceId}`,
+        data: { sagaKey: work.sagaKey, sagaTitle: work.sagaTitle },
+      });
+
+      if (
+        !isSuspended(user) &&
+        isAlertEnabled(
+          user.alertPrefs as AlertPrefs,
+          NotificationType.SAGA_SEQUEL_ANNOUNCED,
+          "email",
+        )
+      ) {
+        try {
+          await this.mail.sendSagaSequel(user, work.title, work.sagaTitle, url);
+        } catch (err) {
+          this.logger.error(`Sequel email failed for ${user.id}`, err);
+        }
+      }
+    }
+
+    return recipients.length;
   }
 
   private async scanMovies(userId?: string): Promise<number> {

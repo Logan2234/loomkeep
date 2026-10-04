@@ -4,6 +4,7 @@ const SHIPPED = {
   "movie-releases": "2026-10-03",
   "game-releases": "2026-10-04",
   "book-sagas": "2026-10-04",
+  "game-sagas": "2026-10-04",
   sagas: "2026-10-03",
   "library-sagas": "2026-10-04",
   "notification-digest": "2026-08-25",

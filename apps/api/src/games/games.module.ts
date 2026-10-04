@@ -7,6 +7,7 @@ import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
 import { GameItemService } from "./game-item.service";
 import { GameLibraryService } from "./game-library.service";
+import { GameSagaService } from "./game-saga.service";
 import { GameSessionService } from "./game-session.service";
 import { GamesController } from "./games.controller";
 import { IgdbProvider } from "./providers/igdb.provider";
@@ -26,6 +27,7 @@ import { IgdbProvider } from "./providers/igdb.provider";
   providers: [
     GameItemService,
     GameLibraryService,
+    GameSagaService,
     GameSessionService,
     IgdbProvider,
   ],

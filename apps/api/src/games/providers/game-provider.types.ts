@@ -1,4 +1,5 @@
 import type {
+  GameSagaMemberDto,
   GameSource,
   GameSummaryDto,
   GameTimeToBeatDto,
@@ -42,6 +43,14 @@ export interface ProviderGameDetails {
   multiplayerModes: string[];
   /** Average times to beat; null below the submission threshold. */
   timeToBeat: GameTimeToBeatDto | null;
+}
+
+/** A series kept to its main games, in release order. */
+export interface ProviderGameSaga {
+  /** "IGDB:<collection id>". */
+  key: string;
+  title: string;
+  members: Omit<GameSagaMemberDto, "status">[];
 }
 
 export interface GameCatalogProvider {

@@ -53,6 +53,7 @@ describe("NotificationService.scanAll", () => {
       },
       sagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      gameSagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       libraryEntry: {
         findMany: vi
           .fn()
@@ -206,6 +207,7 @@ describe("NotificationService.scan", () => {
     const prisma = {
       libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      gameSagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       user: {
         findUnique: vi.fn().mockResolvedValue({
           notifyPush,
