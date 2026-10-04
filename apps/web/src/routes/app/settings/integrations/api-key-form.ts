@@ -1,3 +1,4 @@
+import { localDateInput } from "$lib/date";
 import type { ApiKeyDto, ApiKeyResource, ApiKeyScope } from "@loomkeep/shared";
 
 export type ExpirationChoice = "30" | "90" | "365" | "custom" | "never";
@@ -30,8 +31,7 @@ export function expiresAtFor(
 /** The earliest date the custom picker offers: tomorrow, as `YYYY-MM-DD`. */
 export function minCustomDate(now = new Date()): string {
   const tomorrow = new Date(now.getTime() + DAY_MS);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`;
+  return localDateInput(tomorrow);
 }
 
 export type ExpiryState = "never" | "active" | "soon" | "expired";

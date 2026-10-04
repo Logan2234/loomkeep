@@ -31,6 +31,8 @@ const MAX_ATTEMPTS = 3;
  * retries) — the hook a caller uses to count real requests against a
  * provider quota (see QuotaTrackerService), as opposed to counting once per
  * `fetchJson()` call, which would undercount a call retried on 429/5xx.
+ * `beforeAttempt` waits for a provider's throttle before counting a request;
+ * `isRetryable` overrides the default HTTP retry policy for that provider.
  */
 export async function fetchJson<T>(
   url: string | URL,
@@ -40,11 +42,14 @@ export async function fetchJson<T>(
     notFoundMessage?: string;
     maxRetryDelayMs?: number;
     onAttempt?: () => void;
+    beforeAttempt?: () => Promise<void>;
+    isRetryable?: (status: number) => boolean;
   },
 ): Promise<T> {
   let lastStatus = 0;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    if (opts.beforeAttempt) await opts.beforeAttempt();
     opts.onAttempt?.();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -81,7 +86,9 @@ export async function fetchJson<T>(
     if (response.ok) return (await response.json()) as T;
 
     lastStatus = response.status;
-    const transient = response.status === 429 || response.status >= 500;
+    const transient = opts.isRetryable
+      ? opts.isRetryable(response.status)
+      : response.status === 429 || response.status >= 500;
 
     if (transient && attempt < MAX_ATTEMPTS) {
       const delay = retryDelayMs(response.headers.get("Retry-After"), attempt);

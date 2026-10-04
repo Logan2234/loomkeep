@@ -16,26 +16,15 @@
   import { m } from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
   import Icon from "./Icon.svelte";
+  import { readStorage, writeStorage } from "$lib/local-storage";
 
   const DISMISSED_KEY = "news-banner-dismissed";
 
-  function readDismissed(): string | null {
-    try {
-      return localStorage.getItem(DISMISSED_KEY);
-    } catch {
-      return null;
-    }
-  }
-
-  let dismissedId = $state(readDismissed());
+  let dismissedId = $state(readStorage(DISMISSED_KEY));
 
   function dismiss(id: string) {
     dismissedId = id;
-    try {
-      localStorage.setItem(DISMISSED_KEY, id);
-    } catch {
-      // Private browsing: it stays closed until the next page load.
-    }
+    writeStorage(DISMISSED_KEY, id);
   }
 
   // The flag already updates live; this clock does the same for a banner's

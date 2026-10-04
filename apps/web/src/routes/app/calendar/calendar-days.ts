@@ -1,4 +1,5 @@
 import { calendarDayIso } from "$lib/calendar-entry";
+import { localDateInput } from "$lib/date";
 import type { CalendarEntryDto } from "@loomkeep/shared";
 
 export type CalendarFilter =
@@ -54,11 +55,6 @@ function startOfDay(date: Date): Date {
   return d;
 }
 
-function dayKey(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
 /**
  * Buckets the (date-sorted) entries by local day. The next {@link WEEK_DAYS}
  * days are always there, empty or not; later days only when something airs.
@@ -73,12 +69,17 @@ export function groupByDay(
   for (let offset = 0; offset < WEEK_DAYS; offset++) {
     const date = new Date(today);
     date.setDate(today.getDate() + offset);
-    days.set(dayKey(date), { key: dayKey(date), date, offset, items: [] });
+    days.set(localDateInput(date), {
+      key: localDateInput(date),
+      date,
+      offset,
+      items: [],
+    });
   }
 
   for (const entry of entries) {
     const date = startOfDay(new Date(calendarDayIso(entry)));
-    const key = dayKey(date);
+    const key = localDateInput(date);
     let day = days.get(key);
 
     if (!day) {

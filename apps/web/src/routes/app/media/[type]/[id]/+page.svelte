@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { localDateInput } from "$lib/date";
   import { page } from "$app/state";
   import {
     addLibraryReplay,
@@ -251,12 +252,9 @@
     detail ? joinMeta(TYPE_LABELS[detail.type], detail.year) : "",
   );
   const isMovie = $derived(detail?.type === "MOVIE");
-  let today = $state(new Date().toISOString().slice(0, 10));
+  let today = $state(localDateInput());
   $effect(() => {
-    const timer = setInterval(
-      () => (today = new Date().toISOString().slice(0, 10)),
-      60_000,
-    );
+    const timer = setInterval(() => (today = localDateInput()), 60_000);
     return () => clearInterval(timer);
   });
   // Not out yet: an unreleased film or an announced anime. Either can be

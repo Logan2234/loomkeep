@@ -8,6 +8,7 @@ import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { XpService } from "../gamification/xp.service";
 import type { ListService } from "../lists/list.service";
+import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
 import type { ModerationDecisionService } from "../reports/moderation-decision.service";
@@ -15,6 +16,7 @@ import type { ReportService } from "../reports/report.service";
 import type { ReviewService } from "../reviews/review.service";
 import type { SecurityEventService } from "../security/security-event.service";
 import type { FollowService } from "../social/follow.service";
+import { AccountDeletionService } from "../users/account-deletion.service";
 import type { DataExportService } from "../users/data-export.service";
 import { AdminUsersController } from "./admin-users.controller";
 
@@ -38,12 +40,16 @@ function makeController() {
     },
     userEntitlement: { findMany: vi.fn().mockResolvedValue([]) },
     importRun: { updateMany: vi.fn() },
+    securityEvent: { updateMany: vi.fn() },
+    invitation: { updateMany: vi.fn() },
+    notification: { deleteMany: vi.fn() },
     libraryEntry: { count: vi.fn() },
     gameEntry: { count: vi.fn() },
     bookEntry: { count: vi.fn() },
     musicEntry: { count: vi.fn() },
   } as unknown as PrismaService;
   const authService = {
+    revokeAllSessions: vi.fn(),
     resendVerificationEmail: vi.fn(),
     requestPasswordReset: vi.fn(),
   } as unknown as AuthService;
@@ -62,6 +68,7 @@ function makeController() {
   } as unknown as FollowService;
   const reports = { listAgainstUser: vi.fn() } as unknown as ReportService;
   const lists = {
+    reassignOwnedListsOnAccountDeletion: vi.fn(),
     listEditable: vi.fn(),
   } as unknown as ListService;
   const moderationDecisions = {
@@ -71,6 +78,14 @@ function makeController() {
     setPlan: vi.fn().mockResolvedValue({ plan: "PREMIUM" }),
   } as unknown as EntitlementService;
   const xp = { adjust: vi.fn().mockResolvedValue(150) } as unknown as XpService;
+  const mail = { sendAccountDeleted: vi.fn() } as unknown as MailService;
+  const accountDeletion = new AccountDeletionService(
+    prisma,
+    lists,
+    securityEvents,
+    mail,
+    authService,
+  );
 
   const controller = new AdminUsersController(
     prisma,
@@ -85,6 +100,7 @@ function makeController() {
     moderationDecisions,
     entitlements,
     xp,
+    accountDeletion,
   );
   return {
     controller,
@@ -95,6 +111,8 @@ function makeController() {
     moderationDecisions,
     entitlements,
     xp,
+    lists,
+    mail,
   };
 }
 
@@ -457,6 +475,47 @@ describe("AdminUsersController.sendPasswordResetLink", () => {
 });
 
 describe("AdminUsersController.deleteUser", () => {
+  it("revokes sessions, preserves edited lists and purges identifying records after the moderation notice", async () => {
+    const {
+      controller,
+      prisma,
+      authService,
+      lists,
+      mail,
+      moderationDecisions,
+    } = makeController();
+    (prisma.user.findUnique as Mock).mockResolvedValue({
+      id: "user-2",
+      email: "bob@example.com",
+      username: "bob",
+      locale: "en",
+    });
+    const calls: string[] = [];
+    (moderationDecisions.record as Mock).mockImplementation(async () => {
+      calls.push("notice");
+    });
+    (authService.revokeAllSessions as Mock).mockImplementation(async () => {
+      calls.push("revoke");
+    });
+    (prisma.user.delete as Mock).mockImplementation(async () => {
+      calls.push("delete");
+    });
+    await controller.deleteUser("user-2", jwtPayload("user-1"), REASON_BODY);
+    expect(calls).toEqual(["notice", "revoke", "delete"]);
+    expect(lists.reassignOwnedListsOnAccountDeletion).toHaveBeenCalledWith(
+      "user-2",
+    );
+    expect(prisma.securityEvent.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user-2", type: { not: "USER_DELETED" } },
+      data: { detail: null },
+    });
+    expect(prisma.invitation.updateMany).toHaveBeenCalledWith({
+      where: { email: { equals: "bob@example.com", mode: "insensitive" } },
+      data: { email: null },
+    });
+    expect(prisma.notification.deleteMany).toHaveBeenCalled();
+    expect(mail.sendAccountDeleted).not.toHaveBeenCalled();
+  });
   it("rejects an admin deleting their own account", async () => {
     const { controller } = makeController();
 

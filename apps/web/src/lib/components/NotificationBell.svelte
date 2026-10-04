@@ -45,7 +45,6 @@
   const reduced = prefersReducedMotion();
 
   let open = $state(false);
-  let busy = $state<string | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
   let drawerContentEl = $state<HTMLDivElement | null>(null);
   let buttonEl = $state<HTMLButtonElement | null>(null);
@@ -118,25 +117,13 @@
     );
   }
 
-  async function accept(req: FollowRequestDto) {
-    busy = req.id;
-    try {
-      await acceptFollowRequest(req.id);
-      removeRequest(req.id);
-    } finally {
-      busy = null;
-    }
-  }
-
-  async function reject(req: FollowRequestDto) {
-    busy = req.id;
-    try {
-      await rejectFollowRequest(req.id);
-      removeRequest(req.id);
-    } finally {
-      busy = null;
-    }
-  }
+  const followMut = createApiMutation(() => ({
+    mutate: ({ id, action }: { id: string; action: "accept" | "reject" }) =>
+      action === "accept" ? acceptFollowRequest(id) : rejectFollowRequest(id),
+    onSuccess: (_: void, { id }: { id: string; action: "accept" | "reject" }) =>
+      removeRequest(id),
+    errorToast: true,
+  }));
 
   function onItemClick(n: NotificationDto) {
     markReadMut.mutate(n.id);
@@ -275,16 +262,16 @@
             <button
               type="button"
               aria-label={m.common_accept()}
-              disabled={busy === req.id}
-              onclick={() => accept(req)}
+              disabled={followMut.loading}
+              onclick={() => followMut.mutate({ id: req.id, action: "accept" })}
               class="bg-accent text-accent-fg grid h-8 w-8 shrink-0 place-items-center rounded-full transition-opacity disabled:opacity-50">
               <Icon name="check" class="h-4 w-4" />
             </button>
             <button
               type="button"
               aria-label={m.common_reject()}
-              disabled={busy === req.id}
-              onclick={() => reject(req)}
+              disabled={followMut.loading}
+              onclick={() => followMut.mutate({ id: req.id, action: "reject" })}
               class="text-dim hover:text-fg hover:bg-surface-2 grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors disabled:opacity-50">
               <Icon name="x" class="h-4 w-4" />
             </button>

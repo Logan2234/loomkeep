@@ -1,7 +1,7 @@
-import { ErrorCode, MusicSource, MusicSummaryDto } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { MusicSource, MusicSummaryDto } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { AppException } from "../../common/app.exception";
+import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
 import type {
@@ -118,24 +118,14 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
   }
 
   async getDetails(sourceId: string): Promise<ProviderMusicDetails> {
-    let releaseGroup: MusicBrainzReleaseGroup;
-
-    try {
-      const params = new URLSearchParams({
-        inc: "artist-credits+genres+tags+url-rels",
-        fmt: "json",
-      });
-      releaseGroup = await this.get<MusicBrainzReleaseGroup>(
-        `/release-group/${encodeURIComponent(sourceId)}?${params}`,
-      );
-    } catch {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.CatalogItemNotFound,
-        undefined,
-        "Album not found on MusicBrainz",
-      );
-    }
+    const params = new URLSearchParams({
+      inc: "artist-credits+genres+tags+url-rels",
+      fmt: "json",
+    });
+    const releaseGroup = await this.get<MusicBrainzReleaseGroup>(
+      `/release-group/${encodeURIComponent(sourceId)}?${params}`,
+      "Album not found on MusicBrainz",
+    );
 
     const primaryArtistId = releaseGroup["artist-credit"]?.[0]?.artist?.id;
 
@@ -282,50 +272,29 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
    * and identified via a `User-Agent` (required by that same policy). Retries
    * on 503 (MusicBrainz's rate-limit response) with backoff.
    */
-  private async get<T>(path: string): Promise<T> {
+  private async get<T>(path: string, notFoundMessage?: string): Promise<T> {
     const contact =
       this.configService.get<string>("API_CONTACT") ??
       "self-hosted, no contact provided";
     const url = `${API_URL}${path}`;
 
-    let lastStatus = 0;
-
-    for (let attempt = 1; attempt <= GET_MAX_ATTEMPTS; attempt++) {
-      await this.throttle.wait();
-
-      this.quota.record("musicbrainz");
-      const response = await fetch(url, {
+    return fetchJson<T>(
+      url,
+      {
         headers: {
           Accept: "application/json",
           "User-Agent": `Loomkeep/1.0 (${contact})`,
         },
-      });
-
-      if (response.ok) return (await response.json()) as T;
-
-      lastStatus = response.status;
-
-      if (response.status === 503 && attempt < GET_MAX_ATTEMPTS) {
-        await sleep(500 * 2 ** (attempt - 1));
-        continue;
-      }
-
-      break;
-    }
-
-    throw new AppException(
-      HttpStatus.BAD_GATEWAY,
-      ErrorCode.CatalogProviderUnavailable,
-      undefined,
-      `MusicBrainz request failed with status ${lastStatus}`,
+      },
+      {
+        sourceLabel: "MusicBrainz",
+        notFoundMessage,
+        onAttempt: () => this.quota.record("musicbrainz"),
+        beforeAttempt: () => this.throttle.wait(),
+        isRetryable: (status) => status === 503,
+      },
     );
   }
-}
-
-const GET_MAX_ATTEMPTS = 3;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function parseYear(date: string | undefined): number | null {

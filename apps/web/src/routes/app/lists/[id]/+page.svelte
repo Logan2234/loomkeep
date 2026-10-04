@@ -119,8 +119,6 @@
     errorToast: true,
     onSuccess: () => (reporting = false),
   }));
-  let removingId = $state<string | null>(null);
-  let reordering = $state(false);
 
   // Local, reorderable copy of the items — svelte-dnd-action mutates this
   // directly during a drag; resets to the query's own items whenever those
@@ -161,54 +159,66 @@
     leaveMut.mutate();
   }
 
-  async function removeItem(itemId: string) {
-    if (!list || removingId) return;
-    removingId = itemId;
-    try {
-      await removeListItem(list.id, itemId);
-      const items = list.items.filter((i) => i.id !== itemId);
-      patchList({ items });
-    } finally {
-      removingId = null;
-    }
+  const removeMut = createApiMutation(() => ({
+    mutate: (itemId: string) => removeListItem(id, itemId),
+    onSuccess: (_: void, itemId: string) => {
+      if (list)
+        patchList({ items: list.items.filter((item) => item.id !== itemId) });
+    },
+    errorToast: true,
+  }));
+  const removingId = $derived(removeMut.loading ? removeMut.variables : null);
+
+  function removeItem(itemId: string) {
+    if (!list) return;
+    removeMut.mutate(itemId);
   }
 
-  async function confirmRemove() {
+  function confirmRemove() {
     if (!confirmRemoveId) return;
     const itemId = confirmRemoveId;
     confirmRemoveId = null;
     focusedItemId = null;
-    await removeItem(itemId);
+    removeItem(itemId);
   }
 
   function handleDndConsider(e: CustomEvent<{ items: ListItemDto[] }>) {
     dragItems = e.detail.items;
   }
 
-  async function handleDndFinalize(e: CustomEvent<{ items: ListItemDto[] }>) {
+  const reorderMut = createApiMutation(() => ({
+    mutate: ({
+      listId,
+      orderedItemIds,
+      expectedUpdatedAt,
+    }: {
+      listId: string;
+      orderedItemIds: string[];
+      expectedUpdatedAt: string;
+    }) => reorderListItems(listId, orderedItemIds, expectedUpdatedAt),
+    onSuccess: () => {
+      void queryClient.refetchQueries({ queryKey: detailKey });
+    },
+    onError: (err: unknown) => {
+      if (err instanceof ApiError && err.status === 409) conflictNotice = true;
+      void queryClient.refetchQueries({ queryKey: detailKey });
+    },
+    errorToast: true,
+  }));
+  const reordering = $derived(reorderMut.loading);
+
+  function handleDndFinalize(e: CustomEvent<{ items: ListItemDto[] }>) {
     dragItems = e.detail.items;
     if (!list || reordering) return;
     const listId = list.id;
     const expectedUpdatedAt = list.updatedAt;
-    reordering = true;
+    conflictNotice = false;
     patchList({ items: dragItems });
-    try {
-      await reorderListItems(
-        listId,
-        dragItems.map((i) => i.id),
-        expectedUpdatedAt,
-      );
-      await queryClient.refetchQueries({ queryKey: detailKey });
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        conflictNotice = true;
-        await queryClient.refetchQueries({ queryKey: detailKey });
-        return;
-      }
-      throw err;
-    } finally {
-      reordering = false;
-    }
+    reorderMut.mutate({
+      listId,
+      orderedItemIds: dragItems.map((item) => item.id),
+      expectedUpdatedAt,
+    });
   }
 
   // Poster tile for the COLLECTION grid. `focused` renders the enlarged copy

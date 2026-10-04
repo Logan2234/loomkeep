@@ -4,9 +4,8 @@
 // failed write is silently dropped.
 
 export function readStorage(key: string): string | null {
-  if (typeof localStorage === "undefined") return null;
-
   try {
+    if (typeof localStorage === "undefined") return null;
     return localStorage.getItem(key);
   } catch {
     return null;
@@ -14,9 +13,8 @@ export function readStorage(key: string): string | null {
 }
 
 export function writeStorage(key: string, value: string): void {
-  if (typeof localStorage === "undefined") return;
-
   try {
+    if (typeof localStorage === "undefined") return;
     localStorage.setItem(key, value);
   } catch {
     // See the module comment.
@@ -24,9 +22,8 @@ export function writeStorage(key: string, value: string): void {
 }
 
 export function removeStorage(key: string): void {
-  if (typeof localStorage === "undefined") return;
-
   try {
+    if (typeof localStorage === "undefined") return;
     localStorage.removeItem(key);
   } catch {
     // See the module comment.

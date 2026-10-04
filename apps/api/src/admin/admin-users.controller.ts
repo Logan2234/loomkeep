@@ -58,6 +58,7 @@ import { MyReviewResponseDto } from "../reviews/dto/my-review-response.dto";
 import { ReviewService } from "../reviews/review.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { FollowService } from "../social/follow.service";
+import { AccountDeletionService } from "../users/account-deletion.service";
 import { avatarUrl } from "../users/avatar.util";
 import { DataExportService } from "../users/data-export.service";
 import { UserDataExportResponseDto } from "../users/dto/data-export/user-data-export-response.dto";
@@ -99,6 +100,7 @@ export class AdminUsersController {
     private readonly moderationDecisions: ModerationDecisionService,
     private readonly entitlements: EntitlementService,
     private readonly xp: XpService,
+    private readonly accountDeletion: AccountDeletionService,
   ) {}
 
   /**
@@ -517,15 +519,6 @@ export class AdminUsersController {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     }
 
-    // Recorded before the delete so the FK (onDelete: SetNull) still resolves;
-    // the row itself survives the account's removal — see SecurityEvent.
-    await this.securityEvents.record({
-      type: "USER_DELETED",
-      userId: user.id,
-      detail: "Deleted from the admin panel",
-    });
-    await this.securityEvents.forgetIps(user.id);
-
     await this.moderationDecisions.record({
       measure: ModerationMeasure.ACCOUNT_DELETED,
       targetType: ReportTargetType.USER,
@@ -540,11 +533,11 @@ export class AdminUsersController {
       decidedById: admin.sub,
     });
 
-    await this.prisma.importRun.updateMany({
-      where: { userId },
-      data: { summary: null, error: null, details: Prisma.DbNull },
-    });
-    await this.prisma.user.delete({ where: { id: userId } });
+    await this.accountDeletion.deleteAccount(
+      userId,
+      "admin",
+      "Deleted from the admin panel",
+    );
   }
 }
 

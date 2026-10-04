@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { localDateInput } from "$lib/date";
   import { getOnThisDay } from "$lib/api/stats";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
@@ -17,11 +18,7 @@
 
   // The viewer's own calendar day, not the server's.
   const today = new Date();
-  const localDay = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, "0"),
-    String(today.getDate()).padStart(2, "0"),
-  ].join("-");
+  const localDay = localDateInput(today);
   const yearAgo = new Date(
     today.getFullYear() - 1,
     today.getMonth(),
