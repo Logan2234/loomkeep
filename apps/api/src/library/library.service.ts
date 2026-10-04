@@ -20,6 +20,7 @@ import {
   EntryStatus,
   episodeRuntimeFor,
   ErrorCode,
+  isAnimeUnaired,
   isDormant,
   isGhost,
   isRuntimeKnown,
@@ -39,7 +40,7 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { MediaItemService } from "../catalog/media-item.service";
-import { assertMovieReleased } from "../catalog/movie-release.util";
+import { assertMediaReleased } from "../catalog/movie-release.util";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { AppException } from "../common/app.exception";
 import {
@@ -228,7 +229,7 @@ export class LibraryService {
       dto.status === "COMPLETED" ||
       (dto.rating !== null && dto.rating !== undefined)
     ) {
-      await assertMovieReleased(this.prisma, mediaItem.id);
+      await assertMediaReleased(this.prisma, mediaItem.id);
     }
 
     const before = await this.prisma.libraryEntry.findUnique({
@@ -691,7 +692,7 @@ export class LibraryService {
       (dto.startedAt !== null && dto.startedAt !== undefined) ||
       (dto.finishedAt !== null && dto.finishedAt !== undefined)
     ) {
-      await assertMovieReleased(this.prisma, owned.mediaItemId);
+      await assertMediaReleased(this.prisma, owned.mediaItemId);
     }
 
     let reminder: {
@@ -1944,7 +1945,7 @@ export class LibraryService {
       );
     }
 
-    await assertMovieReleased(this.prisma, entry.mediaItemId);
+    await assertMediaReleased(this.prisma, entry.mediaItemId);
 
     const replay = await this.prisma.movieReplay.create({
       data: {
@@ -2212,12 +2213,13 @@ function toMediaItemDto(
     posterUrl: media.posterUrl,
     canonicalSource: media.canonicalSource,
     sourceId: canonicalExternalId(media, media.externalIds),
-    ...(media.type === "MOVIE" &&
-    movieReleaseInfo(
-      movieReleaseDates(media.movieReleaseDates),
-      media.status,
-      "US",
-    ).upcoming
+    ...((media.type === "MOVIE" &&
+      movieReleaseInfo(
+        movieReleaseDates(media.movieReleaseDates),
+        media.status,
+        "US",
+      ).upcoming) ||
+    (media.type === "ANIME" && isAnimeUnaired(media.status))
       ? { upcoming: true }
       : {}),
   };

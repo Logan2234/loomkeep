@@ -122,8 +122,9 @@ export function toSagaMember(media: AnilistMedia): SagaMemberDto {
 }
 
 export function toMediaDetails(media: AnilistMedia): ProviderMediaDetails {
+  const summary = toSummary(media);
   return {
-    summary: toSummary(media),
+    summary,
     overview: media.description ? stripHtml(media.description) : null,
     backdropUrl: media.bannerImage ?? null,
     genres: media.genres ?? [],
@@ -134,7 +135,12 @@ export function toMediaDetails(media: AnilistMedia): ProviderMediaDetails {
     externalIds: [
       { source: MediaSource.ANILIST, externalId: String(media.id) },
     ],
-    seasons: [{ number: 1, title: null, episodes: buildEpisodes(media) }],
+    // Each AniList entry is one cour/season of its own (sequels are separate
+    // entries, linked through the saga), so its single generated season
+    // carries the entry's own name rather than a misleading "Season 1".
+    seasons: [
+      { number: 1, title: summary.title, episodes: buildEpisodes(media) },
+    ],
   };
 }
 
@@ -250,15 +256,54 @@ function buildEpisodes(media: AnilistMedia): ProviderEpisode[] {
     ? media.nextAiringEpisode.episode - 1
     : null;
   const count = media.episodes ?? aired ?? media.streamingEpisodes?.length ?? 0;
+  const titles = streamingTitlesByNumber(media.streamingEpisodes ?? [], count);
 
   return Array.from({ length: count }, (_, index) => ({
     number: index + 1,
-    title: media.streamingEpisodes?.[index]?.title ?? null,
+    title: titles.get(index + 1) ?? null,
     airDate: null,
     runtimeMin: media.duration ?? null,
     overview: null,
     stillUrl: null,
   }));
+}
+
+// "Episode 16 - Medusa Mechanism" — the shape AniList's streaming episodes
+// (Crunchyroll's listing) use. The name part is optional.
+const STREAMING_TITLE = /^\s*Episode\s+(\d+)\s*(?:[-–—:]\s*(.*))?$/i;
+
+/**
+ * Keys streaming episode names by the number written in their title, never by
+ * their position: AniList returns them in no guaranteed order (often newest
+ * first). A name with no readable number is dropped — no name beats the wrong
+ * one. A later cour listed under its own AniList entry often keeps the show's
+ * absolute numbering (episodes 13–24 for a 12-episode entry), so when the
+ * numbers overshoot the count they're shifted to start at 1.
+ */
+function streamingTitlesByNumber(
+  streamingEpisodes: NonNullable<AnilistMedia["streamingEpisodes"]>,
+  count: number,
+): Map<number, string> {
+  const parsed: { number: number; name: string | null }[] = [];
+
+  for (const { title } of streamingEpisodes) {
+    const match = title ? STREAMING_TITLE.exec(title) : null;
+    if (!match) continue;
+    parsed.push({ number: Number(match[1]), name: match[2]?.trim() || null });
+  }
+
+  if (parsed.length === 0) return new Map();
+
+  const numbers = parsed.map((episode) => episode.number);
+  const offset = Math.max(...numbers) > count ? Math.min(...numbers) - 1 : 0;
+
+  const titles = new Map<number, string>();
+
+  for (const { number, name } of parsed) {
+    if (name && !titles.has(number - offset)) titles.set(number - offset, name);
+  }
+
+  return titles;
 }
 
 // Loops the tag-stripping pass until stable — a single pass can leave a tag

@@ -25,7 +25,7 @@ export interface MediaItemDto {
    * identity used to address the media page (`/media/{type}/{sourceId}`).
    */
   sourceId: string;
-  /** Derived movie availability; absent on older responses. */
+  /** Not out yet (unreleased film, unaired anime); absent on older responses. */
   upcoming?: boolean;
 }
 
