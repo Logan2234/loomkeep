@@ -41,6 +41,7 @@ describe("movie release reminders", () => {
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       sagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      gameSagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       notification: { createMany },
     };
     const service = new NotificationService(
@@ -92,6 +93,7 @@ describe("movie release reminders", () => {
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       sagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      gameSagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       notification: { createMany },
     };
     const service = new NotificationService(

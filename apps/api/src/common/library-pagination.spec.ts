@@ -33,6 +33,7 @@ describe("library pagination boundaries", () => {
           null!,
           null!,
           gate as never,
+          null!,
         ),
         new MusicController(null!, service as never, gate as never),
       ],
@@ -102,6 +103,7 @@ describe("library pagination boundaries", () => {
       sessions as never,
       null!,
       gate as never,
+      null!,
     );
     await books.listSessions(viewer, "entry", "abc");
     await games.listSessions(viewer, "entry", "Infinity");

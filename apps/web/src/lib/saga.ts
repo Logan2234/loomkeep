@@ -1,9 +1,12 @@
 import { formatDate, joinMeta } from "$lib/format";
+import { gameReleaseLabel } from "$lib/game-release";
 import { m } from "$lib/paraglide/messages.js";
 import type {
   BookSagaMemberDto,
   BookStatus,
   EntryStatus,
+  GameSagaMemberDto,
+  GameStatus,
   LibrarySagaDto,
   LibrarySagasDto,
   SagaMemberDto,
@@ -31,6 +34,7 @@ export interface SagaMemberView {
   badge:
     | { domain: "MEDIA"; status: EntryStatus }
     | { domain: "BOOKS"; status: BookStatus }
+    | { domain: "GAMES"; status: GameStatus }
     | null;
 }
 
@@ -150,4 +154,36 @@ export const bookSagaMember = (x: BookSagaMemberDto): SagaMemberView => ({
   dropped: x.status === "DROPPED",
   segmentClass: x.status ? BOOK_SEGMENT_COLORS[x.status] : "bg-surface-2",
   badge: x.status ? { domain: "BOOKS", status: x.status } : null,
+});
+
+// ── Games ──
+
+const GAME_SEGMENT_COLORS: Record<GameStatus, string> = {
+  COMPLETED: "bg-success",
+  PLAYING: "bg-accent",
+  BACKLOG: "bg-dim/55",
+  DROPPED: "bg-danger",
+};
+
+export const gameSagaMember = (x: GameSagaMemberDto): SagaMemberView => ({
+  id: x.sourceId,
+  title: x.title,
+  posterUrl: x.coverUrl,
+  href: `/app/games/${x.sourceId}`,
+  meta: x.upcoming
+    ? (gameReleaseLabel(x.releaseDate, x.releaseDatePrecision) ??
+      m.media_saga_upcoming())
+    : x.year !== null
+      ? String(x.year)
+      : "",
+  position: null,
+  upcoming: x.upcoming,
+  seen: x.status === "COMPLETED",
+  dropped: x.status === "DROPPED",
+  segmentClass: x.status
+    ? GAME_SEGMENT_COLORS[x.status]
+    : x.upcoming
+      ? "border-border border border-dashed"
+      : "bg-surface-2",
+  badge: x.status ? { domain: "GAMES", status: x.status } : null,
 });

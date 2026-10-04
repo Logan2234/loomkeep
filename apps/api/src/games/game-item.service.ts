@@ -7,6 +7,7 @@ import { mapWithConcurrency } from "../common/concurrency.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { GameSagaService } from "./game-saga.service";
 import type {
   GameCatalogProvider,
   ProviderGameDetails,
@@ -32,6 +33,7 @@ export class GameItemService {
     private readonly prisma: PrismaService,
     private readonly igdbProvider: IgdbProvider,
     private readonly jobRuns: JobRunService,
+    private readonly sagas: GameSagaService,
   ) {}
 
   /**
@@ -80,6 +82,16 @@ export class GameItemService {
       async (detail): Promise<boolean> => {
         try {
           await this.persistDetails(detail.summary.source, detail);
+          // Re-reading a tracked game's series is how a newly announced
+          // game in it is noticed (see the sequel alert).
+          await this.sagas
+            .sync(detail.summary.sourceId)
+            .catch((err) =>
+              this.logger.warn(
+                `Saga sync failed for IGDB game ${detail.summary.sourceId}`,
+                err,
+              ),
+            );
           return true;
         } catch (err) {
           this.logger.error(

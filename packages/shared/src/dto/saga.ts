@@ -1,6 +1,12 @@
-import type { BookStatus, EntryStatus } from "../enums";
+import type {
+  BookStatus,
+  EntryStatus,
+  GameStatus,
+  ReleaseDatePrecision,
+} from "../enums";
 import type { BookSummaryDto } from "./book";
 import type { MediaSummaryDto } from "./catalog";
+import type { GameSummaryDto } from "./game";
 
 /** One work of a saga, in viewing order. */
 export interface SagaMemberDto extends MediaSummaryDto {
@@ -85,3 +91,29 @@ export type LibraryBookSagasDto = LibrarySagasDto<BookSagaMemberDto>;
 
 export const LIBRARY_SAGA_SORTS = ["recent", "title", "progress"] as const;
 export type LibrarySagaSort = (typeof LIBRARY_SAGA_SORTS)[number];
+
+/** One main game of an IGDB series, in release order. */
+export interface GameSagaMemberDto extends GameSummaryDto {
+  /** The first day of its release period; null when undated. */
+  releaseDate: string | null;
+  releaseDatePrecision: ReleaseDatePrecision | null;
+  /** Announced but not out yet: shown, never counted in the progress. */
+  upcoming: boolean;
+  /** The player's library status, null when not tracked. */
+  status: GameStatus | null;
+}
+
+/** An IGDB series, kept to its main games (no spin-off, DLC or remaster). */
+export interface GameSagaDto {
+  /** Stable id of the saga, e.g. `IGDB:18`. */
+  key: string;
+  title: string;
+  members: GameSagaMemberDto[];
+}
+
+export interface GameSagaResponseDto {
+  /** Null when the game is a main game of no series of two or more. */
+  saga: GameSagaDto | null;
+}
+
+export type LibraryGameSagasDto = LibrarySagasDto<GameSagaMemberDto>;

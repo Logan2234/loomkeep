@@ -1,5 +1,7 @@
 import type {
   BulkEntriesResultDto,
+  GameSagaResponseDto as GameSagaResponse,
+  LibraryGameSagasDto,
   PagedResult,
   PileSummaryDto,
 } from "@loomkeep/shared";
@@ -12,6 +14,7 @@ import {
   GameSessionMutationDto,
   GameSessionSummaryDto,
   GameSource,
+  LIBRARY_SAGA_SORTS,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -46,6 +49,10 @@ import { BulkUpdateGameEntriesBody } from "./dto/bulk-update-game-entries.dto";
 import { CreateGameSessionDto } from "./dto/create-game-session.dto";
 import { GameDetailResponseDto } from "./dto/game-detail-response.dto";
 import { GameEntryResponseDto } from "./dto/game-entry-response.dto";
+import {
+  GameSagaResponseDto,
+  LibraryGameSagasResponseDto,
+} from "./dto/game-saga-response.dto";
 import { GameSearchResultResponseDto } from "./dto/game-search-response.dto";
 import {
   GameSessionMutationResponseDto,
@@ -56,6 +63,7 @@ import { UpdateGameSessionDto } from "./dto/update-game-session.dto";
 import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
 import { GameItemService } from "./game-item.service";
 import { GameLibraryService } from "./game-library.service";
+import { GameSagaService } from "./game-saga.service";
 import { GameSessionService } from "./game-session.service";
 
 @Controller("games")
@@ -66,6 +74,7 @@ export class GamesController {
     private readonly gameSessionService: GameSessionService,
     private readonly ageGate: AgeGateService,
     private readonly domainGate: DomainGateService,
+    private readonly gameSagaService: GameSagaService,
   ) {}
 
   /**
@@ -167,6 +176,23 @@ export class GamesController {
     });
   }
 
+  /** The player's series: in progress, waiting on an announced game, finished. */
+  @Get("sagas")
+  @ApiOkResponse({ type: LibraryGameSagasResponseDto })
+  async listSagas(
+    @CurrentUser() user: JwtPayload,
+    @Query("q") q?: string,
+    @Query("sort") sort?: string,
+    @Query("order") order?: string,
+  ): Promise<LibraryGameSagasDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
+    return this.gameSagaService.listSagas(user.sub, {
+      q,
+      sort: LIBRARY_SAGA_SORTS.find((s) => s === sort),
+      order: order === "asc" ? "asc" : "desc",
+    });
+  }
+
   /** What's left in the pile among the entries the list shows under the same filters. */
   @Get("pile")
   @ApiOkResponse({ type: PileSummaryResponseDto })
@@ -241,6 +267,19 @@ export class GamesController {
     @Param("id") entryId: string,
   ): Promise<void> {
     await this.gameLibraryService.deleteEntry(user.sub, entryId);
+  }
+
+  /** The series a game is a main game of, each game with the player's status. */
+  @Get(":source/:sourceId/saga")
+  @ApiOkResponse({ type: GameSagaResponseDto })
+  async getGameSaga(
+    @CurrentUser() user: JwtPayload,
+    @Param("source") sourceParam: string,
+    @Param("sourceId") sourceId: string,
+  ): Promise<GameSagaResponse> {
+    parseGameSource(sourceParam);
+    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
+    return { saga: await this.gameSagaService.getSaga(user.sub, sourceId) };
   }
 
   /** Game detail page: catalogue metadata + the user's library state. */

@@ -1672,6 +1672,43 @@ model SagaMember {
   @@index([announcedAt, notifiedAt])
 }
 
+// A game series (IGDB collection) one of whose main games a user tracks:
+// saved so the refresh job can tell a newly announced game from the rest,
+// like Saga for films and anime.
+model GameSaga {
+  // "IGDB:<collection id>".
+  key       String           @id
+  title     String
+  syncedAt  DateTime         @default(now())
+  createdAt DateTime         @default(now())
+  members   GameSagaMember[]
+}
+
+model GameSagaMember {
+  id                   String                @id @default(cuid())
+  sagaKey              String
+  // The IGDB game id.
+  sourceId             String
+  // Release order within the series.
+  position             Int
+  title                String
+  coverUrl             String?
+  releaseDate          String?
+  releaseDatePrecision ReleaseDatePrecision?
+  isAdult              Boolean               @default(false)
+  upcoming             Boolean               @default(false)
+  // Set when the game joined a series already known — never on a series'
+  // first read. What the sequel alert looks for.
+  announcedAt          DateTime?
+  notifiedAt           DateTime?
+  createdAt            DateTime              @default(now())
+
+  saga GameSaga @relation(fields: [sagaKey], references: [key], onDelete: Cascade)
+
+  @@unique([sagaKey, sourceId])
+  @@index([announcedAt, notifiedAt])
+}
+
 // Locale-specific title/overview/genres, for a locale other than whatever
 // language the base MediaItem's own fields happen to be in (in practice
 // always English, since providers are queried without a language until a
@@ -1830,6 +1867,9 @@ model GameItem {
   timeToBeatSubmissions   Int?
   // 18+ title (IGDB "Erotic" theme). Restricted per-account, like MediaItem.
   isAdult                 Boolean    @default(false)
+  // The saga it belongs to (its IGDB series, e.g. "IGDB:18"), set when its
+  // saga is first read (see GameSagaService).
+  sagaKey                 String?
   metadata                Json       @default("{}")
   lastSyncedAt            DateTime   @default(now())
   createdAt               DateTime   @default(now())
@@ -1837,6 +1877,8 @@ model GameItem {
 
   externalIds GameExternalId[]
   entries     GameEntry[]
+
+  @@index([sagaKey])
 }
 
 model GameExternalId {

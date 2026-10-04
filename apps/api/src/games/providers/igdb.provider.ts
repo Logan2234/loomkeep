@@ -3,6 +3,7 @@ import {
   ErrorCode,
   GameSource,
   GameSummaryDto,
+  isGameUpcoming,
   ReleaseDatePrecision,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
@@ -15,6 +16,7 @@ import { RequestThrottle } from "../../common/request-throttle";
 import type {
   GameCatalogProvider,
   ProviderGameDetails,
+  ProviderGameSaga,
 } from "./game-provider.types";
 
 const OAUTH_URL = "https://id.twitch.tv/oauth2/token";
@@ -38,6 +40,18 @@ const MIN_REQUEST_INTERVAL_MS = 260;
 interface IgdbImage {
   image_id: string;
 }
+
+// A game's place in a series (IGDB "collection"): type 1 is a main game
+// ("Member"), 2 a spin-off.
+interface IgdbCollectionMembership {
+  collection: { id: number; name?: string };
+  game?: IgdbGame;
+}
+const MAIN_GAME_MEMBERSHIP = 1;
+// A base game, not a DLC, remaster, port or bundle.
+const MAIN_GAME_TYPE = 0;
+const SAGA_GAME_FIELDS =
+  "game.name, game.cover.image_id, game.first_release_date, game.game_type, game.themes, game.release_dates.date, game.release_dates.date_format";
 
 // One release per platform and region. `date_format` says how much of `date`
 // is real: 0 the day, 1 the month, 2 the year, 3–6 a quarter (Q1–Q4), 7 none.
@@ -96,6 +110,7 @@ interface IgdbGame {
   storyline?: string;
   first_release_date?: number; // Unix seconds.
   release_dates?: IgdbReleaseDate[];
+  game_type?: number;
   cover?: IgdbImage;
   artworks?: IgdbImage[];
   screenshots?: IgdbImage[];
@@ -444,6 +459,54 @@ export class IgdbProvider implements GameCatalogProvider {
         : null,
       isAdult: game.themes?.includes(EROTIC_THEME_ID) ?? false,
     };
+  }
+
+  /**
+   * The series a game is a main game of, kept to its main games in release
+   * order — spin-offs, DLCs and remasters left out. When it belongs to a
+   * series and to a part of one (Assassin's Creed and its Ezio trilogy), the
+   * largest wins: IGDB doesn't reliably link a subseries to its parent. Null
+   * when no series has two main games.
+   */
+  async getSaga(sourceId: string): Promise<ProviderGameSaga | null> {
+    if (!isIgdbId(sourceId)) return null;
+    const memberships = await this.query<IgdbCollectionMembership[]>(
+      "/collection_memberships",
+      `fields collection.id; where game = ${sourceId} & type = ${MAIN_GAME_MEMBERSHIP}; limit 20;`,
+    );
+    const collections = [...new Set(memberships.map((m) => m.collection.id))];
+    let best: { id: number; title: string; games: IgdbGame[] } | null = null;
+
+    for (const id of collections) {
+      const rows = await this.query<IgdbCollectionMembership[]>(
+        "/collection_memberships",
+        `fields collection.name, ${SAGA_GAME_FIELDS}; where collection = ${id} & type = ${MAIN_GAME_MEMBERSHIP}; limit 500;`,
+      );
+      const games = rows.flatMap((row) =>
+        row.game && row.game.game_type === MAIN_GAME_TYPE ? [row.game] : [],
+      );
+
+      if (!best || games.length > best.games.length) {
+        best = { id, title: rows[0]?.collection.name ?? "", games };
+      }
+    }
+
+    if (!best || best.games.length < 2) return null;
+    const members = best.games
+      .map((game) => ({ ...this.toSummary(game), ...firstRelease(game) }))
+      // Undated announcements go last, in no particular order among them.
+      .sort((a, b) =>
+        (a.releaseDate ?? "9999").localeCompare(b.releaseDate ?? "9999"),
+      )
+      .map((game) => ({
+        ...game,
+        releaseDate: game.releaseDate?.slice(0, 10) ?? null,
+        upcoming: isGameUpcoming(
+          game.releaseDate?.slice(0, 10) ?? null,
+          game.releaseDatePrecision,
+        ),
+      }));
+    return { key: `IGDB:${best.id}`, title: best.title, members };
   }
 
   /** POST an Apicalypse query to an IGDB endpoint with a valid access token. */

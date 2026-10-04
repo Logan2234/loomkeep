@@ -58,7 +58,13 @@ function makeService(overrides: {
     getDetailsByIds:
       overrides.getDetailsByIds ?? vi.fn().mockResolvedValue([details]),
   } as unknown as IgdbProvider;
-  const service = new GameItemService(prisma, igdbProvider, jobRunsStub);
+  const sagas = { sync: vi.fn().mockResolvedValue(undefined) };
+  const service = new GameItemService(
+    prisma,
+    igdbProvider,
+    jobRunsStub,
+    sagas as never,
+  );
   return { service, prisma, igdbProvider };
 }
 
