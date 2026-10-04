@@ -200,13 +200,18 @@ export interface JobRunDto {
 /**
  * One background job the admin can inspect/trigger, with its recent runs.
  *
- * Carries no label or schedule: both are presentation, derived from `key` by
- * the web (`adminJobLabel`/`adminJobSchedule`), like an `ErrorCode` message.
+ * Labels are derived from `key` by the web. Execution times and the effective
+ * scheduler time zone come from the server.
  */
 export interface JobDto {
   key: string;
   /** Most recent runs first. */
   runs: JobRunDto[];
+  runningSince: string | null;
+  timeZone: string | null;
+  nextRunAt: string | null;
+  /** First scheduled slot without a recorded run; null while running or on time. */
+  overdueSince: string | null;
 }
 
 export interface JobListResponseDto {
@@ -496,6 +501,17 @@ export interface SecurityEventDto {
   createdAt: string;
 }
 
+export type AdminImportStatus = JobStatus | "RUNNING";
+
+export interface AdminImportDetails {
+  items: { title: string; state: "selected" | "ignored" | "unresolved" }[];
+  report: import("./import").ImportReport | null;
+}
+
+export interface AdminImportDetailDto extends AdminImportRunDto {
+  details: AdminImportDetails | null;
+}
+
 export interface AdminImportRunDto {
   id: string;
   /** Null once the account has since been deleted. */
@@ -504,7 +520,9 @@ export interface AdminImportRunDto {
   identifier: string | null;
   /** Import source id ("tvtime", "storygraph", "goodreads", "steam"). */
   sourceId: string;
-  status: JobStatus;
+  status: AdminImportStatus;
+  /** Present on an active in-memory import, before it is persisted. */
+  phase?: "analyze" | "commit";
   /** Items actually written, regardless of outcome. */
   itemCount: number;
   /** Whether the commit wiped the domain's library first (destructive replace). */
@@ -514,7 +532,8 @@ export interface AdminImportRunDto {
   /** Present only when `status` is "FAILURE". */
   error: string | null;
   startedAt: string;
-  finishedAt: string;
+  finishedAt: string | null;
+  progress?: { done: number; total: number };
 }
 
 /** Committed imports for one source, all accounts and all time. */

@@ -22,6 +22,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import SidePanel from "$lib/components/SidePanel.svelte";
+  import Tabs from "$lib/components/Tabs.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { debounce } from "$lib/debounce";
   import { formatDateTime } from "$lib/format";
@@ -47,6 +48,13 @@
   ];
 
   const domainIcon = (d: Domain): IconName => DOMAINS[d]?.icon ?? "tv";
+  const domainTabs = Object.entries(DOMAINS).map(([value, domain]) => ({
+    value: value as Domain,
+    label: domain.comingSoon
+      ? `${domain.label} · ${m.common_coming_soon()}`
+      : domain.label,
+    disabled: domain.comingSoon,
+  }));
 
   const filters = $derived(parseCacheFilters(page.url.searchParams));
   const activeDomain = $derived(filters.domain);
@@ -97,17 +105,9 @@
   const orphanTotal = $derived(latestPage?.orphanTotal ?? 0);
 
   function resetFilters() {
-    changeFilters({ q: null, domain: null, sort: null, orphans: null });
+    changeFilters({ q: null, sort: null, orphans: null });
   }
   const activeFilters = $derived([
-    ...(activeDomain !== "MEDIA"
-      ? [
-          {
-            label: DOMAINS[activeDomain].label,
-            remove: () => selectDomain("MEDIA"),
-          },
-        ]
-      : []),
     ...(sort !== "stale"
       ? [
           {
@@ -240,39 +240,19 @@
     subtitle={m.admin_cache_subtitle()}
     back="/app/admin" />
 
+  <Tabs
+    class="mb-5"
+    label={m.admin_cache_title()}
+    tabs={domainTabs}
+    current={activeDomain}
+    onSelect={selectDomain} />
+
   <AdminFilterBar
     count={items.length}
     loading={cacheQuery.loading}
     error={!!error}
     active={activeFilters}
     onReset={resetFilters}>
-    <div class="flex w-full flex-wrap items-center gap-2">
-      {#each Object.entries(DOMAINS) as [id, d] (id)}
-        {#if d.comingSoon}
-          <!-- Planned domain: nothing in cache yet, tab is non-clickable. -->
-          <button
-            class="chip disabled:pointer-events-none disabled:opacity-40"
-            disabled
-            title={m.common_coming_soon()}>
-            <Icon name={d.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
-            {d.label}
-            <span
-              class="bg-surface-2 text-dim ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-bold">
-              {m.common_coming_soon()}
-            </span>
-          </button>
-        {:else}
-          <button
-            class="chip"
-            class:chip-on={activeDomain === id}
-            onclick={() => selectDomain(id as Domain)}>
-            <Icon name={d.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
-            {d.label}
-          </button>
-        {/if}
-      {/each}
-    </div>
-
     <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
       <input
         type="text"

@@ -442,7 +442,7 @@ export class ReportService {
   }
 
   /** Daily 7h admin-only digest of pending reports. Skipped entirely when there's nothing pending. */
-  @Cron("0 7 * * *")
+  @Cron("0 7 * * *", { name: JOB_KEYS.REPORTS_DIGEST })
   async sendDailyDigest(): Promise<number> {
     return this.jobRuns.record(
       JOB_KEYS.REPORTS_DIGEST,

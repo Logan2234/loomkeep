@@ -6,6 +6,7 @@ import { CatalogModule } from "../catalog/catalog.module";
 import { CommentsModule } from "../comments/comments.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
+import { ImportModule } from "../import/import.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { ListsModule } from "../lists/list.module";
 import { MailModule } from "../mail/mail.module";
@@ -16,7 +17,6 @@ import { ReportsModule } from "../reports/reports.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { SecurityModule } from "../security/security.module";
 import { SocialModule } from "../social/social.module";
-import { InactiveAccountService } from "../users/inactive-account.service";
 import { UsersModule } from "../users/users.module";
 import { AdminAccountsStatsService } from "./admin-accounts-stats.service";
 import { AdminCacheController } from "./admin-cache.controller";
@@ -54,6 +54,7 @@ import { QuotaAlertService } from "./quota-alert.service";
     BooksModule,
     MusicModule,
     JobsModule,
+    ImportModule,
     SecurityModule,
     UsersModule,
     ReportsModule,
@@ -89,7 +90,6 @@ import { QuotaAlertService } from "./quota-alert.service";
     AdminSocialStatsService,
     AdminSystemStatsService,
     BackupService,
-    InactiveAccountService,
   ],
 })
 export class AdminModule {}

@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
@@ -36,6 +37,7 @@ function makeController() {
       delete: vi.fn(),
     },
     userEntitlement: { findMany: vi.fn().mockResolvedValue([]) },
+    importRun: { updateMany: vi.fn() },
     libraryEntry: { count: vi.fn() },
     gameEntry: { count: vi.fn() },
     bookEntry: { count: vi.fn() },
@@ -502,6 +504,10 @@ describe("AdminUsersController.deleteUser", () => {
         decidedById: "user-1",
       }),
     );
+    expect(prisma.importRun.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user-2" },
+      data: { summary: null, error: null, details: Prisma.DbNull },
+    });
     expect(prisma.user.delete).toHaveBeenCalledWith({
       where: { id: "user-2" },
     });

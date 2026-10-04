@@ -17,12 +17,10 @@
     formatNumber,
   } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import AdminQueryError from "../AdminQueryError.svelte";
   import { filterNewsletterSends } from "./newsletter-filters";
 
-  const client = useQueryClient();
   const sendsQuery = createApiQuery(() => ({
     key: keys.admin.newsletterSends(),
     fetch: getAdminNewsletterSends,
@@ -37,7 +35,6 @@
   const sends = $derived(
     filterNewsletterSends(sendsQuery.data ?? [], { query, from, to }),
   );
-  let refreshing = $state(false);
   function update(updates: Record<string, string | null>) {
     void goto(adminFilterHref(page.url, updates), {
       replaceState: true,
@@ -67,17 +64,6 @@
         ]
       : []),
   ]);
-  async function refresh() {
-    refreshing = true;
-    try {
-      await Promise.all([
-        client.refetchQueries({ queryKey: keys.admin.newsletterSends() }),
-        client.refetchQueries({ queryKey: keys.admin.accountsStats() }),
-      ]);
-    } finally {
-      refreshing = false;
-    }
-  }
 </script>
 
 <PageHeader
@@ -85,12 +71,6 @@
   title={m.common_newsletter()}
   subtitle={m.admin_newsletter_history()}
   back="/app/admin">
-  {#snippet actions()}<button
-      class="btn btn-ghost"
-      disabled={refreshing}
-      onclick={refresh}
-      >{refreshing ? m.common_loading() : m.common_refresh()}</button
-    >{/snippet}
 </PageHeader>
 <div class="card mb-5 space-y-4 p-5">
   <p class="text-dim text-sm">{m.admin_newsletter_help()}</p>

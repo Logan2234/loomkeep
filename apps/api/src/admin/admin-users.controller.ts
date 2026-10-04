@@ -34,7 +34,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -540,6 +540,10 @@ export class AdminUsersController {
       decidedById: admin.sub,
     });
 
+    await this.prisma.importRun.updateMany({
+      where: { userId },
+      data: { summary: null, error: null, details: Prisma.DbNull },
+    });
     await this.prisma.user.delete({ where: { id: userId } });
   }
 }

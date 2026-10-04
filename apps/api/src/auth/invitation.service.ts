@@ -86,14 +86,48 @@ export class InvitationService {
         .replace(/\/$/, "") || "http://localhost:5173";
   }
 
-  async list(page: ParsedPage): Promise<PagedResult<AdminInvitationDto>> {
+  async list(
+    page: ParsedPage,
+    filters: { query?: string; status?: AdminInvitationStatus } = {},
+  ): Promise<PagedResult<AdminInvitationDto>> {
+    const now = new Date();
+    const available = { lt: this.prisma.invitation.fields.maxUses };
+    const states: Record<AdminInvitationStatus, Prisma.InvitationWhereInput> = {
+      pending: { revokedAt: null, useCount: available, expiresAt: { gt: now } },
+      used: {
+        revokedAt: null,
+        useCount: { gte: this.prisma.invitation.fields.maxUses },
+      },
+      expired: {
+        revokedAt: null,
+        useCount: available,
+        expiresAt: { lte: now },
+      },
+      revoked: { revokedAt: { not: null } },
+    };
+    const query = filters.query?.trim();
+    const where: Prisma.InvitationWhereInput = {
+      AND: [
+        ...(filters.status ? [states[filters.status]] : []),
+        ...(query
+          ? [
+              {
+                OR: [
+                  { email: { contains: query, mode: "insensitive" as const } },
+                  { label: { contains: query, mode: "insensitive" as const } },
+                ],
+              },
+            ]
+          : []),
+      ],
+    };
     const rows = await this.prisma.invitation.findMany({
+      where,
       include: INVITATION_INCLUDE,
       orderBy: { createdAt: "desc" },
       skip: page.skip,
       take: page.take + 1,
     });
-    const now = new Date();
 
     return {
       items: rows.slice(0, page.limit).map((row) => this.toDto(row, now)),

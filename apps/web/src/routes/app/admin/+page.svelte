@@ -23,6 +23,7 @@
   import type { ServiceStatusDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import StatsSectionError from "./stats/components/StatsSectionError.svelte";
+  import AttentionLink from "./AttentionLink.svelte";
 
   const queryClient = useQueryClient();
 
@@ -325,42 +326,42 @@
     <h2 id="admin-attention-title" class="font-display mb-3 text-lg font-bold">
       {m.admin_attention()}
     </h2>
-    <ul class="divide-border divide-y">
+    <ul class="space-y-1">
       {#each attention.degraded as service (service.key)}<li>
-          <a
-            class="hover:bg-surface-2 flex items-center justify-between gap-3 rounded py-3"
+          <AttentionLink
             href={`/app/admin/services#service-${service.key}`}
-            ><span>{m.admin_services_title()} · {service.label}</span><Icon
-              name="chevron-right"
-              class="h-4 w-4" /></a>
+            icon="gauge"
+            title={service.label}
+            detail={m.admin_services_title()}
+            tone="danger" />
         </li>{/each}
       {#each attention.failed as job (job.key)}<li>
-          <a
-            class="hover:bg-surface-2 flex items-center justify-between gap-3 rounded py-3"
+          <AttentionLink
             href={`/app/admin/jobs#job-${job.key}`}
-            ><span>{adminJobLabel(job.key)} · {m.common_failure()}</span><Icon
-              name="chevron-right"
-              class="h-4 w-4" /></a>
+            icon="calendar"
+            title={adminJobLabel(job.key)}
+            detail={m.common_failure()}
+            tone="danger" />
         </li>{/each}
       {#if appConfig.socialEnabled && reportsPending.available && reportsPending.count > 0}<li>
-          <a
+          <AttentionLink
             href="/app/admin/reports?status=PENDING"
-            class="hover:bg-surface-2 flex items-center justify-between gap-3 rounded py-3"
-            ><span
-              >{m.admin_reports_pending_count({
-                count: reportsPending.count,
-              })}</span
-            ><Icon name="chevron-right" class="h-4 w-4" /></a>
+            icon="flag"
+            title={m.admin_reports_pending_count({
+              count: reportsPending.count,
+            })}
+            detail={m.admin_social_reports_title()}
+            tone="warning" />
         </li>{/if}
       {#if backupsQuery.data && (attention.anomalies || !attention.latest)}<li>
-          <a
+          <AttentionLink
             href="/app/admin/backup"
-            class="hover:bg-surface-2 flex items-center justify-between gap-3 rounded py-3"
-            ><span
-              >{attention.anomalies
-                ? m.admin_backup_anomalies({ count: attention.anomalies })
-                : m.admin_no_backups()}</span
-            ><Icon name="chevron-right" class="h-4 w-4" /></a>
+            icon="database"
+            title={attention.anomalies
+              ? m.admin_backup_anomalies({ count: attention.anomalies })
+              : m.admin_no_backups()}
+            detail={m.admin_backup_title()}
+            tone="warning" />
         </li>{/if}
     </ul>
     {#if overviewQuery.loading || servicesQuery.loading || jobsQuery.loading || backupsQuery.loading || (appConfig.socialEnabled && !reportsPending.available && !reportsPending.error)}<p

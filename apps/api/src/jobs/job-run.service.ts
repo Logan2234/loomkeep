@@ -1,5 +1,6 @@
 import type { JobDto, JobRunDto } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
+import { SchedulerRegistry } from "@nestjs/schedule";
 import type { JobRun } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
@@ -8,16 +9,17 @@ import { JOB_HEALTHCHECK_ENV, JOB_KEYS, type JobKey } from "./job-keys";
 
 /** Runs kept per job — bounds the table on a self-host instance running for years. */
 const RUNS_KEPT_PER_JOB = 50;
-/** Runs shown in the admin page per job. */
-const RECENT_RUNS_SHOWN = 20;
 
 @Injectable()
 export class JobRunService {
   private readonly logger = new Logger(JobRunService.name);
+  private readonly startedAt = new Date();
+  private readonly running = new Map<JobKey, Set<Date>>();
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly alerts: JobAlertService,
+    private readonly scheduler: SchedulerRegistry,
   ) {}
 
   /**
@@ -31,6 +33,9 @@ export class JobRunService {
     summarize: (result: T) => string,
   ): Promise<T> {
     const startedAt = new Date();
+    const active = this.running.get(jobKey) ?? new Set<Date>();
+    active.add(startedAt);
+    this.running.set(jobKey, active);
     // Short correlation id, generated once per run: the only way to tie a
     // FAILURE row on the admin "Jobs" page back to that run's actual log
     // lines (JobRun.error has no room for a full log excerpt, only the
@@ -61,6 +66,9 @@ export class JobRunService {
       await this.ping(jobKey, false);
       if (previous !== "FAILURE") await this.alerts.jobFailed(jobKey, error);
       throw err;
+    } finally {
+      active.delete(startedAt);
+      if (active.size === 0) this.running.delete(jobKey);
     }
   }
 
@@ -89,7 +97,7 @@ export class JobRunService {
         this.prisma.jobRun.findMany({
           where: { jobKey: key },
           orderBy: { startedAt: "desc" },
-          take: RECENT_RUNS_SHOWN,
+          take: RUNS_KEPT_PER_JOB,
         }),
       ),
     );
@@ -97,7 +105,42 @@ export class JobRunService {
     return keys.map((key, i) => ({
       key,
       runs: runsByKey[i].map(toRunDto),
+      ...this.scheduleState(key, runsByKey[i][0]?.startedAt),
     }));
+  }
+
+  private scheduleState(key: JobKey, lastStartedAt?: Date) {
+    const active = this.running.get(key);
+    const runningSince = active?.size
+      ? new Date(
+          Math.min(...Array.from(active, (date) => date.getTime())),
+        ).toISOString()
+      : null;
+    const cron = this.scheduler.getCronJobs().get(key);
+    if (!cron)
+      return {
+        runningSince,
+        timeZone: null,
+        nextRunAt: null,
+        overdueSince: null,
+      };
+    const next = cron.nextDate();
+    const timeZone = cron.cronTime.timeZone ?? next.zoneName;
+    const expected = cron.cronTime.getNextDateFrom(
+      lastStartedAt ?? this.startedAt,
+      timeZone ?? undefined,
+    );
+    // Allow the scheduled callback to enter record() before flagging a missed run.
+    const overdueSince =
+      !runningSince && expected.toMillis() < Date.now() - 60_000
+        ? expected.toUTC().toISO()
+        : null;
+    return {
+      runningSince,
+      timeZone,
+      nextRunAt: next.toUTC().toISO(),
+      overdueSince,
+    };
   }
 
   private async lastStatus(jobKey: JobKey): Promise<string | undefined> {

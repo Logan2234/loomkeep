@@ -7,6 +7,7 @@
   // overrides it locally, and remounting the section drops the override.
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import TrendChart from "$lib/components/TrendChart.svelte";
+  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
@@ -61,17 +62,14 @@
         {/if}{CADENCE[trend.period]}
       </p>
     </div>
-    <div class="flex gap-1">
-      {#each PERIODS as p (p.value)}
-        <button
-          class="chip !px-2.5 !py-1 !text-xs"
-          class:chip-on={trend.period === p.value}
-          disabled={periodMut.loading}
-          onclick={() => setPeriod(p.value)}>
-          {p.label}
-        </button>
-      {/each}
-    </div>
+    <SegmentedControl
+      label={title}
+      options={PERIODS.map((period) => ({
+        ...period,
+        disabled: periodMut.loading,
+      }))}
+      value={trend.period}
+      onChange={setPeriod} />
   </div>
 
   <div class="transition-opacity" class:opacity-50={periodMut.loading}>

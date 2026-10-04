@@ -2,11 +2,11 @@ import { normalizeAdminBackupInventory } from "$lib/admin-backup-inventory";
 import type {
   AdminBackupRestoreRequestDto,
   AdminCacheSort,
+  AdminImportStatus,
   AdminUserFilter,
   AdminUserOptionDto,
   CreateAdminInvitationRequestDto,
   Domain,
-  JobStatus,
   Locale,
   MailTemplatePreviewDto,
   ModerationLegalBasis,
@@ -137,9 +137,13 @@ export function getAdminUsers(
   });
 }
 
-export function getAdminInvitations(filters: { page?: number } = {}) {
+export function getAdminInvitations(
+  filters: { page?: number; query?: string; status?: string } = {},
+) {
   return typedRequest("/admin/invitations", {
     query: {
+      q: filters.query || undefined,
+      status: filters.status || undefined,
       page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
     },
   });
@@ -373,7 +377,9 @@ export const deleteAdminCacheOrphans = (domain: Domain) =>
 export function getAdminImportRuns(
   filters: {
     source?: string;
-    status?: JobStatus;
+    status?: AdminImportStatus;
+    from?: string;
+    to?: string;
     userId?: string;
     page?: number;
     limit?: number;
@@ -383,12 +389,17 @@ export function getAdminImportRuns(
     query: {
       source: filters.source,
       status: filters.status,
+      from: filters.from,
+      to: filters.to,
       userId: filters.userId,
       page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
       limit: filters.limit ? String(filters.limit) : undefined,
     },
   });
 }
+
+export const getAdminImportDetail = (id: string) =>
+  typedRequest("/admin/imports/{id}", { params: { id } });
 
 export const getAdminImportSummary = () =>
   typedRequest("/admin/imports/summary");

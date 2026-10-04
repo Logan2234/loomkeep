@@ -90,7 +90,7 @@ export class BackupService {
   }
 
   /** Daily 3h dump to disk, pruned to the {@link KEEP} most recent. Also the manual "Sauvegarder maintenant" trigger. */
-  @Cron("0 3 * * *")
+  @Cron("0 3 * * *", { name: JOB_KEYS.BACKUP })
   async runScheduled(): Promise<AdminBackupFileDto> {
     return this.jobRuns.record(
       JOB_KEYS.BACKUP,

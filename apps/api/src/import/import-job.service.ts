@@ -1,4 +1,6 @@
 import type {
+  AdminImportDetails,
+  AdminImportRunDto,
   ImportAnalyzeRequest,
   ImportAvailabilityDto,
   ImportCommitRequest,
@@ -20,6 +22,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import type { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { EntitlementService } from "../entitlements/entitlement.service";
@@ -57,6 +60,9 @@ interface JobRecord {
   finishedAt: number | null;
   /** The source's parse model, kept between an analysis and its later commit. */
   parsed: unknown;
+  overwrite?: boolean;
+  recorded?: boolean;
+  details?: AdminImportDetails;
 }
 
 /**
@@ -309,6 +315,20 @@ export class ImportJobService {
     const { parsed, plan } = analyzed;
     const job = this.newJob(userId, sourceId, "commit", null);
     job.progress.total = decisions.include.size;
+    job.overwrite = decisions.overwrite;
+    job.details = {
+      items: plan.groups.flatMap((group) =>
+        group.items.map((item) => ({
+          title: item.title,
+          state: decisions.include.has(item.key)
+            ? ("selected" as const)
+            : !item.match && !decisions.overrides.has(item.key)
+              ? ("unresolved" as const)
+              : ("ignored" as const),
+        })),
+      ),
+      report: null,
+    };
     this.jobs.set(job.id, job);
 
     const progress = this.progressFor(job);
@@ -325,13 +345,47 @@ export class ImportJobService {
       // analysis, so its payload has to survive.
       if (job.status === "completed") this.releasePayload(analyzed);
 
-      return this.recordRun(userId, job, decisions.overwrite).catch((err) => {
-        // Audit logging must never take the request path down with it.
-        this.logger.error(`Failed to record import run ${job.id}`, err);
-      });
+      return this.recordRun(userId, job, decisions.overwrite)
+        .catch((err) => {
+          // Audit logging must never take the request path down with it.
+          this.logger.error(`Failed to record import run ${job.id}`, err);
+        })
+        .finally(() => {
+          job.recorded = true;
+        });
     });
 
     return toDto(job);
+  }
+
+  listRunningImports(): AdminImportRunDto[] {
+    return [...this.jobs.values()]
+      .filter((job) =>
+        job.kind === "analyze" ? job.status === "running" : !job.recorded,
+      )
+      .sort((a, b) => b.startedAt - a.startedAt)
+      .map((job) => ({
+        id: job.id,
+        userId: job.userId,
+        identifier: null,
+        sourceId: job.sourceId,
+        status: "RUNNING",
+        phase: job.kind,
+        itemCount: 0,
+        overwrite: job.overwrite ?? false,
+        summary: null,
+        error: null,
+        startedAt: new Date(job.startedAt).toISOString(),
+        finishedAt: null,
+        progress: { ...job.progress },
+      }));
+  }
+
+  runningImportDetails(id: string): AdminImportDetails | null {
+    const job = this.jobs.get(id);
+    return job?.kind === "commit" && !job.recorded
+      ? (job.details ?? null)
+      : null;
   }
 
   getJob(userId: string, jobId: string): ImportJobDto {
@@ -420,6 +474,7 @@ export class ImportJobService {
 
     await this.prisma.importRun.create({
       data: {
+        id: job.id,
         userId,
         sourceId: job.sourceId,
         domain,
@@ -430,10 +485,18 @@ export class ImportJobService {
           ? job.report.tiles.map((t) => `${t.value} ${t.label}`).join(" · ")
           : null,
         error: job.error,
+        details: job.details
+          ? ({
+              ...job.details,
+              report: job.report,
+            } as unknown as Prisma.InputJsonValue)
+          : undefined,
         startedAt: new Date(job.startedAt),
         finishedAt: new Date(job.finishedAt ?? Date.now()),
       },
     });
+
+    job.recorded = true;
 
     // One-off milestone per domain, deduped by the XpEntry unique
     // constraint (see XP_RULES.IMPORT_COMPLETED) — a re-import or overwrite

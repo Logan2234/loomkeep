@@ -40,7 +40,9 @@ export class InactiveAccountService {
     private readonly jobRuns: JobRunService,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_5AM)
+  @Cron(CronExpression.EVERY_DAY_AT_5AM, {
+    name: JOB_KEYS.INACTIVE_ACCOUNTS_SCAN,
+  })
   async scan(): Promise<{ warned: number; deleted: number }> {
     return this.jobRuns.record(
       JOB_KEYS.INACTIVE_ACCOUNTS_SCAN,
