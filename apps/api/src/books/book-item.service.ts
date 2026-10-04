@@ -153,6 +153,7 @@ export class BookItemService {
       editionCount: details.editionCount,
       isbn: details.isbn,
       series: details.series,
+      seriesKey: details.seriesKey,
       language: details.language,
       firstSentence: details.firstSentence,
       readOnlineUrl: details.readOnlineUrl,
@@ -290,6 +291,7 @@ export class BookItemService {
       genres: details.genres,
       pageCount: details.pageCount,
       isbn: details.isbn,
+      seriesKey: details.seriesKey,
       isAdult: details.summary.isAdult,
       lastSyncedAt: new Date(),
     };

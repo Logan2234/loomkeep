@@ -29,6 +29,7 @@ export class BookDetailResponseDto implements BookDetailDto {
   editionCount!: number | null;
   isbn!: string | null;
   series!: string | null;
+  seriesKey!: string | null;
   language!: string | null;
   firstSentence!: string | null;
   readOnlineUrl!: string | null;

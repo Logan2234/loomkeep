@@ -4,6 +4,7 @@ import type {
   BulkEntriesTargetDto,
   BulkUpdateEntriesDto,
   CreateBookSessionDto,
+  LibrarySagaSort,
   UpdateBookEntryDto,
   UpdateBookSessionDto,
   UpsertBookEntryDto,
@@ -128,3 +129,27 @@ export const bulkUpdateBookEntries = (
 
 export const bulkDeleteBookEntries = (body: BulkEntriesTargetDto) =>
   typedRequest("/books/entries/bulk-delete", { method: "POST", body });
+
+/** A series' numbered volumes, each with the reader's status. */
+export const getBookSaga = (seriesKey: string) =>
+  typedRequest("/books/series/{seriesKey}", {
+    params: { seriesKey },
+    query: { lang: getLocale() },
+  });
+
+export interface BookSagaFilters {
+  query?: string;
+  sort?: LibrarySagaSort;
+  order?: "asc" | "desc";
+}
+
+/** The reader's series: started, then finished. */
+export const listBookSagas = (filters: BookSagaFilters = {}) =>
+  typedRequest("/books/sagas", {
+    query: {
+      q: filters.query || undefined,
+      sort: filters.sort,
+      order: filters.order,
+      lang: getLocale(),
+    },
+  });

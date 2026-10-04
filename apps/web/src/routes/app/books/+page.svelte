@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import {
     bulkDeleteBookEntries,
     bulkUpdateBookEntries,
@@ -13,7 +14,11 @@
   import PosterCard from "$lib/components/PosterCard.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import ReadingGoalChip from "$lib/components/ReadingGoalChip.svelte";
+  import SagasModeSwitch, {
+    sagasMode,
+  } from "$lib/components/saga/SagasModeSwitch.svelte";
   import BookSearchPanel from "$lib/components/search/BookSearchPanel.svelte";
+  import BookSagasView from "./components/BookSagasView.svelte";
   import {
     BOOK_OWNERSHIP_SOURCES,
     BOOK_OWNERSHIP_STATUS_OPTIONS,
@@ -30,6 +35,7 @@
     type LibraryColumn,
     type LibraryItemView,
   } from "$lib/library-view";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages";
   import { Domain, isSessionPaused, type BookEntryDto } from "@loomkeep/shared";
 
@@ -172,66 +178,79 @@
       favorite: params.favoritesOnly,
       statuses: params.statuses,
     });
+
+  const mode = $derived(sagasMode(page.url));
 </script>
 
-<LibraryBrowser
-  icon="book"
-  title={m.common_Books()}
-  subtitle={(n) =>
-    n === 1
-      ? m.book_library_count_one({ count: n })
-      : m.book_library_count_many({ count: n })}
-  noun={m.common_book()}
-  domain={Domain.BOOKS}
-  {load}
-  {loadPile}
-  keyOf={(e) => e.id}
-  statusOptions={STATUS_OPTIONS}
-  sorts={SORTS}
-  defaultSort="added"
-  {itemView}
-  columns={COLUMNS}
-  bulk={BULK}
-  {setFavorite}>
-  {#snippet headerActions()}
-    <ReadingGoalChip />
-  {/snippet}
-  {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
-    <BookSearchPanel {query} limit={10} {onResults} />
-  {/snippet}
-  {#snippet card(
-    entry: BookEntryDto,
-    onToggleFavorite: (next: boolean) => void,
-  )}
-    <PosterCard
-      href={`/app/books/${entry.book.sourceId}`}
-      src={entry.book.coverUrl}
-      title={entry.book.title}
-      favorite={entry.favorite}
-      {onToggleFavorite}>
-      {#snippet meta()}
-        {#if entry.book.pageCount}
-          <ProgressBar
-            value={pct(entry)}
-            label={m.common_selection_summary({
-              label: m.book_reading_progress(),
-              selection: entry.book.title,
-            })} />
-          <span class="timecode text-xs">
-            {entry.currentPage} / {entry.book.pageCount}
-            {m.book_pages_lower()}
-            {#if isSessionPaused(entry, "READING")}
-              {m.media_paused_suffix()}
-            {/if}
-          </span>
-        {:else}
-          <span class="timecode text-xs">
-            {BOOK_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
-              · ★ {entry.rating}{/if}{#if isSessionPaused(entry, "READING")}
-              {m.media_paused_suffix()}{/if}
-          </span>
-        {/if}
-      {/snippet}
-    </PosterCard>
-  {/snippet}
-</LibraryBrowser>
+{#snippet modeSwitch()}
+  <SagasModeSwitch isNew={isFeatureNew("book-sagas")} />
+{/snippet}
+
+{#if mode === "sagas"}
+  <BookSagasView {modeSwitch} />
+{:else}
+  <LibraryBrowser
+    icon="book"
+    title={m.common_Books()}
+    subtitle={(n) =>
+      n === 1
+        ? m.book_library_count_one({ count: n })
+        : m.book_library_count_many({ count: n })}
+    noun={m.common_book()}
+    domain={Domain.BOOKS}
+    {load}
+    {loadPile}
+    keyOf={(e) => e.id}
+    statusOptions={STATUS_OPTIONS}
+    sorts={SORTS}
+    defaultSort="added"
+    {itemView}
+    columns={COLUMNS}
+    bulk={BULK}
+    {setFavorite}>
+    {#snippet headerActions()}
+      <div class="flex items-center gap-2">
+        <ReadingGoalChip />
+        {@render modeSwitch()}
+      </div>
+    {/snippet}
+    {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
+      <BookSearchPanel {query} limit={10} {onResults} />
+    {/snippet}
+    {#snippet card(
+      entry: BookEntryDto,
+      onToggleFavorite: (next: boolean) => void,
+    )}
+      <PosterCard
+        href={`/app/books/${entry.book.sourceId}`}
+        src={entry.book.coverUrl}
+        title={entry.book.title}
+        favorite={entry.favorite}
+        {onToggleFavorite}>
+        {#snippet meta()}
+          {#if entry.book.pageCount}
+            <ProgressBar
+              value={pct(entry)}
+              label={m.common_selection_summary({
+                label: m.book_reading_progress(),
+                selection: entry.book.title,
+              })} />
+            <span class="timecode text-xs">
+              {entry.currentPage} / {entry.book.pageCount}
+              {m.book_pages_lower()}
+              {#if isSessionPaused(entry, "READING")}
+                {m.media_paused_suffix()}
+              {/if}
+            </span>
+          {:else}
+            <span class="timecode text-xs">
+              {BOOK_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
+                · ★ {entry.rating}{/if}{#if isSessionPaused(entry, "READING")}
+                {m.media_paused_suffix()}{/if}
+            </span>
+          {/if}
+        {/snippet}
+      </PosterCard>
+    {/snippet}
+  </LibraryBrowser>
+{/if}

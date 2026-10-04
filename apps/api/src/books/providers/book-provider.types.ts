@@ -28,6 +28,8 @@ export interface ProviderBookDetails {
   /** ISBN of the picked edition, when known. */
   isbn: string | null;
   series: string | null;
+  /** The source's series the work is a numbered volume of, when any. */
+  seriesKey: string | null;
   /** Human-readable language of the picked edition, when known. */
   language: string | null;
   firstSentence: string | null;
@@ -35,6 +37,13 @@ export interface ProviderBookDetails {
   readOnlineUrl: string | null;
   /** Cross-reference links (Goodreads, LibraryThing, Amazon…), when known. */
   externalLinks: { label: string; url: string }[];
+}
+
+/** A series kept to its whole-numbered volumes, in order. */
+export interface ProviderBookSeries {
+  key: string;
+  title: string;
+  members: (BookSummaryDto & { position: number })[];
 }
 
 export interface BookCatalogProvider {
@@ -59,4 +68,9 @@ export interface BookCatalogProvider {
    * translated into.
    */
   getEditions(sourceId: string, lang?: string): Promise<BookEditionDto[]>;
+  /** A series' numbered volumes, titled in `lang`; null under two volumes. */
+  getSeries(
+    seriesKey: string,
+    lang?: string,
+  ): Promise<ProviderBookSeries | null>;
 }

@@ -234,6 +234,7 @@ describe("OpenLibraryProvider", () => {
       editionCount: null,
       isbn: null,
       series: null,
+      seriesKey: null,
       language: null,
       firstSentence: null,
       readOnlineUrl: null,
@@ -1275,5 +1276,64 @@ describe("OpenLibraryProvider", () => {
         coverUrl: null,
       },
     ]);
+  });
+
+  describe("getSeries", () => {
+    const volume = (
+      id: string,
+      title: string,
+      position: string,
+      editions = 10,
+    ) => ({
+      key: `/works/${id}`,
+      title,
+      first_publish_year: 1997,
+      edition_count: editions,
+      series_key: ["OL1L", "OL326110L"],
+      series_name: ["Wizarding World", "Harry Potter"],
+      series_position: ["9", position],
+    });
+
+    it("keeps the numbered volumes in order, titled in the reader's language", async () => {
+      const fetch = mockFetch({
+        numFound: 5,
+        docs: [
+          volume("OL2W", "Harry Potter et la Chambre des secrets", "2"),
+          volume("OL1W", "Harry Potter à l'école des sorciers", "1"),
+          volume("OL7W", "Harry Potter (series) 1-7", "1-7"),
+          volume("OL25W", "A novella", "2.5"),
+          // A duplicate work for volume 1, catalogued less.
+          volume("OL1BW", "Harry Potter 1 (reprint)", "1", 2),
+        ],
+      });
+
+      const series = await providerWith().getSeries("OL326110L", "fr");
+
+      expect(calledUrl(fetch)).toContain("q=series_key:OL326110L");
+      expect(calledUrl(fetch)).toContain("lang=fr");
+      expect(series).toMatchObject({
+        key: "OL326110L",
+        title: "Harry Potter",
+        members: [
+          { sourceId: "OL1W", position: 1 },
+          { sourceId: "OL2W", position: 2 },
+        ],
+      });
+    });
+
+    it("has no saga under two volumes", async () => {
+      mockFetch({ numFound: 1, docs: [volume("OL1W", "Alone", "1")] });
+
+      await expect(providerWith().getSeries("OL326110L")).resolves.toBeNull();
+    });
+
+    it("never queries Open Library with something other than a series id", async () => {
+      const fetch = mockFetch({ numFound: 0, docs: [] });
+
+      await expect(
+        providerWith().getSeries("OL1L OR key:/works/X"),
+      ).resolves.toBeNull();
+      expect(fetch).not.toHaveBeenCalled();
+    });
   });
 });

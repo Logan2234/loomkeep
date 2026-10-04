@@ -1,4 +1,5 @@
-import type { EntryStatus } from "../enums";
+import type { BookStatus, EntryStatus } from "../enums";
+import type { BookSummaryDto } from "./book";
 import type { MediaSummaryDto } from "./catalog";
 
 /** One work of a saga, in viewing order. */
@@ -31,15 +32,15 @@ export interface MediaSagaResponseDto {
 }
 
 /** A saga from the viewer's own library, for the "Sagas" view. */
-export interface LibrarySagaDto {
+export interface LibrarySagaDto<M = SagaMemberDto> {
   key: string;
   title: string;
-  members: SagaMemberDto[];
+  members: M[];
   /**
    * What's next: the first released work not seen, or else the announced
    * one. Null once the saga is finished.
    */
-  next: SagaMemberDto | null;
+  next: M | null;
   /** Finished (or caught-up) works, out of `released`. */
   seen: number;
   released: number;
@@ -49,14 +50,38 @@ export interface LibrarySagaDto {
   finishedAt: string | null;
 }
 
-export interface LibrarySagasDto {
+export interface LibrarySagasDto<M = SagaMemberDto> {
   /** At least one work finished and one released work still to see. */
-  inProgress: LibrarySagaDto[];
+  inProgress: LibrarySagaDto<M>[];
   /** Everything released is seen, and a sequel is announced. */
-  waiting: LibrarySagaDto[];
+  waiting: LibrarySagaDto<M>[];
   /** Everything seen or dropped, nothing announced. */
-  finished: LibrarySagaDto[];
+  finished: LibrarySagaDto<M>[];
 }
+
+/** One volume of a book series, in reading order. */
+export interface BookSagaMemberDto extends BookSummaryDto {
+  /** Its number in the series: whole volumes only, no novella or omnibus. */
+  position: number;
+  /** The reader's library status, null when not tracked. */
+  status: BookStatus | null;
+}
+
+/** An Open Library series, kept to its numbered volumes. */
+export interface BookSagaDto {
+  /** Open Library's series id, e.g. `OL326110L`. */
+  key: string;
+  title: string;
+  members: BookSagaMemberDto[];
+}
+
+export interface BookSagaResponseDto {
+  /** Null when the series has fewer than two numbered volumes. */
+  saga: BookSagaDto | null;
+}
+
+/** The reader's book series. Open Library catalogues a book once out, so none waits on a sequel. */
+export type LibraryBookSagasDto = LibrarySagasDto<BookSagaMemberDto>;
 
 export const LIBRARY_SAGA_SORTS = ["recent", "title", "progress"] as const;
 export type LibrarySagaSort = (typeof LIBRARY_SAGA_SORTS)[number];

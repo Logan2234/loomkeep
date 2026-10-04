@@ -1,7 +1,6 @@
 import type {
   CatalogSource,
   EntryStatus,
-  LibrarySagaDto,
   LibrarySagaSort,
   LibrarySagasDto,
   MediaSagaDto,
@@ -15,7 +14,11 @@ import { mapWithConcurrency } from "../common/concurrency.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { AgeGateService } from "../users/age-gate.service";
 import { LibraryService } from "./library.service";
-import { sagaProgress } from "./saga-progress.util";
+import {
+  MEDIA_SAGA_STATUS,
+  sagaComparator,
+  sagaProgress,
+} from "./saga-progress.util";
 
 export interface LibrarySagaFilters {
   types?: MediaType[];
@@ -158,7 +161,7 @@ export class SagaService {
         continue;
       }
 
-      const progress = sagaProgress(members);
+      const progress = sagaProgress(members, MEDIA_SAGA_STATUS);
       if (progress.state === "none") continue;
       result[progress.state].push({
         key: saga.key,
@@ -252,18 +255,4 @@ function toMemberDto(
     upcoming: m.upcoming,
     status: status ?? null,
   };
-}
-
-/** Descending by default: most recent, Z to A, furthest along first. */
-function sagaComparator(
-  sort: LibrarySagaSort,
-): (a: LibrarySagaDto, b: LibrarySagaDto) => number {
-  switch (sort) {
-    case "title":
-      return (a, b) => b.title.localeCompare(a.title);
-    case "progress":
-      return (a, b) => b.seen / b.released - a.seen / a.released;
-    default:
-      return (a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt);
-  }
 }

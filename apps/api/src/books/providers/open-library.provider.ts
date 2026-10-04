@@ -8,6 +8,7 @@ import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import type {
   BookCatalogProvider,
   ProviderBookDetails,
+  ProviderBookSeries,
 } from "./book-provider.types";
 
 const API_URL = "https://openlibrary.org";
@@ -63,13 +64,20 @@ const ISBN_SEARCH_FIELDS = `${SEARCH_FIELDS},isbn`;
 // (https://openlibrary.org/dev/docs/api/search). The language match is not a
 // hard filter upstream, hence getDetails() reading `editions.docs[0].language`
 // back rather than assuming it equals `lang`.
-const DETAILS_FIELDS = `${SEARCH_FIELDS},editions,editions.key,editions.title,editions.language,editions.isbn,editions.ebook_access`;
+const DETAILS_FIELDS = `${SEARCH_FIELDS},series_key,series_position,editions,editions.key,editions.title,editions.language,editions.isbn,editions.ebook_access`;
 
 // Same trick for search results: the nested edition's own title (in the
 // requested language) reads far better than the work's single canonical
 // title, which is often the original-language one (e.g. a French reader
 // searching would otherwise see "Harry Potter and the Philosopher's Stone").
 const SEARCH_FIELDS_WITH_EDITIONS = `${SEARCH_FIELDS},editions,editions.title`;
+
+// A series' volumes, each titled in the requested language like a search.
+const SERIES_FIELDS = `${SEARCH_FIELDS_WITH_EDITIONS},series_key,series_name,series_position`;
+
+// Far beyond any real series (Discworld has 41 volumes), short of an omnibus
+// flood.
+const SERIES_LIMIT = 100;
 
 // Fallback when no caller-supplied language is available (e.g. bulk import).
 // `search()`/`getDetails()` accept a `lang` argument for the signed-in user's
@@ -101,6 +109,11 @@ interface OpenLibraryDoc {
   ratings_count?: number;
   isbn?: string[]; // Every ISBN across every edition of the work.
   edition_count?: number;
+  // Open Library's series entities ("OL326110L"), each with the work's place
+  // in it, index for index: "1", "2.5" for a novella, "1-3" for an omnibus.
+  series_key?: string[];
+  series_name?: string[];
+  series_position?: string[];
   // Present only when `editions`/`editions.*` was requested (getDetails()'s
   // DETAILS_FIELDS) — the one edition Solr's `lang=` picked, per the note on
   // DETAILS_FIELDS above.
@@ -350,6 +363,7 @@ export class OpenLibraryProvider implements BookCatalogProvider {
         nestedEdition?.isbn?.[0] ??
         null,
       series: editionDetail?.series?.[0] ?? null,
+      seriesKey: doc ? mainSeries(doc) : null,
       language: languageLabel(
         editionLanguageCode(editionDetail) ?? nestedEdition?.language?.[0],
         lang,
@@ -507,6 +521,55 @@ export class OpenLibraryProvider implements BookCatalogProvider {
       .slice(0, MAX_SAME_AUTHOR_BOOKS);
   }
 
+  /**
+   * A series' numbered volumes, in order, titled in `lang` when an edition
+   * in it exists. Novellas ("2.5") and omnibuses ("1-3") are left out, and
+   * of two works sharing a number the one with more editions stays. Null
+   * when fewer than two volumes remain.
+   */
+  async getSeries(
+    seriesKey: string,
+    lang: string = DEFAULT_LANG,
+  ): Promise<ProviderBookSeries | null> {
+    // Interpolated into a Solr query: an Open Library series id, nothing else.
+    if (!SERIES_KEY.test(seriesKey)) return null;
+    const docs = await this.searchDocs(
+      `series_key:${seriesKey}`,
+      SERIES_LIMIT,
+      {
+        fields: SERIES_FIELDS,
+        lang,
+      },
+    );
+    let title: string | null = null;
+    const byPosition = new Map<
+      number,
+      { doc: OpenLibraryDoc; editions: number }
+    >();
+
+    for (const doc of docs) {
+      const index = doc.series_key?.indexOf(seriesKey) ?? -1;
+      const position = doc.series_position?.[index];
+      if (index < 0 || !position || !WHOLE_NUMBER.test(position)) continue;
+      title ??= doc.series_name?.[index] ?? null;
+      const editions = doc.edition_count ?? 0;
+      const held = byPosition.get(Number(position));
+
+      if (!held || editions > held.editions) {
+        byPosition.set(Number(position), { doc, editions });
+      }
+    }
+
+    if (byPosition.size < 2) return null;
+    return {
+      key: seriesKey,
+      title: title ?? seriesKey,
+      members: [...byPosition.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([position, { doc }]) => ({ ...this.toSummary(doc), position })),
+    };
+  }
+
   private async searchDocs(
     query: string,
     limit: number,
@@ -620,6 +683,18 @@ function retryDelayMs(
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** An Open Library series id. */
+const SERIES_KEY = /^OL\d+L$/;
+const WHOLE_NUMBER = /^\d+$/;
+
+/** The first series the work is a whole-numbered volume of, if any. */
+function mainSeries(doc: OpenLibraryDoc): string | null {
+  const index = (doc.series_position ?? []).findIndex((p) =>
+    WHOLE_NUMBER.test(p),
+  );
+  return index < 0 ? null : (doc.series_key?.[index] ?? null);
 }
 
 /**

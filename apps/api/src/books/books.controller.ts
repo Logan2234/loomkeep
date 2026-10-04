@@ -1,5 +1,7 @@
 import type {
+  BookSagaResponseDto as BookSagaResponse,
   BulkEntriesResultDto,
+  LibraryBookSagasDto,
   PagedResult,
   PileSummaryDto,
 } from "@loomkeep/shared";
@@ -13,6 +15,7 @@ import {
   BookSource,
   Domain,
   ErrorCode,
+  LIBRARY_SAGA_SORTS,
   ReadingGoalDto,
 } from "@loomkeep/shared";
 import {
@@ -46,10 +49,15 @@ import { filterAdultContent } from "../users/age.util";
 import { DomainGateService } from "../users/domain-gate.service";
 import { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
+import { BookSagaService } from "./book-saga.service";
 import { BookSessionService } from "./book-session.service";
 import { BookDetailResponseDto } from "./dto/book-detail-response.dto";
 import { BookEditionResponseDto } from "./dto/book-edition-response.dto";
 import { BookEntryResponseDto } from "./dto/book-entry-response.dto";
+import {
+  BookSagaResponseDto,
+  LibraryBookSagasResponseDto,
+} from "./dto/book-saga-response.dto";
 import { BookSearchResultResponseDto } from "./dto/book-search-response.dto";
 import {
   BookSessionMutationResponseDto,
@@ -68,6 +76,7 @@ export class BooksController {
   constructor(
     private readonly bookItemService: BookItemService,
     private readonly bookLibraryService: BookLibraryService,
+    private readonly bookSagaService: BookSagaService,
     private readonly bookSessionService: BookSessionService,
     private readonly domainGate: DomainGateService,
     private readonly ageGate: AgeGateService,
@@ -173,6 +182,43 @@ export class BooksController {
   }
 
   /** What's left in the pile among the entries the list shows under the same filters. */
+  /** The reader's book series: started, then finished. */
+  @Get("sagas")
+  @ApiOkResponse({ type: LibraryBookSagasResponseDto })
+  async listSagas(
+    @CurrentUser() user: JwtPayload,
+    @Query("q") q?: string,
+    @Query("sort") sort?: string,
+    @Query("order") order?: string,
+    @Query("lang") lang?: string,
+  ): Promise<LibraryBookSagasDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
+    return this.bookSagaService.listSagas(user.sub, {
+      q,
+      sort: LIBRARY_SAGA_SORTS.find((s) => s === sort),
+      order: order === "asc" ? "asc" : "desc",
+      lang: safeLang(lang),
+    });
+  }
+
+  /** A series' numbered volumes, each with the reader's status. */
+  @Get("series/:seriesKey")
+  @ApiOkResponse({ type: BookSagaResponseDto })
+  async getSeries(
+    @CurrentUser() user: JwtPayload,
+    @Param("seriesKey") seriesKey: string,
+    @Query("lang") lang?: string,
+  ): Promise<BookSagaResponse> {
+    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
+    return {
+      saga: await this.bookSagaService.getSaga(
+        user.sub,
+        seriesKey,
+        safeLang(lang),
+      ),
+    };
+  }
+
   @Get("pile")
   @ApiOkResponse({ type: PileSummaryResponseDto })
   async getPile(

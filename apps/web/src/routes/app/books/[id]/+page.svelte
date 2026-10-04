@@ -4,11 +4,13 @@
     deleteBookEntry,
     getBookDetail,
     getBookEditions,
+    getBookSaga,
     updateBookEntry,
     upsertBookEntry,
   } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
+  import BookSagaSection from "./components/BookSagaSection.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
   import Banner from "$lib/components/Banner.svelte";
@@ -115,6 +117,21 @@
   ]);
 
   const entry = $derived(detail?.entry ?? null);
+
+  // Read here rather than in the saga block: the same-author carousel leaves
+  // out the series' volumes, which the block already lists.
+  const sagaKey = $derived(
+    keys.books.saga(detail?.seriesKey ?? "", entry !== null),
+  );
+  const sagaQuery = createApiQuery(() => ({
+    key: sagaKey,
+    fetch: () => getBookSaga(detail!.seriesKey!).then((r) => r.saga),
+    enabled: !!detail?.seriesKey,
+    keepPreviousData: true,
+  }));
+  const sagaIds = $derived(
+    new Set(sagaQuery.data?.members.map((x) => x.sourceId)),
+  );
   const reviewMeta = $derived(
     detail ? joinMeta(detail.authors.join(", "), detail.year) : "",
   );
@@ -412,9 +429,20 @@
           </TrackingPanel>
         {/if}
 
+        {#if sagaQuery.data}
+          <BookSagaSection
+            saga={sagaQuery.data}
+            {sagaKey}
+            sourceId={detail.sourceId}
+            entryStatus={entry?.status ?? null} />
+        {/if}
+
         <RelatedCarousel
           title={m.book_same_author()}
-          items={toCarouselItems(detail.sameAuthorBooks, "/app/books")} />
+          items={toCarouselItems(
+            detail.sameAuthorBooks.filter((b) => !sagaIds.has(b.sourceId)),
+            "/app/books",
+          )} />
 
         <!-- Details panel, mobile position: after "Mon suivi". -->
         {#if hasMeta}

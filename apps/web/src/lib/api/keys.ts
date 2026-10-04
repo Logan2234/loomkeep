@@ -26,6 +26,10 @@ export const keys = {
       ["books", "editions", source, sourceId] as const,
     reading: (sort: string) => ["books", "reading", sort] as const,
     tracked: () => ["books", "tracked"] as const,
+    // Keyed on whether the book is tracked: tracking it ties it to its series.
+    saga: (seriesKey: string, tracked: boolean) =>
+      ["books", "saga", seriesKey, tracked] as const,
+    sagas: (filters: object) => ["books", "sagas", filters] as const,
     search: (query: string) => ["books", "search", query] as const,
     sessionsRoot: (entryId: string) => ["books", "sessions", entryId] as const,
     sessions: (entryId: string, page = 1) =>
