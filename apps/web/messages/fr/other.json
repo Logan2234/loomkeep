@@ -787,7 +787,7 @@
   "profile_avatar_large": "Avatar en grand",
   "profile_avatar_reduce": "Réduire l'avatar",
   "calendar_feed_title": "Flux des sorties",
-  "calendar_feed_description": "Pour suivre dans un lecteur de flux (Feedly, FreshRSS, Thunderbird…) les épisodes sortis ces 30 derniers jours. C'est le même lien personnel : le régénérer révoque aussi le flux.",
+  "calendar_feed_description": "Pour suivre dans un lecteur de flux (Feedly, FreshRSS, Thunderbird…) les épisodes, films et jeux sortis ces 30 derniers jours. C'est le même lien personnel : le régénérer révoque aussi le flux.",
   "calendar_feed_copy_rss": "Copier le lien RSS",
   "subscription_copy_atom": "Copier le lien Atom",
   "calendar_link_generating": "Génération du lien…",

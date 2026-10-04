@@ -787,7 +787,7 @@
   "profile_avatar_large": "Avatar ingrandito",
   "profile_avatar_reduce": "Riduci l'avatar",
   "calendar_feed_title": "Feed delle uscite",
-  "calendar_feed_description": "Per seguire in un lettore di feed (Feedly, FreshRSS, Thunderbird…) gli episodi usciti negli ultimi 30 giorni. È lo stesso link personale: rigenerarlo revoca anche il feed.",
+  "calendar_feed_description": "Per seguire in un lettore di feed (Feedly, FreshRSS, Thunderbird…) gli episodi, i film e i giochi usciti negli ultimi 30 giorni. È lo stesso link personale: rigenerarlo revoca anche il feed.",
   "calendar_feed_copy_rss": "Copia il link RSS",
   "subscription_copy_atom": "Copia il link Atom",
   "calendar_link_generating": "Generazione del link…",

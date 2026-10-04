@@ -787,7 +787,7 @@
   "profile_avatar_large": "Enlarged avatar",
   "profile_avatar_reduce": "Reduce avatar",
   "calendar_feed_title": "Release feed",
-  "calendar_feed_description": "To follow the episodes released over the last 30 days in a feed reader (Feedly, FreshRSS, Thunderbird…). It's the same personal link: regenerating it revokes the feed too.",
+  "calendar_feed_description": "To follow the episodes, movies and games released over the last 30 days in a feed reader (Feedly, FreshRSS, Thunderbird…). It's the same personal link: regenerating it revokes the feed too.",
   "calendar_feed_copy_rss": "Copy RSS link",
   "subscription_copy_atom": "Copy Atom link",
   "calendar_link_generating": "Generating link…",
