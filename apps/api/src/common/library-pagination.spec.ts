@@ -86,7 +86,7 @@ describe("library pagination boundaries", () => {
     },
   );
 
-  it("normalizes session pages before they reach Prisma", () => {
+  it("normalizes session pages before they reach Prisma", async () => {
     const sessions = { list: vi.fn() };
     const books = new BooksController(
       null!,
@@ -103,8 +103,8 @@ describe("library pagination boundaries", () => {
       null!,
       gate as never,
     );
-    books.listSessions(viewer, "entry", "abc");
-    games.listSessions(viewer, "entry", "Infinity");
+    await books.listSessions(viewer, "entry", "abc");
+    await games.listSessions(viewer, "entry", "Infinity");
     expect(sessions.list.mock.calls).toEqual([
       ["viewer", "entry", 1],
       ["viewer", "entry", 1],
