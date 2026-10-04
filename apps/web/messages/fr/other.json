@@ -1288,6 +1288,5 @@
   "media_movie_reminder_cancel": "Désactiver le rappel de sortie",
   "media_movie_reminder_active": "Rappel activé",
   "media_movie_reminder_enabled_toast": "Rappel activé : le film rejoindra tes résumés de sortie.",
-  "media_movie_reminder_disabled_toast": "Rappel de sortie désactivé.",
-  "media_movie_reminder_channels_disabled": "Active les résumés de sortie par e-mail ou push pour recevoir ce rappel."
+  "media_movie_reminder_disabled_toast": "Rappel de sortie désactivé."
 }

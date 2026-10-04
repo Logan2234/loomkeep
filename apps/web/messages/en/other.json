@@ -1288,6 +1288,5 @@
   "media_movie_reminder_cancel": "Turn off release reminder",
   "media_movie_reminder_active": "Reminder enabled",
   "media_movie_reminder_enabled_toast": "Reminder enabled: this movie will appear in your release summaries.",
-  "media_movie_reminder_disabled_toast": "Release reminder disabled.",
-  "media_movie_reminder_channels_disabled": "Enable release summaries by email or push to receive this reminder."
+  "media_movie_reminder_disabled_toast": "Release reminder disabled."
 }

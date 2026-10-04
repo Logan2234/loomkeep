@@ -22,6 +22,7 @@
     entry,
     isMovie,
     upcoming = false,
+    airingFinished = false,
     onToggleMovieAlerts = () => {},
     saving,
     nextEpisode,
@@ -41,6 +42,8 @@
     entry: LibraryEntryDto | null;
     isMovie: boolean;
     upcoming?: boolean;
+    /** A finished show airs no more episodes to be alerted of. */
+    airingFinished?: boolean;
     onToggleMovieAlerts?: () => void;
     saving: boolean;
     nextEpisode: NextEpisodeDto | null;
@@ -144,7 +147,7 @@
             </button>
           {/snippet}
           {@render digestOffTooltip(movieBell)}
-          <span class="text-sm"
+          <span class="text-sm {digestOff ? 'text-dim' : ''}"
             >{entry.movieReleaseAlertsEnabled
               ? m.media_movie_reminder_active()
               : m.media_movie_reminder_enable()}</span>
@@ -238,7 +241,7 @@
               {/snippet}
               {@render digestOffTooltip(cancelReminder, true)}
             {/if}
-            {#if !isMovie}
+            {#if !isMovie && !airingFinished}
               {#snippet episodeAlerts()}
                 <button
                   role="menuitem"

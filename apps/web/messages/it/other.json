@@ -1288,6 +1288,5 @@
   "media_movie_reminder_cancel": "Disattiva il promemoria di uscita",
   "media_movie_reminder_active": "Promemoria attivo",
   "media_movie_reminder_enabled_toast": "Promemoria attivato: il film apparirà nei tuoi riepiloghi delle uscite.",
-  "media_movie_reminder_disabled_toast": "Promemoria di uscita disattivato.",
-  "media_movie_reminder_channels_disabled": "Attiva i riepiloghi delle uscite via e-mail o push per ricevere questo promemoria."
+  "media_movie_reminder_disabled_toast": "Promemoria di uscita disattivato."
 }

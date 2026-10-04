@@ -570,7 +570,7 @@
               {@render bellButton(entry)}
             {/if}
             <div class="min-w-0 text-sm">
-              <p>
+              <p class={digestOff ? "text-dim" : ""}>
                 {entry.releaseAlertsEnabled
                   ? m.media_movie_reminder_active()
                   : m.media_movie_reminder_enable()}
@@ -583,12 +583,6 @@
               {/if}
             </div>
           </div>
-          {#if digestOff}
-            <a
-              href="/app/settings/communications"
-              class="text-accent text-sm underline"
-              >{m.media_movie_reminder_channels_disabled()}</a>
-          {/if}
           <p class="text-dim text-xs">{m.game_upcoming_tracking_hint()}</p>
         </div>
       {/snippet}

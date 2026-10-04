@@ -1,8 +1,9 @@
+import { auth } from "$lib/auth.svelte";
 import { m } from "$lib/paraglide/messages";
-import type { LibraryEntryDto } from "@loomkeep/shared";
+import type { LibraryEntryDto, UserDto } from "@loomkeep/shared";
 import { render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import ActionBar from "./ActionBar.svelte";
 
 const entry: LibraryEntryDto = {
@@ -97,5 +98,51 @@ describe("upcoming movie action bar", () => {
     expect(
       screen.queryByRole("button", { name: m.media_movie_reminder_enable() }),
     ).toBeNull();
+  });
+});
+
+describe("release alerts in the action bar", () => {
+  const series = { ...props(), isMovie: false, upcoming: false };
+
+  afterEach(() => {
+    auth.user = null;
+  });
+
+  it("offers a running show's episode alerts, not a finished one's", async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(ActionBar, { props: series });
+    await user.click(
+      screen.getByRole("button", { name: m.common_more_actions() }),
+    );
+    expect(
+      screen.getByRole("menuitem", {
+        name: new RegExp(m.media_mute_episode_alerts()),
+      }),
+    ).toBeTruthy();
+    unmount();
+
+    render(ActionBar, { props: { ...series, airingFinished: true } });
+    await user.click(
+      screen.getByRole("button", { name: m.common_more_actions() }),
+    );
+    expect(
+      screen.queryByRole("menuitem", {
+        name: new RegExp(m.media_mute_episode_alerts()),
+      }),
+    ).toBeNull();
+  });
+
+  it("greys the reminder out while no release summary is on", () => {
+    auth.user = {
+      id: "u1",
+      notifyEmail: "DISABLED",
+      notifyPush: "DISABLED",
+    } as UserDto;
+    render(ActionBar, { props: props() });
+
+    const bell = screen.getByRole("button", {
+      name: m.media_movie_reminder_enable(),
+    }) as HTMLButtonElement;
+    expect(bell.disabled).toBe(true);
   });
 });
