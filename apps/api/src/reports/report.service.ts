@@ -14,9 +14,10 @@ import {
   type ReportTargetType,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
+import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { resolveWorkHref } from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -28,7 +29,6 @@ import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 
-export const REPORT_PAGE_SIZE = 20;
 const EXCERPT_LENGTH = 120;
 
 type ReportRow = {
@@ -263,7 +263,7 @@ export class ReportService {
     status: "PENDING" | "RESOLVED" | "DISMISSED" | undefined,
     page: number,
     reporterId?: string,
-    limit = REPORT_PAGE_SIZE,
+    limit = DEFAULT_PAGE_SIZE,
   ): Promise<PagedResult<ReportDto>> {
     const rows = await this.prisma.report.findMany({
       where: {
@@ -388,7 +388,7 @@ export class ReportService {
         ],
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 50,
+      take: DEFAULT_PAGE_SIZE,
       include: { reporter: { select: REPORTER_SELECT } },
     });
 
@@ -442,7 +442,7 @@ export class ReportService {
   }
 
   /** Daily 7h admin-only digest of pending reports. Skipped entirely when there's nothing pending. */
-  @Cron("0 7 * * *", { name: JOB_KEYS.REPORTS_DIGEST })
+  @Cron(CronExpression.EVERY_DAY_AT_7AM, { name: JOB_KEYS.REPORTS_DIGEST })
   async sendDailyDigest(): Promise<number> {
     return this.jobRuns.record(
       JOB_KEYS.REPORTS_DIGEST,

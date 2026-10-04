@@ -33,7 +33,7 @@ import {
   assertBulkTarget,
   assertBulkUpdate,
 } from "../common/bulk-entries.util";
-import { toDateOrNull } from "../common/date.util";
+import { sinceDaysAgo, toDateOrNull, utcYearRange } from "../common/date.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters,
@@ -514,9 +514,7 @@ export class BookLibraryService {
     }
 
     if (statuses.includes("PAUSED")) {
-      const cutoff = new Date(
-        Date.now() - DORMANT_AFTER_DAYS * 24 * 60 * 60 * 1000,
-      );
+      const cutoff = sinceDaysAgo(new Date(), DORMANT_AFTER_DAYS);
       statusFilters.push({
         status: BookStatus.READING,
         sessions: {
@@ -905,10 +903,7 @@ export class BookLibraryService {
     userId: string,
     year: number,
   ): Promise<number> {
-    const range = {
-      gte: new Date(Date.UTC(year, 0, 1)),
-      lt: new Date(Date.UTC(year + 1, 0, 1)),
-    };
+    const range = utcYearRange(year);
 
     return this.prisma.bookReading.count({
       where: {

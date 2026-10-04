@@ -1,4 +1,5 @@
 import type { EntryStatus } from "@loomkeep/shared";
+import { utcDateKey } from "../../../common/date.util";
 import type { ImportShow, ParsedImport } from "../../media-import-model";
 
 const MAX_ENTRIES = 20_000;
@@ -193,8 +194,7 @@ function parseDate(value: string): Date | null {
   }
 
   const date = new Date(`${value}T00:00:00.000Z`);
-  return Number.isNaN(date.getTime()) ||
-    date.toISOString().slice(0, 10) !== value
+  return Number.isNaN(date.getTime()) || utcDateKey(date) !== value
     ? null
     : date;
 }

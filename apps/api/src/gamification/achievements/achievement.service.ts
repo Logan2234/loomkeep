@@ -8,9 +8,10 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { Cron } from "@nestjs/schedule";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import type { Prisma } from "@prisma/client";
 import { AppException } from "../../common/app.exception";
+import { sinceDaysAgo } from "../../common/date.util";
 import { isUniqueViolation } from "../../common/prisma-error.util";
 import { EventsGateway } from "../../events/events.gateway";
 import { JOB_KEYS } from "../../jobs/job-keys";
@@ -397,7 +398,9 @@ export class AchievementService {
    * This is a full sweep without activity-based targeting. Revisit that if
    * the catalogue makes the loop expensive.
    */
-  @Cron("0 5 * * *", { name: JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP })
+  @Cron(CronExpression.EVERY_DAY_AT_5AM, {
+    name: JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP,
+  })
   async runAchievementsSweepJob(): Promise<string> {
     return this.jobRuns.record(
       JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP,
@@ -425,9 +428,7 @@ export class AchievementService {
    * their progression (their achievements aren't shown to others either).
    */
   private async recomputeRarity(): Promise<number> {
-    const activeSince = new Date(
-      Date.now() - RARITY_ACTIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
-    );
+    const activeSince = sinceDaysAgo(new Date(), RARITY_ACTIVE_WINDOW_DAYS);
     const eligible: Prisma.UserWhereInput = {
       onboardedAt: { not: null },
       lastActiveAt: { gte: activeSince },

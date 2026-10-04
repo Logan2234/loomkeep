@@ -1,6 +1,7 @@
 import { NotificationType } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import { addDays, sinceDaysAgo } from "../common/date.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
@@ -50,7 +51,7 @@ export class ApiKeyLifecycleService {
   }
 
   async warnExpiring(now = new Date()): Promise<number> {
-    const horizon = new Date(now.getTime() + EXPIRY_WARNING_DAYS * DAY_MS);
+    const horizon = addDays(now, EXPIRY_WARNING_DAYS);
     const keys = await this.prisma.apiKey.findMany({
       where: {
         expiresAt: { gt: now, lte: horizon },
@@ -93,7 +94,7 @@ export class ApiKeyLifecycleService {
   }
 
   async deleteUnused(now = new Date()): Promise<number> {
-    const cutoff = new Date(now.getTime() - UNUSED_KEY_DAYS * DAY_MS);
+    const cutoff = sinceDaysAgo(now, UNUSED_KEY_DAYS);
     const keys = await this.prisma.apiKey.findMany({
       where: {
         OR: [

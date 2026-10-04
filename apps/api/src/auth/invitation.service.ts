@@ -12,6 +12,7 @@ import { Cron } from "@nestjs/schedule";
 import type { Invitation, Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { randomToken, sha256Hex } from "../common/crypto.util";
+import { addDays, sinceDaysAgo } from "../common/date.util";
 import type { ParsedPage } from "../common/pagination.util";
 import { primaryWebOrigin } from "../common/web-origin.util";
 import { MailService } from "../mail/mail.service";
@@ -20,7 +21,7 @@ import { avatarUrl } from "../users/avatar.util";
 
 /** How long an unused, dead (expired or revoked) invitation is kept for the admin list. */
 const DEAD_INVITATION_RETENTION_DAYS = 30;
-const DAY_MS = 24 * 60 * 60_000;
+const DEAD_INVITATION_PURGE_CRON = "30 6 * * *";
 
 const INVITATION_INCLUDE = {
   createdBy: { select: { displayName: true } },
@@ -149,7 +150,7 @@ export class InvitationService {
         // An address-bound invitation can only ever create that one account.
         maxUses: email ? 1 : input.maxUses,
         tokenIssuedAt: now,
-        expiresAt: new Date(now.getTime() + input.validityDays * DAY_MS),
+        expiresAt: addDays(now, input.validityDays),
       },
       include: INVITATION_INCLUDE,
     });
@@ -272,11 +273,9 @@ export class InvitationService {
    * enough in the admin list. A redeemed one is kept: it's what the admin
    * drawer's "invité par" line reads.
    */
-  @Cron("30 6 * * *")
+  @Cron(DEAD_INVITATION_PURGE_CRON)
   async purgeDead(now = new Date()): Promise<void> {
-    const before = new Date(
-      now.getTime() - DEAD_INVITATION_RETENTION_DAYS * DAY_MS,
-    );
+    const before = sinceDaysAgo(now, DEAD_INVITATION_RETENTION_DAYS);
     const { count } = await this.prisma.invitation.deleteMany({
       where: {
         useCount: 0,

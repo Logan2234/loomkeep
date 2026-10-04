@@ -2,6 +2,7 @@ import type { PublicStatsSummaryDto } from "@loomkeep/shared";
 import { Controller, Get, UseGuards } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { Public } from "../auth/decorators/public.decorator";
+import { sinceDaysAgo } from "../common/date.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminService } from "./admin.service";
 import { PublicStatsSummaryResponseDto } from "./dto/public-stats-summary-response.dto";
@@ -24,7 +25,7 @@ export class PublicStatsController {
   @Get("summary")
   @ApiOkResponse({ type: PublicStatsSummaryResponseDto })
   async getSummary(): Promise<PublicStatsSummaryDto> {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = sinceDaysAgo(new Date(), 7);
 
     // getServicesStatus() is the odd one out among these four: it live-probes
     // every external provider (TMDB, AniList, IGDB...) with no caching, so

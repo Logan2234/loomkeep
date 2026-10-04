@@ -1,5 +1,6 @@
 import type { TvTimeImportFilesDto } from "@loomkeep/shared";
 import { parseCsv } from "../../csv";
+import { earlierOf } from "../../import-date.util";
 
 /** One distinct watched episode of a show, with its rewatch count folded in. */
 interface ParsedWatchedEpisode {
@@ -112,7 +113,7 @@ function parseShows(
     const watchedAt = toDateOrNull(row.created_at);
 
     if (existing) {
-      existing.watchedAt = earliest(existing.watchedAt, watchedAt);
+      existing.watchedAt = earlierOf(existing.watchedAt, watchedAt);
     } else {
       show.episodes.push({
         season,
@@ -248,10 +249,4 @@ function toDateOrNull(value: string | undefined): Date | null {
   if (!/[Zz]|[+-]\d\d:?\d\d$/.test(normalized)) normalized += "Z";
   const date = new Date(normalized);
   return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function earliest(a: Date | null, b: Date | null): Date | null {
-  if (!a) return b;
-  if (!b) return a;
-  return a < b ? a : b;
 }

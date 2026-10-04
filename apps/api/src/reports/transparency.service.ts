@@ -1,5 +1,6 @@
 import type { ModerationTransparencyDto } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
+import { utcYearRange } from "../common/date.util";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   summarizeMeasures,
@@ -22,10 +23,7 @@ export class TransparencyService {
       requested !== undefined && years.includes(requested)
         ? requested
         : currentYear;
-    const period = {
-      gte: new Date(Date.UTC(year, 0, 1)),
-      lt: new Date(Date.UTC(year + 1, 0, 1)),
-    };
+    const period = utcYearRange(year);
 
     const [reports, decisions] = await Promise.all([
       this.prisma.report.findMany({

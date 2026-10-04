@@ -30,6 +30,10 @@ import type { FastifyReply } from "fastify";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
+import {
+  EXPORT_THROTTLE,
+  SENSITIVE_ACTION_THROTTLE,
+} from "../common/throttle.constants";
 import { SocialProfileResponseDto } from "../social/dto/social-profile-response.dto";
 import { AccountDeletionSummaryResponseDto } from "./dto/account-deletion-summary-response.dto";
 import { ChangeEmailDto } from "./dto/change-email.dto";
@@ -155,7 +159,7 @@ export class UsersController {
    * Looser than the GDPR dump above: this reads one domain at a time, so it's
    * a fraction of the cost — but still far from free.
    */
-  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
+  @Throttle(EXPORT_THROTTLE)
   @Get("me/export.csv")
   @ApiOkResponse({ type: CsvExportResponseDto })
   exportCsv(
@@ -169,7 +173,7 @@ export class UsersController {
    * Films in Letterboxd's import format. `reviews=true` adds the review
    * texts — opt-in, since they become public once imported there.
    */
-  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
+  @Throttle(EXPORT_THROTTLE)
   @Get("me/export/letterboxd")
   @ApiOkResponse({ type: MigrationExportResponseDto })
   async exportLetterboxd(
@@ -185,7 +189,7 @@ export class UsersController {
   }
 
   /** Books in Goodreads' export format, which StoryGraph imports too. */
-  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
+  @Throttle(EXPORT_THROTTLE)
   @Get("me/export/goodreads")
   @ApiOkResponse({ type: MigrationExportResponseDto })
   async exportGoodreads(
@@ -263,7 +267,7 @@ export class UsersController {
   // Every call bcrypt.compare()s the current password (requireVerifiedUser)
   // — the global 60/min default let a stolen access token burn 60 bcrypt
   // hashes/min against it.
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(SENSITIVE_ACTION_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Patch("me/email")
   changeEmail(
@@ -286,7 +290,7 @@ export class UsersController {
   }
 
   // Same reasoning as changeEmail() above — bcrypt.compare() on every call.
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(SENSITIVE_ACTION_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Patch("me/password")
   changePassword(

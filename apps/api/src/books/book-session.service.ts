@@ -21,7 +21,8 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { AppException } from "../common/app.exception";
-import { localDay } from "../common/local-day.util";
+import { addDays, utcDateKey } from "../common/date.util";
+import { localDayOrUtc } from "../common/local-day.util";
 import { bookSessionAggregate } from "../common/session-aggregate.util";
 import { sessionPeriodMinutes } from "../common/session-period.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
@@ -433,11 +434,7 @@ export class BookSessionService {
     const timezone = entry.user.timezone ?? "UTC";
     const periods = sessionPeriodMinutes(recent, timezone, now);
     const days = new Set(
-      recent.map(
-        (session) =>
-          localDay(timezone, session.occurredAt) ??
-          session.occurredAt.toISOString().slice(0, 10),
-      ),
+      recent.map((session) => localDayOrUtc(timezone, session.occurredAt)),
     );
     const recentPages = recent.reduce(
       (total, session) => total + session.pagesRead,
@@ -451,12 +448,7 @@ export class BookSessionService {
         : Math.max(0, entry.referencePageCount - entry.currentPage);
     const estimatedCompletionDate =
       averagePagesPerDay && remaining && remaining > 0
-        ? new Date(
-            now.getTime() +
-              Math.ceil(remaining / averagePagesPerDay) * 24 * 60 * 60 * 1000,
-          )
-            .toISOString()
-            .slice(0, 10)
+        ? utcDateKey(addDays(now, Math.ceil(remaining / averagePagesPerDay)))
         : null;
 
     return {

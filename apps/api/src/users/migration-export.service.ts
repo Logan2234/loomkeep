@@ -3,6 +3,7 @@ import { ReviewTargetType } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import type { BookStatus } from "@prisma/client";
 import { toCsv } from "../common/csv.util";
+import { utcDateKey } from "../common/date.util";
 import { PrismaService } from "../prisma/prisma.service";
 
 type CsvRow = (string | number | null)[];
@@ -309,7 +310,7 @@ function letterboxdReview(text: string | null | undefined): string | null {
 }
 
 function dashedDate(date: Date | null): string | null {
-  return date?.toISOString().slice(0, 10) ?? null;
+  return date ? utcDateKey(date) : null;
 }
 
 function slashedDate(date: Date | null): string | null {

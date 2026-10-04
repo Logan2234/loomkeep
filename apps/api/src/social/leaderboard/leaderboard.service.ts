@@ -6,6 +6,7 @@ import {
   ProfileAccess,
 } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
+import { utcMonthRange, utcYearRange } from "../../common/date.util";
 import { PrismaService } from "../../prisma/prisma.service";
 import { avatarUrl } from "../../users/avatar.util";
 import { FollowService } from "../follow.service";
@@ -208,15 +209,9 @@ export function periodRange(
   period: Exclude<LeaderboardPeriod, "all">,
   now: Date = new Date(),
 ): { start: Date; end: Date } {
-  if (period === "month") {
-    return {
-      start: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
-      end: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)),
-    };
-  }
-
-  return {
-    start: new Date(Date.UTC(now.getUTCFullYear(), 0, 1)),
-    end: new Date(Date.UTC(now.getUTCFullYear() + 1, 0, 1)),
-  };
+  const range =
+    period === "month"
+      ? utcMonthRange(now)
+      : utcYearRange(now.getUTCFullYear());
+  return { start: range.gte, end: range.lt };
 }

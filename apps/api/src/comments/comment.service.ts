@@ -330,7 +330,7 @@ export class CommentService {
     const rows = await this.prisma.comment.findMany({
       where: { authorId, deletedAt: null },
       orderBy: { createdAt: "desc" },
-      take: 50,
+      take: DEFAULT_PAGE_SIZE,
       select: {
         id: true,
         text: true,

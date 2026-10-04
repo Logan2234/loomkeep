@@ -1,11 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-
-function startOfUtcDay(date: Date): Date {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
-}
+import { startOfUtcDay } from "./date.util";
 
 /**
  * Documented free-tier daily quotas, for the providers that publish one.

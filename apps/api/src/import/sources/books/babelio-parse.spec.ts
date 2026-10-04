@@ -8,6 +8,13 @@ function csv(...rows: string[]): string {
 }
 
 describe("parseBabelioCsv", () => {
+  it("normalizes a lowercase ISBN-10 check digit for provider matching", () => {
+    const rows = parseBabelioCsv(
+      csv('"0-8044-2957-x";"Book";"Author";"";"";"";"Lu";""'),
+    );
+    expect(rows[0].isbn).toBe("080442957X");
+  });
+
   it("parses the official semicolon-delimited export by ISBN", () => {
     const rows = parseBabelioCsv(
       csv(

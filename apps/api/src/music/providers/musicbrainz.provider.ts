@@ -13,7 +13,7 @@ import type {
   ProviderMusicDetails,
 } from "./music-provider.types";
 
-const API_URL = "https://musicbrainz.org/ws/2";
+export const MUSICBRAINZ_API_URL = "https://musicbrainz.org/ws/2";
 const COVER_ART_URL = "https://coverartarchive.org";
 
 // MusicBrainz's usage policy caps unauthenticated requests at ~1/second per
@@ -281,7 +281,7 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
    */
   private async get<T>(path: string, notFoundMessage?: string): Promise<T> {
     const contact = this.configService.get<string>("API_CONTACT");
-    const url = `${API_URL}${path}`;
+    const url = `${MUSICBRAINZ_API_URL}${path}`;
 
     return fetchJson<T>(
       url,

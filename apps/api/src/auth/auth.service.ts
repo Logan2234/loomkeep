@@ -25,6 +25,7 @@ import { randomInt, randomUUID, timingSafeEqual } from "node:crypto";
 import { ApiKeysService } from "../api-keys/api-keys.service";
 import { AppException } from "../common/app.exception";
 import { randomToken, sha256Hex } from "../common/crypto.util";
+import { utcDateKey } from "../common/date.util";
 import { normalizeEmail } from "../common/email.util";
 import { HibpService } from "../common/hibp.service";
 import { isUniqueViolation } from "../common/prisma-error.util";
@@ -43,10 +44,12 @@ import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { InvitationService } from "./invitation.service";
 import {
+  ACCESS_TOKEN_TTL_SECONDS,
   JWT_ACCESS_AUDIENCE,
   JWT_ALGORITHM,
   JWT_ISSUER,
   JWT_REFRESH_AUDIENCE,
+  REFRESH_TOKEN_TTL_DAYS,
 } from "./jwt.constants";
 import { MfaService } from "./mfa.service";
 import { isRegistrationEnabled } from "./registration.config";
@@ -54,8 +57,6 @@ import { SessionCacheService } from "./session-cache.service";
 import { TurnstileService } from "./turnstile.service";
 import { WebauthnService } from "./webauthn.service";
 
-const ACCESS_TOKEN_TTL = "15m";
-const REFRESH_TOKEN_TTL_DAYS = 30;
 const RESET_TOKEN_TTL_MINUTES = 60;
 const VERIFY_TOKEN_TTL_HOURS = 24;
 export const BCRYPT_ROUNDS = 12;
@@ -1009,7 +1010,7 @@ export class AuthService {
 
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.getOrThrow<string>("JWT_ACCESS_SECRET"),
-      expiresIn: ACCESS_TOKEN_TTL,
+      expiresIn: ACCESS_TOKEN_TTL_SECONDS,
       algorithm: JWT_ALGORITHM,
       issuer: JWT_ISSUER,
       audience: JWT_ACCESS_AUDIENCE,
@@ -1021,7 +1022,7 @@ export class AuthService {
       { sub: user.id, jti },
       {
         secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
-        expiresIn: `${REFRESH_TOKEN_TTL_DAYS}d`,
+        expiresIn: REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60,
         algorithm: JWT_ALGORITHM,
         issuer: JWT_ISSUER,
         audience: JWT_REFRESH_AUDIENCE,
@@ -1125,9 +1126,7 @@ export function toUserDto(user: User): UserDto {
     email: user.email,
     username: user.username,
     displayName: user.displayName,
-    birthDate: user.birthDate
-      ? user.birthDate.toISOString().slice(0, 10)
-      : null,
+    birthDate: user.birthDate ? utcDateKey(user.birthDate) : null,
     allowAdultContent: user.allowAdultContent,
     notifyEmail: user.notifyEmail as UserDto["notifyEmail"],
     notifyPush: user.notifyPush as UserDto["notifyPush"],

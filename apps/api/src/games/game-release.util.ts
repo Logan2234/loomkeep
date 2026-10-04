@@ -5,6 +5,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
+import { utcDateKey } from "../common/date.util";
 import type { PrismaService } from "../prisma/prisma.service";
 
 /** Whether a cached game isn't out yet. */
@@ -13,7 +14,7 @@ export function isGameItemUpcoming(game: {
   releaseDatePrecision: ReleaseDatePrecision | null;
 }): boolean {
   return isGameUpcoming(
-    game.releaseDate?.toISOString().slice(0, 10) ?? null,
+    game.releaseDate ? utcDateKey(game.releaseDate) : null,
     game.releaseDatePrecision,
   );
 }

@@ -3,6 +3,7 @@ import {
   type AchievementFamily,
   type AchievementTier,
 } from "@loomkeep/shared";
+import { utcYearRange } from "../../common/date.util";
 import { localDay, localParts } from "../../common/local-day.util";
 import type { PrismaService } from "../../prisma/prisma.service";
 import { decadeOf } from "../../stats/decade.util";
@@ -448,10 +449,7 @@ export async function checkContemporary(
       status: "COMPLETED",
       mediaItem: {
         type: "MOVIE",
-        releaseDate: {
-          gte: new Date(Date.UTC(birthYear, 0, 1)),
-          lt: new Date(Date.UTC(birthYear + 1, 0, 1)),
-        },
+        releaseDate: utcYearRange(birthYear),
       },
     },
     select: { id: true },

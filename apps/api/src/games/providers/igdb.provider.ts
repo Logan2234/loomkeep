@@ -19,7 +19,7 @@ import type {
   ProviderGameSaga,
 } from "./game-provider.types";
 
-const OAUTH_URL = "https://id.twitch.tv/oauth2/token";
+export const IGDB_OAUTH_URL = "https://id.twitch.tv/oauth2/token";
 const API_URL = "https://api.igdb.com/v4";
 const IMG = "https://images.igdb.com/igdb/image/upload";
 
@@ -546,7 +546,7 @@ export class IgdbProvider implements GameCatalogProvider {
     });
 
     const token = await fetchJson<TwitchToken>(
-      OAUTH_URL,
+      IGDB_OAUTH_URL,
       {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },

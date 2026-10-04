@@ -31,7 +31,7 @@ import {
   assertBulkTarget,
   assertBulkUpdate,
 } from "../common/bulk-entries.util";
-import { toDateOrNull } from "../common/date.util";
+import { sinceDaysAgo, toDateOrNull } from "../common/date.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters,
@@ -507,9 +507,7 @@ export class GameLibraryService {
     }
 
     if (statuses.includes("PAUSED")) {
-      const cutoff = new Date(
-        Date.now() - DORMANT_AFTER_DAYS * 24 * 60 * 60 * 1000,
-      );
+      const cutoff = sinceDaysAgo(new Date(), DORMANT_AFTER_DAYS);
       statusFilters.push({
         status: GameStatus.PLAYING,
         sessions: {

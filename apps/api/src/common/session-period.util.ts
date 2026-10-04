@@ -1,5 +1,6 @@
 import type { SessionWeekDayDto } from "@loomkeep/shared";
-import { localDay } from "./local-day.util";
+import { utcDateKey } from "./date.util";
+import { localDayOrUtc } from "./local-day.util";
 
 interface DatedDuration {
   durationMinutes: number;
@@ -16,17 +17,17 @@ export function sessionPeriodMinutes(
   weekDays: SessionWeekDayDto[];
   monthMinutes: number;
 } {
-  const today = localDay(timezone, now) ?? now.toISOString().slice(0, 10);
+  const today = localDayOrUtc(timezone, now);
   const todayUtc = new Date(`${today}T00:00:00.000Z`);
   const weekday = todayUtc.getUTCDay() || 7;
   const weekStart = new Date(todayUtc);
   weekStart.setUTCDate(todayUtc.getUTCDate() - weekday + 1);
-  const weekStartDay = weekStart.toISOString().slice(0, 10);
+  const weekStartDay = utcDateKey(weekStart);
   const weekDays = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart);
     date.setUTCDate(weekStart.getUTCDate() + index);
     return {
-      date: date.toISOString().slice(0, 10),
+      date: utcDateKey(date),
       durationMinutes: 0,
       sessionCount: 0,
     };
@@ -38,9 +39,7 @@ export function sessionPeriodMinutes(
   let monthMinutes = 0;
 
   for (const session of sessions) {
-    const day =
-      localDay(timezone, session.occurredAt) ??
-      session.occurredAt.toISOString().slice(0, 10);
+    const day = localDayOrUtc(timezone, session.occurredAt);
 
     if (day >= weekStartDay && day <= today) {
       weekMinutes += session.durationMinutes;

@@ -1,4 +1,5 @@
 import { type Mock, vi } from "vitest";
+import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { MailService } from "../mail/mail.service";
@@ -793,6 +794,14 @@ describe("ReportService.list — reporterId filter", () => {
 });
 
 describe("ReportService.listAgainstUser", () => {
+  it("limits the admin drawer to the default page size", async () => {
+    const { svc, prisma } = make();
+    await svc.listAgainstUser("user1");
+    expect(prisma.report.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: DEFAULT_PAGE_SIZE }),
+    );
+  });
+
   it("matches reports targeting the user directly or content of theirs", async () => {
     const { svc, prisma } = make({
       comment: { findMany: vi.fn().mockResolvedValue([{ id: "c1" }]) },

@@ -1,4 +1,5 @@
 import type { CalendarEntryDto } from "@loomkeep/shared";
+import { utcDateKey } from "../../common/date.util";
 
 const CRLF = "\r\n";
 // RFC 5545 §3.1: content lines must be folded at 75 octets, continuation
@@ -31,7 +32,7 @@ function escapeText(value: string): string {
 // so events are rendered as all-day (VALUE=DATE) rather than timed — a timed
 // UTC midnight would shift to the wrong calendar day in western timezones.
 function formatDateOnly(date: Date): string {
-  return date.toISOString().slice(0, 10).replace(/-/g, "");
+  return utcDateKey(date).replace(/-/g, "");
 }
 
 function formatTimestampUtc(date: Date): string {

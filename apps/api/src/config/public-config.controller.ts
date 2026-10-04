@@ -6,6 +6,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Public } from "../auth/decorators/public.decorator";
 import { isRegistrationEnabled } from "../auth/registration.config";
+import { DEFAULT_SUPPORT_ADDRESS } from "../common/instance-defaults";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { instanceSetting } from "../instance-settings/instance-settings.store";
 import { isSocialEnabled } from "../social/social.config";
@@ -37,7 +38,7 @@ export class PublicConfigController {
       gitSha: (process.env.GIT_SHA ?? "unknown").slice(0, 7),
       supportEmail:
         this.config.get<string>("MAIL_SUPPORT_ADDRESS")?.trim() ||
-        "contact@loomkeep.app",
+        DEFAULT_SUPPORT_ADDRESS,
     };
   }
 }

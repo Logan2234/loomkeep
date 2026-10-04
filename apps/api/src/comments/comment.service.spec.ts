@@ -2,6 +2,7 @@ import type { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { type Mock, vi } from "vitest";
 import { AppException } from "../common/app.exception";
+import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
@@ -1094,6 +1095,16 @@ describe("CommentService — XP wiring", () => {
     expect(xp.revokeBySource).toHaveBeenCalledWith("CommentReaction", [
       "reaction-1",
     ]);
+  });
+});
+
+describe("CommentService.listByAuthor", () => {
+  it("limits the admin drawer to the default page size", async () => {
+    const { svc, prisma } = make();
+    await svc.listByAuthor("author");
+    expect(prisma.comment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: DEFAULT_PAGE_SIZE }),
+    );
   });
 });
 

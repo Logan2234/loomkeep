@@ -28,6 +28,7 @@ import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
+import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
@@ -127,7 +128,7 @@ export class CommentController {
   // Anti-flood: comments (unlike reviews) have no per-target cap, so without a
   // per-user throttle a single person could post unbounded top-level comments
   // and replies back-to-back.
-  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  @Throttle(REPORT_THROTTLE)
   @Post()
   @ApiCreatedResponse({ type: CommentResponseDto })
   create(
@@ -173,7 +174,7 @@ export class CommentController {
   }
 
   @Post(":id/report")
-  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  @Throttle(REPORT_THROTTLE)
   report(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,

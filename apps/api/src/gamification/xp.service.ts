@@ -1,11 +1,12 @@
 import { ErrorCode, XP_RULES, XpReason } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { Cron } from "@nestjs/schedule";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import type { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
-import { localDay } from "../common/local-day.util";
+import { sinceDaysAgo } from "../common/date.util";
+import { localDayOrUtc } from "../common/local-day.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
@@ -325,7 +326,9 @@ export class XpService {
     return removed;
   }
 
-  @Cron("0 4 * * *", { name: JOB_KEYS.GAMIFICATION_RECONCILE })
+  @Cron(CronExpression.EVERY_DAY_AT_4AM, {
+    name: JOB_KEYS.GAMIFICATION_RECONCILE,
+  })
   async runReconcileJob(): Promise<Record<string, number>> {
     return this.jobRuns.record(
       JOB_KEYS.GAMIFICATION_RECONCILE,
@@ -378,26 +381,20 @@ export class XpService {
     const now = new Date();
     // An invalid stored timezone (unvalidated at write time, see
     // update-user.dto.ts) falls back to UTC rather than failing the award.
-    const today = localDay(user?.timezone ?? "UTC", now) ?? isoDay(now);
+    const today = localDayOrUtc(user?.timezone ?? "UTC", now);
 
-    const since = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+    const since = sinceDaysAgo(now, 2);
     const recent = await tx.xpEntry.findMany({
       where: { userId, reason, createdAt: { gte: since } },
       select: { createdAt: true },
     });
 
     const countToday = recent.filter(
-      (e) =>
-        (localDay(user?.timezone ?? "UTC", e.createdAt) ??
-          isoDay(e.createdAt)) === today,
+      (e) => localDayOrUtc(user?.timezone ?? "UTC", e.createdAt) === today,
     ).length;
 
     return countToday >= cap;
   }
-}
-
-function isoDay(date: Date): string {
-  return date.toISOString().slice(0, 10);
 }
 
 function summarizeReconcile(corrections: Record<string, number>): string {

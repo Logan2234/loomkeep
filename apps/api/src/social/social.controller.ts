@@ -28,6 +28,7 @@ import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
+import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { ActivityService, FEED_PAGE_SIZE } from "./activity.service";
@@ -208,7 +209,7 @@ export class SocialController {
   }
 
   @Post("users/:username/report")
-  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  @Throttle(REPORT_THROTTLE)
   async reportUser(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,

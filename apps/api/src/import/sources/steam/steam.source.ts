@@ -28,7 +28,7 @@ import type {
   ProgressReporter,
 } from "../../import-source";
 
-const STEAM_API = "https://api.steampowered.com";
+export const STEAM_API = "https://api.steampowered.com";
 
 /** Review sections, in display order, with their French headings. */
 const STATUS_GROUPS: { status: GameStatus; label: string }[] = [

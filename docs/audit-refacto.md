@@ -24,7 +24,7 @@
   - le `switch` à 4 domaines répété 6 fois dans `admin-cache.controller.ts` ;
   - les 11 boutons « charger plus ».
 - **Fichiers à découper en priorité** : `library.service.ts` (2163 l.), `mail.service.ts` (1929), `achievements/registry.ts` (1677), `data-export.service.ts` (une méthode de 746 l.), `LibraryBrowser.svelte` (1062), `CommentThread.svelte` (1025).
-- **Inventaire total** : 210 pistes, dont 11 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
+- **Inventaire total** : 196 pistes, dont 10 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
 
 ---
 
@@ -126,14 +126,6 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | SH-38 | 1   | `XP_RULES` / `XP_RULE_LIST` (API seule, export spéculatif)                                          | faible | S      | faible | P3       |
 | SH-39 | 1   | `DEFAULT_INSTANCE_SETTINGS` / `INSTANCE_SETTING_ENV` API seule                                      | faible | S      | faible | P3       |
 | SH-40 | 1   | `mergeAlertPrefs` API seule                                                                         | faible | S      | faible | P3       |
-| HB-06 | 2   | `startOfUtcDay` ×3, `startOfUtcMonth`                                                               | faible | S      | faible | P2       |
-| HB-07 | 2   | Intervalles d'année/mois UTC ×4                                                                     | faible | S      | faible | P3       |
-| HB-08 | 2   | « il y a N jours » inliné ≈15 fois (`sinceDaysAgo` existe)                                          | moyen  | S      | faible | P2       |
-| HB-09 | 2   | Repli `localDay(...) ?? toISOString().slice(0,10)` ×6                                               | faible | S      | faible | P2       |
-| HB-10 | 2   | Clé `YYYY-MM-DD` redéclarée ×4 + inlinée ×7                                                         | faible | S      | faible | P3       |
-| HB-11 | 2   | Import : `toDateOrNull` (collision de nom), `earliest` copiés                                       | faible | S      | faible | P3       |
-| HB-12 | 2   | Date UTC des CSV livres ×2                                                                          | faible | S      | faible | P3       |
-| HB-13 | 2   | 🐛 Validation ISBN ×3 (babelio accepte `x` minuscule)                                               | faible | S      | faible | P2       |
 | HB-14 | 2   | Import : `indexPlanMatches` et `toMatch` copiés                                                     | faible | S      | faible | P3       |
 | HB-15 | 2   | `normalizeSessionNotes` / `validDate` copiés jeux ↔ livres                                          | faible | S      | faible | P2       |
 | HB-16 | 2   | `stripHtml` ×2                                                                                      | faible | S      | faible | P3       |
@@ -167,13 +159,7 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | HF-20 | 2   | Sérialisation `page`/`limit` ×18 dans `lib/api`                                                     | faible | S      | faible | P2       |
 | CB-01 | 3   | `MINUTE/HOUR/DAY_MS` redéfinis ≈35 fois (API + web + shared)                                        | moyen  | S      | faible | P2       |
 | CB-02 | 3   | TTL de synchro catalogue 24 h ×6 + commentaire périmé                                               | moyen  | S      | faible | P1       |
-| CB-03 | 3   | Durées de vie access/refresh définies deux fois (JWT ↔ cookie)                                      | moyen  | S      | faible | P1       |
-| CB-04 | 3   | Presets `@Throttle` répétés (×5, ×3, ×6)                                                            | faible | S      | faible | P2       |
 | CB-05 | 3   | En-têtes de rate limit listés ×3 (CORS)                                                             | faible | S      | faible | P2       |
-| CB-06 | 3   | URLs de base des providers redupliquées dans les sondes admin                                       | faible | S      | faible | P3       |
-| CB-07 | 3   | Adresse de support / origine Quackback en dur                                                       | faible | S      | faible | P3       |
-| CB-08 | 3   | Styles de cron mélangés                                                                             | faible | S      | faible | P3       |
-| CB-09 | 3   | `REPORT_PAGE_SIZE` = `DEFAULT_PAGE_SIZE`, `take: 50` ×2                                             | faible | S      | faible | P3       |
 | CF-01 | 3   | Clés de stockage éparpillées (3 conventions de préfixe)                                             | moyen  | S      | faible | P2       |
 | CF-02 | 3   | Debounce de recherche 300 ms ×10                                                                    | faible | S      | faible | P2       |
 | CF-03 | 3   | 171 durées de transition, 16 valeurs distinctes                                                     | moyen  | L      | moyen  | P3       |
@@ -302,8 +288,8 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | Axe                | Nombre de pistes                      |
 | ------------------ | ------------------------------------- |
 | Axe 1 (partagé)    | 40                                    |
-| Axe 2 (helpers)    | 51 (31 back, 20 front)                |
-| Axe 3 (constantes) | 23 (9 back, 14 front)                 |
+| Axe 2 (helpers)    | 43 (23 back, 20 front)                |
+| Axe 3 (constantes) | 17 (3 back, 14 front)                 |
 | Axe 4 (types)      | 24 (10 back, 14 front)                |
 | Axe 5 (refactors)  | 89 (30 back, 31 front, 28 transverse) |
 
@@ -652,56 +638,6 @@ Le modèle existe déjà (`REVIEW_TEXT_MAX_LENGTH`, `COMMENT_TEXT_MAX_LENGTH`, `
 
 Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, `toDateOrNull`, `fetchJson`, `localDay`, `parsePageQuery`, `isUniqueViolation`, `secretsMatch`, `compareTitles`, `primaryWebOrigin`, `resolveWorkHref`, `canonicalExternalId`, `parseEnumParam`, `RequestThrottle`, `toCsv`, `safeLang` et `normalizeEmail`. Les pistes ci-dessous relèvent surtout des **contournements** de ces utilitaires.
 
-**HB-06 — `startOfUtcDay` / `startOfUtcMonth`**
-
-- **Constat** : `admin/admin-stats.util.ts:14`, `admin/admin.service.ts:70,76` et `common/quota-tracker.service.ts:4`.
-- **Proposition** : les regrouper dans `common/date.util.ts`.
-
-**HB-07 — Intervalles d'année et de mois UTC**
-
-- **Constat** : `books/book-library.service.ts:908-911`, `reports/transparency.service.ts:25-28`, `achievements/registry.ts:452-453` et `social/leaderboard/leaderboard.service.ts:213-220`.
-- **Proposition** : `utcYearRange(year)` et `utcMonthRange(date)` dans `common/date.util.ts`.
-
-**HB-08 — « il y a N jours »**
-
-- **Constat** : `sinceDaysAgo` existe dans `security/login-failure.util.ts:9`, mais ce calcul est ré-inliné dans :
-  - `book-library.service.ts:517-519`, `game-library.service.ts:488-490`
-  - `admin/public-stats.controller.ts:27`, `admin-system-stats.service.ts:59`
-  - `achievement.service.ts:430-431`
-  - `notification.service.ts:121,260,383`
-  - `calendar-feed.service.ts:73`
-  - `api-key-lifecycle.service.ts:51,94`
-  - `invitation.service.ts:250-252`
-  - `xp.service.ts:385`, `session-xp.service.ts:27-29`
-- **Proposition** : déplacer `sinceDaysAgo` et ajouter `addDays` dans `common/date.util.ts`.
-
-**HB-09 — Repli `localDay(tz, d) ?? d.toISOString().slice(0,10)`**
-
-- **Constat** : `common/session-period.util.ts:19,41-43`, `gamification/session-xp.service.ts:25-26,61` et `gamification/xp.service.ts:383,393-394`.
-- **Proposition** : `localDayOrUtc(timezone, date)` dans `common/local-day.util.ts`. Cela supprime aussi `xp.service.ts:401` (`isoDay`).
-
-**HB-10 — Clé `YYYY-MM-DD`**
-
-- **Constat** : redéclarée dans `xp.service.ts:401`, `stats/video-temporal.util.ts:27`, `users/csv-export.service.ts:8` et `users/migration-export.service.ts:309`. Inlinée dans `auth.service.ts:1141`, `book-session.service.ts:439`, `library.service.ts:1470,2092`, `notification.service.ts:263,301` et `ee/calendar/ics.util.ts:34`.
-- **Proposition** : `utcDateKey(date)` dans `common/date.util.ts`.
-
-**HB-11 — Dates à l'import**
-
-- **Constat** :
-  - `toDateOrNull` est identique dans `import/sources/simkl/parse-simkl.ts:69` et `trakt/parse-trakt-export.ts:191`, et **entre en collision de nom** avec `common/date.util.ts:2`, qui a une autre signature et pas de garde NaN.
-  - `earliest` est identique dans `trakt:197` et `tvtime/parse-export.ts:253`.
-- **Proposition** : `import/import-date.util.ts` → `parseDateOrNull` et `earlierOf`. Le `toDateOrNull` de tvtime (`:245`) normalise le fuseau : il reste local.
-
-**HB-12 — Date UTC des CSV livres**
-
-- **Constat** : `goodreads-parse.ts:150-153` et `storygraph-parse.ts:118-120`.
-- **Proposition** : `utcDateIso(y, m, d)` dans `import/sources/books/csv-field.util.ts`.
-
-**HB-13 — 🐛 Validation ISBN**
-
-- **Constat** : la même regex `/^(\d{9}[\dX]|\d{13})$/` est dans `babelio-parse.ts:58`, `goodreads-parse.ts:126` et `storygraph-parse.ts:91`. Babelio applique le flag `/i` **sans passer en majuscules**, alors que `open-library.provider.ts:249` compare les ISBN avec `includes`, qui est sensible à la casse.
-- **Proposition** : `wellFormedIsbn(cleaned)` dans `csv-field.util.ts`, qui met le `X` en majuscule.
-
 **HB-14 — Import : `indexPlanMatches` / `toMatch`**
 
 - **Constat** : `book-csv.source.ts:408` est identique à `steam.source.ts:428`, et `media/media-match-resolver.ts:92` à `myanimelist/anilist-match-resolver.ts:29`.
@@ -914,10 +850,10 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 **CB-01 — Durées en millisecondes**
 
 - **Constat** :
-  - `DAY_MS` est déclaré localement 10 fois : `admin/admin-accounts-stats.service.ts:23`, `admin-stats.util.ts:3`, `admin-system-stats.service.ts:9`, `api-key-lifecycle.service.ts:14`, `invitation.service.ts:22`, `ee/licensing/license-key.ts:15`, `achievements/registry.ts:134`, `security/login-failure.util.ts:6`, `stats/on-this-day.util.ts:3` et `video-temporal.util.ts:11`.
-  - `24*60*60*1000` est inliné 9 fois : `public-stats.controller.ts:27`, `auth.service.ts:1040`, `book-library:518`, `book-session:456`, `game-library:489`, `achievement.service:431`, `video-stats.util.ts:63`, `ee/stats/aggregates.util.ts:28` et `mail.service.ts:273`.
-  - `86_400_000` est inliné 4 fois : `calendar-feed:73`, `notification.service:121,260,383`.
-  - D'autres durées en dur : `HOUR_MS` (`admin-social-stats.util.ts:14`), `× 60_000` (×9 dans auth, webauthn et users), et 48 h dans `session-xp:27` et `xp:385`.
+  - `DAY_MS` reste déclaré localement 8 fois : `common/date.util.ts`, `admin/admin-accounts-stats.service.ts`, `admin-stats.util.ts`, `api-key-lifecycle.service.ts`, `ee/licensing/license-key.ts`, `achievements/registry.ts`, `stats/on-this-day.util.ts` et `video-temporal.util.ts`.
+  - Les calculs inlinés de jours restent notamment dans `auth.service.ts`, `video-stats.util.ts`, `ee/stats/aggregates.util.ts` et `mail.service.ts` ; les TTL catalogue sont couverts par CB-02.
+  - D’autres durées en dur : `HOUR_MS` (`admin-social-stats.util.ts`) et `× 60_000` dans auth, webauthn et users.
+  - Voir le repère HB-08 : les décalages de jours sont déjà mutualisés, mais leur unité reste locale à l’API.
   - Le web (HF-05) et shared lui-même (`dto/library.ts:81,94`) répètent ces calculs.
 - **Proposition** : `MINUTE_MS`, `HOUR_MS` et `DAY_MS` dans `packages/shared/src/date.ts` (avec SH-29). Sinon, `common/date.util.ts` côté API et `lib/date.ts` côté web.
 - **Honnêteté** : la constante est triviale ; c'est gratuit si SH-29 est fait, et à ne pas mener seul.
@@ -929,48 +865,10 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
   - Le commentaire `admin-catalogue-stats.service.ts:18-20` est **périmé** : il affirme que games et books n'ont pas de cron de rafraîchissement, alors que `game-item.service.ts:43` et `book-item.service.ts:46` en ont un (`@Cron(EVERY_6_HOURS)`).
 - **Proposition** : `CATALOG_SYNC_TTL_MS` et `isFresh(lastSyncedAt)` dans `common/catalog-sync.util.ts`. Cela reste intra-API, donc pas dans shared.
 
-**CB-03 — Durées de vie des tokens couplées**
-
-- **Constat** : `auth/auth.service.ts:61-62` (`"15m"`, 30 jours) et `auth/auth-cookies.ts:12-13` (`15*60`, `30*24*60*60`) définissent les mêmes durées séparément.
-- **Proposition** : `auth/jwt.constants.ts`, avec `ACCESS_TOKEN_TTL_SECONDS` et `REFRESH_TOKEN_TTL_DAYS`, dont le JWT et le cookie dérivent tous deux.
-- **Bénéfice** : le `Max-Age` du cookie et l'expiration du JWT ne peuvent plus dériver.
-
-**CB-04 — Presets `@Throttle`**
-
-- **Constat** :
-  - `{limit:1, ttl:5_000}` ×5 : `comment.controller.ts:130,176`, `list.controller.ts:256`, `review.controller.ts:176` et `social.controller.ts:211`.
-  - `{10, 3_600_000}` ×3 : `users.controller.ts:158,172,188`.
-  - `{5, 60_000}` ×6 : `auth.controller.ts:142,253,260`, `mfa.controller.ts:116` et `users.controller.ts:266,289`.
-- **Proposition** : `REPORT_THROTTLE`, `EXPORT_THROTTLE` et `SENSITIVE_ACTION_THROTTLE`, sur le modèle de `auth/auth-throttle.ts`.
-
 **CB-05 — En-têtes de rate limit**
 
 - **Constat** : `api-keys/public-api.guard.ts:37-42`, `common/cors.ts:25-28`, `public-api/v1/api-responses.ts:14-22,55` et `export-rate-limit.guard.ts:26`.
 - **Proposition** : `RATE_LIMIT_HEADERS`, réutilisé par le CORS (`exposedHeaders`).
-
-**CB-06 — URLs de base des providers**
-
-- **Constat** : les sondes de `admin/admin.service.ts:99,114,130,146,164,182,196,213` redupliquent les constantes de chaque provider (`tmdb.provider.ts:42`, `anilist.provider.ts:24`, …).
-- **Proposition** : exporter et réutiliser ces constantes.
-
-**CB-07 — Support et Quackback**
-
-- **Constat** :
-  - `contact@loomkeep.app` sert de valeur de repli dans `config/public-config.controller.ts:38-40` et `mail/mail.service.ts:618-619,1135`.
-  - `https://feedback.loomkeep.app` est écrit dans `mail.service.ts:1649` et `newsletter/newsletter.service.ts:12`.
-- **Proposition** : `DEFAULT_SUPPORT_ADDRESS` et `QUACKBACK_ORIGIN`.
-
-**CB-08 — Styles de cron**
-
-- **Constat** :
-  - `CronExpression.EVERY_DAY_AT_6AM` (`api-key-lifecycle.service.ts:35`) coexiste avec `"0 6 * * *"` (`security-event.service.ts:162`).
-  - Chaînes brutes : `backup.service.ts:93`, `invitation.service.ts:248`, `xp.service.ts:330` et `report.service.ts:445`.
-- **Proposition** : harmoniser. Gain faible.
-
-**CB-09 — Tailles de page**
-
-- **Constat** : `REPORT_PAGE_SIZE = 20` (`report.service.ts:31`) vaut `DEFAULT_PAGE_SIZE`. `take: 50` apparaît dans `comment.service.ts:333` et `report.service.ts:391`.
-- **Proposition** : utiliser `DEFAULT_PAGE_SIZE` et créer `ADMIN_DRAWER_LIMIT`.
 
 #### Front
 
@@ -1782,7 +1680,7 @@ Pistes à fort rendement et faible effort (S, risque faible), à traiter en prem
 | 1   | SH-05 + HB-20 (première étape) | 🐛 liens morts dans les listes et les stats ; `workPath` unique |
 | 2   | SH-01, SH-02, SH-24            | constantes déjà dans shared, ou à une ligne d'y être            |
 | 3   | SH-06, CF-10, RT-28            | incohérences de texte visibles (S1E2, Anime/Animé, italien)     |
-| 4   | CB-02, CB-03                   | constantes critiques (TTL catalogue, durée de vie des tokens)   |
+| 4   | CB-02                          | constante critique (TTL catalogue)                              |
 | 5   | RT-01, RT-02, RT-03            | suppression pure de code mort                                   |
 | 6   | RF-12, RF-21                   | 11 boutons et 5 modals → 2 composants                           |
 | 7   | CF-08, TF-08                   | source unique des domaines ; clés de badge typées               |
@@ -1798,13 +1696,13 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------- |
 | **L0a** 🐛 | SH-05 côté API seulement : `workPath` dans `common/work-href.util.ts`, branché dans `list.service` et `stats.service`                 | —                                    | Test rouge d'abord. Minimal, pour corriger vite.               |
 | **L0f** 🐛 | Front : SH-24, RF-23                                                                                                                  | —                                    | Tests unitaires et de composant.                               |
-| **L0g** 🐛 | Textes : SH-06, CF-10, RT-28, HB-13, SH-27 (filtre serveur et import)                                                                 | —                                    |                                                                |
+| **L0g** 🐛 | Textes : SH-06, CF-10, RT-28, SH-27 (filtre serveur et import)                                                                        | —                                    |                                                                |
 | **L1** ∥   | Nettoyage : RT-01, RT-02, RT-03, RT-11, RT-12, RT-13, RT-14, RT-26, SH-38 (`XP_RULE_LIST`)                                            | —                                    | Aucun risque fonctionnel.                                      |
 | **L2**     | shared, constantes de contrat : SH-01, 02, 03, 17, 18, 19, 20, 21, 28, 30, 31 + SH-29/CB-01 (`shared/date.ts`)                        | —                                    | Un seul `build:package`.                                       |
 | **L3**     | shared, routes et présentation : SH-05 complet (`shared/routes.ts`, migration de L0a et du web), SH-06, 07, 08, HF-07                 | L0a                                  | Supprime `home/widgets/media.ts`.                              |
 | **L4**     | shared, unions : SH-09, 10, 11, 12, 13, 14, 15, 16, 22, 23, 25, 26, SH-32                                                             | L2                                   | Typage des `List*Filters` web.                                 |
-| **L5** ∥   | API `common/` : HB-06 à HB-12, HB-15 à HB-18, HB-21, HB-25, HB-27, HB-28                                                              | L2 (pour `DAY_MS`)                   | Plusieurs petites PR possibles (date, crypto, pagination).     |
-| **L6** ∥   | API constantes : CB-02 à CB-09                                                                                                        | —                                    |                                                                |
+| **L5** ∥   | API `common/` : HB-15 à HB-18, HB-21, HB-25, HB-27, HB-28                                                                             | L2 (pour `DAY_MS`)                   | Plusieurs petites PR possibles (date, crypto, pagination).     |
+| **L6** ∥   | API constantes : CB-02, CB-05                                                                                                         | —                                    |                                                                |
 | **L7** ∥   | API types : TB-01 à TB-06, TB-08 à TB-10                                                                                              | —                                    | TB-04 avec HB-15.                                              |
 | **L8**     | API services transverses : HB-20 (`resolveWorkTargets`), RB-18, RB-03, RB-04, RB-06, RB-07, RB-08, RB-09, RB-11 à RB-13, HB-26, HB-30 | L3, L5                               | Une PR par thème.                                              |
 | **L9**     | API admin : RB-14, RB-15, RB-16, RB-17, RB-19                                                                                         | L5, L8                               | RB-19 après décision sur la maintenance.                       |
@@ -1837,6 +1735,7 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 
 Ces numéros restent uniquement pour guider les pistes qui en dépendent ; ils ne font plus partie des tâches à traiter.
 
+- **HB-08** : `common/date.util.ts` fournit `addDays` et `sinceDaysAgo` avec des décalages fixes de 24 heures, sans changement de fuseau ni mutation de la date. CB-01 pourra déplacer la constante d’unité vers shared en préservant cette sémantique.
 - **HB-24** : `common/crypto.util.ts` expose `randomToken(bytes, encoding)` ; les tokens d'authentification, d'invitation et de newsletter restent en hex sur 32 octets, ceux des flux en base64url sur 24 octets. HB-25 et HB-26 doivent réutiliser ce module en conservant ces formats et la séparation entre génération et cycle de vie des tokens.
 - **HF-04** : `localDateInput` vit dans `lib/date.ts`, avec un réexport dans `session-presentation.ts`. Il sert aux dates de sortie, à la borne de naissance, au calendrier, aux clés API et à OnThisDay. SH-29 pourra déplacer cette source unique vers shared ; HF-05 pourra compléter ce module avec les calculs de jours calendaires.
 

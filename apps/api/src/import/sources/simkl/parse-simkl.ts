@@ -1,3 +1,4 @@
+import { parseDateOrNull } from "../../import-date.util";
 import type { ImportMovie, ImportShow } from "../../media-import-model";
 import type {
   SimklAllItemsResponse,
@@ -27,7 +28,7 @@ function toImportShow(entry: SimklShowEntry): ImportShow {
       season: season.number,
       episode: ep.number,
       sourceEpisodeId: `${season.number}x${ep.number}`,
-      watchedAt: toDateOrNull(ep.watched_at),
+      watchedAt: parseDateOrNull(ep.watched_at),
       // Simkl's free tier has no per-episode rewatch count (that needs the
       // Pro/VIP-only `allow_rewatch` flag) — every watched episode counts once.
       totalWatches: 1,
@@ -49,7 +50,7 @@ function toImportMovie(entry: SimklMovieEntry): ImportMovie {
     // Movies only ever carry plantowatch/completed/dropped — anything but
     // "still on the watchlist" counts as watched.
     watched,
-    watchedAt: watched ? toDateOrNull(entry.last_watched_at) : null,
+    watchedAt: watched ? parseDateOrNull(entry.last_watched_at) : null,
     // Simkl's free tier has no per-movie rewatch signal (that needs the
     // Pro/VIP-only `allow_rewatch` flag) — every watched movie counts once.
     rewatchedAt: [],
@@ -64,10 +65,4 @@ function toExternalIds(ids: SimklIds) {
     imdb: ids.imdb,
     anilist: ids.anilist,
   };
-}
-
-function toDateOrNull(value: string | undefined): Date | null {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
 }

@@ -6,7 +6,8 @@ import type {
   SecurityEventType,
 } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { sinceDaysAgo } from "../common/date.util";
 import { currentRequest } from "../common/request-context";
 import {
   SECURITY_ALERT_EVENTS,
@@ -14,7 +15,7 @@ import {
 } from "../mail/mail.i18n";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
-import { rankFailedTargets, sinceDaysAgo } from "./login-failure.util";
+import { rankFailedTargets } from "./login-failure.util";
 
 /** Default events per page on the admin "Sécurité" list. */
 export const SECURITY_EVENT_PAGE_SIZE = 50;
@@ -159,7 +160,7 @@ export class SecurityEventService {
     });
   }
 
-  @Cron("0 6 * * *")
+  @Cron(CronExpression.EVERY_DAY_AT_6AM)
   async purgeExpired(now = new Date()): Promise<void> {
     const { count } = await this.prisma.securityEvent.deleteMany({
       where: { createdAt: { lt: sinceDaysAgo(now, RETENTION_DAYS) } },

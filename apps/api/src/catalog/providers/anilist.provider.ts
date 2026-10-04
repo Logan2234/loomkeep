@@ -28,7 +28,7 @@ import {
 } from "./anilist.mapper";
 import type { CatalogProvider, ProviderMediaDetails } from "./provider.types";
 
-const GRAPHQL_URL = "https://graphql.anilist.co";
+export const ANILIST_GRAPHQL_URL = "https://graphql.anilist.co";
 
 // AniList caps usage at 90 requests/minute and imposes a full minute's
 // timeout on the offending IP if that's exceeded — steeper than a plain
@@ -353,7 +353,7 @@ export class AnilistProvider implements CatalogProvider {
       data?: T;
       errors?: { message: string }[];
     }>(
-      GRAPHQL_URL,
+      ANILIST_GRAPHQL_URL,
       {
         method: "POST",
         headers: {

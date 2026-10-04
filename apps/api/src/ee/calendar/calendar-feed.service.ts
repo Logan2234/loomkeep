@@ -14,6 +14,7 @@ import {
   resolveCopyLocale,
 } from "../../common/copy-locale.util";
 import { randomToken } from "../../common/crypto.util";
+import { sinceDaysAgo, utcDateKey } from "../../common/date.util";
 import { canonicalExternalId } from "../../common/external-id.util";
 import { primaryWebOrigin } from "../../common/web-origin.util";
 import { EntitlementService } from "../../entitlements/entitlement.service";
@@ -81,7 +82,7 @@ export class CalendarFeedService {
     const user = await this.premiumUserForToken(token);
     if (!user) return null;
 
-    const since = new Date(now.getTime() - RELEASES_WINDOW_DAYS * 86_400_000);
+    const since = sinceDaysAgo(now, RELEASES_WINDOW_DAYS);
     const episodes = await this.prisma.episode.findMany({
       where: {
         airDate: { gte: since, lte: now },
@@ -149,8 +150,8 @@ export class CalendarFeedService {
       },
       include: { mediaItem: { include: { externalIds: true } } },
     });
-    const from = since.toISOString().slice(0, 10);
-    const to = now.toISOString().slice(0, 10);
+    const from = utcDateKey(since);
+    const to = utcDateKey(now);
 
     return entries.flatMap((entry) => {
       const region = resolveWatchRegion(
@@ -206,7 +207,7 @@ export class CalendarFeedService {
 
     return entries.flatMap(({ gameItem: item }) => {
       const day = gameReleaseAlertDay(
-        item.releaseDate?.toISOString().slice(0, 10) ?? null,
+        item.releaseDate ? utcDateKey(item.releaseDate) : null,
         item.releaseDatePrecision,
       );
       if (!day) return [];
