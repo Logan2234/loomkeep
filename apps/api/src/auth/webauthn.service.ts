@@ -23,6 +23,7 @@ import {
 } from "@simplewebauthn/server";
 import * as bcrypt from "bcryptjs";
 import { AppException } from "../common/app.exception";
+import { webOrigins } from "../common/web-origin.util";
 import { notificationCopy } from "../notifications/notification-copy";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
@@ -49,10 +50,7 @@ export class WebauthnService {
 
   /** WEB_ORIGIN is the browser-facing origin (comma-separated) — see main.ts's CORS setup. Its hostname doubles as the WebAuthn RP ID, so self-hosters need no extra config. */
   private origins(): string[] {
-    return this.configService
-      .getOrThrow<string>("WEB_ORIGIN")
-      .split(",")
-      .map((o) => o.trim());
+    return webOrigins(this.configService.getOrThrow<string>("WEB_ORIGIN"));
   }
 
   private rpID(): string {

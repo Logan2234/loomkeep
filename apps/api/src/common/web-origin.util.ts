@@ -7,3 +7,10 @@ export function primaryWebOrigin(raw: string | undefined): string {
     raw?.split(",")[0]?.trim().replace(/\/$/, "") || "http://localhost:5173"
   );
 }
+
+export function webOrigins(raw: string | undefined): string[] {
+  return (raw ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}

@@ -248,7 +248,9 @@ export class MigrationExportService {
 
     for (const watch of watches) {
       const itemId = watch.episode.season.mediaItemId;
-      byItem.set(itemId, [...(byItem.get(itemId) ?? []), watch.watchedAt]);
+      const group = byItem.get(itemId);
+      if (group) group.push(watch.watchedAt);
+      else byItem.set(itemId, [watch.watchedAt]);
     }
 
     return byItem;

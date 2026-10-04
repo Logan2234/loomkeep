@@ -1,6 +1,7 @@
 import type { RatingDto } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { HTTP_TIMEOUT_MS } from "../common/http.util";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
 
 const OMDB_URL = "https://www.omdbapi.com/";
@@ -38,7 +39,9 @@ export class OmdbService {
       url.searchParams.set("apikey", apiKey);
       url.searchParams.set("i", imdbId);
       this.quota.record("omdb");
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+      });
       if (!response.ok) return [];
 
       const data = (await response.json()) as OmdbResponse;

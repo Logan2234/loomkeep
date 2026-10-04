@@ -1,9 +1,14 @@
 import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus } from "@nestjs/common";
 import { AppException } from "./app.exception";
+import { sleep } from "./async.util";
 
 // A hung provider must not hold a request open indefinitely.
-const TIMEOUT_MS = 10_000;
+export const HTTP_TIMEOUT_MS = 10_000;
+
+export function identifyingUserAgent(contact: string | undefined): string {
+  return `Loomkeep/1.0 (${contact ?? "self-hosted, no contact provided"})`;
+}
 
 // Transient failures (429/5xx) get a couple of retries with backoff — a
 // provider hiccup shouldn't surface as a user-facing error.
@@ -52,7 +57,7 @@ export async function fetchJson<T>(
     if (opts.beforeAttempt) await opts.beforeAttempt();
     opts.onAttempt?.();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timeout = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
 
     let response: Response;
 
@@ -124,8 +129,4 @@ function retryDelayMs(
   }
 
   return 500 * 2 ** (attempt - 1); // 500ms, then 1000ms.
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

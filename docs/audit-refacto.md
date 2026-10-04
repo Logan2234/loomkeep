@@ -24,7 +24,7 @@
   - le `switch` à 4 domaines répété 6 fois dans `admin-cache.controller.ts` ;
   - les 11 boutons « charger plus ».
 - **Fichiers à découper en priorité** : `library.service.ts` (2163 l.), `mail.service.ts` (1929), `achievements/registry.ts` (1677), `data-export.service.ts` (une méthode de 746 l.), `LibraryBrowser.svelte` (1062), `CommentThread.svelte` (1025).
-- **Inventaire total** : 220 pistes, dont 13 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
+- **Inventaire total** : 210 pistes, dont 11 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
 
 ---
 
@@ -126,10 +126,6 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | SH-38 | 1   | `XP_RULES` / `XP_RULE_LIST` (API seule, export spéculatif)                                          | faible | S      | faible | P3       |
 | SH-39 | 1   | `DEFAULT_INSTANCE_SETTINGS` / `INSTANCE_SETTING_ENV` API seule                                      | faible | S      | faible | P3       |
 | SH-40 | 1   | `mergeAlertPrefs` API seule                                                                         | faible | S      | faible | P3       |
-| HB-01 | 2   | `sleep` dupliqué entre HTTP et throttle                                                             | faible | S      | faible | P2       |
-| HB-03 | 2   | 🐛 8 `fetch` bruts sans timeout (dont Turnstile au login)                                           | moyen  | S      | faible | P1       |
-| HB-04 | 2   | User-Agent identifiant construit ×3                                                                 | faible | S      | faible | P3       |
-| HB-05 | 2   | 🐛 Parsing de `WEB_ORIGIN` réécrit ×8 (`//app` dans les flux ICS/RSS)                               | moyen  | S      | faible | P1       |
 | HB-06 | 2   | `startOfUtcDay` ×3, `startOfUtcMonth`                                                               | faible | S      | faible | P2       |
 | HB-07 | 2   | Intervalles d'année/mois UTC ×4                                                                     | faible | S      | faible | P3       |
 | HB-08 | 2   | « il y a N jours » inliné ≈15 fois (`sinceDaysAgo` existe)                                          | moyen  | S      | faible | P2       |
@@ -145,14 +141,10 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | HB-18 | 2   | `(page - 1) * limit` recalculé alors que `ParsedPage.skip` existe                                   | faible | S      | faible | P3       |
 | HB-20 | 2   | Résolution des cibles d'œuvres dupliquée (lists/reviews/export/stats)                               | fort   | M      | moyen  | P1       |
 | HB-21 | 2   | Objet `select` canonique des external ids ×14                                                       | faible | S      | faible | P2       |
-| HB-22 | 2   | P2002 inline ×4 malgré `isUniqueViolation`                                                          | faible | S      | faible | P2       |
-| HB-23 | 2   | SHA-256 hex ×3 (couplage users → auth.service)                                                      | faible | S      | faible | P2       |
-| HB-24 | 2   | Tokens aléatoires `randomBytes(...)` ×8                                                             | faible | S      | faible | P3       |
 | HB-25 | 2   | Code OTP à 6 chiffres ×3                                                                            | faible | S      | faible | P3       |
 | HB-26 | 2   | Émission de tokens à usage unique ×3 dans `auth.service`                                            | moyen  | S      | faible | P2       |
 | HB-27 | 2   | `parseTarget` / `domainOrThrow` réimplémentent `parseEnumParam`                                     | faible | S      | faible | P3       |
 | HB-28 | 2   | URLs d'images TMDB ×9 / IGDB ×3                                                                     | faible | S      | faible | P3       |
-| HB-29 | 2   | Regroupement par spread en O(n²) ×2                                                                 | faible | S      | faible | P3       |
 | HB-30 | 2   | Requête « ids d'épisodes vus » ×5 dans `library.service`                                            | faible | S      | faible | P2       |
 | HB-31 | 2   | Stubs de test dupliqués (`stubXp` ×9, `mockFetchByUrl` ×6…)                                         | moyen  | M      | faible | P2       |
 | HF-02 | 2   | `sessionStorage` sans try/catch (onboarding)                                                        | faible | S      | faible | P3       |
@@ -202,7 +194,6 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | TB-04 | 4   | `toPlaythroughDto` / `toReadingDto` dupliqués et typés à la main                                    | moyen  | S      | faible | P1       |
 | TB-05 | 4   | `!` après `filter` (prédicats de type manquants) ×14                                                | faible | S      | faible | P3       |
 | TB-06 | 4   | `dto.listId!` dans des closures ×4                                                                  | faible | S      | faible | P3       |
-| TB-07 | 4   | `!` sur un token relu après `update` ×2                                                             | faible | S      | faible | P3       |
 | TB-08 | 4   | `!` sur des variables d'env (push)                                                                  | faible | S      | faible | P3       |
 | TB-09 | 4   | `Map.get(...)!` ×9                                                                                  | faible | S      | faible | P3       |
 | TB-10 | 4   | Cast du dictionnaire de quotas                                                                      | faible | S      | faible | P3       |
@@ -283,7 +274,6 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | RT-03 | 5   | Script `graph` cassé + dépendance `tsconfig-paths` inutile                                          | faible | S      | faible | P1       |
 | RT-04 | 5   | Champs d'import hérités (`subtitle`, `sub`) + chaînes FR/EN en dur côté API                         | moyen  | S      | faible | P2       |
 | RT-05 | 5   | Shims de compatibilité à dater (`LegacyBackupFileDto`, `loomkeep.tokens`)                           | faible | S      | faible | P3       |
-| RT-06 | 5   | `make-zip.ts` (helper de test) compilé dans `dist/`                                                 | faible | S      | faible | P2       |
 | RT-07 | 5   | Barrel `lib/api/client.ts` (118 imports) : statut à trancher                                        | moyen  | M      | faible | P2       |
 | RT-08 | 5   | Libs navigateur dans les `dependencies` web (image Docker)                                          | moyen  | S      | moyen  | P2       |
 | RT-09 | 5   | `@simplewebauthn/browser` en devDependency de shared                                                | faible | S      | faible | P2       |
@@ -662,29 +652,6 @@ Le modèle existe déjà (`REVIEW_TEXT_MAX_LENGTH`, `COMMENT_TEXT_MAX_LENGTH`, `
 
 Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, `toDateOrNull`, `fetchJson`, `localDay`, `parsePageQuery`, `isUniqueViolation`, `secretsMatch`, `compareTitles`, `primaryWebOrigin`, `resolveWorkHref`, `canonicalExternalId`, `parseEnumParam`, `RequestThrottle`, `toCsv`, `safeLang` et `normalizeEmail`. Les pistes ci-dessous relèvent surtout des **contournements** de ces utilitaires.
 
-**HB-01 — `sleep`**
-
-- **Constat** : après HB-02 (voir §7), les copies restantes sont dans `common/http.util.ts` et `common/request-throttle.ts`. `retryDelayMs` est désormais unique.
-- **Proposition** : créer `common/async.util.ts` → `sleep` pour ces deux appelants.
-
-**HB-03 — 🐛 `fetch` bruts sans timeout**
-
-- **Constat** : `catalog/omdb.service.ts:41`, `auth/turnstile.service.ts:32` (**sur le chemin du login**), `import/sources/simkl/simkl.source.ts:72,121`, `import/sources/steam/steam.source.ts:392`, `jobs/job-run.service.ts:79`, `newsletter/newsletter.service.ts:144` et `musicbrainz.provider.ts:224`. Seuls `github-public-keys.service.ts:43`, `hibp.service.ts:30` et `admin.service.ts:577` bornent leurs appels.
-- **Proposition** : exporter `HTTP_TIMEOUT_MS` depuis `http.util.ts` (où il vaut aujourd'hui `TIMEOUT_MS` privé, à `:6`) et passer `signal: AbortSignal.timeout(...)` partout. Garder le timeout plus court de hibp, qui est sur le chemin du mot de passe.
-
-**HB-04 — User-Agent identifiant**
-
-- **Constat** : `admin/admin.service.ts:573`, `open-library.provider.ts:564-576` et `musicbrainz.provider.ts:286-300`.
-- **Proposition** : `identifyingUserAgent(contact)` dans `common/http.util.ts`.
-
-**HB-05 — 🐛 `WEB_ORIGIN` réécrit**
-
-- **Constat** :
-  - `auth/invitation.service.ts:82-86` est une copie exacte de `primaryWebOrigin`.
-  - `ee/calendar/calendar-feed.service.ts:92-94` et `ee/social/activity-feed.service.ts:137-139` ne retirent pas le `/` final, d'où des URLs **`//app/...`** dans les flux ICS et RSS si `WEB_ORIGIN` se termine par `/`.
-  - Autres copies : `notifications/push.service.ts:170`, et en liste d'origines `main.ts:96`, `events/events.gateway.ts:84-87`, `auth/webauthn.service.ts:52-55` et `links/link-resolver.service.ts:82-90`.
-- **Proposition** : utiliser `primaryWebOrigin` et ajouter `webOrigins(raw)` dans `common/web-origin.util.ts`. `ee/` a le droit d'importer `common/`.
-
 **HB-06 — `startOfUtcDay` / `startOfUtcMonth`**
 
 - **Constat** : `admin/admin-stats.util.ts:14`, `admin/admin.service.ts:70,76` et `common/quota-tracker.service.ts:4`.
@@ -786,31 +753,15 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
   - Copies inline : `stats.service.ts:259-260,311-312,343-344,376,411,586,664,738` et `notification.service.ts:142`.
 - **Proposition** : exporter `CANONICAL_EXTERNAL_ID_SELECT` depuis `common/external-id.util.ts`.
 
-**HB-22 — P2002 inline**
-
-- **Constat** : `auth/auth.service.ts:189-193`, `achievement.service.ts:114-117`, `xp.service.ts:215-218` et `newsletter.service.ts:70-73`.
-- **Proposition** : `isUniqueViolation(err, field?)`, avec un paramètre `field` dont auth a besoin pour lire `meta.target`.
-
-**HB-23 — SHA-256 hex**
-
-- **Constat** : `auth/auth.service.ts:1124` (`hashToken`), `auth/invitation.service.ts:48` et `api-keys/api-key-auth.service.ts:32`. `users/users.service.ts:24` importe `hashToken` **depuis `auth.service`**, ce qui crée un couplage inter-modules.
-- **Proposition** : `sha256Hex` dans `common/crypto.util.ts`. `hashApiKey` reste comme wrapper, pour son commentaire CodeQL.
-- **À ne pas toucher** : `auth-cookies.ts:135`, qui est une dérivation de clé, pas un hash de token.
-
-**HB-24 — Tokens aléatoires**
-
-- **Constat** : `randomBytes(32).toString("hex")` dans `auth.service.ts:208,328,873`, `invitation.service.ts:114,156` et `newsletter.service.ts:182` ; `randomBytes(24).toString("base64url")` dans `calendar-feed.service.ts:167` et `activity-feed.service.ts:213`.
-- **Proposition** : `randomToken(bytes, encoding)` dans `common/crypto.util.ts`.
-
 **HB-25 — Code OTP à 6 chiffres**
 
 - **Constat** : `auth.service.ts:408,462` et `users.service.ts:465`.
-- **Proposition** : `randomNumericCode(OTP_CODE_LENGTH)` (voir SH-17).
+- **Proposition** : `randomNumericCode(OTP_CODE_LENGTH)` dans `common/crypto.util.ts`, qui centralise déjà les tokens (HB-24 résolue, voir §7), avec la constante de SH-17.
 
 **HB-26 — Tokens à usage unique dans `auth.service`**
 
 - **Constat** : la même séquence est copiée 3 fois : `register 211-222`, `resendVerificationEmail 328-342` et `requestPasswordReset 873-886`.
-- **Proposition** : `issueUserToken(userId, type, ttlMs)`, qui supprime l'ancien token et crée le nouveau dans une transaction.
+- **Proposition** : `issueUserToken(userId, type, ttlMs)`, qui supprime l'ancien token et crée le nouveau dans une transaction, en réutilisant `common/crypto.util.ts` pour sa génération (HB-24 résolue, voir §7).
 
 **HB-27 — `parseEnumParam` contourné**
 
@@ -824,11 +775,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 
 - **Constat** : `catalog/providers/tmdb.mapper.ts:184,197,231,263,312,354,364,396,484` et `games/providers/igdb.provider.ts:370,374,432`.
 - **Proposition** : helpers locaux `tmdbImage(path, size)` et `igdbImage(id, size)`, plus des constantes de taille.
-
-**HB-29 — Regroupement en O(n²)**
-
-- **Constat** : `library.service.ts:428` et `migration-export.service.ts:251` font `map.set(k, [...(map.get(k) ?? []), v])`.
-- **Proposition** : faire un push sur place, sans helper.
 
 **HB-30 — « ids d'épisodes déjà vus »**
 
@@ -1162,11 +1108,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 
 - **Constat** : `game-library:442`, `music-library:360`, `library:506` et `book-library:471`.
 - **Proposition** : capturer la valeur dans une constante locale, ou passer `listId` à `addToList` (`common/bulk-entries.util.ts`).
-
-**TB-07 — Token relu après `update`**
-
-- **Constat** : `calendar-feed.service.ts:170` et `activity-feed.service.ts:216`.
-- **Proposition** : générer le token dans une constante et la renvoyer, en lien avec HB-24.
 
 **TB-08 — Variables d'env**
 
@@ -1704,11 +1645,6 @@ Valeur faible pour l'ensemble.
 - **Constat** : `lib/admin-backup-inventory.ts:6-17` (`LegacyBackupFileDto`, #246) et `lib/api/auth.ts:39-41` (`removeItem("loomkeep.tokens")`, #206).
 - **Proposition** : dater ces shims dans un commentaire, puis les retirer.
 
-**RT-06 — `make-zip.ts`**
-
-- **Constat** : `apps/api/src/import/make-zip.ts:3-8` affirme être exclu par `tsconfig.build.json`, ce qui est **faux** : ce dernier n'exclut que `**/*spec.ts`. Le fichier part donc dans `dist/`, alors qu'il ne sert qu'à 3 specs.
-- **Proposition** : le déplacer vers `apps/api/test/` ou le renommer en `*.spec-helper.ts`, et corriger le commentaire.
-
 **RT-07 — Barrel `lib/api/client.ts`**
 
 - **Constat** : il se décrit comme « Compatibility barrel », mais **115 à 118 fichiers** l'importent, contre 12 pour `core` et environ 33 en imports directs. Il est incomplet (il ne réexporte pas `links`, `stats`, `session-timer`, etc.), ce qui produit des imports mixtes dans un même fichier (`NotificationBell.svelte:21,29`, `ProfileView.svelte:13-14`, `media/+page.svelte:2,7`).
@@ -1821,7 +1757,6 @@ Valeur faible pour l'ensemble.
 - `library.service.ts:464-470` et `1566-1572` : JSDoc empilées sur la mauvaise méthode.
 - `routes/app/lists/[id]/+page.svelte:214-217` : commentaire orphelin.
 - `books/[id]/+page.svelte:149-151` : obsolète.
-- `make-zip.ts:3-8` : voir RT-06.
 - **CLAUDE.md** : affirme que le web dérive la clé i18n via `errorCodeToMessageKey()`, alors que le web utilise une map explicite `MESSAGES` (`lib/api/errors.ts:13,320`) et que la fonction ne sert qu'aux specs.
 
 **RT-27 — Docs et Dockerfiles**
@@ -1847,12 +1782,11 @@ Pistes à fort rendement et faible effort (S, risque faible), à traiter en prem
 | 1   | SH-05 + HB-20 (première étape) | 🐛 liens morts dans les listes et les stats ; `workPath` unique |
 | 2   | SH-01, SH-02, SH-24            | constantes déjà dans shared, ou à une ligne d'y être            |
 | 3   | SH-06, CF-10, RT-28            | incohérences de texte visibles (S1E2, Anime/Animé, italien)     |
-| 4   | HB-03                          | timeouts sur 8 `fetch`, dont le login                           |
-| 5   | CB-02, CB-03                   | constantes critiques (TTL catalogue, durée de vie des tokens)   |
-| 6   | RT-01, RT-02, RT-03            | suppression pure de code mort                                   |
-| 7   | RF-12, RF-21                   | 11 boutons et 5 modals → 2 composants                           |
-| 8   | CF-08, TF-08                   | source unique des domaines ; clés de badge typées               |
-| 9   | SH-15                          | contrat realtime corrigé (`jobId`)                              |
+| 4   | CB-02, CB-03                   | constantes critiques (TTL catalogue, durée de vie des tokens)   |
+| 5   | RT-01, RT-02, RT-03            | suppression pure de code mort                                   |
+| 6   | RF-12, RF-21                   | 11 boutons et 5 modals → 2 composants                           |
+| 7   | CF-08, TF-08                   | source unique des domaines ; clés de badge typées               |
+| 8   | SH-15                          | contrat realtime corrigé (`jobId`)                              |
 
 ---
 
@@ -1863,16 +1797,15 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 | Lot        | Contenu                                                                                                                               | Dépend de                            | Remarques                                                      |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------- |
 | **L0a** 🐛 | SH-05 côté API seulement : `workPath` dans `common/work-href.util.ts`, branché dans `list.service` et `stats.service`                 | —                                    | Test rouge d'abord. Minimal, pour corriger vite.               |
-| **L0d** 🐛 | HB-03 + reliquat HB-01 (voir §7, HB-02)                                                                                               | —                                    | Specs des providers.                                           |
 | **L0f** 🐛 | Front : SH-24, RF-23                                                                                                                  | —                                    | Tests unitaires et de composant.                               |
-| **L0g** 🐛 | Textes : SH-06, CF-10, RT-28, HB-05, HB-13, SH-27 (filtre serveur et import)                                                          | —                                    |                                                                |
-| **L1** ∥   | Nettoyage : RT-01, RT-02, RT-03, RT-06, RT-11, RT-12, RT-13, RT-14, RT-26, SH-38 (`XP_RULE_LIST`)                                     | —                                    | Aucun risque fonctionnel.                                      |
+| **L0g** 🐛 | Textes : SH-06, CF-10, RT-28, HB-13, SH-27 (filtre serveur et import)                                                                 | —                                    |                                                                |
+| **L1** ∥   | Nettoyage : RT-01, RT-02, RT-03, RT-11, RT-12, RT-13, RT-14, RT-26, SH-38 (`XP_RULE_LIST`)                                            | —                                    | Aucun risque fonctionnel.                                      |
 | **L2**     | shared, constantes de contrat : SH-01, 02, 03, 17, 18, 19, 20, 21, 28, 30, 31 + SH-29/CB-01 (`shared/date.ts`)                        | —                                    | Un seul `build:package`.                                       |
 | **L3**     | shared, routes et présentation : SH-05 complet (`shared/routes.ts`, migration de L0a et du web), SH-06, 07, 08, HF-07                 | L0a                                  | Supprime `home/widgets/media.ts`.                              |
 | **L4**     | shared, unions : SH-09, 10, 11, 12, 13, 14, 15, 16, 22, 23, 25, 26, SH-32                                                             | L2                                   | Typage des `List*Filters` web.                                 |
-| **L5** ∥   | API `common/` : HB-06 à HB-12, HB-15 à HB-18, HB-21 à HB-25, HB-27 à HB-29                                                            | L2 (pour `DAY_MS`)                   | Plusieurs petites PR possibles (date, crypto, pagination).     |
+| **L5** ∥   | API `common/` : HB-06 à HB-12, HB-15 à HB-18, HB-21, HB-25, HB-27, HB-28                                                              | L2 (pour `DAY_MS`)                   | Plusieurs petites PR possibles (date, crypto, pagination).     |
 | **L6** ∥   | API constantes : CB-02 à CB-09                                                                                                        | —                                    |                                                                |
-| **L7** ∥   | API types : TB-01 à TB-10                                                                                                             | —                                    | TB-04 avec HB-15.                                              |
+| **L7** ∥   | API types : TB-01 à TB-06, TB-08 à TB-10                                                                                              | —                                    | TB-04 avec HB-15.                                              |
 | **L8**     | API services transverses : HB-20 (`resolveWorkTargets`), RB-18, RB-03, RB-04, RB-06, RB-07, RB-08, RB-09, RB-11 à RB-13, HB-26, HB-30 | L3, L5                               | Une PR par thème.                                              |
 | **L9**     | API admin : RB-14, RB-15, RB-16, RB-17, RB-19                                                                                         | L5, L8                               | RB-19 après décision sur la maintenance.                       |
 | **L10**    | API découpages : RB-10, RB-20 à RB-30                                                                                                 | L8 (RB-23, RB-24, RB-28 après HB-20) | Une PR par fichier, sans changement de comportement.           |
@@ -1904,7 +1837,7 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 
 Ces numéros restent uniquement pour guider les pistes qui en dépendent ; ils ne font plus partie des tâches à traiter.
 
-- **HB-02** : Open Library et MusicBrainz utilisent désormais `common/http.util.ts` → `fetchJson` (timeout, retries, erreurs réseau en 502, vrais 404 conservés). MusicBrainz attend son throttle avant chaque tentative et ne réessaie les réponses HTTP que sur 503 ; les quotas comptent chaque requête. Pour HB-01, seuls les `sleep` du helper HTTP et du throttle restent à mutualiser. HB-03 conserve les autres appels `fetch` bruts, notamment Cover Art Archive.
+- **HB-24** : `common/crypto.util.ts` expose `randomToken(bytes, encoding)` ; les tokens d'authentification, d'invitation et de newsletter restent en hex sur 32 octets, ceux des flux en base64url sur 24 octets. HB-25 et HB-26 doivent réutiliser ce module en conservant ces formats et la séparation entre génération et cycle de vie des tokens.
 - **HF-04** : `localDateInput` vit dans `lib/date.ts`, avec un réexport dans `session-presentation.ts`. Il sert aux dates de sortie, à la borne de naissance, au calendrier, aux clés API et à OnThisDay. SH-29 pourra déplacer cette source unique vers shared ; HF-05 pourra compléter ce module avec les calculs de jours calendaires.
 
 ---

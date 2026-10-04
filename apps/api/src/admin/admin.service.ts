@@ -10,6 +10,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { identifyingUserAgent } from "../common/http.util";
 import { PROVIDER_DAILY_QUOTAS } from "../common/quota-tracker.service";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { JOB_HEALTHCHECK_ENV } from "../jobs/job-keys";
@@ -195,7 +196,11 @@ export class AdminService {
         probe: (signal) =>
           this.ping("https://openlibrary.org/search.json?q=1984&limit=1", {
             signal,
-            headers: { "User-Agent": this.userAgent() },
+            headers: {
+              "User-Agent": identifyingUserAgent(
+                this.env("API_CONTACT") || undefined,
+              ),
+            },
           }),
         // No published quota — Open Library asks for an identifying
         // User-Agent and reasonable batching instead of enforcing a ceiling.
@@ -213,7 +218,11 @@ export class AdminService {
             "https://musicbrainz.org/ws/2/release-group/?query=test&fmt=json&limit=1",
             {
               signal,
-              headers: { "User-Agent": this.userAgent() },
+              headers: {
+                "User-Agent": identifyingUserAgent(
+                  this.env("API_CONTACT") || undefined,
+                ),
+              },
             },
           ),
       },
@@ -562,15 +571,6 @@ export class AdminService {
 
   private env(key: string): string {
     return this.config.get<string>(key) ?? "";
-  }
-
-  /**
-   * Identifying `User-Agent`, required by the keyless providers' usage
-   * policies (Open Library, MusicBrainz) — same shape as the one their own
-   * providers send.
-   */
-  private userAgent(): string {
-    return `Loomkeep/1.0 (${this.env("API_CONTACT") || "self-hosted, no contact provided"})`;
   }
 
   /** Runs a probe under an abort-timeout, so no single service stalls the page. */

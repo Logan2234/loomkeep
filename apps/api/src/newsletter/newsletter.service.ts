@@ -1,9 +1,10 @@
 import { ErrorCode, type NewsletterSendDto } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import type { NewsletterSend } from "@prisma/client";
-import { Prisma } from "@prisma/client";
-import { randomBytes } from "node:crypto";
 import { AppException } from "../common/app.exception";
+import { randomToken } from "../common/crypto.util";
+import { HTTP_TIMEOUT_MS } from "../common/http.util";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { notSuspended } from "../users/suspension.util";
@@ -67,10 +68,7 @@ export class NewsletterService {
         data: { quackbackChangelogId, title },
       });
     } catch (err) {
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === "P2002"
-      ) {
+      if (isUniqueViolation(err)) {
         return null;
       }
 
@@ -143,7 +141,10 @@ export class NewsletterService {
     try {
       const response = await fetch(
         `${QUACKBACK_CHANGELOG_API_URL}/${encodeURIComponent(changelogId)}`,
-        { headers: { Authorization: `Bearer ${apiKey}` } },
+        {
+          headers: { Authorization: `Bearer ${apiKey}` },
+          signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+        },
       );
 
       if (!response.ok) {
@@ -179,7 +180,7 @@ export class NewsletterService {
   ): Promise<string> {
     if (existing) return existing;
 
-    const token = randomBytes(32).toString("hex");
+    const token = randomToken(32, "hex");
     await this.prisma.user.update({
       where: { id: userId },
       data: { newsletterUnsubscribeToken: token },

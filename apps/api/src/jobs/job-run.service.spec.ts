@@ -55,7 +55,10 @@ describe("JobRunService.record — Healthchecks.io ping", () => {
       () => "summary",
     );
 
-    expect(fetchMock).toHaveBeenCalledWith(PING_URL);
+    expect(fetchMock).toHaveBeenCalledWith(
+      PING_URL,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 
   it("pings the /fail URL on failure, then still rethrows", async () => {
@@ -72,7 +75,10 @@ describe("JobRunService.record — Healthchecks.io ping", () => {
       ),
     ).rejects.toThrow("boom");
 
-    expect(fetchMock).toHaveBeenCalledWith(`${PING_URL}/fail`);
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PING_URL}/fail`,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 
   it("stores a run id and the full stack in JobRun.error on failure", async () => {

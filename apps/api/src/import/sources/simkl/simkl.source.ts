@@ -3,6 +3,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { AppException } from "../../../common/app.exception";
+import { HTTP_TIMEOUT_MS } from "../../../common/http.util";
 import { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { primaryWebOrigin } from "../../../common/web-origin.util";
 import { PrismaService } from "../../../prisma/prisma.service";
@@ -70,6 +71,7 @@ export class SimklImportSource extends MediaImportSource<SimklParsed> {
 
     this.quota.record("simkl");
     const response = await fetch(`${SIMKL_API}/oauth/token`, {
+      signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -119,6 +121,7 @@ export class SimklImportSource extends MediaImportSource<SimklParsed> {
 
     this.quota.record("simkl");
     const response = await fetch(url, {
+      signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 

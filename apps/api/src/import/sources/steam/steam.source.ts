@@ -16,6 +16,7 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../../common/app.exception";
+import { HTTP_TIMEOUT_MS } from "../../../common/http.util";
 import { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { GameItemService } from "../../../games/game-item.service";
 import { IgdbProvider } from "../../../games/providers/igdb.provider";
@@ -389,7 +390,9 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
     }
 
     this.quota.record("steam");
-    const response = await fetch(target);
+    const response = await fetch(target, {
+      signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+    });
 
     if (!response.ok) {
       throw new AppException(

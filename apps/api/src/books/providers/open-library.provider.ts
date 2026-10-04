@@ -4,7 +4,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
 import { chunk } from "../../common/array.util";
-import { fetchJson } from "../../common/http.util";
+import { fetchJson, identifyingUserAgent } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import type {
   BookCatalogProvider,
@@ -615,9 +615,7 @@ export class OpenLibraryProvider implements BookCatalogProvider {
    * calls in a burst; honours `Retry-After` when Open Library sends one.
    */
   private async get<T>(path: string, notFoundMessage?: string): Promise<T> {
-    const contact =
-      this.configService.get<string>("API_CONTACT") ??
-      "self-hosted, no contact provided";
+    const contact = this.configService.get<string>("API_CONTACT");
     const url = `${API_URL}${path}`;
 
     return fetchJson<T>(
@@ -625,7 +623,7 @@ export class OpenLibraryProvider implements BookCatalogProvider {
       {
         headers: {
           Accept: "application/json",
-          "User-Agent": `Loomkeep/1.0 (${contact})`,
+          "User-Agent": identifyingUserAgent(contact),
         },
       },
       {

@@ -427,7 +427,9 @@ export class LibraryService {
 
     for (const episode of episodes) {
       const id = episode.season.mediaItemId;
-      episodesByMedia.set(id, [...(episodesByMedia.get(id) ?? []), episode]);
+      const group = episodesByMedia.get(id);
+      if (group) group.push(episode);
+      else episodesByMedia.set(id, [episode]);
     }
 
     return summarizePile(

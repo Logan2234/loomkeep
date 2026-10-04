@@ -22,6 +22,7 @@ import {
 } from "../auth/jwt.constants";
 import { SessionCacheService } from "../auth/session-cache.service";
 import { isSessionLive } from "../auth/session-live.util";
+import { webOrigins } from "../common/web-origin.util";
 import {
   MetricsService,
   type WsRejectionReason,
@@ -81,13 +82,10 @@ function classifyRejection(error: unknown): WsRejectionReason {
 // Nest's DI is available to inject ConfigService), same constraint as
 // main.ts's own CORS setup — mirrored here directly from process.env for the
 // same reason.
-const webOrigins = (process.env.WEB_ORIGIN ?? "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedWebOrigins = webOrigins(process.env.WEB_ORIGIN);
 
 @WebSocketGateway({
-  cors: { origin: webOrigins, credentials: true },
+  cors: { origin: allowedWebOrigins, credentials: true },
   // @nestjs/platform-fastify's raw http.Server never completes engine.io's
   // polling→websocket upgrade handshake (confirmed with curl: it 101s then
   // hangs, never sending the expected probe packet) — polling would just be

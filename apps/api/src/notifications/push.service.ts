@@ -2,6 +2,7 @@ import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import webpush from "web-push";
 import { AppException } from "../common/app.exception";
+import { primaryWebOrigin } from "../common/web-origin.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { isAllowedPushEndpoint } from "./push-endpoint.validator";
 
@@ -167,6 +168,6 @@ export class PushService {
  */
 function vapidSubject(): string | null {
   if (process.env.VAPID_SUBJECT) return process.env.VAPID_SUBJECT;
-  const origin = process.env.WEB_ORIGIN?.split(",")[0].trim();
+  const origin = primaryWebOrigin(process.env.WEB_ORIGIN);
   return origin?.startsWith("https://") ? origin : null;
 }

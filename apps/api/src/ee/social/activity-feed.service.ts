@@ -2,12 +2,13 @@ import type { ActivityEventDto, ActivityFeedTokenDto } from "@loomkeep/shared";
 import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { randomBytes } from "node:crypto";
 import { AppException } from "../../common/app.exception";
 import {
   type CopyLocale,
   resolveCopyLocale,
 } from "../../common/copy-locale.util";
+import { randomToken } from "../../common/crypto.util";
+import { primaryWebOrigin } from "../../common/web-origin.util";
 import { EntitlementService } from "../../entitlements/entitlement.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ActivityService } from "../../social/activity.service";
@@ -134,9 +135,7 @@ export class ActivityFeedService {
       ACTIVITY_FEED_MAX_ENTRIES,
     );
 
-    const webOrigin = (this.config.get<string>("WEB_ORIGIN") ?? "")
-      .split(",")[0]
-      .trim();
+    const webOrigin = primaryWebOrigin(this.config.get<string>("WEB_ORIGIN"));
     const copy: ActivityFeedCopy = FEED_COPY[resolveCopyLocale(user.locale)];
     const profileLink = `${webOrigin}/app/u/${user.username}`;
 
@@ -208,12 +207,13 @@ export class ActivityFeedService {
   }
 
   private async issueToken(userId: string): Promise<ActivityFeedTokenDto> {
-    const { activityFeedToken } = await this.prisma.user.update({
+    const token = randomToken(24, "base64url");
+    await this.prisma.user.update({
       where: { id: userId },
-      data: { activityFeedToken: randomBytes(24).toString("base64url") },
+      data: { activityFeedToken: token },
       select: { activityFeedToken: true },
     });
-    return { token: activityFeedToken! };
+    return { token };
   }
 
   private async requirePremium(userId: string): Promise<void> {

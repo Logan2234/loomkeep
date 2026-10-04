@@ -7,14 +7,15 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { randomBytes } from "node:crypto";
 import { resolveWatchRegion } from "../../catalog/watch-region.util";
 import { AppException } from "../../common/app.exception";
 import {
   type CopyLocale,
   resolveCopyLocale,
 } from "../../common/copy-locale.util";
+import { randomToken } from "../../common/crypto.util";
 import { canonicalExternalId } from "../../common/external-id.util";
+import { primaryWebOrigin } from "../../common/web-origin.util";
 import { EntitlementService } from "../../entitlements/entitlement.service";
 import { LibraryService } from "../../library/library.service";
 import { notificationCopy } from "../../notifications/notification-copy";
@@ -99,9 +100,7 @@ export class CalendarFeedService {
       },
     });
 
-    const webOrigin = (this.config.get<string>("WEB_ORIGIN") ?? "")
-      .split(",")[0]
-      .trim();
+    const webOrigin = primaryWebOrigin(this.config.get<string>("WEB_ORIGIN"));
     const copy = FEED_COPY[resolveCopyLocale(user.locale)];
 
     const episodeEntries: ReleaseFeedEntry[] = episodes.map((episode) => {
@@ -266,12 +265,13 @@ export class CalendarFeedService {
   }
 
   private async issueToken(userId: string): Promise<CalendarTokenDto> {
-    const { calendarToken } = await this.prisma.user.update({
+    const token = randomToken(24, "base64url");
+    await this.prisma.user.update({
       where: { id: userId },
-      data: { calendarToken: randomBytes(24).toString("base64url") },
+      data: { calendarToken: token },
       select: { calendarToken: true },
     });
-    return { token: calendarToken! };
+    return { token };
   }
 
   private async requirePremium(userId: string): Promise<void> {

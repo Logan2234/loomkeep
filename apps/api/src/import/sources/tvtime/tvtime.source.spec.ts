@@ -5,8 +5,8 @@ import type {
   ImportPlanItem,
 } from "@loomkeep/shared";
 import { vi } from "vitest";
+import { makeZip } from "../../../../test/make-zip";
 import { ImportJobService } from "../../import-job.service";
-import { makeZip } from "../../make-zip";
 import { MediaMatchResolver } from "../media/media-match-resolver";
 import { TvTimeImportSource } from "./tvtime.source";
 

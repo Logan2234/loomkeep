@@ -10,9 +10,10 @@ import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
 import type { Invitation, Prisma } from "@prisma/client";
-import { createHash, randomBytes } from "node:crypto";
 import { AppException } from "../common/app.exception";
+import { randomToken, sha256Hex } from "../common/crypto.util";
 import type { ParsedPage } from "../common/pagination.util";
+import { primaryWebOrigin } from "../common/web-origin.util";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { avatarUrl } from "../users/avatar.util";
@@ -45,10 +46,6 @@ export interface CreateInvitationInput {
   validityDays: number;
 }
 
-function hashInvitationToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
-}
-
 export function invitationStatus(
   invitation: Pick<
     Invitation,
@@ -79,11 +76,7 @@ export class InvitationService {
   ) {
     // WEB_ORIGIN may list several origins (see main.ts's CORS setup); links
     // point at the first, like every other link the API hands out.
-    this.webOrigin =
-      (config.get<string>("WEB_ORIGIN") ?? "")
-        .split(",")[0]
-        ?.trim()
-        .replace(/\/$/, "") || "http://localhost:5173";
+    this.webOrigin = primaryWebOrigin(config.get<string>("WEB_ORIGIN"));
   }
 
   async list(
@@ -145,11 +138,11 @@ export class InvitationService {
       await this.assertEmailInvitable(email);
     }
 
-    const token = randomBytes(32).toString("hex");
+    const token = randomToken(32, "hex");
     const now = new Date();
     const invitation = await this.prisma.invitation.create({
       data: {
-        tokenHash: hashInvitationToken(token),
+        tokenHash: sha256Hex(token),
         createdById: creatorId,
         email,
         label: input.label?.trim() || null,
@@ -187,14 +180,14 @@ export class InvitationService {
       await this.assertEmailRegistrable(existing.email);
     }
 
-    const token = randomBytes(32).toString("hex");
+    const token = randomToken(32, "hex");
     const now = new Date();
     const validityMs =
       existing.expiresAt.getTime() - existing.tokenIssuedAt.getTime();
     const invitation = await this.prisma.invitation.update({
       where: { id: invitationId },
       data: {
-        tokenHash: hashInvitationToken(token),
+        tokenHash: sha256Hex(token),
         tokenIssuedAt: now,
         expiresAt: new Date(now.getTime() + validityMs),
       },
@@ -298,7 +291,7 @@ export class InvitationService {
     token: string,
   ): Promise<Invitation & { createdBy: { displayName: string } | null }> {
     const invitation = await this.prisma.invitation.findUnique({
-      where: { tokenHash: hashInvitationToken(token) },
+      where: { tokenHash: sha256Hex(token) },
       include: { createdBy: { select: { displayName: true } } },
     });
     const status = invitation ? invitationStatus(invitation) : null;

@@ -5,8 +5,8 @@ import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { vi, type Mock } from "vitest";
 import type { ApiKeysService } from "../api-keys/api-keys.service";
-import { hashToken } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
+import { sha256Hex } from "../common/crypto.util";
 import type { HibpService } from "../common/hibp.service";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { EventsGateway } from "../events/events.gateway";
@@ -143,7 +143,7 @@ describe("UsersService — email change", () => {
         id: "req-1",
         userId,
         newEmail: "new@example.com",
-        codeHash: hashToken("123456"),
+        codeHash: sha256Hex("123456"),
         attempts: 0,
         expiresAt: new Date(Date.now() + 60_000),
         ...overrides,

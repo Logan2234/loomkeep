@@ -18,20 +18,16 @@ import {
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
-import { Prisma, type User } from "@prisma/client";
+import type { Prisma, User } from "@prisma/client";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import * as bcrypt from "bcryptjs";
-import {
-  createHash,
-  randomBytes,
-  randomInt,
-  randomUUID,
-  timingSafeEqual,
-} from "node:crypto";
+import { randomInt, randomUUID, timingSafeEqual } from "node:crypto";
 import { ApiKeysService } from "../api-keys/api-keys.service";
 import { AppException } from "../common/app.exception";
+import { randomToken, sha256Hex } from "../common/crypto.util";
 import { normalizeEmail } from "../common/email.util";
 import { HibpService } from "../common/hibp.service";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { EventsGateway } from "../events/events.gateway";
 import { MailService } from "../mail/mail.service";
 import { AdminAlertService } from "../notifications/admin-alert.service";
@@ -187,11 +183,7 @@ export class AuthService {
       // generateUniqueUsername) can independently collide under the same
       // race, and that's a distinct, much rarer failure that shouldn't be
       // reported to the user as "email already taken".
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === "P2002" &&
-        (err.meta?.target as string[] | undefined)?.includes("email")
-      ) {
+      if (isUniqueViolation(err, "email")) {
         throw new AppException(
           HttpStatus.CONFLICT,
           ErrorCode.AuthEmailAlreadyExists,
@@ -205,12 +197,12 @@ export class AuthService {
     await this.mail.sendWelcome(recipient, user.displayName);
 
     if (!emailVerified) {
-      const verifyToken = randomBytes(32).toString("hex");
+      const verifyToken = randomToken(32, "hex");
       await this.prisma.userToken.create({
         data: {
           userId: user.id,
           type: "EMAIL_VERIFICATION",
-          tokenHash: hashToken(verifyToken),
+          tokenHash: sha256Hex(verifyToken),
           expiresAt: new Date(
             Date.now() + VERIFY_TOKEN_TTL_HOURS * 60 * 60_000,
           ),
@@ -277,7 +269,7 @@ export class AuthService {
   /** Consumes an email-verification link. Informational only — nothing is gated on it. */
   async verifyEmail(token: string): Promise<void> {
     const stored = await this.prisma.userToken.findUnique({
-      where: { tokenHash: hashToken(token) },
+      where: { tokenHash: sha256Hex(token) },
     });
 
     if (
@@ -325,7 +317,7 @@ export class AuthService {
       );
     }
 
-    const verifyToken = randomBytes(32).toString("hex");
+    const verifyToken = randomToken(32, "hex");
     await this.prisma.$transaction([
       this.prisma.userToken.deleteMany({
         where: { userId: user.id, type: "EMAIL_VERIFICATION" },
@@ -334,7 +326,7 @@ export class AuthService {
         data: {
           userId: user.id,
           type: "EMAIL_VERIFICATION",
-          tokenHash: hashToken(verifyToken),
+          tokenHash: sha256Hex(verifyToken),
           expiresAt: new Date(
             Date.now() + VERIFY_TOKEN_TTL_HOURS * 60 * 60_000,
           ),
@@ -406,7 +398,7 @@ export class AuthService {
 
     if (user.mfaEmailEnabled && !user.mfaTotpEnabled && !webauthnAllowed) {
       const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
-      emailCodeHash = hashToken(code);
+      emailCodeHash = sha256Hex(code);
       emailCodeExpiresAt = new Date(
         Date.now() + MFA_EMAIL_CODE_TTL_MINUTES * 60_000,
       );
@@ -463,7 +455,7 @@ export class AuthService {
     await this.prisma.mfaLoginChallenge.update({
       where: { id: challenge.id },
       data: {
-        emailCodeHash: hashToken(code),
+        emailCodeHash: sha256Hex(code),
         emailCodeExpiresAt: new Date(
           Date.now() + MFA_EMAIL_CODE_TTL_MINUTES * 60_000,
         ),
@@ -515,12 +507,12 @@ export class AuthService {
       challenge.emailCodeHash !== null &&
       challenge.emailCodeExpiresAt !== null &&
       challenge.emailCodeExpiresAt >= new Date() &&
-      // Both sides are hex-encoded SHA-256 digests (hashToken()), so they're
+      // Both sides are hex-encoded SHA-256 digests (sha256Hex()), so they're
       // always the same length — timingSafeEqual can't throw here the way it
       // would on attacker-controlled input, hence no length guard.
       timingSafeEqual(
         Buffer.from(challenge.emailCodeHash),
-        Buffer.from(hashToken(rawCode)),
+        Buffer.from(sha256Hex(rawCode)),
       );
     const recoveryVerified =
       !totpVerified &&
@@ -693,7 +685,7 @@ export class AuthService {
       );
     }
 
-    const tokenHash = hashToken(refreshToken);
+    const tokenHash = sha256Hex(refreshToken);
     await this.prisma.consumedRefreshToken.deleteMany({
       where: { expiresAt: { lt: new Date() } },
     });
@@ -738,7 +730,7 @@ export class AuthService {
       const update = await tx.refreshToken.updateMany({
         where: { id: stored.id, tokenHash },
         data: {
-          tokenHash: hashToken(signed.refreshToken),
+          tokenHash: sha256Hex(signed.refreshToken),
           jti: signed.jti,
           expiresAt: signed.expiresAt,
           lastUsedAt: new Date(),
@@ -779,7 +771,7 @@ export class AuthService {
 
   /** Invalidates one refresh token (logout on the current device). */
   async logout(refreshToken: string): Promise<void> {
-    const tokenHash = hashToken(refreshToken);
+    const tokenHash = sha256Hex(refreshToken);
     const session = await this.prisma.refreshToken.findUnique({
       where: { tokenHash },
       select: { id: true },
@@ -870,7 +862,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) return;
 
-    const token = randomBytes(32).toString("hex");
+    const token = randomToken(32, "hex");
     await this.prisma.$transaction([
       this.prisma.userToken.deleteMany({
         where: { userId: user.id, type: "PASSWORD_RESET" },
@@ -879,7 +871,7 @@ export class AuthService {
         data: {
           userId: user.id,
           type: "PASSWORD_RESET",
-          tokenHash: hashToken(token),
+          tokenHash: sha256Hex(token),
           expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60_000),
         },
       }),
@@ -900,7 +892,7 @@ export class AuthService {
     userAgent?: string,
   ): Promise<void> {
     const stored = await this.prisma.userToken.findUnique({
-      where: { tokenHash: hashToken(token) },
+      where: { tokenHash: sha256Hex(token) },
       include: { user: true },
     });
 
@@ -1108,7 +1100,7 @@ export class AuthService {
       data: {
         id: sessionId,
         userId: user.id,
-        tokenHash: hashToken(signed.refreshToken),
+        tokenHash: sha256Hex(signed.refreshToken),
         jti: signed.jti,
         userAgent: userAgent ?? null,
         expiresAt: signed.expiresAt,
@@ -1119,10 +1111,6 @@ export class AuthService {
       refreshToken: signed.refreshToken,
     };
   }
-}
-
-export function hashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
 }
 
 /** First tag of the Accept-Language header, "fr" if it starts with "fr", "en" otherwise (covers "no header" too). */

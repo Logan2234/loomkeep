@@ -2,10 +2,11 @@ import { ErrorCode, XP_RULES, XpReason } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { localDay } from "../common/local-day.util";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -212,10 +213,7 @@ export class XpService {
     } catch (err) {
       // A concurrent/retried award() on the same source hits the unique
       // constraint; that is expected under concurrency, not an error.
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === "P2002"
-      ) {
+      if (isUniqueViolation(err)) {
         this.logger.debug(
           `XP entry already exists for ${reason}/${sourceId} (user ${userId})`,
         );

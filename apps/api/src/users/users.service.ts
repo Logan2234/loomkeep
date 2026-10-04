@@ -21,8 +21,9 @@ import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { randomInt } from "node:crypto";
 import { ApiKeysService } from "../api-keys/api-keys.service";
-import { BCRYPT_ROUNDS, hashToken, toUserDto } from "../auth/auth.service";
+import { BCRYPT_ROUNDS, toUserDto } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
+import { sha256Hex } from "../common/crypto.util";
 import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
@@ -469,7 +470,7 @@ export class UsersService {
         data: {
           userId,
           newEmail: dto.newEmail,
-          codeHash: hashToken(code),
+          codeHash: sha256Hex(code),
           expiresAt: new Date(Date.now() + EMAIL_CHANGE_TTL_MINUTES * 60_000),
         },
       }),
@@ -504,7 +505,7 @@ export class UsersService {
 
     const matches =
       stored &&
-      stored.codeHash === hashToken(dto.code) &&
+      stored.codeHash === sha256Hex(dto.code) &&
       stored.expiresAt >= new Date();
 
     if (!stored || !matches) {
