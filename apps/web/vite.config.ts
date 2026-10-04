@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { SvelteKitPWA } from "@vite-pwa/sveltekit";
 import { defineConfig } from "vite";
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   server: { host: true, allowedHosts: ["dev.loomkeep.app"] },
   clearScreen: false,
   plugins: [
@@ -16,7 +16,10 @@ export default defineConfig({
       project: "./project.inlang",
       outdir: "./src/lib/paraglide",
       strategy: ["cookie", "preferredLanguage", "baseLocale"],
-    }),
+      // One module per locale in dev: one per message meant thousands of
+      // unbundled requests on every reload. The build keeps per-message modules, which tree-shake.
+      outputStructure:
+        command === "serve" ? "locale-modules" : "message-modules",    }),
     sveltekit({
       compilerOptions: {
         // Force runes mode for the project, except for libraries. Can be removed in svelte 6.
@@ -67,4 +70,4 @@ export default defineConfig({
   ssr: {
     external: ["@loomkeep/shared"],
   },
-});
+}));

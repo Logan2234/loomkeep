@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
   import { getLibraryPile, listLibrary } from "$lib/api/client";
   import {
     bulkDeleteLibraryEntries,
@@ -11,14 +13,18 @@
   } from "$lib/components/LibraryBrowser.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
+  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
+  import SagasView from "./components/SagasView.svelte";
   import {
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
   } from "$lib/constants/ownership-sources";
   import { MEDIA_STATUS_META } from "$lib/constants/status-labels";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import {
     ownershipText,
@@ -182,6 +188,18 @@
     remove: bulkDeleteLibraryEntries,
   };
 
+  // The sagas view lives in the URL, so a link or "back" lands on it again.
+  const mode = $derived(
+    page.url.searchParams.get("vue") === "sagas" ? "sagas" : "works",
+  );
+
+  function setMode(next: "works" | "sagas") {
+    void goto(next === "sagas" ? "?vue=sagas" : page.url.pathname, {
+      keepFocus: true,
+      noScroll: true,
+    });
+  }
+
   const load = (params: LibraryLoadParams) =>
     listLibrary({
       query: params.query,
@@ -202,67 +220,88 @@
     });
 </script>
 
-<LibraryBrowser
-  icon="tv"
-  title={m.common_Media()}
-  subtitle={(n) =>
-    n === 1
-      ? m.media_library_count_one({ count: n })
-      : m.media_library_count_many({ count: n })}
-  noun="titre"
-  domain={Domain.MEDIA}
-  {load}
-  {loadPile}
-  keyOf={(e) => e.id}
-  statusOptions={STATUS_OPTIONS}
-  sorts={SORTS}
-  defaultSort="recent"
-  {itemView}
-  columns={COLUMNS}
-  bulk={BULK}
-  {setFavorite}>
-  {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
-    <MediaSearchPanel {query} limit={10} {onResults} />
-  {/snippet}
-  {#snippet card(
-    entry: LibraryEntryDto,
-    onToggleFavorite: (next: boolean) => void,
-  )}
-    <PosterCard
-      href={mediaHref(entry)}
-      src={entry.mediaItem.posterUrl}
-      title={entry.mediaItem.title}
-      favorite={entry.favorite}
-      {onToggleFavorite}>
-      {#snippet meta()}
-        {#if entry.progress}
-          <ProgressBar
-            value={pct(entry)}
-            label={m.common_selection_summary({
-              label: m.common_progress(),
-              selection: entry.mediaItem.title,
-            })} />
-          <span class="timecode text-xs">
-            {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes}
-            {m.media_episode_short()}
-            {#if isGhost(entry)}
-              <span class="text-dim inline-flex items-center gap-1"
-                >· <Icon
-                  name="ghost"
-                  class="h-3 w-3" />{m.media_status_ghost()}</span>
-            {:else if isDormant(entry)}
-              <span class="text-dim">{m.media_paused_suffix()}</span>
-            {/if}
-          </span>
-        {:else}
-          <span class="timecode text-xs">
-            {entry.mediaItem.upcoming
-              ? m.media_upcoming()
-              : STATUS_LABELS[entry.status]}{#if entry.rating !== null}
-              · ★ {entry.rating}{/if}
-          </span>
-        {/if}
-      {/snippet}
-    </PosterCard>
-  {/snippet}
-</LibraryBrowser>
+{#snippet modeSwitch()}
+  <div class="flex items-center gap-2">
+    {#if isFeatureNew("library-sagas")}<NewBadge />{/if}
+    <SegmentedControl
+      label={m.media_view_label()}
+      options={[
+        { value: "works", label: m.common_works(), icon: "library" },
+        { value: "sagas", label: m.media_view_sagas(), icon: "list" },
+      ]}
+      value={mode}
+      onChange={setMode} />
+  </div>
+{/snippet}
+
+{#if mode === "sagas"}
+  <SagasView {modeSwitch} />
+{:else}
+  <LibraryBrowser
+    icon="tv"
+    title={m.common_Media()}
+    subtitle={(n) =>
+      n === 1
+        ? m.media_library_count_one({ count: n })
+        : m.media_library_count_many({ count: n })}
+    noun="titre"
+    domain={Domain.MEDIA}
+    {load}
+    {loadPile}
+    keyOf={(e) => e.id}
+    statusOptions={STATUS_OPTIONS}
+    sorts={SORTS}
+    defaultSort="recent"
+    {itemView}
+    columns={COLUMNS}
+    bulk={BULK}
+    {setFavorite}>
+    {#snippet headerActions()}
+      {@render modeSwitch()}
+    {/snippet}
+    {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
+      <MediaSearchPanel {query} limit={10} {onResults} />
+    {/snippet}
+    {#snippet card(
+      entry: LibraryEntryDto,
+      onToggleFavorite: (next: boolean) => void,
+    )}
+      <PosterCard
+        href={mediaHref(entry)}
+        src={entry.mediaItem.posterUrl}
+        title={entry.mediaItem.title}
+        favorite={entry.favorite}
+        {onToggleFavorite}>
+        {#snippet meta()}
+          {#if entry.progress}
+            <ProgressBar
+              value={pct(entry)}
+              label={m.common_selection_summary({
+                label: m.common_progress(),
+                selection: entry.mediaItem.title,
+              })} />
+            <span class="timecode text-xs">
+              {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes}
+              {m.media_episode_short()}
+              {#if isGhost(entry)}
+                <span class="text-dim inline-flex items-center gap-1"
+                  >· <Icon
+                    name="ghost"
+                    class="h-3 w-3" />{m.media_status_ghost()}</span>
+              {:else if isDormant(entry)}
+                <span class="text-dim">{m.media_paused_suffix()}</span>
+              {/if}
+            </span>
+          {:else}
+            <span class="timecode text-xs">
+              {entry.mediaItem.upcoming
+                ? m.media_upcoming()
+                : STATUS_LABELS[entry.status]}{#if entry.rating !== null}
+                · ★ {entry.rating}{/if}
+            </span>
+          {/if}
+        {/snippet}
+      </PosterCard>
+    {/snippet}
+  </LibraryBrowser>
+{/if}

@@ -49,6 +49,7 @@ describe("admin presentation", () => {
         "apiKeyLeaked",
         "newsletter",
         "episodeDigest",
+        "sagaSequel",
         "moderationDecision",
         "adminNewUser",
         "quotaAlert",

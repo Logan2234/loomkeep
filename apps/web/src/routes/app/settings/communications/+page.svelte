@@ -208,6 +208,20 @@
     ).filter((group) => group.alerts.length > 0),
   );
 
+  // Its own matrix: the only release alert with a bell entry and an email
+  // to switch on, which the activity matrix (bell and push) has no column for.
+  const sagaGroups: AlertGroupRows[] = [
+    {
+      alerts: [
+        {
+          key: "SAGA_SEQUEL_ANNOUNCED",
+          label: m.settings_alert_saga_sequel(),
+          hint: m.settings_communications_sagas_desc(),
+        },
+      ],
+    },
+  ];
+
   const adminGroups: AlertGroupRows[] = [
     {
       alerts: [
@@ -295,6 +309,13 @@
                 onChange={(v) => setCadence("notifyPush", v)} />
             {/snippet}
           </SettingRow>
+          <AlertGrid
+            anchor="saga-alerts"
+            title=""
+            description=""
+            groups={sagaGroups}
+            columns={["bell", "push", "email"]}
+            {pushBlocked} />
         </div>
       </section>
 

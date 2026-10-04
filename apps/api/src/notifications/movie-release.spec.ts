@@ -39,11 +39,13 @@ describe("movie release reminders", () => {
     const prisma = {
       libraryEntry: { findMany: vi.fn().mockResolvedValue(rows) },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
+      sagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       notification: { createMany },
     };
     const service = new NotificationService(
       prisma as never,
       { record: (_key: string, fn: () => Promise<unknown>) => fn() } as never,
+      {} as never,
       {} as never,
       {} as never,
     );
@@ -87,11 +89,13 @@ describe("movie release reminders", () => {
         ]),
       },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
+      sagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       notification: { createMany },
     };
     const service = new NotificationService(
       prisma as never,
       { record: (_key: string, fn: () => Promise<unknown>) => fn() } as never,
+      {} as never,
       {} as never,
       {} as never,
     );

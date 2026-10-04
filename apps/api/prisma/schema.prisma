@@ -1621,6 +1621,46 @@ model MediaItem {
   @@index([sagaKey])
 }
 
+// A saga a tracked work belongs to: a TMDB collection or an AniList main
+// line (see SagaSyncService), kept so the library can tell which sagas are
+// in progress and spot a sequel joining one. Saved only once one of its works
+// is tracked; titles are in the source's base language, like MediaItem's.
+model Saga {
+  // "TMDB:<collection id>" or "ANILIST:<id of its first work>".
+  key       String       @id
+  title     String
+  syncedAt  DateTime     @default(now())
+  createdAt DateTime     @default(now())
+  members   SagaMember[]
+}
+
+model SagaMember {
+  id          String         @id @default(cuid())
+  sagaKey     String
+  source      ExternalSource
+  sourceId    String
+  type        MediaType
+  // Viewing order within the saga.
+  position    Int
+  title       String
+  posterUrl   String?
+  releaseDate String?
+  format      String?
+  episodes    Int?
+  isAdult     Boolean        @default(false)
+  upcoming    Boolean        @default(false)
+  // Set when the work joined a saga already known — never on a saga's first
+  // read, when every work is "new". What the sequel alert looks for.
+  announcedAt DateTime?
+  notifiedAt  DateTime?
+  createdAt   DateTime       @default(now())
+
+  saga Saga @relation(fields: [sagaKey], references: [key], onDelete: Cascade)
+
+  @@unique([sagaKey, sourceId])
+  @@index([announcedAt, notifiedAt])
+}
+
 // Locale-specific title/overview/genres, for a locale other than whatever
 // language the base MediaItem's own fields happen to be in (in practice
 // always English, since providers are queried without a language until a

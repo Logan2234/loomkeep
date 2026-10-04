@@ -34,6 +34,8 @@
   "admin_template_email_code": "Codice di verifica dell'email",
   "admin_template_mfa_code": "Codice MFA (accesso)",
   "admin_template_episode_digest": "Riepilogo uscite (email)",
+  "admin_template_saga_sequel": "Seguito di saga annunciato",
+  "admin_template_path": "Percorso nell'app",
   "admin_template_inactivity": "Promemoria account inattivo",
   "admin_template_moderation": "Decisione di moderazione (DSA art. 17)",
   "admin_users_xp": "Esperienza",

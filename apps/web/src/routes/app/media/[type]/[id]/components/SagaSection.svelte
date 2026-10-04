@@ -9,8 +9,12 @@
   import Poster from "$lib/components/Poster.svelte";
   import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
-  import { formatDate, joinMeta } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
+  import {
+    sagaMemberHref as hrefOf,
+    sagaMemberMeta as metaOf,
+    sagaSegmentClass as segmentClass,
+  } from "$lib/saga";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type { EntryStatus, MediaType, SagaMemberDto } from "@loomkeep/shared";
@@ -31,12 +35,17 @@
   const reduced = prefersReducedMotion();
   const ms = (duration: number) => (reduced ? 0 : duration);
 
-  const sagaKey = $derived(keys.media.saga(type, sourceId));
+  // Keyed on whether the work is tracked: tracking it is what ties it to its
+  // saga server-side, so that read has to happen again then.
+  const sagaKey = $derived(
+    keys.media.saga(type, sourceId, entryStatus !== null),
+  );
 
   const sagaQuery = createApiQuery(() => ({
     key: sagaKey,
     fetch: () => getMediaSaga(type, sourceId).then((r) => r.saga),
     enabled: type !== "SERIES",
+    keepPreviousData: true,
   }));
 
   const members = $derived(
@@ -65,37 +74,6 @@
   const after = $derived(members.slice(windowEnd));
   const foldable = $derived(before.length + after.length > 0);
 
-  const SEGMENT_COLORS: Record<EntryStatus, string> = {
-    COMPLETED: "bg-success",
-    UP_TO_DATE: "bg-success",
-    WATCHING: "bg-accent",
-    PLANNED: "bg-dim/55",
-    DROPPED: "bg-danger",
-  };
-  const segmentClass = (x: SagaMemberDto) =>
-    x.status
-      ? SEGMENT_COLORS[x.status]
-      : x.upcoming
-        ? "border-border border border-dashed"
-        : "bg-surface-2";
-
-  const FORMATS: Record<string, string> = {
-    MOVIE: m.media_movie(),
-    SPECIAL: m.media_special(),
-    TV_SHORT: m.media_short_series(),
-  };
-
-  const metaOf = (x: SagaMemberDto) =>
-    x.upcoming
-      ? m.media_saga_upcoming_on({
-          date: x.releaseDate ? formatDate(x.releaseDate) : "—",
-        })
-      : joinMeta(
-          x.year !== null ? String(x.year) : null,
-          x.format ? (FORMATS[x.format] ?? x.format) : null,
-          x.episodes ? `${x.episodes} ${m.media_episode_short()}` : null,
-        );
-
   // The end segments pin their label to their own edge so it never spills
   // out of the card.
   const tooltipAnchor = (i: number) =>
@@ -107,9 +85,6 @@
 
   const numberOf = (x: SagaMemberDto) =>
     String(members.indexOf(x) + 1).padStart(2, "0");
-
-  const hrefOf = (x: SagaMemberDto) =>
-    `/app/media/${x.type.toLowerCase()}/${x.sourceId}`;
 
   const addMut = createApiMutation(() => ({
     mutate: (x: SagaMemberDto) =>

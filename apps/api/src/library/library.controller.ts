@@ -5,11 +5,12 @@ import type {
   EpisodeWatchDto,
   LibraryDomainCountsDto,
   LibraryEntryDto,
+  LibrarySagasDto,
   MediaType,
   PagedResult,
   PileSummaryDto,
 } from "@loomkeep/shared";
-import { Domain, Locale } from "@loomkeep/shared";
+import { Domain, LIBRARY_SAGA_SORTS, Locale } from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -42,16 +43,19 @@ import { EntryEpisodesResponseResponseDto } from "./dto/entry-episodes-response.
 import { EpisodeWatchResponseDto } from "./dto/episode-watch-response.dto";
 import { LibraryDomainCountsResponseDto } from "./dto/library-domain-counts-response.dto";
 import { LibraryEntryResponseDto } from "./dto/library-entry-response.dto";
+import { LibrarySagasResponseDto } from "./dto/media-saga-response.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
 import { LibraryService } from "./library.service";
+import { SagaService } from "./saga.service";
 
 @Controller("library")
 export class LibraryController {
   constructor(
     private readonly libraryService: LibraryService,
     private readonly domainGate: DomainGateService,
+    private readonly sagas: SagaService,
   ) {}
 
   @Get()
@@ -99,6 +103,29 @@ export class LibraryController {
       favorite: favorite === "true",
       statuses: toQueryArray(status),
       types: toQueryArray(type) as MediaType[],
+      lang: Locale.includes(lang as Locale) ? lang : undefined,
+    });
+  }
+
+  /** The sagas of the library in progress, and the ones waiting on a sequel. */
+  @Get("sagas")
+  @ApiOkResponse({ type: LibrarySagasResponseDto })
+  async listSagas(
+    @CurrentUser() user: JwtPayload,
+    @Query("q") q?: string,
+    @Query("type") type?: string | string[],
+    @Query("sort") sort?: string,
+    @Query("order") order?: string,
+    @Query("lang") lang?: string,
+  ): Promise<LibrarySagasDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
+    return this.sagas.listSagas(user.sub, {
+      q,
+      types: (toQueryArray(type) as MediaType[]).filter(
+        (t) => t === "MOVIE" || t === "ANIME",
+      ),
+      sort: LIBRARY_SAGA_SORTS.find((s) => s === sort),
+      order: order === "asc" ? "asc" : "desc",
       lang: Locale.includes(lang as Locale) ? lang : undefined,
     });
   }

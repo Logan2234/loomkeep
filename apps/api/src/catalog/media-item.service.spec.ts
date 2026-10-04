@@ -14,13 +14,15 @@ describe("MediaItemService.refreshStale", () => {
     const prisma = {
       mediaItem: { findMany: vi.fn().mockResolvedValue(items) },
     } as unknown as PrismaService;
+    const sagas = { sync: vi.fn().mockResolvedValue(undefined) };
     const service = new MediaItemService(
       prisma,
       undefined as never,
       undefined as never,
       jobRunsStub,
+      sagas as never,
     );
-    return { service, prisma };
+    return { service, prisma, sagas };
   }
 
   it("only queries non-dropped tracked media past the sync TTL, oldest first and capped", async () => {
@@ -62,6 +64,43 @@ describe("MediaItemService.refreshStale", () => {
     expect(refreshed).toBe(2);
     expect(upsert).toHaveBeenNthCalledWith(1, "TMDB", "42", "SERIES");
     expect(upsert).toHaveBeenNthCalledWith(2, "ANILIST", "99", "ANIME");
+  });
+
+  it("re-reads the saga of films and anime, never failing the refresh over it", async () => {
+    const items = [
+      {
+        id: "m1",
+        type: "SERIES",
+        canonicalSource: "TMDB",
+        externalIds: [{ source: "TMDB", externalId: "1399" }],
+      },
+      {
+        id: "m2",
+        type: "MOVIE",
+        canonicalSource: "TMDB",
+        externalIds: [{ source: "TMDB", externalId: "438631" }],
+      },
+      {
+        id: "m3",
+        type: "ANIME",
+        canonicalSource: "ANILIST",
+        externalIds: [{ source: "ANILIST", externalId: "16498" }],
+      },
+    ];
+    const { service, sagas } = makeService(items);
+    vi.spyOn(service, "upsertFromSource").mockResolvedValue(undefined as never);
+    vi.spyOn(service["logger"], "warn").mockImplementation(() => undefined);
+    sagas.sync
+      .mockRejectedValueOnce(new Error("AniList down"))
+      .mockResolvedValueOnce(undefined);
+
+    const refreshed = await service.refreshStale();
+
+    expect(refreshed).toBe(3);
+    expect(sagas.sync.mock.calls).toEqual([
+      ["MOVIE", "438631"],
+      ["ANIME", "16498"],
+    ]);
   });
 
   it("skips items missing their canonical external id", async () => {
@@ -117,6 +156,7 @@ describe("MediaItemService episode sync", () => {
       undefined as never,
       undefined as never,
       jobRunsStub,
+      undefined as never,
     );
     return { service, prisma };
   }
@@ -281,6 +321,7 @@ describe("MediaItemService.translationFor", () => {
       tmdbProvider as never,
       undefined as never,
       jobRunsStub,
+      undefined as never,
     );
     return { service, prisma, tmdbProvider };
   }
@@ -385,6 +426,7 @@ describe("MediaItemService.translatedTitles", () => {
       undefined as never,
       undefined as never,
       jobRunsStub,
+      undefined as never,
     );
 
     expect(await service.translatedTitles(["m1"], "en")).toEqual(new Map());
@@ -406,6 +448,7 @@ describe("MediaItemService.translatedTitles", () => {
       undefined as never,
       undefined as never,
       jobRunsStub,
+      undefined as never,
     );
 
     const titles = await service.translatedTitles(["m1", "m2", "m3"], "fr");
@@ -448,6 +491,7 @@ describe("MediaItemService.forceRefresh (translation refresh)", () => {
       tmdbProvider as never,
       undefined as never,
       jobRunsStub,
+      undefined as never,
     );
 
     await service.forceRefresh("m1");
@@ -490,6 +534,7 @@ describe("MediaItemService.forceRefresh (translation refresh)", () => {
       { getDetails } as never,
       undefined as never,
       jobRunsStub,
+      undefined as never,
     );
     vi.spyOn(service["logger"], "error").mockImplementation(() => undefined);
 

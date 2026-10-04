@@ -1,5 +1,7 @@
 import type {
   EntryStatus,
+  LibrarySagaDto,
+  LibrarySagasDto,
   MediaSagaDto,
   MediaSagaResponseDto as MediaSagaResponse,
   SagaMemberDto,
@@ -25,4 +27,21 @@ export class MediaSagaBodyResponseDto implements MediaSagaDto {
 
 export class MediaSagaResponseDto implements MediaSagaResponse {
   saga!: MediaSagaBodyResponseDto | null;
+}
+
+export class LibrarySagaResponseDto implements LibrarySagaDto {
+  key!: string;
+  title!: string;
+  members!: SagaMemberResponseDto[];
+  next!: SagaMemberResponseDto | null;
+  seen!: number;
+  released!: number;
+  lastActivityAt!: string;
+  finishedAt!: string | null;
+}
+
+export class LibrarySagasResponseDto implements LibrarySagasDto {
+  inProgress!: LibrarySagaResponseDto[];
+  waiting!: LibrarySagaResponseDto[];
+  finished!: LibrarySagaResponseDto[];
 }

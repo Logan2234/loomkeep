@@ -51,6 +51,7 @@ describe("NotificationService.scanAll", () => {
       episode: {
         findMany: vi.fn().mockResolvedValue(over.episodes ?? [episodeRow()]),
       },
+      sagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       libraryEntry: {
         findMany: vi
           .fn()
@@ -79,6 +80,7 @@ describe("NotificationService.scanAll", () => {
       jobRunsStub,
       eventsStub,
       pushStub,
+      {} as never,
     );
     return { service, prisma };
   }
@@ -220,6 +222,7 @@ describe("NotificationService.scan", () => {
       jobRunsStub,
       eventsStub,
       pushStub,
+      {} as never,
     );
     return { service, prisma };
   }
@@ -276,6 +279,7 @@ describe("NotificationService — bell feed (read = deleted)", () => {
       jobRunsStub,
       eventsStub,
       pushStub,
+      {} as never,
     );
     return { service, prisma };
   }
@@ -392,6 +396,7 @@ describe("NotificationService.create — realtime push", () => {
       jobRunsStub,
       events,
       pushStub,
+      {} as never,
     );
     return { service, events, prisma };
   }
@@ -460,6 +465,7 @@ describe("NotificationService push", () => {
       jobRunsStub,
       eventsStub,
       push,
+      {} as never,
     );
     return { service, push };
   }
@@ -524,6 +530,7 @@ describe("NotificationService.createOrGroup", () => {
       jobRunsStub,
       eventsStub,
       pushStub,
+      {} as never,
     );
 
     await service.createOrGroup(

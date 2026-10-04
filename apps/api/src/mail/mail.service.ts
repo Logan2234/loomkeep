@@ -467,6 +467,16 @@ export class MailService {
       build: (locale, v) =>
         this.buildApiKeyExpiring(locale, v.name, new Date(v.expiresAt)),
     },
+    sagaSequel: {
+      label: "Suite de saga annoncée",
+      fields: [
+        { key: "title", label: "Œuvre annoncée", default: "Dune: Part Three" },
+        { key: "saga", label: "Saga", default: "Dune Collection" },
+        { key: "path", label: "Lien", default: "/app/media/movie/1170608" },
+      ],
+      build: (locale, v) =>
+        this.buildSagaSequel(locale, v.title, v.saga, v.path),
+    },
     apiKeyCreated: {
       label: "Clé API créée",
       fields: [
@@ -779,6 +789,19 @@ export class MailService {
     await this.send({
       to: recipient.email,
       ...this.buildApiKeyExpiring(locale, name, expiresAt),
+    });
+  }
+
+  async sendSagaSequel(
+    recipient: MailRecipient,
+    title: string,
+    saga: string,
+    path: string,
+  ): Promise<void> {
+    const locale = resolveCopyLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildSagaSequel(locale, title, saga, path),
     });
   }
 
@@ -1328,6 +1351,28 @@ ${url}`,
          <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.hint)}</p>
          ${this.button(url, copy.button)}`,
         { template: "apiKeyExpiring" },
+      ),
+    };
+  }
+
+  private buildSagaSequel(
+    locale: Locale,
+    title: string,
+    saga: string,
+    path: string,
+  ): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].sagaSequel;
+    const url = `${this.webOrigin}${path}`;
+    return {
+      subject: copy.subject(title),
+      text: `${copy.intro(title, saga)} ${copy.hint}\n\n${url}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(title, saga))}</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.hint)}</p>
+         ${this.button(url, copy.button)}`,
+        { template: "sagaSequel" },
       ),
     };
   }

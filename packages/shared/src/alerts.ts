@@ -117,6 +117,15 @@ export const ALERTS = {
     email: "cadence",
     mailTemplate: "episodeDigest",
   },
+  // In the bell too: nothing else surfaces an announcement, which neither
+  // the calendar nor "Up next" can show before there's a date.
+  SAGA_SEQUEL_ANNOUNCED: {
+    group: AlertGroup.RELEASES,
+    bell: "always",
+    push: "on",
+    email: "off",
+    mailTemplate: "sagaSequel",
+  },
 
   // Your account: things to know about, settings or not.
   MODERATION_ACTION: {

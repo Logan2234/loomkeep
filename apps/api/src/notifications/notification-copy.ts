@@ -92,6 +92,7 @@ const COPY = {
       failedBody:
         "Il n'a pas pu aller au bout. Les détails sont dans tes réglages.",
     },
+    sagaSequel: (saga: string) => `Nouvelle suite annoncée · ${saga}`,
     adminAlerts: {
       reportsPending: (count: number) => ({
         title: "Signalements en attente",
@@ -207,6 +208,7 @@ const COPY = {
       body: "The result is waiting in your settings.",
       failedBody: "It couldn't finish. The details are in your settings.",
     },
+    sagaSequel: (saga: string) => `New sequel announced · ${saga}`,
     adminAlerts: {
       reportsPending: (count: number) => ({
         title: "Reports waiting",
@@ -325,6 +327,7 @@ const COPY = {
       failedBody:
         "Non è riuscita ad arrivare in fondo. I dettagli sono nelle impostazioni.",
     },
+    sagaSequel: (saga: string) => `Nuovo seguito annunciato · ${saga}`,
     adminAlerts: {
       reportsPending: (count: number) => ({
         title: "Segnalazioni in attesa",
@@ -411,6 +414,8 @@ export interface NotificationCopy {
     body: string;
     failedBody: string;
   };
+  /** Body under the new work's title: which saga it joins. */
+  sagaSequel: (saga: string) => string;
   adminAlerts: {
     reportsPending: (count: number) => PushText;
     jobFailed: (job: string) => PushText;
