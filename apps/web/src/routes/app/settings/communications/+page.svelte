@@ -216,7 +216,7 @@
         {
           key: "SAGA_SEQUEL_ANNOUNCED",
           label: m.settings_alert_saga_sequel(),
-          hint: m.settings_alert_saga_sequel_hint(),
+          hint: m.settings_communications_sagas_desc(),
         },
       ],
     },
@@ -311,8 +311,8 @@
           </SettingRow>
           <AlertGrid
             anchor="saga-alerts"
-            title={m.settings_communications_sagas_title()}
-            description={m.settings_communications_sagas_desc()}
+            title=""
+            description=""
             groups={sagaGroups}
             columns={["bell", "push", "email"]}
             {pushBlocked} />
