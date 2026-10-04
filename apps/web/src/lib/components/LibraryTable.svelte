@@ -376,7 +376,7 @@
                     </div>
                   </div>
                 {:else if column.kind === "status"}
-                  {#if editing}
+                  {#if editing && !item.trackingLocked}
                     {@render statusEdit(entry, item)}
                     {#if justSaved(entry, "status")}{@render savedCheck()}{/if}
                   {:else}
@@ -415,7 +415,7 @@
                   {/if}
                 {:else if column.kind === "text"}
                   {@const value = column.value(entry)}
-                  {#if column.ownership && editing}
+                  {#if column.ownership && editing && !item.trackingLocked}
                     {@render ownershipEdit(entry, item, value)}
                     {#if justSaved(entry, "ownership")}{@render savedCheck()}{/if}
                   {:else}

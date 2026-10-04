@@ -70,7 +70,8 @@
 
   const offered = $derived(
     domain.statuses
-      .filter((s) => !view?.upcoming || s.value === "PLANNED")
+      // An unreleased work can only wait in the domain's to-do status, listed first.
+      .filter((s) => !view?.upcoming || s.value === domain.statuses[0]?.value)
       .map((s) => s.value),
   );
   const status = $derived(

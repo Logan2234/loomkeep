@@ -2,6 +2,7 @@ import type {
   GameOwnershipStatus,
   GameSource,
   GameStatus,
+  ReleaseDatePrecision,
   SessionCycleAction,
   SessionSource,
   TrackingCycleStatus,
@@ -50,8 +51,15 @@ export interface GameDetailsDto extends GameSummaryDto {
   screenshots: string[];
   genres: string[];
   platforms: string[];
-  /** ISO first-release date; null when the source has none. */
+  /**
+   * ISO first-release date, the first day of its period when `releaseDatePrecision`
+   * isn't DAY; null when the source has none or the game is announced undated.
+   */
   releaseDate: string | null;
+  /** Null when the source dates no release at all. */
+  releaseDatePrecision: ReleaseDatePrecision | null;
+  /** Not out yet: tracking waits for the release. */
+  upcoming: boolean;
   /** Official website of the game, when the source exposes one. */
   website: string | null;
   /** IGDB's own "similar games" recommendations, capped to a handful. */
@@ -88,6 +96,8 @@ export interface GameItemDto {
   canonicalSource: GameSource;
   /** External ID in `canonicalSource`, used to address the game detail page. */
   sourceId: string;
+  /** Not out yet; absent once released. */
+  upcoming?: boolean;
 }
 
 export interface GamePlaythroughDto {
@@ -129,6 +139,8 @@ export interface GameEntryDto {
   ownershipStatus: GameOwnershipStatus;
   /** Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise. */
   ownershipSource: string | null;
+  /** The user asked to be told when the game comes out. */
+  releaseAlertsEnabled: boolean;
 }
 
 /** Body for creating/updating a library entry from a catalogue game. */
@@ -153,6 +165,7 @@ export interface UpdateGameEntryDto {
   finishedAt?: string | null;
   ownershipStatus?: GameOwnershipStatus;
   ownershipSource?: string | null;
+  releaseAlertsEnabled?: boolean;
 }
 
 export interface GameSessionDto {

@@ -26,6 +26,7 @@ it("shows local movie releases alongside episode codes in the home calendar", as
       canonicalSource: "TMDB",
       sourceId: "1",
     },
+    game: null,
     entryId: "e1",
     episodeAlertsMuted: true,
     episodesBehind: 0,
@@ -42,7 +43,7 @@ it("shows local movie releases alongside episode codes in the home calendar", as
     seasonNumber: 1,
     episodeNumber: 2,
     mediaItem: {
-      ...movie.mediaItem,
+      ...movie.mediaItem!,
       id: "m2",
       type: "SERIES",
       title: "Upcoming episode",

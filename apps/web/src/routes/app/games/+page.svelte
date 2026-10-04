@@ -53,11 +53,17 @@
     updateGameEntry(entry.id, { favorite: next });
 
   const itemView = (entry: GameEntryDto): LibraryItemView => ({
+    upcoming: entry.game.upcoming,
+    trackingLocked: entry.game.upcoming,
     href: `/app/games/${entry.game.sourceId}`,
     title: entry.game.title,
     subtitle: null,
     imageUrl: entry.game.coverUrl,
-    status: { value: entry.status, ...GAME_STATUS_META[entry.status] },
+    status: {
+      value: entry.status,
+      ...GAME_STATUS_META[entry.status],
+      ...(entry.game.upcoming ? { label: m.media_upcoming() } : {}),
+    },
     ownership: entry.ownershipStatus,
     ownershipSource: entry.ownershipSource,
     reviewTarget: { type: "GAME", id: entry.game.id },
@@ -192,7 +198,9 @@
       {onToggleFavorite}>
       {#snippet meta()}
         <span class="timecode text-xs">
-          {GAME_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
+          {entry.game.upcoming
+            ? m.media_upcoming()
+            : GAME_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
             · ★ {entry.rating}{/if}{#if isSessionPaused(entry, "PLAYING")}
             {m.media_paused_suffix()}{/if}
         </span>

@@ -52,6 +52,8 @@ const COPY = {
       `${titles.length === 1 ? "Nouvelle sortie" : `${titles.length} nouvelles sorties`} ${period === "daily" ? "aujourd'hui" : "ces 7 derniers jours"} : ${[...new Set(titles)].slice(0, 3).join(", ")}.`,
     movieRelease: (type: "cinema" | "digital", region: string) =>
       `${type === "cinema" ? "Sortie au cinéma" : "Sortie numérique"} · ${region}`,
+    gameRelease: (thisMonth: boolean) =>
+      thisMonth ? "Sortie prévue ce mois-ci" : "Sortie du jeu",
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
       const when = period === "daily" ? "aujourd'hui" : "ces 7 derniers jours";
       const shows = [...new Set(titles)];
@@ -169,6 +171,8 @@ const COPY = {
       `${titles.length === 1 ? "New release" : `${titles.length} new releases`} ${period === "daily" ? "today" : "in the last 7 days"}: ${[...new Set(titles)].slice(0, 3).join(", ")}.`,
     movieRelease: (type: "cinema" | "digital", region: string) =>
       `${type === "cinema" ? "Cinema release" : "Digital release"} · ${region}`,
+    gameRelease: (thisMonth: boolean) =>
+      thisMonth ? "Due out this month" : "Game release",
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
       const when = period === "daily" ? "today" : "in the last 7 days";
       const shows = [...new Set(titles)];
@@ -287,6 +291,8 @@ const COPY = {
       `${titles.length === 1 ? "Nuova uscita" : `${titles.length} nuove uscite`} ${period === "daily" ? "oggi" : "negli ultimi 7 giorni"}: ${[...new Set(titles)].slice(0, 3).join(", ")}.`,
     movieRelease: (type: "cinema" | "digital", region: string) =>
       `${type === "cinema" ? "Uscita al cinema" : "Uscita digitale"} · ${region}`,
+    gameRelease: (thisMonth: boolean) =>
+      thisMonth ? "In uscita questo mese" : "Uscita del gioco",
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
       const when = period === "daily" ? "oggi" : "negli ultimi 7 giorni";
       const shows = [...new Set(titles)];
@@ -401,6 +407,8 @@ export interface NotificationCopy {
   episodeDigestPush: (period: DigestPeriod, titles: string[]) => string[];
   releaseDigestPush: (period: DigestPeriod, titles: string[]) => string;
   movieRelease: (type: "cinema" | "digital", region: string) => string;
+  /** A game dated to a month alerts on its 1st, before the day is known. */
+  gameRelease: (thisMonth: boolean) => string;
   pushTitle: {
     commentReply: (actor: string) => string;
     commentMention: (actor: string) => string;

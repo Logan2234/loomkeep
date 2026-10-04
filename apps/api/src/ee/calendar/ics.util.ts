@@ -41,7 +41,22 @@ function formatTimestampUtc(date: Date): string {
     .replace(/\.\d{3}Z$/, "Z");
 }
 
-/** Renders a user's upcoming-episode calendar as an RFC 5545 .ics feed. */
+function eventSummary(entry: CalendarEntryDto): string {
+  if (entry.game) return entry.game.title;
+  const title = entry.mediaItem?.title ?? "";
+  if (entry.mediaItem?.type === "MOVIE") return title;
+  return `${title} S${String(entry.seasonNumber).padStart(2, "0")}E${String(entry.episodeNumber).padStart(2, "0")}`;
+}
+
+function eventUid(entry: CalendarEntryDto): string {
+  if (entry.game) return `${entry.game.id}-game@loomkeep.app`;
+  const id = entry.mediaItem?.id ?? "";
+  return entry.mediaItem?.type === "MOVIE"
+    ? `${id}-movie-${entry.releaseRegion}@loomkeep.app`
+    : `${id}-${entry.seasonNumber}-${entry.episodeNumber}@loomkeep.app`;
+}
+
+/** Renders a user's upcoming-release calendar as an RFC 5545 .ics feed. */
 export function buildCalendarIcs(entries: CalendarEntryDto[]): string {
   const now = formatTimestampUtc(new Date());
   const lines: string[] = [
@@ -55,22 +70,22 @@ export function buildCalendarIcs(entries: CalendarEntryDto[]): string {
   ];
 
   for (const entry of entries) {
-    const movie = entry.mediaItem.type === "MOVIE";
-    const code = `S${String(entry.seasonNumber).padStart(2, "0")}E${String(entry.episodeNumber).padStart(2, "0")}`;
-    const summary = movie
-      ? entry.mediaItem.title
-      : `${entry.mediaItem.title} ${code}`;
-    const uid = movie
-      ? `${entry.mediaItem.id}-movie-${entry.releaseRegion}@loomkeep.app`
-      : `${entry.mediaItem.id}-${entry.seasonNumber}-${entry.episodeNumber}@loomkeep.app`;
-
+    const start = new Date(entry.airDate);
     lines.push(
       "BEGIN:VEVENT",
-      `UID:${uid}`,
+      `UID:${eventUid(entry)}`,
       `DTSTAMP:${now}`,
-      `DTSTART;VALUE=DATE:${formatDateOnly(new Date(entry.airDate))}`,
-      `SUMMARY:${escapeText(summary)}`,
+      `DTSTART;VALUE=DATE:${formatDateOnly(start)}`,
     );
+
+    // A game dated to a month spans it, rather than claiming its 1st.
+    if (entry.releasePrecision === "MONTH") {
+      const end = new Date(start);
+      end.setUTCMonth(end.getUTCMonth() + 1);
+      lines.push(`DTEND;VALUE=DATE:${formatDateOnly(end)}`);
+    }
+
+    lines.push(`SUMMARY:${escapeText(eventSummary(entry))}`);
 
     if (entry.episodeTitle) {
       lines.push(`DESCRIPTION:${escapeText(entry.episodeTitle)}`);

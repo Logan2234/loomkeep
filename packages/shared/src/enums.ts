@@ -80,6 +80,7 @@ export type DigestCadence = (typeof DigestCadence)[keyof typeof DigestCadence];
 export const NotificationType = {
   NEW_EPISODE: "NEW_EPISODE",
   NEW_MOVIE: "NEW_MOVIE",
+  NEW_GAME: "NEW_GAME",
   /** Someone started following you (public profile). */
   FOLLOW: "FOLLOW",
   /** Someone asked to follow your private profile. */
@@ -228,6 +229,21 @@ export const GameOwnershipStatus = {
 } as const;
 export type GameOwnershipStatus =
   (typeof GameOwnershipStatus)[keyof typeof GameOwnershipStatus];
+
+/**
+ * How precisely a game's release date is known, after IGDB's `date_format`.
+ * Anything but DAY dates the release to its period's first day.
+ */
+export const ReleaseDatePrecision = {
+  DAY: "DAY",
+  MONTH: "MONTH",
+  QUARTER: "QUARTER",
+  YEAR: "YEAR",
+  /** Announced, not dated. */
+  TBD: "TBD",
+} as const;
+export type ReleaseDatePrecision =
+  (typeof ReleaseDatePrecision)[keyof typeof ReleaseDatePrecision];
 
 export const BookSource = {
   OPEN_LIBRARY: "OPEN_LIBRARY",

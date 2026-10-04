@@ -364,7 +364,11 @@ describe("NotificationDigestService.runDigests", () => {
         where: expect.objectContaining({
           userId: "u1",
           type: {
-            in: [NotificationType.NEW_EPISODE, NotificationType.NEW_MOVIE],
+            in: [
+              NotificationType.NEW_EPISODE,
+              NotificationType.NEW_MOVIE,
+              NotificationType.NEW_GAME,
+            ],
           },
           emailDigestedAt: null,
         }),

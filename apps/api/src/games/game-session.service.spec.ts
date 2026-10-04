@@ -30,6 +30,7 @@ describe("GameSessionService", () => {
       findUniqueOrThrow: vi.fn(),
     },
     gameSession: { count: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
+    gameItem: { findUnique: vi.fn() },
     $transaction: vi.fn(),
   };
   const activity = {
@@ -67,6 +68,10 @@ describe("GameSessionService", () => {
       startedAt: created.occurredAt,
     });
     prisma.$transaction.mockImplementation((run) => run(tx));
+    prisma.gameItem.findUnique.mockResolvedValue({
+      releaseDate: new Date("2020-01-01T00:00:00.000Z"),
+      releaseDatePrecision: "DAY",
+    });
     prisma.gameEntry.findUniqueOrThrow.mockResolvedValue({
       user: { timezone: "UTC" },
       playthroughs: [],
@@ -128,6 +133,31 @@ describe("GameSessionService", () => {
     });
     expect(result.summary.totalTrackedMinutes).toBe(60);
     expect(result.xpAwarded).toBe(true);
+  });
+
+  it("refuses a session on a game that isn't out, but not one Steam reports", async () => {
+    prisma.gameEntry.findUnique.mockResolvedValue({
+      id: "entry-1",
+      userId: "user-1",
+      gameItemId: "game-1",
+      status: "BACKLOG",
+      startedAt: null,
+      playtimeMinutes: 0,
+      trackedPlaytimeMinutes: 0,
+      steamPlaytimeMinutes: null,
+    });
+    prisma.gameItem.findUnique.mockResolvedValue({
+      releaseDate: null,
+      releaseDatePrecision: "TBD",
+    });
+    const dto = { durationMinutes: 60, occurredAt: "2024-09-26T12:00:00.000Z" };
+
+    await expect(
+      service.create("user-1", "entry-1", dto),
+    ).rejects.toMatchObject({ code: "library.game_not_released" });
+    await expect(
+      service.create("user-1", "entry-1", dto, "IMPORT"),
+    ).resolves.toBeDefined();
   });
 
   it("creates the first playthrough and links the first session to it", async () => {

@@ -2,14 +2,15 @@ import {
   type AlertPrefs,
   DigestCadence,
   ErrorCode,
+  gameReleaseAlertDay,
+  isAlertEnabled,
+  isAlertToggleable,
   type MediaType,
+  movieReleaseDates,
+  movieReleaseInfo,
   type NotificationDto,
   type NotificationFeedDto,
   NotificationType,
-  isAlertEnabled,
-  isAlertToggleable,
-  movieReleaseDates,
-  movieReleaseInfo,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
@@ -38,6 +39,7 @@ const FEED_LIMIT = 50;
 const FEED_EXCLUDED_TYPES: NotificationType[] = [
   NotificationType.NEW_EPISODE,
   NotificationType.NEW_MOVIE,
+  NotificationType.NEW_GAME,
   NotificationType.FOLLOW_REQUEST,
 ];
 
@@ -95,7 +97,7 @@ export class NotificationService {
    * `NotificationDigestService`. Runs are idempotent (deduped by episode), so
    * overlapping or missed ticks are harmless.
    */
-  @Cron(CronExpression.EVERY_HOUR)
+  @Cron(CronExpression.EVERY_HOUR, { name: JOB_KEYS.NOTIFICATIONS_SCAN })
   async scanAll(): Promise<number> {
     return this.jobRuns.record(
       JOB_KEYS.NOTIFICATIONS_SCAN,
@@ -119,7 +121,9 @@ export class NotificationService {
    */
   private async runScanAll(): Promise<number> {
     const moviesCreated =
-      (await this.scanMovies()) + (await this.scanSagaSequels());
+      (await this.scanMovies()) +
+      (await this.scanGames()) +
+      (await this.scanSagaSequels());
     const now = new Date();
     const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000);
 
@@ -429,6 +433,76 @@ export class NotificationService {
     return created.count;
   }
 
+  /**
+   * Releases of the games their players asked to be told about, on the day —
+   * or on the 1st, for a game dated to a month. A vaguer date alerts nothing
+   * until IGDB narrows it.
+   */
+  private async scanGames(userId?: string): Promise<number> {
+    const now = new Date();
+    const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000);
+    const today = now.toISOString().slice(0, 10);
+    const entries = await this.prisma.gameEntry.findMany({
+      where: {
+        userId,
+        releaseReminderAt: { not: null },
+        status: { not: "DROPPED" },
+        gameItem: {
+          releaseDatePrecision: { in: ["DAY", "MONTH"] },
+          releaseDate: { gt: since, lte: now },
+        },
+        user: {
+          enabledDomains: { has: "GAMES" },
+          OR: [
+            { notifyPush: { not: DigestCadence.DISABLED } },
+            { notifyEmail: { not: DigestCadence.DISABLED } },
+          ],
+        },
+      },
+      include: {
+        gameItem: { include: { externalIds: true } },
+        user: { select: { locale: true } },
+      },
+    });
+    const rows: Prisma.NotificationCreateManyInput[] = entries.flatMap(
+      (entry) => {
+        const { gameItem } = entry;
+        const day = gameReleaseAlertDay(
+          gameItem.releaseDate?.toISOString().slice(0, 10) ?? null,
+          gameItem.releaseDatePrecision,
+        );
+        if (
+          !day ||
+          day > today ||
+          day < entry.releaseReminderAt!.toISOString().slice(0, 10)
+        )
+          return [];
+        return [
+          {
+            userId: entry.userId,
+            type: NotificationType.NEW_GAME,
+            title: gameItem.title,
+            body: notificationCopy(entry.user.locale).gameRelease(
+              gameItem.releaseDatePrecision === "MONTH",
+            ),
+            url: `/app/games/${canonicalExternalId(gameItem, gameItem.externalIds)}`,
+            dedupeKey: `game:${entry.gameItemId}`,
+            data: {
+              airDate: `${day}T00:00:00.000Z`,
+              gameItemId: entry.gameItemId,
+            },
+          },
+        ];
+      },
+    );
+    if (rows.length === 0) return 0;
+    const created = await this.prisma.notification.createMany({
+      data: rows,
+      skipDuplicates: true,
+    });
+    return created.count;
+  }
+
   /** The ledger rows one user's newly-aired episodes turn into. */
   private episodeNotificationRows(
     userId: string,
@@ -470,12 +544,16 @@ export class NotificationService {
       return 0;
     }
 
+    const gamesCreated = user.enabledDomains.includes("GAMES")
+      ? await this.scanGames(userId)
+      : 0;
+
     // Episode alerts belong to the MEDIA domain: a user who disabled it gets
     // none. Filtered here (not by hiding the feed) so other notification types
     // stay available.
-    if (!user.enabledDomains.includes("MEDIA")) return 0;
+    if (!user.enabledDomains.includes("MEDIA")) return gamesCreated;
 
-    const moviesCreated = await this.scanMovies(userId);
+    const moviesCreated = (await this.scanMovies(userId)) + gamesCreated;
 
     const now = new Date();
     const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000);

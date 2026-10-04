@@ -68,6 +68,7 @@ import {
 import { canonicalExternalId } from "../common/external-id.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
+import { toGameItemDto } from "../games/game-item.mapper";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import {
@@ -1445,6 +1446,7 @@ export class LibraryService {
 
     const episodeEntries: CalendarEntryDto[] = episodes.map((episode) => ({
       mediaItem: toMediaItemDto(episode.season.mediaItem),
+      game: null,
       entryId: episode.season.mediaItem.entries[0].id,
       episodeAlertsMuted:
         episode.season.mediaItem.entries[0].episodeAlertsMuted,
@@ -1463,7 +1465,11 @@ export class LibraryService {
       },
       include: { mediaItem: { include: { externalIds: true } } },
     });
-    if (movies.length === 0) return episodeEntries;
+    const gameEntries = await this.calendarGames(userId);
+    if (movies.length === 0)
+      return [...episodeEntries, ...gameEntries].sort((a, b) =>
+        a.airDate.localeCompare(b.airDate),
+      );
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: { watchRegion: true },
@@ -1484,6 +1490,7 @@ export class LibraryService {
       return [
         {
           mediaItem: toMediaItemDto(entry.mediaItem),
+          game: null,
           entryId: entry.id,
           episodeAlertsMuted: !entry.movieReleaseReminderAt,
           episodesBehind: 0,
@@ -1496,9 +1503,43 @@ export class LibraryService {
         },
       ];
     });
-    return [...episodeEntries, ...movieEntries].sort((a, b) =>
+    return [...episodeEntries, ...movieEntries, ...gameEntries].sort((a, b) =>
       a.airDate.localeCompare(b.airDate),
     );
+  }
+
+  /**
+   * Upcoming releases of the games the user tracks, when their day is known —
+   * or their month, on its 1st. A vaguer date has no day to sit on.
+   */
+  private async calendarGames(userId: string): Promise<CalendarEntryDto[]> {
+    const today = new Date().toISOString().slice(0, 10);
+    const entries = await this.prisma.gameEntry.findMany({
+      where: {
+        userId,
+        status: { not: "DROPPED" },
+        user: { enabledDomains: { has: "GAMES" } },
+        gameItem: {
+          releaseDatePrecision: { in: ["DAY", "MONTH"] },
+          releaseDate: { gte: new Date(`${today}T00:00:00.000Z`) },
+        },
+      },
+      include: { gameItem: { include: { externalIds: true } } },
+    });
+    return entries.map((entry) => ({
+      mediaItem: null,
+      game: toGameItemDto(entry.gameItem),
+      entryId: entry.id,
+      episodeAlertsMuted: !entry.releaseReminderAt,
+      episodesBehind: 0,
+      seasonNumber: null,
+      episodeNumber: null,
+      episodeTitle: null,
+      releasePrecision:
+        entry.gameItem.releaseDatePrecision === "MONTH" ? "MONTH" : "DAY",
+      // Non-null: guaranteed by the `gte` filter above.
+      airDate: entry.gameItem.releaseDate!.toISOString(),
+    }));
   }
 
   /**

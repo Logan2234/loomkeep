@@ -359,24 +359,29 @@ export class MailService {
     episodeDigest: {
       label: "Digest de sorties (email)",
       fields: [
-        { key: "itemCount", label: "Nombre d'épisodes (1-6)", default: "1" },
+        { key: "itemCount", label: "Nombre de sorties (1-6)", default: "1" },
         { key: "period", label: "Période (daily ou weekly)", default: "daily" },
       ],
       build: (locale, v) => {
         const count = Math.max(1, Math.min(6, Number(v.itemCount) || 1));
-        const sampleTitles = [
-          "One Piece",
-          "Loki",
-          "The Bear",
-          "Arcane",
-          "Shogun",
-          "Severance",
+        // Episodes, a film and a game: the summary carries all three.
+        const samples = [
+          { title: "One Piece", body: "S1E1", url: "/app/media/anime/21" },
+          {
+            title: "Dune : Deuxième partie",
+            body: "Sortie au cinéma · FR",
+            url: "/app/media/movie/693134",
+          },
+          {
+            title: "Grand Theft Auto VI",
+            body: "Sortie du jeu",
+            url: "/app/games/52189",
+          },
+          { title: "The Bear", body: "S3E2", url: "/app/media/series/136315" },
+          { title: "Arcane", body: "S2E1", url: "/app/media/series/94605" },
+          { title: "Severance", body: "S2E4", url: "/app/media/series/95396" },
         ];
-        const items = Array.from({ length: count }, (_, i) => ({
-          title: sampleTitles[i % sampleTitles.length],
-          body: `S1E${i + 1}`,
-          url: "/app/media/series/12345",
-        }));
+        const items = samples.slice(0, count);
         return this.buildEpisodeDigest(
           locale,
           items,

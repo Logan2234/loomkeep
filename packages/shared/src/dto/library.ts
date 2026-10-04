@@ -5,6 +5,7 @@ import type {
   MediaOwnershipStatus,
   MediaType,
 } from "../enums";
+import type { GameItemDto } from "./game";
 
 /**
  * Tracked-item count per domain, hidden domains included — the settings
@@ -146,12 +147,15 @@ export interface EntryEpisodesResponseDto {
   seasons: SeasonWithWatchesDto[];
 }
 
-/** An upcoming episode or local movie release from the user's library. */
+/** An upcoming episode, local movie release or game release from the user's library. */
 export interface CalendarEntryDto {
-  mediaItem: MediaItemDto;
-  /** The user's library entry for the show — the target for muting its alerts. */
+  /** The show or movie; null for a game. */
+  mediaItem: MediaItemDto | null;
+  /** The game; null for a show or movie. */
+  game: GameItemDto | null;
+  /** The user's library entry for the work — the target for muting its alerts. */
   entryId: string;
-  /** Show-level mute; for movies, true means the user has not opted into a release reminder. */
+  /** Show-level mute; for movies and games, true means the user has not opted into a release reminder. */
   episodeAlertsMuted: boolean;
   /**
    * The show's regular episodes aired before today that the user hasn't
@@ -163,6 +167,8 @@ export interface CalendarEntryDto {
   episodeTitle: string | null;
   releaseRegion?: string;
   releaseType?: "cinema" | "digital";
+  /** A game dated to a month sits on its 1st. */
+  releasePrecision?: "DAY" | "MONTH";
   /** ISO air date (always in the future for the calendar feed). */
   airDate: string;
 }

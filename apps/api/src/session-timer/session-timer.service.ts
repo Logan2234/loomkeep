@@ -8,6 +8,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { SessionSource, type SessionTimer } from "@prisma/client";
 import { BookSessionService } from "../books/book-session.service";
 import { AppException } from "../common/app.exception";
+import { assertGameReleased } from "../games/game-release.util";
 import { GameSessionService } from "../games/game-session.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { FinishSessionTimerDto } from "./dto/finish-session-timer.dto";
@@ -171,7 +172,7 @@ export class SessionTimerService {
   private async assertGameOwnership(userId: string, entryId: string) {
     const entry = await this.prisma.gameEntry.findUnique({
       where: { id: entryId },
-      select: { userId: true },
+      select: { userId: true, gameItemId: true },
     });
 
     if (!entry) {
@@ -187,6 +188,8 @@ export class SessionTimerService {
         ErrorCode.LibraryEntryForbidden,
       );
     }
+
+    await assertGameReleased(this.prisma, entry.gameItemId);
   }
 
   private async assertBookOwnership(userId: string, entryId: string) {

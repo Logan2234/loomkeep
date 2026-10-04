@@ -3,6 +3,7 @@ import type {
   GameSummaryDto,
   GameTimeToBeatDto,
   RatingDto,
+  ReleaseDatePrecision,
 } from "@loomkeep/shared";
 import type { ProviderExternalId } from "../../common/provider-external-id";
 
@@ -15,7 +16,9 @@ export interface ProviderGameDetails {
   screenshots: string[];
   genres: string[];
   platforms: string[];
+  /** The first day of the release's period; null when undated. */
   releaseDate: string | null;
+  releaseDatePrecision: ReleaseDatePrecision | null;
   website: string | null;
   similarGames: GameSummaryDto[];
   developers: string[];

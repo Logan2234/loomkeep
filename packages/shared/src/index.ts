@@ -40,6 +40,7 @@ export * from "./dto/user";
 export * from "./dto/widget";
 export * from "./enums";
 export * from "./error-codes";
+export * from "./game-release";
 export * from "./legal";
 export * from "./level";
 export * from "./locale";

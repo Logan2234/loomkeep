@@ -27,6 +27,7 @@ describe("local movie release calendar", () => {
     const prisma = {
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       libraryEntry: { findMany: vi.fn().mockResolvedValue([row]) },
+      gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       user: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({ watchRegion: "FR" }),
       },
@@ -59,5 +60,63 @@ describe("local movie release calendar", () => {
     );
     movie.movieReleaseDates.pop();
     expect(await service.getCalendar("u1")).toEqual([]);
+  });
+
+  it("lists a game dated to a month on its 1st, beside the episodes", async () => {
+    const game = {
+      id: "e2",
+      releaseReminderAt: new Date("2026-09-01T00:00:00Z"),
+      gameItem: {
+        id: "g1",
+        title: "Kingdom Hearts IV",
+        coverUrl: null,
+        canonicalSource: "IGDB",
+        externalIds: [{ source: "IGDB", externalId: "113112" }],
+        releaseDate: new Date("2026-11-01T00:00:00Z"),
+        releaseDatePrecision: "MONTH",
+      },
+    };
+    const gameEntryFindMany = vi.fn().mockResolvedValue([game]);
+    const prisma = {
+      episode: { findMany: vi.fn().mockResolvedValue([]) },
+      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      gameEntry: { findMany: gameEntryFindMany },
+    };
+    const service = new LibraryService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    expect(await service.getCalendar("u1")).toEqual([
+      expect.objectContaining({
+        mediaItem: null,
+        game: expect.objectContaining({
+          title: "Kingdom Hearts IV",
+          sourceId: "113112",
+        }),
+        entryId: "e2",
+        episodeAlertsMuted: false,
+        releasePrecision: "MONTH",
+        airDate: "2026-11-01T00:00:00.000Z",
+      }),
+    ]);
+    // A vaguer date has no day to sit on; a disabled domain shows nothing.
+    expect(gameEntryFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          user: { enabledDomains: { has: "GAMES" } },
+          gameItem: expect.objectContaining({
+            releaseDatePrecision: { in: ["DAY", "MONTH"] },
+          }),
+        }),
+      }),
+    );
   });
 });

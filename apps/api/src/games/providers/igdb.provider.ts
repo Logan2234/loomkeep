@@ -1,5 +1,10 @@
 import type { GameTimeToBeatDto, RatingDto } from "@loomkeep/shared";
-import { ErrorCode, GameSource, GameSummaryDto } from "@loomkeep/shared";
+import {
+  ErrorCode,
+  GameSource,
+  GameSummaryDto,
+  ReleaseDatePrecision,
+} from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
@@ -32,6 +37,13 @@ const MIN_REQUEST_INTERVAL_MS = 260;
 
 interface IgdbImage {
   image_id: string;
+}
+
+// One release per platform and region. `date_format` says how much of `date`
+// is real: 0 the day, 1 the month, 2 the year, 3–6 a quarter (Q1–Q4), 7 none.
+interface IgdbReleaseDate {
+  date?: number; // Unix seconds.
+  date_format?: number;
 }
 
 interface IgdbNamed {
@@ -83,6 +95,7 @@ interface IgdbGame {
   summary?: string;
   storyline?: string;
   first_release_date?: number; // Unix seconds.
+  release_dates?: IgdbReleaseDate[];
   cover?: IgdbImage;
   artworks?: IgdbImage[];
   screenshots?: IgdbImage[];
@@ -233,7 +246,7 @@ export class IgdbProvider implements GameCatalogProvider {
   }
 
   private static readonly DETAIL_FIELDS =
-    "name, slug, summary, storyline, first_release_date, cover.image_id, artworks.image_id, screenshots.image_id, genres.name, platforms.name, themes, websites.url, websites.category, websites.type, " +
+    "name, slug, summary, storyline, first_release_date, release_dates.date, release_dates.date_format, cover.image_id, artworks.image_id, screenshots.image_id, genres.name, platforms.name, themes, websites.url, websites.category, websites.type, " +
     "similar_games.name, similar_games.cover.image_id, similar_games.first_release_date, similar_games.themes, " +
     "involved_companies.company.name, involved_companies.developer, involved_companies.publisher, " +
     "game_modes.name, player_perspectives.name, " +
@@ -374,9 +387,7 @@ export class IgdbProvider implements GameCatalogProvider {
         .map((s) => `${IMG}/t_1080p/${s.image_id}.jpg`),
       genres: game.genres?.map((g) => g.name) ?? [],
       platforms: game.platforms?.map((p) => p.name) ?? [],
-      releaseDate: game.first_release_date
-        ? new Date(game.first_release_date * 1000).toISOString()
-        : null,
+      ...firstRelease(game),
       website:
         game.websites?.find((w) => w.category === 1 || w.type === 1)?.url ??
         null,
@@ -536,6 +547,105 @@ function toRatings(game: IgdbGame): RatingDto[] {
 
 function voteSuffix(count: number | undefined): string {
   return count ? ` (${count})` : "";
+}
+
+/** Release periods, in IGDB's `date_format` order: the day, the month, the year. */
+const PERIOD_FORMATS: Record<number, ReleaseDatePrecision> = {
+  0: ReleaseDatePrecision.DAY,
+  1: ReleaseDatePrecision.MONTH,
+  2: ReleaseDatePrecision.YEAR,
+  3: ReleaseDatePrecision.QUARTER,
+  4: ReleaseDatePrecision.QUARTER,
+  5: ReleaseDatePrecision.QUARTER,
+  6: ReleaseDatePrecision.QUARTER,
+};
+const TBD_FORMAT = 7;
+const PRECISION_RANK: ReleaseDatePrecision[] = [
+  ReleaseDatePrecision.DAY,
+  ReleaseDatePrecision.MONTH,
+  ReleaseDatePrecision.QUARTER,
+  ReleaseDatePrecision.YEAR,
+];
+
+/** The first and last day of the period one IGDB release date stands for. */
+function releasePeriod(
+  date: number,
+  format: number,
+): { start: Date; end: Date } {
+  const stamp = new Date(date * 1000);
+  const year = stamp.getUTCFullYear();
+  const day = (month: number, d: number) => new Date(Date.UTC(year, month, d));
+
+  switch (PERIOD_FORMATS[format]) {
+    case ReleaseDatePrecision.MONTH:
+      return {
+        start: day(stamp.getUTCMonth(), 1),
+        end: day(stamp.getUTCMonth() + 1, 0),
+      };
+
+    case ReleaseDatePrecision.QUARTER: {
+      const first = (format - 3) * 3;
+      return { start: day(first, 1), end: day(first + 3, 0) };
+    }
+
+    case ReleaseDatePrecision.YEAR:
+      return { start: day(0, 1), end: day(11, 31) };
+
+    default: {
+      const only = day(stamp.getUTCMonth(), stamp.getUTCDate());
+      return { start: only, end: only };
+    }
+  }
+}
+
+/**
+ * The game's first release across platforms and regions, dated to the first
+ * day of its period — IGDB stamps "2028" December 31st and "Q4 2027" the
+ * quarter's last day. Releases are compared by the end of their period, so a
+ * vague "2026" never wins over a real day inside it.
+ */
+function firstRelease(game: IgdbGame): {
+  releaseDate: string | null;
+  releaseDatePrecision: ReleaseDatePrecision | null;
+} {
+  const dated = (game.release_dates ?? []).flatMap((r) =>
+    r.date !== undefined &&
+    r.date_format !== undefined &&
+    PERIOD_FORMATS[r.date_format]
+      ? [
+          {
+            ...releasePeriod(r.date, r.date_format),
+            precision: PERIOD_FORMATS[r.date_format],
+          },
+        ]
+      : [],
+  );
+  const [first] = dated.sort(
+    (a, b) =>
+      a.end.getTime() - b.end.getTime() ||
+      PRECISION_RANK.indexOf(a.precision) - PRECISION_RANK.indexOf(b.precision),
+  );
+
+  if (first) {
+    return {
+      releaseDate: first.start.toISOString(),
+      releaseDatePrecision: first.precision,
+    };
+  }
+
+  if (game.release_dates?.some((r) => r.date_format === TBD_FORMAT)) {
+    return {
+      releaseDate: null,
+      releaseDatePrecision: ReleaseDatePrecision.TBD,
+    };
+  }
+
+  return {
+    releaseDate: game.first_release_date
+      ? new Date(game.first_release_date * 1000).toISOString()
+      : null,
+    releaseDatePrecision: null,
+  };
 }
 
 /** Prefer a video whose name mentions "trailer"; else the first IGDB lists. */

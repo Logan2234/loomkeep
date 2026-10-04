@@ -204,6 +204,7 @@
   "apierr_api_secret_scanning_unauthorized": "Secret scanning alert not signed by GitHub.",
   "apierr_admin_setting_locked_by_env": "This setting is pinned by an environment variable.",
   "apierr_auth_account_suspended": "Your account is suspended.",
+  "apierr_library_game_not_released": "This game has not been released yet. Status, sessions, ownership, ratings and reviews become available when it comes out.",
   "apierr_library_movie_not_released": "This movie has not been released yet. Tracking, ratings and reviews become available at its first public release.",
   "apierr_library_anime_not_aired": "This anime has not started airing yet. Tracking, ratings and reviews become available once it airs."
 }

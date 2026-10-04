@@ -1,11 +1,12 @@
+import { auth } from "$lib/auth.svelte";
 import { m } from "$lib/paraglide/messages.js";
 import { apiUrl, server } from "$lib/test/msw";
 import { renderWithQuery } from "$lib/test/render";
-import type { CalendarEntryDto } from "@loomkeep/shared";
+import type { CalendarEntryDto, UserDto } from "@loomkeep/shared";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CalendarPage from "./+page.svelte";
 
 vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
@@ -30,6 +31,7 @@ function upcoming(
       canonicalSource: "TMDB",
       sourceId: `src-${entryId}`,
     },
+    game: null,
     entryId,
     episodeAlertsMuted: false,
     episodesBehind: 0,
@@ -65,6 +67,10 @@ beforeEach(() => {
       return HttpResponse.json({});
     }),
   );
+});
+
+afterEach(() => {
+  auth.user = null;
 });
 
 describe("calendar page", () => {
@@ -104,6 +110,66 @@ describe("calendar page", () => {
       }),
     ).toBeTruthy();
   });
+  it("lists a game dated to a month and opts into its reminder on the game entry", async () => {
+    const gamePatches: { id: string; body: unknown }[] = [];
+    server.use(
+      http.patch(apiUrl("/games/entries/:id"), async ({ request, params }) => {
+        gamePatches.push({ id: String(params.id), body: await request.json() });
+        return HttpResponse.json({});
+      }),
+    );
+    serveCalendar([
+      upcoming("game-1", "Kingdom Hearts IV", 0, 1, {
+        mediaItem: null,
+        game: {
+          id: "g1",
+          title: "Kingdom Hearts IV",
+          coverUrl: null,
+          canonicalSource: "IGDB",
+          sourceId: "113112",
+        },
+        seasonNumber: null,
+        episodeNumber: null,
+        episodeAlertsMuted: true,
+        releasePrecision: "MONTH",
+      }),
+    ]);
+    renderWithQuery(CalendarPage, {});
+
+    const button = await screen.findByRole("button", {
+      name: m.media_movie_reminder_enable(),
+    });
+    expect(screen.getByText(m.calendar_game_this_month())).toBeTruthy();
+    expect(
+      screen
+        .getByRole("link", { name: /Kingdom Hearts IV/ })
+        .getAttribute("href"),
+    ).toBe("/app/games/113112");
+    await userEvent.setup().click(button);
+    await waitFor(() =>
+      expect(gamePatches).toEqual([
+        { id: "game-1", body: { releaseAlertsEnabled: true } },
+      ]),
+    );
+    expect(patched).toEqual([]);
+  });
+
+  it("greys the bells out while no release summary is on", async () => {
+    auth.user = {
+      id: "u1",
+      notifyEmail: "DISABLED",
+      notifyPush: "DISABLED",
+    } as UserDto;
+    renderWithQuery(CalendarPage, {});
+
+    const bells = await screen.findAllByRole("button", {
+      name: m.calendar_mute_series({ title: "Lanterns" }),
+    });
+    expect(bells.every((bell) => (bell as HTMLButtonElement).disabled)).toBe(
+      true,
+    );
+  });
+
   it("mutes the whole series from any one of its episodes", async () => {
     renderWithQuery(CalendarPage, {});
     const user = userEvent.setup();

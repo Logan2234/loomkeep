@@ -78,6 +78,8 @@ export function writeLibraryColumns(
 /** What the table, compact and wall modes show of an entry, whatever its domain. */
 export interface LibraryItemView {
   upcoming?: boolean;
+  /** An unreleased game: its status and ownership wait for the release. */
+  trackingLocked?: boolean;
   href: string;
   title: string;
   /** Type, authors or artists, shown under the title. */

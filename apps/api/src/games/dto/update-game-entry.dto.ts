@@ -57,4 +57,8 @@ export class UpdateGameEntryDto implements UpdateGameEntryContract {
   @IsString()
   @MaxLength(100)
   ownershipSource?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  releaseAlertsEnabled?: boolean;
 }

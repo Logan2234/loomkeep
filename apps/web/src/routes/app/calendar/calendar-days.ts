@@ -1,6 +1,8 @@
+import { calendarDayIso } from "$lib/calendar-entry";
 import type { CalendarEntryDto } from "@loomkeep/shared";
 
-export type CalendarFilter = "all" | "series" | "anime" | "movie" | "muted";
+export type CalendarFilter =
+  "all" | "series" | "anime" | "movie" | "game" | "muted";
 
 export function matchesFilter(
   entry: CalendarEntryDto,
@@ -8,11 +10,13 @@ export function matchesFilter(
 ): boolean {
   switch (filter) {
     case "movie":
-      return entry.mediaItem.type === "MOVIE";
+      return entry.mediaItem?.type === "MOVIE";
     case "series":
-      return entry.mediaItem.type === "SERIES";
+      return entry.mediaItem?.type === "SERIES";
     case "anime":
-      return entry.mediaItem.type === "ANIME";
+      return entry.mediaItem?.type === "ANIME";
+    case "game":
+      return entry.game !== null;
     case "muted":
       return entry.episodeAlertsMuted;
     default:
@@ -32,6 +36,15 @@ export interface CalendarDay {
 
 /** Days shown even when empty, so the first week reads as a continuous run. */
 export const WEEK_DAYS = 7;
+
+/**
+ * Which stretch a day falls in: the strip's seven days, the seven after them,
+ * or anything later — a release a month off isn't "next week".
+ */
+export function calendarBand(offset: number): "week" | "nextWeek" | "later" {
+  if (offset < WEEK_DAYS) return "week";
+  return offset < 2 * WEEK_DAYS ? "nextWeek" : "later";
+}
 
 const DAY_MS = 86_400_000;
 
@@ -64,13 +77,7 @@ export function groupByDay(
   }
 
   for (const entry of entries) {
-    const date = startOfDay(
-      new Date(
-        entry.mediaItem.type === "MOVIE"
-          ? `${entry.airDate.slice(0, 10)}T00:00:00`
-          : entry.airDate,
-      ),
-    );
+    const date = startOfDay(new Date(calendarDayIso(entry)));
     const key = dayKey(date);
     let day = days.get(key);
 

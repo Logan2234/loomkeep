@@ -25,6 +25,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { CreateGameSessionDto } from "./dto/create-game-session.dto";
 import { UpdateGameSessionDto } from "./dto/update-game-session.dto";
+import { assertGameReleased } from "./game-release.util";
 
 const PAGE_SIZE = 10;
 
@@ -53,6 +54,12 @@ export class GameSessionService {
   ): Promise<GameSessionMutationDto> {
     const occurredAt = this.validDate(dto.occurredAt);
     const entry = await this.ownedEntry(userId, entryId);
+
+    // An import reports play that happened, whatever IGDB says of the release.
+    if (source !== SessionSource.IMPORT) {
+      await assertGameReleased(this.prisma, entry.gameItemId);
+    }
+
     const { session, playthrough } = await this.prisma.$transaction(
       async (tx) => {
         const playthrough = await this.resolvePlaythrough(

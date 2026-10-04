@@ -1,8 +1,20 @@
 <script lang="ts">
-  import { getCalendar, updateLibraryEntry } from "$lib/api/client";
+  import {
+    getCalendar,
+    updateGameEntry,
+    updateLibraryEntry,
+  } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
+  import {
+    calendarCode,
+    calendarHref,
+    calendarItemId,
+    calendarPoster,
+    calendarTitle,
+    isReleaseReminder,
+  } from "$lib/calendar-entry";
   import Banner from "$lib/components/Banner.svelte";
   import CalendarSubscribeModal from "$lib/ee/calendar/CalendarSubscribeModal.svelte";
   import { useEeLock } from "$lib/ee/license.svelte";
@@ -24,6 +36,7 @@
   import {
     type CalendarDay,
     type CalendarFilter,
+    calendarBand,
     groupByDay,
     matchesFilter,
     WEEK_DAYS,
@@ -53,13 +66,18 @@
       muted: boolean;
       title: string;
       movie: boolean;
+      game: boolean;
     }) =>
-      updateLibraryEntry(
-        args.entryId,
-        args.movie
-          ? { movieReleaseAlertsEnabled: !args.muted }
-          : { episodeAlertsMuted: args.muted },
-      ),
+      args.game
+        ? updateGameEntry(args.entryId, {
+            releaseAlertsEnabled: !args.muted,
+          }).then(() => undefined)
+        : updateLibraryEntry(
+            args.entryId,
+            args.movie
+              ? { movieReleaseAlertsEnabled: !args.muted }
+              : { episodeAlertsMuted: args.muted },
+          ).then(() => undefined),
     onSuccess: (_, { entryId, muted }) =>
       queryClient.setQueryData<CalendarEntryDto[]>(
         keys.calendar.upcoming(),
@@ -68,11 +86,13 @@
             e.entryId === entryId ? { ...e, episodeAlertsMuted: muted } : e,
           ),
       ),
-    successToast: (_, { muted, title, movie }) =>
-      movie
+    successToast: (_, { muted, title, movie, game }) =>
+      movie || game
         ? muted
           ? m.media_movie_reminder_disabled_toast()
-          : m.media_movie_reminder_enabled_toast()
+          : game
+            ? m.game_release_reminder_enabled_toast()
+            : m.media_movie_reminder_enabled_toast()
         : muted
           ? m.media_episode_alerts_muted_toast({ title })
           : m.media_episode_alerts_unmuted_toast({ title }),
@@ -83,8 +103,9 @@
     alertsMut.mutate({
       entryId: e.entryId,
       muted: !e.episodeAlertsMuted,
-      title: e.mediaItem.title,
-      movie: e.mediaItem.type === "MOVIE",
+      title: calendarTitle(e),
+      movie: e.mediaItem?.type === "MOVIE",
+      game: !!e.game,
     });
   }
 
@@ -112,6 +133,15 @@
       value: "movie",
       label: `${m.media_movie()} (${showCount("movie")})`,
     },
+    // Only once a game is coming: most libraries track no game at all.
+    ...(showCount("game") > 0
+      ? [
+          {
+            value: "game" as const,
+            label: `${m.common_Games()} (${showCount("game")})`,
+          },
+        ]
+      : []),
     {
       value: "muted",
       label: `${m.calendar_alerts_muted()} (${showCount("muted")})`,
@@ -156,19 +186,15 @@
 
   const dayId = (day: CalendarDay) => `calendar-${day.key}`;
 
-  const code = (e: CalendarEntryDto) =>
-    e.mediaItem.type === "MOVIE"
-      ? `${e.releaseType === "cinema" ? m.media_release_cinema() : m.media_release_digital()} · ${e.releaseRegion}`
-      : `S${String(e.seasonNumber).padStart(2, "0")}E${String(e.episodeNumber).padStart(2, "0")}`;
-  const href = (e: CalendarEntryDto) =>
-    `/app/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`;
-  const rowKey = (e: CalendarEntryDto) => e.mediaItem.id + code(e);
+  const code = calendarCode;
+  const href = calendarHref;
+  const rowKey = (e: CalendarEntryDto) => calendarItemId(e) + code(e);
 </script>
 
 {#snippet badges(e: CalendarEntryDto)}
   <span
     class="border-border text-dim shrink-0 rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold">
-    {TYPE_LABELS[e.mediaItem.type]()}
+    {e.mediaItem ? TYPE_LABELS[e.mediaItem.type]() : m.game_type()}
   </span>
   {#if e.episodesBehind > 0}
     <span
@@ -249,9 +275,19 @@
                 {day.date.getDate()}
               </span>
               <span class="text-dim font-mono text-[0.6rem] sm:text-xs">
-                {day.items.length > 0
-                  ? m.calendar_strip_count({ count: day.items.length })
-                  : "—"}
+                {#if day.items.length > 0}
+                  <!-- A phone's tile only has room for the number. -->
+                  <span class="sm:hidden">{day.items.length}</span>
+                  <span class="hidden sm:inline">
+                    {day.items.length === 1
+                      ? m.calendar_strip_count_one()
+                      : m.calendar_strip_count_many({
+                          count: day.items.length,
+                        })}
+                  </span>
+                {:else}
+                  —
+                {/if}
               </span>
             </a>
           {/each}
@@ -259,10 +295,13 @@
 
         <div class="flex flex-col gap-6 md:gap-3">
           {#each days as day, i (day.key)}
-            {#if day.offset >= WEEK_DAYS && (i === 0 || days[i - 1].offset < WEEK_DAYS)}
+            {@const band = calendarBand(day.offset)}
+            {#if band !== "week" && (i === 0 || calendarBand(days[i - 1].offset) !== band)}
               <div class="flex items-center gap-3 pt-3">
                 <span class="timecode text-xs tracking-widest uppercase">
-                  {m.calendar_next_week()}
+                  {band === "nextWeek"
+                    ? m.calendar_next_week()
+                    : m.calendar_later()}
                 </span>
                 <div class="bg-border h-px flex-1"></div>
               </div>
@@ -273,7 +312,8 @@
               class="scroll-mt-6 md:grid md:grid-cols-[8rem_minmax(0,1fr)] md:gap-6 md:py-2">
               <div
                 class="border-border mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-2 md:mb-0 md:flex-col md:gap-0.5 md:border-0 md:pt-2 md:pb-0">
-                {#if day.offset === 0 && day.items.length > 0}
+                <!-- "Tonight" is when episodes air; a film or a game is out all day. -->
+                {#if day.offset === 0 && day.items.some((e) => !isReleaseReminder(e))}
                   <span
                     class="bg-accent text-accent-fg self-center rounded px-2 py-0.5 font-mono text-xs font-bold tracking-wider uppercase md:mb-1.5 md:self-start">
                     {m.calendar_tonight()}
@@ -308,8 +348,8 @@
                             ? 'opacity-50'
                             : ''}">
                           <Poster
-                            src={e.mediaItem.posterUrl}
-                            title={e.mediaItem.title}
+                            src={calendarPoster(e)}
+                            title={calendarTitle(e)}
                             alt="" />
                         </div>
                         <div
@@ -319,7 +359,7 @@
                           </span>
                           <h3
                             class="font-display line-clamp-2 text-lg leading-snug font-bold">
-                            {e.mediaItem.title}
+                            {calendarTitle(e)}
                           </h3>
                           {#if e.episodeTitle}
                             <p class="text-dim line-clamp-2 text-sm">
@@ -333,8 +373,8 @@
                       </a>
                       <div class="absolute top-3 right-3">
                         <AlertBellButton
-                          movie={e.mediaItem.type === "MOVIE"}
-                          title={e.mediaItem.title}
+                          movie={isReleaseReminder(e)}
+                          title={calendarTitle(e)}
                           muted={e.episodeAlertsMuted}
                           disabled={alertsMut.loading}
                           onToggle={() => toggleAlerts(e)} />
@@ -355,8 +395,8 @@
                             ? 'opacity-50'
                             : ''}">
                           <Poster
-                            src={e.mediaItem.posterUrl}
-                            title={e.mediaItem.title}
+                            src={calendarPoster(e)}
+                            title={calendarTitle(e)}
                             alt="" />
                         </div>
                         <div class="min-w-0 flex-1">
@@ -364,7 +404,7 @@
                             class="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <p
                               class="font-display max-w-full truncate font-semibold">
-                              {e.mediaItem.title}
+                              {calendarTitle(e)}
                             </p>
                             {@render badges(e)}
                           </div>
@@ -381,8 +421,8 @@
                         </span>
                       {/if}
                       <AlertBellButton
-                        movie={e.mediaItem.type === "MOVIE"}
-                        title={e.mediaItem.title}
+                        movie={isReleaseReminder(e)}
+                        title={calendarTitle(e)}
                         muted={e.episodeAlertsMuted}
                         disabled={alertsMut.loading}
                         onToggle={() => toggleAlerts(e)} />

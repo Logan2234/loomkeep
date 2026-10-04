@@ -402,6 +402,15 @@ enum GameOwnershipStatus {
   BORROWED
 }
 
+// How precisely a game's release date is known (IGDB's `date_format`).
+enum ReleaseDatePrecision {
+  DAY
+  MONTH
+  QUARTER
+  YEAR
+  TBD
+}
+
 // Source a book's catalogue data comes from. Open Library only — keyless and
 // unmetered, unlike the Google Books API it replaced.
 enum BookSource {
@@ -1802,7 +1811,10 @@ model GameItem {
   coverUrl                String?
   backdropUrl             String?
   overview                String?
+  // The first day of the announced period unless the precision is DAY:
+  // IGDB's own timestamp for "2028" is December 31st, not a real date.
   releaseDate             DateTime?
+  releaseDatePrecision    ReleaseDatePrecision?
   genres                  String[]
   platforms               String[]
   // IGDB's average time to beat, in minutes: to the credits without the
@@ -1857,6 +1869,9 @@ model GameEntry {
   ownershipStatus        GameOwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise.
   ownershipSource        String?
+  // Set when the user asked to be told of the release; a release dated
+  // before it never alerts.
+  releaseReminderAt      DateTime?
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
 

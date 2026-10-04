@@ -522,7 +522,17 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           {
             id: "email-digest",
             label: m.common_email(),
-            keywords: ["resume", "digest", "episodes", "hebdo"],
+            keywords: [
+              "resume",
+              "digest",
+              "episodes",
+              "films",
+              "jeux",
+              "sorties",
+              "rappel",
+              "hebdo",
+              "quotidien",
+            ],
           },
           {
             id: "push",
@@ -532,7 +542,22 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           {
             id: "push-digest",
             label: m.settings_communications_releases_title(),
-            keywords: ["push", "episodes", "sorties", "digest"],
+            keywords: [
+              "push",
+              "episodes",
+              "films",
+              "jeux",
+              "games",
+              "movies",
+              "sorties",
+              "releases",
+              "rappel",
+              "reminder",
+              "saga",
+              "suite",
+              "resume",
+              "digest",
+            ],
           },
           {
             id: "activity-alerts",

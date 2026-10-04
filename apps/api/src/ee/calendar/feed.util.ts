@@ -1,5 +1,5 @@
-/** One aired episode, as a feed entry. */
-interface ReleaseFeedEntry {
+/** One release — an aired episode, a movie or a game — as a feed entry. */
+export interface ReleaseFeedEntry {
   /** A stable URI: a feed reader dedupes entries on it. */
   id: string;
   title: string;
@@ -27,8 +27,8 @@ function escapeXml(value: string): string {
     .replace(/'/g, "&apos;");
 }
 
-// The feed changes when a new episode airs; with none in the window there is
-// no better date than now.
+// The feed changes when something new comes out; with nothing in the window
+// there is no better date than now.
 function lastUpdated(feed: ReleaseFeed, now: Date): Date {
   return feed.entries[0]?.airDate ?? now;
 }

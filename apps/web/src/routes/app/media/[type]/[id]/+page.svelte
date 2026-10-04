@@ -538,6 +538,7 @@
 
   <ActionBar
     {upcoming}
+    airingFinished={detail.airingFinished}
     onToggleMovieAlerts={() =>
       movieAlertsMut.mutate(!entry?.movieReleaseAlertsEnabled)}
     {entry}
@@ -570,12 +571,6 @@
   </ActionBar>
 
   <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
-    {#if isMovie && upcoming && entry?.movieReleaseAlertsEnabled && auth.user?.notifyEmail === "DISABLED" && auth.user?.notifyPush === "DISABLED"}
-      <p class="text-dim mt-4 text-sm">
-        <a href="/app/settings/communications" class="text-accent underline"
-          >{m.media_movie_reminder_channels_disabled()}</a>
-      </p>
-    {/if}
     {#if entry?.progress && !upcoming}
       <div class="mt-6 max-w-sm">
         <ProgressBar value={pct} label={m.common_progress()} />

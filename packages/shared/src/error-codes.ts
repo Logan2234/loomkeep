@@ -143,6 +143,7 @@ export const ErrorCode = {
   LibraryReplayNotMovie: "library.replay_not_movie",
   LibraryMovieNotReleased: "library.movie_not_released",
   LibraryAnimeNotAired: "library.anime_not_aired",
+  LibraryGameNotReleased: "library.game_not_released",
   LibraryReplayNotFound: "library.replay_not_found",
   LibraryReplayForbidden: "library.replay_forbidden",
   LibrarySessionNotFound: "library.session_not_found",

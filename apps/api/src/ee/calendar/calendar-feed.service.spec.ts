@@ -16,6 +16,8 @@ function makeService(
       update: vi.fn().mockResolvedValue({ calendarToken: "fresh-token" }),
     },
     episode: { findMany: vi.fn().mockResolvedValue([]) },
+    libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   const entitlements = {
     isEffectivelyPremium: vi.fn().mockResolvedValue(hasPremium),
@@ -136,7 +138,7 @@ describe("CalendarFeedService.getReleasesFeed", () => {
 
     const feed = await service.getReleasesFeed("tok", now);
 
-    expect(feed?.title).toBe("Loomkeep · New episodes");
+    expect(feed?.title).toBe("Loomkeep · New releases");
     expect(feed?.entries).toEqual([
       {
         id: "urn:loomkeep:episode:ep-1",
@@ -144,6 +146,87 @@ describe("CalendarFeedService.getReleasesFeed", () => {
         link: "https://loomkeep.app/app/media/series/95396",
         airDate: new Date("2026-09-20T00:00:00Z"),
       },
+    ]);
+  });
+
+  it("adds the movies and games that came out, newest first", async () => {
+    const { service, prisma } = makeService(
+      { id: "user-1", locale: "fr", watchRegion: "FR" } as never,
+      true,
+    );
+    (prisma.episode.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([
+      {
+        id: "ep-1",
+        number: 5,
+        title: null,
+        airDate: new Date("2026-09-10T00:00:00Z"),
+        season: {
+          number: 2,
+          mediaItem: {
+            title: "Severance",
+            type: "SERIES",
+            canonicalSource: "TMDB",
+            externalIds: [{ source: "TMDB", externalId: "95396" }],
+          },
+        },
+      },
+    ]);
+    (
+      prisma.libraryEntry.findMany as ReturnType<typeof vi.fn>
+    ).mockResolvedValue([
+      {
+        movieReleaseRegion: null,
+        mediaItem: {
+          id: "m1",
+          title: "Dune",
+          status: "Released",
+          canonicalSource: "TMDB",
+          externalIds: [{ source: "TMDB", externalId: "438631" }],
+          movieReleaseDates: [{ country: "FR", date: "2026-09-15", type: 3 }],
+        },
+      },
+      {
+        movieReleaseRegion: null,
+        mediaItem: {
+          id: "m2",
+          title: "Avengers: Doomsday",
+          status: "Post Production",
+          canonicalSource: "TMDB",
+          externalIds: [{ source: "TMDB", externalId: "1003596" }],
+          movieReleaseDates: [{ country: "FR", date: "2026-12-16", type: 3 }],
+        },
+      },
+    ]);
+    (prisma.gameEntry.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([
+      {
+        gameItem: {
+          id: "g1",
+          title: "Hollow Knight: Silksong",
+          canonicalSource: "IGDB",
+          externalIds: [{ source: "IGDB", externalId: "136224" }],
+          releaseDate: new Date("2026-09-20T00:00:00Z"),
+          releaseDatePrecision: "DAY",
+        },
+      },
+    ]);
+
+    const feed = await service.getReleasesFeed("tok", now);
+
+    expect(feed?.title).toBe("Loomkeep · Sorties");
+    expect(feed?.entries).toEqual([
+      {
+        id: "urn:loomkeep:game:g1",
+        title: "Hollow Knight: Silksong — Sortie du jeu",
+        link: "https://loomkeep.app/app/games/136224",
+        airDate: new Date("2026-09-20T00:00:00Z"),
+      },
+      {
+        id: "urn:loomkeep:movie:m1:FR",
+        title: "Dune — Sortie au cinéma · FR",
+        link: "https://loomkeep.app/app/media/movie/438631",
+        airDate: new Date("2026-09-15T00:00:00Z"),
+      },
+      expect.objectContaining({ id: "urn:loomkeep:episode:ep-1" }),
     ]);
   });
 
