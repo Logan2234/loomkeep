@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  import { formatNumber } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   let {
     bars,
     onSelect,

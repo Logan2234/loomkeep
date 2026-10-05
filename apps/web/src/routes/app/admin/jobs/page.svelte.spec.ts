@@ -1,13 +1,13 @@
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import { screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { expect, it, vi } from "vitest";
 import Jobs from "./+page.svelte";
 
-vi.mock("$lib/auth.svelte", () => ({
+vi.mock("#lib/auth.svelte.js", () => ({
   auth: { isAdmin: true, user: null, clear: vi.fn() },
 }));
 

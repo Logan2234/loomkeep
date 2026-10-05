@@ -1,6 +1,6 @@
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import { screen } from "@testing-library/svelte";
 import { http, HttpResponse } from "msw";
 import type { Component } from "svelte";
@@ -12,7 +12,7 @@ import StoryGraphPage from "./storygraph/+page.svelte";
 import TraktPage from "./trakt/+page.svelte";
 import TvTimePage from "./tvtime/+page.svelte";
 
-vi.mock("$lib/realtime/socket", () => ({
+vi.mock("#lib/realtime/socket.js", () => ({
   socket: { on: vi.fn(), off: vi.fn() },
   onRealtimeEvent: vi.fn(() => () => {}),
 }));

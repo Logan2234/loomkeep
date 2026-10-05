@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { getAdminImportDetail } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import TabPanels from "$lib/components/TabPanels.svelte";
-  import Tabs from "$lib/components/Tabs.svelte";
-  import { importReportLabel } from "$lib/components/import-presentation";
-  import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-  import { formatDateTime, formatDurationMs } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import { getAdminImportDetail } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import TabPanels from "#lib/components/TabPanels.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
+  import { importReportLabel } from "#lib/components/import-presentation.js";
+  import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
+  import { formatDateTime, formatDurationMs } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { AdminImportDetailDto } from "@loomkeep/shared";
   let { id, onclose }: { id: string; onclose: () => void } = $props();
   const query = createApiQuery<AdminImportDetailDto>(() => ({

@@ -1,4 +1,4 @@
-import { m } from "$lib/paraglide/messages.js";
+import { m } from "#lib/paraglide/messages.js";
 import { render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import TrackingStatusBadge from "./TrackingStatusBadge.svelte";

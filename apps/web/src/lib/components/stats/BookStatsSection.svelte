@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { getBookStats } from "$lib/api/stats";
-  import { formatNumber } from "$lib/format";
+  import { m } from "#lib/paraglide/messages.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { getBookStats } from "#lib/api/stats.js";
+  import { formatNumber } from "#lib/format.js";
   import type { DomainStatusBreakdownDto } from "@loomkeep/shared";
   import PremiumTeaser from "../PremiumTeaser.svelte";
   import RankBars from "./RankBars.svelte";

@@ -5,10 +5,10 @@
   // period selector, so each temporal card re-queries its own endpoint. The
   // payload carries the default (weekly) curve; picking another period
   // overrides it locally, and remounting the section drops the override.
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import TrendChart from "$lib/components/TrendChart.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import TrendChart from "#lib/components/TrendChart.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
 

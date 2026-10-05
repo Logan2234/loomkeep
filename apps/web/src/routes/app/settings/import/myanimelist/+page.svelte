@@ -1,6 +1,6 @@
 <script lang="ts">
-  import ImportWizard from "$lib/components/ImportWizard.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import ImportWizard from "#lib/components/ImportWizard.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 </script>
 
 <ImportWizard source="myanimelist">

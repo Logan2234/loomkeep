@@ -1,4 +1,4 @@
-import { isDomainEnabled } from "$lib/domains";
+import { isDomainEnabled } from "#lib/domains.js";
 import type { Domain, HomeWidgetDto } from "@loomkeep/shared";
 
 /**

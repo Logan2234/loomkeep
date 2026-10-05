@@ -1,47 +1,47 @@
 <script lang="ts">
-  import { resolveApiError } from "$lib/api/errors";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
+  import { resolveApiError } from "#lib/api/errors.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
   import {
     getStatsOverview,
     getStatsPiles,
     getStatsWorksByDecade,
     getStatsWorksByRating,
-  } from "$lib/api/stats";
-  import { auth } from "$lib/auth.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import PremiumTeaser from "$lib/components/PremiumTeaser.svelte";
-  import BookStatsSection from "$lib/components/stats/BookStatsSection.svelte";
-  import DomainFilter from "$lib/components/stats/DomainFilter.svelte";
-  import GameStatsSection from "$lib/components/stats/GameStatsSection.svelte";
-  import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
-  import InsufficientDataNotice from "$lib/components/stats/InsufficientDataNotice.svelte";
-  import MusicStatsSection from "$lib/components/stats/MusicStatsSection.svelte";
-  import PeriodFilter from "$lib/components/stats/PeriodFilter.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
-  import SocialStatsSection from "$lib/components/stats/SocialStatsSection.svelte";
-  import StackedBar from "$lib/components/stats/StackedBar.svelte";
-  import StatTile from "$lib/components/stats/StatTile.svelte";
-  import StatsWorksModal from "$lib/components/stats/StatsWorksModal.svelte";
-  import VideoStatsSection from "$lib/components/stats/VideoStatsSection.svelte";
-  import VideoTemporalSection from "$lib/components/stats/VideoTemporalSection.svelte";
-  import { POSSESSION_STATUS_LABEL } from "$lib/components/stats/possession-labels";
+  } from "#lib/api/stats.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import PremiumTeaser from "#lib/components/PremiumTeaser.svelte";
+  import BookStatsSection from "#lib/components/stats/BookStatsSection.svelte";
+  import DomainFilter from "#lib/components/stats/DomainFilter.svelte";
+  import GameStatsSection from "#lib/components/stats/GameStatsSection.svelte";
+  import HistogramBars from "#lib/components/stats/HistogramBars.svelte";
+  import InsufficientDataNotice from "#lib/components/stats/InsufficientDataNotice.svelte";
+  import MusicStatsSection from "#lib/components/stats/MusicStatsSection.svelte";
+  import PeriodFilter from "#lib/components/stats/PeriodFilter.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
+  import SocialStatsSection from "#lib/components/stats/SocialStatsSection.svelte";
+  import StackedBar from "#lib/components/stats/StackedBar.svelte";
+  import StatTile from "#lib/components/stats/StatTile.svelte";
+  import StatsWorksModal from "#lib/components/stats/StatsWorksModal.svelte";
+  import VideoStatsSection from "#lib/components/stats/VideoStatsSection.svelte";
+  import VideoTemporalSection from "#lib/components/stats/VideoTemporalSection.svelte";
+  import { POSSESSION_STATUS_LABEL } from "#lib/components/stats/possession-labels.js";
   import {
     STATS_DOMAIN_COLOR_VAR,
     STATS_DOMAIN_LABEL,
     STATUS_BUCKET_COLOR,
     STATUS_BUCKET_LABEL,
     STATUS_BUCKET_ORDER,
-  } from "$lib/components/stats/stats-domain";
-  import { appConfig } from "$lib/config.svelte";
-  import { useEeLock } from "$lib/ee/license.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { formatNumber, PERCENT_OPTIONS } from "$lib/format";
-  import { isPileEmpty, pileTile } from "$lib/pile";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/components/stats/stats-domain.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { useEeLock } from "#lib/ee/license.svelte.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { formatNumber, PERCENT_OPTIONS } from "#lib/format.js";
+  import { isPileEmpty, pileTile } from "#lib/pile.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     StatsDomain,
     StatsWindow,

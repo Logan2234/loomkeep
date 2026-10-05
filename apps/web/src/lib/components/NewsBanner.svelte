@@ -1,10 +1,10 @@
 <script lang="ts">
-  // The site-wide announcement strip (see $lib/news-banner for the flag and
+  // The site-wide announcement strip (see #lib/news-banner for the flag and
   // its payload). Mounted once, in the root layout, above every page.
   import { page } from "$app/state";
-  import { auth } from "$lib/auth.svelte";
-  import { liveFlags } from "$lib/feature-flags-live.svelte";
-  import { formatDateTime } from "$lib/format";
+  import { auth } from "#lib/auth.svelte.js";
+  import { liveFlags } from "#lib/feature-flags-live.svelte.js";
+  import { formatDateTime } from "#lib/format.js";
   import {
     NEWS_BANNER_FLAG,
     customText,
@@ -12,11 +12,11 @@
     isNewsBannerLive,
     newsBannerFitsPage,
     parseNewsBanner,
-  } from "$lib/news-banner";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+  } from "#lib/news-banner.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
   import Icon from "./Icon.svelte";
-  import { readStorage, writeStorage } from "$lib/local-storage";
+  import { readStorage, writeStorage } from "#lib/local-storage.js";
 
   const DISMISSED_KEY = "news-banner-dismissed";
 

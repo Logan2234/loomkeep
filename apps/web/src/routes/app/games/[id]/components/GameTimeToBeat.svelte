@@ -1,8 +1,8 @@
 <script lang="ts">
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { formatHours } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { formatHours } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { GameTimeToBeatDto } from "@loomkeep/shared";
 
   // Its own card under "Détails". Deliberately never compared

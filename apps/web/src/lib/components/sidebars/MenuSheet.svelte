@@ -8,17 +8,17 @@
   // (NotificationBell.svelte) in the root layout instead.
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { logout } from "$lib/api/auth";
-  import { auth } from "$lib/auth.svelte";
-  import Drawer from "$lib/components/Drawer.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
-  import { isDomainEnabled } from "$lib/domains";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { resolveMenuGroups } from "$lib/navigation";
-  import { m } from "$lib/paraglide/messages.js";
-  import { useReportsPendingCount } from "$lib/reports-pending.svelte";
+  import { logout } from "#lib/api/auth.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Drawer from "#lib/components/Drawer.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
+  import { isDomainEnabled } from "#lib/domains.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { resolveMenuGroups } from "#lib/navigation.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
   import type { ComponentProps } from "svelte";
 
   type IconName = ComponentProps<typeof Icon>["name"];

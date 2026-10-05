@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { updateMe } from "$lib/api/auth";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { appConfig } from "$lib/config.svelte";
+  import { updateMe } from "#lib/api/auth.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import {
     CHANGELOG_URL,
     DOCS_URL,
@@ -12,10 +12,10 @@
     FEEDBACK_URL,
     GITHUB_REPO_URL,
     ROADMAP_URL,
-  } from "$lib/constants/external-links";
-  import { m } from "$lib/paraglide/messages.js";
-  import { languageOptions } from "$lib/locales";
-  import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
+  } from "#lib/constants/external-links.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { languageOptions } from "#lib/locales.js";
+  import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
   import type { Locale } from "@loomkeep/shared";
 
   // Signed in, initAuth re-applies the account's locale on every load, so the

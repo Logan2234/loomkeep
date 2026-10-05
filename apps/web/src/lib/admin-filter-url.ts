@@ -1,8 +1,10 @@
+import type { ReadonlyURL } from "$app/state";
+
 export function adminFilterHref(
-  url: URL,
+  url: ReadonlyURL,
   updates: Record<string, string | null>,
 ): string {
-  const params = new URLSearchParams(url.searchParams);
+  const params = new URLSearchParams(url.searchParams.toString());
 
   for (const [key, value] of Object.entries(updates)) {
     if (value === null) params.delete(key);

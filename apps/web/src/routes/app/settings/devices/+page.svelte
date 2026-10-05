@@ -4,16 +4,16 @@
     getSessions,
     revokeOtherSessions,
     revokeSession,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import RelativeTime from "$lib/components/RelativeTime.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import RelativeTime from "#lib/components/RelativeTime.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import { deviceLabel, type SessionDto } from "@loomkeep/shared";
   import { flashAnchor } from "../flash-anchor";
   import SettingsSection from "../components/SettingsSection.svelte";

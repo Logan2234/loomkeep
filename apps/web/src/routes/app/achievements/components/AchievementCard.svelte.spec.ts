@@ -1,12 +1,12 @@
-import { renderWithQuery } from "$lib/test/render";
+import { renderWithQuery } from "#lib/test/render.js";
 import type { AchievementDto } from "@loomkeep/shared";
 import { tick } from "svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AchievementGroup } from "../achievements";
 import AchievementCard from "./AchievementCard.svelte";
 
-vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
-vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 const entry: AchievementDto = {
   key: "one_sided",

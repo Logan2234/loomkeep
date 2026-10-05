@@ -1,7 +1,7 @@
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
-import { toast } from "$lib/toast.svelte";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
+import { toast } from "#lib/toast.svelte.js";
 import { ErrorCode } from "@loomkeep/shared";
 import { fireEvent, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
@@ -15,7 +15,7 @@ vi.mock("$app/state", () => ({
     url: new URL("http://localhost/app/lists/list"),
   },
 }));
-vi.mock("$lib/realtime/socket", () => ({
+vi.mock("#lib/realtime/socket.js", () => ({
   joinRealtimeRoom: () => () => {},
   onRealtimeEvent: () => () => {},
 }));

@@ -4,10 +4,10 @@
   import {
     getAdminUserOptions,
     normalizeAdminUserOptionsPage,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import Combobox from "./Combobox.svelte";
 
   let {

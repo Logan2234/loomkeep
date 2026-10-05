@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   // "Vidéo — en détail" section of /stats. Self-contained: fetches on mount,
   // reuses the MEDIA status breakdown already loaded by the overview (avoids
   // re-deriving "en cours" from scratch) and StatsWorksModal for the
   // ghost/paused drill-down, same pattern as the ratings/decades modal.
-  import { resolveApiError } from "$lib/api/errors";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { getVideoSeries, getVideoStats } from "$lib/api/stats";
+  import { resolveApiError } from "#lib/api/errors.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { getVideoSeries, getVideoStats } from "#lib/api/stats.js";
   import type {
     DomainStatusBreakdownDto,
     StatsWorkDto,

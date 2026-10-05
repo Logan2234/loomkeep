@@ -1,11 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "$lib/admin-filter-url";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import TabPanels from "$lib/components/TabPanels.svelte";
-  import Tabs from "$lib/components/Tabs.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import { adminFilterHref } from "#lib/admin-filter-url.js";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import TabPanels from "#lib/components/TabPanels.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import EmailTab from "./components/EmailTab.svelte";
   import PushTab from "./components/PushTab.svelte";
 
@@ -22,8 +22,7 @@
     void goto(
       adminFilterHref(page.url, { tab: next === "email" ? null : next }),
       {
-        noScroll: true,
-        keepFocus: true,
+        reset: false,
       },
     );
   }

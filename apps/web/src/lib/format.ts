@@ -1,6 +1,6 @@
-import { auth } from "$lib/auth.svelte";
-import { m } from "$lib/paraglide/messages.js";
-import { getLocale, isLocale } from "$lib/paraglide/runtime.js";
+import { auth } from "#lib/auth.svelte.js";
+import { m } from "#lib/paraglide/messages.js";
+import { getLocale, isLocale } from "#lib/paraglide/runtime.js";
 import { regionalLocale } from "@loomkeep/shared";
 
 const resolveLocale = (locale?: string) =>

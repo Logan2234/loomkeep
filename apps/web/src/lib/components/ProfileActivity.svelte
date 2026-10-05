@@ -1,19 +1,19 @@
 <script lang="ts">
-  import { activityPhrase, activityRating } from "$lib/activity-phrase";
-  import { getUserActivity } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
-  import ProfileSectionHeading from "$lib/components/profile/ProfileSectionHeading.svelte";
-  import RelativeTime from "$lib/components/RelativeTime.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import { useEeLock } from "$lib/ee/license.svelte";
-  import ActivityFeedSubscribeModal from "$lib/ee/social/ActivityFeedSubscribeModal.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { m } from "$lib/paraglide/messages.js";
+  import { activityPhrase, activityRating } from "#lib/activity-phrase.js";
+  import { getUserActivity } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
+  import ProfileSectionHeading from "#lib/components/profile/ProfileSectionHeading.svelte";
+  import RelativeTime from "#lib/components/RelativeTime.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { useEeLock } from "#lib/ee/license.svelte.js";
+  import ActivityFeedSubscribeModal from "#lib/ee/social/ActivityFeedSubscribeModal.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ActivityEventDto, PagedResult } from "@loomkeep/shared";
 
   let {

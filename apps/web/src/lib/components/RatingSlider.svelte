@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { ratingWord } from "$lib/rating-words";
-  import { m } from "$lib/paraglide/messages.js";
+  import { ratingWord } from "#lib/rating-words.js";
+  import { m } from "#lib/paraglide/messages.js";
   import RollingNumber from "./RollingNumber.svelte";
 
   // 0–10 rating as a native range input, so keyboard and screen readers work

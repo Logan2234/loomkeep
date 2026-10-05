@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import { onMount, tick } from "svelte";
   import { scale } from "svelte/transition";
-  import { prefersReducedMotion } from "$lib/motion";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import {
     computeTooltipPosition,
     type TooltipPosition,

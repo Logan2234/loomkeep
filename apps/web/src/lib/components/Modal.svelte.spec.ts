@@ -1,5 +1,5 @@
-import { layout } from "$lib/layout.svelte";
-import { m } from "$lib/paraglide/messages.js";
+import { layout } from "#lib/layout.svelte.js";
+import { m } from "#lib/paraglide/messages.js";
 import { render, screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { createRawSnippet } from "svelte";

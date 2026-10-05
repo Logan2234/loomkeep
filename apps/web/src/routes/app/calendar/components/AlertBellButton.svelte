@@ -1,10 +1,10 @@
 <script lang="ts">
   // Mutes a show's release alerts from any of its calendar episodes — the
   // flag lives on the library entry, so it always covers the whole show.
-  import Icon from "$lib/components/Icon.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import { releaseDigestOff } from "$lib/release-alerts";
-  import { m } from "$lib/paraglide/messages.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { releaseDigestOff } from "#lib/release-alerts.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     title,

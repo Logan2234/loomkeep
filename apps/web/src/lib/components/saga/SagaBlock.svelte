@@ -1,13 +1,13 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { SagaMemberView } from "$lib/saga";
-  import { toast } from "$lib/toast.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { SagaMemberView } from "#lib/saga.js";
+  import { toast } from "#lib/toast.svelte.js";
   import { cubicOut } from "svelte/easing";
   import { fly, scale, slide } from "svelte/transition";
 

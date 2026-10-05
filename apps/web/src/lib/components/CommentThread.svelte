@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { longpress } from "$lib/actions/longpress";
+  import { longpress } from "#lib/actions/longpress.js";
   import {
     createComment,
     deleteComment,
@@ -9,16 +9,16 @@
     reportComment,
     unreactToComment,
     updateComment,
-  } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { auth } from "$lib/auth.svelte";
-  import FocusOverlay from "$lib/components/FocusOverlay.svelte";
-  import RelativeTime from "$lib/components/RelativeTime.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import { onRealtimeEvent } from "$lib/realtime/socket";
-  import { toast } from "$lib/toast.svelte";
+  } from "#lib/api/client.js";
+  import { resolveApiError } from "#lib/api/errors.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import FocusOverlay from "#lib/components/FocusOverlay.svelte";
+  import RelativeTime from "#lib/components/RelativeTime.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { onRealtimeEvent } from "#lib/realtime/socket.js";
+  import { toast } from "#lib/toast.svelte.js";
   import {
     COMMENT_EMOTE_DISPLAY,
     COMMENT_TEXT_MAX_LENGTH,

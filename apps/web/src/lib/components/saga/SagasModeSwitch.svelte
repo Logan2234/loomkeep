@@ -1,14 +1,16 @@
 <script lang="ts" module>
-  export const sagasMode = (url: URL): "works" | "sagas" =>
+  import type { ReadonlyURL } from "$app/state";
+
+  export const sagasMode = (url: ReadonlyURL): "works" | "sagas" =>
     url.searchParams.get("vue") === "sagas" ? "sagas" : "works";
 </script>
 
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   // A library's works or its sagas, the choice living in the URL so a link
   // or "back" lands on the same view.
@@ -18,8 +20,7 @@
 
   function setMode(next: "works" | "sagas") {
     void goto(next === "sagas" ? "?vue=sagas" : page.url.pathname, {
-      keepFocus: true,
-      noScroll: true,
+      reset: false,
     });
   }
 </script>

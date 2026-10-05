@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { browser } from "$app/environment";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
+  import { browser } from "$app/env";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import type { Snippet } from "svelte";
   import { findSection } from "../nav";
 

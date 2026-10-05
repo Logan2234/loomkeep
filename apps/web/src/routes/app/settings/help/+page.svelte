@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import Icon from "$lib/components/Icon.svelte";
+  import Icon from "#lib/components/Icon.svelte";
   import {
     CHANGELOG_URL,
     DOCS_URL,
@@ -8,8 +8,8 @@
     FEEDBACK_FEATURE_REQUESTS_URL,
     ROADMAP_URL,
     STATUS_URL,
-  } from "$lib/constants/external-links";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/constants/external-links.js";
+  import { m } from "#lib/paraglide/messages.js";
   import SettingsSection from "../components/SettingsSection.svelte";
   import { flashAnchor } from "../flash-anchor";
 

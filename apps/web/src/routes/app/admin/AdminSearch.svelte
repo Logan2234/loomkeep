@@ -1,8 +1,8 @@
 <script lang="ts">
   import { afterNavigate } from "$app/navigation";
-  import Icon from "$lib/components/Icon.svelte";
-  import { searchAdminSections } from "$lib/admin-search";
-  import { m } from "$lib/paraglide/messages";
+  import Icon from "#lib/components/Icon.svelte";
+  import { searchAdminSections } from "#lib/admin-search.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   let { children }: { children: Snippet } = $props();
   let query = $state("");

@@ -1,10 +1,10 @@
-import { ApiError } from "$lib/api/core";
-import { resolveApiError } from "$lib/api/errors";
-import { auth } from "$lib/auth.svelte";
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { goto, visit } from "$lib/test/navigation.svelte";
-import { renderWithQuery } from "$lib/test/render";
+import { ApiError } from "#lib/api/core.js";
+import { resolveApiError } from "#lib/api/errors.js";
+import { auth } from "#lib/auth.svelte.js";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { goto, visit } from "#lib/test/navigation.svelte.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import { ErrorCode, type MfaMethod, type UserDto } from "@loomkeep/shared";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
@@ -12,8 +12,8 @@ import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "./+page.svelte";
 
-vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
-vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 const USER = { id: "u1", displayName: "Logan" } as UserDto;
 

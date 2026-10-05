@@ -1,11 +1,11 @@
 <script lang="ts">
   // NotificationBell owns the sheet and follow requests; this tab shares its
   // query key and only dispatches the event that opens it.
-  import { getNotifications } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getNotifications } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     slotClass = "h-9 w-9",

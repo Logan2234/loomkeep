@@ -1,15 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { keys } from "$lib/api/keys";
-  import { resolveLink } from "$lib/api/links";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import BootSplash from "$lib/components/BootSplash.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import QuickAddPanel from "$lib/components/QuickAddPanel.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { quickAddTarget } from "$lib/quick-add";
-  import { readSharedLink } from "$lib/share-link";
+  import { keys } from "#lib/api/keys.js";
+  import { resolveLink } from "#lib/api/links.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import BootSplash from "#lib/components/BootSplash.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import QuickAddPanel from "#lib/components/QuickAddPanel.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import { quickAddTarget } from "#lib/quick-add.js";
+  import { readSharedLink } from "#lib/share-link.js";
 
   const { link, searchTerm } = readSharedLink(page.url.searchParams);
   const searchHref = `/app/search?query=${encodeURIComponent(searchTerm)}`;
@@ -30,9 +30,8 @@
 
   $effect(() => {
     if (quickAdd) return;
-    if (target) void goto(target, { replaceState: true });
-    else if (settled && searchTerm)
-      void goto(searchHref, { replaceState: true });
+    if (target) void goto(target, { replace: true });
+    else if (settled && searchTerm) void goto(searchHref, { replace: true });
   });
 </script>
 

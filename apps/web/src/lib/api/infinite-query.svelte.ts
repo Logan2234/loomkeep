@@ -10,7 +10,7 @@
 // site whose source can repeat an item across pages (MediaSearchPanel's
 // external catalog search) de-dupes it locally, since that's specific to
 // one source, not something every call site needs.
-import { toast } from "$lib/toast.svelte";
+import { toast } from "#lib/toast.svelte.js";
 import {
   createInfiniteQuery,
   keepPreviousData,

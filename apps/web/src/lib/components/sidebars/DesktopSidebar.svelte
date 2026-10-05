@@ -1,21 +1,21 @@
 <script lang="ts">
-  import { browser } from "$app/environment";
-  import { readStorage, writeStorage } from "$lib/local-storage";
+  import { browser } from "$app/env";
+  import { readStorage, writeStorage } from "#lib/local-storage.js";
   import { goto } from "$app/navigation";
   import { navigating, page } from "$app/state";
-  import { logout } from "$lib/api/auth";
-  import { auth } from "$lib/auth.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
-  import { isDomainEnabled } from "$lib/domains";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { visibleNavSections } from "$lib/navigation";
-  import { m } from "$lib/paraglide/messages.js";
-  import { useReportsPendingCount } from "$lib/reports-pending.svelte";
+  import { logout } from "#lib/api/auth.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
+  import { isDomainEnabled } from "#lib/domains.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { visibleNavSections } from "#lib/navigation.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
   import { scale } from "svelte/transition";
 
   const reduced = prefersReducedMotion();

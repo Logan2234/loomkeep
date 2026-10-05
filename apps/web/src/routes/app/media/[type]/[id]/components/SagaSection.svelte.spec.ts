@@ -1,8 +1,8 @@
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { goto } from "$lib/test/navigation.svelte";
-import { renderWithQuery } from "$lib/test/render";
-import { toast } from "$lib/toast.svelte";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { goto } from "#lib/test/navigation.svelte.js";
+import { renderWithQuery } from "#lib/test/render.js";
+import { toast } from "#lib/toast.svelte.js";
 import type {
   EntryStatus,
   MediaSagaDto,
@@ -15,7 +15,7 @@ import { flushSync } from "svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import SagaSection from "./SagaSection.svelte";
 
-vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 const work = (
   sourceId: string,

@@ -1,11 +1,14 @@
 <script lang="ts">
-  import { equipAchievement, unequipAchievement } from "$lib/api/gamification";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import { formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  import {
+    equipAchievement,
+    unequipAchievement,
+  } from "#lib/api/gamification.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { formatNumber } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     MAX_EQUIPPED_BADGES,
     type AchievementDto,

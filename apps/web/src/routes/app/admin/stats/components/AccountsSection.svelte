@@ -2,13 +2,13 @@
   // "Comptes & engagement": who is on the instance and how alive they are.
   // Everything activity-related comes from refresh-token usage (see the API
   // service) — ActivityEvent only exists since P4 and would bury old accounts.
-  import { getAdminNewAccountsTrend } from "$lib/api/client";
-  import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import StatFigure from "$lib/components/stats/StatFigure.svelte";
-  import { formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
-  import { getLocale } from "$lib/paraglide/runtime.js";
+  import { getAdminNewAccountsTrend } from "#lib/api/client.js";
+  import HistogramBars from "#lib/components/stats/HistogramBars.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import StatFigure from "#lib/components/stats/StatFigure.svelte";
+  import { formatNumber } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
   import {
     DORMANT_AFTER_DAYS,
     ProfileAccess,

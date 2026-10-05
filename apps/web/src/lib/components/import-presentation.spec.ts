@@ -1,5 +1,5 @@
-import { m } from "$lib/paraglide/messages.js";
-import { getLocale, overwriteGetLocale } from "$lib/paraglide/runtime.js";
+import { m } from "#lib/paraglide/messages.js";
+import { getLocale, overwriteGetLocale } from "#lib/paraglide/runtime.js";
 import {
   ErrorCode,
   type ImportItemContext,

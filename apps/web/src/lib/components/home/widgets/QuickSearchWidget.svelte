@@ -2,12 +2,12 @@
   // The search page's bar in one row: the domain picked first, as there, then
   // Entrée opens the search on that domain with the words typed.
   import { goto } from "$app/navigation";
-  import { auth } from "$lib/auth.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { isDomainEnabled, orderedDomains } from "$lib/domains";
-  import type { BoxSize } from "$lib/home/sizing";
-  import { m } from "$lib/paraglide/messages.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domains.js";
+  import type { BoxSize } from "#lib/home/sizing.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { Domain } from "@loomkeep/shared";
 
   let { size }: { size: BoxSize } = $props();

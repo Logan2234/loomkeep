@@ -1,5 +1,5 @@
-import { browser } from "$app/environment";
-import { readStorage, writeStorage } from "$lib/local-storage";
+import { readStorage, writeStorage } from "#lib/local-storage.js";
+import { browser } from "$app/env";
 
 const STORAGE_KEY = "lk-theme";
 export const THEME_COLOR = { light: "#f7f5f3", dark: "#0c0d10" } as const;

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { prefersReducedMotion } from "$lib/motion";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { fly } from "svelte/transition";
 
   let {

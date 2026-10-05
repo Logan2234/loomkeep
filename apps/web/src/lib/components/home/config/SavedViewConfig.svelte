@@ -1,14 +1,14 @@
 <script lang="ts">
   // The saved view a widget shows. A pick among however many views the user
   // saved, so a combobox rather than the segmented control of fixed choices.
-  import { getSavedViews } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { isDomainEnabled, orderedDomains } from "$lib/domains";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getSavedViews } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domains.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let { viewId = $bindable() }: { viewId: string | undefined } = $props();
 

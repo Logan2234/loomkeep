@@ -1,7 +1,7 @@
 <script lang="ts">
   // Loading placeholder for poster listings (books/games/media): a grid of
   // shimmering poster cards.
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   import PosterGrid from "./PosterGrid.svelte";
 
   let { count = 10 }: { count?: number } = $props();

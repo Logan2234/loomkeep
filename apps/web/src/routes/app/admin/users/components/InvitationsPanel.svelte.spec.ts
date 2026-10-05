@@ -1,7 +1,7 @@
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { page, visit } from "$lib/test/navigation.svelte";
-import { renderWithQuery } from "$lib/test/render";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { page, visit } from "#lib/test/navigation.svelte.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import type { AdminInvitationDto } from "@loomkeep/shared";
 import { screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
@@ -9,8 +9,8 @@ import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import InvitationsPanel from "./InvitationsPanel.svelte";
 
-vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
-vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 const CAMILLE = {
   id: "u-camille",

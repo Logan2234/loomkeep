@@ -1,5 +1,5 @@
-import { m } from "$lib/paraglide/messages.js";
-import { ratingWord } from "$lib/rating-words";
+import { m } from "#lib/paraglide/messages.js";
+import { ratingWord } from "#lib/rating-words.js";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";

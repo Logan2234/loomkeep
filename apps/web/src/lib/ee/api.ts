@@ -1,4 +1,4 @@
-import { typedRequest } from "$lib/api/generated/typed-request";
+import { typedRequest } from "#lib/api/generated/typed-request.js";
 
 export const getEeStatus = () => typedRequest("/ee/status");
 

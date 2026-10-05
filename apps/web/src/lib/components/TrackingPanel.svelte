@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { IconName } from "$lib/types/icon-name";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import type { ListItemTargetType } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
   import { scale } from "svelte/transition";

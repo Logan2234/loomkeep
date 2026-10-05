@@ -7,24 +7,24 @@
     watchEpisode,
     watchSeason,
     watchThrough,
-  } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import Dropdown from "$lib/components/Dropdown.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import ReviewsSection from "$lib/components/ReviewsSection.svelte";
-  import { appConfig } from "$lib/config.svelte";
+  } from "#lib/api/client.js";
+  import { resolveApiError } from "#lib/api/errors.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import Dropdown from "#lib/components/Dropdown.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import ReviewsSection from "#lib/components/ReviewsSection.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import {
     DATE_MEDIUM_OPTIONS,
     formatDate,
     formatRuntimeTimecode,
-  } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     LibraryEntryDto,
     MediaDetailSeasonDto,

@@ -1,7 +1,7 @@
-import { auth } from "$lib/auth.svelte";
-import { m } from "$lib/paraglide/messages";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
+import { auth } from "#lib/auth.svelte.js";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import type { LibraryEntryDto, UserDto } from "@loomkeep/shared";
 import { screen } from "@testing-library/svelte";
 import { http, HttpResponse } from "msw";

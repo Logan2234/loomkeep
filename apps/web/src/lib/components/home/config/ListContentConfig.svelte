@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { getEditableLists } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import ListCoverGrid from "$lib/components/ListCoverGrid.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getEditableLists } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import ListCoverGrid from "#lib/components/ListCoverGrid.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   let { listId = $bindable() }: { listId: string | undefined } = $props();
 

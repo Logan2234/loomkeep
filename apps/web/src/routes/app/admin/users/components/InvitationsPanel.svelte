@@ -1,25 +1,25 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "$lib/admin-filter-url";
-  import Combobox from "$lib/components/Combobox.svelte";
+  import { adminFilterHref } from "#lib/admin-filter-url.js";
+  import Combobox from "#lib/components/Combobox.svelte";
   import AdminFilterBar from "../../AdminFilterBar.svelte";
   import {
     getAdminInvitations,
     renewAdminInvitation,
     revokeAdminInvitation,
-  } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
+  } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
   import AdminQueryError from "../../AdminQueryError.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { formatDate } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { formatDate } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     AdminInvitationDto,
     AdminInvitationLinkDto,
@@ -54,9 +54,8 @@
   );
   function filter(updates: Record<string, string | null>) {
     void goto(adminFilterHref(page.url, updates), {
-      replaceState: true,
-      noScroll: true,
-      keepFocus: true,
+      replace: true,
+      reset: false,
     });
   }
   function resetFilters() {

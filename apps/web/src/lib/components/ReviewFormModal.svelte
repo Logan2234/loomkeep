@@ -3,19 +3,19 @@
     deleteReview,
     getReviewRevisions,
     upsertReview,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     clearReviewDraft,
     readReviewDraft,
     writeReviewDraft,
-  } from "$lib/review-draft";
+  } from "#lib/review-draft.js";
   import {
     REVIEW_TEXT_MAX_LENGTH,
     type ReviewDto,

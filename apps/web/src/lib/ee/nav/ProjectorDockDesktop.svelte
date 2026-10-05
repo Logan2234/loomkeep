@@ -1,17 +1,17 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { logout } from "$lib/api/auth";
-  import { auth } from "$lib/auth.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
-  import { isDomainEnabled } from "$lib/domains";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { visibleNavItems } from "$lib/navigation";
-  import { m } from "$lib/paraglide/messages.js";
-  import { useReportsPendingCount } from "$lib/reports-pending.svelte";
+  import { logout } from "#lib/api/auth.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
+  import { isDomainEnabled } from "#lib/domains.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { visibleNavItems } from "#lib/navigation.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
 
   let { children } = $props();
 

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { getLeaderboard } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import { formatNumber } from "$lib/format";
-  import { HOME_WIDGETS } from "$lib/home/widgets";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getLeaderboard } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import { formatNumber } from "#lib/format.js";
+  import { HOME_WIDGETS } from "#lib/home/widgets.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     HomeWidgetDto,
     LeaderboardEntryDto,

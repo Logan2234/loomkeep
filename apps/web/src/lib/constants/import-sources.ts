@@ -1,6 +1,6 @@
-import { DOCS_URL } from "$lib/constants/external-links";
-import { m } from "$lib/paraglide/messages";
-import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
+import { DOCS_URL } from "#lib/constants/external-links.js";
+import { m } from "#lib/paraglide/messages.js";
+import type { ImportSourceDescriptor } from "#lib/types/import-descriptor.js";
 import {
   Domain,
   IMPORT_SOURCE_NAMES,

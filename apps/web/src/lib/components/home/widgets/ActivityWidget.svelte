@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import ActivityItem from "$lib/components/ActivityItem.svelte";
-  import { HOME_WIDGETS } from "$lib/home/widgets";
-  import { bodyOf, type BoxSize } from "$lib/home/sizing";
-  import { m } from "$lib/paraglide/messages.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import ActivityItem from "#lib/components/ActivityItem.svelte";
+  import { HOME_WIDGETS } from "#lib/home/widgets.js";
+  import { bodyOf, type BoxSize } from "#lib/home/sizing.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { HomeWidgetDto } from "@loomkeep/shared";
   import WidgetShell from "../WidgetShell.svelte";
   import { loadActivity } from "./activity";

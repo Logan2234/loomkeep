@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { bootstrap } from "$lib/bootstrap.svelte";
-  import BootSplash from "$lib/components/BootSplash.svelte";
+  import { bootstrap } from "#lib/bootstrap.svelte.js";
+  import BootSplash from "#lib/components/BootSplash.svelte";
 
   let { children } = $props();
 </script>

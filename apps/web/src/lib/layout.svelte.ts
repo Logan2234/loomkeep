@@ -1,4 +1,4 @@
-import { browser } from "$app/environment";
+import { browser } from "$app/env";
 
 /**
  * Which of the two navigation shells is mounted (Svelte 5 runes).

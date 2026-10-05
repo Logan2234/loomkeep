@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { API_URL, createApiKey } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import AnimatedHeight from "$lib/components/AnimatedHeight.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import FieldError from "$lib/components/FieldError.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import { DOCS_URL } from "$lib/constants/external-links";
-  import { m } from "$lib/paraglide/messages.js";
+  import { API_URL, createApiKey } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import AnimatedHeight from "#lib/components/AnimatedHeight.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import FieldError from "#lib/components/FieldError.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import { DOCS_URL } from "#lib/constants/external-links.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     API_KEY_NAME_MAX_LENGTH,
     API_KEY_RESOURCES,

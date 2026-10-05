@@ -6,13 +6,13 @@
   // to (and the editor lays widgets out at the home page's own width).
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { getMfaStatus } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import LegalLinks from "$lib/components/LegalLinks.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getMfaStatus } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import LegalLinks from "#lib/components/LegalLinks.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import SettingsNav from "./components/SettingsNav.svelte";
   import SettingsSearchField from "./components/SettingsSearchField.svelte";

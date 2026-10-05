@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Icon from "$lib/components/Icon.svelte";
-  import ProfileSectionHeading from "$lib/components/profile/ProfileSectionHeading.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { IconName } from "$lib/types/icon-name";
+  import Icon from "#lib/components/Icon.svelte";
+  import ProfileSectionHeading from "#lib/components/profile/ProfileSectionHeading.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import type { ProfileDomainStatDto } from "@loomkeep/shared";
 
   let {

@@ -2,8 +2,8 @@
   // Time-window filter for /stats all-time aggregates (Tout/Année/Mois/
   // Semaine). Distinct from the trend-curve period pickers (bucket size) —
   // this narrows *which* entries count, not how a curve is bucketed.
-  import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { StatsWindow } from "@loomkeep/shared";
 
   const WINDOWS: StatsWindow[] = ["ALL", "YEAR", "MONTH", "WEEK"];

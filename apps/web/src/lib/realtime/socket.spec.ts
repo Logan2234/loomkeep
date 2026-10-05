@@ -18,11 +18,11 @@ const { fakeSocket, ioMock, tryRefreshMock, authMock } = vi.hoisted(() => {
 });
 
 vi.mock("socket.io-client", () => ({ io: ioMock }));
-vi.mock("$lib/api/core", () => ({
+vi.mock("#lib/api/core.js", () => ({
   API_URL: "http://localhost:3000/api",
   tryRefresh: tryRefreshMock,
 }));
-vi.mock("$lib/auth.svelte", () => ({ auth: authMock }));
+vi.mock("#lib/auth.svelte.js", () => ({ auth: authMock }));
 
 describe("realtime socket", () => {
   beforeEach(() => {

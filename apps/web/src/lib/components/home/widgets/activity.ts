@@ -1,4 +1,4 @@
-import { getFeed } from "$lib/api/client";
+import { getFeed } from "#lib/api/client.js";
 import type { ActivityEventDto, Domain } from "@loomkeep/shared";
 
 /**

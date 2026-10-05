@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import Icon from "$lib/components/Icon.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
-  import type { IconName } from "$lib/types/icon-name";
+  import Icon from "#lib/components/Icon.svelte";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import type { Snippet } from "svelte";
   import { fly } from "svelte/transition";
   import { flashAnchor } from "../flash-anchor";

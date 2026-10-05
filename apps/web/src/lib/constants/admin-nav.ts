@@ -1,5 +1,5 @@
-import type Icon from "$lib/components/Icon.svelte";
-import { m } from "$lib/paraglide/messages";
+import type Icon from "#lib/components/Icon.svelte";
+import { m } from "#lib/paraglide/messages.js";
 import type { ComponentProps } from "svelte";
 
 export type AdminNavItem = {

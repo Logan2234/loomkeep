@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { listGames } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { HOME_WIDGETS } from "$lib/home/widgets";
-  import type { BoxSize } from "$lib/home/sizing";
-  import { m } from "$lib/paraglide/messages.js";
+  import { listGames } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { HOME_WIDGETS } from "#lib/home/widgets.js";
+  import type { BoxSize } from "#lib/home/sizing.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { HomeWidgetDto, HomeWidgetSort } from "@loomkeep/shared";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";

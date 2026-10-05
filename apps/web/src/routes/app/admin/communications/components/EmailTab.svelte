@@ -2,31 +2,31 @@
   import { untrack } from "svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "$lib/admin-filter-url";
-  import { foldAdminSearch } from "$lib/admin-search";
-  import FieldError from "$lib/components/FieldError.svelte";
+  import { adminFilterHref } from "#lib/admin-filter-url.js";
+  import { foldAdminSearch } from "#lib/admin-search.js";
+  import FieldError from "#lib/components/FieldError.svelte";
   import AdminQueryError from "../../AdminQueryError.svelte";
   import { Locale } from "@loomkeep/shared";
   import {
     getAdminEmailPreview,
     getAdminEmailTemplates,
     sendAdminTestEmail,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { resolveApiError } from "$lib/api/errors";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { resolveApiError } from "#lib/api/errors.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
   import {
     adminTemplateLabel,
     adminTemplateFieldLabel,
     groupAdminEmailTemplates,
-  } from "$lib/constants/admin-presentation";
-  import { debounce } from "$lib/debounce";
-  import { languageName } from "$lib/locales";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+  } from "#lib/constants/admin-presentation.js";
+  import { debounce } from "#lib/debounce.js";
+  import { languageName } from "#lib/locales.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
   import { createLatestEmailPreviewRequest } from "./email-preview";
 
   const templatesQuery = createApiQuery(() => ({
@@ -101,7 +101,7 @@
     if (updateUrl)
       void goto(
         adminFilterHref(page.url, { template: key, locale: emailLocale }),
-        { replaceState: true, noScroll: true, keepFocus: true },
+        { replace: true, reset: false },
       );
   }
 
@@ -259,7 +259,7 @@
             void loadPreview();
             void goto(
               adminFilterHref(page.url, { template: selectedKey, locale }),
-              { replaceState: true, noScroll: true, keepFocus: true },
+              { replace: true, reset: false },
             );
           }} />
 

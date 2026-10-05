@@ -2,17 +2,17 @@
   // Achievement progress is private to the signed-in user because the full
   // catalogue of conditions forms a behavioral fingerprint.
   import { page } from "$app/state";
-  import { layout } from "$lib/layout.svelte";
-  import { getAchievements } from "$lib/api/gamification";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  import { layout } from "#lib/layout.svelte.js";
+  import { getAchievements } from "#lib/api/gamification.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { formatNumber } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     FAMILY_ORDER,
     groupAchievements,

@@ -3,24 +3,24 @@
   import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "$lib/admin-filter-url";
+  import { adminFilterHref } from "#lib/admin-filter-url.js";
   import {
     getAdminSecurityEvents,
     getAdminSecuritySummary,
-  } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
-  import { formatDateTime, formatNumber } from "$lib/format";
-  import { debounce } from "$lib/debounce";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
+  import { formatDateTime, formatNumber } from "#lib/format.js";
+  import { debounce } from "#lib/debounce.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     PagedResult,
     SecurityEventDto,
@@ -141,8 +141,7 @@
   function resetFilters() {
     identifierDebounce.cancel();
     void goto(adminFilterHref(page.url, { type: null, identifier: null }), {
-      noScroll: true,
-      keepFocus: true,
+      reset: false,
     });
   }
   const activeFilters = $derived([
@@ -156,8 +155,7 @@
             remove: () => {
               identifierDebounce.cancel();
               void goto(adminFilterHref(page.url, { identifier: null }), {
-                noScroll: true,
-                keepFocus: true,
+                reset: false,
               });
             },
           },
@@ -170,7 +168,7 @@
   const identifierDebounce = debounce(() => {
     void goto(
       adminFilterHref(page.url, { identifier: identifierInput.trim() || null }),
-      { replaceState: true, noScroll: true, keepFocus: true },
+      { replace: true, reset: false },
     );
   }, 300);
   $effect(() => {
@@ -189,7 +187,7 @@
         type,
         identifier: identifierInput.trim() || null,
       }),
-      { noScroll: true, keepFocus: true },
+      { reset: false },
     );
   }
 

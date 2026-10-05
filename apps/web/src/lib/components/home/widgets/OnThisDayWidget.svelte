@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { localDateInput } from "$lib/date";
-  import { getOnThisDay } from "$lib/api/stats";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { formatDate } from "$lib/format";
-  import { HOME_WIDGETS } from "$lib/home/widgets";
-  import type { BoxSize } from "$lib/home/sizing";
-  import { m } from "$lib/paraglide/messages.js";
+  import { localDateInput } from "#lib/date.js";
+  import { getOnThisDay } from "#lib/api/stats.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { formatDate } from "#lib/format.js";
+  import { HOME_WIDGETS } from "#lib/home/widgets.js";
+  import type { BoxSize } from "#lib/home/sizing.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { OnThisDayEntryDto } from "@loomkeep/shared";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";

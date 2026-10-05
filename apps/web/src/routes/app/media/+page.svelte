@@ -1,38 +1,38 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { getLibraryPile, listLibrary } from "$lib/api/client";
+  import { getLibraryPile, listLibrary } from "#lib/api/client.js";
   import {
     bulkDeleteLibraryEntries,
     bulkUpdateLibraryEntries,
     updateLibraryEntry,
-  } from "$lib/api/library";
+  } from "#lib/api/library.js";
   import type {
     LibraryLoadParams,
     PileLoadParams,
-  } from "$lib/components/LibraryBrowser.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
-  import PosterCard from "$lib/components/PosterCard.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
+  } from "#lib/components/LibraryBrowser.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import LibraryBrowser from "#lib/components/LibraryBrowser.svelte";
+  import PosterCard from "#lib/components/PosterCard.svelte";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import MediaSearchPanel from "#lib/components/search/MediaSearchPanel.svelte";
   import SagasModeSwitch, {
     sagasMode,
-  } from "$lib/components/saga/SagasModeSwitch.svelte";
+  } from "#lib/components/saga/SagasModeSwitch.svelte";
   import SagasView from "./components/SagasView.svelte";
   import {
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/constants/ownership-sources";
-  import { MEDIA_STATUS_META } from "$lib/constants/status-labels";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
+  } from "#lib/constants/ownership-sources.js";
+  import { MEDIA_STATUS_META } from "#lib/constants/status-labels.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
-  } from "$lib/library-view";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/library-view.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { LibraryEntryDto, MediaType } from "@loomkeep/shared";
   import {
     Domain,

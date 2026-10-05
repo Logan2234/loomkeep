@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   import LegalLinks from "./LegalLinks.svelte";
 
   let { tagline, children }: { tagline?: Snippet; children: Snippet } =

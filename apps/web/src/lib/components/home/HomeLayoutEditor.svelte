@@ -8,24 +8,24 @@
   // tiles on a scaled-down plan of it: the page stacks them there anyway, so
   // their real content at that width would say nothing about the desktop.
   import { beforeNavigate } from "$app/navigation";
-  import { resetHomeLayout, saveHomeLayout } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { bottomRow, compact, moveItem, resizeItem } from "$lib/home/grid";
-  import { currentHomeGate } from "$lib/home/gate";
-  import { hiddenWidgets, resolveHomeLayout } from "$lib/home/layout";
-  import { DEFAULT_QUICK_LINKS } from "$lib/home/quick-links";
+  import { resetHomeLayout, saveHomeLayout } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { bottomRow, compact, moveItem, resizeItem } from "#lib/home/grid.js";
+  import { currentHomeGate } from "#lib/home/gate.js";
+  import { hiddenWidgets, resolveHomeLayout } from "#lib/home/layout.js";
+  import { DEFAULT_QUICK_LINKS } from "#lib/home/quick-links.js";
   import {
     HOME_GAP,
     HOME_GRID_MIN_WIDTH,
     HOME_ROW_HEIGHT,
     HOME_WIDGETS,
     isDivider,
-  } from "$lib/home/widgets";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/home/widgets.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     HOME_GRID_COLUMNS as COLUMNS,
     HOME_LAYOUT_LIMITS,

@@ -15,10 +15,10 @@
   // per-team toggle for that notification doesn't cover SSO-identified
   // portal users, only team/admin accounts). Re-enable once that's fixed
   // upstream or worked around.
-  import { browser } from "$app/environment";
-  import { auth } from "$lib/auth.svelte";
-  import { layout } from "$lib/layout.svelte";
-  import { toast } from "$lib/toast.svelte";
+  import { browser } from "$app/env";
+  import { auth } from "#lib/auth.svelte.js";
+  import { layout } from "#lib/layout.svelte.js";
+  import { toast } from "#lib/toast.svelte.js";
 
   // Defines window.Quackback (a queue-based stub the real SDK replaces once
   // it loads) and injects the script tag, exactly once per page load.

@@ -5,8 +5,8 @@
   // edges reveal prev/next arrows; on coarse/touch pointers native swipe drives
   // it and a row of tappable page dots gives the affordance arrows can't.
   // Callers supply their own per-item markup via the `card` snippet.
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import { onDestroy } from "svelte";
   import { flip } from "svelte/animate";

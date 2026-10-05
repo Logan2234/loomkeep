@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages";
+  import { m } from "#lib/paraglide/messages.js";
   import { tick } from "svelte";
   import Dropdown from "./Dropdown.svelte";
   import Icon from "./Icon.svelte";

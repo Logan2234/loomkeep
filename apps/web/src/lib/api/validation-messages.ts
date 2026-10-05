@@ -1,4 +1,4 @@
-import { m } from "$lib/paraglide/messages.js";
+import { m } from "#lib/paraglide/messages.js";
 import { ErrorCode, type ValidationConstraintName } from "@loomkeep/shared";
 import { ApiError } from "./core";
 import { resolveApiError } from "./errors";

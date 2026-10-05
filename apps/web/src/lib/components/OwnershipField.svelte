@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { joinMeta } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  import { joinMeta } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import Dropdown from "./Dropdown.svelte";
   import Icon from "./Icon.svelte";
   import OwnershipMenuItems from "./OwnershipMenuItems.svelte";

@@ -1,22 +1,22 @@
 <script lang="ts">
-  import { getAdminServices } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { scrollToAdminAnchor } from "$lib/admin-anchor";
+  import { getAdminServices } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { scrollToAdminAnchor } from "#lib/admin-anchor.js";
   import AdminQueryError from "../AdminQueryError.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
   import {
     groupAdminServices,
     adminServiceLabel,
     adminServiceDetail,
-  } from "$lib/constants/admin-presentation";
-  import { formatNumber, formatTime } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/constants/admin-presentation.js";
+  import { formatNumber, formatTime } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ServiceStatusDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
 

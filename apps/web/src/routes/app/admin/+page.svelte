@@ -1,25 +1,25 @@
 <script lang="ts">
   import { env } from "$env/dynamic/public";
-  import { adminAttentionData } from "$lib/admin-attention";
+  import { adminAttentionData } from "#lib/admin-attention.js";
   import {
     getAdminBackupFiles,
     getAdminJobs,
     getAdminOverview,
     getAdminServices,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import BetaBadge from "$lib/components/BetaBadge.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
-  import { adminJobLabel } from "$lib/constants/admin-presentation";
-  import { DOCS_URL, GITHUB_REPO_URL } from "$lib/constants/external-links";
-  import { formatNumber, formatRelative } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { useReportsPendingCount } from "$lib/reports-pending.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import BetaBadge from "#lib/components/BetaBadge.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
+  import { adminJobLabel } from "#lib/constants/admin-presentation.js";
+  import { DOCS_URL, GITHUB_REPO_URL } from "#lib/constants/external-links.js";
+  import { formatNumber, formatRelative } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
   import type { ServiceStatusDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import StatsSectionError from "./stats/components/StatsSectionError.svelte";

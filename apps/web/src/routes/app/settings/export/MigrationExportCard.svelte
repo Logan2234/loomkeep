@@ -1,14 +1,14 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { exportForGoodreads, exportForLetterboxd } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import Switch from "$lib/components/Switch.svelte";
-  import { downloadBlob } from "$lib/download";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
+  import { exportForGoodreads, exportForLetterboxd } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import Switch from "#lib/components/Switch.svelte";
+  import { downloadBlob } from "#lib/download.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
   import type { MigrationExportDto } from "@loomkeep/shared";
   import { flashAnchor } from "../flash-anchor";
 

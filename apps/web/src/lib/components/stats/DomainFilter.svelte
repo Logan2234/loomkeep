@@ -3,8 +3,8 @@
   // SegmentedStatusControl (dot swatch + generic segmented UI) with the
   // stats domain metadata, and only ever offers domains the user enabled —
   // a disabled domain never appears here, mirroring the API's own gating.
-  import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { StatsDomain } from "@loomkeep/shared";
   import { STATS_DOMAIN_COLOR_VAR, STATS_DOMAIN_LABEL } from "./stats-domain";
 

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { env } from "$env/dynamic/public";
-  import Banner from "$lib/components/Banner.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   // Built client-side rather than bouncing through an API redirect endpoint:
   // a same-origin server redirect (GET /api/simkl/connect -> 302) was

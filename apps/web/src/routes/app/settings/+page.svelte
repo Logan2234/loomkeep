@@ -3,21 +3,25 @@
   // health first, then the five groups with each section's current value
   // under its name. On a desktop the rail already shows that list, so the
   // index hands over to the first section instead of repeating itself.
-  import { browser } from "$app/environment";
+  import { browser } from "$app/env";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { getLastImportRun, getMfaStatus, getSessions } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { languageName } from "$lib/locales";
-  import { m } from "$lib/paraglide/messages.js";
-  import { theme } from "$lib/theme.svelte";
+  import {
+    getLastImportRun,
+    getMfaStatus,
+    getSessions,
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { languageName } from "#lib/locales.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { theme } from "#lib/theme.svelte.js";
   import { DigestCadence } from "@loomkeep/shared";
   import SettingsNav from "./components/SettingsNav.svelte";
   import {
@@ -31,7 +35,7 @@
   // the anchor rather than dropping the user on the index.
   $effect(() => {
     const target = LEGACY_HASH_ROUTES[page.url.hash.slice(1)];
-    if (target) void goto(target, { replaceState: true });
+    if (target) void goto(target, { replace: true });
   });
 
   $effect(() => {
@@ -39,7 +43,7 @@
     const wide = window.matchMedia("(min-width: 1024px)");
     const openFirstSection = () => {
       if (wide.matches && page.url.pathname === "/app/settings") {
-        void goto(sectionHref("security"), { replaceState: true });
+        void goto(sectionHref("security"), { replace: true });
       }
     };
     openFirstSection();

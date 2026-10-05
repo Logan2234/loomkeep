@@ -3,7 +3,7 @@
 // (different context, not worth coupling) but the single source for anything
 // under lib/components/stats/.
 
-import { m } from "$lib/paraglide/messages.js";
+import { m } from "#lib/paraglide/messages.js";
 import type { StatsDomain, StatsStatusBucket } from "@loomkeep/shared";
 
 export const STATS_DOMAIN_LABEL: Record<StatsDomain, string> = {

@@ -6,9 +6,9 @@
     REPORT_MOTIF_LABELS,
     REPORT_PROFILE_PARTS,
     REPORT_TARGET_LABELS,
-  } from "$lib/constants/report-labels";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/constants/report-labels.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     REPORT_MOTIFS_REQUIRING_REASON,
     REPORT_PROFILE_PART_CATEGORIES,

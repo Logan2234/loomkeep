@@ -1,7 +1,7 @@
-import { updateMe } from "$lib/api/client";
-import { createApiMutation } from "$lib/api/mutation.svelte";
-import { auth } from "$lib/auth.svelte";
-import { toggleDomainSelection } from "$lib/domains";
+import { updateMe } from "#lib/api/client.js";
+import { createApiMutation } from "#lib/api/mutation.svelte.js";
+import { auth } from "#lib/auth.svelte.js";
+import { toggleDomainSelection } from "#lib/domains.js";
 import type { Domain } from "@loomkeep/shared";
 
 /**

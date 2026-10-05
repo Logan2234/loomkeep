@@ -5,38 +5,38 @@
     type ContrastPreference,
     type DensityPreference,
     type MotionPreference,
-  } from "$lib/accessibility.svelte";
-  import { updateMe } from "$lib/api/auth";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
-  import ThemePreview from "$lib/components/ThemePreview.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
-  import { isDomainEnabled } from "$lib/domains";
-  import { useEeLock } from "$lib/ee/license.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { languageOptions } from "$lib/locales";
-  import type { MobileDestination } from "$lib/navigation";
+  } from "#lib/accessibility.svelte.js";
+  import { updateMe } from "#lib/api/auth.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
+  import ThemePreview from "#lib/components/ThemePreview.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { THEME_DEFINITIONS } from "#lib/constants/theme-definitions.js";
+  import { isDomainEnabled } from "#lib/domains.js";
+  import { useEeLock } from "#lib/ee/license.svelte.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { languageOptions } from "#lib/locales.js";
+  import type { MobileDestination } from "#lib/navigation.js";
   import {
     DEFAULT_BOTTOM_SHORTCUTS,
     resolveBottomShortcuts,
     resolveShortcutChoices,
-  } from "$lib/navigation";
+  } from "#lib/navigation.js";
   import {
     NAV_STYLE_META,
     navStyle,
     type NavStyle,
-  } from "$lib/navStyle.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/navStyle.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { flashAnchor } from "../flash-anchor";
   import SettingRow from "./SettingRow.svelte";
-  import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
+  import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
   import {
     type Locale,
     MOBILE_NAV_SHORTCUT_LIMITS,

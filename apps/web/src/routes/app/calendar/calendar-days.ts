@@ -1,5 +1,5 @@
-import { calendarDayIso } from "$lib/calendar-entry";
-import { localDateInput } from "$lib/date";
+import { calendarDayIso } from "#lib/calendar-entry.js";
+import { localDateInput } from "#lib/date.js";
 import type { CalendarEntryDto } from "@loomkeep/shared";
 
 export type CalendarFilter =

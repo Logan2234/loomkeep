@@ -3,7 +3,7 @@
   // enters from below when it goes up, from above when it goes down. Unlike
   // CountFlash, this is for values the reader is actively changing (a vote,
   // a rating being dragged), where the direction of the change is the point.
-  import { prefersReducedMotion } from "$lib/motion";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
 

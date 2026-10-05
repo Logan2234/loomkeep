@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { auth } from "$lib/auth.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { formatRegion } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
-  import { createWatchProviderToggle } from "$lib/watch-provider-toggle.svelte";
+  import { auth } from "#lib/auth.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { formatRegion } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { createWatchProviderToggle } from "#lib/watch-provider-toggle.svelte.js";
   import type { WatchProviderDto, WatchProvidersDto } from "@loomkeep/shared";
 
   let { offers }: { offers: WatchProvidersDto } = $props();

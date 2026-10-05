@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { ApiError } from "$lib/api/core";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { getModerationTransparency } from "$lib/api/transparency";
+  import { ApiError } from "#lib/api/core.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { getModerationTransparency } from "#lib/api/transparency.js";
   import {
     MODERATION_LEGAL_BASIS_LABELS,
     REPORT_CATEGORY_LABELS,
-  } from "$lib/constants/report-labels";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/constants/report-labels.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ModerationMeasure } from "@loomkeep/shared";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";

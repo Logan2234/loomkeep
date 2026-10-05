@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
-  import { getCastDetail } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Carousel from "$lib/components/Carousel.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import Poster from "$lib/components/Poster.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getCastDetail } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Carousel from "#lib/components/Carousel.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import Poster from "#lib/components/Poster.svelte";
   import type { CastMemberDto } from "@loomkeep/shared";
 
   let { cast, source }: { cast: CastMemberDto[]; source: "anilist" | "tmdb" } =

@@ -5,25 +5,25 @@
     getPrivacySettings,
     updateMe,
     updatePrivacySettings,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import Switch from "$lib/components/Switch.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import Switch from "#lib/components/Switch.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     ACCESS,
     ACCESS_OPTIONS,
     AUDIENCES,
     FACETS,
     MODE_MATRIX,
-  } from "$lib/privacy-options";
+  } from "#lib/privacy-options.js";
   import {
     Domain,
     ProfileAccess,

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Banner from "$lib/components/Banner.svelte";
-  import ImportWizard from "$lib/components/ImportWizard.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import ImportWizard from "#lib/components/ImportWizard.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 </script>
 
 <ImportWizard source="steam">

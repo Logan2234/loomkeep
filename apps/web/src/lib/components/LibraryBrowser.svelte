@@ -32,26 +32,26 @@
   // filter) is injected via props/snippets.
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { resolveApiError } from "$lib/api/errors";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import LibraryBulkBar from "$lib/components/LibraryBulkBar.svelte";
-  import LibraryReviewEditor from "$lib/components/LibraryReviewEditor.svelte";
-  import LibraryTable from "$lib/components/LibraryTable.svelte";
-  import LibraryViewMenu from "$lib/components/LibraryViewMenu.svelte";
-  import LibraryWall from "$lib/components/LibraryWall.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import PosterGrid from "$lib/components/PosterGrid.svelte";
-  import PosterGridSkeleton from "$lib/components/PosterGridSkeleton.svelte";
-  import SavedViewBar from "$lib/components/SavedViewBar.svelte";
-  import { debounce } from "$lib/debounce";
+  import { resolveApiError } from "#lib/api/errors.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import LibraryBulkBar from "#lib/components/LibraryBulkBar.svelte";
+  import LibraryReviewEditor from "#lib/components/LibraryReviewEditor.svelte";
+  import LibraryTable from "#lib/components/LibraryTable.svelte";
+  import LibraryViewMenu from "#lib/components/LibraryViewMenu.svelte";
+  import LibraryWall from "#lib/components/LibraryWall.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import PosterGrid from "#lib/components/PosterGrid.svelte";
+  import PosterGridSkeleton from "#lib/components/PosterGridSkeleton.svelte";
+  import SavedViewBar from "#lib/components/SavedViewBar.svelte";
+  import { debounce } from "#lib/debounce.js";
   import {
     readLibraryColumns,
     readLibraryViewMode,
@@ -63,12 +63,12 @@
     type LibraryItemView,
     type LibrarySelection,
     type LibraryViewMode,
-  } from "$lib/library-view";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import { pileHeaderLabel } from "$lib/pile";
-  import { filtersToSearchParams } from "$lib/saved-views";
-  import { toast } from "$lib/toast.svelte";
+  } from "#lib/library-view.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { pileHeaderLabel } from "#lib/pile.js";
+  import { filtersToSearchParams } from "#lib/saved-views.js";
+  import { toast } from "#lib/toast.svelte.js";
   import type {
     BulkEntriesResultDto,
     BulkEntriesTargetDto,
@@ -243,9 +243,8 @@
     if (activeViewId) params.set("view", activeViewId);
     const qs = params.toString();
     void goto(qs ? `?${qs}` : untrack(() => page.url.pathname), {
-      replaceState: true,
-      noScroll: true,
-      keepFocus: true,
+      replace: true,
+      reset: false,
     });
   }
 

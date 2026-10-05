@@ -3,12 +3,12 @@
   import MigrationExportCard from "./MigrationExportCard.svelte";
 
   import { page } from "$app/state";
-  import { exportMyData, exportMyDataCsv } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { downloadBlob } from "$lib/download";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
+  import { exportMyData, exportMyDataCsv } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { downloadBlob } from "#lib/download.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
   import { Domain } from "@loomkeep/shared";
   import { flashAnchor } from "../flash-anchor";
 

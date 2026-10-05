@@ -1,4 +1,4 @@
-import { m } from "$lib/paraglide/messages.js";
+import { m } from "#lib/paraglide/messages.js";
 
 // Index = integer rating. Functions, not strings, so the word follows a
 // locale switch without a reload.

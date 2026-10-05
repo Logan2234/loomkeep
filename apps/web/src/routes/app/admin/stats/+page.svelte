@@ -9,19 +9,19 @@
     getAdminCatalogueStats,
     getAdminSocialStats,
     getAdminSystemStats,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
-  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
+  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
   import {
     DATETIME_LONG_OPTIONS,
     formatDateTime,
     formatNumber,
-  } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { useQueryClient } from "@tanstack/svelte-query";
   import AccountsSection from "./components/AccountsSection.svelte";
   import CatalogueSection from "./components/CatalogueSection.svelte";

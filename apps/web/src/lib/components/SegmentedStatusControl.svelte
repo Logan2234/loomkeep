@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends string">
   // Segmented status picker shared by books and games (media's status is
   // server-derived, not user-selectable this way).
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   let {
     statuses,
     current,

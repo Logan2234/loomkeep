@@ -1,7 +1,7 @@
 <script lang="ts">
   /* eslint-disable svelte/no-dom-manipulating -- contenteditable needs atomically editable mention tokens. */
-  import { getCommentParticipants } from "$lib/api/client";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getCommentParticipants } from "#lib/api/client.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     CommentMentionDto,
     CommentTargetType,

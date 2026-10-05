@@ -4,39 +4,39 @@
     bulkDeleteBookEntries,
     bulkUpdateBookEntries,
     updateBookEntry,
-  } from "$lib/api/books";
-  import { getBooksPile, listBooks } from "$lib/api/client";
+  } from "#lib/api/books.js";
+  import { getBooksPile, listBooks } from "#lib/api/client.js";
   import type {
     LibraryLoadParams,
     PileLoadParams,
-  } from "$lib/components/LibraryBrowser.svelte";
-  import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
-  import PosterCard from "$lib/components/PosterCard.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import ReadingGoalChip from "$lib/components/ReadingGoalChip.svelte";
+  } from "#lib/components/LibraryBrowser.svelte";
+  import LibraryBrowser from "#lib/components/LibraryBrowser.svelte";
+  import PosterCard from "#lib/components/PosterCard.svelte";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import ReadingGoalChip from "#lib/components/ReadingGoalChip.svelte";
   import SagasModeSwitch, {
     sagasMode,
-  } from "$lib/components/saga/SagasModeSwitch.svelte";
-  import BookSearchPanel from "$lib/components/search/BookSearchPanel.svelte";
+  } from "#lib/components/saga/SagasModeSwitch.svelte";
+  import BookSearchPanel from "#lib/components/search/BookSearchPanel.svelte";
   import BookSagasView from "./components/BookSagasView.svelte";
   import {
     BOOK_OWNERSHIP_SOURCES,
     BOOK_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/constants/ownership-sources";
+  } from "#lib/constants/ownership-sources.js";
   import {
     BOOK_STATUS_LABELS,
     BOOK_STATUS_META,
     BOOK_STATUS_ORDER,
-  } from "$lib/constants/status-labels";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
+  } from "#lib/constants/status-labels.js";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
-  } from "$lib/library-view";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/library-view.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { Domain, isSessionPaused, type BookEntryDto } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [

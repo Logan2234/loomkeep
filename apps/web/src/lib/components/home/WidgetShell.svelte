@@ -2,9 +2,9 @@
   // A home widget's card: icon, title, an optional "see all" link, and the
   // body the widget lays out in. The header's height is fixed — sizing.ts
   // subtracts it to know the room the body has.
-  import Icon from "$lib/components/Icon.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { IconName } from "$lib/types/icon-name";
+  import Icon from "#lib/components/Icon.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import type { Snippet } from "svelte";
 
   let {

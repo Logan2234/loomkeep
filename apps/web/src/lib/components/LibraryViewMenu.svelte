@@ -1,10 +1,13 @@
 <script lang="ts">
   // "Affichage" menu at the end of a library's sort row: picks how the list
   // is rendered, without adding a row above the results.
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { LIBRARY_VIEW_MODES, type LibraryViewMode } from "$lib/library-view";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { IconName } from "$lib/types/icon-name";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import {
+    LIBRARY_VIEW_MODES,
+    type LibraryViewMode,
+  } from "#lib/library-view.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import { MediaQuery } from "svelte/reactivity";
   import Dropdown from "./Dropdown.svelte";
   import Icon from "./Icon.svelte";

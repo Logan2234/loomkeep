@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   import AnimatedNumberInput from "./AnimatedNumberInput.svelte";
   import Icon from "./Icon.svelte";
 

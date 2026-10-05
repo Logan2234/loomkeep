@@ -1,9 +1,9 @@
 <script lang="ts">
   import { READING_GOAL_LIMITS } from "@loomkeep/shared";
 
-  import { upsertReadingGoal } from "$lib/api/books";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { upsertReadingGoal } from "#lib/api/books.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ReadingGoalDto } from "@loomkeep/shared";
   import Modal from "./Modal.svelte";
 

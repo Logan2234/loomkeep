@@ -2,12 +2,12 @@
   // The widget catalog, sorted by what each widget is for — what you're in
   // the middle of, what's coming, your collections, then what arranges the
   // page — so composing a home page reads top to bottom.
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import { currentHomeGate } from "$lib/home/gate";
-  import { HOME_WIDGET_GROUPS, HOME_WIDGETS } from "$lib/home/widgets";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import { currentHomeGate } from "#lib/home/gate.js";
+  import { HOME_WIDGET_GROUPS, HOME_WIDGETS } from "#lib/home/widgets.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { HomeWidgetType } from "@loomkeep/shared";
   import { fly } from "svelte/transition";
 

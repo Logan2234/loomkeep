@@ -23,11 +23,11 @@
   // setTimeout, only after the local closing animation has finished, makes
   // the parent's unmount instant and unconditional — nothing left for Svelte
   // to defer.
-  import { dialogFocus } from "$lib/actions/dialogFocus";
-  import { portal } from "$lib/actions/portal";
-  import { scrollLock } from "$lib/actions/scrollLock";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import { dialogFocus } from "#lib/actions/dialogFocus.js";
+  import { portal } from "#lib/actions/portal.js";
+  import { scrollLock } from "#lib/actions/scrollLock.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import { onMount } from "svelte";
 

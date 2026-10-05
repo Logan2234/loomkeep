@@ -1,12 +1,12 @@
 <script lang="ts">
   import { LIST_LIMITS } from "@loomkeep/shared";
 
-  import { createList, deleteList, updateList } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { createList, deleteList, updateList } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ListDto, ListKind, ListVisibility } from "@loomkeep/shared";
-  import { prefersReducedMotion } from "$lib/motion";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { fade } from "svelte/transition";
   import Modal from "./Modal.svelte";
   import SegmentedControl from "./SegmentedControl.svelte";

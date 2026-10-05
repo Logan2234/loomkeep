@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { forgotPassword } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import FieldError from "$lib/components/FieldError.svelte";
-  import AuthShell from "$lib/components/AuthShell.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { forgotPassword } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import FieldError from "#lib/components/FieldError.svelte";
+  import AuthShell from "#lib/components/AuthShell.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   let email = $state("");
   let submitted = $state(false);

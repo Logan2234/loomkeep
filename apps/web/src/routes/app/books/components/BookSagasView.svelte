@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { listBookSagas, upsertBookEntry } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
+  import { listBookSagas, upsertBookEntry } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
   import SagasView, {
     type SagaListFilters,
-  } from "$lib/components/saga/SagasView.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { bookSagaMember, librarySagasView } from "$lib/saga";
+  } from "#lib/components/saga/SagasView.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import { bookSagaMember, librarySagasView } from "#lib/saga.js";
   import type { BookSagaMemberDto } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
 

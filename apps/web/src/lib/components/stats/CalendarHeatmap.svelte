@@ -1,8 +1,8 @@
 <script lang="ts">
   // GitHub-style calendar heatmap: 7 rows (weekdays) × N columns (weeks).
   // Days are pre-zero-filled by the caller, oldest first, chronological.
-  import { formatDate } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import { formatDate } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     days,

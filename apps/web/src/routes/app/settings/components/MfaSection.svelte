@@ -16,21 +16,21 @@
     setEmailMfa,
     setPasswordless,
     setupTotp,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import PasswordInput from "$lib/components/PasswordInput.svelte";
-  import Switch from "$lib/components/Switch.svelte";
-  import { downloadBlob } from "$lib/download";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
-  import { normalizeCodeInput } from "$lib/one-time-code";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import PasswordInput from "#lib/components/PasswordInput.svelte";
+  import Switch from "#lib/components/Switch.svelte";
+  import { downloadBlob } from "#lib/download.js";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import { normalizeCodeInput } from "#lib/one-time-code.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
   import type { MfaStatusDto, WebauthnCredentialDto } from "@loomkeep/shared";
   import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
   import { useQueryClient } from "@tanstack/svelte-query";

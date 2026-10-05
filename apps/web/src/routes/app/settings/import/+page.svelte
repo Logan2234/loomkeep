@@ -3,24 +3,24 @@
     getImportAvailability,
     getImportQuota,
     getLastImportRun,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
   import { page } from "$app/state";
-  import Icon from "$lib/components/Icon.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import RelativeTime from "$lib/components/RelativeTime.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-  import { isDomainEnabled } from "$lib/domains";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { m } from "$lib/paraglide/messages.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import RelativeTime from "#lib/components/RelativeTime.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
+  import { isDomainEnabled } from "#lib/domains.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { m } from "#lib/paraglide/messages.js";
   import SettingsSection from "../components/SettingsSection.svelte";
   import { flashAnchor } from "../flash-anchor";
-  import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
+  import type { ImportSourceDescriptor } from "#lib/types/import-descriptor.js";
   import {
     Domain,
     type ImportAvailabilityDto,

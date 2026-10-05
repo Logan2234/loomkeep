@@ -1,5 +1,5 @@
-import { API_URL, tryRefresh } from "$lib/api/core";
-import { auth } from "$lib/auth.svelte";
+import { API_URL, tryRefresh } from "#lib/api/core.js";
+import { auth } from "#lib/auth.svelte.js";
 import type { RealtimeEvent } from "@loomkeep/shared";
 import { io } from "socket.io-client";
 

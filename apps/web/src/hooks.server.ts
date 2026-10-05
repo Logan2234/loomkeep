@@ -1,5 +1,5 @@
-import { paraglideMiddleware } from "$lib/paraglide/server.js";
-import type { Handle } from "@sveltejs/kit";
+import { paraglideMiddleware } from "#lib/paraglide/server.js";
+import type { Handle } from "@sveltejs/kit/hooks";
 
 // Caddy (docker/Caddyfile) sets these same headers at the edge for the
 // hosted VPS, but a self-host install running this container directly

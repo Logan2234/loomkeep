@@ -2,13 +2,13 @@
   // A widget's own settings, beyond its size and place. Edits a copy: the
   // layout only changes on "Appliquer", and the page itself only once the
   // editor saves.
-  import Combobox from "$lib/components/Combobox.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { DEFAULT_QUICK_LINKS } from "$lib/home/quick-links";
-  import { HOME_WIDGETS } from "$lib/home/widgets";
-  import { m } from "$lib/paraglide/messages.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { DEFAULT_QUICK_LINKS } from "#lib/home/quick-links.js";
+  import { HOME_WIDGETS } from "#lib/home/widgets.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     HOME_LAYOUT_LIMITS,
     type HomeWidgetConfigDto,

@@ -1,13 +1,13 @@
 <script lang="ts">
   // The mobile checklist uses a separate shell in OnboardingBanner.
   import { afterNavigate } from "$app/navigation";
-  import { skipOnboardingStep } from "$lib/api/gamification";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { useOnboardingChecklist } from "$lib/gamification/onboarding-checklist.svelte";
-  import { layout } from "$lib/layout.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { skipOnboardingStep } from "#lib/api/gamification.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { useOnboardingChecklist } from "#lib/gamification/onboarding-checklist.svelte.js";
+  import { layout } from "#lib/layout.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { OnboardingStepKey } from "@loomkeep/shared";
   import { fly } from "svelte/transition";
   import { deriveStepViews } from "./onboarding-checklist";

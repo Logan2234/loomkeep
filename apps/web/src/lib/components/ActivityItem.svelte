@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { activityPhrase, activityRating } from "$lib/activity-phrase";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import RelativeTime from "$lib/components/RelativeTime.svelte";
+  import { activityPhrase, activityRating } from "#lib/activity-phrase.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import RelativeTime from "#lib/components/RelativeTime.svelte";
   import type { ActivityEventDto } from "@loomkeep/shared";
 
   let { event }: { event: ActivityEventDto } = $props();

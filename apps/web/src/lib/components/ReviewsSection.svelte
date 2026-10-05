@@ -4,21 +4,21 @@
     reportReview,
     unvoteReview,
     voteReview,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { formatNumber } from "$lib/format";
-  import { createMyReview } from "$lib/my-review.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { formatNumber } from "#lib/format.js";
+  import { createMyReview } from "#lib/my-review.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     arrangeReviews,
     summarizeReviews,
     type ReviewArrangement,
-  } from "$lib/review-community";
+  } from "#lib/review-community.js";
   import type {
     ReportCategory,
     ReportMotif,

@@ -1,8 +1,8 @@
 <script lang="ts">
   // Clickable poster tile for a library entry. The line(s) under the title
   // (status/rating, progress bar, ...) vary per domain, so they're a snippet.
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import { scale } from "svelte/transition";
   import Icon from "./Icon.svelte";

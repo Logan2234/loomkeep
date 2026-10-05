@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast, type ToastVariant } from "$lib/toast.svelte";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast, type ToastVariant } from "#lib/toast.svelte.js";
   import { flip } from "svelte/animate";
   import { fade, fly } from "svelte/transition";
   import Icon from "./Icon.svelte";

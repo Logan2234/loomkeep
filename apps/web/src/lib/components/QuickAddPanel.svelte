@@ -4,14 +4,14 @@
     getEditableLists,
     getListMembership,
     removeListItem,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { quickAddDomain, quickAddTarget } from "$lib/quick-add";
-  import { prefersReducedMotion } from "$lib/motion";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { quickAddDomain, quickAddTarget } from "#lib/quick-add.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { scale } from "svelte/transition";
   import Banner from "./Banner.svelte";
   import Combobox from "./Combobox.svelte";

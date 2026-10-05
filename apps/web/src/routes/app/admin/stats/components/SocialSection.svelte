@@ -1,13 +1,13 @@
 <script lang="ts">
   // "Social": what the P4 surface actually produced, instance-wide. Only
   // mounted when the API reports the section enabled (SOCIAL_ENABLED).
-  import { getAdminSocialActivityTrend } from "$lib/api/client";
-  import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import StatFigure from "$lib/components/stats/StatFigure.svelte";
-  import { REPORT_CATEGORY_LABELS } from "$lib/constants/report-labels";
-  import { formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getAdminSocialActivityTrend } from "#lib/api/client.js";
+  import HistogramBars from "#lib/components/stats/HistogramBars.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import StatFigure from "#lib/components/stats/StatFigure.svelte";
+  import { REPORT_CATEGORY_LABELS } from "#lib/constants/report-labels.js";
+  import { formatNumber } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { AdminSocialStatsDto } from "@loomkeep/shared";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
 

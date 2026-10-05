@@ -1,4 +1,4 @@
-import { auth } from "$lib/auth.svelte";
+import { auth } from "#lib/auth.svelte.js";
 
 /**
  * Neither release summary is on, by email or by push: a release reminder or

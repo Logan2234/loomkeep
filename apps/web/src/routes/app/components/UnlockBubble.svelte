@@ -7,31 +7,31 @@
     getMyProgression,
     getPendingAchievements,
     markAchievementDisplayed,
-  } from "$lib/api/gamification";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { formatNumber } from "$lib/format";
+  } from "#lib/api/gamification.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { formatNumber } from "#lib/format.js";
   import {
     ENTER_MS,
     EXIT_MS,
     UnlockQueue,
     type UnlockBubble,
-  } from "$lib/gamification/unlock-queue";
+  } from "#lib/gamification/unlock-queue.js";
   import {
     compareToLastKnown,
     readLastKnown,
     writeLastKnown,
-  } from "$lib/last-known";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import { onRealtimeEvent } from "$lib/realtime/socket";
+  } from "#lib/last-known.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { onRealtimeEvent } from "#lib/realtime/socket.js";
   import { levelForXp } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { backOut } from "svelte/easing";
   import { fly } from "svelte/transition";
-  import AchievementMedallion from "$lib/components/AchievementMedallion.svelte";
+  import AchievementMedallion from "#lib/components/AchievementMedallion.svelte";
   import { achievementName, entryIcon } from "../achievements/labels";
 
   const queryClient = useQueryClient();

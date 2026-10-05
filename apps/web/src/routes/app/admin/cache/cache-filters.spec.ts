@@ -1,4 +1,4 @@
-import { adminFilterHref } from "$lib/admin-filter-url";
+import { adminFilterHref } from "#lib/admin-filter-url.js";
 import { Domain } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
 import { parseCacheFilters } from "./cache-filters";

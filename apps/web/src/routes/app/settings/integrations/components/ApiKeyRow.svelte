@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Icon from "$lib/components/Icon.svelte";
-  import { formatDate, formatRelative } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { formatDate, formatRelative } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ApiKeyDto } from "@loomkeep/shared";
   import { expiryState } from "../api-key-form";
   import { slide } from "svelte/transition";

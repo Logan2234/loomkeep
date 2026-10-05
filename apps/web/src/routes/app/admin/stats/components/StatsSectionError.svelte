@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Banner from "$lib/components/Banner.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     message,

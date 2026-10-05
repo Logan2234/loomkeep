@@ -1,6 +1,6 @@
-import { updateMe } from "$lib/api/client";
-import { createApiMutation } from "$lib/api/mutation.svelte";
-import { auth } from "$lib/auth.svelte";
+import { updateMe } from "#lib/api/client.js";
+import { createApiMutation } from "#lib/api/mutation.svelte.js";
+import { auth } from "#lib/auth.svelte.js";
 
 /**
  * Adds or removes one of the user's streaming services, optimistically —

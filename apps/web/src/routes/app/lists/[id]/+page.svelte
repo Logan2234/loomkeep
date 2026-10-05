@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { longpress } from "$lib/actions/longpress";
+  import { longpress } from "#lib/actions/longpress.js";
   import {
     ApiError,
     getList,
@@ -10,25 +10,25 @@
     removeListMember,
     reorderListItems,
     reportList,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import Dropdown from "$lib/components/Dropdown.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import FocusOverlay from "$lib/components/FocusOverlay.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import ListFormModal from "$lib/components/ListFormModal.svelte";
-  import ListMembersModal from "$lib/components/ListMembersModal.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import ReportModal from "$lib/components/ReportModal.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { joinRealtimeRoom, onRealtimeEvent } from "$lib/realtime/socket";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import Dropdown from "#lib/components/Dropdown.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import FocusOverlay from "#lib/components/FocusOverlay.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import ListFormModal from "#lib/components/ListFormModal.svelte";
+  import ListMembersModal from "#lib/components/ListMembersModal.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import ReportModal from "#lib/components/ReportModal.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { joinRealtimeRoom, onRealtimeEvent } from "#lib/realtime/socket.js";
   import type { ListDto, ListItemDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { dndzone } from "svelte-dnd-action";
