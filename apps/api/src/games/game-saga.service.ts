@@ -9,6 +9,7 @@ import { isGameUpcoming, type SortOrder } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import type { GameSagaMember } from "@prisma/client";
 import {
+  completedSagaWorks,
   sagaComparator,
   sagaProgress,
   type SagaStatusReader,
@@ -273,6 +274,32 @@ export class GameSagaService {
     ]);
 
     await this.rememberMembership(ids, saga.key);
+  }
+
+  /**
+   * The series `sagaKey` once the player has completed it — every released
+   * game finished, nothing announced — with how many games it counts; null
+   * otherwise. Read from the saved series, so no provider call.
+   */
+  async completed(
+    userId: string,
+    sagaKey: string,
+  ): Promise<{ title: string; works: number } | null> {
+    const saga = await this.prisma.gameSaga.findUnique({
+      where: { key: sagaKey },
+      include: { members: true },
+    });
+    if (!saga) return null;
+
+    const statuses = await this.statusesBySourceId(
+      userId,
+      saga.members.map((m) => m.sourceId),
+    );
+    const works = completedSagaWorks(
+      saga.members.map((m) => toMemberDto(m, statuses.get(m.sourceId))),
+      GAME_SAGA_STATUS,
+    );
+    return works === null ? null : { title: saga.title, works };
   }
 
   private async statusesBySourceId(

@@ -30,6 +30,8 @@ const episode = (n: number, amount = 10): XpHistoryItemDto => ({
   episodeNumber: n,
   achievementKey: null,
   domain: null,
+  goalTarget: null,
+  goalYear: null,
 });
 
 const today = localDayKey(new Date());

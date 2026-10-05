@@ -12,6 +12,7 @@ import {
   GameOwnershipStatus,
   GameStatus,
   ReviewTargetType,
+  sagaCompletionXp,
   TrackingCycleStatus,
   XpReason,
 } from "@loomkeep/shared";
@@ -62,6 +63,7 @@ import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
 import { toGameItemDto } from "./game-item.mapper";
 import { GameItemService } from "./game-item.service";
 import { assertGameReleased, isGameItemUpcoming } from "./game-release.util";
+import { GameSagaService } from "./game-saga.service";
 import { toPlaythroughDto } from "./game.mappers";
 
 // Entries always need the game + its external IDs (canonical sourceId), plus
@@ -187,7 +189,37 @@ export class GameLibraryService {
     private readonly events: EventsGateway,
     private readonly lists: ListService,
     private readonly sessionXp?: SessionXpService,
+    private readonly sagas?: GameSagaService,
   ) {}
+
+  /**
+   * SAGA_COMPLETED once the game's series has every released game finished
+   * and nothing announced. Checked on each finish; once per series.
+   */
+  private async awardSagaIfCompleted(
+    userId: string,
+    gameItemId: string,
+  ): Promise<void> {
+    const item = await this.prisma.gameItem.findUnique({
+      where: { id: gameItemId },
+      select: { sagaKey: true },
+    });
+    if (!item?.sagaKey || !this.sagas) return;
+    const saga = await this.sagas.completed(userId, item.sagaKey);
+    if (!saga) return;
+
+    await this.xp.award(
+      userId,
+      XpReason.SAGA_COMPLETED,
+      item.sagaKey,
+      sagaCompletionXp(saga.works),
+      { title: saga.title, href: "/app/games?vue=sagas", data: {} },
+    );
+    await this.achievements.evaluate(
+      userId,
+      ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.SAGA_COMPLETED],
+    );
+  }
 
   /** Emits the status milestone + FAVORITED events for a game entry write. */
   private emitEntryActivity(
@@ -295,6 +327,7 @@ export class GameLibraryService {
         userId,
         ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
       );
+      await this.awardSagaIfCompleted(userId, entry.gameItemId);
     }
 
     if (dto.rating !== undefined) {
@@ -623,6 +656,7 @@ export class GameLibraryService {
         userId,
         ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
       );
+      await this.awardSagaIfCompleted(userId, entry.gameItemId);
     }
 
     if (dto.rating !== undefined) {

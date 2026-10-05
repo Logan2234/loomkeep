@@ -11,8 +11,9 @@ import { XpReason } from "./enums";
  * nature (a one-off milestone, e.g. DOMAIN_STARTED) — every repeatable
  * reason carries one, calibrated to what's physically plausible in a day.
  * `amount` is omitted only for ADMIN_ADJUSTMENT (signed, chosen per grant by
- * an admin) and ACHIEVEMENT_UNLOCKED (varies by achievement tier) — both
- * pass `XpService.award`'s `amountOverride` instead of a fixed value here.
+ * an admin), ACHIEVEMENT_UNLOCKED (varies by achievement tier) and the
+ * progressive SAGA_COMPLETED / READING_GOAL_REACHED (sized by the saga or the
+ * goal) — all pass `XpService.award`'s `amountOverride` instead.
  */
 export interface XpRule {
   reason: XpReason;
@@ -180,6 +181,22 @@ export const XP_RULES: Record<XpReason, XpRule> = {
     socialGated: true,
   },
 
+  // Every released work of a saga seen, nothing announced. The amount grows
+  // with the saga (sagaCompletionXp); once per saga, so no dailyCap — the
+  // number of sagas bounds it.
+  SAGA_COMPLETED: {
+    reason: XpReason.SAGA_COMPLETED,
+    sourceType: "Saga",
+    socialGated: false,
+  },
+  // The year's reading goal met; the amount grows with the goal
+  // (readingGoalXp). Once per goal, i.e. per year.
+  READING_GOAL_REACHED: {
+    reason: XpReason.READING_GOAL_REACHED,
+    sourceType: "ReadingGoal",
+    socialGated: false,
+  },
+
   IMPORT_COMPLETED: {
     reason: XpReason.IMPORT_COMPLETED,
     amount: 150,
@@ -220,3 +237,23 @@ export const XP_RULES: Record<XpReason, XpRule> = {
  * it, not delete it.
  */
 export const XP_RULE_LIST: XpRule[] = Object.values(XP_RULES);
+
+/**
+ * SAGA_COMPLETED's amount for a saga of `works` released works: grows faster
+ * than the saga, so finishing a long one pays more per work than a diptych
+ * (2 → 60, 3 → 105, 8 → 480), capped for the 40-volume series.
+ */
+export function sagaCompletionXp(works: number): number {
+  return Math.min(1000, 5 * works * works + 20 * works);
+}
+
+/** Smallest reading goal that earns READING_GOAL_REACHED. */
+export const MIN_REWARDED_READING_GOAL = 3;
+
+/**
+ * READING_GOAL_REACHED's amount for a goal of `books`: grows faster than the
+ * goal (3 → 72, 12 → 612), capped at 20 books.
+ */
+export function readingGoalXp(books: number): number {
+  return Math.min(1500, 3 * books * books + 15 * books);
+}

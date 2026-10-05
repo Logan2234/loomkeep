@@ -162,6 +162,8 @@ const REASON_ICON: Record<XpReason, IconName> = {
   PROFILE_COMPLETED: "user",
   ACHIEVEMENT_UNLOCKED: "trophy",
   ADMIN_ADJUSTMENT: "shield",
+  SAGA_COMPLETED: "library",
+  READING_GOAL_REACHED: "gauge",
 };
 
 export const reasonIcon = (reason: XpReason): IconName =>
@@ -183,6 +185,13 @@ export function itemLabel(item: XpHistoryItemDto): string {
       messages[`gamification_${item.achievementKey}_name`]?.() ??
       item.achievementKey
     );
+  }
+
+  if (item.goalTarget !== null && item.goalYear !== null) {
+    return m.gamification_xp_history_goal({
+      year: item.goalYear,
+      count: item.goalTarget,
+    });
   }
 
   if (item.domain) {

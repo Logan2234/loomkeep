@@ -4,11 +4,14 @@ import {
   ACHIEVEMENT_LIST,
   ACHIEVEMENTS,
   checkAnniversary,
+  checkBedsideBook,
   checkBigScreen,
   checkChatterboxTier,
   checkCinephileTier,
+  checkComfortGame,
   checkContemporary,
   checkCrowdFavorite,
+  checkCultFilm,
   checkCuratorTier,
   checkCuriousCat,
   checkDecadesTier,
@@ -43,12 +46,18 @@ import {
   checkStreakTier,
   checkWelcomeBack,
   checkWellRounded,
+  checkWorthTheWait,
 } from "./registry";
 
 const { computeOnboardingDoneMap } = vi.hoisted(() => ({
   computeOnboardingDoneMap: vi.fn(),
 }));
 vi.mock("../onboarding/onboarding.util", () => ({ computeOnboardingDoneMap }));
+
+const SIGNED_UP = {
+  timezone: "UTC",
+  createdAt: new Date("2024-01-01T00:00:00Z"),
+};
 
 describe("checkFirstEpisode", () => {
   it("unlocks once at least one EpisodeWatch exists", async () => {
@@ -97,9 +106,10 @@ describe("checkCinephileTier", () => {
 });
 
 describe("ACHIEVEMENTS catalogue shape", () => {
-  it("every entry's xpAward is 15, 50 or 150", () => {
+  it("every entry's xpAward is on the scale", () => {
+    // 15/50/150 by tier, plus a few singles set between two steps by hand.
     for (const def of ACHIEVEMENT_LIST) {
-      expect([15, 50, 150]).toContain(def.xpAward);
+      expect([15, 25, 50, 100, 150]).toContain(def.xpAward);
     }
   });
 
@@ -263,6 +273,35 @@ describe("checkNightOwl / checkEarlyBird (hour-window family)", () => {
   });
 });
 
+describe("behaviour achievements", () => {
+  // An imported history tells of habits kept elsewhere: read alone, it would
+  // unlock night_owl & co. the day it lands.
+  it("only read activity dated after the account was created", async () => {
+    const createdAt = new Date("2026-09-27T00:00:00Z");
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({ timezone: "UTC", createdAt }),
+      },
+      episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
+      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      movieReplay: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+
+    await checkNightOwl(prisma, "user-1");
+
+    expect(prisma.episodeWatch.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ watchedAt: { gte: createdAt } }),
+      }),
+    );
+    expect(prisma.libraryEntry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ finishedAt: { gte: createdAt } }),
+      }),
+    );
+  });
+});
+
 describe("checkStreakTier", () => {
   it("computes the current episode-watch streak and reports it as progress", async () => {
     const now = new Date("2026-01-03T12:00:00Z");
@@ -399,6 +438,7 @@ describe("checkWellRounded", () => {
 describe("checkHalloween", () => {
   it("unlocks off a horror episode/movie watched in October", async () => {
     const prisma = {
+      user: { findUnique: vi.fn().mockResolvedValue(SIGNED_UP) },
       episodeWatch: {
         findMany: vi
           .fn()
@@ -829,6 +869,7 @@ describe("checkAnniversary", () => {
 describe("checkWelcomeBack", () => {
   it("unlocks off a 182+ day gap between two episode watches", async () => {
     const prisma = {
+      user: { findUnique: vi.fn().mockResolvedValue(SIGNED_UP) },
       episodeWatch: {
         findMany: vi
           .fn()
@@ -956,5 +997,136 @@ describe("registry metadata", () => {
       .map(([key]) => key);
 
     expect(mismatched).toEqual([]);
+  });
+});
+
+describe("hours_played", () => {
+  it("counts a finished game's average length when nothing was logged, its own playtime otherwise", async () => {
+    const prisma = {
+      gameEntry: {
+        findMany: vi.fn().mockResolvedValue([
+          // Finished, never logged: IGDB's 30h.
+          {
+            status: "COMPLETED",
+            playtimeMinutes: 0,
+            gameItem: { timeToBeatNormallyMin: 1800 },
+          },
+          // Logged more than the average: its own 80h.
+          {
+            status: "COMPLETED",
+            playtimeMinutes: 4800,
+            gameItem: { timeToBeatNormallyMin: 1200 },
+          },
+          // Unfinished: only what was logged, 10h.
+          {
+            status: "PLAYING",
+            playtimeMinutes: 600,
+            gameItem: { timeToBeatNormallyMin: 3000 },
+          },
+        ]),
+      },
+    } as unknown as PrismaService;
+
+    await expect(
+      ACHIEVEMENTS.hours_played_bronze.check(prisma, "user-1"),
+    ).resolves.toEqual({
+      unlocked: true,
+      progress: { current: 120, target: 100 },
+    });
+  });
+});
+
+describe("saga_finisher", () => {
+  it("counts the sagas completed here", async () => {
+    const prisma = {
+      xpEntry: { count: vi.fn().mockResolvedValue(5) },
+    } as unknown as PrismaService;
+
+    await expect(
+      ACHIEVEMENTS.saga_finisher_silver.check(prisma, "user-1"),
+    ).resolves.toEqual({ unlocked: true, progress: { current: 5, target: 5 } });
+    expect(prisma.xpEntry.count).toHaveBeenCalledWith({
+      where: { userId: "user-1", reason: "SAGA_COMPLETED", revokedAt: null },
+    });
+  });
+});
+
+describe("checkWorthTheWait", () => {
+  const prismaWith = (createdAt: string, finishedAt: string) =>
+    ({
+      user: { findUnique: vi.fn().mockResolvedValue(SIGNED_UP) },
+      libraryEntry: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            createdAt: new Date(createdAt),
+            finishedAt: new Date(finishedAt),
+          },
+        ]),
+      },
+      gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      bookEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    }) as unknown as PrismaService;
+
+  it("unlocks off a work finished a year or more after it was added", async () => {
+    await expect(
+      checkWorthTheWait(
+        prismaWith("2024-03-01T00:00:00Z", "2025-03-02T00:00:00Z"),
+        "user-1",
+      ),
+    ).resolves.toEqual({ unlocked: true });
+  });
+
+  it("stays locked for one finished within the year", async () => {
+    await expect(
+      checkWorthTheWait(
+        prismaWith("2024-03-01T00:00:00Z", "2024-12-01T00:00:00Z"),
+        "user-1",
+      ),
+    ).resolves.toEqual({ unlocked: false });
+  });
+});
+
+describe("the loyal trio", () => {
+  it("cult_film: one movie watched three times, i.e. two rewatches", async () => {
+    const prisma = {
+      movieReplay: {
+        groupBy: vi.fn().mockResolvedValue([
+          { libraryEntryId: "e1", _count: { _all: 1 } },
+          { libraryEntryId: "e2", _count: { _all: 2 } },
+        ]),
+      },
+    } as unknown as PrismaService;
+
+    await expect(checkCultFilm(prisma, "user-1")).resolves.toEqual({
+      unlocked: true,
+    });
+  });
+
+  it("bedside_book: one book read three times", async () => {
+    const prisma = {
+      bookReading: {
+        groupBy: vi
+          .fn()
+          .mockResolvedValue([{ bookEntryId: "e1", _count: { _all: 2 } }]),
+      },
+    } as unknown as PrismaService;
+
+    await expect(checkBedsideBook(prisma, "user-1")).resolves.toEqual({
+      unlocked: false,
+    });
+  });
+
+  it("comfort_game: one game finished three times", async () => {
+    const prisma = {
+      gamePlaythrough: {
+        groupBy: vi
+          .fn()
+          .mockResolvedValue([{ gameEntryId: "e1", _count: { _all: 3 } }]),
+      },
+    } as unknown as PrismaService;
+
+    await expect(checkComfortGame(prisma, "user-1")).resolves.toEqual({
+      unlocked: true,
+    });
   });
 });

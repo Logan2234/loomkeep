@@ -30,6 +30,7 @@ import {
   progressPercent,
   ReviewTargetType,
   runtimeFor,
+  sagaCompletionXp,
   XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
@@ -88,6 +89,7 @@ import type { BulkUpdateEntriesBody } from "./dto/bulk-update-entries.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
+import { completedSagaWorks, MEDIA_SAGA_STATUS } from "./saga-progress.util";
 import { deriveStatus, normalizeAiringFinished } from "./status.util";
 
 // Reused include: entries always need the media + its external IDs (sourceId),
@@ -277,6 +279,7 @@ export class LibraryService {
         userId,
         ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.MOVIE_WATCHED],
       );
+      await this.awardSagaIfCompleted(userId, entry.mediaItemId);
     }
 
     // The /10 rating lives in Review (the single source of truth).
@@ -764,6 +767,7 @@ export class LibraryService {
         userId,
         ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.MOVIE_WATCHED],
       );
+      await this.awardSagaIfCompleted(userId, entry.mediaItemId);
     }
 
     if (dto.rating !== undefined) {
@@ -1372,7 +1376,7 @@ export class LibraryService {
     const mediaItemIds = [...new Set(seasons.map((s) => s.mediaItemId))];
     const entries = await this.prisma.libraryEntry.findMany({
       where: { userId, mediaItemId: { in: mediaItemIds } },
-      select: { id: true },
+      select: { id: true, mediaItemId: true },
     });
 
     for (const entry of entries) {
@@ -1384,6 +1388,7 @@ export class LibraryService {
           userId,
           ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.SERIES_COMPLETED],
         );
+        await this.awardSagaIfCompleted(userId, entry.mediaItemId);
       } else {
         await this.xp.revokeBySource("LibraryEntry", [entry.id]);
       }
@@ -1620,6 +1625,63 @@ export class LibraryService {
    * The viewer's effective status for each of these catalogue works they
    * track, keyed by source id — the same derivation as the library list.
    */
+  /**
+   * SAGA_COMPLETED once the item's saga (a film collection, an anime's main
+   * line) has every released work seen and nothing announced. Checked on each
+   * finish, the only moment it can become true; once per saga.
+   */
+  private async awardSagaIfCompleted(
+    userId: string,
+    mediaItemId: string,
+  ): Promise<void> {
+    const item = await this.prisma.mediaItem.findUnique({
+      where: { id: mediaItemId },
+      select: { sagaKey: true },
+    });
+    if (!item?.sagaKey) return;
+    const saga = await this.prisma.saga.findUnique({
+      where: { key: item.sagaKey },
+      select: {
+        title: true,
+        members: { select: { type: true, sourceId: true, upcoming: true } },
+      },
+    });
+    if (!saga) return;
+
+    const statuses = new Map<string, EntryStatus>();
+
+    for (const type of ["MOVIE", "ANIME"] as const) {
+      const ids = saga.members
+        .filter((m) => m.type === type)
+        .map((m) => m.sourceId);
+      if (ids.length === 0) continue;
+      const source: CatalogSource = type === "ANIME" ? "ANILIST" : "TMDB";
+      const byId = await this.statusesBySourceId(userId, source, type, ids);
+      for (const [id, status] of byId) statuses.set(`${type}:${id}`, status);
+    }
+
+    const works = completedSagaWorks(
+      saga.members.map((m) => ({
+        upcoming: m.upcoming,
+        status: statuses.get(`${m.type}:${m.sourceId}`) ?? null,
+      })),
+      MEDIA_SAGA_STATUS,
+    );
+    if (works === null) return;
+
+    await this.xp.award(
+      userId,
+      XpReason.SAGA_COMPLETED,
+      item.sagaKey,
+      sagaCompletionXp(works),
+      { title: saga.title, href: "/app/media?vue=sagas", data: {} },
+    );
+    await this.achievements.evaluate(
+      userId,
+      ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.SAGA_COMPLETED],
+    );
+  }
+
   async statusesBySourceId(
     userId: string,
     source: CatalogSource,

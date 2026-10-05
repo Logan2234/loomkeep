@@ -11,7 +11,10 @@ import {
   BookStatus,
   Domain,
   DORMANT_AFTER_DAYS,
+  MIN_REWARDED_READING_GOAL,
+  readingGoalXp,
   ReviewTargetType,
+  sagaCompletionXp,
   TrackingCycleStatus,
   XpReason,
 } from "@loomkeep/shared";
@@ -63,6 +66,7 @@ import {
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { BookItemService } from "./book-item.service";
+import { BookSagaService } from "./book-saga.service";
 import { toReadingDto } from "./book.mappers";
 import type { BulkUpdateBookEntriesBody } from "./dto/bulk-update-book-entries.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
@@ -71,6 +75,9 @@ import { UpsertReadingGoalDto } from "./dto/upsert-reading-goal.dto";
 
 // Entries always need the book + its external IDs (canonical sourceId), plus
 // its reading history, most recent first.
+// How long a reading goal must stand unchanged before meeting it pays XP.
+const GOAL_SETTLED_DAYS = 30;
+
 const ENTRY_INCLUDE = {
   bookItem: { include: { externalIds: true } },
   readings: {
@@ -215,7 +222,78 @@ export class BookLibraryService {
     private readonly events: EventsGateway,
     private readonly lists: ListService,
     private readonly sessionXp?: SessionXpService,
+    private readonly sagas?: BookSagaService,
   ) {}
+
+  /**
+   * What finishing a book can complete beyond the book itself: its series
+   * (SAGA_COMPLETED, once per series) and the reading goal of the year it was
+   * finished (READING_GOAL_REACHED, once per goal).
+   */
+  private async awardFinishMilestones(
+    userId: string,
+    bookItemId: string,
+    finishedAt: Date | null,
+  ): Promise<void> {
+    await this.awardReadingGoal(
+      userId,
+      (finishedAt ?? new Date()).getUTCFullYear(),
+    );
+
+    const item = await this.prisma.bookItem.findUnique({
+      where: { id: bookItemId },
+      select: { seriesKey: true },
+    });
+    if (!item?.seriesKey || !this.sagas) return;
+    const saga = await this.sagas.completed(userId, item.seriesKey);
+    if (!saga) return;
+
+    await this.xp.award(
+      userId,
+      XpReason.SAGA_COMPLETED,
+      item.seriesKey,
+      sagaCompletionXp(saga.works),
+      { title: saga.title, href: "/app/books?vue=sagas", data: {} },
+    );
+    await this.achievements.evaluate(
+      userId,
+      ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.SAGA_COMPLETED],
+    );
+  }
+
+  /**
+   * READING_GOAL_REACHED, sized by the goal — so lowering it to what's
+   * already read pays little. A goal must also have stood a month unchanged
+   * when it is met: set the day it's reached, it would be a formality.
+   */
+  private async awardReadingGoal(userId: string, year: number): Promise<void> {
+    const goal = await this.prisma.readingGoal.findUnique({
+      where: { userId_year: { userId, year } },
+    });
+
+    if (
+      !goal ||
+      goal.target < MIN_REWARDED_READING_GOAL ||
+      goal.updatedAt > sinceDaysAgo(new Date(), GOAL_SETTLED_DAYS)
+    ) {
+      return;
+    }
+
+    const completed = await this.countBooksFinishedInYear(userId, year);
+    if (completed < goal.target) return;
+
+    await this.xp.award(
+      userId,
+      XpReason.READING_GOAL_REACHED,
+      goal.id,
+      readingGoalXp(goal.target),
+      {
+        title: null,
+        href: "/app/books",
+        data: { goalTarget: goal.target, goalYear: year },
+      },
+    );
+  }
 
   /** Emits the status milestone + FAVORITED events for a book entry write. */
   private emitEntryActivity(
@@ -322,6 +400,11 @@ export class BookLibraryService {
       await this.achievements.evaluate(
         userId,
         ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
+      );
+      await this.awardFinishMilestones(
+        userId,
+        entry.bookItemId,
+        statusReading.finishedAt,
       );
     }
 
@@ -618,6 +701,11 @@ export class BookLibraryService {
       await this.achievements.evaluate(
         userId,
         ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
+      );
+      await this.awardFinishMilestones(
+        userId,
+        entry.bookItemId,
+        completedReading.finishedAt,
       );
     }
 

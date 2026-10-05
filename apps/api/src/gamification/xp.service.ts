@@ -70,22 +70,27 @@ export class XpService {
    * is used elsewhere, so a disabled flag or an exhausted cap is never an
    * error.
    *
-   * `amountOverride` is the one exception to the barème being fixed-amount:
-   * XpReason.ACHIEVEMENT_UNLOCKED has no `amount` in XP_RULES (it varies by
-   * achievement tier), so `AchievementService` passes the unlocked
-   * definition's own `xpAward` here instead. Every other caller omits it.
+   * `amountOverride` covers the reasons with no fixed `amount` in XP_RULES:
+   * ACHIEVEMENT_UNLOCKED (the tier's `xpAward`) and the progressive
+   * SAGA_COMPLETED / READING_GOAL_REACHED. Every other caller omits it.
+   *
+   * `subject` is what earned it, for a source the ledger can't look up on its
+   * own (a saga read from a provider, a reading goal); otherwise resolved from
+   * the source row.
    */
   async award(
     userId: string,
     reason: XpReason,
     sourceId: string,
     amountOverride?: number,
+    subject?: XpSubject,
   ): Promise<boolean> {
     const credited = await this.creditEntry(
       userId,
       reason,
       sourceId,
       amountOverride,
+      subject ? new Map([[sourceId, subject]]) : undefined,
     );
 
     if (credited) {
