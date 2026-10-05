@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { env } from "$env/dynamic/public";
+  import * as env from "$app/env/public";
   import { bootstrap } from "#lib/bootstrap.svelte.js";
   import NewsBanner from "#lib/components/NewsBanner.svelte";
   import Toast from "#lib/components/Toast.svelte";

@@ -33,11 +33,13 @@ export const handle: Handle = ({ event, resolve }) => {
   }
 
   return paraglideMiddleware(event.request, async ({ request, locale }) => {
-    event.request = request;
-    const response = await resolve(event, {
-      transformPageChunk: ({ html }) =>
-        html.replaceAll("%paraglide.lang%", locale),
-    });
+    const response = await resolve(
+      { ...event, request },
+      {
+        transformPageChunk: ({ html }) =>
+          html.replaceAll("%paraglide.lang%", locale),
+      },
+    );
     response.headers.append("Vary", "Accept-Language, Cookie");
 
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) {

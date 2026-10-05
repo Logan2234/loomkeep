@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { env } from "$env/dynamic/public";
+  import * as env from "$app/env/public";
   import { signalVersionLinkClicked } from "#lib/api/client.js";
   import { auth } from "#lib/auth.svelte.js";
   import BetaBadge from "#lib/components/BetaBadge.svelte";

@@ -2,9 +2,13 @@ import "@testing-library/svelte/vitest";
 import { afterAll, afterEach, beforeAll, vi } from "vitest";
 import { server } from "./msw";
 
-// The browser build of $env/dynamic/public reads what SvelteKit's own client
-// runtime injects at boot, which never runs here.
-vi.mock("$env/dynamic/public", () => ({ env: {} }));
+// Component tests do not receive SvelteKit's runtime environment payload.
+vi.mock("$app/env/public", async () => {
+  const { variables } = await import("../../env.js");
+  return Object.fromEntries(
+    Object.keys(variables).map((key) => [key, undefined]),
+  );
+});
 // Component tests do not boot SvelteKit's client runtime; core.ts only
 // reports through Sentry here.
 vi.mock("@sentry/sveltekit", () => ({ captureException: vi.fn() }));
@@ -16,6 +20,6 @@ document.documentElement.classList.add("a11y-reduce-motion");
 
 // A request no test declared fails the test rather than silently hanging on
 // a real network call.
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { env } from "$env/dynamic/public";
+  import * as env from "$app/env/public";
   import { auth } from "#lib/auth.svelte.js";
   import { bootstrap } from "#lib/bootstrap.svelte.js";
   import Icon from "#lib/components/Icon.svelte";

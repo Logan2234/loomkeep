@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { env } from "$env/dynamic/public";
+  import * as env from "$app/env/public";
   import { appConfig } from "#lib/config.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { GITHUB_REPO_URL } from "../constants/external-links";

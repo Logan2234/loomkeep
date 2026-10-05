@@ -57,7 +57,9 @@ test("renders the public landing page and signed-in app shell", async () => {
     const response = await fetch(serverOrigin + pathname);
     assert.equal(response.status, 200, `${pathname}\n${output}`);
     assert.match(response.headers.get("content-type"), /text\/html/);
-    assert.match(await response.text(), /<html/);
+    const html = await response.text();
+    assert.match(html, /<html/);
+    if (pathname === "/app") assert.ok(html.includes(`${serverOrigin}/api`));
   }
 });
 

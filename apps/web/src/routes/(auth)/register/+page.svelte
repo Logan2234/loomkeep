@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { env } from "$env/dynamic/public";
+  import * as env from "$app/env/public";
   import { previewInvitation, register } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";

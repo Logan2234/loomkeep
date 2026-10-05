@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { env } from "$env/dynamic/public";
+  import * as env from "$app/env/public";
   import Banner from "#lib/components/Banner.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import { m } from "#lib/paraglide/messages.js";

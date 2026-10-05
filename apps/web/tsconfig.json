@@ -4,6 +4,6 @@
     "allowJs": true,
     "checkJs": true
   },
-  "include": ["src", "*.ts", "*.js", "*.mjs"],
+  "include": ["src", "*.ts", "*.js"],
   "exclude": ["src/service-worker"]
 }

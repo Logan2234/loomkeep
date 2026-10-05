@@ -1,15 +1,48 @@
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { once } from "node:events";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 const server = setupServer();
 const origin = "https://msw.loomkeep.test";
 
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 describe("MSW REST interception", () => {
+  it("rejects undeclared HTTP requests before they reach a real server", async () => {
+    let requests = 0;
+    const upstream = createServer((_request, response) => {
+      requests++;
+      response.end("unexpected network request");
+    });
+    upstream.listen(0, "127.0.0.1");
+    await once(upstream, "listening");
+    const { port } = upstream.address() as AddressInfo;
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      await expect(
+        fetch(`http://127.0.0.1:${port}/undeclared`),
+      ).rejects.toThrow();
+      expect(requests).toBe(0);
+    } finally {
+      logError.mockRestore();
+      await new Promise<void>((resolve) => upstream.close(() => resolve()));
+    }
+  });
+
   it("preserves dynamic paths, query parameters and JSON mutation bodies", async () => {
     server.use(
       http.patch(`${origin}/library/:id`, async ({ params, request }) =>

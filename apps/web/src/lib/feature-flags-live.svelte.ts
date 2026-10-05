@@ -1,4 +1,4 @@
-import { env } from "$env/dynamic/public";
+import * as env from "$app/env/public";
 import type { UnleashClient } from "unleash-proxy-client";
 
 /**
