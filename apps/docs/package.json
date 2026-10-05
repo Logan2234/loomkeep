@@ -10,12 +10,12 @@
     "preview": "astro preview"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.42.4",
+    "@astrojs/starlight": "^0.42.5",
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
     "@fontsource-variable/hanken-grotesk": "^5.3.0",
     "@fontsource/space-mono": "^5.3.0",
-    "@scalar/api-reference": "^1.72.2",
-    "@scalar/astro": "^0.4.24",
+    "@scalar/api-reference": "^1.72.3",
+    "@scalar/astro": "^0.4.25",
     "astro": "^7.3.5",
     "starlight-links-validator": "^0.26.0",
     "starlight-llms-txt": "^0.12.0",
