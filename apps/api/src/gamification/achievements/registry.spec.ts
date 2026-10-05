@@ -97,9 +97,9 @@ describe("checkCinephileTier", () => {
 });
 
 describe("ACHIEVEMENTS catalogue shape", () => {
-  it("every entry's xpAward is 50, 150 or 400", () => {
+  it("every entry's xpAward is 15, 50 or 150", () => {
     for (const def of ACHIEVEMENT_LIST) {
-      expect([50, 150, 400]).toContain(def.xpAward);
+      expect([15, 50, 150]).toContain(def.xpAward);
     }
   });
 

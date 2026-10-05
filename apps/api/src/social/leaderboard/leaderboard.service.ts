@@ -144,7 +144,7 @@ export class LeaderboardService {
     const { start, end } = periodRange(period);
     const sums = await this.prisma.xpEntry.groupBy({
       by: ["userId"],
-      where: { ...where, createdAt: { gte: start, lt: end } },
+      where: { ...where, createdAt: { gte: start, lt: end }, revokedAt: null },
       _sum: { amount: true },
     });
 

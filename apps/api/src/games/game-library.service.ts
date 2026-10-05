@@ -673,12 +673,11 @@ export class GameLibraryService {
       this.prisma.gameEntry.delete({ where: { id: entryId } }),
     ]);
 
-    await this.xp.revokeBySource("GameEntry", [entryId]); // GAME_FINISHED
     await this.xp.revokeBySource("Entry", [entryId]); // WORK_ADDED
     await this.xp.revokeBySource(
       "GamePlaythrough",
       playthroughs.map((playthrough) => playthrough.id),
-    );
+    ); // GAME_FINISHED / GAME_REPLAYED
     await this.xp.revokeBySource(
       "Review",
       reviews.map((r) => r.id),

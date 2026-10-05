@@ -48,14 +48,22 @@
   let flashing = $state(false);
   $effect(() => {
     if (!highlighted || !node) return;
+    const card = node;
 
-    node.scrollIntoView({
-      block: "center",
-      behavior: prefersReducedMotion() ? "auto" : "smooth",
-    });
+    // Next frame: a card whose data is cached mounts during the navigation
+    // itself, and SvelteKit's reset to the top right after would undo it.
+    const frame = requestAnimationFrame(() =>
+      card.scrollIntoView({
+        block: "center",
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+      }),
+    );
     flashing = true;
     const timer = setTimeout(() => (flashing = false), FLASH_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
   });
 
   // The card speaks for the tier still to earn — its threshold is what the

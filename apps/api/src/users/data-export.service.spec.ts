@@ -476,7 +476,12 @@ describe("DataExportService.buildExport", () => {
     expect(data.progression).toEqual({
       xp: 120,
       xpEntries: [
-        { reason: "REVIEW", amount: 20, createdAt: "2026-02-02T00:00:00.000Z" },
+        {
+          reason: "REVIEW",
+          amount: 20,
+          createdAt: "2026-02-02T00:00:00.000Z",
+          revokedAt: null,
+        },
       ],
       achievements: [
         { key: "first_review", unlockedAt: "2026-02-02T00:00:00.000Z" },

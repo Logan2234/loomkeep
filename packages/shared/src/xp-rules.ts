@@ -62,14 +62,17 @@ export const XP_RULES: Record<XpReason, XpRule> = {
   },
   GAME_FINISHED: {
     reason: XpReason.GAME_FINISHED,
-    amount: 200,
-    sourceType: "GameEntry",
+    // A game takes tens of hours where a book takes a few: paid more than
+    // BOOK_FINISHED so an hour played is worth about an hour read.
+    amount: 350,
+    // The first playthrough: un-finishing the game revokes that cycle.
+    sourceType: "GamePlaythrough",
     dailyCap: 3,
     socialGated: false,
   },
   GAME_REPLAYED: {
     reason: XpReason.GAME_REPLAYED,
-    amount: 50,
+    amount: 100,
     sourceType: "GamePlaythrough",
     dailyCap: 3,
     socialGated: false,
@@ -77,7 +80,8 @@ export const XP_RULES: Record<XpReason, XpRule> = {
   BOOK_FINISHED: {
     reason: XpReason.BOOK_FINISHED,
     amount: 150,
-    sourceType: "BookEntry",
+    // The first reading: un-finishing the book revokes that cycle.
+    sourceType: "BookReading",
     dailyCap: 3,
     socialGated: false,
   },
@@ -125,23 +129,25 @@ export const XP_RULES: Record<XpReason, XpRule> = {
 
   WORK_RATED: {
     reason: XpReason.WORK_RATED,
-    amount: 10,
+    // A rating takes a second: worth half an episode, ten a day.
+    amount: 5,
     sourceType: "Review",
-    dailyCap: 20,
+    dailyCap: 10,
     socialGated: false,
   },
   REVIEW_WRITTEN: {
     reason: XpReason.REVIEW_WRITTEN,
     amount: 30,
     sourceType: "Review",
-    dailyCap: 20,
+    // Five reviews a day is a prolific critic; more is filler.
+    dailyCap: 5,
     socialGated: false,
   },
   REVIEW_DETAILED: {
     reason: XpReason.REVIEW_DETAILED,
     amount: 30,
     sourceType: "Review",
-    dailyCap: 20,
+    dailyCap: 5,
     socialGated: false,
   },
 

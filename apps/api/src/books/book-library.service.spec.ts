@@ -119,7 +119,6 @@ describe("BookLibraryService.deleteEntry", () => {
       data: { text: null, deletedAt: expect.any(Date) },
     });
     expect(bookEntryDelete).toHaveBeenCalledWith({ where: { id: "entry-1" } });
-    expect(xp.revokeBySource).toHaveBeenCalledWith("BookEntry", ["entry-1"]);
     expect(xp.revokeBySource).toHaveBeenCalledWith("Entry", ["entry-1"]);
     expect(deleteLinked).toHaveBeenCalledWith("BookSession", "session-1");
     expect(refreshAfterDelete).toHaveBeenCalledWith("user-1", sessionCreatedAt);

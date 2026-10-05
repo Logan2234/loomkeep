@@ -15,6 +15,7 @@ export const keys = {
     achievements: () => ["gamification", "achievements"] as const,
     pending: () => ["gamification", "pending"] as const,
     progression: () => ["gamification", "progression"] as const,
+    xpHistory: () => ["gamification", "xpHistory"] as const,
     leaderboard: (scope: string, period: string) =>
       ["gamification", "leaderboard", scope, period] as const,
     onboarding: () => ["gamification", "onboarding"] as const,

@@ -242,7 +242,12 @@ export class DataExportService {
       this.prisma.xpEntry.findMany({
         where: { userId },
         orderBy: { createdAt: "asc" },
-        select: { reason: true, amount: true, createdAt: true },
+        select: {
+          reason: true,
+          amount: true,
+          createdAt: true,
+          revokedAt: true,
+        },
       }),
       this.prisma.userAchievement.findMany({
         where: { userId },
@@ -712,6 +717,7 @@ export class DataExportService {
           reason: entry.reason,
           amount: entry.amount,
           createdAt: entry.createdAt.toISOString(),
+          revokedAt: entry.revokedAt?.toISOString() ?? null,
         })),
         achievements: achievementRows.map((achievement) => ({
           key: achievement.key,

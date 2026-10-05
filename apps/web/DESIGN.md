@@ -51,6 +51,30 @@ Green/red are semantic only (success/danger), never decoration.
 expands it to a labelled sidebar; user avatar at bottom) + fixed **bottom tab
 bar** on mobile. No horizontal top nav.
 
+**Motion** — part of the feature, never a later polish pass: every UI change
+ships the transitions of what it adds.
+
+- What moves: anything that appears, disappears, expands or collapses
+  (sections, modals, menus, toasts), and every state change a pointer or a key
+  causes (hover, focus, pressed, selected, a chevron turning).
+- Character: quiet and precise, like the light of a projector — fades, short
+  slides, a slight scale (never below 0.95), colour and brightness shifts.
+  Never bouncy, elastic or cartoonish: no overshoot, no spring wobble, no
+  spinning or wiggling icons, no long travel across the screen.
+- Timing: ~150 ms for hover, press and colour; 180–250 ms for entering,
+  leaving, expanding; ease-out in, ease-in out. Nothing past 300 ms except a
+  deliberate one-off moment (a level reached, a count-up), and those stay
+  under 500 ms.
+- How: CSS transitions (`transition-colors`, `transition-transform`,
+  `duration-150`/`200`) for state changes; Svelte's `fade`/`slide`/`scale` for
+  what enters or leaves the DOM. Animate opacity, transform, colour and
+  filter — not layout, so nothing around the movement shifts (Svelte's
+  `slide` is the one exception, for unfolding content).
+- Reduced motion: Svelte transitions take their duration from
+  `prefersReducedMotion()` (`$lib/motion`, `duration: reduced ? 0 : 200`), and
+  spatial CSS ones (transform) add `motion-reduce:transition-none`. Colour
+  fades may stay.
+
 Implementation: Tailwind v4 (`@tailwindcss/vite`), semantic light/dark tokens
 in `src/app.css`, shared component classes (`.btn`, `.input`, `.card`,
 `.chip`, `.timecode`).

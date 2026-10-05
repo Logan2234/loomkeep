@@ -350,6 +350,7 @@ export class AchievementService {
       where: {
         sourceType: "UserAchievement",
         sourceId: { in: rows.map((r) => r.id) },
+        revokedAt: null,
       },
       select: { sourceId: true, amount: true },
     });

@@ -43,6 +43,7 @@
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import LevelCard from "../LevelCard.svelte";
+  import XpHistoryModal from "../XpHistoryModal.svelte";
   import BadgeShowcase from "../BadgeShowcase.svelte";
 
   // Shared body for both /u/[username] (any profile, including your own —
@@ -234,6 +235,7 @@
   let scanModalOpen = $state(false);
   let avatarModalOpen = $state(false);
   let editProfileModalOpen = $state(false);
+  let xpHistoryOpen = $state(false);
 
   function applyAvatar(url: string | null) {
     queryClient.setQueryData(
@@ -370,7 +372,10 @@
             leaderboardHref={selfManage && appConfig.socialEnabled
               ? "/app/leaderboard"
               : undefined}
-            achievementsHref={selfManage ? "/app/achievements" : undefined} />
+            achievementsHref={selfManage ? "/app/achievements" : undefined}
+            onOpenHistory={selfManage
+              ? () => (xpHistoryOpen = true)
+              : undefined} />
           <div class="mt-6">
             <BadgeShowcase badges={profile.equippedBadges} />
           </div>
@@ -468,6 +473,10 @@
     avatarUrl={profile.avatarUrl}
     onSaved={applyAvatar}
     onclose={() => (avatarModalOpen = false)} />
+{/if}
+
+{#if xpHistoryOpen && profile && profile.xp !== null}
+  <XpHistoryModal xp={profile.xp} onclose={() => (xpHistoryOpen = false)} />
 {/if}
 
 {#if editProfileModalOpen && profile}

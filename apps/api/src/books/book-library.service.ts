@@ -669,12 +669,11 @@ export class BookLibraryService {
       this.prisma.bookEntry.delete({ where: { id: entryId } }),
     ]);
 
-    await this.xp.revokeBySource("BookEntry", [entryId]); // BOOK_FINISHED
     await this.xp.revokeBySource("Entry", [entryId]); // WORK_ADDED
     await this.xp.revokeBySource(
       "BookReading",
       readings.map((reading) => reading.id),
-    );
+    ); // BOOK_FINISHED / BOOK_REPLAYED
     await this.xp.revokeBySource(
       "Review",
       reviews.map((r) => r.id),

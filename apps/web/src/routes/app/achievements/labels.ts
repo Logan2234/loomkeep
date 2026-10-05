@@ -147,7 +147,7 @@ export function contextNote(group: AchievementGroup): NoteSegment[] {
 /**
  * "Débloqué par 4 % des membres" (the ladder's tooltip and screen-reader
  * text) — a share of real members, deliberately
- * distinct from the XP award (50/150/400), which is Loomkeep's own rating of
+ * distinct from the XP award (15/50/150), which is Loomkeep's own rating of
  * how hard an achievement is. Null when the instance is too small to say.
  */
 export function rarityLabel(

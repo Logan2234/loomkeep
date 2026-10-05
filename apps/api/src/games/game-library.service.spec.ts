@@ -118,7 +118,6 @@ describe("GameLibraryService.deleteEntry", () => {
       data: { text: null, deletedAt: expect.any(Date) },
     });
     expect(gameEntryDelete).toHaveBeenCalledWith({ where: { id: "entry-1" } });
-    expect(xp.revokeBySource).toHaveBeenCalledWith("GameEntry", ["entry-1"]);
     expect(xp.revokeBySource).toHaveBeenCalledWith("Entry", ["entry-1"]);
     expect(deleteLinked).toHaveBeenCalledWith("GameSession", "session-1");
     expect(refreshAfterDelete).toHaveBeenCalledWith("user-1", sessionCreatedAt);
