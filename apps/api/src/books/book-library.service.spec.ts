@@ -119,7 +119,6 @@ describe("BookLibraryService.deleteEntry", () => {
       data: { text: null, deletedAt: expect.any(Date) },
     });
     expect(bookEntryDelete).toHaveBeenCalledWith({ where: { id: "entry-1" } });
-    expect(xp.revokeBySource).toHaveBeenCalledWith("BookEntry", ["entry-1"]);
     expect(xp.revokeBySource).toHaveBeenCalledWith("Entry", ["entry-1"]);
     expect(deleteLinked).toHaveBeenCalledWith("BookSession", "session-1");
     expect(refreshAfterDelete).toHaveBeenCalledWith("user-1", sessionCreatedAt);
@@ -195,6 +194,9 @@ describe("BookLibraryService — finishedAt sync", () => {
         create: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
         update: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
       },
+      // No goal set, no series: what a finish can also complete.
+      readingGoal: { findUnique: vi.fn().mockResolvedValue(null) },
+      bookItem: { findUnique: vi.fn().mockResolvedValue({ seriesKey: null }) },
     } as unknown as PrismaService;
     const reviews = {
       getRating: vi.fn().mockResolvedValue(null),
@@ -257,6 +259,9 @@ describe("BookLibraryService — finishedAt sync", () => {
         create: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
         update: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
       },
+      // No goal set, no series: what a finish can also complete.
+      readingGoal: { findUnique: vi.fn().mockResolvedValue(null) },
+      bookItem: { findUnique: vi.fn().mockResolvedValue({ seriesKey: null }) },
     } as unknown as PrismaService;
     const reviews = {
       getRating: vi.fn().mockResolvedValue(null),
@@ -479,7 +484,16 @@ describe("BookLibraryService — XP wiring", () => {
     );
   });
 
-  it("awards BOOK_FINISHED on the TO_READ -> READ transition, not on other updates", async () => {
+  /** Marks a book READ from TO_READ, with what the finish may also complete. */
+  async function finishBook(
+    extra: {
+      pages?: number | null;
+      goal?: { target: number; updatedAt: Date } | null;
+      booksThisYear?: number;
+      seriesKey?: string | null;
+      saga?: { title: string; works: number } | null;
+    } = {},
+  ) {
     const findUnique = vi
       .fn()
       .mockResolvedValueOnce({ status: "TO_READ", favorite: false })
@@ -503,11 +517,36 @@ describe("BookLibraryService — XP wiring", () => {
       },
       bookReading: {
         findFirst: vi.fn().mockResolvedValue(null),
-        create: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
-        update: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
+        create: vi.fn().mockResolvedValue({
+          id: "reading-1",
+          number: 1,
+          finishedAt: new Date("2026-10-05T12:00:00Z"),
+        }),
+        update: vi.fn().mockResolvedValue({
+          id: "reading-1",
+          number: 1,
+          finishedAt: new Date("2026-10-05T12:00:00Z"),
+        }),
+        count: vi.fn().mockResolvedValue(extra.booksThisYear ?? 0),
+      },
+      readingGoal: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue(
+            extra.goal ? { id: "goal-1", ...extra.goal } : null,
+          ),
+      },
+      bookItem: {
+        findUnique: vi.fn().mockResolvedValue({
+          seriesKey: extra.seriesKey ?? null,
+          pageCount: extra.pages ?? null,
+        }),
       },
     } as unknown as PrismaService;
     const xp = stubXp();
+    const sagas = {
+      completed: vi.fn().mockResolvedValue(extra.saga ?? null),
+    } as unknown as import("./book-saga.service").BookSagaService;
 
     const service = new BookLibraryService(
       prisma,
@@ -521,6 +560,8 @@ describe("BookLibraryService — XP wiring", () => {
       stubAchievements(),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
+      undefined,
+      sagas,
     );
 
     await service.upsertEntry("user-1", {
@@ -528,11 +569,81 @@ describe("BookLibraryService — XP wiring", () => {
       sourceId: "ol-1",
       status: "READ",
     } as never);
+    return xp;
+  }
+
+  it("awards BOOK_FINISHED on the TO_READ -> READ transition, not on other updates", async () => {
+    const xp = await finishBook();
+
+    // No page count known: the flat amount.
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "BOOK_FINISHED",
+      "reading-1",
+      150,
+    );
+  });
+
+  it("pays a finished book by its length", async () => {
+    const xp = await finishBook({ pages: 48 });
 
     expect(xp.award).toHaveBeenCalledWith(
       "user-1",
       "BOOK_FINISHED",
       "reading-1",
+      66,
+    );
+  });
+
+  it("pays the reading goal it completes, sized by the goal, once it has stood a month", async () => {
+    const xp = await finishBook({
+      goal: { target: 12, updatedAt: new Date(Date.now() - 40 * 86_400_000) },
+      booksThisYear: 12,
+    });
+
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "READING_GOAL_REACHED",
+      "goal-1",
+      612,
+      {
+        title: null,
+        href: "/app/books",
+        data: { goalTarget: 12, goalYear: 2026 },
+      },
+    );
+  });
+
+  it.each([
+    ["set less than a month before it's met", 12, 5],
+    ["below the smallest rewarded goal", 2, 40],
+  ])("doesn't pay a reading goal %s", async (_case, target, ageDays) => {
+    const xp = await finishBook({
+      goal: { target, updatedAt: new Date(Date.now() - ageDays * 86_400_000) },
+      booksThisYear: 12,
+    });
+
+    expect(xp.award).not.toHaveBeenCalledWith(
+      "user-1",
+      "READING_GOAL_REACHED",
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it("pays the series a finish completes, sized by the series", async () => {
+    const xp = await finishBook({
+      seriesKey: "OL82563L",
+      saga: { title: "Harry Potter", works: 7 },
+    });
+
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "SAGA_COMPLETED",
+      "OL82563L",
+      385,
+      { title: "Harry Potter", href: "/app/books?vue=sagas", data: {} },
     );
   });
 });

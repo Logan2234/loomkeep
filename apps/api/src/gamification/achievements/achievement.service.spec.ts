@@ -8,6 +8,7 @@ import type { PrismaService } from "../../prisma/prisma.service";
 import type { XpService } from "../xp.service";
 import { AchievementService } from "./achievement.service";
 import { RARITY_ACTIVE_WINDOW_DAYS } from "./rarity.util";
+import { ACHIEVEMENTS } from "./registry";
 
 // A social-gated fixture exercises behavior independent of the real registry.
 const { socialGatedCheck } = vi.hoisted(() => ({
@@ -94,7 +95,7 @@ describe("AchievementService.evaluate", () => {
       "user-1",
       "ACHIEVEMENT_UNLOCKED",
       "achievement-1",
-      50,
+      ACHIEVEMENTS.first_episode.xpAward,
     );
     expect(events.emitToUser).toHaveBeenCalledWith(
       "user-1",
@@ -188,7 +189,7 @@ describe("AchievementService.markVersionLinkClicked", () => {
       "user-1",
       "ACHIEVEMENT_UNLOCKED",
       "achievement-1",
-      50,
+      ACHIEVEMENTS.curious_cat.xpAward,
     );
   });
 

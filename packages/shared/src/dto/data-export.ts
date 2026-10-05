@@ -343,7 +343,12 @@ export interface DataExportActivity {
 
 export interface DataExportProgression {
   xp: number;
-  xpEntries: { reason: string; amount: number; createdAt: string }[];
+  xpEntries: {
+    reason: string;
+    amount: number;
+    createdAt: string;
+    revokedAt: string | null;
+  }[];
   achievements: { key: string; unlockedAt: string }[];
 }
 

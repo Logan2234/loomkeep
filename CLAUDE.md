@@ -261,6 +261,9 @@ relationship primitive (friend = reciprocal accepted follow). Details:
   every `apps/web` UI change.
 - Visual identity ("Séance" — fonts, palette, nav pattern):
   `apps/web/DESIGN.md`.
+- Every `apps/web` UI change ships its transitions (hover and focus states,
+  whatever appears, unfolds or closes) — how they should feel and how to
+  write them: `apps/web/DESIGN.md` › Motion.
 - Every alert Loomkeep sends — bell (`Notification` row), web push, email —
   is declared once in `ALERTS` (`packages/shared/src/alerts.ts`): its
   channels, which ones each account can switch (stored in

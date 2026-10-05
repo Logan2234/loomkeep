@@ -7,6 +7,7 @@ import { GamificationController } from "./gamification.controller";
 import { OnboardingController } from "./onboarding/onboarding.controller";
 import { OnboardingService } from "./onboarding/onboarding.service";
 import { SessionXpService } from "./session-xp.service";
+import { XpHistoryService } from "./xp-history.service";
 import { XpService } from "./xp.service";
 
 // G1: XP ledger + level curve. G2 adds the achievement engine (registry in
@@ -24,6 +25,7 @@ import { XpService } from "./xp.service";
   ],
   providers: [
     XpService,
+    XpHistoryService,
     SessionXpService,
     AchievementService,
     OnboardingService,

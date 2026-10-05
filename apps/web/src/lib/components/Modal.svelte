@@ -16,6 +16,7 @@
     description,
     eyebrow,
     leading,
+    badge,
     onclose,
     children,
     actions,
@@ -31,6 +32,8 @@
     eyebrow?: string;
     /** Visual before the title block, e.g. a work's poster thumbnail. */
     leading?: Snippet;
+    /** Inline after the title, e.g. a "Nouveau" badge. */
+    badge?: Snippet;
     onclose: () => void;
     children: Snippet;
     /**
@@ -65,6 +68,12 @@
   const isDesktop = $derived(!layout.compact);
 </script>
 
+{#snippet titleBadge()}
+  {#if badge}
+    <span class="ml-1.5 inline-block align-middle">{@render badge()}</span>
+  {/if}
+{/snippet}
+
 {#snippet header(showClose: boolean)}
   {#if showClose}
     <button
@@ -86,6 +95,7 @@
           id="modal-title"
           class="font-display text-lg leading-tight font-bold text-balance">
           {title}
+          {@render titleBadge()}
         </h3>
         {#if description}
           <p class="text-dim mt-1 text-sm">{description}</p>
@@ -96,6 +106,7 @@
     <div class="mb-4 pr-8">
       <h3 id="modal-title" class="font-display text-lg font-bold">
         {title}
+        {@render titleBadge()}
       </h3>
       {#if description}
         <p class="text-dim mt-1 text-sm">{description}</p>

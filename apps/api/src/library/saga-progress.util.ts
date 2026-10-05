@@ -19,7 +19,9 @@ export interface SagaStatusReader<M> {
 }
 
 /** A film or an anime: one caught up on, still airing, counts as seen. */
-export const MEDIA_SAGA_STATUS: SagaStatusReader<SagaMemberDto> = {
+export const MEDIA_SAGA_STATUS: SagaStatusReader<
+  Pick<SagaMemberDto, "status" | "upcoming">
+> = {
   isSeen: (m) => m.status === "COMPLETED" || m.status === "UP_TO_DATE",
   isDropped: (m) => m.status === "DROPPED",
   isUpcoming: (m) => m.upcoming,
@@ -48,6 +50,21 @@ export function sagaProgress<M>(
   return announced
     ? { state: "waiting", next: announced, ...counts }
     : { state: "finished", next: null, ...counts };
+}
+
+/**
+ * How many released works a saga counts once it is completed — every one of
+ * them seen, none dropped, nothing announced — or null while it isn't. What
+ * SAGA_COMPLETED is paid on.
+ */
+export function completedSagaWorks<M>(
+  members: M[],
+  reader: SagaStatusReader<M>,
+): number | null {
+  const progress = sagaProgress(members, reader);
+  return progress.state === "finished" && progress.seen === progress.released
+    ? progress.released
+    : null;
 }
 
 /** What sorting reads of a saga, whatever its domain. */

@@ -2194,12 +2194,16 @@ model MusicEntry {
 // source per reason) live in packages/shared/src/level.ts and xp-rules.ts —
 // pure data/functions shared with the web, kept out of Prisma entirely.
 
-// One credited (or reversed-by-deletion) unit of XP. Append-only by design:
-// a reversal deletes the row outright rather than writing a
-// negative entry or a revokedAt — re-crediting the same source always starts
-// from a fresh row, so cycling a source (mark watched, unwatch, rewatch)
-// never manufactures XP. Admin adjustments are the exception: distinct rows,
-// never deleted.
+// One credited unit of XP. A reversal stamps `revokedAt` rather than deleting
+// the row, so the history can show what was taken back; every sum reads live
+// rows only. Re-crediting the same source starts from a fresh row, so cycling
+// a source (mark watched, unwatch, rewatch) never manufactures XP. Admin
+// adjustments are the exception: distinct signed rows, never revoked.
+//
+// Idempotence is a partial unique index on (userId, reason, sourceType,
+// sourceId) WHERE "revokedAt" IS NULL, written in the migration's SQL:
+// Prisma's @@unique cannot express the WHERE, and a full one would block
+// re-crediting a source once revoked.
 model XpEntry {
   id         String   @id @default(cuid())
   userId     String
@@ -2209,7 +2213,7 @@ model XpEntry {
   reason     String
   // Table the gain is anchored to ("EpisodeWatch", "LibraryEntry", "DOMAIN"…
   // — see XpRule.sourceType in xp-rules.ts) and that row's id. Together with
-  // reason they make crediting idempotent (the unique constraint below) and
+  // reason they make crediting idempotent (the partial unique index above) and
   // let the nightly reconciliation job re-verify each entry still has a live
   // source. Non-nullable: Postgres treats NULLs as distinct in a unique
   // index, so a nullable sourceId would let the same (userId, reason) pair
@@ -2222,12 +2226,22 @@ model XpEntry {
   // readable (and reconciliation-stable) after a future barème change —
   // re-tuning an amount must never retroactively rewrite history.
   amount     Int
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+  // Display snapshot of what earned it, taken at grant time like
+  // ActivityEvent's: the source row is usually gone by the time a revoked
+  // line is read back (an unwatch deletes its EpisodeWatch). Null title for a
+  // reason with no work behind it (profile, admin adjustment…).
+  title      String?
+  href       String?
+  // Reason-specific extras: { seasonNumber, episodeNumber }, { achievementKey },
+  // { domain }.
+  data       Json      @default("{}")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, reason, sourceType, sourceId])
   @@index([userId, createdAt])
+  @@index([userId, revokedAt])
   @@index([reason, id])
 }
 

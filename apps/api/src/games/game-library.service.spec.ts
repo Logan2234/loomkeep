@@ -118,7 +118,6 @@ describe("GameLibraryService.deleteEntry", () => {
       data: { text: null, deletedAt: expect.any(Date) },
     });
     expect(gameEntryDelete).toHaveBeenCalledWith({ where: { id: "entry-1" } });
-    expect(xp.revokeBySource).toHaveBeenCalledWith("GameEntry", ["entry-1"]);
     expect(xp.revokeBySource).toHaveBeenCalledWith("Entry", ["entry-1"]);
     expect(deleteLinked).toHaveBeenCalledWith("GameSession", "session-1");
     expect(refreshAfterDelete).toHaveBeenCalledWith("user-1", sessionCreatedAt);
@@ -185,10 +184,12 @@ describe("GameLibraryService — XP wiring", () => {
 
     expect(xp.award).toHaveBeenCalledWith("user-1", "WORK_ADDED", "e1");
     expect(xp.award).toHaveBeenCalledWith("user-1", "DOMAIN_STARTED", "GAMES");
+    // No time to beat known: the flat amount.
     expect(xp.award).toHaveBeenCalledWith(
       "user-1",
       "GAME_FINISHED",
       "playthrough-1",
+      350,
     );
     expect(events.emitToUser).toHaveBeenCalledWith(
       "user-1",

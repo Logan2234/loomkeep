@@ -1,5 +1,9 @@
 import type { EntryStatus, SagaMemberDto } from "@loomkeep/shared";
-import { MEDIA_SAGA_STATUS, sagaProgress } from "./saga-progress.util";
+import {
+  completedSagaWorks,
+  MEDIA_SAGA_STATUS,
+  sagaProgress,
+} from "./saga-progress.util";
 
 const work = (
   sourceId: string,
@@ -63,5 +67,28 @@ describe("sagaProgress", () => {
     expect(progress([work("1", "DROPPED"), work("2", "DROPPED")]).state).toBe(
       "none",
     );
+  });
+});
+
+describe("completedSagaWorks", () => {
+  it("counts the works of a saga seen through, nothing announced", () => {
+    expect(
+      completedSagaWorks(
+        [
+          work("1", "COMPLETED"),
+          work("2", "COMPLETED"),
+          work("3", "COMPLETED"),
+        ],
+        MEDIA_SAGA_STATUS,
+      ),
+    ).toBe(3);
+  });
+
+  it.each([
+    ["a work dropped", [work("1", "COMPLETED"), work("2", "DROPPED")]],
+    ["a sequel announced", [work("1", "COMPLETED"), work("2", null, true)]],
+    ["a work left", [work("1", "COMPLETED"), work("2", null)]],
+  ])("isn't completed with %s", (_case, members) => {
+    expect(completedSagaWorks(members, MEDIA_SAGA_STATUS)).toBeNull();
   });
 });

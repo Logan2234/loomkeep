@@ -134,6 +134,130 @@ const checkGameFinisherTier = (target: number) =>
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Sagas completed while tracked here (SAGA_COMPLETED), every domain together. */
+const checkSagaFinisherTier = (target: number) =>
+  checkCountTier(
+    (prisma, userId) =>
+      prisma.xpEntry.count({
+        where: { userId, reason: XpReason.SAGA_COMPLETED, revokedAt: null },
+      }),
+    target,
+  );
+
+/** Pages of every book finished, as catalogued — one without a known count adds none. */
+const checkPagesReaderTier = (target: number) =>
+  checkCountTier(async (prisma, userId) => {
+    const pages = await prisma.bookItem.aggregate({
+      where: { entries: { some: { userId, status: "READ" } } },
+      _sum: { pageCount: true },
+    });
+    return pages._sum.pageCount ?? 0;
+  }, target);
+
+/**
+ * Hours played across every game: its own playtime (sessions, a Steam sync)
+ * or, for a game finished without any, IGDB's average time to beat — so a
+ * player who logs nothing but their finishes still counts what games take.
+ */
+const checkHoursPlayedTier = (target: number) =>
+  checkCountTier(async (prisma, userId) => {
+    const entries = await prisma.gameEntry.findMany({
+      where: { userId },
+      select: {
+        status: true,
+        playtimeMinutes: true,
+        gameItem: { select: { timeToBeatNormallyMin: true } },
+      },
+    });
+    const minutes = entries.reduce(
+      (sum, e) =>
+        sum +
+        Math.max(
+          e.playtimeMinutes,
+          e.status === "COMPLETED"
+            ? (e.gameItem.timeToBeatNormallyMin ?? 0)
+            : 0,
+        ),
+      0,
+    );
+    return Math.floor(minutes / 60);
+  }, target);
+
+// How many times one work must be finished for the "loyal" achievements.
+const LOYAL_TIMES = 3;
+
+/** "cult_film": one movie watched LOYAL_TIMES times — its first watch plus rewatches. */
+export async function checkCultFilm(
+  prisma: PrismaService,
+  userId: string,
+): Promise<AchievementCheckResult> {
+  const replays = await prisma.movieReplay.groupBy({
+    by: ["libraryEntryId"],
+    where: {
+      libraryEntry: {
+        userId,
+        status: "COMPLETED",
+        mediaItem: { type: "MOVIE" },
+      },
+    },
+    _count: { _all: true },
+  });
+  return {
+    unlocked: replays.some((r) => r._count._all >= LOYAL_TIMES - 1),
+  };
+}
+
+/** "bedside_book": one book read to the end LOYAL_TIMES times. */
+export async function checkBedsideBook(
+  prisma: PrismaService,
+  userId: string,
+): Promise<AchievementCheckResult> {
+  const readings = await prisma.bookReading.groupBy({
+    by: ["bookEntryId"],
+    where: { status: "COMPLETED", bookEntry: { userId } },
+    _count: { _all: true },
+  });
+  return { unlocked: readings.some((r) => r._count._all >= LOYAL_TIMES) };
+}
+
+/** "comfort_game": one game finished LOYAL_TIMES times. */
+export async function checkComfortGame(
+  prisma: PrismaService,
+  userId: string,
+): Promise<AchievementCheckResult> {
+  const playthroughs = await prisma.gamePlaythrough.groupBy({
+    by: ["gameEntryId"],
+    where: { status: "COMPLETED", gameEntry: { userId } },
+    _count: { _all: true },
+  });
+  return { unlocked: playthroughs.some((p) => p._count._all >= LOYAL_TIMES) };
+}
+
+/** "worth_the_wait" (secret): a work finished a year or more after it was added. */
+export async function checkWorthTheWait(
+  prisma: PrismaService,
+  userId: string,
+): Promise<AchievementCheckResult> {
+  const user = await behaviourUser(prisma, userId);
+  if (!user) return { unlocked: false };
+
+  // Two columns of one row can't be compared in a Prisma filter: read the
+  // finished entries and compare here.
+  const where = { userId, finishedAt: { gte: user.createdAt } };
+  const select = { createdAt: true, finishedAt: true };
+  const [media, games, books] = await Promise.all([
+    prisma.libraryEntry.findMany({ where, select }),
+    prisma.gameEntry.findMany({ where, select }),
+    prisma.bookEntry.findMany({ where, select }),
+  ]);
+  const unlocked = [...media, ...games, ...books].some(
+    (e) =>
+      e.finishedAt !== null &&
+      e.finishedAt.getTime() - e.createdAt.getTime() >= 365 * DAY_MS,
+  );
+  return { unlocked };
+}
+
 /** "marathon": 10+ episodes watched on the same local calendar day. */
 export async function checkMarathon(
   prisma: PrismaService,
@@ -173,18 +297,20 @@ async function movieWatchTimestamps(
   prisma: PrismaService,
   userId: string,
   movieWhere: Record<string, unknown> = {},
+  since?: Date,
 ): Promise<Date[]> {
   const [movieFirstWatches, movieReplays] = await Promise.all([
     prisma.libraryEntry.findMany({
       where: {
         userId,
-        finishedAt: { not: null },
+        finishedAt: since ? { gte: since } : { not: null },
         mediaItem: { type: "MOVIE", ...movieWhere },
       },
       select: { finishedAt: true },
     }),
     prisma.movieReplay.findMany({
       where: {
+        ...(since ? { finishedAt: { gte: since } } : {}),
         libraryEntry: { userId, mediaItem: { type: "MOVIE", ...movieWhere } },
       },
       select: { finishedAt: true },
@@ -199,24 +325,34 @@ async function movieWatchTimestamps(
   ];
 }
 
+/**
+ * The behaviour achievements (night_owl, early_bird, halloween,
+ * new_year_finish, welcome_back, worth_the_wait) only read activity dated
+ * after the account was created: an imported history tells of habits kept
+ * elsewhere, and would unlock them all the day it lands.
+ */
+async function behaviourUser(prisma: PrismaService, userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { timezone: true, createdAt: true },
+  });
+}
+
 /** Shared core of night_owl/early_bird — a watch whose local hour falls in [startHour, endHour). */
 function checkHourWindow(startHour: number, endHour: number) {
   return async (
     prisma: PrismaService,
     userId: string,
   ): Promise<AchievementCheckResult> => {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { timezone: true },
-    });
+    const user = await behaviourUser(prisma, userId);
     if (!user) return { unlocked: false };
 
     const [episodeWatches, movieDates] = await Promise.all([
       prisma.episodeWatch.findMany({
-        where: { userId },
+        where: { userId, watchedAt: { gte: user.createdAt } },
         select: { watchedAt: true },
       }),
-      movieWatchTimestamps(prisma, userId),
+      movieWatchTimestamps(prisma, userId, {}, user.createdAt),
     ]);
     const dates = [...knownWatchDates(episodeWatches), ...movieDates];
     const unlocked = dates.some((d) => {
@@ -414,19 +550,26 @@ export async function checkHalloween(
   prisma: PrismaService,
   userId: string,
 ): Promise<AchievementCheckResult> {
+  const user = await behaviourUser(prisma, userId);
+  if (!user) return { unlocked: false };
+
   const [horrorEpisodeWatches, horrorMovieDates] = await Promise.all([
     prisma.episodeWatch.findMany({
       where: {
         userId,
+        watchedAt: { gte: user.createdAt },
         episode: {
           season: { mediaItem: { genres: { hasSome: HORROR_GENRES } } },
         },
       },
       select: { watchedAt: true },
     }),
-    movieWatchTimestamps(prisma, userId, {
-      genres: { hasSome: HORROR_GENRES },
-    }),
+    movieWatchTimestamps(
+      prisma,
+      userId,
+      { genres: { hasSome: HORROR_GENRES } },
+      user.createdAt,
+    ),
   ]);
   const all = [...knownWatchDates(horrorEpisodeWatches), ...horrorMovieDates];
   const unlocked = all.some((d) => d.getUTCMonth() === 9); // October
@@ -464,25 +607,14 @@ export async function checkNewYearFinish(
   prisma: PrismaService,
   userId: string,
 ): Promise<AchievementCheckResult> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { timezone: true },
-  });
+  const user = await behaviourUser(prisma, userId);
   if (!user) return { unlocked: false };
 
+  const where = { userId, finishedAt: { gte: user.createdAt } };
   const [media, games, books] = await Promise.all([
-    prisma.libraryEntry.findMany({
-      where: { userId, finishedAt: { not: null } },
-      select: { finishedAt: true },
-    }),
-    prisma.gameEntry.findMany({
-      where: { userId, finishedAt: { not: null } },
-      select: { finishedAt: true },
-    }),
-    prisma.bookEntry.findMany({
-      where: { userId, finishedAt: { not: null } },
-      select: { finishedAt: true },
-    }),
+    prisma.libraryEntry.findMany({ where, select: { finishedAt: true } }),
+    prisma.gameEntry.findMany({ where, select: { finishedAt: true } }),
+    prisma.bookEntry.findMany({ where, select: { finishedAt: true } }),
   ]);
 
   const dates = [...media, ...games, ...books]
@@ -924,8 +1056,11 @@ export async function checkWelcomeBack(
   prisma: PrismaService,
   userId: string,
 ): Promise<AchievementCheckResult> {
+  const user = await behaviourUser(prisma, userId);
+  if (!user) return { unlocked: false };
+
   const watches = await prisma.episodeWatch.findMany({
-    where: { userId },
+    where: { userId, watchedAt: { gte: user.createdAt } },
     select: { watchedAt: true },
     orderBy: { watchedAt: "asc" },
   });
@@ -1029,7 +1164,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   first_episode: {
     key: "first_episode",
     family: "volume",
-    xpAward: 50,
+    xpAward: 15,
     check: checkFirstEpisode,
   },
   cinephile_bronze: {
@@ -1037,24 +1172,24 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "volume",
     tierOf: "cinephile",
     tier: "bronze",
-    xpAward: 50,
-    check: checkCinephileTier(10),
+    xpAward: 15,
+    check: checkCinephileTier(25),
   },
   cinephile_silver: {
     key: "cinephile_silver",
     family: "volume",
     tierOf: "cinephile",
     tier: "silver",
-    xpAward: 150,
-    check: checkCinephileTier(50),
+    xpAward: 50,
+    check: checkCinephileTier(100),
   },
   cinephile_gold: {
     key: "cinephile_gold",
     family: "volume",
     tierOf: "cinephile",
     tier: "gold",
-    xpAward: 400,
-    check: checkCinephileTier(200),
+    xpAward: 150,
+    check: checkCinephileTier(500),
   },
 
   episode_watcher_bronze: {
@@ -1062,31 +1197,31 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "volume",
     tierOf: "episode_watcher",
     tier: "bronze",
-    xpAward: 50,
-    check: checkEpisodeWatcherTier(100),
+    xpAward: 15,
+    check: checkEpisodeWatcherTier(250),
   },
   episode_watcher_silver: {
     key: "episode_watcher_silver",
     family: "volume",
     tierOf: "episode_watcher",
     tier: "silver",
-    xpAward: 150,
-    check: checkEpisodeWatcherTier(500),
+    xpAward: 50,
+    check: checkEpisodeWatcherTier(1000),
   },
   episode_watcher_gold: {
     key: "episode_watcher_gold",
     family: "volume",
     tierOf: "episode_watcher",
     tier: "gold",
-    xpAward: 400,
-    check: checkEpisodeWatcherTier(2000),
+    xpAward: 150,
+    check: checkEpisodeWatcherTier(5000),
   },
   series_finisher_bronze: {
     key: "series_finisher_bronze",
     family: "volume",
     tierOf: "series_finisher",
     tier: "bronze",
-    xpAward: 50,
+    xpAward: 15,
     check: checkSeriesFinisherTier(10),
   },
   series_finisher_silver: {
@@ -1094,23 +1229,23 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "volume",
     tierOf: "series_finisher",
     tier: "silver",
-    xpAward: 150,
-    check: checkSeriesFinisherTier(30),
+    xpAward: 50,
+    check: checkSeriesFinisherTier(50),
   },
   series_finisher_gold: {
     key: "series_finisher_gold",
     family: "volume",
     tierOf: "series_finisher",
     tier: "gold",
-    xpAward: 400,
-    check: checkSeriesFinisherTier(75),
+    xpAward: 150,
+    check: checkSeriesFinisherTier(150),
   },
   book_finisher_bronze: {
     key: "book_finisher_bronze",
     family: "volume",
     tierOf: "book_finisher",
     tier: "bronze",
-    xpAward: 50,
+    xpAward: 15,
     check: checkBookFinisherTier(10),
   },
   book_finisher_silver: {
@@ -1118,7 +1253,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "volume",
     tierOf: "book_finisher",
     tier: "silver",
-    xpAward: 150,
+    xpAward: 50,
     check: checkBookFinisherTier(50),
   },
   book_finisher_gold: {
@@ -1126,7 +1261,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "volume",
     tierOf: "book_finisher",
     tier: "gold",
-    xpAward: 400,
+    xpAward: 150,
     check: checkBookFinisherTier(150),
   },
   game_finisher_bronze: {
@@ -1134,7 +1269,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "volume",
     tierOf: "game_finisher",
     tier: "bronze",
-    xpAward: 50,
+    xpAward: 15,
     check: checkGameFinisherTier(10),
   },
   game_finisher_silver: {
@@ -1142,7 +1277,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "volume",
     tierOf: "game_finisher",
     tier: "silver",
-    xpAward: 150,
+    xpAward: 50,
     check: checkGameFinisherTier(30),
   },
   game_finisher_gold: {
@@ -1150,26 +1285,74 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "volume",
     tierOf: "game_finisher",
     tier: "gold",
-    xpAward: 400,
+    xpAward: 150,
     check: checkGameFinisherTier(75),
+  },
+  pages_reader_bronze: {
+    key: "pages_reader_bronze",
+    family: "volume",
+    tierOf: "pages_reader",
+    tier: "bronze",
+    xpAward: 15,
+    check: checkPagesReaderTier(2500),
+  },
+  pages_reader_silver: {
+    key: "pages_reader_silver",
+    family: "volume",
+    tierOf: "pages_reader",
+    tier: "silver",
+    xpAward: 50,
+    check: checkPagesReaderTier(10000),
+  },
+  pages_reader_gold: {
+    key: "pages_reader_gold",
+    family: "volume",
+    tierOf: "pages_reader",
+    tier: "gold",
+    xpAward: 150,
+    check: checkPagesReaderTier(30000),
+  },
+  hours_played_bronze: {
+    key: "hours_played_bronze",
+    family: "volume",
+    tierOf: "hours_played",
+    tier: "bronze",
+    xpAward: 15,
+    check: checkHoursPlayedTier(100),
+  },
+  hours_played_silver: {
+    key: "hours_played_silver",
+    family: "volume",
+    tierOf: "hours_played",
+    tier: "silver",
+    xpAward: 50,
+    check: checkHoursPlayedTier(500),
+  },
+  hours_played_gold: {
+    key: "hours_played_gold",
+    family: "volume",
+    tierOf: "hours_played",
+    tier: "gold",
+    xpAward: 150,
+    check: checkHoursPlayedTier(2000),
   },
 
   marathon: {
     key: "marathon",
     family: "ritual",
-    xpAward: 150,
+    xpAward: 50,
     check: checkMarathon,
   },
   night_owl: {
     key: "night_owl",
     family: "ritual",
-    xpAward: 50,
+    xpAward: 15,
     check: checkNightOwl,
   },
   early_bird: {
     key: "early_bird",
     family: "ritual",
-    xpAward: 50,
+    xpAward: 15,
     check: checkEarlyBird,
   },
   streak_bronze: {
@@ -1177,7 +1360,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "ritual",
     tierOf: "streak",
     tier: "bronze",
-    xpAward: 50,
+    xpAward: 15,
     check: checkStreakTier(7),
   },
   streak_silver: {
@@ -1185,7 +1368,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "ritual",
     tierOf: "streak",
     tier: "silver",
-    xpAward: 150,
+    xpAward: 50,
     check: checkStreakTier(30),
   },
   streak_gold: {
@@ -1193,7 +1376,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "ritual",
     tierOf: "streak",
     tier: "gold",
-    xpAward: 400,
+    xpAward: 150,
     check: checkStreakTier(365),
   },
 
@@ -1204,7 +1387,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "exploration",
     tierOf: "decades",
     tier: "bronze",
-    xpAward: 50,
+    xpAward: 15,
     check: checkDecadesTier(5),
   },
   decades_silver: {
@@ -1212,7 +1395,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "exploration",
     tierOf: "decades",
     tier: "silver",
-    xpAward: 150,
+    xpAward: 50,
     check: checkDecadesTier(10),
   },
   decades_gold: {
@@ -1220,7 +1403,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "exploration",
     tierOf: "decades",
     tier: "gold",
-    xpAward: 400,
+    xpAward: 150,
     check: checkDecadesTier(15),
   },
   genres_bronze: {
@@ -1228,7 +1411,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "exploration",
     tierOf: "genres",
     tier: "bronze",
-    xpAward: 50,
+    xpAward: 15,
     check: checkGenresTier(25),
   },
   genres_silver: {
@@ -1236,7 +1419,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "exploration",
     tierOf: "genres",
     tier: "silver",
-    xpAward: 150,
+    xpAward: 50,
     check: checkGenresTier(75),
   },
   genres_gold: {
@@ -1244,45 +1427,76 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "exploration",
     tierOf: "genres",
     tier: "gold",
-    xpAward: 400,
+    xpAward: 150,
     check: checkGenresTier(150),
   },
   omnivore: {
     key: "omnivore",
     family: "exploration",
-    xpAward: 150,
+    xpAward: 25,
     check: checkOmnivore,
   },
 
   big_screen: {
     key: "big_screen",
     family: "completion",
-    xpAward: 400,
+    xpAward: 100,
     check: checkBigScreen,
+  },
+  saga_finisher_bronze: {
+    key: "saga_finisher_bronze",
+    family: "completion",
+    tierOf: "saga_finisher",
+    tier: "bronze",
+    xpAward: 15,
+    check: checkSagaFinisherTier(1),
+  },
+  saga_finisher_silver: {
+    key: "saga_finisher_silver",
+    family: "completion",
+    tierOf: "saga_finisher",
+    tier: "silver",
+    xpAward: 50,
+    check: checkSagaFinisherTier(5),
+  },
+  saga_finisher_gold: {
+    key: "saga_finisher_gold",
+    family: "completion",
+    tierOf: "saga_finisher",
+    tier: "gold",
+    xpAward: 150,
+    check: checkSagaFinisherTier(15),
+  },
+  worth_the_wait: {
+    key: "worth_the_wait",
+    family: "completion",
+    xpAward: 50,
+    secret: true,
+    check: checkWorthTheWait,
   },
   well_rounded: {
     key: "well_rounded",
     family: "completion",
-    xpAward: 150,
+    xpAward: 50,
     check: checkWellRounded,
   },
 
   halloween: {
     key: "halloween",
     family: "seasonal",
-    xpAward: 50,
+    xpAward: 15,
     check: checkHalloween,
   },
   contemporary: {
     key: "contemporary",
     family: "seasonal",
-    xpAward: 150,
+    xpAward: 50,
     check: checkContemporary,
   },
   new_year_finish: {
     key: "new_year_finish",
     family: "seasonal",
-    xpAward: 50,
+    xpAward: 15,
     secret: true,
     check: checkNewYearFinish,
   },
@@ -1290,7 +1504,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   first_comment: {
     key: "first_comment",
     family: "social",
-    xpAward: 50,
+    xpAward: 15,
     socialGated: true,
     check: checkFirstComment,
   },
@@ -1299,7 +1513,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "social",
     tierOf: "chatterbox",
     tier: "bronze",
-    xpAward: 50,
+    xpAward: 15,
     socialGated: true,
     check: checkChatterboxTier(20),
   },
@@ -1308,7 +1522,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "social",
     tierOf: "chatterbox",
     tier: "silver",
-    xpAward: 150,
+    xpAward: 50,
     socialGated: true,
     check: checkChatterboxTier(100),
   },
@@ -1317,28 +1531,28 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "social",
     tierOf: "chatterbox",
     tier: "gold",
-    xpAward: 400,
+    xpAward: 150,
     socialGated: true,
     check: checkChatterboxTier(500),
   },
   crowd_favorite: {
     key: "crowd_favorite",
     family: "social",
-    xpAward: 150,
+    xpAward: 50,
     socialGated: true,
     check: checkCrowdFavorite,
   },
   standing_ovation: {
     key: "standing_ovation",
     family: "social",
-    xpAward: 150,
+    xpAward: 50,
     socialGated: true,
     check: checkStandingOvation,
   },
   first_list: {
     key: "first_list",
     family: "social",
-    xpAward: 50,
+    xpAward: 15,
     socialGated: true,
     check: checkFirstList,
   },
@@ -1347,7 +1561,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "social",
     tierOf: "curator",
     tier: "bronze",
-    xpAward: 50,
+    xpAward: 15,
     socialGated: true,
     check: checkCuratorTier(3),
   },
@@ -1356,7 +1570,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "social",
     tierOf: "curator",
     tier: "silver",
-    xpAward: 150,
+    xpAward: 50,
     socialGated: true,
     check: checkCuratorTier(10),
   },
@@ -1365,7 +1579,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "social",
     tierOf: "curator",
     tier: "gold",
-    xpAward: 400,
+    xpAward: 150,
     socialGated: true,
     check: checkCuratorTier(25),
   },
@@ -1374,7 +1588,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "social",
     tierOf: "followers",
     tier: "bronze",
-    xpAward: 50,
+    xpAward: 15,
     socialGated: true,
     check: checkFollowersTier(1),
   },
@@ -1383,7 +1597,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "social",
     tierOf: "followers",
     tier: "silver",
-    xpAward: 150,
+    xpAward: 50,
     socialGated: true,
     check: checkFollowersTier(10),
   },
@@ -1392,21 +1606,21 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "social",
     tierOf: "followers",
     tier: "gold",
-    xpAward: 400,
+    xpAward: 150,
     socialGated: true,
     check: checkFollowersTier(100),
   },
   has_friends: {
     key: "has_friends",
     family: "social",
-    xpAward: 50,
+    xpAward: 15,
     socialGated: true,
     check: checkHasFriends,
   },
   one_sided: {
     key: "one_sided",
     family: "social",
-    xpAward: 50,
+    xpAward: 15,
     secret: true,
     socialGated: true,
     check: checkOneSided,
@@ -1415,7 +1629,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   locked_down: {
     key: "locked_down",
     family: "account",
-    xpAward: 50,
+    xpAward: 15,
     check: checkLockedDown,
   },
   member_since_bronze: {
@@ -1423,7 +1637,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "account",
     tierOf: "member_since",
     tier: "bronze",
-    xpAward: 50,
+    xpAward: 15,
     check: checkMemberSinceTier(30),
   },
   member_since_silver: {
@@ -1431,7 +1645,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "account",
     tierOf: "member_since",
     tier: "silver",
-    xpAward: 150,
+    xpAward: 50,
     check: checkMemberSinceTier(365),
   },
   member_since_gold: {
@@ -1439,19 +1653,19 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "account",
     tierOf: "member_since",
     tier: "gold",
-    xpAward: 400,
+    xpAward: 150,
     check: checkMemberSinceTier(365 * 5),
   },
   fresh_start: {
     key: "fresh_start",
     family: "account",
-    xpAward: 50,
+    xpAward: 15,
     check: checkFreshStart,
   },
   profile_complete: {
     key: "profile_complete",
     family: "account",
-    xpAward: 50,
+    xpAward: 15,
     check: checkProfileComplete,
   },
   // The checklist grants XP only through this completion reward. It is not
@@ -1461,21 +1675,21 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   premiere_seance: {
     key: "premiere_seance",
     family: "account",
-    xpAward: 150,
+    xpAward: 50,
     check: checkPremiereSeance,
   },
 
   no_favorites: {
     key: "no_favorites",
     family: "misc",
-    xpAward: 150,
+    xpAward: 50,
     secret: true,
     check: checkNoFavorites,
   },
   full_inventory: {
     key: "full_inventory",
     family: "completion",
-    xpAward: 150,
+    xpAward: 50,
     check: checkFullInventory,
   },
 
@@ -1483,28 +1697,46 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   guilty_pleasure: {
     key: "guilty_pleasure",
     family: "completion",
-    xpAward: 150,
+    xpAward: 50,
     secret: true,
     check: checkGuiltyPleasure,
   },
   hidden_gem: {
     key: "hidden_gem",
     family: "exploration",
-    xpAward: 400,
+    xpAward: 150,
     secret: true,
     check: checkHiddenGem,
   },
   full_circle: {
     key: "full_circle",
     family: "ritual",
-    xpAward: 150,
+    xpAward: 50,
     secret: true,
     check: checkFullCircle,
+  },
+  cult_film: {
+    key: "cult_film",
+    family: "ritual",
+    xpAward: 50,
+    check: checkCultFilm,
+  },
+  bedside_book: {
+    key: "bedside_book",
+    family: "ritual",
+    xpAward: 50,
+    check: checkBedsideBook,
+  },
+  comfort_game: {
+    key: "comfort_game",
+    family: "ritual",
+    xpAward: 50,
+    check: checkComfortGame,
   },
   anniversary: {
     key: "anniversary",
     family: "seasonal",
-    xpAward: 150,
+    xpAward: 50,
     secret: true,
     check: checkAnniversary,
   },
@@ -1513,35 +1745,35 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   welcome_back: {
     key: "welcome_back",
     family: "ritual",
-    xpAward: 150,
+    xpAward: 50,
     secret: true,
     check: checkWelcomeBack,
   },
   double_life: {
     key: "double_life",
     family: "misc",
-    xpAward: 150,
+    xpAward: 50,
     secret: true,
     check: checkDoubleLife,
   },
   icebreaker: {
     key: "icebreaker",
     family: "social",
-    xpAward: 400,
+    xpAward: 150,
     secret: true,
     check: checkIcebreaker,
   },
   first_take: {
     key: "first_take",
     family: "social",
-    xpAward: 400,
+    xpAward: 150,
     secret: true,
     check: checkFirstTake,
   },
   curious_cat: {
     key: "curious_cat",
     family: "misc",
-    xpAward: 50,
+    xpAward: 15,
     secret: true,
     check: checkCuriousCat,
   },
@@ -1587,6 +1819,7 @@ export const ACHIEVEMENT_KEYS_BY_XP_REASON: Partial<
     "cinephile_bronze",
     "cinephile_silver",
     "cinephile_gold",
+    "worth_the_wait",
     "night_owl",
     "early_bird",
     "decades_bronze",
@@ -1604,6 +1837,7 @@ export const ACHIEVEMENT_KEYS_BY_XP_REASON: Partial<
     "series_finisher_bronze",
     "series_finisher_silver",
     "series_finisher_gold",
+    "worth_the_wait",
     "decades_bronze",
     "decades_silver",
     "decades_gold",
@@ -1620,6 +1854,10 @@ export const ACHIEVEMENT_KEYS_BY_XP_REASON: Partial<
     "game_finisher_bronze",
     "game_finisher_silver",
     "game_finisher_gold",
+    "hours_played_bronze",
+    "hours_played_silver",
+    "hours_played_gold",
+    "worth_the_wait",
     "decades_bronze",
     "decades_silver",
     "decades_gold",
@@ -1630,10 +1868,19 @@ export const ACHIEVEMENT_KEYS_BY_XP_REASON: Partial<
     "well_rounded",
     "new_year_finish",
   ],
+  SAGA_COMPLETED: [
+    "saga_finisher_bronze",
+    "saga_finisher_silver",
+    "saga_finisher_gold",
+  ],
   BOOK_FINISHED: [
     "book_finisher_bronze",
     "book_finisher_silver",
     "book_finisher_gold",
+    "pages_reader_bronze",
+    "pages_reader_silver",
+    "pages_reader_gold",
+    "worth_the_wait",
     "decades_bronze",
     "decades_silver",
     "decades_gold",

@@ -9,6 +9,7 @@ import { type SortOrder } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import {
+  completedSagaWorks,
   sagaComparator,
   sagaProgress,
   type SagaStatusReader,
@@ -73,6 +74,20 @@ export class BookSagaService {
         status: statuses.get(m.sourceId) ?? null,
       })),
     };
+  }
+
+  /**
+   * The series `seriesKey` once the reader has finished it — every volume
+   * read — with how many volumes it counts; null otherwise.
+   */
+  async completed(
+    userId: string,
+    seriesKey: string,
+  ): Promise<{ title: string; works: number } | null> {
+    const saga = await this.getSaga(userId, seriesKey);
+    if (!saga) return null;
+    const works = completedSagaWorks(saga.members, BOOK_SAGA_STATUS);
+    return works === null ? null : { title: saga.title, works };
   }
 
   /** The series of the reader's library: started, then finished. */

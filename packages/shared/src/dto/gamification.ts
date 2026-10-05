@@ -1,3 +1,5 @@
+import type { XpReason } from "../enums";
+
 /**
  * An unlocked achievement not yet shown to the user by the unlock bubble
  * UI (`UserAchievement.displayedAt IS NULL`). `xpAwarded` is looked up from
@@ -92,6 +94,47 @@ export const MAX_EQUIPPED_BADGES = 3;
  */
 export interface MyProgressionDto {
   xp: number | null;
+}
+
+/**
+ * What earned (or took back) one XP line, snapshotted at grant time — the
+ * source row is often gone by the time a revoked line is read. `title` is
+ * null for a reason with no work behind it (profile, admin adjustment…).
+ */
+export interface XpHistoryItemDto {
+  reason: XpReason;
+  /** A loss taking back an earlier gain, rather than the gain itself. */
+  revoked: boolean;
+  /** Signed: a revocation shows the gain it takes back, negated. */
+  amount: number;
+  /** When this happened: the gain, or for a revocation, the revocation. */
+  at: string;
+  /** For a gain later taken back, when; for a revocation, null. */
+  revokedAt: string | null;
+  /** For a revocation, when the gain it takes back was earned. */
+  earnedAt: string | null;
+  title: string | null;
+  /** Null when there is nothing left to open (a deleted list). */
+  href: string | null;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  /** ACHIEVEMENT_UNLOCKED's achievement — a tiered one's family — for the web to name it. */
+  achievementKey: string | null;
+  /** DOMAIN_STARTED / IMPORT_COMPLETED's domain. */
+  domain: string | null;
+  /** READING_GOAL_REACHED's goal: how many books, which year. */
+  goalTarget: number | null;
+  goalYear: number | null;
+}
+
+/** One local day (the viewer's timezone) of the XP ledger. */
+export interface XpHistoryDayDto {
+  /** "YYYY-MM-DD". */
+  day: string;
+  /** Signed sum of `items`. */
+  net: number;
+  /** Most recent first. */
+  items: XpHistoryItemDto[];
 }
 
 export type LeaderboardScope = "global" | "friends";

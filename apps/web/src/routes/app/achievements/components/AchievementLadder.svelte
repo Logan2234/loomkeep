@@ -59,7 +59,7 @@
 </script>
 
 <!-- One grid, rows as subgrids: every column lines up from one tier to the
-     next, however wide its figures ("45 %" vs "< 8 %", "50 XP" vs "400 XP").
+     next, however wide its figures ("45 %" vs "< 8 %", "15 XP" vs "150 XP").
      The wider gap keeps share, reward and pin apart as three separate reads. -->
 <div class="grid grid-cols-[1fr_auto_auto_auto] gap-x-4">
   {#each group.entries as entry, index (entry.key ?? index)}
