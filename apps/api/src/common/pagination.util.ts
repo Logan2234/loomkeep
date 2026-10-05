@@ -1,4 +1,4 @@
-import { MAX_PAGE_LIMIT } from "@loomkeep/shared";
+import { MAX_PAGE_LIMIT, type PagedResult } from "@loomkeep/shared";
 
 /** Parsed, safe `page`/`limit` query params for a `GET` list endpoint. */
 export interface ParsedPage {

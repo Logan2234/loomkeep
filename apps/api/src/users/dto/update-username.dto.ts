@@ -1,4 +1,4 @@
-import { USER_LIMITS } from "@loomkeep/shared";
+import { USER_LIMITS, type UpdateUsernameRequestDto } from "@loomkeep/shared";
 import { IsString, MaxLength, MinLength } from "class-validator";
 
 export class UpdateUsernameDto implements UpdateUsernameRequestDto {

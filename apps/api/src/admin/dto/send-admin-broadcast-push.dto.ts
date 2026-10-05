@@ -1,4 +1,7 @@
-import { PUSH_LIMITS } from "@loomkeep/shared";
+import {
+  PUSH_LIMITS,
+  type SendAdminBroadcastPushRequestDto,
+} from "@loomkeep/shared";
 import { IsOptional, IsString, MaxLength } from "class-validator";
 
 export class SendAdminBroadcastPushDto implements SendAdminBroadcastPushRequestDto {

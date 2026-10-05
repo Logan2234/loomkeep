@@ -1,4 +1,4 @@
-import { FeatureFlag } from "@loomkeep/shared";
+import { FeatureFlag, type UserDto } from "@loomkeep/shared";
 import { liveFlags } from "./feature-flags-live.svelte";
 
 /** Global auth state. Session tokens stay in HttpOnly cookies. */

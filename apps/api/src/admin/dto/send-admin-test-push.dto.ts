@@ -1,4 +1,7 @@
-import { PUSH_LIMITS } from "@loomkeep/shared";
+import {
+  PUSH_LIMITS,
+  type SendAdminTestPushRequestDto,
+} from "@loomkeep/shared";
 import { IsEmail, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class SendAdminTestPushDto implements SendAdminTestPushRequestDto {

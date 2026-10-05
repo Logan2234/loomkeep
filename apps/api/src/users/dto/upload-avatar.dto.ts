@@ -1,4 +1,8 @@
-import { AVATAR_MIME_TYPES, type AvatarMimeType } from "@loomkeep/shared";
+import {
+  AVATAR_MIME_TYPES,
+  type AvatarMimeType,
+  type UploadAvatarRequestDto,
+} from "@loomkeep/shared";
 import { IsIn, IsString, MaxLength } from "class-validator";
 
 // 3MB of base64 text decodes to ~2.2MB of bytes — comfortably above what a

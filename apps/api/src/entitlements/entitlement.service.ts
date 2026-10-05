@@ -1,4 +1,4 @@
-import { FeatureFlag } from "@loomkeep/shared";
+import { FeatureFlag, type LicenseStatusDto } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import type { Plan, UserEntitlement } from "@prisma/client";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";

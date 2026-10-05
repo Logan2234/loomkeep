@@ -1,4 +1,8 @@
-import { episodeCode, progressPercent } from "@loomkeep/shared";
+import {
+  episodeCode,
+  progressPercent,
+  type LibraryEntryDto,
+} from "@loomkeep/shared";
 
 export const epCode = (e: { seasonNumber: number; episodeNumber: number }) =>
   episodeCode(e.seasonNumber, e.episodeNumber);

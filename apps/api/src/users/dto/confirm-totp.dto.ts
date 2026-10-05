@@ -1,4 +1,4 @@
-import { OTP_CODE_LENGTH } from "@loomkeep/shared";
+import { OTP_CODE_LENGTH, type ConfirmTotpRequestDto } from "@loomkeep/shared";
 import { IsString, Length } from "class-validator";
 
 export class ConfirmTotpDto implements ConfirmTotpRequestDto {

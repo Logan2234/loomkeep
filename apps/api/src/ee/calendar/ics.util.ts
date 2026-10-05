@@ -1,4 +1,4 @@
-import { episodeCode } from "@loomkeep/shared";
+import { episodeCode, type CalendarEntryDto } from "@loomkeep/shared";
 import { utcDateKey } from "../../common/date.util";
 
 const CRLF = "\r\n";
