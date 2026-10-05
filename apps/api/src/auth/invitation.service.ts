@@ -13,7 +13,7 @@ import type { Invitation, Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { randomToken, sha256Hex } from "../common/crypto.util";
 import { addDays, sinceDaysAgo } from "../common/date.util";
-import type { ParsedPage } from "../common/pagination.util";
+import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { primaryWebOrigin } from "../common/web-origin.util";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -123,10 +123,8 @@ export class InvitationService {
       take: page.take + 1,
     });
 
-    return {
-      items: rows.slice(0, page.limit).map((row) => this.toDto(row, now)),
-      hasMore: rows.length > page.limit,
-    };
+    const { items, hasMore } = toPagedResult(rows, page.limit);
+    return { items: items.map((row) => this.toDto(row, now)), hasMore };
   }
 
   async create(

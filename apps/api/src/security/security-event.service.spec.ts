@@ -1,5 +1,6 @@
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { vi, type Mock } from "vitest";
+import { parsePageQuery } from "../common/pagination.util";
 import { registerRequestContext } from "../common/request-context";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -154,7 +155,7 @@ describe("SecurityEventService.listForAccount", () => {
   it("reads only the account's own events, newest first, without USER_DELETED", async () => {
     const { service, prisma } = makeService();
 
-    await service.listForAccount("user-1", 2, 20);
+    await service.listForAccount("user-1", parsePageQuery("2", "20", 20));
 
     expect(prisma.securityEvent.findMany).toHaveBeenCalledWith({
       where: { userId: "user-1", type: { not: "USER_DELETED" } },
@@ -179,7 +180,10 @@ describe("SecurityEventService.listForAccount", () => {
       },
     ]);
 
-    const result = await service.listForAccount("user-1", 1, 20);
+    const result = await service.listForAccount(
+      "user-1",
+      parsePageQuery("1", "20", 20),
+    );
 
     expect(result).toEqual({
       hasMore: false,
@@ -246,7 +250,7 @@ describe("SecurityEventService.list", () => {
   it("pages by 50, offsetting by (page - 1) * 50", async () => {
     const { service, prisma } = makeService();
 
-    await service.list({ page: 3 });
+    await service.list({ page: parsePageQuery("3", undefined, 50) });
 
     // take is limit + 1 (over-fetch by one to derive hasMore).
     expect(prisma.securityEvent.findMany).toHaveBeenCalledWith(

@@ -19,13 +19,16 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { AppException } from "../common/app.exception";
+import { toPagedResult } from "../common/pagination.util";
 import { sessionPeriodMinutes } from "../common/session-period.util";
+import { normalizeSessionNotes, sessionDate } from "../common/session.util";
 import { SessionXpService } from "../gamification/session-xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { CreateGameSessionDto } from "./dto/create-game-session.dto";
 import { UpdateGameSessionDto } from "./dto/update-game-session.dto";
 import { assertGameReleased } from "./game-release.util";
+import { toPlaythroughDto } from "./game.mappers";
 
 const PAGE_SIZE = 10;
 
@@ -52,7 +55,7 @@ export class GameSessionService {
     dto: CreateGameSessionDto,
     source: SessionSource = SessionSource.MANUAL,
   ): Promise<GameSessionMutationDto> {
-    const occurredAt = this.validDate(dto.occurredAt);
+    const occurredAt = sessionDate(dto.occurredAt);
     const entry = await this.ownedEntry(userId, entryId);
 
     // An import reports play that happened, whatever IGDB says of the release.
@@ -137,7 +140,7 @@ export class GameSessionService {
   ): Promise<GameSessionMutationDto> {
     const before = await this.ownedSession(userId, sessionId);
     const occurredAt = dto.occurredAt
-      ? this.validDate(dto.occurredAt)
+      ? sessionDate(dto.occurredAt)
       : before.occurredAt;
     const durationMinutes = dto.durationMinutes ?? before.durationMinutes;
     const notes =
@@ -282,11 +285,12 @@ export class GameSessionService {
       }),
     ]);
     const periods = sessionPeriodMinutes(recent, user.user.timezone ?? "UTC");
+    const { items, hasMore } = toPagedResult(rows, PAGE_SIZE);
     return {
-      items: rows
-        .slice(0, PAGE_SIZE)
-        .map((session) => toDto(session, session.playthrough?.number ?? null)),
-      hasMore: rows.length > PAGE_SIZE,
+      items: items.map((session) =>
+        toDto(session, session.playthrough?.number ?? null),
+      ),
+      hasMore,
       totalSessions,
       totalTrackedMinutes: entry.trackedPlaytimeMinutes,
       activePlaythrough: user.playthroughs[0]
@@ -417,19 +421,6 @@ export class GameSessionService {
     });
   }
 
-  private validDate(value: string): Date {
-    const date = new Date(value);
-
-    if (date.getTime() > Date.now()) {
-      throw new AppException(
-        HttpStatus.BAD_REQUEST,
-        ErrorCode.LibrarySessionDateFuture,
-      );
-    }
-
-    return date;
-  }
-
   private activityData(
     session: Pick<GameSession, "durationMinutes" | "occurredAt">,
   ) {
@@ -455,33 +446,4 @@ function toDto(
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
   };
-}
-
-function toPlaythroughDto(playthrough: {
-  id: string;
-  number: number;
-  status: string;
-  startedAt: Date | null;
-  finishedAt: Date | null;
-  trackedMinutes: number;
-  legacyIncomplete: boolean;
-  _count: { sessions: number };
-}) {
-  return {
-    id: playthrough.id,
-    number: playthrough.number,
-    status: playthrough.status as "ACTIVE" | "COMPLETED" | "DROPPED",
-    startedAt: playthrough.startedAt?.toISOString() ?? null,
-    finishedAt: playthrough.finishedAt?.toISOString() ?? null,
-    sessionCount: playthrough._count.sessions,
-    trackedMinutes: playthrough.trackedMinutes,
-    legacyIncomplete: playthrough.legacyIncomplete,
-  };
-}
-
-function normalizeSessionNotes(
-  notes: string | null | undefined,
-): string | null {
-  const trimmed = notes?.trim();
-  return trimmed ? trimmed : null;
 }

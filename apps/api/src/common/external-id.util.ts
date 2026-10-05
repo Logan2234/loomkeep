@@ -1,3 +1,8 @@
+export const CANONICAL_EXTERNAL_ID_SELECT = {
+  canonicalSource: true,
+  externalIds: { select: { source: true, externalId: true } },
+} as const;
+
 /**
  * A catalogue item's external ID in its own canonical source (always present
  * in practice; falls back to "" if the canonical ref is somehow missing).

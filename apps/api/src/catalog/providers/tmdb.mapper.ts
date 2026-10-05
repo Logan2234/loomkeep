@@ -17,6 +17,20 @@ import type {
 // these and serve them from Loomkeep's own infra. URLs are only ever handed
 // to the client, which loads them straight from image.tmdb.org.
 const IMG = "https://image.tmdb.org/t/p";
+const IMAGE_SIZE = {
+  poster: "w500",
+  backdrop: "w1280",
+  still: "w300",
+  profile: "w185",
+  logo: "w92",
+} as const;
+
+function tmdbImage(
+  path: string,
+  size: (typeof IMAGE_SIZE)[keyof typeof IMAGE_SIZE],
+): string {
+  return `${IMG}/${size}${path}`;
+}
 
 export interface TmdbMovieResult {
   id: number;
@@ -189,7 +203,9 @@ export function toMovieSummary(movie: TmdbMovieResult): MediaSummaryDto {
     title: movie.title,
     originalTitle: movie.original_title ?? null,
     year: movie.release_date ? Number(movie.release_date.slice(0, 4)) : null,
-    posterUrl: movie.poster_path ? `${IMG}/w500${movie.poster_path}` : null,
+    posterUrl: movie.poster_path
+      ? tmdbImage(movie.poster_path, IMAGE_SIZE.poster)
+      : null,
     isAdult: movie.adult ?? false,
   };
 }
@@ -218,7 +234,9 @@ export function toTvSummary(tv: TmdbTvResult): MediaSummaryDto {
     title: tv.name,
     originalTitle: tv.original_name ?? null,
     year: tv.first_air_date ? Number(tv.first_air_date.slice(0, 4)) : null,
-    posterUrl: tv.poster_path ? `${IMG}/w500${tv.poster_path}` : null,
+    posterUrl: tv.poster_path
+      ? tmdbImage(tv.poster_path, IMAGE_SIZE.poster)
+      : null,
     // TMDB's TV catalogue carries no `adult` flag (its pornographic
     // catalogue is movies-only).
     isAdult: false,
@@ -252,7 +270,7 @@ export function toMovieDetails(movie: TmdbMovieDetails): ProviderMediaDetails {
     summary: toMovieSummary(movie),
     overview: movie.overview ?? null,
     backdropUrl: movie.backdrop_path
-      ? `${IMG}/w1280${movie.backdrop_path}`
+      ? tmdbImage(movie.backdrop_path, IMAGE_SIZE.backdrop)
       : null,
     genres: movie.genres?.map((g) => g.name) ?? [],
     status: movie.status ?? null,
@@ -284,7 +302,9 @@ export function toTvDetails(
   return {
     summary: toTvSummary(tv),
     overview: tv.overview ?? null,
-    backdropUrl: tv.backdrop_path ? `${IMG}/w1280${tv.backdrop_path}` : null,
+    backdropUrl: tv.backdrop_path
+      ? tmdbImage(tv.backdrop_path, IMAGE_SIZE.backdrop)
+      : null,
     genres: tv.genres?.map((g) => g.name) ?? [],
     status: tv.status ?? null,
     format: null,
@@ -333,7 +353,7 @@ export function toTvSeason(
       // TMDB reports 0 as well as null for an unknown runtime.
       runtimeMin: e.runtime || null,
       overview: e.overview?.trim() || null,
-      stillUrl: e.still_path ? `${IMG}/w300${e.still_path}` : null,
+      stillUrl: e.still_path ? tmdbImage(e.still_path, IMAGE_SIZE.still) : null,
     })),
   };
 }
@@ -375,7 +395,9 @@ export function toExtras(
       id: String(c.id),
       name: c.name,
       role: c.character || null,
-      photoUrl: c.profile_path ? `${IMG}/w185${c.profile_path}` : null,
+      photoUrl: c.profile_path
+        ? tmdbImage(c.profile_path, IMAGE_SIZE.profile)
+        : null,
       // Split cast photo is an AniList-only concept (voice actor vs. character).
       characterPhotoUrl: null,
     })),
@@ -385,7 +407,7 @@ export function toExtras(
     ratings: [...tmdbRating, ...omdbRatings],
     images: (data.images?.backdrops ?? [])
       .slice(0, MAX_GALLERY_IMAGES)
-      .map((b) => `${IMG}/w1280${b.file_path}`),
+      .map((b) => tmdbImage(b.file_path, IMAGE_SIZE.backdrop)),
     tagline: data.tagline?.trim() || null,
     directors: directorNames(type, data),
     trailerVideoId: pickTrailer(data.videos?.results),
@@ -417,7 +439,9 @@ export function toCastDetail(p: TmdbPersonDetails): CastDetailDto {
 
   return {
     name: p.name,
-    photoUrl: p.profile_path ? `${IMG}/w185${p.profile_path}` : null,
+    photoUrl: p.profile_path
+      ? tmdbImage(p.profile_path, IMAGE_SIZE.profile)
+      : null,
     subtitle: personSubtitle(p),
     description: p.biography?.trim() || null,
     knownFor,
@@ -505,6 +529,6 @@ export function toWatchProviders(
     .map((p) => ({
       id: p.provider_id,
       name: p.provider_name.trim(),
-      logoUrl: p.logo_path ? `${IMG}/w92${p.logo_path}` : null,
+      logoUrl: p.logo_path ? tmdbImage(p.logo_path, IMAGE_SIZE.logo) : null,
     }));
 }

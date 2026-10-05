@@ -88,8 +88,11 @@ export function buildImportShows(
 
   const favoriteIds = new Set(
     favorites
-      .filter((e) => e.type === "show" && e.show)
-      .map((e) => e.show!.ids.trakt),
+      .filter(
+        (e): e is typeof e & { show: NonNullable<typeof e.show> } =>
+          e.type === "show" && !!e.show,
+      )
+      .map((e) => e.show.ids.trakt),
   );
   const ratingById = new Map(ratings.map((r) => [r.show.ids.trakt, r.rating]));
 
@@ -157,8 +160,11 @@ export function buildImportMovies(
 
   const favoriteIds = new Set(
     favorites
-      .filter((e) => e.type === "movie" && e.movie)
-      .map((e) => e.movie!.ids.trakt),
+      .filter(
+        (e): e is typeof e & { movie: NonNullable<typeof e.movie> } =>
+          e.type === "movie" && !!e.movie,
+      )
+      .map((e) => e.movie.ids.trakt),
   );
   const ratingById = new Map(ratings.map((r) => [r.movie.ids.trakt, r.rating]));
 

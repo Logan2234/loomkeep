@@ -5,6 +5,7 @@ import type { FastifyReply } from "fastify";
 import { ApiRateLimitService } from "../../api-keys/api-rate-limit.service";
 import type { AuthenticatedRequest } from "../../auth/decorators/current-user.decorator";
 import { AppException } from "../../common/app.exception";
+import { RATE_LIMIT_HEADERS } from "../../common/rate-limit-headers";
 
 /**
  * Once an hour per account, answered like the per-minute quota
@@ -23,7 +24,9 @@ export class ExportRateLimitGuard implements CanActivate {
     const result = this.rateLimit.consumeExport(user.sub);
 
     if (!result.allowed) {
-      http.getResponse<FastifyReply>().header("Retry-After", result.resetIn);
+      http
+        .getResponse<FastifyReply>()
+        .header(RATE_LIMIT_HEADERS.retryAfter, result.resetIn);
       throw new AppException(
         HttpStatus.TOO_MANY_REQUESTS,
         ErrorCode.ApiRateLimited,

@@ -12,7 +12,11 @@ import { ApiOkResponse } from "@nestjs/swagger";
 import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
-import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
+import {
+  DEFAULT_PAGE_SIZE,
+  parsePageQuery,
+  toPagedResult,
+} from "../common/pagination.util";
 import { ImportJobService } from "../import/import-job.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { buildImportSummary } from "./admin-imports.util";
@@ -174,10 +178,7 @@ export class AdminImportsController {
             take: pageLimit - running.length + 1,
           });
     const combined = [...running, ...rows.map(toRunDto)];
-    return {
-      items: combined.slice(0, pageLimit),
-      hasMore: combined.length > pageLimit,
-    };
+    return toPagedResult(combined, pageLimit);
   }
 
   @Get("imports/:id")

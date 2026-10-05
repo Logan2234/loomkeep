@@ -1,4 +1,4 @@
-import { parsePageQuery } from "./pagination.util";
+import { parsePageQuery, toPagedResult } from "./pagination.util";
 
 describe("parsePageQuery", () => {
   it("defaults to page 1 and the given default limit when both are omitted", () => {
@@ -40,5 +40,25 @@ describe("parsePageQuery", () => {
       page: 2,
       limit: 10,
     });
+  });
+});
+
+describe("toPagedResult", () => {
+  it.each([
+    { rows: [], items: [], hasMore: false },
+    { rows: ["a"], items: ["a"], hasMore: false },
+    { rows: ["a", "b"], items: ["a", "b"], hasMore: false },
+    { rows: ["a", "b", "c"], items: ["a", "b"], hasMore: true },
+  ])(
+    "keeps a full page only when another row exists: $rows",
+    ({ rows, items, hasMore }) => {
+      expect(toPagedResult(rows, 2)).toEqual({ items, hasMore });
+    },
+  );
+
+  it("leaves the fetched rows intact", () => {
+    const rows = Object.freeze([1, 2, 3]);
+    expect(toPagedResult(rows, 2)).toEqual({ items: [1, 2], hasMore: true });
+    expect(rows).toEqual([1, 2, 3]);
   });
 });

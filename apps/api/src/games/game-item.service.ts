@@ -3,6 +3,10 @@ import { isGameUpcoming } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { GameItem } from "@prisma/client";
+import {
+  CATALOG_SYNC_TTL_MS,
+  isCatalogFresh,
+} from "../common/catalog-sync.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
@@ -15,7 +19,6 @@ import type {
 import { IgdbProvider } from "./providers/igdb.provider";
 
 // A cached game referenced by users is refreshed at most once a day.
-const SYNC_TTL_MS = 24 * 60 * 60 * 1000;
 
 // Same bound as the media refresh: a catalog bigger than this is caught up
 // over the next runs, most stale first. IGDB serves them 500 per query.
@@ -56,7 +59,7 @@ export class GameItemService {
   }
 
   private async runRefreshStale(): Promise<number> {
-    const staleBefore = new Date(Date.now() - SYNC_TTL_MS);
+    const staleBefore = new Date(Date.now() - CATALOG_SYNC_TTL_MS);
     const items = await this.prisma.gameItem.findMany({
       where: {
         lastSyncedAt: { lt: staleBefore },
@@ -162,10 +165,7 @@ export class GameItemService {
       include: { gameItem: true },
     });
 
-    if (
-      existingRef &&
-      Date.now() - existingRef.gameItem.lastSyncedAt.getTime() < SYNC_TTL_MS
-    ) {
+    if (existingRef && isCatalogFresh(existingRef.gameItem.lastSyncedAt)) {
       return existingRef.gameItem;
     }
 

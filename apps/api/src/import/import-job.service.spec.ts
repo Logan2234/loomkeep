@@ -3,6 +3,7 @@ import { HttpStatus } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
+import { parsePageQuery } from "../common/pagination.util";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
@@ -739,7 +740,9 @@ describe("ImportJobService.getHistory", () => {
       stubNotifications(),
     );
 
-    await expect(service.getHistory("u1", 1, 20)).resolves.toEqual({
+    await expect(
+      service.getHistory("u1", parsePageQuery("1", "20", 20)),
+    ).resolves.toEqual({
       items: [
         {
           id: "run-1",

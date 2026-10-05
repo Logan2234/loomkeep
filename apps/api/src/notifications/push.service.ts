@@ -29,15 +29,17 @@ export interface PushSendOutcome {
 @Injectable()
 export class PushService {
   private readonly logger = new Logger(PushService.name);
-  private readonly enabled: boolean;
+  private readonly enabled: boolean = false;
+  private readonly vapidPublicKey: string = "";
 
   constructor(private readonly prisma: PrismaService) {
     const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } = process.env;
     const subject = vapidSubject();
-    this.enabled = Boolean(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && subject);
 
-    if (this.enabled) {
-      webpush.setVapidDetails(subject!, VAPID_PUBLIC_KEY!, VAPID_PRIVATE_KEY!);
+    if (subject && VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+      this.enabled = true;
+      this.vapidPublicKey = VAPID_PUBLIC_KEY;
+      webpush.setVapidDetails(subject, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
     } else if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
       this.logger.warn(
         "VAPID_SUBJECT not set and WEB_ORIGIN isn't HTTPS — push notifications are disabled",
@@ -49,7 +51,7 @@ export class PushService {
   }
 
   publicKey(): string {
-    return this.enabled ? process.env.VAPID_PUBLIC_KEY! : "";
+    return this.vapidPublicKey;
   }
 
   async subscribe(

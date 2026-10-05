@@ -8,6 +8,11 @@ import type {
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { sinceDaysAgo } from "../common/date.util";
+import {
+  parsePageQuery,
+  toPagedResult,
+  type ParsedPage,
+} from "../common/pagination.util";
 import { currentRequest } from "../common/request-context";
 import {
   SECURITY_ALERT_EVENTS,
@@ -44,8 +49,7 @@ export interface ListSecurityEventsParams {
   type?: SecurityEventType;
   /** Matches either the stored identifier (LOGIN_FAILED) or the linked account's current email. */
   identifier?: string;
-  page?: number;
-  limit?: number;
+  page?: ParsedPage;
 }
 
 @Injectable()
@@ -125,19 +129,20 @@ export class SecurityEventService {
    */
   async listForAccount(
     userId: string,
-    page: number,
-    limit: number,
+    page: ParsedPage,
   ): Promise<PagedResult<AccountSecurityEventDto>> {
+    const { skip, take, limit } = page;
     const rows = await this.prisma.securityEvent.findMany({
       where: { userId, type: { not: "USER_DELETED" } },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
     });
 
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
     return {
-      hasMore: rows.length > limit,
-      items: rows.slice(0, limit).map((e) => ({
+      hasMore,
+      items: pageRows.map((e) => ({
         id: e.id,
         type: e.type as SecurityEventType,
         detail: e.detail,
@@ -224,11 +229,9 @@ export class SecurityEventService {
   async list(
     params: ListSecurityEventsParams,
   ): Promise<PagedResult<SecurityEventDto>> {
-    const page = params.page && params.page > 0 ? params.page : 1;
-    const limit =
-      params.limit && params.limit > 0
-        ? params.limit
-        : SECURITY_EVENT_PAGE_SIZE;
+    const { skip, take, limit } =
+      params.page ??
+      parsePageQuery(undefined, undefined, SECURITY_EVENT_PAGE_SIZE);
 
     const rows = await this.prisma.securityEvent.findMany({
       where: {
@@ -253,11 +256,10 @@ export class SecurityEventService {
       },
       include: { user: { select: { email: true } } },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
     });
-    const hasMore = rows.length > limit;
-    const events = rows.slice(0, limit);
+    const { items: events, hasMore } = toPagedResult(rows, limit);
 
     return {
       hasMore,

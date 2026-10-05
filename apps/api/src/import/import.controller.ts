@@ -66,7 +66,7 @@ export class ImportController {
     @Query("limit") limit?: string,
   ): Promise<PagedResult<ImportHistoryRunDto>> {
     const parsed = parsePageQuery(page, limit, DEFAULT_PAGE_SIZE);
-    return this.jobs.getHistory(user.sub, parsed.page, parsed.limit);
+    return this.jobs.getHistory(user.sub, parsed);
   }
 
   /** Analyse an export and build a reconciliation plan (writes nothing). */

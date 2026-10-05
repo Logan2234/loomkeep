@@ -1,4 +1,5 @@
 import {
+  VisibilityFacet,
   type ActivityActorDto,
   type ActivityDomain,
   type ActivityEventDto,
@@ -8,11 +9,18 @@ import {
   type ListVisibility,
   type PagedResult,
   type ProfileAccess,
-  VisibilityFacet,
 } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { canonicalExternalId } from "../common/external-id.util";
+import {
+  CANONICAL_EXTERNAL_ID_SELECT,
+  canonicalExternalId,
+} from "../common/external-id.util";
+import {
+  parsePageQuery,
+  toPagedResult,
+  type ParsedPage,
+} from "../common/pagination.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { avatarUrl } from "../users/avatar.util";
 import { DomainGateService } from "../users/domain-gate.service";
@@ -153,10 +161,10 @@ export class ActivityService {
    */
   async homeFeed(
     viewerId: string,
-    page = 1,
-    limit = FEED_PAGE_SIZE,
+    page: ParsedPage = parsePageQuery(undefined, undefined, FEED_PAGE_SIZE),
     domain?: Domain,
   ): Promise<PagedResult<ActivityEventDto>> {
+    const { skip, take, limit } = page;
     const enabled = await this.domainGate.getEnabledDomains(viewerId);
 
     if (domain && !enabled.includes(domain)) {
@@ -176,8 +184,8 @@ export class ActivityService {
         domain: { in: domains },
       },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
     });
 
     return this.buildFeed(viewerId, rows, limit);
@@ -191,14 +199,14 @@ export class ActivityService {
   async profileTimeline(
     viewerId: string,
     target: { id: string; profileAccess: string },
-    page = 1,
-    limit = FEED_PAGE_SIZE,
+    page: ParsedPage = parsePageQuery(undefined, undefined, FEED_PAGE_SIZE),
   ): Promise<PagedResult<ActivityEventDto>> {
+    const { skip, take, limit } = page;
     const rows = await this.prisma.activityEvent.findMany({
       where: { userId: target.id },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
     });
 
     return this.buildFeed(viewerId, rows, limit);
@@ -227,8 +235,8 @@ export class ActivityService {
     rows: EventRow[],
     limit: number,
   ): Promise<PagedResult<ActivityEventDto>> {
-    const hasMore = rows.length > limit;
-    const page = await this.filterVisible(viewerId, rows.slice(0, limit));
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
+    const page = await this.filterVisible(viewerId, pageRows);
 
     const actors = await this.actors(page.map((e) => e.userId));
     const aggregated = aggregate(page);
@@ -388,16 +396,16 @@ export class ActivityService {
     imageUrl: string | null;
     href: string | null;
   } | null> {
-    const withIds = {
-      canonicalSource: true,
-      externalIds: { select: { source: true, externalId: true } },
-    } as const;
-
     switch (targetType) {
       case "MEDIA": {
         const i = await this.prisma.mediaItem.findUnique({
           where: { id: targetId },
-          select: { title: true, posterUrl: true, type: true, ...withIds },
+          select: {
+            title: true,
+            posterUrl: true,
+            type: true,
+            ...CANONICAL_EXTERNAL_ID_SELECT,
+          },
         });
         if (!i) return null;
         const src = canonicalExternalId(i, i.externalIds);
@@ -411,7 +419,11 @@ export class ActivityService {
       case "GAME": {
         const i = await this.prisma.gameItem.findUnique({
           where: { id: targetId },
-          select: { title: true, coverUrl: true, ...withIds },
+          select: {
+            title: true,
+            coverUrl: true,
+            ...CANONICAL_EXTERNAL_ID_SELECT,
+          },
         });
         if (!i) return null;
         const src = canonicalExternalId(i, i.externalIds);
@@ -425,7 +437,11 @@ export class ActivityService {
       case "BOOK": {
         const i = await this.prisma.bookItem.findUnique({
           where: { id: targetId },
-          select: { title: true, coverUrl: true, ...withIds },
+          select: {
+            title: true,
+            coverUrl: true,
+            ...CANONICAL_EXTERNAL_ID_SELECT,
+          },
         });
         if (!i) return null;
         const src = canonicalExternalId(i, i.externalIds);
@@ -439,7 +455,11 @@ export class ActivityService {
       case "MUSIC": {
         const i = await this.prisma.musicItem.findUnique({
           where: { id: targetId },
-          select: { title: true, coverUrl: true, ...withIds },
+          select: {
+            title: true,
+            coverUrl: true,
+            ...CANONICAL_EXTERNAL_ID_SELECT,
+          },
         });
         if (!i) return null;
         const src = canonicalExternalId(i, i.externalIds);

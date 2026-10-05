@@ -2,7 +2,7 @@ import type { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { type Mock, vi } from "vitest";
 import { AppException } from "../common/app.exception";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
+import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
@@ -324,7 +324,12 @@ describe("CommentService.list — blocking", () => {
         b: relation({ blockedByTarget: true }),
       },
     });
-    const result = await svc.list("viewer", "MEDIA", "m1", 1);
+    const result = await svc.list(
+      "viewer",
+      "MEDIA",
+      "m1",
+      parsePageQuery("1", "20", 20),
+    );
     expect(result.items.map((row) => row.id)).toEqual(["self", "former"]);
     expect(prisma.block.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.block.findMany).toHaveBeenCalledWith({
@@ -434,7 +439,11 @@ describe("CommentService.listReplies", () => {
       ]);
     const { svc } = make({ comment: { findMany } });
 
-    const page = await svc.listReplies("viewer", "c1", 1, 1);
+    const page = await svc.listReplies(
+      "viewer",
+      "c1",
+      parsePageQuery("1", "1", 20),
+    );
 
     expect(page.items.map((r) => r.id)).toEqual(["r0"]);
     expect(page.hasMore).toBe(true);

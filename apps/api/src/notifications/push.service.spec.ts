@@ -153,6 +153,13 @@ describe("PushService VAPID subject", () => {
     expect(service.publicKey()).toBe(VAPID_KEYS.publicKey);
   });
 
+  it("returns the public key validated at startup even if the environment changes", () => {
+    process.env.WEB_ORIGIN = "https://tracker.example.org";
+    const { service } = makeService();
+    delete process.env.VAPID_PUBLIC_KEY;
+    expect(service.publicKey()).toBe(VAPID_KEYS.publicKey);
+  });
+
   it("stays off without a subject when the instance isn't on HTTPS", () => {
     process.env.WEB_ORIGIN = "http://localhost:8080";
     const setVapidDetails = vi.spyOn(webpush, "setVapidDetails");

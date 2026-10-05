@@ -1,3 +1,5 @@
+import type { PagedResult } from "@loomkeep/shared";
+
 /** Parsed, safe `page`/`limit` query params for a `GET` list endpoint. */
 export interface ParsedPage {
   page: number;
@@ -45,4 +47,11 @@ export function parsePageQuery(
     skip: (parsedPage - 1) * parsedLimit,
     take: parsedLimit,
   };
+}
+
+export function toPagedResult<T>(
+  rows: readonly T[],
+  limit: number,
+): PagedResult<T> {
+  return { items: rows.slice(0, limit), hasMore: rows.length > limit };
 }

@@ -24,7 +24,7 @@
   - le `switch` à 4 domaines répété 6 fois dans `admin-cache.controller.ts` ;
   - les 11 boutons « charger plus ».
 - **Fichiers à découper en priorité** : `library.service.ts` (2163 l.), `mail.service.ts` (1929), `achievements/registry.ts` (1677), `data-export.service.ts` (une méthode de 746 l.), `LibraryBrowser.svelte` (1062), `CommentThread.svelte` (1025).
-- **Inventaire total** : 196 pistes, dont 10 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
+- **Inventaire total** : 182 pistes, dont 10 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
 
 ---
 
@@ -126,17 +126,11 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | SH-38 | 1   | `XP_RULES` / `XP_RULE_LIST` (API seule, export spéculatif)                                          | faible | S      | faible | P3       |
 | SH-39 | 1   | `DEFAULT_INSTANCE_SETTINGS` / `INSTANCE_SETTING_ENV` API seule                                      | faible | S      | faible | P3       |
 | SH-40 | 1   | `mergeAlertPrefs` API seule                                                                         | faible | S      | faible | P3       |
-| HB-14 | 2   | Import : `indexPlanMatches` et `toMatch` copiés                                                     | faible | S      | faible | P3       |
-| HB-15 | 2   | `normalizeSessionNotes` / `validDate` copiés jeux ↔ livres                                          | faible | S      | faible | P2       |
 | HB-16 | 2   | `stripHtml` ×2                                                                                      | faible | S      | faible | P3       |
-| HB-17 | 2   | Idiome `take: limit + 1` / `hasMore` ≈15 sites                                                      | moyen  | M      | faible | P2       |
-| HB-18 | 2   | `(page - 1) * limit` recalculé alors que `ParsedPage.skip` existe                                   | faible | S      | faible | P3       |
 | HB-20 | 2   | Résolution des cibles d'œuvres dupliquée (lists/reviews/export/stats)                               | fort   | M      | moyen  | P1       |
-| HB-21 | 2   | Objet `select` canonique des external ids ×14                                                       | faible | S      | faible | P2       |
 | HB-25 | 2   | Code OTP à 6 chiffres ×3                                                                            | faible | S      | faible | P3       |
 | HB-26 | 2   | Émission de tokens à usage unique ×3 dans `auth.service`                                            | moyen  | S      | faible | P2       |
 | HB-27 | 2   | `parseTarget` / `domainOrThrow` réimplémentent `parseEnumParam`                                     | faible | S      | faible | P3       |
-| HB-28 | 2   | URLs d'images TMDB ×9 / IGDB ×3                                                                     | faible | S      | faible | P3       |
 | HB-30 | 2   | Requête « ids d'épisodes vus » ×5 dans `library.service`                                            | faible | S      | faible | P2       |
 | HB-31 | 2   | Stubs de test dupliqués (`stubXp` ×9, `mockFetchByUrl` ×6…)                                         | moyen  | M      | faible | P2       |
 | HF-02 | 2   | `sessionStorage` sans try/catch (onboarding)                                                        | faible | S      | faible | P3       |
@@ -158,8 +152,6 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | HF-19 | 2   | Paramètres d'URL énumérés validés à la main ×5                                                      | faible | S      | faible | P2       |
 | HF-20 | 2   | Sérialisation `page`/`limit` ×18 dans `lib/api`                                                     | faible | S      | faible | P2       |
 | CB-01 | 3   | `MINUTE/HOUR/DAY_MS` redéfinis ≈35 fois (API + web + shared)                                        | moyen  | S      | faible | P2       |
-| CB-02 | 3   | TTL de synchro catalogue 24 h ×6 + commentaire périmé                                               | moyen  | S      | faible | P1       |
-| CB-05 | 3   | En-têtes de rate limit listés ×3 (CORS)                                                             | faible | S      | faible | P2       |
 | CF-01 | 3   | Clés de stockage éparpillées (3 conventions de préfixe)                                             | moyen  | S      | faible | P2       |
 | CF-02 | 3   | Debounce de recherche 300 ms ×10                                                                    | faible | S      | faible | P2       |
 | CF-03 | 3   | 171 durées de transition, 16 valeurs distinctes                                                     | moyen  | L      | moyen  | P3       |
@@ -177,12 +169,6 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | TB-01 | 4   | `as unknown as` sur `homeLayout` et `instance-settings`                                             | faible | S      | faible | P2       |
 | TB-02 | 4   | `alertPrefs as AlertPrefs` ×4                                                                       | faible | S      | faible | P2       |
 | TB-03 | 4   | Colonnes JSON castées ×11                                                                           | faible | S      | faible | P3       |
-| TB-04 | 4   | `toPlaythroughDto` / `toReadingDto` dupliqués et typés à la main                                    | moyen  | S      | faible | P1       |
-| TB-05 | 4   | `!` après `filter` (prédicats de type manquants) ×14                                                | faible | S      | faible | P3       |
-| TB-06 | 4   | `dto.listId!` dans des closures ×4                                                                  | faible | S      | faible | P3       |
-| TB-08 | 4   | `!` sur des variables d'env (push)                                                                  | faible | S      | faible | P3       |
-| TB-09 | 4   | `Map.get(...)!` ×9                                                                                  | faible | S      | faible | P3       |
-| TB-10 | 4   | Cast du dictionnaire de quotas                                                                      | faible | S      | faible | P3       |
 | TF-01 | 4   | `IconName` redéclaré ×3                                                                             | faible | S      | faible | P3       |
 | TF-02 | 4   | Type option `{ value; label }` ≈20 fois                                                             | moyen  | S      | faible | P2       |
 | TF-03 | 4   | Points de graphique dupliqués ×4                                                                    | faible | S      | faible | P3       |
@@ -283,15 +269,15 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | RT-27 | 5   | `apps/docs` importe shared par chemin relatif profond ; Dockerfiles                                 | faible | S      | faible | P3       |
 | RT-28 | 5   | 🐛 `detectLocale` ignore l'italien                                                                  | faible | S      | faible | P1       |
 
-**Total : 227 pistes**, dont 20 marquées 🐛. Par priorité : 8 P0, 31 P1, 83 P2 et 105 P3.
+**Total : 182 pistes**, dont 10 marquées 🐛. Par priorité : 1 P0, 26 P1, 70 P2 et 85 P3.
 
-| Axe                | Nombre de pistes                      |
-| ------------------ | ------------------------------------- |
-| Axe 1 (partagé)    | 40                                    |
-| Axe 2 (helpers)    | 43 (23 back, 20 front)                |
-| Axe 3 (constantes) | 17 (3 back, 14 front)                 |
-| Axe 4 (types)      | 24 (10 back, 14 front)                |
-| Axe 5 (refactors)  | 89 (30 back, 31 front, 28 transverse) |
+| Axe                | Nombre de pistes      |
+| ------------------ | --------------------- |
+| Axe 1 (partagé)    | 40                    |
+| Axe 2 (helpers)    | 25 (7 back, 18 front) |
+| Axe 3 (constantes) | 15 (1 back, 14 front) |
+| Axe 4 (types)      | 17 (3 back, 14 front) |
+| Axe 5 (refactors)  | 85                    |
 
 ---
 
@@ -638,41 +624,10 @@ Le modèle existe déjà (`REVIEW_TEXT_MAX_LENGTH`, `COMMENT_TEXT_MAX_LENGTH`, `
 
 Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, `toDateOrNull`, `fetchJson`, `localDay`, `parsePageQuery`, `isUniqueViolation`, `secretsMatch`, `compareTitles`, `primaryWebOrigin`, `resolveWorkHref`, `canonicalExternalId`, `parseEnumParam`, `RequestThrottle`, `toCsv`, `safeLang` et `normalizeEmail`. Les pistes ci-dessous relèvent surtout des **contournements** de ces utilitaires.
 
-**HB-14 — Import : `indexPlanMatches` / `toMatch`**
-
-- **Constat** : `book-csv.source.ts:408` est identique à `steam.source.ts:428`, et `media/media-match-resolver.ts:92` à `myanimelist/anilist-match-resolver.ts:29`.
-- **Proposition** : placer `indexPlanMatches` dans `import/import-source.ts`, et exporter `toMatch` depuis `media-match-resolver.ts`.
-
-**HB-15 — Helpers de session**
-
-- **Constat** : `normalizeSessionNotes` est copié dans `book-session.service.ts:779` et `game-session.service.ts:475`, `validDate` dans `game-session 413-424` et `book-session 693-704`.
-- **Proposition** : `common/session.util.ts`, ou `common/session-aggregate.util.ts`, que les deux services importent déjà.
-
 **HB-16 — `stripHtml`**
 
 - **Constat** : `open-library.provider.ts:864` et `catalog/providers/anilist.mapper.ts:236`, avec des regex légèrement différentes.
 - **Proposition** : `stripTags(text, { brToNewline })` dans `common/text.util.ts`.
-
-**HB-17 — Idiome `take: limit + 1`**
-
-- **Constat** : environ 15 sites :
-  - `admin-imports.controller.ts:82-85`
-  - `admin-users.controller.ts:193,204-205,266,270`
-  - `invitation.service.ts:94,99-100`
-  - `book-session.service.ts:392,464-466`, `game-session.service.ts:246,280-282`
-  - `comment.service.ts:141,161,210,217`
-  - `import-job.service.ts:176,189`
-  - `report.service.ts:275,278-280`
-  - `security-event.service.ts:134,138,256,258`
-  - `activity.service.ts:180,201,230`
-  - `follow.service.ts:390,393`
-- **Proposition** : `toPagedResult(rows, limit)` dans `common/pagination.util.ts`.
-- **Bénéfice** : supprime le risque de décalage d'une unité.
-
-**HB-18 — `skip` recalculé**
-
-- **Constat** : `(page - 1) * limit` est recalculé dans `comment.service.ts:140,209`, `report.service.ts:274`, `security-event.service.ts:133,255`, `activity.service.ts:179,200`, `follow.service.ts:389` et `import-job.service.ts:175`, alors que `ParsedPage.skip` existe. `security-event.service.ts:226-230` redéfinit même les valeurs par défaut à la main.
-- **Proposition** : passer `ParsedPage` aux services, comme le fait déjà `invitation.service`.
 
 **HB-20 — Résolution des cibles d'œuvres dupliquée**
 
@@ -681,13 +636,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
   - Variantes : `users/data-export.service.ts:776-830` (titres seulement) ; le regroupement `idsByType` dans `ee/stats/advanced-stats.service.ts:457-463`.
 - **Proposition** : `groupIdsByTargetType(rows)` et `resolveWorkTargets(prisma, rows): Map<"TYPE:id", { title, imageUrl, href }>` dans `common/work-href.util.ts`, en s'appuyant sur SH-05.
 - **Risque** : moyen, car ce sont des requêtes Prisma batchées. Il faut garder une requête par domaine.
-
-**HB-21 — `select` canonique des external ids**
-
-- **Constat** :
-  - Copies nommées : `common/work-href.util.ts:4` (`CANONICAL_INCLUDE`, privé), `list.service.ts:988`, `review.service.ts:531`, `home-stats.service.ts:8` et `activity.service.ts:391-394`.
-  - Copies inline : `stats.service.ts:259-260,311-312,343-344,376,411,586,664,738` et `notification.service.ts:142`.
-- **Proposition** : exporter `CANONICAL_EXTERNAL_ID_SELECT` depuis `common/external-id.util.ts`.
 
 **HB-25 — Code OTP à 6 chiffres**
 
@@ -706,11 +654,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
   - `admin-cache.controller.ts:696-707` (`domainOrThrow`, sensible à la casse).
   - `admin-cache.controller.ts:620-626` (`canonicalId`) duplique en plus `canonicalExternalId`, avec un repli différent sur `externalIds[0]`.
 - **Proposition** : `parseEnumParam(value, enum, { errorCode, caseSensitive })`.
-
-**HB-28 — URLs d'images**
-
-- **Constat** : `catalog/providers/tmdb.mapper.ts:184,197,231,263,312,354,364,396,484` et `games/providers/igdb.provider.ts:370,374,432`.
-- **Proposition** : helpers locaux `tmdbImage(path, size)` et `igdbImage(id, size)`, plus des constantes de taille.
 
 **HB-30 — « ids d'épisodes déjà vus »**
 
@@ -851,24 +794,12 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 
 - **Constat** :
   - `DAY_MS` reste déclaré localement 8 fois : `common/date.util.ts`, `admin/admin-accounts-stats.service.ts`, `admin-stats.util.ts`, `api-key-lifecycle.service.ts`, `ee/licensing/license-key.ts`, `achievements/registry.ts`, `stats/on-this-day.util.ts` et `video-temporal.util.ts`.
-  - Les calculs inlinés de jours restent notamment dans `auth.service.ts`, `video-stats.util.ts`, `ee/stats/aggregates.util.ts` et `mail.service.ts` ; les TTL catalogue sont couverts par CB-02.
+  - Les calculs inlinés de jours restent notamment dans `auth.service.ts`, `video-stats.util.ts`, `ee/stats/aggregates.util.ts` et `mail.service.ts` ; les TTL catalogue utilisent déjà `common/catalog-sync.util.ts` (CB-02 résolue, voir §7).
   - D’autres durées en dur : `HOUR_MS` (`admin-social-stats.util.ts`) et `× 60_000` dans auth, webauthn et users.
   - Voir le repère HB-08 : les décalages de jours sont déjà mutualisés, mais leur unité reste locale à l’API.
   - Le web (HF-05) et shared lui-même (`dto/library.ts:81,94`) répètent ces calculs.
 - **Proposition** : `MINUTE_MS`, `HOUR_MS` et `DAY_MS` dans `packages/shared/src/date.ts` (avec SH-29). Sinon, `common/date.util.ts` côté API et `lib/date.ts` côté web.
 - **Honnêteté** : la constante est triviale ; c'est gratuit si SH-29 est fait, et à ne pas mener seul.
-
-**CB-02 — TTL de synchronisation du catalogue**
-
-- **Constat** :
-  - `SYNC_TTL_MS` (24 h) est copié dans `catalog/media-item.service.ts:23`, `games/game-item.service.ts:16`, `books/book-item.service.ts:21` et `music/music-item.service.ts:16`, avec des miroirs dans `admin/admin-cache.controller.ts:38` (`STALE_TTL_MS`) et `admin/admin-catalogue-stats.service.ts:22`.
-  - Le commentaire `admin-catalogue-stats.service.ts:18-20` est **périmé** : il affirme que games et books n'ont pas de cron de rafraîchissement, alors que `game-item.service.ts:43` et `book-item.service.ts:46` en ont un (`@Cron(EVERY_6_HOURS)`).
-- **Proposition** : `CATALOG_SYNC_TTL_MS` et `isFresh(lastSyncedAt)` dans `common/catalog-sync.util.ts`. Cela reste intra-API, donc pas dans shared.
-
-**CB-05 — En-têtes de rate limit**
-
-- **Constat** : `api-keys/public-api.guard.ts:37-42`, `common/cors.ts:25-28`, `public-api/v1/api-responses.ts:14-22,55` et `export-rate-limit.guard.ts:26`.
-- **Proposition** : `RATE_LIMIT_HEADERS`, réutilisé par le CORS (`exposedHeaders`).
 
 #### Front
 
@@ -988,38 +919,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
   - `(x.data ?? {}) as Record<string, unknown>` dans `notification.service.ts:486,623`, `activity.service.ts:245` et `data-export.service.ts:546,667`.
   - `as Prisma.InputJsonValue` ×6.
 - **Proposition** : `jsonObject(value)` avec une vraie garde, dans `common/json.util.ts`.
-
-**TB-04 — Mappers de cycles**
-
-- **Constat** :
-  - `games/game-session.service.ts:453-473` (`toPlaythroughDto`) n'a pas de type de retour, utilise un type structurel inline et un cast `as "ACTIVE" | …`. Il duplique `game-library.service.ts:820-833`, qui est correctement typé.
-  - Même cas pour `book-session.service.ts:749-777` et `book-library.service.ts:≈950-976`.
-- **Proposition** : `games/game.mappers.ts` et `books/book.mappers.ts`, typés par `Prisma.GamePlaythroughGetPayload<…>`.
-- **Bénéfice** : un nouveau statut casse la compilation au lieu d'être masqué par le cast.
-
-**TB-05 — Prédicats de type manquants**
-
-- **Constat** : `!` après un `filter` dans `ee/stats/advanced-stats.service.ts:109,117,124,198,209,218,225`, `trakt/parse-trakt-export.ts:91,160`, `igdb.provider.ts:583`, `comment.service.ts:249,1002`, `review.service.ts:706` et `achievements/registry.ts:194,488`.
-- **Proposition** : `.filter((m): m is … => …)`.
-
-**TB-06 — `dto.listId!` dans des closures**
-
-- **Constat** : `game-library:442`, `music-library:360`, `library:506` et `book-library:471`.
-- **Proposition** : capturer la valeur dans une constante locale, ou passer `listId` à `addToList` (`common/bulk-entries.util.ts`).
-
-**TB-08 — Variables d'env**
-
-- **Constat** : `push.service.ts:39,51`.
-- **Proposition** : stocker les valeurs validées dans des champs.
-
-**TB-09 — `Map.get(...)!`**
-
-- **Constat** : `list.service.ts:281,399,416`, `leaderboard.service.ts:86`, `steam.source.ts:195,283` et `book-csv.source.ts:153,208,348`. Ces accès sont sûrs par construction.
-
-**TB-10 — Quotas**
-
-- **Constat** : `common/quota-tracker.service.ts:79` fait `PROVIDER_DAILY_QUOTAS as Record<string, number>`.
-- **Proposition** : typer `provider` en `keyof typeof PROVIDER_DAILY_QUOTAS`.
 
 #### Front
 
@@ -1144,7 +1043,7 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 **RB-09 — Services `*-item`**
 
 - **Constat** : `game-item 138-257`, `book-item 181-296`, `music-item 64-180` et `media-item 268+` (`upsertFromSource`, `persistDetails`, `forceRefresh`). Chaque `forceRefresh` réimplémente `canonicalExternalId` (exemple : `game-item 190-192`).
-- **Proposition** : CB-02, plus l'usage de `canonicalExternalId`. Une classe de base générique est déconseillée (voir Points écartés).
+- **Proposition** : poursuivre la mutualisation des services sur `common/catalog-sync.util.ts` (CB-02 résolue, voir §7), puis utiliser `canonicalExternalId`. Une classe de base générique est déconseillée (voir Points écartés).
 - **Question** : music n'a pas de cron `refreshStale`. Est-ce voulu, à cause du débit de 1 requête par seconde de MusicBrainz ?
 
 **RB-10 — Découper `library/library.service.ts` (2163 l.)**
@@ -1650,7 +1549,6 @@ Valeur faible pour l'ensemble.
 **RT-26 — Commentaires faux ou orphelins, à corriger**
 
 - `admin/admin-cache.controller.ts:450-455` : « games/books/music don't yet », faux.
-- `admin/admin-catalogue-stats.service.ts:18-20` : affirme qu'il n'y a pas de cron, faux (voir CB-02).
 - `main.ts:181` : « Swagger UI on /docs », alors que le chemin réel est `swagger` (l.200).
 - `library.service.ts:464-470` et `1566-1572` : JSDoc empilées sur la mauvaise méthode.
 - `routes/app/lists/[id]/+page.svelte:214-217` : commentaire orphelin.
@@ -1680,11 +1578,10 @@ Pistes à fort rendement et faible effort (S, risque faible), à traiter en prem
 | 1   | SH-05 + HB-20 (première étape) | 🐛 liens morts dans les listes et les stats ; `workPath` unique |
 | 2   | SH-01, SH-02, SH-24            | constantes déjà dans shared, ou à une ligne d'y être            |
 | 3   | SH-06, CF-10, RT-28            | incohérences de texte visibles (S1E2, Anime/Animé, italien)     |
-| 4   | CB-02                          | constante critique (TTL catalogue)                              |
-| 5   | RT-01, RT-02, RT-03            | suppression pure de code mort                                   |
-| 6   | RF-12, RF-21                   | 11 boutons et 5 modals → 2 composants                           |
-| 7   | CF-08, TF-08                   | source unique des domaines ; clés de badge typées               |
-| 8   | SH-15                          | contrat realtime corrigé (`jobId`)                              |
+| 4   | RT-01, RT-02, RT-03            | suppression pure de code mort                                   |
+| 5   | RF-12, RF-21                   | 11 boutons et 5 modals → 2 composants                           |
+| 6   | CF-08, TF-08                   | source unique des domaines ; clés de badge typées               |
+| 7   | SH-15                          | contrat realtime corrigé (`jobId`)                              |
 
 ---
 
@@ -1701,9 +1598,8 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 | **L2**     | shared, constantes de contrat : SH-01, 02, 03, 17, 18, 19, 20, 21, 28, 30, 31 + SH-29/CB-01 (`shared/date.ts`)                        | —                                    | Un seul `build:package`.                                       |
 | **L3**     | shared, routes et présentation : SH-05 complet (`shared/routes.ts`, migration de L0a et du web), SH-06, 07, 08, HF-07                 | L0a                                  | Supprime `home/widgets/media.ts`.                              |
 | **L4**     | shared, unions : SH-09, 10, 11, 12, 13, 14, 15, 16, 22, 23, 25, 26, SH-32                                                             | L2                                   | Typage des `List*Filters` web.                                 |
-| **L5** ∥   | API `common/` : HB-15 à HB-18, HB-21, HB-25, HB-27, HB-28                                                                             | L2 (pour `DAY_MS`)                   | Plusieurs petites PR possibles (date, crypto, pagination).     |
-| **L6** ∥   | API constantes : CB-02, CB-05                                                                                                         | —                                    |                                                                |
-| **L7** ∥   | API types : TB-01 à TB-06, TB-08 à TB-10                                                                                              | —                                    | TB-04 avec HB-15.                                              |
+| **L5** ∥   | API `common/` : HB-16, HB-25, HB-27                                                                                                   | L2 (pour `DAY_MS`)                   | Plusieurs petites PR possibles (date, crypto, pagination).     |
+| **L7** ∥   | API types : TB-01, TB-02, TB-03                                                                                                       | —                                    |                                                                |
 | **L8**     | API services transverses : HB-20 (`resolveWorkTargets`), RB-18, RB-03, RB-04, RB-06, RB-07, RB-08, RB-09, RB-11 à RB-13, HB-26, HB-30 | L3, L5                               | Une PR par thème.                                              |
 | **L9**     | API admin : RB-14, RB-15, RB-16, RB-17, RB-19                                                                                         | L5, L8                               | RB-19 après décision sur la maintenance.                       |
 | **L10**    | API découpages : RB-10, RB-20 à RB-30                                                                                                 | L8 (RB-23, RB-24, RB-28 après HB-20) | Une PR par fichier, sans changement de comportement.           |
@@ -1735,6 +1631,7 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 
 Ces numéros restent uniquement pour guider les pistes qui en dépendent ; ils ne font plus partie des tâches à traiter.
 
+- **CB-02** : `common/catalog-sync.util.ts` centralise le TTL de 24 heures et `isCatalogFresh`, utilisés par les quatre catalogues et l’administration. RB-09 doit préserver le délai distinct de sept jours de la synchronisation automatique des livres ; le choix d’un cron MusicBrainz reste à arbitrer.
 - **HB-08** : `common/date.util.ts` fournit `addDays` et `sinceDaysAgo` avec des décalages fixes de 24 heures, sans changement de fuseau ni mutation de la date. CB-01 pourra déplacer la constante d’unité vers shared en préservant cette sémantique.
 - **HB-24** : `common/crypto.util.ts` expose `randomToken(bytes, encoding)` ; les tokens d'authentification, d'invitation et de newsletter restent en hex sur 32 octets, ceux des flux en base64url sur 24 octets. HB-25 et HB-26 doivent réutiliser ce module en conservant ces formats et la séparation entre génération et cycle de vie des tokens.
 - **HF-04** : `localDateInput` vit dans `lib/date.ts`, avec un réexport dans `session-presentation.ts`. Il sert aux dates de sortie, à la borne de naissance, au calendrier, aux clés API et à OnThisDay. SH-29 pourra déplacer cette source unique vers shared ; HF-05 pourra compléter ce module avec les calculs de jours calendaires.

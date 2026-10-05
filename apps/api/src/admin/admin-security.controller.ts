@@ -69,8 +69,7 @@ export class AdminSecurityController {
         ? (type as SecurityEventType)
         : undefined,
       identifier: identifier?.trim() || undefined,
-      page: parsed.page,
-      limit: parsed.limit,
+      page: parsed,
     });
   }
 }

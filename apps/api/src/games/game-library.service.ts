@@ -1,15 +1,12 @@
-import type {
-  BulkEntriesResultDto,
-  BulkEntriesTargetDto,
-  GameDetailDto,
-  GameEntryDto,
-  GameItemDto,
-  GamePlaythroughDto,
-  GameSource,
-  PagedResult,
-  PileSummaryDto,
-} from "@loomkeep/shared";
 import {
+  type BulkEntriesResultDto,
+  type BulkEntriesTargetDto,
+  type GameDetailDto,
+  type GameEntryDto,
+  type GameItemDto,
+  type GameSource,
+  type PagedResult,
+  type PileSummaryDto,
   Domain,
   DORMANT_AFTER_DAYS,
   GameOwnershipStatus,
@@ -19,11 +16,7 @@ import {
   XpReason,
 } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
-import type {
-  GameStatus as DbGameStatus,
-  GamePlaythrough,
-  Prisma,
-} from "@prisma/client";
+import type { GameStatus as DbGameStatus, Prisma } from "@prisma/client";
 import {
   addToList,
   applyBulkUpdate,
@@ -69,6 +62,7 @@ import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
 import { toGameItemDto } from "./game-item.mapper";
 import { GameItemService } from "./game-item.service";
 import { assertGameReleased, isGameItemUpcoming } from "./game-release.util";
+import { toPlaythroughDto } from "./game.mappers";
 
 // Entries always need the game + its external IDs (canonical sourceId), plus
 // its playthrough history, most recent first.
@@ -459,8 +453,8 @@ export class GameLibraryService {
       {
         update: (id, patch) =>
           this.updateEntry(userId, id, patch as UpdateGameEntryDto),
-        addToList: (itemId) =>
-          addToList(this.lists, userId, dto.listId!, "GAME", itemId),
+        addToList: (itemId, listId) =>
+          addToList(this.lists, userId, listId, "GAME", itemId),
       },
     );
     return { ...result, skipped: result.skipped + held.length };
@@ -842,20 +836,5 @@ function toEntryDto(entry: EntryWithGame, rating: number | null): GameEntryDto {
     ownershipStatus: entry.ownershipStatus,
     ownershipSource: entry.ownershipSource,
     releaseAlertsEnabled: entry.releaseReminderAt !== null,
-  };
-}
-
-function toPlaythroughDto(
-  playthrough: GamePlaythrough & { _count: { sessions: number } },
-): GamePlaythroughDto {
-  return {
-    id: playthrough.id,
-    number: playthrough.number,
-    status: playthrough.status,
-    startedAt: playthrough.startedAt?.toISOString() ?? null,
-    finishedAt: playthrough.finishedAt?.toISOString() ?? null,
-    sessionCount: playthrough._count.sessions,
-    trackedMinutes: playthrough.trackedMinutes,
-    legacyIncomplete: playthrough.legacyIncomplete,
   };
 }

@@ -506,8 +506,8 @@ export class LibraryService {
       {
         update: (id, patch) =>
           this.updateEntry(userId, id, patch as UpdateEntryDto),
-        addToList: (itemId) =>
-          addToList(this.lists, userId, dto.listId!, "MEDIA", itemId),
+        addToList: (itemId, listId) =>
+          addToList(this.lists, userId, listId, "MEDIA", itemId),
         setStatus: async (entry, status) => {
           // A series is complete once its episodes are watched: every aired
           // one gets marked, as the season buttons do, and the status follows.
