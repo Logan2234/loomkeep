@@ -31,7 +31,7 @@ jobs:
       # ~10s instead of ~1m30 on a web-only change. Caches made on main are
       # visible to every PR; a PR's own stay scoped to it.
       - id: cache
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: apps/api/openapi*.json
           key: openapi-${{ hashFiles('apps/api/**', 'packages/shared/**', 'pnpm-lock.yaml', 'tsconfig.base.json', '.github/workflows/generate-openapi-artifact.yml') }}
