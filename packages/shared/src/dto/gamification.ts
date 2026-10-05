@@ -122,6 +122,9 @@ export interface XpHistoryItemDto {
   achievementKey: string | null;
   /** DOMAIN_STARTED / IMPORT_COMPLETED's domain. */
   domain: string | null;
+  /** READING_GOAL_REACHED's goal: how many books, which year. */
+  goalTarget: number | null;
+  goalYear: number | null;
 }
 
 /** One local day (the viewer's timezone) of the XP ledger. */

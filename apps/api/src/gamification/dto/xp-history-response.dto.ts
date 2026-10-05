@@ -17,6 +17,8 @@ export class XpHistoryItemResponseDto implements XpHistoryItemDto {
   episodeNumber!: number | null;
   achievementKey!: string | null;
   domain!: string | null;
+  goalTarget!: number | null;
+  goalYear!: number | null;
 }
 
 export class XpHistoryDayResponseDto implements XpHistoryDayDto {

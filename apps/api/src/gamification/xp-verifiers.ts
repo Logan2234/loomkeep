@@ -339,6 +339,12 @@ export const XP_VERIFIERS: Partial<Record<XpReason, XpVerifier>> = {
   // re-derive here — the entry stays valid for as long as it exists.
   ACHIEVEMENT_UNLOCKED: ALWAYS_VALID,
 
+  // Paid once, like a milestone: a sequel announced later, or a work of the
+  // saga un-finished, doesn't take back a saga already completed. And once
+  // per goal: lowering it or un-reading a book doesn't either.
+  SAGA_COMPLETED: ALWAYS_VALID,
+  READING_GOAL_REACHED: ALWAYS_VALID,
+
   // ADMIN_ADJUSTMENT and PROFILE_COMPLETED deliberately omitted — see the
   // doc comment above.
 };

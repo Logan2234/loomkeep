@@ -9,9 +9,12 @@ import {
   type PileSummaryDto,
   Domain,
   DORMANT_AFTER_DAYS,
+  gameFinishedXp,
   GameOwnershipStatus,
   GameStatus,
+  replayXp,
   ReviewTargetType,
+  sagaCompletionXp,
   TrackingCycleStatus,
   XpReason,
 } from "@loomkeep/shared";
@@ -62,6 +65,7 @@ import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
 import { toGameItemDto } from "./game-item.mapper";
 import { GameItemService } from "./game-item.service";
 import { assertGameReleased, isGameItemUpcoming } from "./game-release.util";
+import { GameSagaService } from "./game-saga.service";
 import { toPlaythroughDto } from "./game.mappers";
 
 // Entries always need the game + its external IDs (canonical sourceId), plus
@@ -187,7 +191,53 @@ export class GameLibraryService {
     private readonly events: EventsGateway,
     private readonly lists: ListService,
     private readonly sessionXp?: SessionXpService,
+    private readonly sagas?: GameSagaService,
   ) {}
+
+  /**
+   * A finish paid by the game's length (IGDB's average time to beat), a
+   * replay half that.
+   */
+  private async finishXp(
+    gameItemId: string,
+    reason: XpReason,
+  ): Promise<number> {
+    const item = await this.prisma.gameItem.findUnique({
+      where: { id: gameItemId },
+      select: { timeToBeatNormallyMin: true },
+    });
+    const first = gameFinishedXp(item?.timeToBeatNormallyMin ?? null);
+    return reason === XpReason.GAME_REPLAYED ? replayXp(first) : first;
+  }
+
+  /**
+   * SAGA_COMPLETED once the game's series has every released game finished
+   * and nothing announced. Checked on each finish; once per series.
+   */
+  private async awardSagaIfCompleted(
+    userId: string,
+    gameItemId: string,
+  ): Promise<void> {
+    const item = await this.prisma.gameItem.findUnique({
+      where: { id: gameItemId },
+      select: { sagaKey: true },
+    });
+    if (!item?.sagaKey || !this.sagas) return;
+    const saga = await this.sagas.completed(userId, item.sagaKey);
+    if (!saga) return;
+
+    await this.xp.award(
+      userId,
+      XpReason.SAGA_COMPLETED,
+      item.sagaKey,
+      sagaCompletionXp(saga.works),
+      { title: saga.title, href: "/app/games?vue=sagas", data: {} },
+    );
+    await this.achievements.evaluate(
+      userId,
+      ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.SAGA_COMPLETED],
+    );
+  }
 
   /** Emits the status milestone + FAVORITED events for a game entry write. */
   private emitEntryActivity(
@@ -290,11 +340,17 @@ export class GameLibraryService {
         statusPlaythrough.number === 1
           ? XpReason.GAME_FINISHED
           : XpReason.GAME_REPLAYED;
-      await this.xp.award(userId, reason, statusPlaythrough.id);
+      await this.xp.award(
+        userId,
+        reason,
+        statusPlaythrough.id,
+        await this.finishXp(entry.gameItemId, reason),
+      );
       await this.achievements.evaluate(
         userId,
         ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
       );
+      await this.awardSagaIfCompleted(userId, entry.gameItemId);
     }
 
     if (dto.rating !== undefined) {
@@ -618,11 +674,17 @@ export class GameLibraryService {
         completedPlaythrough.number === 1
           ? XpReason.GAME_FINISHED
           : XpReason.GAME_REPLAYED;
-      await this.xp.award(userId, reason, completedPlaythrough.id);
+      await this.xp.award(
+        userId,
+        reason,
+        completedPlaythrough.id,
+        await this.finishXp(entry.gameItemId, reason),
+      );
       await this.achievements.evaluate(
         userId,
         ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
       );
+      await this.awardSagaIfCompleted(userId, entry.gameItemId);
     }
 
     if (dto.rating !== undefined) {

@@ -20,6 +20,9 @@ export interface XpSubjectData {
   episodeNumber?: number;
   achievementKey?: string;
   domain?: string;
+  /** READING_GOAL_REACHED's goal: how many books, which year. */
+  goalTarget?: number;
+  goalYear?: number;
 }
 
 type WorkKind = "MEDIA" | "GAME" | "BOOK" | "MUSIC";

@@ -43,6 +43,12 @@ function makeService({
   statuses = {} as Record<string, string>,
   known = [] as string[],
   tagged = 0,
+  saved = [
+    savedMember("1"),
+    savedMember("2"),
+    savedMember("3"),
+    savedMember("4", true),
+  ],
 } = {}) {
   const getSaga = vi.fn().mockResolvedValue(WITCHER);
   const prisma = {
@@ -69,6 +75,11 @@ function makeService({
       count: vi.fn().mockResolvedValue(1),
     },
     gameSaga: {
+      findUnique: vi.fn().mockResolvedValue({
+        key: "IGDB:117",
+        title: "The Witcher",
+        members: saved,
+      }),
       findMany: vi.fn().mockResolvedValue([
         {
           key: "IGDB:117",
@@ -161,5 +172,27 @@ describe("GameSagaService", () => {
         released: 3,
       }),
     ]);
+  });
+});
+
+describe("GameSagaService.completed", () => {
+  const finishedAll = { 1: "COMPLETED", 2: "COMPLETED", 3: "COMPLETED" };
+
+  it("counts the games of a series finished through, nothing announced", async () => {
+    const { service } = makeService({
+      statuses: finishedAll,
+      saved: [savedMember("1"), savedMember("2"), savedMember("3")],
+    });
+
+    await expect(service.completed("user-1", "IGDB:117")).resolves.toEqual({
+      title: "The Witcher",
+      works: 3,
+    });
+  });
+
+  it("isn't completed while a game is announced", async () => {
+    const { service } = makeService({ statuses: finishedAll });
+
+    await expect(service.completed("user-1", "IGDB:117")).resolves.toBeNull();
   });
 });

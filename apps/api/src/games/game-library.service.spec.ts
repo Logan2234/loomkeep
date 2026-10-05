@@ -184,10 +184,12 @@ describe("GameLibraryService — XP wiring", () => {
 
     expect(xp.award).toHaveBeenCalledWith("user-1", "WORK_ADDED", "e1");
     expect(xp.award).toHaveBeenCalledWith("user-1", "DOMAIN_STARTED", "GAMES");
+    // No time to beat known: the flat amount.
     expect(xp.award).toHaveBeenCalledWith(
       "user-1",
       "GAME_FINISHED",
       "playthrough-1",
+      350,
     );
     expect(events.emitToUser).toHaveBeenCalledWith(
       "user-1",

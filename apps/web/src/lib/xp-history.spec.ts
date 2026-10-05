@@ -27,6 +27,8 @@ const item = (over: Partial<XpHistoryItemDto> = {}): XpHistoryItemDto => ({
   episodeNumber: null,
   achievementKey: null,
   domain: null,
+  goalTarget: null,
+  goalYear: null,
   ...over,
 });
 

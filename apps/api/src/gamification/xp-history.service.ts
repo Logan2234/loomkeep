@@ -192,6 +192,8 @@ function toItem(
     episodeNumber: data.episodeNumber ?? null,
     achievementKey: data.achievementKey ?? null,
     domain: data.domain ?? null,
+    goalTarget: data.goalTarget ?? null,
+    goalYear: data.goalYear ?? null,
   };
 }
 
