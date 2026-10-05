@@ -1,5 +1,11 @@
 <script lang="ts">
   import {
+    WEBAUTHN_NAME_MAX_LENGTH,
+    OTP_CODE_LENGTH,
+    RECOVERY_CODE_LENGTH,
+  } from "@loomkeep/shared";
+
+  import {
     confirmTotp,
     disableTotp,
     getMfaStatus,
@@ -211,7 +217,7 @@
   }
 
   const groupCode = (code: string): string =>
-    `${code.slice(0, 5)}-${code.slice(5)}`;
+    `${code.slice(0, RECOVERY_CODE_LENGTH / 2)}-${code.slice(RECOVERY_CODE_LENGTH / 2)}`;
 
   /**
    * Plain text rather than PDF: it needs no dependency, prints fine, and is
@@ -584,14 +590,17 @@
             name="code"
             inputmode="numeric"
             autocomplete="one-time-code"
-            minlength="6"
+            minlength={OTP_CODE_LENGTH}
             required
             enterkeyhint="done"
             class="input font-mono text-lg tracking-[0.3em]"
             placeholder="000000"
             value={totpCodeInput}
             oninput={(e) =>
-              (totpCodeInput = normalizeCodeInput(e.currentTarget, 6))} />
+              (totpCodeInput = normalizeCodeInput(
+                e.currentTarget,
+                OTP_CODE_LENGTH,
+              ))} />
         </label>
         {#if totpConfirmMut.error}
           <p class="text-danger text-sm">
@@ -609,7 +618,7 @@
             type="submit"
             class="btn btn-primary"
             disabled={totpConfirmMut.loading ||
-              totpCodeInput.trim().length !== 6}>
+              totpCodeInput.trim().length !== OTP_CODE_LENGTH}>
             {totpConfirmMut.loading
               ? m.common_save_loading()
               : m.common_enable()}
@@ -717,7 +726,7 @@
           type="text"
           name="name"
           required
-          maxlength="60"
+          maxlength={WEBAUTHN_NAME_MAX_LENGTH}
           enterkeyhint="done"
           class="input"
           bind:value={webauthnNameInput} />
@@ -756,7 +765,7 @@
           type="text"
           name="name"
           required
-          maxlength="60"
+          maxlength={WEBAUTHN_NAME_MAX_LENGTH}
           enterkeyhint="done"
           class="input"
           bind:value={webauthnNameInput} />

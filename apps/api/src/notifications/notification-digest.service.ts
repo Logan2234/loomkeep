@@ -1,4 +1,8 @@
-import { DigestCadence, NotificationType } from "@loomkeep/shared";
+import {
+  DigestCadence,
+  NotificationType,
+  type AlertChannel,
+} from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { localParts } from "../common/local-day.util";
@@ -8,10 +12,8 @@ import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { notSuspended } from "../users/suspension.util";
-import { type DigestPeriod, notificationCopy } from "./notification-copy";
+import { notificationCopy, type DigestPeriod } from "./notification-copy";
 import { PushService } from "./push.service";
-
-type Channel = "email" | "push";
 
 interface DigestItem {
   title: string;
@@ -127,7 +129,7 @@ export class NotificationDigestService {
   /** Returns 1 if a digest was sent on this channel, 0 otherwise. */
   private async deliverChannel(
     user: { id: string; email: string; locale: string; timezone: string },
-    channel: Channel,
+    channel: AlertChannel,
     stored: DigestCadence,
   ): Promise<number> {
     if (stored === DigestCadence.DISABLED) return 0;

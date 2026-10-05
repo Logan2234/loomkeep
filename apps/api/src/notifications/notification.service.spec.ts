@@ -140,10 +140,29 @@ describe("NotificationService.scanAll", () => {
     expect(rows[0]).toMatchObject({
       type: NotificationType.NEW_EPISODE,
       title: "Une série",
-      body: "S2E5 · Le dénouement",
+      body: "S02E05 · Le dénouement",
       dedupeKey: "episode:ep1",
     });
   });
+
+  it.each([
+    { number: 5, title: "Episode title", body: "S02E05 · Episode title" },
+    { number: 5, title: null, body: "S02E05" },
+    { number: 105, title: "Episode title", body: "S02E105 · Episode title" },
+  ])(
+    "pads episode codes in notifications: $body",
+    async ({ number, title, body }) => {
+      const { service, prisma } = makeService({
+        episodes: [episodeRow({ number, title })],
+      });
+
+      await service.scanAll();
+
+      const rows = (prisma.notification.createMany as Mock).mock.calls[0][0]
+        .data;
+      expect(rows[0].body).toBe(body);
+    },
+  );
 
   it("skips a user already notified without skipping the others", async () => {
     // Dedup is per (user, episode): one user having seen it must not suppress
@@ -241,7 +260,7 @@ describe("NotificationService.scan", () => {
           userId: "u1",
           type: NotificationType.NEW_EPISODE,
           title: "Severance",
-          body: "S2E5 · The One With The Finale",
+          body: "S02E05 · The One With The Finale",
           url: "/app/media/series/42",
           dedupeKey: "episode:ep1",
         }),

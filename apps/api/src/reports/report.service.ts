@@ -10,6 +10,8 @@ import {
   type ReportDto,
   type ReportMotif,
   type ReportProfilePart,
+  type ReportResolution,
+  type ReportStatus,
   type ReportTargetSummaryDto,
   type ReportTargetType,
 } from "@loomkeep/shared";
@@ -264,7 +266,7 @@ export class ReportService {
   }
 
   async list(
-    status: "PENDING" | "RESOLVED" | "DISMISSED" | undefined,
+    status: ReportStatus | undefined,
     page: ParsedPage,
     reporterId?: string,
   ): Promise<PagedResult<ReportDto>> {
@@ -287,7 +289,7 @@ export class ReportService {
   async resolve(
     adminId: string,
     id: string,
-    status: "RESOLVED" | "DISMISSED",
+    status: ReportResolution,
   ): Promise<void> {
     const reporterId = await this.prisma.$transaction((tx) =>
       this.resolveInTransaction(tx, adminId, id, status),
@@ -300,7 +302,7 @@ export class ReportService {
     tx: Prisma.TransactionClient,
     adminId: string,
     id: string,
-    status: "RESOLVED" | "DISMISSED",
+    status: ReportResolution,
   ): Promise<string | null> {
     const { count } = await tx.report.updateMany({
       where: { id, status: "PENDING" },

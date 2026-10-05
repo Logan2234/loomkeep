@@ -7,6 +7,7 @@ import type {
   MediaType,
   SagaMemberDto,
 } from "@loomkeep/shared";
+import { type SortOrder } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import type { SagaMember } from "@prisma/client";
 import { SagaSyncService } from "../catalog/saga-sync.service";
@@ -24,7 +25,7 @@ export interface LibrarySagaFilters {
   types?: MediaType[];
   q?: string;
   sort?: LibrarySagaSort;
-  order?: "asc" | "desc";
+  order?: SortOrder;
   lang?: string;
 }
 

@@ -4,6 +4,8 @@ import {
   HOME_GRID_COLUMNS,
   LEGAL_VERSION,
   mergeAlertPrefs,
+  OTP_CODE_LENGTH,
+  REQUIRED_SHORTCUT,
   UserDto,
   UsernameAvailabilityDto,
   XpReason,
@@ -361,7 +363,10 @@ export class UsersService {
     }
 
     // The "menu" launcher must always be reachable from the bottom bar.
-    if (dto.mobileNavShortcuts && !dto.mobileNavShortcuts.includes("menu")) {
+    if (
+      dto.mobileNavShortcuts &&
+      !dto.mobileNavShortcuts.includes(REQUIRED_SHORTCUT)
+    ) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.UserMobileNavMissingMenu,
@@ -463,7 +468,9 @@ export class UsersService {
       );
     }
 
-    const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+    const code = randomInt(0, 10 ** OTP_CODE_LENGTH)
+      .toString()
+      .padStart(OTP_CODE_LENGTH, "0");
     await this.prisma.$transaction([
       this.prisma.emailChangeRequest.deleteMany({ where: { userId } }),
       this.prisma.emailChangeRequest.create({

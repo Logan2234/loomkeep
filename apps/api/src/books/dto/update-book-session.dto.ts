@@ -1,5 +1,7 @@
 import {
+  MAX_PAGE_NUMBER,
   MAX_SESSION_DURATION_MINUTES,
+  SESSION_NOTES_MAX_LENGTH,
   type UpdateBookSessionDto as Contract,
 } from "@loomkeep/shared";
 import {
@@ -25,24 +27,24 @@ export class UpdateBookSessionDto implements Contract {
 
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(SESSION_NOTES_MAX_LENGTH)
   notes?: string | null;
 
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(100000)
+  @Max(MAX_PAGE_NUMBER)
   pagesRead?: number;
 
   @IsOptional()
   @IsInt()
   @Min(0)
-  @Max(100000)
+  @Max(MAX_PAGE_NUMBER)
   startPage?: number | null;
 
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(100000)
+  @Max(MAX_PAGE_NUMBER)
   endPage?: number | null;
 }

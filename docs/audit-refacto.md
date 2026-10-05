@@ -14,8 +14,8 @@
 - **La dette vient surtout de copies qui ont divergé.** Ces divergences ont déjà produit **plusieurs bugs réels** :
   - liens `/games/…` sans préfixe `/app` dans les listes et les stats ;
   - plafond du minuteur absent côté web ;
-  - « S1E2 » contre « S01E02 ».
-- **Plus gros gisement front ↔ back** : les **limites de champs** (environ 15 paires `@MaxLength` ↔ `maxlength` codées en dur) et les **constructeurs de routes `/app/...`** (environ 55 sites des deux côtés). Ces deux familles vont naturellement dans `packages/shared`, sur le modèle de `REVIEW_TEXT_MAX_LENGTH`.
+
+- **Plus gros gisement front ↔ back restant** : les **constructeurs de routes `/app/...`** (environ 55 sites des deux côtés), à partager dans `packages/shared`. Les limites de champs sont désormais communes aux formulaires et aux validateurs API.
 - **À l'inverse, `packages/shared` est surdimensionné côté API** : `dto/api-v1.ts` (21/21 exports API seule), `dto/data-export.ts` (37/38) et environ 270 exports sur 546 ne sont jamais importés par le web, qui type ces routes via OpenAPI. Une règle d'appartenance est à acter.
 - **Plus gros gains en lignes** :
   - docks de session jeu/livre (environ 1 800 lignes dupliquées à environ 85 %) ;
@@ -24,7 +24,7 @@
   - le `switch` à 4 domaines répété 6 fois dans `admin-cache.controller.ts` ;
   - les 11 boutons « charger plus ».
 - **Fichiers à découper en priorité** : `library.service.ts` (2163 l.), `mail.service.ts` (1929), `achievements/registry.ts` (1677), `data-export.service.ts` (une méthode de 746 l.), `LibraryBrowser.svelte` (1062), `CommentThread.svelte` (1025).
-- **Inventaire total** : 182 pistes, dont 10 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
+- **Inventaire total** : 165 pistes, dont 9 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
 
 ---
 
@@ -86,37 +86,20 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 
 | ID    | Axe | Titre                                                                                               | Impact | Effort | Risque | Priorité |
 | ----- | --- | --------------------------------------------------------------------------------------------------- | ------ | ------ | ------ | -------- |
-| SH-01 | 1   | `MAX_SESSION_DURATION_MINUTES` redéclarée côté web                                                  | faible | S      | faible | P1       |
-| SH-02 | 1   | Longueurs de mot de passe 8/72 en dur (API + web)                                                   | moyen  | S      | faible | P1       |
-| SH-03 | 1   | ≈15 limites de champs texte en miroir `@MaxLength` ↔ `maxlength`                                    | fort   | M      | faible | P1       |
 | SH-04 | 1   | Échelle de note 0–10 et histogramme divergent (10 vs 11 cases)                                      | moyen  | M      | moyen  | P2       |
 | SH-05 | 1   | 🐛 Constructeurs de routes `/app/...` (≈55 sites) → `shared/routes.ts`                              | fort   | M      | faible | P0       |
-| SH-06 | 1   | 🐛 Code épisode `SxxEyy` ×7, « S1E2 » dans les notifications                                        | moyen  | S      | faible | P1       |
-| SH-07 | 1   | Pourcentage de progression série ×4                                                                 | faible | S      | faible | P2       |
 | SH-08 | 1   | 🐛 Pourcentage de lecture livre ×4, variantes divergentes (borne)                                   | moyen  | S      | faible | P1       |
 | SH-09 | 1   | Statuts synthétiques DORMANT/GHOST/PAUSED en littéraux                                              | moyen  | S      | faible | P2       |
 | SH-10 | 1   | Clés de tri des bibliothèques : unions API privées, `sort?: string` web                             | moyen  | M      | faible | P2       |
-| SH-11 | 1   | Union `"asc" \| "desc"` ×11                                                                         | faible | S      | faible | P2       |
 | SH-12 | 1   | Unions shared sans tableau runtime, re-épelées en `@IsIn`                                           | moyen  | S      | faible | P2       |
-| SH-13 | 1   | Sous-ensembles de `ReportStatus` en littéraux                                                       | faible | S      | faible | P3       |
-| SH-14 | 1   | `ModerationReasonBody` déclaré des deux côtés                                                       | faible | S      | faible | P2       |
 | SH-15 | 1   | 🐛 Realtime : `jobId` absent d'`ImportProgressEvent`, commandes de salle en littéraux               | moyen  | S      | faible | P1       |
-| SH-16 | 1   | Noms de flags Unleash (`premium-features`, `MAINTENANCE_*`) en chaînes                              | moyen  | S      | faible | P2       |
-| SH-17 | 1   | Longueurs OTP (6) et code de secours (10)                                                           | faible | S      | faible | P2       |
-| SH-18 | 1   | Avatar : types MIME et dimension 512 en double/triple                                               | faible | S      | faible | P2       |
-| SH-19 | 1   | Bornes des raccourcis de la barre mobile (3..7, `menu`)                                             | faible | S      | faible | P3       |
-| SH-20 | 1   | Seuil d'expiration des clés API (7 j) badge ↔ mail                                                  | faible | S      | faible | P3       |
-| SH-21 | 1   | Construction de la portée `${resource}:read` ×3                                                     | faible | S      | faible | P3       |
 | SH-22 | 1   | Règle « film à venir » réimplémentée côté web                                                       | moyen  | S      | faible | P2       |
 | SH-23 | 1   | Somme du temps restant d'une série en double                                                        | faible | S      | faible | P3       |
 | SH-24 | 1   | 🐛 Arrondi minuteur → minutes sans plafond côté web                                                 | faible | S      | faible | P1       |
 | SH-25 | 1   | Domaines « à session » `GAMES \| BOOKS` répétés                                                     | faible | S      | faible | P3       |
 | SH-26 | 1   | Correspondance type de critique → domaine                                                           | faible | S      | faible | P3       |
 | SH-27 | 1   | 🐛 Normalisation sans accents ×6 ; filtre serveur et import non normalisés                          | moyen  | S      | faible | P1       |
-| SH-28 | 1   | Objectif de lecture 1..1000                                                                         | faible | S      | faible | P3       |
 | SH-29 | 1   | Jour local `YYYY-MM-DD` : regex de contrat et fabrication de la clé                                 | moyen  | S      | faible | P2       |
-| SH-30 | 1   | `DEFAULT_PAGE_SIZE` recopié côté web                                                                | faible | S      | faible | P3       |
-| SH-31 | 1   | Union `"push" \| "email"` ×6                                                                        | faible | S      | faible | P3       |
 | SH-32 | 1   | 23 classes `*Body` sur 28 n'implémentent pas le DTO de requête shared                               | moyen  | M      | faible | P2       |
 | SH-33 | 1   | `dto/api-v1.ts` utilisé par l'API seule → `public-api/v1`                                           | moyen  | S      | faible | P2       |
 | SH-34 | 1   | `dto/data-export.ts` : 37/38 exports API seule                                                      | moyen  | M      | faible | P2       |
@@ -269,11 +252,11 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | RT-27 | 5   | `apps/docs` importe shared par chemin relatif profond ; Dockerfiles                                 | faible | S      | faible | P3       |
 | RT-28 | 5   | 🐛 `detectLocale` ignore l'italien                                                                  | faible | S      | faible | P1       |
 
-**Total : 182 pistes**, dont 10 marquées 🐛. Par priorité : 1 P0, 26 P1, 70 P2 et 85 P3.
+**Total : 165 pistes**, dont 9 marquées 🐛. Par priorité : 1 P0, 22 P1, 64 P2 et 78 P3.
 
 | Axe                | Nombre de pistes      |
 | ------------------ | --------------------- |
-| Axe 1 (partagé)    | 40                    |
+| Axe 1 (partagé)    | 23                    |
 | Axe 2 (helpers)    | 25 (7 back, 18 front) |
 | Axe 3 (constantes) | 15 (1 back, 14 front) |
 | Axe 4 (types)      | 17 (3 back, 14 front) |
@@ -291,48 +274,6 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 - Vite tree-shake mal le CJS : toute donnée runtime ajoutée part probablement dans le bundle web. Pour des constantes et petites fonctions pures, le coût est négligeable ; pour de gros objets réservés à l'API (`XP_RULES`, `ALERTS`), il ne l'est pas.
 - Aucune proposition ci-dessous n'importe de module Node ni Prisma.
 - Chaque changement exige `pnpm build:package`.
-
-#### SH-01 — `MAX_SESSION_DURATION_MINUTES` redéclarée côté web
-
-- **Constat** :
-  - `packages/shared/src/dto/session.ts:4` et `apps/web/src/lib/session-presentation.ts:1` déclarent la même constante, `= 9999`.
-  - Côté web, les 3 consommateurs importent la copie locale : `BookSessionDock.svelte:16-21`, `GameSessionDock.svelte:16-21` et `SessionDurationPicker.svelte:3-6`.
-- **Proposition** : supprimer la ligne web et importer depuis `@loomkeep/shared`.
-- **Bénéfice** : c'est le doublon le plus net de l'audit.
-- **Risque** : nul.
-
-#### SH-02 — Longueurs de mot de passe 8/72
-
-- **Constat** :
-  - API : `@MinLength(8) @MaxLength(72)` dans `auth/dto/register.dto.ts:29-30`, `auth/dto/reset-password.dto.ts:15-16` et `users/dto/change-password.dto.ts:16-17`.
-  - Web : `minlength={8} maxlength={72}` dans `routes/(auth)/register/+page.svelte:184-185`, `reset-password/+page.svelte:61-62,72-73` et `settings/components/SecuritySection.svelte:555-556,571-572`.
-  - `PASSWORD_MIN_LENGTH` existe déjà dans `password.ts`, mais seul `PasswordRequirements.svelte` le lit.
-- **Proposition** :
-  - ajouter `PASSWORD_MAX_LENGTH = 72` dans `packages/shared/src/password.ts`, en y déplaçant le commentaire sur la troncature bcrypt (`register.dto.ts:28`) ;
-  - utiliser les deux constantes partout.
-- **Risque** : nul.
-
-#### SH-03 — Limites de longueur des champs texte
-
-Le modèle existe déjà (`REVIEW_TEXT_MAX_LENGTH`, `COMMENT_TEXT_MAX_LENGTH`, `API_KEY_NAME_MAX_LENGTH`, `HOME_LAYOUT_LIMITS`). Voici les paires codées en dur :
-
-| Champ                        | Limite    | API (`apps/api/src/`)                                                                                              | Web (`apps/web/src/`)                                                                       | Cible shared                                  |
-| ---------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| Nom affiché                  | 50        | `auth/dto/register.dto.ts:44`, `users/dto/update-user.dto.ts:41`, `reports/dto/profile-measures.dto.ts:29`         | `EditProfileModal.svelte:50`, `register/+page.svelte:141`, `admin/reports/+page.svelte:710` | `USER_LIMITS.displayName` (`dto/user.ts`)     |
-| Nom d'utilisateur            | 50        | `users/dto/update-username.dto.ts:7`                                                                               | `SecuritySection.svelte:377`                                                                | `USER_LIMITS.username`                        |
-| Bio                          | 500       | `update-user.dto.ts:97`                                                                                            | `EditProfileModal.svelte:61`                                                                | `USER_LIMITS.bio`                             |
-| Notes d'entrée               | 5000      | 8 DTO `upsert-/update-*-entry.dto.ts` (library:27/40, books:32/37, games:32/36, music:31/36)                       | `NoteField.svelte:22`                                                                       | `ENTRY_NOTES_MAX_LENGTH` (`dto/library.ts`)   |
-| Notes de session             | 1000      | `create-/update-book-session.dto.ts:28`, `create-/update-game-session.dto.ts:28`, `finish-session-timer.dto.ts:22` | `BookSessionDock.svelte:735,907`, `GameSessionDock.svelte:596,720`                          | `SESSION_NOTES_MAX_LENGTH` (`dto/session.ts`) |
-| `ownershipSource`            | 100       | `common/dto/bulk-entries.dto.ts:44` + 4 `update-*-entry.dto.ts`                                                    | `OwnershipMenuItems.svelte:67`                                                              | `OWNERSHIP_SOURCE_MAX_LENGTH`                 |
-| Titre / description de liste | 100 / 500 | `lists/dto/create-list.dto.ts:18,23`, `update-list.dto.ts:19,24`                                                   | `ListFormModal.svelte:135,153`                                                              | `LIST_LIMITS` (`dto/list.ts`)                 |
-| Motif de signalement         | 500       | `reports/dto/create-report.dto.ts:19`                                                                              | `ReportModal.svelte:223`                                                                    | `REPORT_REASON_MAX_LENGTH`                    |
-| Push admin (titre / corps)   | 100 / 500 | `admin/dto/send-admin-broadcast-push.dto.ts:7,12`, `send-admin-test-push.dto.ts:10,15`                             | `PushTab.svelte:165,180,276,291`                                                            | `PUSH_LIMITS` (`dto/push.ts`)                 |
-| Libellé d'invitation         | 60        | `admin/dto/create-admin-invitation.dto.ts:28`                                                                      | `InviteUserModal.svelte:279`                                                                | à côté de `INVITATION_MAX_USES`               |
-| Nom de clé WebAuthn          | 60        | `users/dto/rename-webauthn-credential.dto.ts:7`                                                                    | `MfaSection.svelte:720,759`                                                                 | `WEBAUTHN_NAME_MAX_LENGTH`                    |
-
-- **Bénéfice** : aucune dérive possible entre ce qu'accepte l'input et ce que valide l'API.
-- **Piège** : `AddToListModal.svelte:181` (`maxlength={100}`) borne une **recherche**, pas un titre. C'est un faux positif.
-- **Risque** : nul.
 
 #### SH-04 — Échelle de note et histogramme
 
@@ -377,20 +318,6 @@ Le modèle existe déjà (`REVIEW_TEXT_MAX_LENGTH`, `COMMENT_TEXT_MAX_LENGTH`, `
 - **Risque** : nul, ce sont des chaînes pures.
 - **Ordre** : écrire d'abord le test rouge sur `ListService.resolveTargets` et `StatsService`.
 
-#### SH-06 — 🐛 Code épisode `SxxEyy`
-
-- **Constat** :
-  - API : `ee/calendar/ics.util.ts:59`, `ee/calendar/calendar-feed.service.ts:104` et `notifications/notification.service.ts:55`. Cette dernière écrit **« S1E2 »**, sans zéro devant, alors que tout le reste utilise « S01E02 ».
-  - Web : `epCode` dans `home/widgets/media.ts:3`, réécrit dans `calendar/+page.svelte:162`, `ActionBar.svelte:92-94,101-103` et `EpisodesSection.svelte:399-401,446,457`.
-- **Proposition** : `episodeCode(season, episode)` dans shared (`dto/library.ts` ou un nouveau `format.ts`).
-- **Risque** : le texte des notifications push change, ce qui est voulu.
-
-#### SH-07 — Pourcentage de progression d'une série
-
-- **Constat** : `apps/api/src/library/library.service.ts:165-170` (`mediaProgressPct`), web `home/widgets/media.ts:9-14` (`entryPct`), `routes/app/media/+page.svelte:≈62-67` et `media/[type]/[id]/+page.svelte:275-281`.
-- **Proposition** : `progressPercent(progress: ProgressDto | null)` dans `dto/library.ts`.
-- **Risque** : nul.
-
 #### SH-08 — 🐛 Pourcentage de lecture d'un livre : 4 variantes
 
 - **Constat** :
@@ -420,11 +347,6 @@ Le modèle existe déjà (`REVIEW_TEXT_MAX_LENGTH`, `COMMENT_TEXT_MAX_LENGTH`, `
 - **Proposition** : `MEDIA_SORT_KEYS`, `BOOK_SORT_KEYS`, `GAME_SORT_KEYS` et `MUSIC_SORT_KEYS` en `as const` dans `dto/<domaine>.ts`, utilisés pour typer les `SORTS` côté web.
 - **Risque** : nul.
 
-#### SH-11 — `SortOrder`
-
-- **Constat** : l'union `"asc" | "desc"` apparaît dans `shared/dto/saved-view.ts:24`, `common/entry-lifecycle.util.ts:38`, `public-api/v1/dto/queries.dto.ts:98-99`, `library-v1.service.ts:50`, `saved-views/dto/saved-view.dto.ts:59-60,127`, `lib/api/{books,games,library,music}.ts` et `LibraryBrowser.svelte:9`.
-- **Proposition** : `SORT_ORDERS` en `as const` et `type SortOrder` dans `dto/pagination.ts`.
-
 #### SH-12 — Unions shared sans tableau runtime
 
 | Union (shared)                                         | Copies                                                                                         |
@@ -439,16 +361,6 @@ Le modèle existe déjà (`REVIEW_TEXT_MAX_LENGTH`, `COMMENT_TEXT_MAX_LENGTH`, `
 
 - **Proposition** : suivre le modèle déjà en place pour `STATS_DOMAINS` (`const X = [...] as const; type X = (typeof X)[number]`), puis utiliser `@IsIn(X)` côté API.
 
-#### SH-13 — `ReportResolution`
-
-- **Constat** : `reports/dto/resolve-report.dto.ts:4-5` (`@IsIn(["RESOLVED","DISMISSED"])`), `report.service.ts:263,286,299`, `admin-reports.controller.ts:56,92`, web `lib/api/admin.ts:443` et `admin/reports/+page.svelte:107`.
-- **Proposition** : `type ReportResolution = Exclude<ReportStatus,"PENDING">` et `REPORT_RESOLUTIONS` dans `dto/report.ts`.
-
-#### SH-14 — `ModerationReasonBody` dupliqué
-
-- **Constat** : classe API `reports/dto/moderation-reason.dto.ts:10-26`, interface web `lib/api/admin.ts:26-30` (utilisée l.283, 454, 465, 476 et 487).
-- **Proposition** : `ModerationReasonRequestDto` dans `dto/report.ts`, que la classe API `implements`.
-
 #### SH-15 — 🐛 Contrat realtime incomplet
 
 - **Constat** :
@@ -457,42 +369,6 @@ Le modèle existe déjà (`REVIEW_TEXT_MAX_LENGTH`, `COMMENT_TEXT_MAX_LENGTH`, `
   - 18 appels `emitToUser(…, "notification" | …)` passent un littéral plutôt que `RealtimeEvent.X` : `library.service.ts:300,780`, `book-library:344,638`, `game-library:312,604`, `music-library:235,475`, etc.
 - **Proposition** : dans `realtime.ts`, ajouter `jobId`, un `RealtimeCommand` en `as const`, `ImportJobStatus` et, en option, une map `RealtimePayloads` pour typer `emitToUser`.
 - **Risque** : nul.
-
-#### SH-16 — Noms de flags Unleash
-
-- **Constat** :
-  - `"premium-features"` côté API (`entitlements/entitlement.service.ts:73`, `ee/licensing/license.service.ts:49`, `api-keys/api-rate-limit.service.ts:97`) et côté web (`lib/auth.svelte.ts:28`).
-  - `` `MAINTENANCE_${domain}` `` côté API (`users/domain-gate.service.ts:50`) et côté web (`lib/domains.ts:28`, `routes/app/settings/domains/+page.svelte:108`).
-- **Proposition** : `packages/shared/src/feature-flags.ts` avec `FeatureFlag` en `as const` et `maintenanceFlag(domain)`.
-
-#### SH-17 — Longueurs des codes à usage unique
-
-- **Constat** :
-  - API : `auth/mfa.service.ts:17,64`, `auth.service.ts:408,462`, `users/users.service.ts:465`, `confirm-totp.dto.ts:6` et `confirm-email-change.dto.ts:6`.
-  - Web : `login/+page.svelte:375` (`11 : 6`), `MfaSection.svelte:587,594` et `SecuritySection.svelte:493,500`.
-- **Proposition** : `OTP_CODE_LENGTH` et `RECOVERY_CODE_LENGTH` dans `dto/auth.ts`. L'alphabet des codes reste privé à l'API.
-
-#### SH-18 — Avatar
-
-- **Constat** :
-  - Types MIME : API `users/dto/upload-avatar.dto.ts:5-9`, shared `dto/user.ts:160` (union en littéral), web `EditAvatarModal.svelte:211` (`accept=`).
-  - Dimension 512 : API `users/avatar.util.ts:23`, web `EditAvatarModal.svelte:14`.
-- **Proposition** : `AVATAR_MIME_TYPES` en `as const` et `AVATAR_MAX_DIMENSION` dans `dto/user.ts`. Les tailles en octets restent côté serveur.
-
-#### SH-19 — Raccourcis de la barre mobile
-
-- **Constat** : API `users/dto/update-user.dto.ts:89-90` et `users.service.ts:362-369` ; web `AppearanceSection.svelte:46-47` et `lib/navigation.ts:384-389`.
-- **Proposition** : `MOBILE_NAV_SHORTCUT_LIMITS` et `MOBILE_NAV_REQUIRED_SHORTCUT` dans `dto/user.ts`.
-
-#### SH-20 — Seuil d'expiration des clés API
-
-- **Constat** : web `settings/integrations/api-key-form.ts:7` (`EXPIRING_SOON_DAYS = 7`), API `api-keys/api-key-lifecycle.service.ts:16` (`EXPIRY_WARNING_DAYS = 7`). Le badge doit rester aligné sur le mail.
-- **Proposition** : `API_KEY_EXPIRY_WARNING_DAYS` dans `dto/api-key.ts`.
-
-#### SH-21 — Portée `${resource}:read`
-
-- **Constat** : shared `dto/api-key.ts:19-21`, web `ApiKeyCreateModal.svelte:98-100`, API `auth/guards/jwt-auth.guard.ts:139`.
-- **Proposition** : `readScope(resource)` dans `dto/api-key.ts`.
 
 #### SH-22 — Règle « film à venir »
 
@@ -532,27 +408,12 @@ Le modèle existe déjà (`REVIEW_TEXT_MAX_LENGTH`, `COMMENT_TEXT_MAX_LENGTH`, `
 - **Proposition** : `foldSearchText(value)` dans un nouveau `packages/shared/src/text.ts`.
 - **Risque** : l'import trouvera davantage de correspondances. Il faut un test.
 
-#### SH-28 — Objectif de lecture
-
-- **Constat** : API `books/dto/upsert-reading-goal.dto.ts:11-12`, web `ReadingGoalEditModal.svelte:62-63`.
-- **Proposition** : `READING_GOAL_LIMITS` dans `dto/book.ts`. Le `@Max(100000)` des pages, répété 9 fois côté API, peut y être ajouté en `MAX_PAGE_NUMBER`.
-
 #### SH-29 — Jour local `YYYY-MM-DD`
 
 - **Constat** :
   - Regex de contrat : API `stats/home-stats.controller.ts:11`, shared `movie-release.ts:25` (inline), web `lib/admin-user-filters.ts:19`.
   - `OnThisDayWidget.svelte` envoie une clé locale à l'API via `lib/date.ts` → `localDateInput` (HF-04 résolue, voir §7). SH-29 doit préserver ce jour local lors du déplacement vers shared.
 - **Proposition** : `LOCAL_DAY_RE` et `localDayKey(date, timeZone?)` dans un nouveau `packages/shared/src/date.ts`. Implémentation par Intl, sans dépendance. Ce module accueillerait aussi `DAY_MS` (CB-01).
-
-#### SH-30 — `DEFAULT_PAGE_SIZE`
-
-- **Constat** : web `UserSelector.svelte:26` (`PAGE_SIZE = 20`) contre API `common/pagination.util.ts:17`. Le commentaire de ce dernier rappelle des dérives passées.
-- **Proposition** : `DEFAULT_PAGE_SIZE` et `MAX_PAGE_LIMIT` dans `dto/pagination.ts`.
-
-#### SH-31 — `AlertChannel`
-
-- **Constat** : shared `alerts.ts:272,278,288`, API `notifications/notification-digest.service.ts:14`, web `settings/communications/AlertGrid.svelte:28`.
-- **Proposition** : exporter `type AlertChannel` depuis `alerts.ts`.
 
 #### SH-32 — Contrats de requête non garantis
 
@@ -640,7 +501,7 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 **HB-25 — Code OTP à 6 chiffres**
 
 - **Constat** : `auth.service.ts:408,462` et `users.service.ts:465`.
-- **Proposition** : `randomNumericCode(OTP_CODE_LENGTH)` dans `common/crypto.util.ts`, qui centralise déjà les tokens (HB-24 résolue, voir §7), avec la constante de SH-17.
+- **Proposition** : `randomNumericCode(OTP_CODE_LENGTH)` dans `common/crypto.util.ts`, qui centralise déjà les tokens (HB-24 résolue, voir §7), avec `OTP_CODE_LENGTH` de shared (SH-17 résolue, voir §7).
 
 **HB-26 — Tokens à usage unique dans `auth.service`**
 
@@ -703,8 +564,8 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 
 **HF-07 — Helpers coincés dans `home/widgets/media.ts`**
 
-- **Constat** : `epCode`, `mediaHref` et `entryPct` sont réécrits environ 30 fois (voir les listes de SH-05, SH-06 et SH-07). S'y ajoute `media/+page.svelte:75-76`, qui redéfinit son propre `mediaHref`.
-- **Proposition** : si SH-05 à SH-07 sont adoptés, la piste se réduit à migrer les appelants vers shared. Sinon, créer `lib/media-presentation.ts`.
+- **Constat** : les constructeurs `mediaHref` restent dupliqués (voir SH-05), notamment dans `media/+page.svelte`. Les adaptateurs `epCode` et `entryPct` de `home/widgets/media.ts` délèguent déjà à shared (SH-06 et SH-07 résolues, voir §7).
+- **Proposition** : après SH-05, migrer les appelants vers les fonctions shared, puis supprimer `home/widgets/media.ts` et ses adaptateurs.
 
 **HF-08 — Pluriel à la main**
 
@@ -1576,8 +1437,8 @@ Pistes à fort rendement et faible effort (S, risque faible), à traiter en prem
 | #   | ID                             | Pourquoi                                                        |
 | --- | ------------------------------ | --------------------------------------------------------------- |
 | 1   | SH-05 + HB-20 (première étape) | 🐛 liens morts dans les listes et les stats ; `workPath` unique |
-| 2   | SH-01, SH-02, SH-24            | constantes déjà dans shared, ou à une ligne d'y être            |
-| 3   | SH-06, CF-10, RT-28            | incohérences de texte visibles (S1E2, Anime/Animé, italien)     |
+| 2   | SH-24                          | constantes déjà dans shared, ou à une ligne d'y être            |
+| 3   | CF-10, RT-28                   | incohérences de texte visibles (Anime/Animé, italien)           |
 | 4   | RT-01, RT-02, RT-03            | suppression pure de code mort                                   |
 | 5   | RF-12, RF-21                   | 11 boutons et 5 modals → 2 composants                           |
 | 6   | CF-08, TF-08                   | source unique des domaines ; clés de badge typées               |
@@ -1593,11 +1454,11 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------- |
 | **L0a** 🐛 | SH-05 côté API seulement : `workPath` dans `common/work-href.util.ts`, branché dans `list.service` et `stats.service`                 | —                                    | Test rouge d'abord. Minimal, pour corriger vite.               |
 | **L0f** 🐛 | Front : SH-24, RF-23                                                                                                                  | —                                    | Tests unitaires et de composant.                               |
-| **L0g** 🐛 | Textes : SH-06, CF-10, RT-28, SH-27 (filtre serveur et import)                                                                        | —                                    |                                                                |
+| **L0g** 🐛 | Textes : CF-10, RT-28, SH-27 (filtre serveur et import)                                                                               | —                                    |                                                                |
 | **L1** ∥   | Nettoyage : RT-01, RT-02, RT-03, RT-11, RT-12, RT-13, RT-14, RT-26, SH-38 (`XP_RULE_LIST`)                                            | —                                    | Aucun risque fonctionnel.                                      |
-| **L2**     | shared, constantes de contrat : SH-01, 02, 03, 17, 18, 19, 20, 21, 28, 30, 31 + SH-29/CB-01 (`shared/date.ts`)                        | —                                    | Un seul `build:package`.                                       |
-| **L3**     | shared, routes et présentation : SH-05 complet (`shared/routes.ts`, migration de L0a et du web), SH-06, 07, 08, HF-07                 | L0a                                  | Supprime `home/widgets/media.ts`.                              |
-| **L4**     | shared, unions : SH-09, 10, 11, 12, 13, 14, 15, 16, 22, 23, 25, 26, SH-32                                                             | L2                                   | Typage des `List*Filters` web.                                 |
+| **L2**     | shared, constantes de contrat : SH-29/CB-01 (`shared/date.ts`)                                                                        | —                                    | Un seul `build:package`.                                       |
+| **L3**     | shared, routes et présentation : SH-05 complet (`shared/routes.ts`, migration de L0a et du web), SH-08, HF-07                         | L0a                                  | Supprime `home/widgets/media.ts`.                              |
+| **L4**     | shared, unions : SH-09, 10, 12, 15, 22, 23, 25, 26, SH-32                                                                             | L2                                   | Typage des `List*Filters` web.                                 |
 | **L5** ∥   | API `common/` : HB-16, HB-25, HB-27                                                                                                   | L2 (pour `DAY_MS`)                   | Plusieurs petites PR possibles (date, crypto, pagination).     |
 | **L7** ∥   | API types : TB-01, TB-02, TB-03                                                                                                       | —                                    |                                                                |
 | **L8**     | API services transverses : HB-20 (`resolveWorkTargets`), RB-18, RB-03, RB-04, RB-06, RB-07, RB-08, RB-09, RB-11 à RB-13, HB-26, HB-30 | L3, L5                               | Une PR par thème.                                              |
@@ -1629,6 +1490,9 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 
 ## 7. Repères des tâches résolues
 
+- **SH-06 et SH-07** : shared fournit `episodeCode` (format `S02E05`, sans tronquer les numéros à trois chiffres) et `progressPercent` (arrondi à l’entier, zéro sans épisodes). HF-07 doit réutiliser ces fonctions en retirant les adaptateurs du module de widgets, sans modifier la progression.
+- **SH-17** : `OTP_CODE_LENGTH = 6` et `RECOVERY_CODE_LENGTH = 10` vivent dans `dto/auth.ts` ; API et web les utilisent, le séparateur du code de secours restant purement visuel. HB-25 doit utiliser cette longueur pour le code numérique et laisser l’alphabet des codes de secours privé à l’API.
+
 Ces numéros restent uniquement pour guider les pistes qui en dépendent ; ils ne font plus partie des tâches à traiter.
 
 - **CB-02** : `common/catalog-sync.util.ts` centralise le TTL de 24 heures et `isCatalogFresh`, utilisés par les quatre catalogues et l’administration. RB-09 doit préserver le délai distinct de sept jours de la synchronisation automatique des livres ; le choix d’un cron MusicBrainz reste à arbitrer.
@@ -1640,49 +1504,49 @@ Ces numéros restent uniquement pour guider les pistes qui en dépendent ; ils n
 
 ## 8. Points écartés
 
-| Sujet examiné                                                                                                                                             | Raison du rejet                                                                                                                                    |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Classe de base commune aux 4 services de bibliothèque                                                                                                     | Le raisonnement en tête de `entry-lifecycle.util.ts` tient : MEDIA diverge sur presque chaque appel Prisma. Les helpers libres sont le bon niveau. |
-| Fusion de `syncPlaythroughStatus` / `syncReadingStatus` ; classe de base `*-item`                                                                         | Les delegates Prisma génériques imposent des casts : le coût de typage dépasse le gain. On n'extrait que les tables et le TTL (RB-05, RB-09).      |
-| `admin.service.ts:82-356` (getter de 275 l.)                                                                                                              | Table déclarative de sondes (`specs`) : une donnée, pas une logique.                                                                               |
-| `users.controller.ts`, `books.controller.ts`                                                                                                              | Fins ; hors RB-19, rien à sortir.                                                                                                                  |
-| `ParseUUIDPipe` / `ParseIntPipe` sur les ids                                                                                                              | Les ids sont des cuid ; le 404 du service suffit.                                                                                                  |
-| `health.controller`, `public-stats.controller` (Prisma direct)                                                                                            | Triviaux, acceptables.                                                                                                                             |
-| Helper `uniq` (`[...new Set()]` ≈26 fois), `trim() \|\| null`                                                                                             | Idiomatique ; un helper n'apporterait que de l'indirection.                                                                                        |
-| `splitAuthors` ×3, `parseYear`, `toIsoDate` ×3, `pickTrailer`, `toRatings`                                                                                | Entrées hétérogènes selon le provider : ce n'est pas la même logique.                                                                              |
-| `toDateOrNull` de tvtime, `earliest(dates[])` de profile-stats                                                                                            | Sémantique différente (fuseau, arité).                                                                                                             |
-| `CACHE_TTL_MS = 30_000` ×2, `MIN_REQUEST_INTERVAL_MS` par provider, `WATCH_LIST_TTL_MS`, cron `EVERY_6_HOURS` ×3                                          | Réglages indépendants, volontairement locaux.                                                                                                      |
-| `createHash` dans `auth-cookies.ts:135`                                                                                                                   | Dérivation de clé, pas un hash de token.                                                                                                           |
-| `getCalendar` et son repli `movieReleaseRegion`                                                                                                           | Différence voulue (RB-12).                                                                                                                         |
-| Partager `deriveStatus`, libellés de statut, textes de notification                                                                                       | Le web ne recalcule pas le statut ; il y a deux systèmes i18n distincts (Paraglide et `notification-copy.ts`).                                     |
-| `COPY_LOCALES` ↔ `Locale`                                                                                                                                 | Sous-ensemble voulu (langues de rédaction de l'API).                                                                                               |
-| `format.ts` du web dans shared                                                                                                                            | Intl + Paraglide, propre au web ; l'API ne formate pas de durées.                                                                                  |
-| Tailles de page `20` du web dans une constante commune                                                                                                    | Les deux sites (`ToWatchWidget`, `UserSelector`) n'ont pas le même sens ; SH-30 ne vise que la pagination réelle.                                  |
-| Unions `type Tab` / `Step` / `Mode` homonymes                                                                                                             | Les valeurs diffèrent ; elles sont propres à chaque écran.                                                                                         |
-| Enums utilisés à l'exécution par l'API seule (`XpReason`, `ActivityType`…)                                                                                | Vocabulaire des DTO, consommé comme types par le web : ils sont à leur place.                                                                      |
-| Seuils numériques réservés à l'API dans shared (`GHOST_AFTER_DAYS`, `MAX_API_KEYS_PER_USER`…)                                                             | Coût nul ; certains sont utiles au web (SH-40).                                                                                                    |
-| `LEVEL_BASE/STEP/CAP_COST`, `VALIDATION_CONSTRAINT_NAMES`, `REPORT_CATEGORY_MOTIFS` exportés pour les tests                                               | Pattern « exporter pour tester », assumé (`@public`).                                                                                              |
-| `VALERR_MESSAGE_KEYS`, les 47 `check*` de `registry.ts` exportés                                                                                          | Même raison.                                                                                                                                       |
-| `legacyIncomplete`, `settings/nav.ts` `legacyHash`, `notification-presentation.ts:24`                                                                     | Donnée métier persistée, ou redirection de favoris : ce n'est pas du code mort.                                                                    |
-| `apps/api/test/__snapshots__`                                                                                                                             | La règle « no snapshot » ne vise que le web.                                                                                                       |
-| `settings/nav.ts` (826 l.)                                                                                                                                | Données déclaratives, source unique volontaire.                                                                                                    |
-| Pages légales (865 et 515 l.), `admin/components/+page.svelte` (747 l.)                                                                                   | Prose, et vitrine du design system.                                                                                                                |
-| `HomeLayoutEditor` (718 l.)                                                                                                                               | Les maths de grille sont déjà dans `lib/home/grid.ts` ; le reste est de la colle DOM.                                                              |
-| Hero de la page média                                                                                                                                     | Design en overlay volontairement distinct (RF-02).                                                                                                 |
-| Sélecteurs de domaine (onboarding contre réglages), tuiles et chips `aria-pressed`                                                                        | Visuels différents ; la logique `domainToggle` et la classe `.chip` sont déjà partagées.                                                           |
-| `AdminList` générique (reports, security, imports)                                                                                                        | Sur-ingénierie ; on se limite à RF-12, RF-14 et RF-15.                                                                                             |
-| `CommentThread` en TanStack brut                                                                                                                          | Exception documentée (seules les clés sont concernées, RF-11).                                                                                     |
-| try/catch légitimes du web (scan ISBN, `QuickAddPanel` parsing d'URL, `safeRedirect`, `navigator.share`, Mermaid, rollback optimiste de `LibraryBrowser`) | API d'appareil ou de navigateur, ou logique optimiste, et non des appels à l'API.                                                                  |
-| `Intl.DateTimeFormat`, `downloadBlob`, `staleTime`, z-index, durées de toast                                                                              | Déjà centralisés.                                                                                                                                  |
-| URLs d'images TMDB/IGDB côté web                                                                                                                          | Seulement dans `landing-mock-data.ts` ; le web reçoit des URLs complètes.                                                                          |
-| `Math.round(x / 60)` des stats, `padStart` décoratifs                                                                                                     | Valeurs numériques de graphique ou effet visuel ponctuel.                                                                                          |
-| `mailto:contact@loomkeep.app` des pages légales                                                                                                           | Contenu juridique figé.                                                                                                                            |
-| `as unknown as` WebAuthn du web, `Component<any>` des utilitaires de test                                                                                 | Documentés, et pattern standard.                                                                                                                   |
-| `COMPACT_QUERY` de `layout.svelte.ts`                                                                                                                     | Différente à dessein (largeur ou hauteur).                                                                                                         |
-| ESLint et tsconfig                                                                                                                                        | Déjà factorisés via les configs `base`.                                                                                                            |
-| Versions de vitest, coverage, typescript et `@types/node`                                                                                                 | Homogènes.                                                                                                                                         |
-| `prisma` en `dependencies`, `@fastify/static` en dev, `pino-http`, `rxjs`, `@nestjs/schematics`, `dotenv`                                                 | Justifiés (runtime de migration, Swagger réservé au dev, peers).                                                                                   |
-| APIs Node dans shared                                                                                                                                     | Aucune trouvée : sain.                                                                                                                             |
-| Barrel `shared/index.ts` (50 `export *`)                                                                                                                  | Cohérent ; l'impact sur le tree-shaking est négligeable pour des constantes (attention seulement aux gros objets, SH-38).                          |
-| `ownershipSource: "Steam"` import ↔ préréglage web                                                                                                        | Couplage implicite mais stable ; gain marginal.                                                                                                    |
-| Domaine des sources d'import (web) contre classes de base (API)                                                                                           | Structurel côté API ; une table partagée ferait doublon.                                                                                           |
+| Sujet examiné                                                                                                                                             | Raison du rejet                                                                                                                                                                     |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Classe de base commune aux 4 services de bibliothèque                                                                                                     | Le raisonnement en tête de `entry-lifecycle.util.ts` tient : MEDIA diverge sur presque chaque appel Prisma. Les helpers libres sont le bon niveau.                                  |
+| Fusion de `syncPlaythroughStatus` / `syncReadingStatus` ; classe de base `*-item`                                                                         | Les delegates Prisma génériques imposent des casts : le coût de typage dépasse le gain. On n'extrait que les tables et le TTL (RB-05, RB-09).                                       |
+| `admin.service.ts:82-356` (getter de 275 l.)                                                                                                              | Table déclarative de sondes (`specs`) : une donnée, pas une logique.                                                                                                                |
+| `users.controller.ts`, `books.controller.ts`                                                                                                              | Fins ; hors RB-19, rien à sortir.                                                                                                                                                   |
+| `ParseUUIDPipe` / `ParseIntPipe` sur les ids                                                                                                              | Les ids sont des cuid ; le 404 du service suffit.                                                                                                                                   |
+| `health.controller`, `public-stats.controller` (Prisma direct)                                                                                            | Triviaux, acceptables.                                                                                                                                                              |
+| Helper `uniq` (`[...new Set()]` ≈26 fois), `trim() \|\| null`                                                                                             | Idiomatique ; un helper n'apporterait que de l'indirection.                                                                                                                         |
+| `splitAuthors` ×3, `parseYear`, `toIsoDate` ×3, `pickTrailer`, `toRatings`                                                                                | Entrées hétérogènes selon le provider : ce n'est pas la même logique.                                                                                                               |
+| `toDateOrNull` de tvtime, `earliest(dates[])` de profile-stats                                                                                            | Sémantique différente (fuseau, arité).                                                                                                                                              |
+| `CACHE_TTL_MS = 30_000` ×2, `MIN_REQUEST_INTERVAL_MS` par provider, `WATCH_LIST_TTL_MS`, cron `EVERY_6_HOURS` ×3                                          | Réglages indépendants, volontairement locaux.                                                                                                                                       |
+| `createHash` dans `auth-cookies.ts:135`                                                                                                                   | Dérivation de clé, pas un hash de token.                                                                                                                                            |
+| `getCalendar` et son repli `movieReleaseRegion`                                                                                                           | Différence voulue (RB-12).                                                                                                                                                          |
+| Partager `deriveStatus`, libellés de statut, textes de notification                                                                                       | Le web ne recalcule pas le statut ; il y a deux systèmes i18n distincts (Paraglide et `notification-copy.ts`).                                                                      |
+| `COPY_LOCALES` ↔ `Locale`                                                                                                                                 | Sous-ensemble voulu (langues de rédaction de l'API).                                                                                                                                |
+| `format.ts` du web dans shared                                                                                                                            | Intl + Paraglide, propre au web ; l'API ne formate pas de durées.                                                                                                                   |
+| Tailles de page `20` du web dans une constante commune                                                                                                    | Les deux sites (`ToWatchWidget`, `UserSelector`) n'ont pas le même sens ; la pagination réelle utilise `DEFAULT_PAGE_SIZE` de shared, tandis que le quota du widget reste distinct. |
+| Unions `type Tab` / `Step` / `Mode` homonymes                                                                                                             | Les valeurs diffèrent ; elles sont propres à chaque écran.                                                                                                                          |
+| Enums utilisés à l'exécution par l'API seule (`XpReason`, `ActivityType`…)                                                                                | Vocabulaire des DTO, consommé comme types par le web : ils sont à leur place.                                                                                                       |
+| Seuils numériques réservés à l'API dans shared (`GHOST_AFTER_DAYS`, `MAX_API_KEYS_PER_USER`…)                                                             | Coût nul ; certains sont utiles au web (SH-40).                                                                                                                                     |
+| `LEVEL_BASE/STEP/CAP_COST`, `VALIDATION_CONSTRAINT_NAMES`, `REPORT_CATEGORY_MOTIFS` exportés pour les tests                                               | Pattern « exporter pour tester », assumé (`@public`).                                                                                                                               |
+| `VALERR_MESSAGE_KEYS`, les 47 `check*` de `registry.ts` exportés                                                                                          | Même raison.                                                                                                                                                                        |
+| `legacyIncomplete`, `settings/nav.ts` `legacyHash`, `notification-presentation.ts:24`                                                                     | Donnée métier persistée, ou redirection de favoris : ce n'est pas du code mort.                                                                                                     |
+| `apps/api/test/__snapshots__`                                                                                                                             | La règle « no snapshot » ne vise que le web.                                                                                                                                        |
+| `settings/nav.ts` (826 l.)                                                                                                                                | Données déclaratives, source unique volontaire.                                                                                                                                     |
+| Pages légales (865 et 515 l.), `admin/components/+page.svelte` (747 l.)                                                                                   | Prose, et vitrine du design system.                                                                                                                                                 |
+| `HomeLayoutEditor` (718 l.)                                                                                                                               | Les maths de grille sont déjà dans `lib/home/grid.ts` ; le reste est de la colle DOM.                                                                                               |
+| Hero de la page média                                                                                                                                     | Design en overlay volontairement distinct (RF-02).                                                                                                                                  |
+| Sélecteurs de domaine (onboarding contre réglages), tuiles et chips `aria-pressed`                                                                        | Visuels différents ; la logique `domainToggle` et la classe `.chip` sont déjà partagées.                                                                                            |
+| `AdminList` générique (reports, security, imports)                                                                                                        | Sur-ingénierie ; on se limite à RF-12, RF-14 et RF-15.                                                                                                                              |
+| `CommentThread` en TanStack brut                                                                                                                          | Exception documentée (seules les clés sont concernées, RF-11).                                                                                                                      |
+| try/catch légitimes du web (scan ISBN, `QuickAddPanel` parsing d'URL, `safeRedirect`, `navigator.share`, Mermaid, rollback optimiste de `LibraryBrowser`) | API d'appareil ou de navigateur, ou logique optimiste, et non des appels à l'API.                                                                                                   |
+| `Intl.DateTimeFormat`, `downloadBlob`, `staleTime`, z-index, durées de toast                                                                              | Déjà centralisés.                                                                                                                                                                   |
+| URLs d'images TMDB/IGDB côté web                                                                                                                          | Seulement dans `landing-mock-data.ts` ; le web reçoit des URLs complètes.                                                                                                           |
+| `Math.round(x / 60)` des stats, `padStart` décoratifs                                                                                                     | Valeurs numériques de graphique ou effet visuel ponctuel.                                                                                                                           |
+| `mailto:contact@loomkeep.app` des pages légales                                                                                                           | Contenu juridique figé.                                                                                                                                                             |
+| `as unknown as` WebAuthn du web, `Component<any>` des utilitaires de test                                                                                 | Documentés, et pattern standard.                                                                                                                                                    |
+| `COMPACT_QUERY` de `layout.svelte.ts`                                                                                                                     | Différente à dessein (largeur ou hauteur).                                                                                                                                          |
+| ESLint et tsconfig                                                                                                                                        | Déjà factorisés via les configs `base`.                                                                                                                                             |
+| Versions de vitest, coverage, typescript et `@types/node`                                                                                                 | Homogènes.                                                                                                                                                                          |
+| `prisma` en `dependencies`, `@fastify/static` en dev, `pino-http`, `rxjs`, `@nestjs/schematics`, `dotenv`                                                 | Justifiés (runtime de migration, Swagger réservé au dev, peers).                                                                                                                    |
+| APIs Node dans shared                                                                                                                                     | Aucune trouvée : sain.                                                                                                                                                              |
+| Barrel `shared/index.ts` (50 `export *`)                                                                                                                  | Cohérent ; l'impact sur le tree-shaking est négligeable pour des constantes (attention seulement aux gros objets, SH-38).                                                           |
+| `ownershipSource: "Steam"` import ↔ préréglage web                                                                                                        | Couplage implicite mais stable ; gain marginal.                                                                                                                                     |
+| Domaine des sources d'import (web) contre classes de base (API)                                                                                           | Structurel côté API ; une table partagée ferait doublon.                                                                                                                            |

@@ -16,6 +16,7 @@
     INVITATION_MAX_USES,
     INVITATION_VALIDITY_DAYS,
     type AdminInvitationLinkDto,
+    INVITATION_LABEL_MAX_LENGTH,
   } from "@loomkeep/shared";
   import { untrack } from "svelte";
   import { backOut, cubicOut } from "svelte/easing";
@@ -276,7 +277,7 @@
           <input
             type="text"
             name="label"
-            maxlength="60"
+            maxlength={INVITATION_LABEL_MAX_LENGTH}
             autocomplete="off"
             placeholder={m.admin_invitations_label_placeholder()}
             aria-invalid={createMut.fieldErrors.label ? "true" : undefined}

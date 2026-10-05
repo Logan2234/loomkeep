@@ -1,3 +1,5 @@
+export const PUSH_LIMITS = { title: 100, body: 500 } as const;
+
 /** Web Push subscription payload, as returned by PushManager.subscribe(). */
 export interface PushSubscriptionRequestDto {
   endpoint: string;

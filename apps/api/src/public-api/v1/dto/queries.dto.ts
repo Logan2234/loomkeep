@@ -2,8 +2,10 @@ import type { ApiV1LibrarySort, ApiV1Phase } from "@loomkeep/shared";
 import {
   API_V1_LIBRARY_SORTS,
   Locale,
+  SORT_ORDERS,
   STATS_DOMAINS,
   StatsStatusBucket,
+  type SortOrder,
   type StatsDomain,
 } from "@loomkeep/shared";
 import { ApiPropertyOptional } from "@nestjs/swagger";
@@ -90,13 +92,13 @@ export class LibraryQueryDto extends PageQueryDto {
   sort?: ApiV1LibrarySort;
 
   @ApiPropertyOptional({
-    enum: ["asc", "desc"],
+    enum: SORT_ORDERS,
     description:
       "`desc` keeps each sort's natural order (newest, best rated, A→Z for titles); `asc` reverses it.",
   })
   @IsOptional()
-  @IsIn(["asc", "desc"])
-  order?: "asc" | "desc";
+  @IsIn(SORT_ORDERS)
+  order?: SortOrder;
 }
 
 export class CalendarQueryDto extends LangQueryDto {

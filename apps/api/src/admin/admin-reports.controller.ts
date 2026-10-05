@@ -1,13 +1,13 @@
 import {
   ErrorCode,
   ModerationMeasure,
+  ReportStatus,
   type AdminReportsSummaryDto,
   type PagedResult,
   type ReportCategory,
   type ReportDto,
   type ReportMotif,
   type ReportPendingCountDto,
-  type ReportStatus,
   type ReportTargetType,
 } from "@loomkeep/shared";
 import {
@@ -53,7 +53,7 @@ import {
 } from "./admin-social-stats.util";
 import { AdminReportsSummaryResponseDto } from "./dto/admin-reports-summary-response.dto";
 
-const STATUSES: ReportStatus[] = ["PENDING", "RESOLVED", "DISMISSED"];
+const STATUSES = Object.values(ReportStatus);
 
 type PendingReport = {
   targetType: ReportTargetType;
@@ -89,7 +89,7 @@ export class AdminReportsController {
     const parsed = parsePageQuery(page, limit, DEFAULT_PAGE_SIZE);
     return this.reports.list(
       STATUSES.includes(status as ReportStatus)
-        ? (status as "PENDING" | "RESOLVED" | "DISMISSED")
+        ? (status as ReportStatus)
         : undefined,
       parsed,
       reporterId,

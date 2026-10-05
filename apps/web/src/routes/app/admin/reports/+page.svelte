@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type ReportResolution, USER_LIMITS } from "@loomkeep/shared";
+
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import AdminQueryError from "../AdminQueryError.svelte";
   import { appConfig } from "$lib/config.svelte";
@@ -128,7 +130,7 @@
   const summary = $derived(summaryQuery.data);
 
   const resolveMut = createApiMutation(() => ({
-    mutate: (args: { id: string; status: "RESOLVED" | "DISMISSED" }) =>
+    mutate: (args: { id: string; status: ReportResolution }) =>
       resolveAdminReport(args.id, args.status),
     invalidates: [
       reportsKey,
@@ -753,7 +755,7 @@
   <input
     id="measure-name-value"
     class="input text-sm"
-    maxlength={50}
+    maxlength={USER_LIMITS.displayName}
     aria-label={m.admin_reports_measure_name_label()}
     placeholder={m.admin_reports_measure_name_label()}
     bind:value={newDisplayName} />

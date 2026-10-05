@@ -1,4 +1,7 @@
-import { NotificationType } from "@loomkeep/shared";
+import {
+  API_KEY_EXPIRY_WARNING_DAYS,
+  NotificationType,
+} from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { addDays, sinceDaysAgo } from "../common/date.util";
@@ -14,7 +17,6 @@ import { ApiKeyAuthService } from "./api-key-auth.service";
 
 const DAY_MS = 86_400_000;
 /** How far ahead of its expiration a key's owner is warned. */
-const EXPIRY_WARNING_DAYS = 7;
 /** A key nobody has used for this long is deleted. */
 const UNUSED_KEY_DAYS = 365;
 
@@ -51,7 +53,7 @@ export class ApiKeyLifecycleService {
   }
 
   async warnExpiring(now = new Date()): Promise<number> {
-    const horizon = addDays(now, EXPIRY_WARNING_DAYS);
+    const horizon = addDays(now, API_KEY_EXPIRY_WARNING_DAYS);
     const keys = await this.prisma.apiKey.findMany({
       where: {
         expiresAt: { gt: now, lte: horizon },
@@ -69,7 +71,7 @@ export class ApiKeyLifecycleService {
       // owner picked that date a few days ago.
       const lifetime = expiresAt.getTime() - key.createdAt.getTime();
 
-      if (lifetime > EXPIRY_WARNING_DAYS * DAY_MS) {
+      if (lifetime > API_KEY_EXPIRY_WARNING_DAYS * DAY_MS) {
         await this.mail.sendApiKeyExpiring(key.user, key.name, expiresAt);
         const copy = notificationCopy(key.user.locale).apiKeys;
         await this.notifications.create({

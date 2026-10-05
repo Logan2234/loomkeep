@@ -9,6 +9,16 @@ import type {
 } from "../enums";
 import type { UserSummaryDto } from "./social";
 
+export const REPORT_REASON_MAX_LENGTH = 500;
+export const REPORT_RESOLUTIONS = ["RESOLVED", "DISMISSED"] as const;
+export type ReportResolution = Exclude<ReportStatus, "PENDING">;
+
+export interface ModerationReasonRequestDto {
+  reasonText: string;
+  legalBasis: ModerationLegalBasis;
+  tosClause?: string;
+}
+
 /** Minimal display info for whatever a report targets, resolved server-side. */
 export interface ReportTargetSummaryDto {
   /** A short excerpt/label — comment text, review text, or a username. */

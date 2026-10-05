@@ -1,5 +1,10 @@
 import type { Domain, PagedResult, ReviewTargetType } from "@loomkeep/shared";
-import { ActivityType, ErrorCode, XpReason } from "@loomkeep/shared";
+import {
+  ActivityType,
+  ErrorCode,
+  XpReason,
+  type SortOrder,
+} from "@loomkeep/shared";
 import { HttpStatus } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import type { XpService } from "../gamification/xp.service";
@@ -37,7 +42,7 @@ export interface ListEntriesFilters {
   favorite?: boolean;
   statuses?: string[];
   sort?: string;
-  order?: "asc" | "desc";
+  order?: SortOrder;
   page?: number;
   limit?: number;
   /** The signed-in user's locale, when known — drives alphabetical collation. */

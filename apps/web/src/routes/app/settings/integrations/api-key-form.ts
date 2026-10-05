@@ -1,11 +1,11 @@
 import { localDateInput } from "$lib/date";
 import type { ApiKeyDto, ApiKeyResource, ApiKeyScope } from "@loomkeep/shared";
+import { API_KEY_EXPIRY_WARNING_DAYS } from "@loomkeep/shared";
 
 export type ExpirationChoice = "30" | "90" | "365" | "custom" | "never";
 export const DEFAULT_EXPIRATION: ExpirationChoice = "90";
 
 /** Below this, a key's expiration is flagged in the list. */
-const EXPIRING_SOON_DAYS = 7;
 const DAY_MS = 86_400_000;
 
 /**
@@ -43,7 +43,7 @@ export function expiryState(
   if (!key.expiresAt) return "never";
   const left = new Date(key.expiresAt).getTime() - now.getTime();
   if (left <= 0) return "expired";
-  return left < EXPIRING_SOON_DAYS * DAY_MS ? "soon" : "active";
+  return left < API_KEY_EXPIRY_WARNING_DAYS * DAY_MS ? "soon" : "active";
 }
 
 /** The endpoint an example calls: the first one the key can read. */

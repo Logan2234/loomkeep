@@ -1,5 +1,3 @@
-export const MAX_SESSION_DURATION_MINUTES = 9999;
-
 export { localDateInput } from "./date";
 
 export function sessionDateToIso(value: string): string {

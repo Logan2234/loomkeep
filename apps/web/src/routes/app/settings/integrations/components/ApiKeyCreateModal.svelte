@@ -15,6 +15,7 @@
     API_KEY_RESOURCES,
     type ApiKeyResource,
     type CreatedApiKeyDto,
+    readScope,
   } from "@loomkeep/shared";
   import { untrack } from "svelte";
   import {
@@ -95,9 +96,7 @@
     if (!canSubmit) return;
     createMut.mutate({
       name: name.trim(),
-      scopes: API_KEY_RESOURCES.filter((r) => readable.has(r)).map(
-        (r) => `${r}:read` as const,
-      ),
+      scopes: API_KEY_RESOURCES.filter((r) => readable.has(r)).map(readScope),
       expiresAt: expiresAtFor(expiration, customDate),
     });
   }

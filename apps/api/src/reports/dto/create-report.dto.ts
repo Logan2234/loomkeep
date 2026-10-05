@@ -1,4 +1,5 @@
 import {
+  REPORT_REASON_MAX_LENGTH,
   ReportCategory,
   ReportMotif,
   ReportProfilePart,
@@ -16,7 +17,7 @@ export class CreateReportBody {
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(REPORT_REASON_MAX_LENGTH)
   reason?: string;
 
   /** Required on a profile report — checked in ReportService.create. */

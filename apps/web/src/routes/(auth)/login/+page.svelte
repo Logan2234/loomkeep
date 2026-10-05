@@ -21,7 +21,12 @@
   import { prefersReducedMotion } from "$lib/motion";
   import { normalizeCodeInput } from "$lib/one-time-code";
   import { m } from "$lib/paraglide/messages.js";
-  import { ErrorCode, type MfaMethod } from "@loomkeep/shared";
+  import {
+    ErrorCode,
+    type MfaMethod,
+    OTP_CODE_LENGTH,
+    RECOVERY_CODE_LENGTH,
+  } from "@loomkeep/shared";
   import { fly } from "svelte/transition";
 
   const reduced = prefersReducedMotion();
@@ -372,7 +377,9 @@
           oninput={(e) =>
             (codeInput = normalizeCodeInput(
               e.currentTarget,
-              selectedMethod === "recovery" ? 11 : 6,
+              selectedMethod === "recovery"
+                ? RECOVERY_CODE_LENGTH + 1
+                : OTP_CODE_LENGTH,
             ))} />
       </label>
 

@@ -1,3 +1,4 @@
+import { USER_LIMITS } from "@loomkeep/shared";
 import {
   IsBoolean,
   IsDateString,
@@ -26,7 +27,7 @@ export class ProfileMeasuresBody extends ModerationReasonBody {
   @IsOptional()
   @IsString()
   @MinLength(1)
-  @MaxLength(50)
+  @MaxLength(USER_LIMITS.displayName)
   displayName?: string;
 
   /** Suspends the account until this instant (ISO 8601, in the future). */

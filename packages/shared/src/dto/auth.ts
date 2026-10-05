@@ -7,6 +7,9 @@ import type {
 import type { Locale, SecurityEventType } from "../enums";
 import type { UserDto } from "./user";
 
+export const OTP_CODE_LENGTH = 6;
+export const RECOVERY_CODE_LENGTH = 10;
+
 export interface RegisterRequestDto {
   email: string;
   password: string;

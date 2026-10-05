@@ -5,7 +5,7 @@ import type {
   LibraryGameSagasDto,
   LibrarySagaSort,
 } from "@loomkeep/shared";
-import { isGameUpcoming } from "@loomkeep/shared";
+import { isGameUpcoming, type SortOrder } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import type { GameSagaMember } from "@prisma/client";
 import {
@@ -31,7 +31,7 @@ const GAME_SAGA_STATUS: SagaStatusReader<GameSagaMemberDto> = {
 export interface LibraryGameSagaFilters {
   q?: string;
   sort?: LibrarySagaSort;
-  order?: "asc" | "desc";
+  order?: SortOrder;
 }
 
 /**

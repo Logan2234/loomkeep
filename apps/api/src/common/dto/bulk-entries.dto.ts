@@ -2,6 +2,7 @@ import {
   BULK_ENTRIES_MAX_IDS,
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
+  OWNERSHIP_SOURCE_MAX_LENGTH,
 } from "@loomkeep/shared";
 import { Type } from "class-transformer";
 import {
@@ -41,7 +42,7 @@ export class BulkUpdateEntriesBaseBody extends BulkEntriesTargetBody {
 
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(OWNERSHIP_SOURCE_MAX_LENGTH)
   ownershipSource?: string | null;
 }
 

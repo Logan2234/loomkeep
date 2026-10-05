@@ -1,4 +1,4 @@
-import { Domain } from "@loomkeep/shared";
+import { Domain, REQUIRED_SHORTCUT } from "@loomkeep/shared";
 import { auth } from "./auth.svelte";
 import { orderedDomains } from "./domains";
 import { m } from "./paraglide/messages.js";
@@ -386,7 +386,7 @@ const MENU_GROUPS: { label: string; ids: MobileNavId[] }[] = [
 export const DEFAULT_BOTTOM_SHORTCUTS: MobileNavId[] = [
   "home",
   "search",
-  "menu",
+  REQUIRED_SHORTCUT,
   "calendar",
   "settings",
 ];

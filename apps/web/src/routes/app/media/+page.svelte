@@ -39,6 +39,7 @@
     isDormant,
     isGhost,
     MEDIA_BULK_STATUSES,
+    progressPercent,
   } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
@@ -64,13 +65,6 @@
     { label: m.library_sort_started(), value: "started" },
     { label: m.common_status(), value: "status" },
   ];
-
-  function pct(entry: LibraryEntryDto): number {
-    if (!entry.progress || entry.progress.totalEpisodes === 0) return 0;
-    return Math.round(
-      (entry.progress.watchedEpisodes / entry.progress.totalEpisodes) * 100,
-    );
-  }
 
   const TYPE_LABELS: Record<MediaType, string> = {
     MOVIE: m.media_movie(),
@@ -102,7 +96,7 @@
     favorite: entry.favorite,
     progress: entry.progress
       ? {
-          percent: pct(entry),
+          percent: progressPercent(entry.progress),
           label: `${entry.progress.watchedEpisodes} / ${entry.progress.totalEpisodes} ${m.media_episode_short()}`,
           paused: isDormant(entry),
           ghost: isGhost(entry),
@@ -255,7 +249,7 @@
         {#snippet meta()}
           {#if entry.progress}
             <ProgressBar
-              value={pct(entry)}
+              value={progressPercent(entry.progress)}
               label={m.common_selection_summary({
                 label: m.common_progress(),
                 selection: entry.mediaItem.title,

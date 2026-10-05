@@ -7,6 +7,9 @@ import type {
 } from "../enums";
 import type { GameItemDto } from "./game";
 
+export const ENTRY_NOTES_MAX_LENGTH = 5000;
+export const OWNERSHIP_SOURCE_MAX_LENGTH = 100;
+
 /**
  * Tracked-item count per domain, hidden domains included — the settings
  * "Domaines" tiles need to say what turning one off would take out of the
@@ -176,4 +179,19 @@ export interface CalendarEntryDto {
 /** The opaque token used in the public .ics subscription URL. */
 export interface CalendarTokenDto {
   token: string;
+}
+
+export function episodeCode(
+  season: number | null,
+  episode: number | null,
+): string {
+  return `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
+}
+
+export function progressPercent(
+  progress:
+    Pick<ProgressDto, "watchedEpisodes" | "totalEpisodes"> | null | undefined,
+): number {
+  if (!progress || progress.totalEpisodes === 0) return 0;
+  return Math.round((progress.watchedEpisodes / progress.totalEpisodes) * 100);
 }

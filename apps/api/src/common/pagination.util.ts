@@ -1,4 +1,4 @@
-import type { PagedResult } from "@loomkeep/shared";
+import { MAX_PAGE_LIMIT, type PagedResult } from "@loomkeep/shared";
 
 /** Parsed, safe `page`/`limit` query params for a `GET` list endpoint. */
 export interface ParsedPage {
@@ -8,15 +8,7 @@ export interface ParsedPage {
   take: number;
 }
 
-const MAX_LIMIT = 200;
-
-/**
- * Default page size for every user-facing list endpoint, unless the caller
- * asks for another `limit`. One value on purpose: each domain used to carry
- * its own copy, which drifted (40 in the library services, 50 in admin, 20
- * for comments) with nothing behind the difference.
- */
-export const DEFAULT_PAGE_SIZE = 20;
+export { DEFAULT_PAGE_SIZE } from "@loomkeep/shared";
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
@@ -38,7 +30,7 @@ export function parsePageQuery(
   const parsedPage = parsePositiveInt(page, 1);
   const parsedLimit = Math.min(
     parsePositiveInt(limit, defaultLimit),
-    MAX_LIMIT,
+    MAX_PAGE_LIMIT,
   );
 
   return {

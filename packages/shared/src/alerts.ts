@@ -1,3 +1,5 @@
+export type AlertChannel = "push" | "email";
+
 /**
  * How an alert reaches someone on one channel:
  * - `always`: sent whenever it happens, with no setting;
@@ -284,13 +286,13 @@ export type AlertKey = keyof typeof ALERTS;
 
 /** One account's choices, only where it moved away from the default. */
 export type AlertPrefs = Partial<
-  Record<AlertKey, Partial<Record<"push" | "email", boolean>>>
+  Record<AlertKey, Partial<Record<AlertChannel, boolean>>>
 >;
 
 /** Whether `channel` can be switched on and off for `key`. */
 export function isAlertToggleable(
   key: AlertKey,
-  channel: "push" | "email",
+  channel: AlertChannel,
 ): boolean {
   const rule: AlertRule | undefined = (ALERTS[key] as AlertDefinition)[channel];
   return rule === "on" || rule === "off";
@@ -300,7 +302,7 @@ export function isAlertToggleable(
 export function isAlertEnabled(
   prefs: AlertPrefs | null | undefined,
   key: AlertKey,
-  channel: "push" | "email",
+  channel: AlertChannel,
 ): boolean {
   const rule: AlertRule | undefined = (ALERTS[key] as AlertDefinition)[channel];
   if (rule === "always") return true;

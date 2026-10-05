@@ -1,4 +1,5 @@
 import {
+  ENTRY_NOTES_MAX_LENGTH,
   MusicSource,
   MusicStatus,
   UpsertMusicEntryDto as UpsertMusicEntryContract,
@@ -33,7 +34,7 @@ export class UpsertMusicEntryDto implements UpsertMusicEntryContract {
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
+  @MaxLength(ENTRY_NOTES_MAX_LENGTH)
   notes?: string | null;
 
   @IsOptional()
