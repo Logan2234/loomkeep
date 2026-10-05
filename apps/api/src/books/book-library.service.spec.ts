@@ -487,6 +487,7 @@ describe("BookLibraryService — XP wiring", () => {
   /** Marks a book READ from TO_READ, with what the finish may also complete. */
   async function finishBook(
     extra: {
+      pages?: number | null;
       goal?: { target: number; updatedAt: Date } | null;
       booksThisYear?: number;
       seriesKey?: string | null;
@@ -536,9 +537,10 @@ describe("BookLibraryService — XP wiring", () => {
           ),
       },
       bookItem: {
-        findUnique: vi
-          .fn()
-          .mockResolvedValue({ seriesKey: extra.seriesKey ?? null }),
+        findUnique: vi.fn().mockResolvedValue({
+          seriesKey: extra.seriesKey ?? null,
+          pageCount: extra.pages ?? null,
+        }),
       },
     } as unknown as PrismaService;
     const xp = stubXp();
@@ -573,10 +575,23 @@ describe("BookLibraryService — XP wiring", () => {
   it("awards BOOK_FINISHED on the TO_READ -> READ transition, not on other updates", async () => {
     const xp = await finishBook();
 
+    // No page count known: the flat amount.
     expect(xp.award).toHaveBeenCalledWith(
       "user-1",
       "BOOK_FINISHED",
       "reading-1",
+      150,
+    );
+  });
+
+  it("pays a finished book by its length", async () => {
+    const xp = await finishBook({ pages: 48 });
+
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "BOOK_FINISHED",
+      "reading-1",
+      66,
     );
   });
 

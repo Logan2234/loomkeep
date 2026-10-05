@@ -680,6 +680,7 @@ describe("LibraryService — XP wiring", () => {
           { id: "ep1", number: 1, airDate: null, season: { number: 1 } },
           { id: "ep2", number: 2, airDate: null, season: { number: 1 } },
         ]),
+        count: vi.fn().mockResolvedValue(2),
       },
       episodeWatch: {
         create: vi.fn().mockResolvedValue({
@@ -730,10 +731,12 @@ describe("LibraryService — XP wiring", () => {
 
     await service.watchEpisode("user-1", "ep2", {} as never);
 
+    // Paid by its episodes: a two-episode season gets the floor.
     expect(xp.award).toHaveBeenCalledWith(
       "user-1",
       "SEASON_COMPLETED",
       "season-1",
+      10,
     );
     expect(achievements.evaluate).toHaveBeenCalledWith(
       "user-1",

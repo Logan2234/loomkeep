@@ -31,6 +31,8 @@ import {
   ReviewTargetType,
   runtimeFor,
   sagaCompletionXp,
+  seasonCompletedXp,
+  seriesCompletedXp,
   XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
@@ -1367,7 +1369,15 @@ export class LibraryService {
       const complete = await isSeasonComplete(this.prisma, userId, season.id);
 
       if (complete) {
-        await this.xp.award(userId, XpReason.SEASON_COMPLETED, season.id);
+        const episodes = await this.prisma.episode.count({
+          where: { seasonId: season.id },
+        });
+        await this.xp.award(
+          userId,
+          XpReason.SEASON_COMPLETED,
+          season.id,
+          seasonCompletedXp(episodes),
+        );
       } else {
         await this.xp.revokeBySource("Season", [season.id]);
       }
@@ -1383,7 +1393,15 @@ export class LibraryService {
       const complete = await isSeriesComplete(this.prisma, userId, entry.id);
 
       if (complete) {
-        await this.xp.award(userId, XpReason.SERIES_COMPLETED, entry.id);
+        const seasons = await this.prisma.season.count({
+          where: { mediaItemId: entry.mediaItemId, number: { gt: 0 } },
+        });
+        await this.xp.award(
+          userId,
+          XpReason.SERIES_COMPLETED,
+          entry.id,
+          seriesCompletedXp(seasons),
+        );
         await this.achievements.evaluate(
           userId,
           ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.SERIES_COMPLETED],

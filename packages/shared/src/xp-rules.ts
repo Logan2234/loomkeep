@@ -10,6 +10,10 @@ import { XpReason } from "./enums";
  * `dailyCap` is omitted only for a reason that is inherently unique by
  * nature (a one-off milestone, e.g. DOMAIN_STARTED) — every repeatable
  * reason carries one, calibrated to what's physically plausible in a day.
+ * For the finishes sized by what was finished (bookFinishedXp, gameFinishedXp,
+ * seasonCompletedXp, seriesCompletedXp), `amount` is what's paid when that
+ * size is unknown.
+ *
  * `amount` is omitted only for ADMIN_ADJUSTMENT (signed, chosen per grant by
  * an admin), ACHIEVEMENT_UNLOCKED (varies by achievement tier) and the
  * progressive SAGA_COMPLETED / READING_GOAL_REACHED (sized by the saga or the
@@ -73,7 +77,8 @@ export const XP_RULES: Record<XpReason, XpRule> = {
   },
   GAME_REPLAYED: {
     reason: XpReason.GAME_REPLAYED,
-    amount: 100,
+    // Half a first finish (gameFinishedXp), this when the length is unknown.
+    amount: 175,
     sourceType: "GamePlaythrough",
     dailyCap: 3,
     socialGated: false,
@@ -88,7 +93,8 @@ export const XP_RULES: Record<XpReason, XpRule> = {
   },
   BOOK_REPLAYED: {
     reason: XpReason.BOOK_REPLAYED,
-    amount: 50,
+    // Half a first finish (bookFinishedXp), this when the length is unknown.
+    amount: 75,
     sourceType: "BookReading",
     dailyCap: 3,
     socialGated: false,
@@ -256,4 +262,39 @@ export const MIN_REWARDED_READING_GOAL = 3;
  */
 export function readingGoalXp(books: number): number {
   return Math.min(1500, 3 * books * books + 15 * books);
+}
+
+/**
+ * BOOK_FINISHED by length, so a 48-page comic doesn't pay like a long novel:
+ * 50 + a third of the pages, capped at 400 — 330 pages pay about the old flat
+ * 150, which is what an unknown length still pays.
+ */
+export function bookFinishedXp(pages: number | null): number {
+  if (!pages) return XP_RULES.BOOK_FINISHED.amount!;
+  return Math.min(400, 50 + Math.round(pages / 3));
+}
+
+/**
+ * GAME_FINISHED by IGDB's average time to beat, so a 3-hour game doesn't pay
+ * like a 100-hour one: 100 + 8 per hour, capped at 700. Unknown length: the
+ * rule's flat amount.
+ */
+export function gameFinishedXp(minutes: number | null): number {
+  if (!minutes) return XP_RULES.GAME_FINISHED.amount!;
+  return Math.min(700, 100 + Math.round((8 * minutes) / 60));
+}
+
+/** SEASON_COMPLETED by its episodes: 2 each, between 10 and 60. */
+export function seasonCompletedXp(episodes: number): number {
+  return Math.min(60, Math.max(10, 2 * episodes));
+}
+
+/** SERIES_COMPLETED by its seasons: 50 + 25 each, capped at 300. */
+export function seriesCompletedXp(seasons: number): number {
+  return Math.min(300, 50 + 25 * seasons);
+}
+
+/** A replay (game, book) pays half its first finish. */
+export function replayXp(firstFinishXp: number): number {
+  return Math.round(firstFinishXp / 2);
 }

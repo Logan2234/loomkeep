@@ -9,8 +9,10 @@ import {
   type PileSummaryDto,
   Domain,
   DORMANT_AFTER_DAYS,
+  gameFinishedXp,
   GameOwnershipStatus,
   GameStatus,
+  replayXp,
   ReviewTargetType,
   sagaCompletionXp,
   TrackingCycleStatus,
@@ -193,6 +195,22 @@ export class GameLibraryService {
   ) {}
 
   /**
+   * A finish paid by the game's length (IGDB's average time to beat), a
+   * replay half that.
+   */
+  private async finishXp(
+    gameItemId: string,
+    reason: XpReason,
+  ): Promise<number> {
+    const item = await this.prisma.gameItem.findUnique({
+      where: { id: gameItemId },
+      select: { timeToBeatNormallyMin: true },
+    });
+    const first = gameFinishedXp(item?.timeToBeatNormallyMin ?? null);
+    return reason === XpReason.GAME_REPLAYED ? replayXp(first) : first;
+  }
+
+  /**
    * SAGA_COMPLETED once the game's series has every released game finished
    * and nothing announced. Checked on each finish; once per series.
    */
@@ -322,7 +340,12 @@ export class GameLibraryService {
         statusPlaythrough.number === 1
           ? XpReason.GAME_FINISHED
           : XpReason.GAME_REPLAYED;
-      await this.xp.award(userId, reason, statusPlaythrough.id);
+      await this.xp.award(
+        userId,
+        reason,
+        statusPlaythrough.id,
+        await this.finishXp(entry.gameItemId, reason),
+      );
       await this.achievements.evaluate(
         userId,
         ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
@@ -651,7 +674,12 @@ export class GameLibraryService {
         completedPlaythrough.number === 1
           ? XpReason.GAME_FINISHED
           : XpReason.GAME_REPLAYED;
-      await this.xp.award(userId, reason, completedPlaythrough.id);
+      await this.xp.award(
+        userId,
+        reason,
+        completedPlaythrough.id,
+        await this.finishXp(entry.gameItemId, reason),
+      );
       await this.achievements.evaluate(
         userId,
         ACHIEVEMENT_KEYS_BY_XP_REASON[reason],

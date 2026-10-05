@@ -8,11 +8,13 @@ import {
   type PagedResult,
   type PileSummaryDto,
   type ReadingGoalDto,
+  bookFinishedXp,
   BookStatus,
   Domain,
   DORMANT_AFTER_DAYS,
   MIN_REWARDED_READING_GOAL,
   readingGoalXp,
+  replayXp,
   ReviewTargetType,
   sagaCompletionXp,
   TrackingCycleStatus,
@@ -226,6 +228,25 @@ export class BookLibraryService {
   ) {}
 
   /**
+   * A finish paid by the book's length — the edition read, else the work's
+   * catalogued count — a reread half that.
+   */
+  private async finishXp(
+    bookItemId: string,
+    reading: { referencePageCount: number | null },
+    reason: XpReason,
+  ): Promise<number> {
+    const item = await this.prisma.bookItem.findUnique({
+      where: { id: bookItemId },
+      select: { pageCount: true },
+    });
+    const first = bookFinishedXp(
+      reading.referencePageCount ?? item?.pageCount ?? null,
+    );
+    return reason === XpReason.BOOK_REPLAYED ? replayXp(first) : first;
+  }
+
+  /**
    * What finishing a book can complete beyond the book itself: its series
    * (SAGA_COMPLETED, once per series) and the reading goal of the year it was
    * finished (READING_GOAL_REACHED, once per goal).
@@ -396,7 +417,12 @@ export class BookLibraryService {
         statusReading.number === 1
           ? XpReason.BOOK_FINISHED
           : XpReason.BOOK_REPLAYED;
-      await this.xp.award(userId, reason, statusReading.id);
+      await this.xp.award(
+        userId,
+        reason,
+        statusReading.id,
+        await this.finishXp(entry.bookItemId, statusReading, reason),
+      );
       await this.achievements.evaluate(
         userId,
         ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
@@ -697,7 +723,12 @@ export class BookLibraryService {
         completedReading.number === 1
           ? XpReason.BOOK_FINISHED
           : XpReason.BOOK_REPLAYED;
-      await this.xp.award(userId, reason, completedReading.id);
+      await this.xp.award(
+        userId,
+        reason,
+        completedReading.id,
+        await this.finishXp(entry.bookItemId, completedReading, reason),
+      );
       await this.achievements.evaluate(
         userId,
         ACHIEVEMENT_KEYS_BY_XP_REASON[reason],

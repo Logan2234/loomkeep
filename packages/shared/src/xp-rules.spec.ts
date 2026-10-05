@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { XpReason } from "./enums";
 import {
+  bookFinishedXp,
+  gameFinishedXp,
   readingGoalXp,
+  replayXp,
   sagaCompletionXp,
+  seasonCompletedXp,
+  seriesCompletedXp,
   XP_RULE_LIST,
   XP_RULES,
 } from "./xp-rules";
@@ -96,5 +101,33 @@ describe("progressive XP", () => {
     expect(readingGoalXp(12)).toBe(612);
     expect(readingGoalXp(20)).toBe(1500);
     expect(readingGoalXp(50)).toBe(1500);
+  });
+
+  it("pays a finished book by its length, the flat amount when unknown", () => {
+    expect(bookFinishedXp(48)).toBe(66);
+    expect(bookFinishedXp(330)).toBe(160);
+    expect(bookFinishedXp(1500)).toBe(400);
+    expect(bookFinishedXp(null)).toBe(150);
+  });
+
+  it("pays a finished game by its time to beat, the flat amount when unknown", () => {
+    expect(gameFinishedXp(3 * 60)).toBe(124);
+    expect(gameFinishedXp(30 * 60)).toBe(340);
+    expect(gameFinishedXp(100 * 60)).toBe(700);
+    expect(gameFinishedXp(null)).toBe(350);
+  });
+
+  it("pays a season by its episodes and a series by its seasons", () => {
+    expect(seasonCompletedXp(3)).toBe(10);
+    expect(seasonCompletedXp(12)).toBe(24);
+    expect(seasonCompletedXp(50)).toBe(60);
+    expect(seriesCompletedXp(1)).toBe(75);
+    expect(seriesCompletedXp(4)).toBe(150);
+    expect(seriesCompletedXp(20)).toBe(300);
+  });
+
+  it("pays a replay half its first finish, matching the flat fallbacks", () => {
+    expect(replayXp(bookFinishedXp(null))).toBe(XP_RULES.BOOK_REPLAYED.amount);
+    expect(replayXp(gameFinishedXp(null))).toBe(XP_RULES.GAME_REPLAYED.amount);
   });
 });
