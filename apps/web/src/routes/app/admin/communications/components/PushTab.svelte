@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { PUSH_LIMITS } from "@loomkeep/shared";
+
   import { page } from "$app/state";
   import {
     getAdminPushDevices,
@@ -169,7 +171,7 @@
         name="pushTitle"
         bind:value={pushTitle}
         placeholder="Loomkeep (admin)"
-        maxlength="100"
+        maxlength={PUSH_LIMITS.title}
         class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
     </div>
 
@@ -184,7 +186,7 @@
         name="pushBody"
         bind:value={pushBody}
         placeholder={m.admin_communications_test_placeholder()}
-        maxlength="500"
+        maxlength={PUSH_LIMITS.body}
         rows="2"
         class="border-border bg-surface w-full resize-none rounded-lg border px-3 py-2 text-sm"
       ></textarea>
@@ -286,7 +288,7 @@
         name="broadcastTitle"
         bind:value={broadcastTitle}
         placeholder="Loomkeep (admin)"
-        maxlength="100"
+        maxlength={PUSH_LIMITS.title}
         class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
     </div>
 
@@ -301,7 +303,7 @@
         name="broadcastBody"
         bind:value={broadcastBody}
         placeholder={m.admin_communications_broadcast_placeholder()}
-        maxlength="500"
+        maxlength={PUSH_LIMITS.body}
         rows="2"
         class="border-border bg-surface w-full resize-none rounded-lg border px-3 py-2 text-sm"
       ></textarea>

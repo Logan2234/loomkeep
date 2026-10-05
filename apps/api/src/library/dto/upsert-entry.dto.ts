@@ -1,5 +1,6 @@
 import {
   CatalogSource,
+  ENTRY_NOTES_MAX_LENGTH,
   EntryStatus,
   MediaType,
   UpsertLibraryEntryDto,
@@ -37,7 +38,7 @@ export class UpsertEntryDto implements UpsertLibraryEntryDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
+  @MaxLength(ENTRY_NOTES_MAX_LENGTH)
   notes?: string | null;
 
   @IsOptional()

@@ -4,6 +4,8 @@
  * `class-validator` DTOs (`@Matches`), so the two can never drift apart.
  */
 export const PASSWORD_MIN_LENGTH = 8;
+/** bcrypt truncates passwords beyond 72 bytes. */
+export const PASSWORD_MAX_LENGTH = 72;
 export const PASSWORD_UPPERCASE_RE = /[A-Z]/;
 export const PASSWORD_DIGIT_RE = /[0-9]/;
 export const PASSWORD_SPECIAL_RE = /[^A-Za-z0-9]/;

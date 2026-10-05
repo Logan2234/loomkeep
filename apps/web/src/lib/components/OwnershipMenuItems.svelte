@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { OWNERSHIP_SOURCE_MAX_LENGTH } from "@loomkeep/shared";
+
   // The items of an ownership menu, for a Dropdown with role="menu": one
   // entry per way of owning a work, and a submenu for those that come with
   // presets (Streaming › Netflix, Prime Video…, "Autre…" for a free value).
@@ -64,7 +66,7 @@
         <input
           type="text"
           class="input mx-2 my-1 w-auto py-1.5 text-sm"
-          maxlength="100"
+          maxlength={OWNERSHIP_SOURCE_MAX_LENGTH}
           placeholder={m.ownership_source_placeholder()}
           value={custom ? source : ""}
           autofocus

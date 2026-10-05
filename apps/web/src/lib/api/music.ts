@@ -7,6 +7,7 @@ import type {
   UpdateMusicEntryDto,
   UpsertMusicEntryDto,
 } from "@loomkeep/shared";
+import { type SortOrder } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
 export const searchMusic = (query: string) =>
@@ -17,7 +18,7 @@ export interface ListMusicFilters {
   favorite?: boolean;
   statuses?: string[];
   sort?: string;
-  order?: "asc" | "desc";
+  order?: SortOrder;
   page?: number;
 }
 

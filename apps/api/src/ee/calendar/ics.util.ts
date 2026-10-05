@@ -1,4 +1,4 @@
-import type { CalendarEntryDto } from "@loomkeep/shared";
+import { episodeCode } from "@loomkeep/shared";
 import { utcDateKey } from "../../common/date.util";
 
 const CRLF = "\r\n";
@@ -46,7 +46,7 @@ function eventSummary(entry: CalendarEntryDto): string {
   if (entry.game) return entry.game.title;
   const title = entry.mediaItem?.title ?? "";
   if (entry.mediaItem?.type === "MOVIE") return title;
-  return `${title} S${String(entry.seasonNumber).padStart(2, "0")}E${String(entry.episodeNumber).padStart(2, "0")}`;
+  return `${title} ${episodeCode(entry.seasonNumber, entry.episodeNumber)}`;
 }
 
 function eventUid(entry: CalendarEntryDto): string {

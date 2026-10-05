@@ -45,7 +45,12 @@
   import { m } from "$lib/paraglide/messages.js";
   import { timeLeftToWatch } from "$lib/pile";
   import type { MediaType } from "@loomkeep/shared";
-  import { isAnimeUnaired, isDormant, isGhost } from "@loomkeep/shared";
+  import {
+    isAnimeUnaired,
+    isDormant,
+    isGhost,
+    progressPercent,
+  } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
   import ActionBar from "./components/ActionBar.svelte";
@@ -274,13 +279,7 @@
   );
   const dormant = $derived(entry ? isDormant(entry) : false);
   const ghost = $derived(entry ? isGhost(entry) : false);
-  const pct = $derived(
-    entry?.progress && entry.progress.totalEpisodes > 0
-      ? Math.round(
-          (entry.progress.watchedEpisodes / entry.progress.totalEpisodes) * 100,
-        )
-      : 0,
-  );
+  const pct = $derived(progressPercent(entry?.progress));
 
   // Specials (season 0) are excluded from progress; show them last so the
   // regular run leads.

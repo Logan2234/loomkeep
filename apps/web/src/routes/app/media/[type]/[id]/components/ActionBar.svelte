@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { episodeCode } from "@loomkeep/shared";
+
   import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -108,18 +110,14 @@
             type="button"
             class="bg-accent text-accent-fg grid h-11 w-11 shrink-0 place-items-center rounded-full transition-transform active:scale-95 disabled:opacity-50"
             disabled={continuing}
-            title={`${m.common_continue()} S${String(nextEpisode.seasonNumber).padStart(2, "0")}E${String(
-              nextEpisode.episodeNumber,
-            ).padStart(2, "0")}`}
+            title={`${m.common_continue()} ${episodeCode(nextEpisode.seasonNumber, nextEpisode.episodeNumber)}`}
             onclick={onContinue}>
             <Icon name="chevron-right" class="h-5 w-5" />
           </button>
           <div class="text-sm whitespace-nowrap">
             {m.common_continue()} ·
             <b class="timecode">
-              S{String(nextEpisode.seasonNumber).padStart(2, "0")}E{String(
-                nextEpisode.episodeNumber,
-              ).padStart(2, "0")}
+              {episodeCode(nextEpisode.seasonNumber, nextEpisode.episodeNumber)}
             </b>
           </div>
         {:else if isMovie && upcoming}

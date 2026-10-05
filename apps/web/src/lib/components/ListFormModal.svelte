@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { LIST_LIMITS } from "@loomkeep/shared";
+
   import { createList, deleteList, updateList } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { appConfig } from "$lib/config.svelte";
@@ -132,7 +134,7 @@
         name="title"
         class="input"
         minlength="1"
-        maxlength={100}
+        maxlength={LIST_LIMITS.title}
         required
         placeholder={m.lists_title_placeholder()}
         bind:value={title} />
@@ -150,7 +152,7 @@
         name="description"
         class="input min-h-16 resize-y"
         rows="3"
-        maxlength={500}
+        maxlength={LIST_LIMITS.description}
         bind:value={description}></textarea>
     </div>
 

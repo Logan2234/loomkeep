@@ -9,6 +9,9 @@ import type {
 import type { RatingDto } from "./catalog";
 import type { SessionWeekDayDto } from "./session";
 
+export const READING_GOAL_LIMITS = { min: 1, max: 1000 } as const;
+export const MAX_PAGE_NUMBER = 100000;
+
 /** A book as returned by a live catalogue search (not persisted). */
 export interface BookSummaryDto {
   source: BookSource;

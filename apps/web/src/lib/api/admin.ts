@@ -9,7 +9,6 @@ import type {
   Domain,
   Locale,
   MailTemplatePreviewDto,
-  ModerationLegalBasis,
   PagedResult,
   Plan,
   Role,
@@ -20,14 +19,14 @@ import type {
   TrendPeriod,
   UpdateInstanceSettingsDto,
 } from "@loomkeep/shared";
+import {
+  type ModerationReasonRequestDto,
+  type ReportResolution,
+} from "@loomkeep/shared";
 import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 
-export interface ModerationReasonBody {
-  reasonText: string;
-  legalBasis: ModerationLegalBasis;
-  tosClause?: string;
-}
+export type ModerationReasonBody = ModerationReasonRequestDto;
 
 export const getAdminServices = () => typedRequest("/admin/services");
 
@@ -451,7 +450,7 @@ export const getAdminReportsPendingCount = () =>
 
 export const resolveAdminReport = (
   id: string,
-  status: "RESOLVED" | "DISMISSED",
+  status: ReportResolution,
 ): Promise<void> =>
   typedRequest("/admin/reports/{id}/resolve", {
     method: "POST",

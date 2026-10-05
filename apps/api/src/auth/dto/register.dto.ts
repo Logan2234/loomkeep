@@ -3,8 +3,11 @@ import {
   Locale,
   type Locale as LocaleCode,
   PASSWORD_DIGIT_RE,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
   PASSWORD_SPECIAL_RE,
   PASSWORD_UPPERCASE_RE,
+  USER_LIMITS,
 } from "@loomkeep/shared";
 import { Transform } from "class-transformer";
 import {
@@ -24,10 +27,9 @@ export class RegisterDto implements RegisterRequestDto {
   @IsEmail()
   email!: string;
 
-  // bcrypt truncates beyond 72 bytes, hence the upper bound.
   @IsString()
-  @MinLength(8)
-  @MaxLength(72)
+  @MinLength(PASSWORD_MIN_LENGTH)
+  @MaxLength(PASSWORD_MAX_LENGTH)
   @Matches(PASSWORD_UPPERCASE_RE, {
     message: "password must contain at least one uppercase letter",
   })
@@ -41,7 +43,7 @@ export class RegisterDto implements RegisterRequestDto {
 
   @IsString()
   @MinLength(1)
-  @MaxLength(50)
+  @MaxLength(USER_LIMITS.displayName)
   displayName!: string;
 
   @IsOptional()

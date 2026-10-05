@@ -1,5 +1,6 @@
 import type { CalendarTokenDto } from "@loomkeep/shared";
 import {
+  episodeCode,
   ErrorCode,
   gameReleaseAlertDay,
   movieReleaseDates,
@@ -106,7 +107,7 @@ export class CalendarFeedService {
 
     const episodeEntries: ReleaseFeedEntry[] = episodes.map((episode) => {
       const item = episode.season.mediaItem;
-      const code = `S${pad(episode.season.number)}E${pad(episode.number)}`;
+      const code = episodeCode(episode.season.number, episode.number);
 
       return {
         id: `urn:loomkeep:episode:${episode.id}`,
@@ -291,8 +292,4 @@ interface FeedUser {
   id: string;
   locale: string;
   watchRegion: string | null;
-}
-
-function pad(n: number): string {
-  return String(n).padStart(2, "0");
 }

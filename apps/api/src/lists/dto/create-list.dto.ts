@@ -1,4 +1,5 @@
 import {
+  LIST_LIMITS,
   ListKind,
   type ListKind as ListKindT,
   type ListVisibility,
@@ -15,12 +16,12 @@ import {
 export class CreateListBody {
   @IsString()
   @MinLength(1)
-  @MaxLength(100)
+  @MaxLength(LIST_LIMITS.title)
   title!: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(LIST_LIMITS.description)
   description?: string | null;
 
   @IsIn(Object.values(ListKind))

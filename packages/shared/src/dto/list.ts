@@ -2,6 +2,8 @@ import type { ListKind, ListVisibility, ReviewTargetType } from "../enums";
 import type { ReviewTargetSummaryDto } from "./review";
 import type { UserSummaryDto } from "./social";
 
+export const LIST_LIMITS = { title: 100, description: 500 } as const;
+
 /** Work-level target types a list item may reference — no SEASON/EPISODE. */
 export type ListItemTargetType = Extract<
   ReviewTargetType,

@@ -23,7 +23,13 @@
   import { normalizeCodeInput } from "$lib/one-time-code";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
-  import { isPasswordValid } from "@loomkeep/shared";
+  import {
+    isPasswordValid,
+    PASSWORD_MIN_LENGTH,
+    PASSWORD_MAX_LENGTH,
+    USER_LIMITS,
+    OTP_CODE_LENGTH,
+  } from "@loomkeep/shared";
   import { flashAnchor } from "../flash-anchor";
   import { sectionHref } from "../nav";
 
@@ -374,7 +380,7 @@
             name="username"
             class="input"
             minlength="1"
-            maxlength="50"
+            maxlength={USER_LIMITS.username}
             autocomplete="username"
             required
             bind:value={usernameInput}
@@ -490,14 +496,17 @@
               name="code"
               inputmode="numeric"
               autocomplete="one-time-code"
-              minlength="6"
+              minlength={OTP_CODE_LENGTH}
               required
               enterkeyhint="done"
               class="input"
               placeholder="123456"
               value={emailCodeInput}
               oninput={(e) =>
-                (emailCodeInput = normalizeCodeInput(e.currentTarget, 6))} />
+                (emailCodeInput = normalizeCodeInput(
+                  e.currentTarget,
+                  OTP_CODE_LENGTH,
+                ))} />
           </label>
           {#if confirmEmailMut.error}
             <p class="text-danger text-sm">{confirmEmailMut.error}</p>
@@ -513,7 +522,7 @@
               type="submit"
               class="btn btn-primary"
               disabled={confirmEmailMut.loading ||
-                emailCodeInput.trim().length !== 6}>
+                emailCodeInput.trim().length !== OTP_CODE_LENGTH}>
               {confirmEmailMut.loading
                 ? m.common_verifying()
                 : m.common_confirm()}
@@ -552,8 +561,8 @@
             name="newPassword"
             autocomplete="new-password"
             enterkeyhint="next"
-            minlength={8}
-            maxlength={72}
+            minlength={PASSWORD_MIN_LENGTH}
+            maxlength={PASSWORD_MAX_LENGTH}
             required
             bind:value={newPasswordInput} />
           <div class="mt-2">
@@ -568,8 +577,8 @@
             name="confirmPassword"
             autocomplete="new-password"
             enterkeyhint="done"
-            minlength={8}
-            maxlength={72}
+            minlength={PASSWORD_MIN_LENGTH}
+            maxlength={PASSWORD_MAX_LENGTH}
             required
             bind:value={confirmPasswordInput} />
         </label>

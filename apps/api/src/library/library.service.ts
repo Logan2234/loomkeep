@@ -27,6 +27,7 @@ import {
   MediaType,
   movieReleaseDates,
   movieReleaseInfo,
+  progressPercent,
   ReviewTargetType,
   runtimeFor,
   XpReason,
@@ -164,13 +165,6 @@ const MEDIA_ROW_SELECT = {
   mediaItem: { select: { type: true, status: true, title: true } },
 } satisfies Prisma.LibraryEntrySelect;
 
-function mediaProgressPct(entry: MediaRow): number {
-  if (!entry.progress || entry.progress.totalEpisodes === 0) return 0;
-  return Math.round(
-    (entry.progress.watchedEpisodes / entry.progress.totalEpisodes) * 100,
-  );
-}
-
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
 function compareMediaEntries(
   sort: MediaSortKey,
@@ -184,7 +178,7 @@ function compareMediaEntries(
     case "rating":
       return (b.rating ?? -1) - (a.rating ?? -1);
     case "progress":
-      return mediaProgressPct(b) - mediaProgressPct(a);
+      return progressPercent(b.progress) - progressPercent(a.progress);
     case "finished":
       return timeMs(b.finishedAt) - timeMs(a.finishedAt);
     case "started":

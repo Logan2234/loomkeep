@@ -14,6 +14,7 @@ import {
   ErrorCode,
   LEGAL_VERSION,
   NotificationType,
+  OTP_CODE_LENGTH,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -398,7 +399,9 @@ export class AuthService {
     let emailCodeExpiresAt: Date | undefined;
 
     if (user.mfaEmailEnabled && !user.mfaTotpEnabled && !webauthnAllowed) {
-      const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+      const code = randomInt(0, 10 ** OTP_CODE_LENGTH)
+        .toString()
+        .padStart(OTP_CODE_LENGTH, "0");
       emailCodeHash = sha256Hex(code);
       emailCodeExpiresAt = new Date(
         Date.now() + MFA_EMAIL_CODE_TTL_MINUTES * 60_000,
@@ -452,7 +455,9 @@ export class AuthService {
       );
     }
 
-    const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+    const code = randomInt(0, 10 ** OTP_CODE_LENGTH)
+      .toString()
+      .padStart(OTP_CODE_LENGTH, "0");
     await this.prisma.mfaLoginChallenge.update({
       where: { id: challenge.id },
       data: {

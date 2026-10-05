@@ -1,4 +1,6 @@
 <script module lang="ts">
+  import { type SortOrder } from "@loomkeep/shared";
+
   export interface LibraryLoadParams {
     query: string;
     statuses: string[];
@@ -6,7 +8,7 @@
     /** The domain's extra filter value (media's type list), opaque here. */
     extra: unknown;
     sort: string;
-    order: "asc" | "desc";
+    order: SortOrder;
     /** 1-indexed. */
     page: number;
   }

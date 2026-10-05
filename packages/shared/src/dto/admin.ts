@@ -1,6 +1,8 @@
 import type { Domain, Locale, Plan, Role, SecurityEventType } from "../enums";
 import type { PagedResult } from "./pagination";
 
+export const INVITATION_LABEL_MAX_LENGTH = 60;
+
 /** Which app area a dependency powers, for grouping in the admin services page. */
 export type ServiceArea =
   | "Vidéo"

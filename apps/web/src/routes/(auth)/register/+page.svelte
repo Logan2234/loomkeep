@@ -16,7 +16,12 @@
   import Icon from "$lib/components/Icon.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
-  import { isPasswordValid } from "@loomkeep/shared";
+  import {
+    isPasswordValid,
+    PASSWORD_MIN_LENGTH,
+    PASSWORD_MAX_LENGTH,
+    USER_LIMITS,
+  } from "@loomkeep/shared";
   import { untrack } from "svelte";
   import { fade, slide } from "svelte/transition";
 
@@ -138,7 +143,7 @@
         type="text"
         name="displayName"
         minlength="1"
-        maxlength="50"
+        maxlength={USER_LIMITS.displayName}
         aria-label={m.common_username()}
         aria-invalid={registerMut.fieldErrors.displayName ? "true" : undefined}
         aria-describedby={registerMut.fieldErrors.displayName
@@ -181,8 +186,8 @@
         autocomplete="new-password"
         enterkeyhint="done"
         bind:value={password}
-        minlength={8}
-        maxlength={72}
+        minlength={PASSWORD_MIN_LENGTH}
+        maxlength={PASSWORD_MAX_LENGTH}
         required />
       <PasswordRequirements value={password} />
       {#if turnstileSiteKey}

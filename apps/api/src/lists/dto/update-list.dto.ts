@@ -1,4 +1,5 @@
 import {
+  LIST_LIMITS,
   ListKind,
   type ListKind as ListKindT,
   type ListVisibility,
@@ -16,12 +17,12 @@ export class UpdateListBody {
   @IsOptional()
   @IsString()
   @MinLength(1)
-  @MaxLength(100)
+  @MaxLength(LIST_LIMITS.title)
   title?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(LIST_LIMITS.description)
   description?: string | null;
 
   @IsOptional()

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { DEFAULT_PAGE_SIZE } from "@loomkeep/shared";
+
   import {
     getAdminUserOptions,
     normalizeAdminUserOptionsPage,
@@ -23,7 +25,6 @@
     onChange: (value: string | null) => void;
   } = $props();
 
-  const PAGE_SIZE = 20;
   let pendingSearch = $state("");
   let search = $state("");
   let selectedLabel = $state<string | undefined>();
@@ -43,7 +44,7 @@
         await getAdminUserOptions({
           search: search || undefined,
           page,
-          limit: PAGE_SIZE,
+          limit: DEFAULT_PAGE_SIZE,
         }),
         search,
       ),

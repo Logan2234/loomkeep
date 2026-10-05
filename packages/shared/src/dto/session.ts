@@ -1,6 +1,8 @@
 import type { Domain, SessionCycleAction } from "../enums";
 import { DORMANT_AFTER_DAYS } from "./library";
 
+export const SESSION_NOTES_MAX_LENGTH = 1000;
+
 export const MAX_SESSION_DURATION_MINUTES = 9999;
 
 export interface SessionTimerDto {

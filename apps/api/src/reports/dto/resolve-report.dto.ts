@@ -1,6 +1,7 @@
+import { type ReportResolution, REPORT_RESOLUTIONS } from "@loomkeep/shared";
 import { IsIn } from "class-validator";
 
 export class ResolveReportBody {
-  @IsIn(["RESOLVED", "DISMISSED"])
-  status!: "RESOLVED" | "DISMISSED";
+  @IsIn(REPORT_RESOLUTIONS)
+  status!: ReportResolution;
 }

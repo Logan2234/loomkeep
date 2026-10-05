@@ -1,4 +1,4 @@
-import type { LicenseStatusDto } from "@loomkeep/shared";
+import { FeatureFlag } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { EntitlementService } from "../../entitlements/entitlement.service";
@@ -46,7 +46,7 @@ export class LicenseService {
    * the `ee/` features stay on everywhere, as they were before moving there.
    */
   isActive(now = new Date()): boolean {
-    if (!this.flags.isEnabled("premium-features", false)) return true;
+    if (!this.flags.isEnabled(FeatureFlag.PREMIUM_FEATURES, false)) return true;
     return this.license !== null && isLicenseCurrent(this.license, now);
   }
 

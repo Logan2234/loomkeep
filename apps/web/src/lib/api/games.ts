@@ -10,6 +10,7 @@ import type {
   UpdateGameSessionDto,
   UpsertGameEntryDto,
 } from "@loomkeep/shared";
+import { type SortOrder } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
 export const searchGames = (query: string) =>
@@ -20,7 +21,7 @@ export interface ListGamesFilters {
   favorite?: boolean;
   statuses?: string[];
   sort?: string;
-  order?: "asc" | "desc";
+  order?: SortOrder;
   page?: number;
 }
 
@@ -119,7 +120,7 @@ export const getGameSaga = (sourceId: string) =>
 export interface GameSagaFilters {
   query?: string;
   sort?: LibrarySagaSort;
-  order?: "asc" | "desc";
+  order?: SortOrder;
 }
 
 /** The player's series: in progress, waiting on an announced game, finished. */

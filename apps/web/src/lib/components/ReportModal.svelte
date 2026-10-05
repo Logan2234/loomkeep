@@ -18,6 +18,7 @@
     type ReportMotif,
     type ReportProfilePart,
     type ReportTargetType,
+    REPORT_REASON_MAX_LENGTH,
   } from "@loomkeep/shared";
   import { flip } from "svelte/animate";
   import { fade, slide } from "svelte/transition";
@@ -220,7 +221,7 @@
           class="input min-h-20 resize-y text-sm"
           rows="3"
           placeholder={reasonPlaceholder}
-          maxlength={500}
+          maxlength={REPORT_REASON_MAX_LENGTH}
           bind:value={reason}></textarea>
       </div>
     {/if}

@@ -1,4 +1,4 @@
-import type { UserSummaryDto } from "@loomkeep/shared";
+import { AVATAR_MAX_DIMENSION } from "@loomkeep/shared";
 import sharp from "sharp";
 
 const MAGIC_BYTES: Record<string, (buf: Buffer) => boolean> = {
@@ -18,9 +18,6 @@ const MAGIC_BYTES: Record<string, (buf: Buffer) => boolean> = {
 export function matchesMimeType(buffer: Buffer, mimeType: string): boolean {
   return MAGIC_BYTES[mimeType]?.(buffer) ?? false;
 }
-
-/** Longest side an avatar is stored at — it is never displayed larger. */
-const AVATAR_MAX_DIMENSION = 512;
 
 /** What every avatar is stored as, whatever was uploaded. */
 export const STORED_AVATAR_MIME_TYPE = "image/webp";

@@ -1,5 +1,6 @@
 import {
   MAX_SESSION_DURATION_MINUTES,
+  SESSION_NOTES_MAX_LENGTH,
   type UpdateGameSessionDto as Contract,
 } from "@loomkeep/shared";
 import {
@@ -25,6 +26,6 @@ export class UpdateGameSessionDto implements Contract {
 
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(SESSION_NOTES_MAX_LENGTH)
   notes?: string | null;
 }

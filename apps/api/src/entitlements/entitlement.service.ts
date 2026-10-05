@@ -1,4 +1,4 @@
-import type { LicenseStatusDto } from "@loomkeep/shared";
+import { FeatureFlag } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import type { Plan, UserEntitlement } from "@prisma/client";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
@@ -70,7 +70,7 @@ export class EntitlementService {
    * and the `GET /users/me/entitlement` endpoint the web reads.
    */
   async isEffectivelyPremium(userId: string): Promise<boolean> {
-    if (!this.flags.isEnabled("premium-features", false)) return true;
+    if (!this.flags.isEnabled(FeatureFlag.PREMIUM_FEATURES, false)) return true;
     return this.hasPremium(userId);
   }
 

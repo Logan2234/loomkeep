@@ -5,6 +5,7 @@ import type {
   LibraryBookSagasDto,
   LibrarySagaSort,
 } from "@loomkeep/shared";
+import { type SortOrder } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import {
@@ -28,7 +29,7 @@ const BOOK_SAGA_STATUS: SagaStatusReader<BookSagaMemberDto> = {
 export interface LibraryBookSagaFilters {
   q?: string;
   sort?: LibrarySagaSort;
-  order?: "asc" | "desc";
+  order?: SortOrder;
   lang?: string;
 }
 

@@ -1,6 +1,7 @@
 import {
   type AlertPrefs,
   DigestCadence,
+  episodeCode,
   ErrorCode,
   gameReleaseAlertDay,
   isAlertEnabled,
@@ -57,9 +58,9 @@ type CreateNotificationInput = {
   data?: Record<string, unknown>;
 };
 
-/** Digest body: `S1E2 · Title` (title suffix only when known). */
+/** Digest body: `S01E02 · Title` (title suffix only when known). */
 function notificationBody(n: NewEpisodeNotification): string {
-  return `S${n.seasonNumber}E${n.episodeNumber}${n.episodeTitle ? " · " + n.episodeTitle : ""}`;
+  return `${episodeCode(n.seasonNumber, n.episodeNumber)}${n.episodeTitle ? " · " + n.episodeTitle : ""}`;
 }
 
 /** Deep link to the media detail page for a notification. */

@@ -1,5 +1,6 @@
 import { m } from "$lib/paraglide/messages.js";
 import type { CalendarEntryDto } from "@loomkeep/shared";
+import { episodeCode } from "@loomkeep/shared";
 
 // A calendar entry holds either a show/movie or a game; these read it whichever.
 
@@ -36,5 +37,5 @@ export function calendarCode(e: CalendarEntryDto): string {
       : m.calendar_game_release();
   if (e.mediaItem?.type === "MOVIE")
     return `${e.releaseType === "cinema" ? m.media_release_cinema() : m.media_release_digital()} · ${e.releaseRegion}`;
-  return `S${String(e.seasonNumber).padStart(2, "0")}E${String(e.episodeNumber).padStart(2, "0")}`;
+  return episodeCode(e.seasonNumber, e.episodeNumber);
 }

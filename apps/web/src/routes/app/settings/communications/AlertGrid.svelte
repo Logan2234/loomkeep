@@ -1,4 +1,6 @@
 <script lang="ts" module>
+  import { type AlertChannel } from "@loomkeep/shared";
+
   import type { AlertKey } from "@loomkeep/shared";
 
   export interface AlertGroupRows {
@@ -25,8 +27,6 @@
   import type { Snippet } from "svelte";
   import SettingRow from "../components/SettingRow.svelte";
 
-  type Channel = "push" | "email";
-
   let {
     anchor,
     title,
@@ -40,21 +40,28 @@
     title: string;
     description: string;
     groups: AlertGroupRows[];
-    columns: ("bell" | Channel)[];
+    columns: ("bell" | AlertChannel)[];
     /** No device receives push: the choices are kept, but can't take effect. */
     pushBlocked?: boolean;
     /** Shown above the matrix, e.g. where push currently arrives. */
     notice?: Snippet;
   } = $props();
 
-  const COLUMNS: Record<"bell" | Channel, { label: string; icon: IconName }> = {
+  const COLUMNS: Record<
+    "bell" | AlertChannel,
+    { label: string; icon: IconName }
+  > = {
     bell: { label: m.settings_communications_bell(), icon: "bell" },
     push: { label: m.settings_communications_push(), icon: "smartphone" },
     email: { label: m.common_email(), icon: "mail" },
   };
 
   const mutation = createApiMutation(() => ({
-    mutate: (change: { key: AlertKey; channel: Channel; value: boolean }) =>
+    mutate: (change: {
+      key: AlertKey;
+      channel: AlertChannel;
+      value: boolean;
+    }) =>
       updateMe({
         alertPrefs: { [change.key]: { [change.channel]: change.value } },
       }),
