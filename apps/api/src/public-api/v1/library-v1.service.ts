@@ -14,6 +14,7 @@ import {
   GameStatus,
   MusicStatus,
   STATS_DOMAINS,
+  type SortOrder,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -47,7 +48,7 @@ export interface LibraryV1Query {
   phases?: ApiV1Phase[];
   favorite?: boolean;
   sort: ApiV1LibrarySort;
-  order: "asc" | "desc";
+  order: SortOrder;
   page: number;
   limit: number;
   lang?: Locale;

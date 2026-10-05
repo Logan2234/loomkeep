@@ -2,10 +2,12 @@ import {
   MediaType,
   SAVED_VIEW_DOMAINS,
   SAVED_VIEW_LIMITS,
+  SORT_ORDERS,
   type CreateSavedViewDto,
   type SavedViewDomain,
   type SavedViewDto,
   type SavedViewFiltersDto,
+  type SortOrder,
   type UpdateSavedViewDto,
 } from "@loomkeep/shared";
 import { Type } from "class-transformer";
@@ -56,8 +58,8 @@ export class SavedViewFiltersBody implements SavedViewFiltersDto {
   sort?: string;
 
   @IsOptional()
-  @IsIn(["asc", "desc"])
-  order?: "asc" | "desc";
+  @IsIn(SORT_ORDERS)
+  order?: SortOrder;
 }
 
 export class CreateSavedViewBody implements CreateSavedViewDto {
@@ -124,7 +126,7 @@ export class SavedViewFiltersResponseDto implements SavedViewFiltersDto {
    * Ascending or descending.
    * @example "desc"
    */
-  order?: "asc" | "desc";
+  order?: SortOrder;
 }
 
 export class SavedViewResponseDto implements SavedViewDto {

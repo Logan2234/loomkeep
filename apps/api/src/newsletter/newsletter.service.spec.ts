@@ -135,7 +135,10 @@ describe("NewsletterService.handleChangelogPublished", () => {
 
       expect(fetch).toHaveBeenCalledWith(
         "https://feedback.loomkeep.app/api/v1/changelog/changelog_1",
-        { headers: { Authorization: "Bearer quackback-api-key" } },
+        {
+          headers: { Authorization: "Bearer quackback-api-key" },
+          signal: expect.any(AbortSignal),
+        },
       );
       expect(mail.sendNewsletter).toHaveBeenCalledWith(
         { email: "a@example.com", locale: "en" },

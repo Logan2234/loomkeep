@@ -11,6 +11,18 @@ import {
 } from "../enums";
 import type { HomeLayoutDto } from "./home-layout";
 
+export const USER_LIMITS = { displayName: 50, username: 50, bio: 500 } as const;
+export const WEBAUTHN_NAME_MAX_LENGTH = 60;
+export const AVATAR_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+] as const;
+export type AvatarMimeType = (typeof AVATAR_MIME_TYPES)[number];
+export const AVATAR_MAX_DIMENSION = 512;
+export const MOBILE_NAV_SHORTCUT_LIMITS = { min: 3, max: 7 } as const;
+export const REQUIRED_SHORTCUT = "menu";
+
 export interface UserDto {
   id: string;
   email: string;
@@ -157,7 +169,7 @@ export interface UsernameAvailabilityDto {
 }
 
 export interface UploadAvatarRequestDto {
-  mimeType: "image/png" | "image/jpeg" | "image/webp";
+  mimeType: AvatarMimeType;
   /** Base64, no `data:...;base64,` prefix. */
   data: string;
 }

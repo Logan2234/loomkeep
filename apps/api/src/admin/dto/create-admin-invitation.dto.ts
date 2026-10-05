@@ -1,5 +1,6 @@
 import type { CreateAdminInvitationRequestDto } from "@loomkeep/shared";
 import {
+  INVITATION_LABEL_MAX_LENGTH,
   INVITATION_MAX_USES,
   INVITATION_VALIDITY_DAYS,
 } from "@loomkeep/shared";
@@ -25,7 +26,7 @@ export class CreateAdminInvitationDto implements CreateAdminInvitationRequestDto
 
   @IsOptional()
   @IsString()
-  @MaxLength(60)
+  @MaxLength(INVITATION_LABEL_MAX_LENGTH)
   label?: string;
 
   @IsInt()

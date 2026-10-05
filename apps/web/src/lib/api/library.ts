@@ -8,6 +8,7 @@ import type {
   MediaType,
   UpsertLibraryEntryDto,
 } from "@loomkeep/shared";
+import { type SortOrder } from "@loomkeep/shared";
 import { getLocale } from "../paraglide/runtime.js";
 import { typedRequest } from "./generated/typed-request";
 
@@ -18,7 +19,7 @@ export interface ListLibraryFilters {
   statuses?: string[];
   types?: MediaType[];
   sort?: string;
-  order?: "asc" | "desc";
+  order?: SortOrder;
   page?: number;
 }
 
@@ -26,7 +27,7 @@ export interface LibrarySagaFilters {
   query?: string;
   types?: MediaType[];
   sort?: LibrarySagaSort;
-  order?: "asc" | "desc";
+  order?: SortOrder;
 }
 
 /** The library's sagas in progress, and the ones waiting on a sequel. */

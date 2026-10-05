@@ -1,13 +1,13 @@
 import {
   ErrorCode,
   ModerationMeasure,
+  ReportStatus,
   type AdminReportsSummaryDto,
   type PagedResult,
   type ReportCategory,
   type ReportDto,
   type ReportMotif,
   type ReportPendingCountDto,
-  type ReportStatus,
   type ReportTargetType,
 } from "@loomkeep/shared";
 import {
@@ -30,7 +30,7 @@ import {
 import { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
-import { parsePageQuery } from "../common/pagination.util";
+import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
@@ -43,7 +43,7 @@ import {
   type ModerationDecisionIdentity,
   type RecordModerationDecisionInput,
 } from "../reports/moderation-decision.service";
-import { REPORT_PAGE_SIZE, ReportService } from "../reports/report.service";
+import { ReportService } from "../reports/report.service";
 import { ReviewService } from "../reviews/review.service";
 import { AdminOnly } from "./admin-only.decorator";
 import {
@@ -53,7 +53,7 @@ import {
 } from "./admin-social-stats.util";
 import { AdminReportsSummaryResponseDto } from "./dto/admin-reports-summary-response.dto";
 
-const STATUSES: ReportStatus[] = ["PENDING", "RESOLVED", "DISMISSED"];
+const STATUSES = Object.values(ReportStatus);
 
 type PendingReport = {
   targetType: ReportTargetType;
@@ -86,14 +86,13 @@ export class AdminReportsController {
     @Query("limit") limit?: string,
     @Query("reporterId") reporterId?: string,
   ): Promise<PagedResult<ReportDto>> {
-    const parsed = parsePageQuery(page, limit, REPORT_PAGE_SIZE);
+    const parsed = parsePageQuery(page, limit, DEFAULT_PAGE_SIZE);
     return this.reports.list(
       STATUSES.includes(status as ReportStatus)
-        ? (status as "PENDING" | "RESOLVED" | "DISMISSED")
+        ? (status as ReportStatus)
         : undefined,
-      parsed.page,
+      parsed,
       reporterId,
-      parsed.limit,
     );
   }
 

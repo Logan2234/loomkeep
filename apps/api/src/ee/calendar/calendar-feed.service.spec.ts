@@ -66,13 +66,17 @@ describe("CalendarFeedService tokens", () => {
   });
 
   it("issues a token on first use", async () => {
-    const { service } = makeService(
+    const { service, prisma } = makeService(
       { id: "user-1", calendarToken: null },
       true,
     );
 
-    await expect(service.getToken("user-1")).resolves.toEqual({
-      token: "fresh-token",
+    const { token } = await service.getToken("user-1");
+    expect(token).toMatch(/^[A-Za-z0-9_-]{32}$/);
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { calendarToken: token },
+      select: { calendarToken: true },
     });
   });
 

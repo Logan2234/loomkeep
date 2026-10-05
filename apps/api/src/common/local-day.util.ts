@@ -1,3 +1,5 @@
+import { utcDateKey } from "./date.util";
+
 /**
  * Local-timezone helpers built on `Intl.DateTimeFormat`, shared by anything
  * that needs to reason about "today" or "this hour" from the user's own
@@ -54,4 +56,8 @@ export function localDay(timezone: string, date: Date): string | null {
   } catch {
     return null;
   }
+}
+
+export function localDayOrUtc(timezone: string, date: Date): string {
+  return localDay(timezone, date) ?? utcDateKey(date);
 }

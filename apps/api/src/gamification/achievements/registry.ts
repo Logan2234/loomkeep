@@ -3,6 +3,7 @@ import {
   type AchievementFamily,
   type AchievementTier,
 } from "@loomkeep/shared";
+import { utcYearRange } from "../../common/date.util";
 import { localDay, localParts } from "../../common/local-day.util";
 import type { PrismaService } from "../../prisma/prisma.service";
 import { decadeOf } from "../../stats/decade.util";
@@ -191,7 +192,9 @@ async function movieWatchTimestamps(
   ]);
 
   return [
-    ...movieFirstWatches.map((w) => w.finishedAt!),
+    ...movieFirstWatches
+      .map((w) => w.finishedAt)
+      .filter((date): date is Date => date !== null),
     ...movieReplays.map((w) => w.finishedAt),
   ];
 }
@@ -448,10 +451,7 @@ export async function checkContemporary(
       status: "COMPLETED",
       mediaItem: {
         type: "MOVIE",
-        releaseDate: {
-          gte: new Date(Date.UTC(birthYear, 0, 1)),
-          lt: new Date(Date.UTC(birthYear + 1, 0, 1)),
-        },
+        releaseDate: utcYearRange(birthYear),
       },
     },
     select: { id: true },
@@ -485,7 +485,9 @@ export async function checkNewYearFinish(
     }),
   ]);
 
-  const dates = [...media, ...games, ...books].map((r) => r.finishedAt!);
+  const dates = [...media, ...games, ...books]
+    .map((r) => r.finishedAt)
+    .filter((date): date is Date => date !== null);
   const unlocked = dates.some((d) => {
     const day = localDay(user.timezone, d);
     return day !== null && day.endsWith("-01-01");

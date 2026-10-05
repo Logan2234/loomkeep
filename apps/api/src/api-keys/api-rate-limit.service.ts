@@ -1,4 +1,4 @@
-import type { ApiKeyQuotaDto } from "@loomkeep/shared";
+import { FeatureFlag, type ApiKeyQuotaDto } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
@@ -94,6 +94,6 @@ export class ApiRateLimitService {
   }
 
   private premiumOffered(): boolean {
-    return this.flags.isEnabled("premium-features", false);
+    return this.flags.isEnabled(FeatureFlag.PREMIUM_FEATURES, false);
   }
 }

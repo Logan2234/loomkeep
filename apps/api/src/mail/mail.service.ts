@@ -7,6 +7,10 @@ import {
 import { Injectable, Logger } from "@nestjs/common";
 import nodemailer, { Transporter } from "nodemailer";
 import { resolveCopyLocale } from "../common/copy-locale.util";
+import {
+  DEFAULT_SUPPORT_ADDRESS,
+  QUACKBACK_ORIGIN,
+} from "../common/instance-defaults";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
 import { primaryWebOrigin } from "../common/web-origin.util";
 import {
@@ -631,7 +635,7 @@ export class MailService {
     this.webOrigin = primaryWebOrigin(process.env.WEB_ORIGIN);
     this.from = SMTP_FROM ?? "Loomkeep <noreply@loomkeep.app>";
     this.supportAddress =
-      process.env.MAIL_SUPPORT_ADDRESS?.trim() || "contact@loomkeep.app";
+      process.env.MAIL_SUPPORT_ADDRESS?.trim() || DEFAULT_SUPPORT_ADDRESS;
     this.publicApiUrl = (
       process.env.PUBLIC_API_URL || `${this.webOrigin}/api`
     ).replace(/\/$/, "");
@@ -1160,7 +1164,7 @@ export class MailService {
       this.formatEventDate(locale, input.decidedAt),
     );
     const appeal = copy.appeal.replace(
-      "contact@loomkeep.app",
+      DEFAULT_SUPPORT_ADDRESS,
       this.supportAddress,
     );
 
@@ -1696,7 +1700,7 @@ ${url}`,
     const copy = MAIL_COPY[resolveCopyLocale(locale)].newsletter;
     const entryUrl =
       this.umamiLink(UMAMI_LINK_SLUG_NEWSLETTER_CHANGELOG) ??
-      "https://feedback.loomkeep.app/changelog";
+      `${QUACKBACK_ORIGIN}/changelog`;
     const prefsUrl =
       this.umamiLink(UMAMI_LINK_SLUG_NEWSLETTER_NOTIFICATIONS) ??
       `${this.webOrigin}/app/settings/communications`;

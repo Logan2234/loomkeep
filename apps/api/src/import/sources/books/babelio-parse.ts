@@ -1,6 +1,6 @@
 import type { BookOwnershipStatus, BookStatus } from "@loomkeep/shared";
 import { parseCsv } from "../../csv";
-import { parseStarRatingToTen } from "./csv-field.util";
+import { parseStarRatingToTen, wellFormedIsbn } from "./csv-field.util";
 
 export interface ParsedBabelioRow {
   title: string;
@@ -57,5 +57,5 @@ function splitAuthors(value: string | undefined): string[] {
 
 function normaliseIsbn(value: string | undefined): string | null {
   const cleaned = (value ?? "").replace(/[^\dX]/gi, "");
-  return /^(\d{9}[\dX]|\d{13})$/i.test(cleaned) ? cleaned : null;
+  return wellFormedIsbn(cleaned);
 }

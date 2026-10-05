@@ -1,15 +1,17 @@
-import type { OnThisDayEntryDto, StatsDomain } from "@loomkeep/shared";
-import { Domain, TrackingCycleStatus } from "@loomkeep/shared";
+import {
+  type OnThisDayEntryDto,
+  type StatsDomain,
+  Domain,
+  TrackingCycleStatus,
+} from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
-import { canonicalExternalId } from "../common/external-id.util";
+import {
+  CANONICAL_EXTERNAL_ID_SELECT,
+  canonicalExternalId,
+} from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { DomainGateService } from "../users/domain-gate.service";
 import { anniversaryWindow, rankByAnniversary } from "./on-this-day.util";
-
-const externalIds = {
-  canonicalSource: true,
-  externalIds: { select: { source: true, externalId: true } },
-} as const;
 
 /**
  * The home-page widget that needs its own query: what you were on a year
@@ -56,7 +58,7 @@ export class HomeStatsService {
                           title: true,
                           posterUrl: true,
                           type: true,
-                          ...externalIds,
+                          ...CANONICAL_EXTERNAL_ID_SELECT,
                         },
                       },
                     },
@@ -109,7 +111,7 @@ export class HomeStatsService {
                   title: true,
                   posterUrl: true,
                   type: true,
-                  ...externalIds,
+                  ...CANONICAL_EXTERNAL_ID_SELECT,
                 },
               },
             },
@@ -155,7 +157,11 @@ export class HomeStatsService {
                 select: { finishedAt: true },
               },
               gameItem: {
-                select: { title: true, coverUrl: true, ...externalIds },
+                select: {
+                  title: true,
+                  coverUrl: true,
+                  ...CANONICAL_EXTERNAL_ID_SELECT,
+                },
               },
             },
           });
@@ -208,7 +214,11 @@ export class HomeStatsService {
                 select: { finishedAt: true },
               },
               bookItem: {
-                select: { title: true, coverUrl: true, ...externalIds },
+                select: {
+                  title: true,
+                  coverUrl: true,
+                  ...CANONICAL_EXTERNAL_ID_SELECT,
+                },
               },
             },
           });
@@ -243,7 +253,11 @@ export class HomeStatsService {
               startedAt: true,
               finishedAt: true,
               musicItem: {
-                select: { title: true, coverUrl: true, ...externalIds },
+                select: {
+                  title: true,
+                  coverUrl: true,
+                  ...CANONICAL_EXTERNAL_ID_SELECT,
+                },
               },
             },
           });

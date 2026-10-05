@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { READING_GOAL_LIMITS } from "@loomkeep/shared";
+
   import { upsertReadingGoal } from "$lib/api/books";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -59,8 +61,8 @@
         id="reading-goal-target"
         type="number"
         name="target"
-        min="1"
-        max="1000"
+        min={READING_GOAL_LIMITS.min}
+        max={READING_GOAL_LIMITS.max}
         required
         class="input"
         bind:value={draft} />

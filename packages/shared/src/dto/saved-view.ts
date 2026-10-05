@@ -1,4 +1,5 @@
 import type { MediaType } from "../enums";
+import type { SortOrder } from "./pagination";
 
 /** The domains a view can be saved on: those with a library page. */
 export const SAVED_VIEW_DOMAINS = ["MEDIA", "GAMES", "BOOKS", "MUSIC"] as const;
@@ -21,7 +22,7 @@ export interface SavedViewFiltersDto {
   /** MEDIA only. */
   types?: MediaType[];
   sort?: string;
-  order?: "asc" | "desc";
+  order?: SortOrder;
 }
 
 export interface SavedViewDto {

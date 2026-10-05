@@ -1,4 +1,5 @@
-import { rankFailedTargets, sinceDaysAgo } from "./login-failure.util";
+import { sinceDaysAgo } from "../common/date.util";
+import { rankFailedTargets } from "./login-failure.util";
 
 describe("sinceDaysAgo", () => {
   const now = new Date("2026-08-05T12:00:00.000Z");

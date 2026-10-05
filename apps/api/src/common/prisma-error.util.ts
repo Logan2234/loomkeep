@@ -7,8 +7,18 @@ import { Prisma } from "@prisma/client";
  * all "someone else got there first", where the right move is to adopt their
  * row or report a conflict — never to let it surface as an unhandled 500.
  */
-export function isUniqueViolation(err: unknown): boolean {
+export function isUniqueViolation(err: unknown, field?: string): boolean {
+  if (
+    !(err instanceof Prisma.PrismaClientKnownRequestError) ||
+    err.code !== "P2002"
+  ) {
+    return false;
+  }
+
+  if (field === undefined) return true;
+  const target = err.meta?.target;
   return (
-    err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002"
+    (Array.isArray(target) || typeof target === "string") &&
+    target.includes(field)
   );
 }

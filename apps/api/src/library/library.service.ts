@@ -27,6 +27,7 @@ import {
   MediaType,
   movieReleaseDates,
   movieReleaseInfo,
+  progressPercent,
   ReviewTargetType,
   runtimeFor,
   XpReason,
@@ -50,7 +51,7 @@ import {
   assertBulkTarget,
   assertBulkUpdate,
 } from "../common/bulk-entries.util";
-import { toDateOrNull } from "../common/date.util";
+import { toDateOrNull, utcDateKey } from "../common/date.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters as SharedListEntriesFilters,
@@ -164,13 +165,6 @@ const MEDIA_ROW_SELECT = {
   mediaItem: { select: { type: true, status: true, title: true } },
 } satisfies Prisma.LibraryEntrySelect;
 
-function mediaProgressPct(entry: MediaRow): number {
-  if (!entry.progress || entry.progress.totalEpisodes === 0) return 0;
-  return Math.round(
-    (entry.progress.watchedEpisodes / entry.progress.totalEpisodes) * 100,
-  );
-}
-
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
 function compareMediaEntries(
   sort: MediaSortKey,
@@ -184,7 +178,7 @@ function compareMediaEntries(
     case "rating":
       return (b.rating ?? -1) - (a.rating ?? -1);
     case "progress":
-      return mediaProgressPct(b) - mediaProgressPct(a);
+      return progressPercent(b.progress) - progressPercent(a.progress);
     case "finished":
       return timeMs(b.finishedAt) - timeMs(a.finishedAt);
     case "started":
@@ -427,7 +421,9 @@ export class LibraryService {
 
     for (const episode of episodes) {
       const id = episode.season.mediaItemId;
-      episodesByMedia.set(id, [...(episodesByMedia.get(id) ?? []), episode]);
+      const group = episodesByMedia.get(id);
+      if (group) group.push(episode);
+      else episodesByMedia.set(id, [episode]);
     }
 
     return summarizePile(
@@ -504,8 +500,8 @@ export class LibraryService {
       {
         update: (id, patch) =>
           this.updateEntry(userId, id, patch as UpdateEntryDto),
-        addToList: (itemId) =>
-          addToList(this.lists, userId, dto.listId!, "MEDIA", itemId),
+        addToList: (itemId, listId) =>
+          addToList(this.lists, userId, listId, "MEDIA", itemId),
         setStatus: async (entry, status) => {
           // A series is complete once its episodes are watched: every aired
           // one gets marked, as the season buttons do, and the status follows.
@@ -1474,7 +1470,7 @@ export class LibraryService {
       where: { id: userId },
       select: { watchRegion: true },
     });
-    const today = new Date().toISOString().slice(0, 10);
+    const today = utcDateKey(new Date());
     const movieEntries: CalendarEntryDto[] = movies.flatMap((entry) => {
       const region = resolveWatchRegion(
         user.watchRegion ?? entry.movieReleaseRegion ?? undefined,
@@ -1513,7 +1509,7 @@ export class LibraryService {
    * or their month, on its 1st. A vaguer date has no day to sit on.
    */
   private async calendarGames(userId: string): Promise<CalendarEntryDto[]> {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = utcDateKey(new Date());
     const entries = await this.prisma.gameEntry.findMany({
       where: {
         userId,
@@ -2196,7 +2192,7 @@ export class LibraryService {
       overview: translation?.overview ?? media.overview,
       genres: translation?.genres ?? media.genres,
       airingStatus: media.status,
-      releaseDate: media.releaseDate?.toISOString().slice(0, 10) ?? null,
+      releaseDate: media.releaseDate ? utcDateKey(media.releaseDate) : null,
       movieRelease:
         type === "MOVIE"
           ? movieReleaseInfo(

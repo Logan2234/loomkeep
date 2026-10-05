@@ -1,5 +1,6 @@
 import type { CalendarTokenDto } from "@loomkeep/shared";
 import {
+  episodeCode,
   ErrorCode,
   gameReleaseAlertDay,
   movieReleaseDates,
@@ -7,14 +8,16 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { randomBytes } from "node:crypto";
 import { resolveWatchRegion } from "../../catalog/watch-region.util";
 import { AppException } from "../../common/app.exception";
 import {
   type CopyLocale,
   resolveCopyLocale,
 } from "../../common/copy-locale.util";
+import { randomToken } from "../../common/crypto.util";
+import { sinceDaysAgo, utcDateKey } from "../../common/date.util";
 import { canonicalExternalId } from "../../common/external-id.util";
+import { primaryWebOrigin } from "../../common/web-origin.util";
 import { EntitlementService } from "../../entitlements/entitlement.service";
 import { LibraryService } from "../../library/library.service";
 import { notificationCopy } from "../../notifications/notification-copy";
@@ -80,7 +83,7 @@ export class CalendarFeedService {
     const user = await this.premiumUserForToken(token);
     if (!user) return null;
 
-    const since = new Date(now.getTime() - RELEASES_WINDOW_DAYS * 86_400_000);
+    const since = sinceDaysAgo(now, RELEASES_WINDOW_DAYS);
     const episodes = await this.prisma.episode.findMany({
       where: {
         airDate: { gte: since, lte: now },
@@ -99,14 +102,12 @@ export class CalendarFeedService {
       },
     });
 
-    const webOrigin = (this.config.get<string>("WEB_ORIGIN") ?? "")
-      .split(",")[0]
-      .trim();
+    const webOrigin = primaryWebOrigin(this.config.get<string>("WEB_ORIGIN"));
     const copy = FEED_COPY[resolveCopyLocale(user.locale)];
 
     const episodeEntries: ReleaseFeedEntry[] = episodes.map((episode) => {
       const item = episode.season.mediaItem;
-      const code = `S${pad(episode.season.number)}E${pad(episode.number)}`;
+      const code = episodeCode(episode.season.number, episode.number);
 
       return {
         id: `urn:loomkeep:episode:${episode.id}`,
@@ -150,8 +151,8 @@ export class CalendarFeedService {
       },
       include: { mediaItem: { include: { externalIds: true } } },
     });
-    const from = since.toISOString().slice(0, 10);
-    const to = now.toISOString().slice(0, 10);
+    const from = utcDateKey(since);
+    const to = utcDateKey(now);
 
     return entries.flatMap((entry) => {
       const region = resolveWatchRegion(
@@ -207,7 +208,7 @@ export class CalendarFeedService {
 
     return entries.flatMap(({ gameItem: item }) => {
       const day = gameReleaseAlertDay(
-        item.releaseDate?.toISOString().slice(0, 10) ?? null,
+        item.releaseDate ? utcDateKey(item.releaseDate) : null,
         item.releaseDatePrecision,
       );
       if (!day) return [];
@@ -266,12 +267,13 @@ export class CalendarFeedService {
   }
 
   private async issueToken(userId: string): Promise<CalendarTokenDto> {
-    const { calendarToken } = await this.prisma.user.update({
+    const token = randomToken(24, "base64url");
+    await this.prisma.user.update({
       where: { id: userId },
-      data: { calendarToken: randomBytes(24).toString("base64url") },
+      data: { calendarToken: token },
       select: { calendarToken: true },
     });
-    return { token: calendarToken! };
+    return { token };
   }
 
   private async requirePremium(userId: string): Promise<void> {
@@ -290,8 +292,4 @@ interface FeedUser {
   id: string;
   locale: string;
   watchRegion: string | null;
-}
-
-function pad(n: number): string {
-  return String(n).padStart(2, "0");
 }

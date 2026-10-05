@@ -1,6 +1,7 @@
 import { XpReason } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
-import { localDay } from "../common/local-day.util";
+import { addDays, sinceDaysAgo } from "../common/date.util";
+import { localDay, localDayOrUtc } from "../common/local-day.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { XpService } from "./xp.service";
 
@@ -22,11 +23,9 @@ export class SessionXpService {
 
   async refreshAfterDelete(userId: string, createdAt: Date): Promise<void> {
     const timezone = await this.timezoneFor(userId);
-    const day =
-      localDay(timezone, createdAt) ?? createdAt.toISOString().slice(0, 10);
-    const margin = 48 * 60 * 60 * 1000;
-    const from = new Date(createdAt.getTime() - margin);
-    const to = new Date(createdAt.getTime() + margin);
+    const day = localDayOrUtc(timezone, createdAt);
+    const from = sinceDaysAgo(createdAt, 2);
+    const to = addDays(createdAt, 2);
 
     const [games, books] = await Promise.all([
       this.prisma.gameSession.findMany({
@@ -58,7 +57,7 @@ export class SessionXpService {
 
   private async dayFor(userId: string, date: Date): Promise<string> {
     const timezone = await this.timezoneFor(userId);
-    return localDay(timezone, date) ?? date.toISOString().slice(0, 10);
+    return localDayOrUtc(timezone, date);
   }
 
   private async timezoneFor(userId: string): Promise<string> {

@@ -4,6 +4,8 @@ import {
   HOME_GRID_COLUMNS,
   LEGAL_VERSION,
   mergeAlertPrefs,
+  OTP_CODE_LENGTH,
+  REQUIRED_SHORTCUT,
   UserDto,
   UsernameAvailabilityDto,
   XpReason,
@@ -21,8 +23,9 @@ import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { randomInt } from "node:crypto";
 import { ApiKeysService } from "../api-keys/api-keys.service";
-import { BCRYPT_ROUNDS, hashToken, toUserDto } from "../auth/auth.service";
+import { BCRYPT_ROUNDS, toUserDto } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
+import { sha256Hex } from "../common/crypto.util";
 import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
@@ -360,7 +363,10 @@ export class UsersService {
     }
 
     // The "menu" launcher must always be reachable from the bottom bar.
-    if (dto.mobileNavShortcuts && !dto.mobileNavShortcuts.includes("menu")) {
+    if (
+      dto.mobileNavShortcuts &&
+      !dto.mobileNavShortcuts.includes(REQUIRED_SHORTCUT)
+    ) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.UserMobileNavMissingMenu,
@@ -462,14 +468,16 @@ export class UsersService {
       );
     }
 
-    const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+    const code = randomInt(0, 10 ** OTP_CODE_LENGTH)
+      .toString()
+      .padStart(OTP_CODE_LENGTH, "0");
     await this.prisma.$transaction([
       this.prisma.emailChangeRequest.deleteMany({ where: { userId } }),
       this.prisma.emailChangeRequest.create({
         data: {
           userId,
           newEmail: dto.newEmail,
-          codeHash: hashToken(code),
+          codeHash: sha256Hex(code),
           expiresAt: new Date(Date.now() + EMAIL_CHANGE_TTL_MINUTES * 60_000),
         },
       }),
@@ -504,7 +512,7 @@ export class UsersService {
 
     const matches =
       stored &&
-      stored.codeHash === hashToken(dto.code) &&
+      stored.codeHash === sha256Hex(dto.code) &&
       stored.expiresAt >= new Date();
 
     if (!stored || !matches) {

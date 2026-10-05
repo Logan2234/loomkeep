@@ -1,6 +1,7 @@
 import {
   BookSource,
   BookStatus,
+  ENTRY_NOTES_MAX_LENGTH,
   UpsertBookEntryDto as UpsertBookEntryContract,
 } from "@loomkeep/shared";
 import {
@@ -34,7 +35,7 @@ export class UpsertBookEntryDto implements UpsertBookEntryContract {
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
+  @MaxLength(ENTRY_NOTES_MAX_LENGTH)
   notes?: string | null;
 
   @IsOptional()

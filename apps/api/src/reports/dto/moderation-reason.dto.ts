@@ -1,4 +1,7 @@
-import { ModerationLegalBasis } from "@loomkeep/shared";
+import {
+  ModerationLegalBasis,
+  type ModerationReasonRequestDto,
+} from "@loomkeep/shared";
 import { IsIn, IsString, MinLength, ValidateIf } from "class-validator";
 
 /**
@@ -7,7 +10,7 @@ import { IsIn, IsString, MinLength, ValidateIf } from "class-validator";
  * both AdminReportsController and AdminUsersController since the shape is
  * identical either way. See ModerationDecisionService.record.
  */
-export class ModerationReasonBody {
+export class ModerationReasonBody implements ModerationReasonRequestDto {
   @IsString()
   @MinLength(1)
   reasonText!: string;

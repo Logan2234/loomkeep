@@ -4,7 +4,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
 import { chunk } from "../../common/array.util";
-import { fetchJson } from "../../common/http.util";
+import { fetchJson, identifyingUserAgent } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import type {
   BookCatalogProvider,
@@ -12,7 +12,7 @@ import type {
   ProviderBookSeries,
 } from "./book-provider.types";
 
-const API_URL = "https://openlibrary.org";
+export const OPEN_LIBRARY_API_URL = "https://openlibrary.org";
 const COVERS_URL = "https://covers.openlibrary.org/b/id";
 
 // Open Library has no "similar books" endpoint; other works by the primary
@@ -329,8 +329,8 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     // page — "work" isn't a real book on Open Library, may not be in the
     // requested language, and reads oddly as a rating's destination.
     const bookUrl = pickedOlid
-      ? `${API_URL}/books/${pickedOlid}`
-      : `${API_URL}/works/${id}`;
+      ? `${OPEN_LIBRARY_API_URL}/books/${pickedOlid}`
+      : `${OPEN_LIBRARY_API_URL}/works/${id}`;
 
     return {
       summary,
@@ -615,17 +615,15 @@ export class OpenLibraryProvider implements BookCatalogProvider {
    * calls in a burst; honours `Retry-After` when Open Library sends one.
    */
   private async get<T>(path: string, notFoundMessage?: string): Promise<T> {
-    const contact =
-      this.configService.get<string>("API_CONTACT") ??
-      "self-hosted, no contact provided";
-    const url = `${API_URL}${path}`;
+    const contact = this.configService.get<string>("API_CONTACT");
+    const url = `${OPEN_LIBRARY_API_URL}${path}`;
 
     return fetchJson<T>(
       url,
       {
         headers: {
           Accept: "application/json",
-          "User-Agent": `Loomkeep/1.0 (${contact})`,
+          "User-Agent": identifyingUserAgent(contact),
         },
       },
       {

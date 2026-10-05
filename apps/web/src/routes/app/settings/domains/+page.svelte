@@ -15,7 +15,7 @@
   import { orderedDomains } from "$lib/domains";
   import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared";
+  import { Domain, PREMIUM_DOMAINS, maintenanceFlag } from "@loomkeep/shared";
   import { dragHandle, dragHandleZone } from "svelte-dnd-action";
   import { flashAnchor } from "../flash-anchor";
 
@@ -105,7 +105,7 @@
         {@const domain = id}
         {@const on = auth.user.enabledDomains.includes(id)}
         {@const isLast = on && auth.user.enabledDomains.length === 1}
-        {@const inMaintenance = liveFlags.isEnabled(`MAINTENANCE_${id}`)}
+        {@const inMaintenance = liveFlags.isEnabled(maintenanceFlag(id))}
         {@const showLock =
           !on &&
           !inMaintenance &&

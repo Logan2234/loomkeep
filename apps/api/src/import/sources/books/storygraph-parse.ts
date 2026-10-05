@@ -1,6 +1,11 @@
 import type { BookOwnershipStatus, BookStatus } from "@loomkeep/shared";
 import { parseCsv } from "../../csv";
-import { parseReadCount, parseStarRatingToTen } from "./csv-field.util";
+import {
+  parseReadCount,
+  parseStarRatingToTen,
+  utcDateIso,
+  wellFormedIsbn,
+} from "./csv-field.util";
 
 export interface ParsedStoryGraphRow {
   title: string;
@@ -90,7 +95,7 @@ function splitAuthors(value: string | undefined): string[] {
 /** Keep only a well-formed ISBN-10/13 (hyphens/spaces stripped); else null. */
 function normaliseIsbn(value: string | undefined): string | null {
   const cleaned = (value ?? "").replace(/[\s-]/g, "");
-  return /^(\d{9}[\dX]|\d{13})$/.test(cleaned) ? cleaned : null;
+  return wellFormedIsbn(cleaned);
 }
 
 /**
@@ -116,8 +121,7 @@ function toIso(value: string | undefined): string | null {
   const match = (value ?? "").trim().match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
   if (!match) return null;
   const [, year, month, day] = match;
-  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  return utcDateIso(year, month, day);
 }
 
 function emptyToNull(value: string | undefined): string | null {

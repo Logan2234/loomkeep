@@ -1,5 +1,10 @@
 <script lang="ts">
   import {
+    SESSION_NOTES_MAX_LENGTH,
+    MAX_SESSION_DURATION_MINUTES,
+  } from "@loomkeep/shared";
+
+  import {
     createGameSession,
     deleteGameSession,
     getGameSessions,
@@ -16,7 +21,6 @@
   import {
     formatSessionMinutes,
     localDateInput,
-    MAX_SESSION_DURATION_MINUTES,
     sessionDateToIso,
   } from "$lib/session-presentation";
   import { toast } from "$lib/toast.svelte";
@@ -593,7 +597,7 @@
         <span class="relative">
           <textarea
             class="input min-h-28 w-full resize-y pb-7 leading-relaxed"
-            maxlength="1000"
+            maxlength={SESSION_NOTES_MAX_LENGTH}
             placeholder={m.game_session_notes_placeholder()}
             bind:value={notes}
             disabled={createMut.loading || finishTimerMut.loading}></textarea>
@@ -717,7 +721,7 @@
                           </span>
                           <textarea
                             class="input min-h-24 w-full resize-y"
-                            maxlength="1000"
+                            maxlength={SESSION_NOTES_MAX_LENGTH}
                             placeholder={m.game_session_notes_placeholder()}
                             bind:value={editNotes}></textarea>
                         </label>

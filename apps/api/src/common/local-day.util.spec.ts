@@ -1,4 +1,12 @@
-import { localDay, localParts } from "./local-day.util";
+import { localDay, localDayOrUtc, localParts } from "./local-day.util";
+
+describe("localDayOrUtc", () => {
+  it("keeps the local day and falls back to UTC only for an invalid zone", () => {
+    const date = new Date("2026-09-01T23:00:00Z");
+    expect(localDayOrUtc("Europe/Paris", date)).toBe("2026-09-02");
+    expect(localDayOrUtc("Not/AZone", date)).toBe("2026-09-01");
+  });
+});
 
 describe("localParts", () => {
   it("returns the local hour and weekday for a valid IANA zone", () => {

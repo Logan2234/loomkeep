@@ -1,6 +1,6 @@
 import type { ApiKeyScope } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
-import { createHash } from "node:crypto";
+import { sha256Hex } from "../common/crypto.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { isSuspended } from "../users/suspension.util";
 import { isWellFormedApiKey } from "./api-key-format";
@@ -30,7 +30,7 @@ export interface ApiKeyPrincipal {
  * positive, same reasoning as `secretsMatch` (common/secret-compare.util.ts).
  */
 export function hashApiKey(secret: string): string {
-  return createHash("sha256").update(secret).digest("hex");
+  return sha256Hex(secret);
 }
 
 /** Resolves the secret of an `Authorization: Bearer lk_…` header to its key. */

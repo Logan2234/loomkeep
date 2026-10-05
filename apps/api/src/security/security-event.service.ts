@@ -6,7 +6,13 @@ import type {
   SecurityEventType,
 } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { sinceDaysAgo } from "../common/date.util";
+import {
+  parsePageQuery,
+  toPagedResult,
+  type ParsedPage,
+} from "../common/pagination.util";
 import { currentRequest } from "../common/request-context";
 import {
   SECURITY_ALERT_EVENTS,
@@ -14,7 +20,7 @@ import {
 } from "../mail/mail.i18n";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
-import { rankFailedTargets, sinceDaysAgo } from "./login-failure.util";
+import { rankFailedTargets } from "./login-failure.util";
 
 /** Default events per page on the admin "Sécurité" list. */
 export const SECURITY_EVENT_PAGE_SIZE = 50;
@@ -43,8 +49,7 @@ export interface ListSecurityEventsParams {
   type?: SecurityEventType;
   /** Matches either the stored identifier (LOGIN_FAILED) or the linked account's current email. */
   identifier?: string;
-  page?: number;
-  limit?: number;
+  page?: ParsedPage;
 }
 
 @Injectable()
@@ -124,19 +129,20 @@ export class SecurityEventService {
    */
   async listForAccount(
     userId: string,
-    page: number,
-    limit: number,
+    page: ParsedPage,
   ): Promise<PagedResult<AccountSecurityEventDto>> {
+    const { skip, take, limit } = page;
     const rows = await this.prisma.securityEvent.findMany({
       where: { userId, type: { not: "USER_DELETED" } },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
     });
 
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
     return {
-      hasMore: rows.length > limit,
-      items: rows.slice(0, limit).map((e) => ({
+      hasMore,
+      items: pageRows.map((e) => ({
         id: e.id,
         type: e.type as SecurityEventType,
         detail: e.detail,
@@ -159,7 +165,7 @@ export class SecurityEventService {
     });
   }
 
-  @Cron("0 6 * * *")
+  @Cron(CronExpression.EVERY_DAY_AT_6AM)
   async purgeExpired(now = new Date()): Promise<void> {
     const { count } = await this.prisma.securityEvent.deleteMany({
       where: { createdAt: { lt: sinceDaysAgo(now, RETENTION_DAYS) } },
@@ -223,11 +229,9 @@ export class SecurityEventService {
   async list(
     params: ListSecurityEventsParams,
   ): Promise<PagedResult<SecurityEventDto>> {
-    const page = params.page && params.page > 0 ? params.page : 1;
-    const limit =
-      params.limit && params.limit > 0
-        ? params.limit
-        : SECURITY_EVENT_PAGE_SIZE;
+    const { skip, take, limit } =
+      params.page ??
+      parsePageQuery(undefined, undefined, SECURITY_EVENT_PAGE_SIZE);
 
     const rows = await this.prisma.securityEvent.findMany({
       where: {
@@ -252,11 +256,10 @@ export class SecurityEventService {
       },
       include: { user: { select: { email: true } } },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
     });
-    const hasMore = rows.length > limit;
-    const events = rows.slice(0, limit);
+    const { items: events, hasMore } = toPagedResult(rows, limit);
 
     return {
       hasMore,

@@ -1,6 +1,8 @@
 import {
   BookOwnershipStatus,
   BookStatus,
+  ENTRY_NOTES_MAX_LENGTH,
+  OWNERSHIP_SOURCE_MAX_LENGTH,
   UpdateBookEntryDto as UpdateBookEntryContract,
 } from "@loomkeep/shared";
 import {
@@ -29,7 +31,7 @@ export class UpdateBookEntryDto implements UpdateBookEntryContract {
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
+  @MaxLength(ENTRY_NOTES_MAX_LENGTH)
   notes?: string | null;
 
   @IsOptional()
@@ -65,6 +67,6 @@ export class UpdateBookEntryDto implements UpdateBookEntryContract {
 
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(OWNERSHIP_SOURCE_MAX_LENGTH)
   ownershipSource?: string | null;
 }

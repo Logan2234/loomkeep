@@ -19,9 +19,17 @@ import type {
   ProviderGameSaga,
 } from "./game-provider.types";
 
-const OAUTH_URL = "https://id.twitch.tv/oauth2/token";
+export const IGDB_OAUTH_URL = "https://id.twitch.tv/oauth2/token";
 const API_URL = "https://api.igdb.com/v4";
 const IMG = "https://images.igdb.com/igdb/image/upload";
+const IMAGE_SIZE = { cover: "cover_big", backdrop: "1080p" } as const;
+
+function igdbImage(
+  id: string,
+  size: (typeof IMAGE_SIZE)[keyof typeof IMAGE_SIZE],
+): string {
+  return `${IMG}/t_${size}/${id}.jpg`;
+}
 
 // IGDB theme id for "Erotic" — our adult-content marker, mirroring TMDB `adult`
 // / AniList hentai. See https://api-docs.igdb.com (themes reference).
@@ -395,11 +403,11 @@ export class IgdbProvider implements GameCatalogProvider {
       summary: this.toSummary(game),
       overview: game.summary ?? null,
       backdropUrl: game.artworks?.[0]
-        ? `${IMG}/t_1080p/${game.artworks[0].image_id}.jpg`
+        ? igdbImage(game.artworks[0].image_id, IMAGE_SIZE.backdrop)
         : null,
       screenshots: (game.screenshots ?? [])
         .slice(0, MAX_SCREENSHOTS)
-        .map((s) => `${IMG}/t_1080p/${s.image_id}.jpg`),
+        .map((s) => igdbImage(s.image_id, IMAGE_SIZE.backdrop)),
       genres: game.genres?.map((g) => g.name) ?? [],
       platforms: game.platforms?.map((p) => p.name) ?? [],
       ...firstRelease(game),
@@ -455,7 +463,7 @@ export class IgdbProvider implements GameCatalogProvider {
         ? new Date(game.first_release_date * 1000).getUTCFullYear()
         : null,
       coverUrl: game.cover
-        ? `${IMG}/t_cover_big/${game.cover.image_id}.jpg`
+        ? igdbImage(game.cover.image_id, IMAGE_SIZE.cover)
         : null,
       isAdult: game.themes?.includes(EROTIC_THEME_ID) ?? false,
     };
@@ -546,7 +554,7 @@ export class IgdbProvider implements GameCatalogProvider {
     });
 
     const token = await fetchJson<TwitchToken>(
-      OAUTH_URL,
+      IGDB_OAUTH_URL,
       {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },

@@ -13,8 +13,10 @@ import {
   Domain as DomainValues,
   ListVisibility as ListVisibilityValues,
   Locale as LocaleValues,
+  MOBILE_NAV_SHORTCUT_LIMITS,
   ReviewVisibility as ReviewVisibilityValues,
   SpoilerSensitivity as SpoilerSensitivityValues,
+  USER_LIMITS,
 } from "@loomkeep/shared";
 import {
   ArrayMaxSize,
@@ -38,7 +40,7 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   @IsOptional()
   @IsString()
   @MinLength(1)
-  @MaxLength(50)
+  @MaxLength(USER_LIMITS.displayName)
   displayName?: string;
 
   @IsOptional()
@@ -86,15 +88,15 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   // ignored at render time — but the required "menu" launcher is enforced in the
   // controller. See web navigation.ts.
   @IsOptional()
-  @ArrayMinSize(3)
-  @ArrayMaxSize(7)
+  @ArrayMinSize(MOBILE_NAV_SHORTCUT_LIMITS.min)
+  @ArrayMaxSize(MOBILE_NAV_SHORTCUT_LIMITS.max)
   @ArrayUnique()
   @IsString({ each: true })
   mobileNavShortcuts?: string[];
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(USER_LIMITS.bio)
   bio?: string | null;
 
   @IsOptional()

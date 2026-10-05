@@ -7,7 +7,11 @@
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import { isPasswordValid } from "@loomkeep/shared";
+  import {
+    isPasswordValid,
+    PASSWORD_MIN_LENGTH,
+    PASSWORD_MAX_LENGTH,
+  } from "@loomkeep/shared";
 
   const token = page.url.searchParams.get("token") ?? "";
 
@@ -58,8 +62,8 @@
           autocomplete="new-password"
           enterkeyhint="next"
           bind:value={newPassword}
-          minlength={8}
-          maxlength={72}
+          minlength={PASSWORD_MIN_LENGTH}
+          maxlength={PASSWORD_MAX_LENGTH}
           required />
         <PasswordRequirements value={newPassword} />
         <PasswordInput
@@ -69,8 +73,8 @@
           autocomplete="new-password"
           enterkeyhint="done"
           bind:value={confirmPassword}
-          minlength={8}
-          maxlength={72}
+          minlength={PASSWORD_MIN_LENGTH}
+          maxlength={PASSWORD_MAX_LENGTH}
           required />
         {#if error}<p class="text-danger text-sm">{error}</p>{/if}
         <button

@@ -10,13 +10,20 @@ import {
   type ReportDto,
   type ReportMotif,
   type ReportProfilePart,
+  type ReportResolution,
+  type ReportStatus,
   type ReportTargetSummaryDto,
   type ReportTargetType,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
+import {
+  DEFAULT_PAGE_SIZE,
+  toPagedResult,
+  type ParsedPage,
+} from "../common/pagination.util";
 import { resolveWorkHref } from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -28,7 +35,6 @@ import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 
-export const REPORT_PAGE_SIZE = 20;
 const EXCERPT_LENGTH = 120;
 
 type ReportRow = {
@@ -260,30 +266,30 @@ export class ReportService {
   }
 
   async list(
-    status: "PENDING" | "RESOLVED" | "DISMISSED" | undefined,
-    page: number,
+    status: ReportStatus | undefined,
+    page: ParsedPage,
     reporterId?: string,
-    limit = REPORT_PAGE_SIZE,
   ): Promise<PagedResult<ReportDto>> {
+    const { skip, take, limit } = page;
     const rows = await this.prisma.report.findMany({
       where: {
         ...(status ? { status } : {}),
         ...(reporterId ? { reporterId } : {}),
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
       include: { reporter: { select: REPORTER_SELECT } },
     });
-    const hasMore = rows.length > limit;
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
 
-    return { items: await this.toDtos(rows.slice(0, limit)), hasMore };
+    return { items: await this.toDtos(pageRows), hasMore };
   }
 
   async resolve(
     adminId: string,
     id: string,
-    status: "RESOLVED" | "DISMISSED",
+    status: ReportResolution,
   ): Promise<void> {
     const reporterId = await this.prisma.$transaction((tx) =>
       this.resolveInTransaction(tx, adminId, id, status),
@@ -296,7 +302,7 @@ export class ReportService {
     tx: Prisma.TransactionClient,
     adminId: string,
     id: string,
-    status: "RESOLVED" | "DISMISSED",
+    status: ReportResolution,
   ): Promise<string | null> {
     const { count } = await tx.report.updateMany({
       where: { id, status: "PENDING" },
@@ -388,7 +394,7 @@ export class ReportService {
         ],
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 50,
+      take: DEFAULT_PAGE_SIZE,
       include: { reporter: { select: REPORTER_SELECT } },
     });
 
@@ -442,7 +448,7 @@ export class ReportService {
   }
 
   /** Daily 7h admin-only digest of pending reports. Skipped entirely when there's nothing pending. */
-  @Cron("0 7 * * *", { name: JOB_KEYS.REPORTS_DIGEST })
+  @Cron(CronExpression.EVERY_DAY_AT_7AM, { name: JOB_KEYS.REPORTS_DIGEST })
   async sendDailyDigest(): Promise<number> {
     return this.jobRuns.record(
       JOB_KEYS.REPORTS_DIGEST,

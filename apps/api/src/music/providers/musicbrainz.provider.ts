@@ -1,7 +1,11 @@
 import { MusicSource, MusicSummaryDto } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { fetchJson } from "../../common/http.util";
+import {
+  fetchJson,
+  HTTP_TIMEOUT_MS,
+  identifyingUserAgent,
+} from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
 import type {
@@ -9,7 +13,7 @@ import type {
   ProviderMusicDetails,
 } from "./music-provider.types";
 
-const API_URL = "https://musicbrainz.org/ws/2";
+export const MUSICBRAINZ_API_URL = "https://musicbrainz.org/ws/2";
 const COVER_ART_URL = "https://coverartarchive.org";
 
 // MusicBrainz's usage policy caps unauthenticated requests at ~1/second per
@@ -213,7 +217,10 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
   ): Promise<{ url: string; type: string }[]> {
     const response = await fetch(
       `${COVER_ART_URL}/release-group/${releaseGroupId}`,
-      { headers: { Accept: "application/json" } },
+      {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+      },
     ).catch(() => null);
     if (!response || !response.ok) return [];
 
@@ -273,17 +280,15 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
    * on 503 (MusicBrainz's rate-limit response) with backoff.
    */
   private async get<T>(path: string, notFoundMessage?: string): Promise<T> {
-    const contact =
-      this.configService.get<string>("API_CONTACT") ??
-      "self-hosted, no contact provided";
-    const url = `${API_URL}${path}`;
+    const contact = this.configService.get<string>("API_CONTACT");
+    const url = `${MUSICBRAINZ_API_URL}${path}`;
 
     return fetchJson<T>(
       url,
       {
         headers: {
           Accept: "application/json",
-          "User-Agent": `Loomkeep/1.0 (${contact})`,
+          "User-Agent": identifyingUserAgent(contact),
         },
       },
       {

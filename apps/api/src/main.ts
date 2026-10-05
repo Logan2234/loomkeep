@@ -1,3 +1,4 @@
+import { webOrigins } from "./common/web-origin.util";
 // Must run before any other import: logger.config.ts reads process.env.NODE_ENV
 // at module-load time (not through ConfigModule), so .env has to be loaded
 // before app.module.ts (and everything it imports) even starts resolving.
@@ -93,10 +94,10 @@ async function bootstrap() {
 
   // Comma-separated so multiple origins can be allowed at once; the public
   // API gets its own, open policy (see corsOptionsFor).
-  const webOrigins = webOrigin.split(",").map((o) => o.trim());
+  const allowedWebOrigins = webOrigins(webOrigin);
   app.enableCors({
     delegator: (request, callback) =>
-      callback(null, corsOptionsFor(request.url, webOrigins)),
+      callback(null, corsOptionsFor(request.url, allowedWebOrigins)),
   });
 
   // EventsGateway (WebSocket real-time push) rides socket.io regardless of

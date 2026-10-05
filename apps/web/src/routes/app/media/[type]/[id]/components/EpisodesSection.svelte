@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { episodeCode } from "@loomkeep/shared";
+
   import {
     unwatchEpisode,
     unwatchSeason,
@@ -396,9 +398,7 @@
                 class="flex flex-col gap-1 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-3">
                 <div class="flex min-w-0 items-center gap-3">
                   <span class="timecode w-14 shrink-0 text-sm">
-                    S{String(season.number).padStart(2, "0")}E{String(
-                      episode.number,
-                    ).padStart(2, "0")}
+                    {episodeCode(season.number, episode.number)}
                   </span>
                   <span class="min-w-0 flex-1 truncate text-sm">
                     {episode.title ?? `${m.common_episode()} ${episode.number}`}
@@ -443,7 +443,7 @@
                         reviewTarget = {
                           type: "EPISODE",
                           id: episode.id!,
-                          label: `S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`,
+                          label: episodeCode(season.number, episode.number),
                         };
                       }}>
                       <Icon name="star" class="h-4 w-4" />
@@ -454,7 +454,7 @@
                       <CommentsPanel
                         targetType="EPISODE"
                         targetId={episode.id}
-                        title={`S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}${episode.title ? ` · ${episode.title}` : ""}`}
+                        title={`${episodeCode(season.number, episode.number)}${episode.title ? ` · ${episode.title}` : ""}`}
                         canParticipate={!!entry}
                         revealSpoilersByDefault={watched}
                         compact />

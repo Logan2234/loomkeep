@@ -2,8 +2,8 @@ import { deflateRawSync } from "node:zlib";
 
 /**
  * Test helper: build a minimal ZIP archive in memory. Not shipped at runtime
- * (excluded in tsconfig.build.json); lives next to the code it exercises so the
- * zip and import specs can share it. Each entry can be STORED (method 0) or
+ * (the test directory is excluded in tsconfig.build.json), shared by the
+ * zip and import specs. Each entry can be STORED (method 0) or
  * DEFLATE (method 8) to cover both decode paths.
  */
 export function makeZip(

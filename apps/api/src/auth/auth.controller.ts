@@ -26,6 +26,7 @@ import {
 import { Throttle } from "@nestjs/throttler";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { AppException } from "../common/app.exception";
+import { SENSITIVE_ACTION_THROTTLE } from "../common/throttle.constants";
 import {
   clearAuthCookies,
   readRefreshCookie,
@@ -139,7 +140,7 @@ export class AuthController {
     return { user: result.user };
   }
 
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(SENSITIVE_ACTION_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("mfa/resend-email-code")
   async mfaResendEmailCode(@Body() dto: ResendMfaEmailCodeDto): Promise<void> {
@@ -250,14 +251,14 @@ export class AuthController {
     clearAuthCookies(reply);
   }
 
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(SENSITIVE_ACTION_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("forgot-password")
   async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<void> {
     await this.authService.requestPasswordReset(dto.email);
   }
 
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(SENSITIVE_ACTION_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("reset-password")
   async resetPassword(

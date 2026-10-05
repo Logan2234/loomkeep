@@ -20,7 +20,10 @@ import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { assertMediaReleased } from "../catalog/movie-release.util";
 import { AppException } from "../common/app.exception";
-import { canonicalExternalId } from "../common/external-id.util";
+import {
+  CANONICAL_EXTERNAL_ID_SELECT,
+  canonicalExternalId,
+} from "../common/external-id.util";
 import { resolveWorkHref } from "../common/work-href.util";
 import { assertGameReleased } from "../games/game-release.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
@@ -531,10 +534,6 @@ export class ReviewService {
     }
 
     const map = new Map<string, ReviewTargetSummaryDto>();
-    const canonicalExternalIdInclude = {
-      canonicalSource: true,
-      externalIds: { select: { source: true, externalId: true } },
-    } as const;
 
     const add = (
       type: string,
@@ -564,7 +563,7 @@ export class ReviewService {
           title: true,
           posterUrl: true,
           type: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -591,7 +590,7 @@ export class ReviewService {
           id: true,
           title: true,
           coverUrl: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -614,7 +613,7 @@ export class ReviewService {
           id: true,
           title: true,
           coverUrl: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -637,7 +636,7 @@ export class ReviewService {
           id: true,
           title: true,
           coverUrl: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -705,8 +704,10 @@ export class ReviewService {
     // comment on withXp).
     const hideProgressionByUser = new Map(
       rows
-        .filter((r) => r.user)
-        .map((r) => [r.user!.id, r.user!.hideProgression]),
+        .filter(
+          (r): r is typeof r & { user: NonNullable<typeof r.user> } => !!r.user,
+        )
+        .map((r) => [r.user.id, r.user.hideProgression]),
     );
     const votesFor = (id: string) =>
       voteMap.get(id) ?? { score: 0, myVote: null };

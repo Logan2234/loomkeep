@@ -10,6 +10,7 @@ import type {
   UpsertBookEntryDto,
   UpsertReadingGoalDto,
 } from "@loomkeep/shared";
+import { type SortOrder } from "@loomkeep/shared";
 import { getLocale } from "../paraglide/runtime.js";
 import { typedRequest } from "./generated/typed-request";
 
@@ -21,7 +22,7 @@ export interface ListBooksFilters {
   favorite?: boolean;
   statuses?: string[];
   sort?: string;
-  order?: "asc" | "desc";
+  order?: SortOrder;
   page?: number;
 }
 
@@ -140,7 +141,7 @@ export const getBookSaga = (seriesKey: string) =>
 export interface BookSagaFilters {
   query?: string;
   sort?: LibrarySagaSort;
-  order?: "asc" | "desc";
+  order?: SortOrder;
 }
 
 /** The reader's series: started, then finished. */

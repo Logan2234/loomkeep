@@ -1,6 +1,11 @@
 import type { BookOwnershipStatus, BookStatus } from "@loomkeep/shared";
 import { parseCsv } from "../../csv";
-import { parseReadCount, parseStarRatingToTen } from "./csv-field.util";
+import {
+  parseReadCount,
+  parseStarRatingToTen,
+  utcDateIso,
+  wellFormedIsbn,
+} from "./csv-field.util";
 
 export interface ParsedGoodreadsRow {
   title: string;
@@ -125,7 +130,7 @@ function splitAuthors(
  */
 function normaliseIsbn(value: string | undefined): string | null {
   const cleaned = (value ?? "").replace(/^=/, "").replace(/["\s-]/g, "");
-  return /^(\d{9}[\dX]|\d{13})$/.test(cleaned) ? cleaned : null;
+  return wellFormedIsbn(cleaned);
 }
 
 /**
@@ -139,15 +144,10 @@ function toIso(value: string | undefined): string | null {
   const trimmed = (value ?? "").trim();
 
   const yearFirst = trimmed.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
-  if (yearFirst) return toDateIso(yearFirst[1], yearFirst[2], yearFirst[3]);
+  if (yearFirst) return utcDateIso(yearFirst[1], yearFirst[2], yearFirst[3]);
 
   const yearLast = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (yearLast) return toDateIso(yearLast[3], yearLast[1], yearLast[2]);
+  if (yearLast) return utcDateIso(yearLast[3], yearLast[1], yearLast[2]);
 
   return null;
-}
-
-function toDateIso(year: string, month: string, day: string): string | null {
-  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }

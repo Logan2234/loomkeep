@@ -3,6 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { SchedulerRegistry } from "@nestjs/schedule";
 import type { JobRun } from "@prisma/client";
 import { randomUUID } from "node:crypto";
+import { HTTP_TIMEOUT_MS } from "../common/http.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { JobAlertService } from "./job-alert.service";
 import { JOB_HEALTHCHECK_ENV, JOB_KEYS, type JobKey } from "./job-keys";
@@ -84,7 +85,9 @@ export class JobRunService {
     if (!url) return;
 
     try {
-      await fetch(success ? url : `${url}/fail`);
+      await fetch(success ? url : `${url}/fail`, {
+        signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+      });
     } catch {
       // Ignored — see doc comment above.
     }

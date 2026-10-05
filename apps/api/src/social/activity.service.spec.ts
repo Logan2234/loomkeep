@@ -1,5 +1,6 @@
 import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared";
 import { vi, type Mock } from "vitest";
+import { parsePageQuery } from "../common/pagination.util";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { DomainGateService } from "../users/domain-gate.service";
 import { ActivityService } from "./activity.service";
@@ -177,7 +178,7 @@ describe("ActivityService.homeFeed", () => {
       enabledDomains: ["MEDIA", "BOOKS"],
     });
 
-    await service.homeFeed(VIEWER, 1, 30, "BOOKS");
+    await service.homeFeed(VIEWER, parsePageQuery("1", "30", 30), "BOOKS");
 
     expect(feedDomains(prisma)).toEqual({ in: ["BOOKS"] });
   });
@@ -189,7 +190,11 @@ describe("ActivityService.homeFeed", () => {
       enabledDomains: ["MEDIA"],
     });
 
-    const feed = await service.homeFeed(VIEWER, 1, 30, "GAMES");
+    const feed = await service.homeFeed(
+      VIEWER,
+      parsePageQuery("1", "30", 30),
+      "GAMES",
+    );
 
     expect(feed).toEqual({ items: [], hasMore: false });
     expect(prisma.activityEvent.findMany).not.toHaveBeenCalled();
@@ -217,7 +222,7 @@ describe("ActivityService feed pagination", () => {
       ],
     });
 
-    const feed = await service.homeFeed(VIEWER, 1, 2);
+    const feed = await service.homeFeed(VIEWER, parsePageQuery("1", "2", 30));
 
     expect(feed.hasMore).toBe(true);
     // Only the page's own raw window is shown: e3 belongs to the next page.
@@ -292,7 +297,11 @@ describe("ActivityService feed building", () => {
       ],
     });
 
-    const feed = await service.profileTimeline(VIEWER, target, 1, 1);
+    const feed = await service.profileTimeline(
+      VIEWER,
+      target,
+      parsePageQuery("1", "1", 30),
+    );
 
     expect(feed.hasMore).toBe(true);
     expect(feed.items).toHaveLength(1);

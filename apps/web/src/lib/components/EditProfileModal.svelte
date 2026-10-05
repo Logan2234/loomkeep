@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { USER_LIMITS } from "@loomkeep/shared";
+
   import { updateMe } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { appConfig } from "$lib/config.svelte";
@@ -47,7 +49,7 @@
         name="displayName"
         class="input"
         minlength="1"
-        maxlength="50"
+        maxlength={USER_LIMITS.displayName}
         bind:value={displayName} />
     </label>
 
@@ -58,7 +60,7 @@
           name="bio"
           class="input min-h-20 resize-y"
           rows="3"
-          maxlength="500"
+          maxlength={USER_LIMITS.bio}
           placeholder={m.profile_bio_placeholder()}
           bind:value={bio}></textarea>
       </label>

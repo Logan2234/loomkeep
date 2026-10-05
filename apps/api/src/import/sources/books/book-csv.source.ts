@@ -12,15 +12,17 @@ import type {
   ImportSource,
 } from "@loomkeep/shared";
 import { Domain, ReviewTargetType } from "@loomkeep/shared";
+import assert from "node:assert/strict";
 import { BookItemService } from "../../../books/book-item.service";
 import { mapWithConcurrency, refKey } from "../../../common/concurrency.util";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import { AgeGateService } from "../../../users/age-gate.service";
-import type {
-  CommitDecisions,
-  ImportReq,
-  ProgressReporter,
+import {
+  type CommitDecisions,
+  type ImportReq,
+  type ProgressReporter,
+  indexPlanMatches,
 } from "../../import-source";
 
 // Rows are resolved against the catalogue a few at a time — fast enough for a
@@ -145,13 +147,10 @@ export abstract class BookCsvSource<
       byStatus.set(row.status, bucket);
     }
 
-    const groups: ImportPlanGroup[] = STATUS_GROUPS.filter(
-      (g) => (byStatus.get(g.status)?.length ?? 0) > 0,
-    ).map((g) => ({
-      id: g.status,
-      label: g.label,
-      items: byStatus.get(g.status)!,
-    }));
+    const groups: ImportPlanGroup[] = STATUS_GROUPS.flatMap((g) => {
+      const items = byStatus.get(g.status);
+      return items?.length ? [{ id: g.status, label: g.label, items }] : [];
+    });
 
     return {
       groups,
@@ -200,14 +199,12 @@ export abstract class BookCsvSource<
       progress.tick();
     }
 
-    const tiles: ImportReportTile[] = STATUS_GROUPS.filter(
-      (g) => (tally.get(g.status) ?? 0) > 0,
-    ).map((g) => ({
-      id: g.status,
-      label: g.label,
-      value: tally.get(g.status)!,
-      sub: null,
-    }));
+    const tiles: ImportReportTile[] = STATUS_GROUPS.flatMap((g) => {
+      const value = tally.get(g.status);
+      return value !== undefined && value > 0
+        ? [{ id: g.status, label: g.label, value, sub: null }]
+        : [];
+    });
 
     if (tiles.length === 0) {
       tiles.push({ id: "books", label: "Books", value: 0, sub: null });
@@ -345,7 +342,11 @@ export abstract class BookCsvSource<
     const byKey = new Map(
       [...isbnResolved, ...queryResolved].map((r) => [r.key, r]),
     );
-    return withKeys.map(({ key }) => byKey.get(key)!);
+    return withKeys.map(({ key }) => {
+      const resolved = byKey.get(key);
+      assert(resolved, "Every input row must have a resolution result");
+      return resolved;
+    });
   }
 
   /**
@@ -403,18 +404,6 @@ function toMatch(summary: BookSummaryDto): ImportMatch {
     year: summary.year,
     coverUrl: summary.coverUrl,
   };
-}
-
-function indexPlanMatches(plan: ImportPlan): Map<string, ImportMatch> {
-  const byKey = new Map<string, ImportMatch>();
-
-  for (const group of plan.groups) {
-    for (const item of group.items) {
-      if (item.match) byKey.set(item.key, item.match);
-    }
-  }
-
-  return byKey;
 }
 
 function rowIndex(key: string): number | null {

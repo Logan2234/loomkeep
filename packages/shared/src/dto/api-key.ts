@@ -1,3 +1,5 @@
+export const API_KEY_EXPIRY_WARNING_DAYS = 7;
+
 /**
  * What an API key can be granted access to. The public API (`/api/v1`) only
  * reads for now; a scope is `<resource>:read`, leaving room for
@@ -16,9 +18,8 @@ export const API_KEY_RESOURCES = [
 export type ApiKeyResource = (typeof API_KEY_RESOURCES)[number];
 export type ApiKeyScope = `${ApiKeyResource}:read`;
 
-export const API_KEY_SCOPES: readonly ApiKeyScope[] = API_KEY_RESOURCES.map(
-  (resource) => `${resource}:read` as const,
-);
+export const API_KEY_SCOPES: readonly ApiKeyScope[] =
+  API_KEY_RESOURCES.map(readScope);
 
 /** Every secret starts with it, so a leaked key is recognisable at a glance. */
 export const API_KEY_PREFIX = "lk_";
@@ -77,4 +78,8 @@ export interface ApiV1MeDto {
     expiresAt: string | null;
   } | null;
   rateLimit: { perMinute: number };
+}
+
+export function readScope(resource: ApiKeyResource): ApiKeyScope {
+  return `${resource}:read`;
 }

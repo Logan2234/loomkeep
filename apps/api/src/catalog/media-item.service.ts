@@ -6,6 +6,10 @@ import type {
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { Prisma, type MediaItem } from "@prisma/client";
+import {
+  CATALOG_SYNC_TTL_MS,
+  isCatalogFresh,
+} from "../common/catalog-sync.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -21,7 +25,6 @@ import { TmdbProvider } from "./providers/tmdb.provider";
 import { SagaSyncService } from "./saga-sync.service";
 
 // A cached media referenced by users is refreshed at most once a day.
-const SYNC_TTL_MS = 24 * 60 * 60 * 1000;
 
 // Upper bound on how many stale media items one cron execution refreshes.
 // The cron runs every 6h; at this cap and the concurrency below, a full
@@ -86,7 +89,7 @@ export class MediaItemService {
   }
 
   private async runRefreshStale(): Promise<number> {
-    const staleBefore = new Date(Date.now() - SYNC_TTL_MS);
+    const staleBefore = new Date(Date.now() - CATALOG_SYNC_TTL_MS);
     const items = await this.prisma.mediaItem.findMany({
       where: {
         lastSyncedAt: { lt: staleBefore },
@@ -297,7 +300,7 @@ export class MediaItemService {
     if (
       existingRef &&
       (type !== "MOVIE" || existingRef.mediaItem.movieReleaseDates !== null) &&
-      Date.now() - existingRef.mediaItem.lastSyncedAt.getTime() < SYNC_TTL_MS
+      isCatalogFresh(existingRef.mediaItem.lastSyncedAt)
     ) {
       return existingRef.mediaItem;
     }

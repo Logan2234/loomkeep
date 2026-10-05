@@ -1,6 +1,7 @@
 import {
   type AlertPrefs,
   DigestCadence,
+  episodeCode,
   ErrorCode,
   gameReleaseAlertDay,
   isAlertEnabled,
@@ -17,7 +18,11 @@ import { Cron, CronExpression } from "@nestjs/schedule";
 import { type Notification, Prisma } from "@prisma/client";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { AppException } from "../common/app.exception";
-import { canonicalExternalId } from "../common/external-id.util";
+import { sinceDaysAgo, utcDateKey } from "../common/date.util";
+import {
+  CANONICAL_EXTERNAL_ID_SELECT,
+  canonicalExternalId,
+} from "../common/external-id.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
@@ -53,9 +58,9 @@ type CreateNotificationInput = {
   data?: Record<string, unknown>;
 };
 
-/** Digest body: `S1E2 · Title` (title suffix only when known). */
+/** Digest body: `S01E02 · Title` (title suffix only when known). */
 function notificationBody(n: NewEpisodeNotification): string {
-  return `S${n.seasonNumber}E${n.episodeNumber}${n.episodeTitle ? " · " + n.episodeTitle : ""}`;
+  return `${episodeCode(n.seasonNumber, n.episodeNumber)}${n.episodeTitle ? " · " + n.episodeTitle : ""}`;
 }
 
 /** Deep link to the media detail page for a notification. */
@@ -126,7 +131,7 @@ export class NotificationService {
       (await this.scanSagaSequels()) +
       (await this.scanGameSagaSequels());
     const now = new Date();
-    const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000);
+    const since = sinceDaysAgo(now, WINDOW_DAYS);
 
     const episodes = await this.prisma.episode.findMany({
       where: {
@@ -146,8 +151,7 @@ export class NotificationService {
               select: {
                 title: true,
                 type: true,
-                canonicalSource: true,
-                externalIds: { select: { source: true, externalId: true } },
+                ...CANONICAL_EXTERNAL_ID_SELECT,
               },
             },
           },
@@ -437,10 +441,8 @@ export class NotificationService {
 
   private async scanMovies(userId?: string): Promise<number> {
     const now = new Date();
-    const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000)
-      .toISOString()
-      .slice(0, 10);
-    const today = now.toISOString().slice(0, 10);
+    const since = utcDateKey(sinceDaysAgo(now, WINDOW_DAYS));
+    const today = utcDateKey(now);
     const entries = await this.prisma.libraryEntry.findMany({
       where: {
         userId,
@@ -477,8 +479,7 @@ export class NotificationService {
           !release.localDate ||
           release.localDate <= since ||
           release.localDate > today ||
-          release.localDate <
-            entry.movieReleaseReminderAt.toISOString().slice(0, 10)
+          release.localDate < utcDateKey(entry.movieReleaseReminderAt)
         )
           return [];
         const body = notificationCopy(entry.user.locale).movieRelease(
@@ -518,8 +519,8 @@ export class NotificationService {
    */
   private async scanGames(userId?: string): Promise<number> {
     const now = new Date();
-    const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000);
-    const today = now.toISOString().slice(0, 10);
+    const since = sinceDaysAgo(now, WINDOW_DAYS);
+    const today = utcDateKey(now);
     const entries = await this.prisma.gameEntry.findMany({
       where: {
         userId,
@@ -546,14 +547,10 @@ export class NotificationService {
       (entry) => {
         const { gameItem } = entry;
         const day = gameReleaseAlertDay(
-          gameItem.releaseDate?.toISOString().slice(0, 10) ?? null,
+          gameItem.releaseDate ? utcDateKey(gameItem.releaseDate) : null,
           gameItem.releaseDatePrecision,
         );
-        if (
-          !day ||
-          day > today ||
-          day < entry.releaseReminderAt!.toISOString().slice(0, 10)
-        )
+        if (!day || day > today || day < utcDateKey(entry.releaseReminderAt!))
           return [];
         return [
           {
@@ -634,7 +631,7 @@ export class NotificationService {
     const moviesCreated = (await this.scanMovies(userId)) + gamesCreated;
 
     const now = new Date();
-    const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000);
+    const since = sinceDaysAgo(now, WINDOW_DAYS);
 
     const episodes = await this.prisma.episode.findMany({
       where: {

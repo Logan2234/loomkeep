@@ -28,6 +28,7 @@ import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
+import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
@@ -93,13 +94,7 @@ export class CommentController {
     @Query("limit") limit?: string,
   ): Promise<PagedResult<CommentDto>> {
     const parsed = parsePageQuery(page, limit, COMMENT_PAGE_SIZE);
-    return this.comments.list(
-      user.sub,
-      parseTarget(type),
-      id,
-      parsed.page,
-      parsed.limit,
-    );
+    return this.comments.list(user.sub, parseTarget(type), id, parsed);
   }
 
   /**
@@ -121,13 +116,13 @@ export class CommentController {
     @Query("limit") limit?: string,
   ): Promise<PagedResult<CommentDto>> {
     const parsed = parsePageQuery(page, limit, COMMENT_PAGE_SIZE);
-    return this.comments.listReplies(user.sub, id, parsed.page, parsed.limit);
+    return this.comments.listReplies(user.sub, id, parsed);
   }
 
   // Anti-flood: comments (unlike reviews) have no per-target cap, so without a
   // per-user throttle a single person could post unbounded top-level comments
   // and replies back-to-back.
-  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  @Throttle(REPORT_THROTTLE)
   @Post()
   @ApiCreatedResponse({ type: CommentResponseDto })
   create(
@@ -173,7 +168,7 @@ export class CommentController {
   }
 
   @Post(":id/report")
-  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  @Throttle(REPORT_THROTTLE)
   report(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,

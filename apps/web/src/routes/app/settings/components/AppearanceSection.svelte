@@ -37,14 +37,15 @@
   import { flashAnchor } from "../flash-anchor";
   import SettingRow from "./SettingRow.svelte";
   import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
-  import { type Locale } from "@loomkeep/shared";
+  import {
+    type Locale,
+    MOBILE_NAV_SHORTCUT_LIMITS,
+    REQUIRED_SHORTCUT,
+  } from "@loomkeep/shared";
   import { dndzone } from "svelte-dnd-action";
 
   const eeLock = useEeLock();
   const navStyleLocked = $derived(eeLock.locked);
-
-  const MIN = 3;
-  const MAX = 7;
 
   const LOCALE_OPTIONS = languageOptions();
 
@@ -94,8 +95,8 @@
     resolveShortcutChoices(gate).filter((d) => !selectedIds.includes(d.id)),
   );
 
-  const canRemove = $derived(selected.length > MIN);
-  const canAdd = $derived(selected.length < MAX);
+  const canRemove = $derived(selected.length > MOBILE_NAV_SHORTCUT_LIMITS.min);
+  const canAdd = $derived(selected.length < MOBILE_NAV_SHORTCUT_LIMITS.max);
 
   const saveShortcutsMut = createApiMutation(() => ({
     mutate: (next: string[]) => updateMe({ mobileNavShortcuts: next }),
@@ -128,7 +129,7 @@
   }
 
   function remove(id: string) {
-    if (!canRemove || id === "menu") return;
+    if (!canRemove || id === REQUIRED_SHORTCUT) return;
     void save(selectedIds.filter((x) => x !== id));
   }
 
@@ -309,7 +310,10 @@
     class="card p-5 md:p-6">
     <p class="mb-2 font-semibold">{m.settings_mobile_nav_bar_label()}</p>
     <p class="text-dim text-sm">
-      {m.settings_mobile_nav_bar_description({ min: MIN, max: MAX })}
+      {m.settings_mobile_nav_bar_description({
+        min: MOBILE_NAV_SHORTCUT_LIMITS.min,
+        max: MOBILE_NAV_SHORTCUT_LIMITS.max,
+      })}
     </p>
 
     <ul
@@ -322,7 +326,7 @@
       onconsider={handleDndConsider}
       onfinalize={handleDndFinalize}>
       {#each dragItems as item (item.id)}
-        {@const locked = item.id === "menu"}
+        {@const locked = item.id === REQUIRED_SHORTCUT}
         <li class="flex items-center gap-3 py-2.5">
           <Icon name="grip" class="text-dim h-4 w-4 shrink-0 cursor-grab" />
           <Icon name={item.icon} class="text-accent h-5 w-5 shrink-0" />
@@ -342,7 +346,9 @@
             title={locked
               ? m.settings_nav_menu_cannot_remove()
               : !canRemove
-                ? m.settings_nav_min_shortcuts({ min: MIN })
+                ? m.settings_nav_min_shortcuts({
+                    min: MOBILE_NAV_SHORTCUT_LIMITS.min,
+                  })
                 : undefined}
             onclick={() => remove(item.id)}>
             <Icon name="x" class="h-4 w-4" />
@@ -363,7 +369,9 @@
               class="chip inline-flex items-center gap-1.5 disabled:pointer-events-none disabled:opacity-40"
               disabled={saveShortcutsMut.loading || !canAdd}
               title={!canAdd
-                ? m.settings_nav_max_shortcuts({ max: MAX })
+                ? m.settings_nav_max_shortcuts({
+                    max: MOBILE_NAV_SHORTCUT_LIMITS.max,
+                  })
                 : undefined}
               onclick={() => add(c.id)}>
               <Icon name={c.icon} class="h-3.5 w-3.5" />

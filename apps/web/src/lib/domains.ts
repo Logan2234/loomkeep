@@ -1,4 +1,8 @@
-import { PREMIUM_DOMAINS, type Domain } from "@loomkeep/shared";
+import {
+  maintenanceFlag,
+  PREMIUM_DOMAINS,
+  type Domain,
+} from "@loomkeep/shared";
 import { auth } from "./auth.svelte";
 import { DOMAINS } from "./constants/domains";
 import { liveFlags } from "./feature-flags-live.svelte";
@@ -25,7 +29,7 @@ import { liveFlags } from "./feature-flags-live.svelte";
  * instead: that screen shows the raw choice, with its own lock badge.
  */
 export function isDomainEnabled(domain: Domain): boolean {
-  if (liveFlags.isEnabled(`MAINTENANCE_${domain}`)) return false;
+  if (liveFlags.isEnabled(maintenanceFlag(domain))) return false;
   if (auth.isPremiumLocked && PREMIUM_DOMAINS.includes(domain)) return false;
   const enabled = auth.user?.enabledDomains;
   return enabled ? enabled.includes(domain) : true;

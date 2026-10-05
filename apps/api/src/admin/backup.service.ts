@@ -7,7 +7,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { Cron } from "@nestjs/schedule";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
@@ -90,7 +90,7 @@ export class BackupService {
   }
 
   /** Daily 3h dump to disk, pruned to the {@link KEEP} most recent. Also the manual "Sauvegarder maintenant" trigger. */
-  @Cron("0 3 * * *", { name: JOB_KEYS.BACKUP })
+  @Cron(CronExpression.EVERY_DAY_AT_3AM, { name: JOB_KEYS.BACKUP })
   async runScheduled(): Promise<AdminBackupFileDto> {
     return this.jobRuns.record(
       JOB_KEYS.BACKUP,

@@ -25,6 +25,7 @@ import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { MfaService } from "../auth/mfa.service";
 import { WebauthnService } from "../auth/webauthn.service";
+import { SENSITIVE_ACTION_THROTTLE } from "../common/throttle.constants";
 import { ConfirmTotpResultDto } from "./dto/confirm-totp-response.dto";
 import { ConfirmTotpDto } from "./dto/confirm-totp.dto";
 import { DisableTotpDto } from "./dto/disable-totp.dto";
@@ -113,7 +114,7 @@ export class MfaController {
   }
 
   // Authenticated-only, but still a sensitive/spammy-if-abused action.
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(SENSITIVE_ACTION_THROTTLE)
   @Post("recovery-codes/regenerate")
   @ApiCreatedResponse({ type: RegenerateRecoveryCodesResultDto })
   async regenerateRecoveryCodes(

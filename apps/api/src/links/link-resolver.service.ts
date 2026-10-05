@@ -9,6 +9,7 @@ import { OpenLibraryProvider } from "../books/providers/open-library.provider";
 import { AnilistProvider } from "../catalog/providers/anilist.provider";
 import { TmdbProvider } from "../catalog/providers/tmdb.provider";
 import { AppException } from "../common/app.exception";
+import { webOrigins } from "../common/web-origin.util";
 import { IgdbProvider } from "../games/providers/igdb.provider";
 import { MusicBrainzProvider } from "../music/providers/musicbrainz.provider";
 import { type CatalogLink, parseCatalogLink } from "./link-parser";
@@ -79,15 +80,15 @@ export class LinkResolverService {
 
   /** This instance's own web hostnames (WEB_ORIGIN), plus the hosted one. */
   private loomkeepHosts(): string[] {
-    const own = (this.config.get<string>("WEB_ORIGIN") ?? "")
-      .split(",")
-      .flatMap((origin) => {
+    const own = webOrigins(this.config.get<string>("WEB_ORIGIN")).flatMap(
+      (origin) => {
         try {
           return [new URL(origin.trim()).hostname.replace(/^www\./, "")];
         } catch {
           return [];
         }
-      });
+      },
+    );
     return [...own, HOSTED_INSTANCE_HOST];
   }
 

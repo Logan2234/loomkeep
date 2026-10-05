@@ -1,4 +1,4 @@
-import { API_KEY_PREFIX, ErrorCode } from "@loomkeep/shared";
+import { API_KEY_PREFIX, ErrorCode, readScope } from "@loomkeep/shared";
 import {
   CanActivate,
   ExecutionContext,
@@ -136,7 +136,7 @@ export class JwtAuthGuard implements CanActivate {
     const granted =
       access !== undefined &&
       (access.resource === null ||
-        principal.scopes.includes(`${access.resource}:read`));
+        principal.scopes.includes(readScope(access.resource)));
 
     if (!granted) {
       throw new AppException(

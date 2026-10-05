@@ -1,6 +1,8 @@
 import {
+  ENTRY_NOTES_MAX_LENGTH,
   GameOwnershipStatus,
   GameStatus,
+  OWNERSHIP_SOURCE_MAX_LENGTH,
   UpdateGameEntryDto as UpdateGameEntryContract,
 } from "@loomkeep/shared";
 import {
@@ -29,7 +31,7 @@ export class UpdateGameEntryDto implements UpdateGameEntryContract {
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
+  @MaxLength(ENTRY_NOTES_MAX_LENGTH)
   notes?: string | null;
 
   @IsOptional()
@@ -55,7 +57,7 @@ export class UpdateGameEntryDto implements UpdateGameEntryContract {
 
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(OWNERSHIP_SOURCE_MAX_LENGTH)
   ownershipSource?: string | null;
 
   @IsOptional()

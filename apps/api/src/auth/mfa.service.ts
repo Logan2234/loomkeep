@@ -1,4 +1,8 @@
-import { ErrorCode } from "@loomkeep/shared";
+import {
+  ErrorCode,
+  OTP_CODE_LENGTH,
+  RECOVERY_CODE_LENGTH,
+} from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
@@ -14,7 +18,6 @@ import { BCRYPT_ROUNDS } from "./auth.service";
 import { decryptTotpSecret, encryptTotpSecret } from "./mfa-crypto.util";
 
 export const RECOVERY_CODE_COUNT = 10;
-const RECOVERY_CODE_LENGTH = 10;
 // Excludes ambiguous characters (0/O, 1/I/L) so codes are easy to read/type back.
 const RECOVERY_CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 /** Shape of a normalized recovery code — lets verifyRecoveryCode() bail before any bcrypt.compare() on input that plainly isn't one. */
@@ -61,7 +64,7 @@ export class MfaService {
       issuer: TOTP_ISSUER,
       label: email,
       algorithm: "SHA1",
-      digits: 6,
+      digits: OTP_CODE_LENGTH,
       period: 30,
       secret,
     });
@@ -329,7 +332,7 @@ export class MfaService {
     const totp = new TOTP({
       issuer: TOTP_ISSUER,
       algorithm: "SHA1",
-      digits: 6,
+      digits: OTP_CODE_LENGTH,
       period: 30,
       secret: Secret.fromBase32(secret),
     });

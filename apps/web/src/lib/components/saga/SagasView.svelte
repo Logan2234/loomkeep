@@ -1,11 +1,13 @@
 <script lang="ts" module>
+  import { type SortOrder } from "@loomkeep/shared";
+
   import type { LibrarySagaSort } from "@loomkeep/shared";
 
   export interface SagaListFilters {
     query: string;
     types: string[];
     sort: LibrarySagaSort;
-    order: "asc" | "desc";
+    order: SortOrder;
   }
 </script>
 
