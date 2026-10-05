@@ -6,7 +6,7 @@ const URL_IN_TEXT = /https?:\/\/[^\s<>"]+/i;
  * link in `url`, in `text` ("Regarde ça https://…"), or both, depending on
  * the app.
  */
-export function readSharedLink(params: URLSearchParams): {
+export function readSharedLink(params: Pick<URLSearchParams, "get">): {
   link: string | null;
   searchTerm: string;
 } {

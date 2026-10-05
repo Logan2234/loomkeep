@@ -1,7 +1,7 @@
-import { DOMAINS } from "$lib/constants/domains";
+import { DOMAINS } from "#lib/constants/domains.js";
 import { Domain, type AdminCacheSort } from "@loomkeep/shared";
 
-export function parseCacheFilters(params: URLSearchParams): {
+export function parseCacheFilters(params: Pick<URLSearchParams, "get">): {
   domain: Domain;
   sort: AdminCacheSort;
   orphansOnly: boolean;
