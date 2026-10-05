@@ -25,6 +25,10 @@ import type { Prisma } from "@prisma/client";
 import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
+import {
+  CATALOG_SYNC_TTL_MS,
+  isCatalogFresh,
+} from "../common/catalog-sync.util";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { GameItemService } from "../games/game-item.service";
 import { MusicItemService } from "../music/music-item.service";
@@ -35,7 +39,6 @@ import { AdminCacheItemDetailResponseDto } from "./dto/admin-cache-item-detail-r
 import { AdminCacheListResultResponseDto } from "./dto/admin-cache-list-response.dto";
 import { AdminCacheResyncStaleResultResponseDto } from "./dto/admin-cache-resync-stale-result-response.dto";
 
-const STALE_TTL_MS = 24 * 60 * 60 * 1000;
 const DOMAINS = ["MEDIA", "GAMES", "BOOKS", "MUSIC"] as const;
 type CacheDomain = (typeof DOMAINS)[number];
 type CachePrisma = PrismaService | Prisma.TransactionClient;
@@ -613,7 +616,7 @@ export class AdminCacheController {
   }
 
   private staleBefore(): Date {
-    return new Date(Date.now() - STALE_TTL_MS);
+    return new Date(Date.now() - CATALOG_SYNC_TTL_MS);
   }
 
   /** The item's id in its own canonical source (the one the Loomkeep page addresses). */
@@ -728,7 +731,7 @@ export class AdminCacheController {
       lastSyncedAt: item.lastSyncedAt.toISOString(),
       createdAt: item.createdAt.toISOString(),
       referenceCount,
-      stale: Date.now() - item.lastSyncedAt.getTime() >= STALE_TTL_MS,
+      stale: !isCatalogFresh(item.lastSyncedAt),
       cachedLocales,
     };
   }

@@ -114,8 +114,8 @@ describe("applyBulkUpdate", () => {
       o,
     );
 
-    expect(o.addToList).toHaveBeenNthCalledWith(1, "x");
-    expect(o.addToList).toHaveBeenNthCalledWith(2, "y");
+    expect(o.addToList).toHaveBeenNthCalledWith(1, "x", "list-1");
+    expect(o.addToList).toHaveBeenNthCalledWith(2, "y", "list-1");
     expect(result).toEqual({ updated: 1, skipped: 1 });
   });
 

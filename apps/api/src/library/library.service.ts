@@ -50,7 +50,7 @@ import {
   assertBulkTarget,
   assertBulkUpdate,
 } from "../common/bulk-entries.util";
-import { toDateOrNull } from "../common/date.util";
+import { toDateOrNull, utcDateKey } from "../common/date.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters as SharedListEntriesFilters,
@@ -506,8 +506,8 @@ export class LibraryService {
       {
         update: (id, patch) =>
           this.updateEntry(userId, id, patch as UpdateEntryDto),
-        addToList: (itemId) =>
-          addToList(this.lists, userId, dto.listId!, "MEDIA", itemId),
+        addToList: (itemId, listId) =>
+          addToList(this.lists, userId, listId, "MEDIA", itemId),
         setStatus: async (entry, status) => {
           // A series is complete once its episodes are watched: every aired
           // one gets marked, as the season buttons do, and the status follows.
@@ -1476,7 +1476,7 @@ export class LibraryService {
       where: { id: userId },
       select: { watchRegion: true },
     });
-    const today = new Date().toISOString().slice(0, 10);
+    const today = utcDateKey(new Date());
     const movieEntries: CalendarEntryDto[] = movies.flatMap((entry) => {
       const region = resolveWatchRegion(
         user.watchRegion ?? entry.movieReleaseRegion ?? undefined,
@@ -1515,7 +1515,7 @@ export class LibraryService {
    * or their month, on its 1st. A vaguer date has no day to sit on.
    */
   private async calendarGames(userId: string): Promise<CalendarEntryDto[]> {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = utcDateKey(new Date());
     const entries = await this.prisma.gameEntry.findMany({
       where: {
         userId,
@@ -2198,7 +2198,7 @@ export class LibraryService {
       overview: translation?.overview ?? media.overview,
       genres: translation?.genres ?? media.genres,
       airingStatus: media.status,
-      releaseDate: media.releaseDate?.toISOString().slice(0, 10) ?? null,
+      releaseDate: media.releaseDate ? utcDateKey(media.releaseDate) : null,
       movieRelease:
         type === "MOVIE"
           ? movieReleaseInfo(

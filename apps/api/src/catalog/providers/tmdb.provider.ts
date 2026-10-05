@@ -12,6 +12,7 @@ import {
 } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { utcDateKey } from "../../common/date.util";
 import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { OmdbService } from "../omdb.service";
@@ -42,7 +43,7 @@ import {
   type TmdbWatchProvider,
 } from "./tmdb.mapper";
 
-const BASE_URL = "https://api.themoviedb.org/3";
+export const TMDB_API_URL = "https://api.themoviedb.org/3";
 
 // The provider lists barely move: a day-old copy spares two TMDB calls each
 // time someone opens their services settings.
@@ -241,7 +242,7 @@ export class TmdbProvider implements CatalogProvider {
       `/collection/${collectionId}`,
       { language: regionalLocale(lang) },
     );
-    const today = new Date().toISOString().slice(0, 10);
+    const today = utcDateKey(new Date());
     const members = (collection.parts ?? [])
       .map((part) => toMovieSagaMember(part, today))
       .sort(byRelease);
@@ -325,7 +326,7 @@ export class TmdbProvider implements CatalogProvider {
     path: string,
     params: Record<string, string>,
   ): Promise<T> {
-    const url = new URL(`${BASE_URL}${path}`);
+    const url = new URL(`${TMDB_API_URL}${path}`);
 
     for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, value);

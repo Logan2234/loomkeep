@@ -15,7 +15,7 @@ import { buildImportMovies, buildImportShows } from "./parse-simkl";
 import type { SimklAllItemsResponse } from "./simkl-api.types";
 import { simklRedirectUri } from "./simkl-oauth.util";
 
-const SIMKL_API = "https://api.simkl.com";
+export const SIMKL_API = "https://api.simkl.com";
 
 /** Parse model: the raw OAuth code, filled in with the fetched export by {@link load}. */
 interface SimklParsed extends ParsedImport {

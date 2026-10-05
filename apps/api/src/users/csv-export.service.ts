@@ -2,10 +2,11 @@ import { Domain, ErrorCode, ReviewTargetType } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
 import { toCsv } from "../common/csv.util";
+import { utcDateKey } from "../common/date.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 
-const isoDate = (d: Date | null): string => d?.toISOString().slice(0, 10) ?? "";
+const isoDate = (d: Date | null): string => (d ? utcDateKey(d) : "");
 
 /**
  * Flat, per-domain CSV export for migrating to another tool (Storygraph,

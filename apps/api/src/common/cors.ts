@@ -1,4 +1,5 @@
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
+import { RATE_LIMIT_HEADERS } from "./rate-limit-headers";
 
 type CorsOptions = NonNullable<
   Parameters<NestFastifyApplication["enableCors"]>[0]
@@ -22,10 +23,10 @@ export function corsOptionsFor(
       methods: ["GET", "OPTIONS"],
       allowedHeaders: ["Authorization", "Content-Type"],
       exposedHeaders: [
-        "Retry-After",
-        "X-RateLimit-Limit",
-        "X-RateLimit-Remaining",
-        "X-RateLimit-Reset",
+        RATE_LIMIT_HEADERS.retryAfter,
+        RATE_LIMIT_HEADERS.limit,
+        RATE_LIMIT_HEADERS.remaining,
+        RATE_LIMIT_HEADERS.reset,
       ],
       credentials: false,
       optionsSuccessStatus: 204,
@@ -43,7 +44,7 @@ export function corsOptionsFor(
     credentials: true,
     // Retry-After is unreadable from JS on a cross-origin response
     // unless exposed: without it a 429 can only say "try again soon".
-    exposedHeaders: ["Content-Disposition", "Retry-After"],
+    exposedHeaders: ["Content-Disposition", RATE_LIMIT_HEADERS.retryAfter],
     preflightContinue: false,
   };
 }

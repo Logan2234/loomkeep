@@ -10,6 +10,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
+import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED } from "../gamification/achievements/registry";
@@ -380,21 +381,21 @@ export class FollowService {
   /** Accounts this user chose to block, with the action needed to reverse it. */
   async listBlocked(
     userId: string,
-    page: number,
-    limit: number,
+    page: ParsedPage,
   ): Promise<PagedResult<UserSummaryDto>> {
+    const { skip, take, limit } = page;
     const rows = await this.prisma.block.findMany({
       where: { blockerId: userId },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
       select: { blocked: { select: USER_SUMMARY_SELECT } },
     });
-    const hasMore = rows.length > limit;
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
 
     return {
       hasMore,
-      items: rows.slice(0, limit).map((row) => toUserSummaryDto(row.blocked)),
+      items: pageRows.map((row) => toUserSummaryDto(row.blocked)),
     };
   }
 

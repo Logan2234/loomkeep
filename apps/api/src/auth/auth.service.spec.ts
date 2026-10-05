@@ -617,7 +617,7 @@ describe("AuthService.login", () => {
   });
 
   it("returns tokens and records a session on success", async () => {
-    const { service, prisma } = makeService();
+    const { service, prisma, jwtService } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
     (prisma.user.findFirst as Mock).mockResolvedValue(user);
@@ -632,6 +632,16 @@ describe("AuthService.login", () => {
     expect(result.user.id).toBe(user.id);
     expect(result.tokens.accessToken).toBeTruthy();
     expect(result.tokens.refreshToken).toBeTruthy();
+    expect(jwtService.signAsync).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      expect.objectContaining({ expiresIn: 900 }),
+    );
+    expect(jwtService.signAsync).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      expect.objectContaining({ expiresIn: 2592000 }),
+    );
     expect(prisma.refreshToken.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ userId: user.id }),

@@ -1,3 +1,4 @@
+import { earlierOf, parseDateOrNull } from "../../import-date.util";
 import type { ImportMovie, ImportShow } from "../../media-import-model";
 import type {
   TraktFavoriteEntry,
@@ -56,12 +57,12 @@ export function buildImportShows(
 
     const { season, number: episode } = entry.episode;
     const key = `${season}|${episode}`;
-    const watchedAt = toDateOrNull(entry.watched_at);
+    const watchedAt = parseDateOrNull(entry.watched_at);
     const existing = show.episodes.get(key);
 
     if (existing) {
       existing.totalWatches++;
-      existing.watchedAt = earliest(existing.watchedAt, watchedAt);
+      existing.watchedAt = earlierOf(existing.watchedAt, watchedAt);
     } else {
       show.episodes.set(key, {
         season,
@@ -87,8 +88,11 @@ export function buildImportShows(
 
   const favoriteIds = new Set(
     favorites
-      .filter((e) => e.type === "show" && e.show)
-      .map((e) => e.show!.ids.trakt),
+      .filter(
+        (e): e is typeof e & { show: NonNullable<typeof e.show> } =>
+          e.type === "show" && !!e.show,
+      )
+      .map((e) => e.show.ids.trakt),
   );
   const ratingById = new Map(ratings.map((r) => [r.show.ids.trakt, r.rating]));
 
@@ -124,7 +128,7 @@ export function buildImportMovies(
   for (const entry of history) {
     if (entry.type !== "movie" || !entry.movie) continue;
 
-    const watchedAt = toDateOrNull(entry.watched_at);
+    const watchedAt = parseDateOrNull(entry.watched_at);
     const existing = byTraktId.get(entry.movie.ids.trakt);
 
     if (existing) {
@@ -156,8 +160,11 @@ export function buildImportMovies(
 
   const favoriteIds = new Set(
     favorites
-      .filter((e) => e.type === "movie" && e.movie)
-      .map((e) => e.movie!.ids.trakt),
+      .filter(
+        (e): e is typeof e & { movie: NonNullable<typeof e.movie> } =>
+          e.type === "movie" && !!e.movie,
+      )
+      .map((e) => e.movie.ids.trakt),
   );
   const ratingById = new Map(ratings.map((r) => [r.movie.ids.trakt, r.rating]));
 
@@ -186,16 +193,4 @@ function toExternalIds(ids: {
     tvdb: ids.tvdb !== undefined ? String(ids.tvdb) : undefined,
     imdb: ids.imdb,
   };
-}
-
-function toDateOrNull(value: string | undefined): Date | null {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function earliest(a: Date | null, b: Date | null): Date | null {
-  if (!a) return b;
-  if (!b) return a;
-  return a < b ? a : b;
 }

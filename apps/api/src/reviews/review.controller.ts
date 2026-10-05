@@ -26,6 +26,7 @@ import {
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
@@ -173,7 +174,7 @@ export class ReviewController {
 
   @Post(":reviewId/report")
   @UseGuards(SocialFeatureGuard)
-  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  @Throttle(REPORT_THROTTLE)
   report(
     @CurrentUser() user: JwtPayload,
     @Param("reviewId") reviewId: string,

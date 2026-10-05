@@ -16,3 +16,17 @@ export function parseStarRatingToTen(value: string | undefined): number | null {
   const stars = Number((value ?? "").trim());
   return Number.isFinite(stars) && stars > 0 ? stars * 2 : null;
 }
+
+export function utcDateIso(
+  year: string,
+  month: string,
+  day: string,
+): string | null {
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+export function wellFormedIsbn(cleaned: string): string | null {
+  const normalized = cleaned.toUpperCase();
+  return /^(\d{9}[\dX]|\d{13})$/.test(normalized) ? normalized : null;
+}

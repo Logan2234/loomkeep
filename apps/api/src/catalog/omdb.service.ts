@@ -4,7 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { HTTP_TIMEOUT_MS } from "../common/http.util";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
 
-const OMDB_URL = "https://www.omdbapi.com/";
+export const OMDB_URL = "https://www.omdbapi.com/";
 
 /** Maps OMDb's verbose rating source names to our short labels. */
 const SOURCE_LABELS: Record<string, string> = {

@@ -7,6 +7,7 @@ import type {
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { BookItem } from "@prisma/client";
+import { isCatalogFresh } from "../common/catalog-sync.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
@@ -18,7 +19,6 @@ import type {
 import { OpenLibraryProvider } from "./providers/open-library.provider";
 
 // A cached book referenced by users is refreshed at most once a day.
-const SYNC_TTL_MS = 24 * 60 * 60 * 1000;
 
 // The background refresh is far lazier than the on-demand TTL: a book's
 // metadata barely moves, and each refresh costs Open Library (a volunteer-run
@@ -188,10 +188,7 @@ export class BookItemService {
       include: { bookItem: true },
     });
 
-    if (
-      existingRef &&
-      Date.now() - existingRef.bookItem.lastSyncedAt.getTime() < SYNC_TTL_MS
-    ) {
+    if (existingRef && isCatalogFresh(existingRef.bookItem.lastSyncedAt)) {
       return existingRef.bookItem;
     }
 

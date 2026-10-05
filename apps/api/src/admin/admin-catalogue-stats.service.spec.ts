@@ -66,7 +66,7 @@ describe("AdminCatalogueStatsService", () => {
     );
     expect(staleCall).toBeDefined();
     const cutoff = staleCall![0].where.lastSyncedAt.lt as Date;
-    // 24h, matching MediaItemService's own SYNC_TTL_MS.
+    // 24h, matching CATALOG_SYNC_TTL_MS.
     expect(Date.now() - cutoff.getTime()).toBeCloseTo(24 * 60 * 60 * 1000, -4);
   });
 

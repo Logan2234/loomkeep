@@ -1,5 +1,6 @@
 import { NotificationType } from "@loomkeep/shared";
 import { vi, type Mock } from "vitest";
+import { parsePageQuery } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import { notificationCopy } from "../notifications/notification-copy";
@@ -364,7 +365,9 @@ describe("FollowService.listBlocked", () => {
       },
     ]);
 
-    await expect(service.listBlocked("viewer", 1, 20)).resolves.toEqual({
+    await expect(
+      service.listBlocked("viewer", parsePageQuery("1", "20", 20)),
+    ).resolves.toEqual({
       items: [
         {
           id: "blocked-1",

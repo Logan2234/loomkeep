@@ -21,10 +21,6 @@ export class AccountSecurityEventsController {
     @Query("limit") limit?: string,
   ): Promise<PagedResult<AccountSecurityEventDto>> {
     const parsed = parsePageQuery(page, limit, DEFAULT_PAGE_SIZE);
-    return this.securityEvents.listForAccount(
-      user.sub,
-      parsed.page,
-      parsed.limit,
-    );
+    return this.securityEvents.listForAccount(user.sub, parsed);
   }
 }

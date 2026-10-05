@@ -1,10 +1,8 @@
 import type { PrismaService } from "../prisma/prisma.service";
-import { canonicalExternalId } from "./external-id.util";
-
-const CANONICAL_INCLUDE = {
-  canonicalSource: true,
-  externalIds: { select: { source: true, externalId: true } },
-} as const;
+import {
+  CANONICAL_EXTERNAL_ID_SELECT,
+  canonicalExternalId,
+} from "./external-id.util";
 
 /**
  * Client route to a work's detail page from a ReviewTargetType/
@@ -22,7 +20,7 @@ export async function resolveWorkHref(
     case "MEDIA": {
       const item = await prisma.mediaItem.findUnique({
         where: { id: targetId },
-        select: { type: true, ...CANONICAL_INCLUDE },
+        select: { type: true, ...CANONICAL_EXTERNAL_ID_SELECT },
       });
       if (!item) return null;
       const sourceId = canonicalExternalId(item, item.externalIds);
@@ -34,7 +32,7 @@ export async function resolveWorkHref(
     case "GAME": {
       const item = await prisma.gameItem.findUnique({
         where: { id: targetId },
-        select: CANONICAL_INCLUDE,
+        select: CANONICAL_EXTERNAL_ID_SELECT,
       });
       if (!item) return null;
       const sourceId = canonicalExternalId(item, item.externalIds);
@@ -44,7 +42,7 @@ export async function resolveWorkHref(
     case "BOOK": {
       const item = await prisma.bookItem.findUnique({
         where: { id: targetId },
-        select: CANONICAL_INCLUDE,
+        select: CANONICAL_EXTERNAL_ID_SELECT,
       });
       if (!item) return null;
       const sourceId = canonicalExternalId(item, item.externalIds);
@@ -54,7 +52,7 @@ export async function resolveWorkHref(
     case "MUSIC": {
       const item = await prisma.musicItem.findUnique({
         where: { id: targetId },
-        select: CANONICAL_INCLUDE,
+        select: CANONICAL_EXTERNAL_ID_SELECT,
       });
       if (!item) return null;
       const sourceId = canonicalExternalId(item, item.externalIds);

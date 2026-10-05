@@ -1,13 +1,13 @@
-import type {
-  ActivityEventDto,
-  ConnectionDto,
-  FollowRequestDto,
-  PagedResult,
-  RelationshipDto,
-  SocialProfileDto,
-  UserSummaryDto,
+import {
+  type ActivityEventDto,
+  type ConnectionDto,
+  type FollowRequestDto,
+  type PagedResult,
+  type RelationshipDto,
+  type SocialProfileDto,
+  type UserSummaryDto,
+  Domain,
 } from "@loomkeep/shared";
-import { Domain } from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -28,6 +28,7 @@ import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
+import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { ActivityService, FEED_PAGE_SIZE } from "./activity.service";
@@ -66,8 +67,7 @@ export class SocialController {
     const parsed = parsePageQuery(page, limit, FEED_PAGE_SIZE);
     return this.activity.homeFeed(
       user.sub,
-      parsed.page,
-      parsed.limit,
+      parsed,
       domain
         ? parseEnumParam(domain, Object.values(Domain), "domain")
         : undefined,
@@ -90,12 +90,7 @@ export class SocialController {
     // A locked (private, unfollowed) profile exposes no activity.
     if (!target) return { items: [], hasMore: false };
     const parsed = parsePageQuery(page, limit, FEED_PAGE_SIZE);
-    return this.activity.profileTimeline(
-      user.sub,
-      target,
-      parsed.page,
-      parsed.limit,
-    );
+    return this.activity.profileTimeline(user.sub, target, parsed);
   }
 
   @Get("requests")
@@ -113,7 +108,7 @@ export class SocialController {
     @Query("limit") limit?: string,
   ): Promise<PagedResult<UserSummaryDto>> {
     const parsed = parsePageQuery(page, limit, DEFAULT_PAGE_SIZE);
-    return this.follow.listBlocked(user.sub, parsed.page, parsed.limit);
+    return this.follow.listBlocked(user.sub, parsed);
   }
 
   @Post("requests/:id/accept")
@@ -208,7 +203,7 @@ export class SocialController {
   }
 
   @Post("users/:username/report")
-  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  @Throttle(REPORT_THROTTLE)
   async reportUser(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,

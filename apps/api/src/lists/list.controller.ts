@@ -29,6 +29,7 @@ import {
 } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
+import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
@@ -253,7 +254,7 @@ export class ListController {
 
   @Post(":id/report")
   @UseGuards(SocialFeatureGuard)
-  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  @Throttle(REPORT_THROTTLE)
   async report(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,

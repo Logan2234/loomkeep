@@ -69,8 +69,21 @@ describe("QuotaTrackerService thresholds", () => {
     ]);
   });
 
-  it("stays quiet for a provider with no documented daily quota", async () => {
-    // TMDB limits requests per second, not per day.
-    expect(await reach("tmdb", 1_000_000)).toEqual([]);
-  });
+  it.each(["tmdb", "anilist", "igdb", "musicbrainz", "toString", "__proto__"])(
+    "counts %s without raising a daily quota alert",
+    async (provider) => {
+      const upsert = vi.fn().mockResolvedValue({ count: 1_000_000 });
+      const service = new QuotaTrackerService(makePrisma(upsert));
+      const listener = vi.fn();
+      service.onThresholdReached(listener);
+      service.record(provider);
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({ provider, count: 1 }),
+        }),
+      );
+      expect(listener).not.toHaveBeenCalled();
+    },
+  );
 });

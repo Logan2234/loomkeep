@@ -4,13 +4,13 @@ import type { NewsletterSend } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { randomToken } from "../common/crypto.util";
 import { HTTP_TIMEOUT_MS } from "../common/http.util";
+import { QUACKBACK_ORIGIN } from "../common/instance-defaults";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { notSuspended } from "../users/suspension.util";
 
-const QUACKBACK_CHANGELOG_API_URL =
-  "https://feedback.loomkeep.app/api/v1/changelog";
+const QUACKBACK_CHANGELOG_API_URL = `${QUACKBACK_ORIGIN}/api/v1/changelog`;
 
 @Injectable()
 export class NewsletterService {

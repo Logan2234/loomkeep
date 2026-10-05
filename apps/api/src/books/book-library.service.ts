@@ -1,16 +1,13 @@
-import type {
-  BookDetailDto,
-  BookEntryDto,
-  BookItemDto,
-  BookReadingDto,
-  BookSource,
-  BulkEntriesResultDto,
-  BulkEntriesTargetDto,
-  PagedResult,
-  PileSummaryDto,
-  ReadingGoalDto,
-} from "@loomkeep/shared";
 import {
+  type BookDetailDto,
+  type BookEntryDto,
+  type BookItemDto,
+  type BookSource,
+  type BulkEntriesResultDto,
+  type BulkEntriesTargetDto,
+  type PagedResult,
+  type PileSummaryDto,
+  type ReadingGoalDto,
   BookStatus,
   Domain,
   DORMANT_AFTER_DAYS,
@@ -22,7 +19,6 @@ import { Injectable } from "@nestjs/common";
 import type {
   BookExternalId,
   BookItem,
-  BookReading,
   BookStatus as DbBookStatus,
   Prisma,
 } from "@prisma/client";
@@ -33,7 +29,7 @@ import {
   assertBulkTarget,
   assertBulkUpdate,
 } from "../common/bulk-entries.util";
-import { toDateOrNull } from "../common/date.util";
+import { sinceDaysAgo, toDateOrNull, utcYearRange } from "../common/date.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters,
@@ -67,6 +63,7 @@ import {
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { BookItemService } from "./book-item.service";
+import { toReadingDto } from "./book.mappers";
 import type { BulkUpdateBookEntriesBody } from "./dto/bulk-update-book-entries.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";
@@ -467,8 +464,8 @@ export class BookLibraryService {
       {
         update: (id, patch) =>
           this.updateEntry(userId, id, patch as UpdateBookEntryDto),
-        addToList: (itemId) =>
-          addToList(this.lists, userId, dto.listId!, "BOOK", itemId),
+        addToList: (itemId, listId) =>
+          addToList(this.lists, userId, listId, "BOOK", itemId),
       },
     );
   }
@@ -514,9 +511,7 @@ export class BookLibraryService {
     }
 
     if (statuses.includes("PAUSED")) {
-      const cutoff = new Date(
-        Date.now() - DORMANT_AFTER_DAYS * 24 * 60 * 60 * 1000,
-      );
+      const cutoff = sinceDaysAgo(new Date(), DORMANT_AFTER_DAYS);
       statusFilters.push({
         status: BookStatus.READING,
         sessions: {
@@ -905,10 +900,7 @@ export class BookLibraryService {
     userId: string,
     year: number,
   ): Promise<number> {
-    const range = {
-      gte: new Date(Date.UTC(year, 0, 1)),
-      lt: new Date(Date.UTC(year + 1, 0, 1)),
-    };
+    const range = utcYearRange(year);
 
     return this.prisma.bookReading.count({
       where: {
@@ -953,24 +945,5 @@ function toEntryDto(entry: EntryWithBook, rating: number | null): BookEntryDto {
     readings: entry.readings.map(toReadingDto),
     ownershipStatus: entry.ownershipStatus,
     ownershipSource: entry.ownershipSource,
-  };
-}
-
-function toReadingDto(
-  reading: BookReading & { _count: { sessions: number } },
-): BookReadingDto {
-  return {
-    id: reading.id,
-    number: reading.number,
-    status: reading.status,
-    editionKey: reading.editionKey,
-    referencePageCount: reading.referencePageCount,
-    currentPage: reading.currentPage,
-    startedAt: reading.startedAt?.toISOString() ?? null,
-    finishedAt: reading.finishedAt?.toISOString() ?? null,
-    sessionCount: reading._count.sessions,
-    trackedMinutes: reading.trackedMinutes,
-    pagesRead: reading.pagesRead,
-    legacyIncomplete: reading.legacyIncomplete,
   };
 }

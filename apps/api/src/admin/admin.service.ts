@@ -10,11 +10,20 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { OPEN_LIBRARY_API_URL } from "../books/providers/open-library.provider";
+import { OMDB_URL } from "../catalog/omdb.service";
+import { ANILIST_GRAPHQL_URL } from "../catalog/providers/anilist.provider";
+import { TMDB_API_URL } from "../catalog/providers/tmdb.provider";
+import { startOfUtcDay, startOfUtcMonth } from "../common/date.util";
 import { identifyingUserAgent } from "../common/http.util";
 import { PROVIDER_DAILY_QUOTAS } from "../common/quota-tracker.service";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { IGDB_OAUTH_URL } from "../games/providers/igdb.provider";
+import { SIMKL_API } from "../import/sources/simkl/simkl.source";
+import { STEAM_API } from "../import/sources/steam/steam.source";
 import { JOB_HEALTHCHECK_ENV } from "../jobs/job-keys";
 import { MailService } from "../mail/mail.service";
+import { MUSICBRAINZ_API_URL } from "../music/providers/musicbrainz.provider";
 import { PrismaService } from "../prisma/prisma.service";
 import type { ProviderQuotaSpec } from "./admin-system-stats.util";
 
@@ -68,16 +77,6 @@ interface ServiceSpec {
   quotaLimit?: { max: number; window: QuotaWindow };
 }
 
-function startOfUtcDay(date: Date): Date {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
-}
-
-function startOfUtcMonth(date: Date): Date {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
-}
-
 @Injectable()
 export class AdminService {
   constructor(
@@ -97,7 +96,7 @@ export class AdminService {
         envKeys: ["TMDB_API_TOKEN"],
         keyUrl: "https://www.themoviedb.org/settings/api",
         probe: (signal) =>
-          this.ping("https://api.themoviedb.org/3/configuration", {
+          this.ping(`${TMDB_API_URL}/configuration`, {
             signal,
             headers: {
               Authorization: `Bearer ${this.env("TMDB_API_TOKEN")}`,
@@ -112,7 +111,7 @@ export class AdminService {
         required: true,
         envKeys: [],
         probe: (signal) =>
-          this.ping("https://graphql.anilist.co", {
+          this.ping(ANILIST_GRAPHQL_URL, {
             signal,
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -128,7 +127,7 @@ export class AdminService {
         keyUrl: "https://www.omdbapi.com/apikey.aspx",
         probe: (signal) =>
           this.ping(
-            `https://www.omdbapi.com/?apikey=${this.env("OMDB_API_KEY")}&i=tt0111161`,
+            `${OMDB_URL}?apikey=${this.env("OMDB_API_KEY")}&i=tt0111161`,
             { signal },
           ),
         quotaLimit: { max: PROVIDER_DAILY_QUOTAS.omdb, window: "day" },
@@ -144,7 +143,7 @@ export class AdminService {
         // Twitch's OAuth endpoint and that the secret pair is accepted.
         probe: (signal) =>
           this.ping(
-            "https://id.twitch.tv/oauth2/token" +
+            IGDB_OAUTH_URL +
               `?client_id=${this.env("TWITCH_CLIENT_ID")}` +
               `&client_secret=${this.env("TWITCH_CLIENT_SECRET")}` +
               "&grant_type=client_credentials",
@@ -161,10 +160,9 @@ export class AdminService {
         // Keyless health endpoint: reports Steam reachability independent of the
         // key (the key only gates the actual import).
         probe: (signal) =>
-          this.ping(
-            "https://api.steampowered.com/ISteamWebAPIUtil/GetServerInfo/v1/",
-            { signal },
-          ),
+          this.ping(`${STEAM_API}/ISteamWebAPIUtil/GetServerInfo/v1/`, {
+            signal,
+          }),
         quotaLimit: { max: PROVIDER_DAILY_QUOTAS.steam, window: "day" },
       },
       {
@@ -180,7 +178,7 @@ export class AdminService {
         // background.
         probe: (signal) =>
           this.ping(
-            `https://api.simkl.com/anime/airing?client_id=${this.env("SIMKL_CLIENT_ID")}`,
+            `${SIMKL_API}/anime/airing?client_id=${this.env("SIMKL_CLIENT_ID")}`,
             { signal },
           ),
         quotaLimit: { max: PROVIDER_DAILY_QUOTAS.simkl, window: "day" },
@@ -194,7 +192,7 @@ export class AdminService {
         required: true,
         envKeys: [],
         probe: (signal) =>
-          this.ping("https://openlibrary.org/search.json?q=1984&limit=1", {
+          this.ping(`${OPEN_LIBRARY_API_URL}/search.json?q=1984&limit=1`, {
             signal,
             headers: {
               "User-Agent": identifyingUserAgent(
@@ -215,7 +213,7 @@ export class AdminService {
         envKeys: [],
         probe: (signal) =>
           this.ping(
-            "https://musicbrainz.org/ws/2/release-group/?query=test&fmt=json&limit=1",
+            `${MUSICBRAINZ_API_URL}/release-group/?query=test&fmt=json&limit=1`,
             {
               signal,
               headers: {

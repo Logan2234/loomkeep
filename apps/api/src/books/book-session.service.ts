@@ -21,15 +21,19 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { AppException } from "../common/app.exception";
-import { localDay } from "../common/local-day.util";
+import { addDays, utcDateKey } from "../common/date.util";
+import { localDayOrUtc } from "../common/local-day.util";
+import { toPagedResult } from "../common/pagination.util";
 import { bookSessionAggregate } from "../common/session-aggregate.util";
 import { sessionPeriodMinutes } from "../common/session-period.util";
+import { normalizeSessionNotes, sessionDate } from "../common/session.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import { SessionXpService } from "../gamification/session-xp.service";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
+import { toReadingDto } from "./book.mappers";
 import { CreateBookSessionDto } from "./dto/create-book-session.dto";
 import { UpdateBookSessionDto } from "./dto/update-book-session.dto";
 
@@ -61,7 +65,7 @@ export class BookSessionService {
     dto: CreateBookSessionDto,
     source: SessionSource = SessionSource.MANUAL,
   ): Promise<BookSessionMutationDto> {
-    const occurredAt = this.validDate(dto.occurredAt);
+    const occurredAt = sessionDate(dto.occurredAt);
     const entry = await this.ownedEntry(userId, entryId);
     this.assertEdition(entry);
     const pages = this.normalizePages(dto, entry.referencePageCount);
@@ -145,7 +149,7 @@ export class BookSessionService {
   ): Promise<BookSessionMutationDto> {
     const before = await this.ownedSession(userId, sessionId);
     const occurredAt = dto.occurredAt
-      ? this.validDate(dto.occurredAt)
+      ? sessionDate(dto.occurredAt)
       : before.occurredAt;
     const pages = this.normalizeUpdatePages(
       before,
@@ -433,11 +437,7 @@ export class BookSessionService {
     const timezone = entry.user.timezone ?? "UTC";
     const periods = sessionPeriodMinutes(recent, timezone, now);
     const days = new Set(
-      recent.map(
-        (session) =>
-          localDay(timezone, session.occurredAt) ??
-          session.occurredAt.toISOString().slice(0, 10),
-      ),
+      recent.map((session) => localDayOrUtc(timezone, session.occurredAt)),
     );
     const recentPages = recent.reduce(
       (total, session) => total + session.pagesRead,
@@ -451,19 +451,15 @@ export class BookSessionService {
         : Math.max(0, entry.referencePageCount - entry.currentPage);
     const estimatedCompletionDate =
       averagePagesPerDay && remaining && remaining > 0
-        ? new Date(
-            now.getTime() +
-              Math.ceil(remaining / averagePagesPerDay) * 24 * 60 * 60 * 1000,
-          )
-            .toISOString()
-            .slice(0, 10)
+        ? utcDateKey(addDays(now, Math.ceil(remaining / averagePagesPerDay)))
         : null;
 
+    const { items, hasMore } = toPagedResult(rows, PAGE_SIZE);
     return {
-      items: rows
-        .slice(0, PAGE_SIZE)
-        .map((session) => toDto(session, session.reading?.number ?? null)),
-      hasMore: rows.length > PAGE_SIZE,
+      items: items.map((session) =>
+        toDto(session, session.reading?.number ?? null),
+      ),
+      hasMore,
       totalSessions: totals._count,
       totalTrackedMinutes: entry.trackedReadingMinutes,
       totalPagesRead: totals._sum.pagesRead ?? 0,
@@ -690,19 +686,6 @@ export class BookSessionService {
     }
   }
 
-  private validDate(value: string): Date {
-    const date = new Date(value);
-
-    if (date.getTime() > Date.now()) {
-      throw new AppException(
-        HttpStatus.BAD_REQUEST,
-        ErrorCode.LibrarySessionDateFuture,
-      );
-    }
-
-    return date;
-  }
-
   private invalidPages(): never {
     throw new AppException(
       HttpStatus.BAD_REQUEST,
@@ -744,41 +727,4 @@ function toDto(
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
   };
-}
-
-function toReadingDto(reading: {
-  id: string;
-  number: number;
-  status: string;
-  editionKey: string | null;
-  referencePageCount: number | null;
-  currentPage: number;
-  startedAt: Date | null;
-  finishedAt: Date | null;
-  trackedMinutes: number;
-  pagesRead: number;
-  legacyIncomplete: boolean;
-  _count: { sessions: number };
-}) {
-  return {
-    id: reading.id,
-    number: reading.number,
-    status: reading.status as "ACTIVE" | "COMPLETED" | "DROPPED",
-    editionKey: reading.editionKey,
-    referencePageCount: reading.referencePageCount,
-    currentPage: reading.currentPage,
-    startedAt: reading.startedAt?.toISOString() ?? null,
-    finishedAt: reading.finishedAt?.toISOString() ?? null,
-    sessionCount: reading._count.sessions,
-    trackedMinutes: reading.trackedMinutes,
-    pagesRead: reading.pagesRead,
-    legacyIncomplete: reading.legacyIncomplete,
-  };
-}
-
-function normalizeSessionNotes(
-  notes: string | null | undefined,
-): string | null {
-  const trimmed = notes?.trim();
-  return trimmed ? trimmed : null;
 }
