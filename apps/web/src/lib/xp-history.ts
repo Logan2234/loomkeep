@@ -23,7 +23,7 @@ export interface XpRun {
 }
 
 /** Where the total crossed into another level, between two lines. */
-export interface XpLevelMark {
+interface XpLevelMark {
   kind: "level";
   key: string;
   level: number;
@@ -124,7 +124,7 @@ export function localDayKey(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-export function reasonLabel(reason: XpReason): string {
+function reasonLabel(reason: XpReason): string {
   return (
     messages[`gamification_xp_reason_${reason.toLowerCase()}`]?.() ?? reason
   );
