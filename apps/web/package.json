@@ -60,7 +60,7 @@
     "eslint-plugin-svelte": "^3.23.0",
     "happy-dom": "^20.14.5",
     "mermaid": "^12.0.0",
-    "msw": "^2.15.0",
+    "msw": "^3.0.1",
     "openapi-typescript": "^7.13.0",
     "svelte": "^5.57.1",
     "svelte-check": "^4.7.6",
