@@ -53,7 +53,7 @@ export const musicWork = (album: MusicSummaryDto): MessageWorkDto => ({
  * 18+ titles are left out too: they never become a card.
  */
 export async function searchWorks(query: string): Promise<MessageWorkDto[]> {
-  const take = <T extends { isAdult?: boolean }>(
+  const take = <T extends { title: string; isAdult?: boolean }>(
     items: T[],
     toWork: (item: T) => MessageWorkDto,
   ) =>
