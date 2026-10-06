@@ -1,4 +1,4 @@
-import type { CommentEmote } from "../enums";
+import type { CommentEmote, MediaType } from "../enums";
 import type { CommentReactionSummaryDto } from "./comment";
 import type { UserSummaryDto } from "./social";
 
@@ -14,6 +14,19 @@ export const MESSAGE_TEXT_MAX_LENGTH = 2000;
  */
 export type ConversationReadOnlyReason = "unfollowed" | "blocked" | "deleted";
 
+/** Labels a work card: a media's own type, otherwise its domain. */
+export type MessageWorkKind = MediaType | "GAME" | "BOOK" | "MUSIC";
+
+/** A work card in a message, as it was when the message was sent. */
+export interface MessageWorkDto {
+  kind: MessageWorkKind;
+  title: string;
+  imageUrl: string | null;
+  /** Client route to the work's page. */
+  href: string;
+  year: number | null;
+}
+
 export interface MessageDto {
   id: string;
   conversationId: string;
@@ -21,7 +34,10 @@ export interface MessageDto {
   authorId: string | null;
   /** Written by the viewer. */
   mine: boolean;
-  /** Restricted markdown, rendered by the web. Null once deleted. */
+  /**
+   * Restricted markdown, rendered by the web. Null once deleted, and for a
+   * message that only carries a work.
+   */
   text: string | null;
   /** Sent with `/spoiler`: the whole message stays masked until revealed. */
   spoiler: boolean;
@@ -31,6 +47,8 @@ export interface MessageDto {
   deletedByAdmin: boolean;
   reactions: CommentReactionSummaryDto[];
   myReaction: CommentEmote | null;
+  /** The attached work first, then the work links found in the text. */
+  works: MessageWorkDto[];
   createdAt: string;
   updatedAt: string;
 }
@@ -67,11 +85,32 @@ export interface OpenConversationRequestDto {
 }
 
 export interface SendMessageRequestDto {
+  /** Optional when a work is attached. */
+  text?: string;
+  spoiler?: boolean;
+  /** A work page's path (`/app/games/1942`), attached to the message as a card. */
+  work?: string;
+}
+
+export interface EditMessageRequestDto {
   text: string;
   spoiler?: boolean;
 }
 
-export type EditMessageRequestDto = SendMessageRequestDto;
+/** "Recommander": the work goes to each friend in their own conversation. */
+export interface RecommendWorkRequestDto {
+  /** The work page's path, as for `SendMessageRequestDto.work`. */
+  work: string;
+  usernames: string[];
+  text?: string;
+}
+
+/** Max friends one recommendation goes to. */
+export const RECOMMEND_MAX_FRIENDS = 20;
+
+export interface RecommendWorkResultDto {
+  sent: number;
+}
 
 export interface ReactMessageRequestDto {
   emote: CommentEmote;

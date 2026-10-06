@@ -1,16 +1,15 @@
 import { Module } from "@nestjs/common";
 import { EventsModule } from "../events/events.module";
 import { PushModule } from "../notifications/push.module";
-import { ReportsModule } from "../reports/reports.module";
 import { SocialModule } from "../social/social.module";
-import { ChatController } from "./chat.controller";
 import { ChatService } from "./chat.service";
 
-// Private messages between friends, behind ChatFeatureGuard (social and chat
-// both on). ReportsModule files reports against a message.
+// Private messages between friends: the service alone, which account deletion
+// and moderation (UsersModule, AdminModule) call too. The routes live in
+// ChatApiModule, whose work cards need the catalogue modules — and those
+// import UsersModule, which would make a cycle here.
 @Module({
-  imports: [SocialModule, EventsModule, PushModule, ReportsModule],
-  controllers: [ChatController],
+  imports: [SocialModule, EventsModule, PushModule],
   providers: [ChatService],
   exports: [ChatService],
 })

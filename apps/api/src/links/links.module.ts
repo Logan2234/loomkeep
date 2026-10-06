@@ -10,5 +10,6 @@ import { LinksController } from "./links.controller";
   imports: [CatalogModule, GamesModule, BooksModule, MusicModule],
   controllers: [LinksController],
   providers: [LinkResolverService],
+  exports: [LinkResolverService],
 })
 export class LinksModule {}

@@ -85,6 +85,8 @@ export const ErrorCode = {
   ChatForbidden: "chat.forbidden",
   /** The conversation stays readable, but nobody can write in it anymore. */
   ChatReadOnly: "chat.read_only",
+  /** The attached work isn't a page Loomkeep knows, or is an 18+ title. */
+  ChatWorkNotFound: "chat.work_not_found",
 
   // lists
   ListInvalidMembershipTarget: "lists.invalid_membership_target",

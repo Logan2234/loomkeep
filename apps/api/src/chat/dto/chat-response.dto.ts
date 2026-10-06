@@ -4,9 +4,20 @@ import type {
   ConversationDto,
   ConversationReadOnlyReason,
   MessageDto,
+  MessageWorkDto,
+  MessageWorkKind,
+  RecommendWorkResultDto,
 } from "@loomkeep/shared";
 import { CommentReactionSummaryResponseDto } from "../../comments/dto/comment-reaction-summary-response.dto";
 import { UserSummaryResponseDto } from "../../common/dto/user-summary-response.dto";
+
+export class MessageWorkResponseDto implements MessageWorkDto {
+  kind!: MessageWorkKind;
+  title!: string;
+  imageUrl!: string | null;
+  href!: string;
+  year!: number | null;
+}
 
 export class MessageResponseDto implements MessageDto {
   id!: string;
@@ -20,6 +31,7 @@ export class MessageResponseDto implements MessageDto {
   deletedByAdmin!: boolean;
   reactions!: CommentReactionSummaryResponseDto[];
   myReaction!: CommentEmote | null;
+  works!: MessageWorkResponseDto[];
   createdAt!: string;
   updatedAt!: string;
 }
@@ -38,4 +50,8 @@ export class ConversationResponseDto implements ConversationDto {
 
 export class ChatUnreadResponseDto implements ChatUnreadDto {
   count!: number;
+}
+
+export class RecommendWorkResultResponseDto implements RecommendWorkResultDto {
+  sent!: number;
 }

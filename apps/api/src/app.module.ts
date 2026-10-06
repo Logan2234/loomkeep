@@ -12,7 +12,7 @@ import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
 import { SessionCacheModule } from "./auth/session-cache.module";
 import { BooksModule } from "./books/books.module";
 import { CatalogModule } from "./catalog/catalog.module";
-import { ChatModule } from "./chat/chat.module";
+import { ChatApiModule } from "./chat/chat-api.module";
 import { CommentsModule } from "./comments/comments.module";
 import { AllExceptionsFilter } from "./common/all-exceptions.filter";
 import { CommonModule } from "./common/common.module";
@@ -86,7 +86,7 @@ import { UsersModule } from "./users/users.module";
     SocialModule,
     ReviewsModule,
     CommentsModule,
-    ChatModule,
+    ChatApiModule,
     ListsModule,
     SavedViewsModule,
     SessionTimerModule,
