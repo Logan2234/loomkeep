@@ -1,6 +1,6 @@
 ---
 title: Messages
-description: Writing to your friends in Loomkeep — who you can write to, formatting, spoilers, and what the other side sees.
+description: Writing to your friends in Loomkeep — who you can write to, formatting, spoilers, recommending a work, and what the other side sees.
 ---
 
 When the instance has social features and messages turned on, you can write
@@ -59,6 +59,22 @@ the whole message behind a "tap to see" until your friend chooses to read it.
 Your own messages can be edited (they then say "edited") or deleted (a
 "Message deleted" stays in their place). Anyone in the conversation can react
 to a message, one reaction each.
+
+## Sharing a work
+
+A show, a film, a game, a book or an album travels as a **card**: its poster,
+what it is, its year, and a link to its page.
+
+- **Recommend**: the paper-plane button on any work's page. Pick one or more
+  friends, add a few words if you like: each friend gets it in your
+  conversation together, as a message of its own.
+- **/reco** in a message: type the title, pick the work, and it goes with what
+  you write.
+- **A link** to a work's page, on Loomkeep or on TMDB, IMDb, AniList, Steam,
+  IGDB, Open Library or MusicBrainz, turns into its card on its own, a moment
+  after the message is sent. Up to three per message.
+
+18+ titles never become a card.
 
 ## What the other side sees
 
