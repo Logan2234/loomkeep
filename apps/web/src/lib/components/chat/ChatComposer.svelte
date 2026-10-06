@@ -6,7 +6,8 @@
   import { chatDrafts as drafts } from "#lib/chat/chat.svelte.js";
   import {
     readSlashCommand,
-    wrapSelection,
+    selectionFormats,
+    toggleFormat,
     type ChatFormat,
   } from "#lib/chat/chat-markdown.js";
   import Icon from "#lib/components/Icon.svelte";
@@ -41,7 +42,11 @@
   let textarea = $state<HTMLTextAreaElement | null>(null);
   let value = $state("");
   let highlighted = $state<string | null>(null);
-  let selectionBar = $state<{ left: number; top: number } | null>(null);
+  let selectionBar = $state<{
+    left: number;
+    top: number;
+    active: ChatFormat[];
+  } | null>(null);
   let lastTypingAt = 0;
 
   interface Command {
@@ -144,7 +149,7 @@
     const { selectionStart, selectionEnd } = textarea;
     if (selectionStart === selectionEnd) return;
 
-    const next = wrapSelection(value, selectionStart, selectionEnd, kind);
+    const next = toggleFormat(value, selectionStart, selectionEnd, kind);
     setValue(next.value);
     void tick().then(() => {
       textarea?.focus();
@@ -171,6 +176,11 @@
     selectionBar = {
       left: Math.max(8, Math.min(box.left + middle - 110, innerWidth - 228)),
       top: Math.max(8, box.top + start.top - 46),
+      active: selectionFormats(
+        value,
+        textarea.selectionStart,
+        textarea.selectionEnd,
+      ),
     };
   }
 
@@ -340,10 +350,13 @@
     class="bg-fg text-bg fixed z-[70] flex items-center gap-0.5 rounded-xl p-1 shadow-lg"
     style="left: {selectionBar.left}px; top: {selectionBar.top}px;">
     {#each FORMATS as item (item.kind)}
+      {@const pressed = selectionBar.active.includes(item.kind)}
       <button
         type="button"
-        class="hover:bg-bg/15 grid h-8 min-w-8 place-items-center rounded-lg px-1.5 text-sm font-bold transition-colors duration-150"
+        class="grid h-8 min-w-8 place-items-center rounded-lg px-1.5 text-sm font-bold transition-colors duration-150
+          {pressed ? 'bg-bg/25 text-accent' : 'hover:bg-bg/15'}"
         aria-label={item.label}
+        aria-pressed={pressed}
         title={item.label}
         onmousedown={(e) => e.preventDefault()}
         onclick={() => format(item.kind)}>
@@ -360,8 +373,12 @@
     <span class="bg-bg/25 mx-0.5 h-5 w-px"></span>
     <button
       type="button"
-      class="bg-accent text-accent-fg grid h-8 w-8 place-items-center rounded-lg transition-[filter] duration-150 hover:brightness-110"
+      class="bg-accent text-accent-fg grid h-8 w-8 place-items-center rounded-lg transition-[filter,box-shadow] duration-150 hover:brightness-110
+        {selectionBar.active.includes('spoiler')
+        ? 'ring-bg ring-2 ring-inset'
+        : ''}"
       aria-label={m.chat_format_spoiler()}
+      aria-pressed={selectionBar.active.includes("spoiler")}
       title={m.chat_format_spoiler()}
       onmousedown={(e) => e.preventDefault()}
       onclick={() => format("spoiler")}>

@@ -41,6 +41,8 @@ export interface SettingsSectionDef {
   entries: SettingsEntryDef[];
   /** Hidden when the deployment runs with social off. */
   social?: boolean;
+  /** Hidden when the deployment runs with Messages off. */
+  chat?: boolean;
   newBadgeKey?: FeatureBadgeKey;
   /** Styled as destructive in the rail and on the index. */
   danger?: boolean;
@@ -255,15 +257,27 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
               "rank",
             ],
           },
+        ],
+      },
+      {
+        slug: "messages",
+        label: m.settings_chat_title(),
+        icon: "message",
+        description: m.settings_chat_description(),
+        keywords: ["messages", "chat", "messagerie", "discussion", "amis"],
+        social: true,
+        chat: true,
+        newBadgeKey: "messages",
+        entries: [
           {
             id: "chat-presence",
             label: m.settings_chat_presence(),
-            keywords: ["messages", "chat", "en ligne", "online", "presence"],
+            keywords: ["en ligne", "online", "presence", "ecrit", "typing"],
           },
           {
             id: "chat-read-receipts",
             label: m.settings_chat_read_receipts(),
-            keywords: ["messages", "chat", "vu", "lu", "read", "seen"],
+            keywords: ["vu", "lu", "read", "seen", "receipts"],
           },
         ],
       },
@@ -847,6 +861,17 @@ export const SETTINGS_SECTIONS: SettingsSectionDef[] = SETTINGS_GROUPS.flatMap(
 
 export function sectionHref(slug: string): string {
   return `/app/settings/${slug}`;
+}
+
+/** Whether this deployment shows the section at all. */
+export function isSectionShown(
+  section: SettingsSectionDef,
+  config: { socialEnabled: boolean; chatEnabled: boolean },
+): boolean {
+  return (
+    (!section.social || config.socialEnabled) &&
+    (!section.chat || config.chatEnabled)
+  );
 }
 
 export function findSection(slug: string): SettingsSectionDef | undefined {

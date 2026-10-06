@@ -8,7 +8,6 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { fly } from "svelte/transition";
-  import ChatDrawer from "./ChatDrawer.svelte";
   import ChatNewMessage from "./ChatNewMessage.svelte";
   import ChatRail from "./ChatRail.svelte";
   import ChatThread from "./ChatThread.svelte";
@@ -46,12 +45,9 @@
   bind:this={panel}
   aria-label={m.chat_title()}
   transition:fly={{ y: 10, duration: reduced ? 0 : 200, opacity: 0 }}
-  class="border-border bg-surface fixed right-6 bottom-[90px] z-40 flex h-[min(640px,calc(100dvh-120px))] w-[600px] rounded-2xl border shadow-2xl
-    {chat.drawer ? 'rounded-l-none' : ''}"
+  class="border-border bg-surface fixed right-6 bottom-[90px] z-40 flex h-[min(640px,calc(100dvh-120px))] max-w-[calc(100vw-3rem)] rounded-2xl border shadow-2xl transition-[width] duration-200 ease-out motion-reduce:transition-none
+    {chat.drawer ? 'w-[808px]' : 'w-[600px]'}"
   style="transform-origin: bottom right;">
-  {#if chat.drawer}
-    <ChatDrawer {conversations} />
-  {/if}
   <ChatRail {conversations} />
 
   <div class="flex min-w-0 flex-1 flex-col overflow-hidden rounded-r-2xl">

@@ -340,7 +340,7 @@
       aria-label={m.chat_fullscreen()}
       title={m.chat_fullscreen()}
       onclick={onexpand}>
-      <Icon name="resize" class="h-4.5 w-4.5" />
+      <Icon name="maximize" class="h-4.5 w-4.5" />
     </button>
     <button
       type="button"
@@ -351,7 +351,7 @@
     </button>
   {:else if mode === "full"}
     <button type="button" class="btn btn-ghost btn-sm" onclick={onshrink}>
-      <Icon name="resize" class="h-4 w-4" />
+      <Icon name="minimize" class="h-4 w-4" />
       {m.common_collapse()}
     </button>
   {/if}

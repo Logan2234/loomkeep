@@ -34,7 +34,7 @@ function matches(haystack: string[], needle: string): boolean {
 /**
  * Sections first, then the controls inside them, so typing a section name
  * never buries it under its own rows. `visible` filters out what the
- * deployment hides (social off).
+ * deployment hides (social or Messages off).
  */
 export function searchSettings(
   query: string,

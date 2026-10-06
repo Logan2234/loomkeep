@@ -3,7 +3,8 @@ import {
   chatPreview,
   parseChatMarkdown,
   readSlashCommand,
-  wrapSelection,
+  selectionFormats,
+  toggleFormat,
 } from "./chat-markdown";
 
 describe("parseChatMarkdown", () => {
@@ -30,6 +31,29 @@ describe("parseChatMarkdown", () => {
         children: [
           { type: "text", text: "Helly " },
           { type: "strong", children: [{ type: "text", text: "reste" }] },
+        ],
+      },
+    ]);
+  });
+
+  it("reads three stars as bold and italic", () => {
+    expect(parseChatMarkdown("***les deux***")).toEqual([
+      {
+        type: "strong",
+        children: [
+          { type: "em", children: [{ type: "text", text: "les deux" }] },
+        ],
+      },
+    ]);
+  });
+
+  it("closes an italic inside a bold on three stars", () => {
+    expect(parseChatMarkdown("**gras *italique***")).toEqual([
+      {
+        type: "strong",
+        children: [
+          { type: "text", text: "gras " },
+          { type: "em", children: [{ type: "text", text: "italique" }] },
         ],
       },
     ]);
@@ -73,13 +97,53 @@ describe("chatPreview", () => {
   });
 });
 
-describe("wrapSelection", () => {
-  it("wraps the selection and keeps it on the same words", () => {
-    expect(wrapSelection("La fin est folle", 3, 6, "spoiler")).toEqual({
+describe("toggleFormat", () => {
+  it("wraps a plain selection and keeps it on the same words", () => {
+    expect(toggleFormat("La fin est folle", 3, 6, "spoiler")).toEqual({
       value: "La ||fin|| est folle",
       start: 5,
       end: 8,
     });
+  });
+
+  it("takes the format off when its markers surround the selection", () => {
+    expect(toggleFormat("un **mot**", 5, 8, "bold")).toEqual({
+      value: "un mot",
+      start: 3,
+      end: 6,
+    });
+  });
+
+  it("takes the format off when the selection holds its markers", () => {
+    expect(toggleFormat("un ~~mot~~", 3, 10, "strike")).toEqual({
+      value: "un mot",
+      start: 3,
+      end: 6,
+    });
+  });
+
+  it("adds italic to a bold word, then takes each off separately", () => {
+    const both = toggleFormat("**mot**", 2, 5, "italic");
+    expect(both).toEqual({ value: "***mot***", start: 3, end: 6 });
+    expect(toggleFormat(both.value, both.start, both.end, "bold")).toEqual({
+      value: "*mot*",
+      start: 1,
+      end: 4,
+    });
+    expect(toggleFormat(both.value, both.start, both.end, "italic")).toEqual({
+      value: "**mot**",
+      start: 2,
+      end: 5,
+    });
+  });
+});
+
+describe("selectionFormats", () => {
+  it("tells bold from italic around the same stars", () => {
+    expect(selectionFormats("**mot**", 2, 5)).toEqual(["bold"]);
+    expect(selectionFormats("*mot*", 1, 4)).toEqual(["italic"]);
+    expect(selectionFormats("***mot***", 3, 6)).toEqual(["bold", "italic"]);
+    expect(selectionFormats("||~~mot~~||", 4, 7)).toEqual(["strike"]);
   });
 });
 

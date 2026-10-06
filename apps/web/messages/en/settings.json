@@ -541,6 +541,7 @@
   "settings_delete_account_group_social": "Lists and social",
   "settings_delete_account_group_account": "Account and security",
   "settings_chat_title": "Messages",
+  "settings_chat_description": "What your friends see of you when you write to them.",
   "settings_chat_presence": "Show when I'm online",
   "settings_chat_presence_desc": "Your friends also see when you're typing. Reciprocal: turned off, you no longer see theirs either.",
   "settings_chat_read_receipts": "Show when I've read a message",

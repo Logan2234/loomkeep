@@ -541,6 +541,7 @@
   "settings_delete_account_group_social": "Listes et social",
   "settings_delete_account_group_account": "Compte et sécurité",
   "settings_chat_title": "Messages",
+  "settings_chat_description": "Ce que tes amis voient de toi quand tu leur écris.",
   "settings_chat_presence": "Montrer quand je suis en ligne",
   "settings_chat_presence_desc": "Tes amis voient aussi quand tu écris. Réciproque : désactivé, tu ne vois plus non plus leur présence.",
   "settings_chat_read_receipts": "Montrer quand j'ai lu un message",

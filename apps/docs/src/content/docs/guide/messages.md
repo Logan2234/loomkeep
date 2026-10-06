@@ -23,8 +23,8 @@ A conversation stays readable but nobody can write in it anymore when:
 
 - **On a computer**, the round button at the bottom right of the screen opens
   the Messages panel, with its unread count. The column on the left lists your
-  friends: hover over one to see their last message, or unfold it into a full
-  list. The **full screen** button turns the panel into a page.
+  friends: hover over one to see their last message, or widen it to read
+  every name and last message at once. The **full screen** button turns the panel into a page.
 - **On a phone**, the **Messages** tab sits beside Notifications in the bottom
   bar.
 
@@ -42,12 +42,14 @@ Messages understand a little formatting:
 | ----------------- | --------------------- |
 | `**bold**`        | **bold**              |
 | `*italic*`        | _italic_              |
+| `***both***`      | **_both_**            |
 | `~~struck~~`      | ~~struck~~            |
 | `` `code` ``      | `code`                |
 | `\|\|spoiler\|\|` | blurred until clicked |
 
 Select text to get a small bar that applies them for you, or use
-**Ctrl+B**, **Ctrl+I** and **Ctrl+Shift+S** (spoiler). Links become
+**Ctrl+B**, **Ctrl+I** and **Ctrl+Shift+S** (spoiler). Each one is a switch:
+applied to text that already has it, it takes it off. Links become
 clickable; no preview is fetched, so a link you receive never contacts the
 site behind it until you open it.
 

@@ -68,6 +68,8 @@ export type IconName =
   | "compass"
   | "layout"
   | "resize"
+  | "maximize"
+  | "minimize"
   | "external"
   | "divider-horizontal"
   | "divider-vertical"

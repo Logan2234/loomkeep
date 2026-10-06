@@ -255,6 +255,12 @@
   {:else if name === "resize"}
     <path d="M20 10v10H10" />
     <path d="M20 20 12 12" />
+  {:else if name === "maximize"}
+    <path d="M15 3h6v6M9 21H3v-6" />
+    <path d="m21 3-7 7M3 21l7-7" />
+  {:else if name === "minimize"}
+    <path d="M4 14h6v6M20 10h-6V4" />
+    <path d="m14 10 7-7M3 21l7-7" />
   {:else if name === "external"}
     <path d="M14 4h6v6" />
     <path d="M20 4 11 13" />
