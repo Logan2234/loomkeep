@@ -119,7 +119,7 @@
     if (!conversationId) return;
 
     chat.show(conversationId);
-    const url = new URL(page.url);
+    const url = new URL(page.url.href);
     url.searchParams.delete("messages");
     void goto(url, { replace: true, shallow: true });
   });

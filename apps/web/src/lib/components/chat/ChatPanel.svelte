@@ -28,17 +28,24 @@
     if (id) void goto(`/app/messages/${id}`);
   }
 
+  let panel = $state<HTMLElement | null>(null);
+
+  // Escape folds the list, then closes the panel — only from inside it, and
+  // after the composer and the menus handled theirs.
   function onkeydown(event: KeyboardEvent) {
     if (event.key !== "Escape" || event.defaultPrevented) return;
+    if (!panel?.contains(document.activeElement)) return;
     if (chat.drawer) chat.drawer = false;
     else chat.close();
   }
 </script>
 
+<svelte:window {onkeydown} />
+
 <section
+  bind:this={panel}
   aria-label={m.chat_title()}
   transition:fly={{ y: 10, duration: reduced ? 0 : 200, opacity: 0 }}
-  {onkeydown}
   class="border-border bg-surface fixed right-6 bottom-[90px] z-40 flex h-[min(640px,calc(100dvh-120px))] w-[600px] rounded-2xl border shadow-2xl
     {chat.drawer ? 'rounded-l-none' : ''}"
   style="transform-origin: bottom right;">
