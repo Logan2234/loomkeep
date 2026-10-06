@@ -40,6 +40,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ SOCIAL_ENABLED: "true" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: true,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
@@ -56,6 +57,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ GAMIFICATION_ENABLED: "true" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: true,
       registrationEnabled: true,
       publicApiEnabled: true,
@@ -72,6 +74,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({});
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
@@ -88,6 +91,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ SOCIAL_ENABLED: "1" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
@@ -104,6 +108,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ REGISTRATION_ENABLED: "false" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: false,
       publicApiEnabled: true,
@@ -120,6 +125,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({});
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
@@ -136,6 +142,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ NODE_ENV: "development" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
@@ -152,6 +159,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ NODE_ENV: "production" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
@@ -168,6 +176,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({});
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,

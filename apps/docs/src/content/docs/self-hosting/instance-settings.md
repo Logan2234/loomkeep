@@ -10,6 +10,7 @@ redeploy.
 | Setting           | Default | What it does                                                                                       |
 | ----------------- | ------- | -------------------------------------------------------------------------------------------------- |
 | Social            | off     | Follows, friends, activity feed, shared lists and other people's reviews.                          |
+| Messages          | off     | Private messages between friends (needs Social). Stored unencrypted in your database.              |
 | Gamification      | off     | XP, levels, achievements and leaderboard.                                                          |
 | Open registration | on      | When off, only an [invitation](/self-hosting/administration/#invitations) lets someone sign up.    |
 | Public API        | on      | Personal API keys and `/api/v1`. When off, the API answers `api.disabled`; existing keys are kept. |
@@ -29,6 +30,7 @@ page.
 | Setting           | Variable                 |
 | ----------------- | ------------------------ |
 | Social            | `SOCIAL_ENABLED`         |
+| Messages          | `CHAT_ENABLED`           |
 | Gamification      | `GAMIFICATION_ENABLED`   |
 | Open registration | `REGISTRATION_ENABLED`   |
 | Public API        | `PUBLIC_API_ENABLED`     |

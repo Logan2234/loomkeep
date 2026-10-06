@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { AuthService } from "../auth/auth.service";
+import type { ChatService } from "../chat/chat.service";
 import type { ListService } from "../lists/list.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -34,14 +35,20 @@ function makeService() {
 
   const auth = { revokeAllSessions: vi.fn() } as unknown as AuthService;
 
+  const chat = {
+    eraseAuthor: vi.fn(),
+    purgeEmptyConversations: vi.fn(),
+  } as unknown as ChatService;
+
   const service = new AccountDeletionService(
     prisma,
     lists,
     security,
     mail,
     auth,
+    chat,
   );
-  return { service, prisma, lists, security, mail, auth };
+  return { service, prisma, lists, security, mail, auth, chat };
 }
 
 describe("AccountDeletionService.deleteAccount", () => {
@@ -83,6 +90,27 @@ describe("AccountDeletionService.deleteAccount", () => {
       where: { id: "user-1" },
     });
     expect(calls).toEqual(["record", "forget-ips", "reassign", "delete"]);
+  });
+
+  // GDPR erasure: unlinking the author alone would leave text that can
+  // still identify them in the other member's conversation.
+  it("erases the account's messages before it goes, then drops the conversations left empty", async () => {
+    const { service, prisma, chat } = makeService();
+    const calls: string[] = [];
+    (chat.eraseAuthor as Mock).mockImplementation(async () => {
+      calls.push("erase");
+    });
+    (prisma.user.delete as Mock).mockImplementation(async () => {
+      calls.push("delete");
+    });
+    (chat.purgeEmptyConversations as Mock).mockImplementation(async () => {
+      calls.push("purge");
+    });
+
+    await service.deleteAccount("user-1", "self", "Suppression demandée");
+
+    expect(chat.eraseAuthor).toHaveBeenCalledWith("user-1");
+    expect(calls).toEqual(["erase", "delete", "purge"]);
   });
 
   it("cuts every session before the account goes", async () => {

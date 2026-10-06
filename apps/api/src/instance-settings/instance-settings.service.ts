@@ -89,6 +89,7 @@ export class InstanceSettingsService implements OnModuleInit {
 function toValues(row: InstanceSettings): InstanceSettingsValues {
   return {
     socialEnabled: row.socialEnabled,
+    chatEnabled: row.chatEnabled,
     gamificationEnabled: row.gamificationEnabled,
     registrationEnabled: row.registrationEnabled,
     publicApiEnabled: row.publicApiEnabled,

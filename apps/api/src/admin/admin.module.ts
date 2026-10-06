@@ -3,6 +3,7 @@ import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { AuthModule } from "../auth/auth.module";
 import { BooksModule } from "../books/books.module";
 import { CatalogModule } from "../catalog/catalog.module";
+import { ChatModule } from "../chat/chat.module";
 import { CommentsModule } from "../comments/comments.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
@@ -59,6 +60,7 @@ import { QuotaAlertService } from "./quota-alert.service";
     UsersModule,
     ReportsModule,
     CommentsModule,
+    ChatModule,
     ReviewsModule,
     SocialModule,
     ListsModule,

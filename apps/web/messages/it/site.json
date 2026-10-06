@@ -154,6 +154,7 @@
   "transparency_measures_total_many": "{count} misure prese nel {year}.",
   "transparency_measures_without_report": "Di cui {count} senza segnalazione precedente, su iniziativa dei moderatori.",
   "transparency_measure_comment": "Commento rimosso",
+  "transparency_measure_message": "Messaggio rimosso",
   "transparency_measure_review": "Recensione rimossa",
   "transparency_measure_account": "Account eliminato",
   "transparency_automated_heading": "Decisioni automatizzate",

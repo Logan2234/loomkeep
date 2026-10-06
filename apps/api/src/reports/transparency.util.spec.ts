@@ -102,6 +102,7 @@ describe("summarizeMeasures", () => {
       withoutReport: 1,
       byMeasure: [
         { measure: "COMMENT_REMOVED", count: 1 },
+        { measure: "MESSAGE_REMOVED", count: 0 },
         { measure: "REVIEW_REMOVED", count: 0 },
         { measure: "LIST_REMOVED", count: 0 },
         { measure: "LIST_EDITED", count: 0 },

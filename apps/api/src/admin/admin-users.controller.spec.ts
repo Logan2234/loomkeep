@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
+import type { ChatService } from "../chat/chat.service";
 import type { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
@@ -85,6 +86,10 @@ function makeController() {
     securityEvents,
     mail,
     authService,
+    {
+      eraseAuthor: vi.fn(),
+      purgeEmptyConversations: vi.fn(),
+    } as unknown as ChatService,
   );
 
   const controller = new AdminUsersController(

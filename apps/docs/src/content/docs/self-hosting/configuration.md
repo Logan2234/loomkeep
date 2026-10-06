@@ -29,11 +29,11 @@ variable with its own comments; optional services have theirs on
 
 ## Accounts and instance
 
-| Variable                                                                                                                                | What it is                                                                                      |
-| --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `ADMIN_EMAIL`                                                                                                                           | The account with this email becomes administrator when it signs up or in.                       |
-| `SOCIAL_ENABLED`, `GAMIFICATION_ENABLED`, `REGISTRATION_ENABLED`, `PUBLIC_API_ENABLED`, `API_RATE_LIMIT_FREE`, `API_RATE_LIMIT_PREMIUM` | Optional: override and lock the matching [instance settings](/self-hosting/instance-settings/). |
-| `LOOMKEEP_LICENSE_KEY`                                                                                                                  | Not needed for now: see [Premium edition](/self-hosting/premium/).                              |
+| Variable                                                                                                                                                | What it is                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `ADMIN_EMAIL`                                                                                                                                           | The account with this email becomes administrator when it signs up or in.                       |
+| `SOCIAL_ENABLED`, `CHAT_ENABLED`, `GAMIFICATION_ENABLED`, `REGISTRATION_ENABLED`, `PUBLIC_API_ENABLED`, `API_RATE_LIMIT_FREE`, `API_RATE_LIMIT_PREMIUM` | Optional: override and lock the matching [instance settings](/self-hosting/instance-settings/). |
+| `LOOMKEEP_LICENSE_KEY`                                                                                                                                  | Not needed for now: see [Premium edition](/self-hosting/premium/).                              |
 
 ## Catalogues and imports
 

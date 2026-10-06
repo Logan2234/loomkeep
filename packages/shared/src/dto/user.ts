@@ -102,6 +102,15 @@ export interface UserDto {
    * `SocialProfileDto.xp`.
    */
   hideProgression: boolean;
+  /**
+   * Whether friends see this account online (and typing) in Messages.
+   * Reciprocal: switched off, it no longer sees theirs either.
+   */
+  chatShowPresence: boolean;
+  /** Whether friends see when this account read their messages. Reciprocal too. */
+  chatShowReadReceipts: boolean;
+  /** Shows the feedback launcher, on an instance that has one. */
+  feedbackWidget: boolean;
   /** Overrides reviews/comments' per-context spoiler-reveal default. */
   spoilerSensitivity: SpoilerSensitivity;
   /**
@@ -149,6 +158,12 @@ export interface UpdateUserRequestDto {
   locale?: Locale;
   /** See `UserDto.hideProgression`. */
   hideProgression?: boolean;
+  /** See `UserDto.chatShowPresence`. */
+  chatShowPresence?: boolean;
+  /** See `UserDto.chatShowReadReceipts`. */
+  chatShowReadReceipts?: boolean;
+  /** See `UserDto.feedbackWidget`. */
+  feedbackWidget?: boolean;
   /** See `UserDto.spoilerSensitivity`. */
   spoilerSensitivity?: SpoilerSensitivity;
   /** See `UserDto.domainOrder`. */

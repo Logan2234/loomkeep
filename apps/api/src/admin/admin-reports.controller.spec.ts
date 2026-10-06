@@ -1,5 +1,6 @@
 import { vi, type Mock } from "vitest";
 import type { AuthService } from "../auth/auth.service";
+import type { ChatService } from "../chat/chat.service";
 import type { CommentService } from "../comments/comment.service";
 import type { ListService } from "../lists/list.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -110,6 +111,10 @@ function makeController(
     revokeAllSessions: vi.fn().mockResolvedValue(undefined),
   } as unknown as AuthService;
 
+  const chat = {
+    adminRemove: vi.fn(),
+    publishAdminRemoval: vi.fn(),
+  } as unknown as ChatService;
   const controller = new AdminReportsController(
     reports,
     comments,
@@ -118,6 +123,7 @@ function makeController(
     moderationDecisions,
     lists,
     auth,
+    chat,
   );
   return {
     controller,

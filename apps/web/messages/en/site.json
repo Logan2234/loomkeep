@@ -154,6 +154,7 @@
   "transparency_measures_total_many": "{count} measures taken in {year}.",
   "transparency_measures_without_report": "Including {count} with no prior report, on the moderators' own initiative.",
   "transparency_measure_comment": "Comment removed",
+  "transparency_measure_message": "Message removed",
   "transparency_measure_review": "Review removed",
   "transparency_measure_account": "Account deleted",
   "transparency_automated_heading": "Automated decisions",

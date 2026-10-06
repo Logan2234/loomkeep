@@ -44,6 +44,7 @@ services:
       # Instance settings: empty leaves each one to Admin > Instance settings,
       # a value overrides and locks it there (see .env.example).
       SOCIAL_ENABLED: ${SOCIAL_ENABLED:-}
+      CHAT_ENABLED: ${CHAT_ENABLED:-}
       GAMIFICATION_ENABLED: ${GAMIFICATION_ENABLED:-}
       REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-}
       PUBLIC_API_ENABLED: ${PUBLIC_API_ENABLED:-}

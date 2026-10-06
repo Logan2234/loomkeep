@@ -13,6 +13,12 @@ export interface PublicConfigDto {
   socialEnabled: boolean;
 
   /**
+   * Whether friends can message each other: Admin › Settings or the API's
+   * `CHAT_ENABLED` env var. Always false while `socialEnabled` is.
+   */
+  chatEnabled: boolean;
+
+  /**
    * Whether the gamification system (XP, levels, achievements — G1+) is
    * enabled on this deployment. Driven by the API's `GAMIFICATION_ENABLED`
    * env var, on by default on the hosted build. When false, `XpService.award`

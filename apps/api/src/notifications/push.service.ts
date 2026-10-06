@@ -11,6 +11,8 @@ export interface PushPayload {
   body: string;
   /** Path to open in the app when the notification is clicked (e.g. "/app/media/…"). */
   url: string;
+  /** Pushes sharing a tag replace each other on the device (one per conversation). */
+  tag?: string;
 }
 
 export interface PushDevice {

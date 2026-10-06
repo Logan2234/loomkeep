@@ -1,4 +1,5 @@
 import { type Mock, vi } from "vitest";
+import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
 import type { JobRunService } from "../jobs/job-run.service";
@@ -44,6 +45,11 @@ function make(
       findUnique: vi.fn().mockResolvedValue(null),
       findMany: vi.fn().mockResolvedValue([]),
       ...overrides.list,
+    },
+    message: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
+      ...overrides.message,
     },
     mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
     gameItem: { findUnique: vi.fn().mockResolvedValue(null) },
@@ -807,6 +813,7 @@ describe("ReportService.listAgainstUser", () => {
       comment: { findMany: vi.fn().mockResolvedValue([{ id: "c1" }]) },
       review: { findMany: vi.fn().mockResolvedValue([{ id: "rev1" }]) },
       list: { findMany: vi.fn().mockResolvedValue([{ id: "l1" }]) },
+      message: { findMany: vi.fn().mockResolvedValue([{ id: "m1" }]) },
     });
     await svc.listAgainstUser("user1");
     expect(prisma.report.findMany).toHaveBeenCalledWith(
@@ -817,10 +824,87 @@ describe("ReportService.listAgainstUser", () => {
             { targetType: "COMMENT", targetId: { in: ["c1"] } },
             { targetType: "REVIEW", targetId: { in: ["rev1"] } },
             { targetType: "LIST", targetId: { in: ["l1"] } },
+            { targetType: "MESSAGE", targetId: { in: ["m1"] } },
           ],
         },
       }),
     );
+  });
+});
+
+describe("ReportService — a reported message", () => {
+  // Moderators have no other way into a private conversation: the queue
+  // carries the reported message among the few around it.
+  it("shows it among the messages around it, oldest first", async () => {
+    const at = (time: string) => new Date(`2026-10-06T${time}:00Z`);
+    const message = (id: string, time: string, author: string) => ({
+      id,
+      text: `texte ${id}`,
+      createdAt: at(time),
+      author: { username: author },
+    });
+    const { svc } = make({
+      report: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "r1",
+            targetType: "MESSAGE",
+            targetId: "m2",
+            category: "HARASSMENT",
+            motif: "HARASSMENT_INSULTS",
+            profilePart: null,
+            reason: null,
+            status: "PENDING",
+            createdAt: at("22:00"),
+            resolvedAt: null,
+            reporter: null,
+          },
+        ]),
+      },
+      message: {
+        findUnique: vi.fn().mockResolvedValue({
+          text: "texte m2",
+          deletedAt: null,
+          author: { username: "max" },
+          conversationId: "cv1",
+          createdAt: at("21:31"),
+        }),
+        findMany: vi
+          .fn()
+          .mockResolvedValueOnce([
+            message("m2", "21:31", "max"),
+            message("m1", "21:30", "lea"),
+          ])
+          .mockResolvedValueOnce([message("m3", "21:32", "lea")]),
+      },
+    });
+
+    const { items } = await svc.list("PENDING", parsePageQuery("1", "20", 20));
+
+    expect(items[0].target).toMatchObject({
+      label: "texte m2",
+      href: null,
+      targetOwnerUsername: "max",
+    });
+    expect(items[0].target?.context).toEqual([
+      expect.objectContaining({ text: "texte m1", reported: false }),
+      expect.objectContaining({ text: "texte m2", reported: true }),
+      expect.objectContaining({ text: "texte m3", reported: false }),
+    ]);
+  });
+
+  it("can't be reported by its own author", async () => {
+    const { svc } = make({
+      message: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ authorId: "max", deletedAt: null }),
+      },
+    });
+
+    await expect(
+      svc.create("max", "MESSAGE", "m2", "HARASSMENT", "HARASSMENT_INSULTS"),
+    ).rejects.toBeInstanceOf(AppException);
   });
 });
 

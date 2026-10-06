@@ -1156,6 +1156,9 @@ export function toUserDto(user: User): UserDto {
     mfaTotpEnabled: user.mfaTotpEnabled,
     mfaEmailEnabled: user.mfaEmailEnabled,
     hideProgression: user.hideProgression,
+    chatShowPresence: user.chatShowPresence,
+    chatShowReadReceipts: user.chatShowReadReceipts,
+    feedbackWidget: user.feedbackWidget,
     spoilerSensitivity:
       user.spoilerSensitivity as UserDto["spoilerSensitivity"],
     domainOrder: user.domainOrder as UserDto["domainOrder"],

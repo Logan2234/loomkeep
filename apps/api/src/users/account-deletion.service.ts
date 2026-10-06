@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { AuthService } from "../auth/auth.service";
+import { ChatService } from "../chat/chat.service";
 import { ListService } from "../lists/list.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -21,6 +22,7 @@ export class AccountDeletionService {
     private readonly security: SecurityEventService,
     private readonly mail: MailService,
     private readonly auth: AuthService,
+    private readonly chat: ChatService,
   ) {}
 
   async deleteAccount(
@@ -67,6 +69,7 @@ export class AccountDeletionService {
     }
 
     await this.lists.reassignOwnedListsOnAccountDeletion(userId);
+    await this.chat.eraseAuthor(userId);
 
     // Other members' notifications name the actor by username: left behind,
     // they'd point at a missing profile — or at whoever takes the name next.
@@ -80,6 +83,7 @@ export class AccountDeletionService {
     }
 
     await this.prisma.user.delete({ where: { id: userId } });
+    await this.chat.purgeEmptyConversations();
 
     // The confirmation the GDPR erasure calls for; the address is used one
     // last time, after the account it belonged to is gone. Administrative

@@ -70,6 +70,7 @@ export interface MailCopy {
   };
   moderation: {
     comment: ModerationVariant;
+    message: ModerationVariant;
     review: ModerationVariant;
     listRemoved: ModerationVariant;
     listEdited: ModerationVariant;
@@ -327,6 +328,10 @@ export const MAIL_COPY = {
       comment: {
         measure: "le retrait d'un de tes commentaires",
         subject: "Un de tes commentaires a été retiré",
+      },
+      message: {
+        measure: "le retrait d'un de tes messages",
+        subject: "Un de tes messages a été retiré",
       },
       review: {
         measure: "le retrait d'une de tes critiques",
@@ -658,6 +663,10 @@ export const MAIL_COPY = {
       comment: {
         measure: "the removal of one of your comments",
         subject: "One of your comments has been removed",
+      },
+      message: {
+        measure: "the removal of one of your messages",
+        subject: "One of your messages has been removed",
       },
       review: {
         measure: "the removal of one of your reviews",
@@ -992,6 +1001,10 @@ export const MAIL_COPY = {
       comment: {
         measure: "la rimozione di uno dei tuoi commenti",
         subject: "Uno dei tuoi commenti è stato rimosso",
+      },
+      message: {
+        measure: "la rimozione di uno dei tuoi messaggi",
+        subject: "Uno dei tuoi messaggi è stato rimosso",
       },
       review: {
         measure: "la rimozione di una delle tue recensioni",

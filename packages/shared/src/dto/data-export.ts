@@ -220,6 +220,22 @@ export interface DataExportCommentReaction {
   createdAt: string;
 }
 
+export interface DataExportMessage {
+  mine: boolean;
+  text: string | null;
+  spoiler: boolean;
+  edited: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+}
+
+/** A private conversation, with what both members wrote in it. */
+export interface DataExportConversation {
+  peerUsername: string | null;
+  muted: boolean;
+  messages: DataExportMessage[];
+}
+
 export interface DataExportListItem {
   targetType: ReviewTargetType;
   targetId: string;
@@ -449,6 +465,7 @@ export interface UserDataExportDto {
   reviewVotes: DataExportReviewVote[];
   comments: DataExportComment[];
   commentReactions: DataExportCommentReaction[];
+  conversations: DataExportConversation[];
   lists: DataExportList[];
   listMemberships: DataExportListMembership[];
   follows: { following: DataExportFollow[]; followers: DataExportFollow[] };

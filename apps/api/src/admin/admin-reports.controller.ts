@@ -27,6 +27,7 @@ import {
   CurrentUser,
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
+import { ChatService } from "../chat/chat.service";
 import { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
@@ -76,6 +77,7 @@ export class AdminReportsController {
     private readonly moderationDecisions: ModerationDecisionService,
     private readonly lists: ListService,
     private readonly auth: AuthService,
+    private readonly chat: ChatService,
   ) {}
 
   @Get()
@@ -252,6 +254,13 @@ export class AdminReportsController {
         this.comments.publishAdminRemoval(
           committed.removal.commentTarget.type,
           committed.removal.commentTarget.id,
+        );
+      }
+
+      if (committed.removal?.messageTarget) {
+        void this.chat.publishAdminRemoval(
+          committed.removal.messageTarget.conversationId,
+          committed.removal.messageTarget.messageId,
         );
       }
 
@@ -559,6 +568,7 @@ export class AdminReportsController {
     authorId: string | null;
     snapshot: string | null;
     commentTarget?: { type: string; id: string };
+    messageTarget?: { conversationId: string; messageId: string };
   } | null> {
     if (targetType === "COMMENT") {
       const {
@@ -572,6 +582,19 @@ export class AdminReportsController {
         authorId,
         snapshot: text,
         commentTarget: { type, id },
+      };
+    }
+
+    if (targetType === "MESSAGE") {
+      const { authorId, text, conversationId } = await this.chat.adminRemove(
+        targetId,
+        tx,
+      );
+      return {
+        measure: ModerationMeasure.MESSAGE_REMOVED,
+        authorId,
+        snapshot: text,
+        messageTarget: { conversationId, messageId: targetId },
       };
     }
 

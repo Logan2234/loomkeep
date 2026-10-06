@@ -154,6 +154,7 @@
   "transparency_measures_total_many": "{count} mesures prises en {year}.",
   "transparency_measures_without_report": "Dont {count} sans signalement préalable, à l'initiative de la modération.",
   "transparency_measure_comment": "Commentaire retiré",
+  "transparency_measure_message": "Message retiré",
   "transparency_measure_review": "Critique retirée",
   "transparency_measure_account": "Compte supprimé",
   "transparency_automated_heading": "Décisions automatisées",

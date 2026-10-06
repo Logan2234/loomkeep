@@ -179,6 +179,8 @@ export class ModerationDecisionService {
     switch (measure) {
       case ModerationMeasure.COMMENT_REMOVED:
         return copy.moderation.commentRemoved;
+      case ModerationMeasure.MESSAGE_REMOVED:
+        return copy.moderation.messageRemoved;
       case ModerationMeasure.REVIEW_REMOVED:
         return copy.moderation.reviewRemoved;
       case ModerationMeasure.LIST_REMOVED:
