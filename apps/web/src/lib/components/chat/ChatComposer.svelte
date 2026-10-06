@@ -11,16 +11,24 @@
     type ChatFormat,
   } from "#lib/chat/chat-markdown.js";
   import Icon from "#lib/components/Icon.svelte";
+  import Poster from "#lib/components/Poster.svelte";
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { socket } from "#lib/realtime/socket.js";
   import type { IconName } from "#lib/types/icon-name.js";
-  import { MESSAGE_TEXT_MAX_LENGTH, type MessageDto } from "@loomkeep/shared";
+  import {
+    MESSAGE_TEXT_MAX_LENGTH,
+    type MessageDto,
+    type MessageWorkDto,
+    type SendMessageRequestDto,
+  } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { tick } from "svelte";
   import { fade, scale } from "svelte/transition";
   import { caretPosition } from "./caret-position";
+  import ChatWorkPicker from "./ChatWorkPicker.svelte";
+  import { workKindLabel } from "./conversation-presentation";
 
   let {
     conversationId,
@@ -40,7 +48,10 @@
   const COUNTER_FROM = MESSAGE_TEXT_MAX_LENGTH - 200;
 
   let textarea = $state<HTMLTextAreaElement | null>(null);
+  let picker = $state<ChatWorkPicker | null>(null);
   let value = $state("");
+  // The work `/reco` attached: sent as a card with the message.
+  let attached = $state<MessageWorkDto | null>(null);
   let highlighted = $state<string | null>(null);
   let selectionBar = $state<{
     left: number;
@@ -70,13 +81,14 @@
       icon: "book-open",
       label: "/reco",
       hint: m.chat_command_reco(),
-      available: false,
+      available: true,
     },
   ];
 
   $effect(() => {
     const id = conversationId;
     value = drafts.get(id) ?? "";
+    attached = null;
     void tick().then(autosize);
   });
 
@@ -93,9 +105,18 @@
   const commands = $derived.by(() => {
     const typed = /^\/(\w*)$/.exec(value);
     return typed
-      ? COMMANDS.filter((c) => c.id.startsWith(typed[1].toLowerCase()))
+      ? COMMANDS.filter(
+          (c) =>
+            c.id.startsWith(typed[1].toLowerCase()) &&
+            !(editing && c.id === "reco"),
+        )
       : [];
   });
+
+  // What follows `/reco `, while a work is being looked for.
+  const recoQuery = $derived(
+    editing ? null : (/^\/reco\s([\s\S]*)$/.exec(value)?.[1] ?? null),
+  );
 
   $effect(() => {
     if (!commands.some((c) => c.id === highlighted && c.available)) {
@@ -103,12 +124,18 @@
     }
   });
 
-  const sendable = $derived(readSlashCommand(value).text.length > 0);
+  const sendable = $derived(
+    recoQuery === null &&
+      (readSlashCommand(value).text.length > 0 || attached !== null),
+  );
 
   const sendMut = createApiMutation(() => ({
-    mutate: (body: { text: string; spoiler: boolean }) =>
+    mutate: (body: SendMessageRequestDto) =>
       editing
-        ? editMessage(editing.id, body)
+        ? editMessage(editing.id, {
+            text: body.text ?? "",
+            spoiler: body.spoiler,
+          })
         : sendMessage(conversationId, body),
     onSuccess: (message) => {
       queryClient.setQueryData<MessagePages>(
@@ -116,6 +143,7 @@
         (data) => upsertMessage(data, message),
       );
       if (editing) oncanceledit();
+      attached = null;
       setValue("");
     },
     errorToast: true,
@@ -135,7 +163,18 @@
 
   function send() {
     if (!sendable || sendMut.loading) return;
-    sendMut.mutate(readSlashCommand(value));
+    const { text, spoiler } = readSlashCommand(value);
+    sendMut.mutate({
+      text: text || undefined,
+      spoiler,
+      work: attached?.href,
+    });
+  }
+
+  function attach(work: MessageWorkDto) {
+    attached = work;
+    setValue("");
+    textarea?.focus();
   }
 
   function pick(command: Command) {
@@ -199,6 +238,8 @@
   }
 
   function onkeydown(event: KeyboardEvent) {
+    if (recoQuery !== null && picker?.handleKey(event)) return;
+
     if (commands.length > 0) {
       const available = commands.filter((c) => c.available);
       const index = available.findIndex((c) => c.id === highlighted);
@@ -276,8 +317,38 @@
     </div>
   {/if}
 
+  {#if attached}
+    {@const work = attached}
+    <div
+      transition:scale={{ duration: reduced ? 0 : 150, start: 0.97 }}
+      class="border-accent bg-accent/10 mb-2 flex items-center gap-2.5 rounded-xl border px-2 py-1.5 text-sm"
+      style="transform-origin: bottom left;">
+      <span class="w-[22px] shrink-0 overflow-hidden rounded-sm">
+        <Poster src={work.imageUrl} title={work.title} alt="" caption={false} />
+      </span>
+      <span class="min-w-0 flex-1 truncate">
+        <b class="font-semibold">{work.title}</b>
+        <span class="text-dim">· {workKindLabel(work.kind)}</span>
+      </span>
+      <button
+        type="button"
+        class="btn-icon h-7 w-7"
+        aria-label={m.chat_reco_remove()}
+        onclick={() => (attached = null)}>
+        <Icon name="x" class="h-3.5 w-3.5" />
+      </button>
+    </div>
+  {/if}
+
   <div class="flex items-end gap-2">
     <div class="relative min-w-0 flex-1">
+      {#if recoQuery !== null}
+        <ChatWorkPicker
+          bind:this={picker}
+          query={recoQuery}
+          onpick={attach}
+          oncancel={() => setValue("")} />
+      {/if}
       {#if commands.length > 0}
         <div
           transition:scale={{ duration: reduced ? 0 : 150, start: 0.97 }}

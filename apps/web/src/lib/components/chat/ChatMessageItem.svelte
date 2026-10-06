@@ -15,6 +15,7 @@
   } from "@loomkeep/shared";
   import { fade, scale } from "svelte/transition";
   import ChatMessageText from "./ChatMessageText.svelte";
+  import ChatWorkCard from "./ChatWorkCard.svelte";
 
   let {
     message,
@@ -83,13 +84,15 @@
         </button>
       {/if}
       {#if message.mine && writable}
-        <button
-          type="button"
-          class="btn-icon h-7 w-7"
-          aria-label={m.common_edit()}
-          onclick={() => onedit(message)}>
-          <Icon name="edit" class="h-4 w-4" />
-        </button>
+        {#if message.text}
+          <button
+            type="button"
+            class="btn-icon h-7 w-7"
+            aria-label={m.common_edit()}
+            onclick={() => onedit(message)}>
+            <Icon name="edit" class="h-4 w-4" />
+          </button>
+        {/if}
         <button
           type="button"
           class="btn-icon h-7 w-7"
@@ -148,14 +151,22 @@
       {m.chat_spoiler_reveal()}
     </button>
   {:else}
-    <p
+    <div
       in:fade={{ duration: reduced ? 0 : 150 }}
-      class="rounded-2xl px-3 py-2 text-sm leading-relaxed
+      class="flex flex-col gap-1.5 rounded-2xl text-sm leading-relaxed
+        {message.text ? 'px-3 py-2' : 'p-1.5'}
         {message.mine
         ? 'bg-accent/20 text-fg rounded-br-md'
         : 'bg-surface-2 rounded-bl-md'}">
-      <ChatMessageText text={message.text ?? ""} />
-    </p>
+      {#if message.text}
+        <p><ChatMessageText text={message.text} /></p>
+      {/if}
+      {#each message.works as work (work.href)}
+        <div in:fade={{ duration: reduced ? 0 : 150 }}>
+          <ChatWorkCard {work} />
+        </div>
+      {/each}
+    </div>
   {/if}
 
   {#if message.reactions.length > 0}

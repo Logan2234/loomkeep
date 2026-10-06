@@ -19,6 +19,7 @@
     onToggleFavorite,
     onRemove,
     actions = [],
+    extra,
     children,
   }: {
     favorite: boolean;
@@ -33,6 +34,8 @@
       onSelect: () => void;
       separator?: boolean;
     }[];
+    /** Another action, first in the row. */
+    extra?: Snippet;
     children: Snippet;
   } = $props();
 </script>
@@ -45,6 +48,7 @@
     <span class="text-sm font-semibold">{m.tracking_title()}</span>
 
     <div class="flex shrink-0 items-center gap-2.5">
+      {@render extra?.()}
       <AddToListButton {targetType} {targetId} />
 
       <button

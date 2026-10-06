@@ -156,6 +156,9 @@ export const keys = {
     conversation: (id: string) => ["chat", "conversation", id] as const,
     messages: (id: string) => ["chat", "messages", id] as const,
     friends: (query: string) => ["chat", "friends", query] as const,
+    // Outside ["chat"]: a reconnection refetches what's under it, and this
+    // one is catalogue searches.
+    workSearch: (query: string) => ["chat-work-search", query] as const,
   },
   notifications: {
     feed: () => ["notifications", "feed"] as const,

@@ -29,8 +29,9 @@ beforeEach(() => {
       apiUrl("/chat/conversations/cv1/messages"),
       async ({ request }) => {
         const body = (await request.json()) as {
-          text: string;
+          text?: string;
           spoiler: boolean;
+          work?: string;
         };
         sent.push(body);
         return HttpResponse.json({
@@ -38,13 +39,14 @@ beforeEach(() => {
           conversationId: "cv1",
           authorId: "me",
           mine: true,
-          text: body.text,
+          text: body.text ?? null,
           spoiler: body.spoiler,
           edited: false,
           deleted: false,
           deletedByAdmin: false,
           reactions: [],
           myReaction: null,
+          works: [],
           createdAt: "2026-10-07T10:00:00.000Z",
           updatedAt: "2026-10-07T10:00:00.000Z",
         } satisfies MessageDto);
@@ -85,6 +87,62 @@ describe("ChatComposer", () => {
       expect(sent).toEqual([{ text: "Mark reste", spoiler: true }]),
     );
     expect(box.value).toBe("");
+  });
+
+  it("attaches the work /reco finds, and sends it with the message", async () => {
+    server.use(
+      http.get(apiUrl("/catalog/search"), () =>
+        HttpResponse.json({ items: [], hasMore: false }),
+      ),
+      http.get(apiUrl("/games/search"), () =>
+        HttpResponse.json({
+          results: [
+            {
+              source: "IGDB",
+              sourceId: "11737",
+              title: "Outer Wilds",
+              year: 2019,
+              coverUrl: null,
+              isAdult: false,
+            },
+          ],
+        }),
+      ),
+      http.get(apiUrl("/books/search"), () =>
+        HttpResponse.json({ results: [] }),
+      ),
+      http.get(apiUrl("/music/search"), () =>
+        HttpResponse.json({ results: [] }),
+      ),
+    );
+    const user = userEvent.setup();
+    const box = renderComposer();
+
+    await user.type(box, "/reco outer");
+    const result = await screen.findByRole("option", { name: /Outer Wilds/ });
+    await user.click(result);
+
+    expect(box.value).toBe("");
+    await user.type(box, "Celui-là{Enter}");
+
+    await waitFor(() =>
+      expect(sent).toEqual([
+        { text: "Celui-là", spoiler: false, work: "/app/games/11737" },
+      ]),
+    );
+  });
+
+  it("takes bold off with the shortcut that put it on", async () => {
+    const user = userEvent.setup();
+    const box = renderComposer();
+
+    await user.type(box, "un mot");
+    box.setSelectionRange(3, 6);
+    await user.keyboard("{Control>}b{/Control}");
+    expect(box.value).toBe("un **mot**");
+
+    await user.keyboard("{Control>}b{/Control}");
+    expect(box.value).toBe("un mot");
   });
 
   it("wraps the selection in the shortcut's marker", async () => {

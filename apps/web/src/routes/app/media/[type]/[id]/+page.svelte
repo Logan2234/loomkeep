@@ -21,6 +21,8 @@
   import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
   import Banner from "#lib/components/Banner.svelte";
   import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import RecommendButton from "#lib/components/chat/RecommendButton.svelte";
+  import { mediaWork } from "#lib/chat/work-search.js";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
   import Icon from "#lib/components/Icon.svelte";
@@ -555,15 +557,20 @@
       episodeAlertsMut.mutate(!entry?.episodeAlertsMuted)}
     onRemove={() => (confirmRemove = true)}>
     {#snippet socialActions()}
-      {#if appConfig.socialEnabled && detail.commentTargetId}
-        <CommentsPanel
-          targetType="MEDIA"
-          targetId={detail.commentTargetId}
-          title={detail.title}
-          canParticipate={!!entry}
-          revealSpoilersByDefault={entry?.status === "COMPLETED"}
-          compact />
-      {/if}
+      <div class="flex items-center gap-2.5">
+        {#if appConfig.socialEnabled && detail.commentTargetId}
+          <CommentsPanel
+            targetType="MEDIA"
+            targetId={detail.commentTargetId}
+            title={detail.title}
+            canParticipate={!!entry}
+            revealSpoilersByDefault={entry?.status === "COMPLETED"}
+            compact />
+        {/if}
+        {#if !detail.isAdult}
+          <RecommendButton work={mediaWork(detail)} />
+        {/if}
+      </div>
     {/snippet}
   </ActionBar>
 

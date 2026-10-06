@@ -32,6 +32,8 @@
   import ReviewsSection from "#lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "#lib/components/TrackingPanel.svelte";
+  import RecommendButton from "#lib/components/chat/RecommendButton.svelte";
+  import { bookWork } from "#lib/chat/work-search.js";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import {
@@ -80,6 +82,8 @@
     enabled: !!id,
   }));
   const detail = $derived(bookQuery.data);
+  // 18+ titles never become a card: the friend may not allow them.
+  const work = $derived(detail && !detail.isAdult ? bookWork(detail) : null);
   const error = $derived(bookQuery.error);
 
   // The interface-language auto-pick's own language, captured once and kept
@@ -352,8 +356,14 @@
           </p>
         {/if}
 
+        {#snippet recommendButton()}
+          {#if work}
+            <RecommendButton {work} />
+          {/if}
+        {/snippet}
+
         {#if !entry}
-          <div class="mt-6">
+          <div class="mt-6 flex items-center gap-2.5">
             <button
               class="btn btn-primary"
               disabled={saving}
@@ -361,9 +371,13 @@
               <Icon name="plus" class="h-4 w-4" />
               {m.library_add()}
             </button>
+            {#if work}
+              <RecommendButton {work} />
+            {/if}
           </div>
         {:else}
           <TrackingPanel
+            extra={work ? recommendButton : undefined}
             favorite={entry.favorite}
             {saving}
             onToggleFavorite={() =>

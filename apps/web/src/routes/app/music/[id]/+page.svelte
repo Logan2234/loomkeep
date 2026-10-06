@@ -25,6 +25,8 @@
   import ReviewsSection from "#lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "#lib/components/TrackingPanel.svelte";
+  import RecommendButton from "#lib/components/chat/RecommendButton.svelte";
+  import { musicWork } from "#lib/chat/work-search.js";
   import { appConfig } from "#lib/config.svelte.js";
   import {
     MUSIC_OWNERSHIP_SOURCES,
@@ -56,6 +58,7 @@
     enabled: !!id,
   }));
   const detail = $derived(musicQuery.data);
+  const work = $derived(detail ? musicWork(detail) : null);
   const error = $derived(musicQuery.error);
 
   const entry = $derived(detail?.entry ?? null);
@@ -232,8 +235,14 @@
           </div>
         </div>
 
+        {#snippet recommendButton()}
+          {#if work}
+            <RecommendButton {work} />
+          {/if}
+        {/snippet}
+
         {#if !entry}
-          <div class="mt-6">
+          <div class="mt-6 flex items-center gap-2.5">
             <button
               class="btn btn-primary"
               disabled={saving}
@@ -241,9 +250,13 @@
               <Icon name="plus" class="h-4 w-4" />
               {m.library_add()}
             </button>
+            {#if work}
+              <RecommendButton {work} />
+            {/if}
           </div>
         {:else}
           <TrackingPanel
+            extra={work ? recommendButton : undefined}
             favorite={entry.favorite}
             {saving}
             targetType="MUSIC"
