@@ -125,6 +125,7 @@ export default defineConfig({
                     "guide/install",
                     "guide/calendar-and-feeds",
                     "guide/notifications",
+                    "guide/messages",
                     "guide/security",
                     "guide/your-data",
                     "guide/free-and-premium",

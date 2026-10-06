@@ -44,8 +44,11 @@ In [instance settings](/self-hosting/instance-settings/):
 ## Social features
 
 With social features on, people see each other's activity, reviews and
-lists, within the privacy settings each one chooses. They can also report
-what others post: reports reach **Admin › Reports**, and administrators get
+lists, within the privacy settings each one chooses. Turn on **Messages** in
+[Instance settings](/self-hosting/instance-settings/) as well and friends can
+write to each other; their messages sit unencrypted in your database, so say
+so to the people you open the instance to. They can also report what others
+post, messages included: reports reach **Admin › Reports**, and administrators get
 a daily email while some are pending. Someone has to look at them: see
 [Moderation](/self-hosting/administration/#moderation).
 

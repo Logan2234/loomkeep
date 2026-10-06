@@ -45,6 +45,12 @@ only the friends you approve, or nobody (ghost mode). You also choose, for
 each domain, who sees your library and your activity. Your notes are always private. On an
 instance with social features off, nobody else sees anything.
 
+## Can anyone read my messages?
+
+Only the friend you're writing to, and the moderators of a message one of you
+reports. Messages aren't end-to-end encrypted, though: whoever hosts the
+instance could technically read them. See [Messages](/guide/messages/).
+
 ## Can I move from loomkeep.app to my own instance?
 
 Not in one step yet. Meanwhile, the **complete archive** in
