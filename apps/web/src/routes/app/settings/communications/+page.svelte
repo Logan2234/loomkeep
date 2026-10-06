@@ -146,6 +146,18 @@
     (
       [
         {
+          label: m.chat_title(),
+          alerts: appConfig.chatEnabled
+            ? [
+                {
+                  key: "CHAT_MESSAGE",
+                  label: m.settings_alert_chat_message(),
+                  hint: m.settings_alert_chat_message_hint(),
+                },
+              ]
+            : [],
+        },
+        {
           label: m.settings_alert_group_comments(),
           alerts: social([
             {

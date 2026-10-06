@@ -1,6 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { openConversation } from "#lib/api/chat.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
+  import { chat } from "#lib/chat/chat.svelte.js";
   import Avatar from "#lib/components/Avatar.svelte";
   import CountFlash from "#lib/components/CountFlash.svelte";
   import Dropdown from "#lib/components/Dropdown.svelte";
@@ -9,6 +13,7 @@
   import { appConfig } from "#lib/config.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { RelationshipDto, SocialProfileDto } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   let {
     profile,
@@ -49,6 +54,31 @@
     onOpenScanModal: () => void;
     onOpenConnections: (kind: "followers" | "following") => void;
   } = $props();
+
+  const queryClient = useQueryClient();
+
+  // Messages go between accounts that follow each other.
+  const canMessage = $derived(
+    appConfig.chatEnabled &&
+      !!rel &&
+      !rel.isSelf &&
+      !rel.blocking &&
+      rel.following &&
+      rel.followsYou &&
+      profile.profileAccess !== "GHOST",
+  );
+
+  const messageMut = createApiMutation(() => ({
+    mutate: () => openConversation(profile.username),
+    onSuccess: (conversation) => {
+      queryClient.setQueryData(
+        keys.chat.conversation(conversation.id),
+        conversation,
+      );
+      chat.show(conversation.id);
+    },
+    errorToast: true,
+  }));
 </script>
 
 <section class="card relative flex flex-col p-5 md:p-6">
@@ -154,6 +184,17 @@
               {followLabel}
             </button>
           {/if}
+        {/if}
+        {#if canMessage}
+          <button
+            type="button"
+            class="btn btn-ghost px-3"
+            aria-label={m.chat_write_to({ name: profile.displayName })}
+            title={m.chat_write_to({ name: profile.displayName })}
+            disabled={messageMut.loading}
+            onclick={() => messageMut.mutate()}>
+            <Icon name="message" class="h-4 w-4" />
+          </button>
         {/if}
         <Dropdown placement="bottom-end" role="menu" class="min-w-44">
           {#snippet trigger({ open, toggle, onkeydown })}

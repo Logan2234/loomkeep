@@ -137,6 +137,17 @@
     hideProgressionMut.mutate(!auth.user.hideProgression);
   }
 
+  const chatPresenceMut = createApiMutation(() => ({
+    mutate: (chatShowPresence: boolean) => updateMe({ chatShowPresence }),
+    errorToast: true,
+  }));
+
+  const chatReadReceiptsMut = createApiMutation(() => ({
+    mutate: (chatShowReadReceipts: boolean) =>
+      updateMe({ chatShowReadReceipts }),
+    errorToast: true,
+  }));
+
   let isPrivate = $derived(settings?.profileAccess !== ProfileAccess.PUBLIC);
 
   // Only domains the user actually kept visible (see enabledDomains on
@@ -260,6 +271,39 @@
               label={m.settings_hide_progression()}
               checked={gamificationUser.hideProgression}
               onChange={toggleHideProgression} />
+          {/snippet}
+        </SettingRow>
+      </div>
+    {/if}
+
+    {#if appConfig.chatEnabled && auth.user}
+      {@const chatUser = auth.user}
+      <div class="border-border mt-6 space-y-4 border-t pt-6">
+        <p class="text-dim text-xs font-semibold tracking-wide uppercase">
+          {m.settings_chat_title()}
+        </p>
+        <SettingRow
+          anchor="chat-presence"
+          label={m.settings_chat_presence()}
+          description={m.settings_chat_presence_desc()}
+          mutation={chatPresenceMut}>
+          {#snippet control()}
+            <Switch
+              label={m.settings_chat_presence()}
+              checked={chatUser.chatShowPresence}
+              onChange={(value) => chatPresenceMut.mutate(value)} />
+          {/snippet}
+        </SettingRow>
+        <SettingRow
+          anchor="chat-read-receipts"
+          label={m.settings_chat_read_receipts()}
+          description={m.settings_chat_read_receipts_desc()}
+          mutation={chatReadReceiptsMut}>
+          {#snippet control()}
+            <Switch
+              label={m.settings_chat_read_receipts()}
+              checked={chatUser.chatShowReadReceipts}
+              onChange={(value) => chatReadReceiptsMut.mutate(value)} />
           {/snippet}
         </SettingRow>
       </div>

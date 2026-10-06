@@ -761,5 +761,8 @@
   "admin_imports_source": "Source",
   "admin_jobs_history_date": "Date",
   "admin_jobs_history_result": "Résultat",
-  "admin_jobs_history_duration": "Durée"
+  "admin_jobs_history_duration": "Durée",
+  "admin_settings_chat": "Messages",
+  "admin_settings_chat_hint": "Messages privés entre amis (nécessite Social). Stockés non chiffrés dans la base de l'instance.",
+  "admin_reports_message_context": "Messages autour du message signalé"
 }

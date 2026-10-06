@@ -539,5 +539,14 @@
   "settings_delete_account_removed_content_copies": "Copies of comments removed by moderation",
   "settings_delete_account_group_library": "Library and tracking",
   "settings_delete_account_group_social": "Lists and social",
-  "settings_delete_account_group_account": "Account and security"
+  "settings_delete_account_group_account": "Account and security",
+  "settings_chat_title": "Messages",
+  "settings_chat_presence": "Show when I'm online",
+  "settings_chat_presence_desc": "Your friends also see when you're typing. Reciprocal: turned off, you no longer see theirs either.",
+  "settings_chat_read_receipts": "Show when I've read a message",
+  "settings_chat_read_receipts_desc": "Reciprocal: turned off, you no longer see your friends' \"Seen\" either.",
+  "settings_feedback_widget": "\"Give feedback\" button",
+  "settings_feedback_widget_desc": "The bottom-right button that opens the feedback board. Hidden, it stays reachable from this page.",
+  "settings_alert_chat_message": "A message from a friend",
+  "settings_alert_chat_message_hint": "Only while the app is open nowhere, without the message's text."
 }

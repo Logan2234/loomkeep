@@ -206,5 +206,11 @@
   "apierr_auth_account_suspended": "Ton compte est désactivé.",
   "apierr_library_game_not_released": "Ce jeu n’est pas encore sorti : le statut, les sessions, la possession, les notes et les critiques seront disponibles à sa sortie.",
   "apierr_library_movie_not_released": "Ce film n’est pas encore sorti : le suivi, les notes et les critiques seront disponibles à sa première sortie publique.",
-  "apierr_library_anime_not_aired": "Cet anime n’est pas encore diffusé : le suivi, les notes et les critiques seront disponibles dès sa diffusion."
+  "apierr_library_anime_not_aired": "Cet anime n’est pas encore diffusé : le suivi, les notes et les critiques seront disponibles dès sa diffusion.",
+  "apierr_chat_feature_disabled": "Les messages ne sont pas disponibles sur cette instance.",
+  "apierr_chat_not_friends": "Tu ne peux écrire qu'à un ami : quelqu'un que tu suis et qui te suit en retour.",
+  "apierr_chat_conversation_not_found": "Cette conversation est introuvable.",
+  "apierr_chat_message_not_found": "Ce message est introuvable.",
+  "apierr_chat_forbidden": "Seul l'auteur d'un message peut le modifier ou le supprimer.",
+  "apierr_chat_read_only": "Cette conversation est en lecture seule."
 }

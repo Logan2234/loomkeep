@@ -9,6 +9,8 @@
     resolveBottomShortcuts,
   } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
+  import ChatTab from "#lib/components/chat/ChatTab.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import NotificationTab from "./NotificationTab.svelte";
 
   // The user's stored order (falls back to the default set), gated by enabled
@@ -93,6 +95,9 @@
     {/if}
   {/each}
 
+  {#if appConfig.chatEnabled}
+    <ChatTab />
+  {/if}
   <NotificationTab />
 </nav>
 

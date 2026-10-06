@@ -539,5 +539,14 @@
   "settings_delete_account_removed_content_copies": "Copie dei commenti rimossi dalla moderazione",
   "settings_delete_account_group_library": "Libreria e tracciamento",
   "settings_delete_account_group_social": "Liste e social",
-  "settings_delete_account_group_account": "Account e sicurezza"
+  "settings_delete_account_group_account": "Account e sicurezza",
+  "settings_chat_title": "Messaggi",
+  "settings_chat_presence": "Mostra quando sono online",
+  "settings_chat_presence_desc": "I tuoi amici vedono anche quando scrivi. Reciproco: disattivato, non vedi più nemmeno la loro presenza.",
+  "settings_chat_read_receipts": "Mostra quando ho letto un messaggio",
+  "settings_chat_read_receipts_desc": "Reciproco: disattivato, non vedi più nemmeno i «Visto» dei tuoi amici.",
+  "settings_feedback_widget": "Pulsante «Lascia un feedback»",
+  "settings_feedback_widget_desc": "Il pulsante in basso a destra che apre la bacheca dei feedback. Nascosto, resta raggiungibile da questa pagina.",
+  "settings_alert_chat_message": "Un messaggio da un amico",
+  "settings_alert_chat_message_hint": "Solo quando l'app non è aperta da nessuna parte, senza il testo del messaggio."
 }

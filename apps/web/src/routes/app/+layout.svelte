@@ -7,6 +7,11 @@
   import { trackBackHistory } from "#lib/backNav.svelte.js";
   import { bootstrap } from "#lib/bootstrap.svelte.js";
   import BootSplash from "#lib/components/BootSplash.svelte";
+  import ChatLauncher from "#lib/components/chat/ChatLauncher.svelte";
+  import ChatRealtime from "#lib/components/chat/ChatRealtime.svelte";
+  import ChatSheet from "#lib/components/chat/ChatSheet.svelte";
+  import { chat } from "#lib/chat/chat.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
   import Modal from "#lib/components/Modal.svelte";
   import NotificationBell from "#lib/components/NotificationBell.svelte";
@@ -101,6 +106,14 @@
   <UnlockBubble />
   <WidgetIdentify />
   <OnboardingWidget />
+  {#if appConfig.chatEnabled}
+    <ChatRealtime />
+    {#if !layout.compact}
+      <ChatLauncher />
+    {:else if chat.open}
+      <ChatSheet />
+    {/if}
+  {/if}
 
   <!-- Exactly one shell is mounted: rendering both and hiding one in CSS
        duplicated every `id` on the page, which broke `#section` anchors and

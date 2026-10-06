@@ -25,6 +25,7 @@
   type ToggleKey = Extract<
     InstanceSettingKey,
     | "socialEnabled"
+    | "chatEnabled"
     | "gamificationEnabled"
     | "registrationEnabled"
     | "publicApiEnabled"
@@ -53,6 +54,11 @@
       key: "socialEnabled",
       label: m.common_social(),
       hint: m.admin_settings_social_hint(),
+    },
+    {
+      key: "chatEnabled",
+      label: m.admin_settings_chat(),
+      hint: m.admin_settings_chat_hint(),
     },
     {
       key: "gamificationEnabled",

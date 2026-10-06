@@ -76,7 +76,10 @@ Key generation and restoring:
 [Quackback](https://quackback.io) runs as its own unmodified deployment,
 bootstrapped with `quackback-bootstrap.sh`: translating its stack (its own
 Postgres, Dragonfly, MinIO) into this repo would drift with every upstream
-change. The override here only routes Caddy to its published port.
+change. The override here only routes Caddy to its published port. The
+in-app launcher appears only when the web has `PUBLIC_QUACKBACK_URL`
+(`https://feedback.loomkeep.app` here): a self-hosted instance loads nothing
+from the board unless it sets its own.
 
 ## Homepage dashboard
 

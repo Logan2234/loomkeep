@@ -29,8 +29,8 @@ export class DataExportMessageResponseDto implements DataExportMessage {
   edited!: boolean;
 
   /**
-   * When it was deleted, by its author or by moderation.
-   * @example null
+   * When it was deleted, by its author or by moderation, if it was.
+   * @example "2026-10-07T09:00:00.000Z"
    */
   deletedAt!: string | null;
 

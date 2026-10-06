@@ -8,6 +8,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import SidePanel from "./SidePanel.svelte";
 import WidgetIdentify from "./WidgetIdentify.svelte";
 
+vi.mock("$app/env/public", () => ({
+  PUBLIC_QUACKBACK_URL: "https://feedback.example.com/",
+}));
+
 const body = createRawSnippet(() => ({ render: () => "<p>Discussion</p>" }));
 
 let quackback: ReturnType<typeof vi.fn<(...args: unknown[]) => void>>;
@@ -40,6 +44,26 @@ describe("WidgetIdentify", () => {
     panel.unmount();
     flushSync();
     expect(lastCommand()).toBe("showLauncher");
+  });
+
+  it("loads the SDK from the instance's own feedback board", () => {
+    delete window.Quackback;
+    // Kept out of the document: the test environment can't load it anyway.
+    const append = vi
+      .spyOn(document.head, "appendChild")
+      .mockImplementation((node) => node);
+    render(WidgetIdentify);
+
+    const script = append.mock.calls[0]?.[0] as HTMLScriptElement;
+    expect(script.src).toBe("https://feedback.example.com/api/widget/sdk.js");
+    append.mockRestore();
+  });
+
+  it("stays away for an account that turned the launcher off", () => {
+    auth.user = { id: "u1", feedbackWidget: false } as UserDto;
+    render(WidgetIdentify);
+
+    expect(quackback).not.toHaveBeenCalled();
   });
 
   it("hides the feedback launcher while a toast shares its corner", () => {

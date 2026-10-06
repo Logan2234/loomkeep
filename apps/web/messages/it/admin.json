@@ -761,5 +761,8 @@
   "admin_imports_source": "Origine",
   "admin_jobs_history_date": "Data",
   "admin_jobs_history_result": "Risultato",
-  "admin_jobs_history_duration": "Durata"
+  "admin_jobs_history_duration": "Durata",
+  "admin_settings_chat": "Messaggi",
+  "admin_settings_chat_hint": "Messaggi privati tra amici (richiede Social). Salvati non cifrati nel database dell'istanza.",
+  "admin_reports_message_context": "Messaggi attorno a quello segnalato"
 }
