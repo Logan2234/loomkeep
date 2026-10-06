@@ -1,6 +1,6 @@
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import type { AccountDeletionSummaryDto } from "@loomkeep/shared";
 import { screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
@@ -8,8 +8,11 @@ import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 import DeleteAccountPage from "./+page.svelte";
 
-vi.mock("$app/state", async () => import("$lib/test/navigation.svelte"));
-vi.mock("$app/navigation", async () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/state", async () => import("#lib/test/navigation.svelte.js"));
+vi.mock(
+  "$app/navigation",
+  async () => import("#lib/test/navigation.svelte.js"),
+);
 
 function summary(
   overrides: Partial<AccountDeletionSummaryDto> = {},

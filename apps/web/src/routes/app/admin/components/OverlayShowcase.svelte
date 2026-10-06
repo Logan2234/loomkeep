@@ -1,15 +1,15 @@
 <script lang="ts">
-  import SidePanel from "$lib/components/SidePanel.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import Drawer from "$lib/components/Drawer.svelte";
-  import Dropdown from "$lib/components/Dropdown.svelte";
-  import FocusOverlay from "$lib/components/FocusOverlay.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Lightbox from "$lib/components/Lightbox.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
+  import SidePanel from "#lib/components/SidePanel.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import Drawer from "#lib/components/Drawer.svelte";
+  import Dropdown from "#lib/components/Dropdown.svelte";
+  import FocusOverlay from "#lib/components/FocusOverlay.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Lightbox from "#lib/components/Lightbox.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
 
   let panelOpen = $state(false);
   let nestedModalOpen = $state(false);

@@ -6,13 +6,13 @@
   // per-user/global feeds are invalidated to catch up on whatever was missed
   // while offline; NotificationBell, reports-pending etc. only need to listen
   // for their own live event from then on.
-  import { keys } from "$lib/api/keys";
-  import { auth } from "$lib/auth.svelte";
+  import { keys } from "#lib/api/keys.js";
+  import { auth } from "#lib/auth.svelte.js";
   import {
     connectRealtimeSocket,
     disconnectRealtimeSocket,
     socket,
-  } from "$lib/realtime/socket";
+  } from "#lib/realtime/socket.js";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   const queryClient = useQueryClient();

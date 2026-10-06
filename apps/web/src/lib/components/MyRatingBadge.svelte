@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { auth } from "$lib/auth.svelte";
-  import { createMyReview } from "$lib/my-review.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { createMyReview } from "#lib/my-review.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ReviewTargetType } from "@loomkeep/shared";
   import Icon from "./Icon.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";

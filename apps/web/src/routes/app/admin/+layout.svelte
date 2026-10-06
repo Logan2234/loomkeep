@@ -1,10 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { auth } from "$lib/auth.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import AdminPageShell from "./AdminPageShell.svelte";
 
   let { children } = $props();

@@ -1,8 +1,8 @@
-import { layout } from "$lib/layout.svelte";
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
-import { toast } from "$lib/toast.svelte";
+import { layout } from "#lib/layout.svelte.js";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
+import { toast } from "#lib/toast.svelte.js";
 import { ErrorCode } from "@loomkeep/shared";
 import { fireEvent, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
@@ -10,7 +10,7 @@ import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import NotificationBell from "./NotificationBell.svelte";
 
-vi.mock("$lib/realtime/socket", () => ({ onRealtimeEvent: () => () => {} }));
+vi.mock("#lib/realtime/socket.js", () => ({ onRealtimeEvent: () => () => {} }));
 vi.mock("svelte/transition", () => ({
   slide: () => ({ duration: 0 }),
   fade: () => ({ duration: 0 }),

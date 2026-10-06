@@ -3,28 +3,28 @@
   import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "$lib/admin-filter-url";
+  import { adminFilterHref } from "#lib/admin-filter-url.js";
   import {
     ADMIN_USER_ADVANCED_KEYS,
     localDayBoundary,
     type AdminUserAdvancedFilters,
     type AdminUserAdvancedKey,
-  } from "$lib/admin-user-filters";
-  import { getAdminUsers } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import TabPanels from "$lib/components/TabPanels.svelte";
-  import Tabs from "$lib/components/Tabs.svelte";
-  import { debounce } from "$lib/debounce";
-  import { formatDate } from "$lib/format";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/admin-user-filters.js";
+  import { getAdminUsers } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import TabPanels from "#lib/components/TabPanels.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
+  import { debounce } from "#lib/debounce.js";
+  import { formatDate } from "#lib/format.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     AdminInvitationLinkDto,
     AdminInvitationRedeemerDto,
@@ -62,7 +62,7 @@
       adminFilterHref(page.url, {
         tab: value === "accounts" ? null : value,
       }),
-      { replaceState: true, noScroll: true, keepFocus: true },
+      { replace: true, reset: false },
     );
   }
 
@@ -146,9 +146,8 @@
 
   const queryFilterDebounce = debounce(() => {
     void goto(adminFilterHref(page.url, { q: query.trim() || null }), {
-      replaceState: true,
-      noScroll: true,
-      keepFocus: true,
+      replace: true,
+      reset: false,
     });
   }, 300);
   $effect(() => {
@@ -167,7 +166,7 @@
         q: query.trim() || null,
         filter: value === "all" ? null : value,
       }),
-      { noScroll: true, keepFocus: true },
+      { reset: false },
     );
   }
 
@@ -178,7 +177,7 @@
         q: query.trim() || null,
         [key]: value || null,
       }),
-      { noScroll: true, keepFocus: true },
+      { reset: false },
     );
   }
 
@@ -187,8 +186,7 @@
     const updates: Record<string, null> = { q: null, filter: null };
     for (const key of ADMIN_USER_ADVANCED_KEYS) updates[key] = null;
     void goto(adminFilterHref(page.url, updates), {
-      noScroll: true,
-      keepFocus: true,
+      reset: false,
     });
   }
 
@@ -203,7 +201,7 @@
       filter: null,
     };
     for (const key of ADMIN_USER_ADVANCED_KEYS) updates[key] = null;
-    void goto(adminFilterHref(page.url, updates), { noScroll: true });
+    void goto(adminFilterHref(page.url, updates), { reset: false });
   }
 
   function closeDrawer() {
@@ -322,8 +320,7 @@
                   remove: () => {
                     queryFilterDebounce.cancel();
                     void goto(adminFilterHref(page.url, { q: null }), {
-                      noScroll: true,
-                      keepFocus: true,
+                      reset: false,
                     });
                   },
                 },

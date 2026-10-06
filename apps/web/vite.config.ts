@@ -2,7 +2,6 @@ import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import adapter from "@sveltejs/adapter-node";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
-import { SvelteKitPWA } from "@vite-pwa/sveltekit";
 import { defineConfig } from "vite";
 
 export default defineConfig(({ command }) => ({
@@ -31,24 +30,9 @@ export default defineConfig(({ command }) => ({
       },
       // adapter-node: the web app ships as a plain Node server, self-hostable in Docker.
       adapter: adapter(),
+      files: { serviceWorker: "src/service-worker/service-worker" },
     }),
-    SvelteKitPWA({
-      registerType: "autoUpdate",
-      // Custom service worker (src/sw.ts) so we can handle Web Push `push`
-      // events; injectManifest keeps precaching the app shell for offline use.
-      strategies: "injectManifest",
-      srcDir: "src",
-      filename: "service-worker.ts",
-      injectManifest: {
-        globPatterns: ["**/*.{js,css,html,svg,woff2}"],
-      },
-      devOptions: {
-        enabled: true,
-        type: "module",
-      },
-      // Served by the locale-aware /manifest.webmanifest endpoint.
-      manifest: false,
-    }),
+
   ],
   // @loomkeep/shared is a linked workspace package, so Vite treats it as
   // source and skips its usual CJS→ESM pre-bundling — but it's compiled to

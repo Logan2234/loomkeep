@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { dialogFocus } from "$lib/actions/dialogFocus";
-  import { portal } from "$lib/actions/portal";
-  import { scrollLock } from "$lib/actions/scrollLock";
-  import { layout } from "$lib/layout.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import { dialogFocus } from "#lib/actions/dialogFocus.js";
+  import { portal } from "#lib/actions/portal.js";
+  import { scrollLock } from "#lib/actions/scrollLock.js";
+  import { layout } from "#lib/layout.svelte.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { onMount, type Snippet } from "svelte";
   import { fade, fly } from "svelte/transition";
 

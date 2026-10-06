@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import ProviderMark from "$lib/components/ProviderMark.svelte";
+  import ProviderMark from "#lib/components/ProviderMark.svelte";
   import {
     ANILIST_API,
     IGDB_API,
@@ -8,9 +8,9 @@
     OMDB_API,
     OPENLIBRARY_API,
     TMDB_API,
-  } from "$lib/constants/external-links";
-  import { m } from "$lib/paraglide/messages";
-  import type { ProviderBrandKey } from "$lib/provider-brands";
+  } from "#lib/constants/external-links.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { ProviderBrandKey } from "#lib/provider-brands.js";
   import SettingsSection from "../components/SettingsSection.svelte";
   import { flashAnchor } from "../flash-anchor";
 

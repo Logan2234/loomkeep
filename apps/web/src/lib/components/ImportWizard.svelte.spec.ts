@@ -1,6 +1,6 @@
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import {
   Domain,
   ErrorCode,
@@ -17,7 +17,7 @@ import ImportWizard from "./ImportWizard.svelte";
 
 // Progress ticks arrive over the socket in the app; here every job is
 // already settled on its first poll, so the socket only needs to exist.
-vi.mock("$lib/realtime/socket", () => ({
+vi.mock("#lib/realtime/socket.js", () => ({
   socket: { on: vi.fn(), off: vi.fn() },
   onRealtimeEvent: vi.fn(() => () => {}),
 }));

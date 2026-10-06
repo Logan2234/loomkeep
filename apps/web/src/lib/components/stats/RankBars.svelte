@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
-  import { formatNumber } from "$lib/format";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import { formatNumber } from "#lib/format.js";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
 
   let {
     items,

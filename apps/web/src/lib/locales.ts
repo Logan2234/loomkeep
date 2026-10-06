@@ -1,4 +1,4 @@
-import { locales } from "$lib/paraglide/runtime";
+import { locales } from "#lib/paraglide/runtime.js";
 
 /** A language named in itself ("Español"), so its speakers find it from any UI language. */
 export function languageName(locale: string): string {

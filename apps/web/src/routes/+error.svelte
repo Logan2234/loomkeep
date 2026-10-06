@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { auth } from "$lib/auth.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   const status = $derived(page.status);
   const isNotFound = $derived(status === 404);

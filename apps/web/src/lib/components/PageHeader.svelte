@@ -7,7 +7,7 @@
 
   type IconName = ComponentProps<typeof Icon>["name"];
 
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   import NewBadge from "./NewBadge.svelte";
 
   let {

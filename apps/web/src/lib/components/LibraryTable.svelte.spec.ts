@@ -2,14 +2,14 @@ import type {
   LibraryColumn,
   LibraryInlineEdit,
   LibraryItemView,
-} from "$lib/library-view";
-import { m } from "$lib/paraglide/messages.js";
+} from "#lib/library-view.js";
+import { m } from "#lib/paraglide/messages.js";
 import { render, screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import LibraryTable from "./LibraryTable.svelte";
 
-vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 interface Entry {
   id: string;

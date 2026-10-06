@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Carousel from "$lib/components/Carousel.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import ListCoverGrid from "$lib/components/ListCoverGrid.svelte";
-  import ProfileSectionHeading from "$lib/components/profile/ProfileSectionHeading.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import Carousel from "#lib/components/Carousel.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import ListCoverGrid from "#lib/components/ListCoverGrid.svelte";
+  import ProfileSectionHeading from "#lib/components/profile/ProfileSectionHeading.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { MyListDto } from "@loomkeep/shared";
 
   type ListTile =

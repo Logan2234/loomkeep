@@ -3,7 +3,7 @@
   // outgrow a phone screen — hence the baseline drawn as an inset shadow: a
   // bottom border pulled under the tabs with a negative margin would be
   // clipped by the scroll container. Pair it with TabPanels for the content.
-  import { prefersReducedMotion } from "$lib/motion";
+  import { prefersReducedMotion } from "#lib/motion.js";
 
   let {
     tabs,

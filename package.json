@@ -14,7 +14,7 @@
     "url": "https://feedback.loomkeep.app/?board=bug-reports"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.17"
   },
   "packageManager": "pnpm@12.8.1",
   "repository": {

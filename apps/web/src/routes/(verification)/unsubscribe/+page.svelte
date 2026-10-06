@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { unsubscribeNewsletter } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { unsubscribeNewsletter } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   const token = page.url.searchParams.get("token") ?? "";
 

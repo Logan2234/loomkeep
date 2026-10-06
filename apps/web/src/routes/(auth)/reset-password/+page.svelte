@@ -1,12 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { resetPassword } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import AuthShell from "$lib/components/AuthShell.svelte";
-  import PasswordInput from "$lib/components/PasswordInput.svelte";
-  import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { resetPassword } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import AuthShell from "#lib/components/AuthShell.svelte";
+  import PasswordInput from "#lib/components/PasswordInput.svelte";
+  import PasswordRequirements from "#lib/components/PasswordRequirements.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     isPasswordValid,
     PASSWORD_MIN_LENGTH,

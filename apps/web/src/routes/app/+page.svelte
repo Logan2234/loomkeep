@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { env } from "$env/dynamic/public";
-  import { signalVersionLinkClicked } from "$lib/api/client";
-  import { auth } from "$lib/auth.svelte";
-  import BetaBadge from "$lib/components/BetaBadge.svelte";
-  import HomeGrid from "$lib/components/home/HomeGrid.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { GITHUB_REPO_URL } from "$lib/constants/external-links";
-  import { currentHomeGate } from "$lib/home/gate";
-  import { resolveHomeLayout } from "$lib/home/layout";
-  import { m } from "$lib/paraglide/messages";
+  import * as env from "$app/env/public";
+  import { signalVersionLinkClicked } from "#lib/api/client.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import BetaBadge from "#lib/components/BetaBadge.svelte";
+  import HomeGrid from "#lib/components/home/HomeGrid.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { GITHUB_REPO_URL } from "#lib/constants/external-links.js";
+  import { currentHomeGate } from "#lib/home/gate.js";
+  import { resolveHomeLayout } from "#lib/home/layout.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   const widgets = $derived(
     resolveHomeLayout(auth.user?.homeLayout, currentHomeGate()),

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import { MODERATION_LEGAL_BASIS_LABELS } from "$lib/constants/report-labels";
-  import { m } from "$lib/paraglide/messages.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import { MODERATION_LEGAL_BASIS_LABELS } from "#lib/constants/report-labels.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ModerationLegalBasis } from "@loomkeep/shared";
 
   let {

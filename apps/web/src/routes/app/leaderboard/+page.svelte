@@ -1,21 +1,21 @@
 <script lang="ts">
   // The API caps the unpaginated list at 100 and
   // returns the viewer's own row separately when it falls outside that cut.
-  import { getLeaderboard } from "$lib/api/gamification";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import TabPanels from "$lib/components/TabPanels.svelte";
-  import Tabs from "$lib/components/Tabs.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { formatNumber } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getLeaderboard } from "#lib/api/gamification.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import TabPanels from "#lib/components/TabPanels.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { formatNumber } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     levelForXp,
     type LeaderboardEntryDto,

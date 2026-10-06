@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Drawer from "$lib/components/Drawer.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import Drawer from "#lib/components/Drawer.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { AchievementGroup } from "../achievements";
   import {
     achievementDescription,
@@ -8,7 +8,7 @@
     groupIcon,
   } from "../labels";
   import AchievementLadder from "./AchievementLadder.svelte";
-  import AchievementMedallion from "$lib/components/AchievementMedallion.svelte";
+  import AchievementMedallion from "#lib/components/AchievementMedallion.svelte";
 
   let {
     group,

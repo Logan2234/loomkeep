@@ -1,5 +1,5 @@
 <script lang="ts">
-  import NewBadge from "$lib/components/NewBadge.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
 
   let {
     label,

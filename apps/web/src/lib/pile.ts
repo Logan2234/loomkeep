@@ -1,5 +1,5 @@
-import { formatHours, formatNumber, hoursParts } from "$lib/format";
-import { m } from "$lib/paraglide/messages";
+import { formatHours, formatNumber, hoursParts } from "#lib/format.js";
+import { m } from "#lib/paraglide/messages.js";
 import {
   Domain,
   episodeRuntimeFor,

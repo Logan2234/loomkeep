@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ENTRY_NOTES_MAX_LENGTH } from "@loomkeep/shared";
 
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     value = null,

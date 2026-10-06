@@ -3,14 +3,14 @@
     listLibrary,
     updateLibraryEntry,
     watchEpisode,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import { HOME_WIDGETS } from "$lib/home/widgets";
-  import type { BoxSize } from "$lib/home/sizing";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import { HOME_WIDGETS } from "#lib/home/widgets.js";
+  import type { BoxSize } from "#lib/home/sizing.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { HomeWidgetDto, LibraryEntryDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { tick } from "svelte";

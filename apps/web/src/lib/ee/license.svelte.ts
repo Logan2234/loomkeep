@@ -1,6 +1,6 @@
-import { keys } from "$lib/api/keys";
-import { createApiQuery } from "$lib/api/query.svelte";
-import { auth } from "$lib/auth.svelte";
+import { keys } from "#lib/api/keys.js";
+import { createApiQuery } from "#lib/api/query.svelte.js";
+import { auth } from "#lib/auth.svelte.js";
 import { getEeStatus } from "./api";
 
 /**

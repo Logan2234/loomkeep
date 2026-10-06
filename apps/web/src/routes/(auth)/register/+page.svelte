@@ -1,21 +1,21 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { env } from "$env/dynamic/public";
-  import { previewInvitation, register } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import FieldError from "$lib/components/FieldError.svelte";
-  import AuthShell from "$lib/components/AuthShell.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import PasswordInput from "$lib/components/PasswordInput.svelte";
-  import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
-  import Turnstile from "$lib/components/Turnstile.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import * as env from "$app/env/public";
+  import { previewInvitation, register } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import FieldError from "#lib/components/FieldError.svelte";
+  import AuthShell from "#lib/components/AuthShell.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import PasswordInput from "#lib/components/PasswordInput.svelte";
+  import PasswordRequirements from "#lib/components/PasswordRequirements.svelte";
+  import Turnstile from "#lib/components/Turnstile.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     isPasswordValid,
     PASSWORD_MIN_LENGTH,

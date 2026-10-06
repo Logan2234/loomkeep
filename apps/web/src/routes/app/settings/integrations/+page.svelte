@@ -5,23 +5,23 @@
     getApiKeys,
     revokeAllApiKeys,
     revokeApiKey,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { DOCS_URL } from "$lib/constants/external-links";
-  import CalendarSubscribeModal from "$lib/ee/calendar/CalendarSubscribeModal.svelte";
-  import { useEeLock } from "$lib/ee/license.svelte";
-  import ActivityFeedSubscribeModal from "$lib/ee/social/ActivityFeedSubscribeModal.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { IconName } from "$lib/types/icon-name";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { DOCS_URL } from "#lib/constants/external-links.js";
+  import CalendarSubscribeModal from "#lib/ee/calendar/CalendarSubscribeModal.svelte";
+  import { useEeLock } from "#lib/ee/license.svelte.js";
+  import ActivityFeedSubscribeModal from "#lib/ee/social/ActivityFeedSubscribeModal.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import type { ApiKeyDto } from "@loomkeep/shared";
   import { flashAnchor } from "../flash-anchor";
   import SettingsSection from "../components/SettingsSection.svelte";

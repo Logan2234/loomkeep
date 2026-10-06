@@ -1,21 +1,21 @@
 <script lang="ts">
-  import { getPushDeviceCount, updateMe } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import Switch from "$lib/components/Switch.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getPushDeviceCount, updateMe } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import Switch from "#lib/components/Switch.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     disablePush,
     enablePush,
     isPushEnabledHere,
     isPushSupported,
-  } from "$lib/push";
+  } from "#lib/push.js";
   import { DigestCadence } from "@loomkeep/shared";
   import { onMount } from "svelte";
   import SettingRow from "../components/SettingRow.svelte";

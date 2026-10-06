@@ -1,5 +1,5 @@
-import { m } from "$lib/paraglide/messages.js";
-import { formatSessionMinutes } from "$lib/session-presentation";
+import { m } from "#lib/paraglide/messages.js";
+import { formatSessionMinutes } from "#lib/session-presentation.js";
 import { render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";

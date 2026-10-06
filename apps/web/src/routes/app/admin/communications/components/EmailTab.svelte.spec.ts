@@ -1,8 +1,8 @@
-import { languageName } from "$lib/locales";
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { visit } from "$lib/test/navigation.svelte";
-import { renderWithQuery } from "$lib/test/render";
+import { languageName } from "#lib/locales.js";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { visit } from "#lib/test/navigation.svelte.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import { ErrorCode } from "@loomkeep/shared";
 import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
@@ -11,10 +11,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import EmailTab from "./EmailTab.svelte";
 
 let requests: URL[];
-vi.mock("$app/state", async () => await import("$lib/test/navigation.svelte"));
+vi.mock(
+  "$app/state",
+  async () => await import("#lib/test/navigation.svelte.js"),
+);
 vi.mock(
   "$app/navigation",
-  async () => await import("$lib/test/navigation.svelte"),
+  async () => await import("#lib/test/navigation.svelte.js"),
 );
 let sent: unknown;
 beforeEach(() => {

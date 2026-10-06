@@ -1,8 +1,8 @@
-import { auth } from "$lib/auth.svelte";
-import { languageName } from "$lib/locales";
-import { setLocale } from "$lib/paraglide/runtime.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
+import { auth } from "#lib/auth.svelte.js";
+import { languageName } from "#lib/locales.js";
+import { setLocale } from "#lib/paraglide/runtime.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import type { UserDto } from "@loomkeep/shared";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
@@ -10,8 +10,8 @@ import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import LandingFooter from "./LandingFooter.svelte";
 
-vi.mock("$lib/paraglide/runtime.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("$lib/paraglide/runtime.js")>()),
+vi.mock("#lib/paraglide/runtime.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("#lib/paraglide/runtime.js")>()),
   setLocale: vi.fn(),
 }));
 

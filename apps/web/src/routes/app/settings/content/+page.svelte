@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { localDateInput } from "$lib/date";
-  import { updateMe } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import Switch from "$lib/components/Switch.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { localDateInput } from "#lib/date.js";
+  import { updateMe } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import Switch from "#lib/components/Switch.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import { SpoilerSensitivity } from "@loomkeep/shared";
   import SettingRow from "../components/SettingRow.svelte";
   import SettingsSection from "../components/SettingsSection.svelte";

@@ -1,12 +1,12 @@
 // Display text and glyph for one achievement, resolved from its registry
 // key. The entry-level pieces (name/description/icon) live in
-// $lib/achievement-labels.ts, shared with anywhere else an AchievementDto
+// #lib/achievement-labels.ts, shared with anywhere else an AchievementDto
 // renders on its own — this file keeps only what depends on this route's
 // own concepts (AchievementGroup, family sections).
-import { entryIcon } from "$lib/achievement-labels";
-import { formatDate, formatNumber } from "$lib/format";
-import { m } from "$lib/paraglide/messages.js";
-import type { IconName } from "$lib/types/icon-name";
+import { entryIcon } from "#lib/achievement-labels.js";
+import { formatDate, formatNumber } from "#lib/format.js";
+import { m } from "#lib/paraglide/messages.js";
+import type { IconName } from "#lib/types/icon-name.js";
 import type {
   AchievementFamily,
   AchievementRarityDto,
@@ -18,7 +18,7 @@ export {
   achievementDescription,
   achievementName,
   entryIcon,
-} from "$lib/achievement-labels";
+} from "#lib/achievement-labels.js";
 
 export function tierLabel(tier: AchievementTier | null): string {
   if (tier === "bronze") return m.gamification_tier_bronze();

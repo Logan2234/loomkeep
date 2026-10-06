@@ -1,34 +1,34 @@
 <script lang="ts">
-  import { getMusicPile, listMusic } from "$lib/api/client";
+  import { getMusicPile, listMusic } from "#lib/api/client.js";
   import {
     bulkDeleteMusicEntries,
     bulkUpdateMusicEntries,
     updateMusicEntry,
-  } from "$lib/api/music";
+  } from "#lib/api/music.js";
   import type {
     LibraryLoadParams,
     PileLoadParams,
-  } from "$lib/components/LibraryBrowser.svelte";
-  import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
-  import PosterCard from "$lib/components/PosterCard.svelte";
-  import MusicSearchPanel from "$lib/components/search/MusicSearchPanel.svelte";
+  } from "#lib/components/LibraryBrowser.svelte";
+  import LibraryBrowser from "#lib/components/LibraryBrowser.svelte";
+  import PosterCard from "#lib/components/PosterCard.svelte";
+  import MusicSearchPanel from "#lib/components/search/MusicSearchPanel.svelte";
   import {
     MUSIC_OWNERSHIP_SOURCES,
     MUSIC_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/constants/ownership-sources";
+  } from "#lib/constants/ownership-sources.js";
   import {
     MUSIC_STATUS_LABELS,
     MUSIC_STATUS_META,
     MUSIC_STATUS_ORDER,
-  } from "$lib/constants/status-labels";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
+  } from "#lib/constants/status-labels.js";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
-  } from "$lib/library-view";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/library-view.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { Domain, type MusicEntryDto } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = MUSIC_STATUS_ORDER.map((value) => ({

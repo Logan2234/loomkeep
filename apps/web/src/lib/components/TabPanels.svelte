@@ -2,7 +2,7 @@
   // The content side of Tabs: cross-fades from one tab's content to the next.
   // Both panels share one grid cell while they fade, so the page doesn't jump
   // by the outgoing panel's height.
-  import { prefersReducedMotion } from "$lib/motion";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import type { Snippet } from "svelte";
   import { fade } from "svelte/transition";
 

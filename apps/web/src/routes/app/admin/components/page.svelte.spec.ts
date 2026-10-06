@@ -1,11 +1,11 @@
-import { m } from "$lib/paraglide/messages.js";
+import { m } from "#lib/paraglide/messages.js";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import Components from "./+page.svelte";
 
-vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
-vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 it("finds classes and icons, gives specimens direct links and offers generic statistics", async () => {
   vi.stubGlobal(

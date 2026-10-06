@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { getBlockedUsers, unblockUser } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { keys } from "$lib/api/keys";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getBlockedUsers, unblockUser } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PagedResult, UserSummaryDto } from "@loomkeep/shared";
   import SettingsSection from "../components/SettingsSection.svelte";
 

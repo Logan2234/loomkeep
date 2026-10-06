@@ -1,16 +1,16 @@
-import { ApiError } from "$lib/api/core";
-import { resolveApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/core.js";
+import { resolveApiError } from "#lib/api/errors.js";
 import type {
   LibraryBulkActions,
   LibraryColumn,
   LibraryItemView,
-} from "$lib/library-view";
-import { m } from "$lib/paraglide/messages.js";
-import { pileHeaderLabel } from "$lib/pile";
-import { apiUrl, server } from "$lib/test/msw";
-import { goto, visit } from "$lib/test/navigation.svelte";
-import { renderWithQuery } from "$lib/test/render";
-import { toast } from "$lib/toast.svelte";
+} from "#lib/library-view.js";
+import { m } from "#lib/paraglide/messages.js";
+import { pileHeaderLabel } from "#lib/pile.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { goto, visit } from "#lib/test/navigation.svelte.js";
+import { renderWithQuery } from "#lib/test/render.js";
+import { toast } from "#lib/toast.svelte.js";
 import type { PileSummaryDto } from "@loomkeep/shared";
 import { ErrorCode, type PagedResult } from "@loomkeep/shared";
 import { screen, waitFor, within } from "@testing-library/svelte";
@@ -23,8 +23,8 @@ import LibraryBrowser, {
   type PileLoadParams,
 } from "./LibraryBrowser.svelte";
 
-vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
-vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 // happy-dom's IntersectionObserver never reports an intersection, so the
 // infinite-scroll sentinel is driven by hand.
@@ -493,7 +493,7 @@ describe("LibraryBrowser", () => {
     );
     expect(goto).toHaveBeenLastCalledWith(
       "?fav=1&order=asc",
-      expect.objectContaining({ replaceState: true }),
+      expect.objectContaining({ replace: true }),
     );
   });
 

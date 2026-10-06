@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatNumber } from "$lib/format";
+  import { formatNumber } from "#lib/format.js";
   let {
     value,
     label,

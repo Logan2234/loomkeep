@@ -1,25 +1,32 @@
 <script lang="ts">
   import AdminFilterBar from "../AdminFilterBar.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
   import ImportDetailModal from "./ImportDetailModal.svelte";
-  import Banner from "$lib/components/Banner.svelte";
+  import Banner from "#lib/components/Banner.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "$lib/admin-filter-url";
-  import { getAdminImportRuns, getAdminImportSummary } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
-  import UserSelector from "$lib/components/UserSelector.svelte";
-  import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-  import { formatDateTime, formatDurationMs, formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  import { adminFilterHref } from "#lib/admin-filter-url.js";
+  import {
+    getAdminImportRuns,
+    getAdminImportSummary,
+  } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
+  import UserSelector from "#lib/components/UserSelector.svelte";
+  import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
+  import {
+    formatDateTime,
+    formatDurationMs,
+    formatNumber,
+  } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     AdminImportRunDto,
     AdminImportStatus,
@@ -66,8 +73,7 @@
   const accountId = $derived(page.url.searchParams.get("account") || null);
   function changeFilters(updates: Record<string, string | null>) {
     void goto(adminFilterHref(page.url, updates), {
-      noScroll: true,
-      keepFocus: true,
+      reset: false,
     });
   }
   function resetFilters() {

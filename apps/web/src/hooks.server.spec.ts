@@ -4,6 +4,22 @@ import { handle } from "./hooks.server";
 import { getLocale } from "./lib/paraglide/runtime.js";
 
 describe("server locale isolation", () => {
+  it("resolves localized requests without mutating a readonly event", async () => {
+    const request = new Request("https://loomkeep.example/", {
+      headers: { "accept-language": "fr" },
+    });
+    const event = Object.freeze({ request }) as RequestEvent;
+    const response = await handle({
+      event,
+      resolve: async (localizedEvent) => {
+        expect(localizedEvent.request).toBeInstanceOf(Request);
+        return new Response(getLocale());
+      },
+    });
+    expect(await response.text()).toBe("fr");
+    expect(event.request).toBe(request);
+  });
+
   it("renders each request in its own locale and varies caches accordingly", async () => {
     const responses = await Promise.all(
       ["fr", "en"].map(async (locale) => {

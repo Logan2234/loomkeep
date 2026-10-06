@@ -1,16 +1,16 @@
 <script lang="ts">
   import { episodeCode } from "@loomkeep/shared";
 
-  import AddToListButton from "$lib/components/AddToListButton.svelte";
-  import Dropdown from "$lib/components/Dropdown.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { formatDate } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { releaseDigestOff } from "$lib/release-alerts";
-  import { m } from "$lib/paraglide/messages";
+  import AddToListButton from "#lib/components/AddToListButton.svelte";
+  import Dropdown from "#lib/components/Dropdown.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { formatDate } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { releaseDigestOff } from "#lib/release-alerts.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { LibraryEntryDto, NextEpisodeDto } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
   import { scale } from "svelte/transition";

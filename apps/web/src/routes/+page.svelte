@@ -1,19 +1,19 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { env } from "$env/dynamic/public";
-  import { auth } from "$lib/auth.svelte";
-  import { bootstrap } from "$lib/bootstrap.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import { appConfig } from "$lib/config.svelte";
+  import * as env from "$app/env/public";
+  import { auth } from "#lib/auth.svelte.js";
+  import { bootstrap } from "#lib/bootstrap.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import {
     DOCS_URL,
     FEEDBACK_URL,
     GITHUB_REPO_URL,
-  } from "$lib/constants/external-links";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import { theme } from "$lib/theme.svelte";
+  } from "#lib/constants/external-links.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { theme } from "#lib/theme.svelte.js";
   import LandingFooter from "./components/LandingFooter.svelte";
   import { LANDING_LIBRARY } from "./components/landing-mock-data";
 

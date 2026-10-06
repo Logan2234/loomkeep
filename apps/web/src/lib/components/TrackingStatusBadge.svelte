@@ -8,8 +8,8 @@
     MEDIA_STATUS_META,
     MUSIC_STATUS_DESC,
     MUSIC_STATUS_META,
-  } from "$lib/constants/status-labels";
-  import type { IconName } from "$lib/types/icon-name";
+  } from "#lib/constants/status-labels.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import type {
     BookStatus,
     EntryStatus,

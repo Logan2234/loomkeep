@@ -6,7 +6,7 @@ const event = (id: string, domain: string, createdAt: string) =>
 
 // The feed page's first page: a friend's game, then their book.
 const { getFeedMock } = vi.hoisted(() => ({ getFeedMock: vi.fn() }));
-vi.mock("$lib/api/client", () => ({ getFeed: getFeedMock }));
+vi.mock("#lib/api/client.js", () => ({ getFeed: getFeedMock }));
 
 describe("loadActivity", () => {
   beforeEach(() => {

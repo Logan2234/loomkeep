@@ -4,7 +4,7 @@
   // appears before the first `bootstrap.ready` — SPA navigations don't re-run
   // the bootstrap — and on an explicit reconnect retry. The share target
   // reuses it, with a message, while it looks the shared link up.
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     message,

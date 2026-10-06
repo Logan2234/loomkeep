@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { m } from "$lib/paraglide/messages";
+  import { m } from "#lib/paraglide/messages.js";
   import SettingsSection from "../components/SettingsSection.svelte";
   import { flashAnchor } from "../flash-anchor";
 

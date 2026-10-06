@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { PROVIDER_BRANDS, type ProviderBrandKey } from "$lib/provider-brands";
+  import {
+    PROVIDER_BRANDS,
+    type ProviderBrandKey,
+  } from "#lib/provider-brands.js";
 
   let {
     brand,

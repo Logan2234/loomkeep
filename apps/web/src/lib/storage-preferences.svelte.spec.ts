@@ -3,7 +3,7 @@ import { accessibility } from "./accessibility.svelte";
 import { navStyle } from "./navStyle.svelte";
 import { theme } from "./theme.svelte";
 
-vi.mock("$app/environment", () => ({ browser: true }));
+vi.mock("$app/env", () => ({ browser: true }));
 afterEach(() => vi.unstubAllGlobals());
 
 describe("preferences with unavailable storage", () => {

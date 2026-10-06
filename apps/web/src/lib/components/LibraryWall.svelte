@@ -2,9 +2,9 @@
   // The wall mode of LibraryBrowser: posters only, many per row. The title
   // and status show on hover or focus; a hairline at the bottom carries the
   // progress, so nothing but the artwork takes room.
-  import { joinMeta } from "$lib/format";
-  import type { LibraryItemView, LibrarySelection } from "$lib/library-view";
-  import { prefersReducedMotion } from "$lib/motion";
+  import { joinMeta } from "#lib/format.js";
+  import type { LibraryItemView, LibrarySelection } from "#lib/library-view.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { flip } from "svelte/animate";
   import { fade, scale } from "svelte/transition";
   import Icon from "./Icon.svelte";

@@ -3,19 +3,19 @@
     batchDeleteReviews,
     batchSetReviewVisibility,
     getMyReviews,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import ReviewFormModal from "$lib/components/ReviewFormModal.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import ReviewFormModal from "#lib/components/ReviewFormModal.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     MyReviewDto,
     ReviewTargetType,

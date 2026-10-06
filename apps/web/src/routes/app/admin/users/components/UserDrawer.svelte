@@ -18,24 +18,24 @@
     sendAdminUserPasswordReset,
     updateAdminUserPlan,
     updateAdminUserRole,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX } from "$lib/components/overlay-layers";
-  import SidePanel from "$lib/components/SidePanel.svelte";
-  import { downloadBlob } from "$lib/download";
-  import { formatDate, formatDateTime, formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import AvatarLightbox from "#lib/components/AvatarLightbox.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX } from "#lib/components/overlay-layers.js";
+  import SidePanel from "#lib/components/SidePanel.svelte";
+  import { downloadBlob } from "#lib/download.js";
+  import { formatDate, formatDateTime, formatNumber } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
   import {
     levelForXp,
     type AdminUserDto,

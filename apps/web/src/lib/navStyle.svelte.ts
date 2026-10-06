@@ -1,6 +1,6 @@
-import { browser } from "$app/environment";
-import { readStorage, writeStorage } from "$lib/local-storage";
-import { m } from "$lib/paraglide/messages";
+import { readStorage, writeStorage } from "#lib/local-storage.js";
+import { m } from "#lib/paraglide/messages.js";
+import { browser } from "$app/env";
 
 const STORAGE_KEY = "lk-nav-style";
 

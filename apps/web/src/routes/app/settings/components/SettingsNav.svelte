@@ -8,12 +8,12 @@
   // entries, measured off `aria-current="page"` — the same mechanism as the
   // global sidebar's, so the two rails behave alike when they sit together.
   import { page } from "$app/state";
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { tick } from "svelte";
   import { settingsShortcutLabel } from "../keyboard-navigation";
   import { SETTINGS_GROUPS, sectionHref } from "../nav";

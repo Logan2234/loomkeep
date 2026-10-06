@@ -1,4 +1,4 @@
-import { normalizeAdminBackupInventory } from "$lib/admin-backup-inventory";
+import { normalizeAdminBackupInventory } from "#lib/admin-backup-inventory.js";
 import type {
   AdminBackupRestoreRequestDto,
   AdminCacheSort,

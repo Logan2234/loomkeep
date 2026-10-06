@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { getCalendar } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Poster from "$lib/components/Poster.svelte";
+  import { getCalendar } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Poster from "#lib/components/Poster.svelte";
   import {
     calendarCode,
     calendarDayIso,
@@ -11,11 +11,11 @@
     calendarItemId,
     calendarPoster,
     calendarTitle,
-  } from "$lib/calendar-entry";
-  import { formatDate } from "$lib/format";
-  import { HOME_WIDGETS } from "$lib/home/widgets";
-  import { bodyOf, rowsLayout, type BoxSize } from "$lib/home/sizing";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/calendar-entry.js";
+  import { formatDate } from "#lib/format.js";
+  import { HOME_WIDGETS } from "#lib/home/widgets.js";
+  import { bodyOf, rowsLayout, type BoxSize } from "#lib/home/sizing.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { CalendarEntryDto } from "@loomkeep/shared";
   import WidgetShell from "../WidgetShell.svelte";
 

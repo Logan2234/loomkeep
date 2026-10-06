@@ -1,5 +1,5 @@
-import { m } from "$lib/paraglide/messages";
-import type { IconName } from "$lib/types/icon-name";
+import { m } from "#lib/paraglide/messages.js";
+import type { IconName } from "#lib/types/icon-name.js";
 import { Domain } from "@loomkeep/shared";
 
 export const DOMAINS: Record<

@@ -9,20 +9,20 @@
     getSessions,
     resendVerificationEmail,
     updateUsername,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { Cooldown } from "$lib/cooldown.svelte";
-  import { debounce } from "$lib/debounce";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import PasswordInput from "$lib/components/PasswordInput.svelte";
-  import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
-  import { normalizeCodeInput } from "$lib/one-time-code";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { Cooldown } from "#lib/cooldown.svelte.js";
+  import { debounce } from "#lib/debounce.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import PasswordInput from "#lib/components/PasswordInput.svelte";
+  import PasswordRequirements from "#lib/components/PasswordRequirements.svelte";
+  import { normalizeCodeInput } from "#lib/one-time-code.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
   import {
     isPasswordValid,
     PASSWORD_MIN_LENGTH,

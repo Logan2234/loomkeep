@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { getMediaSaga, upsertLibraryEntry } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import SagaBlock from "$lib/components/saga/SagaBlock.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { m } from "$lib/paraglide/messages.js";
-  import { mediaSagaMember } from "$lib/saga";
+  import { getMediaSaga, upsertLibraryEntry } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import SagaBlock from "#lib/components/saga/SagaBlock.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { mediaSagaMember } from "#lib/saga.js";
   import type { EntryStatus, MediaType, SagaMemberDto } from "@loomkeep/shared";
 
   let {

@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { API_URL } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { toast } from "$lib/toast.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
+  import { API_URL } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import { getCalendarToken, regenerateCalendarToken } from "../api";
 
   let { onclose }: { onclose: () => void } = $props();

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import { tick } from "svelte";
   import { scale } from "svelte/transition";

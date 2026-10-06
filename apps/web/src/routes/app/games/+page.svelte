@@ -1,40 +1,40 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { getGamesPile, listGames } from "$lib/api/client";
+  import { getGamesPile, listGames } from "#lib/api/client.js";
   import {
     bulkDeleteGameEntries,
     bulkUpdateGameEntries,
     updateGameEntry,
-  } from "$lib/api/games";
+  } from "#lib/api/games.js";
   import type {
     LibraryLoadParams,
     PileLoadParams,
-  } from "$lib/components/LibraryBrowser.svelte";
-  import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
-  import PosterCard from "$lib/components/PosterCard.svelte";
+  } from "#lib/components/LibraryBrowser.svelte";
+  import LibraryBrowser from "#lib/components/LibraryBrowser.svelte";
+  import PosterCard from "#lib/components/PosterCard.svelte";
   import SagasModeSwitch, {
     sagasMode,
-  } from "$lib/components/saga/SagasModeSwitch.svelte";
-  import GameSearchPanel from "$lib/components/search/GameSearchPanel.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
+  } from "#lib/components/saga/SagasModeSwitch.svelte";
+  import GameSearchPanel from "#lib/components/search/GameSearchPanel.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import GameSagasView from "./components/GameSagasView.svelte";
   import {
     GAME_OWNERSHIP_SOURCES,
     GAME_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/constants/ownership-sources";
+  } from "#lib/constants/ownership-sources.js";
   import {
     GAME_STATUS_LABELS,
     GAME_STATUS_META,
     GAME_STATUS_ORDER,
-  } from "$lib/constants/status-labels";
-  import { DATE_MEDIUM_OPTIONS, formatDate, formatHours } from "$lib/format";
+  } from "#lib/constants/status-labels.js";
+  import { DATE_MEDIUM_OPTIONS, formatDate, formatHours } from "#lib/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
-  } from "$lib/library-view";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/library-view.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { Domain, isSessionPaused, type GameEntryDto } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [

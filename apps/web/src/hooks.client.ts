@@ -1,4 +1,4 @@
-import { env } from "$env/dynamic/public";
+import * as env from "$app/env/public";
 import * as Sentry from "@sentry/sveltekit";
 
 const dsn = env.PUBLIC_GLITCHTIP_WEB_DSN;

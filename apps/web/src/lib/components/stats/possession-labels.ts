@@ -1,8 +1,8 @@
-// Union of every domain's ownership status labels (see $lib/ownership-sources
+// Union of every domain's ownership status labels (see #lib/ownership-sources
 // for the per-domain option lists these mirror) — the cross-domain
 // possession breakdown combines statuses from all 4 domains, so it needs one
 // merged label map rather than picking a single domain's.
-import { m } from "$lib/paraglide/messages.js";
+import { m } from "#lib/paraglide/messages.js";
 
 export const POSSESSION_STATUS_LABEL: Record<string, string> = {
   get PHYSICAL() {

@@ -1,10 +1,10 @@
 <script lang="ts">
   import { AVATAR_MAX_DIMENSION, AVATAR_MIME_TYPES } from "@loomkeep/shared";
 
-  import { deleteAvatar, uploadAvatar } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { deleteAvatar, uploadAvatar } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import type { UploadAvatarRequestDto } from "@loomkeep/shared";
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";

@@ -1,4 +1,4 @@
-import { m } from "$lib/paraglide/messages.js";
+import { m } from "#lib/paraglide/messages.js";
 import { describe, expect, it } from "vitest";
 import { gameReleaseLabel } from "./game-release";
 

@@ -198,7 +198,7 @@ lk_…`), accepted only on routes marked `@AllowApiKey()` — the versioned
   from `m.*()` rather than hardcoding the French copy.
 - The API is stubbed at the network level with msw (`src/lib/test/msw.ts`,
   `server.use(http.get(apiUrl(...)))`), so `core.ts` and the TanStack helpers
-  run for real — don't `vi.mock` `$lib/api/*` per component. An unhandled
+  run for real — don't `vi.mock` `#lib/api/*` per component. An unhandled
   request fails the test. A component using the API helpers renders through
   `renderWithQuery()` (`src/lib/test/render.ts`), which provides a fresh
   retry-less `QueryClient`. `$app/state` + `$app/navigation` are mocked with

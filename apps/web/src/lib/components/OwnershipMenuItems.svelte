@@ -4,7 +4,7 @@
   // The items of an ownership menu, for a Dropdown with role="menu": one
   // entry per way of owning a work, and a submenu for those that come with
   // presets (Streaming › Netflix, Prime Video…, "Autre…" for a free value).
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   import DropdownSubmenu from "./DropdownSubmenu.svelte";
   import Icon from "./Icon.svelte";
 

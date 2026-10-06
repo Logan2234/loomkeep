@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
-  import { MONTH_YEAR_OPTIONS, formatDate, formatNumber } from "$lib/format";
+  import { m } from "#lib/paraglide/messages.js";
+  import { MONTH_YEAR_OPTIONS, formatDate, formatNumber } from "#lib/format.js";
   import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
 
   let { points, period }: { points: TrendPointDto[]; period: TrendPeriod } =

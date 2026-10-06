@@ -1,4 +1,4 @@
-import { localDateInput } from "$lib/date";
+import { localDateInput } from "#lib/date.js";
 import type { ApiKeyDto, ApiKeyResource, ApiKeyScope } from "@loomkeep/shared";
 import { API_KEY_EXPIRY_WARNING_DAYS } from "@loomkeep/shared";
 

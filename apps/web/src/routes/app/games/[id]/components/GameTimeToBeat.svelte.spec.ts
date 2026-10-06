@@ -1,5 +1,5 @@
-import { formatHours } from "$lib/format";
-import { m } from "$lib/paraglide/messages.js";
+import { formatHours } from "#lib/format.js";
+import { m } from "#lib/paraglide/messages.js";
 import { render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import GameTimeToBeat from "./GameTimeToBeat.svelte";

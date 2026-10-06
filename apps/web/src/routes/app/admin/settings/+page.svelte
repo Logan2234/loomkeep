@@ -2,20 +2,20 @@
   import {
     getAdminInstanceSettings,
     updateAdminInstanceSettings,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
   import AdminQueryError from "../AdminQueryError.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import Switch from "$lib/components/Switch.svelte";
-  import { DOCS_URL } from "$lib/constants/external-links";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import Switch from "#lib/components/Switch.svelte";
+  import { DOCS_URL } from "#lib/constants/external-links.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
   import {
     API_RATE_LIMIT_BOUNDS,
     type InstanceSettingKey,

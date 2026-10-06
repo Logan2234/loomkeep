@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { getMyProfile, getMyProgression } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import StreakBadge from "$lib/components/StreakBadge.svelte";
-  import { bodyOf, type BoxSize } from "$lib/home/sizing";
-  import { HOME_WIDGETS } from "$lib/home/widgets";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getMyProfile, getMyProgression } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import StreakBadge from "#lib/components/StreakBadge.svelte";
+  import { bodyOf, type BoxSize } from "#lib/home/sizing.js";
+  import { HOME_WIDGETS } from "#lib/home/widgets.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { levelProgress, xpForLevel } from "@loomkeep/shared";
   import WidgetShell from "../WidgetShell.svelte";
 

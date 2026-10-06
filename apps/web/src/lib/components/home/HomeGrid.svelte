@@ -4,15 +4,15 @@
   // narrow one, each keeping its height — except the quick links, which grow
   // to show every link: a block made wide and short for a desktop would
   // otherwise hide most of them on a phone.
-  import { stackOrder } from "$lib/home/grid";
+  import { stackOrder } from "#lib/home/grid.js";
   import {
     columnsToPixels,
     HOME_GAP,
     HOME_GRID_MIN_WIDTH,
     HOME_ROW_HEIGHT,
     rowsToPixels,
-  } from "$lib/home/widgets";
-  import { prefersReducedMotion } from "$lib/motion";
+  } from "#lib/home/widgets.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { HOME_GRID_COLUMNS, type HomeWidgetDto } from "@loomkeep/shared";
   import { fly } from "svelte/transition";
   import HomeWidget from "./HomeWidget.svelte";

@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { getSocialStats } from "$lib/api/stats";
+  import { m } from "#lib/paraglide/messages.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { getSocialStats } from "#lib/api/stats.js";
   import {
     MONTH_SHORT_OPTIONS,
     PERCENT_OPTIONS,
     formatDate,
     formatNumber,
-  } from "$lib/format";
+  } from "#lib/format.js";
   import type { SocialStatsDto } from "@loomkeep/shared";
   import LineChart from "./LineChart.svelte";
   import StatTile from "./StatTile.svelte";

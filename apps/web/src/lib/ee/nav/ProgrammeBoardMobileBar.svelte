@@ -1,12 +1,12 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import Icon from "$lib/components/Icon.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { isDomainEnabled } from "$lib/domains";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { visibleNavItems } from "$lib/navigation";
-  import { m } from "$lib/paraglide/messages.js";
-  import NotificationTab from "$lib/components/sidebars/NotificationTab.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { isDomainEnabled } from "#lib/domains.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { visibleNavItems } from "#lib/navigation.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import NotificationTab from "#lib/components/sidebars/NotificationTab.svelte";
 
   const items = $derived(
     visibleNavItems(

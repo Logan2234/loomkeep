@@ -1,6 +1,6 @@
 <script lang="ts" generics="T extends string">
-  import { m } from "$lib/paraglide/messages.js";
-  import type { IconName } from "$lib/types/icon-name";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import Icon from "./Icon.svelte";
   import PremiumLockBadge from "./PremiumLockBadge.svelte";
   import Tooltip from "./Tooltip.svelte";

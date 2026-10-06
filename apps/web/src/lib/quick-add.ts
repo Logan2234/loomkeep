@@ -16,15 +16,15 @@ import {
   upsertGameEntry,
   upsertLibraryEntry,
   upsertMusicEntry,
-} from "$lib/api/client";
-import { keys } from "$lib/api/keys";
+} from "#lib/api/client.js";
+import { keys } from "#lib/api/keys.js";
 import {
   BOOK_STATUS_LABELS,
   GAME_STATUS_LABELS,
   MEDIA_STATUS_META,
   MUSIC_STATUS_LABELS,
-} from "$lib/constants/status-labels";
-import { m } from "$lib/paraglide/messages.js";
+} from "#lib/constants/status-labels.js";
+import { m } from "#lib/paraglide/messages.js";
 import type {
   BookStatus,
   EntryStatus,

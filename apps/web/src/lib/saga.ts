@@ -1,6 +1,6 @@
-import { formatDate, joinMeta } from "$lib/format";
-import { gameReleaseLabel } from "$lib/game-release";
-import { m } from "$lib/paraglide/messages.js";
+import { formatDate, joinMeta } from "#lib/format.js";
+import { gameReleaseLabel } from "#lib/game-release.js";
+import { m } from "#lib/paraglide/messages.js";
 import type {
   BookSagaMemberDto,
   BookStatus,

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { acceptTerms } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { acceptTerms } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import Banner from "./Banner.svelte";
   import Modal from "./Modal.svelte";
 

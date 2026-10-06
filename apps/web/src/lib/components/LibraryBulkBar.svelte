@@ -2,19 +2,19 @@
   // Floating bar of a library's selection mode (UX-04): the count, then one
   // menu per bulk action. It stays dark in both themes, so it reads as a
   // layer above the page rather than part of it.
-  import { getEditableLists } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import type { LibraryBulkActions } from "$lib/library-view";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getEditableLists } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import type { LibraryBulkActions } from "#lib/library-view.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { BulkUpdateEntriesDto } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
   import { fly } from "svelte/transition";
   import Dropdown from "./Dropdown.svelte";
   import Icon from "./Icon.svelte";
   import OwnershipMenuItems from "./OwnershipMenuItems.svelte";
-  import type { IconName } from "$lib/types/icon-name";
+  import type { IconName } from "#lib/types/icon-name.js";
 
   let {
     count,

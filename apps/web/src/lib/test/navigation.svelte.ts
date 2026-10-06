@@ -2,8 +2,8 @@ import { vi } from "vitest";
 
 // Stands in for both $app/state and $app/navigation, which only work inside
 // a booted SvelteKit app:
-//   vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
-//   vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
+//   vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
+//   vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 // `page.url` is reactive and `goto` updates it the way SvelteKit's router
 // does, so an effect that navigates on its own reads still re-runs here.
 

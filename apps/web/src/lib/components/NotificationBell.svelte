@@ -18,23 +18,23 @@
     getNotifications,
     markNotificationRead,
     markNotificationsRead,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
   import {
     acceptFollowRequest,
     getFollowRequests,
     rejectFollowRequest,
-  } from "$lib/api/social";
-  import { formatDate } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import { onRealtimeEvent } from "$lib/realtime/socket";
+  } from "#lib/api/social.js";
+  import { formatDate } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { onRealtimeEvent } from "#lib/realtime/socket.js";
   import type { FollowRequestDto, NotificationDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade, scale, slide } from "svelte/transition";
-  import { layout } from "$lib/layout.svelte";
+  import { layout } from "#lib/layout.svelte.js";
   import Avatar from "./Avatar.svelte";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";

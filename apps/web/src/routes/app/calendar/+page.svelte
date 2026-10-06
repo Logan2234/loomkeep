@@ -3,10 +3,10 @@
     getCalendar,
     updateGameEntry,
     updateLibraryEntry,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
   import {
     calendarCode,
     calendarHref,
@@ -14,23 +14,23 @@
     calendarPoster,
     calendarTitle,
     isReleaseReminder,
-  } from "$lib/calendar-entry";
-  import Banner from "$lib/components/Banner.svelte";
-  import CalendarSubscribeModal from "$lib/ee/calendar/CalendarSubscribeModal.svelte";
-  import { useEeLock } from "$lib/ee/license.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
-  import TabPanels from "$lib/components/TabPanels.svelte";
-  import Tabs from "$lib/components/Tabs.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import { formatDate } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/calendar-entry.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import CalendarSubscribeModal from "#lib/ee/calendar/CalendarSubscribeModal.svelte";
+  import { useEeLock } from "#lib/ee/license.svelte.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
+  import TabPanels from "#lib/components/TabPanels.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { formatDate } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { CalendarEntryDto, MediaType } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import {

@@ -4,7 +4,7 @@
   // Only valid inside a Dropdown with role="menu". Where neither side has
   // room (a phone), the submenu slides over its parent menu instead, with a
   // "‹ label" row to go back — the usual mobile drill-down.
-  import { prefersReducedMotion } from "$lib/motion";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import type { Snippet } from "svelte";
   import { onDestroy, tick } from "svelte";
   import { cubicOut } from "svelte/easing";

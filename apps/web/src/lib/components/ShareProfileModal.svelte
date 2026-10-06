@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
-  import { profileUrl, shareProfile } from "$lib/share-profile";
+  import { profileUrl, shareProfile } from "#lib/share-profile.js";
 
   let {
     username,

@@ -80,4 +80,4 @@ export function flashAnchor(node: HTMLElement, args: FlashAnchorArgs) {
   return { update: run };
 }
 
-import { prefersReducedMotion } from "$lib/motion";
+import { prefersReducedMotion } from "#lib/motion.js";

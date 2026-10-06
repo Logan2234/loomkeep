@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { appConfig } from "$lib/config.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import { settingsShortcutLabel } from "../../keyboard-navigation";
   import { SETTINGS_SECTIONS, type SettingsSectionDef } from "../../nav";
 

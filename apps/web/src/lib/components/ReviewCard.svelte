@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { auth } from "$lib/auth.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import { ratingWord } from "$lib/rating-words";
+  import { auth } from "#lib/auth.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { ratingWord } from "#lib/rating-words.js";
   import {
     levelProgress,
     SpoilerSensitivity,

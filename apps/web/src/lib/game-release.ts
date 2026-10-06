@@ -1,5 +1,5 @@
-import { formatDate, MONTH_YEAR_OPTIONS } from "$lib/format";
-import { m } from "$lib/paraglide/messages.js";
+import { formatDate, MONTH_YEAR_OPTIONS } from "#lib/format.js";
+import { m } from "#lib/paraglide/messages.js";
 import type { ReleaseDatePrecision } from "@loomkeep/shared";
 
 /**

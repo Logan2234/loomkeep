@@ -1,5 +1,5 @@
-import { browser } from "$app/environment";
-import { readStorage, writeStorage } from "$lib/local-storage";
+import { readStorage, writeStorage } from "#lib/local-storage.js";
+import { browser } from "$app/env";
 
 const MOTION_KEY = "lk-a11y-motion";
 const CONTRAST_KEY = "lk-a11y-contrast";

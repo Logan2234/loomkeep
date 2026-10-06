@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { bootstrap } from "$lib/bootstrap.svelte";
-  import { isDomainEnabled } from "$lib/domains";
+  import { bootstrap } from "#lib/bootstrap.svelte.js";
+  import { isDomainEnabled } from "#lib/domains.js";
   import { Domain } from "@loomkeep/shared";
 
   let { children } = $props();

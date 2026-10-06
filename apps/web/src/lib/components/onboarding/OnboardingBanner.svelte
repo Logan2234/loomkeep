@@ -1,13 +1,13 @@
 <script lang="ts">
   // MobileLayout reserves room for this bar above the bottom navigation.
   import { afterNavigate } from "$app/navigation";
-  import { skipOnboardingStep } from "$lib/api/gamification";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import Drawer from "$lib/components/Drawer.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { useOnboardingChecklist } from "$lib/gamification/onboarding-checklist.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { skipOnboardingStep } from "#lib/api/gamification.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import Drawer from "#lib/components/Drawer.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { useOnboardingChecklist } from "#lib/gamification/onboarding-checklist.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { OnboardingStepKey } from "@loomkeep/shared";
   import { deriveStepViews } from "./onboarding-checklist";
   import OnboardingChecklistRows from "./OnboardingChecklistRows.svelte";

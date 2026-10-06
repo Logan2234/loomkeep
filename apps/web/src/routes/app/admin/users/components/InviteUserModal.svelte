@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { createAdminInvitation } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import AnimatedHeight from "$lib/components/AnimatedHeight.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import FieldError from "$lib/components/FieldError.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import RollingNumber from "$lib/components/RollingNumber.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import { formatDate } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import { createAdminInvitation } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import AnimatedHeight from "#lib/components/AnimatedHeight.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import FieldError from "#lib/components/FieldError.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import RollingNumber from "#lib/components/RollingNumber.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import { formatDate } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     INVITATION_MAX_USES,
     INVITATION_VALIDITY_DAYS,

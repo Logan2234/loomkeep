@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { localDateInput } from "$lib/date";
+  import { localDateInput } from "#lib/date.js";
   import { page } from "$app/state";
   import {
     addLibraryReplay,
@@ -11,39 +11,39 @@
     updateLibraryEntry,
     upsertLibraryEntry,
     watchEpisode,
-  } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { goBack } from "$lib/backNav.svelte";
-  import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
-  import Lightbox from "$lib/components/Lightbox.svelte";
-  import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
-  import NoteField from "$lib/components/NoteField.svelte";
-  import OwnershipField from "$lib/components/OwnershipField.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import ProviderMark from "$lib/components/ProviderMark.svelte";
-  import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
-  import ReviewsSection from "$lib/components/ReviewsSection.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { OMDB_API } from "$lib/constants/external-links";
+  } from "#lib/api/client.js";
+  import { resolveApiError } from "#lib/api/errors.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { goBack } from "#lib/backNav.svelte.js";
+  import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
+  import Lightbox from "#lib/components/Lightbox.svelte";
+  import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
+  import NoteField from "#lib/components/NoteField.svelte";
+  import OwnershipField from "#lib/components/OwnershipField.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import ProviderMark from "#lib/components/ProviderMark.svelte";
+  import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
+  import ReviewsSection from "#lib/components/ReviewsSection.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { OMDB_API } from "#lib/constants/external-links.js";
   import {
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/constants/ownership-sources";
-  import { formatDate, formatRuntimeTimecode, joinMeta } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import { timeLeftToWatch } from "$lib/pile";
+  } from "#lib/constants/ownership-sources.js";
+  import { formatDate, formatRuntimeTimecode, joinMeta } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { timeLeftToWatch } from "#lib/pile.js";
   import type { MediaType } from "@loomkeep/shared";
   import {
     isAnimeUnaired,

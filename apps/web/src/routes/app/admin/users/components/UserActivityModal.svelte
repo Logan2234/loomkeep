@@ -6,18 +6,18 @@
     getAdminUserLists,
     getAdminUserReportsAgainst,
     getAdminUserReviews,
-  } from "$lib/api/admin";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Modal from "$lib/components/Modal.svelte";
+  } from "#lib/api/admin.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import Modal from "#lib/components/Modal.svelte";
   import {
     REPORT_CATEGORY_LABELS,
     REPORT_MOTIF_LABELS,
     REPORT_STATUS_COLORS,
     REPORT_STATUS_LABELS,
-  } from "$lib/constants/report-labels";
-  import { formatDate } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/constants/report-labels.js";
+  import { formatDate } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   type ActivityKind =
     "reviews" | "comments" | "followers" | "following" | "lists" | "reports";

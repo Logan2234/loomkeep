@@ -5,14 +5,14 @@
   // poster (`meta`) and the button next to it (`action`); both get a fixed
   // slot on every card, filled or not, so a strip's posters and buttons line
   // up whatever each work has to show.
-  import Carousel from "$lib/components/Carousel.svelte";
-  import Poster from "$lib/components/Poster.svelte";
+  import Carousel from "#lib/components/Carousel.svelte";
+  import Poster from "#lib/components/Poster.svelte";
   import {
     bodyOf,
     POSTER_ACTION_HEIGHT,
     posterLayout,
     type BoxSize,
-  } from "$lib/home/sizing";
+  } from "#lib/home/sizing.js";
   import type { Snippet } from "svelte";
 
   interface ItemInfo {

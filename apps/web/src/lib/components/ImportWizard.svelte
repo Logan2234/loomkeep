@@ -7,23 +7,23 @@
     searchBooks,
     searchCatalog,
     searchGames,
-  } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-  import { formatNumber } from "$lib/format";
-  import { readImportFile } from "$lib/import-file";
-  import { m } from "$lib/paraglide/messages.js";
-  import { onRealtimeEvent, socket } from "$lib/realtime/socket";
+  } from "#lib/api/client.js";
+  import { resolveApiError } from "#lib/api/errors.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
+  import { formatNumber } from "#lib/format.js";
+  import { readImportFile } from "#lib/import-file.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { onRealtimeEvent, socket } from "#lib/realtime/socket.js";
   import {
     Domain,
     type BookSummaryDto,

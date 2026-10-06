@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Icon from "$lib/components/Icon.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import { fly } from "svelte/transition";
   import {
     STEP_CONFIG,

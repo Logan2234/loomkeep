@@ -1,15 +1,15 @@
-import { downloadBlob } from "$lib/download";
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
+import { downloadBlob } from "#lib/download.js";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 import MigrationExportCard from "./MigrationExportCard.svelte";
 
-vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
-vi.mock("$lib/download", () => ({ downloadBlob: vi.fn() }));
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
+vi.mock("#lib/download.js", () => ({ downloadBlob: vi.fn() }));
 
 function answer(path: string, names: string[]) {
   const asked: (string | null)[] = [];

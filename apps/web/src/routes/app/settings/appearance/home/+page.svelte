@@ -1,8 +1,8 @@
 <script lang="ts">
-  import HomeLayoutEditor from "$lib/components/home/HomeLayoutEditor.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { m } from "$lib/paraglide/messages.js";
+  import HomeLayoutEditor from "#lib/components/home/HomeLayoutEditor.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { m } from "#lib/paraglide/messages.js";
 </script>
 
 <!-- Same width and gutters as the home page, so every widget is laid out

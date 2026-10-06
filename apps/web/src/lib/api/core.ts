@@ -1,4 +1,4 @@
-import { env } from "$env/dynamic/public";
+import * as env from "$app/env/public";
 import type { ApiErrorBody, PagedResult } from "@loomkeep/shared";
 import { ErrorCode } from "@loomkeep/shared";
 import * as Sentry from "@sentry/sveltekit";

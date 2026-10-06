@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
-  import { theme } from "$lib/theme.svelte";
-  import { foldAdminSearch } from "$lib/admin-search";
-  import { downloadBlob } from "$lib/download";
+  import { m } from "#lib/paraglide/messages.js";
+  import { theme } from "#lib/theme.svelte.js";
+  import { foldAdminSearch } from "#lib/admin-search.js";
+  import { downloadBlob } from "#lib/download.js";
   import { tick } from "svelte";
 
   let { code }: { code: string } = $props();

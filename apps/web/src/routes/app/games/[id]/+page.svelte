@@ -7,55 +7,55 @@
     getGameSaga,
     updateGameEntry,
     upsertGameEntry,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { goBack } from "$lib/backNav.svelte";
-  import { toCarouselItems } from "$lib/carousel";
-  import Banner from "$lib/components/Banner.svelte";
-  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
-  import GameSessionDock from "$lib/components/GameSessionDock.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Lightbox from "$lib/components/Lightbox.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
-  import NoteField from "$lib/components/NoteField.svelte";
-  import OwnershipField from "$lib/components/OwnershipField.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import ProviderMark from "$lib/components/ProviderMark.svelte";
-  import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
-  import ReviewsSection from "$lib/components/ReviewsSection.svelte";
-  import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
-  import TrackingPanel from "$lib/components/TrackingPanel.svelte";
-  import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { IGDB_API } from "$lib/constants/external-links";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { goBack } from "#lib/backNav.svelte.js";
+  import { toCarouselItems } from "#lib/carousel.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
+  import GameSessionDock from "#lib/components/GameSessionDock.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Lightbox from "#lib/components/Lightbox.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
+  import NoteField from "#lib/components/NoteField.svelte";
+  import OwnershipField from "#lib/components/OwnershipField.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import ProviderMark from "#lib/components/ProviderMark.svelte";
+  import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
+  import ReviewsSection from "#lib/components/ReviewsSection.svelte";
+  import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
+  import TrackingPanel from "#lib/components/TrackingPanel.svelte";
+  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { IGDB_API } from "#lib/constants/external-links.js";
   import {
     GAME_OWNERSHIP_SOURCES,
     GAME_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/constants/ownership-sources";
+  } from "#lib/constants/ownership-sources.js";
   import {
     GAME_STATUS_SEG_ACTIVE as SEG_ACTIVE,
     GAME_STATUS_DESC as STATUS_DESC,
     GAME_STATUS_META as STATUS_META,
     GAME_STATUS_ORDER as STATUS_ORDER,
-  } from "$lib/constants/status-labels";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { joinMeta } from "$lib/format";
-  import { gameReleaseLabel, isVagueRelease } from "$lib/game-release";
-  import { releaseDigestOff } from "$lib/release-alerts";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/constants/status-labels.js";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { joinMeta } from "#lib/format.js";
+  import { gameReleaseLabel, isVagueRelease } from "#lib/game-release.js";
+  import { releaseDigestOff } from "#lib/release-alerts.js";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     GAME_DIRECT_STATUS_TARGETS,
     getStatusCorrections,
-  } from "$lib/status-corrections";
+  } from "#lib/status-corrections.js";
   import type { GameEntryDto } from "@loomkeep/shared";
   import { slide } from "svelte/transition";
   import GameSagaSection from "./components/GameSagaSection.svelte";

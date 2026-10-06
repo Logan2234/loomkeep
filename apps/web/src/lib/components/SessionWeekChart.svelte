@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { formatDate } from "$lib/format";
-  import { formatSessionMinutes } from "$lib/session-presentation";
+  import { formatDate } from "#lib/format.js";
+  import { formatSessionMinutes } from "#lib/session-presentation.js";
   import type { SessionWeekDayDto } from "@loomkeep/shared";
 
   let { days }: { days: SessionWeekDayDto[] } = $props();

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { getReadingGoal } from "$lib/api/books";
-  import ReadingGoalEditModal from "$lib/components/ReadingGoalEditModal.svelte";
-  import ReadingGoalGauge from "$lib/components/ReadingGoalGauge.svelte";
-  import { HOME_WIDGETS } from "$lib/home/widgets";
-  import { bodyOf, type BoxSize } from "$lib/home/sizing";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getReadingGoal } from "#lib/api/books.js";
+  import ReadingGoalEditModal from "#lib/components/ReadingGoalEditModal.svelte";
+  import ReadingGoalGauge from "#lib/components/ReadingGoalGauge.svelte";
+  import { HOME_WIDGETS } from "#lib/home/widgets.js";
+  import { bodyOf, type BoxSize } from "#lib/home/sizing.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ReadingGoalDto } from "@loomkeep/shared";
   import WidgetShell from "../WidgetShell.svelte";
 

@@ -1,19 +1,19 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { getFeed } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import ActivityItem from "$lib/components/ActivityItem.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import TabPanels from "$lib/components/TabPanels.svelte";
-  import Tabs from "$lib/components/Tabs.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { isDomainEnabled, orderedDomains } from "$lib/domains";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getFeed } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import ActivityItem from "#lib/components/ActivityItem.svelte";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import TabPanels from "#lib/components/TabPanels.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domains.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ActivityEventDto, Domain, PagedResult } from "@loomkeep/shared";
 
   type Tab = "ALL" | Domain;
@@ -38,10 +38,10 @@
   });
 
   function changeTab(next: Tab) {
-    const url = new URL(page.url);
+    const url = new URL(page.url.href);
     if (next === "ALL") url.searchParams.delete("domain");
     else url.searchParams.set("domain", next);
-    void goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+    void goto(url, { replace: true, reset: false });
   }
 
   const feed = createApiInfiniteQuery<

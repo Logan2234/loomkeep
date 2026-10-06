@@ -5,40 +5,40 @@
     getMusicDetail,
     updateMusicEntry,
     upsertMusicEntry,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { goBack } from "$lib/backNav.svelte";
-  import { toCarouselItems } from "$lib/carousel";
-  import Banner from "$lib/components/Banner.svelte";
-  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
-  import Lightbox from "$lib/components/Lightbox.svelte";
-  import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
-  import NoteField from "$lib/components/NoteField.svelte";
-  import OwnershipField from "$lib/components/OwnershipField.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
-  import ReviewsSection from "$lib/components/ReviewsSection.svelte";
-  import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
-  import TrackingPanel from "$lib/components/TrackingPanel.svelte";
-  import { appConfig } from "$lib/config.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { goBack } from "#lib/backNav.svelte.js";
+  import { toCarouselItems } from "#lib/carousel.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
+  import Lightbox from "#lib/components/Lightbox.svelte";
+  import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
+  import NoteField from "#lib/components/NoteField.svelte";
+  import OwnershipField from "#lib/components/OwnershipField.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
+  import ReviewsSection from "#lib/components/ReviewsSection.svelte";
+  import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
+  import TrackingPanel from "#lib/components/TrackingPanel.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import {
     MUSIC_OWNERSHIP_SOURCES,
     MUSIC_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/constants/ownership-sources";
+  } from "#lib/constants/ownership-sources.js";
   import {
     MUSIC_STATUS_SEG_ACTIVE as SEG_ACTIVE,
     MUSIC_STATUS_DESC as STATUS_DESC,
     MUSIC_STATUS_META as STATUS_META,
     MUSIC_STATUS_ORDER as STATUS_ORDER,
-  } from "$lib/constants/status-labels";
-  import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
-  import { MONTH_YEAR_OPTIONS, formatDate, joinMeta } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/constants/status-labels.js";
+  import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
+  import { MONTH_YEAR_OPTIONS, formatDate, joinMeta } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   // MusicBrainz is the only music source today; the web route carries just the id.
   const SOURCE = "musicbrainz";

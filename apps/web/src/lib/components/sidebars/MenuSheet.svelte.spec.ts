@@ -1,17 +1,17 @@
-import { m } from "$lib/paraglide/messages.js";
-import { page, visit } from "$lib/test/navigation.svelte";
-import { renderWithQuery } from "$lib/test/render";
+import { m } from "#lib/paraglide/messages.js";
+import { page, visit } from "#lib/test/navigation.svelte.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import { screen, within } from "@testing-library/svelte";
 import { expect, it, vi } from "vitest";
 import MenuSheet from "./MenuSheet.svelte";
 
-vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
-vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
-vi.mock("$lib/auth.svelte", () => ({ auth: { isAdmin: true } }));
-vi.mock("$lib/config.svelte", () => ({
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
+vi.mock("#lib/auth.svelte.js", () => ({ auth: { isAdmin: true } }));
+vi.mock("#lib/config.svelte.js", () => ({
   appConfig: { socialEnabled: true, gamificationEnabled: true },
 }));
-vi.mock("$lib/reports-pending.svelte", () => ({
+vi.mock("#lib/reports-pending.svelte.js", () => ({
   useReportsPendingCount: () => ({ count: 12, available: true }),
 }));
 

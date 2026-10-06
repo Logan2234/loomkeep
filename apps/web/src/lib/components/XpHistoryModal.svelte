@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { getXpHistory } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { formatDate, formatNumber, formatTime } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getXpHistory } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { formatDate, formatNumber, formatTime } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     buildTimeline,
     chartBars,
@@ -19,7 +19,7 @@
     runDescription,
     runLabel,
     type XpRun,
-  } from "$lib/xp-history";
+  } from "#lib/xp-history.js";
   import {
     levelProgress,
     type PagedResult,

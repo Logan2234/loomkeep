@@ -6,7 +6,7 @@
     DATETIME_LONG_OPTIONS,
     formatDateTime,
     formatRelative,
-  } from "$lib/format";
+  } from "#lib/format.js";
 
   let { iso, class: className = "" }: { iso: string; class?: string } =
     $props();

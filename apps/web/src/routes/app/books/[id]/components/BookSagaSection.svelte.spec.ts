@@ -1,6 +1,6 @@
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import type {
   BookSagaDto,
   BookSagaMemberDto,
@@ -12,8 +12,8 @@ import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 import BookSagaSection from "./BookSagaSection.svelte";
 
-vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
-vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 const volume = (
   sourceId: string,

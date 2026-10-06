@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { getCommentCount } from "$lib/api/client";
-  import { auth } from "$lib/auth.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { joinRealtimeRoom, onRealtimeEvent } from "$lib/realtime/socket";
+  import { getCommentCount } from "#lib/api/client.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { joinRealtimeRoom, onRealtimeEvent } from "#lib/realtime/socket.js";
   import {
     SpoilerSensitivity,
     type CommentPresenceEvent,

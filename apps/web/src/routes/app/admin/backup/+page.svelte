@@ -6,26 +6,26 @@
     getAdminBackupFiles,
     restoreAdminBackup,
     runAdminJob,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
   import AdminQueryError from "../AdminQueryError.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import PasswordInput from "$lib/components/PasswordInput.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { downloadBlob } from "$lib/download";
+  import Banner from "#lib/components/Banner.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import PasswordInput from "#lib/components/PasswordInput.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { downloadBlob } from "#lib/download.js";
   import {
     DATETIME_NUMERIC_OPTIONS,
     formatBytes,
     formatDateTime,
-  } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { toast } from "$lib/toast.svelte";
+  } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { toast } from "#lib/toast.svelte.js";
   import type {
     AdminBackupFileDto,
     AdminOrphanBackupFileDto,

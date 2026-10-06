@@ -1,17 +1,17 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { env } from "$env/dynamic/public";
-  import { bootstrap } from "$lib/bootstrap.svelte";
-  import NewsBanner from "$lib/components/NewsBanner.svelte";
-  import Toast from "$lib/components/Toast.svelte";
-  import { layout } from "$lib/layout.svelte";
-  import { navStyle } from "$lib/navStyle.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import * as env from "$app/env/public";
+  import { bootstrap } from "#lib/bootstrap.svelte.js";
+  import NewsBanner from "#lib/components/NewsBanner.svelte";
+  import Toast from "#lib/components/Toast.svelte";
+  import { layout } from "#lib/layout.svelte.js";
+  import { navStyle } from "#lib/navStyle.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
   import { regionalLocale } from "@loomkeep/shared";
-  import { queryClient } from "$lib/queryClient";
-  import { accessibility } from "$lib/accessibility.svelte";
-  import { theme } from "$lib/theme.svelte";
+  import { queryClient } from "#lib/queryClient.js";
+  import { accessibility } from "#lib/accessibility.svelte.js";
+  import { theme } from "#lib/theme.svelte.js";
   import "@fontsource-variable/bricolage-grotesque/wght.css";
   import "@fontsource-variable/hanken-grotesk/wght.css";
   import "@fontsource/space-mono/400.css";

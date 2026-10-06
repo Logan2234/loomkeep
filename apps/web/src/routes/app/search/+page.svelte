@@ -1,24 +1,24 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { keys } from "$lib/api/keys";
-  import { resolveLink } from "$lib/api/links";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import BookSearchPanel from "$lib/components/search/BookSearchPanel.svelte";
-  import GameSearchPanel from "$lib/components/search/GameSearchPanel.svelte";
-  import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
-  import MusicSearchPanel from "$lib/components/search/MusicSearchPanel.svelte";
-  import QuickAddPanel from "$lib/components/QuickAddPanel.svelte";
-  import ScanIsbnModal from "$lib/components/ScanIsbnModal.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { debounce } from "$lib/debounce";
-  import { isDomainEnabled } from "$lib/domains";
-  import { layout } from "$lib/layout.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { quickAddTarget } from "$lib/quick-add";
-  import { isPastedLink } from "$lib/share-link";
+  import { keys } from "#lib/api/keys.js";
+  import { resolveLink } from "#lib/api/links.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import BookSearchPanel from "#lib/components/search/BookSearchPanel.svelte";
+  import GameSearchPanel from "#lib/components/search/GameSearchPanel.svelte";
+  import MediaSearchPanel from "#lib/components/search/MediaSearchPanel.svelte";
+  import MusicSearchPanel from "#lib/components/search/MusicSearchPanel.svelte";
+  import QuickAddPanel from "#lib/components/QuickAddPanel.svelte";
+  import ScanIsbnModal from "#lib/components/ScanIsbnModal.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { debounce } from "#lib/debounce.js";
+  import { isDomainEnabled } from "#lib/domains.js";
+  import { layout } from "#lib/layout.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { quickAddTarget } from "#lib/quick-add.js";
+  import { isPastedLink } from "#lib/share-link.js";
   import { Domain, type MediaType } from "@loomkeep/shared";
 
   // Only the domains the user keeps enabled are searchable (mirrors the nav;
@@ -80,9 +80,8 @@
     if (domain !== Domain.MEDIA) params.set("type", domain);
     const qs = params.toString();
     void goto(qs ? `?${qs}` : page.url.pathname, {
-      replaceState: true,
-      noScroll: true,
-      keepFocus: true,
+      replace: true,
+      reset: false,
     });
   }, 300);
   $effect(() => {

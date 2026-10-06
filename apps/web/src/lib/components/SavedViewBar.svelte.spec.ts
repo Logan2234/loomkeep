@@ -1,8 +1,8 @@
-import { ApiError } from "$lib/api/core";
-import { resolveApiError } from "$lib/api/errors";
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
+import { ApiError } from "#lib/api/core.js";
+import { resolveApiError } from "#lib/api/errors.js";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import {
   ErrorCode,
   type SavedViewDto,

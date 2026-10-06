@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { upsertBookEntry } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import SagaBlock from "$lib/components/saga/SagaBlock.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { m } from "$lib/paraglide/messages.js";
-  import { bookSagaMember } from "$lib/saga";
+  import { upsertBookEntry } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import SagaBlock from "#lib/components/saga/SagaBlock.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { bookSagaMember } from "#lib/saga.js";
   import type {
     BookSagaDto,
     BookSagaMemberDto,

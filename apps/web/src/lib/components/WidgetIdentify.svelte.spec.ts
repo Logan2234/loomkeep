@@ -1,6 +1,6 @@
-import { auth } from "$lib/auth.svelte";
-import { layout } from "$lib/layout.svelte";
-import { toast } from "$lib/toast.svelte";
+import { auth } from "#lib/auth.svelte.js";
+import { layout } from "#lib/layout.svelte.js";
+import { toast } from "#lib/toast.svelte.js";
 import type { UserDto } from "@loomkeep/shared";
 import { render } from "@testing-library/svelte";
 import { createRawSnippet, flushSync } from "svelte";

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Icon from "$lib/components/Icon.svelte";
+  import Icon from "#lib/components/Icon.svelte";
   import {
     compareToLastKnown,
     readLastKnown,
     writeLastKnown,
-  } from "$lib/last-known";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/last-known.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     days,
@@ -38,7 +38,7 @@
   // Rise only, never a fall. A shorter streak updates the stored value in
   // silence — the "no loss pressure" guardrail is explicit that losing a
   // streak is never notified. Same last-known-value mechanism as the
-  // level-up bubble, shared through $lib/last-known.
+  // level-up bubble, shared through #lib/last-known.
   const RISE_MS = 900;
   let rising = $state(false);
   $effect(() => {

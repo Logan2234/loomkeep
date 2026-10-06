@@ -8,19 +8,19 @@
     resendMfaEmailCode,
     verifyMfaLogin,
     verifyWebauthnMfaLogin,
-  } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import FieldError from "$lib/components/FieldError.svelte";
-  import AuthShell from "$lib/components/AuthShell.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PasswordInput from "$lib/components/PasswordInput.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { Cooldown } from "$lib/cooldown.svelte";
-  import { formatDateTime } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { normalizeCodeInput } from "$lib/one-time-code";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import FieldError from "#lib/components/FieldError.svelte";
+  import AuthShell from "#lib/components/AuthShell.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import PasswordInput from "#lib/components/PasswordInput.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { Cooldown } from "#lib/cooldown.svelte.js";
+  import { formatDateTime } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { normalizeCodeInput } from "#lib/one-time-code.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     ErrorCode,
     type MfaMethod,

@@ -1,7 +1,7 @@
-import { auth } from "$lib/auth.svelte";
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
+import { auth } from "#lib/auth.svelte.js";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import type { CalendarEntryDto, UserDto } from "@loomkeep/shared";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
@@ -9,8 +9,8 @@ import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CalendarPage from "./+page.svelte";
 
-vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
-vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 const inDays = (days: number) =>
   new Date(Date.now() + days * 86_400_000).toISOString();

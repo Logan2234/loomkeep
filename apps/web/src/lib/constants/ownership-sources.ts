@@ -1,4 +1,4 @@
-import { m } from "$lib/paraglide/messages";
+import { m } from "#lib/paraglide/messages.js";
 
 export const GAME_OWNERSHIP_STATUS_OPTIONS = [
   { value: "NONE", label: m.common_none() },

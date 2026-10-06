@@ -3,15 +3,15 @@
   // fit, so both render as rows: a thumbnail (table) or text only (compact)
   // with the status, rating and progress on one line.
   import { goto } from "$app/navigation";
-  import { joinMeta } from "$lib/format";
+  import { joinMeta } from "#lib/format.js";
   import type {
     LibraryColumn,
     LibraryInlineEdit,
     LibraryItemView,
     LibrarySelection,
-  } from "$lib/library-view";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/library-view.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { MediaQuery } from "svelte/reactivity";
   import { flip } from "svelte/animate";
   import { fade, scale } from "svelte/transition";

@@ -1,13 +1,13 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { auth } from "$lib/auth.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import CountFlash from "$lib/components/CountFlash.svelte";
-  import Dropdown from "$lib/components/Dropdown.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import StreakBadge from "$lib/components/StreakBadge.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import CountFlash from "#lib/components/CountFlash.svelte";
+  import Dropdown from "#lib/components/Dropdown.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import StreakBadge from "#lib/components/StreakBadge.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { RelationshipDto, SocialProfileDto } from "@loomkeep/shared";
 
   let {

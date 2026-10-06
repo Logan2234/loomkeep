@@ -10,32 +10,32 @@
     reportUser,
     unblockUser,
     unfollowUser,
-  } from "$lib/api/client";
-  import { ApiError } from "$lib/api/core";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import EditAvatarModal from "$lib/components/EditAvatarModal.svelte";
-  import EditProfileModal from "$lib/components/EditProfileModal.svelte";
-  import ListFormModal from "$lib/components/ListFormModal.svelte";
-  import ProfileActivity from "$lib/components/ProfileActivity.svelte";
-  import ProfileConnectionsModal from "$lib/components/profile/ProfileConnectionsModal.svelte";
-  import ProfileHeader from "$lib/components/profile/ProfileHeader.svelte";
-  import ProfileLibrarySection from "$lib/components/profile/ProfileLibrarySection.svelte";
-  import ProfileListsSection from "$lib/components/profile/ProfileListsSection.svelte";
-  import ProfileStatsCard from "$lib/components/profile/ProfileStatsCard.svelte";
-  import ProfileReviews from "$lib/components/ProfileReviews.svelte";
-  import ReportModal from "$lib/components/ReportModal.svelte";
-  import ScanProfileModal from "$lib/components/ScanProfileModal.svelte";
-  import ShareProfileModal from "$lib/components/ShareProfileModal.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { formatDate, MONTH_YEAR_OPTIONS } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { ApiError } from "#lib/api/core.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import AvatarLightbox from "#lib/components/AvatarLightbox.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import EditAvatarModal from "#lib/components/EditAvatarModal.svelte";
+  import EditProfileModal from "#lib/components/EditProfileModal.svelte";
+  import ListFormModal from "#lib/components/ListFormModal.svelte";
+  import ProfileActivity from "#lib/components/ProfileActivity.svelte";
+  import ProfileConnectionsModal from "#lib/components/profile/ProfileConnectionsModal.svelte";
+  import ProfileHeader from "#lib/components/profile/ProfileHeader.svelte";
+  import ProfileLibrarySection from "#lib/components/profile/ProfileLibrarySection.svelte";
+  import ProfileListsSection from "#lib/components/profile/ProfileListsSection.svelte";
+  import ProfileStatsCard from "#lib/components/profile/ProfileStatsCard.svelte";
+  import ProfileReviews from "#lib/components/ProfileReviews.svelte";
+  import ReportModal from "#lib/components/ReportModal.svelte";
+  import ScanProfileModal from "#lib/components/ScanProfileModal.svelte";
+  import ShareProfileModal from "#lib/components/ShareProfileModal.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { formatDate, MONTH_YEAR_OPTIONS } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     MyListDto,
     RelationshipDto,

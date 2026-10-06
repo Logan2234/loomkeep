@@ -1,7 +1,7 @@
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
-import { localDayKey } from "$lib/xp-history";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
+import { localDayKey } from "#lib/xp-history.js";
 import {
   xpForLevel,
   type PagedResult,
@@ -14,8 +14,8 @@ import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 import XpHistoryModal from "./XpHistoryModal.svelte";
 
-vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
-vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 const episode = (n: number, amount = 10): XpHistoryItemDto => ({
   reason: "EPISODE_WATCHED",

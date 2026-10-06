@@ -3,7 +3,7 @@
   import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "$lib/admin-filter-url";
+  import { adminFilterHref } from "#lib/admin-filter-url.js";
   import {
     deleteAdminCacheItem,
     deleteAdminCacheOrphans,
@@ -11,24 +11,24 @@
     getAdminCacheItem,
     resyncAdminCacheItem,
     resyncAdminCacheStale,
-  } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import SidePanel from "$lib/components/SidePanel.svelte";
-  import Tabs from "$lib/components/Tabs.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { debounce } from "$lib/debounce";
-  import { formatDateTime } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { IconName } from "$lib/types/icon-name";
+  } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import SidePanel from "#lib/components/SidePanel.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { debounce } from "#lib/debounce.js";
+  import { formatDateTime } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import type {
     AdminCacheItemDto,
     AdminCacheListResponseDto,
@@ -140,15 +140,14 @@
     searchDebounce.cancel();
     void goto(
       adminFilterHref(page.url, { q: searchInput.trim() || null, ...updates }),
-      { noScroll: true, keepFocus: true },
+      { reset: false },
     );
   }
 
   const searchDebounce = debounce(() => {
     void goto(adminFilterHref(page.url, { q: searchInput.trim() || null }), {
-      replaceState: true,
-      noScroll: true,
-      keepFocus: true,
+      replace: true,
+      reset: false,
     });
   }, 300);
   $effect(() => {

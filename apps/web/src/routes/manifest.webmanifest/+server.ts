@@ -1,5 +1,5 @@
-import { getLocale, isLocale } from "$lib/paraglide/runtime.js";
-import { createManifest } from "$lib/pwa-manifest";
+import { getLocale, isLocale } from "#lib/paraglide/runtime.js";
+import { createManifest } from "#lib/pwa-manifest.js";
 import type { RequestHandler } from "@sveltejs/kit";
 
 export const GET: RequestHandler = ({ url }) => {

@@ -7,51 +7,51 @@
     getBookSaga,
     updateBookEntry,
     upsertBookEntry,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
   import BookSagaSection from "./components/BookSagaSection.svelte";
-  import { goBack } from "$lib/backNav.svelte";
-  import { toCarouselItems } from "$lib/carousel";
-  import Banner from "$lib/components/Banner.svelte";
-  import BookSessionDock from "$lib/components/BookSessionDock.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Lightbox from "$lib/components/Lightbox.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import NoteField from "$lib/components/NoteField.svelte";
-  import OwnershipField from "$lib/components/OwnershipField.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import ProviderMark from "$lib/components/ProviderMark.svelte";
-  import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
-  import ReviewsSection from "$lib/components/ReviewsSection.svelte";
-  import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
-  import TrackingPanel from "$lib/components/TrackingPanel.svelte";
-  import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
-  import { appConfig } from "$lib/config.svelte";
+  import { goBack } from "#lib/backNav.svelte.js";
+  import { toCarouselItems } from "#lib/carousel.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import BookSessionDock from "#lib/components/BookSessionDock.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Lightbox from "#lib/components/Lightbox.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import NoteField from "#lib/components/NoteField.svelte";
+  import OwnershipField from "#lib/components/OwnershipField.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import ProviderMark from "#lib/components/ProviderMark.svelte";
+  import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
+  import ReviewsSection from "#lib/components/ReviewsSection.svelte";
+  import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
+  import TrackingPanel from "#lib/components/TrackingPanel.svelte";
+  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import {
     BOOK_OWNERSHIP_SOURCES,
     BOOK_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/constants/ownership-sources";
+  } from "#lib/constants/ownership-sources.js";
   import {
     BOOK_STATUS_SEG_ACTIVE as SEG_ACTIVE,
     BOOK_STATUS_DESC as STATUS_DESC,
     BOOK_STATUS_META as STATUS_META,
     BOOK_STATUS_ORDER as STATUS_ORDER,
-  } from "$lib/constants/status-labels";
-  import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { joinMeta } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/constants/status-labels.js";
+  import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { joinMeta } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     BOOK_DIRECT_STATUS_TARGETS,
     getStatusCorrections,
-  } from "$lib/status-corrections";
+  } from "#lib/status-corrections.js";
 
   // Open Library is the only book source today; the web route carries just
   // the work id (e.g. "OL893414W").

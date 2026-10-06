@@ -1,6 +1,6 @@
 // Shared by the desktop widget and mobile banner, which use separate shells.
-import { m } from "$lib/paraglide/messages.js";
-import type { IconName } from "$lib/types/icon-name";
+import { m } from "#lib/paraglide/messages.js";
+import type { IconName } from "#lib/types/icon-name.js";
 import type { OnboardingStepDto, OnboardingStepKey } from "@loomkeep/shared";
 
 interface StepConfig {

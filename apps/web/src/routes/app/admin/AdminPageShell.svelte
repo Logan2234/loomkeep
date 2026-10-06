@@ -2,7 +2,7 @@
   import {
     ADMIN_PAGE_WIDTH,
     adminPageLayout,
-  } from "$lib/constants/admin-layout";
+  } from "#lib/constants/admin-layout.js";
   import type { Snippet } from "svelte";
   import AdminSearch from "./AdminSearch.svelte";
 

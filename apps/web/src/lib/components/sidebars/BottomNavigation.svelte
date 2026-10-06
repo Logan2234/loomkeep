@@ -1,14 +1,14 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { auth } from "$lib/auth.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { isDomainEnabled } from "$lib/domains";
-  import { isFeatureNew } from "$lib/feature-badges";
+  import { auth } from "#lib/auth.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { isDomainEnabled } from "#lib/domains.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import {
     DEFAULT_BOTTOM_SHORTCUTS,
     resolveBottomShortcuts,
-  } from "$lib/navigation";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/navigation.js";
+  import { m } from "#lib/paraglide/messages.js";
   import NotificationTab from "./NotificationTab.svelte";
 
   // The user's stored order (falls back to the default set), gated by enabled

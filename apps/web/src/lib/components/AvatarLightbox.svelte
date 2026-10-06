@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
-  import { prefersReducedMotion } from "$lib/motion";
+  import { m } from "#lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { fade, scale } from "svelte/transition";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";

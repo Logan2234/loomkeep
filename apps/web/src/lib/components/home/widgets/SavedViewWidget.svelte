@@ -5,13 +5,13 @@
     listGames,
     listLibrary,
     listMusic,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { HOME_WIDGETS } from "$lib/home/widgets";
-  import type { BoxSize } from "$lib/home/sizing";
-  import { m } from "$lib/paraglide/messages.js";
-  import { savedViewHref } from "$lib/saved-views";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { HOME_WIDGETS } from "#lib/home/widgets.js";
+  import type { BoxSize } from "#lib/home/sizing.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { savedViewHref } from "#lib/saved-views.js";
   import type { HomeWidgetDto, SavedViewDto } from "@loomkeep/shared";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   // Single-series line chart over an SVG viewbox — reusable for any
   // {label,value}[] series (weekday/hour curves, monthly minutes…). Shows a
   // handful of evenly-spaced x-axis labels regardless of point count.

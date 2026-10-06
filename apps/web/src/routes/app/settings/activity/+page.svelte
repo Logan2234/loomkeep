@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { getAccountSecurityEvents } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import Banner from "$lib/components/Banner.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { formatDateTime } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { IconName } from "$lib/types/icon-name";
+  import { getAccountSecurityEvents } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { formatDateTime } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import {
     deviceLabel,
     type AccountSecurityEventDto,

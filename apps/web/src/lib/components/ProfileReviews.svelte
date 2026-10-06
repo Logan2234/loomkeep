@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { getMyReviews } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import ProfileSectionHeading from "$lib/components/profile/ProfileSectionHeading.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getMyReviews } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import ProfileSectionHeading from "#lib/components/profile/ProfileSectionHeading.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   const PREVIEW_COUNT = 3;
 

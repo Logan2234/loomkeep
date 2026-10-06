@@ -119,6 +119,10 @@ overrides:
 # whichever rxjs pnpm hoisted — rxjs 6 once apps/docs joined the workspace,
 # which crashes the API at boot. Declared here, it gets the app's rxjs 7.
 packageExtensions:
+  # Vitest browser mocking still imports msw/core/http, removed in MSW 3.
+  "@vitest/mocker@5.0.3":
+    dependencies:
+      msw: ^2.15.0
   "@nestjs/platform-fastify":
     peerDependencies:
       rxjs: ^7.1.0

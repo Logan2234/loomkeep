@@ -1,12 +1,12 @@
 <script lang="ts">
-  import Icon from "$lib/components/Icon.svelte";
-  import { currentHomeGate } from "$lib/home/gate";
+  import Icon from "#lib/components/Icon.svelte";
+  import { currentHomeGate } from "#lib/home/gate.js";
   import {
     DEFAULT_QUICK_LINKS,
     resolveQuickLinks,
-  } from "$lib/home/quick-links";
-  import type { BoxSize } from "$lib/home/sizing";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/home/quick-links.js";
+  import type { BoxSize } from "#lib/home/sizing.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { HomeWidgetDto } from "@loomkeep/shared";
 
   let { widget, size }: { widget: HomeWidgetDto; size: BoxSize } = $props();

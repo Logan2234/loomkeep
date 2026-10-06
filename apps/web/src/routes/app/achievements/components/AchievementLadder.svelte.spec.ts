@@ -1,4 +1,4 @@
-import { renderWithQuery } from "$lib/test/render";
+import { renderWithQuery } from "#lib/test/render.js";
 import type { AchievementDto } from "@loomkeep/shared";
 import { screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";

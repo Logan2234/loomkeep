@@ -1,7 +1,7 @@
-import { auth } from "$lib/auth.svelte";
-import { m } from "$lib/paraglide/messages.js";
-import { apiUrl, server } from "$lib/test/msw";
-import { renderWithQuery } from "$lib/test/render";
+import { auth } from "#lib/auth.svelte.js";
+import { m } from "#lib/paraglide/messages.js";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import type { MfaStatusDto, UserDto } from "@loomkeep/shared";
 import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
@@ -10,8 +10,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import MfaSection from "./MfaSection.svelte";
 import SecuritySection from "./SecuritySection.svelte";
 
-vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
-vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 // Codes are pasted from an authenticator or an email, often with spaces
 // around or inside them; a `maxlength` counting those spaces used to cut

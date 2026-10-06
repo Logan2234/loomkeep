@@ -1,11 +1,17 @@
 /// <reference lib="webworker" />
+import { version } from "$app/env";
+import { assets, immutable, prerendered } from "$app/manifest";
 import { cleanupOutdatedCaches, precacheAndRoute } from "workbox-precaching";
 
 declare let self: ServiceWorkerGlobalScope;
 
-// Precache the app shell injected by vite-pwa (injectManifest strategy),
-// preserving the offline behaviour the previous generateSW config provided.
-precacheAndRoute(self.__WB_MANIFEST ?? []);
+precacheAndRoute([
+  ...immutable.map(({ path }) => ({ url: path, revision: null })),
+  ...[...assets, ...prerendered].map(({ path }) => ({
+    url: path || "/",
+    revision: version,
+  })),
+]);
 cleanupOutdatedCaches();
 
 self.skipWaiting();

@@ -1,24 +1,24 @@
 <script lang="ts">
-  import { getAdminJobs, runAdminJob } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { scrollToAdminAnchor } from "$lib/admin-anchor";
+  import { getAdminJobs, runAdminJob } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { scrollToAdminAnchor } from "#lib/admin-anchor.js";
   import AdminQueryError from "../AdminQueryError.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import SectionRail from "$lib/components/SectionRail.svelte";
-  import StatFigure from "$lib/components/stats/StatFigure.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { formatDate, formatDurationMs } from "$lib/format";
+  import Icon from "#lib/components/Icon.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import SectionRail from "#lib/components/SectionRail.svelte";
+  import StatFigure from "#lib/components/stats/StatFigure.svelte";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { formatDate, formatDurationMs } from "#lib/format.js";
   import {
     adminJobLabel,
     adminJobDescription,
     adminJobButtonState,
     adminJobSchedule,
-  } from "$lib/constants/admin-presentation";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/constants/admin-presentation.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { JobDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";

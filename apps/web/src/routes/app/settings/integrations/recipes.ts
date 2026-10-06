@@ -1,5 +1,5 @@
-import { DOCS_URL } from "$lib/constants/external-links";
-import { m } from "$lib/paraglide/messages.js";
+import { DOCS_URL } from "#lib/constants/external-links.js";
+import { m } from "#lib/paraglide/messages.js";
 import type { Recipe } from "./api-key-form";
 
 export const RECIPE_LABELS: Record<

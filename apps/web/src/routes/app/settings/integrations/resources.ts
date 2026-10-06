@@ -1,4 +1,4 @@
-import { m } from "$lib/paraglide/messages.js";
+import { m } from "#lib/paraglide/messages.js";
 import type { ApiKeyResource, ApiKeyScope } from "@loomkeep/shared";
 
 export const RESOURCE_LABELS: Record<

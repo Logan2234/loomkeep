@@ -1,6 +1,6 @@
 // Resolves mutation errors before they reach templates and invalidates the
 // declared query keys after success.
-import { toast } from "$lib/toast.svelte";
+import { toast } from "#lib/toast.svelte.js";
 import {
   createMutation,
   useQueryClient,

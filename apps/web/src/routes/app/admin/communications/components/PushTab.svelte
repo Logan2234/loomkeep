@@ -7,19 +7,19 @@
     getAdminPushSummary,
     sendAdminBroadcastPush,
     sendAdminTestPush,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
   import AdminQueryError from "../../AdminQueryError.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
-  import UserSelector from "$lib/components/UserSelector.svelte";
-  import { formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import Banner from "#lib/components/Banner.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
+  import UserSelector from "#lib/components/UserSelector.svelte";
+  import { formatNumber } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let email = $state(page.url.searchParams.get("email") ?? "");
   let pushTitle = $state("");

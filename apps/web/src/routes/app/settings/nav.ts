@@ -3,10 +3,10 @@
 // next to the markup that rendered it; here the same array drives the rail,
 // the mobile index, the search and the legacy-anchor redirects, so a new
 // section is added once.
-import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-import type { isFeatureNew } from "$lib/feature-badges";
-import { m } from "$lib/paraglide/messages.js";
-import type { IconName } from "$lib/types/icon-name";
+import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
+import type { isFeatureNew } from "#lib/feature-badges.js";
+import { m } from "#lib/paraglide/messages.js";
+import type { IconName } from "#lib/types/icon-name.js";
 type FeatureBadgeKey = Parameters<typeof isFeatureNew>[0];
 /**
  * Below this many unused recovery codes, running out stops being a detail of

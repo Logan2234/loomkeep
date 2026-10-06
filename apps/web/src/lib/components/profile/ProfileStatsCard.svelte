@@ -1,9 +1,9 @@
 <script lang="ts">
-  import CalendarHeatmap from "$lib/components/stats/CalendarHeatmap.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import ProfileSectionHeading from "$lib/components/profile/ProfileSectionHeading.svelte";
-  import { formatDate } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  import CalendarHeatmap from "#lib/components/stats/CalendarHeatmap.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import ProfileSectionHeading from "#lib/components/profile/ProfileSectionHeading.svelte";
+  import { formatDate } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { SocialProfileDto } from "@loomkeep/shared";
 
   let { profile }: { profile: SocialProfileDto } = $props();

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { dialogFocus } from "$lib/actions/dialogFocus";
-  import { portal } from "$lib/actions/portal";
-  import { scrollLock } from "$lib/actions/scrollLock";
-  import { m } from "$lib/paraglide/messages.js";
-  import { prefersReducedMotion } from "$lib/motion";
+  import { dialogFocus } from "#lib/actions/dialogFocus.js";
+  import { portal } from "#lib/actions/portal.js";
+  import { scrollLock } from "#lib/actions/scrollLock.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { fade, scale } from "svelte/transition";
   import Icon from "./Icon.svelte";
 

@@ -12,25 +12,25 @@
 </script>
 
 <script lang="ts">
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
-  import { debounce } from "$lib/debounce";
-  import { formatDate } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
+  import { debounce } from "#lib/debounce.js";
+  import { formatDate } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     LibrarySagasView,
     LibrarySagaView,
     SagaMemberView,
-  } from "$lib/saga";
-  import type { IconName } from "$lib/types/icon-name";
+  } from "#lib/saga.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import type { Snippet } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { fly, scale, slide } from "svelte/transition";

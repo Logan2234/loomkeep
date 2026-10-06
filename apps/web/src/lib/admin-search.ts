@@ -1,4 +1,4 @@
-import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
+import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
 
 export function foldAdminSearch(value: string): string {
   return value

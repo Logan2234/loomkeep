@@ -5,7 +5,7 @@
   // ([grid-area:1/1]): while both are mounted the cell takes the taller one,
   // then this settles on the one that stays. The 1-unit inset keeps focus
   // rings clear of the clip.
-  import { prefersReducedMotion } from "$lib/motion";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import type { Snippet } from "svelte";
 
   let { children, class: cls = "" }: { children: Snippet; class?: string } =

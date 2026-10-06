@@ -2,9 +2,9 @@
   // The review modal, opened from a library table row: a rating lives in
   // the entry's review, so editing it goes through the same form as the
   // work's page. Waits for the viewer's review, if any, before opening.
-  import { auth } from "$lib/auth.svelte";
-  import type { LibraryItemView } from "$lib/library-view";
-  import { createMyReview } from "$lib/my-review.svelte";
+  import { auth } from "#lib/auth.svelte.js";
+  import type { LibraryItemView } from "#lib/library-view.js";
+  import { createMyReview } from "#lib/my-review.svelte.js";
   import { useQueryClient } from "@tanstack/svelte-query";
   import ReviewFormModal from "./ReviewFormModal.svelte";
 

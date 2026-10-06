@@ -1,12 +1,12 @@
-import { auth } from "$lib/auth.svelte";
-import { m } from "$lib/paraglide/messages.js";
-import { renderWithQuery } from "$lib/test/render";
+import { auth } from "#lib/auth.svelte.js";
+import { m } from "#lib/paraglide/messages.js";
+import { renderWithQuery } from "#lib/test/render.js";
 import type { UserDto } from "@loomkeep/shared";
 import { screen } from "@testing-library/svelte";
 import { afterEach, expect, it, vi } from "vitest";
 import ContentSettings from "./+page.svelte";
 
-vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();

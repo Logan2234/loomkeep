@@ -5,17 +5,17 @@
     getUserFollowing,
     removeFollower,
     unfollowUser,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ConnectionDto, RelationshipDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";

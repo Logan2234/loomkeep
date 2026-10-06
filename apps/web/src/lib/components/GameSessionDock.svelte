@@ -9,21 +9,21 @@
     deleteGameSession,
     getGameSessions,
     updateGameSession,
-  } from "$lib/api/games";
-  import { finishSessionTimer } from "$lib/api/session-timer";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { DATETIME_NUMERIC_OPTIONS, formatDate } from "$lib/format";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/games.js";
+  import { finishSessionTimer } from "#lib/api/session-timer.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { DATETIME_NUMERIC_OPTIONS, formatDate } from "#lib/format.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     formatSessionMinutes,
     localDateInput,
     sessionDateToIso,
-  } from "$lib/session-presentation";
-  import { toast } from "$lib/toast.svelte";
+  } from "#lib/session-presentation.js";
+  import { toast } from "#lib/toast.svelte.js";
   import type {
     CreateGameSessionDto,
     FinishSessionTimerDto,

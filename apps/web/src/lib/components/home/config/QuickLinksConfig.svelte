@@ -1,13 +1,13 @@
 <script lang="ts">
-  import Icon from "$lib/components/Icon.svelte";
-  import { currentHomeGate } from "$lib/home/gate";
+  import Icon from "#lib/components/Icon.svelte";
+  import { currentHomeGate } from "#lib/home/gate.js";
   import {
     appDestinations,
     describeQuickLink,
     isWebAddress,
-  } from "$lib/home/quick-links";
-  import { m } from "$lib/paraglide/messages.js";
-  import { prefersReducedMotion } from "$lib/motion";
+  } from "#lib/home/quick-links.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { HOME_LAYOUT_LIMITS, type HomeQuickLinkDto } from "@loomkeep/shared";
   import { untrack } from "svelte";
   import { dndzone } from "svelte-dnd-action";
