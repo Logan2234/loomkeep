@@ -2,6 +2,7 @@ import type {
   ChatUnreadDto,
   CommentEmote,
   ConversationDto,
+  EditMessageRequestDto,
   MessageDto,
   PagedResult,
   ReportCategory,
@@ -41,7 +42,7 @@ export const sendMessage = (
     body,
   });
 
-export const editMessage = (messageId: string, body: SendMessageRequestDto) =>
+export const editMessage = (messageId: string, body: EditMessageRequestDto) =>
   request<MessageDto>(`/chat/messages/${id(messageId)}`, {
     method: "PUT",
     body,
