@@ -83,6 +83,7 @@ describe("applyToConversations", () => {
     peerLastReadAt: null,
     lastMessage: message("m1", "21:30"),
     unread: 0,
+    lastReadAt: "2026-10-06T21:30:00.000Z",
     muted: false,
     lastMessageAt: "2026-10-06T21:30:00.000Z",
   } satisfies ConversationDto;
