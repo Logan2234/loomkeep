@@ -6,6 +6,7 @@ export type IconName =
   | "stats"
   | "user"
   | "users"
+  | "user-minus"
   | "activity"
   | "menu"
   | "sun"

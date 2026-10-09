@@ -8,6 +8,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import ChatSearchField from "./ChatSearchField.svelte";
   import { fly } from "svelte/transition";
   import ChatConversationRow from "./ChatConversationRow.svelte";
   import ChatNewMessage from "./ChatNewMessage.svelte";
@@ -116,14 +117,7 @@
 
     {#if chat.tab === "friends"}
       <div class="px-4 pb-1.5">
-        <label class="input flex h-11 items-center gap-2 py-0">
-          <Icon name="search" class="text-dim h-4.5 w-4.5 shrink-0" />
-          <span class="sr-only">{m.chat_search_friends()}</span>
-          <input
-            bind:value={search}
-            class="min-w-0 flex-1 bg-transparent outline-none"
-            placeholder={m.chat_search_friends()} />
-        </label>
+        <ChatSearchField bind:value={search} height="h-11 text-base" />
       </div>
       <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-2">
         {#each shown as conversation (conversation.id)}

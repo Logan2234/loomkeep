@@ -156,6 +156,20 @@ describe("ChatComposer", () => {
     expect(box.value).toBe("La ||fin||");
   });
 
+  it("strikes with Ctrl+Shift+X and marks code with Ctrl+E", async () => {
+    const user = userEvent.setup();
+    const box = renderComposer();
+
+    await user.type(box, "La fin");
+    box.setSelectionRange(3, 6);
+    await user.keyboard("{Control>}{Shift>}x{/Shift}{/Control}");
+    expect(box.value).toBe("La ~~fin~~");
+
+    box.setSelectionRange(5, 8);
+    await user.keyboard("{Control>}e{/Control}");
+    expect(box.value).toBe("La ~~`fin`~~");
+  });
+
   // On a phone, Enter writes a new line: the send button sits right there.
   it("keeps Enter for new lines on the compact shell", async () => {
     layout.compact = true;

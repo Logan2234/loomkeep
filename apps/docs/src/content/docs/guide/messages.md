@@ -48,7 +48,8 @@ Messages understand a little formatting:
 | `\|\|spoiler\|\|` | blurred until clicked |
 
 Select text to get a small bar that applies them for you, or use
-**Ctrl+B**, **Ctrl+I** and **Ctrl+Shift+S** (spoiler). Each one is a switch:
+**Ctrl+B**, **Ctrl+I**, **Ctrl+Shift+X** (strikethrough), **Ctrl+E** (code)
+and **Ctrl+Shift+S** (spoiler). Each one is a switch:
 applied to text that already has it, it takes it off. Links become
 clickable; no preview is fetched, so a link you receive never contacts the
 site behind it until you open it.

@@ -10,6 +10,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
+  import ChatSearchField from "./ChatSearchField.svelte";
   import ChatConversationRow from "./ChatConversationRow.svelte";
   import ChatNewMessage from "./ChatNewMessage.svelte";
   import ChatThread from "./ChatThread.svelte";
@@ -105,14 +106,7 @@
         </button>
       </div>
       {#if chat.tab === "friends"}
-        <label class="input flex h-10 items-center gap-2 py-0">
-          <Icon name="search" class="text-dim h-4 w-4 shrink-0" />
-          <span class="sr-only">{m.chat_search_friends()}</span>
-          <input
-            bind:value={search}
-            class="min-w-0 flex-1 bg-transparent text-sm outline-none"
-            placeholder={m.chat_search_friends()} />
-        </label>
+        <ChatSearchField bind:value={search} height="h-10" />
         <div class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
           {#each shown as conversation (conversation.id)}
             <ChatConversationRow

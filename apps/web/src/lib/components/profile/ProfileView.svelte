@@ -177,6 +177,7 @@
   }));
 
   let confirmBlock = $state(false);
+  let confirmUnfriend = $state(false);
   let avatarZoomed = $state(false);
 
   const unblockMut = createApiMutation(() => ({
@@ -356,6 +357,7 @@
         {ghostCantFollow}
         {memberSince}
         onToggleFollow={toggleFollow}
+        onUnfriend={() => (confirmUnfriend = true)}
         onToggleBlock={toggleBlock}
         onReport={() => (reporting = true)}
         onSignOut={signOut}
@@ -442,6 +444,22 @@
     {busy}
     onConfirm={confirmBlockUser}
     onCancel={() => (confirmBlock = false)} />
+{/if}
+
+{#if confirmUnfriend && profile}
+  <ConfirmationModal
+    title={m.profile_unfriend_confirm_title({ name: profile.displayName })}
+    message={appConfig.chatEnabled
+      ? m.profile_unfriend_confirm_message_chat({ name: profile.displayName })
+      : m.profile_unfriend_confirm_message({ name: profile.displayName })}
+    confirmLabel={m.profile_unfriend()}
+    danger
+    {busy}
+    onConfirm={() => {
+      confirmUnfriend = false;
+      followMut.mutate();
+    }}
+    onCancel={() => (confirmUnfriend = false)} />
 {/if}
 
 {#if reporting && profile}

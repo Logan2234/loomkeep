@@ -6,6 +6,7 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { initConfig } from "#lib/api/config.js";
   import { auth } from "#lib/auth.svelte.js";
   import AdminQueryError from "../AdminQueryError.svelte";
   import Banner from "#lib/components/Banner.svelte";
@@ -46,7 +47,11 @@
     mutate: (patch: UpdateInstanceSettingsDto) =>
       updateAdminInstanceSettings(patch),
     invalidates: [keys.admin.instanceSettings()],
-    onSuccess: () => toast.success(m.admin_settings_saved()),
+    onSuccess: () => {
+      toast.success(m.admin_settings_saved());
+      // The app read these at startup: what they show or hide changes now.
+      void initConfig();
+    },
   }));
 
   const FEATURES: { key: ToggleKey; label: string; hint: string }[] = [

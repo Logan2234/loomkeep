@@ -2,12 +2,14 @@
   import Icon from "#lib/components/Icon.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { SETTINGS_SECTIONS, isSectionShown, sectionHref } from "../nav";
+  import { SETTINGS_SECTIONS, sectionHref } from "../nav";
   import { groupSearchHits, hitHref, searchSettings } from "../search";
   import { settingsSearch } from "../search-state.svelte";
 
   const visibleSections = $derived(
-    SETTINGS_SECTIONS.filter((section) => isSectionShown(section, appConfig)),
+    SETTINGS_SECTIONS.filter(
+      (section) => !section.social || appConfig.socialEnabled,
+    ),
   );
   const results = $derived(
     searchSettings(settingsSearch.query, visibleSections),

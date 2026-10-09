@@ -6,6 +6,7 @@
   import Avatar from "#lib/components/Avatar.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import { m } from "#lib/paraglide/messages.js";
+  import ChatSearchField from "./ChatSearchField.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   let {
@@ -74,15 +75,7 @@
 </header>
 
 <div class="px-4 pt-3 pb-1">
-  <label class="input flex items-center gap-2">
-    <Icon name="search" class="text-dim h-4 w-4 shrink-0" />
-    <span class="sr-only">{m.chat_search_friends()}</span>
-    <input
-      bind:value={search}
-      {oninput}
-      class="min-w-0 flex-1 bg-transparent outline-none"
-      placeholder={m.chat_search_friends()} />
-  </label>
+  <ChatSearchField bind:value={search} height="h-10" {oninput} />
   <p class="text-dim mt-2 text-xs">{m.chat_friends_only()}</p>
 </div>
 

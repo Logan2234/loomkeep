@@ -276,6 +276,12 @@
     } else if (mod && !event.shiftKey && key === "i") {
       event.preventDefault();
       format("italic");
+    } else if (mod && event.shiftKey && key === "x") {
+      event.preventDefault();
+      format("strike");
+    } else if (mod && !event.shiftKey && key === "e") {
+      event.preventDefault();
+      format("code");
     } else if (event.key === "Escape" && editing) {
       event.preventDefault();
       setValue("");
@@ -291,7 +297,7 @@
     { kind: "bold", glyph: "B", label: m.chat_format_bold() },
     { kind: "italic", glyph: "I", label: m.chat_format_italic() },
     { kind: "strike", glyph: "S", label: m.chat_format_strike() },
-    { kind: "code", glyph: "</>", label: m.common_code() },
+    { kind: "code", glyph: "</>", label: m.chat_format_code() },
   ];
 </script>
 
