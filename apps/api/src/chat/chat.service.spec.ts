@@ -68,9 +68,26 @@ function messageRow(over: Record<string, unknown> = {}) {
     updatedAt: new Date("2026-10-06T21:34:00Z"),
     reactions: [],
     embeds: [],
+    pinnedAt: null,
+    forwarded: false,
     ...over,
   };
 }
+
+// The card as a viewer gets it: no target, and whether they track the work.
+const {
+  targetType: _type,
+  targetId: _id,
+  ...SEVERANCE_SEEN
+} = {
+  targetType: "MEDIA",
+  targetId: "media-1",
+  kind: "SERIES",
+  title: "Severance",
+  imageUrl: "https://image.tmdb.org/t/p/w342/severance.jpg",
+  href: "/app/media/series/95396",
+  year: 2022,
+};
 
 const SEVERANCE: WorkCard = {
   targetType: "MEDIA",
@@ -149,7 +166,11 @@ function setup(
         authorId: LEA,
         conversationId: "cv1",
         deletedAt: null,
+        pinnedAt: null,
+        createdAt: new Date("2026-10-06T21:34:00Z"),
       }),
+      findUniqueOrThrow: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
       findMany: vi.fn().mockResolvedValue([]),
       update: vi.fn().mockResolvedValue(messageRow()),
     },
@@ -159,6 +180,10 @@ function setup(
       createMany: vi.fn(),
     },
     block: { findMany: vi.fn().mockResolvedValue([]) },
+    libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    bookEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    musicEntry: { findMany: vi.fn().mockResolvedValue([]) },
     $queryRaw: vi.fn().mockResolvedValue([]),
     $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   } as unknown as PrismaService;
@@ -283,11 +308,11 @@ describe("ChatService", () => {
         expect.objectContaining({
           data: expect.objectContaining({
             text: null,
-            embeds: { create: { ...SEVERANCE, position: 0 } },
+            embeds: { create: [{ ...SEVERANCE, position: 0 }] },
           }),
         }),
       );
-      expect(message.works).toEqual([SEVERANCE]);
+      expect(message.works).toEqual([{ ...SEVERANCE_SEEN, inLibrary: false }]);
     });
 
     it("recommends to each friend in their own conversation", async () => {
@@ -342,6 +367,99 @@ describe("ChatService", () => {
       );
 
       expect(page.items[0].works).toEqual([]);
+    });
+  });
+
+  describe("message tools", () => {
+    it("tells the viewer which cards are of works they already track", async () => {
+      const { service, prisma } = setup();
+      (prisma.message.findMany as Mock).mockResolvedValue([
+        messageRow({ embeds: [SEVERANCE] }),
+      ]);
+      (prisma.libraryEntry.findMany as Mock).mockResolvedValue([
+        { mediaItemId: "media-1" },
+      ]);
+
+      const page = await service.messages(
+        ME,
+        "cv1",
+        parsePageQuery(undefined, undefined, 40),
+      );
+
+      expect(page.items[0].works[0].inLibrary).toBe(true);
+    });
+
+    it("keeps a conversation's pins under the limit", async () => {
+      const { service, prisma } = setup();
+      (prisma.message.count as Mock).mockResolvedValue(50);
+
+      await expectCode(service.pin(ME, "m1", true), ErrorCode.ChatPinLimit);
+      expect(prisma.message.update).not.toHaveBeenCalled();
+    });
+
+    it("pins for both members", async () => {
+      const { service, prisma, events } = setup();
+      (prisma.message.findUniqueOrThrow as Mock).mockResolvedValue(
+        messageRow({ pinnedAt: new Date() }),
+      );
+
+      await service.pin(ME, "m1", true);
+
+      expect(prisma.message.update).toHaveBeenCalledWith({
+        where: { id: "m1" },
+        data: { pinnedAt: expect.any(Date) },
+      });
+      const emitted = (events.emitToUser as Mock).mock.calls.map(
+        ([, , event]) => event.message.pinned,
+      );
+      expect(emitted).toEqual([true, true]);
+    });
+
+    it("marks a conversation unread from a message on", async () => {
+      const { service, prisma } = setup();
+
+      await service.markUnreadFrom(ME, "m1");
+
+      expect(prisma.conversationMember.update).toHaveBeenCalledWith({
+        where: { conversationId_userId: { conversationId: "cv1", userId: ME } },
+        data: { lastReadAt: new Date("2026-10-06T21:33:59.999Z") },
+      });
+    });
+
+    it("forwards a copy, marked forwarded, with its cards", async () => {
+      const { service, prisma } = setup();
+      (prisma.message.findUniqueOrThrow as Mock).mockResolvedValue(
+        messageRow({
+          text: "La fin !",
+          embeds: [{ ...SEVERANCE, id: "e1", messageId: "m1", position: 0 }],
+        }),
+      );
+
+      const sent = await service.forward(ME, "m1", [LEA]);
+
+      expect(sent).toBe(1);
+      expect(prisma.message.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            text: "La fin !",
+            forwarded: true,
+            embeds: { create: [{ ...SEVERANCE, position: 0 }] },
+          }),
+        }),
+      );
+    });
+
+    it("forwards nothing when one recipient isn't a friend", async () => {
+      const { service, prisma } = setup();
+      (prisma.message.findUniqueOrThrow as Mock).mockResolvedValue(
+        messageRow(),
+      );
+
+      await expectCode(
+        service.forward(ME, "m1", [LEA, ZOE]),
+        ErrorCode.ChatNotFriends,
+      );
+      expect(prisma.message.create).not.toHaveBeenCalled();
     });
   });
 

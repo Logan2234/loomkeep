@@ -2,6 +2,7 @@ import {
   CommentEmote,
   type CommentEmote as CommentEmoteT,
   type EditMessageRequestDto,
+  type ForwardMessageRequestDto,
   MESSAGE_TEXT_MAX_LENGTH,
   type MuteConversationRequestDto,
   type OpenConversationRequestDto,
@@ -94,6 +95,15 @@ export class RecommendWorkBody implements RecommendWorkRequestDto {
   @IsString()
   @MaxLength(MESSAGE_TEXT_MAX_LENGTH)
   text?: string;
+}
+
+export class ForwardMessageBody implements ForwardMessageRequestDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(RECOMMEND_MAX_FRIENDS)
+  @ArrayUnique()
+  @IsString({ each: true })
+  usernames!: string[];
 }
 
 export class ReactMessageBody implements ReactMessageRequestDto {

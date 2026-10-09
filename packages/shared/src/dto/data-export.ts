@@ -233,6 +233,7 @@ export interface DataExportMessage {
   edited: boolean;
   deletedAt: string | null;
   createdAt: string;
+  forwarded: boolean;
   works: DataExportMessageWork[];
 }
 

@@ -55,6 +55,12 @@ export class DataExportMessageResponseDto implements DataExportMessage {
    */
   createdAt!: string;
 
+  /**
+   * Copied from another conversation ("Transférer").
+   * @example false
+   */
+  forwarded!: boolean;
+
   /** The works it carried as cards: the one attached first, then its links'. */
   works!: DataExportMessageWorkResponseDto[];
 }

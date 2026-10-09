@@ -625,6 +625,7 @@ export class DataExportService {
           edited: m.edited,
           deletedAt: m.deletedAt?.toISOString() ?? null,
           createdAt: m.createdAt.toISOString(),
+          forwarded: m.forwarded,
           works: m.embeds,
         })),
       })),

@@ -17,6 +17,7 @@ export class MessageWorkResponseDto implements MessageWorkDto {
   imageUrl!: string | null;
   href!: string;
   year!: number | null;
+  inLibrary!: boolean;
 }
 
 export class MessageResponseDto implements MessageDto {
@@ -32,6 +33,8 @@ export class MessageResponseDto implements MessageDto {
   reactions!: CommentReactionSummaryResponseDto[];
   myReaction!: CommentEmote | null;
   works!: MessageWorkResponseDto[];
+  pinned!: boolean;
+  forwarded!: boolean;
   createdAt!: string;
   updatedAt!: string;
 }

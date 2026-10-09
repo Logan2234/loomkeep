@@ -938,8 +938,9 @@ model Message {
   conversationId String
   // Null once the author's account is gone; its text is erased first (GDPR).
   authorId       String?
-  // Restricted markdown (bold, italic, strike, code, ||spoiler||), rendered
-  // by the web. Null once deleted.
+  // Restricted markdown (bold, italic, strike, code, ||spoiler||, quotes,
+  // lists, code blocks, #work mentions), rendered by the web. Null once
+  // deleted, and for a message that only carries a work.
   text           String?
   // Sent with /spoiler: the whole message stays masked until revealed.
   spoiler        Boolean   @default(false)
@@ -947,6 +948,10 @@ model Message {
   deletedAt      DateTime?
   // Set only by a moderation takedown, which the tombstone then says.
   deletedByAdmin Boolean   @default(false)
+  // Pinned in its conversation, by either member; shown to both.
+  pinnedAt       DateTime?
+  // Copied from another conversation by "Transférer": says so, never by whom.
+  forwarded      Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -956,6 +961,7 @@ model Message {
   embeds       MessageEmbed[]
 
   @@index([conversationId, createdAt])
+  @@index([conversationId, pinnedAt])
   @@index([authorId])
 }
 
