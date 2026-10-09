@@ -45,6 +45,8 @@ export type IconName =
   | "gear"
   | "pin"
   | "pin-filled"
+  | "forward"
+  | "mark-unread"
   | "message"
   | "flag"
   | "reply"

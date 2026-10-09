@@ -1,16 +1,25 @@
 /**
  * The restricted markdown a message is written in: **bold**, *italic*,
- * ***both***, ~~strike~~, `code`, ||spoiler|| and bare links. Parsed into nodes the
- * component renders itself, never into HTML: a message is someone else's
- * text, so nothing in it may become markup.
+ * ***both***, ~~strike~~, `code`, ||spoiler||, bare links, #[Title](/app/…)
+ * work mentions and episode codes (S02E05); and, line by line, `> ` quotes,
+ * `- ` lists and ``` code blocks. Parsed into nodes the component renders
+ * itself, never into HTML: a message is someone else's text, so nothing in
+ * it may become markup.
  */
 export type ChatNode =
   | { type: "text"; text: string }
   | { type: "code"; text: string }
   | { type: "link"; href: string }
-  | { type: "strong" | "em" | "strike" | "spoiler"; children: ChatNode[] };
+  | { type: "mention"; title: string; href: string }
+  | { type: "episode"; season: number; episode: number; code: string }
+  | {
+      type: "strong" | "em" | "strike" | "spoiler" | "quote";
+      children: ChatNode[];
+    }
+  | { type: "list"; items: ChatNode[][] }
+  | { type: "codeblock"; text: string };
 
-type Wrapper = Extract<ChatNode, { children: ChatNode[] }>["type"];
+type Wrapper = "strong" | "em" | "strike" | "spoiler";
 
 // Longest markers first, so `**` is never read as two `*`.
 const MARKERS: [string, Wrapper[]][] = [
@@ -22,12 +31,85 @@ const MARKERS: [string, Wrapper[]][] = [
 ];
 
 const LINK = /https?:\/\/[^\s<>]+[^\s<>.,;:!?)\]'"]/y;
+/** A work page's path, the only target a mention may point at. */
+const WORK_PATH =
+  "\\/app\\/(?:media\\/(?:movie|series|anime)|games|books|music)\\/[^\\s()]+";
+const MENTION = new RegExp(
+  `#\\[([^\\]\\n]{1,120})\\]\\((${WORK_PATH})\\)`,
+  "y",
+);
+const EPISODE = /S(\d{1,2}) ?E(\d{1,3})/iy;
+const WORD = /[\p{L}\p{N}]/u;
 
 export function parseChatMarkdown(source: string): ChatNode[] {
-  return parse(source, 0, source.length);
+  const lines = source.split("\n");
+  const nodes: ChatNode[] = [];
+  let paragraph: string[] = [];
+
+  const flush = () => {
+    if (paragraph.length === 0) return;
+    const text = paragraph.join("\n");
+    nodes.push(...parseInline(text, 0, text.length));
+    paragraph = [];
+  };
+
+  // Consecutive lines of one kind, from `index` on.
+  const run = (index: number, matches: (line: string) => boolean) => {
+    let last = index;
+    while (last + 1 < lines.length && matches(lines[last + 1])) last++;
+    return lines.slice(index, last + 1);
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.startsWith("```")) {
+      const close = lines.findIndex(
+        (other, j) => j > i && other.trimEnd() === "```",
+      );
+
+      if (close !== -1) {
+        flush();
+        nodes.push({
+          type: "codeblock",
+          text: lines.slice(i + 1, close).join("\n"),
+        });
+        i = close;
+        continue;
+      }
+    }
+
+    if (/^> ?/.test(line)) {
+      const quoted = run(i, (other) => /^> ?/.test(other));
+      const text = quoted.map((l) => l.replace(/^> ?/, "")).join("\n");
+      flush();
+      nodes.push({
+        type: "quote",
+        children: parseInline(text, 0, text.length),
+      });
+      i += quoted.length - 1;
+      continue;
+    }
+
+    if (/^[-*] /.test(line)) {
+      const items = run(i, (other) => /^[-*] /.test(other));
+      flush();
+      nodes.push({
+        type: "list",
+        items: items.map((item) => parseInline(item, 2, item.length)),
+      });
+      i += items.length - 1;
+      continue;
+    }
+
+    paragraph.push(line);
+  }
+
+  flush();
+  return nodes;
 }
 
-function parse(source: string, start: number, end: number): ChatNode[] {
+function parseInline(source: string, start: number, end: number): ChatNode[] {
   const nodes: ChatNode[] = [];
   let text = "";
   let i = start;
@@ -59,6 +141,41 @@ function parse(source: string, start: number, end: number): ChatNode[] {
       continue;
     }
 
+    MENTION.lastIndex = i;
+    const mention = (source[i] === "#" && MENTION.exec(source)) || null;
+
+    if (mention && i + mention[0].length <= end) {
+      flush();
+      nodes.push({ type: "mention", title: mention[1], href: mention[2] });
+      i += mention[0].length;
+      continue;
+    }
+
+    EPISODE.lastIndex = i;
+    const episode =
+      (/[sS]/.test(source[i]) &&
+        !WORD.test(source[i - 1] ?? "") &&
+        EPISODE.exec(source)) ||
+      null;
+
+    if (
+      episode &&
+      i + episode[0].length <= end &&
+      !WORD.test(source[i + episode[0].length] ?? "")
+    ) {
+      const season = Number(episode[1]);
+      const number = Number(episode[2]);
+      flush();
+      nodes.push({
+        type: "episode",
+        season,
+        episode: number,
+        code: `S${String(season).padStart(2, "0")}E${String(number).padStart(2, "0")}`,
+      });
+      i += episode[0].length;
+      continue;
+    }
+
     const marker = MARKERS.find(([token]) => source.startsWith(token, i));
 
     if (marker) {
@@ -70,7 +187,7 @@ function parse(source: string, start: number, end: number): ChatNode[] {
         nodes.push(
           ...types.reduceRight<ChatNode[]>(
             (children, type) => [{ type, children }],
-            parse(source, i + token.length, close),
+            parseInline(source, i + token.length, close),
           ),
         );
         i = close + token.length;
@@ -139,10 +256,20 @@ function flatten(nodes: ChatNode[]): string {
         case "text":
         case "code":
           return node.text;
+        case "codeblock":
+          return ` ${node.text} `;
         case "link":
           return node.href;
+        case "mention":
+          return `#${node.title}`;
+        case "episode":
+          return node.code;
         case "spoiler":
           return "•••";
+        case "list":
+          return ` ${node.items.map(flatten).join(" · ")} `;
+        case "quote":
+          return ` ${flatten(node.children)} `;
         default:
           return flatten(node.children);
       }
@@ -150,6 +277,43 @@ function flatten(nodes: ChatNode[]): string {
     .join("")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/** A work mentioned inline, the way a message stores it. */
+export function mentionToken(title: string, href: string): string {
+  return `#[${title.replace(/[\]\n]/g, " ").trim()}](${href})`;
+}
+
+/**
+ * The series an episode code in this message points at: the only one the
+ * message mentions or carries a card of. With none or several, the code
+ * links nowhere — guessing the wrong series would be worse.
+ */
+export function episodeSeries(
+  nodes: ChatNode[],
+  cardHrefs: string[],
+): string | null {
+  const series = new Set(cardHrefs.filter(isSeriesHref));
+
+  const visit = (list: ChatNode[]) => {
+    for (const node of list) {
+      if (node.type === "mention" && isSeriesHref(node.href)) {
+        series.add(node.href);
+      } else if (node.type === "list") {
+        node.items.forEach(visit);
+      } else if ("children" in node) {
+        visit(node.children);
+      }
+    }
+  };
+
+  visit(nodes);
+
+  return series.size === 1 ? [...series][0] : null;
+}
+
+function isSeriesHref(href: string): boolean {
+  return /^\/app\/media\/(series|anime)\//.test(href);
 }
 
 /** The markers the selection bar and the shortcuts wrap a selection in. */

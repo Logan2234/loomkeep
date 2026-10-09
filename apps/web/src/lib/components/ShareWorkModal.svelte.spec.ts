@@ -22,6 +22,7 @@ const SEVERANCE = {
   imageUrl: null,
   href: "/app/media/series/95396",
   year: 2022,
+  inLibrary: false,
 };
 
 const friend = (id: string, username: string, displayName: string) => ({

@@ -47,6 +47,8 @@ beforeEach(() => {
           reactions: [],
           myReaction: null,
           works: [],
+          pinned: false,
+          forwarded: false,
           createdAt: "2026-10-07T10:00:00.000Z",
           updatedAt: "2026-10-07T10:00:00.000Z",
         } satisfies MessageDto);
@@ -243,6 +245,52 @@ describe("ChatComposer", () => {
           text: "Regarde https://loomkeep.app/app/games/11737",
           spoiler: false,
           skipLinks: ["https://loomkeep.app/app/games/11737"],
+        },
+      ]),
+    );
+  });
+
+  it("mentions a work with #, and sends it as a token", async () => {
+    server.use(
+      http.get(apiUrl("/catalog/search"), () =>
+        HttpResponse.json({
+          items: [
+            {
+              source: "TMDB",
+              sourceId: "95396",
+              type: "SERIES",
+              title: "Severance",
+              year: 2022,
+              posterUrl: null,
+              isAdult: false,
+            },
+          ],
+          hasMore: false,
+        }),
+      ),
+      http.get(apiUrl("/games/search"), () =>
+        HttpResponse.json({ results: [] }),
+      ),
+      http.get(apiUrl("/books/search"), () =>
+        HttpResponse.json({ results: [] }),
+      ),
+      http.get(apiUrl("/music/search"), () =>
+        HttpResponse.json({ results: [] }),
+      ),
+    );
+    const user = userEvent.setup();
+    const box = renderComposer();
+
+    await user.type(box, "Regarde #seve");
+    await user.click(await screen.findByRole("option", { name: /Severance/ }));
+    expect(box.value).toBe("Regarde #Severance ");
+    await user.type(box, "S01E09{Enter}");
+
+    await waitFor(() =>
+      expect(sent).toEqual([
+        {
+          text: "Regarde #[Severance](/app/media/series/95396) S01E09",
+          spoiler: false,
         },
       ]),
     );

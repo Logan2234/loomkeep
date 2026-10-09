@@ -213,5 +213,6 @@
   "apierr_chat_message_not_found": "This message can't be found.",
   "apierr_chat_forbidden": "Only a message's author can edit or delete it.",
   "apierr_chat_read_only": "This conversation is read-only.",
-  "apierr_chat_work_not_found": "This work can't be attached to a message."
+  "apierr_chat_work_not_found": "This work can't be attached to a message.",
+  "apierr_chat_pin_limit": "This conversation already has 50 pinned messages: unpin one first."
 }

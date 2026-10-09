@@ -6,6 +6,13 @@
   import { upsertMessage, type MessagePages } from "#lib/chat/chat-cache.js";
   import { chatDrafts as drafts } from "#lib/chat/chat.svelte.js";
   import {
+    deserializeMentions,
+    highlightRuns,
+    mentionAtCaret,
+    serializeMentions,
+    type Mention,
+  } from "#lib/chat/composer-mentions.js";
+  import {
     MAX_LINKED_WORKS,
     MAX_SCANNED_LINKS,
     previewLinkedWork,
@@ -56,7 +63,14 @@
 
   let textarea = $state<HTMLTextAreaElement | null>(null);
   let picker = $state<ChatWorkPicker | null>(null);
+  let mentionPicker = $state<ChatWorkPicker | null>(null);
+  let backdrop = $state<HTMLDivElement | null>(null);
   let value = $state("");
+  // Works mentioned with `#`: the field shows `#Title`, the message stores
+  // a token (see serializeMentions).
+  let mentions = $state<Mention[]>([]);
+  let mentionAt = $state<{ start: number; query: string } | null>(null);
+  let dismissedMentionAt = $state<number | null>(null);
   // The work `/reco` attached: sent as a card with the message.
   let attached = $state<MessageWorkDto | null>(null);
   // Links whose card the writer turned down: they go as plain links.
@@ -97,7 +111,10 @@
 
   $effect(() => {
     const id = conversationId;
-    value = drafts.get(id) ?? "";
+    // Drafts keep their mentions as tokens.
+    const draft = deserializeMentions(drafts.get(id) ?? "");
+    value = draft.text;
+    mentions = draft.mentions;
     attached = null;
     declinedLinks = [];
     void tick().then(autosize);
@@ -105,7 +122,9 @@
 
   $effect(() => {
     if (!editing) return;
-    value = (editing.spoiler ? "/spoiler " : "") + (editing.text ?? "");
+    const stored = deserializeMentions(editing.text ?? "");
+    value = (editing.spoiler ? "/spoiler " : "") + stored.text;
+    mentions = stored.mentions;
     void tick().then(() => {
       autosize();
       textarea?.focus();
@@ -201,6 +220,7 @@
       if (editing) oncanceledit();
       attached = null;
       declinedLinks = [];
+      mentions = [];
       setValue("");
     },
     errorToast: true,
@@ -208,9 +228,43 @@
 
   function setValue(next: string) {
     value = next;
-    drafts.set(conversationId, next);
+    saveDraft();
     void tick().then(autosize);
   }
+
+  function saveDraft() {
+    drafts.set(conversationId, serializeMentions(value, mentions));
+  }
+
+  function readMention() {
+    const found =
+      textarea &&
+      document.activeElement === textarea &&
+      recoQuery === null &&
+      commands.length === 0
+        ? mentionAtCaret(value, textarea.selectionStart)
+        : null;
+    mentionAt = found && found.start !== dismissedMentionAt ? found : null;
+    if (!found) dismissedMentionAt = null;
+  }
+
+  function insertMention(work: MessageWorkDto) {
+    if (!mentionAt || !textarea) return;
+    const caret = textarea.selectionStart;
+    const inserted = `#${work.title} `;
+    if (!mentions.some((mention) => mention.title === work.title)) {
+      mentions = [...mentions, { title: work.title, href: work.href }];
+    }
+    const at = mentionAt.start;
+    setValue(value.slice(0, at) + inserted + value.slice(caret));
+    mentionAt = null;
+    void tick().then(() => {
+      textarea?.focus();
+      textarea?.setSelectionRange(at + inserted.length, at + inserted.length);
+    });
+  }
+
+  const runs = $derived(highlightRuns(value, mentions));
 
   function autosize() {
     if (!textarea) return;
@@ -220,7 +274,9 @@
 
   function send() {
     if (!sendable || sendMut.loading) return;
-    const { text, spoiler } = readSlashCommand(value);
+    const { text, spoiler } = readSlashCommand(
+      serializeMentions(value, mentions),
+    );
     sendMut.mutate({
       text: text || undefined,
       spoiler,
@@ -247,6 +303,7 @@
     if (!textarea) return;
     const { selectionStart, selectionEnd } = textarea;
     if (selectionStart === selectionEnd) return;
+    mentionAt = null;
 
     const next = toggleFormat(value, selectionStart, selectionEnd, kind);
     setValue(next.value);
@@ -258,6 +315,7 @@
   }
 
   function placeSelectionBar() {
+    readMention();
     if (
       !textarea ||
       document.activeElement !== textarea ||
@@ -291,7 +349,7 @@
   }
 
   function oninput() {
-    drafts.set(conversationId, value);
+    saveDraft();
     autosize();
     placeSelectionBar();
     if (value.trim()) announceTyping();
@@ -299,6 +357,7 @@
 
   function onkeydown(event: KeyboardEvent) {
     if (recoQuery !== null && picker?.handleKey(event)) return;
+    if (mentionAt && mentionPicker?.handleKey(event)) return;
 
     if (commands.length > 0) {
       const available = commands.filter((c) => c.available);
@@ -442,6 +501,17 @@
           onpick={attach}
           oncancel={() => setValue("")} />
       {/if}
+      {#if mentionAt}
+        <ChatWorkPicker
+          bind:this={mentionPicker}
+          query={mentionAt.query}
+          holdsEnter={false}
+          onpick={insertMention}
+          oncancel={() => {
+            dismissedMentionAt = mentionAt?.start ?? null;
+            mentionAt = null;
+          }} />
+      {/if}
       {#if commands.length > 0}
         <div
           transition:scale={{ duration: reduced ? 0 : 150, start: 0.97 }}
@@ -476,6 +546,18 @@
       <label for="chat-composer-{conversationId}" class="sr-only">
         {m.chat_message_label()}
       </label>
+      <!-- Under the field, the same text in the same box, invisible but for
+           the underline of its links and mentions. -->
+      <div
+        bind:this={backdrop}
+        aria-hidden="true"
+        class="bg-bg pointer-events-none absolute inset-0 overflow-hidden rounded-[1.2rem] border border-transparent px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap text-transparent
+          {layout.compact ? 'text-base' : ''}">
+        {#each runs as run, i (i)}{#if run.marked}<span
+              class="decoration-accent underline decoration-2 underline-offset-[3px]"
+              >{run.text}</span
+            >{:else}{run.text}{/if}{/each}&#8203;
+      </div>
       <textarea
         id="chat-composer-{conversationId}"
         bind:this={textarea}
@@ -483,11 +565,17 @@
         rows="1"
         maxlength={MESSAGE_TEXT_MAX_LENGTH}
         placeholder={m.chat_composer_placeholder({ name: peerName })}
-        class="border-border bg-bg focus:border-accent selection:bg-accent/30 block w-full resize-none rounded-[1.2rem] border px-3.5 py-2 text-sm leading-relaxed transition-colors duration-150 outline-none
+        class="border-border focus:border-accent selection:bg-accent/30 relative block w-full resize-none [scrollbar-width:none] rounded-[1.2rem] border bg-transparent px-3.5 py-2 text-sm leading-relaxed transition-colors duration-150 outline-none
           {layout.compact ? 'text-base' : ''}"
         {oninput}
         {onkeydown}
-        onblur={() => (selectionBar = null)}></textarea>
+        onscroll={() => {
+          if (backdrop && textarea) backdrop.scrollTop = textarea.scrollTop;
+        }}
+        onblur={() => {
+          selectionBar = null;
+          mentionAt = null;
+        }}></textarea>
     </div>
     <button
       type="button"

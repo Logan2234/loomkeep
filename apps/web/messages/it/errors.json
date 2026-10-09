@@ -213,5 +213,6 @@
   "apierr_chat_message_not_found": "Questo messaggio non è stato trovato.",
   "apierr_chat_forbidden": "Solo l'autore di un messaggio può modificarlo o eliminarlo.",
   "apierr_chat_read_only": "Questa conversazione è in sola lettura.",
-  "apierr_chat_work_not_found": "Quest'opera non può essere allegata a un messaggio."
+  "apierr_chat_work_not_found": "Quest'opera non può essere allegata a un messaggio.",
+  "apierr_chat_pin_limit": "Questa conversazione ha già 50 messaggi fissati: sbloccane uno prima."
 }

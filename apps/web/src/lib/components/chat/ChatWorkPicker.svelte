@@ -13,11 +13,17 @@
     query,
     onpick,
     oncancel,
+    holdsEnter = true,
   }: {
-    /** What follows `/reco `. */
+    /** What follows `/reco ` or `#`. */
     query: string;
     onpick: (work: MessageWorkDto) => void;
     oncancel: () => void;
+    /**
+     * Enter with nothing to pick still belongs to the picker: `/reco …` is no
+     * message to send. A `#` that matches nothing is just text, though.
+     */
+    holdsEnter?: boolean;
   } = $props();
 
   const reduced = prefersReducedMotion();
@@ -64,7 +70,7 @@
       return true;
     }
 
-    if (works.length === 0) return event.key === "Enter";
+    if (works.length === 0) return holdsEnter && event.key === "Enter";
 
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();

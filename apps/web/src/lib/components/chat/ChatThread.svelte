@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    getPinnedMessages,
     getConversation,
     getMessages,
     markConversationRead,
@@ -68,6 +69,26 @@
       last.hasMore ? all.length + 1 : undefined,
   }));
   const messages = $derived(chronological(messagesQuery.pages));
+
+  const pinsQuery = createApiQuery(() => ({
+    key: keys.chat.pins(conversationId),
+    fetch: () => getPinnedMessages(conversationId),
+  }));
+  const pins = $derived(pinsQuery.data ?? []);
+
+  // A pinned message still loaded comes into view, lit for a moment; an
+  // older one is read in the list itself.
+  let highlightedId = $state<string | null>(null);
+  function showPinned(messageId: string) {
+    const el = scroller?.querySelector(`[data-message-id="${messageId}"]`);
+    if (!el) return;
+    el.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      block: "center",
+    });
+    highlightedId = messageId;
+    setTimeout(() => (highlightedId = null), 1600);
+  }
 
   const peer = $derived(conversation?.peer ?? null);
   const peerName = $derived(peer?.displayName ?? m.chat_deleted_account());
@@ -298,6 +319,54 @@
     {/if}
   </div>
 
+  {#if pins.length > 0}
+    <Dropdown placement="bottom-end" class="w-80 max-w-[calc(100vw-2rem)]">
+      {#snippet trigger({ open, toggle, onkeydown })}
+        <button
+          type="button"
+          class="btn-icon relative"
+          aria-label={m.chat_pins({ count: pins.length })}
+          title={m.chat_pins({ count: pins.length })}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          {onkeydown}
+          onclick={toggle}>
+          <Icon name="pin" class="h-4.5 w-4.5" />
+          <span
+            class="text-accent absolute -top-0.5 -right-0.5 font-mono text-[0.6rem] font-bold"
+            >{pins.length}</span>
+        </button>
+      {/snippet}
+      {#snippet children({ close })}
+        <div class="flex max-h-80 flex-col overflow-y-auto">
+          {#each pins as pin (pin.id)}
+            <button
+              role="menuitem"
+              class="menu-item flex-col items-start! gap-0.5"
+              onclick={() => {
+                close();
+                showPinned(pin.id);
+              }}>
+              <span class="text-dim font-mono text-[0.65rem]">
+                {pin.mine ? m.common_you() : peerName} · {formatDate(
+                  pin.createdAt,
+                  { day: "2-digit", month: "2-digit" },
+                )}
+              </span>
+              <span class="line-clamp-2 text-left text-sm">
+                {pin.spoiler
+                  ? m.chat_spoiler_reveal()
+                  : pin.text
+                    ? chatPreview(pin.text)
+                    : pin.works.map((work) => work.title).join(", ")}
+              </span>
+            </button>
+          {/each}
+        </div>
+      {/snippet}
+    </Dropdown>
+  {/if}
+
   {#if conversation && conversation.readOnly !== "deleted"}
     <Dropdown placement="bottom-end" class="min-w-52">
       {#snippet trigger({ open, toggle, onkeydown })}
@@ -387,7 +456,10 @@
         {entry.label}
       </p>
     {:else}
-      <div class="flex flex-col {entry.gap ? 'mt-2' : ''}">
+      <div
+        class="-mx-2 flex flex-col rounded-xl px-2 transition-colors duration-500
+          {entry.gap ? 'mt-2' : ''}
+          {highlightedId === entry.message.id ? 'bg-accent/10' : ''}">
         <ChatMessageItem
           message={entry.message}
           {writable}

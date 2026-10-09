@@ -20,6 +20,7 @@
     type ChatReadEvent,
     type ChatTypingEvent,
     type ConversationDto,
+    type MessageDto,
     type PagedResult,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -54,6 +55,19 @@
 
     if (!message.mine) {
       void queryClient.invalidateQueries({ queryKey: keys.chat.unread() });
+    }
+
+    // Pinned or unpinned by either member, or deleted while pinned.
+    if (
+      message.pinned ||
+      message.deleted ||
+      queryClient
+        .getQueryData<MessageDto[]>(keys.chat.pins(conversationId))
+        ?.some((pin) => pin.id === message.id)
+    ) {
+      void queryClient.invalidateQueries({
+        queryKey: keys.chat.pins(conversationId),
+      });
     }
   }
 

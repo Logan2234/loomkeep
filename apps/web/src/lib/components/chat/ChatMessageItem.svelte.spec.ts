@@ -27,18 +27,32 @@ const MINE: MessageDto = {
   reactions: [],
   myReaction: null,
   works: [],
+  pinned: false,
+  forwarded: false,
   createdAt: "2026-10-09T21:14:00.000Z",
   updatedAt: "2026-10-09T21:14:00.000Z",
 };
 
 let deleted = false;
+let pinned: string | null = null;
+let unreadFrom: string | null = null;
 
 beforeEach(() => {
   deleted = false;
+  pinned = null;
+  unreadFrom = null;
   layout.compact = false;
   server.use(
     http.delete(apiUrl("/chat/messages/m1"), () => {
       deleted = true;
+      return new HttpResponse(null, { status: 204 });
+    }),
+    http.put(apiUrl("/chat/messages/:id/pin"), ({ params }) => {
+      pinned = params.id as string;
+      return new HttpResponse(null, { status: 204 });
+    }),
+    http.post(apiUrl("/chat/messages/:id/unread"), ({ params }) => {
+      unreadFrom = params.id as string;
       return new HttpResponse(null, { status: 204 });
     }),
   );
@@ -48,9 +62,9 @@ afterEach(() => {
   layout.compact = true;
 });
 
-function renderMessage() {
+function renderMessage(message: MessageDto = MINE) {
   renderWithQuery(ChatMessageItem, {
-    message: MINE,
+    message,
     writable: true,
     endOfGroup: true,
     time: "21:14",
@@ -74,6 +88,31 @@ describe("ChatMessageItem", () => {
     await user.click(screen.getByRole("button", { name: m.common_delete() }));
 
     await waitFor(() => expect(deleted).toBe(true));
+  });
+
+  it("pins a message, and marks the other's unread from there", async () => {
+    const user = userEvent.setup();
+    renderMessage({ ...MINE, id: "m2", mine: false, authorId: "lea" });
+
+    await user.click(
+      screen.getByRole("button", { name: m.common_more_actions() }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: m.chat_pin() }));
+    await waitFor(() => expect(pinned).toBe("m2"));
+
+    await user.click(
+      screen.getByRole("button", { name: m.common_more_actions() }),
+    );
+    await user.click(
+      screen.getByRole("menuitem", { name: m.chat_mark_unread() }),
+    );
+    await waitFor(() => expect(unreadFrom).toBe("m2"));
+  });
+
+  it("says a forwarded message was forwarded", () => {
+    renderMessage({ ...MINE, forwarded: true });
+
+    expect(screen.getByText(m.chat_forwarded())).toBeTruthy();
   });
 
   // A phone has no hover: a long press opens the same actions in a sheet.

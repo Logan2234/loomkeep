@@ -22,6 +22,8 @@ function message(id: string, at: string, over: Partial<MessageDto> = {}) {
     reactions: [],
     myReaction: null,
     works: [],
+    pinned: false,
+    forwarded: false,
     createdAt: `2026-10-06T${at}:00.000Z`,
     updatedAt: `2026-10-06T${at}:00.000Z`,
     ...over,

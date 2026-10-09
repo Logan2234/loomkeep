@@ -1,9 +1,12 @@
 <script lang="ts">
   import {
     deleteMessage,
+    markUnreadFrom,
+    pinMessage,
     reactToMessage,
     unreactToMessage,
   } from "#lib/api/chat.js";
+  import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import Drawer from "#lib/components/Drawer.svelte";
   import Dropdown from "#lib/components/Dropdown.svelte";
@@ -18,6 +21,7 @@
     type MessageDto,
   } from "@loomkeep/shared";
   import { fade } from "svelte/transition";
+  import ChatForwardModal from "./ChatForwardModal.svelte";
   import ChatMessageText from "./ChatMessageText.svelte";
   import ChatWorkCard from "./ChatWorkCard.svelte";
 
@@ -47,6 +51,7 @@
   let wallRevealed = $state(false);
   // The phone's long-press sheet, standing in for the hover pills.
   let sheetOpen = $state(false);
+  let forwarding = $state(false);
   let pressTimer: ReturnType<typeof setTimeout> | undefined;
   let pressStart: { x: number; y: number } | null = null;
 
@@ -64,6 +69,19 @@
       confirmingDelete = false;
       sheetOpen = false;
     },
+    errorToast: true,
+  }));
+
+  const pinMut = createApiMutation(() => ({
+    mutate: () => pinMessage(message.id, !message.pinned),
+    invalidates: [keys.chat.pins(message.conversationId)],
+    errorToast: true,
+  }));
+
+  const unreadMut = createApiMutation(() => ({
+    mutate: () => markUnreadFrom(message.id),
+    invalidates: [keys.chat.conversations(), keys.chat.unread()],
+    successToast: m.chat_marked_unread(),
     errorToast: true,
   }));
 
@@ -183,10 +201,45 @@
       {m.chat_copy_text()}
     </button>
   {/if}
+  <button
+    role="menuitem"
+    class="menu-item"
+    onclick={() => {
+      close();
+      forwarding = true;
+    }}>
+    <Icon name="forward" class="h-4 w-4" />
+    {m.chat_forward_ellipsis()}
+  </button>
+  {#if writable}
+    <button
+      role="menuitem"
+      class="menu-item"
+      disabled={pinMut.loading}
+      onclick={() => {
+        close();
+        pinMut.mutate();
+      }}>
+      <Icon name={message.pinned ? "pin-filled" : "pin"} class="h-4 w-4" />
+      {message.pinned ? m.chat_unpin() : m.chat_pin()}
+    </button>
+  {/if}
+  {#if !message.mine}
+    <button
+      role="menuitem"
+      class="menu-item"
+      onclick={() => {
+        close();
+        unreadMut.mutate();
+      }}>
+      <Icon name="mark-unread" class="h-4 w-4" />
+      {m.chat_mark_unread()}
+    </button>
+  {/if}
   {#if message.mine && writable}
     <button
       role="menuitem"
-      class="menu-item menu-item-danger"
+      class="menu-item menu-item-danger border-border border-t"
       onclick={() => (confirmingDelete = true)}>
       <Icon name="trash" class="h-4 w-4" />
       {m.chat_delete_ellipsis()}
@@ -195,7 +248,7 @@
   {#if !message.mine}
     <button
       role="menuitem"
-      class="menu-item menu-item-danger"
+      class="menu-item menu-item-danger border-border border-t"
       onclick={() => {
         close();
         onreport(message);
@@ -210,6 +263,12 @@
   class="group relative flex max-w-[78%] flex-col
     {message.mine ? 'items-end self-end' : 'items-start self-start'}"
   data-message-id={message.id}>
+  {#if message.forwarded && !message.deleted}
+    <p class="text-dim mx-1 mb-0.5 flex items-center gap-1 text-[0.7rem]">
+      <Icon name="forward" class="h-3 w-3" />
+      {m.chat_forwarded()}
+    </p>
+  {/if}
   <!-- The pills sit beside the bubble, on the conversation's side: they
        never cover its text nor the message above. -->
   <div
@@ -252,7 +311,9 @@
             : 'bg-surface-2 rounded-bl-md'}
             {sheetOpen ? 'ring-accent ring-2' : ''}">
           {#if message.text}
-            <p><ChatMessageText text={message.text} /></p>
+            <ChatMessageText
+              text={message.text}
+              cardHrefs={message.works.map((work) => work.href)} />
           {/if}
           {#each message.works as work (work.href)}
             <div in:fade={{ duration: reduced ? 0 : 150 }}>
@@ -341,7 +402,12 @@
   {/if}
 
   {#if endOfGroup && !message.deleted}
-    <p class="text-dim mx-1 mt-1 font-mono text-[0.68rem]">
+    <p
+      class="text-dim mx-1 mt-1 flex items-center gap-1 font-mono text-[0.68rem]">
+      {#if message.pinned}
+        <Icon name="pin-filled" class="text-accent h-3 w-3" />
+        <span class="sr-only">{m.chat_pinned()}</span>
+      {/if}
       {message.edited ? `${time} · ${m.chat_edited()}` : time}
     </p>
   {/if}
@@ -374,4 +440,8 @@
       </div>
     </div>
   </Drawer>
+{/if}
+
+{#if forwarding}
+  <ChatForwardModal {message} onclose={() => (forwarding = false)} />
 {/if}
