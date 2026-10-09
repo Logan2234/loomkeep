@@ -1,17 +1,20 @@
-import type {
-  ChatUnreadDto,
-  ConversationDto,
-  ConversationWorkDto,
-  MessageDto,
-  PagedResult,
-  RecommendWorkResultDto,
-  UserSummaryDto,
+import {
+  type ChatUnreadDto,
+  type ConversationDto,
+  type ConversationWorkDto,
+  ErrorCode,
+  type MessageDto,
+  type PagedResult,
+  type RecommendWorkResultDto,
+  type UserSummaryDto,
+  type WorkThreadDto,
 } from "@loomkeep/shared";
 import {
   Body,
   Controller,
   Delete,
   Get,
+  HttpStatus,
   Param,
   Post,
   Put,
@@ -24,6 +27,8 @@ import {
   CurrentUser,
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
+import { parseTarget } from "../comments/comment.controller";
+import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
@@ -55,7 +60,9 @@ import {
   ConversationWorkResponseDto,
   MessageResponseDto,
   RecommendWorkResultResponseDto,
+  WorkThreadResponseDto,
 } from "./dto/chat-response.dto";
+import { WorkThreadService } from "./work-thread.service";
 
 @UseGuards(ChatFeatureGuard)
 @Controller("chat")
@@ -63,6 +70,7 @@ export class ChatController {
   constructor(
     private readonly chat: ChatService,
     private readonly works: ChatWorkService,
+    private readonly threads: WorkThreadService,
     private readonly reports: ReportService,
   ) {}
 
@@ -182,7 +190,44 @@ export class ChatController {
   @Get("unread")
   @ApiOkResponse({ type: ChatUnreadResponseDto })
   async unread(@CurrentUser() user: JwtPayload): Promise<ChatUnreadDto> {
-    return { count: await this.chat.unreadTotal(user.sub) };
+    const [count, works] = await Promise.all([
+      this.chat.unreadTotal(user.sub),
+      this.threads.unreadTotal(user.sub),
+    ]);
+    return { count, works };
+  }
+
+  /** The works' discussions of the "Œuvres" tab. */
+  @Get("works")
+  @ApiOkResponse({ type: WorkThreadResponseDto, isArray: true })
+  workThreads(@CurrentUser() user: JwtPayload): Promise<WorkThreadDto[]> {
+    return this.threads.list(user.sub);
+  }
+
+  /** One work's discussion, followed or not: opening it from its page. */
+  @Get("works/:type/:id")
+  @ApiOkResponse({ type: WorkThreadResponseDto })
+  async workThread(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+  ): Promise<WorkThreadDto> {
+    const thread = await this.threads.get(user.sub, parseTarget(type), id);
+
+    if (!thread) {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
+    }
+
+    return thread;
+  }
+
+  @Post("works/:type/:id/read")
+  readWorkThread(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.threads.markRead(user.sub, parseTarget(type), id);
   }
 
   @Put("messages/:id")

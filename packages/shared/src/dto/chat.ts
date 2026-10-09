@@ -1,4 +1,4 @@
-import type { CommentEmote, MediaType } from "../enums";
+import type { CommentEmote, CommentTargetType, MediaType } from "../enums";
 import type { CommentReactionSummaryDto } from "./comment";
 import type { UserSummaryDto } from "./social";
 
@@ -86,6 +86,35 @@ export interface ConversationDto {
 /** `GET /chat/unread`: what the Messages launcher shows. Muted conversations don't count. */
 export interface ChatUnreadDto {
   count: number;
+  /** Unread in the works' discussions of the "Œuvres" tab. */
+  works: number;
+}
+
+/**
+ * A work's discussion in Messages' "Œuvres" tab: one the viewer wrote in or
+ * was mentioned in. The comments themselves keep their own API.
+ */
+export interface WorkThreadDto {
+  targetType: CommentTargetType;
+  targetId: string;
+  /** The work's title; a season or an episode adds its numbers. */
+  title: string;
+  kind: MessageWorkKind | null;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  imageUrl: string | null;
+  /** The work's page: a season's or an episode's leads to its series. */
+  href: string | null;
+  unread: number;
+  /** Writing needs the work in the library (comments' own rule). */
+  canParticipate: boolean;
+  lastActivityAt: string;
+  lastComment: {
+    authorName: string | null;
+    mine: boolean;
+    /** Null for a comment tagged as a spoiler. */
+    text: string | null;
+  } | null;
 }
 
 export interface OpenConversationRequestDto {

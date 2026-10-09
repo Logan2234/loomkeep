@@ -1,6 +1,7 @@
 import type {
   ChatUnreadDto,
   CommentEmote,
+  CommentTargetType,
   ConversationDto,
   ConversationReadOnlyReason,
   ConversationWorkDto,
@@ -8,6 +9,7 @@ import type {
   MessageWorkDto,
   MessageWorkKind,
   RecommendWorkResultDto,
+  WorkThreadDto,
 } from "@loomkeep/shared";
 import { CommentReactionSummaryResponseDto } from "../../comments/dto/comment-reaction-summary-response.dto";
 import { UserSummaryResponseDto } from "../../common/dto/user-summary-response.dto";
@@ -64,6 +66,28 @@ export class ConversationResponseDto implements ConversationDto {
 
 export class ChatUnreadResponseDto implements ChatUnreadDto {
   count!: number;
+  works!: number;
+}
+
+class WorkThreadLastCommentResponseDto {
+  authorName!: string | null;
+  mine!: boolean;
+  text!: string | null;
+}
+
+export class WorkThreadResponseDto implements WorkThreadDto {
+  targetType!: CommentTargetType;
+  targetId!: string;
+  title!: string;
+  kind!: MessageWorkKind | null;
+  seasonNumber!: number | null;
+  episodeNumber!: number | null;
+  imageUrl!: string | null;
+  href!: string | null;
+  unread!: number;
+  canParticipate!: boolean;
+  lastActivityAt!: string;
+  lastComment!: WorkThreadLastCommentResponseDto | null;
 }
 
 export class RecommendWorkResultResponseDto implements RecommendWorkResultDto {
