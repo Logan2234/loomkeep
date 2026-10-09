@@ -226,7 +226,33 @@
             </button>
           {/snippet}
           {#snippet children({ close })}
+            {#if isDropped}
+              <button
+                role="menuitem"
+                type="button"
+                class="menu-item"
+                onclick={() => {
+                  close();
+                  onResume();
+                }}>
+                <Icon name="refresh" class="h-4 w-4" />
+                {m.media_resume()}
+              </button>
+            {:else}
+              <button
+                role="menuitem"
+                type="button"
+                class="menu-item"
+                onclick={() => {
+                  close();
+                  onDrop();
+                }}>
+                <Icon name="archive" class="h-4 w-4" />
+                {m.media_drop_tracking()}
+              </button>
+            {/if}
             <ShareWorkMenuItem
+              separated
               onclick={() => {
                 close();
                 onShare();
@@ -272,31 +298,6 @@
                 </button>
               {/snippet}
               {@render digestOffTooltip(episodeAlerts, true)}
-            {/if}
-            {#if isDropped}
-              <button
-                role="menuitem"
-                type="button"
-                class="menu-item"
-                onclick={() => {
-                  close();
-                  onResume();
-                }}>
-                <Icon name="refresh" class="h-4 w-4" />
-                {m.media_resume()}
-              </button>
-            {:else}
-              <button
-                role="menuitem"
-                type="button"
-                class="menu-item"
-                onclick={() => {
-                  close();
-                  onDrop();
-                }}>
-                <Icon name="archive" class="h-4 w-4" />
-                {m.media_drop_tracking()}
-              </button>
             {/if}
             <button
               role="menuitem"

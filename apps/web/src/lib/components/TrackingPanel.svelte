@@ -84,13 +84,6 @@
           </button>
         {/snippet}
         {#snippet children({ close })}
-          {#if onShare}
-            <ShareWorkMenuItem
-              onclick={() => {
-                close();
-                onShare();
-              }} />
-          {/if}
           {#each actions as action (action.label)}
             <button
               role="menuitem"
@@ -107,6 +100,14 @@
               {action.label}
             </button>
           {/each}
+          {#if onShare}
+            <ShareWorkMenuItem
+              separated={actions.length > 0}
+              onclick={() => {
+                close();
+                onShare();
+              }} />
+          {/if}
           <button
             role="menuitem"
             type="button"

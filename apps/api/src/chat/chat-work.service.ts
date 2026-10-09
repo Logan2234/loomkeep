@@ -25,6 +25,8 @@ export interface WorkCard {
 
 /** Cards a message's links turn into, at most. */
 const MAX_LINKED_WORKS = 3;
+// Links looked at, at most: each unknown one costs a catalogue call.
+const MAX_SCANNED_LINKS = 10;
 
 const MEDIA_PATH = /^\/app\/media\/(movie|series|anime)\/([^/?#\s]+)$/;
 const DOMAIN_PATH = /^\/app\/(games|books|music)\/([^/?#\s]+)$/;
@@ -78,9 +80,9 @@ export class ChatWorkService {
   }
 
   private async linkedWorks(text: string, skip: string[]): Promise<WorkCard[]> {
-    const urls = [...new Set(text.match(LINK) ?? [])].filter(
-      (url) => !skip.includes(url),
-    );
+    const urls = [...new Set(text.match(LINK) ?? [])]
+      .filter((url) => !skip.includes(url))
+      .slice(0, MAX_SCANNED_LINKS);
     const cards: WorkCard[] = [];
 
     for (const url of urls) {

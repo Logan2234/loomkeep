@@ -58,6 +58,7 @@
   import {
     GAME_DIRECT_STATUS_TARGETS,
     getStatusCorrections,
+    statusCorrectionLabel,
   } from "#lib/status-corrections.js";
   import type { GameEntryDto } from "@loomkeep/shared";
   import { slide } from "svelte/transition";
@@ -211,6 +212,10 @@
             ),
         )
       : [],
+  );
+
+  const correctionLabel = $derived(
+    statusCorrectionLabel(statusCorrections, m.game_status_reset_backlog()),
   );
 
   function openStatusCorrection() {
@@ -459,15 +464,16 @@
                         },
                       ]
                     : []),
-                  {
-                    label:
-                      statusCorrections.length === 1
-                        ? m.game_status_reset_backlog()
-                        : m.tracking_correct_status(),
-                    icon: "edit" as const,
-                    separator: true,
-                    onSelect: openStatusCorrection,
-                  },
+                  ...(correctionLabel
+                    ? [
+                        {
+                          label: correctionLabel,
+                          icon: "edit" as const,
+                          separator: true,
+                          onSelect: openStatusCorrection,
+                        },
+                      ]
+                    : []),
                 ]}
             targetType="GAME"
             targetId={entry.game.id}>

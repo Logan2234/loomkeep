@@ -54,6 +54,7 @@
   import {
     BOOK_DIRECT_STATUS_TARGETS,
     getStatusCorrections,
+    statusCorrectionLabel,
   } from "#lib/status-corrections.js";
 
   // Open Library is the only book source today; the web route carries just
@@ -188,6 +189,10 @@
             ),
         )
       : [],
+  );
+
+  const correctionLabel = $derived(
+    statusCorrectionLabel(statusCorrections, m.book_status_reset_to_read()),
   );
 
   function openStatusCorrection() {
@@ -401,15 +406,16 @@
                     },
                   ]
                 : []),
-              {
-                label:
-                  statusCorrections.length === 1
-                    ? m.book_status_reset_to_read()
-                    : m.tracking_correct_status(),
-                icon: "edit" as const,
-                separator: true,
-                onSelect: openStatusCorrection,
-              },
+              ...(correctionLabel
+                ? [
+                    {
+                      label: correctionLabel,
+                      icon: "edit" as const,
+                      separator: true,
+                      onSelect: openStatusCorrection,
+                    },
+                  ]
+                : []),
             ]}
             targetType="BOOK"
             targetId={entry.book.id}>

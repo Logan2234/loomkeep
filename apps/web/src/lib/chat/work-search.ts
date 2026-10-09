@@ -96,13 +96,15 @@ export async function searchWorks(query: string): Promise<MessageWorkDto[]> {
   );
 }
 
-/** Links the API turns into cards, at most. */
+/** Cards the API makes from a message's links, at most. */
 export const MAX_LINKED_WORKS = 3;
+/** Links the API looks at, at most — the ones not turned down, in order. */
+export const MAX_SCANNED_LINKS = 10;
 
-/** The links of a message being written that the composer previews. */
+/** The distinct links of a message being written, in order. */
 export function typedLinks(text: string): string[] {
   const links = text.match(/https?:\/\/[^\s<>]+[^\s<>.,;:!?)\]'"]/g) ?? [];
-  return [...new Set(links)].slice(0, MAX_LINKED_WORKS);
+  return [...new Set(links)];
 }
 
 const MEDIA_PAGE = /^\/app\/media\/(movie|series|anime)\/([^/?#]+)$/;

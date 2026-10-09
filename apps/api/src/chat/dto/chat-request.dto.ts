@@ -42,7 +42,7 @@ export class EditMessageBody {
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(10)
+  @ArrayMaxSize(50)
   @IsString({ each: true })
   skipLinks?: string[];
 }
@@ -67,7 +67,7 @@ export class SendMessageBody {
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(10)
+  @ArrayMaxSize(50)
   @IsString({ each: true })
   skipLinks?: string[];
 }

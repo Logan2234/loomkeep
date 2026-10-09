@@ -5,7 +5,12 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { upsertMessage, type MessagePages } from "#lib/chat/chat-cache.js";
   import { chatDrafts as drafts } from "#lib/chat/chat.svelte.js";
-  import { previewLinkedWork, typedLinks } from "#lib/chat/work-search.js";
+  import {
+    MAX_LINKED_WORKS,
+    MAX_SCANNED_LINKS,
+    previewLinkedWork,
+    typedLinks,
+  } from "#lib/chat/work-search.js";
   import {
     readSlashCommand,
     selectionFormats,
@@ -130,21 +135,31 @@
     }
   });
 
-  // What the links will turn into once sent — the first three, as the API
-  // does — read once typing pauses.
+  // What the links will turn into once sent, read once typing pauses: as the
+  // API does, the first three cards among the links not turned down — so
+  // turning one down brings in the next.
   const links = $derived(typedLinks(value));
+  const candidates = $derived(
+    links
+      .filter((url) => !declinedLinks.includes(url))
+      .slice(0, MAX_SCANNED_LINKS),
+  );
   $effect(() => {
-    const next = links;
+    const next = candidates;
     const timer = setTimeout(() => (previewedLinks = next), 500);
     return () => clearTimeout(timer);
   });
   const previewQuery = createApiQuery(() => ({
     key: keys.chat.linkPreviews(previewedLinks),
+    // One cache entry per link: turning one down doesn't refetch the others.
     fetch: () =>
       Promise.all(
         previewedLinks.map(async (url) => ({
           url,
-          work: await previewLinkedWork(url).catch(() => null),
+          work: await queryClient.ensureQueryData({
+            queryKey: keys.chat.linkPreview(url),
+            queryFn: () => previewLinkedWork(url).catch(() => null),
+          }),
         })),
       ),
     enabled: previewedLinks.length > 0,
@@ -155,12 +170,12 @@
       .filter(
         (preview, index, all) =>
           preview.work !== null &&
-          links.includes(preview.url) &&
-          !declinedLinks.includes(preview.url) &&
+          candidates.includes(preview.url) &&
           preview.work.href !== attached?.href &&
           all.findIndex((other) => other.work?.href === preview.work?.href) ===
             index,
       )
+      .slice(0, MAX_LINKED_WORKS)
       .map(({ url, work }) => ({ url, work: work as MessageWorkDto })),
   );
 
@@ -210,7 +225,9 @@
       text: text || undefined,
       spoiler,
       work: attached?.href,
-      skipLinks: declinedLinks.length > 0 ? declinedLinks : undefined,
+      skipLinks: declinedLinks.some((url) => links.includes(url))
+        ? declinedLinks.filter((url) => links.includes(url))
+        : undefined,
     });
   }
 

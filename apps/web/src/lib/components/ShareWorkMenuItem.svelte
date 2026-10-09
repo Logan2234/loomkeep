@@ -5,10 +5,21 @@
   import Icon from "./Icon.svelte";
   import NewBadge from "./NewBadge.svelte";
 
-  let { onclick }: { onclick: () => void } = $props();
+  let {
+    onclick,
+    separated = false,
+  }: {
+    onclick: () => void;
+    /** Opens its group, after the status actions. */
+    separated?: boolean;
+  } = $props();
 </script>
 
-<button role="menuitem" type="button" class="menu-item" {onclick}>
+<button
+  role="menuitem"
+  type="button"
+  class="menu-item {separated ? 'border-border border-t' : ''}"
+  {onclick}>
   <Icon name="share" class="h-4 w-4" />
   {m.common_share()}
   {#if isFeatureNew("share-work")}

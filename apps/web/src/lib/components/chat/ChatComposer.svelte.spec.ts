@@ -163,6 +163,51 @@ describe("ChatComposer", () => {
     expect(screen.getByText("Hades")).toBeTruthy();
   });
 
+  it("brings in the next link when one of the first three is turned down", async () => {
+    const titles: Record<string, string> = {
+      "1": "Outer Wilds",
+      "2": "Hades",
+      "3": "Celeste",
+      "4": "Tunic",
+    };
+    server.use(
+      http.get(apiUrl("/links/resolve"), ({ request }) => {
+        const url = new URL(request.url).searchParams.get("url") ?? "";
+        return HttpResponse.json({
+          match: { domain: "GAMES", href: new URL(url).pathname },
+        });
+      }),
+      http.get(apiUrl("/games/igdb/:id"), ({ params }) =>
+        HttpResponse.json({
+          source: "IGDB",
+          sourceId: params.id,
+          title: titles[params.id as string],
+          year: 2019,
+          coverUrl: null,
+          isAdult: false,
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    const box = renderComposer();
+
+    await user.type(
+      box,
+      [1, 2, 3, 4]
+        .map((id) => `https://loomkeep.app/app/games/${id}`)
+        .join(" "),
+    );
+    await screen.findByText("Celeste", {}, { timeout: 2000 });
+    expect(screen.queryByText("Tunic")).toBe(null);
+
+    await user.click(
+      screen.getAllByRole("button", { name: m.chat_link_preview_remove() })[0],
+    );
+
+    await screen.findByText("Tunic", {}, { timeout: 2000 });
+    expect(screen.queryByText("Outer Wilds")).toBe(null);
+  });
+
   it("previews a work link, and sends it plain once its card is turned down", async () => {
     server.use(
       http.get(apiUrl("/links/resolve"), () =>
