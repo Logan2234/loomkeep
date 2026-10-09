@@ -1,8 +1,14 @@
 import {
   CommentEmote,
   type CommentEmote as CommentEmoteT,
+  type EditMessageRequestDto,
   MESSAGE_TEXT_MAX_LENGTH,
+  type MuteConversationRequestDto,
+  type OpenConversationRequestDto,
   RECOMMEND_MAX_FRIENDS,
+  type ReactMessageRequestDto,
+  type RecommendWorkRequestDto,
+  type SendMessageRequestDto,
 } from "@loomkeep/shared";
 import {
   ArrayMaxSize,
@@ -23,13 +29,13 @@ import {
 const WORK_PATH =
   /^\/app\/(media\/(movie|series|anime)|games|books|music)\/[^/?#\s]+$/;
 
-export class OpenConversationBody {
+export class OpenConversationBody implements OpenConversationRequestDto {
   @IsString()
   @MinLength(1)
   username!: string;
 }
 
-export class EditMessageBody {
+export class EditMessageBody implements EditMessageRequestDto {
   @IsString()
   @MinLength(1)
   @MaxLength(MESSAGE_TEXT_MAX_LENGTH)
@@ -48,7 +54,7 @@ export class EditMessageBody {
 }
 
 /** The text may be left out when a work goes with it. */
-export class SendMessageBody {
+export class SendMessageBody implements SendMessageRequestDto {
   @ValidateIf((body: SendMessageBody) => !body.work || body.text !== undefined)
   @IsString()
   @MinLength(1)
@@ -72,7 +78,7 @@ export class SendMessageBody {
   skipLinks?: string[];
 }
 
-export class RecommendWorkBody {
+export class RecommendWorkBody implements RecommendWorkRequestDto {
   @IsString()
   @Matches(WORK_PATH)
   work!: string;
@@ -90,12 +96,12 @@ export class RecommendWorkBody {
   text?: string;
 }
 
-export class ReactMessageBody {
+export class ReactMessageBody implements ReactMessageRequestDto {
   @IsIn(Object.values(CommentEmote))
   emote!: CommentEmoteT;
 }
 
-export class MuteConversationBody {
+export class MuteConversationBody implements MuteConversationRequestDto {
   @IsBoolean()
   muted!: boolean;
 }

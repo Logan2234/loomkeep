@@ -153,7 +153,7 @@ function flatten(nodes: ChatNode[]): string {
 }
 
 /** The markers the selection bar and the shortcuts wrap a selection in. */
-export const CHAT_FORMATS = {
+const CHAT_FORMATS = {
   bold: "**",
   italic: "*",
   strike: "~~",
