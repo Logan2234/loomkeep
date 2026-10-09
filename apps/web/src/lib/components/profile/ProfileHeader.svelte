@@ -60,8 +60,8 @@
 
   const queryClient = useQueryClient();
 
-  // Following each other: unfollowing then ends a friendship, which is rarer
-  // than following, so it moves from the header to the menu.
+  // Unfollowing is rarer than following: once followed, it moves from the
+  // header to the menu — and ends a friendship when they follow back.
   const mutualFriends = $derived(
     !!rel && !rel.isSelf && rel.following && rel.followsYou,
   );
@@ -183,7 +183,7 @@
             {m.common_unblock()}
           </button>
         {:else}
-          {#if !ghostCantFollow && !mutualFriends}
+          {#if !ghostCantFollow && !rel.following}
             <button
               class="btn {rel.following || rel.requested
                 ? 'btn-ghost'
@@ -220,17 +220,18 @@
             </button>
           {/snippet}
           {#snippet children({ close })}
-            {#if mutualFriends && !rel?.blocking}
+            {#if rel?.following && !rel.blocking}
               <button
                 role="menuitem"
                 class="menu-item"
                 disabled={busy}
                 onclick={() => {
                   close();
-                  onUnfriend();
+                  if (mutualFriends) onUnfriend();
+                  else onToggleFollow();
                 }}>
                 <Icon name="user-minus" class="h-4 w-4" />
-                {m.profile_unfriend()}
+                {mutualFriends ? m.profile_unfriend() : m.common_unfollow()}
               </button>
             {/if}
             {#if !rel?.blocking}

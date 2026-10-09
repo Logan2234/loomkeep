@@ -5,15 +5,19 @@
     unreactToMessage,
   } from "#lib/api/chat.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import Drawer from "#lib/components/Drawer.svelte";
+  import Dropdown from "#lib/components/Dropdown.svelte";
   import Icon from "#lib/components/Icon.svelte";
+  import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
   import {
     COMMENT_EMOTE_DISPLAY,
     type CommentEmote,
     type MessageDto,
   } from "@loomkeep/shared";
-  import { fade, scale } from "svelte/transition";
+  import { fade } from "svelte/transition";
   import ChatMessageText from "./ChatMessageText.svelte";
 
   let {
@@ -37,9 +41,13 @@
   } = $props();
 
   const reduced = prefersReducedMotion();
-  let picking = $state(false);
+  const LONG_PRESS_MS = 450;
   let confirmingDelete = $state(false);
   let wallRevealed = $state(false);
+  // The phone's long-press sheet, standing in for the hover pills.
+  let sheetOpen = $state(false);
+  let pressTimer: ReturnType<typeof setTimeout> | undefined;
+  let pressStart: { x: number; y: number } | null = null;
 
   const reactMut = createApiMutation(() => ({
     mutate: (emote: CommentEmote) =>
@@ -51,112 +59,258 @@
 
   const deleteMut = createApiMutation(() => ({
     mutate: () => deleteMessage(message.id),
-    onSuccess: () => (confirmingDelete = false),
+    onSuccess: () => {
+      confirmingDelete = false;
+      sheetOpen = false;
+    },
     errorToast: true,
   }));
 
+  const hasActions = $derived(!message.deleted && (writable || !message.mine));
+  const EMOTES = Object.entries(COMMENT_EMOTE_DISPLAY) as [
+    CommentEmote,
+    string,
+  ][];
+
   function react(emote: CommentEmote) {
-    picking = false;
+    sheetOpen = false;
     reactMut.mutate(emote);
   }
 
-  const hasActions = $derived(!message.deleted && (writable || !message.mine));
+  async function copyText() {
+    sheetOpen = false;
+    try {
+      await navigator.clipboard.writeText(message.text ?? "");
+      toast.success(m.chat_text_copied());
+    } catch {
+      toast.error(m.chat_copy_failed());
+    }
+  }
+
+  function openSheet() {
+    confirmingDelete = false;
+    sheetOpen = true;
+  }
+
+  function onpointerdown(event: PointerEvent) {
+    if (!layout.compact || !hasActions || event.pointerType === "mouse") return;
+    pressStart = { x: event.clientX, y: event.clientY };
+    pressTimer = setTimeout(openSheet, LONG_PRESS_MS);
+  }
+
+  // A scroll isn't a press.
+  function onpointermove(event: PointerEvent) {
+    if (!pressStart) return;
+    const moved =
+      Math.abs(event.clientX - pressStart.x) +
+      Math.abs(event.clientY - pressStart.y);
+    if (moved > 10) cancelPress();
+  }
+
+  function cancelPress() {
+    clearTimeout(pressTimer);
+    pressStart = null;
+  }
+
+  function oncontextmenu(event: MouseEvent) {
+    // Android turns a long press into a context menu: the sheet replaces it.
+    if (layout.compact && hasActions) event.preventDefault();
+  }
 </script>
+
+{#snippet emotePicker(onpicked: () => void)}
+  <div class="flex gap-0.5" role="group" aria-label={m.common_react()}>
+    {#each EMOTES as [emote, glyph] (emote)}
+      <button
+        type="button"
+        class="hover:bg-surface-2 grid h-9 w-9 place-items-center rounded-full text-lg transition-[transform,background-color] duration-150 hover:scale-110 motion-reduce:transition-none
+          {message.myReaction === emote ? 'bg-accent/20' : ''}"
+        aria-pressed={message.myReaction === emote}
+        onclick={() => {
+          onpicked();
+          react(emote);
+        }}>
+        {glyph}
+      </button>
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet deleteConfirm(oncancel: () => void)}
+  <div
+    in:fade={{ duration: reduced ? 0 : 150 }}
+    class="flex flex-col gap-2 px-2.5 py-2 text-sm">
+    <p class="font-semibold">{m.chat_delete_confirm()}</p>
+    <p class="text-dim text-xs">{m.chat_delete_confirm_hint()}</p>
+    <div class="flex gap-2">
+      <button
+        type="button"
+        class="btn btn-danger btn-sm"
+        disabled={deleteMut.loading}
+        onclick={() => deleteMut.mutate()}>
+        {m.common_delete()}
+      </button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick={oncancel}>
+        {m.common_cancel()}
+      </button>
+    </div>
+  </div>
+{/snippet}
+
+{#snippet actionItems(close: () => void)}
+  {#if message.mine && writable && message.text}
+    <button
+      role="menuitem"
+      class="menu-item"
+      onclick={() => {
+        close();
+        onedit(message);
+      }}>
+      <Icon name="edit" class="h-4 w-4" />
+      {m.common_edit()}
+    </button>
+  {/if}
+  {#if message.text && !message.spoiler}
+    <button
+      role="menuitem"
+      class="menu-item"
+      onclick={() => {
+        close();
+        void copyText();
+      }}>
+      <Icon name="copy" class="h-4 w-4" />
+      {m.chat_copy_text()}
+    </button>
+  {/if}
+  {#if message.mine && writable}
+    <button
+      role="menuitem"
+      class="menu-item menu-item-danger"
+      onclick={() => (confirmingDelete = true)}>
+      <Icon name="trash" class="h-4 w-4" />
+      {m.chat_delete_ellipsis()}
+    </button>
+  {/if}
+  {#if !message.mine}
+    <button
+      role="menuitem"
+      class="menu-item menu-item-danger"
+      onclick={() => {
+        close();
+        onreport(message);
+      }}>
+      <Icon name="flag" class="h-4 w-4" />
+      {m.common_report()}
+    </button>
+  {/if}
+{/snippet}
 
 <div
   class="group relative flex max-w-[78%] flex-col
     {message.mine ? 'items-end self-end' : 'items-start self-start'}"
   data-message-id={message.id}>
-  {#if hasActions}
+  <!-- The pills sit beside the bubble, on the conversation's side: they
+       never cover its text nor the message above. -->
+  <div
+    class="flex max-w-full items-center gap-1.5
+      {message.mine ? 'flex-row-reverse' : ''}">
     <div
-      class="border-border bg-surface absolute -top-4 z-10 flex gap-0.5 rounded-lg border p-0.5 opacity-0 shadow-md transition-[opacity,transform] duration-150 group-focus-within:opacity-100 group-hover:opacity-100 motion-reduce:transition-none
-        {message.mine ? '-left-3' : '-right-3'}
-        {picking ? 'opacity-100' : ''}">
-      {#if writable}
+      class="min-w-0 {layout.compact
+        ? 'select-none [-webkit-touch-callout:none]'
+        : ''}"
+      role="presentation"
+      {onpointerdown}
+      {onpointermove}
+      onpointerup={cancelPress}
+      onpointercancel={cancelPress}
+      {oncontextmenu}>
+      {#if message.deleted}
+        <p
+          class="border-border text-dim rounded-2xl border border-dashed px-3 py-2 text-sm italic">
+          {message.deletedByAdmin
+            ? m.chat_message_removed_by_admin()
+            : m.chat_message_deleted()}
+        </p>
+      {:else if message.spoiler && !wallRevealed}
         <button
           type="button"
-          class="btn-icon h-7 w-7"
-          aria-label={m.common_react()}
-          aria-expanded={picking}
-          onclick={() => (picking = !picking)}>
-          <Icon name="sparkles" class="h-4 w-4" />
+          class="text-fg flex items-center gap-2 rounded-2xl bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--accent)_22%,transparent)_0_8px,var(--surface-2)_8px_16px)] px-3.5 py-2.5 text-sm font-semibold transition-[filter] duration-150
+            hover:brightness-110
+            {message.mine ? 'rounded-br-md' : 'rounded-bl-md'}"
+          onclick={() => (wallRevealed = true)}>
+          <Icon name="eye-off" class="h-4 w-4" />
+          {m.chat_spoiler_reveal()}
         </button>
-      {/if}
-      {#if message.mine && writable}
-        <button
-          type="button"
-          class="btn-icon h-7 w-7"
-          aria-label={m.common_edit()}
-          onclick={() => onedit(message)}>
-          <Icon name="edit" class="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          class="btn-icon h-7 w-7"
-          aria-label={m.common_delete()}
-          onclick={() => (confirmingDelete = true)}>
-          <Icon name="trash" class="h-4 w-4" />
-        </button>
-      {/if}
-      {#if !message.mine}
-        <button
-          type="button"
-          class="btn-icon h-7 w-7"
-          aria-label={m.common_report()}
-          onclick={() => onreport(message)}>
-          <Icon name="flag" class="h-4 w-4" />
-        </button>
+      {:else}
+        <p
+          in:fade={{ duration: reduced ? 0 : 150 }}
+          class="rounded-2xl px-3 py-2 text-sm leading-relaxed transition-shadow duration-150
+            {message.mine
+            ? 'bg-accent/20 text-fg rounded-br-md'
+            : 'bg-surface-2 rounded-bl-md'}
+            {sheetOpen ? 'ring-accent ring-2' : ''}">
+          <ChatMessageText text={message.text ?? ""} />
+        </p>
       {/if}
     </div>
-  {/if}
 
-  {#if picking}
-    <div
-      transition:scale={{ duration: reduced ? 0 : 150, start: 0.95 }}
-      role="group"
-      aria-label={m.common_react()}
-      class="border-border bg-surface absolute bottom-full z-20 mb-5 flex gap-0.5 rounded-full border p-1 shadow-lg
-        {message.mine ? 'right-0' : 'left-0'}">
-      {#each Object.entries(COMMENT_EMOTE_DISPLAY) as [emote, glyph] (emote)}
-        <button
-          type="button"
-          class="hover:bg-surface-2 grid h-8 w-8 place-items-center rounded-full text-lg transition-transform duration-150 hover:scale-110 motion-reduce:transition-none
-            {message.myReaction === emote ? 'bg-accent/20' : ''}"
-          aria-pressed={message.myReaction === emote}
-          onclick={() => react(emote as CommentEmote)}>
-          {glyph}
-        </button>
-      {/each}
-    </div>
-  {/if}
-
-  {#if message.deleted}
-    <p
-      class="border-border text-dim rounded-2xl border border-dashed px-3 py-2 text-sm italic">
-      {message.deletedByAdmin
-        ? m.chat_message_removed_by_admin()
-        : m.chat_message_deleted()}
-    </p>
-  {:else if message.spoiler && !wallRevealed}
-    <button
-      type="button"
-      class="text-fg flex items-center gap-2 rounded-2xl bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--accent)_22%,transparent)_0_8px,var(--surface-2)_8px_16px)] px-3.5 py-2.5 text-sm font-semibold transition-[filter] duration-150
-        hover:brightness-110
-        {message.mine ? 'rounded-br-md' : 'rounded-bl-md'}"
-      onclick={() => (wallRevealed = true)}>
-      <Icon name="eye-off" class="h-4 w-4" />
-      {m.chat_spoiler_reveal()}
-    </button>
-  {:else}
-    <p
-      in:fade={{ duration: reduced ? 0 : 150 }}
-      class="rounded-2xl px-3 py-2 text-sm leading-relaxed
-        {message.mine
-        ? 'bg-accent/20 text-fg rounded-br-md'
-        : 'bg-surface-2 rounded-bl-md'}">
-      <ChatMessageText text={message.text ?? ""} />
-    </p>
-  {/if}
+    {#if hasActions && !layout.compact}
+      <div
+        class="flex shrink-0 gap-1 opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100 has-[[aria-expanded=true]]:opacity-100">
+        {#if writable}
+          <Dropdown
+            placement={message.mine ? "bottom-end" : "bottom-start"}
+            role="presentation"
+            class="rounded-full! p-1!">
+            {#snippet trigger({ open, toggle, onkeydown })}
+              <button
+                type="button"
+                class="border-border bg-surface text-dim hover:text-fg grid h-7 w-7 place-items-center rounded-full border transition-colors duration-150"
+                aria-label={m.common_react()}
+                aria-haspopup="true"
+                aria-expanded={open}
+                {onkeydown}
+                onclick={toggle}>
+                <Icon name="smile" class="h-4 w-4" />
+              </button>
+            {/snippet}
+            {#snippet children({ close })}
+              {@render emotePicker(close)}
+            {/snippet}
+          </Dropdown>
+        {/if}
+        <Dropdown
+          placement={message.mine ? "bottom-end" : "bottom-start"}
+          class="min-w-52">
+          {#snippet trigger({ open, toggle, onkeydown })}
+            <button
+              type="button"
+              class="border-border bg-surface text-dim hover:text-fg grid h-7 w-7 place-items-center rounded-full border transition-colors duration-150"
+              aria-label={m.common_more_actions()}
+              aria-haspopup="menu"
+              aria-expanded={open}
+              {onkeydown}
+              onclick={(event) => {
+                confirmingDelete = false;
+                toggle(event);
+              }}>
+              <Icon name="dots-horizontal" class="h-4 w-4" />
+            </button>
+          {/snippet}
+          {#snippet children({ close })}
+            {#if confirmingDelete}
+              {@render deleteConfirm(() => {
+                confirmingDelete = false;
+                close();
+              })}
+            {:else}
+              {@render actionItems(close)}
+            {/if}
+          {/snippet}
+        </Dropdown>
+      </div>
+    {/if}
+  </div>
 
   {#if message.reactions.length > 0}
     <div class="mt-1 flex flex-wrap gap-1">
@@ -191,25 +345,24 @@
       {m.chat_seen_at({ time: seenAt })}
     </p>
   {/if}
-
-  {#if confirmingDelete}
-    <div
-      transition:fade={{ duration: reduced ? 0 : 150 }}
-      class="border-border bg-surface mt-1.5 flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 text-xs">
-      {m.chat_delete_confirm()}
-      <button
-        type="button"
-        class="btn btn-danger btn-sm"
-        disabled={deleteMut.loading}
-        onclick={() => deleteMut.mutate()}>
-        {m.common_delete()}
-      </button>
-      <button
-        type="button"
-        class="btn btn-ghost btn-sm"
-        onclick={() => (confirmingDelete = false)}>
-        {m.common_cancel()}
-      </button>
-    </div>
-  {/if}
 </div>
+
+{#if sheetOpen}
+  <!-- Above the Messages sheet (z-50). -->
+  <Drawer onclose={() => (sheetOpen = false)} zIndex={60}>
+    <div class="flex flex-col gap-2 px-3 pt-1 pb-3">
+      {#if writable && !confirmingDelete}
+        <div class="self-center">
+          {@render emotePicker(() => {})}
+        </div>
+      {/if}
+      <div class="flex flex-col" role="menu">
+        {#if confirmingDelete}
+          {@render deleteConfirm(() => (confirmingDelete = false))}
+        {:else}
+          {@render actionItems(() => (sheetOpen = false))}
+        {/if}
+      </div>
+    </div>
+  </Drawer>
+{/if}

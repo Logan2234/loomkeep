@@ -39,6 +39,10 @@
     <circle cx="10" cy="8" r="4" />
     <path d="M2 20c0-4 4-6 8-6s8 2 8 6" />
     <path d="M17 11h5" />
+  {:else if name === "smile"}
+    <circle cx="12" cy="12" r="9" />
+    <path d="M8.5 14.5a4.5 4.5 0 0 0 7 0" />
+    <path d="M9 9.5h.01M15 9.5h.01" stroke-width="2.6" />
   {:else if name === "users"}
     <circle cx="9" cy="8" r="3.2" />
     <path d="M3 19c0-3.3 2.7-5 6-5s6 1.7 6 5" />

@@ -276,46 +276,46 @@
       </div>
     {/if}
 
-    {#if appConfig.chatEnabled && auth.user}
-      {@const chatUser = auth.user}
-      <section class="border-border mt-6 rounded-xl border p-4">
-        <p class="font-semibold">{m.settings_chat_title()}</p>
-        <p class="text-dim mt-0.5 mb-2 text-xs">
-          {m.settings_chat_description()}
-        </p>
-        <div class="divide-border divide-y">
-          <SettingRow
-            anchor="chat-presence"
-            label={m.settings_chat_presence()}
-            description={m.settings_chat_presence_desc()}
-            mutation={chatPresenceMut}>
-            {#snippet control()}
-              <Switch
-                label={m.settings_chat_presence()}
-                checked={chatUser.chatShowPresence}
-                onChange={(value) => chatPresenceMut.mutate(value)} />
-            {/snippet}
-          </SettingRow>
-          <SettingRow
-            anchor="chat-read-receipts"
-            label={m.settings_chat_read_receipts()}
-            description={m.settings_chat_read_receipts_desc()}
-            mutation={chatReadReceiptsMut}>
-            {#snippet control()}
-              <Switch
-                label={m.settings_chat_read_receipts()}
-                checked={chatUser.chatShowReadReceipts}
-                onChange={(value) => chatReadReceiptsMut.mutate(value)} />
-            {/snippet}
-          </SettingRow>
-        </div>
-      </section>
-    {/if}
-
     <p class="text-dim mt-4 text-xs">
       {m.settings_privacy_content_hint()}
     </p>
   </section>
+
+  {#if appConfig.chatEnabled && auth.user}
+    {@const chatUser = auth.user}
+    <section class="card mt-5 p-5 md:p-6">
+      <p class="font-semibold">{m.settings_chat_title()}</p>
+      <p class="text-dim mt-0.5 mb-2 text-xs">
+        {m.settings_chat_description()}
+      </p>
+      <div class="divide-border divide-y">
+        <SettingRow
+          anchor="chat-presence"
+          label={m.settings_chat_presence()}
+          description={m.settings_chat_presence_desc()}
+          mutation={chatPresenceMut}>
+          {#snippet control()}
+            <Switch
+              label={m.settings_chat_presence()}
+              checked={chatUser.chatShowPresence}
+              onChange={(value) => chatPresenceMut.mutate(value)} />
+          {/snippet}
+        </SettingRow>
+        <SettingRow
+          anchor="chat-read-receipts"
+          label={m.settings_chat_read_receipts()}
+          description={m.settings_chat_read_receipts_desc()}
+          mutation={chatReadReceiptsMut}>
+          {#snippet control()}
+            <Switch
+              label={m.settings_chat_read_receipts()}
+              checked={chatUser.chatShowReadReceipts}
+              onChange={(value) => chatReadReceiptsMut.mutate(value)} />
+          {/snippet}
+        </SettingRow>
+      </div>
+    </section>
+  {/if}
 {/if}
 
 {#if showModesModal}
