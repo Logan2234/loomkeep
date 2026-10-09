@@ -1,5 +1,6 @@
 <script lang="ts">
-  // Loads and shows the Quackback feedback widget — mounted only on
+  // Loads and shows the Quackback feedback widget, on an instance that set
+  // PUBLIC_QUACKBACK_URL and for an account that didn't hide it — mounted only on
   // authenticated, non-public routes (see app/+layout.svelte), so its own
   // mount/unmount lifecycle is what keeps the widget off the landing page and
   // login/register/legal pages: loaded on mount, hidden on unmount
@@ -16,9 +17,13 @@
   // portal users, only team/admin accounts). Re-enable once that's fixed
   // upstream or worked around.
   import { browser } from "$app/env";
-  import { auth } from "#lib/auth.svelte.js";
-  import { layout } from "#lib/layout.svelte.js";
-  import { toast } from "#lib/toast.svelte.js";
+  import {
+    cornerLaunchersHidden,
+    feedbackBoardUrl,
+    feedbackLauncherWanted,
+  } from "#lib/corner-launchers.svelte.js";
+
+  const wanted = $derived(feedbackLauncherWanted());
 
   // Defines window.Quackback (a queue-based stub the real SDK replaces once
   // it loads) and injects the script tag, exactly once per page load.
@@ -29,12 +34,12 @@
     };
     const script = document.createElement("script");
     script.async = true;
-    script.src = "https://feedback.loomkeep.app/api/widget/sdk.js";
+    script.src = `${feedbackBoardUrl}/api/widget/sdk.js`;
     document.head.appendChild(script);
   }
 
   $effect(() => {
-    if (!browser || !auth.isLoggedIn) return;
+    if (!browser || !wanted) return;
 
     loadSdk();
     window.Quackback!("init");
@@ -52,9 +57,9 @@
   // Toasts stack in the same corner, so the launcher steps aside while any
   // is showing.
   $effect(() => {
-    if (!browser || !auth.isLoggedIn) return;
-    const hidden =
-      layout.compact || layout.openSidePanels > 0 || toast.items.length > 0;
-    window.Quackback?.(hidden ? "hideLauncher" : "showLauncher");
+    if (!browser || !wanted) return;
+    window.Quackback?.(
+      cornerLaunchersHidden() ? "hideLauncher" : "showLauncher",
+    );
   });
 </script>

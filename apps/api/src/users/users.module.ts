@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { AuthModule } from "../auth/auth.module";
+import { ChatModule } from "../chat/chat.module";
 import { EntitlementModule } from "../entitlements/entitlement.module";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
@@ -35,6 +36,7 @@ import { UsersService } from "./users.service";
     SocialModule,
     GamificationModule,
     EventsModule,
+    ChatModule,
   ],
   controllers: [UsersController, MfaController],
   providers: [

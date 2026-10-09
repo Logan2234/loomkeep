@@ -761,5 +761,8 @@
   "admin_imports_source": "Source",
   "admin_jobs_history_date": "Date",
   "admin_jobs_history_result": "Result",
-  "admin_jobs_history_duration": "Duration"
+  "admin_jobs_history_duration": "Duration",
+  "admin_settings_chat": "Messages",
+  "admin_settings_chat_hint": "Private messages between friends (needs Social). Stored unencrypted in the instance's database.",
+  "admin_reports_message_context": "Messages around the reported one"
 }

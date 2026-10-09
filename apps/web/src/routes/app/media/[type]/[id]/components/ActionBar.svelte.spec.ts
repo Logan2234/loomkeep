@@ -50,6 +50,7 @@ function props() {
     onResume: vi.fn(),
     onToggleEpisodeAlerts: vi.fn(),
     onRemove: vi.fn(),
+    onShare: vi.fn(),
     onToggleMovieAlerts: vi.fn(),
   };
 }

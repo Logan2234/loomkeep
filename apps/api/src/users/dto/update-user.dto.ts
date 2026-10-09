@@ -116,6 +116,18 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   hideProgression?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  chatShowPresence?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  chatShowReadReceipts?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  feedbackWidget?: boolean;
+
+  @IsOptional()
   @IsIn(Object.values(SpoilerSensitivityValues))
   spoilerSensitivity?: SpoilerSensitivity;
 

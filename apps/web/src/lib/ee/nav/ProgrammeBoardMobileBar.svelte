@@ -6,6 +6,7 @@
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { visibleNavItems } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
+  import ChatTab from "#lib/components/chat/ChatTab.svelte";
   import NotificationTab from "#lib/components/sidebars/NotificationTab.svelte";
 
   const items = $derived(
@@ -62,6 +63,11 @@
     {m.common_menu()}
   </button>
 
+  {#if appConfig.chatEnabled}
+    <ChatTab
+      slotClass="h-5 w-5"
+      rootClass="flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 text-[0.6rem]" />
+  {/if}
   <NotificationTab
     slotClass="h-5 w-5"
     rootClass="flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 text-[0.6rem]" />

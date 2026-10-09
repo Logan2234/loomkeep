@@ -23,6 +23,7 @@ const PARSE: {
   [K in InstanceSettingKey]: (raw: string) => InstanceSettingsValues[K];
 } = {
   socialEnabled: (raw) => raw === "true",
+  chatEnabled: (raw) => raw === "true",
   gamificationEnabled: (raw) => raw === "true",
   // Kept from the env-only days: open unless explicitly "false".
   registrationEnabled: (raw) => raw !== "false",

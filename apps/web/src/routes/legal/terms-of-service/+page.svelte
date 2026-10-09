@@ -64,8 +64,9 @@
     <p>
       Loomkeep peut également proposer des fonctionnalités sociales permettant
       notamment de suivre d'autres utilisateurs, publier des avis ou
-      commentaires, créer des listes et partager certaines informations selon
-      les paramètres de confidentialité choisis.
+      commentaires, échanger des messages privés avec ses amis, créer des listes
+      et partager certaines informations selon les paramètres de confidentialité
+      choisis.
     </p>
     <p>
       Loomkeep ne fournit pas nécessairement les contenus eux-mêmes. Les
@@ -142,6 +143,10 @@
       <li>bloquer d'autres utilisateurs ;</li>
       <li>publier des avis ;</li>
       <li>publier des commentaires ;</li>
+      <li>
+        échanger des messages privés avec les utilisateurs qu'il suit et qui le
+        suivent en retour ;
+      </li>
       <li>créer des listes ;</li>
       <li>partager certaines informations relatives à sa bibliothèque ;</li>
       <li>réagir à des contenus ;</li>
@@ -256,8 +261,10 @@
     </p>
     <p>
       Depuis l'application, tout utilisateur peut signaler un commentaire, une
-      critique, une liste ou le profil d'un autre utilisateur, en indiquant le
-      motif du signalement.
+      critique, une liste, un message privé reçu ou le profil d'un autre
+      utilisateur, en indiquant le motif du signalement. Le signalement d'un
+      message privé transmet à la modération ce message et les quelques messages
+      qui l'entourent dans la conversation.
     </p>
     <p>
       Les signalements peuvent être examinés afin de déterminer si une action
@@ -268,7 +275,9 @@
     </p>
     <ul>
       <li>laisser le contenu en ligne ;</li>
-      <li>retirer le commentaire ou la critique concernés ;</li>
+      <li>
+        retirer le commentaire, la critique ou le message privé concernés ;
+      </li>
       <li>
         supprimer une liste, ou en modifier le titre, la description, les œuvres
         ou la visibilité ;

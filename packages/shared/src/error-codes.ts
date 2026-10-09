@@ -76,6 +76,18 @@ export const ErrorCode = {
   CommentParticipationRequiresLibrary: "comment.participation_requires_library",
   CommentInteractionBlocked: "comment.interaction_blocked",
 
+  // chat
+  ChatFeatureDisabled: "chat.feature_disabled",
+  /** Messages only go between two accounts that follow each other. */
+  ChatNotFriends: "chat.not_friends",
+  ChatConversationNotFound: "chat.conversation_not_found",
+  ChatMessageNotFound: "chat.message_not_found",
+  ChatForbidden: "chat.forbidden",
+  /** The conversation stays readable, but nobody can write in it anymore. */
+  ChatReadOnly: "chat.read_only",
+  /** The attached work isn't a page Loomkeep knows, or is an 18+ title. */
+  ChatWorkNotFound: "chat.work_not_found",
+
   // lists
   ListInvalidMembershipTarget: "lists.invalid_membership_target",
   ListNotFound: "lists.not_found",

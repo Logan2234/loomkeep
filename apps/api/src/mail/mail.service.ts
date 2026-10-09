@@ -588,7 +588,7 @@ export class MailService {
         {
           key: "measure",
           label:
-            "Mesures, séparées par des virgules (COMMENT_REMOVED, REVIEW_REMOVED, LIST_REMOVED, LIST_EDITED, AVATAR_REMOVED, BIO_CLEARED, DISPLAY_NAME_CHANGED, ACCOUNT_SUSPENDED ou ACCOUNT_DELETED)",
+            "Mesures, séparées par des virgules (COMMENT_REMOVED, MESSAGE_REMOVED, REVIEW_REMOVED, LIST_REMOVED, LIST_EDITED, AVATAR_REMOVED, BIO_CLEARED, DISPLAY_NAME_CHANGED, ACCOUNT_SUSPENDED ou ACCOUNT_DELETED)",
           default: "COMMENT_REMOVED",
         },
         {
@@ -1138,6 +1138,7 @@ export class MailService {
           }
         : {
             [ModerationMeasure.COMMENT_REMOVED]: copy.comment,
+            [ModerationMeasure.MESSAGE_REMOVED]: copy.message,
             [ModerationMeasure.REVIEW_REMOVED]: copy.review,
             [ModerationMeasure.LIST_REMOVED]: copy.listRemoved,
             [ModerationMeasure.LIST_EDITED]: copy.listEdited,

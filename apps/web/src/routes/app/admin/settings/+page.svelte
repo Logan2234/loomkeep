@@ -6,6 +6,7 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { initConfig } from "#lib/api/config.js";
   import { auth } from "#lib/auth.svelte.js";
   import AdminQueryError from "../AdminQueryError.svelte";
   import Banner from "#lib/components/Banner.svelte";
@@ -25,6 +26,7 @@
   type ToggleKey = Extract<
     InstanceSettingKey,
     | "socialEnabled"
+    | "chatEnabled"
     | "gamificationEnabled"
     | "registrationEnabled"
     | "publicApiEnabled"
@@ -45,7 +47,11 @@
     mutate: (patch: UpdateInstanceSettingsDto) =>
       updateAdminInstanceSettings(patch),
     invalidates: [keys.admin.instanceSettings()],
-    onSuccess: () => toast.success(m.admin_settings_saved()),
+    onSuccess: () => {
+      toast.success(m.admin_settings_saved());
+      // The app read these at startup: what they show or hide changes now.
+      void initConfig();
+    },
   }));
 
   const FEATURES: { key: ToggleKey; label: string; hint: string }[] = [
@@ -53,6 +59,11 @@
       key: "socialEnabled",
       label: m.common_social(),
       hint: m.admin_settings_social_hint(),
+    },
+    {
+      key: "chatEnabled",
+      label: m.admin_settings_chat(),
+      hint: m.admin_settings_chat_hint(),
     },
     {
       key: "gamificationEnabled",

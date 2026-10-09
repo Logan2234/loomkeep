@@ -5,6 +5,8 @@
  */
 export interface InstanceSettingsValues {
   socialEnabled: boolean;
+  /** Private messages between friends; only effective with `socialEnabled`. */
+  chatEnabled: boolean;
   gamificationEnabled: boolean;
   registrationEnabled: boolean;
   publicApiEnabled: boolean;
@@ -16,6 +18,7 @@ export type InstanceSettingKey = keyof InstanceSettingsValues;
 
 export const INSTANCE_SETTING_ENV: Record<InstanceSettingKey, string> = {
   socialEnabled: "SOCIAL_ENABLED",
+  chatEnabled: "CHAT_ENABLED",
   gamificationEnabled: "GAMIFICATION_ENABLED",
   registrationEnabled: "REGISTRATION_ENABLED",
   publicApiEnabled: "PUBLIC_API_ENABLED",
@@ -26,6 +29,7 @@ export const INSTANCE_SETTING_ENV: Record<InstanceSettingKey, string> = {
 /** What a fresh instance starts with — the same as the env defaults used to be. */
 export const DEFAULT_INSTANCE_SETTINGS: InstanceSettingsValues = {
   socialEnabled: false,
+  chatEnabled: false,
   gamificationEnabled: false,
   registrationEnabled: true,
   publicApiEnabled: true,

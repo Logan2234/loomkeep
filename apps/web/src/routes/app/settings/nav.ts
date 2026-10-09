@@ -255,6 +255,16 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
               "rank",
             ],
           },
+          {
+            id: "chat-presence",
+            label: m.settings_chat_presence(),
+            keywords: ["messages", "chat", "en ligne", "online", "presence"],
+          },
+          {
+            id: "chat-read-receipts",
+            label: m.settings_chat_read_receipts(),
+            keywords: ["messages", "chat", "vu", "lu", "read", "seen"],
+          },
         ],
       },
       {
@@ -725,6 +735,11 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
             id: "help-chat",
             label: m.settings_help_chat_title(),
             keywords: ["chat", "developer", "message", "contact"],
+          },
+          {
+            id: "feedback-widget",
+            label: m.settings_feedback_widget(),
+            keywords: ["avis", "feedback", "quackback", "bouton", "launcher"],
           },
           {
             id: "help-shortcuts",

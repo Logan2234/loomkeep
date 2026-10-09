@@ -226,6 +226,7 @@ enum ReportTargetType {
   REVIEW
   USER
   LIST
+  MESSAGE
 }
 
 // Top-level reason bucket for a report, chosen before a precise ReportMotif
@@ -330,6 +331,7 @@ enum ModerationMeasure {
   DISPLAY_NAME_CHANGED
   ACCOUNT_SUSPENDED
   ACCOUNT_DELETED
+  MESSAGE_REMOVED
 }
 
 // DSA art. 17(3)(d): whether the measure is grounded in the content's alleged
@@ -497,6 +499,14 @@ model User {
   // Same gating role as GHOST/anonymized for the streak badge, but a
   // standing user preference rather than a mode switch.
   hideProgression               Boolean            @default(false)
+  // Messages: whether friends see this account online (and typing), and when
+  // it read their messages. Reciprocal by design: switched off, the account
+  // no longer sees either from anyone else.
+  chatShowPresence              Boolean            @default(true)
+  chatShowReadReceipts          Boolean            @default(true)
+  // Shows the feedback (Quackback) launcher. An instance without
+  // PUBLIC_QUACKBACK_URL has no launcher at all, whatever this says.
+  feedbackWidget                Boolean            @default(true)
   // Up to 3 unlocked, non-secret achievement keys shown on the profile.
   // Equipping a key freezes that tier rather than following the highest tier;
   // an achievement's tiers are separate keys (cinephile_bronze vs
@@ -686,6 +696,9 @@ model User {
   comments                   Comment[]
   commentReactions           CommentReaction[]
   commentMentions            CommentMention[]
+  conversationMemberships    ConversationMember[]
+  messages                   Message[]
+  messageReactions           MessageReaction[]
   reportsFiled               Report[]               @relation("ReportsFiled")
   reportsResolved            Report[]               @relation("ReportsResolved")
   lists                      List[]
@@ -885,6 +898,101 @@ model CommentMention {
 
   @@id([commentId, start])
   @@index([userId])
+}
+
+// A private conversation between friends. Members live in their own table
+// rather than two columns, so group conversations need no reshaping later.
+model Conversation {
+  id            String   @id @default(cuid())
+  // Both member ids, sorted and joined by ":" — one conversation per pair of
+  // friends, found again rather than duplicated. Null for a future group.
+  pairKey       String?  @unique
+  createdAt     DateTime @default(now())
+  // The list of conversations is sorted by it.
+  lastMessageAt DateTime @default(now())
+
+  members  ConversationMember[]
+  messages Message[]
+}
+
+model ConversationMember {
+  conversationId String
+  userId         String
+  // Everything sent up to this instant is read: drives the unread count and
+  // the "Vu" the other member sees.
+  lastReadAt     DateTime  @default(now())
+  mutedAt        DateTime?
+  joinedAt       DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+// Never hard-deleted: a deletion is a tombstone, so a later quote-reply can
+// still point at what it answers.
+model Message {
+  id             String    @id @default(cuid())
+  conversationId String
+  // Null once the author's account is gone; its text is erased first (GDPR).
+  authorId       String?
+  // Restricted markdown (bold, italic, strike, code, ||spoiler||), rendered
+  // by the web. Null once deleted.
+  text           String?
+  // Sent with /spoiler: the whole message stays masked until revealed.
+  spoiler        Boolean   @default(false)
+  edited         Boolean   @default(false)
+  deletedAt      DateTime?
+  // Set only by a moderation takedown, which the tombstone then says.
+  deletedByAdmin Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  conversation Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       User?             @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  reactions    MessageReaction[]
+  embeds       MessageEmbed[]
+
+  @@index([conversationId, createdAt])
+  @@index([authorId])
+}
+
+model MessageReaction {
+  id        String       @id @default(cuid())
+  messageId String
+  userId    String
+  emote     CommentEmote
+  createdAt DateTime     @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+// A work, season or episode attached to a message (a recommendation card).
+// A work card in a message. The card is a snapshot of the work as it was sent:
+// the message reads the same later, and showing it costs no catalogue lookup.
+model MessageEmbed {
+  id         String           @id @default(cuid())
+  messageId  String
+  targetType ReviewTargetType
+  targetId   String
+  // MediaType for MEDIA, otherwise the target type itself.
+  kind       String
+  title      String
+  imageUrl   String?
+  href       String
+  year       Int?
+  // 0: the work attached by hand (/reco, "Recommander"); 1 and up: links found
+  // in the text, recomputed when the text is edited.
+  position   Int              @default(0)
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
 }
 
 // Social (P4): a user-submitted report against a polymorphic target — a
@@ -1220,6 +1328,8 @@ model RefreshToken {
 model InstanceSettings {
   id                  Int      @id @default(1)
   socialEnabled       Boolean  @default(false)
+  // Private messages between friends; only effective with socialEnabled.
+  chatEnabled         Boolean  @default(false)
   gamificationEnabled Boolean  @default(false)
   registrationEnabled Boolean  @default(true)
   publicApiEnabled    Boolean  @default(true)

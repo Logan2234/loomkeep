@@ -37,6 +37,7 @@ function makeService() {
     reviewVote: { findMany: vi.fn().mockResolvedValue([]) },
     comment: { findMany: vi.fn().mockResolvedValue([]) },
     commentReaction: { findMany: vi.fn().mockResolvedValue([]) },
+    conversationMember: { findMany: vi.fn().mockResolvedValue([]) },
     list: { findMany: vi.fn().mockResolvedValue([]) },
     listMember: { findMany: vi.fn().mockResolvedValue([]) },
     follow: { findMany: vi.fn().mockResolvedValue([]) },

@@ -25,6 +25,8 @@ interface PushPayload {
   url: string;
   /** Language of the server-generated text, when provided by the sender. */
   locale?: string;
+  /** Pushes sharing a tag replace each other, e.g. one per conversation. */
+  tag?: string;
 }
 
 // A "new episode" push from the API: show a notification carrying the deep link.
@@ -40,7 +42,7 @@ self.addEventListener("push", (event) => {
       data: { url: payload.url },
       dir: "auto",
       lang: payload.locale,
-      tag: "loomkeep",
+      tag: payload.tag ?? "loomkeep",
     }),
   );
 });

@@ -10,6 +10,7 @@ export * from "./dto/auth";
 export * from "./dto/book";
 export * from "./dto/bulk-entries";
 export * from "./dto/catalog";
+export * from "./dto/chat";
 export * from "./dto/comment";
 export * from "./dto/config";
 export * from "./dto/data-export";

@@ -35,6 +35,14 @@
   {:else if name === "user"}
     <circle cx="12" cy="8" r="4" />
     <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
+  {:else if name === "user-minus"}
+    <circle cx="10" cy="8" r="4" />
+    <path d="M2 20c0-4 4-6 8-6s8 2 8 6" />
+    <path d="M17 11h5" />
+  {:else if name === "smile"}
+    <circle cx="12" cy="12" r="9" />
+    <path d="M8.5 14.5a4.5 4.5 0 0 0 7 0" />
+    <path d="M9 9.5h.01M15 9.5h.01" stroke-width="2.6" />
   {:else if name === "users"}
     <circle cx="9" cy="8" r="3.2" />
     <path d="M3 19c0-3.3 2.7-5 6-5s6 1.7 6 5" />
@@ -255,6 +263,12 @@
   {:else if name === "resize"}
     <path d="M20 10v10H10" />
     <path d="M20 20 12 12" />
+  {:else if name === "maximize"}
+    <path d="M15 3h6v6M9 21H3v-6" />
+    <path d="m21 3-7 7M3 21l7-7" />
+  {:else if name === "minimize"}
+    <path d="M4 14h6v6M20 10h-6V4" />
+    <path d="m14 10 7-7M3 21l7-7" />
   {:else if name === "external"}
     <path d="M14 4h6v6" />
     <path d="M20 4 11 13" />

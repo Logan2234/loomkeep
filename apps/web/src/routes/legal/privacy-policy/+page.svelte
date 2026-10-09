@@ -130,6 +130,10 @@
       <li>blocages ;</li>
       <li>avis ;</li>
       <li>commentaires ;</li>
+      <li>
+        messages privés échangés avec des amis, leurs réactions et l'heure de
+        leur dernière lecture ;
+      </li>
       <li>réactions ;</li>
       <li>listes ;</li>
       <li>événements d'activité ;</li>
@@ -208,7 +212,7 @@
             ><td>Exécution du contrat</td></tr>
           <tr
             ><td>Fonctionnalités sociales</td><td
-              >profil, avis, commentaires, relations</td
+              >profil, avis, commentaires, messages privés, relations</td
             ><td>Exécution du contrat</td></tr>
           <tr
             ><td>Sécurité du service</td><td
@@ -269,6 +273,17 @@
       <li>certaines activités ;</li>
       <li>relations sociales.</li>
     </ul>
+    <p>
+      Les messages privés ne sont visibles que des deux membres de la
+      conversation. Selon les réglages de chacun, l'autre membre peut voir quand
+      l'utilisateur a l'application ouverte, quand il écrit et jusqu'où il a lu
+      ; ces indications sont réciproques et se désactivent depuis les paramètres
+      de confidentialité. Les messages sont conservés sans chiffrement de bout
+      en bout : l'hébergeur de l'instance peut techniquement y accéder. La
+      modération n'en prend connaissance que lorsqu'un des deux membres signale
+      un message, auquel cas elle voit ce message et les quelques messages qui
+      l'entourent.
+    </p>
     <p>
       Les données strictement nécessaires à la sécurité et à la gestion du
       compte, telles que le mot de passe ou les informations techniques
@@ -616,13 +631,15 @@
       service ou avec les obligations applicables. Concrètement : les critiques,
       les commentaires et les œuvres ajoutées aux listes d'autres membres
       restent visibles sans plus être rattachés au compte ; une liste modifiée à
-      plusieurs est transférée à son plus ancien éditeur ; les notifications
-      reçues par d'autres membres à propos du compte sont effacées ; les
-      décisions de modération le concernant sont conservées sans son identité,
-      au titre de l'obligation de transparence. Le détail des événements de
-      sécurité conservés (ancienne adresse e-mail, nom d'un appareil) et des
-      imports est effacé, de même que l'adresse e-mail des invitations reçues.
-      Toutes les sessions sont fermées immédiatement.
+      plusieurs est transférée à son plus ancien éditeur ; le texte des messages
+      privés envoyés par le compte est effacé, l'autre membre conservant ses
+      propres messages en lecture seule ; les notifications reçues par d'autres
+      membres à propos du compte sont effacées ; les décisions de modération le
+      concernant sont conservées sans son identité, au titre de l'obligation de
+      transparence. Le détail des événements de sécurité conservés (ancienne
+      adresse e-mail, nom d'un appareil) et des imports est effacé, de même que
+      l'adresse e-mail des invitations reçues. Toutes les sessions sont fermées
+      immédiatement.
     </p>
     <p>
       Le journal de sécurité et d'imports (créations de compte, changements

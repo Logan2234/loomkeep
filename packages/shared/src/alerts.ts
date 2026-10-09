@@ -94,6 +94,13 @@ export const ALERTS = {
     bell: "always",
     push: "off",
   },
+  // Never in the bell: the Messages launcher carries its own unread count.
+  // Pushed only while the recipient has the app open nowhere.
+  CHAT_MESSAGE: {
+    group: AlertGroup.ACTIVITY,
+    push: "on",
+    audience: "social",
+  },
   // Never pushed: a count going up is no reason to reach for someone's phone.
   COMMENT_REACTIONS: {
     group: AlertGroup.ACTIVITY,

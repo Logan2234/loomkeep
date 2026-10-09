@@ -9,6 +9,7 @@ import { DataExportBlockResponseDto } from "./data-export-block-response.dto";
 import { DataExportBookEntryResponseDto } from "./data-export-book-entry-response.dto";
 import { DataExportCommentReactionResponseDto } from "./data-export-comment-reaction-response.dto";
 import { DataExportCommentResponseDto } from "./data-export-comment-response.dto";
+import { DataExportConversationResponseDto } from "./data-export-conversation-response.dto";
 import { DataExportDeviceResponseDto } from "./data-export-device-response.dto";
 import { DataExportEntitlementResponseDto } from "./data-export-entitlement-response.dto";
 import { DataExportEntryResponseDto } from "./data-export-entry-response.dto";
@@ -109,6 +110,9 @@ export class UserDataExportResponseDto implements UserDataExportDto {
 
   /** Reactions to comments. */
   commentReactions!: DataExportCommentReactionResponseDto[];
+
+  /** Private conversations, with the messages sent and received in each. */
+  conversations!: DataExportConversationResponseDto[];
 
   /** Lists owned. */
   lists!: DataExportListResponseDto[];

@@ -50,6 +50,7 @@ export class DataExportService {
       reviewVoteRows,
       commentRows,
       commentReactionRows,
+      conversationRows,
       listRows,
       listMemberRows,
       followingRows,
@@ -137,6 +138,29 @@ export class DataExportService {
       this.prisma.commentReaction.findMany({
         where: { userId },
         orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.conversationMember.findMany({
+        where: { userId },
+        orderBy: { joinedAt: "asc" },
+        select: {
+          mutedAt: true,
+          conversation: {
+            select: {
+              members: {
+                select: { userId: true, user: { select: { username: true } } },
+              },
+              messages: {
+                orderBy: { createdAt: "asc" },
+                include: {
+                  embeds: {
+                    orderBy: { position: "asc" },
+                    select: { title: true, href: true },
+                  },
+                },
+              },
+            },
+          },
+        },
       }),
       this.prisma.list.findMany({
         where: { userId },
@@ -588,6 +612,21 @@ export class DataExportService {
         commentId: r.commentId,
         emote: r.emote,
         createdAt: r.createdAt.toISOString(),
+      })),
+      conversations: conversationRows.map((c) => ({
+        peerUsername:
+          c.conversation.members.find((m) => m.userId !== userId)?.user
+            .username ?? null,
+        muted: c.mutedAt !== null,
+        messages: c.conversation.messages.map((m) => ({
+          mine: m.authorId === userId,
+          text: m.text,
+          spoiler: m.spoiler,
+          edited: m.edited,
+          deletedAt: m.deletedAt?.toISOString() ?? null,
+          createdAt: m.createdAt.toISOString(),
+          works: m.embeds,
+        })),
       })),
       lists: listRows.map((l) => ({
         title: l.title,

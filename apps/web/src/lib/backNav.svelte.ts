@@ -22,3 +22,8 @@ export function goBack(event: MouseEvent) {
     history.back();
   }
 }
+
+/** Whether going back in history stays inside the app. */
+export function hasAppHistory(): boolean {
+  return hasInternalHistory;
+}

@@ -1,8 +1,10 @@
+import { m } from "#lib/paraglide/messages.js";
 import { describe, expect, it } from "vitest";
 import {
   BOOK_DIRECT_STATUS_TARGETS,
   GAME_DIRECT_STATUS_TARGETS,
   getStatusCorrections,
+  statusCorrectionLabel,
 } from "./status-corrections";
 
 const BOOK_STATUSES = ["TO_READ", "READING", "READ", "DROPPED"] as const;
@@ -54,5 +56,22 @@ describe("getStatusCorrections", () => {
       "PLAYING",
       "DROPPED",
     ]);
+  });
+});
+
+describe("statusCorrectionLabel", () => {
+  // A game in progress with sessions can't go back to the backlog: with no
+  // correction left, the menu used to offer an editor with nothing in it.
+  it("offers no correction when none is left", () => {
+    expect(statusCorrectionLabel([], "Remettre à jouer")).toBe(null);
+  });
+
+  it("names the only correction, or opens the editor for several", () => {
+    expect(statusCorrectionLabel(["BACKLOG"], "Remettre à jouer")).toBe(
+      "Remettre à jouer",
+    );
+    expect(statusCorrectionLabel(["BACKLOG", "COMPLETED"], "x")).toBe(
+      m.tracking_correct_status(),
+    );
   });
 });

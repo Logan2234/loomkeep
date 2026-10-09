@@ -449,6 +449,27 @@
                 {r.target.label}
               {/if}
             </p>
+            {#if r.target.context?.length}
+              <ol
+                class="border-border bg-surface-2/50 mt-2 space-y-1 rounded-lg border p-2.5 text-xs"
+                aria-label={m.admin_reports_message_context()}>
+                {#each r.target.context as line, i (i)}
+                  <li
+                    class="flex gap-2 {line.reported
+                      ? 'text-fg bg-danger/10 rounded px-1 font-semibold'
+                      : 'text-dim'}">
+                    <span class="shrink-0 font-mono">
+                      {formatDateTime(line.createdAt)}
+                    </span>
+                    <span class="shrink-0"
+                      >@{line.authorUsername ??
+                        m.admin_reports_deleted_user()}</span>
+                    <span class="min-w-0 break-words whitespace-pre-wrap"
+                      >{line.text ?? m.chat_message_deleted()}</span>
+                  </li>
+                {/each}
+              </ol>
+            {/if}
           {:else}
             <p class="text-dim mt-1.5 text-sm italic">
               {m.admin_reports_target_missing()}
@@ -469,7 +490,7 @@
 
           {#if r.status === "PENDING"}
             <div class="mt-2 flex flex-wrap gap-2">
-              {#if (r.targetType === "COMMENT" || r.targetType === "REVIEW") && r.target}
+              {#if (r.targetType === "COMMENT" || r.targetType === "REVIEW" || r.targetType === "MESSAGE") && r.target}
                 <button
                   class="btn btn-danger btn-sm"
                   disabled={rowBusy(r.id)}

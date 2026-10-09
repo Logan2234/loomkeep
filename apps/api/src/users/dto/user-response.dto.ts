@@ -176,6 +176,24 @@ export class UserResponseDto implements UserDto {
   hideProgression!: boolean;
 
   /**
+   * Friends see this account online and typing in Messages. Reciprocal.
+   * @example true
+   */
+  chatShowPresence!: boolean;
+
+  /**
+   * Friends see when this account read their messages. Reciprocal.
+   * @example true
+   */
+  chatShowReadReceipts!: boolean;
+
+  /**
+   * The feedback launcher is shown, on an instance that has one.
+   * @example true
+   */
+  feedbackWidget!: boolean;
+
+  /**
    * How spoilers are handled: AUTO (hidden until watched), ALWAYS_HIDDEN or
    * ALWAYS_REVEALED.
    * @example "AUTO"

@@ -9,6 +9,8 @@
     resolveBottomShortcuts,
   } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
+  import ChatTab from "#lib/components/chat/ChatTab.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import NotificationTab from "#lib/components/sidebars/NotificationTab.svelte";
 
   const items = $derived(
@@ -76,6 +78,11 @@
     {/if}
   {/each}
 
+  {#if appConfig.chatEnabled}
+    <ChatTab
+      slotClass="h-10 w-10"
+      rootClass="flex flex-1 flex-col items-center gap-0.5 text-[0.6rem]" />
+  {/if}
   <NotificationTab
     slotClass="h-10 w-10"
     rootClass="flex flex-1 flex-col items-center gap-0.5 text-[0.6rem]" />

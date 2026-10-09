@@ -2,6 +2,7 @@ import type { PublicConfigDto } from "@loomkeep/shared";
 
 export class PublicConfigResponseDto implements PublicConfigDto {
   socialEnabled!: boolean;
+  chatEnabled!: boolean;
   gamificationEnabled!: boolean;
   registrationEnabled!: boolean;
   publicApiEnabled!: boolean;

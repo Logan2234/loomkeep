@@ -9,6 +9,10 @@ export class UpdateInstanceSettingsRequestDto implements UpdateInstanceSettingsD
 
   @IsOptional()
   @IsBoolean()
+  chatEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   gamificationEnabled?: boolean;
 
   @IsOptional()

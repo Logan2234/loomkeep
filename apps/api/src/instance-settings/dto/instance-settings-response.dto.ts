@@ -6,6 +6,7 @@ import type {
 
 class InstanceSettingsValuesResponseDto implements InstanceSettingsValues {
   socialEnabled!: boolean;
+  chatEnabled!: boolean;
   gamificationEnabled!: boolean;
   registrationEnabled!: boolean;
   publicApiEnabled!: boolean;
@@ -17,6 +18,7 @@ class InstanceSettingsLocksResponseDto implements Partial<
   Record<InstanceSettingKey, string>
 > {
   socialEnabled?: string;
+  chatEnabled?: string;
   gamificationEnabled?: string;
   registrationEnabled?: string;
   publicApiEnabled?: string;

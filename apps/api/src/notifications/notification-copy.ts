@@ -27,6 +27,8 @@ const COPY = {
       requested: "souhaite vous suivre",
       accepted: "a accepté votre demande",
     },
+    /** The push for a new message: its content stays off the lock screen. */
+    chatMessage: "t'a envoyé un message",
     commentReactions: {
       title: "Ton commentaire fait réagir",
       body: (count: number) => `${count} réactions`,
@@ -39,6 +41,7 @@ const COPY = {
         : `a ajouté un élément à « ${listTitle} »`,
     moderation: {
       commentRemoved: "Un de tes commentaires a été retiré",
+      messageRemoved: "Un de tes messages a été retiré",
       reviewRemoved: "Une de tes critiques a été retirée",
       listRemoved: "Une de tes listes a été supprimée",
       listEdited: "Une de tes listes a été modifiée",
@@ -147,6 +150,7 @@ const COPY = {
       requested: "wants to follow you",
       accepted: "accepted your request",
     },
+    chatMessage: "sent you a message",
     commentReactions: {
       title: "Your comment is getting reactions",
       body: (count: number) => `${count} reactions`,
@@ -159,6 +163,7 @@ const COPY = {
         : `added an item to “${listTitle}”`,
     moderation: {
       commentRemoved: "One of your comments was removed",
+      messageRemoved: "One of your messages was removed",
       reviewRemoved: "One of your reviews was removed",
       listRemoved: "One of your lists was deleted",
       listEdited: "One of your lists was edited",
@@ -267,6 +272,7 @@ const COPY = {
       requested: "vuole seguirti",
       accepted: "ha accettato la tua richiesta",
     },
+    chatMessage: "ti ha inviato un messaggio",
     commentReactions: {
       title: "Il tuo commento sta ricevendo reazioni",
       body: (count: number) => `${count} reazioni`,
@@ -279,6 +285,7 @@ const COPY = {
         : `ha aggiunto un elemento a “${listTitle}”`,
     moderation: {
       commentRemoved: "Uno dei tuoi commenti è stato rimosso",
+      messageRemoved: "Uno dei tuoi messaggi è stato rimosso",
       reviewRemoved: "Una delle tue recensioni è stata rimossa",
       listRemoved: "Una delle tue liste è stata eliminata",
       listEdited: "Una delle tue liste è stata modificata",
@@ -387,11 +394,13 @@ export interface NotificationCopy {
   adminBroadcastPush: string;
   reportResolution: { title: string; resolved: string; dismissed: string };
   follow: { followed: string; requested: string; accepted: string };
+  chatMessage: string;
   commentReactions: { title: string; body: (count: number) => string };
   listEditorAdded: (listTitle: string) => string;
   listItemAdded: (itemTitle: string | null, listTitle: string) => string;
   moderation: {
     commentRemoved: string;
+    messageRemoved: string;
     reviewRemoved: string;
     listRemoved: string;
     listEdited: string;

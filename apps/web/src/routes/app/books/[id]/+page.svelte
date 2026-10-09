@@ -32,6 +32,9 @@
   import ReviewsSection from "#lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "#lib/components/TrackingPanel.svelte";
+  import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
+  import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
+  import { bookWork } from "#lib/chat/work-search.js";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import {
@@ -51,6 +54,7 @@
   import {
     BOOK_DIRECT_STATUS_TARGETS,
     getStatusCorrections,
+    statusCorrectionLabel,
   } from "#lib/status-corrections.js";
 
   // Open Library is the only book source today; the web route carries just
@@ -80,6 +84,9 @@
     enabled: !!id,
   }));
   const detail = $derived(bookQuery.data);
+  // 18+ titles never become a card: the friend may not allow them.
+  const work = $derived(detail ? bookWork(detail) : null);
+  let sharing = $state(false);
   const error = $derived(bookQuery.error);
 
   // The interface-language auto-pick's own language, captured once and kept
@@ -182,6 +189,10 @@
             ),
         )
       : [],
+  );
+
+  const correctionLabel = $derived(
+    statusCorrectionLabel(statusCorrections, m.book_status_reset_to_read()),
   );
 
   function openStatusCorrection() {
@@ -353,7 +364,7 @@
         {/if}
 
         {#if !entry}
-          <div class="mt-6">
+          <div class="mt-6 flex items-center gap-2.5">
             <button
               class="btn btn-primary"
               disabled={saving}
@@ -361,9 +372,11 @@
               <Icon name="plus" class="h-4 w-4" />
               {m.library_add()}
             </button>
+            <WorkMoreMenu onshare={() => (sharing = true)} />
           </div>
         {:else}
           <TrackingPanel
+            onShare={() => (sharing = true)}
             favorite={entry.favorite}
             {saving}
             onToggleFavorite={() =>
@@ -393,15 +406,16 @@
                     },
                   ]
                 : []),
-              {
-                label:
-                  statusCorrections.length === 1
-                    ? m.book_status_reset_to_read()
-                    : m.tracking_correct_status(),
-                icon: "edit" as const,
-                separator: true,
-                onSelect: openStatusCorrection,
-              },
+              ...(correctionLabel
+                ? [
+                    {
+                      label: correctionLabel,
+                      icon: "edit" as const,
+                      separator: true,
+                      onSelect: openStatusCorrection,
+                    },
+                  ]
+                : []),
             ]}
             targetType="BOOK"
             targetId={entry.book.id}>
@@ -581,6 +595,13 @@
       {/if}
     </div>
   </div>
+
+  {#if sharing && work}
+    <ShareWorkModal
+      {work}
+      sendable={!detail?.isAdult}
+      onclose={() => (sharing = false)} />
+  {/if}
 
   {#if confirmRemove}
     <ConfirmationModal

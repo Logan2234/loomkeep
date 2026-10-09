@@ -39,10 +39,11 @@ create a **shareable link** to send yourself.
 
 ## Moderation
 
-When social features are on, members can report comments, reviews, lists
-and profiles. Reports land in **Admin › Reports**, where you can:
+When social features are on, members can report comments, reviews, lists,
+messages they received and profiles. Reports land in **Admin › Reports**, where you can:
 
-- remove a comment or a review;
+- remove a comment, a review or a message (a reported message comes with
+  the few around it in its conversation: you have no other way into it);
 - delete a reported list, or open it, edit it like its owner would (title,
   description, works, visibility), then record the change;
 - on a profile, remove the picture, clear the bio, change the display name

@@ -7,6 +7,7 @@ import {
   reportMotifsFor,
   type PagedResult,
   type ReportCategory,
+  type ReportContextMessageDto,
   type ReportDto,
   type ReportMotif,
   type ReportProfilePart,
@@ -36,6 +37,10 @@ import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 
 const EXCERPT_LENGTH = 120;
+
+/** How many messages around a reported one the moderation queue shows. */
+const MESSAGE_CONTEXT_BEFORE = 5;
+const MESSAGE_CONTEXT_AFTER = 2;
 
 type ReportRow = {
   id: string;
@@ -203,6 +208,22 @@ export class ReportService {
       return comment.authorId ? [comment.authorId] : [];
     }
 
+    if (targetType === "MESSAGE") {
+      const message = await this.prisma.message.findUnique({
+        where: { id: targetId },
+        select: { authorId: true, deletedAt: true },
+      });
+
+      if (!message || message.deletedAt) {
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.ChatMessageNotFound,
+        );
+      }
+
+      return message.authorId ? [message.authorId] : [];
+    }
+
     if (targetType === "REVIEW") {
       const review = await this.prisma.review.findUnique({
         where: { id: targetId },
@@ -359,21 +380,29 @@ export class ReportService {
    * shortcut, not the moderation queue itself.
    */
   async listAgainstUser(userId: string): Promise<ReportDto[]> {
-    const [authoredCommentIds, authoredReviewIds, ownedListIds] =
-      await Promise.all([
-        this.prisma.comment.findMany({
-          where: { authorId: userId },
-          select: { id: true },
-        }),
-        this.prisma.review.findMany({
-          where: { userId },
-          select: { id: true },
-        }),
-        this.prisma.list.findMany({
-          where: { userId },
-          select: { id: true },
-        }),
-      ]);
+    const [
+      authoredCommentIds,
+      authoredReviewIds,
+      ownedListIds,
+      authoredMessageIds,
+    ] = await Promise.all([
+      this.prisma.comment.findMany({
+        where: { authorId: userId },
+        select: { id: true },
+      }),
+      this.prisma.review.findMany({
+        where: { userId },
+        select: { id: true },
+      }),
+      this.prisma.list.findMany({
+        where: { userId },
+        select: { id: true },
+      }),
+      this.prisma.message.findMany({
+        where: { authorId: userId },
+        select: { id: true },
+      }),
+    ]);
 
     const rows = await this.prisma.report.findMany({
       where: {
@@ -390,6 +419,10 @@ export class ReportService {
           {
             targetType: "LIST",
             targetId: { in: ownedListIds.map((l) => l.id) },
+          },
+          {
+            targetType: "MESSAGE",
+            targetId: { in: authoredMessageIds.map((m) => m.id) },
           },
         ],
       },
@@ -426,6 +459,51 @@ export class ReportService {
         ),
       })),
     );
+  }
+
+  /** The reported message with a few before and after it, oldest first. */
+  private async messageContext(
+    messageId: string,
+  ): Promise<ReportContextMessageDto[]> {
+    const target = await this.prisma.message.findUnique({
+      where: { id: messageId },
+      select: { conversationId: true, createdAt: true },
+    });
+    if (!target) return [];
+
+    const select = {
+      id: true,
+      text: true,
+      createdAt: true,
+      author: { select: { username: true } },
+    } as const;
+    const [before, after] = await Promise.all([
+      this.prisma.message.findMany({
+        where: {
+          conversationId: target.conversationId,
+          createdAt: { lte: target.createdAt },
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: MESSAGE_CONTEXT_BEFORE + 1,
+        select,
+      }),
+      this.prisma.message.findMany({
+        where: {
+          conversationId: target.conversationId,
+          createdAt: { gt: target.createdAt },
+        },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: MESSAGE_CONTEXT_AFTER,
+        select,
+      }),
+    ]);
+
+    return [...before.reverse(), ...after].map((m) => ({
+      authorUsername: m.author?.username ?? null,
+      text: m.text,
+      createdAt: m.createdAt.toISOString(),
+      reported: m.id === messageId,
+    }));
   }
 
   /** Every reported review of a page in one query, keyed by id. */
@@ -500,6 +578,27 @@ export class ReportService {
           comment.targetId,
         ),
         targetOwnerUsername: comment.author?.username ?? null,
+      };
+    }
+
+    if (targetType === "MESSAGE") {
+      const message = await this.prisma.message.findUnique({
+        where: { id: targetId },
+        select: {
+          text: true,
+          deletedAt: true,
+          author: { select: { username: true } },
+        },
+      });
+      if (!message) return null;
+      return {
+        label: message.deletedAt
+          ? "(message supprimé)"
+          : (message.text ?? "").slice(0, EXCERPT_LENGTH),
+        // A private conversation has no page a moderator could open.
+        href: null,
+        targetOwnerUsername: message.author?.username ?? null,
+        context: await this.messageContext(targetId),
       };
     }
 

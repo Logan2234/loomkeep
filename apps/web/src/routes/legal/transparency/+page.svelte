@@ -15,6 +15,7 @@
 
   const MEASURE_LABELS: Record<ModerationMeasure, string> = {
     COMMENT_REMOVED: m.transparency_measure_comment(),
+    MESSAGE_REMOVED: m.transparency_measure_message(),
     REVIEW_REMOVED: m.transparency_measure_review(),
     LIST_REMOVED: m.transparency_measure_list_removed(),
     LIST_EDITED: m.transparency_measure_list_edited(),

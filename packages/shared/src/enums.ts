@@ -550,6 +550,7 @@ export const ReportTargetType = {
   REVIEW: "REVIEW",
   USER: "USER",
   LIST: "LIST",
+  MESSAGE: "MESSAGE",
 } as const;
 export type ReportTargetType =
   (typeof ReportTargetType)[keyof typeof ReportTargetType];
@@ -569,6 +570,7 @@ export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus];
  */
 export const ModerationMeasure = {
   COMMENT_REMOVED: "COMMENT_REMOVED",
+  MESSAGE_REMOVED: "MESSAGE_REMOVED",
   REVIEW_REMOVED: "REVIEW_REMOVED",
   LIST_REMOVED: "LIST_REMOVED",
   LIST_EDITED: "LIST_EDITED",

@@ -539,5 +539,15 @@
   "settings_delete_account_removed_content_copies": "Copies des commentaires retirés par la modération",
   "settings_delete_account_group_library": "Bibliothèque et suivi",
   "settings_delete_account_group_social": "Listes et social",
-  "settings_delete_account_group_account": "Compte et sécurité"
+  "settings_delete_account_group_account": "Compte et sécurité",
+  "settings_chat_title": "Messages",
+  "settings_chat_description": "Ce que tes amis voient de toi quand tu leur écris.",
+  "settings_chat_presence": "Montrer quand je suis en ligne",
+  "settings_chat_presence_desc": "Tes amis voient aussi quand tu écris. Réciproque : désactivé, tu ne vois plus non plus leur présence.",
+  "settings_chat_read_receipts": "Montrer quand j'ai lu un message",
+  "settings_chat_read_receipts_desc": "Réciproque : désactivé, tu ne vois plus non plus les « Vu » de tes amis.",
+  "settings_feedback_widget": "Bouton « Donner un avis »",
+  "settings_feedback_widget_desc": "Le bouton en bas à droite qui ouvre le tableau des retours. Masqué, il reste accessible depuis cette page.",
+  "settings_alert_chat_message": "Un message d'un ami",
+  "settings_alert_chat_message_hint": "Seulement quand l'app n'est ouverte nulle part, sans le texte du message."
 }

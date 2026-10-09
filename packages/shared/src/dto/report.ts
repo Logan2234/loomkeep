@@ -26,6 +26,22 @@ export interface ReportTargetSummaryDto {
   href: string | null;
   /** Username of whoever owns the target (comment or review author, reported user, list owner). */
   targetOwnerUsername: string | null;
+  /**
+   * MESSAGE reports only: the reported message among the few around it in
+   * its conversation — moderators have no other way into a private
+   * conversation, and its reporter, a member of it, hands them this much.
+   */
+  context?: ReportContextMessageDto[];
+}
+
+export interface ReportContextMessageDto {
+  /** Null once the author's account is deleted. */
+  authorUsername: string | null;
+  /** Null once deleted. */
+  text: string | null;
+  createdAt: string;
+  /** The message the report is about. */
+  reported: boolean;
 }
 
 export interface ReportDto {

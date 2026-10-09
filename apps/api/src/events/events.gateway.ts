@@ -1,4 +1,8 @@
-import { RealtimeEvent } from "@loomkeep/shared";
+import {
+  type ChatPresenceEvent,
+  type ChatTypingEvent,
+  RealtimeEvent,
+} from "@loomkeep/shared";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
@@ -22,6 +26,7 @@ import {
 } from "../auth/jwt.constants";
 import { SessionCacheService } from "../auth/session-cache.service";
 import { isSessionLive } from "../auth/session-live.util";
+import { isChatEnabled } from "../chat/chat.config";
 import { webOrigins } from "../common/web-origin.util";
 import {
   MetricsService,
@@ -177,6 +182,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
       if (user?.role === "ADMIN") await client.join(ADMIN_REPORTS_ROOM);
 
+      this.announcePresence(payload.sub, true);
+
       const msUntilExpiry = payload.exp * 1000 - Date.now();
       this.expiryTimers.set(
         client.id,
@@ -193,6 +200,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket): void {
+    const userId = client.data.userId as string | undefined;
+    if (userId) this.announcePresence(userId, false);
+
     const timer = this.expiryTimers.get(client.id);
 
     if (timer) {
@@ -261,6 +271,87 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() listId: string,
   ): Promise<void> {
     await client.leave(listRoom(listId));
+  }
+
+  /**
+   * Relayed to the other member of the conversation, never stored. Only
+   * while both show their presence: typing reveals as much as being online.
+   */
+  @SubscribeMessage("chat-typing")
+  async handleChatTyping(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() { conversationId }: { conversationId: string },
+  ): Promise<void> {
+    const userId = client.data.userId as string | undefined;
+    if (!userId || !isChatEnabled(this.config)) return;
+
+    const members = await this.prisma.conversationMember.findMany({
+      where: { conversationId },
+      select: { userId: true, user: { select: { chatShowPresence: true } } },
+    });
+    const self = members.find((m) => m.userId === userId);
+    const peer = members.find((m) => m.userId !== userId);
+    if (!self?.user.chatShowPresence || !peer?.user.chatShowPresence) return;
+    if (await this.blockedEitherWay(userId, peer.userId)) return;
+
+    const event: ChatTypingEvent = { conversationId, userId };
+    this.emitToUser(peer.userId, RealtimeEvent.CHAT_TYPING, event);
+  }
+
+  /**
+   * Only the first device to connect, and the last to leave, change what
+   * friends see. Never awaited: presence must not hold up, or fail, a
+   * connection.
+   */
+  private announcePresence(userId: string, online: boolean): void {
+    void (async () => {
+      const sockets = await this.server.in(userRoom(userId)).fetchSockets();
+      if (online ? sockets.length !== 1 : sockets.length > 0) return;
+      await this.publishPresence(userId, online);
+    })().catch((err: unknown) =>
+      this.logger.warn("Presence could not be published", err),
+    );
+  }
+
+  /** Tells the people the user has a conversation with, when both show their presence. */
+  private async publishPresence(
+    userId: string,
+    online: boolean,
+  ): Promise<void> {
+    if (!isChatEnabled(this.config)) return;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { chatShowPresence: true },
+    });
+    if (!user?.chatShowPresence) return;
+
+    const peers = await this.prisma.conversationMember.findMany({
+      where: {
+        userId: { not: userId },
+        user: { chatShowPresence: true },
+        conversation: { members: { some: { userId } } },
+      },
+      select: { userId: true },
+    });
+    const event: ChatPresenceEvent = { userId, online };
+
+    for (const peer of peers) {
+      if (await this.blockedEitherWay(userId, peer.userId)) continue;
+      this.emitToUser(peer.userId, RealtimeEvent.CHAT_PRESENCE, event);
+    }
+  }
+
+  private async blockedEitherWay(a: string, b: string): Promise<boolean> {
+    const blocks = await this.prisma.block.count({
+      where: {
+        OR: [
+          { blockerId: a, blockedId: b },
+          { blockerId: b, blockedId: a },
+        ],
+      },
+    });
+    return blocks > 0;
   }
 
   private async canAccessList(

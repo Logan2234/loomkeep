@@ -136,6 +136,7 @@ export const REPORT_TARGET_LABELS: Record<ReportTargetType, string> = {
   REVIEW: m.report_target_review(),
   USER: m.report_target_user(),
   LIST: m.report_target_list(),
+  MESSAGE: m.report_target_message(),
 };
 
 export const MODERATION_LEGAL_BASIS_LABELS: Record<

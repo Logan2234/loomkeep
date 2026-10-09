@@ -6,6 +6,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Public } from "../auth/decorators/public.decorator";
 import { isRegistrationEnabled } from "../auth/registration.config";
+import { isChatEnabled } from "../chat/chat.config";
 import { DEFAULT_SUPPORT_ADDRESS } from "../common/instance-defaults";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { instanceSetting } from "../instance-settings/instance-settings.store";
@@ -26,6 +27,7 @@ export class PublicConfigController {
 
     return {
       socialEnabled: isSocialEnabled(this.config),
+      chatEnabled: isChatEnabled(this.config),
       gamificationEnabled: isGamificationEnabled(this.config),
       registrationEnabled: isRegistrationEnabled(this.config),
       publicApiEnabled: instanceSetting(this.config, "publicApiEnabled"),

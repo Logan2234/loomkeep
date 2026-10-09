@@ -149,6 +149,19 @@ export const keys = {
     // query, whose cached shape differs.
     home: (domains: string) => ["feed", "home", domains] as const,
   },
+  chat: {
+    all: () => ["chat"] as const,
+    unread: () => ["chat", "unread"] as const,
+    conversations: () => ["chat", "conversations"] as const,
+    conversation: (id: string) => ["chat", "conversation", id] as const,
+    messages: (id: string) => ["chat", "messages", id] as const,
+    friends: (query: string) => ["chat", "friends", query] as const,
+    // Outside ["chat"]: a reconnection refetches what's under it, and this
+    // one is catalogue searches.
+    workSearch: (query: string) => ["chat-work-search", query] as const,
+    linkPreviews: (urls: string[]) => ["chat-link-previews", ...urls] as const,
+    linkPreview: (url: string) => ["chat-link-preview", url] as const,
+  },
   notifications: {
     feed: () => ["notifications", "feed"] as const,
     pushDevices: () => ["notifications", "push-devices"] as const,

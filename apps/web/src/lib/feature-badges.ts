@@ -6,6 +6,8 @@ const SHIPPED = {
   "book-sagas": "2026-10-04",
   "game-sagas": "2026-10-04",
   "xp-history": "2026-10-05",
+  messages: "2026-10-07",
+  "share-work": "2026-10-09",
   sagas: "2026-10-03",
   "library-sagas": "2026-10-04",
   "notification-digest": "2026-08-25",
