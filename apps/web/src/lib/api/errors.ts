@@ -165,6 +165,7 @@ const MESSAGES = {
   [ErrorCode.ChatMessageNotFound]: () => m.apierr_chat_message_not_found(),
   [ErrorCode.ChatForbidden]: () => m.apierr_chat_forbidden(),
   [ErrorCode.ChatReadOnly]: () => m.apierr_chat_read_only(),
+  [ErrorCode.ChatWorkNotFound]: () => m.apierr_chat_work_not_found(),
   [ErrorCode.ListInvalidMembershipTarget]: () =>
     m.apierr_lists_invalid_membership_target(),
   [ErrorCode.ListNotFound]: () => m.apierr_lists_not_found(),

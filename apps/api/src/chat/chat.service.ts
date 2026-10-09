@@ -9,6 +9,7 @@ import {
   ErrorCode,
   FollowStatus,
   type MessageDto,
+  type MessageWorkKind,
   type PagedResult,
   ProfileAccess,
   RealtimeEvent,
@@ -26,6 +27,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { BlockService } from "../social/block.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 import { isSuspended } from "../users/suspension.util";
+import type { WorkCard } from "./chat-work.service";
 
 export const CONVERSATION_PAGE_SIZE = 50;
 export const MESSAGE_PAGE_SIZE = 40;
@@ -42,13 +44,17 @@ const PEER_SELECT = {
 
 type Peer = Prisma.UserGetPayload<{ select: typeof PEER_SELECT }>;
 
-type MessageRow = Prisma.MessageGetPayload<{
-  include: { reactions: { select: { userId: true; emote: true } } };
-}>;
-
 const MESSAGE_INCLUDE = {
   reactions: { select: { userId: true, emote: true } },
-} as const;
+  embeds: {
+    orderBy: { position: "asc" },
+    select: { kind: true, title: true, imageUrl: true, href: true, year: true },
+  },
+} as const satisfies Prisma.MessageInclude;
+
+type MessageRow = Prisma.MessageGetPayload<{
+  include: typeof MESSAGE_INCLUDE;
+}>;
 
 type Viewer = {
   id: string;
@@ -215,11 +221,13 @@ export class ChatService {
     return { items: items.map((row) => toMessageDto(row, viewerId)), hasMore };
   }
 
+  /** `work`: the card attached by hand, which lets `text` be empty. */
   async send(
     authorId: string,
     conversationId: string,
-    text: string,
+    text: string | null,
     spoiler = false,
+    work: WorkCard | null = null,
   ): Promise<MessageDto> {
     const membership = await this.membership(authorId, conversationId);
     const peer = peerOf(membership, authorId);
@@ -228,7 +236,14 @@ export class ChatService {
     const now = new Date();
     const [row] = await this.prisma.$transaction([
       this.prisma.message.create({
-        data: { conversationId, authorId, text, spoiler, createdAt: now },
+        data: {
+          conversationId,
+          authorId,
+          text,
+          spoiler,
+          createdAt: now,
+          embeds: work ? { create: { ...work, position: 0 } } : undefined,
+        },
         include: MESSAGE_INCLUDE,
       }),
       this.prisma.conversation.update({
@@ -263,6 +278,59 @@ export class ChatService {
     });
     this.publish(membership, row);
     return toMessageDto(row, authorId);
+  }
+
+  /**
+   * "Recommander": the work goes to each friend as a message of its own, in
+   * their conversation together. Every recipient is checked before anything
+   * is sent, so a refusal sends nothing.
+   */
+  async recommend(
+    authorId: string,
+    usernames: string[],
+    text: string | null,
+    work: WorkCard,
+  ): Promise<number> {
+    const conversations: ConversationDto[] = [];
+
+    for (const username of usernames) {
+      conversations.push(await this.open(authorId, username));
+    }
+
+    for (const conversation of conversations) {
+      await this.send(authorId, conversation.id, text, false, work);
+    }
+
+    return conversations.length;
+  }
+
+  /** The cards found in a message's links, replacing the previous ones. */
+  async replaceLinkedWorks(
+    messageId: string,
+    cards: WorkCard[],
+  ): Promise<void> {
+    const message = await this.prisma.message.findUnique({
+      where: { id: messageId },
+      select: { conversationId: true, deletedAt: true },
+    });
+    if (!message || message.deletedAt) return;
+
+    const [removed] = await this.prisma.$transaction([
+      this.prisma.messageEmbed.deleteMany({
+        where: { messageId, position: { gt: 0 } },
+      }),
+      this.prisma.messageEmbed.createMany({
+        data: cards.map((card, index) => ({
+          ...card,
+          messageId,
+          position: index + 1,
+        })),
+      }),
+    ]);
+
+    if (removed.count > 0 || cards.length > 0) {
+      await this.publishToMembers(message.conversationId, messageId);
+    }
   }
 
   /** Leaves a tombstone, so whatever answers it keeps something to point at. */
@@ -380,6 +448,13 @@ export class ChatService {
 
   /** After the takedown's transaction committed: both members see the tombstone. */
   async publishAdminRemoval(
+    conversationId: string,
+    messageId: string,
+  ): Promise<void> {
+    await this.publishToMembers(conversationId, messageId);
+  }
+
+  private async publishToMembers(
     conversationId: string,
     messageId: string,
   ): Promise<void> {
@@ -760,6 +835,12 @@ function toMessageDto(row: MessageRow, viewerId: string): MessageDto {
     deletedByAdmin: row.deletedByAdmin,
     reactions,
     myReaction,
+    works: row.deletedAt
+      ? []
+      : row.embeds.map((embed) => ({
+          ...embed,
+          kind: embed.kind as MessageWorkKind,
+        })),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

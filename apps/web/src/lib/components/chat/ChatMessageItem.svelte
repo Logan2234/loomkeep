@@ -19,6 +19,7 @@
   } from "@loomkeep/shared";
   import { fade } from "svelte/transition";
   import ChatMessageText from "./ChatMessageText.svelte";
+  import ChatWorkCard from "./ChatWorkCard.svelte";
 
   let {
     message,
@@ -242,15 +243,23 @@
           {m.chat_spoiler_reveal()}
         </button>
       {:else}
-        <p
+        <div
           in:fade={{ duration: reduced ? 0 : 150 }}
-          class="rounded-2xl px-3 py-2 text-sm leading-relaxed transition-shadow duration-150
+          class="flex flex-col gap-1.5 rounded-2xl text-sm leading-relaxed transition-shadow duration-150
+            {message.text ? 'px-3 py-2' : 'p-1.5'}
             {message.mine
             ? 'bg-accent/20 text-fg rounded-br-md'
             : 'bg-surface-2 rounded-bl-md'}
             {sheetOpen ? 'ring-accent ring-2' : ''}">
-          <ChatMessageText text={message.text ?? ""} />
-        </p>
+          {#if message.text}
+            <p><ChatMessageText text={message.text} /></p>
+          {/if}
+          {#each message.works as work (work.href)}
+            <div in:fade={{ duration: reduced ? 0 : 150 }}>
+              <ChatWorkCard {work} />
+            </div>
+          {/each}
+        </div>
       {/if}
     </div>
 

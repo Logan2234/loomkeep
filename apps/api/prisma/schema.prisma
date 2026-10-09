@@ -973,11 +973,21 @@ model MessageReaction {
 }
 
 // A work, season or episode attached to a message (a recommendation card).
+// A work card in a message. The card is a snapshot of the work as it was sent:
+// the message reads the same later, and showing it costs no catalogue lookup.
 model MessageEmbed {
   id         String           @id @default(cuid())
   messageId  String
   targetType ReviewTargetType
   targetId   String
+  // MediaType for MEDIA, otherwise the target type itself.
+  kind       String
+  title      String
+  imageUrl   String?
+  href       String
+  year       Int?
+  // 0: the work attached by hand (/reco, "Recommander"); 1 and up: links found
+  // in the text, recomputed when the text is edited.
   position   Int              @default(0)
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)

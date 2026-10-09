@@ -220,6 +220,12 @@ export interface DataExportCommentReaction {
   createdAt: string;
 }
 
+/** A work card a message carried. */
+export interface DataExportMessageWork {
+  title: string;
+  href: string;
+}
+
 export interface DataExportMessage {
   mine: boolean;
   text: string | null;
@@ -227,6 +233,7 @@ export interface DataExportMessage {
   edited: boolean;
   deletedAt: string | null;
   createdAt: string;
+  works: DataExportMessageWork[];
 }
 
 /** A private conversation, with what both members wrote in it. */

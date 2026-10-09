@@ -30,6 +30,9 @@
   import ReviewsSection from "#lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "#lib/components/TrackingPanel.svelte";
+  import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
+  import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
+  import { gameWork } from "#lib/chat/work-search.js";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { IGDB_API } from "#lib/constants/external-links.js";
@@ -55,6 +58,7 @@
   import {
     GAME_DIRECT_STATUS_TARGETS,
     getStatusCorrections,
+    statusCorrectionLabel,
   } from "#lib/status-corrections.js";
   import type { GameEntryDto } from "@loomkeep/shared";
   import { slide } from "svelte/transition";
@@ -95,6 +99,9 @@
     if (gameQuery.data) adultBlocked = false;
   });
   const detail = $derived(gameQuery.data);
+  // 18+ titles never become a card: the friend may not allow them.
+  const work = $derived(detail ? gameWork(detail) : null);
+  let sharing = $state(false);
   const error = $derived(
     adultBlocked ? m.game_adult_restricted() : gameQuery.error,
   );
@@ -205,6 +212,10 @@
             ),
         )
       : [],
+  );
+
+  const correctionLabel = $derived(
+    statusCorrectionLabel(statusCorrections, m.game_status_reset_backlog()),
   );
 
   function openStatusCorrection() {
@@ -406,7 +417,7 @@
         {/if}
 
         {#if !entry}
-          <div class="mt-6">
+          <div class="mt-6 flex items-center gap-2.5">
             <button
               class="btn btn-primary"
               disabled={saving}
@@ -414,9 +425,11 @@
               <Icon name="plus" class="h-4 w-4" />
               {m.library_add()}
             </button>
+            <WorkMoreMenu onshare={() => (sharing = true)} />
           </div>
         {:else}
           <TrackingPanel
+            onShare={() => (sharing = true)}
             favorite={entry.favorite}
             {saving}
             onToggleFavorite={() =>
@@ -451,15 +464,16 @@
                         },
                       ]
                     : []),
-                  {
-                    label:
-                      statusCorrections.length === 1
-                        ? m.game_status_reset_backlog()
-                        : m.tracking_correct_status(),
-                    icon: "edit" as const,
-                    separator: true,
-                    onSelect: openStatusCorrection,
-                  },
+                  ...(correctionLabel
+                    ? [
+                        {
+                          label: correctionLabel,
+                          icon: "edit" as const,
+                          separator: true,
+                          onSelect: openStatusCorrection,
+                        },
+                      ]
+                    : []),
                 ]}
             targetType="GAME"
             targetId={entry.game.id}>
@@ -688,6 +702,13 @@
       {/if}
     </div>
   </div>
+
+  {#if sharing && work}
+    <ShareWorkModal
+      {work}
+      sendable={!detail?.isAdult}
+      onclose={() => (sharing = false)} />
+  {/if}
 
   {#if confirmRemove}
     <ConfirmationModal

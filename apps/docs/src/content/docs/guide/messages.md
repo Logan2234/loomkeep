@@ -1,6 +1,6 @@
 ---
 title: Messages
-description: Writing to your friends in Loomkeep — who you can write to, formatting, spoilers, and what the other side sees.
+description: Writing to your friends in Loomkeep — who you can write to, formatting, spoilers, sharing a work, and what the other side sees.
 ---
 
 When the instance has social features and messages turned on, you can write
@@ -57,9 +57,31 @@ site behind it until you open it.
 Typing **/** at the start of a message opens the commands. **/spoiler** hides
 the whole message behind a "tap to see" until your friend chooses to read it.
 
-Your own messages can be edited (they then say "edited") or deleted (a
-"Message deleted" stays in their place). Anyone in the conversation can react
-to a message, one reaction each.
+Hover a message for its 😊 (react, one reaction each) and **⋯** (edit, copy
+the text, delete, report); on a phone, press and hold it. An edited message
+says "edited"; a deleted one leaves "Message deleted" in its place.
+
+## Sharing a work
+
+A show, a film, a game, a book or an album travels as a **card**: its poster,
+what it is, its year, and a link to its page.
+
+- **Share**, in the **⋯** menu of any work's page: pick one or more friends
+  (the ones you wrote to last come first), add a few words if you like, and
+  each friend gets it in your conversation together, as a message of its own.
+  The same window copies the link, shows its QR code, or hands it to your
+  device's own share sheet.
+- **/reco** in a message: type the title, pick the work, and it goes with what
+  you write.
+- **A link** to a work's page, on Loomkeep or on TMDB, IMDb, AniList, Steam,
+  IGDB, Open Library or MusicBrainz, turns into its card on its own, a moment
+  after the message is sent. Up to three per message.
+
+While you write, the cards your first three links will become show above
+the field: a card's **×** sends its link plain.
+
+18+ titles never become a card. A card for a domain you turned off shows a
+warning instead of opening: turn the domain on in **Settings › Domains**.
 
 ## What the other side sees
 

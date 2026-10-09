@@ -26,6 +26,7 @@ const MINE: MessageDto = {
   deletedByAdmin: false,
   reactions: [],
   myReaction: null,
+  works: [],
   createdAt: "2026-10-09T21:14:00.000Z",
   updatedAt: "2026-10-09T21:14:00.000Z",
 };

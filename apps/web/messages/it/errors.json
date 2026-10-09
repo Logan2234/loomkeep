@@ -212,5 +212,6 @@
   "apierr_chat_conversation_not_found": "Questa conversazione non è stata trovata.",
   "apierr_chat_message_not_found": "Questo messaggio non è stato trovato.",
   "apierr_chat_forbidden": "Solo l'autore di un messaggio può modificarlo o eliminarlo.",
-  "apierr_chat_read_only": "Questa conversazione è in sola lettura."
+  "apierr_chat_read_only": "Questa conversazione è in sola lettura.",
+  "apierr_chat_work_not_found": "Quest'opera non può essere allegata a un messaggio."
 }

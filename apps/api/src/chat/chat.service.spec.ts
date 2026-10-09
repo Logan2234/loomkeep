@@ -1,15 +1,19 @@
 import { ErrorCode, RealtimeEvent } from "@loomkeep/shared";
 import { type Mock, vi } from "vitest";
 import { AppException } from "../common/app.exception";
+import { parsePageQuery } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
 import { notificationCopy } from "../notifications/notification-copy";
 import type { PushService } from "../notifications/push.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { BlockService } from "../social/block.service";
+import type { WorkCard } from "./chat-work.service";
 import { ChatService } from "./chat.service";
 
 const ME = "me";
 const LEA = "lea";
+// Follows ME, but ME doesn't follow back.
+const ZOE = "zoe";
 
 function peer(id: string, over: Record<string, unknown> = {}) {
   return {
@@ -63,9 +67,20 @@ function messageRow(over: Record<string, unknown> = {}) {
     createdAt: new Date("2026-10-06T21:34:00Z"),
     updatedAt: new Date("2026-10-06T21:34:00Z"),
     reactions: [],
+    embeds: [],
     ...over,
   };
 }
+
+const SEVERANCE: WorkCard = {
+  targetType: "MEDIA",
+  targetId: "media-1",
+  kind: "SERIES",
+  title: "Severance",
+  imageUrl: "https://image.tmdb.org/t/p/w342/severance.jpg",
+  href: "/app/media/series/95396",
+  year: 2022,
+};
 
 function setup(
   opts: { friends?: boolean; blockedByPeer?: boolean; online?: boolean } = {},
@@ -77,6 +92,7 @@ function setup(
         .fn()
         .mockImplementation(({ where }: { where: Record<string, string> }) => {
           if (where.username === LEA) return { id: LEA };
+          if (where.username === ZOE) return { id: ZOE };
 
           if (where.id === LEA) {
             return {
@@ -102,7 +118,14 @@ function setup(
       }),
       findMany: vi.fn().mockResolvedValue([]),
     },
-    follow: { count: vi.fn().mockResolvedValue(friends ? 2 : 1) },
+    follow: {
+      count: vi
+        .fn()
+        .mockImplementation(
+          ({ where }: { where: { OR: { followeeId: string }[] } }) =>
+            friends && where.OR[0].followeeId !== ZOE ? 2 : 1,
+        ),
+    },
     conversation: {
       upsert: vi.fn().mockResolvedValue({ id: "cv1" }),
       update: vi.fn(),
@@ -131,7 +154,10 @@ function setup(
       update: vi.fn().mockResolvedValue(messageRow()),
     },
     messageReaction: { deleteMany: vi.fn() },
-    messageEmbed: { deleteMany: vi.fn() },
+    messageEmbed: {
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      createMany: vi.fn(),
+    },
     block: { findMany: vi.fn().mockResolvedValue([]) },
     $queryRaw: vi.fn().mockResolvedValue([]),
     $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
@@ -241,6 +267,81 @@ describe("ChatService", () => {
       const here = setup({ online: true });
       await here.service.send(ME, "cv1", "Salut");
       expect(here.push.sendToUser).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("work cards", () => {
+    it("stores the attached work as the message's first card", async () => {
+      const { service, prisma } = setup();
+      (prisma.message.create as Mock).mockResolvedValue(
+        messageRow({ text: null, embeds: [SEVERANCE] }),
+      );
+
+      const message = await service.send(ME, "cv1", null, false, SEVERANCE);
+
+      expect(prisma.message.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            text: null,
+            embeds: { create: { ...SEVERANCE, position: 0 } },
+          }),
+        }),
+      );
+      expect(message.works).toEqual([SEVERANCE]);
+    });
+
+    it("recommends to each friend in their own conversation", async () => {
+      const { service, prisma } = setup();
+
+      const sent = await service.recommend(ME, [LEA], "À voir", SEVERANCE);
+
+      expect(sent).toBe(1);
+      expect(prisma.message.create).toHaveBeenCalledTimes(1);
+    });
+
+    // Checked before sending: one refusal mustn't leave the others half-sent.
+    it("sends nothing when one recipient isn't a friend", async () => {
+      const { service, prisma } = setup();
+
+      await expectCode(
+        service.recommend(ME, [LEA, ZOE], null, SEVERANCE),
+        ErrorCode.ChatNotFriends,
+      );
+      expect(prisma.message.create).not.toHaveBeenCalled();
+    });
+
+    it("replaces the link cards, keeping the attached one", async () => {
+      const { service, prisma, events } = setup();
+      (prisma.conversationMember.findMany as Mock).mockResolvedValue([
+        { userId: ME },
+        { userId: LEA },
+      ]);
+      (prisma.message.findUnique as Mock).mockResolvedValue(messageRow());
+
+      await service.replaceLinkedWorks("m1", [SEVERANCE]);
+
+      expect(prisma.messageEmbed.deleteMany).toHaveBeenCalledWith({
+        where: { messageId: "m1", position: { gt: 0 } },
+      });
+      expect(prisma.messageEmbed.createMany).toHaveBeenCalledWith({
+        data: [{ ...SEVERANCE, messageId: "m1", position: 1 }],
+      });
+      expect(events.emitToUser).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps a deleted message's cards out of sight", async () => {
+      const { service, prisma } = setup();
+      (prisma.message.findMany as Mock).mockResolvedValue([
+        messageRow({ deletedAt: new Date(), embeds: [SEVERANCE] }),
+      ]);
+
+      const page = await service.messages(
+        ME,
+        "cv1",
+        parsePageQuery(undefined, undefined, 40),
+      );
+
+      expect(page.items[0].works).toEqual([]);
     });
   });
 

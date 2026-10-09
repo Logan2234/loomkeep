@@ -149,7 +149,15 @@ export class DataExportService {
               members: {
                 select: { userId: true, user: { select: { username: true } } },
               },
-              messages: { orderBy: { createdAt: "asc" } },
+              messages: {
+                orderBy: { createdAt: "asc" },
+                include: {
+                  embeds: {
+                    orderBy: { position: "asc" },
+                    select: { title: true, href: true },
+                  },
+                },
+              },
             },
           },
         },
@@ -617,6 +625,7 @@ export class DataExportService {
           edited: m.edited,
           deletedAt: m.deletedAt?.toISOString() ?? null,
           createdAt: m.createdAt.toISOString(),
+          works: m.embeds,
         })),
       })),
       lists: listRows.map((l) => ({

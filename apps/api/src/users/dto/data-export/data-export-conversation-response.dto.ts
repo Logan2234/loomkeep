@@ -1,7 +1,22 @@
 import type {
   DataExportConversation,
   DataExportMessage,
+  DataExportMessageWork,
 } from "@loomkeep/shared";
+
+export class DataExportMessageWorkResponseDto implements DataExportMessageWork {
+  /**
+   * The work's title when the message was sent.
+   * @example "Severance"
+   */
+  title!: string;
+
+  /**
+   * The work's page on this instance.
+   * @example "/app/media/series/95396"
+   */
+  href!: string;
+}
 
 export class DataExportMessageResponseDto implements DataExportMessage {
   /**
@@ -39,6 +54,9 @@ export class DataExportMessageResponseDto implements DataExportMessage {
    * @example "2026-10-06T21:30:00.000Z"
    */
   createdAt!: string;
+
+  /** The works it carried as cards: the one attached first, then its links'. */
+  works!: DataExportMessageWorkResponseDto[];
 }
 
 export class DataExportConversationResponseDto implements DataExportConversation {

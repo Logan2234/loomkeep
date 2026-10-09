@@ -8,6 +8,7 @@
   import AddToListButton from "./AddToListButton.svelte";
   import Dropdown from "./Dropdown.svelte";
   import Icon from "./Icon.svelte";
+  import ShareWorkMenuItem from "./ShareWorkMenuItem.svelte";
 
   const reduced = prefersReducedMotion();
 
@@ -19,6 +20,7 @@
     onToggleFavorite,
     onRemove,
     actions = [],
+    onShare,
     children,
   }: {
     favorite: boolean;
@@ -33,6 +35,7 @@
       onSelect: () => void;
       separator?: boolean;
     }[];
+    onShare?: () => void;
     children: Snippet;
   } = $props();
 </script>
@@ -97,6 +100,14 @@
               {action.label}
             </button>
           {/each}
+          {#if onShare}
+            <ShareWorkMenuItem
+              separated={actions.length > 0}
+              onclick={() => {
+                close();
+                onShare();
+              }} />
+          {/if}
           <button
             role="menuitem"
             type="button"

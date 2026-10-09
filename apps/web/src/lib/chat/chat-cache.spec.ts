@@ -21,6 +21,7 @@ function message(id: string, at: string, over: Partial<MessageDto> = {}) {
     deletedByAdmin: false,
     reactions: [],
     myReaction: null,
+    works: [],
     createdAt: `2026-10-06T${at}:00.000Z`,
     updatedAt: `2026-10-06T${at}:00.000Z`,
     ...over,

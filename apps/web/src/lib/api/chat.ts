@@ -5,6 +5,8 @@ import type {
   EditMessageRequestDto,
   MessageDto,
   PagedResult,
+  RecommendWorkRequestDto,
+  RecommendWorkResultDto,
   ReportCategory,
   ReportMotif,
   SendMessageRequestDto,
@@ -45,6 +47,13 @@ export const sendMessage = (
 export const editMessage = (messageId: string, body: EditMessageRequestDto) =>
   request<MessageDto>(`/chat/messages/${id(messageId)}`, {
     method: "PUT",
+    body,
+  });
+
+/** Sends the work to each friend, in their own conversation. */
+export const recommendWork = (body: RecommendWorkRequestDto) =>
+  request<RecommendWorkResultDto>("/chat/recommendations", {
+    method: "POST",
     body,
   });
 

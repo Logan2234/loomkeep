@@ -3,6 +3,7 @@ import type {
   ConversationDto,
   MessageDto,
   PagedResult,
+  RecommendWorkResultDto,
   UserSummaryDto,
 } from "@loomkeep/shared";
 import {
@@ -32,21 +33,25 @@ import {
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { ChatFeatureGuard } from "./chat-feature.guard";
+import { ChatWorkService } from "./chat-work.service";
 import {
   CONVERSATION_PAGE_SIZE,
   ChatService,
   MESSAGE_PAGE_SIZE,
 } from "./chat.service";
 import {
+  EditMessageBody,
   MuteConversationBody,
   OpenConversationBody,
   ReactMessageBody,
+  RecommendWorkBody,
   SendMessageBody,
 } from "./dto/chat-request.dto";
 import {
   ChatUnreadResponseDto,
   ConversationResponseDto,
   MessageResponseDto,
+  RecommendWorkResultResponseDto,
 } from "./dto/chat-response.dto";
 
 @UseGuards(ChatFeatureGuard)
@@ -54,6 +59,7 @@ import {
 export class ChatController {
   constructor(
     private readonly chat: ChatService,
+    private readonly works: ChatWorkService,
     private readonly reports: ReportService,
   ) {}
 
@@ -108,12 +114,39 @@ export class ChatController {
   @Throttle(CHAT_MESSAGE_THROTTLE)
   @Post("conversations/:id/messages")
   @ApiCreatedResponse({ type: MessageResponseDto })
-  send(
+  async send(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
     @Body() body: SendMessageBody,
   ): Promise<MessageDto> {
-    return this.chat.send(user.sub, id, body.text, body.spoiler);
+    const work = body.work ? await this.works.required(body.work) : null;
+    const text = body.text?.trim() ? body.text : null;
+    const message = await this.chat.send(
+      user.sub,
+      id,
+      text,
+      body.spoiler,
+      work,
+    );
+
+    if (text) this.works.refreshLinkedWorks(message.id, text, body.skipLinks);
+
+    return message;
+  }
+
+  /** "Recommander": the work goes to each friend, in their own conversation. */
+  @Throttle(CHAT_MESSAGE_THROTTLE)
+  @Post("recommendations")
+  @ApiCreatedResponse({ type: RecommendWorkResultResponseDto })
+  async recommend(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: RecommendWorkBody,
+  ): Promise<RecommendWorkResultDto> {
+    const work = await this.works.required(body.work);
+    const text = body.text?.trim() ? body.text : null;
+    return {
+      sent: await this.chat.recommend(user.sub, body.usernames, text, work),
+    };
   }
 
   @Post("conversations/:id/read")
@@ -151,12 +184,14 @@ export class ChatController {
 
   @Put("messages/:id")
   @ApiOkResponse({ type: MessageResponseDto })
-  edit(
+  async edit(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
-    @Body() body: SendMessageBody,
+    @Body() body: EditMessageBody,
   ): Promise<MessageDto> {
-    return this.chat.edit(user.sub, id, body.text, body.spoiler);
+    const message = await this.chat.edit(user.sub, id, body.text, body.spoiler);
+    this.works.refreshLinkedWorks(message.id, body.text, body.skipLinks);
+    return message;
   }
 
   @Delete("messages/:id")

@@ -2,8 +2,15 @@
   import { editMessage, sendMessage } from "#lib/api/chat.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
   import { upsertMessage, type MessagePages } from "#lib/chat/chat-cache.js";
   import { chatDrafts as drafts } from "#lib/chat/chat.svelte.js";
+  import {
+    MAX_LINKED_WORKS,
+    MAX_SCANNED_LINKS,
+    previewLinkedWork,
+    typedLinks,
+  } from "#lib/chat/work-search.js";
   import {
     readSlashCommand,
     selectionFormats,
@@ -11,16 +18,24 @@
     type ChatFormat,
   } from "#lib/chat/chat-markdown.js";
   import Icon from "#lib/components/Icon.svelte";
+  import Poster from "#lib/components/Poster.svelte";
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { socket } from "#lib/realtime/socket.js";
   import type { IconName } from "#lib/types/icon-name.js";
-  import { MESSAGE_TEXT_MAX_LENGTH, type MessageDto } from "@loomkeep/shared";
+  import {
+    MESSAGE_TEXT_MAX_LENGTH,
+    type MessageDto,
+    type MessageWorkDto,
+    type SendMessageRequestDto,
+  } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { tick } from "svelte";
   import { fade, scale } from "svelte/transition";
   import { caretPosition } from "./caret-position";
+  import ChatWorkPicker from "./ChatWorkPicker.svelte";
+  import { workKindLabel } from "./conversation-presentation";
 
   let {
     conversationId,
@@ -40,7 +55,13 @@
   const COUNTER_FROM = MESSAGE_TEXT_MAX_LENGTH - 200;
 
   let textarea = $state<HTMLTextAreaElement | null>(null);
+  let picker = $state<ChatWorkPicker | null>(null);
   let value = $state("");
+  // The work `/reco` attached: sent as a card with the message.
+  let attached = $state<MessageWorkDto | null>(null);
+  // Links whose card the writer turned down: they go as plain links.
+  let declinedLinks = $state<string[]>([]);
+  let previewedLinks = $state<string[]>([]);
   let highlighted = $state<string | null>(null);
   let selectionBar = $state<{
     left: number;
@@ -70,13 +91,15 @@
       icon: "book-open",
       label: "/reco",
       hint: m.chat_command_reco(),
-      available: false,
+      available: true,
     },
   ];
 
   $effect(() => {
     const id = conversationId;
     value = drafts.get(id) ?? "";
+    attached = null;
+    declinedLinks = [];
     void tick().then(autosize);
   });
 
@@ -93,9 +116,18 @@
   const commands = $derived.by(() => {
     const typed = /^\/(\w*)$/.exec(value);
     return typed
-      ? COMMANDS.filter((c) => c.id.startsWith(typed[1].toLowerCase()))
+      ? COMMANDS.filter(
+          (c) =>
+            c.id.startsWith(typed[1].toLowerCase()) &&
+            !(editing && c.id === "reco"),
+        )
       : [];
   });
+
+  // What follows `/reco `, while a work is being looked for.
+  const recoQuery = $derived(
+    editing ? null : (/^\/reco\s([\s\S]*)$/.exec(value)?.[1] ?? null),
+  );
 
   $effect(() => {
     if (!commands.some((c) => c.id === highlighted && c.available)) {
@@ -103,12 +135,63 @@
     }
   });
 
-  const sendable = $derived(readSlashCommand(value).text.length > 0);
+  // What the links will turn into once sent, read once typing pauses: as the
+  // API does, the first three cards among the links not turned down — so
+  // turning one down brings in the next.
+  const links = $derived(typedLinks(value));
+  const candidates = $derived(
+    links
+      .filter((url) => !declinedLinks.includes(url))
+      .slice(0, MAX_SCANNED_LINKS),
+  );
+  $effect(() => {
+    const next = candidates;
+    const timer = setTimeout(() => (previewedLinks = next), 500);
+    return () => clearTimeout(timer);
+  });
+  const previewQuery = createApiQuery(() => ({
+    key: keys.chat.linkPreviews(previewedLinks),
+    // One cache entry per link: turning one down doesn't refetch the others.
+    fetch: () =>
+      Promise.all(
+        previewedLinks.map(async (url) => ({
+          url,
+          work: await queryClient.ensureQueryData({
+            queryKey: keys.chat.linkPreview(url),
+            queryFn: () => previewLinkedWork(url).catch(() => null),
+          }),
+        })),
+      ),
+    enabled: previewedLinks.length > 0,
+    keepPreviousData: true,
+  }));
+  const previews = $derived(
+    (previewQuery.data ?? [])
+      .filter(
+        (preview, index, all) =>
+          preview.work !== null &&
+          candidates.includes(preview.url) &&
+          preview.work.href !== attached?.href &&
+          all.findIndex((other) => other.work?.href === preview.work?.href) ===
+            index,
+      )
+      .slice(0, MAX_LINKED_WORKS)
+      .map(({ url, work }) => ({ url, work: work as MessageWorkDto })),
+  );
+
+  const sendable = $derived(
+    recoQuery === null &&
+      (readSlashCommand(value).text.length > 0 || attached !== null),
+  );
 
   const sendMut = createApiMutation(() => ({
-    mutate: (body: { text: string; spoiler: boolean }) =>
+    mutate: (body: SendMessageRequestDto) =>
       editing
-        ? editMessage(editing.id, body)
+        ? editMessage(editing.id, {
+            text: body.text ?? "",
+            spoiler: body.spoiler,
+            skipLinks: body.skipLinks,
+          })
         : sendMessage(conversationId, body),
     onSuccess: (message) => {
       queryClient.setQueryData<MessagePages>(
@@ -116,6 +199,8 @@
         (data) => upsertMessage(data, message),
       );
       if (editing) oncanceledit();
+      attached = null;
+      declinedLinks = [];
       setValue("");
     },
     errorToast: true,
@@ -135,7 +220,21 @@
 
   function send() {
     if (!sendable || sendMut.loading) return;
-    sendMut.mutate(readSlashCommand(value));
+    const { text, spoiler } = readSlashCommand(value);
+    sendMut.mutate({
+      text: text || undefined,
+      spoiler,
+      work: attached?.href,
+      skipLinks: declinedLinks.some((url) => links.includes(url))
+        ? declinedLinks.filter((url) => links.includes(url))
+        : undefined,
+    });
+  }
+
+  function attach(work: MessageWorkDto) {
+    attached = work;
+    setValue("");
+    textarea?.focus();
   }
 
   function pick(command: Command) {
@@ -199,6 +298,8 @@
   }
 
   function onkeydown(event: KeyboardEvent) {
+    if (recoQuery !== null && picker?.handleKey(event)) return;
+
     if (commands.length > 0) {
       const available = commands.filter((c) => c.available);
       const index = available.findIndex((c) => c.id === highlighted);
@@ -282,8 +383,65 @@
     </div>
   {/if}
 
+  {#snippet workChip(
+    work: MessageWorkDto,
+    removeLabel: string,
+    onremove: () => void,
+    linked: boolean,
+  )}
+    <div
+      transition:scale={{ duration: reduced ? 0 : 150, start: 0.97 }}
+      class="mb-2 flex items-center gap-2.5 rounded-xl border px-2 py-1.5 text-sm
+        {linked ? 'border-border border-dashed' : 'border-accent bg-accent/10'}"
+      style="transform-origin: bottom left;">
+      <span class="w-[22px] shrink-0 overflow-hidden rounded-sm">
+        <Poster src={work.imageUrl} title={work.title} alt="" caption={false} />
+      </span>
+      <span class="min-w-0 flex-1 truncate">
+        {#if linked}
+          <span
+            class="text-dim mr-1 font-mono text-[0.62rem] font-bold tracking-wider uppercase"
+            >{m.chat_link_preview()}</span>
+        {/if}
+        <b class="font-semibold">{work.title}</b>
+        <span class="text-dim">· {workKindLabel(work.kind)}</span>
+      </span>
+      <button
+        type="button"
+        class="btn-icon h-7 w-7"
+        aria-label={removeLabel}
+        onclick={onremove}>
+        <Icon name="x" class="h-3.5 w-3.5" />
+      </button>
+    </div>
+  {/snippet}
+
+  {#if attached}
+    {@render workChip(
+      attached,
+      m.chat_reco_remove(),
+      () => (attached = null),
+      false,
+    )}
+  {/if}
+  {#each previews as preview (preview.url)}
+    {@render workChip(
+      preview.work,
+      m.chat_link_preview_remove(),
+      () => (declinedLinks = [...declinedLinks, preview.url]),
+      true,
+    )}
+  {/each}
+
   <div class="flex items-end gap-2">
     <div class="relative min-w-0 flex-1">
+      {#if recoQuery !== null}
+        <ChatWorkPicker
+          bind:this={picker}
+          query={recoQuery}
+          onpick={attach}
+          oncancel={() => setValue("")} />
+      {/if}
       {#if commands.length > 0}
         <div
           transition:scale={{ duration: reduced ? 0 : 150, start: 0.97 }}

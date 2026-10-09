@@ -212,5 +212,6 @@
   "apierr_chat_conversation_not_found": "Cette conversation est introuvable.",
   "apierr_chat_message_not_found": "Ce message est introuvable.",
   "apierr_chat_forbidden": "Seul l'auteur d'un message peut le modifier ou le supprimer.",
-  "apierr_chat_read_only": "Cette conversation est en lecture seule."
+  "apierr_chat_read_only": "Cette conversation est en lecture seule.",
+  "apierr_chat_work_not_found": "Cette œuvre ne peut pas être jointe à un message."
 }
