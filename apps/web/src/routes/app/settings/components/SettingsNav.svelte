@@ -16,7 +16,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { tick } from "svelte";
   import { settingsShortcutLabel } from "../keyboard-navigation";
-  import { SETTINGS_GROUPS, isSectionShown, sectionHref } from "../nav";
+  import { SETTINGS_GROUPS, sectionHref } from "../nav";
   import { settingsSearch } from "../search-state.svelte";
 
   let {
@@ -35,8 +35,8 @@
   const groups = $derived(
     SETTINGS_GROUPS.map((group) => ({
       ...group,
-      sections: group.sections.filter((section) =>
-        isSectionShown(section, appConfig),
+      sections: group.sections.filter(
+        (section) => !section.social || appConfig.socialEnabled,
       ),
     })).filter((group) => group.sections.length > 0),
   );

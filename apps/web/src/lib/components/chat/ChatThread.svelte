@@ -276,8 +276,10 @@
       class="flex items-center gap-1.5 truncate font-semibold
         {mode === 'full' ? 'font-display text-xl font-extrabold' : ''}">
       {#if peer}
-        <a href="/app/u/{peer.username}" class="truncate hover:underline"
-          >{peerName}</a>
+        <a
+          href="/app/u/{peer.username}"
+          class="truncate underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-150 hover:decoration-current"
+          onclick={() => chat.close()}>{peerName}</a>
       {:else}
         <span class="truncate">{peerName}</span>
       {/if}
@@ -312,7 +314,11 @@
       {/snippet}
       {#snippet children({ close })}
         {#if peer}
-          <a role="menuitem" class="menu-item" href="/app/u/{peer.username}">
+          <a
+            role="menuitem"
+            class="menu-item"
+            href="/app/u/{peer.username}"
+            onclick={() => chat.close()}>
             <Icon name="user" class="h-4 w-4" />
             {m.chat_view_profile()}
           </a>

@@ -4,6 +4,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import ChatSearchField from "./ChatSearchField.svelte";
   import type { IconName } from "#lib/types/icon-name.js";
   import type { ConversationDto } from "@loomkeep/shared";
   import { fade, scale } from "svelte/transition";
@@ -107,14 +108,7 @@
     <div
       transition:fade={{ duration: reduced ? 0 : 150 }}
       class="shrink-0 px-3 pt-1">
-      <label class="input flex h-9 items-center gap-2 py-0">
-        <Icon name="search" class="text-dim h-4 w-4 shrink-0" />
-        <span class="sr-only">{m.chat_search_friends()}</span>
-        <input
-          bind:value={search}
-          class="min-w-0 flex-1 bg-transparent text-sm outline-none"
-          placeholder={m.chat_search_friends()} />
-      </label>
+      <ChatSearchField bind:value={search} />
     </div>
   {/if}
 

@@ -24,7 +24,6 @@
   import {
     RECOVERY_CODES_LOW_THRESHOLD,
     SETTINGS_SECTIONS,
-    isSectionShown,
     sectionHref,
   } from "./nav";
   import { settingsSearch } from "./search-state.svelte";
@@ -61,7 +60,9 @@
   const alerts = $derived({ "two-factor-authentication": recoveryLow });
 
   const visibleSections = $derived(
-    SETTINGS_SECTIONS.filter((section) => isSectionShown(section, appConfig)),
+    SETTINGS_SECTIONS.filter(
+      (section) => !section.social || appConfig.socialEnabled,
+    ),
   );
 
   function isShortcutTarget(event: KeyboardEvent): boolean {

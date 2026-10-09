@@ -1,4 +1,5 @@
 import { auth } from "#lib/auth.svelte.js";
+import { appConfig } from "#lib/config.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
@@ -55,6 +56,34 @@ describe("Admin instance settings", () => {
     await user.click(await toggle(m.admin_settings_public_api_enabled()));
 
     await waitFor(() => expect(patched).toEqual({ publicApiEnabled: false }));
+  });
+
+  // The app reads the instance's surfaces from /config once at startup: a
+  // switch flipped here must reach it without a reload.
+  it("refreshes the app's config once a switch is saved", async () => {
+    server.use(
+      http.get(apiUrl("/config"), () =>
+        HttpResponse.json({
+          socialEnabled: true,
+          chatEnabled: patched?.chatEnabled ?? false,
+          gamificationEnabled: false,
+          registrationEnabled: false,
+          publicApiEnabled: true,
+          erdEnabled: false,
+          adminMfaEnforced: true,
+          version: "",
+          gitSha: "",
+          supportEmail: "",
+        }),
+      ),
+    );
+    appConfig.chatEnabled = false;
+    const user = userEvent.setup();
+    renderWithQuery(Page, {});
+
+    await user.click(await toggle(m.admin_settings_chat()));
+
+    await waitFor(() => expect(appConfig.chatEnabled).toBe(true));
   });
 
   it("saves a rate limit on change, and ignores an out-of-range one", async () => {

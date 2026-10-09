@@ -25,6 +25,7 @@
     ghostCantFollow,
     memberSince,
     onToggleFollow,
+    onUnfriend,
     onToggleBlock,
     onReport,
     onSignOut,
@@ -44,6 +45,8 @@
     ghostCantFollow: boolean;
     memberSince: string;
     onToggleFollow: () => void;
+    /** Unfollowing a friend, from the menu: it ends the friendship. */
+    onUnfriend: () => void;
     onToggleBlock: () => void;
     onReport: () => void;
     onSignOut: () => void;
@@ -56,6 +59,12 @@
   } = $props();
 
   const queryClient = useQueryClient();
+
+  // Following each other: unfollowing then ends a friendship, which is rarer
+  // than following, so it moves from the header to the menu.
+  const mutualFriends = $derived(
+    !!rel && !rel.isSelf && rel.following && rel.followsYou,
+  );
 
   // Messages go between accounts that follow each other.
   const canMessage = $derived(
@@ -174,7 +183,7 @@
             {m.common_unblock()}
           </button>
         {:else}
-          {#if !ghostCantFollow}
+          {#if !ghostCantFollow && !mutualFriends}
             <button
               class="btn {rel.following || rel.requested
                 ? 'btn-ghost'
@@ -211,6 +220,19 @@
             </button>
           {/snippet}
           {#snippet children({ close })}
+            {#if mutualFriends && !rel?.blocking}
+              <button
+                role="menuitem"
+                class="menu-item"
+                disabled={busy}
+                onclick={() => {
+                  close();
+                  onUnfriend();
+                }}>
+                <Icon name="user-minus" class="h-4 w-4" />
+                {m.profile_unfriend()}
+              </button>
+            {/if}
             {#if !rel?.blocking}
               <button
                 role="menuitem"
