@@ -86,6 +86,7 @@ export type IconName =
   | "crown"
   | "key"
   | "copy"
+  | "smile"
   | "keyboard"
   | "send"
   | "rss"

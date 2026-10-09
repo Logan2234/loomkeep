@@ -37,7 +37,9 @@ function renderHeader(rel: Partial<RelationshipDto>, onUnfriend = vi.fn()) {
     selfManage: false,
     publicView: false,
     busy: false,
-    followLabel: m.profile_follow_following(),
+    followLabel: rel.following
+      ? m.profile_follow_following()
+      : m.common_follow(),
     ghostCantFollow: false,
     memberSince: "",
     onToggleFollow: vi.fn(),
@@ -56,11 +58,26 @@ function renderHeader(rel: Partial<RelationshipDto>, onUnfriend = vi.fn()) {
 }
 
 describe("ProfileHeader", () => {
-  it("keeps the follow button for someone who doesn't follow back", () => {
+  it("offers to follow someone not followed yet", () => {
+    renderHeader({ following: false, followsYou: true });
+
+    expect(
+      screen.getByRole("button", { name: m.common_follow() }),
+    ).toBeTruthy();
+  });
+
+  it("puts unfollowing in the menu once followed", async () => {
+    const user = userEvent.setup();
     renderHeader({ following: true, followsYou: false });
 
     expect(
-      screen.getByRole("button", { name: m.profile_follow_following() }),
+      screen.queryByRole("button", { name: m.profile_follow_following() }),
+    ).toBe(null);
+    await user.click(
+      screen.getByRole("button", { name: m.common_more_actions() }),
+    );
+    expect(
+      screen.getByRole("menuitem", { name: m.common_unfollow() }),
     ).toBeTruthy();
   });
 
