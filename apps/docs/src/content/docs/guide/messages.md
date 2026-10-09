@@ -75,7 +75,11 @@ what it is, its year, and a link to its page.
   IGDB, Open Library or MusicBrainz, turns into its card on its own, a moment
   after the message is sent. Up to three per message.
 
-18+ titles never become a card.
+While you write, the card a link will become shows above the field: its
+**×** sends the link plain, without a card.
+
+18+ titles never become a card. A card for a domain you turned off shows a
+warning instead of opening: turn the domain on in **Settings › Domains**.
 
 ## What the other side sees
 

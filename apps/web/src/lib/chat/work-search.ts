@@ -1,13 +1,15 @@
-import { searchBooks } from "#lib/api/books.js";
-import { searchCatalog } from "#lib/api/catalog.js";
-import { searchGames } from "#lib/api/games.js";
-import { searchMusic } from "#lib/api/music.js";
+import { getBookDetail, searchBooks } from "#lib/api/books.js";
+import { getMediaDetail, searchCatalog } from "#lib/api/catalog.js";
+import { getGameDetail, searchGames } from "#lib/api/games.js";
+import { resolveLink } from "#lib/api/links.js";
+import { getMusicDetail, searchMusic } from "#lib/api/music.js";
 import { isDomainEnabled } from "#lib/domains.js";
 import {
   Domain,
   type BookSummaryDto,
   type GameSummaryDto,
   type MediaSummaryDto,
+  type MediaType,
   type MessageWorkDto,
   type MusicSummaryDto,
 } from "@loomkeep/shared";
@@ -92,4 +94,49 @@ export async function searchWorks(query: string): Promise<MessageWorkDto[]> {
   return settled.flatMap((result) =>
     result.status === "fulfilled" ? result.value : [],
   );
+}
+
+/** The first link of a message being written, the one the composer previews. */
+export function firstLink(text: string): string | null {
+  return /https?:\/\/[^\s<>]+[^\s<>.,;:!?)\]'"]/.exec(text)?.[0] ?? null;
+}
+
+const MEDIA_PAGE = /^\/app\/media\/(movie|series|anime)\/([^/?#]+)$/;
+const DOMAIN_PAGE = /^\/app\/(games|books|music)\/([^/?#]+)$/;
+
+/**
+ * The card a link will turn into once the message is sent, or null. Read
+ * live from the catalogue: a link merely typed caches nothing.
+ */
+export async function previewLinkedWork(
+  url: string,
+): Promise<MessageWorkDto | null> {
+  const { match } = await resolveLink(url);
+  if (!match) return null;
+
+  const media = MEDIA_PAGE.exec(match.href);
+
+  if (media) {
+    const detail = await getMediaDetail(
+      media[1].toUpperCase() as MediaType,
+      media[2],
+    );
+    return detail.isAdult ? null : mediaWork(detail);
+  }
+
+  const page = DOMAIN_PAGE.exec(match.href);
+  if (!page) return null;
+  const [, section, sourceId] = page;
+
+  if (section === "games") {
+    const detail = await getGameDetail("igdb", sourceId);
+    return detail.isAdult ? null : gameWork(detail);
+  }
+
+  if (section === "books") {
+    const detail = await getBookDetail("open_library", sourceId);
+    return detail.isAdult ? null : bookWork(detail);
+  }
+
+  return musicWork(await getMusicDetail("musicbrainz", sourceId));
 }

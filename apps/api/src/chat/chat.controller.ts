@@ -128,7 +128,11 @@ export class ChatController {
       body.spoiler,
       work,
     );
-    if (text) this.works.refreshLinkedWorks(message.id, text);
+
+    if (text && body.linkCards !== false) {
+      this.works.refreshLinkedWorks(message.id, text);
+    }
+
     return message;
   }
 
@@ -188,7 +192,11 @@ export class ChatController {
     @Body() body: EditMessageBody,
   ): Promise<MessageDto> {
     const message = await this.chat.edit(user.sub, id, body.text, body.spoiler);
-    this.works.refreshLinkedWorks(message.id, body.text);
+    // Turning the cards off removes the ones the links had.
+    this.works.refreshLinkedWorks(
+      message.id,
+      body.linkCards === false ? null : body.text,
+    );
     return message;
   }
 

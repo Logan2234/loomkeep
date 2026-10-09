@@ -117,4 +117,14 @@ describe("ChatWorkService", () => {
       "/app/games/9",
     ]);
   });
+
+  it("drops the link cards when the writer turns them off", async () => {
+    const { service, chat } = setup();
+
+    service.refreshLinkedWorks("m1", null);
+
+    await vi.waitFor(() =>
+      expect(chat.replaceLinkedWorks).toHaveBeenCalledWith("m1", []),
+    );
+  });
 });

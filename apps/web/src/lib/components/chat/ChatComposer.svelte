@@ -2,8 +2,10 @@
   import { editMessage, sendMessage } from "#lib/api/chat.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
   import { upsertMessage, type MessagePages } from "#lib/chat/chat-cache.js";
   import { chatDrafts as drafts } from "#lib/chat/chat.svelte.js";
+  import { firstLink, previewLinkedWork } from "#lib/chat/work-search.js";
   import {
     readSlashCommand,
     selectionFormats,
@@ -52,6 +54,9 @@
   let value = $state("");
   // The work `/reco` attached: sent as a card with the message.
   let attached = $state<MessageWorkDto | null>(null);
+  // The link whose card the writer turned down: it goes as a plain link.
+  let declinedLink = $state<string | null>(null);
+  let previewedLink = $state<string | null>(null);
   let highlighted = $state<string | null>(null);
   let selectionBar = $state<{
     left: number;
@@ -89,6 +94,7 @@
     const id = conversationId;
     value = drafts.get(id) ?? "";
     attached = null;
+    declinedLink = null;
     void tick().then(autosize);
   });
 
@@ -124,6 +130,27 @@
     }
   });
 
+  // What the first link will turn into once sent, read once typing pauses.
+  const typedLink = $derived(firstLink(value));
+  $effect(() => {
+    const next = typedLink;
+    const timer = setTimeout(() => (previewedLink = next), 500);
+    return () => clearTimeout(timer);
+  });
+  const previewQuery = createApiQuery(() => ({
+    key: keys.chat.linkPreview(previewedLink ?? ""),
+    fetch: () => previewLinkedWork(previewedLink ?? ""),
+    enabled: !!previewedLink && previewedLink !== declinedLink,
+  }));
+  const preview = $derived(
+    previewedLink &&
+      previewedLink === typedLink &&
+      previewedLink !== declinedLink &&
+      previewQuery.data?.href !== attached?.href
+      ? (previewQuery.data ?? null)
+      : null,
+  );
+
   const sendable = $derived(
     recoQuery === null &&
       (readSlashCommand(value).text.length > 0 || attached !== null),
@@ -135,6 +162,7 @@
         ? editMessage(editing.id, {
             text: body.text ?? "",
             spoiler: body.spoiler,
+            linkCards: body.linkCards,
           })
         : sendMessage(conversationId, body),
     onSuccess: (message) => {
@@ -144,6 +172,7 @@
       );
       if (editing) oncanceledit();
       attached = null;
+      declinedLink = null;
       setValue("");
     },
     errorToast: true,
@@ -168,6 +197,8 @@
       text: text || undefined,
       spoiler,
       work: attached?.href,
+      linkCards:
+        declinedLink && value.includes(declinedLink) ? false : undefined,
     });
   }
 
@@ -323,27 +354,54 @@
     </div>
   {/if}
 
-  {#if attached}
-    {@const work = attached}
+  {#snippet workChip(
+    work: MessageWorkDto,
+    removeLabel: string,
+    onremove: () => void,
+    linked: boolean,
+  )}
     <div
       transition:scale={{ duration: reduced ? 0 : 150, start: 0.97 }}
-      class="border-accent bg-accent/10 mb-2 flex items-center gap-2.5 rounded-xl border px-2 py-1.5 text-sm"
+      class="mb-2 flex items-center gap-2.5 rounded-xl border px-2 py-1.5 text-sm
+        {linked ? 'border-border border-dashed' : 'border-accent bg-accent/10'}"
       style="transform-origin: bottom left;">
       <span class="w-[22px] shrink-0 overflow-hidden rounded-sm">
         <Poster src={work.imageUrl} title={work.title} alt="" caption={false} />
       </span>
       <span class="min-w-0 flex-1 truncate">
+        {#if linked}
+          <span
+            class="text-dim mr-1 font-mono text-[0.62rem] font-bold tracking-wider uppercase"
+            >{m.chat_link_preview()}</span>
+        {/if}
         <b class="font-semibold">{work.title}</b>
         <span class="text-dim">· {workKindLabel(work.kind)}</span>
       </span>
       <button
         type="button"
         class="btn-icon h-7 w-7"
-        aria-label={m.chat_reco_remove()}
-        onclick={() => (attached = null)}>
+        aria-label={removeLabel}
+        onclick={onremove}>
         <Icon name="x" class="h-3.5 w-3.5" />
       </button>
     </div>
+  {/snippet}
+
+  {#if attached}
+    {@render workChip(
+      attached,
+      m.chat_reco_remove(),
+      () => (attached = null),
+      false,
+    )}
+  {/if}
+  {#if preview}
+    {@render workChip(
+      preview,
+      m.chat_link_preview_remove(),
+      () => (declinedLink = previewedLink),
+      true,
+    )}
   {/if}
 
   <div class="flex items-end gap-2">

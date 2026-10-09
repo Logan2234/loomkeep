@@ -25,6 +25,15 @@
 
   let searched = $state("");
   let highlighted = $state(0);
+  let list = $state<HTMLElement | null>(null);
+
+  // The list scrolls inside the panel: keep the highlighted work in view.
+  $effect(() => {
+    void highlighted;
+    list
+      ?.querySelector('[aria-selected="true"]')
+      ?.scrollIntoView({ block: "nearest" });
+  });
 
   $effect(() => {
     const next = query.trim();
@@ -76,7 +85,8 @@
 
 <div
   transition:scale={{ duration: reduced ? 0 : 150, start: 0.97 }}
-  class="border-border bg-surface absolute inset-x-0 bottom-full z-30 mb-2 rounded-xl border p-1.5 shadow-xl"
+  bind:this={list}
+  class="border-border bg-surface absolute inset-x-0 bottom-full z-30 mb-2 max-h-64 overflow-y-auto rounded-xl border p-1.5 shadow-xl"
   style="transform-origin: bottom left;">
   {#if works.length > 0}
     <div role="listbox" aria-label={m.common_works()}>

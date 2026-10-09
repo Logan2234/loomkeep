@@ -132,6 +132,46 @@ describe("ChatComposer", () => {
     );
   });
 
+  it("previews a work link, and sends it plain once its card is turned down", async () => {
+    server.use(
+      http.get(apiUrl("/links/resolve"), () =>
+        HttpResponse.json({
+          match: { domain: "GAMES", href: "/app/games/11737" },
+        }),
+      ),
+      http.get(apiUrl("/games/igdb/11737"), () =>
+        HttpResponse.json({
+          source: "IGDB",
+          sourceId: "11737",
+          title: "Outer Wilds",
+          year: 2019,
+          coverUrl: null,
+          isAdult: false,
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    const box = renderComposer();
+
+    await user.type(box, "Regarde https://loomkeep.app/app/games/11737");
+    await screen.findByText("Outer Wilds", {}, { timeout: 2000 });
+    await user.click(
+      screen.getByRole("button", { name: m.chat_link_preview_remove() }),
+    );
+    expect(screen.queryByText("Outer Wilds")).toBe(null);
+    await user.type(box, "{Enter}");
+
+    await waitFor(() =>
+      expect(sent).toEqual([
+        {
+          text: "Regarde https://loomkeep.app/app/games/11737",
+          spoiler: false,
+          linkCards: false,
+        },
+      ]),
+    );
+  });
+
   it("takes bold off with the shortcut that put it on", async () => {
     const user = userEvent.setup();
     const box = renderComposer();

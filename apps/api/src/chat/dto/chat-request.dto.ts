@@ -39,6 +39,10 @@ export class EditMessageBody {
   @IsOptional()
   @IsBoolean()
   spoiler?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  linkCards?: boolean;
 }
 
 /** The text may be left out when a work goes with it. */
@@ -58,6 +62,10 @@ export class SendMessageBody {
   @IsString()
   @Matches(WORK_PATH)
   work?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  linkCards?: boolean;
 }
 
 export class RecommendWorkBody {
