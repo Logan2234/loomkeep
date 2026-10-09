@@ -66,8 +66,17 @@ friends (marked "Forwarded", without saying who wrote it), pins it, marks the
 conversation unread from there, deletes or reports it. An edited message says
 "edited"; a deleted one leaves "Message deleted" in its place.
 
-Pinned messages are the same for both of you: the pin in the conversation's
-header lists them, up to fifty.
+Pinned messages are the same for both of you: they carry a pin, and the pin
+in the conversation's header lists them, up to fifty. Marking a conversation
+unread draws a **New** line above that message, as opening a conversation
+does above the first message you hadn't read.
+
+The conversation's **⋯** also searches it (**Ctrl+F**) and gathers its
+**shared works**: every work that went through it, once each.
+
+On a computer, **↑** in an empty field edits your last message, and
+**Alt+↑** / **Alt+↓** move to the previous or next conversation. Every
+shortcut is listed in **Settings › Help › Keyboard shortcuts**.
 
 ## Sharing a work
 

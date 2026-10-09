@@ -51,3 +51,26 @@ export function conversationTime(conversation: ConversationDto): string {
 export function shownUnread(conversation: ConversationDto): number {
   return conversation.muted ? 0 : conversation.unread;
 }
+
+/**
+ * Alt+↑ / Alt+↓: the conversation above or below in the list, from the open
+ * one (or the first, when none is open). Null past either end.
+ */
+export function neighbourConversation(
+  conversations: ConversationDto[],
+  currentId: string | null,
+  step: 1 | -1,
+): string | null {
+  if (conversations.length === 0) return null;
+  const index = conversations.findIndex((c) => c.id === currentId);
+  if (index === -1) return conversations[0].id;
+  return conversations[index + step]?.id ?? null;
+}
+
+/** The step Alt+↑ / Alt+↓ asks for, or null for any other key. */
+export function conversationStep(event: KeyboardEvent): 1 | -1 | null {
+  if (!event.altKey || event.ctrlKey || event.metaKey) return null;
+  if (event.key === "ArrowDown") return 1;
+  if (event.key === "ArrowUp") return -1;
+  return null;
+}

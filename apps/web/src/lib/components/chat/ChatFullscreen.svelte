@@ -15,7 +15,11 @@
   import ChatNewMessage from "./ChatNewMessage.svelte";
   import ChatThread from "./ChatThread.svelte";
   import ChatWorksSoon from "./ChatWorksSoon.svelte";
-  import { shownUnread } from "./conversation-presentation";
+  import {
+    conversationStep,
+    neighbourConversation,
+    shownUnread,
+  } from "./conversation-presentation";
 
   let { conversationId }: { conversationId: string | null } = $props();
 
@@ -43,6 +47,16 @@
     void goto(`/app/messages/${id}`);
   }
 
+  function onkeydown(event: KeyboardEvent) {
+    const step = conversationStep(event);
+    if (!step) return;
+    const next = neighbourConversation(conversations, conversationId, step);
+    if (next) {
+      event.preventDefault();
+      open(next);
+    }
+  }
+
   function shrink() {
     if (conversationId) chat.show(conversationId);
     if (hasAppHistory()) history.back();
@@ -53,6 +67,8 @@
   const showList = $derived(!layout.compact || (!conversationId && !composing));
   const showThread = $derived(!layout.compact || !!conversationId || composing);
 </script>
+
+<svelte:window {onkeydown} />
 
 <!-- One screen tall: the list and the conversation scroll on their own. On
      the compact shell, the bottom bar keeps its share of the height. -->

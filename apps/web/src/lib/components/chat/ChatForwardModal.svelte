@@ -9,7 +9,8 @@
   import Modal from "#lib/components/Modal.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
-  import type { MessageDto } from "@loomkeep/shared";
+  import type { ConversationDto, MessageDto } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import ChatFriendPicker from "./ChatFriendPicker.svelte";
 
   let {
@@ -21,6 +22,11 @@
   } = $props();
 
   let picked = $state<string[]>([]);
+
+  // The conversation it comes from: it isn't forwarded back there.
+  const origin = useQueryClient().getQueryData<ConversationDto>(
+    keys.chat.conversation(message.conversationId),
+  )?.peer?.username;
 
   const preview = $derived(
     message.spoiler
@@ -50,7 +56,10 @@
     <p class="bg-surface-2 text-dim line-clamp-3 rounded-xl px-3 py-2 text-sm">
       {preview}
     </p>
-    <ChatFriendPicker bind:picked label={m.chat_forward_to()} />
+    <ChatFriendPicker
+      bind:picked
+      label={m.chat_forward_to()}
+      exclude={origin ? [origin] : []} />
   </div>
 
   {#snippet actions()}

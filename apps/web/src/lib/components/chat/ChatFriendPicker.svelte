@@ -14,10 +14,13 @@
   let {
     picked = $bindable([]),
     label,
+    exclude = [],
   }: {
     /** Usernames. */
     picked?: string[];
     label: string;
+    /** Usernames left out: a message isn't forwarded back where it was. */
+    exclude?: string[];
   } = $props();
 
   const reduced = prefersReducedMotion();
@@ -39,9 +42,9 @@
       const index = recent.indexOf(id);
       return index === -1 ? recent.length : index;
     };
-    return [...(friendsQuery.data ?? [])].sort(
-      (a, b) => rank(a.id) - rank(b.id),
-    );
+    return (friendsQuery.data ?? [])
+      .filter((friend) => !exclude.includes(friend.username))
+      .sort((a, b) => rank(a.id) - rank(b.id));
   });
 
   function toggle(username: string) {

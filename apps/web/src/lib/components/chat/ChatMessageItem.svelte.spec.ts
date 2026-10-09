@@ -62,9 +62,10 @@ afterEach(() => {
   layout.compact = true;
 });
 
-function renderMessage(message: MessageDto = MINE) {
+function renderMessage(message: MessageDto = MINE, onmarkedunread = vi.fn()) {
   renderWithQuery(ChatMessageItem, {
     message,
+    onmarkedunread,
     writable: true,
     endOfGroup: true,
     time: "21:14",
@@ -92,7 +93,11 @@ describe("ChatMessageItem", () => {
 
   it("pins a message, and marks the other's unread from there", async () => {
     const user = userEvent.setup();
-    renderMessage({ ...MINE, id: "m2", mine: false, authorId: "lea" });
+    const onmarkedunread = vi.fn();
+    renderMessage(
+      { ...MINE, id: "m2", mine: false, authorId: "lea" },
+      onmarkedunread,
+    );
 
     await user.click(
       screen.getByRole("button", { name: m.common_more_actions() }),
@@ -107,6 +112,14 @@ describe("ChatMessageItem", () => {
       screen.getByRole("menuitem", { name: m.chat_mark_unread() }),
     );
     await waitFor(() => expect(unreadFrom).toBe("m2"));
+    await waitFor(() => expect(onmarkedunread).toHaveBeenCalled());
+  });
+
+  // A pin shows on the message itself, not only in the header's list.
+  it("marks a pinned message on its bubble", () => {
+    renderMessage({ ...MINE, pinned: true });
+
+    expect(screen.getByRole("img", { name: m.chat_pinned() })).toBeTruthy();
   });
 
   it("says a forwarded message was forwarded", () => {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { appConfig } from "#lib/config.svelte.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import Icon from "#lib/components/Icon.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -8,6 +9,79 @@
 
   // Named after the key it actually names on this machine — see
   // SettingsSearchField, which computes the same label for the same reason.
+  const isMac = $derived(
+    typeof navigator !== "undefined" &&
+      /Mac|iPhone|iPad|iPod/.test(navigator.platform),
+  );
+  const mod = $derived(isMac ? "⌘" : "Ctrl");
+
+  // Messages: what the composer and the conversation list answer to.
+  const CHAT_SHORTCUTS = $derived<
+    { icon: IconName; label: string; keys: string[] }[]
+  >([
+    { icon: "send", label: m.settings_shortcuts_chat_send(), keys: ["↵"] },
+    {
+      icon: "rows",
+      label: m.settings_shortcuts_chat_newline(),
+      keys: ["⇧ ↵"],
+    },
+    {
+      icon: "edit",
+      label: m.settings_shortcuts_chat_bold(),
+      keys: [`${mod} B`],
+    },
+    {
+      icon: "edit",
+      label: m.settings_shortcuts_chat_italic(),
+      keys: [`${mod} I`],
+    },
+    {
+      icon: "edit",
+      label: m.settings_shortcuts_chat_strike(),
+      keys: [`${mod} ⇧ X`],
+    },
+    {
+      icon: "edit",
+      label: m.settings_shortcuts_chat_code(),
+      keys: [`${mod} E`],
+    },
+    {
+      icon: "eye-off",
+      label: m.settings_shortcuts_chat_spoiler(),
+      keys: [`${mod} ⇧ S`],
+    },
+    {
+      icon: "book-open",
+      label: m.settings_shortcuts_chat_commands(),
+      keys: ["/"],
+    },
+    {
+      icon: "search",
+      label: m.settings_shortcuts_chat_mention(),
+      keys: ["#"],
+    },
+    {
+      icon: "edit",
+      label: m.settings_shortcuts_chat_edit_last(),
+      keys: ["↑"],
+    },
+    {
+      icon: "search",
+      label: m.chat_search_messages(),
+      keys: [`${mod} F`],
+    },
+    {
+      icon: "message",
+      label: m.settings_shortcuts_chat_switch(),
+      keys: [isMac ? "⌥ ↑" : "Alt ↑", isMac ? "⌥ ↓" : "Alt ↓"],
+    },
+    {
+      icon: "x",
+      label: m.settings_shortcuts_chat_escape(),
+      keys: [m.settings_shortcuts_escape()],
+    },
+  ]);
+
   const shortcutLabel = $derived(
     typeof navigator !== "undefined" &&
       /Mac|iPhone|iPad|iPod/.test(navigator.platform)
@@ -290,6 +364,31 @@
       </kbd>
     </div>
   </section>
+
+  {#if appConfig.chatEnabled}
+    <p class="text-dim mb-2 text-sm font-semibold">
+      {m.settings_chat_title()}
+    </p>
+    <section class="card divide-border mb-4 divide-y p-5 md:p-6">
+      {#each CHAT_SHORTCUTS as shortcut (shortcut.label)}
+        <div
+          class="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+          <span class="flex items-center gap-3">
+            <Icon name={shortcut.icon} class="text-dim h-4 w-4 shrink-0" />
+            <span class="font-semibold">{shortcut.label}</span>
+          </span>
+          <span class="flex items-center gap-1">
+            {#each shortcut.keys as key (key)}
+              <kbd
+                class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
+                {key}
+              </kbd>
+            {/each}
+          </span>
+        </div>
+      {/each}
+    </section>
+  {/if}
 
   <p class="text-dim mb-2 text-sm font-semibold">
     {m.settings_shortcuts_jump_title()}

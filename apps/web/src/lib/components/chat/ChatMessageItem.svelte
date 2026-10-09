@@ -20,7 +20,7 @@
     type CommentEmote,
     type MessageDto,
   } from "@loomkeep/shared";
-  import { fade } from "svelte/transition";
+  import { fade, scale } from "svelte/transition";
   import ChatForwardModal from "./ChatForwardModal.svelte";
   import ChatMessageText from "./ChatMessageText.svelte";
   import ChatWorkCard from "./ChatWorkCard.svelte";
@@ -33,6 +33,7 @@
     seenAt = null,
     onedit,
     onreport,
+    onmarkedunread,
   }: {
     message: MessageDto;
     /** Reacting needs a conversation still open to writing. */
@@ -43,6 +44,8 @@
     seenAt?: string | null;
     onedit: (message: MessageDto) => void;
     onreport: (message: MessageDto) => void;
+    /** The thread draws its "new" line above this message. */
+    onmarkedunread?: (message: MessageDto) => void;
   } = $props();
 
   const reduced = prefersReducedMotion();
@@ -81,7 +84,7 @@
   const unreadMut = createApiMutation(() => ({
     mutate: () => markUnreadFrom(message.id),
     invalidates: [keys.chat.conversations(), keys.chat.unread()],
-    successToast: m.chat_marked_unread(),
+    onSuccess: () => onmarkedunread?.(message),
     errorToast: true,
   }));
 
@@ -275,7 +278,7 @@
     class="flex max-w-full items-center gap-1.5
       {message.mine ? 'flex-row-reverse' : ''}">
     <div
-      class="min-w-0 {layout.compact
+      class="relative min-w-0 {layout.compact
         ? 'select-none [-webkit-touch-callout:none]'
         : ''}"
       role="presentation"
@@ -284,6 +287,18 @@
       onpointerup={cancelPress}
       onpointercancel={cancelPress}
       {oncontextmenu}>
+      {#if message.pinned && !message.deleted}
+        <!-- On the bubble's outer corner, so a pin shows while reading. -->
+        <span
+          transition:scale={{ duration: reduced ? 0 : 150, start: 0.6 }}
+          class="bg-accent text-accent-fg ring-surface absolute -top-1.5 z-10 grid h-5 w-5 place-items-center rounded-full ring-2
+            {message.mine ? '-left-1.5' : '-right-1.5'}"
+          role="img"
+          aria-label={m.chat_pinned()}
+          title={m.chat_pinned()}>
+          <Icon name="pin-filled" class="h-3 w-3" />
+        </span>
+      {/if}
       {#if message.deleted}
         <p
           class="border-border text-dim rounded-2xl border border-dashed px-3 py-2 text-sm italic">
@@ -404,10 +419,6 @@
   {#if endOfGroup && !message.deleted}
     <p
       class="text-dim mx-1 mt-1 flex items-center gap-1 font-mono text-[0.68rem]">
-      {#if message.pinned}
-        <Icon name="pin-filled" class="text-accent h-3 w-3" />
-        <span class="sr-only">{m.chat_pinned()}</span>
-      {/if}
       {message.edited ? `${time} · ${m.chat_edited()}` : time}
     </p>
   {/if}

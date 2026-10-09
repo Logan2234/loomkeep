@@ -48,12 +48,15 @@
     conversationId,
     peerName,
     editing = null,
+    oneditlast,
     oncanceledit,
   }: {
     conversationId: string;
     peerName: string;
     editing?: MessageDto | null;
     oncanceledit: () => void;
+    /** ↑ in an empty field: edit the last message the viewer sent. */
+    oneditlast?: () => void;
   } = $props();
 
   const reduced = prefersReducedMotion();
@@ -258,6 +261,9 @@
     const at = mentionAt.start;
     setValue(value.slice(0, at) + inserted + value.slice(caret));
     mentionAt = null;
+    // The caret lands right after `#Title `, which reads as a new search:
+    // this one is done.
+    dismissedMentionAt = at;
     void tick().then(() => {
       textarea?.focus();
       textarea?.setSelectionRange(at + inserted.length, at + inserted.length);
@@ -401,6 +407,15 @@
     } else if (mod && !event.shiftKey && key === "e") {
       event.preventDefault();
       format("code");
+    } else if (
+      event.key === "ArrowUp" &&
+      value === "" &&
+      !editing &&
+      !mod &&
+      !event.altKey
+    ) {
+      event.preventDefault();
+      oneditlast?.();
     } else if (event.key === "Escape" && editing) {
       event.preventDefault();
       setValue("");

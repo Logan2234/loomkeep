@@ -214,5 +214,6 @@
   "apierr_chat_forbidden": "Seul l'auteur d'un message peut le modifier ou le supprimer.",
   "apierr_chat_read_only": "Cette conversation est en lecture seule.",
   "apierr_chat_work_not_found": "Cette œuvre ne peut pas être jointe à un message.",
-  "apierr_chat_pin_limit": "Cette conversation a déjà 50 messages épinglés : désépingle-en un d'abord."
+  "apierr_chat_pin_limit": "Cette conversation a déjà 50 messages épinglés : désépingle-en un d'abord.",
+  "apierr_chat_forward_to_origin": "Un message ne peut pas être transféré dans sa propre conversation."
 }

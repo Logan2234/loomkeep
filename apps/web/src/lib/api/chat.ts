@@ -2,6 +2,7 @@ import type {
   ChatUnreadDto,
   CommentEmote,
   ConversationDto,
+  ConversationWorkDto,
   EditMessageRequestDto,
   ForwardMessageRequestDto,
   MessageDto,
@@ -62,6 +63,17 @@ export const pinMessage = (messageId: string, pinned: boolean) =>
   request<void>(`/chat/messages/${id(messageId)}/pin`, {
     method: pinned ? "PUT" : "DELETE",
   });
+
+export const searchMessages = (conversationId: string, query: string) =>
+  request<MessageDto[]>(
+    `/chat/conversations/${id(conversationId)}/search?q=${encodeURIComponent(query)}`,
+  );
+
+/** The conversation's shared works, once each, last shared first. */
+export const getConversationWorks = (conversationId: string) =>
+  request<ConversationWorkDto[]>(
+    `/chat/conversations/${id(conversationId)}/works`,
+  );
 
 export const getPinnedMessages = (conversationId: string) =>
   request<MessageDto[]>(`/chat/conversations/${id(conversationId)}/pins`);

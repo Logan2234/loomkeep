@@ -12,6 +12,10 @@
   import ChatRail from "./ChatRail.svelte";
   import ChatThread from "./ChatThread.svelte";
   import ChatWorksSoon from "./ChatWorksSoon.svelte";
+  import {
+    conversationStep,
+    neighbourConversation,
+  } from "./conversation-presentation";
 
   const reduced = prefersReducedMotion();
 
@@ -32,8 +36,19 @@
   // Escape folds the list, then closes the panel — only from inside it, and
   // after the composer and the menus handled theirs.
   function onkeydown(event: KeyboardEvent) {
-    if (event.key !== "Escape" || event.defaultPrevented) return;
     if (!panel?.contains(document.activeElement)) return;
+
+    const step = conversationStep(event);
+    if (step && chat.tab === "friends") {
+      const next = neighbourConversation(conversations, chat.activeId, step);
+      if (next) {
+        event.preventDefault();
+        chat.select(next);
+      }
+      return;
+    }
+
+    if (event.key !== "Escape" || event.defaultPrevented) return;
     if (chat.drawer) chat.drawer = false;
     else chat.close();
   }

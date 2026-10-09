@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     getPinnedMessages,
+    pinMessage,
     getConversation,
     getMessages,
     markConversationRead,
@@ -33,6 +34,8 @@
   import { fade } from "svelte/transition";
   import ChatComposer from "./ChatComposer.svelte";
   import ChatMessageItem from "./ChatMessageItem.svelte";
+  import ChatSearchBar from "./ChatSearchBar.svelte";
+  import ChatSharedWorks from "./ChatSharedWorks.svelte";
 
   let {
     conversationId,
@@ -76,18 +79,75 @@
   }));
   const pins = $derived(pinsQuery.data ?? []);
 
-  // A pinned message still loaded comes into view, lit for a moment; an
-  // older one is read in the list itself.
+  const unpinMut = createApiMutation(() => ({
+    mutate: (messageId: string) => pinMessage(messageId, false),
+    invalidates: [keys.chat.pins(conversationId)],
+    errorToast: true,
+  }));
+
+  let searching = $state(false);
+  let showingWorks = $state(false);
+
+  // Brings a message into view, lit for a moment — reading older pages
+  // until it's there, for a pin or a search result from long ago.
   let highlightedId = $state<string | null>(null);
-  function showPinned(messageId: string) {
-    const el = scroller?.querySelector(`[data-message-id="${messageId}"]`);
-    if (!el) return;
-    el.scrollIntoView({
+  async function reveal(messageId: string) {
+    const find = () =>
+      scroller?.querySelector(`[data-message-id="${messageId}"]`);
+
+    for (let wait = 0; !find() && wait < 40; wait++) {
+      if (!messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
+        break;
+      }
+      if (!messagesQuery.isFetchingNextPage) messagesQuery.fetchNextPage();
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+
+    find()?.scrollIntoView({
       behavior: reduced ? "auto" : "smooth",
       block: "center",
     });
     highlightedId = messageId;
     setTimeout(() => (highlightedId = null), 1600);
+  }
+
+  // Where the "new" line goes: the first message from the other member the
+  // viewer hadn't read on opening — or the one marked unread since. Read
+  // once, so reading the conversation doesn't take it away at once.
+  let unreadFrom = $state<string | null>(null);
+  let unreadPlaced = false;
+  $effect(() => {
+    if (unreadPlaced || !conversation || messages.length === 0) return;
+    unreadPlaced = true;
+    const readAt = conversation.lastReadAt;
+    unreadFrom =
+      messages.find((message) => !message.mine && message.createdAt > readAt)
+        ?.id ?? null;
+  });
+
+  // Ctrl+F searches the conversation rather than the page — from the
+  // full-screen page, or from inside the panel.
+  function onwindowkeydown(event: KeyboardEvent) {
+    const mod = event.ctrlKey || event.metaKey;
+    if (!mod || event.shiftKey || event.altKey) return;
+    if (event.key.toLowerCase() !== "f") return;
+    const root = scroller?.parentElement;
+    if (mode !== "full" && !root?.contains(document.activeElement)) return;
+    event.preventDefault();
+    if (searching) {
+      root?.querySelector<HTMLInputElement>("[data-chat-search]")?.focus();
+    } else {
+      searching = true;
+    }
+  }
+
+  // ↑ in an empty field edits the viewer's last message, as on Discord.
+  function editLast() {
+    if (!writable) return;
+    const last = messages.findLast(
+      (message) => message.mine && !message.deleted && message.text,
+    );
+    if (last) editing = last;
   }
 
   const peer = $derived(conversation?.peer ?? null);
@@ -267,6 +327,8 @@
   );
 </script>
 
+<svelte:window onkeydown={onwindowkeydown} />
+
 <!-- On the full-screen page, the notification bell is fixed in the same
      top-right corner: the header leaves it room. -->
 <header
@@ -340,27 +402,40 @@
       {#snippet children({ close })}
         <div class="flex max-h-80 flex-col overflow-y-auto">
           {#each pins as pin (pin.id)}
-            <button
-              role="menuitem"
-              class="menu-item flex-col items-start! gap-0.5"
-              onclick={() => {
-                close();
-                showPinned(pin.id);
-              }}>
-              <span class="text-dim font-mono text-[0.65rem]">
-                {pin.mine ? m.common_you() : peerName} · {formatDate(
-                  pin.createdAt,
-                  { day: "2-digit", month: "2-digit" },
-                )}
-              </span>
-              <span class="line-clamp-2 text-left text-sm">
-                {pin.spoiler
-                  ? m.chat_spoiler_reveal()
-                  : pin.text
-                    ? chatPreview(pin.text)
-                    : pin.works.map((work) => work.title).join(", ")}
-              </span>
-            </button>
+            <div class="group/pin relative">
+              <button
+                type="button"
+                class="btn-icon absolute top-1.5 right-1.5 h-7 w-7 opacity-0 transition-opacity duration-150 group-focus-within/pin:opacity-100 group-hover/pin:opacity-100 focus-visible:opacity-100"
+                aria-label={m.chat_unpin()}
+                title={m.chat_unpin()}
+                disabled={unpinMut.loading || !writable}
+                onclick={() => unpinMut.mutate(pin.id)}>
+                <Icon name="x" class="h-3.5 w-3.5" />
+              </button>
+              <button
+                role="menuitem"
+                class="menu-item w-full flex-col items-start! gap-0.5 pr-10! whitespace-normal!"
+                onclick={() => {
+                  close();
+                  void reveal(pin.id);
+                }}>
+                <span class="text-dim font-mono text-[0.65rem]">
+                  {pin.mine ? m.common_you() : peerName} · {formatDate(
+                    pin.createdAt,
+                    { day: "2-digit", month: "2-digit" },
+                  )}
+                </span>
+                <!-- A long pin shows its first lines, never a sideways scroll. -->
+                <span
+                  class="line-clamp-5 w-full text-left text-sm [overflow-wrap:anywhere]">
+                  {pin.spoiler
+                    ? m.chat_spoiler_reveal()
+                    : pin.text
+                      ? chatPreview(pin.text)
+                      : pin.works.map((work) => work.title).join(", ")}
+                </span>
+              </button>
+            </div>
           {/each}
         </div>
       {/snippet}
@@ -404,6 +479,26 @@
             class="h-4 w-4" />
           {conversation.muted ? m.chat_unmute() : m.chat_mute()}
         </button>
+        <button
+          role="menuitem"
+          class="menu-item"
+          onclick={() => {
+            close();
+            searching = true;
+          }}>
+          <Icon name="search" class="h-4 w-4" />
+          {m.chat_search_messages()}
+        </button>
+        <button
+          role="menuitem"
+          class="menu-item"
+          onclick={() => {
+            close();
+            showingWorks = true;
+          }}>
+          <Icon name="library" class="h-4 w-4" />
+          {m.chat_shared_works()}
+        </button>
       {/snippet}
     </Dropdown>
   {/if}
@@ -432,6 +527,17 @@
   {/if}
 </header>
 
+{#if searching}
+  <ChatSearchBar
+    {conversationId}
+    {peerName}
+    onpick={(messageId) => {
+      searching = false;
+      void reveal(messageId);
+    }}
+    onclose={() => (searching = false)} />
+{/if}
+
 <div
   bind:this={scroller}
   {onscroll}
@@ -456,6 +562,19 @@
         {entry.label}
       </p>
     {:else}
+      {#if entry.message.id === unreadFrom}
+        <div
+          transition:fade={{ duration: reduced ? 0 : 200 }}
+          role="separator"
+          aria-label={m.chat_unread_from_here()}
+          class="text-accent my-2 flex items-center gap-2">
+          <span class="bg-accent h-px flex-1"></span>
+          <span
+            class="font-mono text-[0.62rem] font-bold tracking-widest uppercase"
+            >{m.common_new()}</span>
+          <span class="bg-accent h-px flex-1"></span>
+        </div>
+      {/if}
       <div
         class="-mx-2 flex flex-col rounded-xl px-2 transition-colors duration-500
           {entry.gap ? 'mt-2' : ''}
@@ -469,6 +588,7 @@
             ? formatTime(conversation.peerLastReadAt)
             : null}
           onedit={(message) => (editing = message)}
+          onmarkedunread={(message) => (unreadFrom = message.id)}
           onreport={(message) => (reporting = message)} />
       </div>
     {/if}
@@ -503,6 +623,7 @@
     {conversationId}
     {peerName}
     {editing}
+    oneditlast={editLast}
     oncanceledit={() => (editing = null)} />
 {/if}
 
@@ -518,4 +639,11 @@
     onClose={() => (reporting = null)}
     onSubmit={({ category, motif, reason }) =>
       reportMut.mutate([target.id, category, motif, reason])} />
+{/if}
+
+{#if showingWorks}
+  <ChatSharedWorks
+    {conversationId}
+    {peerName}
+    onclose={() => (showingWorks = false)} />
 {/if}
