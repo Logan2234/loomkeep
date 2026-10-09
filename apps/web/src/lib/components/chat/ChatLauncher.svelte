@@ -24,7 +24,9 @@
     key: keys.chat.unread(),
     fetch: getChatUnread,
   }));
-  const unread = $derived(unreadQuery.data?.count ?? 0);
+  const unread = $derived(
+    (unreadQuery.data?.count ?? 0) + (unreadQuery.data?.works ?? 0),
+  );
 
   // The full-screen page is Messages already.
   const onMessagesPage = $derived(

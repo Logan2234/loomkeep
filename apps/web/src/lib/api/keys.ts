@@ -158,6 +158,9 @@ export const keys = {
     friends: (query: string) => ["chat", "friends", query] as const,
     pins: (id: string) => ["chat", "pins", id] as const,
     works: (id: string) => ["chat", "works", id] as const,
+    workThreads: () => ["chat", "work-threads"] as const,
+    workThread: (targetType: string, targetId: string) =>
+      ["chat", "work-thread", targetType, targetId] as const,
     search: (id: string, query: string) =>
       ["chat", "search", id, query] as const,
     // Outside ["chat"]: a reconnection refetches what's under it, and this

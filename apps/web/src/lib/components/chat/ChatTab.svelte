@@ -17,7 +17,9 @@
     key: keys.chat.unread(),
     fetch: getChatUnread,
   }));
-  const unread = $derived(unreadQuery.data?.count ?? 0);
+  const unread = $derived(
+    (unreadQuery.data?.count ?? 0) + (unreadQuery.data?.works ?? 0),
+  );
 </script>
 
 <button

@@ -9,9 +9,5 @@
   <p class="font-display text-fg text-lg font-extrabold text-balance">
     {m.chat_works_title()}
   </p>
-  <p class="max-w-[32ch] text-sm leading-relaxed">{m.chat_works_soon()}</p>
-  <span
-    class="border-accent text-accent rounded border px-1.5 font-mono text-[0.62rem] font-bold tracking-wider uppercase">
-    {m.common_coming_soon()}
-  </span>
+  <p class="max-w-[32ch] text-sm leading-relaxed">{m.chat_works_empty()}</p>
 </div>

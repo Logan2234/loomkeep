@@ -6,16 +6,23 @@
   import { m } from "#lib/paraglide/messages.js";
   import ChatSearchField from "./ChatSearchField.svelte";
   import type { IconName } from "#lib/types/icon-name.js";
-  import type { ConversationDto } from "@loomkeep/shared";
+  import Poster from "#lib/components/Poster.svelte";
+  import type { ConversationDto, WorkThreadDto } from "@loomkeep/shared";
   import { fade, scale } from "svelte/transition";
   import {
     conversationName,
     conversationPreview,
     conversationTime,
     shownUnread,
+    workThreadContext,
+    workThreadPreview,
+    workThreadTime,
   } from "./conversation-presentation";
 
-  let { conversations }: { conversations: ConversationDto[] } = $props();
+  let {
+    conversations,
+    threads,
+  }: { conversations: ConversationDto[]; threads: WorkThreadDto[] } = $props();
 
   const TABS: { id: ChatTab; icon: IconName; label: string }[] = [
     { id: "friends", icon: "users", label: m.common_friends() },
@@ -26,6 +33,11 @@
   let search = $state("");
   let hovered = $state<{
     conversation: ConversationDto;
+    top: number;
+    left: number;
+  } | null>(null);
+  let hoveredWork = $state<{
+    thread: WorkThreadDto;
     top: number;
     left: number;
   } | null>(null);
@@ -50,8 +62,19 @@
     hovered = { conversation, top: box.top - 4, left: box.right + 12 };
   }
 
+  function hoverWork(event: Event, thread: WorkThreadDto) {
+    if (unfolded) return;
+    const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    hoveredWork = { thread, top: box.top - 4, left: box.right + 12 };
+  }
+
+  const activeWork = (thread: WorkThreadDto) =>
+    chat.activeWork?.targetType === thread.targetType &&
+    chat.activeWork.targetId === thread.targetId;
+
   function toggle() {
     hovered = null;
+    hoveredWork = null;
     chat.drawer = !chat.drawer;
   }
 </script>
@@ -114,7 +137,82 @@
 
   <span class="bg-border mx-[22px] my-1 h-px shrink-0"></span>
 
-  {#if friendsTab}
+  {#if !friendsTab}
+    {#each threads as thread (`${thread.targetType}:${thread.targetId}`)}
+      {@const active = activeWork(thread)}
+      {@const context = workThreadContext(thread)}
+      <div class="group relative w-full shrink-0 px-1.5">
+        <span
+          class="absolute top-1/2 left-0 w-1 -translate-y-1/2 rounded-r transition-[height,opacity] duration-200
+            {active
+            ? 'bg-accent h-9 opacity-100'
+            : 'bg-fg h-2 opacity-0 group-hover:h-4 group-hover:opacity-60'}"
+          aria-hidden="true"></span>
+        <button
+          type="button"
+          class="flex w-full items-center gap-3 rounded-xl py-1 pr-2 pl-2.5 text-left transition-colors duration-150
+            {unfolded && active ? 'bg-surface-2' : ''}
+            {unfolded ? 'hover:bg-surface-2' : ''}"
+          aria-label={thread.unread
+            ? m.chat_conversation_unread({
+                name: thread.title,
+                count: thread.unread,
+              })
+            : thread.title}
+          aria-current={active ? "true" : undefined}
+          onmouseenter={(e) => hoverWork(e, thread)}
+          onfocus={(e) => hoverWork(e, thread)}
+          onmouseleave={() => (hoveredWork = null)}
+          onblur={() => (hoveredWork = null)}
+          onclick={() =>
+            chat.showWork({
+              targetType: thread.targetType,
+              targetId: thread.targetId,
+            })}>
+          <span
+            class="relative ml-1 w-9 shrink-0 transition-transform duration-150 motion-reduce:transition-none
+              {unfolded ? '' : 'group-hover:scale-105'}">
+            <span class="block overflow-hidden rounded-md">
+              <Poster
+                src={thread.imageUrl}
+                title={thread.title}
+                alt=""
+                caption={false} />
+            </span>
+            {#if thread.unread > 0}
+              <span
+                class="bg-accent text-accent-fg ring-bg absolute -top-1.5 -right-2.5 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 font-mono text-[0.62rem] font-bold ring-2">
+                {thread.unread > 99 ? "99+" : thread.unread}
+              </span>
+            {/if}
+          </span>
+          {#if unfolded}
+            <span
+              in:fade={{ duration: reduced ? 0 : 150, delay: reduced ? 0 : 80 }}
+              class="min-w-0 flex-1"
+              aria-hidden="true">
+              <span class="flex items-baseline justify-between gap-2">
+                <span class="truncate font-semibold">{thread.title}</span>
+                <span
+                  class="shrink-0 font-mono text-[0.68rem] {thread.unread
+                    ? 'text-accent'
+                    : 'text-dim'}">{workThreadTime(thread)}</span>
+              </span>
+              {#if context}
+                <span
+                  class="text-accent block font-mono text-[0.62rem] font-bold tracking-wider uppercase"
+                  >{context}</span>
+              {/if}
+              <span
+                class="block truncate text-[0.8rem] {thread.unread
+                  ? 'text-fg'
+                  : 'text-dim'}">{workThreadPreview(thread)}</span>
+            </span>
+          {/if}
+        </button>
+      </div>
+    {/each}
+  {:else}
     {#each shown as conversation (conversation.id)}
       {@const active = chat.activeId === conversation.id && !chat.composing}
       {@const unread = shownUnread(conversation)}
@@ -230,6 +328,37 @@
     </div>
   {/if}
 </nav>
+
+{#if hoveredWork && !unfolded}
+  {@const card = hoveredWork.thread}
+  {@const context = workThreadContext(card)}
+  <div
+    transition:scale={{ duration: reduced ? 0 : 120, start: 0.96 }}
+    class="border-border bg-surface pointer-events-none fixed z-[60] flex w-64 flex-col gap-1 rounded-xl border px-3.5 py-3 shadow-xl"
+    style="top: {hoveredWork.top}px; left: {hoveredWork.left}px; transform-origin: left top;"
+    aria-hidden="true">
+    <span class="flex items-baseline justify-between gap-2">
+      <b class="truncate font-semibold">{card.title}</b>
+      <span
+        class="font-mono text-[0.68rem] {card.unread
+          ? 'text-accent'
+          : 'text-dim'}">{workThreadTime(card)}</span>
+    </span>
+    {#if context}
+      <span
+        class="text-accent font-mono text-[0.62rem] font-bold tracking-wider uppercase"
+        >{context}</span>
+    {/if}
+    <span class="text-dim truncate text-[0.8rem]"
+      >{workThreadPreview(card)}</span>
+    {#if card.unread > 0}
+      <span
+        class="text-accent font-mono text-[0.62rem] font-bold tracking-wider uppercase">
+        {m.chat_unread_count({ count: card.unread })}
+      </span>
+    {/if}
+  </div>
+{/if}
 
 {#if hovered && !unfolded}
   {@const card = hovered.conversation}

@@ -1,6 +1,7 @@
 import type {
   ChatUnreadDto,
   CommentEmote,
+  CommentTargetType,
   ConversationDto,
   ConversationWorkDto,
   EditMessageRequestDto,
@@ -13,6 +14,7 @@ import type {
   ReportMotif,
   SendMessageRequestDto,
   UserSummaryDto,
+  WorkThreadDto,
 } from "@loomkeep/shared";
 import { request } from "./core";
 
@@ -130,4 +132,20 @@ export const reportMessage = (
   request<void>(`/chat/messages/${id(messageId)}/report`, {
     method: "POST",
     body: { category, motif, reason },
+  });
+
+/** The works' discussions of the "Œuvres" tab, latest of the viewer's own first. */
+export const getWorkThreads = () => request<WorkThreadDto[]>("/chat/works");
+
+export const getWorkThread = (
+  targetType: CommentTargetType,
+  targetId: string,
+) => request<WorkThreadDto>(`/chat/works/${targetType}/${id(targetId)}`);
+
+export const markWorkThreadRead = (
+  targetType: CommentTargetType,
+  targetId: string,
+) =>
+  request<void>(`/chat/works/${targetType}/${id(targetId)}/read`, {
+    method: "POST",
   });
