@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   chatPreview,
+  episodeSeries,
+  mentionToken,
   parseChatMarkdown,
   readSlashCommand,
   selectionFormats,
@@ -89,7 +91,92 @@ describe("parseChatMarkdown", () => {
   });
 });
 
+describe("blocks", () => {
+  it("reads quotes, lists and code blocks line by line", () => {
+    expect(
+      parseChatMarkdown(
+        "Avant\n> elle a dit\n> **non**\n- un\n- deux\n```\nconst x = 1;\n```",
+      ),
+    ).toEqual([
+      { type: "text", text: "Avant" },
+      {
+        type: "quote",
+        children: [
+          { type: "text", text: "elle a dit\n" },
+          { type: "strong", children: [{ type: "text", text: "non" }] },
+        ],
+      },
+      {
+        type: "list",
+        items: [
+          [{ type: "text", text: "un" }],
+          [{ type: "text", text: "deux" }],
+        ],
+      },
+      { type: "codeblock", text: "const x = 1;" },
+    ]);
+  });
+
+  it("leaves an unclosed code fence as text", () => {
+    expect(parseChatMarkdown("```\npas fermé")).toEqual([
+      { type: "text", text: "```\npas fermé" },
+    ]);
+  });
+});
+
+describe("work mentions and episode codes", () => {
+  it("reads a work mention and a padded episode code", () => {
+    expect(
+      parseChatMarkdown(
+        `${mentionToken("Severance", "/app/media/series/95396")} s2e5 !`,
+      ),
+    ).toEqual([
+      {
+        type: "mention",
+        title: "Severance",
+        href: "/app/media/series/95396",
+      },
+      { type: "text", text: " " },
+      { type: "episode", season: 2, episode: 5, code: "S02E05" },
+      { type: "text", text: " !" },
+    ]);
+  });
+
+  // A mention may only point at a work page: it can't hide another link.
+  it("keeps a mention of anything but a work page as text", () => {
+    expect(parseChatMarkdown("#[Clique](https://example.com)")).toEqual([
+      { type: "text", text: "#[Clique](" },
+      { type: "link", href: "https://example.com" },
+      { type: "text", text: ")" },
+    ]);
+  });
+
+  it("doesn't read an episode code inside a word", () => {
+    expect(parseChatMarkdown("ABS2E5")).toEqual([
+      { type: "text", text: "ABS2E5" },
+    ]);
+  });
+
+  it("links episode codes to the only series of the message", () => {
+    const nodes = parseChatMarkdown(
+      `${mentionToken("Severance", "/app/media/series/95396")} S02E05`,
+    );
+
+    expect(episodeSeries(nodes, [])).toBe("/app/media/series/95396");
+    expect(episodeSeries(nodes, ["/app/media/anime/21"])).toBe(null);
+    expect(episodeSeries(parseChatMarkdown("S02E05"), [])).toBe(null);
+  });
+});
+
 describe("chatPreview", () => {
+  it("shows mentions by their title and spaces out blocks", () => {
+    expect(
+      chatPreview(
+        `${mentionToken("Severance", "/app/media/series/95396")} **gr**as\n- un\n- deux`,
+      ),
+    ).toBe("#Severance gras un · deux");
+  });
+
   it("drops the markers and hides spoilers", () => {
     expect(chatPreview("La fin : ||Helly reste|| **fou**")).toBe(
       "La fin : ••• fou",

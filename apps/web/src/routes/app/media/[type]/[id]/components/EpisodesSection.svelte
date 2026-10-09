@@ -30,6 +30,7 @@
     MediaDetailSeasonDto,
     ReviewTargetType,
   } from "@loomkeep/shared";
+  import { tick } from "svelte";
   import { SvelteDate, SvelteSet } from "svelte/reactivity";
   import { fly, slide } from "svelte/transition";
 
@@ -91,6 +92,24 @@
 
   // Collapsed by default; several seasons can be expanded independently.
   let expandedSeasons = new SvelteSet<number>();
+
+  // `#s2e5` (an episode code in a message links here): open the season and
+  // bring the episode into view, lit for a moment.
+  let highlightedEpisode = $state<string | null>(null);
+  $effect(() => {
+    const target = /^#s(\d+)e(\d+)$/i.exec(window.location.hash);
+    if (!target) return;
+    const season = Number(target[1]);
+    const key = `s${season}e${Number(target[2])}`;
+    expandedSeasons.add(season);
+    void tick().then(() => {
+      document
+        .getElementById(`episode-${key}`)
+        ?.scrollIntoView({ behavior: reduced ? "auto" : "smooth" });
+      highlightedEpisode = key;
+      setTimeout(() => (highlightedEpisode = null), 2000);
+    });
+  });
   function toggleSeason(seasonNumber: number) {
     if (expandedSeasons.has(seasonNumber)) {
       expandedSeasons.delete(seasonNumber);
@@ -389,7 +408,12 @@
         <ul transition:slide|global={{ duration: reduced ? 0 : 200 }}>
           {#each season.episodes as episode (episode.number)}
             {@const watched = episode.watchCount > 0}
-            <li class="border-border border-b last:border-b-0">
+            <li
+              id="episode-s{season.number}e{episode.number}"
+              class="border-border scroll-mt-24 border-b transition-colors duration-500 last:border-b-0
+                {highlightedEpisode === `s${season.number}e${episode.number}`
+                ? 'bg-accent/15'
+                : ''}">
               <!-- One row on a wide viewport, two stacked lines on a phone: the
                    number, the watched-on date and up to four action buttons
                    left the title a few dozen pixels at 375px, and nothing at

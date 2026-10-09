@@ -47,6 +47,9 @@ Messages understand a little formatting:
 | `` `code` ``      | `code`                |
 | `\|\|spoiler\|\|` | blurred until clicked |
 
+And, at the start of a line: `> ` quotes, `- ` makes a list, and a line of
+three backticks opens a code block until the next one.
+
 Select text to get a small bar that applies them for you, or use
 **Ctrl+B**, **Ctrl+I**, **Ctrl+Shift+X** (strikethrough), **Ctrl+E** (code)
 and **Ctrl+Shift+S** (spoiler). Each one is a switch:
@@ -57,9 +60,23 @@ site behind it until you open it.
 Typing **/** at the start of a message opens the commands. **/spoiler** hides
 the whole message behind a "tap to see" until your friend chooses to read it.
 
-Hover a message for its 😊 (react, one reaction each) and **⋯** (edit, copy
-the text, delete, report); on a phone, press and hold it. An edited message
-says "edited"; a deleted one leaves "Message deleted" in its place.
+Hover a message for its 😊 (react, one reaction each) and **⋯**; on a phone,
+press and hold it. The **⋯** edits, copies the text, forwards it to other
+friends (marked "Forwarded", without saying who wrote it), pins it, marks the
+conversation unread from there, deletes or reports it. An edited message says
+"edited"; a deleted one leaves "Message deleted" in its place.
+
+Pinned messages are the same for both of you: they carry a pin, and the pin
+in the conversation's header lists them, up to fifty. Marking a conversation
+unread draws a **New** line above that message, as opening a conversation
+does above the first message you hadn't read.
+
+The conversation's **⋯** also searches it (**Ctrl+F**) and gathers its
+**shared works**: every work that went through it, once each.
+
+On a computer, **↑** in an empty field edits your last message, and
+**Alt+↑** / **Alt+↓** move to the previous or next conversation. Every
+shortcut is listed in **Settings › Help › Keyboard shortcuts**.
 
 ## Sharing a work
 
@@ -73,12 +90,21 @@ what it is, its year, and a link to its page.
   device's own share sheet.
 - **/reco** in a message: type the title, pick the work, and it goes with what
   you write.
+- **#** inside a sentence: type `#` and a few letters of a title, pick the
+  work, and its name becomes a link to its page — without a card.
 - **A link** to a work's page, on Loomkeep or on TMDB, IMDb, AniList, Steam,
   IGDB, Open Library or MusicBrainz, turns into its card on its own, a moment
   after the message is sent. Up to three per message.
 
-While you write, the cards your first three links will become show above
-the field: a card's **×** sends its link plain.
+While you write, links and `#` mentions are underlined, and the cards your
+first three links will become show above the field: a card's **×** sends its
+link plain, and the next link takes its place.
+
+A card you receive has a **+** that adds the work to your library — to watch,
+to play, to read or to listen to — and a check once it's there.
+
+An episode code such as `S02E05` opens that episode when the message names a
+single series (by `#`, a card or a link); otherwise it stays plain text.
 
 18+ titles never become a card. A card for a domain you turned off shows a
 warning instead of opening: turn the domain on in **Settings › Domains**.

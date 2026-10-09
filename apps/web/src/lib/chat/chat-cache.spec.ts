@@ -22,6 +22,8 @@ function message(id: string, at: string, over: Partial<MessageDto> = {}) {
     reactions: [],
     myReaction: null,
     works: [],
+    pinned: false,
+    forwarded: false,
     createdAt: `2026-10-06T${at}:00.000Z`,
     updatedAt: `2026-10-06T${at}:00.000Z`,
     ...over,
@@ -81,6 +83,7 @@ describe("applyToConversations", () => {
     peerLastReadAt: null,
     lastMessage: message("m1", "21:30"),
     unread: 0,
+    lastReadAt: "2026-10-06T21:30:00.000Z",
     muted: false,
     lastMessageAt: "2026-10-06T21:30:00.000Z",
   } satisfies ConversationDto;

@@ -1,20 +1,23 @@
 import {
   type AlertPrefs,
+  CHAT_SEARCH_MIN_LENGTH,
   type ChatMessageEvent,
   type ChatReadEvent,
   type CommentEmote,
   type CommentReactionSummaryDto,
   type ConversationDto,
   type ConversationReadOnlyReason,
+  type ConversationWorkDto,
   ErrorCode,
   FollowStatus,
+  isAlertEnabled,
   type MessageDto,
   type MessageWorkKind,
   type PagedResult,
+  PINNED_MESSAGES_MAX,
   ProfileAccess,
   RealtimeEvent,
   type UserSummaryDto,
-  isAlertEnabled,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
@@ -48,7 +51,15 @@ const MESSAGE_INCLUDE = {
   reactions: { select: { userId: true, emote: true } },
   embeds: {
     orderBy: { position: "asc" },
-    select: { kind: true, title: true, imageUrl: true, href: true, year: true },
+    select: {
+      targetType: true,
+      targetId: true,
+      kind: true,
+      title: true,
+      imageUrl: true,
+      href: true,
+      year: true,
+    },
   },
 } as const satisfies Prisma.MessageInclude;
 
@@ -218,7 +229,11 @@ export class ChatService {
       include: MESSAGE_INCLUDE,
     });
     const { items, hasMore } = toPagedResult(rows, page.limit);
-    return { items: items.map((row) => toMessageDto(row, viewerId)), hasMore };
+    const owned = await this.ownedWorks(viewerId, embedsOf(items));
+    return {
+      items: items.map((row) => toMessageDto(row, viewerId, owned)),
+      hasMore,
+    };
   }
 
   /** `work`: the card attached by hand, which lets `text` be empty. */
@@ -230,6 +245,25 @@ export class ChatService {
     work: WorkCard | null = null,
   ): Promise<MessageDto> {
     const membership = await this.membership(authorId, conversationId);
+    const row = await this.deliver(authorId, membership, {
+      text,
+      spoiler,
+      embeds: work ? [{ ...work, position: 0 }] : [],
+    });
+    return this.dtoFor(row, authorId);
+  }
+
+  private async deliver(
+    authorId: string,
+    membership: Membership,
+    message: {
+      text: string | null;
+      spoiler: boolean;
+      forwarded?: boolean;
+      embeds: (WorkCard & { position: number })[];
+    },
+  ): Promise<MessageRow> {
+    const { conversationId } = membership;
     const peer = peerOf(membership, authorId);
     await this.ensureWritable(authorId, peer);
 
@@ -239,10 +273,12 @@ export class ChatService {
         data: {
           conversationId,
           authorId,
-          text,
-          spoiler,
+          text: message.text,
+          spoiler: message.spoiler,
+          forwarded: message.forwarded ?? false,
           createdAt: now,
-          embeds: work ? { create: { ...work, position: 0 } } : undefined,
+          embeds:
+            message.embeds.length > 0 ? { create: message.embeds } : undefined,
         },
         include: MESSAGE_INCLUDE,
       }),
@@ -257,9 +293,9 @@ export class ChatService {
       }),
     ]);
 
-    this.publish(membership, row);
+    await this.publish(membership, row);
     if (peer) await this.pushIfAway(authorId, peer.userId, conversationId);
-    return toMessageDto(row, authorId);
+    return row;
   }
 
   async edit(
@@ -276,8 +312,8 @@ export class ChatService {
       data: { text, spoiler, edited: true },
       include: MESSAGE_INCLUDE,
     });
-    this.publish(membership, row);
-    return toMessageDto(row, authorId);
+    await this.publish(membership, row);
+    return this.dtoFor(row, authorId);
   }
 
   /**
@@ -337,7 +373,170 @@ export class ChatService {
   async remove(authorId: string, messageId: string): Promise<void> {
     const { message, membership } = await this.ownMessage(authorId, messageId);
     const row = await this.tombstone(message.id, false, this.prisma);
-    this.publish(membership, row);
+    await this.publish(membership, row);
+  }
+
+  /** Either member pins or unpins; both see it. */
+  async pin(userId: string, messageId: string, pinned: boolean): Promise<void> {
+    const { message, membership } = await this.memberMessage(userId, messageId);
+    await this.ensureWritable(userId, peerOf(membership, userId));
+
+    if (pinned && !message.pinnedAt) {
+      const count = await this.prisma.message.count({
+        where: {
+          conversationId: message.conversationId,
+          pinnedAt: { not: null },
+          deletedAt: null,
+        },
+      });
+
+      if (count >= PINNED_MESSAGES_MAX) {
+        throw new AppException(HttpStatus.CONFLICT, ErrorCode.ChatPinLimit);
+      }
+    }
+
+    await this.prisma.message.update({
+      where: { id: message.id },
+      data: { pinnedAt: pinned ? (message.pinnedAt ?? new Date()) : null },
+    });
+    await this.publishById(membership, message.id);
+  }
+
+  /** The conversation's pinned messages, last pinned first. */
+  async pins(viewerId: string, conversationId: string): Promise<MessageDto[]> {
+    await this.membership(viewerId, conversationId);
+    const rows = await this.prisma.message.findMany({
+      where: { conversationId, pinnedAt: { not: null }, deletedAt: null },
+      orderBy: { pinnedAt: "desc" },
+      take: PINNED_MESSAGES_MAX,
+      include: MESSAGE_INCLUDE,
+    });
+    const owned = await this.ownedWorks(viewerId, embedsOf(rows));
+    return rows.map((row) => toMessageDto(row, viewerId, owned));
+  }
+
+  /** Messages whose text holds the query, newest first. */
+  async search(
+    viewerId: string,
+    conversationId: string,
+    query: string,
+  ): Promise<MessageDto[]> {
+    await this.membership(viewerId, conversationId);
+    const needle = query.trim();
+    if (needle.length < CHAT_SEARCH_MIN_LENGTH) return [];
+
+    const rows = await this.prisma.message.findMany({
+      where: {
+        conversationId,
+        deletedAt: null,
+        text: { contains: needle, mode: "insensitive" },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: MESSAGE_PAGE_SIZE,
+      include: MESSAGE_INCLUDE,
+    });
+    const owned = await this.ownedWorks(viewerId, embedsOf(rows));
+    return rows.map((row) => toMessageDto(row, viewerId, owned));
+  }
+
+  /** Every work shared in the conversation, once each, last shared first. */
+  async works(
+    viewerId: string,
+    conversationId: string,
+  ): Promise<ConversationWorkDto[]> {
+    await this.membership(viewerId, conversationId);
+    const embeds = await this.prisma.messageEmbed.findMany({
+      where: { message: { conversationId, deletedAt: null } },
+      orderBy: [{ message: { createdAt: "desc" } }, { position: "asc" }],
+      take: 500,
+      include: { message: { select: { authorId: true, createdAt: true } } },
+    });
+
+    const seen = new Set<string>();
+    const latest = embeds.filter((embed) => {
+      if (seen.has(embed.href)) return false;
+      seen.add(embed.href);
+      return true;
+    });
+    const owned = await this.ownedWorks(viewerId, latest);
+
+    return latest.map((embed) => ({
+      kind: embed.kind as MessageWorkKind,
+      title: embed.title,
+      imageUrl: embed.imageUrl,
+      href: embed.href,
+      year: embed.year,
+      inLibrary: owned.has(`${embed.targetType}:${embed.targetId}`),
+      messageId: embed.messageId,
+      sharedAt: embed.message.createdAt.toISOString(),
+      mine: embed.message.authorId === viewerId,
+    }));
+  }
+
+  /** Unread again from this message on, as if it had just arrived. */
+  async markUnreadFrom(userId: string, messageId: string): Promise<void> {
+    const { message } = await this.memberMessage(userId, messageId);
+    await this.prisma.conversationMember.update({
+      where: {
+        conversationId_userId: {
+          conversationId: message.conversationId,
+          userId,
+        },
+      },
+      data: { lastReadAt: new Date(message.createdAt.getTime() - 1) },
+    });
+  }
+
+  /**
+   * "Transférer": a copy goes to each friend picked, in their conversation,
+   * marked forwarded without saying whose it was. Every recipient is checked
+   * before anything is sent.
+   */
+  async forward(
+    userId: string,
+    messageId: string,
+    usernames: string[],
+  ): Promise<number> {
+    const { message } = await this.memberMessage(userId, messageId);
+    const original = await this.prisma.message.findUniqueOrThrow({
+      where: { id: message.id },
+      include: { embeds: { orderBy: { position: "asc" } } },
+    });
+
+    const memberships: Membership[] = [];
+
+    for (const username of usernames) {
+      const conversation = await this.open(userId, username);
+
+      if (conversation.id === message.conversationId) {
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          ErrorCode.ChatForwardToOrigin,
+        );
+      }
+
+      memberships.push(await this.membership(userId, conversation.id));
+    }
+
+    for (const membership of memberships) {
+      await this.deliver(userId, membership, {
+        text: original.text,
+        spoiler: original.spoiler,
+        forwarded: true,
+        embeds: original.embeds.map((embed) => ({
+          targetType: embed.targetType,
+          targetId: embed.targetId,
+          kind: embed.kind as MessageWorkKind,
+          title: embed.title,
+          imageUrl: embed.imageUrl,
+          href: embed.href,
+          year: embed.year,
+          position: embed.position,
+        })),
+      });
+    }
+
+    return memberships.length;
   }
 
   /** One reaction per member and message: a second emote replaces the first. */
@@ -469,7 +668,7 @@ export class ChatService {
     if (!row) return;
 
     for (const { userId } of members) {
-      this.emitMessage(userId, row);
+      await this.emitMessage(userId, row);
     }
   }
 
@@ -492,6 +691,66 @@ export class ChatService {
     await this.prisma.conversation.deleteMany({
       where: { members: { none: {} } },
     });
+  }
+
+  private async dtoFor(row: MessageRow, viewerId: string): Promise<MessageDto> {
+    return toMessageDto(
+      row,
+      viewerId,
+      await this.ownedWorks(viewerId, row.embeds),
+    );
+  }
+
+  /** The works among these cards the viewer already tracks. */
+  private async ownedWorks(
+    userId: string,
+    embeds: { targetType: string; targetId: string }[],
+  ): Promise<Set<string>> {
+    const idsOf = (type: string) => [
+      ...new Set(
+        embeds
+          .filter((embed) => embed.targetType === type)
+          .map((embed) => embed.targetId),
+      ),
+    ];
+    const media = idsOf("MEDIA");
+    const games = idsOf("GAME");
+    const books = idsOf("BOOK");
+    const music = idsOf("MUSIC");
+    const owned = new Set<string>();
+
+    const [mediaRows, gameRows, bookRows, musicRows] = await Promise.all([
+      media.length > 0
+        ? this.prisma.libraryEntry.findMany({
+            where: { userId, mediaItemId: { in: media } },
+            select: { mediaItemId: true },
+          })
+        : [],
+      games.length > 0
+        ? this.prisma.gameEntry.findMany({
+            where: { userId, gameItemId: { in: games } },
+            select: { gameItemId: true },
+          })
+        : [],
+      books.length > 0
+        ? this.prisma.bookEntry.findMany({
+            where: { userId, bookItemId: { in: books } },
+            select: { bookItemId: true },
+          })
+        : [],
+      music.length > 0
+        ? this.prisma.musicEntry.findMany({
+            where: { userId, musicItemId: { in: music } },
+            select: { musicItemId: true },
+          })
+        : [],
+    ]);
+
+    for (const row of mediaRows) owned.add(`MEDIA:${row.mediaItemId}`);
+    for (const row of gameRows) owned.add(`GAME:${row.gameItemId}`);
+    for (const row of bookRows) owned.add(`BOOK:${row.bookItemId}`);
+    for (const row of musicRows) owned.add(`MUSIC:${row.musicItemId}`);
+    return owned;
   }
 
   private async viewer(userId: string): Promise<Viewer> {
@@ -534,6 +793,8 @@ export class ChatService {
         authorId: true,
         conversationId: true,
         deletedAt: true,
+        pinnedAt: true,
+        createdAt: true,
       },
     });
 
@@ -653,6 +914,7 @@ export class ChatService {
     const lastByConversation = new Map(
       lastMessages.map((m) => [m.conversationId, m]),
     );
+    const owned = await this.ownedWorks(viewer.id, embedsOf(lastMessages));
 
     return Promise.all(
       memberships.map(async (m): Promise<ConversationDto> => {
@@ -671,8 +933,9 @@ export class ChatService {
             peer && showsReadReceipts(viewer, peer.user)
               ? peer.lastReadAt.toISOString()
               : null,
-          lastMessage: last ? toMessageDto(last, viewer.id) : null,
+          lastMessage: last ? toMessageDto(last, viewer.id, owned) : null,
           unread: unread.get(m.conversationId) ?? 0,
+          lastReadAt: m.lastReadAt.toISOString(),
           muted: m.mutedAt !== null,
           lastMessageAt: m.conversation.lastMessageAt.toISOString(),
         };
@@ -710,7 +973,12 @@ export class ChatService {
     await db.messageEmbed.deleteMany({ where: { messageId } });
     return db.message.update({
       where: { id: messageId },
-      data: { text: null, deletedAt: new Date(), deletedByAdmin: byAdmin },
+      data: {
+        text: null,
+        deletedAt: new Date(),
+        deletedByAdmin: byAdmin,
+        pinnedAt: null,
+      },
       include: MESSAGE_INCLUDE,
     });
   }
@@ -723,20 +991,26 @@ export class ChatService {
       where: { id: messageId },
       include: MESSAGE_INCLUDE,
     });
-    this.publish(membership, row);
+    await this.publish(membership, row);
   }
 
-  /** Each member gets the message as they see it (`mine`, `myReaction`). */
-  private publish(membership: Membership, row: MessageRow): void {
+  /**
+   * Each member gets the message as they see it (`mine`, `myReaction`, the
+   * cards of the works they already track).
+   */
+  private async publish(
+    membership: Membership,
+    row: MessageRow,
+  ): Promise<void> {
     for (const member of membership.conversation.members) {
-      this.emitMessage(member.userId, row);
+      await this.emitMessage(member.userId, row);
     }
   }
 
-  private emitMessage(userId: string, row: MessageRow): void {
+  private async emitMessage(userId: string, row: MessageRow): Promise<void> {
     const event: ChatMessageEvent = {
       conversationId: row.conversationId,
-      message: toMessageDto(row, userId),
+      message: await this.dtoFor(row, userId),
     };
     this.events.emitToUser(userId, RealtimeEvent.CHAT_MESSAGE, event);
   }
@@ -794,6 +1068,10 @@ export class ChatService {
   }
 }
 
+function embedsOf(rows: MessageRow[]) {
+  return rows.flatMap((row) => row.embeds);
+}
+
 function peerOf(
   membership: Membership,
   viewerId: string,
@@ -810,7 +1088,11 @@ function showsReadReceipts(
   return a.chatShowReadReceipts && b.chatShowReadReceipts;
 }
 
-function toMessageDto(row: MessageRow, viewerId: string): MessageDto {
+function toMessageDto(
+  row: MessageRow,
+  viewerId: string,
+  owned: ReadonlySet<string>,
+): MessageDto {
   const counts = new Map<CommentEmote, number>();
   let myReaction: CommentEmote | null = null;
 
@@ -837,10 +1119,13 @@ function toMessageDto(row: MessageRow, viewerId: string): MessageDto {
     myReaction,
     works: row.deletedAt
       ? []
-      : row.embeds.map((embed) => ({
+      : row.embeds.map(({ targetType, targetId, ...embed }) => ({
           ...embed,
           kind: embed.kind as MessageWorkKind,
+          inLibrary: owned.has(`${targetType}:${targetId}`),
         })),
+    pinned: row.pinnedAt !== null,
+    forwarded: row.forwarded,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

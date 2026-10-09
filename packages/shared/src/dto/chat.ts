@@ -25,6 +25,8 @@ export interface MessageWorkDto {
   /** Client route to the work's page. */
   href: string;
   year: number | null;
+  /** The viewer already tracks the work: the card offers no "Add". */
+  inLibrary: boolean;
 }
 
 export interface MessageDto {
@@ -49,6 +51,10 @@ export interface MessageDto {
   myReaction: CommentEmote | null;
   /** The attached work first, then the work links found in the text. */
   works: MessageWorkDto[];
+  /** Pinned in the conversation, by either member. */
+  pinned: boolean;
+  /** Copied from another conversation by "Transférer". */
+  forwarded: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -71,6 +77,8 @@ export interface ConversationDto {
   lastMessage: MessageDto | null;
   /** Messages from the other member sent after the viewer last read. */
   unread: number;
+  /** Up to when the viewer has read: where the "new" line goes. */
+  lastReadAt: string;
   muted: boolean;
   lastMessageAt: string;
 }
@@ -106,6 +114,25 @@ export interface RecommendWorkRequestDto {
   work: string;
   usernames: string[];
   text?: string;
+}
+
+/** A work shared in a conversation, for its gallery: the latest card of it. */
+export interface ConversationWorkDto extends MessageWorkDto {
+  messageId: string;
+  sharedAt: string;
+  /** Shared by the viewer. */
+  mine: boolean;
+}
+
+/** Shortest query `GET /chat/conversations/:id/search` looks for. */
+export const CHAT_SEARCH_MIN_LENGTH = 2;
+
+/** Pins a conversation keeps, at most. */
+export const PINNED_MESSAGES_MAX = 50;
+
+/** "Transférer": a copy of the message goes to each friend picked. */
+export interface ForwardMessageRequestDto {
+  usernames: string[];
 }
 
 /** Max friends one recommendation goes to. */

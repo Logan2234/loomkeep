@@ -7,6 +7,7 @@ import type { MessageDto } from "@loomkeep/shared";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
+import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ChatComposer from "./ChatComposer.svelte";
 
@@ -47,6 +48,8 @@ beforeEach(() => {
           reactions: [],
           myReaction: null,
           works: [],
+          pinned: false,
+          forwarded: false,
           createdAt: "2026-10-07T10:00:00.000Z",
           updatedAt: "2026-10-07T10:00:00.000Z",
         } satisfies MessageDto);
@@ -59,11 +62,12 @@ afterEach(() => {
   layout.compact = true;
 });
 
-function renderComposer() {
+function renderComposer(oneditlast = vi.fn()) {
   renderWithQuery(ChatComposer, {
     conversationId: "cv1",
     peerName: "Léa",
     oncanceledit: vi.fn(),
+    oneditlast,
   });
   return screen.getByRole<HTMLTextAreaElement>("textbox", {
     name: m.chat_message_label(),
@@ -246,6 +250,72 @@ describe("ChatComposer", () => {
         },
       ]),
     );
+  });
+
+  it("mentions a work with #, and sends it as a token", async () => {
+    server.use(
+      http.get(apiUrl("/catalog/search"), () =>
+        HttpResponse.json({
+          items: [
+            {
+              source: "TMDB",
+              sourceId: "95396",
+              type: "SERIES",
+              title: "Severance",
+              year: 2022,
+              posterUrl: null,
+              isAdult: false,
+            },
+          ],
+          hasMore: false,
+        }),
+      ),
+      http.get(apiUrl("/games/search"), () =>
+        HttpResponse.json({ results: [] }),
+      ),
+      http.get(apiUrl("/books/search"), () =>
+        HttpResponse.json({ results: [] }),
+      ),
+      http.get(apiUrl("/music/search"), () =>
+        HttpResponse.json({ results: [] }),
+      ),
+    );
+    const user = userEvent.setup();
+    const box = renderComposer();
+
+    await user.type(box, "Regarde #seve");
+    await user.click(await screen.findByRole("option", { name: /Severance/ }));
+    expect(box.value).toBe("Regarde #Severance ");
+    // The browser reports the caret moving after the insertion: the search
+    // mustn't come back for the mention just made.
+    box.focus();
+    document.dispatchEvent(new Event("selectionchange"));
+    await tick();
+    expect(screen.queryByText(m.chat_reco_prompt())).toBe(null);
+    expect(screen.queryByRole("listbox")).toBe(null);
+    await user.type(box, "S01E09{Enter}");
+
+    await waitFor(() =>
+      expect(sent).toEqual([
+        {
+          text: "Regarde #[Severance](/app/media/series/95396) S01E09",
+          spoiler: false,
+        },
+      ]),
+    );
+  });
+
+  it("edits the last message on ↑ in an empty field only", async () => {
+    const user = userEvent.setup();
+    const oneditlast = vi.fn();
+    const box = renderComposer(oneditlast);
+
+    await user.type(box, "a{ArrowUp}");
+    expect(oneditlast).not.toHaveBeenCalled();
+
+    await user.clear(box);
+    await user.keyboard("{ArrowUp}");
+    expect(oneditlast).toHaveBeenCalledTimes(1);
   });
 
   it("takes bold off with the shortcut that put it on", async () => {

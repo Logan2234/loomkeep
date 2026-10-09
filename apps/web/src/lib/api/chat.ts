@@ -2,7 +2,9 @@ import type {
   ChatUnreadDto,
   CommentEmote,
   ConversationDto,
+  ConversationWorkDto,
   EditMessageRequestDto,
+  ForwardMessageRequestDto,
   MessageDto,
   PagedResult,
   RecommendWorkRequestDto,
@@ -53,6 +55,38 @@ export const editMessage = (messageId: string, body: EditMessageRequestDto) =>
 /** Sends the work to each friend, in their own conversation. */
 export const recommendWork = (body: RecommendWorkRequestDto) =>
   request<RecommendWorkResultDto>("/chat/recommendations", {
+    method: "POST",
+    body,
+  });
+
+export const pinMessage = (messageId: string, pinned: boolean) =>
+  request<void>(`/chat/messages/${id(messageId)}/pin`, {
+    method: pinned ? "PUT" : "DELETE",
+  });
+
+export const searchMessages = (conversationId: string, query: string) =>
+  request<MessageDto[]>(
+    `/chat/conversations/${id(conversationId)}/search?q=${encodeURIComponent(query)}`,
+  );
+
+/** The conversation's shared works, once each, last shared first. */
+export const getConversationWorks = (conversationId: string) =>
+  request<ConversationWorkDto[]>(
+    `/chat/conversations/${id(conversationId)}/works`,
+  );
+
+export const getPinnedMessages = (conversationId: string) =>
+  request<MessageDto[]>(`/chat/conversations/${id(conversationId)}/pins`);
+
+/** Unread again from this message on. */
+export const markUnreadFrom = (messageId: string) =>
+  request<void>(`/chat/messages/${id(messageId)}/unread`, { method: "POST" });
+
+export const forwardMessage = (
+  messageId: string,
+  body: ForwardMessageRequestDto,
+) =>
+  request<RecommendWorkResultDto>(`/chat/messages/${id(messageId)}/forward`, {
     method: "POST",
     body,
   });

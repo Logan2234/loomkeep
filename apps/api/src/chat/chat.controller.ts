@@ -1,6 +1,7 @@
 import type {
   ChatUnreadDto,
   ConversationDto,
+  ConversationWorkDto,
   MessageDto,
   PagedResult,
   RecommendWorkResultDto,
@@ -41,6 +42,7 @@ import {
 } from "./chat.service";
 import {
   EditMessageBody,
+  ForwardMessageBody,
   MuteConversationBody,
   OpenConversationBody,
   ReactMessageBody,
@@ -50,6 +52,7 @@ import {
 import {
   ChatUnreadResponseDto,
   ConversationResponseDto,
+  ConversationWorkResponseDto,
   MessageResponseDto,
   RecommendWorkResultResponseDto,
 } from "./dto/chat-response.dto";
@@ -192,6 +195,68 @@ export class ChatController {
     const message = await this.chat.edit(user.sub, id, body.text, body.spoiler);
     this.works.refreshLinkedWorks(message.id, body.text, body.skipLinks);
     return message;
+  }
+
+  @Put("messages/:id/pin")
+  pin(@CurrentUser() user: JwtPayload, @Param("id") id: string): Promise<void> {
+    return this.chat.pin(user.sub, id, true);
+  }
+
+  @Delete("messages/:id/pin")
+  unpin(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.chat.pin(user.sub, id, false);
+  }
+
+  @Get("conversations/:id/works")
+  @ApiOkResponse({ type: ConversationWorkResponseDto, isArray: true })
+  sharedWorks(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<ConversationWorkDto[]> {
+    return this.chat.works(user.sub, id);
+  }
+
+  @Get("conversations/:id/search")
+  @ApiOkResponse({ type: MessageResponseDto, isArray: true })
+  search(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Query("q") query = "",
+  ): Promise<MessageDto[]> {
+    return this.chat.search(user.sub, id, query);
+  }
+
+  @Get("conversations/:id/pins")
+  @ApiOkResponse({ type: MessageResponseDto, isArray: true })
+  pins(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<MessageDto[]> {
+    return this.chat.pins(user.sub, id);
+  }
+
+  /** Unread again from this message on. */
+  @Post("messages/:id/unread")
+  markUnread(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.chat.markUnreadFrom(user.sub, id);
+  }
+
+  /** "Transférer": a copy to each friend picked, in their own conversation. */
+  @Throttle(CHAT_MESSAGE_THROTTLE)
+  @Post("messages/:id/forward")
+  @ApiCreatedResponse({ type: RecommendWorkResultResponseDto })
+  async forward(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: ForwardMessageBody,
+  ): Promise<RecommendWorkResultDto> {
+    return { sent: await this.chat.forward(user.sub, id, body.usernames) };
   }
 
   @Delete("messages/:id")

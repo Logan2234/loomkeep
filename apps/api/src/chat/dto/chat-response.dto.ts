@@ -3,6 +3,7 @@ import type {
   CommentEmote,
   ConversationDto,
   ConversationReadOnlyReason,
+  ConversationWorkDto,
   MessageDto,
   MessageWorkDto,
   MessageWorkKind,
@@ -17,6 +18,16 @@ export class MessageWorkResponseDto implements MessageWorkDto {
   imageUrl!: string | null;
   href!: string;
   year!: number | null;
+  inLibrary!: boolean;
+}
+
+export class ConversationWorkResponseDto
+  extends MessageWorkResponseDto
+  implements ConversationWorkDto
+{
+  messageId!: string;
+  sharedAt!: string;
+  mine!: boolean;
 }
 
 export class MessageResponseDto implements MessageDto {
@@ -32,6 +43,8 @@ export class MessageResponseDto implements MessageDto {
   reactions!: CommentReactionSummaryResponseDto[];
   myReaction!: CommentEmote | null;
   works!: MessageWorkResponseDto[];
+  pinned!: boolean;
+  forwarded!: boolean;
   createdAt!: string;
   updatedAt!: string;
 }
@@ -44,6 +57,7 @@ export class ConversationResponseDto implements ConversationDto {
   peerLastReadAt!: string | null;
   lastMessage!: MessageResponseDto | null;
   unread!: number;
+  lastReadAt!: string;
   muted!: boolean;
   lastMessageAt!: string;
 }

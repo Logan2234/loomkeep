@@ -23,6 +23,8 @@ export const mediaWork = (media: MediaSummaryDto): MessageWorkDto => ({
   imageUrl: media.posterUrl,
   href: `/app/media/${media.type.toLowerCase()}/${media.sourceId}`,
   year: media.year,
+  // Only cards in sent messages say whether the viewer tracks the work.
+  inLibrary: false,
 });
 
 export const gameWork = (game: GameSummaryDto): MessageWorkDto => ({
@@ -31,6 +33,7 @@ export const gameWork = (game: GameSummaryDto): MessageWorkDto => ({
   imageUrl: game.coverUrl,
   href: `/app/games/${game.sourceId}`,
   year: game.year,
+  inLibrary: false,
 });
 
 export const bookWork = (book: BookSummaryDto): MessageWorkDto => ({
@@ -39,6 +42,7 @@ export const bookWork = (book: BookSummaryDto): MessageWorkDto => ({
   imageUrl: book.coverUrl,
   href: `/app/books/${book.sourceId}`,
   year: book.year,
+  inLibrary: false,
 });
 
 export const musicWork = (album: MusicSummaryDto): MessageWorkDto => ({
@@ -47,6 +51,7 @@ export const musicWork = (album: MusicSummaryDto): MessageWorkDto => ({
   imageUrl: album.coverUrl,
   href: `/app/music/${album.sourceId}`,
   year: album.year,
+  inLibrary: false,
 });
 
 /**
