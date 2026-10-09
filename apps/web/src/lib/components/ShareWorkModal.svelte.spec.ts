@@ -7,12 +7,13 @@ import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import RecommendButton from "./RecommendButton.svelte";
+import ShareWorkModal from "./ShareWorkModal.svelte";
 
 vi.mock("svelte/transition", () => ({
   fade: () => ({ duration: 0 }),
   fly: () => ({ duration: 0 }),
   scale: () => ({ duration: 0 }),
+  slide: () => ({ duration: 0 }),
 }));
 
 const SEVERANCE = {
@@ -23,6 +24,13 @@ const SEVERANCE = {
   year: 2022,
 };
 
+const friend = (id: string, username: string, displayName: string) => ({
+  id,
+  username,
+  displayName,
+  avatarUrl: null,
+});
+
 let sent: RecommendWorkRequestDto[] = [];
 
 beforeEach(() => {
@@ -31,9 +39,15 @@ beforeEach(() => {
   server.use(
     http.get(apiUrl("/chat/friends"), () =>
       HttpResponse.json([
-        { id: "u1", username: "lea", displayName: "Léa", avatarUrl: null },
-        { id: "u2", username: "malo", displayName: "Malo", avatarUrl: null },
+        friend("u1", "lea", "Léa"),
+        friend("u2", "malo", "Malo"),
       ]),
+    ),
+    http.get(apiUrl("/chat/conversations"), () =>
+      HttpResponse.json({
+        items: [{ id: "cv1", peer: friend("u2", "malo", "Malo") }],
+        hasMore: false,
+      }),
     ),
     http.post(apiUrl("/chat/recommendations"), async ({ request }) => {
       sent.push((await request.json()) as RecommendWorkRequestDto);
@@ -46,13 +60,21 @@ afterEach(() => {
   appConfig.chatEnabled = false;
 });
 
-describe("RecommendButton", () => {
-  it("sends the work to the friends picked, with the note", async () => {
+describe("ShareWorkModal", () => {
+  it("puts the friend written to last first, and sends to the friends picked", async () => {
     const user = userEvent.setup();
-    renderWithQuery(RecommendButton, { work: SEVERANCE });
+    renderWithQuery(ShareWorkModal, { work: SEVERANCE, onclose: vi.fn() });
 
-    await user.click(screen.getByRole("button", { name: m.chat_recommend() }));
-    await user.click(await screen.findByRole("button", { name: /Léa/ }));
+    const group = await screen.findByRole("group", {
+      name: m.share_work_send_to(),
+    });
+    await waitFor(() =>
+      expect(group.textContent?.indexOf("Malo")).toBeLessThan(
+        group.textContent?.indexOf("Léa") ?? 0,
+      ),
+    );
+
+    await user.click(screen.getByRole("button", { name: /Léa/ }));
     await user.click(screen.getByRole("button", { name: /Malo/ }));
     await user.type(
       screen.getByPlaceholderText(m.chat_recommend_note()),
@@ -75,12 +97,19 @@ describe("RecommendButton", () => {
     );
   });
 
-  it("isn't offered while Messages is off", () => {
-    appConfig.chatEnabled = false;
-    renderWithQuery(RecommendButton, { work: SEVERANCE });
+  // An 18+ title never becomes a card: the link and the QR code remain.
+  it("only offers the link for a work that can't be sent", () => {
+    renderWithQuery(ShareWorkModal, {
+      work: SEVERANCE,
+      sendable: false,
+      onclose: vi.fn(),
+    });
 
-    expect(screen.queryByRole("button", { name: m.chat_recommend() })).toBe(
+    expect(screen.queryByRole("group", { name: m.share_work_send_to() })).toBe(
       null,
     );
+    expect(
+      screen.getByRole("button", { name: new RegExp(m.common_copy_link()) }),
+    ).toBeTruthy();
   });
 });

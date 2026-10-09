@@ -32,7 +32,8 @@
   import ReviewsSection from "#lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "#lib/components/TrackingPanel.svelte";
-  import RecommendButton from "#lib/components/chat/RecommendButton.svelte";
+  import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
+  import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
   import { bookWork } from "#lib/chat/work-search.js";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
   import { appConfig } from "#lib/config.svelte.js";
@@ -83,7 +84,8 @@
   }));
   const detail = $derived(bookQuery.data);
   // 18+ titles never become a card: the friend may not allow them.
-  const work = $derived(detail && !detail.isAdult ? bookWork(detail) : null);
+  const work = $derived(detail ? bookWork(detail) : null);
+  let sharing = $state(false);
   const error = $derived(bookQuery.error);
 
   // The interface-language auto-pick's own language, captured once and kept
@@ -356,12 +358,6 @@
           </p>
         {/if}
 
-        {#snippet recommendButton()}
-          {#if work}
-            <RecommendButton {work} />
-          {/if}
-        {/snippet}
-
         {#if !entry}
           <div class="mt-6 flex items-center gap-2.5">
             <button
@@ -371,13 +367,11 @@
               <Icon name="plus" class="h-4 w-4" />
               {m.library_add()}
             </button>
-            {#if work}
-              <RecommendButton {work} />
-            {/if}
+            <WorkMoreMenu onshare={() => (sharing = true)} />
           </div>
         {:else}
           <TrackingPanel
-            extra={work ? recommendButton : undefined}
+            onShare={() => (sharing = true)}
             favorite={entry.favorite}
             {saving}
             onToggleFavorite={() =>
@@ -595,6 +589,13 @@
       {/if}
     </div>
   </div>
+
+  {#if sharing && work}
+    <ShareWorkModal
+      {work}
+      sendable={!detail?.isAdult}
+      onclose={() => (sharing = false)} />
+  {/if}
 
   {#if confirmRemove}
     <ConfirmationModal

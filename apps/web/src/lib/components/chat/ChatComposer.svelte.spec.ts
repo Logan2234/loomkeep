@@ -132,6 +132,37 @@ describe("ChatComposer", () => {
     );
   });
 
+  it("previews each of the first links", async () => {
+    server.use(
+      http.get(apiUrl("/links/resolve"), ({ request }) => {
+        const url = new URL(request.url).searchParams.get("url") ?? "";
+        return HttpResponse.json({
+          match: { domain: "GAMES", href: new URL(url).pathname },
+        });
+      }),
+      http.get(apiUrl("/games/igdb/:id"), ({ params }) =>
+        HttpResponse.json({
+          source: "IGDB",
+          sourceId: params.id,
+          title: params.id === "1" ? "Outer Wilds" : "Hades",
+          year: 2019,
+          coverUrl: null,
+          isAdult: false,
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    const box = renderComposer();
+
+    await user.type(
+      box,
+      "https://loomkeep.app/app/games/1 et https://loomkeep.app/app/games/2",
+    );
+
+    await screen.findByText("Outer Wilds", {}, { timeout: 2000 });
+    expect(screen.getByText("Hades")).toBeTruthy();
+  });
+
   it("previews a work link, and sends it plain once its card is turned down", async () => {
     server.use(
       http.get(apiUrl("/links/resolve"), () =>
@@ -166,7 +197,7 @@ describe("ChatComposer", () => {
         {
           text: "Regarde https://loomkeep.app/app/games/11737",
           spoiler: false,
-          linkCards: false,
+          skipLinks: ["https://loomkeep.app/app/games/11737"],
         },
       ]),
     );

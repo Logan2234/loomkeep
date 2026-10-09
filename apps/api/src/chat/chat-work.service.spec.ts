@@ -118,13 +118,19 @@ describe("ChatWorkService", () => {
     ]);
   });
 
-  it("drops the link cards when the writer turns them off", async () => {
+  it("leaves out the links whose card the writer turned down", async () => {
     const { service, chat } = setup();
 
-    service.refreshLinkedWorks("m1", null);
-
-    await vi.waitFor(() =>
-      expect(chat.replaceLinkedWorks).toHaveBeenCalledWith("m1", []),
+    service.refreshLinkedWorks(
+      "m1",
+      "https://tracker.example.org/app/games/7 https://tracker.example.org/app/games/8",
+      ["https://tracker.example.org/app/games/7"],
     );
+
+    await vi.waitFor(() => expect(chat.replaceLinkedWorks).toHaveBeenCalled());
+    const [, cards] = (chat.replaceLinkedWorks as Mock).mock.calls[0];
+    expect(cards.map((c: { href: string }) => c.href)).toEqual([
+      "/app/games/8",
+    ]);
   });
 });

@@ -25,7 +25,8 @@
   import ReviewsSection from "#lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "#lib/components/TrackingPanel.svelte";
-  import RecommendButton from "#lib/components/chat/RecommendButton.svelte";
+  import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
+  import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
   import { musicWork } from "#lib/chat/work-search.js";
   import { appConfig } from "#lib/config.svelte.js";
   import {
@@ -59,6 +60,7 @@
   }));
   const detail = $derived(musicQuery.data);
   const work = $derived(detail ? musicWork(detail) : null);
+  let sharing = $state(false);
   const error = $derived(musicQuery.error);
 
   const entry = $derived(detail?.entry ?? null);
@@ -235,12 +237,6 @@
           </div>
         </div>
 
-        {#snippet recommendButton()}
-          {#if work}
-            <RecommendButton {work} />
-          {/if}
-        {/snippet}
-
         {#if !entry}
           <div class="mt-6 flex items-center gap-2.5">
             <button
@@ -250,13 +246,11 @@
               <Icon name="plus" class="h-4 w-4" />
               {m.library_add()}
             </button>
-            {#if work}
-              <RecommendButton {work} />
-            {/if}
+            <WorkMoreMenu onshare={() => (sharing = true)} />
           </div>
         {:else}
           <TrackingPanel
-            extra={work ? recommendButton : undefined}
+            onShare={() => (sharing = true)}
             favorite={entry.favorite}
             {saving}
             targetType="MUSIC"
@@ -439,6 +433,10 @@
       {/if}
     </div>
   </div>
+
+  {#if sharing && work}
+    <ShareWorkModal {work} sendable={true} onclose={() => (sharing = false)} />
+  {/if}
 
   {#if confirmRemove}
     <ConfirmationModal

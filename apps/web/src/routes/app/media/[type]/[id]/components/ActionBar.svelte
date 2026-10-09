@@ -5,7 +5,9 @@
   import Dropdown from "#lib/components/Dropdown.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
+  import ShareWorkMenuItem from "#lib/components/ShareWorkMenuItem.svelte";
   import Tooltip from "#lib/components/Tooltip.svelte";
+  import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { formatDate } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
@@ -39,6 +41,7 @@
     onResume,
     onToggleEpisodeAlerts,
     onRemove,
+    onShare,
     socialActions,
   }: {
     entry: LibraryEntryDto | null;
@@ -62,6 +65,7 @@
     onToggleEpisodeAlerts: () => void;
     onRemove: () => void;
     socialActions?: Snippet;
+    onShare: () => void;
   } = $props();
 
   const reduced = prefersReducedMotion();
@@ -102,6 +106,7 @@
           <Icon name="plus" class="h-4 w-4" />
           {m.library_add()}
         </button>
+        <WorkMoreMenu onshare={onShare} />
       </div>
     {:else}
       <div class="flex min-w-0 items-center gap-2.5">
@@ -221,6 +226,11 @@
             </button>
           {/snippet}
           {#snippet children({ close })}
+            <ShareWorkMenuItem
+              onclick={() => {
+                close();
+                onShare();
+              }} />
             {#if isMovie && entry.movieReleaseAlertsEnabled && !upcoming}
               {#snippet cancelReminder()}
                 <button

@@ -96,9 +96,13 @@ export async function searchWorks(query: string): Promise<MessageWorkDto[]> {
   );
 }
 
-/** The first link of a message being written, the one the composer previews. */
-export function firstLink(text: string): string | null {
-  return /https?:\/\/[^\s<>]+[^\s<>.,;:!?)\]'"]/.exec(text)?.[0] ?? null;
+/** Links the API turns into cards, at most. */
+export const MAX_LINKED_WORKS = 3;
+
+/** The links of a message being written that the composer previews. */
+export function typedLinks(text: string): string[] {
+  const links = text.match(/https?:\/\/[^\s<>]+[^\s<>.,;:!?)\]'"]/g) ?? [];
+  return [...new Set(links)].slice(0, MAX_LINKED_WORKS);
 }
 
 const MEDIA_PAGE = /^\/app\/media\/(movie|series|anime)\/([^/?#]+)$/;

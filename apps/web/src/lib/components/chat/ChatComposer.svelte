@@ -5,7 +5,7 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { upsertMessage, type MessagePages } from "#lib/chat/chat-cache.js";
   import { chatDrafts as drafts } from "#lib/chat/chat.svelte.js";
-  import { firstLink, previewLinkedWork } from "#lib/chat/work-search.js";
+  import { previewLinkedWork, typedLinks } from "#lib/chat/work-search.js";
   import {
     readSlashCommand,
     selectionFormats,
@@ -54,9 +54,9 @@
   let value = $state("");
   // The work `/reco` attached: sent as a card with the message.
   let attached = $state<MessageWorkDto | null>(null);
-  // The link whose card the writer turned down: it goes as a plain link.
-  let declinedLink = $state<string | null>(null);
-  let previewedLink = $state<string | null>(null);
+  // Links whose card the writer turned down: they go as plain links.
+  let declinedLinks = $state<string[]>([]);
+  let previewedLinks = $state<string[]>([]);
   let highlighted = $state<string | null>(null);
   let selectionBar = $state<{
     left: number;
@@ -94,7 +94,7 @@
     const id = conversationId;
     value = drafts.get(id) ?? "";
     attached = null;
-    declinedLink = null;
+    declinedLinks = [];
     void tick().then(autosize);
   });
 
@@ -130,25 +130,38 @@
     }
   });
 
-  // What the first link will turn into once sent, read once typing pauses.
-  const typedLink = $derived(firstLink(value));
+  // What the links will turn into once sent — the first three, as the API
+  // does — read once typing pauses.
+  const links = $derived(typedLinks(value));
   $effect(() => {
-    const next = typedLink;
-    const timer = setTimeout(() => (previewedLink = next), 500);
+    const next = links;
+    const timer = setTimeout(() => (previewedLinks = next), 500);
     return () => clearTimeout(timer);
   });
   const previewQuery = createApiQuery(() => ({
-    key: keys.chat.linkPreview(previewedLink ?? ""),
-    fetch: () => previewLinkedWork(previewedLink ?? ""),
-    enabled: !!previewedLink && previewedLink !== declinedLink,
+    key: keys.chat.linkPreviews(previewedLinks),
+    fetch: () =>
+      Promise.all(
+        previewedLinks.map(async (url) => ({
+          url,
+          work: await previewLinkedWork(url).catch(() => null),
+        })),
+      ),
+    enabled: previewedLinks.length > 0,
+    keepPreviousData: true,
   }));
-  const preview = $derived(
-    previewedLink &&
-      previewedLink === typedLink &&
-      previewedLink !== declinedLink &&
-      previewQuery.data?.href !== attached?.href
-      ? (previewQuery.data ?? null)
-      : null,
+  const previews = $derived(
+    (previewQuery.data ?? [])
+      .filter(
+        (preview, index, all) =>
+          preview.work !== null &&
+          links.includes(preview.url) &&
+          !declinedLinks.includes(preview.url) &&
+          preview.work.href !== attached?.href &&
+          all.findIndex((other) => other.work?.href === preview.work?.href) ===
+            index,
+      )
+      .map(({ url, work }) => ({ url, work: work as MessageWorkDto })),
   );
 
   const sendable = $derived(
@@ -162,7 +175,7 @@
         ? editMessage(editing.id, {
             text: body.text ?? "",
             spoiler: body.spoiler,
-            linkCards: body.linkCards,
+            skipLinks: body.skipLinks,
           })
         : sendMessage(conversationId, body),
     onSuccess: (message) => {
@@ -172,7 +185,7 @@
       );
       if (editing) oncanceledit();
       attached = null;
-      declinedLink = null;
+      declinedLinks = [];
       setValue("");
     },
     errorToast: true,
@@ -197,8 +210,7 @@
       text: text || undefined,
       spoiler,
       work: attached?.href,
-      linkCards:
-        declinedLink && value.includes(declinedLink) ? false : undefined,
+      skipLinks: declinedLinks.length > 0 ? declinedLinks : undefined,
     });
   }
 
@@ -395,14 +407,14 @@
       false,
     )}
   {/if}
-  {#if preview}
+  {#each previews as preview (preview.url)}
     {@render workChip(
-      preview,
+      preview.work,
       m.chat_link_preview_remove(),
-      () => (declinedLink = previewedLink),
+      () => (declinedLinks = [...declinedLinks, preview.url]),
       true,
     )}
-  {/if}
+  {/each}
 
   <div class="flex items-end gap-2">
     <div class="relative min-w-0 flex-1">

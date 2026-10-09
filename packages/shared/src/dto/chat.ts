@@ -90,14 +90,14 @@ export interface SendMessageRequestDto {
   spoiler?: boolean;
   /** A work page's path (`/app/games/1942`), attached to the message as a card. */
   work?: string;
-  /** False: the work links in the text stay plain links, without cards. */
-  linkCards?: boolean;
+  /** Links whose card the writer turned down: they stay plain links. */
+  skipLinks?: string[];
 }
 
 export interface EditMessageRequestDto {
   text: string;
   spoiler?: boolean;
-  linkCards?: boolean;
+  skipLinks?: string[];
 }
 
 /** "Recommander": the work goes to each friend in their own conversation. */

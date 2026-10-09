@@ -41,8 +41,10 @@ export class EditMessageBody {
   spoiler?: boolean;
 
   @IsOptional()
-  @IsBoolean()
-  linkCards?: boolean;
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  skipLinks?: string[];
 }
 
 /** The text may be left out when a work goes with it. */
@@ -64,8 +66,10 @@ export class SendMessageBody {
   work?: string;
 
   @IsOptional()
-  @IsBoolean()
-  linkCards?: boolean;
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  skipLinks?: string[];
 }
 
 export class RecommendWorkBody {

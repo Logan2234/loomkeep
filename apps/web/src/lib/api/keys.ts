@@ -159,7 +159,7 @@ export const keys = {
     // Outside ["chat"]: a reconnection refetches what's under it, and this
     // one is catalogue searches.
     workSearch: (query: string) => ["chat-work-search", query] as const,
-    linkPreview: (url: string) => ["chat-link-preview", url] as const,
+    linkPreviews: (urls: string[]) => ["chat-link-preview", ...urls] as const,
   },
   notifications: {
     feed: () => ["notifications", "feed"] as const,

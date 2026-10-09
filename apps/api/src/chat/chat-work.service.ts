@@ -65,16 +65,22 @@ export class ChatWorkService {
    * went out: a link to an uncached work costs a catalogue call, which the
    * sender shouldn't wait for. Never throws.
    */
-  refreshLinkedWorks(messageId: string, text: string | null): void {
-    void this.linkedWorks(text ?? "")
+  refreshLinkedWorks(
+    messageId: string,
+    text: string,
+    skip: string[] = [],
+  ): void {
+    void this.linkedWorks(text, skip)
       .then((cards) => this.chat.replaceLinkedWorks(messageId, cards))
       .catch((err) =>
         this.logger.warn(`Work cards failed for message ${messageId}`, err),
       );
   }
 
-  private async linkedWorks(text: string): Promise<WorkCard[]> {
-    const urls = [...new Set(text.match(LINK) ?? [])];
+  private async linkedWorks(text: string, skip: string[]): Promise<WorkCard[]> {
+    const urls = [...new Set(text.match(LINK) ?? [])].filter(
+      (url) => !skip.includes(url),
+    );
     const cards: WorkCard[] = [];
 
     for (const url of urls) {
