@@ -154,8 +154,8 @@
         {#if highlight}
           <div
             class="bg-accent/10 pointer-events-none absolute inset-x-3 top-0 rounded-lg transition-[translate,height] duration-250 ease-out motion-reduce:transition-none"
-            style:translate="0 {highlight.top}px"
-            style:height="{highlight.height}px"
+            style:translate={`0 ${highlight.top}px`}
+            style:height={`${highlight.height}px`}
             aria-hidden="true">
             <span
               class="bg-accent absolute top-1/2 -left-1 h-1.5 w-1.5 -translate-y-1/2 rounded-full shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-accent)_20%,transparent)]"
