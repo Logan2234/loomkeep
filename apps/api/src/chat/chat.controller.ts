@@ -1,6 +1,7 @@
 import type {
   ChatUnreadDto,
   ConversationDto,
+  ConversationWorkDto,
   MessageDto,
   PagedResult,
   RecommendWorkResultDto,
@@ -51,6 +52,7 @@ import {
 import {
   ChatUnreadResponseDto,
   ConversationResponseDto,
+  ConversationWorkResponseDto,
   MessageResponseDto,
   RecommendWorkResultResponseDto,
 } from "./dto/chat-response.dto";
@@ -206,6 +208,25 @@ export class ChatController {
     @Param("id") id: string,
   ): Promise<void> {
     return this.chat.pin(user.sub, id, false);
+  }
+
+  @Get("conversations/:id/works")
+  @ApiOkResponse({ type: ConversationWorkResponseDto, isArray: true })
+  sharedWorks(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<ConversationWorkDto[]> {
+    return this.chat.works(user.sub, id);
+  }
+
+  @Get("conversations/:id/search")
+  @ApiOkResponse({ type: MessageResponseDto, isArray: true })
+  search(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Query("q") query = "",
+  ): Promise<MessageDto[]> {
+    return this.chat.search(user.sub, id, query);
   }
 
   @Get("conversations/:id/pins")

@@ -3,6 +3,7 @@ import type {
   CommentEmote,
   ConversationDto,
   ConversationReadOnlyReason,
+  ConversationWorkDto,
   MessageDto,
   MessageWorkDto,
   MessageWorkKind,
@@ -18,6 +19,15 @@ export class MessageWorkResponseDto implements MessageWorkDto {
   href!: string;
   year!: number | null;
   inLibrary!: boolean;
+}
+
+export class ConversationWorkResponseDto
+  extends MessageWorkResponseDto
+  implements ConversationWorkDto
+{
+  messageId!: string;
+  sharedAt!: string;
+  mine!: boolean;
 }
 
 export class MessageResponseDto implements MessageDto {
@@ -47,6 +57,7 @@ export class ConversationResponseDto implements ConversationDto {
   peerLastReadAt!: string | null;
   lastMessage!: MessageResponseDto | null;
   unread!: number;
+  lastReadAt!: string;
   muted!: boolean;
   lastMessageAt!: string;
 }

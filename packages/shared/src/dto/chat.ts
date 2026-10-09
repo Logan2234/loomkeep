@@ -77,6 +77,8 @@ export interface ConversationDto {
   lastMessage: MessageDto | null;
   /** Messages from the other member sent after the viewer last read. */
   unread: number;
+  /** Up to when the viewer has read: where the "new" line goes. */
+  lastReadAt: string;
   muted: boolean;
   lastMessageAt: string;
 }
@@ -113,6 +115,17 @@ export interface RecommendWorkRequestDto {
   usernames: string[];
   text?: string;
 }
+
+/** A work shared in a conversation, for its gallery: the latest card of it. */
+export interface ConversationWorkDto extends MessageWorkDto {
+  messageId: string;
+  sharedAt: string;
+  /** Shared by the viewer. */
+  mine: boolean;
+}
+
+/** Shortest query `GET /chat/conversations/:id/search` looks for. */
+export const CHAT_SEARCH_MIN_LENGTH = 2;
 
 /** Pins a conversation keeps, at most. */
 export const PINNED_MESSAGES_MAX = 50;

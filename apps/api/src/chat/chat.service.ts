@@ -1,11 +1,13 @@
 import {
   type AlertPrefs,
+  CHAT_SEARCH_MIN_LENGTH,
   type ChatMessageEvent,
   type ChatReadEvent,
   type CommentEmote,
   type CommentReactionSummaryDto,
   type ConversationDto,
   type ConversationReadOnlyReason,
+  type ConversationWorkDto,
   ErrorCode,
   FollowStatus,
   isAlertEnabled,
@@ -227,7 +229,7 @@ export class ChatService {
       include: MESSAGE_INCLUDE,
     });
     const { items, hasMore } = toPagedResult(rows, page.limit);
-    const owned = await this.ownedWorks(viewerId, items);
+    const owned = await this.ownedWorks(viewerId, embedsOf(items));
     return {
       items: items.map((row) => toMessageDto(row, viewerId, owned)),
       hasMore,
@@ -409,8 +411,66 @@ export class ChatService {
       take: PINNED_MESSAGES_MAX,
       include: MESSAGE_INCLUDE,
     });
-    const owned = await this.ownedWorks(viewerId, rows);
+    const owned = await this.ownedWorks(viewerId, embedsOf(rows));
     return rows.map((row) => toMessageDto(row, viewerId, owned));
+  }
+
+  /** Messages whose text holds the query, newest first. */
+  async search(
+    viewerId: string,
+    conversationId: string,
+    query: string,
+  ): Promise<MessageDto[]> {
+    await this.membership(viewerId, conversationId);
+    const needle = query.trim();
+    if (needle.length < CHAT_SEARCH_MIN_LENGTH) return [];
+
+    const rows = await this.prisma.message.findMany({
+      where: {
+        conversationId,
+        deletedAt: null,
+        text: { contains: needle, mode: "insensitive" },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: MESSAGE_PAGE_SIZE,
+      include: MESSAGE_INCLUDE,
+    });
+    const owned = await this.ownedWorks(viewerId, embedsOf(rows));
+    return rows.map((row) => toMessageDto(row, viewerId, owned));
+  }
+
+  /** Every work shared in the conversation, once each, last shared first. */
+  async works(
+    viewerId: string,
+    conversationId: string,
+  ): Promise<ConversationWorkDto[]> {
+    await this.membership(viewerId, conversationId);
+    const embeds = await this.prisma.messageEmbed.findMany({
+      where: { message: { conversationId, deletedAt: null } },
+      orderBy: [{ message: { createdAt: "desc" } }, { position: "asc" }],
+      take: 500,
+      include: { message: { select: { authorId: true, createdAt: true } } },
+    });
+
+    const seen = new Set<string>();
+    const latest = embeds.filter((embed) => {
+      if (seen.has(embed.href)) return false;
+      seen.add(embed.href);
+      return true;
+    });
+    const owned = await this.ownedWorks(viewerId, latest);
+
+    return latest.map((embed) => ({
+      kind: embed.kind as MessageWorkKind,
+      title: embed.title,
+      imageUrl: embed.imageUrl,
+      href: embed.href,
+      year: embed.year,
+      inLibrary: owned.has(`${embed.targetType}:${embed.targetId}`),
+      messageId: embed.messageId,
+      sharedAt: embed.message.createdAt.toISOString(),
+      mine: embed.message.authorId === viewerId,
+    }));
   }
 
   /** Unread again from this message on, as if it had just arrived. */
@@ -447,6 +507,14 @@ export class ChatService {
 
     for (const username of usernames) {
       const conversation = await this.open(userId, username);
+
+      if (conversation.id === message.conversationId) {
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          ErrorCode.ChatForwardToOrigin,
+        );
+      }
+
       memberships.push(await this.membership(userId, conversation.id));
     }
 
@@ -626,21 +694,23 @@ export class ChatService {
   }
 
   private async dtoFor(row: MessageRow, viewerId: string): Promise<MessageDto> {
-    return toMessageDto(row, viewerId, await this.ownedWorks(viewerId, [row]));
+    return toMessageDto(
+      row,
+      viewerId,
+      await this.ownedWorks(viewerId, row.embeds),
+    );
   }
 
-  /** The works among these messages' cards the viewer already tracks. */
+  /** The works among these cards the viewer already tracks. */
   private async ownedWorks(
     userId: string,
-    rows: MessageRow[],
+    embeds: { targetType: string; targetId: string }[],
   ): Promise<Set<string>> {
     const idsOf = (type: string) => [
       ...new Set(
-        rows.flatMap((row) =>
-          row.embeds
-            .filter((embed) => embed.targetType === type)
-            .map((embed) => embed.targetId),
-        ),
+        embeds
+          .filter((embed) => embed.targetType === type)
+          .map((embed) => embed.targetId),
       ),
     ];
     const media = idsOf("MEDIA");
@@ -844,7 +914,7 @@ export class ChatService {
     const lastByConversation = new Map(
       lastMessages.map((m) => [m.conversationId, m]),
     );
-    const owned = await this.ownedWorks(viewer.id, lastMessages);
+    const owned = await this.ownedWorks(viewer.id, embedsOf(lastMessages));
 
     return Promise.all(
       memberships.map(async (m): Promise<ConversationDto> => {
@@ -865,6 +935,7 @@ export class ChatService {
               : null,
           lastMessage: last ? toMessageDto(last, viewer.id, owned) : null,
           unread: unread.get(m.conversationId) ?? 0,
+          lastReadAt: m.lastReadAt.toISOString(),
           muted: m.mutedAt !== null,
           lastMessageAt: m.conversation.lastMessageAt.toISOString(),
         };
@@ -995,6 +1066,10 @@ export class ChatService {
       this.logger.error(`Push failed for ${recipientId}`, err);
     }
   }
+}
+
+function embedsOf(rows: MessageRow[]) {
+  return rows.flatMap((row) => row.embeds);
 }
 
 function peerOf(

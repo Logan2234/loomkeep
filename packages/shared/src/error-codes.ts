@@ -89,6 +89,8 @@ export const ErrorCode = {
   ChatWorkNotFound: "chat.work_not_found",
   /** A conversation keeps a limited number of pinned messages. */
   ChatPinLimit: "chat.pin_limit",
+  /** A message goes forward to other conversations, not back to its own. */
+  ChatForwardToOrigin: "chat.forward_to_origin",
 
   // lists
   ListInvalidMembershipTarget: "lists.invalid_membership_target",
