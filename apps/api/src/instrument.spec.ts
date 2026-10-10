@@ -3,8 +3,12 @@ import { once } from "node:events";
 import { createServer } from "node:http";
 import { vi } from "vitest";
 
+type Envelope = Parameters<
+  ReturnType<typeof Sentry.makeNodeTransport>["send"]
+>[0];
+
 const { envelopes, init } = vi.hoisted(() => ({
-  envelopes: [] as Sentry.Envelope[],
+  envelopes: [] as Envelope[],
   init: vi.fn(),
 }));
 
@@ -44,21 +48,21 @@ describe("production error reporting", () => {
   it("does not initialize without a DSN", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("GLITCHTIP_API_DSN", "");
-    await import("./instrument");
+    await import("./instrument.js");
     expect(init).not.toHaveBeenCalled();
   });
 
   it("does not initialize in development with a DSN", async () => {
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("GLITCHTIP_API_DSN", "https://public@example.com/1");
-    await import("./instrument");
+    await import("./instrument.js");
     expect(init).not.toHaveBeenCalled();
   });
 
   it("delivers an HTTP error without private request data or unsupported envelopes", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("GLITCHTIP_API_DSN", "https://public@example.com/1");
-    await import("./instrument");
+    await import("./instrument.js");
 
     const server = createServer((request, response) => {
       Sentry.captureException(new Error("Loomkeep instrumentation regression"));
@@ -93,7 +97,12 @@ describe("production error reporting", () => {
       expect(response.status).toBe(500);
       expect(await Sentry.flush(2000)).toBe(true);
 
-      const items = envelopes.flatMap((envelope) => envelope[1]);
+      const items: Envelope[1][number][] = [];
+
+      for (const [, envelopeItems] of envelopes) {
+        items.push(...envelopeItems);
+      }
+
       const errors = items.filter(([header]) => header.type === "event");
       expect(errors).toHaveLength(1);
       const event = errors[0][1] as Sentry.Event;
