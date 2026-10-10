@@ -165,7 +165,7 @@
     const url = new URL(page.url.href);
     url.searchParams.delete("work");
     url.searchParams.delete("comment");
-    void goto(url, { replace: true, shallow: true, noScroll: true });
+    void goto(url, { replace: true, shallow: true });
   });
 
   $effect(() => {
