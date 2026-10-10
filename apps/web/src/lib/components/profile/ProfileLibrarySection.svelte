@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { auth } from "#lib/auth.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
   import ProfileSectionHeading from "#lib/components/profile/ProfileSectionHeading.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domains.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { IconName } from "#lib/types/icon-name.js";
-  import type { ProfileDomainStatDto } from "@loomkeep/shared";
+  import type { Domain, ProfileDomainStatDto } from "@loomkeep/shared";
 
   let {
     domains,
@@ -13,43 +15,32 @@
     selfManage: boolean | undefined;
   } = $props();
 
-  const DOMAIN_LABEL: Record<string, string> = {
-    MEDIA: m.common_Media(),
-    GAMES: m.common_Games(),
-    BOOKS: m.common_Books(),
-    MUSIC: m.common_Music(),
-    PODCASTS: m.common_Podcasts(),
-    BOARDGAMES: m.common_Boardgames(),
-  };
-
-  const DOMAIN_HREF: Record<string, string> = {
+  const DOMAIN_HREF: Partial<Record<Domain, string>> = {
     MEDIA: "/app/media",
     GAMES: "/app/games",
     BOOKS: "/app/books",
     MUSIC: "/app/music",
   };
 
-  const DOMAIN_ICON: Record<string, IconName> = {
-    MEDIA: "tv",
-    GAMES: "gamepad",
-    BOOKS: "book",
-    MUSIC: "music",
-    PODCASTS: "podcast",
-    BOARDGAMES: "boardgame",
-  };
-
-  const DOMAIN_COLOR: Record<string, string> = {
-    MEDIA: "var(--stat-media)",
-    GAMES: "var(--stat-games)",
-    BOOKS: "var(--stat-books)",
-    MUSIC: "var(--stat-music)",
-  };
+  // The viewer's own domains, in their own order — whoever's profile this
+  // is: a domain they turned off stays out of here as out of the rest of the
+  // app. A "coming soon" one they opted into shows as such: the server has
+  // no library behind it to count.
+  type Row = { domain: Domain; stat: ProfileDomainStatDto | null };
+  const rows = $derived<Row[]>(
+    orderedDomains(auth.user?.domainOrder)
+      .filter(isDomainEnabled)
+      .map((domain) => ({
+        domain,
+        stat: domains.find((d) => d.domain === domain) ?? null,
+      })),
+  );
 
   const visibleTotal = $derived(
-    domains.reduce((sum, d) => sum + (d.visible ? d.count : 0), 0),
+    rows.reduce((sum, r) => sum + (r.stat?.visible ? r.stat.count : 0), 0),
   );
   const favoritesTotal = $derived(
-    domains.reduce((sum, d) => sum + (d.visible ? d.favorites : 0), 0),
+    rows.reduce((sum, r) => sum + (r.stat?.visible ? r.stat.favorites : 0), 0),
   );
 </script>
 
@@ -58,12 +49,12 @@
 
   {#if visibleTotal > 0}
     <div class="flex h-2 gap-0.75" role="img" aria-label={m.common_library()}>
-      {#each domains as d (d.domain)}
-        {#if d.visible && d.count > 0}
+      {#each rows as { domain, stat } (domain)}
+        {#if stat?.visible && stat.count > 0}
           <span
             class="rounded-[3px] transition-[filter] hover:brightness-110"
-            style="background: {DOMAIN_COLOR[d.domain] ??
-              'var(--dim)'}; flex: {d.count}"></span>
+            style="background: {DOMAINS[domain].accent}; flex: {stat.count}"
+          ></span>
         {/if}
       {/each}
     </div>
@@ -81,9 +72,9 @@
   {/if}
 
   <div class="divide-border/70 mt-4 flex flex-col divide-y">
-    {#each domains as d (d.domain)}
-      {@const href = selfManage ? DOMAIN_HREF[d.domain] : undefined}
-      {@const color = DOMAIN_COLOR[d.domain] ?? "var(--dim)"}
+    {#each rows as { domain, stat } (domain)}
+      {@const href = selfManage && stat ? DOMAIN_HREF[domain] : undefined}
+      {@const color = DOMAINS[domain].accent}
       <svelte:element
         this={href ? "a" : "div"}
         {href}
@@ -93,32 +84,37 @@
         <span
           class="grid h-6.5 w-6.5 shrink-0 place-items-center rounded-lg transition-transform group-hover:scale-110"
           style="background: color-mix(in srgb, {color} 16%, transparent); color: {color};">
-          <Icon name={DOMAIN_ICON[d.domain] ?? "library"} class="h-3.5 w-3.5" />
+          <Icon name={DOMAINS[domain].icon} class="h-3.5 w-3.5" />
         </span>
         <p class="w-24 shrink-0 truncate text-sm font-semibold sm:w-36">
-          {DOMAIN_LABEL[d.domain] ?? d.domain}
+          {DOMAINS[domain].label}
         </p>
-        {#if d.visible}
+        {#if !stat}
+          <span
+            class="bg-surface-2 text-dim ml-auto rounded-full px-2 py-0.5 text-[0.6rem] font-bold whitespace-nowrap">
+            {m.common_coming_soon()}
+          </span>
+        {:else if stat.visible}
           <span
             class="bg-surface-2 hidden h-1.5 flex-1 overflow-hidden rounded-full sm:block">
             <span
               class="block h-full rounded-full"
               style="width: {visibleTotal > 0
-                ? (d.count / visibleTotal) * 100
+                ? (stat.count / visibleTotal) * 100
                 : 0}%; background: {color}"></span>
           </span>
           <span class="ml-auto flex items-baseline gap-3">
-            {#if d.favorites > 0}
+            {#if stat.favorites > 0}
               <span
                 class="text-accent font-mono text-xs font-bold whitespace-nowrap">
-                ♥ {d.favorites}
+                ♥ {stat.favorites}
               </span>
             {/if}
             <span class="whitespace-nowrap">
               <span class="font-display text-lg font-extrabold tabular-nums"
-                >{d.count}</span>
+                >{stat.count}</span>
               <span class="text-dim ml-0.5 text-[11px]"
-                >{d.count > 1
+                >{stat.count > 1
                   ? m.library_title_many()
                   : m.library_title_one()}</span>
             </span>

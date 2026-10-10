@@ -2,9 +2,11 @@
   import { getMyReviews } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
+  import DomainOffMark from "#lib/components/DomainOffMark.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import ProfileSectionHeading from "#lib/components/profile/ProfileSectionHeading.svelte";
   import { appConfig } from "#lib/config.svelte.js";
+  import { isDomainEnabled, targetDomain } from "#lib/domains.js";
   import { m } from "#lib/paraglide/messages.js";
 
   const PREVIEW_COUNT = 3;
@@ -49,19 +51,28 @@
     </ProfileSectionHeading>
     <ul class="divide-border/70 flex flex-col divide-y">
       {#each reviews as review (review.id)}
+        {@const domain = targetDomain(review.targetType)}
+        {@const off = !isDomainEnabled(domain)}
+        {@const href = off ? null : review.target?.href}
+        <!-- A domain the viewer turned off: a warning instead of the link,
+             as on /app/reviews. -->
         <li
-          class="hover:bg-surface-2 -mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors">
+          class="-mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors {href
+            ? 'hover:bg-surface-2'
+            : ''}">
           <svelte:element
-            this={review.target?.href ? "a" : "div"}
-            href={review.target?.href ?? undefined}
-            class="flex min-w-0 flex-1 items-center gap-3 {review.target?.href
+            this={href ? "a" : "div"}
+            href={href ?? undefined}
+            class="flex min-w-0 flex-1 items-center gap-3 {href
               ? 'group'
               : ''}">
             {#if review.target?.imageUrl}
               <img
                 src={review.target.imageUrl}
                 alt=""
-                class="h-16 w-12 shrink-0 rounded-md object-cover" />
+                class="h-16 w-12 shrink-0 rounded-md object-cover {off
+                  ? 'opacity-70'
+                  : ''}" />
             {:else}
               {@const hue = TYPE_HUE[review.targetType] ?? "var(--dim)"}
               <div
@@ -72,12 +83,17 @@
             {/if}
 
             <div class="min-w-0 flex-1">
-              <p
-                class="truncate font-semibold {review.target?.href
-                  ? 'group-hover:text-accent transition-colors'
-                  : ''}">
-                {review.target?.title ?? m.common_work()}
-              </p>
+              <div class="flex items-center gap-1">
+                <p
+                  class="min-w-0 truncate font-semibold {href
+                    ? 'group-hover:text-accent transition-colors'
+                    : ''}">
+                  {review.target?.title ?? m.common_work()}
+                </p>
+                {#if off}
+                  <DomainOffMark {domain} class="-my-1.5 shrink-0" />
+                {/if}
+              </div>
               <p class="text-dim flex flex-wrap items-center gap-x-2 text-xs">
                 <span class="timecode uppercase"
                   >{TYPE_LABEL[review.targetType] ?? review.targetType}</span>

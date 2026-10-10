@@ -27,6 +27,7 @@
     getFollowRequests,
     rejectFollowRequest,
   } from "#lib/api/social.js";
+  import { isDomainEnabled, pathDomain } from "#lib/domains.js";
   import { formatDate } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -36,6 +37,7 @@
   import { fade, scale, slide } from "svelte/transition";
   import { layout } from "#lib/layout.svelte.js";
   import Avatar from "./Avatar.svelte";
+  import DomainOffMark from "./DomainOffMark.svelte";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
   import { notificationText } from "./notification-presentation";
@@ -288,8 +290,12 @@
     {:else if notificationItems.length > 0}
       <ul>
         {#each notificationItems as n (n.id)}
+          {@const domain = n.url ? pathDomain(n.url) : null}
+          {@const off = domain !== null && !isDomainEnabled(domain)}
+          <!-- A page of a domain the viewer can't open: no link, a warning
+               instead (see DomainOffMark). -->
           <li transition:slide={{ duration: 150 }}>
-            {#if n.url}
+            {#if n.url && !off}
               <a
                 href={n.url}
                 onclick={() => onItemClick(n)}
@@ -299,6 +305,9 @@
             {:else}
               <div class="flex items-center gap-3 px-4 py-2.5">
                 {@render row(n)}
+                {#if domain && off}
+                  <DomainOffMark {domain} class="-my-1.5 -mr-1.5 shrink-0" />
+                {/if}
               </div>
             {/if}
           </li>

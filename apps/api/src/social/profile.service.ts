@@ -2,7 +2,6 @@ import {
   type AchievementDto,
   type ConnectionDto,
   Domain,
-  episodeRuntimeFor,
   ErrorCode,
   type ListVisibility,
   ProfileAccess,
@@ -19,16 +18,12 @@ import { ACHIEVEMENTS } from "../gamification/achievements/registry";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { PrismaService } from "../prisma/prisma.service";
 import {
-  computeHeatmap,
   computeStreak,
-  computeYearlyMinutes,
   isStreakSecuredToday,
-  mostActiveYear,
 } from "../stats/video-temporal.util";
 import { avatarUrl } from "../users/avatar.util";
 import { isSuspended } from "../users/suspension.util";
 import { FollowService } from "./follow.service";
-import { earliest, latest } from "./profile-stats.util";
 import { SOCIAL_DOMAINS } from "./social.constants";
 import { VisibilityService } from "./visibility.service";
 import {
@@ -42,12 +37,6 @@ const EMPTY_ACTIVITY_STATS: ProfileActivityStatsDto = {
   visible: false,
   streakDays: 0,
   streakSecuredToday: false,
-  firstActivityAt: null,
-  lastActivityAt: null,
-  totalMinutes: 0,
-  mostActiveYear: null,
-  topGenres: [],
-  heatmap: [],
 };
 
 @Injectable()
@@ -408,8 +397,8 @@ export class ProfileService {
   }
 
   /**
-   * Activity summary. Watch time and genres remain video-specific, while the
-   * streak and heatmap use every dated watch, game session and reading session.
+   * The activity streak shown on a profile: consecutive days with a dated
+   * watch (TMDB specials aside), game session or reading session.
    */
   private async computeActivityStats(
     userId: string,
@@ -417,31 +406,14 @@ export class ProfileService {
   ): Promise<ProfileActivityStatsDto> {
     if (!visible) return EMPTY_ACTIVITY_STATS;
 
-    const [entries, watches, gameSessions, bookSessions] = await Promise.all([
-      this.prisma.libraryEntry.findMany({
-        where: { userId },
-        select: {
-          createdAt: true,
-          updatedAt: true,
-          mediaItem: { select: { genres: true } },
-        },
-      }),
+    const [watches, gameSessions, bookSessions] = await Promise.all([
       this.prisma.episodeWatch.findMany({
-        where: { userId },
-        select: {
-          watchedAt: true,
-          episode: {
-            select: {
-              runtimeMin: true,
-              season: {
-                select: {
-                  number: true,
-                  mediaItem: { select: { type: true, runtimeMin: true } },
-                },
-              },
-            },
-          },
+        where: {
+          userId,
+          watchedAt: { not: null },
+          episode: { season: { number: { not: 0 } } },
         },
+        select: { watchedAt: true },
       }),
       this.prisma.gameSession.findMany({
         where: { gameEntry: { userId } },
@@ -453,69 +425,17 @@ export class ProfileService {
       }),
     ]);
 
-    const regular = watches.filter((w) => w.episode.season.number !== 0);
-    const datedRegular = regular.filter(
-      (w): w is (typeof regular)[number] & { watchedAt: Date } =>
-        w.watchedAt !== null,
-    );
     const now = new Date();
-    const watchDates = datedRegular.map((w) => w.watchedAt);
     const activityDates = [
-      ...watchDates,
+      ...watches.flatMap((w) => (w.watchedAt ? [w.watchedAt] : [])),
       ...gameSessions.map((session) => session.occurredAt),
       ...bookSessions.map((session) => session.occurredAt),
-    ];
-
-    const watchMinutes = regular.map((w) => ({
-      watchedAt: w.watchedAt,
-      minutes: episodeRuntimeFor(
-        w.episode.season.mediaItem.type,
-        w.episode.runtimeMin,
-        w.episode.season.mediaItem.runtimeMin,
-      ),
-    }));
-    const datedMinutes = datedRegular.map((w) => ({
-      watchedAt: w.watchedAt,
-      minutes: episodeRuntimeFor(
-        w.episode.season.mediaItem.type,
-        w.episode.runtimeMin,
-        w.episode.season.mediaItem.runtimeMin,
-      ),
-    }));
-    const totalMinutes = watchMinutes.reduce((sum, d) => sum + d.minutes, 0);
-
-    const genreCounts = new Map<string, number>();
-
-    for (const e of entries) {
-      for (const g of e.mediaItem.genres) {
-        genreCounts.set(g, (genreCounts.get(g) ?? 0) + 1);
-      }
-    }
-
-    const topGenres = [...genreCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([genre, count]) => ({ label: genre, count }));
-
-    const firstTimestamps = [
-      ...entries.map((e) => e.createdAt),
-      ...activityDates,
-    ];
-    const lastTimestamps = [
-      ...entries.map((e) => e.updatedAt),
-      ...activityDates,
     ];
 
     return {
       visible: true,
       streakDays: computeStreak(activityDates, now),
       streakSecuredToday: isStreakSecuredToday(activityDates, now),
-      firstActivityAt: earliest(firstTimestamps)?.toISOString() ?? null,
-      lastActivityAt: latest(lastTimestamps)?.toISOString() ?? null,
-      totalMinutes,
-      mostActiveYear: mostActiveYear(computeYearlyMinutes(datedMinutes)),
-      topGenres,
-      heatmap: computeHeatmap(activityDates, 90, now),
     };
   }
 }

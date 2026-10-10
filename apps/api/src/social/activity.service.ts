@@ -195,6 +195,10 @@ export class ActivityService {
    * A user's profile timeline: everything they did that the viewer may see,
    * filtered per-domain by the actor's Activité audience. The caller has already
    * checked the profile is reachable at all.
+   *
+   * Like the home feed, only covers the domains the viewer keeps enabled —
+   * your own profile included: a domain you turned off leaves your timeline
+   * with the rest of the app.
    */
   async profileTimeline(
     viewerId: string,
@@ -202,8 +206,12 @@ export class ActivityService {
     page: ParsedPage = parsePageQuery(undefined, undefined, FEED_PAGE_SIZE),
   ): Promise<PagedResult<ActivityEventDto>> {
     const { skip, take, limit } = page;
+    const enabled = await this.domainGate.getEnabledDomains(viewerId);
     const rows = await this.prisma.activityEvent.findMany({
-      where: { userId: target.id },
+      where: {
+        userId: target.id,
+        domain: { in: [...enabled, ...UNGATED_FEED_DOMAINS] },
+      },
       orderBy: { createdAt: "desc" },
       skip,
       take: take + 1,

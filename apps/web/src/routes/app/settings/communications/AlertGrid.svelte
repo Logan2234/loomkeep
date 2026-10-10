@@ -74,7 +74,7 @@
     <colgroup>
       <col />
       {#each columns as column (column)}
-        <col class="w-[4.25rem]" />
+        <col class="w-17" />
       {/each}
     </colgroup>
     <thead>
