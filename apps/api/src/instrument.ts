@@ -43,11 +43,24 @@ if (process.env.NODE_ENV === "production" && dsn) {
     integrations: (integrations) => [
       // Process sessions are separate from HTTP sessions and become reportable
       // as soon as a release is configured (including GitHub's inferred SHA).
-      ...integrations.filter(
-        (integration) =>
-          integration.name !== "ProcessSession" &&
-          integration.name !== "Dedupe",
-      ),
+      ...integrations
+        .filter((integration) => integration.name !== "ProcessSession")
+        .map((integration): Sentry.Integration => {
+          const processEvent = integration.processEvent;
+
+          if (integration.name !== "Dedupe" || !processEvent)
+            return integration;
+
+          return {
+            ...integration,
+            // HTTP request identity takes precedence over stack similarity.
+            // Retain the SDK's existing noise filter for non-HTTP errors.
+            processEvent: (event, hint, client) =>
+              typeof event.contexts?.loomkeep?.requestId === "string"
+                ? event
+                : processEvent(event, hint, client),
+          };
+        }),
       // SDK v11 renamed trackIncomingRequestsAsSessions to sessions.
       // GlitchTip does not support Sessions/Release Health.
       Sentry.httpIntegration({ sessions: false }),

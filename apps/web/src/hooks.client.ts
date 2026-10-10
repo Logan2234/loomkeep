@@ -40,14 +40,28 @@ if (dsn) {
     // A zero sample rate still installs tracing, which reads removed Kit stores.
     // GlitchTip also does not implement the browser sessions envelope.
     integrations: (integrations) =>
-      integrations.filter(
-        (integration) =>
-          integration.name !== "BrowserTracing" &&
-          integration.name !== "BrowserSession" &&
-          // Our filter deduplicates by request/Error identity. The SDK's
-          // stack-based Dedupe can suppress distinct failed HTTP requests.
-          integration.name !== "Dedupe",
-      ),
+      integrations
+        .filter(
+          (integration) =>
+            integration.name !== "BrowserTracing" &&
+            integration.name !== "BrowserSession",
+        )
+        .map((integration): Sentry.Integration => {
+          const processEvent = integration.processEvent;
+
+          if (integration.name !== "Dedupe" || !processEvent)
+            return integration;
+
+          return {
+            ...integration,
+            // Do not collapse distinct HTTP requests with identical stacks;
+            // retain default deduplication for errors without a server ID.
+            processEvent: (event, hint, client) =>
+              typeof event.contexts?.loomkeep?.requestId === "string"
+                ? event
+                : processEvent(event, hint, client),
+          };
+        }),
   });
 
   if (env.PUBLIC_SENTRY_ENVIRONMENT === "staging") installStagingProbe();
