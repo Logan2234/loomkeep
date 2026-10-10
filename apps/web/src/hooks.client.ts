@@ -13,10 +13,27 @@ if (dsn) {
   Sentry.init({
     dsn,
     tracesSampleRate: 0,
+    // SDK v11's defaults include request bodies, cookies and user data.
+    // Keep authentication and private content out of collected telemetry.
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: { request: false, response: false },
+      httpBodies: [],
+      urlQueryParams: false,
+      databaseQueryData: false,
+      genAI: { inputs: false, outputs: false },
+      queues: false,
+      graphQL: { document: false, variables: false },
+      stackFrameVariables: false,
+    },
     // A zero sample rate still installs tracing, which reads removed Kit stores.
+    // GlitchTip also does not implement the browser sessions envelope.
     integrations: (integrations) =>
       integrations.filter(
-        (integration) => integration.name !== "BrowserTracing",
+        (integration) =>
+          integration.name !== "BrowserTracing" &&
+          integration.name !== "BrowserSession",
       ),
   });
 }

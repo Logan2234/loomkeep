@@ -12,11 +12,26 @@ const dsn = process.env.GLITCHTIP_API_DSN;
 if (process.env.NODE_ENV === "production" && dsn) {
   Sentry.init({
     dsn,
-    tracesSampleRate: 0.01,
+    // GlitchTip's supported workflow is error reporting, not performance tracing.
+    tracesSampleRate: 0,
+    // SDK v11 collects these by default. Auth, MFA, imports and private
+    // messages must not become error-tracker payloads after the upgrade.
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: { request: false, response: false },
+      httpBodies: [],
+      urlQueryParams: false,
+      databaseQueryData: false,
+      genAI: { inputs: false, outputs: false },
+      queues: false,
+      graphQL: { document: false, variables: false },
+      stackFrameVariables: false,
+    },
     integrations: [
-      // GlitchTip does not support Sessions/Release Health. SDK v9 exposes
-      // the opt-out on the HTTP integration.
-      Sentry.httpIntegration({ trackIncomingRequestsAsSessions: false }),
+      // SDK v11 renamed trackIncomingRequestsAsSessions to sessions.
+      // GlitchTip does not support Sessions/Release Health.
+      Sentry.httpIntegration({ sessions: false }),
     ],
   });
 }
