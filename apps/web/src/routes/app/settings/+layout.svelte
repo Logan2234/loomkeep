@@ -11,8 +11,6 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import Banner from "#lib/components/Banner.svelte";
   import LegalLinks from "#lib/components/LegalLinks.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
-  import { isDomainEnabled } from "#lib/domains.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import SettingsNav from "./components/SettingsNav.svelte";
@@ -28,6 +26,7 @@
     sectionHref,
   } from "./nav";
   import { settingsSearch } from "./search-state.svelte";
+  import { isSectionVisible } from "./section-visibility";
 
   let { children }: { children: Snippet } = $props();
 
@@ -60,13 +59,7 @@
   );
   const alerts = $derived({ "two-factor-authentication": recoveryLow });
 
-  const visibleSections = $derived(
-    SETTINGS_SECTIONS.filter(
-      (section) =>
-        (!section.social || appConfig.socialEnabled) &&
-        (!section.domain || isDomainEnabled(section.domain)),
-    ),
-  );
+  const visibleSections = $derived(SETTINGS_SECTIONS.filter(isSectionVisible));
 
   function isShortcutTarget(event: KeyboardEvent): boolean {
     const target = event.target as HTMLElement | null;
