@@ -18,7 +18,6 @@
   import PageHeader from "#lib/components/PageHeader.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { languageName } from "#lib/locales.js";
   import { m } from "#lib/paraglide/messages.js";
   import { theme } from "#lib/theme.svelte.js";
@@ -146,7 +145,6 @@
     icon="gear"
     back="/app/profile"
     title={m.common_settings()}
-    isNew={isFeatureNew("settings-rework")}
     class="mb-6" />
 
   {#if auth.user}

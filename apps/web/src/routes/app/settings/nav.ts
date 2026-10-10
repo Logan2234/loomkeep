@@ -91,7 +91,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         icon: "lock",
         description: m.settings_mfa_totp_desc(),
         keywords: ["2fa", "mfa", "totp", "otp", "authenticator"],
-        newBadgeKey: "mfa",
         legacyHash: "mfa",
         entries: [
           {

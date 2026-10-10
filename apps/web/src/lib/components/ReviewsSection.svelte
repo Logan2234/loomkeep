@@ -10,7 +10,6 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
   import { appConfig } from "#lib/config.svelte.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { formatNumber } from "#lib/format.js";
   import { createMyReview } from "#lib/my-review.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -27,7 +26,6 @@
     ReviewVoteValue,
   } from "@loomkeep/shared";
   import Icon from "./Icon.svelte";
-  import NewBadge from "./NewBadge.svelte";
   import ReportModal from "./ReportModal.svelte";
   import ReviewCard from "./ReviewCard.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";
@@ -182,9 +180,6 @@
       {:else}
         {m.reviews_section_my_review_title()}
       {/if}
-      {#if isFeatureNew("reviews-redesign")}
-        <NewBadge />
-      {/if}
     </h2>
     <div class="flex shrink-0 items-center gap-1">
       {#if actions}
@@ -200,7 +195,7 @@
 
   <div class="flex flex-col gap-2.5">
     {#if appConfig.socialEnabled && showSummary}
-      <div class="card grid grid-cols-[auto_1fr] items-center gap-[18px] p-4">
+      <div class="card grid grid-cols-[auto_1fr] items-center gap-4.5 p-4">
         <div class="flex flex-col items-start">
           <span
             class="font-display text-[2.6rem] leading-none font-extrabold tabular-nums">
@@ -226,12 +221,12 @@
         </div>
 
         <div
-          class="grid h-[86px] grid-cols-11 items-end gap-[3px]"
+          class="grid h-21.5 grid-cols-11 items-end gap-0.75"
           role="img"
           aria-label={m.reviews_distribution_label()}>
           {#each summary.distribution as count, rating (rating)}
             <div
-              class="flex h-full flex-col items-center gap-[3px]"
+              class="flex h-full flex-col items-center gap-0.75"
               title={m.reviews_distribution_bar({ count, rating })}>
               <div class="border-border flex w-full flex-1 items-end border-b">
                 {#if count > 0}

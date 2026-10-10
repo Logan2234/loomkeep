@@ -39,7 +39,6 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       href: "/app/settings/import/myanimelist",
       input: { type: "xml", accept: ".xml,application/xml,text/xml" },
       noun: { one: m.library_title_one(), many: m.library_title_many() },
-      newBadgeKey: "myanimelist",
       guide: `${DOCS_URL}/guide/imports/myanimelist/`,
     },
     simkl: {
@@ -96,7 +95,6 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
         textEncoding: "windows-1252",
       },
       noun: { one: m.common_book(), many: m.common_books() },
-      newBadgeKey: "babelio",
       guide: `${DOCS_URL}/guide/imports/babelio/`,
     },
     librarything: {

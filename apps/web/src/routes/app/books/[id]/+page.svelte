@@ -23,7 +23,6 @@
   import Lightbox from "#lib/components/Lightbox.svelte";
   import Modal from "#lib/components/Modal.svelte";
   import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
   import NoteField from "#lib/components/NoteField.svelte";
   import OwnershipField from "#lib/components/OwnershipField.svelte";
   import Poster from "#lib/components/Poster.svelte";
@@ -48,7 +47,6 @@
     BOOK_STATUS_ORDER as STATUS_ORDER,
   } from "#lib/constants/status-labels.js";
   import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { joinMeta } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -521,7 +519,6 @@
               <div>
                 <dt class="timecode flex items-center gap-1.5 text-xs">
                   {m.common_language()}
-                  {#if isFeatureNew("book-edition-selector")}<NewBadge />{/if}
                 </dt>
                 <dd class="mt-1.5">
                   <Combobox

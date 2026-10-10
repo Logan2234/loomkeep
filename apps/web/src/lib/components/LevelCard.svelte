@@ -1,7 +1,5 @@
 <script lang="ts">
   import Icon from "#lib/components/Icon.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import { levelProgress, xpForLevel } from "@loomkeep/shared";
 
@@ -74,9 +72,6 @@
 </script>
 
 <div class="relative">
-  {#if leaderboardHref && isFeatureNew("leaderboard")}
-    <span class="absolute -top-2.5 -right-2"><NewBadge /></span>
-  {/if}
   <div
     class="mb-3.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
     <p class="font-display text-[26px] font-extrabold">

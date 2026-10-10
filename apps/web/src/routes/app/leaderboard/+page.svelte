@@ -12,7 +12,6 @@
   import TabPanels from "#lib/components/TabPanels.svelte";
   import Tabs from "#lib/components/Tabs.svelte";
   import { appConfig } from "#lib/config.svelte.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { formatNumber } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -78,8 +77,7 @@
   <PageHeader
     icon="crown"
     title={m.gamification_leaderboard_title()}
-    subtitle={m.gamification_leaderboard_subtitle()}
-    isNew={isFeatureNew("leaderboard")} />
+    subtitle={m.gamification_leaderboard_subtitle()} />
 
   {#if !enabled}
     <EmptyState>{m.gamification_leaderboard_disabled()}</EmptyState>

@@ -267,11 +267,8 @@
     id="nav-style"
     use:flashAnchor={{ anchor: "nav-style", hash: page.url.hash }}
     class="card p-5 md:p-6">
-    <p class="mb-2 flex items-center gap-2 font-semibold">
+    <p class="mb-2 font-semibold">
       {m.settings_nav_style_label()}
-      {#if isFeatureNew("nav-styles")}
-        <NewBadge />
-      {/if}
     </p>
     <p class="text-dim mb-3 text-sm">
       {m.settings_nav_style_description()}
