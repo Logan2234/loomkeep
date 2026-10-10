@@ -2,6 +2,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
+  import { domainOffReason } from "#lib/domains.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { Domain } from "@loomkeep/shared";
 
@@ -10,8 +11,11 @@
   let { domain, class: className = "" }: { domain: Domain; class?: string } =
     $props();
 
+  // A maintenance isn't the viewer's to undo: don't send them to Settings.
   const label = $derived(
-    m.common_work_domain_off({ domain: DOMAINS[domain].label }),
+    domainOffReason(domain) === "maintenance"
+      ? m.common_work_domain_maintenance({ domain: DOMAINS[domain].label })
+      : m.common_work_domain_off({ domain: DOMAINS[domain].label }),
   );
 </script>
 

@@ -1,7 +1,12 @@
 import { Domain } from "@loomkeep/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "./auth.svelte";
-import { isDomainEnabled, orderedDomains } from "./domains";
+import {
+  domainOffReason,
+  isDomainEnabled,
+  orderedDomains,
+  pathDomain,
+} from "./domains";
 
 // Unleash's live flags, the only input here that isn't the user itself.
 const { isEnabled } = vi.hoisted(() => ({ isEnabled: vi.fn(() => false) }));
@@ -27,6 +32,9 @@ describe("isDomainEnabled", () => {
     );
 
     expect(isDomainEnabled(Domain.MEDIA)).toBe(false);
+    // Not the user's to undo: a warning mustn't send them to Settings.
+    expect(domainOffReason(Domain.MEDIA)).toBe("maintenance");
+    expect(domainOffReason(Domain.BOOKS)).toBe("off");
   });
 
   // The 403 loop: the stored choice can still name a premium domain from
@@ -102,5 +110,21 @@ describe("orderedDomains", () => {
       Domain.PODCASTS,
       Domain.BOARDGAMES,
     ]);
+  });
+});
+
+describe("pathDomain", () => {
+  it("names the domain whose screens a path belongs to", () => {
+    expect(pathDomain("/app/media/movie/1")).toBe(Domain.MEDIA);
+    expect(pathDomain("/app/calendar")).toBe(Domain.MEDIA);
+    expect(pathDomain("/app/games/2#comments")).toBe(Domain.GAMES);
+    expect(pathDomain("/app/books?tab=reading")).toBe(Domain.BOOKS);
+    expect(pathDomain("/app/music/3")).toBe(Domain.MUSIC);
+  });
+
+  it("leaves shared screens alone", () => {
+    expect(pathDomain("/app/lists/abc")).toBe(null);
+    expect(pathDomain("/app/gamesroom")).toBe(null);
+    expect(pathDomain("/app")).toBe(null);
   });
 });

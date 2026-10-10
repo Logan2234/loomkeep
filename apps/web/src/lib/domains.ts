@@ -30,10 +30,22 @@ import { liveFlags } from "./feature-flags-live.svelte";
  * instead: that screen shows the raw choice, with its own lock badge.
  */
 export function isDomainEnabled(domain: Domain): boolean {
-  if (liveFlags.isEnabled(maintenanceFlag(domain))) return false;
-  if (auth.isPremiumLocked && PREMIUM_DOMAINS.includes(domain)) return false;
+  return domainOffReason(domain) === null;
+}
+
+/**
+ * Why `isDomainEnabled(domain)` is false, or `null` when it isn't — so a
+ * warning can say whether the user can turn the domain back on themselves
+ * or has to wait out a maintenance.
+ */
+export function domainOffReason(
+  domain: Domain,
+): "maintenance" | "premium" | "off" | null {
+  if (liveFlags.isEnabled(maintenanceFlag(domain))) return "maintenance";
+  if (auth.isPremiumLocked && PREMIUM_DOMAINS.includes(domain))
+    return "premium";
   const enabled = auth.user?.enabledDomains;
-  return enabled ? enabled.includes(domain) : true;
+  return !enabled || enabled.includes(domain) ? null : "off";
 }
 
 /**
@@ -77,4 +89,18 @@ const DOMAIN_OF_TARGET: Record<ReviewTargetType, Domain> = {
 /** The domain a review or list item's target belongs to. */
 export function targetDomain(type: ReviewTargetType): Domain {
   return DOMAIN_OF_TARGET[type];
+}
+
+// Each domain's own screens: what its layout redirects away from once the
+// domain is off (see `routes/app/{media,calendar,games,books,music}`).
+const DOMAIN_PAGES: [RegExp, Domain][] = [
+  [/^\/app\/(media|calendar)(?:[/?#]|$)/, Domain.MEDIA],
+  [/^\/app\/games(?:[/?#]|$)/, Domain.GAMES],
+  [/^\/app\/books(?:[/?#]|$)/, Domain.BOOKS],
+  [/^\/app\/music(?:[/?#]|$)/, Domain.MUSIC],
+];
+
+/** The domain whose screens `path` belongs to, or `null` for a shared one. */
+export function pathDomain(path: string): Domain | null {
+  return DOMAIN_PAGES.find(([pattern]) => pattern.test(path))?.[1] ?? null;
 }
