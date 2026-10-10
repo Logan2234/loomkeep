@@ -839,7 +839,7 @@ export const SETTINGS_SECTIONS: SettingsSectionDef[] = SETTINGS_GROUPS.flatMap(
 );
 
 /** Pages nested under a section, reached from it rather than from the rail. */
-export const SETTINGS_SUBPAGES: SettingsSectionDef[] = [
+const SETTINGS_SUBPAGES: SettingsSectionDef[] = [
   {
     slug: "security/devices",
     label: m.settings_sessions_title(),
