@@ -4,10 +4,9 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
   import { addWorkToLibrary, workDomain } from "#lib/chat/work-library.js";
+  import DomainOffMark from "#lib/components/DomainOffMark.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import Poster from "#lib/components/Poster.svelte";
-  import Tooltip from "#lib/components/Tooltip.svelte";
-  import { DOMAINS } from "#lib/constants/domains.js";
   import { isDomainEnabled } from "#lib/domains.js";
   import { formatDate } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -67,14 +66,7 @@
   </span>
 
   {#if !available}
-    <Tooltip text={m.chat_work_domain_off({ domain: DOMAINS[domain].label })}>
-      <span
-        class="text-warning grid h-7 w-7 place-items-center"
-        role="img"
-        aria-label={m.chat_work_domain_off({ domain: DOMAINS[domain].label })}>
-        <Icon name="warning" class="h-4 w-4" />
-      </span>
-    </Tooltip>
+    <DomainOffMark {domain} />
   {:else if tracked}
     <span
       class="bg-accent text-accent-fg grid h-7 w-7 shrink-0 place-items-center rounded-full"

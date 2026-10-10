@@ -7,12 +7,14 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
+  import DomainOffMark from "#lib/components/DomainOffMark.svelte";
   import EmptyState from "#lib/components/EmptyState.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import ReviewFormModal from "#lib/components/ReviewFormModal.svelte";
   import SegmentedControl from "#lib/components/SegmentedControl.svelte";
   import { appConfig } from "#lib/config.svelte.js";
+  import { isDomainEnabled, targetDomain } from "#lib/domains.js";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -263,6 +265,11 @@
     <ul class="space-y-3">
       {#each shown as review (review.id)}
         {@const isSelected = selected.includes(review.id)}
+        {@const domain = targetDomain(review.targetType)}
+        {@const off = !isDomainEnabled(domain)}
+        {@const href = off ? null : review.target?.href}
+        <!-- Still listed (and editable) when its domain is off, but its page
+             can't open: a warning stands in for the link. -->
         <li
           class="card flex items-start gap-4 p-4 transition-colors {isSelected
             ? 'border-accent bg-accent/5'
@@ -284,20 +291,22 @@
           {/if}
 
           <svelte:element
-            this={review.target?.href ? "a" : "div"}
-            href={review.target?.href ?? undefined}
-            class="flex min-w-0 flex-1 items-start gap-4 {review.target?.href
-              ? 'group'
-              : ''}">
+            this={href ? "a" : "div"}
+            href={href ?? undefined}
+            class="flex min-w-0 flex-1 items-start gap-4 {href ? 'group' : ''}">
             {#if review.target?.imageUrl}
               <img
                 src={review.target.imageUrl}
                 alt=""
                 loading="lazy"
-                class="h-24 w-16 shrink-0 rounded object-cover" />
+                class="h-24 w-16 shrink-0 rounded object-cover {off
+                  ? 'opacity-70'
+                  : ''}" />
             {:else}
               <div
-                class="bg-surface-2 text-dim flex h-24 w-16 shrink-0 items-center justify-center rounded font-mono text-xs">
+                class="bg-surface-2 text-dim flex h-24 w-16 shrink-0 items-center justify-center rounded font-mono text-xs {off
+                  ? 'opacity-70'
+                  : ''}">
                 {TYPE_LABEL[review.targetType]?.[0] ?? "?"}
               </div>
             {/if}
@@ -306,13 +315,17 @@
               <p class="timecode text-micro tracking-wide uppercase">
                 {metaLine(review)}
               </p>
-              <p
-                class="font-display mt-0.5 truncate text-lg leading-tight font-bold {review
-                  .target?.href
-                  ? 'group-hover:text-accent transition-colors'
-                  : ''}">
-                {review.target?.title ?? m.common_work()}
-              </p>
+              <div class="mt-0.5 flex items-center gap-1">
+                <p
+                  class="font-display min-w-0 truncate text-lg leading-tight font-bold {href
+                    ? 'group-hover:text-accent transition-colors'
+                    : ''}">
+                  {review.target?.title ?? m.common_work()}
+                </p>
+                {#if off}
+                  <DomainOffMark {domain} class="-my-1.5 shrink-0" />
+                {/if}
+              </div>
               {#if review.spoilerTag}
                 <span
                   class="text-warning bg-warning/12 mt-1 inline-flex rounded-full px-2 text-[0.6rem] font-bold tracking-wide uppercase">

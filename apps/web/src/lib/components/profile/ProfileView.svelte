@@ -28,7 +28,6 @@
   import ProfileHeader from "#lib/components/profile/ProfileHeader.svelte";
   import ProfileLibrarySection from "#lib/components/profile/ProfileLibrarySection.svelte";
   import ProfileListsSection from "#lib/components/profile/ProfileListsSection.svelte";
-  import ProfileStatsCard from "#lib/components/profile/ProfileStatsCard.svelte";
   import ProfileReviews from "#lib/components/ProfileReviews.svelte";
   import ReportModal from "#lib/components/ReportModal.svelte";
   import ScanProfileModal from "#lib/components/ScanProfileModal.svelte";
@@ -385,25 +384,12 @@
       {/if}
     </div>
 
-    <!-- Wide column: what the viewer produces. Narrow column: what they're
-         measured on. Every section is its own grid item (not nested inside
-         a wide-column wrapper) so mobile can order them independently of
-         where they land on desktop: "En chiffres" reads right after the
-         library there, not stranded at the very bottom under activity —
-         `order-*` drives the single mobile column, `lg:col-start-*` +
-         `lg:row-span-*` place them into the two desktop columns instead. -->
-    <div
-      class="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_358px] lg:gap-7">
-      <div class="order-1 min-w-0 lg:order-0 lg:col-start-1">
-        <ProfileLibrarySection domains={profile.domains} {selfManage} />
-      </div>
-
-      <div class="order-2 min-w-0 lg:order-0 lg:col-start-2 lg:row-span-4">
-        <ProfileStatsCard {profile} />
-      </div>
+    <!-- What the viewer produces, one section under the other. -->
+    <div class="mt-8 flex flex-col gap-8">
+      <ProfileLibrarySection domains={profile.domains} {selfManage} />
 
       {#if appConfig.socialEnabled && listTiles.length > 0}
-        <div class="order-3 min-w-0 lg:order-0 lg:col-start-1">
+        <div class="min-w-0">
           <ProfileListsSection
             {listTiles}
             {selfManage}
@@ -413,14 +399,10 @@
       {/if}
 
       {#if selfManage}
-        <div class="order-4 min-w-0 lg:order-0 lg:col-start-1">
-          <ProfileReviews />
-        </div>
+        <ProfileReviews />
       {/if}
 
-      <div class="order-5 min-w-0 lg:order-0 lg:col-start-1">
-        <ProfileActivity username={profile.username} {selfManage} />
-      </div>
+      <ProfileActivity username={profile.username} {selfManage} />
     </div>
   {/if}
 </div>

@@ -18,6 +18,7 @@
   import { settingsShortcutLabel } from "../keyboard-navigation";
   import { SETTINGS_GROUPS, sectionHref } from "../nav";
   import { settingsSearch } from "../search-state.svelte";
+  import { isSectionVisible } from "../section-visibility";
 
   let {
     variant = "rail",
@@ -169,7 +170,7 @@
           {group.label}
         </p>
         <ul class="card divide-border divide-y">
-          {#each group.sections as section (section.slug)}
+          {#each group.sections.filter(isSectionVisible) as section (section.slug)}
             {@const shortcut = shortcutFor(section.slug)}
             <li>
               <a

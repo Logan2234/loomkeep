@@ -1,8 +1,9 @@
+import { auth } from "#lib/auth.svelte.js";
 import { appConfig } from "#lib/config.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { MyReviewDto } from "@loomkeep/shared";
+import type { MyReviewDto, UserDto } from "@loomkeep/shared";
 import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
@@ -63,6 +64,7 @@ beforeEach(() => {
 
 afterEach(() => {
   appConfig.socialEnabled = false;
+  auth.user = null;
 });
 
 const titles = () =>
@@ -136,5 +138,46 @@ describe("Reviews page", () => {
         within(bar).getByRole("button", { name: m.common_delete() }),
       ).toBeTruthy(),
     );
+  });
+
+  // Its page wouldn't open: the review stays, a warning stands in for the link.
+  it("warns instead of linking to a work whose domain is off", async () => {
+    auth.user = { enabledDomains: ["MEDIA"] } as unknown as UserDto;
+    const linked = (r: MyReviewDto, href: string): MyReviewDto => ({
+      ...r,
+      target: { ...r.target!, href },
+    });
+    server.use(
+      http.get(apiUrl("/reviews/me"), () =>
+        HttpResponse.json([
+          linked(
+            review("dune", "Dune", "MEDIA", 9, "2026-10-02T00:00:00Z"),
+            "/app/media/movie/1",
+          ),
+          linked(
+            review(
+              "bg3",
+              "Baldur's Gate 3",
+              "GAME",
+              10,
+              "2026-09-21T00:00:00Z",
+            ),
+            "/app/games/2",
+          ),
+        ]),
+      ),
+    );
+    renderWithQuery(ReviewsPage, {});
+    await screen.findByText("Baldur's Gate 3");
+
+    expect(
+      screen.getByRole("link", { name: /Dune/ }).getAttribute("href"),
+    ).toBe("/app/media/movie/1");
+    expect(screen.queryByRole("link", { name: /Baldur/ })).toBe(null);
+    expect(
+      screen.getByRole("img", {
+        name: m.common_work_domain_off({ domain: m.common_Games() }),
+      }),
+    ).toBeTruthy();
   });
 });

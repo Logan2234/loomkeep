@@ -2,10 +2,9 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
   import { addWorkToLibrary, workDomain } from "#lib/chat/work-library.js";
+  import DomainOffMark from "#lib/components/DomainOffMark.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import Poster from "#lib/components/Poster.svelte";
-  import Tooltip from "#lib/components/Tooltip.svelte";
-  import { DOMAINS } from "#lib/constants/domains.js";
   import { isDomainEnabled } from "#lib/domains.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { MessageWorkDto } from "@loomkeep/shared";
@@ -88,15 +87,6 @@
   <div
     class="border-border bg-surface text-fg relative flex w-64 max-w-full items-stretch gap-3 rounded-xl border p-2 opacity-80">
     {@render ticket()}
-    <Tooltip
-      text={m.chat_work_domain_off({ domain: DOMAINS[domain].label })}
-      class="absolute top-1.5 right-1.5">
-      <span
-        class="text-warning grid h-6 w-6 place-items-center"
-        role="img"
-        aria-label={m.chat_work_domain_off({ domain: DOMAINS[domain].label })}>
-        <Icon name="warning" class="h-4 w-4" />
-      </span>
-    </Tooltip>
+    <DomainOffMark {domain} class="absolute top-1 right-1" />
   </div>
 {/if}
