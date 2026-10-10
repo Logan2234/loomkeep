@@ -8,7 +8,9 @@ import { defineConfig } from "vitest/config";
 // and $app/env/public via core.ts's ApiError).
 export default defineConfig({
   plugins: [
-    sveltekit({ files: { serviceWorker: "src/service-worker/service-worker" } }),
+    sveltekit({
+      files: { serviceWorker: "src/service-worker/service-worker" },
+    }),
   ],
   test: {
     projects: [
@@ -28,6 +30,8 @@ export default defineConfig({
         resolve: { conditions: ["browser"] },
         test: {
           name: "component",
+          // The real SDK imports virtual $app modules, which Node cannot resolve.
+          server: { deps: { inline: ["@sentry/sveltekit"] } },
           environment: "happy-dom",
           include: ["src/**/*.svelte.spec.ts"],
           setupFiles: ["./src/lib/test/setup.ts"],
