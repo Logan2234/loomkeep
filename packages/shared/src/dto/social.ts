@@ -5,7 +5,6 @@ import type {
   VisibilityFacet,
 } from "../enums";
 import type { AchievementDto } from "./gamification";
-import type { LabelCountDto } from "./stats";
 
 /** Minimal identity of a user, for lists (followers, following, requests). */
 export interface UserSummaryDto {
@@ -82,29 +81,21 @@ export interface ProfileDomainStatDto {
 }
 
 /**
- * Video-derived activity summary shown on a profile (streak, heatmap teaser,
- * genres…) — deliberately video-only (the only domain with a per-event log),
- * gated as one block by the MEDIA domain's ACTIVITY facet.
+ * The activity streak shown on a profile (header badge, home widget): dated
+ * watches, game sessions and reading sessions, gated as one block by the
+ * MEDIA domain's ACTIVITY facet.
  */
 export interface ProfileActivityStatsDto {
   visible: boolean;
-  /** Consecutive days (ending today or yesterday) with at least one watch. */
+  /** Consecutive days (ending today or yesterday) with at least one activity. */
   streakDays: number;
   /**
-   * Whether today already has a watch counted toward `streakDays` — i.e. the
-   * streak needs nothing more before midnight to survive. Lets the badge
-   * show a "you still need to watch something today" cue near the end of
-   * the day without the frontend re-deriving it from the heatmap.
+   * Whether today already has an activity counted toward `streakDays` — i.e.
+   * the streak needs nothing more before midnight to survive. Lets the badge
+   * show a "you still need to do something today" cue near the end of the
+   * day without the frontend re-deriving it.
    */
   streakSecuredToday: boolean;
-  firstActivityAt: string | null;
-  lastActivityAt: string | null;
-  totalMinutes: number;
-  mostActiveYear: number | null;
-  /** Top 3 genres by viewing count — for display chips. */
-  topGenres: LabelCountDto[];
-  /** Daily watch counts, last 90 days, zero-filled — a teaser for /stats. */
-  heatmap: { date: string; count: number }[];
 }
 
 /** A user's social profile as seen by a given viewer (post-visibility). */
