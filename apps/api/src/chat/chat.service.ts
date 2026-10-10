@@ -309,7 +309,15 @@ export class ChatService {
 
     const row = await this.prisma.message.update({
       where: { id: message.id },
-      data: { text, spoiler, edited: true },
+      // Saved unchanged, it isn't "modifié".
+      data: {
+        text,
+        spoiler,
+        edited:
+          message.edited ||
+          message.text !== text ||
+          message.spoiler !== spoiler,
+      },
       include: MESSAGE_INCLUDE,
     });
     await this.publish(membership, row);
@@ -795,6 +803,9 @@ export class ChatService {
         deletedAt: true,
         pinnedAt: true,
         createdAt: true,
+        text: true,
+        spoiler: true,
+        edited: true,
       },
     });
 
