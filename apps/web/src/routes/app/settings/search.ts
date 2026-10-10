@@ -3,7 +3,7 @@
 // section titles — someone looking for the digest hour types "fuseau", which
 // is a row inside Communications and nowhere in its name.
 import type { SettingsSectionDef } from "./nav";
-import { SETTINGS_SECTIONS, sectionHref } from "./nav";
+import { SETTINGS_SEARCHABLE, sectionHref } from "./nav";
 
 export interface SettingsSearchHit {
   section: SettingsSectionDef;
@@ -38,7 +38,7 @@ function matches(haystack: string[], needle: string): boolean {
  */
 export function searchSettings(
   query: string,
-  sections: SettingsSectionDef[] = SETTINGS_SECTIONS,
+  sections: SettingsSectionDef[] = SETTINGS_SEARCHABLE,
 ): SettingsSearchHit[] {
   const needle = fold(query.trim());
   if (!needle) return [];

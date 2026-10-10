@@ -15,7 +15,7 @@
     type PagedResult,
     type SecurityEventType,
   } from "@loomkeep/shared";
-  import SettingsSection from "../components/SettingsSection.svelte";
+  import SettingsSection from "../../components/SettingsSection.svelte";
 
   // USER_DELETED never reaches this page: the account it belongs to is gone.
   type ShownType = Exclude<SecurityEventType, "USER_DELETED">;
@@ -86,7 +86,7 @@
   const events = $derived(eventsQuery.data);
 </script>
 
-<SettingsSection slug="activity">
+<SettingsSection slug="security/activity">
   {#if eventsQuery.error}
     <Banner variant="error" class="mb-4">{eventsQuery.error}</Banner>
   {/if}

@@ -3,7 +3,7 @@
   import PageHeader from "#lib/components/PageHeader.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import type { Snippet } from "svelte";
-  import { findSection } from "../nav";
+  import { findSection, sectionHref } from "../nav";
 
   let { slug, children }: { slug: string; children: Snippet } = $props();
 
@@ -29,7 +29,11 @@
     subtitle={section.description}
     icon={section.icon}
     isNew={section.newBadgeKey ? isFeatureNew(section.newBadgeKey) : false}
-    back={isDesktop ? "/app/profile" : "/app/settings"}
+    back={section.parent
+      ? sectionHref(section.parent)
+      : isDesktop
+        ? "/app/profile"
+        : "/app/settings"}
     class="mb-6" />
 {/if}
 

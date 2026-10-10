@@ -10,7 +10,6 @@
   import { page } from "$app/state";
   import Icon from "#lib/components/Icon.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -36,9 +35,7 @@
   const groups = $derived(
     SETTINGS_GROUPS.map((group) => ({
       ...group,
-      sections: group.sections.filter(
-        (section) => !section.social || appConfig.socialEnabled,
-      ),
+      sections: group.sections.filter(isSectionVisible),
     })).filter((group) => group.sections.length > 0),
   );
   const reduced = prefersReducedMotion();
@@ -50,7 +47,10 @@
   }
 
   function isActive(slug: string): boolean {
-    return page.url.pathname === sectionHref(slug);
+    const href = sectionHref(slug);
+    return (
+      page.url.pathname === href || page.url.pathname.startsWith(`${href}/`)
+    );
   }
 
   let navEl = $state<HTMLElement | null>(null);
@@ -170,7 +170,7 @@
           {group.label}
         </p>
         <ul class="card divide-border divide-y">
-          {#each group.sections.filter(isSectionVisible) as section (section.slug)}
+          {#each group.sections as section (section.slug)}
             {@const shortcut = shortcutFor(section.slug)}
             <li>
               <a

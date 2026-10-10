@@ -96,3 +96,18 @@ describe("domain display order", () => {
     expect(trackingHrefs).toEqual(["/app/calendar", "/app/stats"]);
   });
 });
+
+describe("calendar visibility", () => {
+  const calendarShown = (enabled: Domain[]) =>
+    visibleNavItems({
+      isDomainEnabled: (d) => enabled.includes(d),
+      socialEnabled: false,
+      gamificationEnabled: false,
+    }).some((item) => item.href === "/app/calendar");
+
+  it("stays while either video or games is on, and goes when both are off", () => {
+    expect(calendarShown([Domain.GAMES])).toBe(true);
+    expect(calendarShown([Domain.MEDIA])).toBe(true);
+    expect(calendarShown([Domain.BOOKS, Domain.MUSIC])).toBe(false);
+  });
+});
