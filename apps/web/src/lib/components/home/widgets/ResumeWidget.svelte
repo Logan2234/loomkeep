@@ -6,8 +6,12 @@
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import type { BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { LibraryEntryDto } from "@loomkeep/shared";
-  import { isGhost } from "@loomkeep/shared";
+  import {
+    type LibraryEntryDto,
+    isGhost,
+    MEDIA_SYNTHETIC_STATUS,
+  } from "@loomkeep/shared";
+
   import { useQueryClient } from "@tanstack/svelte-query";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
@@ -23,9 +27,10 @@
   const dormantQuery = createApiQuery(() => ({
     key: keys.library.dormant(),
     fetch: () =>
-      listLibrary({ statuses: ["DORMANT"], types: ["SERIES", "ANIME"] }).then(
-        (r) => r.items,
-      ),
+      listLibrary({
+        statuses: [MEDIA_SYNTHETIC_STATUS.DORMANT],
+        types: ["SERIES", "ANIME"],
+      }).then((r) => r.items),
     enabled: !!auth.user,
   }));
 

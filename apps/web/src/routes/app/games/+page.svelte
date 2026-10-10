@@ -35,14 +35,21 @@
     type LibraryItemView,
   } from "#lib/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { Domain, isSessionPaused, type GameEntryDto } from "@loomkeep/shared";
+  import {
+    Domain,
+    isSessionPaused,
+    type GameEntryDto,
+    type GameSortKey,
+    type GameFilterStatus,
+    SESSION_FILTER_PAUSED,
+  } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
     ...GAME_STATUS_ORDER.map((value) => ({
       label: GAME_STATUS_LABELS[value],
       value,
     })),
-    { label: m.media_status_paused(), value: "PAUSED" },
+    { label: m.media_status_paused(), value: SESSION_FILTER_PAUSED },
   ];
 
   const SORTS = [
@@ -53,7 +60,7 @@
     { label: m.library_sort_finished(), value: "finished" },
     { label: m.library_sort_started(), value: "started" },
     { label: m.common_status(), value: "status" },
-  ];
+  ] satisfies { label: string; value: GameSortKey }[];
 
   const setFavorite = (entry: GameEntryDto, next: boolean) =>
     updateGameEntry(entry.id, { favorite: next });
@@ -156,8 +163,8 @@
     listGames({
       query: params.query,
       favorite: params.favoritesOnly,
-      statuses: params.statuses,
-      sort: params.sort,
+      statuses: params.statuses as GameFilterStatus[],
+      sort: params.sort as GameSortKey,
       order: params.order,
       page: params.page,
     });
@@ -166,7 +173,7 @@
     getGamesPile({
       query: params.query,
       favorite: params.favoritesOnly,
-      statuses: params.statuses,
+      statuses: params.statuses as GameFilterStatus[],
     });
 
   const mode = $derived(sagasMode(page.url));

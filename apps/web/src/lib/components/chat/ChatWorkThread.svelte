@@ -25,6 +25,7 @@
     type CommentDto,
     type CommentPresenceEvent,
     type WorkThreadDto,
+    RealtimeCommand,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { untrack } from "svelte";
@@ -165,10 +166,14 @@
 
     // The room brings the thread's own changes (CommentThread listens to
     // them) and who else is reading it.
-    const leave = joinRealtimeRoom("join-comments", "leave-comments", {
-      targetType,
-      targetId,
-    });
+    const leave = joinRealtimeRoom(
+      RealtimeCommand.JOIN_COMMENTS,
+      RealtimeCommand.LEAVE_COMMENTS,
+      {
+        targetType,
+        targetId,
+      },
+    );
     const offs = [
       onRealtimeEvent<CommentPresenceEvent>("comment-presence", (event) => {
         if (isThis(event)) peopleHere = event.count;

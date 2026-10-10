@@ -11,7 +11,7 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { Domain, SessionTimerDto } from "@loomkeep/shared";
+  import { type SessionTimerDto, type SessionDomain } from "@loomkeep/shared";
   import { slide } from "svelte/transition";
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
@@ -23,7 +23,7 @@
     compact = false,
     onFinish,
   }: {
-    domain: Extract<Domain, "GAMES" | "BOOKS">;
+    domain: SessionDomain;
     entryId: string;
     disabled?: boolean;
     compact?: boolean;

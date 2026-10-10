@@ -25,12 +25,13 @@
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type {
-    AdminInvitationLinkDto,
-    AdminInvitationRedeemerDto,
-    AdminUserDto,
-    AdminUserFilter,
-    PagedResult,
+  import {
+    type AdminInvitationLinkDto,
+    type AdminInvitationRedeemerDto,
+    type AdminUserDto,
+    type AdminUserFilter,
+    type PagedResult,
+    ADMIN_USER_FILTERS,
   } from "@loomkeep/shared";
   import { onDestroy } from "svelte";
   import { flip } from "svelte/animate";
@@ -80,8 +81,8 @@
   let query = $state(page.url.searchParams.get("q") ?? "");
   const queryFilter = $derived(page.url.searchParams.get("q") ?? "");
   const filter = $derived<AdminUserFilter>(
-    ["admin", "unverified", "never", "premium"].includes(
-      page.url.searchParams.get("filter") ?? "",
+    ADMIN_USER_FILTERS.includes(
+      (page.url.searchParams.get("filter") ?? "") as AdminUserFilter,
     )
       ? (page.url.searchParams.get("filter") as AdminUserFilter)
       : "all",

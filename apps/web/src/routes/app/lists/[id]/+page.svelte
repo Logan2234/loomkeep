@@ -31,7 +31,11 @@
   import { isDomainEnabled, targetDomain } from "#lib/domains.js";
   import { m } from "#lib/paraglide/messages.js";
   import { joinRealtimeRoom, onRealtimeEvent } from "#lib/realtime/socket.js";
-  import type { ListDto, ListItemDto } from "@loomkeep/shared";
+  import {
+    type ListDto,
+    type ListItemDto,
+    RealtimeCommand,
+  } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { dndzone } from "svelte-dnd-action";
 
@@ -56,7 +60,11 @@
   // the next time you try to save" into "the list just updates under you".
   $effect(() => {
     if (!id) return;
-    const leave = joinRealtimeRoom("join-list", "leave-list", id);
+    const leave = joinRealtimeRoom(
+      RealtimeCommand.JOIN_LIST,
+      RealtimeCommand.LEAVE_LIST,
+      id,
+    );
     const off = onRealtimeEvent("list-updated", () => {
       void queryClient.invalidateQueries({ queryKey: keys.lists.detail(id) });
     });

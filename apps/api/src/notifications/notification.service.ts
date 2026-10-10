@@ -12,6 +12,7 @@ import {
   type NotificationDto,
   type NotificationFeedDto,
   NotificationType,
+  RealtimeEvent,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
@@ -805,7 +806,7 @@ export class NotificationService {
   publishCreated(userId: string, type: NotificationType): void {
     // Kinds excluded from the bell feed have nothing useful to refetch.
     if (!FEED_EXCLUDED_TYPES.includes(type)) {
-      this.events.emitToUser(userId, "notification");
+      this.events.emitToUser(userId, RealtimeEvent.NOTIFICATION);
     }
   }
 

@@ -1,14 +1,16 @@
-import type {
-  AdminCacheDeleteOrphansResultDto,
-  AdminCacheItemDetailDto,
-  AdminCacheItemDto,
-  AdminCacheListResponseDto,
-  AdminCacheResyncStaleResultDto,
-  AdminCacheSort,
-  CommentTargetType,
-  ReviewTargetType,
+import {
+  type AdminCacheDeleteOrphansResultDto,
+  type AdminCacheItemDetailDto,
+  type AdminCacheItemDto,
+  type AdminCacheListResponseDto,
+  type AdminCacheResyncStaleResultDto,
+  type AdminCacheSort,
+  type CommentTargetType,
+  type ReviewTargetType,
+  ADMIN_CACHE_SORTS,
+  ErrorCode,
 } from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+
 import {
   Controller,
   Delete,
@@ -106,7 +108,9 @@ export class AdminCacheController {
     const cacheDomain = this.domainOrThrow(domain);
     const { skip, take } = parsePageQuery(page, limit, DEFAULT_PAGE_SIZE);
     const query = search?.trim();
-    const orderBy = orderByFor((sort as AdminCacheSort) ?? "stale");
+    const orderBy = orderByFor(
+      ADMIN_CACHE_SORTS.find((value) => value === sort) ?? "stale",
+    );
     const orphansOnly = orphans === "true";
 
     const where = {

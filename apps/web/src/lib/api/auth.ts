@@ -27,6 +27,7 @@ import { removeStorage } from "../local-storage";
 import { getLocale, isLocale, setLocale } from "../paraglide/runtime.js";
 import { ApiError } from "./core";
 import { typedRequest } from "./generated/typed-request";
+import { pageParam } from "./query-params";
 
 /**
  * Restores the session, and reports whether the answer is trustworthy.
@@ -342,7 +343,7 @@ export const revokeApiKey = (id: string): Promise<void> =>
 
 export const getAccountSecurityEvents = (page: number) =>
   typedRequest("/auth/security-events", {
-    query: { page: page > 1 ? String(page) : undefined },
+    query: { page: pageParam(page) },
   });
 
 export async function logout(): Promise<void> {

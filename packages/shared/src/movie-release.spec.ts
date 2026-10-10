@@ -1,5 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { movieReleaseInfo } from "./movie-release";
+import { isMovieUpcoming, isReleased, movieReleaseInfo } from "./movie-release";
+
+describe("release-day comparisons", () => {
+  it("keeps the web's local-day boundary separate from the API's UTC day", () => {
+    const info = { publicDate: "2026-10-04", upcoming: true };
+    const utcNow = new Date("2026-10-04T00:30:00Z");
+    expect(isMovieUpcoming(info, "2026-10-03")).toBe(true);
+    expect(isMovieUpcoming(info, utcNow)).toBe(false);
+    expect(isReleased(info.publicDate, "2026-10-04")).toBe(true);
+  });
+
+  it("retains the catalogue status fallback for undated films", () => {
+    expect(isMovieUpcoming({ publicDate: null, upcoming: true }, now)).toBe(
+      true,
+    );
+    expect(isMovieUpcoming({ publicDate: null, upcoming: false }, now)).toBe(
+      false,
+    );
+  });
+});
 
 const now = new Date("2026-10-03T12:00:00Z");
 describe("movie release availability", () => {

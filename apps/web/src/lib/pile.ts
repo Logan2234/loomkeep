@@ -2,8 +2,7 @@ import { formatHours, formatNumber, hoursParts } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
 import {
   Domain,
-  episodeRuntimeFor,
-  isRuntimeKnown,
+  episodesTimeLeft,
   type MediaDetailSeasonDto,
   type MediaType,
   type PileSummaryDto,
@@ -122,11 +121,5 @@ export function timeLeftToWatch(
     );
   if (left.length === 0) return null;
 
-  return {
-    minutes: left.reduce(
-      (sum, e) => sum + episodeRuntimeFor(type, e.runtimeMin, itemRuntimeMin),
-      0,
-    ),
-    estimated: left.some((e) => !isRuntimeKnown(e.runtimeMin, itemRuntimeMin)),
-  };
+  return episodesTimeLeft(type, itemRuntimeMin, left);
 }

@@ -1,5 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { episodeRuntimeFor, isRuntimeKnown, runtimeFor } from "./runtime";
+import {
+  episodeRuntimeFor,
+  episodesTimeLeft,
+  isRuntimeKnown,
+  runtimeFor,
+} from "./runtime";
+
+describe("episodesTimeLeft", () => {
+  it("adds known episode lengths and the title fallback", () => {
+    expect(
+      episodesTimeLeft("SERIES", 40, [
+        { runtimeMin: 50 },
+        { runtimeMin: null },
+      ]),
+    ).toEqual({ minutes: 90, estimated: false });
+  });
+
+  it("marks per-type fallback lengths as estimated", () => {
+    expect(
+      episodesTimeLeft("ANIME", null, [
+        { runtimeMin: 20 },
+        { runtimeMin: null },
+      ]),
+    ).toEqual({ minutes: 44, estimated: true });
+    expect(episodesTimeLeft("SERIES", null, [])).toEqual({
+      minutes: 0,
+      estimated: false,
+    });
+  });
+});
 
 describe("runtimeFor", () => {
   it("uses the real runtime when known", () => {

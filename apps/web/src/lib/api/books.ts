@@ -1,16 +1,20 @@
-import type {
-  BookOwnershipStatus,
-  BookStatus,
-  BulkEntriesTargetDto,
-  BulkUpdateEntriesDto,
-  CreateBookSessionDto,
-  LibrarySagaSort,
-  UpdateBookEntryDto,
-  UpdateBookSessionDto,
-  UpsertBookEntryDto,
-  UpsertReadingGoalDto,
+import {
+  type BookFilterStatus,
+  type BookOwnershipStatus,
+  type BookSortKey,
+  type BookStatus,
+  type BulkEntriesTargetDto,
+  type BulkUpdateEntriesDto,
+  type CreateBookSessionDto,
+  type LibrarySagaSort,
+  type SortOrder,
+  type UpdateBookEntryDto,
+  type UpdateBookSessionDto,
+  type UpsertBookEntryDto,
+  type UpsertReadingGoalDto,
 } from "@loomkeep/shared";
-import { type SortOrder } from "@loomkeep/shared";
+import { pageParam } from "./query-params";
+
 import { getLocale } from "../paraglide/runtime.js";
 import { typedRequest } from "./generated/typed-request";
 
@@ -20,8 +24,8 @@ export const searchBooks = (query: string) =>
 export interface ListBooksFilters {
   query?: string;
   favorite?: boolean;
-  statuses?: string[];
-  sort?: string;
+  statuses?: BookFilterStatus[];
+  sort?: BookSortKey;
   order?: SortOrder;
   page?: number;
 }
@@ -35,7 +39,7 @@ export function listBooks(filters: ListBooksFilters = {}) {
       status: filters.statuses,
       sort: filters.sort,
       order: filters.order,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      page: pageParam(filters.page),
     },
   });
 }

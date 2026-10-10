@@ -41,3 +41,20 @@ export function isRuntimeKnown(
     (itemRuntimeMin !== null && itemRuntimeMin > 0)
   );
 }
+
+export function episodesTimeLeft(
+  type: MediaType,
+  itemRuntimeMin: number | null,
+  episodes: readonly { runtimeMin: number | null }[],
+): { minutes: number; estimated: boolean } {
+  return {
+    minutes: episodes.reduce(
+      (sum, episode) =>
+        sum + episodeRuntimeFor(type, episode.runtimeMin, itemRuntimeMin),
+      0,
+    ),
+    estimated: episodes.some(
+      (episode) => !isRuntimeKnown(episode.runtimeMin, itemRuntimeMin),
+    ),
+  };
+}

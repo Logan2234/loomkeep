@@ -62,8 +62,11 @@ export type HomeWidgetSort = (typeof HOME_WIDGET_SORTS)[number];
  * address (`kind: "url"`, with `url` and `label`). Flat rather than a union:
  * the API describes it as one OpenAPI object.
  */
+export const HOME_QUICK_LINK_KINDS = ["app", "url"] as const;
+export type HomeQuickLinkKind = (typeof HOME_QUICK_LINK_KINDS)[number];
+
 export interface HomeQuickLinkDto {
-  kind: "app" | "url";
+  kind: HomeQuickLinkKind;
   id?: string;
   url?: string;
   label?: string;

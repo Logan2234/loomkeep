@@ -1,8 +1,8 @@
 import {
   Domain,
   ErrorCode,
-  MAX_SESSION_DURATION_MINUTES,
   type SessionTimerDto,
+  timerMinutes,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { SessionSource, type SessionTimer } from "@prisma/client";
@@ -97,10 +97,7 @@ export class SessionTimerService {
 
   async finish(userId: string, dto: FinishSessionTimerDto): Promise<void> {
     const timer = await this.required(userId);
-    const durationMinutes = Math.min(
-      MAX_SESSION_DURATION_MINUTES,
-      Math.max(1, Math.ceil(this.elapsedSeconds(timer) / 60)),
-    );
+    const durationMinutes = timerMinutes(this.elapsedSeconds(timer));
     const occurredAt = new Date().toISOString();
 
     if (timer.domain === Domain.GAMES && timer.gameEntryId) {

@@ -1,6 +1,7 @@
 import {
   type ChatPresenceEvent,
   type ChatTypingEvent,
+  RealtimeCommand,
   RealtimeEvent,
 } from "@loomkeep/shared";
 import { Logger } from "@nestjs/common";
@@ -225,7 +226,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /** Comments are entirely social-gated (see CommentController) — refused silently, same "don't advertise the surface" rule as the REST side. */
-  @SubscribeMessage("join-comments")
+  @SubscribeMessage(RealtimeCommand.JOIN_COMMENTS)
   async handleJoinComments(
     @ConnectedSocket() client: Socket,
     @MessageBody()
@@ -241,7 +242,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.emitCommentPresence(targetType, targetId);
   }
 
-  @SubscribeMessage("leave-comments")
+  @SubscribeMessage(RealtimeCommand.LEAVE_COMMENTS)
   async handleLeaveComments(
     @ConnectedSocket() client: Socket,
     @MessageBody()
@@ -255,7 +256,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /** Owner or editor only — the same audience ListService.canEdit grants write access to. */
-  @SubscribeMessage("join-list")
+  @SubscribeMessage(RealtimeCommand.JOIN_LIST)
   async handleJoinList(
     @ConnectedSocket() client: Socket,
     @MessageBody() listId: string,
@@ -265,7 +266,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await client.join(listRoom(listId));
   }
 
-  @SubscribeMessage("leave-list")
+  @SubscribeMessage(RealtimeCommand.LEAVE_LIST)
   async handleLeaveList(
     @ConnectedSocket() client: Socket,
     @MessageBody() listId: string,

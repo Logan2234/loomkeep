@@ -1,19 +1,22 @@
-import type {
-  Domain,
-  HomeLayoutDto,
-  HomeWidgetSort,
-  HomeWidgetType,
-  LeaderboardPeriod,
-  LeaderboardScope,
-} from "@loomkeep/shared";
 import {
   Domain as DomainValues,
   HOME_GRID_COLUMNS,
   HOME_LAYOUT_LIMITS,
+  HOME_QUICK_LINK_KINDS,
   HOME_WIDGET_SORTS,
   HOME_WIDGET_TYPES,
+  LEADERBOARD_PERIODS,
+  LEADERBOARD_SCOPES,
   MediaType,
+  type Domain,
+  type HomeLayoutDto,
+  type HomeQuickLinkKind,
+  type HomeWidgetSort,
+  type HomeWidgetType,
+  type LeaderboardPeriod,
+  type LeaderboardScope,
 } from "@loomkeep/shared";
+
 import { Type } from "class-transformer";
 import {
   ArrayMaxSize,
@@ -40,8 +43,8 @@ class HomeQuickLinkBody {
    * and `label`).
    * @example "app"
    */
-  @IsIn(["app", "url"])
-  kind!: "app" | "url";
+  @IsIn(HOME_QUICK_LINK_KINDS)
+  kind!: HomeQuickLinkKind;
 
   /**
    * A web navigation id, for `app`; unknown ones are dropped when shown.
@@ -132,7 +135,7 @@ class HomeWidgetConfigBody {
    * @example "friends"
    */
   @IsOptional()
-  @IsIn(["global", "friends"])
+  @IsIn(LEADERBOARD_SCOPES)
   scope?: LeaderboardScope;
 
   /**
@@ -140,7 +143,7 @@ class HomeWidgetConfigBody {
    * @example "month"
    */
   @IsOptional()
-  @IsIn(["month", "year", "all"])
+  @IsIn(LEADERBOARD_PERIODS)
   period?: LeaderboardPeriod;
 
   /**

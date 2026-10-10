@@ -1,19 +1,21 @@
-import type {
-  BulkEntriesResultDto,
-  BulkEntriesTargetDto,
-  MusicDetailDto,
-  MusicEntryDto,
-  MusicItemDto,
-  MusicSource,
-  PagedResult,
-  PileSummaryDto,
-} from "@loomkeep/shared";
 import {
+  type BulkEntriesResultDto,
+  type BulkEntriesTargetDto,
   Domain,
+  MUSIC_SORT_KEYS,
+  type MusicDetailDto,
+  type MusicEntryDto,
+  type MusicItemDto,
+  type MusicSortKey,
+  type MusicSource,
   MusicStatus,
+  type PagedResult,
+  type PileSummaryDto,
+  RealtimeEvent,
   ReviewTargetType,
   XpReason,
 } from "@loomkeep/shared";
+
 import { Injectable } from "@nestjs/common";
 import type {
   MusicStatus as DbMusicStatus,
@@ -66,16 +68,6 @@ type EntryWithAlbum = Prisma.MusicEntryGetPayload<{
   include: typeof ENTRY_INCLUDE;
 }>;
 
-type MusicSortKey =
-  "added" | "title" | "artist" | "rating" | "finished" | "status";
-const MUSIC_SORT_KEYS = [
-  "added",
-  "title",
-  "artist",
-  "rating",
-  "finished",
-  "status",
-] as const satisfies readonly MusicSortKey[];
 const MUSIC_STATUS_SORT_ORDER = ["TO_LISTEN", "LISTENED"] as const;
 
 /** What ranking an album entry reads — a light slice of its DTO. */
@@ -232,7 +224,7 @@ export class MusicLibraryService {
     // (see OnboardingService) — pushed unconditionally rather than checking
     // whether onboarding is even still in progress first, since that check
     // would cost as much as the emit is worth avoiding.
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return toEntryDto(
       entry,
@@ -472,7 +464,7 @@ export class MusicLibraryService {
       );
     }
 
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return toEntryDto(
       entry,

@@ -9,6 +9,7 @@ import {
   MediaSummaryDto,
   MediaType,
 } from "@loomkeep/shared";
+import { stripTags } from "../../common/text.util";
 import type { ProviderEpisode, ProviderMediaDetails } from "./provider.types";
 
 export interface AnilistMedia {
@@ -127,7 +128,12 @@ export function toMediaDetails(
   const summary = toSummary(media);
   return {
     summary,
-    overview: media.description ? stripHtml(media.description) : null,
+    overview: media.description
+      ? stripTags(media.description, {
+          brToNewline: true,
+          stripEmptyTags: false,
+        })
+      : null,
     backdropUrl: media.bannerImage ?? null,
     genres: media.genres ?? [],
     status: media.status ?? null,
@@ -330,21 +336,6 @@ function streamingTitlesByNumber(
   }
 
   return titles;
-}
-
-// Loops the tag-stripping pass until stable — a single pass can leave a tag
-// exposed on a crafted nested/malformed input (e.g. "<<b>script>"), which is
-// exactly what CodeQL's "incomplete multi-character sanitization" check flags.
-function stripHtml(text: string): string {
-  let result = text.replace(/<br\s*\/?>/gi, "\n");
-  let previous: string;
-
-  do {
-    previous = result;
-    result = previous.replace(/<[^>]+>/g, "");
-  } while (result !== previous);
-
-  return result.trim();
 }
 
 /** Staff credited with the exact role "Director" (case-insensitive). */

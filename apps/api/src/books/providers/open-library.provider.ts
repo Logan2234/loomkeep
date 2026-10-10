@@ -6,6 +6,7 @@ import { AppException } from "../../common/app.exception";
 import { chunk } from "../../common/array.util";
 import { fetchJson, identifyingUserAgent } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { stripTags } from "../../common/text.util";
 import type {
   BookCatalogProvider,
   ProviderBookDetails,
@@ -854,7 +855,7 @@ function description(raw: OpenLibraryWork["description"]): string | null {
   const text = typeof raw === "string" ? raw : raw?.value;
   if (!text) return null;
 
-  let cleaned = stripHtml(text);
+  let cleaned = stripTags(text);
   // Editors often append cross-reference notes ("This work has also been
   // published in multiple volumes. See: ...") after a "---" divider — keep
   // only the synopsis that precedes it.
@@ -880,23 +881,4 @@ function toIsoDate(publishDate: string | undefined): string | null {
   if (!publishDate || !/^\d{4}-\d{2}-\d{2}$/.test(publishDate)) return null;
   const date = new Date(publishDate);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
-}
-
-/**
- * Descriptions are user-edited and occasionally carry light HTML; we render
- * them as plain text. Loops the tag-stripping pass until stable — a single
- * pass can leave a tag exposed on a crafted nested/malformed input (e.g.
- * "<<b>script>"), which is exactly what CodeQL's "incomplete multi-character
- * sanitization" check flags.
- */
-function stripHtml(html: string): string {
-  let result = html;
-  let previous: string;
-
-  do {
-    previous = result;
-    result = previous.replace(/<[^>]*>/g, "");
-  } while (result !== previous);
-
-  return result.trim();
 }

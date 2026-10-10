@@ -5,6 +5,7 @@ import {
   LEGAL_VERSION,
   mergeAlertPrefs,
   OTP_CODE_LENGTH,
+  RealtimeEvent,
   REQUIRED_SHORTCUT,
   UserDto,
   UsernameAvailabilityDto,
@@ -21,11 +22,10 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
-import { randomInt } from "node:crypto";
 import { ApiKeysService } from "../api-keys/api-keys.service";
 import { BCRYPT_ROUNDS, toUserDto } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
-import { sha256Hex } from "../common/crypto.util";
+import { randomNumericCode, sha256Hex } from "../common/crypto.util";
 import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
@@ -436,7 +436,7 @@ export class UsersService {
       // complete_profile is one of the onboarding checklist's steps
       // (OnboardingService) — this method's own condition is exactly that
       // step's own check.
-      this.events.emitToUser(userId, "onboarding-updated");
+      this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
     }
   }
 
@@ -471,9 +471,7 @@ export class UsersService {
       );
     }
 
-    const code = randomInt(0, 10 ** OTP_CODE_LENGTH)
-      .toString()
-      .padStart(OTP_CODE_LENGTH, "0");
+    const code = randomNumericCode(OTP_CODE_LENGTH);
     await this.prisma.$transaction([
       this.prisma.emailChangeRequest.deleteMany({ where: { userId } }),
       this.prisma.emailChangeRequest.create({

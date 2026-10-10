@@ -137,14 +137,16 @@ export interface XpHistoryDayDto {
   items: XpHistoryItemDto[];
 }
 
-export type LeaderboardScope = "global" | "friends";
+export const LEADERBOARD_SCOPES = ["global", "friends"] as const;
+export type LeaderboardScope = (typeof LEADERBOARD_SCOPES)[number];
 
 /**
  * Calendar window a leaderboard sums live from the XP ledger, using the
  * server's clock rather than a snapshot table — or `all`, every XP ever
  * earned, read from the materialised total instead.
  */
-export type LeaderboardPeriod = "month" | "year" | "all";
+export const LEADERBOARD_PERIODS = ["month", "year", "all"] as const;
+export type LeaderboardPeriod = (typeof LEADERBOARD_PERIODS)[number];
 
 /**
  * Deliberately lean, not a `UserSummaryDto`: it carries

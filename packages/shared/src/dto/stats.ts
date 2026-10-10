@@ -56,7 +56,8 @@ export type PossessionBreakdownDto =
  * `TrendPeriod` (a bucket *size* for trend curves) — this is a filter
  * *window* applied to all-time aggregates.
  */
-export type StatsWindow = "ALL" | "YEAR" | "MONTH" | "WEEK";
+export const STATS_WINDOWS = ["ALL", "YEAR", "MONTH", "WEEK"] as const;
+export type StatsWindow = (typeof STATS_WINDOWS)[number];
 
 export interface RatingBucketDto {
   /** 1..10, integer. */
@@ -147,7 +148,8 @@ export interface VideoStatsDto {
 }
 
 /** Staleness bucket for a WATCHING series/anime — mutually exclusive. */
-export type WatchStaleness = "PAUSED" | "GHOST";
+export const WATCH_STALENESS = ["PAUSED", "GHOST"] as const;
+export type WatchStaleness = (typeof WATCH_STALENESS)[number];
 
 export interface LabelCountDto {
   label: string;

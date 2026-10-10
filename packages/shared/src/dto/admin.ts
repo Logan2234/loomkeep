@@ -221,7 +221,8 @@ export interface JobListResponseDto {
 }
 
 /** Bucket granularity for the admin trend charts. */
-export type TrendPeriod = "day" | "week" | "month" | "year";
+export const TREND_PERIODS = ["day", "week", "month", "year"] as const;
+export type TrendPeriod = (typeof TREND_PERIODS)[number];
 
 export interface TrendPointDto {
   /** ISO date (UTC) of the bucket's start. */
@@ -268,7 +269,8 @@ export interface AdminCacheItemDto {
 }
 
 /** How the cache list is ordered. `stale` (default) surfaces the least-fresh first. */
-export type AdminCacheSort = "stale" | "recent" | "title";
+export const ADMIN_CACHE_SORTS = ["stale", "recent", "title"] as const;
+export type AdminCacheSort = (typeof ADMIN_CACHE_SORTS)[number];
 
 export interface AdminCacheListResponseDto extends PagedResult<AdminCacheItemDto> {
   /** How many items in this domain are past the 24h TTL — drives the "resync stale" action. */
@@ -412,8 +414,14 @@ export interface AdminUserXpDto {
 }
 
 /** Extra server-side filter for the admin users list, on top of free-text search. */
-export type AdminUserFilter =
-  "all" | "admin" | "unverified" | "never" | "premium";
+export const ADMIN_USER_FILTERS = [
+  "all",
+  "admin",
+  "unverified",
+  "never",
+  "premium",
+] as const;
+export type AdminUserFilter = (typeof ADMIN_USER_FILTERS)[number];
 
 /** Compact breakdown of the works saved in one account's libraries. */
 export interface AdminUserLibraryStatsDto {

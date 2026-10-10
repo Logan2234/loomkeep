@@ -505,7 +505,7 @@ export class CommentService {
     );
 
     // "comment" is one of the onboarding checklist's steps (OnboardingService).
-    this.events.emitToUser(authorId, "onboarding-updated");
+    this.events.emitToUser(authorId, RealtimeEvent.ONBOARDING_UPDATED);
 
     const [[reactionMap, myReactionMap], xpMap] = await Promise.all([
       this.loadReactions(authorId, [row.id]),

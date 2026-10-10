@@ -4,6 +4,7 @@ import type {
   ReviewVoteValue,
 } from "../enums";
 import type { UserSummaryDto } from "./social";
+import type { StatsDomain } from "./stats";
 
 /** A review: a mandatory /10 rating + optional text on a target. */
 export interface ReviewDto {
@@ -78,3 +79,12 @@ export interface ReviewVoteResultDto {
 export interface ReviewUnvoteResultDto {
   score: number;
 }
+
+export const REVIEW_TARGET_DOMAIN: Record<ReviewTargetType, StatsDomain> = {
+  MEDIA: "MEDIA",
+  SEASON: "MEDIA",
+  EPISODE: "MEDIA",
+  GAME: "GAMES",
+  BOOK: "BOOKS",
+  MUSIC: "MUSIC",
+};

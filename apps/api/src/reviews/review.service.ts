@@ -1,9 +1,9 @@
 import {
   ActivityType,
-  type Domain,
   ErrorCode,
   type MyReviewDto,
   NotificationType,
+  REVIEW_TARGET_DOMAIN,
   REVIEW_VOTE_NOTIFY_THRESHOLD,
   type ReviewDto,
   type ReviewRevisionDto,
@@ -44,14 +44,6 @@ import { resolveReviewVisibility } from "../social/visibility.util";
 import { toUserSummaryDto } from "../users/avatar.util";
 
 /** Feed domain for a review target ("GAME" work lives in the GAMES domain…). */
-const DOMAIN_BY_TARGET: Record<string, Domain> = {
-  MEDIA: "MEDIA",
-  SEASON: "MEDIA",
-  EPISODE: "MEDIA",
-  GAME: "GAMES",
-  BOOK: "BOOKS",
-  MUSIC: "MUSIC",
-};
 
 type ReviewRow = {
   id: string;
@@ -931,7 +923,7 @@ export class ReviewService {
     targetId: string,
     rating: number,
   ): Promise<void> {
-    const domain = DOMAIN_BY_TARGET[targetType];
+    const domain = REVIEW_TARGET_DOMAIN[targetType];
     if (!domain) return;
 
     const work = await this.reviewedWork(targetType, targetId);

@@ -19,10 +19,11 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { seasonEpisodeLabel } from "#lib/review-target-label.js";
-  import type {
-    MyReviewDto,
-    ReviewTargetType,
-    ReviewVisibility,
+  import {
+    type MyReviewDto,
+    type ReviewTargetType,
+    type ReviewVisibility,
+    REVIEW_TARGET_DOMAIN,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
@@ -41,14 +42,8 @@
   };
 
   // Seasons and episodes sit with the films and series they belong to.
-  const GROUP_OF: Record<ReviewTargetType, Exclude<Group, "all">> = {
-    MEDIA: "media",
-    SEASON: "media",
-    EPISODE: "media",
-    GAME: "games",
-    BOOK: "books",
-    MUSIC: "music",
-  };
+  const groupOf = (target: ReviewTargetType) =>
+    REVIEW_TARGET_DOMAIN[target].toLowerCase();
 
   const GROUP_LABEL: Record<Group, string> = {
     all: m.common_all(),
@@ -79,7 +74,7 @@
       .filter(
         (value) =>
           value === "all" ||
-          reviews.some((review) => GROUP_OF[review.targetType] === value),
+          reviews.some((review) => groupOf(review.targetType) === value),
       )
       .map((value) => ({ value, label: GROUP_LABEL[value] })),
   );
@@ -93,7 +88,7 @@
     reviews
       .filter(
         (review) =>
-          (group === "all" || GROUP_OF[review.targetType] === group) &&
+          (group === "all" || groupOf(review.targetType) === group) &&
           normalize(review.target?.title ?? "").includes(normalize(search)),
       )
       .sort((a, b) =>

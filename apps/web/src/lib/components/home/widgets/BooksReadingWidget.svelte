@@ -7,10 +7,11 @@
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import type { BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type {
-    BookEntryDto,
-    HomeWidgetDto,
-    HomeWidgetSort,
+  import {
+    type BookEntryDto,
+    type HomeWidgetDto,
+    type HomeWidgetSort,
+    type BookSortKey,
   } from "@loomkeep/shared";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
@@ -19,7 +20,7 @@
   let { widget, size }: { widget: HomeWidgetDto; size: BoxSize } = $props();
 
   const def = HOME_WIDGETS.booksReading;
-  const SORTS: Partial<Record<HomeWidgetSort, string>> = {
+  const SORTS: Partial<Record<HomeWidgetSort, BookSortKey>> = {
     ...ENTRY_SORTS,
     progress: "progress",
   };

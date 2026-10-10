@@ -1,14 +1,18 @@
-import type {
-  BulkEntriesTargetDto,
-  BulkUpdateEntriesDto,
-  LibraryEntryDto,
-  LibrarySagaSort,
-  MEDIA_BULK_STATUSES,
-  MediaOwnershipStatus,
-  MediaType,
-  UpsertLibraryEntryDto,
+import {
+  type BulkEntriesTargetDto,
+  type BulkUpdateEntriesDto,
+  type LibraryEntryDto,
+  type LibrarySagaSort,
+  type MEDIA_BULK_STATUSES,
+  type MediaFilterStatus,
+  type MediaOwnershipStatus,
+  type MediaSortKey,
+  type MediaType,
+  type SortOrder,
+  type UpsertLibraryEntryDto,
 } from "@loomkeep/shared";
-import { type SortOrder } from "@loomkeep/shared";
+import { pageParam } from "./query-params";
+
 import { getLocale } from "../paraglide/runtime.js";
 import { typedRequest } from "./generated/typed-request";
 
@@ -16,9 +20,9 @@ export interface ListLibraryFilters {
   query?: string;
   favorite?: boolean;
   /** Includes the synthetic "DORMANT" and "GHOST" statuses alongside real `EntryStatus` values. */
-  statuses?: string[];
+  statuses?: MediaFilterStatus[];
   types?: MediaType[];
-  sort?: string;
+  sort?: MediaSortKey;
   order?: SortOrder;
   page?: number;
 }
@@ -56,7 +60,7 @@ export function listLibrary(filters: ListLibraryFilters = {}) {
       type: filters.types,
       sort: filters.sort,
       order: filters.order,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      page: pageParam(filters.page),
     },
   });
 }
