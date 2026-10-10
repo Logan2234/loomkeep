@@ -307,3 +307,152 @@ describe("ActivityService feed building", () => {
     expect(feed.items).toHaveLength(1);
   });
 });
+
+describe("ActivityService list events", () => {
+  const OWNER = "owner-1";
+  const EDITOR = ACTOR;
+  const target = { id: EDITOR, profileAccess: ProfileAccess.PUBLIC };
+  const stranger = relation({
+    following: false,
+    followsYou: false,
+    isFriend: false,
+  });
+
+  function listEvent(actorId = EDITOR) {
+    return eventRow({
+      userId: actorId,
+      type: "LIST_ITEM_ADDED",
+      domain: "LISTS",
+      targetType: "LIST",
+      targetId: "l1",
+      homeFeed: false,
+    });
+  }
+
+  // The viewer's relation differs per user here — to the editor who acted
+  // and to the owner whose list it is — which the shared `make` can't say.
+  function withList(
+    list: {
+      visibility: "PRIVATE" | "FRIENDS" | "PUBLIC";
+      ownerAccess?: ProfileAccess;
+      viewerIsMember?: boolean;
+    },
+    relations: Record<string, ViewerRelation>,
+    actorId = EDITOR,
+  ) {
+    const built = make({ events: [listEvent(actorId)] });
+    (built.prisma.list.findMany as Mock).mockResolvedValue([
+      {
+        id: "l1",
+        visibility: list.visibility,
+        user: {
+          id: OWNER,
+          profileAccess: list.ownerAccess ?? ProfileAccess.PUBLIC,
+        },
+        members: list.viewerIsMember ? [{ userId: VIEWER }] : [],
+      },
+    ]);
+    (built.prisma.user.findUnique as Mock).mockResolvedValue({
+      id: actorId,
+      profileAccess: ProfileAccess.PUBLIC,
+    });
+    (built.visibility.getRelation as Mock).mockImplementation(
+      (_viewer: string, user: { id: string }) => {
+        const found = relations[user.id];
+        if (!found) throw new Error(`No relation stubbed for ${user.id}`);
+        return Promise.resolve(found);
+      },
+    );
+    return built;
+  }
+
+  it("keeps an owner's private list out of a friend's view", async () => {
+    const { service } = withList(
+      { visibility: "PRIVATE" },
+      { [OWNER]: relation() },
+      OWNER,
+    );
+
+    const feed = await service.profileTimeline(VIEWER, {
+      id: OWNER,
+      profileAccess: ProfileAccess.PUBLIC,
+    });
+
+    expect(feed.items).toEqual([]);
+  });
+
+  it("shows the owner their own private list's activity", async () => {
+    const { service } = withList(
+      { visibility: "PRIVATE" },
+      { [OWNER]: relation({ isSelf: true }) },
+      OWNER,
+    );
+
+    const feed = await service.profileTimeline(VIEWER, {
+      id: OWNER,
+      profileAccess: ProfileAccess.PUBLIC,
+    });
+
+    expect(feed.items).toHaveLength(1);
+  });
+
+  it("reads an editor's event against the owner, not the editor", async () => {
+    // A friend of the editor who isn't the owner's friend must not learn
+    // the FRIENDS list exists through the editor's profile.
+    const { service } = withList(
+      { visibility: "FRIENDS" },
+      { [EDITOR]: relation(), [OWNER]: stranger },
+    );
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toEqual([]);
+  });
+
+  it("caps a public list at its owner's private profile", async () => {
+    const { service } = withList(
+      { visibility: "PUBLIC", ownerAccess: ProfileAccess.PRIVATE },
+      { [EDITOR]: relation(), [OWNER]: stranger },
+    );
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toEqual([]);
+  });
+
+  it("hides an editor's event from someone the owner blocked", async () => {
+    const { service } = withList(
+      { visibility: "PUBLIC" },
+      {
+        [EDITOR]: relation(),
+        [OWNER]: relation({ ...stranger, blockedByTarget: true }),
+      },
+    );
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toEqual([]);
+  });
+
+  it("shows an editor's event on a list the viewer can reach", async () => {
+    const { service } = withList(
+      { visibility: "FRIENDS" },
+      { [EDITOR]: relation(), [OWNER]: relation() },
+    );
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toHaveLength(1);
+  });
+
+  it("opens a private list's activity to the viewer editing it", async () => {
+    const { service } = withList(
+      { visibility: "PRIVATE", viewerIsMember: true },
+      { [EDITOR]: relation(), [OWNER]: relation() },
+    );
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toHaveLength(1);
+  });
+});
