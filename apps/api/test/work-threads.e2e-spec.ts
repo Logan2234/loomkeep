@@ -6,6 +6,7 @@ process.env.CHAT_ENABLED = "true";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
+import { REPORT_THROTTLE } from "../src/common/throttle.constants";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
 /**
@@ -14,6 +15,8 @@ import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
  * counting is one SQL query over comments, mentions and read positions —
  * nothing a mocked Prisma could check.
  */
+const COMMENT_COOLDOWN_MS = REPORT_THROTTLE.default.ttl + 100;
+
 describe("Work threads (e2e)", () => {
   let app: INestApplication<App>;
   let http: App;
@@ -98,7 +101,9 @@ describe("Work threads (e2e)", () => {
   });
 
   it("counts what someone else wrote after the member's last word", async () => {
-    // One comment: a second one this soon would hit the posting cooldown.
+    // Posting is throttled to one comment per 5 s, tracked by IP — and every
+    // account here shares the test runner's.
+    await new Promise((resolve) => setTimeout(resolve, COMMENT_COOLDOWN_MS));
     await comment("bob", "D'accord, la fin est folle.");
 
     expect(await unread("alice")).toBe(1);
