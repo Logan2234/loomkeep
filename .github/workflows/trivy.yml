@@ -46,7 +46,7 @@ jobs:
         # preserves the account's actual casing (Logan2234).
         run: |
           if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+            echo "tag=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
           else
             echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
