@@ -41,6 +41,11 @@ them, writing needs the work in your library, and a spoiler stays hidden until
 you show spoilers. Replies and mentions still reach the bell too, and your
 phone if you turned their push on.
 
+Each comment has the same two buttons as a message: one to react, one for its
+menu (reply, edit, copy the text, delete or report). On a phone, press and hold
+the comment instead. The **…** above the discussion leads to the work's page
+or searches the discussion, as **Ctrl+F** does.
+
 ## Writing
 
 On a computer, **Enter** sends and **Shift+Enter** starts a new line. On a
