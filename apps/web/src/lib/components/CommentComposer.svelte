@@ -93,6 +93,8 @@
   } = $props();
 
   const reduced = prefersReducedMotion();
+  // A command's name, the same in every language.
+  const SPOILER_COMMAND = "/spoiler";
 
   let textarea = $state<HTMLTextAreaElement | null>(null);
   let backdrop = $state<HTMLDivElement | null>(null);
@@ -277,7 +279,7 @@
     if (offersCommand && value !== "") {
       if (event.key === "Enter" || event.key === "Tab") {
         event.preventDefault();
-        setValue("/spoiler ");
+        setValue(`${SPOILER_COMMAND} `);
         return;
       }
     }
@@ -372,7 +374,7 @@
           class="bg-surface-2 flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left"
           onmousedown={(e) => e.preventDefault()}
           onclick={() => {
-            setValue("/spoiler ");
+            setValue(`${SPOILER_COMMAND} `);
             textarea?.focus();
           }}>
           <span
@@ -380,7 +382,7 @@
             <Icon name="eye-off" class="h-4 w-4" />
           </span>
           <span class="min-w-0">
-            <span class="block text-sm font-semibold">/spoiler</span>
+            <span class="block text-sm font-semibold">{SPOILER_COMMAND}</span>
             <span class="text-dim block text-xs"
               >{m.chat_command_spoiler()}</span>
           </span>
