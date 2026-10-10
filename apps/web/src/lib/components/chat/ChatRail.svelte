@@ -24,6 +24,12 @@
     threads,
   }: { conversations: ConversationDto[]; threads: WorkThreadDto[] } = $props();
 
+  // A dot on each tab with something unread, whichever is shown.
+  const tabUnread = $derived<Record<ChatTab, boolean>>({
+    friends: conversations.some((c) => shownUnread(c) > 0),
+    works: threads.some((t) => t.unread > 0),
+  });
+
   const TABS: { id: ChatTab; icon: IconName; label: string }[] = [
     { id: "friends", icon: "users", label: m.common_friends() },
     { id: "works", icon: "tv", label: m.common_works() },
@@ -112,11 +118,17 @@
           aria-selected={selected}
           aria-label={tab.label}
           title={unfolded ? undefined : tab.label}
-          class="flex h-9 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors duration-150
+          class="relative flex h-9 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors duration-150
             {unfolded ? 'min-w-0 flex-1 px-2' : 'w-9'}
             {selected ? 'bg-surface-2 text-fg' : 'text-dim hover:text-fg'}"
           onclick={() => (chat.tab = tab.id)}>
           <Icon name={tab.icon} class="h-4.5 w-4.5 shrink-0" />
+          {#if tabUnread[tab.id]}
+            <span
+              transition:scale={{ duration: reduced ? 0 : 150 }}
+              class="bg-accent ring-surface absolute top-1 right-1 h-2 w-2 rounded-full ring-2"
+              aria-hidden="true"></span>
+          {/if}
           {#if unfolded}
             <span
               in:fade={{ duration: reduced ? 0 : 150, delay: reduced ? 0 : 80 }}

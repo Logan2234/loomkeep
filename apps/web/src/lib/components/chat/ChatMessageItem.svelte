@@ -164,16 +164,16 @@
     class="flex flex-col gap-2 px-2.5 py-2 text-sm">
     <p class="font-semibold">{m.chat_delete_confirm()}</p>
     <p class="text-dim text-xs">{m.chat_delete_confirm_hint()}</p>
-    <div class="flex gap-2">
+    <div class="flex justify-end gap-2">
+      <button type="button" class="btn btn-ghost btn-sm" onclick={oncancel}>
+        {m.common_cancel()}
+      </button>
       <button
         type="button"
         class="btn btn-danger btn-sm"
         disabled={deleteMut.loading}
         onclick={() => deleteMut.mutate()}>
         {m.common_delete()}
-      </button>
-      <button type="button" class="btn btn-ghost btn-sm" onclick={oncancel}>
-        {m.common_cancel()}
       </button>
     </div>
   </div>

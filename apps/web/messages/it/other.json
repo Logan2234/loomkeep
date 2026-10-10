@@ -1364,6 +1364,8 @@
   "chat_work_open": "Apri la scheda",
   "chat_unread_from_here": "Non letti da qui",
   "chat_search_messages": "Cerca nella conversazione",
+  "chat_work_go_to": "Vai al titolo",
+  "chat_search_discussion": "Cerca nella discussione",
   "chat_shared_works": "Opere condivise",
   "chat_shared_works_empty": "Nessuna opera condivisa per ora.",
   "chat_shared_by": "Condivisa da {name} · {date}",

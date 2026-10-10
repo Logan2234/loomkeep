@@ -5,7 +5,6 @@
   import { getChatUnread, getConversations } from "#lib/api/chat.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { hasAppHistory } from "#lib/backNav.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
   import { layout } from "#lib/layout.svelte.js";
@@ -64,10 +63,12 @@
     }
   }
 
+  // Back to where Messages was opened from, however many conversations
+  // were browsed since — not one step back.
   function shrink() {
-    if (conversationId) chat.show(conversationId);
-    if (hasAppHistory()) history.back();
-    else void goto("/app");
+    if (worksTab && chat.activeWork) chat.showWork(chat.activeWork);
+    else if (conversationId) chat.show(conversationId);
+    void goto(chat.returnTo ?? "/app");
   }
 
   // The compact shell shows one column: the list, or the conversation.
@@ -112,7 +113,11 @@
           aria-selected={chat.tab === "friends"}
           class="flex h-9 items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-colors duration-150
             {chat.tab === 'friends' ? 'bg-surface-2 text-fg' : 'text-dim'}"
-          onclick={() => (chat.tab = "friends")}>
+          onclick={() => {
+            chat.tab = "friends";
+            // On a phone the list and a conversation share the screen.
+            if (layout.compact && conversationId) void goto("/app/messages");
+          }}>
           {m.common_friends()}
           {#if unread > 0}
             <span
@@ -168,6 +173,7 @@
           <ChatWorkThread
             work={chat.activeWork}
             mode={layout.compact ? "sheet" : "full"}
+            onshrink={shrink}
             onback={() => (chat.activeWork = null)} />
         {/key}
       {:else if worksTab}

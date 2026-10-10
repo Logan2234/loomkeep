@@ -5,6 +5,7 @@
     getConversation,
     getMessages,
     markConversationRead,
+    searchMessages,
     muteConversation,
     reportMessage,
   } from "#lib/api/chat.js";
@@ -31,11 +32,12 @@
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { tick } from "svelte";
-  import { fade } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   import ChatComposer from "./ChatComposer.svelte";
   import ChatMessageItem from "./ChatMessageItem.svelte";
   import ChatSearchBar from "./ChatSearchBar.svelte";
   import ChatSharedWorks from "./ChatSharedWorks.svelte";
+  import { messageHit, shortcutsReach } from "./conversation-presentation";
 
   let {
     conversationId,
@@ -123,6 +125,15 @@
     unreadFrom =
       messages.find((message) => !message.mine && message.createdAt > readAt)
         ?.id ?? null;
+    if (!unreadFrom) return;
+
+    // Opens on the line rather than at the bottom.
+    stuckToBottom = false;
+    void tick().then(() =>
+      scroller
+        ?.querySelector("[data-unread-line]")
+        ?.scrollIntoView({ block: "center" }),
+    );
   });
 
   // Ctrl+F searches the conversation rather than the page — from the
@@ -131,8 +142,9 @@
     const mod = event.ctrlKey || event.metaKey;
     if (!mod || event.shiftKey || event.altKey) return;
     if (event.key.toLowerCase() !== "f") return;
-    const root = scroller?.parentElement;
-    if (mode !== "full" && !root?.contains(document.activeElement)) return;
+    // The scroller sits in its own wrapper, inside the thread's container.
+    const root = scroller?.parentElement?.parentElement;
+    if (mode !== "full" && !shortcutsReach(root)) return;
     event.preventDefault();
     if (searching) {
       root?.querySelector<HTMLInputElement>("[data-chat-search]")?.focus();
@@ -168,8 +180,10 @@
   let editing = $state<MessageDto | null>(null);
   let reporting = $state<MessageDto | null>(null);
   let scroller = $state<HTMLDivElement | null>(null);
+  let content = $state<HTMLDivElement | null>(null);
   let topSentinel = $state<HTMLDivElement | null>(null);
   let stuckToBottom = true;
+  let farFromBottom = $state(false);
 
   type Entry =
     | { kind: "day"; key: string; label: string }
@@ -226,10 +240,31 @@
     void tick().then(() => (el.scrollTop = el.scrollHeight));
   });
 
+  // A card, a link preview or an image can grow the thread after its
+  // message arrived: the bottom stays in view if it was.
+  $effect(() => {
+    if (!content || !scroller) return;
+    const el = scroller;
+    const observer = new ResizeObserver(() => {
+      if (stuckToBottom) el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(content);
+    return () => observer.disconnect();
+  });
+
   function onscroll() {
     if (!scroller) return;
-    stuckToBottom =
-      scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 48;
+    const distance =
+      scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+    stuckToBottom = distance < 48;
+    farFromBottom = distance > 160;
+  }
+
+  function scrollToBottom() {
+    scroller?.scrollTo({
+      top: scroller.scrollHeight,
+      behavior: reduced ? "auto" : "smooth",
+    });
   }
 
   // Older pages load when the top comes into view; the scroll position is
@@ -270,7 +305,9 @@
     readUpTo = last.id;
 
     void markConversationRead(conversationId).then(() => {
-      const clear = (c: ConversationDto) => ({ ...c, unread: 0 });
+      // Reopened from the cache, it must not place the "new" line again.
+      const lastReadAt = new Date().toISOString();
+      const clear = (c: ConversationDto) => ({ ...c, unread: 0, lastReadAt });
       queryClient.setQueryData<ConversationDto>(
         keys.chat.conversation(conversationId),
         (c) => c && clear(c),
@@ -529,8 +566,11 @@
 
 {#if searching}
   <ChatSearchBar
-    {conversationId}
-    {peerName}
+    key={(query) => keys.chat.search(conversationId, query)}
+    search={(query) =>
+      searchMessages(conversationId, query).then((found) =>
+        found.map((message) => messageHit(message, peerName)),
+      )}
     onpick={(messageId) => {
       searching = false;
       void reveal(messageId);
@@ -538,77 +578,95 @@
     onclose={() => (searching = false)} />
 {/if}
 
-<div
-  bind:this={scroller}
-  {onscroll}
-  class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto py-3
+<div class="relative flex min-h-0 flex-1 flex-col">
+  <div
+    bind:this={scroller}
+    {onscroll}
+    class="flex min-h-0 flex-1 flex-col overflow-y-auto py-3
     {mode === 'full' ? 'px-8' : 'px-4'}">
-  <div bind:this={topSentinel} class="h-px shrink-0"></div>
-  {#if messagesQuery.isFetchingNextPage}
-    <p class="text-dim self-center text-xs">{m.common_loading()}</p>
-  {/if}
-  <div class="flex-1"></div>
-
-  {#if !messagesQuery.loading && messages.length === 0}
-    <p class="text-dim self-center py-6 text-center text-sm">
-      {m.chat_empty_conversation({ name: peerName })}
-    </p>
-  {/if}
-
-  {#each entries as entry (entry.kind === "day" ? entry.key : entry.message.id)}
-    {#if entry.kind === "day"}
-      <p
-        class="border-border text-dim my-2 self-center rounded-full border px-2.5 py-0.5 font-mono text-[0.68rem] tracking-wider uppercase">
-        {entry.label}
-      </p>
-    {:else}
-      {#if entry.message.id === unreadFrom}
-        <div
-          transition:fade={{ duration: reduced ? 0 : 200 }}
-          role="separator"
-          aria-label={m.chat_unread_from_here()}
-          class="text-accent my-2 flex items-center gap-2">
-          <span class="bg-accent h-px flex-1"></span>
-          <span
-            class="font-mono text-[0.62rem] font-bold tracking-widest uppercase"
-            >{m.common_new()}</span>
-          <span class="bg-accent h-px flex-1"></span>
-        </div>
+    <div bind:this={content} class="flex min-h-full flex-col gap-1">
+      <div bind:this={topSentinel} class="h-px shrink-0"></div>
+      {#if messagesQuery.isFetchingNextPage}
+        <p class="text-dim self-center text-xs">{m.common_loading()}</p>
       {/if}
-      <div
-        class="-mx-2 flex flex-col rounded-xl px-2 transition-colors duration-500
+      <div class="flex-1"></div>
+
+      {#if !messagesQuery.loading && messages.length === 0}
+        <p class="text-dim self-center py-6 text-center text-sm">
+          {m.chat_empty_conversation({ name: peerName })}
+        </p>
+      {/if}
+
+      {#each entries as entry (entry.kind === "day" ? entry.key : entry.message.id)}
+        {#if entry.kind === "day"}
+          <p
+            class="border-border text-dim my-2 self-center rounded-full border px-2.5 py-0.5 font-mono text-[0.68rem] tracking-wider uppercase">
+            {entry.label}
+          </p>
+        {:else}
+          {#if entry.message.id === unreadFrom}
+            <div
+              transition:fade={{ duration: reduced ? 0 : 200 }}
+              role="separator"
+              data-unread-line
+              aria-label={m.chat_unread_from_here()}
+              class="text-accent my-2 flex items-center gap-2">
+              <span class="bg-accent h-px flex-1"></span>
+              <span
+                class="font-mono text-[0.62rem] font-bold tracking-widest uppercase"
+                >{m.common_new()}</span>
+              <span class="bg-accent h-px flex-1"></span>
+            </div>
+          {/if}
+          <div
+            class="-mx-2 flex flex-col rounded-xl px-2 transition-colors duration-500
           {entry.gap ? 'mt-2' : ''}
           {highlightedId === entry.message.id ? 'bg-accent/10' : ''}">
-        <ChatMessageItem
-          message={entry.message}
-          {writable}
-          endOfGroup={entry.endOfGroup}
-          time={formatTime(entry.message.createdAt)}
-          seenAt={entry.message.id === seenId && conversation?.peerLastReadAt
-            ? formatTime(conversation.peerLastReadAt)
-            : null}
-          onedit={(message) => (editing = message)}
-          onmarkedunread={(message) => (unreadFrom = message.id)}
-          onreport={(message) => (reporting = message)} />
-      </div>
-    {/if}
-  {/each}
+            <ChatMessageItem
+              message={entry.message}
+              {writable}
+              endOfGroup={entry.endOfGroup}
+              time={formatTime(entry.message.createdAt)}
+              seenAt={entry.message.id === seenId &&
+              conversation?.peerLastReadAt
+                ? formatTime(conversation.peerLastReadAt)
+                : null}
+              onedit={(message) => (editing = message)}
+              onmarkedunread={(message) => (unreadFrom = message.id)}
+              onreport={(message) => (reporting = message)} />
+          </div>
+        {/if}
+      {/each}
 
-  {#if typing}
-    <p
-      transition:fade={{ duration: reduced ? 0 : 150 }}
-      class="text-dim mt-1.5 flex items-center gap-2 self-start text-xs">
-      <span
-        class="bg-surface-2 flex gap-1 rounded-full px-2.5 py-2"
-        aria-hidden="true">
-        {#each [0, 1, 2] as dot (dot)}
+      {#if typing}
+        <p
+          transition:fade={{ duration: reduced ? 0 : 150 }}
+          class="text-dim mt-1.5 flex items-center gap-2 self-start text-xs">
           <span
-            class="bg-dim h-1.5 w-1.5 animate-pulse rounded-full motion-reduce:animate-none"
-            style="animation-delay: {dot * 160}ms"></span>
-        {/each}
-      </span>
-      {m.chat_typing({ name: peer?.displayName ?? "" })}
-    </p>
+            class="bg-surface-2 flex gap-1 rounded-full px-2.5 py-2"
+            aria-hidden="true">
+            {#each [0, 1, 2] as dot (dot)}
+              <span
+                class="bg-dim h-1.5 w-1.5 animate-pulse rounded-full motion-reduce:animate-none"
+                style="animation-delay: {dot * 160}ms"></span>
+            {/each}
+          </span>
+          {m.chat_typing({ name: peer?.displayName ?? "" })}
+        </p>
+      {/if}
+    </div>
+  </div>
+
+  {#if farFromBottom}
+    <button
+      type="button"
+      transition:fly={{ y: 8, duration: reduced ? 0 : 160 }}
+      class="border-border bg-surface text-dim hover:text-fg hover:border-accent/60 absolute right-4 bottom-3 z-10 grid h-8 w-8 place-items-center rounded-full border shadow-lg transition-[color,border-color,transform] duration-150 hover:-translate-y-0.5 active:scale-95 motion-reduce:transition-none"
+      title={m.comments_jump_to_latest()}
+      aria-label={m.comments_jump_to_latest()}
+      onclick={scrollToBottom}>
+      <Icon name="chevron-down" class="h-3.5 w-3.5" />
+    </button>
   {/if}
 </div>
 

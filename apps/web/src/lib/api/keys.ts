@@ -159,6 +159,8 @@ export const keys = {
     pins: (id: string) => ["chat", "pins", id] as const,
     works: (id: string) => ["chat", "works", id] as const,
     workThreads: () => ["chat", "work-threads"] as const,
+    commentSearch: (targetType: string, targetId: string, query: string) =>
+      ["chat", "comment-search", targetType, targetId, query] as const,
     workThread: (targetType: string, targetId: string) =>
       ["chat", "work-thread", targetType, targetId] as const,
     search: (id: string, query: string) =>

@@ -1364,6 +1364,8 @@
   "chat_work_open": "Voir la fiche",
   "chat_unread_from_here": "Non lus à partir d'ici",
   "chat_search_messages": "Rechercher dans la conversation",
+  "chat_work_go_to": "Aller à l'œuvre",
+  "chat_search_discussion": "Rechercher dans la discussion",
   "chat_shared_works": "Œuvres partagées",
   "chat_shared_works_empty": "Aucune œuvre partagée pour l'instant.",
   "chat_shared_by": "Partagée par {name} · {date}",

@@ -1364,6 +1364,8 @@
   "chat_work_open": "Open the page",
   "chat_unread_from_here": "Unread from here",
   "chat_search_messages": "Search the conversation",
+  "chat_work_go_to": "Go to the title",
+  "chat_search_discussion": "Search the discussion",
   "chat_shared_works": "Shared works",
   "chat_shared_works_empty": "No work shared yet.",
   "chat_shared_by": "Shared by {name} · {date}",

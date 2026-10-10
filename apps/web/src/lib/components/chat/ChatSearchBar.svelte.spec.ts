@@ -1,3 +1,4 @@
+import { searchMessages } from "#lib/api/chat.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
@@ -7,6 +8,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 import ChatSearchBar from "./ChatSearchBar.svelte";
+import { messageHit } from "./conversation-presentation";
 
 vi.mock("svelte/transition", () => ({
   fade: () => ({ duration: 0 }),
@@ -44,8 +46,11 @@ describe("ChatSearchBar", () => {
     const onpick = vi.fn();
     const user = userEvent.setup();
     renderWithQuery(ChatSearchBar, {
-      conversationId: "cv1",
-      peerName: "Léa",
+      key: (query) => ["search", query],
+      search: (query) =>
+        searchMessages("cv1", query).then((found) =>
+          found.map((message) => messageHit(message, "Léa")),
+        ),
       onpick,
       onclose: vi.fn(),
     });

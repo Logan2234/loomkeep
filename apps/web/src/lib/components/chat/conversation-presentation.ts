@@ -4,13 +4,43 @@ import { m } from "#lib/paraglide/messages.js";
 import { localDayKey } from "#lib/xp-history.js";
 import {
   episodeCode,
+  type CommentDto,
   type ConversationDto,
+  type MessageDto,
   type MessageWorkKind,
   type WorkThreadDto,
 } from "@loomkeep/shared";
 
 export function conversationName(conversation: ConversationDto): string {
   return conversation.peer?.displayName ?? m.chat_deleted_account();
+}
+
+/** A search result, from a conversation or a work's discussion. */
+export interface SearchHit {
+  id: string;
+  who: string;
+  createdAt: string;
+  text: string;
+}
+
+export function messageHit(message: MessageDto, peerName: string): SearchHit {
+  return {
+    id: message.id,
+    who: message.mine ? m.common_you() : peerName,
+    createdAt: message.createdAt,
+    text: message.spoiler
+      ? m.chat_spoiler_reveal()
+      : chatPreview(message.text ?? ""),
+  };
+}
+
+export function commentHit(comment: CommentDto): SearchHit {
+  return {
+    id: comment.id,
+    who: comment.author?.displayName ?? m.chat_deleted_account(),
+    createdAt: comment.createdAt,
+    text: comment.masked ? m.chat_work_spoiler() : (comment.text ?? ""),
+  };
 }
 
 /** The last line, as a conversation list shows it. */
@@ -100,6 +130,24 @@ export function neighbourConversation(
   const index = conversations.findIndex((c) => c.id === currentId);
   if (index === -1) return conversations[0].id;
   return conversations[index + step]?.id ?? null;
+}
+
+/**
+ * Whether Messages' shortcuts apply: with the focus inside it, or nowhere
+ * that types — a read-only conversation has no field to keep it.
+ */
+export function shortcutsReach(root: Element | null | undefined): boolean {
+  const active = document.activeElement;
+
+  if (!active || active === document.body || root?.contains(active)) {
+    return true;
+  }
+
+  const typing =
+    active instanceof HTMLElement &&
+    (active.isContentEditable ||
+      ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName));
+  return !typing;
 }
 
 /** The step Alt+↑ / Alt+↓ asks for, or null for any other key. */

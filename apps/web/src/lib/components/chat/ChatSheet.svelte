@@ -112,7 +112,12 @@
           aria-selected={chat.tab === "friends"}
           class="flex h-10 items-center justify-center gap-2 rounded-lg font-semibold transition-colors duration-150
             {chat.tab === 'friends' ? 'bg-surface-2 text-fg' : 'text-dim'}"
-          onclick={() => (chat.tab = "friends")}>
+          onclick={() => {
+            // The tabs show from the list: a conversation still selected
+            // from before (a work opened over it) mustn't open instead.
+            chat.tab = "friends";
+            chat.activeId = null;
+          }}>
           {m.common_friends()}
           {#if unread > 0}
             <span

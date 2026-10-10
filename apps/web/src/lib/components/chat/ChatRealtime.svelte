@@ -75,7 +75,7 @@
   function onRead({ conversationId, userId, lastReadAt }: ChatReadEvent) {
     const patch = (c: ConversationDto): ConversationDto =>
       userId === auth.user?.id
-        ? { ...c, unread: 0 }
+        ? { ...c, unread: 0, lastReadAt }
         : { ...c, peerLastReadAt: lastReadAt };
 
     queryClient.setQueryData<PagedResult<ConversationDto>>(
@@ -139,6 +139,13 @@
       for (const off of offs) off();
       socket.off("connect", catchUp);
     };
+  });
+
+  $effect(() => {
+    const { pathname, search, hash } = page.url;
+    if (!pathname.startsWith("/app/messages")) {
+      chat.returnTo = pathname + search + hash;
+    }
   });
 
   $effect(() => {

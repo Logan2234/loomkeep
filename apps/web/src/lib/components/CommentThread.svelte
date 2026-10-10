@@ -12,7 +12,8 @@
   } from "#lib/api/client.js";
   import { resolveApiError } from "#lib/api/errors.js";
   import { auth } from "#lib/auth.svelte.js";
-  import FocusOverlay from "#lib/components/FocusOverlay.svelte";
+  import Drawer from "#lib/components/Drawer.svelte";
+  import Dropdown from "#lib/components/Dropdown.svelte";
   import RelativeTime from "#lib/components/RelativeTime.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
@@ -105,8 +106,18 @@
 
   $effect(() => {
     if (!focusCommentId || !query.data) return;
+    const id = focusCommentId;
     void tick().then(() => {
-      document.getElementById(`comment-${focusCommentId}`)?.scrollIntoView({
+      const target = document.getElementById(`comment-${id}`);
+      // Older than the pages loaded (a search result): read back until it's
+      // there. Each page re-runs this effect.
+      if (!target) {
+        if (query.hasNextPage && !query.isFetchingNextPage) {
+          void query.fetchNextPage();
+        }
+        return;
+      }
+      target.scrollIntoView({
         block: "center",
       });
     });
@@ -126,18 +137,16 @@
   let latestCommentId: string | null = null;
   let showJumpToLatest = $state(false);
   let shouldPinToLatest = false;
+  // Read before a new comment renders: measured after, its own height
+  // would count as distance from the bottom.
+  let atBottom = true;
+  let feedContent = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
     const latest = visibleComments.at(-1)?.id;
     if (!feed || !latest || focusCommentId) return;
 
-    const distanceFromBottom =
-      feed.scrollHeight - feed.scrollTop - feed.clientHeight;
-    if (
-      shouldPinToLatest ||
-      latestCommentId === null ||
-      distanceFromBottom < 80
-    ) {
+    if (shouldPinToLatest || latestCommentId === null || atBottom) {
       void tick().then(() => {
         if (feed) {
           feed.scrollTop = feed.scrollHeight;
@@ -235,9 +244,22 @@
 
   function updateJumpToLatest() {
     if (!feed) return;
-    showJumpToLatest =
-      feed.scrollHeight - feed.scrollTop - feed.clientHeight > 160;
+    const distance = feed.scrollHeight - feed.scrollTop - feed.clientHeight;
+    atBottom = distance < 80;
+    showJumpToLatest = distance > 160;
   }
+
+  // Images and reply previews can grow the feed after a comment arrived:
+  // the bottom stays in view if it was.
+  $effect(() => {
+    if (!feed || !feedContent) return;
+    const el = feed;
+    const observer = new ResizeObserver(() => {
+      if (atBottom && !focusCommentId) el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(feedContent);
+    return () => observer.disconnect();
+  });
 
   function scrollToBottom() {
     if (!feed) return;
@@ -288,7 +310,6 @@
   let editText = $state("");
   let editMentions = $state<CommentMentionDto[]>([]);
   let editSpoilerTag = $state(false);
-  let reactingId = $state<string | null>(null);
   let revealed = $state<Set<string>>(new Set());
   let confirmDeleteId = $state<string | null>(null);
   let reportingId = $state<string | null>(null);
@@ -303,8 +324,8 @@
     };
   });
 
-  // Long-press focus (touch): centers the pressed comment in a focused
-  // reading mode without making the full panel difficult to scan.
+  // Long press (touch): its actions in a sheet, as for a message in
+  // Messages, where the hover pills can't show.
   let focusedId = $state<string | null>(null);
   const focused = $derived.by(() => {
     if (!focusedId) return null;
@@ -502,8 +523,16 @@
     }
   }
 
+  async function copyText(comment: CommentDto) {
+    try {
+      await navigator.clipboard.writeText(comment.text ?? "");
+      toast.success(m.chat_text_copied());
+    } catch {
+      toast.error(m.chat_copy_failed());
+    }
+  }
+
   async function react(id: string, emote: CommentEmote) {
-    reactingId = null;
     try {
       await reactMut.mutateAsync({ id, emote });
     } catch (err) {
@@ -545,11 +574,89 @@
   }
 </script>
 
-{#snippet actionRow(
-  c: CommentDto,
-  isReply: boolean,
-  forceShow: boolean = false,
-)}
+{#snippet emotePicker(c: CommentDto, onpicked: () => void)}
+  <div class="flex gap-0.5" role="group" aria-label={m.common_react()}>
+    {#each Object.entries(COMMENT_EMOTE_DISPLAY) as [emote, glyph] (emote)}
+      <button
+        type="button"
+        class="hover:bg-surface-2 grid h-9 w-9 place-items-center rounded-full text-lg transition-[transform,background-color] duration-150 hover:scale-110 motion-reduce:transition-none
+          {c.myReaction === emote ? 'bg-accent/20' : ''}"
+        aria-pressed={c.myReaction === emote}
+        onclick={() => {
+          onpicked();
+          if (c.myReaction === emote) void unreact(c.id);
+          else void react(c.id, emote as CommentEmote);
+        }}>
+        {glyph}
+      </button>
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet menuItems(c: CommentDto, isReply: boolean, close: () => void)}
+  {@const mine = c.author?.id === auth.user?.id}
+  {#if !isReply && canParticipate}
+    <button
+      role="menuitem"
+      class="menu-item"
+      onclick={() => {
+        close();
+        startReply(c.id);
+      }}>
+      <Icon name="reply" class="h-4 w-4" />
+      {m.common_reply()}
+    </button>
+  {/if}
+  {#if mine}
+    <button
+      role="menuitem"
+      class="menu-item"
+      onclick={() => {
+        close();
+        startEdit(c);
+      }}>
+      <Icon name="edit" class="h-4 w-4" />
+      {m.common_edit()}
+    </button>
+  {/if}
+  {#if c.text && (mine || !c.masked || showSpoilers || revealed.has(c.id))}
+    <button
+      role="menuitem"
+      class="menu-item"
+      onclick={() => {
+        close();
+        void copyText(c);
+      }}>
+      <Icon name="copy" class="h-4 w-4" />
+      {m.chat_copy_text()}
+    </button>
+  {/if}
+  {#if mine}
+    <button
+      role="menuitem"
+      class="menu-item menu-item-danger border-border border-t"
+      onclick={() => {
+        close();
+        confirmDeleteId = c.id;
+      }}>
+      <Icon name="trash" class="h-4 w-4" />
+      {m.chat_delete_ellipsis()}
+    </button>
+  {:else}
+    <button
+      role="menuitem"
+      class="menu-item menu-item-danger border-border border-t"
+      onclick={() => {
+        close();
+        openReport(c.id);
+      }}>
+      <Icon name="flag" class="h-4 w-4" />
+      {m.common_report()}
+    </button>
+  {/if}
+{/snippet}
+
+{#snippet actionRow(c: CommentDto, isReply: boolean)}
   <div class="relative mt-1 flex flex-wrap items-center gap-1">
     {#each Object.entries(COMMENT_EMOTE_DISPLAY) as [emote, glyph] (emote)}
       {@const count = c.reactions.find((r) => r.emote === emote)?.count ?? 0}
@@ -570,88 +677,63 @@
       {/if}
     {/each}
 
+    <!-- The same two pills as a message in Messages; a long press opens
+         their sheet on touch screens. -->
     <div
-      class="absolute -top-1 right-0 flex items-center gap-1 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 {forceShow ||
-      reactingId === c.id
-        ? 'pointer-events-auto opacity-100'
-        : 'pointer-events-none opacity-0'}">
+      class="pointer-events-none absolute -top-1 right-0 flex items-center gap-1 opacity-0 transition-opacity duration-150 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 has-[[aria-expanded=true]]:pointer-events-auto has-[[aria-expanded=true]]:opacity-100">
       {#if canParticipate}
-        <div class="relative">
+        <Dropdown
+          placement="bottom-end"
+          role="presentation"
+          class="rounded-full! p-1!">
+          {#snippet trigger({ open, toggle, onkeydown })}
+            <button
+              type="button"
+              class="border-border bg-surface text-dim hover:text-fg grid h-7 w-7 place-items-center rounded-full border transition-colors duration-150"
+              aria-label={m.common_react()}
+              aria-haspopup="true"
+              aria-expanded={open}
+              {onkeydown}
+              onclick={toggle}>
+              <Icon name="smile" class="h-4 w-4" />
+            </button>
+          {/snippet}
+          {#snippet children({ close })}
+            {@render emotePicker(c, close)}
+          {/snippet}
+        </Dropdown>
+      {/if}
+      <Dropdown placement="bottom-end" class="min-w-52">
+        {#snippet trigger({ open, toggle, onkeydown })}
           <button
-            class="text-dim hover:text-fg hover:bg-surface-2 grid h-6 w-6 place-items-center rounded-full transition-colors active:scale-95"
-            title={m.common_react()}
-            aria-label={m.common_react()}
-            aria-expanded={reactingId === c.id}
-            onclick={() => (reactingId = reactingId === c.id ? null : c.id)}>
-            <Icon name="plus" class="h-3.5 w-3.5" />
+            type="button"
+            class="border-border bg-surface text-dim hover:text-fg grid h-7 w-7 place-items-center rounded-full border transition-colors duration-150"
+            aria-label={m.common_more_actions()}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            {onkeydown}
+            onclick={toggle}>
+            <Icon name="dots-horizontal" class="h-4 w-4" />
           </button>
-          {#if reactingId === c.id}
-            <div
-              class="bg-surface border-border absolute right-0 bottom-full left-auto z-10 mb-1 flex gap-1 rounded-lg border p-1 shadow-lg">
-              {#each Object.entries(COMMENT_EMOTE_DISPLAY) as [emote, glyph] (emote)}
-                <button
-                  class="hover:bg-surface-2 rounded px-1.5 py-1 text-base transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95"
-                  onclick={() => react(c.id, emote as CommentEmote)}>
-                  {glyph}
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      {#if !isReply && canParticipate}
-        <button
-          class="btn-icon h-6 w-6"
-          title={m.common_reply()}
-          aria-label={m.common_reply()}
-          onclick={() => startReply(c.id)}>
-          <Icon name="reply" class="h-4 w-4" />
-        </button>
-      {/if}
-      {#if c.author?.id === auth.user?.id}
-        <button
-          class="btn-icon h-6 w-6"
-          title={m.common_edit()}
-          aria-label={m.common_edit()}
-          onclick={() => startEdit(c)}>
-          <Icon name="edit" class="h-4 w-4" />
-        </button>
-        <button
-          class="btn-icon hover:text-danger h-6 w-6"
-          title={m.common_delete()}
-          aria-label={m.common_delete()}
-          onclick={() => (confirmDeleteId = c.id)}>
-          <Icon name="trash" class="h-4 w-4" />
-        </button>
-      {:else}
-        <button
-          class="btn-icon h-6 w-6"
-          title={m.common_report()}
-          aria-label={m.common_report()}
-          onclick={() => openReport(c.id)}>
-          <Icon name="flag" class="h-4 w-4" />
-        </button>
-      {/if}
+        {/snippet}
+        {#snippet children({ close })}
+          {@render menuItems(c, isReply, close)}
+        {/snippet}
+      </Dropdown>
     </div>
   </div>
 {/snippet}
 
-{#snippet commentCard(
-  c: CommentDto,
-  isReply: boolean,
-  focused: boolean = false,
-)}
+{#snippet commentCard(c: CommentDto, isReply: boolean)}
   {@const mentioned = c.mentions.some(
     (mention) => mention.id === auth.user?.id,
   )}
   <div
     id="comment-{c.id}"
-    class="group relative overflow-visible {isReply ? 'py-2.5 pl-1' : 'py-3.5'}"
-    use:longpress={{
-      onLongPress: () => !focused && (focusedId = c.id),
-      duration: 1000,
-    }}>
+    class="group relative overflow-visible rounded-lg transition-colors duration-150 [-webkit-touch-callout:none]
+      {isReply ? 'py-2.5 pl-1' : 'py-3.5'}
+      {focusedId === c.id ? 'bg-surface-2' : ''}"
+    use:longpress={{ onLongPress: () => (focusedId = c.id), duration: 450 }}>
     {#if c.deleted}
       <p class="text-dim text-sm italic">
         {c.deletedByAdmin ? m.comment_deleted_by_admin() : m.comment_deleted()}
@@ -777,7 +859,7 @@
           {/if}
 
           {#if editingId !== c.id && replyToId !== c.id}
-            {@render actionRow(c, isReply, focused)}
+            {@render actionRow(c, isReply)}
           {/if}
 
           {#if replyToId === c.id}
@@ -848,7 +930,7 @@
       bind:this={feed}
       onscroll={updateJumpToLatest}
       class="h-full overflow-y-auto px-5 sm:px-6">
-      <div class="py-4">
+      <div bind:this={feedContent} class="py-4">
         {#if query.isPending}
           <p class="text-dim text-sm">{m.common_loading()}</p>
         {:else if query.isError}
@@ -1000,11 +1082,23 @@
 {/if}
 
 {#if focused}
-  <FocusOverlay onclose={() => (focusedId = null)}>
-    {#snippet content()}
-      {@render commentCard(focused.comment, focused.isReply, true)}
-    {/snippet}
-  </FocusOverlay>
+  <!-- Above the Messages sheet (z-50). -->
+  <Drawer onclose={() => (focusedId = null)} zIndex={60}>
+    <div class="flex flex-col gap-2 px-3 pt-1 pb-3">
+      {#if canParticipate}
+        <div class="self-center">
+          {@render emotePicker(focused.comment, () => (focusedId = null))}
+        </div>
+      {/if}
+      <div class="flex flex-col" role="menu">
+        {@render menuItems(
+          focused.comment,
+          focused.isReply,
+          () => (focusedId = null),
+        )}
+      </div>
+    </div>
+  </Drawer>
 {/if}
 
 {#if reportingId}
