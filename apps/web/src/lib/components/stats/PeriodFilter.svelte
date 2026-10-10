@@ -40,7 +40,7 @@
 </script>
 
 <SegmentedStatusControl
-  statuses={STATS_WINDOWS}
+  statuses={[...STATS_WINDOWS]}
   current={selected}
   disabled={false}
   {meta}
