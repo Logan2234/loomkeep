@@ -38,8 +38,8 @@ since you last read it. They count in the Messages button too. A work's
 
 These are the same comments as before, and the same rules: anyone can read
 them, writing needs the work in your library, and a spoiler stays hidden until
-you show spoilers. Replies and mentions no longer go to the bell, since this
-tab counts them; their push, if you turned it on, still comes.
+you show spoilers. Replies and mentions still reach the bell too, and your
+phone if you turned their push on.
 
 ## Writing
 

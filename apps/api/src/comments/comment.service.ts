@@ -518,7 +518,11 @@ export class CommentService {
       data: {
         text: body.text,
         spoilerTag,
-        edited: true,
+        // Saved unchanged, it isn't "modifié".
+        edited:
+          existing.edited ||
+          existing.text !== body.text ||
+          existing.spoilerTag !== spoilerTag,
         mentions: {
           deleteMany: {},
           create: mentions,
@@ -1120,13 +1124,7 @@ export class CommentService {
     );
     const excerpt = (row.text ?? "").slice(0, EXCERPT_LENGTH);
 
-    // With Messages on, replies and mentions count in its "Œuvres" tab
-    // rather than in the bell; a push still goes to whoever asked for one.
-    const deliver = isChatEnabled(this.config)
-      ? this.notifications.pushOnly.bind(this.notifications)
-      : this.notifications.create.bind(this.notifications);
-
-    await deliver({
+    await this.notifications.create({
       userId: recipientId,
       type,
       title: row.author.displayName,
