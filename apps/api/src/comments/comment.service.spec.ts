@@ -815,6 +815,43 @@ describe("CommentService.participants", () => {
   });
 });
 
+describe("CommentService.search", () => {
+  it("finds a discussion's comments without the ones a block hides", async () => {
+    const { svc, prisma } = make({
+      comment: {
+        findMany: vi.fn().mockResolvedValue([
+          commentRow({ id: "c1", text: "La fin est folle" }),
+          commentRow({
+            id: "c2",
+            text: "Folle, vraiment",
+            authorId: "blocked",
+            author: { ...AUTHOR, id: "blocked" },
+          }),
+        ]),
+      },
+      relations: { blocked: relation({ blocking: true }) },
+    });
+
+    const hits = await svc.search("viewer", "MEDIA" as never, "m1", " folle ");
+
+    expect(hits.map((hit) => hit.id)).toEqual(["c1"]);
+    expect(prisma.comment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          text: { contains: "folle", mode: "insensitive" },
+          deletedAt: null,
+        }),
+      }),
+    );
+  });
+
+  it("doesn't search under the minimum length", async () => {
+    const { svc, prisma } = make();
+    expect(await svc.search("viewer", "MEDIA" as never, "m1", "f")).toEqual([]);
+    expect(prisma.comment.findMany).not.toHaveBeenCalled();
+  });
+});
+
 describe("CommentService.update", () => {
   it("only marks a comment edited when its text or spoiler changed", async () => {
     const existing = commentRow({ authorId: "viewer", text: "Pareil" });
