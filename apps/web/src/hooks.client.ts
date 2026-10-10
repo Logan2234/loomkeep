@@ -13,6 +13,11 @@ if (dsn) {
   Sentry.init({
     dsn,
     tracesSampleRate: 0,
+    // A zero sample rate still installs tracing, which reads removed Kit stores.
+    integrations: (integrations) =>
+      integrations.filter(
+        (integration) => integration.name !== "BrowserTracing",
+      ),
   });
 }
 

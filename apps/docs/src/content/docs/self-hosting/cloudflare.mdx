@@ -73,11 +73,20 @@ you. Then make room for what must get through without a login:
 | ------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `flags.<DOMAIN>`   | `/api/client/*` and `/api/frontend/*`, to everyone | The API and every visitor's browser read flags there, with tokens of their own. Blocked, every flag falls back to its default. |
 | `grafana.<DOMAIN>` | `/api/health`, to your uptime monitor's addresses | Otherwise the monitor only sees Access's login page, and reports Grafana up when it is down.                                  |
+| `errors.<DOMAIN>` | `/api/<project-id>/envelope/`, to everyone | The browser and API send error reports there. Keep the GlitchTip dashboard and management API protected. |
 | `stats.<DOMAIN>`   | Don't put Umami behind Access                | Visitors' browsers load its script and send it their visits.                                                                  |
 
 In Access, "let through" is a second application on that path, with a
 **Bypass** policy. Keep each bypass to its path, and to the monitor's
 [published addresses](https://uptimerobot.com/locations) for Grafana.
+
+For GlitchTip, replace `<project-id>` with each project id from your DSNs
+(for example `/api/1/envelope/` and `/api/2/envelope/`). Create a separate
+application for each ingestion path with **Bypass → Everyone**. Do not
+bypass `/api/*`: that would also expose the management API. A redirect to
+the Access login page prevents the SDK from delivering errors; allowing
+that login domain in the app's CSP does not solve it. The app's `connect-src`
+policy must also allow your GlitchTip origin.
 
 <Aside>
   With Cloudflare in front, [Umami](/self-hosting/optional-services/analytics/)
