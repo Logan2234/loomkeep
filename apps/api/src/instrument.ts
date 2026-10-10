@@ -28,7 +28,12 @@ if (process.env.NODE_ENV === "production" && dsn) {
       graphQL: { document: false, variables: false },
       stackFrameVariables: false,
     },
-    integrations: [
+    integrations: (integrations) => [
+      // Process sessions are separate from HTTP sessions and become reportable
+      // as soon as a release is configured (including GitHub's inferred SHA).
+      ...integrations.filter(
+        (integration) => integration.name !== "ProcessSession",
+      ),
       // SDK v11 renamed trackIncomingRequestsAsSessions to sessions.
       // GlitchTip does not support Sessions/Release Health.
       Sentry.httpIntegration({ sessions: false }),

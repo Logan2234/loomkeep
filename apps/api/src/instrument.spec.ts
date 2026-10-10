@@ -62,6 +62,9 @@ describe("production error reporting", () => {
   it("delivers an HTTP error without private request data or unsupported envelopes", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("GLITCHTIP_API_DSN", "https://public@example.com/1");
+    // GitHub supplies a release automatically. Exercise it locally too:
+    // process sessions are otherwise silently dropped when no release exists.
+    vi.stubEnv("SENTRY_RELEASE", "loomkeep-instrumentation-regression");
     await import("./instrument.js");
 
     const server = createServer((request, response) => {
@@ -106,6 +109,7 @@ describe("production error reporting", () => {
       const errors = items.filter(([header]) => header.type === "event");
       expect(errors).toHaveLength(1);
       const event = errors[0][1] as Sentry.Event;
+      expect(event.release).toBe("loomkeep-instrumentation-regression");
       expect(event.exception?.values?.[0].value).toBe(
         "Loomkeep instrumentation regression",
       );
