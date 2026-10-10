@@ -1,4 +1,4 @@
-import { installStagingProbe } from "#lib/observability/staging-probe";
+import { installStagingProbe } from "#lib/observability/staging-probe.js";
 import * as env from "$app/env/public";
 import {
   createSentryEventFilter,

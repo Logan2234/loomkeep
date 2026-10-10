@@ -29,6 +29,10 @@ test("archives byte-identical build files and removes maps from the public clien
     await mkdir(join(client, "_app/immutable/chunks"), { recursive: true });
     await writeFile(join(client, relative), js);
     await writeFile(join(client, `${relative}.map`), map);
+    await writeFile(join(client, `${relative}.map.gz`), "compressed-map");
+    await writeFile(join(client, `${relative}.map.br`), "compressed-map");
+    await writeFile(join(client, "_app/immutable/chunks/probe.css"), "body {}");
+    await writeFile(join(client, "_app/immutable/chunks/probe.css.map"), map);
     const result = spawnSync(
       process.execPath,
       [
@@ -43,6 +47,11 @@ test("archives byte-identical build files and removes maps from the public clien
     assert.equal(await readFile(join(archive, relative), "utf8"), js);
     assert.equal(await readFile(join(archive, `${relative}.map`), "utf8"), map);
     await assert.rejects(access(join(client, `${relative}.map`)));
+    await assert.rejects(access(join(client, `${relative}.map.gz`)));
+    await assert.rejects(access(join(client, `${relative}.map.br`)));
+    await assert.rejects(
+      access(join(client, "_app/immutable/chunks/probe.css.map")),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

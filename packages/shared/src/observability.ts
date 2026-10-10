@@ -3,7 +3,7 @@ const FILTERED = "[Filtered]";
 const PRIVATE_FIELD =
   /^(?:authorization|headers|cookies?|setcookie|password.*|passphrase|.*token|.*secret|.*apikey|credential.*|email|phone|address|body|content|text|comment|description|query|search|params|variables|vars|mfacode|otp|verificationcode|recoverycodes?|backupcodes?|codeverifier)$/i;
 
-export function scrubTelemetryText(value: string): string {
+function scrubTelemetryText(value: string): string {
   return (
     value
       // URLs in error messages can include signed links, credentials or searches.
