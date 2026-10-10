@@ -106,11 +106,8 @@
 
   const createMut = createApiMutation(() => ({
     mutate: async (title: string) => {
-      const list = await createList({
-        title,
-        kind: "COLLECTION",
-        visibility: "PRIVATE",
-      });
+      // No visibility: the API applies the account's default list visibility.
+      const list = await createList({ title, kind: "COLLECTION" });
       await addListItem(list.id, targetType, targetId);
     },
     invalidates: [keys.lists.editable(), membershipKey],

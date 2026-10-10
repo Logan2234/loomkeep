@@ -197,6 +197,8 @@
   "activity_rewatched": "a relancé",
   "activity_favorited": "a mis en favori",
   "activity_reviewed": "a noté",
+  "activity_reviewed_episode": "a noté l'épisode {episode} de la saison {season} de",
+  "activity_reviewed_season": "a noté la saison {season} de",
   "activity_progress": "a avancé dans",
   "activity_progress_count": "a avancé ({count})",
   "activity_game_session": "a joué pendant {minutes} min à",

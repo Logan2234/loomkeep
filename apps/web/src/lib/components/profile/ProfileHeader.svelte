@@ -126,12 +126,8 @@
           </h1>
           {#if appConfig.gamificationEnabled}
             <StreakBadge
-              days={profile.activityStats.visible
-                ? profile.activityStats.streakDays
-                : undefined}
-              securedToday={profile.activityStats.visible
-                ? profile.activityStats.streakSecuredToday
-                : undefined}
+              days={profile.activityStats.streakDays}
+              securedToday={profile.activityStats.streakSecuredToday}
               isSelf={!!rel?.isSelf}
               trackKey={rel?.isSelf && auth.user
                 ? `streak:${auth.user.id}`

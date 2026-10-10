@@ -370,7 +370,7 @@ export class ReviewService {
       await this.prisma.reviewRevision.create({
         data: { reviewId: row.id, rating: dto.rating, text },
       });
-      await this.emitReviewed(userId, targetType, targetId, dto.rating);
+      await this.emitReviewed(userId, row.id, targetType, targetId, dto.rating);
       await this.awardReviewRatingXp(userId, row.id, text);
     }
 
@@ -860,7 +860,7 @@ export class ReviewService {
       );
     }
 
-    await this.emitReviewed(userId, targetType, targetId, rating);
+    await this.emitReviewed(userId, reviewId, targetType, targetId, rating);
     // Not revoked here on a text shortening — see awardReviewRatingXp's doc
     // comment; the nightly reconciliation is the safety net for that case.
     await this.awardReviewRatingXp(userId, reviewId, text);
@@ -870,10 +870,15 @@ export class ReviewService {
    * Records a REVIEWED activity event for a review write (from either the full
    * editor or the quick-rating path). A work-level review is a home-feed
    * milestone; season/episode reviews stay on the profile timeline (per the
-   * feed matrix). No-op for unknown target types.
+   * feed matrix). A season or episode review is recorded against its show,
+   * like SEASON_FINISHED, with the season/episode numbers in `data` — the
+   * feed only snapshots catalogue works. Linked to the review (`sourceId`)
+   * so the feed can hold it to the review's own audience. No-op for unknown
+   * target types.
    */
   private async emitReviewed(
     userId: string,
+    reviewId: string,
     targetType: ReviewTargetType,
     targetId: string,
     rating: number,
@@ -881,23 +886,68 @@ export class ReviewService {
     const domain = DOMAIN_BY_TARGET[targetType];
     if (!domain) return;
 
-    const level =
-      targetType === "SEASON"
-        ? "SEASON"
-        : targetType === "EPISODE"
-          ? "EPISODE"
-          : "WORK";
+    const work = await this.reviewedWork(targetType, targetId);
+    if (!work) return;
 
     await this.activity.emit({
       userId,
       type: ActivityType.REVIEWED,
       domain,
-      targetType,
-      targetId,
-      level,
-      homeFeed: level === "WORK",
-      data: { rating },
+      targetType: work.targetType,
+      targetId: work.targetId,
+      level: work.level,
+      homeFeed: work.level === "WORK",
+      data: { rating, ...work.data },
+      sourceType: "Review",
+      sourceId: reviewId,
     });
+  }
+
+  /** The catalogue work a review's activity event points at. */
+  private async reviewedWork(
+    targetType: ReviewTargetType,
+    targetId: string,
+  ): Promise<{
+    targetType: string;
+    targetId: string;
+    level: "WORK" | "SEASON" | "EPISODE";
+    data: Record<string, number>;
+  } | null> {
+    if (targetType === ReviewTargetType.SEASON) {
+      const season = await this.prisma.season.findUnique({
+        where: { id: targetId },
+        select: { number: true, mediaItemId: true },
+      });
+      if (!season) return null;
+      return {
+        targetType: ReviewTargetType.MEDIA,
+        targetId: season.mediaItemId,
+        level: "SEASON",
+        data: { seasonNumber: season.number },
+      };
+    }
+
+    if (targetType === ReviewTargetType.EPISODE) {
+      const episode = await this.prisma.episode.findUnique({
+        where: { id: targetId },
+        select: {
+          number: true,
+          season: { select: { number: true, mediaItemId: true } },
+        },
+      });
+      if (!episode) return null;
+      return {
+        targetType: ReviewTargetType.MEDIA,
+        targetId: episode.season.mediaItemId,
+        level: "EPISODE",
+        data: {
+          seasonNumber: episode.season.number,
+          episodeNumber: episode.number,
+        },
+      };
+    }
+
+    return { targetType, targetId, level: "WORK", data: {} };
   }
 
   private async author(userId: string): Promise<UserSummaryDto> {

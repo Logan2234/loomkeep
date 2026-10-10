@@ -217,6 +217,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         description: m.settings_privacy_description(),
         keywords: ["privacy", "public", "prive", "fantome", "ghost"],
         social: true,
+        newBadgeKey: "default-list-visibility",
         legacyHash: "confidentialite",
         entries: [
           {
@@ -239,9 +240,24 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
               "avis",
               "notes",
               "reviews",
+              "visibilite",
               "portee",
               "default visibility",
               "new reviews",
+              "friends",
+              "public",
+            ],
+          },
+          {
+            id: "list-visibility",
+            label: m.settings_privacy_default_lists(),
+            keywords: [
+              "listes",
+              "lists",
+              "visibilite",
+              "default visibility",
+              "new lists",
+              "private",
               "friends",
               "public",
             ],

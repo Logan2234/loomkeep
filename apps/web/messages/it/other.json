@@ -197,6 +197,8 @@
   "activity_rewatched": "ha rivisto",
   "activity_favorited": "ha messo tra i preferiti",
   "activity_reviewed": "ha votato",
+  "activity_reviewed_episode": "ha votato l'episodio {episode} della stagione {season} di",
+  "activity_reviewed_season": "ha votato la stagione {season} di",
   "activity_progress": "è andato avanti con",
   "activity_progress_count": "è andato avanti ({count})",
   "activity_game_session": "ha giocato {minutes} min a",

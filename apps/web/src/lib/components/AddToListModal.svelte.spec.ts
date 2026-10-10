@@ -132,6 +132,8 @@ describe("AddToListModal", () => {
     expect(created).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Pépites 2024" }),
     );
+    // Left to the API, which applies the account's default list visibility.
+    expect(created.mock.calls[0][0]).not.toHaveProperty("visibility");
   });
 
   it("doesn't offer to create a list that already exists", async () => {

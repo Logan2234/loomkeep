@@ -82,13 +82,19 @@ export interface ProfileDomainStatDto {
 }
 
 /**
- * Video-derived activity summary shown on a profile (streak, heatmap teaser,
- * genres…) — deliberately video-only (the only domain with a per-event log),
- * gated as one block by the MEDIA domain's ACTIVITY facet.
+ * Activity summary shown on a profile (streak, heatmap teaser, genres…). The
+ * streak is always filled in for a reachable profile — it counts days, not
+ * what was watched, played or read. The rest only draws on the domains whose
+ * ACTIVITY facet the viewer passes; watch time, most active year and genres
+ * are video-only.
  */
 export interface ProfileActivityStatsDto {
+  /** Whether the viewer passes at least one domain's ACTIVITY facet. */
   visible: boolean;
-  /** Consecutive days (ending today or yesterday) with at least one watch. */
+  /**
+   * Consecutive days (ending today or yesterday) with at least one watch,
+   * game session or reading session, whatever the facets.
+   */
   streakDays: number;
   /**
    * Whether today already has a watch counted toward `streakDays` — i.e. the

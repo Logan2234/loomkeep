@@ -38,6 +38,13 @@ import {
   type ViewerRelation,
 } from "./visibility.util";
 
+/** The domains with dated activity feeding the profile's activity stats. */
+const ACTIVITY_STATS_DOMAINS: Domain[] = [
+  Domain.MEDIA,
+  Domain.GAMES,
+  Domain.BOOKS,
+];
+
 const EMPTY_ACTIVITY_STATS: ProfileActivityStatsDto = {
   visible: false,
   streakDays: 0,
@@ -143,24 +150,27 @@ export class ProfileService {
       domains.push({ domain, visible, count, favorites });
     }
 
-    const activityVisible = resolveFacet(
-      target.profileAccess,
-      this.visibility.audienceFor(
-        settings,
-        Domain.MEDIA,
-        VisibilityFacet.ACTIVITY,
-      ),
-      relation,
+    // Each domain's Activité facet gates its own share of the stats (a game
+    // session never reaches the heatmap through a public video facet).
+    const activityVisibleFor = (domain: Domain) =>
+      resolveFacet(
+        target.profileAccess,
+        this.visibility.audienceFor(settings, domain, VisibilityFacet.ACTIVITY),
+        relation,
+      );
+    const statsDomains = new Set(
+      ACTIVITY_STATS_DOMAINS.filter((domain) => activityVisibleFor(domain)),
     );
 
-    // Same gate as activityStats — the owner always sees their real
-    // progress; anyone else needs both the ACTIVITY facet visible and the
-    // target's own `hideProgression` preference off. `UserScore` is only
+    // The owner always sees their real progress; anyone else needs both
+    // the MEDIA Activité facet visible and the target's own
+    // `hideProgression` preference off. `UserScore` is only
     // read when gamification is actually on, so a self-hoster running with
     // it off never pays that query.
     const gamificationEnabled = isGamificationEnabled(this.config);
     const xpVisible =
-      relation.isSelf || (activityVisible && !target.hideProgression);
+      relation.isSelf ||
+      (activityVisibleFor(Domain.MEDIA) && !target.hideProgression);
 
     const [
       activityStats,
@@ -170,7 +180,7 @@ export class ProfileService {
       commentsCount,
       listsCount,
     ] = await Promise.all([
-      this.computeActivityStats(target.id, activityVisible),
+      this.computeActivityStats(target.id, statsDomains),
       gamificationEnabled && xpVisible
         ? this.fetchRealXp(target.id)
         : Promise.resolve(null),
@@ -408,15 +418,17 @@ export class ProfileService {
   }
 
   /**
-   * Activity summary. Watch time and genres remain video-specific, while the
-   * streak and heatmap use every dated watch, game session and reading session.
+   * Activity summary. The streak counts every dated watch, game session and
+   * reading session and is shown whatever the facets say — a run of days
+   * says nothing about what was watched, played or read. Everything else is
+   * built only from the domains whose Activité facet the viewer passes
+   * (`domains`): watch time, most active year and genres are video-only, and
+   * the heatmap and first/last activity dates merge the visible domains.
    */
   private async computeActivityStats(
     userId: string,
-    visible: boolean,
+    domains: ReadonlySet<Domain>,
   ): Promise<ProfileActivityStatsDto> {
-    if (!visible) return EMPTY_ACTIVITY_STATS;
-
     const [entries, watches, gameSessions, bookSessions] = await Promise.all([
       this.prisma.libraryEntry.findMany({
         where: { userId },
@@ -459,34 +471,37 @@ export class ProfileService {
         w.watchedAt !== null,
     );
     const now = new Date();
-    const watchDates = datedRegular.map((w) => w.watchedAt);
-    const activityDates = [
-      ...watchDates,
-      ...gameSessions.map((session) => session.occurredAt),
-      ...bookSessions.map((session) => session.occurredAt),
-    ];
+    const datesByDomain = new Map<Domain, Date[]>([
+      [Domain.MEDIA, datedRegular.map((w) => w.watchedAt)],
+      [Domain.GAMES, gameSessions.map((session) => session.occurredAt)],
+      [Domain.BOOKS, bookSessions.map((session) => session.occurredAt)],
+    ]);
+    const allDates = [...datesByDomain.values()].flat();
+    const streak = {
+      streakDays: computeStreak(allDates, now),
+      streakSecuredToday: isStreakSecuredToday(allDates, now),
+    };
 
-    const watchMinutes = regular.map((w) => ({
-      watchedAt: w.watchedAt,
-      minutes: episodeRuntimeFor(
+    if (domains.size === 0) return { ...EMPTY_ACTIVITY_STATS, ...streak };
+
+    const activityDates = [...datesByDomain.entries()].flatMap(
+      ([domain, dates]) => (domains.has(domain) ? dates : []),
+    );
+    const mediaVisible = domains.has(Domain.MEDIA);
+
+    const runtimeOf = (w: (typeof regular)[number]) =>
+      episodeRuntimeFor(
         w.episode.season.mediaItem.type,
         w.episode.runtimeMin,
         w.episode.season.mediaItem.runtimeMin,
-      ),
-    }));
-    const datedMinutes = datedRegular.map((w) => ({
-      watchedAt: w.watchedAt,
-      minutes: episodeRuntimeFor(
-        w.episode.season.mediaItem.type,
-        w.episode.runtimeMin,
-        w.episode.season.mediaItem.runtimeMin,
-      ),
-    }));
-    const totalMinutes = watchMinutes.reduce((sum, d) => sum + d.minutes, 0);
+      );
+    const totalMinutes = mediaVisible
+      ? regular.reduce((sum, w) => sum + runtimeOf(w), 0)
+      : 0;
 
     const genreCounts = new Map<string, number>();
 
-    for (const e of entries) {
+    for (const e of mediaVisible ? entries : []) {
       for (const g of e.mediaItem.genres) {
         genreCounts.set(g, (genreCounts.get(g) ?? 0) + 1);
       }
@@ -497,23 +512,32 @@ export class ProfileService {
       .slice(0, 3)
       .map(([genre, count]) => ({ label: genre, count }));
 
+    const visibleEntries = mediaVisible ? entries : [];
     const firstTimestamps = [
-      ...entries.map((e) => e.createdAt),
+      ...visibleEntries.map((e) => e.createdAt),
       ...activityDates,
     ];
     const lastTimestamps = [
-      ...entries.map((e) => e.updatedAt),
+      ...visibleEntries.map((e) => e.updatedAt),
       ...activityDates,
     ];
 
     return {
       visible: true,
-      streakDays: computeStreak(activityDates, now),
-      streakSecuredToday: isStreakSecuredToday(activityDates, now),
+      ...streak,
       firstActivityAt: earliest(firstTimestamps)?.toISOString() ?? null,
       lastActivityAt: latest(lastTimestamps)?.toISOString() ?? null,
       totalMinutes,
-      mostActiveYear: mostActiveYear(computeYearlyMinutes(datedMinutes)),
+      mostActiveYear: mediaVisible
+        ? mostActiveYear(
+            computeYearlyMinutes(
+              datedRegular.map((w) => ({
+                watchedAt: w.watchedAt,
+                minutes: runtimeOf(w),
+              })),
+            ),
+          )
+        : null,
       topGenres,
       heatmap: computeHeatmap(activityDates, 90, now),
     };

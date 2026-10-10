@@ -245,3 +245,101 @@ describe("ProfileService.getProfile xp", () => {
     expect(prisma.userScore.findUnique).not.toHaveBeenCalled();
   });
 });
+
+describe("ProfileService.getProfile activity stats", () => {
+  // A stranger viewing a public profile: each domain's Activité facet decides
+  // alone what that domain adds to the stats.
+  function makeStatsProfile(
+    activityByDomain: Record<string, VisibilityAudience>,
+  ) {
+    const today = new Date();
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "target",
+          username: "alice",
+          displayName: "Alice",
+          bio: null,
+          profileAccess: "PUBLIC",
+          createdAt: new Date("2024-01-01"),
+          avatarUpdatedAt: null,
+          hideProgression: false,
+          equippedBadgeKeys: [],
+        }),
+      },
+      follow: { count: vi.fn().mockResolvedValue(0) },
+      review: { findMany: vi.fn().mockResolvedValue([]) },
+      comment: { count: vi.fn().mockResolvedValue(0) },
+      list: { findMany: vi.fn().mockResolvedValue([]) },
+      libraryEntry: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            createdAt: new Date("2025-01-01"),
+            updatedAt: new Date("2025-01-02"),
+            mediaItem: { genres: ["Drame"] },
+          },
+        ]),
+        count: vi.fn().mockResolvedValue(0),
+      },
+      episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
+      gameSession: {
+        findMany: vi.fn().mockResolvedValue([{ occurredAt: today }]),
+      },
+      bookSession: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+
+    const visibility = {
+      getRelation: vi.fn().mockResolvedValue(relation({})),
+      getSettingsMap: vi.fn().mockResolvedValue(new Map()),
+      audienceFor: vi.fn((_settings, domain: string, facet) =>
+        facet === "ACTIVITY"
+          ? (activityByDomain[domain] ?? VisibilityAudience.NONE)
+          : VisibilityAudience.NONE,
+      ),
+      toRelationshipDto: vi.fn().mockReturnValue({}),
+    } as unknown as VisibilityService;
+    const config = { get: vi.fn() } as unknown as ConfigService;
+
+    return new ProfileService(
+      prisma,
+      visibility,
+      {} as unknown as FollowService,
+      config,
+    );
+  }
+
+  const activeDays = (heatmap: { count: number }[]) =>
+    heatmap.filter((d) => d.count > 0).length;
+
+  it("keeps a hidden domain's sessions out of the heatmap", async () => {
+    const svc = makeStatsProfile({ MEDIA: VisibilityAudience.PUBLIC });
+
+    const { activityStats } = await svc.getProfile("viewer", "alice");
+
+    expect(activityStats.visible).toBe(true);
+    expect(activeDays(activityStats.heatmap)).toBe(0);
+    expect(activityStats.topGenres).toEqual([{ label: "Drame", count: 1 }]);
+  });
+
+  it("counts a domain's sessions once its own facet is visible", async () => {
+    const svc = makeStatsProfile({ GAMES: VisibilityAudience.PUBLIC });
+
+    const { activityStats } = await svc.getProfile("viewer", "alice");
+
+    expect(activeDays(activityStats.heatmap)).toBe(1);
+    // Video-only figures stay out without the MEDIA facet.
+    expect(activityStats.topGenres).toEqual([]);
+    expect(activityStats.firstActivityAt).not.toBe("2025-01-01T00:00:00.000Z");
+  });
+
+  it("shows the streak whatever the facets say", async () => {
+    const svc = makeStatsProfile({});
+
+    const { activityStats } = await svc.getProfile("viewer", "alice");
+
+    expect(activityStats.visible).toBe(false);
+    expect(activityStats.heatmap).toEqual([]);
+    expect(activityStats.streakDays).toBe(1);
+    expect(activityStats.streakSecuredToday).toBe(true);
+  });
+});
