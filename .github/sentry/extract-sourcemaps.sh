@@ -16,7 +16,7 @@ for component in api web; do
     # platform with the Node SDK's process.arch as its distribution.
     docker buildx imagetools inspect "$image" --raw > "$destination/api-manifest.json"
     if node -e '
-      const manifest = require(process.argv[1]);
+      const manifest = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
       process.exit(manifest.manifests?.some(m => m.platform?.architecture === "arm64") ? 0 : 1);
     ' "$destination/api-manifest.json"; then
       platforms+=(arm64)
@@ -32,7 +32,8 @@ for component in api web; do
     mkdir -p "$directory"
     docker cp "$container:/app/loomkeep-release.json" "$directory/release.json"
     node -e '
-      if (require(process.argv[1]).release !== process.argv[2]) {
+      const metadata = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
+      if (metadata.release !== process.argv[2]) {
         throw new Error("Image release does not match requested build");
       }
     ' "$directory/release.json" "$release"
