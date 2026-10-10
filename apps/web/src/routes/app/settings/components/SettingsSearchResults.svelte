@@ -6,7 +6,9 @@
   import { settingsSearch } from "../search-state.svelte";
   import { isSectionVisible } from "../section-visibility";
 
-  const visibleSections = $derived(SETTINGS_SEARCHABLE.filter(isSectionVisible));
+  const visibleSections = $derived(
+    SETTINGS_SEARCHABLE.filter(isSectionVisible),
+  );
   const results = $derived(
     searchSettings(settingsSearch.query, visibleSections),
   );
