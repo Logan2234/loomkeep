@@ -39,10 +39,25 @@ export class AllExceptionsFilter {
     const request = host.switchToHttp().getRequest<FastifyRequest>();
     const response = host.switchToHttp().getResponse();
     const context = { method: request?.method, url: request?.url };
+    // Keep exactly the ID returned in the HTTP error body and Pino logs.
+    const requestId =
+      request?.id !== undefined ? String(request.id) : undefined;
+    const body = this.buildBody(exception, status, requestId);
 
     if (status >= 500) {
       this.logger.error({ err: exception, ...context }, "Unhandled exception");
-      Sentry.captureException(exception);
+      Sentry.captureException(exception, {
+        contexts: {
+          loomkeep: {
+            requestId,
+            method: request?.method,
+            route: request?.routeOptions?.url,
+            status,
+            code: body.code,
+          },
+        },
+        tags: { component: "api", requestId },
+      });
     } else if (status >= 400) {
       this.logger.warn({ err: exception, ...context }, "Request rejected");
     }
@@ -50,9 +65,6 @@ export class AllExceptionsFilter {
     // request.id is typed as string, but pino-http's own default id
     // generator (used when nestjs-pino's LoggerModule wires it up) returns a
     // raw number — coerce explicitly rather than trust the type.
-    const requestId =
-      request?.id !== undefined ? String(request.id) : undefined;
-    const body = this.buildBody(exception, status, requestId);
     this.httpAdapterHost.httpAdapter.reply(response, body, status);
   }
 

@@ -5,6 +5,9 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig(({ command }) => ({
+  define: {
+    __LOOMKEEP_BUILD_SHA__: JSON.stringify(process.env.GIT_SHA ?? "unknown"),
+  },
   server: { host: true, allowedHosts: ["dev.loomkeep.app"] },
   clearScreen: false,
   plugins: [
@@ -39,9 +42,10 @@ export default defineConfig(({ command }) => ({
   // CommonJS (consumed as dist/, see root CLAUDE.md), so named imports break
   // in dev without forcing that conversion explicitly.
   optimizeDeps: {
-    include: ["@loomkeep/shared"],
+    include: ["@loomkeep/shared", "@loomkeep/shared/observability"],
   },
   build: {
+    sourcemap: true,
     commonjsOptions: {
       include: [/@loomkeep\/shared/, /node_modules/],
     },

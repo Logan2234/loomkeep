@@ -22,6 +22,10 @@
     "directory": "packages/shared"
   },
   "exports": {
+    "./observability": {
+      "types": "./dist/observability.d.ts",
+      "default": "./dist/observability.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"

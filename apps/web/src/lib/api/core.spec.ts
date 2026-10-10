@@ -47,7 +47,8 @@ describe("request() → GlitchTip reporting", { timeout: 20_000 }, () => {
 
     expect(captureException).toHaveBeenCalledTimes(1);
     expect(captureException).toHaveBeenCalledWith(expect.anything(), {
-      tags: { requestId: "req-1" },
+      contexts: { loomkeep: { requestId: "req-1", status: 500, code: null } },
+      tags: { component: "web", requestId: "req-1" },
     });
   });
 
@@ -90,7 +91,10 @@ describe("request() → GlitchTip reporting", { timeout: 20_000 }, () => {
     await expect(request("/x")).rejects.toThrow();
 
     expect(captureException).toHaveBeenCalledWith(expect.anything(), {
-      tags: { requestId: undefined },
+      contexts: {
+        loomkeep: { requestId: undefined, status: 0, code: "network.offline" },
+      },
+      tags: { component: "web", requestId: undefined },
     });
   });
 

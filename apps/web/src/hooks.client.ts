@@ -1,4 +1,9 @@
+import { installStagingProbe } from "#lib/observability/staging-probe";
 import * as env from "$app/env/public";
+import {
+  createSentryEventFilter,
+  scrubSentryBreadcrumb,
+} from "@loomkeep/shared/observability";
 import * as Sentry from "@sentry/sveltekit";
 
 const dsn = env.PUBLIC_GLITCHTIP_WEB_DSN;
@@ -12,6 +17,11 @@ const dsn = env.PUBLIC_GLITCHTIP_WEB_DSN;
 if (dsn) {
   Sentry.init({
     dsn,
+    release:
+      __LOOMKEEP_BUILD_SHA__ === "unknown" ? undefined : __LOOMKEEP_BUILD_SHA__,
+    environment: env.PUBLIC_SENTRY_ENVIRONMENT ?? "development",
+    beforeSend: createSentryEventFilter(),
+    beforeBreadcrumb: scrubSentryBreadcrumb,
     tracesSampleRate: 0,
     // SDK v11's defaults include request bodies, cookies and user data.
     // Keep authentication and private content out of collected telemetry.
@@ -36,6 +46,8 @@ if (dsn) {
           integration.name !== "BrowserSession",
       ),
   });
+
+  if (env.PUBLIC_SENTRY_ENVIRONMENT === "staging") installStagingProbe();
 }
 
 export const handleError = Sentry.handleErrorWithSentry();

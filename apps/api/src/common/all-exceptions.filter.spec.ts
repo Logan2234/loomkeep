@@ -39,7 +39,18 @@ describe("AllExceptionsFilter", () => {
 
     filter.catch(error, host);
 
-    expect(Sentry.captureException).toHaveBeenCalledWith(error);
+    expect(Sentry.captureException).toHaveBeenCalledWith(error, {
+      contexts: {
+        loomkeep: {
+          requestId: "req-500",
+          method: "GET",
+          route: undefined,
+          status: 500,
+          code: ErrorCode.InternalError,
+        },
+      },
+      tags: { component: "api", requestId: "req-500" },
+    });
     expect(logger.error).toHaveBeenCalled();
     const [sentResponse, body, status] = reply.mock.calls[0];
     expect(sentResponse).toBe(response);

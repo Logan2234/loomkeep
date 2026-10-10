@@ -50,6 +50,21 @@ jobs:
               - 'tsconfig.base.json'
               - 'package.json'
               - '.github/workflows/ci.yml'
+              - '.github/sentry/**'
+              - '.github/workflows/sentry-staging.yml'
+              - '.github/workflows/deploy.yml'
+
+  sentry-tooling:
+    needs: changes
+    if: needs.changes.outputs.lint == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 26
+      - name: Deployment guard and artifact preservation regressions
+        run: node --test .github/sentry/*.spec.mjs apps/web/scripts/prepare-sourcemaps.spec.mjs
 
   # Web and API run in parallel; packages/shared is TS-only and rides with API.
   lint-test-web:
@@ -327,6 +342,7 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: false
           load: true
+          build-args: GIT_SHA=${{ github.sha }}
           tags: loomkeep-${{ matrix.name }}:ci
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
@@ -433,10 +449,7 @@ jobs:
           file: ${{ matrix.dockerfile }}
           platforms: linux/amd64
           push: true
-          # Only the api Dockerfile declares a GIT_SHA ARG (see its
-          # ARG GIT_SHA=unknown) — passing it for web too would just be an
-          # unused build-arg warning.
-          build-args: ${{ matrix.name == 'api' && format('GIT_SHA={0}', steps.vars.outputs.short) || '' }}
+          build-args: GIT_SHA=${{ github.sha }}
           tags: |
             ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}:latest
             ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}:${{ steps.vars.outputs.short }}
@@ -453,9 +466,37 @@ jobs:
           file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true
-          build-args: ${{ matrix.name == 'api' && format('GIT_SHA={0}', steps.vars.outputs.short) || '' }}
+          build-args: GIT_SHA=${{ github.sha }}
           tags: |
             ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}:latest
             ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}:${{ steps.vars.outputs.short }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  sentry-sourcemaps:
+    needs: docker-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.SENTRY_UPLOAD_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
+        with:
+          node-version: 26
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract the published image artifacts
+        run: bash .github/sentry/extract-sourcemaps.sh "$GITHUB_SHA" "$RUNNER_TEMP/sourcemaps" "${GITHUB_REPOSITORY_OWNER,,}"
+      - name: Upload API and web release artifacts
+        env:
+          SENTRY_URL: ${{ vars.SENTRY_URL }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_API_PROJECT: ${{ vars.SENTRY_API_PROJECT }}
+          SENTRY_WEB_PROJECT: ${{ vars.SENTRY_WEB_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: bash .github/sentry/upload-sourcemaps.sh "$GITHUB_SHA" "$RUNNER_TEMP/sourcemaps"

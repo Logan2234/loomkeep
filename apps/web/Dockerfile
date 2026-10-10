@@ -25,7 +25,12 @@ COPY apps/web apps/web
 # root, `pnpm --filter @loomkeep/api build && pnpm --filter @loomkeep/api
 # generate:openapi`.
 COPY apps/api/openapi.json apps/api/openapi.json
-RUN pnpm --filter @loomkeep/shared build && pnpm --filter @loomkeep/web generate:api-types && pnpm --filter @loomkeep/web build
+ARG GIT_SHA=unknown
+RUN pnpm --filter @loomkeep/shared build \
+  && pnpm --filter @loomkeep/web generate:api-types \
+  && GIT_SHA="$GIT_SHA" pnpm --filter @loomkeep/web build \
+  && node apps/web/scripts/prepare-sourcemaps.mjs apps/web/build/client /app/sentry-web \
+  && node -e 'require("node:fs").writeFileSync("/app/loomkeep-release.json", JSON.stringify({release:process.argv[1]}))' "$GIT_SHA"
 
 # adapter-node's SSR build doesn't safely bundle every server-side dependency
 # into build/ — @loomkeep/shared (a linked workspace package, see the
@@ -62,6 +67,8 @@ WORKDIR /app
 COPY --from=build /app/packages/shared ./packages/shared
 COPY --from=build /app/deploy ./deploy
 COPY --from=build /app/apps/web/build ./deploy/build
+COPY --from=build /app/sentry-web /opt/loomkeep-sourcemaps/web
+COPY --from=build /app/loomkeep-release.json /app/loomkeep-release.json
 WORKDIR /app/deploy
 ENV PORT=3000
 EXPOSE 3000

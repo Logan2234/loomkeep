@@ -66,6 +66,7 @@ WORKDIR /app/deploy
 # the Homepage "Version" widget can show what's actually running.
 ARG GIT_SHA=unknown
 ENV GIT_SHA=$GIT_SHA
+RUN node -e 'require("node:fs").writeFileSync("/app/loomkeep-release.json", JSON.stringify({release:process.env.GIT_SHA}))'
 
 EXPOSE 3000
 

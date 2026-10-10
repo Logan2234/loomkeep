@@ -1,5 +1,9 @@
 // Must be imported before any other module (see main.ts) — Sentry's own
 // setup instructions for Node.
+import {
+  createSentryEventFilter,
+  scrubSentryBreadcrumb,
+} from "@loomkeep/shared/observability";
 import * as Sentry from "@sentry/node";
 
 const dsn = process.env.GLITCHTIP_API_DSN;
@@ -12,6 +16,14 @@ const dsn = process.env.GLITCHTIP_API_DSN;
 if (process.env.NODE_ENV === "production" && dsn) {
   Sentry.init({
     dsn,
+    release:
+      process.env.GIT_SHA && process.env.GIT_SHA !== "unknown"
+        ? process.env.GIT_SHA
+        : undefined,
+    environment: process.env.SENTRY_ENVIRONMENT ?? "production",
+    dist: process.arch,
+    beforeSend: createSentryEventFilter(),
+    beforeBreadcrumb: scrubSentryBreadcrumb,
     // GlitchTip's supported workflow is error reporting, not performance tracing.
     tracesSampleRate: 0,
     // SDK v11 collects these by default. Auth, MFA, imports and private
@@ -37,6 +49,8 @@ if (process.env.NODE_ENV === "production" && dsn) {
       // SDK v11 renamed trackIncomingRequestsAsSessions to sessions.
       // GlitchTip does not support Sessions/Release Health.
       Sentry.httpIntegration({ sessions: false }),
+      // Match the release file names uploaded from the Docker filesystem.
+      Sentry.rewriteFramesIntegration({ root: "/app", prefix: "app:///" }),
     ],
   });
 }

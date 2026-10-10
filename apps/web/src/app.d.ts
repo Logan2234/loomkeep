@@ -8,6 +8,7 @@ declare module "*.ico?inline" {
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 declare global {
+  const __LOOMKEEP_BUILD_SHA__: string;
   namespace App {
     // interface Error {}
     // interface Locals {}
@@ -19,6 +20,9 @@ declare global {
   // Cloudflare Turnstile's own script (loaded directly, not an npm
   // package — see lib/components/Turnstile.svelte) attaches this global.
   interface Window {
+    loomkeepSentryProbe?: () => Promise<
+      { eventId: string; release: string } | undefined
+    >;
     turnstile?: {
       render(
         el: HTMLElement,

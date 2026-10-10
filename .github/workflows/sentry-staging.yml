@@ -1,0 +1,45 @@
+name: Verify Sentry staging sourcemaps
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Full SHA of the deployed staging images
+        required: true
+      api_event_id:
+        description: Event ID from the API staging probe
+        required: true
+      web_event_id:
+        description: Event ID from the browser staging probe
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
+        with:
+          node-version: 26
+      - name: Verify resolved TypeScript frames in both projects
+        env:
+          SENTRY_URL: ${{ vars.SENTRY_URL }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_API_PROJECT: ${{ vars.SENTRY_API_PROJECT }}
+          SENTRY_WEB_PROJECT: ${{ vars.SENTRY_WEB_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          RELEASE: ${{ inputs.release }}
+          API_EVENT_ID: ${{ inputs.api_event_id }}
+          WEB_EVENT_ID: ${{ inputs.web_event_id }}
+        run: node .github/sentry/verify-staging.mjs
+      - name: Record the verified staging deployment
+        env:
+          SENTRY_URL: ${{ vars.SENTRY_URL }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          RELEASE: ${{ inputs.release }}
+        run: npm exec --yes --package=@sentry/cli@2.58.5 -- sentry-cli releases deploys "$RELEASE" new --env staging --name "$RELEASE"

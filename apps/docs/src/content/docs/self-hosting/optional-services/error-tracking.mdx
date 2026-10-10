@@ -37,3 +37,108 @@ GlitchTip keeps its data in a database of its own inside Loomkeep's
 PostgreSQL. That database is created only on a new install: on an instance
 that already ran, create it once with the command at the top of
 `docker/docker-compose.glitchtip.yml`.
+
+## Production and staging
+
+The API reports only with `NODE_ENV=production`. Include
+`docker/docker-compose.prod.yml` in `COMPOSE_FILE` along with the base and
+GlitchTip overrides; a DSN alone does not enable the API's SDK. The hosted
+deployment checks the resolved Compose configuration before replacing any
+containers: production Node runtimes, no directly published API/web ports,
+the reverse proxy, matching environment labels, and the validated image tag.
+It does not print the configuration, which contains secrets.
+
+Set `SENTRY_ENVIRONMENT=production` for production or `staging` for staging.
+Keep `NODE_ENV=production` in both. Compose passes the same environment label
+to the browser and API. The release is the full Git SHA embedded in each
+published build, including the browser bundle; changing runtime settings does
+not relabel an old browser bundle as a newer release. API distributions use
+`x64` or `arm64` to match the artifacts of each published architecture.
+
+## Uploading the deployed sourcemaps
+
+The API and shared package include TypeScript source content in their maps.
+Browser maps are generated during the image build and moved outside the
+public asset directory. CI extracts the JS and maps from the SHA-tagged
+images published to GHCR, checks their embedded release, and uploads them
+without rebuilding or injecting debug IDs into the deployed JavaScript.
+
+For the hosted GitHub Actions pipeline, set these repository variables:
+
+| Variable | Value |
+| --- | --- |
+| `SENTRY_UPLOAD_ENABLED` | `true` |
+| `SENTRY_URL` | Your GlitchTip base URL, for example `https://errors.loomkeep.app/` |
+| `SENTRY_ORG` | Organization slug |
+| `SENTRY_API_PROJECT` | Node project slug |
+| `SENTRY_WEB_PROJECT` | Browser project slug |
+
+Store a GlitchTip token as the **`SENTRY_AUTH_TOKEN` secret**, with
+`project:releases` permission for uploading release artifacts and recording
+deployments. Staging verification also needs permission to read project events.
+Never put this token in a public environment variable or a Docker build argument.
+
+When enabled, an upload failure fails CI and prevents the automatic production
+deployment. The release is associated with both projects. After deployment,
+the workflow waits for the API and web server to answer successfully before
+recording the production deployment on that release.
+
+For a self-hosted build, pass the same full `GIT_SHA` to both Dockerfiles.
+The checked-in `.github/sentry/extract-sourcemaps.sh` and
+`upload-sourcemaps.sh` can also be run manually against the published images,
+using the variables above. They use a pinned Sentry CLI outside the app's
+runtime dependencies. Release artifact uploads are used for GlitchTip
+compatibility.
+
+## Verify a readable stack in staging
+
+Use SHA-tagged images whose maps have been uploaded, set
+`SENTRY_ENVIRONMENT=staging`, and configure both staging DSNs. The API still
+needs the production Compose override. Then generate two explicit probe events:
+
+1. On the staging host:
+
+   ```sh
+   docker compose exec -T api node dist/src/observability/staging-probe.js
+   ```
+
+   The command refuses to run outside staging. Copy its event ID and release.
+   It does not expose a crash endpoint over HTTP.
+
+2. Open the staged web app in a browser. In its developer console:
+
+   ```js
+   await window.loomkeepSentryProbe()
+   ```
+
+   This helper is installed only in staging with a configured DSN. Copy the
+   returned event ID and check that its release matches the API's release.
+
+3. Run the **Verify Sentry staging sourcemaps** GitHub workflow with the full
+   deployed SHA and both event IDs. Configure its GitHub `staging` environment
+   with the tracker variables/token above if staging uses separate projects.
+   Alternatively run `node .github/sentry/verify-staging.mjs` with `RELEASE`,
+   `API_EVENT_ID`, `WEB_EVENT_ID`, and the tracker variables exported locally.
+
+The check polls for symbolication and requires both events to belong to the
+requested release and `staging` environment. Each must resolve to its original
+TypeScript probe file, with the source line containing the probe error. Merely
+receiving an event or completing an upload does not pass this check. The workflow
+records a staging deployment only after this verification passes.
+
+## Privacy and request correlation
+
+The API and browser share `beforeSend` and `beforeBreadcrumb` filters. They
+remove request bodies, headers, cookies, URL queries/fragments and identifying
+user fields; redact named credential/private-content fields in nested manual
+contexts; and clean emails, bearer tokens, personal API keys, JWTs and labeled
+secrets in free-text messages. Stack frames, releases and diagnostic status/code
+remain usable. Arbitrary unlabeled private text still needs care at the capture
+site: these filters cannot infer that every possible string is confidential.
+
+HTTP 5xx events carry the same `requestId` on the API and browser, in their
+`loomkeep` context and searchable tags. Search `requestId:<id>` in both projects
+to connect them to the HTTP response and Pino logs. Each SDK client suppresses
+repeated captures for that ID for a bounded period and prevents a manually
+captured Error from being sent again by a global handler. Separate requests and
+the API/browser observations remain distinct occurrences.

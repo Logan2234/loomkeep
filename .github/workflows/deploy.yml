@@ -50,6 +50,12 @@ jobs:
             # guarantee as the git reset above. Also feeds the Homepage
             # "Version" widget, which reads GIT_SHA baked into the api image.
             export IMAGE_TAG="${DEPLOY_SHA:0:12}"
+            # Inspect the effective config before pulling/replacing containers.
+            # Never print `docker compose config`: it contains resolved secrets.
+            docker compose config --format json | docker run --rm -i \
+              -v "$PWD/.github/sentry/check-production-compose.mjs:/check.mjs:ro" \
+              node:26-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 \
+              node /check.mjs production "$IMAGE_TAG"
             docker compose pull
             # --remove-orphans cleans up containers for services dropped from
             # COMPOSE_FILE (e.g. an add-on removed from the VPS .env). It does
@@ -69,5 +75,25 @@ jobs:
               echo "docker compose up -d failed (attempt $attempt/3), retrying in 5s..."
               sleep 5
             done
+            # Record a deployment only once both apps actually answer.
+            for attempt in $(seq 1 12); do
+              if docker compose exec -T api node -e 'fetch("http://127.0.0.1:3000/api/health", {signal:AbortSignal.timeout(3000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))' \
+                && docker compose exec -T web node -e 'fetch("http://127.0.0.1:3000/", {signal:AbortSignal.timeout(3000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))'; then
+                break
+              fi
+              if [ "$attempt" = 12 ]; then
+                echo "Deployment did not become healthy" >&2
+                exit 1
+              fi
+              sleep 5
+            done
             docker image prune -a -f --filter "until=168h"
             docker builder prune -f --filter "until=168h"
+      - name: Record the successful production deployment
+        if: vars.SENTRY_UPLOAD_ENABLED == 'true'
+        env:
+          SENTRY_URL: ${{ vars.SENTRY_URL }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          RELEASE: ${{ github.event.workflow_run.head_sha }}
+        run: npm exec --yes --package=@sentry/cli@2.58.5 -- sentry-cli releases deploys "$RELEASE" new --env production --name "$RELEASE"

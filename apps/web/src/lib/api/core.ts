@@ -120,7 +120,16 @@ function reportToGlitchTip(error: ApiError): void {
   if (!env.PUBLIC_GLITCHTIP_WEB_DSN) return;
 
   if (error.status >= 500 || error.status === 0) {
-    Sentry.captureException(error, { tags: { requestId: error.requestId } });
+    Sentry.captureException(error, {
+      contexts: {
+        loomkeep: {
+          requestId: error.requestId,
+          status: error.status,
+          code: error.code,
+        },
+      },
+      tags: { component: "web", requestId: error.requestId },
+    });
   }
 }
 
