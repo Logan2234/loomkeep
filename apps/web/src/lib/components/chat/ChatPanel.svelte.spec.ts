@@ -48,7 +48,13 @@ const MESSAGES = [
 
 const CONVERSATION: ConversationDto = {
   id: "cv1",
-  peer: { id: "lea", username: "lea", displayName: "Léa", avatarUrl: null },
+  peer: {
+    id: "lea",
+    username: "lea",
+    displayName: "Léa",
+    avatarUrl: null,
+    profileAccess: "PUBLIC",
+  },
   readOnly: null,
   peerOnline: null,
   peerLastReadAt: null,

@@ -37,6 +37,7 @@ const comment = (id: string, authorId: string): CommentDto => ({
     username: authorId,
     displayName: authorId.toUpperCase(),
     avatarUrl: null,
+    profileAccess: "PUBLIC",
   },
   mentions: [],
   reactions: [],
