@@ -111,11 +111,6 @@
         ? m.settings_health_mfa_on()
         : m.settings_preview_mfa_off()
       : undefined,
-    devices: sessionsQuery.data
-      ? sessionCount > 1
-        ? m.settings_health_sessions_many({ count: sessionCount })
-        : m.settings_health_sessions_one({ count: sessionCount })
-      : undefined,
     content: contentPreview,
     appearance: auth.user
       ? `${theme.mode === "dark" ? m.common_theme_dark() : m.common_theme_light()} · ${languageName(auth.user.locale)}`
@@ -195,7 +190,7 @@
 
       {#if sessionsQuery.data}
         <a
-          href={sectionHref("devices")}
+          href={sectionHref("security/devices")}
           class="border-border hover:border-accent flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors">
           <Icon name="monitor" class="text-dim h-3.5 w-3.5" />
           {sessionCount > 1

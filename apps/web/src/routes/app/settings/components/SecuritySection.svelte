@@ -5,7 +5,6 @@
     changePassword,
     checkUsernameAvailable,
     confirmEmailChange,
-    getMfaStatus,
     getSessions,
     resendVerificationEmail,
     updateUsername,
@@ -204,27 +203,13 @@
 
   const passwordError = $derived(localPasswordError || savePasswordMut.error);
 
-  // The two screens this one hands off to, with their current state read off
-  // the same cache entries they use themselves — so "Aller plus loin" says
-  // what it leads to instead of just that it leads somewhere.
-  const mfaQuery = createApiQuery(() => ({
-    key: keys.mfa.status(),
-    fetch: getMfaStatus,
-  }));
+  // The device count is read off the cache entry the devices page uses, so
+  // "Aller plus loin" says what it leads to instead of just that it leads
+  // somewhere.
   const sessionsQuery = createApiQuery(() => ({
     key: keys.sessions.all(),
     fetch: getSessions,
   }));
-
-  const mfaPreview = $derived.by(() => {
-    const status = mfaQuery.data;
-    if (!status) return null;
-    if (status.totpEnabled) return m.settings_preview_mfa_totp();
-    if (status.emailEnabled || status.webauthnCredentials.length > 0) {
-      return m.settings_health_mfa_on();
-    }
-    return m.settings_preview_mfa_off();
-  });
 
   const sessionsPreview = $derived.by(() => {
     const count = sessionsQuery.data?.length;
@@ -333,21 +318,7 @@
   <ul class="card divide-border divide-y">
     <li>
       <a
-        href={sectionHref("two-factor-authentication")}
-        class="hover:bg-surface-2 flex items-center gap-3 px-4 py-3.5 transition-colors">
-        <Icon name="lock" class="text-accent h-5 w-5 shrink-0" />
-        <span class="min-w-0 flex-1">
-          <span class="block font-semibold">{m.settings_section_mfa()}</span>
-          {#if mfaPreview}
-            <span class="text-dim block truncate text-sm">{mfaPreview}</span>
-          {/if}
-        </span>
-        <Icon name="chevron-right" class="text-dim h-5 w-5 shrink-0" />
-      </a>
-    </li>
-    <li>
-      <a
-        href={sectionHref("devices")}
+        href={sectionHref("security/devices")}
         class="hover:bg-surface-2 flex items-center gap-3 px-4 py-3.5 transition-colors">
         <Icon name="monitor" class="text-accent h-5 w-5 shrink-0" />
         <span class="min-w-0 flex-1">
@@ -356,6 +327,22 @@
           </span>
           <span class="text-dim block truncate text-sm">
             {sessionsPreview ?? m.settings_open_sessions_description()}
+          </span>
+        </span>
+        <Icon name="chevron-right" class="text-dim h-5 w-5 shrink-0" />
+      </a>
+    </li>
+    <li>
+      <a
+        href={sectionHref("security/activity")}
+        class="hover:bg-surface-2 flex items-center gap-3 px-4 py-3.5 transition-colors">
+        <Icon name="activity" class="text-accent h-5 w-5 shrink-0" />
+        <span class="min-w-0 flex-1">
+          <span class="block font-semibold">
+            {m.settings_activity_title()}
+          </span>
+          <span class="text-dim block truncate text-sm">
+            {m.settings_activity_description()}
           </span>
         </span>
         <Icon name="chevron-right" class="text-dim h-5 w-5 shrink-0" />

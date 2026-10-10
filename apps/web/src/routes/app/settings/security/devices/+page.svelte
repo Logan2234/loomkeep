@@ -15,8 +15,8 @@
   import RelativeTime from "#lib/components/RelativeTime.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { deviceLabel, type SessionDto } from "@loomkeep/shared";
-  import { flashAnchor } from "../flash-anchor";
-  import SettingsSection from "../components/SettingsSection.svelte";
+  import { flashAnchor } from "../../flash-anchor";
+  import SettingsSection from "../../components/SettingsSection.svelte";
 
   const sessionsQuery = createApiQuery(() => ({
     key: keys.sessions.all(),
@@ -63,7 +63,7 @@
   );
 </script>
 
-<SettingsSection slug="devices">
+<SettingsSection slug="security/devices">
   {#if loading}
     <CardRowSkeleton count={3} />
   {:else if error}

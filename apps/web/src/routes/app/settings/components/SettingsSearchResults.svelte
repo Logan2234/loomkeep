@@ -1,12 +1,12 @@
 <script lang="ts">
   import Icon from "#lib/components/Icon.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { SETTINGS_SECTIONS, sectionHref } from "../nav";
+  import { SETTINGS_SEARCHABLE, sectionHref } from "../nav";
   import { groupSearchHits, hitHref, searchSettings } from "../search";
   import { settingsSearch } from "../search-state.svelte";
   import { isSectionVisible } from "../section-visibility";
 
-  const visibleSections = $derived(SETTINGS_SECTIONS.filter(isSectionVisible));
+  const visibleSections = $derived(SETTINGS_SEARCHABLE.filter(isSectionVisible));
   const results = $derived(
     searchSettings(settingsSearch.query, visibleSections),
   );

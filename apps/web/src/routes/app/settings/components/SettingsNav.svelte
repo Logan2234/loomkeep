@@ -50,7 +50,10 @@
   }
 
   function isActive(slug: string): boolean {
-    return page.url.pathname === sectionHref(slug);
+    const href = sectionHref(slug);
+    return (
+      page.url.pathname === href || page.url.pathname.startsWith(`${href}/`)
+    );
   }
 
   let navEl = $state<HTMLElement | null>(null);

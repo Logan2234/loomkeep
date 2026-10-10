@@ -47,6 +47,11 @@ export interface SettingsSectionDef {
   newBadgeKey?: FeatureBadgeKey;
   /** Styled as destructive in the rail and on the index. */
   danger?: boolean;
+  /**
+   * Set on a sub-page: it has its own route and search entry, but is reached
+   * from its parent section instead of the rail, the index and Alt+N.
+   */
+  parent?: string;
   /** The `#anchor` this section answered on before it had its own route. */
   legacyHash?: string;
 }
@@ -142,20 +147,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         ],
       },
       {
-        slug: "devices",
-        label: m.settings_sessions_title(),
-        icon: "monitor",
-        description: m.settings_sessions_description(),
-        keywords: ["sessions", "devices", "deconnecter", "logout"],
-        entries: [
-          {
-            id: "sessions-revoke-all",
-            label: m.settings_sessions_disconnect_all(),
-            keywords: ["revoke", "deconnexion"],
-          },
-        ],
-      },
-      {
         slug: "integrations",
         label: m.settings_integrations_title(),
         icon: "key",
@@ -174,25 +165,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
             keywords: ["ics", "calendrier", "calendar", "atom", "rss", "flux"],
           },
         ],
-      },
-      {
-        slug: "activity",
-        label: m.settings_activity_title(),
-        icon: "activity",
-        description: m.settings_activity_description(),
-        keywords: [
-          "activite",
-          "activity",
-          "historique",
-          "history",
-          "journal",
-          "log",
-          "connexions",
-          "ip",
-          "securite",
-        ],
-        newBadgeKey: "account-activity",
-        entries: [],
       },
       {
         slug: "delete-account",
@@ -861,16 +833,62 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
     ],
   },
 ];
+/** Sections with their own rail entry, in rail order (also what Alt+N counts). */
 export const SETTINGS_SECTIONS: SettingsSectionDef[] = SETTINGS_GROUPS.flatMap(
   (group) => group.sections,
 );
+
+/** Pages nested under a section, reached from it rather than from the rail. */
+export const SETTINGS_SUBPAGES: SettingsSectionDef[] = [
+  {
+    slug: "security/devices",
+    label: m.settings_sessions_title(),
+    icon: "monitor",
+    description: m.settings_sessions_description(),
+    parent: "security",
+    keywords: ["sessions", "devices", "deconnecter", "logout"],
+    entries: [
+      {
+        id: "sessions-revoke-all",
+        label: m.settings_sessions_disconnect_all(),
+        keywords: ["revoke", "deconnexion"],
+      },
+    ],
+  },
+  {
+    slug: "security/activity",
+    label: m.settings_activity_title(),
+    icon: "activity",
+    description: m.settings_activity_description(),
+    parent: "security",
+    keywords: [
+      "activite",
+      "activity",
+      "historique",
+      "history",
+      "journal",
+      "log",
+      "connexions",
+      "ip",
+      "securite",
+    ],
+    newBadgeKey: "account-activity",
+    entries: [],
+  },
+];
+
+/** Everything the search can land on: the sections and their sub-pages. */
+export const SETTINGS_SEARCHABLE: SettingsSectionDef[] = [
+  ...SETTINGS_SECTIONS,
+  ...SETTINGS_SUBPAGES,
+];
 
 export function sectionHref(slug: string): string {
   return `/app/settings/${slug}`;
 }
 
 export function findSection(slug: string): SettingsSectionDef | undefined {
-  return SETTINGS_SECTIONS.find((section) => section.slug === slug);
+  return SETTINGS_SEARCHABLE.find((section) => section.slug === slug);
 }
 
 /**
