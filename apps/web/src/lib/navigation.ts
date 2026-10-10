@@ -1,3 +1,4 @@
+import { type FeatureBadgeKey } from "#lib/feature-badges.js";
 import { Domain, REQUIRED_SHORTCUT } from "@loomkeep/shared";
 import { auth } from "./auth.svelte";
 import { orderedDomains } from "./domains";
@@ -22,7 +23,7 @@ interface NavItem {
   /** Masqué tant que GAMIFICATION_ENABLED n'est pas activé sur le déploiement. */
   gamification?: boolean;
   /** Key into feature-badges.ts — shows a "Nouveau" dot while its window is open. */
-  newBadgeKey?: string;
+  newBadgeKey?: FeatureBadgeKey;
 }
 
 export interface NavSection {
@@ -119,7 +120,6 @@ const NAVIGATION: NavSection[] = [
         social: true,
         gamification: true,
         match: (p) => p.startsWith("/app/leaderboard"),
-        newBadgeKey: "leaderboard",
       },
       {
         href: "/app/feed",
@@ -237,7 +237,7 @@ export interface MobileDestination {
   /** Hidden until GAMIFICATION_ENABLED is enabled on the deployment. */
   gamification?: boolean;
   /** Key into feature-badges.ts — shows a "Nouveau" dot while its window is open. */
-  newBadgeKey?: string;
+  newBadgeKey?: FeatureBadgeKey;
 }
 
 const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
@@ -336,7 +336,6 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
     social: true,
     gamification: true,
     match: (p) => p.startsWith("/app/leaderboard"),
-    newBadgeKey: "leaderboard",
   },
   feed: {
     id: "feed",

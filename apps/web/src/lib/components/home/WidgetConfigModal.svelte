@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   // A widget's own settings, beyond its size and place. Edits a copy: the
   // layout only changes on "Appliquer", and the page itself only once the
   // editor saves.
@@ -73,21 +75,21 @@
     onclose();
   }
 
-  const MEDIA_TYPES: { value: MediaType; label: string }[] = [
+  const MEDIA_TYPES: SelectOption<MediaType>[] = [
     { value: "MOVIE", label: m.media_movies() },
     { value: "SERIES", label: m.media_series_plural() },
     { value: "ANIME", label: m.media_anime() },
   ];
-  const SCOPES: { value: LeaderboardScope; label: string }[] = [
+  const SCOPES: SelectOption<LeaderboardScope>[] = [
     { value: "friends", label: m.common_friends() },
     { value: "global", label: m.gamification_leaderboard_tab_global() },
   ];
-  const PERIODS: { value: LeaderboardPeriod; label: string }[] = [
+  const PERIODS: SelectOption<LeaderboardPeriod>[] = [
     { value: "month", label: m.gamification_leaderboard_period_month() },
     { value: "year", label: m.gamification_leaderboard_period_year() },
     { value: "all", label: m.gamification_leaderboard_period_all() },
   ];
-  const LIST_SCOPES: { value: "all" | "own"; label: string }[] = [
+  const LIST_SCOPES: SelectOption<"all" | "own">[] = [
     { value: "all", label: m.home_config_lists_all() },
     { value: "own", label: m.home_config_lists_own() },
   ];

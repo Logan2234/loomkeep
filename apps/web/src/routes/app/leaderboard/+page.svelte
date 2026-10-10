@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   // The API caps the unpaginated list at 100 and
   // returns the viewer's own row separately when it falls outside that cut.
   import { getLeaderboard } from "#lib/api/gamification.js";
@@ -49,7 +51,7 @@
   }
 
   let scope = $state<LeaderboardScope>("global");
-  const scopeTabs: { value: LeaderboardScope; label: string }[] = [
+  const scopeTabs: SelectOption<LeaderboardScope>[] = [
     { value: "global", label: m.gamification_leaderboard_tab_global() },
     { value: "friends", label: m.common_friends() },
   ];

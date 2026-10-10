@@ -6,7 +6,7 @@
     STATS_DOMAIN_COLOR_VAR,
     STATS_DOMAIN_LABEL,
   } from "#lib/components/stats/stats-domain.js";
-  import { formatNumber } from "#lib/format.js";
+  import { formatNumber, formatPercent } from "#lib/format.js";
   import type { AdminCatalogueSectionDto } from "@loomkeep/shared";
   import { m } from "#lib/paraglide/messages.js";
   import Sparkline from "./Sparkline.svelte";
@@ -71,7 +71,7 @@
               <td class="px-2 py-2 text-right font-mono tabular-nums">
                 {row.stalePercent === null
                   ? m.admin_metric_no_sample()
-                  : `${row.stalePercent} %`}
+                  : formatPercent(row.stalePercent)}
               </td>
               <td class="w-24 px-2 py-2">
                 <Sparkline
@@ -102,7 +102,7 @@
 
     <div class="mt-3.5 grid grid-cols-2 gap-3">
       <StatFigure
-        value="{stats.sharedPercent} %"
+        value={formatPercent(stats.sharedPercent)}
         label={m.admin_catalogue_shared_cache()} />
       <StatFigure
         value={formatNumber(stats.orphanCount)}

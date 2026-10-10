@@ -6,9 +6,8 @@
   import HistogramBars from "#lib/components/stats/HistogramBars.svelte";
   import RankBars from "#lib/components/stats/RankBars.svelte";
   import StatFigure from "#lib/components/stats/StatFigure.svelte";
-  import { formatNumber } from "#lib/format.js";
+  import { formatNumber, formatPercent, formatLanguage } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { getLocale } from "#lib/paraglide/runtime.js";
   import {
     DORMANT_AFTER_DAYS,
     ProfileAccess,
@@ -85,12 +84,9 @@
     stats.age.distribution.map((b) => ({ label: b.label, value: b.count })),
   );
 
-  const localeDisplay = new Intl.DisplayNames([getLocale()], {
-    type: "language",
-  });
   const localeItems = $derived(
     stats.byLocale.map((l) => ({
-      label: localeDisplay.of(l.locale) ?? l.locale,
+      label: formatLanguage(l.locale),
       value: l.count,
     })),
   );
@@ -170,10 +166,10 @@
     <HistogramBars bars={ageBars} />
     <div class="border-border mt-3.5 grid grid-cols-2 gap-3 border-t pt-3.5">
       <StatFigure
-        value="{stats.age.birthDateSetPercent} %"
+        value={formatPercent(stats.age.birthDateSetPercent)}
         label={m.admin_accounts_age_birthdate_percent()} />
       <StatFigure
-        value="{stats.age.adultContentPercent} %"
+        value={formatPercent(stats.age.adultContentPercent)}
         label={m.admin_accounts_age_adult_percent()} />
     </div>
   </div>

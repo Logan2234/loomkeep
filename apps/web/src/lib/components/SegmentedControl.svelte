@@ -1,17 +1,20 @@
 <script lang="ts" generics="T extends string">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { m } from "#lib/paraglide/messages.js";
   import type { IconName } from "#lib/types/icon-name.js";
   import Icon from "./Icon.svelte";
   import PremiumLockBadge from "./PremiumLockBadge.svelte";
   import Tooltip from "./Tooltip.svelte";
 
-  interface SegmentOption<V extends string> {
-    value: V;
-    label: string;
+  interface SegmentOption<V extends string> extends SelectOption<V> {
     icon?: IconName;
+
     disabled?: boolean;
+
     /** Native title shown on hover — ignored when `locked` (uses Tooltip instead). */
     disabledReason?: string;
+
     /** Premium-gated option: shows the lock badge + Tooltip instead of a native title. */
     locked?: boolean;
   }

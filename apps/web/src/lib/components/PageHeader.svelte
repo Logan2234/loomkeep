@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { type IconName } from "#lib/types/icon-name.js";
+
   // Recurring top-of-page block: icon + title (+ optional subtitle / actions).
   // Not used by the auth pages (login/register/...), which have their own
   // centered LOOMKEEP wordmark instead of this icon+title layout.
-  import type { ComponentProps, Snippet } from "svelte";
+  import type { Snippet } from "svelte";
   import Icon from "./Icon.svelte";
-
-  type IconName = ComponentProps<typeof Icon>["name"];
 
   import { m } from "#lib/paraglide/messages.js";
   import NewBadge from "./NewBadge.svelte";

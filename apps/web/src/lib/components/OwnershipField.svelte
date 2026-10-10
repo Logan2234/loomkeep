@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { joinMeta } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import Dropdown from "./Dropdown.svelte";
@@ -18,7 +20,7 @@
   }: {
     status: string;
     source: string | null;
-    statusOptions: { value: string; label: string }[];
+    statusOptions: SelectOption[];
     sourceOptionsByStatus: Record<string, string[]>;
     onChange: (status: string, source: string | null) => void;
   } = $props();

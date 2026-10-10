@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { labeledOptions } from "#lib/options.js";
+
   import {
     analyzeImport,
     commitImport,
@@ -186,15 +188,9 @@
   // Per-item status options (books/games); media derives status server-side.
   const statusOptions = $derived(
     descriptor.domain === Domain.BOOKS
-      ? BOOK_STATUS_ORDER.map((s) => ({
-          value: s,
-          label: BOOK_STATUS_LABELS[s],
-        }))
+      ? labeledOptions(BOOK_STATUS_LABELS, BOOK_STATUS_ORDER)
       : descriptor.domain === Domain.GAMES
-        ? GAME_STATUS_ORDER.map((s) => ({
-            value: s,
-            label: GAME_STATUS_LABELS[s],
-          }))
+        ? labeledOptions(GAME_STATUS_LABELS, GAME_STATUS_ORDER)
         : [],
   );
 

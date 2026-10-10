@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { resolveApiError } from "#lib/api/errors.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -60,7 +62,7 @@
   // The two domains with no stats yet show up greyed out, and only for
   // accounts that turned them on — same gate as the live ones.
   const domainTabs = $derived<
-    { value: TabValue; label: string; disabled?: boolean }[]
+    (SelectOption<TabValue> & { disabled?: boolean })[]
   >([
     { value: "ALL", label: m.common_all() },
     ...enabledDomains.map((d) => ({ value: d, label: STATS_DOMAIN_LABEL[d] })),

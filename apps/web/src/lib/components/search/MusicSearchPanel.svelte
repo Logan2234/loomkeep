@@ -13,7 +13,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import PosterGrid from "#lib/components/PosterGrid.svelte";
-  import { debounce } from "#lib/debounce.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { MusicSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
@@ -32,8 +32,6 @@
     onResults?: (count: number) => void;
   } = $props();
 
-  const DEBOUNCE_MS = 300;
-
   // `query` (raw) drives the input; `queryFilter` (debounced) drives the
   // fetch — same split as LibraryBrowser/MediaSearchPanel. A key-based query
   // already discards a stale in-flight response on its own once the key
@@ -41,7 +39,7 @@
   let queryFilter = $state("");
   const debouncedQueryFilter = debounce(() => {
     queryFilter = query.trim();
-  }, DEBOUNCE_MS);
+  }, SEARCH_DEBOUNCE_MS);
 
   $effect(() => {
     if (!query.trim()) {

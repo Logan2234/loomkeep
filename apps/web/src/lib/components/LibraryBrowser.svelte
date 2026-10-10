@@ -1,4 +1,10 @@
 <script module lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { type IconName } from "#lib/types/icon-name.js";
+
+  import { SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
+
   import { type SortOrder } from "@loomkeep/shared";
 
   export interface LibraryLoadParams {
@@ -79,19 +85,14 @@
     SavedViewDomain,
     SavedViewFiltersDto,
   } from "@loomkeep/shared";
-  import type { ComponentProps, Snippet } from "svelte";
+  import type { Snippet } from "svelte";
   import { useQueryClient, type InfiniteData } from "@tanstack/svelte-query";
   import { onDestroy, untrack } from "svelte";
   import { flip } from "svelte/animate";
   import { MediaQuery, SvelteSet } from "svelte/reactivity";
   import { fade, fly, scale, slide } from "svelte/transition";
 
-  type IconName = ComponentProps<typeof Icon>["name"];
-
-  interface Option {
-    label: string;
-    value: string;
-  }
+  type Option = SelectOption;
 
   let {
     icon,
@@ -214,9 +215,9 @@
 
   const debouncedQueryFilter = debounce(() => {
     queryFilter = query.trim();
-  }, 300);
+  }, SEARCH_DEBOUNCE_MS);
 
-  const TYPE_OPTIONS: { label: string; value: MediaType }[] = [
+  const TYPE_OPTIONS: SelectOption<MediaType>[] = [
     { label: m.media_movies(), value: "MOVIE" },
     { label: m.media_series_plural(), value: "SERIES" },
     { label: m.media_anime(), value: "ANIME" },

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type BannerVariant } from "#lib/components/banner-semantics.js";
+
   import Avatar from "#lib/components/Avatar.svelte";
   import Banner from "#lib/components/Banner.svelte";
   import BetaBadge from "#lib/components/BetaBadge.svelte";
@@ -32,7 +34,6 @@
   import StressShowcase from "./StressShowcase.svelte";
   import OverlayShowcase from "./OverlayShowcase.svelte";
 
-  type BannerVariant = "error" | "warning" | "info" | "neutral";
   type ViewMode = "compact" | "comfortable";
 
   const SECTIONS = [

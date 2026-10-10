@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { labeledOptions } from "#lib/options.js";
+
   import { type ReportResolution, USER_LIMITS } from "@loomkeep/shared";
 
   import AdminFilterBar from "../AdminFilterBar.svelte";
@@ -57,9 +59,12 @@
   const reduced = prefersReducedMotion();
   const STATUS_OPTIONS = [
     { label: m.common_pending(), value: "PENDING" },
-    ...(Object.keys(REPORT_STATUS_LABELS) as ReportStatus[])
-      .filter((s) => s !== "PENDING")
-      .map((s) => ({ label: REPORT_STATUS_LABELS[s], value: s })),
+    ...labeledOptions(
+      REPORT_STATUS_LABELS,
+      (Object.keys(REPORT_STATUS_LABELS) as ReportStatus[]).filter(
+        (s) => s !== "PENDING",
+      ),
+    ),
   ];
 
   const activeStatus = $derived<ReportStatus>(

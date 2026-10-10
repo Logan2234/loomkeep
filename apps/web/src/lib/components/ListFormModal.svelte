@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { LIST_LIMITS } from "@loomkeep/shared";
 
   import { createList, deleteList, updateList } from "#lib/api/client.js";
@@ -45,7 +47,7 @@
 
   const reduced = prefersReducedMotion();
 
-  const KINDS: { value: ListKind; label: string; hint: string }[] = [
+  const KINDS: (SelectOption<ListKind> & { hint: string })[] = [
     {
       value: "COLLECTION",
       label: m.lists_kind_collection(),
@@ -58,11 +60,9 @@
     },
   ];
 
-  const VISIBILITY_OPTIONS: {
-    value: ListVisibility;
-    label: string;
+  const VISIBILITY_OPTIONS: (SelectOption<ListVisibility> & {
     icon: "lock" | "users" | "globe";
-  }[] = [
+  })[] = [
     { value: "PRIVATE", label: m.common_private(), icon: "lock" },
     { value: "FRIENDS", label: m.common_friends(), icon: "users" },
     { value: "PUBLIC", label: m.common_public(), icon: "globe" },

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+
   import { API_URL } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -12,7 +14,9 @@
   let { onclose }: { onclose: () => void } = $props();
 
   let confirmingRegenerate = $state(false);
-  let copied = $state(false);
+  const copyFeedback = new CopyFeedback();
+  const copied = $derived(copyFeedback.value === true);
+  $effect(() => () => copyFeedback.reset());
 
   const tokenQuery = createApiQuery(() => ({
     key: keys.activityFeedSubscribe.token(),
@@ -26,19 +30,15 @@
 
   async function copyLink() {
     if (!token) return;
-    await navigator.clipboard.writeText(feedUrl(token));
-    copied = true;
-    setTimeout(() => {
-      copied = false;
-    }, 2000);
+    await copyFeedback.copy(feedUrl(token), true);
   }
 
   const regenerateMut = createApiMutation(() => ({
     mutate: regenerateActivityFeedToken,
     onSuccess: async (result) => {
       confirmingRegenerate = false;
-      await navigator.clipboard.writeText(feedUrl(result.token));
-      toast.success(m.subscription_link_regenerated());
+      if (await copyFeedback.copy(feedUrl(result.token), true))
+        toast.success(m.subscription_link_regenerated());
     },
   }));
 

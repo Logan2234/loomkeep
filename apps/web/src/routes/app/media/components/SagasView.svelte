@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { listLibrarySagas, upsertLibraryEntry } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import SagasView, {
@@ -11,7 +13,7 @@
 
   let { modeSwitch }: { modeSwitch: Snippet } = $props();
 
-  const TYPE_OPTIONS: { label: string; value: MediaType }[] = [
+  const TYPE_OPTIONS: SelectOption<MediaType>[] = [
     { label: m.media_movies(), value: "MOVIE" },
     { label: m.media_anime(), value: "ANIME" },
   ];

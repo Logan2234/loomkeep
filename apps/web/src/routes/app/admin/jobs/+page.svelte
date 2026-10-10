@@ -11,7 +11,7 @@
   import SectionRail from "#lib/components/SectionRail.svelte";
   import StatFigure from "#lib/components/stats/StatFigure.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
-  import { formatDate, formatDurationMs } from "#lib/format.js";
+  import { formatDate, formatDurationMs, formatPercent } from "#lib/format.js";
   import {
     adminJobLabel,
     adminJobDescription,
@@ -229,7 +229,7 @@
             {#if stats}
               <div class="grid grid-cols-3 gap-3 px-4 pb-4 sm:px-5 sm:pb-5">
                 <StatFigure
-                  value="{stats.failurePercent} %"
+                  value={formatPercent(stats.failurePercent)}
                   label={m.admin_jobs_failure_rate()} />
                 <StatFigure
                   value={formatDurationMs(stats.averageMs)}

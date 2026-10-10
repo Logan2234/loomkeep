@@ -1,3 +1,6 @@
+import { type SelectOption } from "#lib/types/select-option.js";
+
+import { m } from "#lib/paraglide/messages.js";
 import type {
   BulkEntriesResultDto,
   BulkEntriesTargetDto,
@@ -72,7 +75,7 @@ export interface LibraryItemView {
   /** Type, authors or artists, shown under the title. */
   subtitle: string | null;
   imageUrl: string | null;
-  status: { value: string; label: string; cls: string };
+  status: SelectOption & { cls: string };
   /** The ownership status value ("NONE" when unset), for its inline menu. */
   ownership: string;
   ownershipSource: string | null;
@@ -113,7 +116,7 @@ export type LibraryColumn<T> = {
 
 /** "Streaming · Netflix" for the ownership column, null when unset. */
 export function ownershipText(
-  options: { value: string; label: string }[],
+  options: SelectOption[],
   status: string,
   source: string | null,
 ): string | null {
@@ -136,8 +139,8 @@ export interface LibrarySelection<T> {
 
 /** A library's bulk actions, wired to its domain's endpoints. */
 export interface LibraryBulkActions {
-  statusOptions: { label: string; value: string }[];
-  ownershipOptions: { label: string; value: string }[];
+  statusOptions: SelectOption[];
+  ownershipOptions: SelectOption[];
   /** Presets offered in a submenu of their ownership status. */
   ownershipSources: Record<string, string[]>;
   update: (dto: BulkUpdateEntriesDto) => Promise<BulkEntriesResultDto>;
@@ -146,8 +149,8 @@ export interface LibraryBulkActions {
 
 /** In-place editing of a table row (desktop only, outside selection mode). */
 export interface LibraryInlineEdit<T> {
-  statusOptions: { label: string; value: string }[];
-  ownershipOptions: { label: string; value: string }[];
+  statusOptions: SelectOption[];
+  ownershipOptions: SelectOption[];
   ownershipSources: Record<string, string[]>;
   save: (
     entry: T,
@@ -162,3 +165,24 @@ export interface LibraryInlineEdit<T> {
   /** Opens the entry's review, where its rating lives. */
   review: (entry: T) => void;
 }
+
+export const COMMON_LIBRARY_SORTS = {
+  get added() {
+    return m.library_sort_added();
+  },
+  get title() {
+    return m.common_title();
+  },
+  get rating() {
+    return m.library_rating();
+  },
+  get finished() {
+    return m.library_sort_finished();
+  },
+  get started() {
+    return m.library_sort_started();
+  },
+  get status() {
+    return m.common_status();
+  },
+};

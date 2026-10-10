@@ -1,4 +1,6 @@
 <script lang="ts" module>
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { type SortOrder } from "@loomkeep/shared";
 
   import type { LibrarySagaSort } from "@loomkeep/shared";
@@ -58,7 +60,7 @@
     icon: IconName;
     title: string;
     /** A type filter, for a domain whose sagas come in several kinds. */
-    typeOptions?: { label: string; value: string }[];
+    typeOptions?: SelectOption[];
     queryKey: (filters: SagaListFilters) => readonly unknown[];
     load: (filters: SagaListFilters) => Promise<LibrarySagasView>;
     /** What to refetch once a work is added. */
@@ -76,7 +78,7 @@
 
   // Only the filters a saga can answer: a saga has no status or favourite of
   // its own, so those stay with the works view.
-  const SORTS: { label: string; value: LibrarySagaSort }[] = [
+  const SORTS: SelectOption<LibrarySagaSort>[] = [
     { label: m.media_sagas_sort_recent(), value: "recent" },
     { label: m.common_title(), value: "title" },
     { label: m.common_progress(), value: "progress" },

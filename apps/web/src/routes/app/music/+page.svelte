@@ -1,4 +1,10 @@
 <script lang="ts">
+  import { labeledOptions } from "#lib/options.js";
+
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { EMBEDDED_SEARCH_LIMIT } from "#lib/constants/search.js";
+
   import { getMusicPile, listMusic } from "#lib/api/client.js";
   import {
     bulkDeleteMusicEntries,
@@ -27,6 +33,7 @@
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
+    COMMON_LIBRARY_SORTS,
   } from "#lib/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -36,19 +43,19 @@
     type MusicStatus,
   } from "@loomkeep/shared";
 
-  const STATUS_OPTIONS = MUSIC_STATUS_ORDER.map((value) => ({
-    label: MUSIC_STATUS_LABELS[value],
-    value,
-  }));
+  const STATUS_OPTIONS = labeledOptions(
+    MUSIC_STATUS_LABELS,
+    MUSIC_STATUS_ORDER,
+  );
 
   const SORTS = [
-    { label: m.library_sort_added(), value: "added" },
-    { label: m.common_title(), value: "title" },
+    { label: COMMON_LIBRARY_SORTS.added, value: "added" },
+    { label: COMMON_LIBRARY_SORTS.title, value: "title" },
     { label: m.music_artist(), value: "artist" },
-    { label: m.library_rating(), value: "rating" },
+    { label: COMMON_LIBRARY_SORTS.rating, value: "rating" },
     { label: m.music_sort_listened(), value: "finished" },
-    { label: m.common_status(), value: "status" },
-  ] satisfies { label: string; value: MusicSortKey }[];
+    { label: COMMON_LIBRARY_SORTS.status, value: "status" },
+  ] satisfies SelectOption<MusicSortKey>[];
 
   const setFavorite = (entry: MusicEntryDto, next: boolean) =>
     updateMusicEntry(entry.id, { favorite: next });
@@ -171,7 +178,7 @@
   bulk={BULK}
   {setFavorite}>
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
-    <MusicSearchPanel {query} limit={10} {onResults} />
+    <MusicSearchPanel {query} limit={EMBEDDED_SEARCH_LIMIT} {onResults} />
   {/snippet}
   {#snippet card(
     entry: MusicEntryDto,

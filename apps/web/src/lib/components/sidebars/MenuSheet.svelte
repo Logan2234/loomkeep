@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type IconName } from "#lib/types/icon-name.js";
+
   // The "Menu" launcher: a full-width sheet that rises from the bottom bar and
   // lays out every destination as tiles — the mobile counterpart of the desktop
   // rail. In the app it groups libraries + tracking/account; inside /admin it
@@ -15,13 +17,10 @@
   import { appConfig } from "#lib/config.svelte.js";
   import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
   import { isDomainEnabled } from "#lib/domains.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { isFeatureNew, type FeatureBadgeKey } from "#lib/feature-badges.js";
   import { resolveMenuGroups } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
   import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
-  import type { ComponentProps } from "svelte";
-
-  type IconName = ComponentProps<typeof Icon>["name"];
 
   let open = $state(false);
 
@@ -60,7 +59,7 @@
   icon: IconName;
   match: (p: string) => boolean;
   comingSoon?: boolean;
-  newBadgeKey?: string;
+  newBadgeKey?: FeatureBadgeKey;
 })}
   {@const active = dest.match(page.url.pathname)}
   {#if dest.comingSoon}

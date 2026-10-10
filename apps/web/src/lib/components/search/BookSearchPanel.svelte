@@ -13,7 +13,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import PosterGrid from "#lib/components/PosterGrid.svelte";
-  import { debounce } from "#lib/debounce.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { BookSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
@@ -36,8 +36,6 @@
     mode?: "title" | "author" | "isbn";
   } = $props();
 
-  const DEBOUNCE_MS = 300;
-
   // `query`/`mode` (raw) drive the input; `queryFilter` (debounced) is the
   // formatted string that actually drives the fetch — same split as
   // LibraryBrowser/MediaSearchPanel. Open Library's Solr parses `author:"…"`
@@ -49,7 +47,7 @@
   let queryFilter = $state("");
   const debouncedQueryFilter = debounce((q: string) => {
     queryFilter = q;
-  }, DEBOUNCE_MS);
+  }, SEARCH_DEBOUNCE_MS);
 
   $effect(() => {
     const q = query.trim();

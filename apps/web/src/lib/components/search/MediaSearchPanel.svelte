@@ -14,7 +14,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import PosterGrid from "#lib/components/PosterGrid.svelte";
-  import { debounce } from "#lib/debounce.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type {
@@ -51,8 +51,6 @@
     ANIME: m.media_anime_label(),
   };
 
-  const DEBOUNCE_MS = 300;
-
   // `query` (prop) is the raw input; `queryFilter` is the debounced value
   // that actually drives the fetch — type changes bypass the debounce.
   let queryFilter = $state("");
@@ -63,7 +61,7 @@
 
   const debouncedQueryFilter = debounce(() => {
     queryFilter = query.trim();
-  }, DEBOUNCE_MS);
+  }, SEARCH_DEBOUNCE_MS);
 
   $effect(() => {
     const q = query; // track

@@ -29,3 +29,30 @@ export function removeStorage(key: string): void {
     // See the module comment.
   }
 }
+
+export function readSessionStorage(key: string): string | null {
+  try {
+    return typeof sessionStorage === "undefined"
+      ? null
+      : sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function writeSessionStorage(key: string, value: string): void {
+  try {
+    if (typeof sessionStorage !== "undefined")
+      sessionStorage.setItem(key, value);
+  } catch {
+    /* Storage is optional for per-device conveniences. */
+  }
+}
+
+export function removeSessionStorage(key: string): void {
+  try {
+    if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(key);
+  } catch {
+    /* Storage is optional for per-device conveniences. */
+  }
+}

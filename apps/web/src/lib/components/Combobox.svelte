@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { m } from "#lib/paraglide/messages.js";
   import { tick } from "svelte";
   import Dropdown from "./Dropdown.svelte";
@@ -9,10 +11,9 @@
     type ListNavigationCommand,
   } from "./list-navigation";
 
-  type Option = {
-    label: string;
-    value: string;
+  type Option = SelectOption & {
     disabled?: boolean;
+
     group?: string;
   };
 

@@ -6,7 +6,7 @@
   import RankBars from "#lib/components/stats/RankBars.svelte";
   import StatFigure from "#lib/components/stats/StatFigure.svelte";
   import { REPORT_CATEGORY_LABELS } from "#lib/constants/report-labels.js";
-  import { formatNumber } from "#lib/format.js";
+  import { formatNumber, formatPercent } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { AdminSocialStatsDto } from "@loomkeep/shared";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
@@ -40,7 +40,7 @@
       label: m.admin_social_total_blocks(),
     },
     {
-      value: `${stats.totals.deletedCommentPercent} %`,
+      value: formatPercent(stats.totals.deletedCommentPercent),
       label: m.admin_social_total_deleted_comments(),
     },
   ]);
@@ -127,7 +127,7 @@
       <StatFigure
         value={stats.reports.foundedPercent === null
           ? m.admin_metric_no_sample()
-          : `${stats.reports.foundedPercent} %`}
+          : formatPercent(stats.reports.foundedPercent)}
         label={m.admin_social_reports_founded_rate()} />
     </div>
     {#if categoryItems.length > 0}
@@ -172,7 +172,7 @@
       <StatFigure
         value={contributorShare === null
           ? m.admin_metric_no_sample()
-          : `${contributorShare} % / ${100 - contributorShare} %`}
+          : `${formatPercent(contributorShare)} / ${formatPercent(100 - contributorShare)}`}
         label={m.admin_social_contributors_readers({
           contributors: formatNumber(stats.contributors),
           total: formatNumber(totalAccounts),

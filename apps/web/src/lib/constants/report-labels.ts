@@ -1,4 +1,5 @@
 import { m } from "#lib/paraglide/messages.js";
+import { type SelectOption } from "#lib/types/select-option.js";
 import type {
   ModerationLegalBasis,
   ReportCategory,
@@ -104,11 +105,9 @@ export const REPORT_MOTIF_LABELS: Record<ReportMotif, string> = {
 };
 
 /** The "what's wrong?" step of a profile report, in display order. */
-export const REPORT_PROFILE_PARTS: {
-  value: ReportProfilePart;
-  label: string;
+export const REPORT_PROFILE_PARTS: (SelectOption<ReportProfilePart> & {
   hint: string;
-}[] = [
+})[] = [
   {
     value: "NAME",
     label: m.common_name(),

@@ -1,14 +1,15 @@
+import { type FeatureBadgeKey } from "#lib/feature-badges.js";
 // The settings information architecture, in one place: five groups, one
 // route per section. The old single page kept a parallel `SECTIONS` array
 // next to the markup that rendered it; here the same array drives the rail,
 // the mobile index, the search and the legacy-anchor redirects, so a new
 // section is added once.
 import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
-import type { isFeatureNew } from "#lib/feature-badges.js";
+
 import { m } from "#lib/paraglide/messages.js";
 import type { IconName } from "#lib/types/icon-name.js";
 import { Domain } from "@loomkeep/shared";
-type FeatureBadgeKey = Parameters<typeof isFeatureNew>[0];
+
 /**
  * Below this many unused recovery codes, running out stops being a detail of
  * the 2FA screen and becomes an account-level warning — the settings layout

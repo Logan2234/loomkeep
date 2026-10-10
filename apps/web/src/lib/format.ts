@@ -276,10 +276,62 @@ export function formatBytes(bytes: number): string {
 }
 
 /** Metadata parts joined with a middle dot ("Film · 2024"), skipping empty ones. */
+export function presentParts(
+  ...parts: (string | number | null | undefined)[]
+): string[] {
+  return parts
+    .filter((part) => part !== null && part !== undefined && part !== "")
+    .map(String);
+}
+
 export function joinMeta(
   ...parts: (string | number | null | undefined)[]
 ): string {
-  return parts
-    .filter((part) => part !== null && part !== undefined && part !== "")
-    .join(" · ");
+  return presentParts(...parts).join(" · ");
+}
+
+export function formatPercent(
+  percent: number,
+  options: Intl.NumberFormatOptions = {},
+  locale?: string,
+): string {
+  return formatNumber(
+    percent / 100,
+    { style: "percent", maximumFractionDigits: 1, ...options },
+    locale,
+  );
+}
+
+const languageDisplayCache = new Map<string, Intl.DisplayNames>();
+
+export function formatLanguage(code: string, locale?: string): string {
+  const resolved = resolveLocale(locale);
+  let formatter = languageDisplayCache.get(resolved);
+
+  if (!formatter) {
+    formatter = new Intl.DisplayNames([resolved], { type: "language" });
+    languageDisplayCache.set(resolved, formatter);
+  }
+
+  return formatter.of(code) ?? code;
+}
+
+export function percentParts(
+  percent: number,
+  locale?: string,
+): { value: string; unit: string } {
+  const parts = getNumberFormat(resolveLocale(locale), {
+    style: "percent",
+    maximumFractionDigits: 1,
+  }).formatToParts(percent / 100);
+  return {
+    value: parts
+      .filter((part) => part.type !== "percentSign" && part.type !== "literal")
+      .map((part) => part.value)
+      .join(""),
+    unit: parts
+      .filter((part) => part.type === "percentSign")
+      .map((part) => part.value)
+      .join(""),
+  };
 }

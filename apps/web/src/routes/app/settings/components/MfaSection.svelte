@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+
   import {
     WEBAUTHN_NAME_MAX_LENGTH,
     OTP_CODE_LENGTH,
@@ -26,7 +28,7 @@
   import Modal from "#lib/components/Modal.svelte";
   import PasswordInput from "#lib/components/PasswordInput.svelte";
   import Switch from "#lib/components/Switch.svelte";
-  import { downloadBlob } from "#lib/download.js";
+  import { downloadBlob, datedFilename } from "#lib/download.js";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
   import { normalizeCodeInput } from "#lib/one-time-code.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -182,11 +184,13 @@
   }
 
   let revealedCodes = $state<string[]>([]);
-  let recoveryCopied = $state(false);
+  const copyFeedback = new CopyFeedback();
+  const recoveryCopied = $derived(copyFeedback.value === true);
+  $effect(() => () => copyFeedback.reset());
 
   function openRecoveryReveal(codes: string[]) {
     revealedCodes = codes;
-    recoveryCopied = false;
+    copyFeedback.reset();
     openModal = "recovery-reveal";
   }
 
@@ -211,9 +215,7 @@
   }
 
   async function copyAllCodes() {
-    await navigator.clipboard.writeText(revealedCodes.join("\n"));
-    recoveryCopied = true;
-    setTimeout(() => (recoveryCopied = false), 2000);
+    await copyFeedback.copy(revealedCodes.join("\n"), true);
   }
 
   const groupCode = (code: string): string =>
@@ -236,7 +238,7 @@
     downloadBlob(
       [...header, ...revealedCodes.map(groupCode), ""].join("\r\n"),
       "text/plain;charset=utf-8",
-      `loomkeep-recovery-codes-${new Date().toISOString().slice(0, 10)}.txt`,
+      datedFilename(`loomkeep-recovery-codes`, "txt"),
     );
   }
 

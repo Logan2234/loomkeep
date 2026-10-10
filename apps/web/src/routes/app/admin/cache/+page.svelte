@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
@@ -24,7 +26,7 @@
   import SidePanel from "#lib/components/SidePanel.svelte";
   import Tabs from "#lib/components/Tabs.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
-  import { debounce } from "#lib/debounce.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { formatDateTime } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -41,7 +43,7 @@
   import { parseCacheFilters } from "./cache-filters";
 
   const reduced = prefersReducedMotion();
-  const SORT_OPTIONS: { label: string; value: AdminCacheSort }[] = [
+  const SORT_OPTIONS: SelectOption<AdminCacheSort>[] = [
     { label: m.admin_cache_sort_stale(), value: "stale" },
     { label: m.admin_cache_sort_recent(), value: "recent" },
     { label: m.common_title(), value: "title" },
@@ -149,7 +151,7 @@
       replace: true,
       reset: false,
     });
-  }, 300);
+  }, SEARCH_DEBOUNCE_MS);
   $effect(() => {
     searchDebounce.cancel();
     searchInput = page.url.searchParams.get("q") ?? "";
