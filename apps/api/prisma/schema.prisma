@@ -894,7 +894,10 @@ model CommentThreadRead {
   userId     String
   targetType CommentTargetType
   targetId   String
-  lastReadAt DateTime
+  // Null for a discussion muted before it was ever read.
+  lastReadAt DateTime?
+  // Muted: its new comments don't count in Messages' launcher nor its tab.
+  mutedAt    DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

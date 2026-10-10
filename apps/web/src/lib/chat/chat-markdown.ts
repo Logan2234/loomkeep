@@ -1,7 +1,9 @@
 /**
- * The restricted markdown a message is written in: **bold**, *italic*,
- * ***both***, ~~strike~~, `code`, ||spoiler||, bare links, #[Title](/app/…)
- * work mentions and episode codes (S02E05); and, line by line, `> ` quotes,
+ * The restricted markdown a message — or a work's comment — is written in:
+ * **bold**, *italic*, ***both***, ~~strike~~, `code`, ||spoiler||, bare
+ * links, #[Title](/app/…) work mentions, @[Name](/app/u/…) people (a
+ * comment's mentions, turned into tokens for display by `withUserTokens`)
+ * and episode codes (S02E05); and, line by line, `> ` quotes,
  * `- ` lists and ``` code blocks. Parsed into nodes the component renders
  * itself, never into HTML: a message is someone else's text, so nothing in
  * it may become markup.
@@ -11,6 +13,7 @@ export type ChatNode =
   | { type: "code"; text: string }
   | { type: "link"; href: string }
   | { type: "mention"; title: string; href: string }
+  | { type: "user"; label: string; href: string }
   | { type: "episode"; season: number; episode: number; code: string }
   | {
       type: "strong" | "em" | "strike" | "spoiler" | "quote";
@@ -38,6 +41,7 @@ const MENTION = new RegExp(
   `#\\[([^\\]\\n]{1,120})\\]\\((${WORK_PATH})\\)`,
   "y",
 );
+const USER = /@\[([^\]\n]{1,60})\]\((\/app\/u\/[\w.-]+)\)/y;
 const EPISODE = /S(\d{1,2}) ?E(\d{1,3})/iy;
 const WORD = /[\p{L}\p{N}]/u;
 
@@ -148,6 +152,16 @@ function parseInline(source: string, start: number, end: number): ChatNode[] {
       flush();
       nodes.push({ type: "mention", title: mention[1], href: mention[2] });
       i += mention[0].length;
+      continue;
+    }
+
+    USER.lastIndex = i;
+    const user = (source[i] === "@" && USER.exec(source)) || null;
+
+    if (user && i + user[0].length <= end) {
+      flush();
+      nodes.push({ type: "user", label: user[1], href: user[2] });
+      i += user[0].length;
       continue;
     }
 
@@ -262,6 +276,8 @@ function flatten(nodes: ChatNode[]): string {
           return node.href;
         case "mention":
           return `#${node.title}`;
+        case "user":
+          return node.label;
         case "episode":
           return node.code;
         case "spoiler":
@@ -286,12 +302,14 @@ export function mentionToken(title: string, href: string): string {
 
 /**
  * The series an episode code in this message points at: the only one the
- * message mentions or carries a card of. With none or several, the code
- * links nowhere — guessing the wrong series would be worse.
+ * message mentions or carries a card of — or, mentioning none, the series a
+ * work's discussion is about (`fallback`). With several, the code links
+ * nowhere: guessing the wrong series would be worse.
  */
 export function episodeSeries(
   nodes: ChatNode[],
   cardHrefs: string[],
+  fallback: string | null = null,
 ): string | null {
   const series = new Set(cardHrefs.filter(isSeriesHref));
 
@@ -309,7 +327,58 @@ export function episodeSeries(
 
   visit(nodes);
 
+  if (series.size === 0) return fallback;
   return series.size === 1 ? [...series][0] : null;
+}
+
+/**
+ * A comment's text with its mentions as `@[@name](/app/u/name)` tokens, so
+ * the parser links them; a mention whose text no longer sits at its offset
+ * stays plain.
+ */
+export function withUserTokens(
+  text: string,
+  mentions: { username: string; start: number }[],
+): string {
+  return [...mentions]
+    .sort((a, b) => b.start - a.start)
+    .reduce((out, { username, start }) => {
+      const written = `@${username}`;
+      if (out.slice(start, start + written.length) !== written) return out;
+      const token = `@[${written}](/app/u/${username})`;
+      return out.slice(0, start) + token + out.slice(start + written.length);
+    }, text);
+}
+
+/**
+ * Where each picked person's `@username` sits in the text about to be sent:
+ * the n-th time someone is picked, their n-th `@username` standing as a
+ * word. A pick whose mention was erased since is dropped.
+ */
+export function placeUserMentions(
+  text: string,
+  picked: { id: string; username: string }[],
+): { userId: string; start: number }[] {
+  const placed: { userId: string; start: number }[] = [];
+  const from = new Map<string, number>();
+
+  for (const { id, username } of picked) {
+    const written = `@${username}`;
+    let at = text.indexOf(written, from.get(username) ?? 0);
+
+    while (at !== -1) {
+      const before = at === 0 ? "" : text[at - 1];
+      const after = text[at + written.length] ?? "";
+      if (!/[\w@.]/.test(before) && !/\w/.test(after)) break;
+      at = text.indexOf(written, at + 1);
+    }
+
+    if (at === -1) continue;
+    placed.push({ userId: id, start: at });
+    from.set(username, at + written.length);
+  }
+
+  return placed;
 }
 
 function isSeriesHref(href: string): boolean {
@@ -464,6 +533,23 @@ export function toggleFormat(
   }
 
   return wrapSelection(value, start, end, format);
+}
+
+/** The format a keyboard shortcut asks for, as in Messages' composer. */
+export function formatShortcut(event: KeyboardEvent): ChatFormat | null {
+  if (!(event.ctrlKey || event.metaKey) || event.altKey) return null;
+  const key = event.key.toLowerCase();
+
+  if (event.shiftKey) {
+    if (key === "s") return "spoiler";
+    if (key === "x") return "strike";
+    return null;
+  }
+
+  if (key === "b") return "bold";
+  if (key === "i") return "italic";
+  if (key === "e") return "code";
+  return null;
 }
 
 /** `/spoiler rest` sends `rest` masked as a whole; anything else goes as typed. */

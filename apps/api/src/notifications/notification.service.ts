@@ -749,14 +749,6 @@ export class NotificationService {
     this.publishCreated(input.userId, input.type);
   }
 
-  /**
-   * The push alone, with no bell entry: for an alert another surface shows
-   * (comment replies and mentions, in Messages' "Œuvres" tab).
-   */
-  async pushOnly(input: CreateNotificationInput): Promise<void> {
-    await this.pushIfWanted(input);
-  }
-
   /** Pushes a new bell entry too, when the recipient chose to for its kind. */
   private async pushIfWanted(input: CreateNotificationInput): Promise<void> {
     if (!isAlertToggleable(input.type, "push")) return;

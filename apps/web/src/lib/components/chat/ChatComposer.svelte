@@ -19,8 +19,8 @@
     typedLinks,
   } from "#lib/chat/work-search.js";
   import {
+    formatShortcut,
     readSlashCommand,
-    selectionFormats,
     toggleFormat,
     type ChatFormat,
   } from "#lib/chat/chat-markdown.js";
@@ -40,7 +40,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { tick } from "svelte";
   import { fade, scale } from "svelte/transition";
-  import { caretPosition } from "./caret-position";
+  import FormatSelectionBar, {
+    selectionBarAt,
+    type SelectionBar,
+  } from "./FormatSelectionBar.svelte";
   import ChatWorkPicker from "./ChatWorkPicker.svelte";
   import { workKindLabel } from "./conversation-presentation";
 
@@ -80,11 +83,7 @@
   let declinedLinks = $state<string[]>([]);
   let previewedLinks = $state<string[]>([]);
   let highlighted = $state<string | null>(null);
-  let selectionBar = $state<{
-    left: number;
-    top: number;
-    active: ChatFormat[];
-  } | null>(null);
+  let selectionBar = $state<SelectionBar | null>(null);
   let lastTypingAt = 0;
 
   interface Command {
@@ -322,29 +321,7 @@
 
   function placeSelectionBar() {
     readMention();
-    if (
-      !textarea ||
-      document.activeElement !== textarea ||
-      textarea.selectionStart === textarea.selectionEnd
-    ) {
-      selectionBar = null;
-      return;
-    }
-
-    const box = textarea.getBoundingClientRect();
-    const start = caretPosition(textarea, textarea.selectionStart);
-    const end = caretPosition(textarea, textarea.selectionEnd);
-    const middle =
-      start.top === end.top ? (start.left + end.left) / 2 : start.left + 60;
-    selectionBar = {
-      left: Math.max(8, Math.min(box.left + middle - 110, innerWidth - 228)),
-      top: Math.max(8, box.top + start.top - 46),
-      active: selectionFormats(
-        value,
-        textarea.selectionStart,
-        textarea.selectionEnd,
-      ),
-    };
+    selectionBar = selectionBarAt(textarea, value);
   }
 
   function announceTyping() {
@@ -390,23 +367,11 @@
     }
 
     const mod = event.ctrlKey || event.metaKey;
-    const key = event.key.toLowerCase();
+    const shortcut = formatShortcut(event);
 
-    if (mod && event.shiftKey && key === "s") {
+    if (shortcut) {
       event.preventDefault();
-      format("spoiler");
-    } else if (mod && !event.shiftKey && key === "b") {
-      event.preventDefault();
-      format("bold");
-    } else if (mod && !event.shiftKey && key === "i") {
-      event.preventDefault();
-      format("italic");
-    } else if (mod && event.shiftKey && key === "x") {
-      event.preventDefault();
-      format("strike");
-    } else if (mod && !event.shiftKey && key === "e") {
-      event.preventDefault();
-      format("code");
+      format(shortcut);
     } else if (
       event.key === "ArrowUp" &&
       value === "" &&
@@ -426,13 +391,6 @@
       send();
     }
   }
-
-  const FORMATS: { kind: ChatFormat; glyph: string; label: string }[] = [
-    { kind: "bold", glyph: "B", label: m.chat_format_bold() },
-    { kind: "italic", glyph: "I", label: m.chat_format_italic() },
-    { kind: "strike", glyph: "S", label: m.chat_format_strike() },
-    { kind: "code", glyph: "</>", label: m.chat_format_code() },
-  ];
 </script>
 
 <svelte:document onselectionchange={placeSelectionBar} />
@@ -610,46 +568,5 @@
 </div>
 
 {#if selectionBar}
-  <div
-    transition:scale={{ duration: reduced ? 0 : 120, start: 0.95 }}
-    role="toolbar"
-    aria-label={m.chat_formatting()}
-    class="bg-fg text-bg fixed z-[70] flex items-center gap-0.5 rounded-xl p-1 shadow-lg"
-    style="left: {selectionBar.left}px; top: {selectionBar.top}px;">
-    {#each FORMATS as item (item.kind)}
-      {@const pressed = selectionBar.active.includes(item.kind)}
-      <button
-        type="button"
-        class="grid h-8 min-w-8 place-items-center rounded-lg px-1.5 text-sm font-bold transition-colors duration-150
-          {pressed ? 'bg-bg/25 text-accent' : 'hover:bg-bg/15'}"
-        aria-label={item.label}
-        aria-pressed={pressed}
-        title={item.label}
-        onmousedown={(e) => e.preventDefault()}
-        onclick={() => format(item.kind)}>
-        <span
-          class={item.kind === "italic"
-            ? "italic"
-            : item.kind === "strike"
-              ? "line-through"
-              : item.kind === "code"
-                ? "font-mono text-xs"
-                : ""}>{item.glyph}</span>
-      </button>
-    {/each}
-    <span class="bg-bg/25 mx-0.5 h-5 w-px"></span>
-    <button
-      type="button"
-      class="bg-accent text-accent-fg grid h-8 w-8 place-items-center rounded-lg transition-[filter,box-shadow] duration-150 hover:brightness-110
-        {selectionBar.active.includes('spoiler')
-        ? 'ring-bg ring-2 ring-inset'
-        : ''}"
-      aria-label={m.chat_format_spoiler()}
-      aria-pressed={selectionBar.active.includes("spoiler")}
-      title={m.chat_format_spoiler()}
-      onmousedown={(e) => e.preventDefault()}
-      onclick={() => format("spoiler")}>
-      <Icon name="eye-off" class="h-4 w-4" />
-    </button>
-  </div>
+  <FormatSelectionBar bar={selectionBar} onformat={format} />
 {/if}

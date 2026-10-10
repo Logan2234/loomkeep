@@ -16,7 +16,11 @@
     isPushEnabledHere,
     isPushSupported,
   } from "#lib/push.js";
-  import { DigestCadence } from "@loomkeep/shared";
+  import {
+    COMMENT_REACTION_NOTIFY_THRESHOLD,
+    DigestCadence,
+    REVIEW_VOTE_NOTIFY_THRESHOLD,
+  } from "@loomkeep/shared";
   import { onMount } from "svelte";
   import SettingRow from "../components/SettingRow.svelte";
   import SettingsSection from "../components/SettingsSection.svelte";
@@ -171,8 +175,17 @@
             {
               key: "COMMENT_REACTIONS",
               label: m.settings_alert_comment_reactions(),
+              hint: m.settings_alert_comment_reactions_hint({
+                count: COMMENT_REACTION_NOTIFY_THRESHOLD,
+              }),
             },
-            { key: "REVIEW_VOTES", label: m.settings_alert_review_votes() },
+            {
+              key: "REVIEW_VOTES",
+              label: m.settings_alert_review_votes(),
+              hint: m.settings_alert_review_votes_hint({
+                count: REVIEW_VOTE_NOTIFY_THRESHOLD,
+              }),
+            },
           ]),
         },
         {

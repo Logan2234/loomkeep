@@ -4,6 +4,7 @@ import {
   type EditMessageRequestDto,
   type ForwardMessageRequestDto,
   MESSAGE_TEXT_MAX_LENGTH,
+  type MarkWorkUnreadRequestDto,
   type MuteConversationRequestDto,
   type OpenConversationRequestDto,
   RECOMMEND_MAX_FRIENDS,
@@ -109,6 +110,11 @@ export class ForwardMessageBody implements ForwardMessageRequestDto {
 export class ReactMessageBody implements ReactMessageRequestDto {
   @IsIn(Object.values(CommentEmote))
   emote!: CommentEmoteT;
+}
+
+export class MarkWorkUnreadBody implements MarkWorkUnreadRequestDto {
+  @IsString()
+  commentId!: string;
 }
 
 export class MuteConversationBody implements MuteConversationRequestDto {

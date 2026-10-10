@@ -7,6 +7,7 @@ import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
 import { REPORT_THROTTLE } from "../src/common/throttle.constants";
+import { PrismaService } from "../src/prisma/prisma.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
 /**
@@ -20,6 +21,7 @@ const COMMENT_COOLDOWN_MS = REPORT_THROTTLE.default.ttl + 100;
 describe("Work threads (e2e)", () => {
   let app: INestApplication<App>;
   let http: App;
+  let prisma: PrismaService;
 
   const alice = e2eUser("e2e-threads-alice");
   const bob = e2eUser("e2e-threads-bob");
@@ -63,9 +65,12 @@ describe("Work threads (e2e)", () => {
   }
 
   beforeAll(async () => {
-    ({ app, http } = await createE2eApp());
+    ({ app, http, prisma } = await createE2eApp());
     await signUpAndTrack(alice, "alice");
     await signUpAndTrack(bob, "bob");
+    // A new account turns its domains on in onboarding; the list only keeps
+    // the discussions of a domain that's on.
+    await prisma.user.updateMany({ data: { enabledDomains: ["MEDIA"] } });
   });
 
   afterAll(async () => {
@@ -118,6 +123,58 @@ describe("Work threads (e2e)", () => {
       .expect(201);
 
     expect(await unread("alice")).toBe(0);
+  });
+
+  it("keeps a muted discussion's unread on it, but out of the total", async () => {
+    await request(http)
+      .put(`/api/chat/works/MEDIA/${mediaItemId}/mute`)
+      .set("Cookie", session.alice)
+      .send({ muted: true })
+      .expect(200);
+    await new Promise((resolve) => setTimeout(resolve, COMMENT_COOLDOWN_MS));
+    await comment("bob", "Vivement la suite.");
+
+    const res = await request(http)
+      .get("/api/chat/works")
+      .set("Cookie", session.alice)
+      .expect(200);
+    expect(res.body[0]).toMatchObject({ unread: 1, muted: true });
+    expect(await unread("alice")).toBe(0);
+  });
+
+  it("reads a discussion again from a comment marked unread", async () => {
+    const list = await request(http)
+      .get(`/api/comments/MEDIA/${mediaItemId}`)
+      .set("Cookie", session.alice)
+      .expect(200);
+    const latest = list.body.items[0];
+
+    await request(http)
+      .post(`/api/chat/works/MEDIA/${mediaItemId}/unread`)
+      .set("Cookie", session.alice)
+      .send({ commentId: latest.id })
+      .expect(201);
+
+    const res = await request(http)
+      .get(`/api/chat/works/MEDIA/${mediaItemId}`)
+      .set("Cookie", session.alice)
+      .expect(200);
+    expect(Date.parse(res.body.lastReadAt)).toBe(
+      Date.parse(latest.createdAt) - 1,
+    );
+  });
+
+  it("leaves out the discussions of a domain turned off", async () => {
+    await prisma.user.updateMany({
+      where: { email: alice.email },
+      data: { enabledDomains: ["BOOKS"] },
+    });
+
+    const res = await request(http)
+      .get("/api/chat/works")
+      .set("Cookie", session.alice)
+      .expect(200);
+    expect(res.body).toEqual([]);
   });
 
   it("opens a discussion its member never took part in, from the work's page", async () => {

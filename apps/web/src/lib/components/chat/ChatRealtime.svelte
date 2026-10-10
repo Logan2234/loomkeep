@@ -20,6 +20,7 @@
     type ChatReadEvent,
     type ChatTypingEvent,
     type ChatWorkActivityEvent,
+    type CommentTargetType,
     type ConversationDto,
     type MessageDto,
     type PagedResult,
@@ -75,7 +76,7 @@
   function onRead({ conversationId, userId, lastReadAt }: ChatReadEvent) {
     const patch = (c: ConversationDto): ConversationDto =>
       userId === auth.user?.id
-        ? { ...c, unread: 0 }
+        ? { ...c, unread: 0, lastReadAt }
         : { ...c, peerLastReadAt: lastReadAt };
 
     queryClient.setQueryData<PagedResult<ConversationDto>>(
@@ -139,6 +140,32 @@
       for (const off of offs) off();
       socket.off("connect", catchUp);
     };
+  });
+
+  $effect(() => {
+    const { pathname, search, hash } = page.url;
+    if (!pathname.startsWith("/app/messages")) {
+      chat.returnTo = pathname + search + hash;
+    }
+  });
+
+  // A comment shared from a work's discussion links back to it:
+  // `?work=TYPE:id&comment=id` on the work's page opens it in Messages.
+  $effect(() => {
+    const target = page.url.searchParams.get("work");
+    if (!target) return;
+    const [targetType, targetId] = target.split(":");
+    if (!targetType || !targetId) return;
+
+    chat.showWork({
+      targetType: targetType as CommentTargetType,
+      targetId,
+      focusCommentId: page.url.searchParams.get("comment"),
+    });
+    const url = new URL(page.url.href);
+    url.searchParams.delete("work");
+    url.searchParams.delete("comment");
+    void goto(url, { replace: true, shallow: true });
   });
 
   $effect(() => {

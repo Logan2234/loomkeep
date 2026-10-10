@@ -1,4 +1,5 @@
 import {
+  CHAT_SEARCH_MIN_LENGTH,
   COMMENT_REACTION_NOTIFY_THRESHOLD,
   ErrorCode,
   NotificationType,
@@ -54,6 +55,7 @@ const EXCERPT_LENGTH = 120;
  * `listReplies` on demand.
  */
 export const REPLY_PREVIEW_LIMIT = 3;
+const COMMENT_SEARCH_LIMIT = 20;
 
 const AUTHOR_SELECT = {
   id: true,
@@ -195,6 +197,38 @@ export class CommentService {
     );
 
     return { items, hasMore };
+  }
+
+  /**
+   * Comments and replies of one discussion containing `query`, newest
+   * first — searched from Messages, with the same minimum length.
+   */
+  async search(
+    viewerId: string,
+    targetType: CommentTargetType,
+    targetId: string,
+    query: string,
+  ): Promise<CommentDto[]> {
+    const needle = query.trim();
+    if (needle.length < CHAT_SEARCH_MIN_LENGTH) return [];
+
+    const rows = (await this.prisma.comment.findMany({
+      where: {
+        targetType,
+        targetId,
+        deletedAt: null,
+        text: { contains: needle, mode: "insensitive" },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: COMMENT_SEARCH_LIMIT,
+      include: {
+        author: { select: AUTHOR_SELECT },
+        mentions: { select: MENTION_SELECT },
+      },
+    })) as CommentRow[];
+    const visible = await this.filterBlocked(viewerId, rows);
+    const toDto = await this.dtoMapper(viewerId, visible);
+    return Promise.all(visible.map(toDto));
   }
 
   /**
@@ -518,7 +552,11 @@ export class CommentService {
       data: {
         text: body.text,
         spoilerTag,
-        edited: true,
+        // Saved unchanged, it isn't "modifié".
+        edited:
+          existing.edited ||
+          existing.text !== body.text ||
+          existing.spoilerTag !== spoilerTag,
         mentions: {
           deleteMany: {},
           create: mentions,
@@ -1120,13 +1158,7 @@ export class CommentService {
     );
     const excerpt = (row.text ?? "").slice(0, EXCERPT_LENGTH);
 
-    // With Messages on, replies and mentions count in its "Œuvres" tab
-    // rather than in the bell; a push still goes to whoever asked for one.
-    const deliver = isChatEnabled(this.config)
-      ? this.notifications.pushOnly.bind(this.notifications)
-      : this.notifications.create.bind(this.notifications);
-
-    await deliver({
+    await this.notifications.create({
       userId: recipientId,
       type,
       title: row.author.displayName,

@@ -1,26 +1,27 @@
 <script lang="ts">
-  // Search in one conversation: a bar under its header, the results below
-  // it over the messages. Picking one brings it into view.
-  import { searchMessages } from "#lib/api/chat.js";
-  import { keys } from "#lib/api/keys.js";
+  // Search in one conversation or one work's discussion: a bar under its
+  // header, the results below it over the messages. Picking one brings it
+  // into view.
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { chatPreview } from "#lib/chat/chat-markdown.js";
   import Icon from "#lib/components/Icon.svelte";
   import { formatDate } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { CHAT_SEARCH_MIN_LENGTH } from "@loomkeep/shared";
   import { slide } from "svelte/transition";
+  import type { SearchHit } from "./conversation-presentation";
 
   let {
-    conversationId,
-    peerName,
+    key,
+    search,
+    label = m.chat_search_messages(),
     onpick,
     onclose,
   }: {
-    conversationId: string;
-    peerName: string;
-    onpick: (messageId: string) => void;
+    key: (query: string) => readonly unknown[];
+    label?: string;
+    search: (query: string) => Promise<SearchHit[]>;
+    onpick: (id: string) => void;
     onclose: () => void;
   } = $props();
 
@@ -40,8 +41,8 @@
   });
 
   const resultsQuery = createApiQuery(() => ({
-    key: keys.chat.search(conversationId, query),
-    fetch: () => searchMessages(conversationId, query),
+    key: key(query),
+    fetch: () => search(query),
     enabled: query.length >= CHAT_SEARCH_MIN_LENGTH,
     keepPreviousData: true,
   }));
@@ -62,8 +63,8 @@
         bind:this={input}
         bind:value={typed}
         data-chat-search
-        aria-label={m.chat_search_messages()}
-        placeholder={m.chat_search_messages()}
+        aria-label={label}
+        placeholder={label}
         class="input focus:border-accent h-9 py-0 pl-9 text-sm transition-colors duration-150"
         onkeydown={(event) => {
           if (event.key === "Escape") {
@@ -91,16 +92,13 @@
           class="hover:bg-surface-2 flex w-full flex-col gap-0.5 px-4 py-2 text-left transition-colors duration-150"
           onclick={() => onpick(result.id)}>
           <span class="text-dim font-mono text-[0.65rem]">
-            {result.mine ? m.common_you() : peerName} · {formatDate(
-              result.createdAt,
-              { day: "2-digit", month: "2-digit", year: "2-digit" },
-            )}
+            {result.who} · {formatDate(result.createdAt, {
+              day: "2-digit",
+              month: "2-digit",
+              year: "2-digit",
+            })}
           </span>
-          <span class="line-clamp-2 text-sm">
-            {result.spoiler
-              ? m.chat_spoiler_reveal()
-              : chatPreview(result.text ?? "")}
-          </span>
+          <span class="line-clamp-2 text-sm">{result.text}</span>
         </button>
       {:else}
         <p class="text-dim px-4 py-3 text-sm" aria-live="polite">

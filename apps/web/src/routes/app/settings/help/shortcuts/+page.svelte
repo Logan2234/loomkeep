@@ -6,6 +6,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { settingsShortcutLabel } from "../../keyboard-navigation";
   import { SETTINGS_SECTIONS, type SettingsSectionDef } from "../../nav";
+  import { isSectionVisible } from "../../section-visibility";
 
   // Named after the key it actually names on this machine — see
   // SettingsSearchField, which computes the same label for the same reason.
@@ -90,13 +91,9 @@
   );
 
   // Same filter as the settings layout's own Alt+N handler — a hidden
-  // section (social off) isn't reachable by its shortcut either, so it has
-  // no business appearing here.
-  const visibleSections = $derived(
-    SETTINGS_SECTIONS.filter(
-      (section) => !section.social || appConfig.socialEnabled,
-    ),
-  );
+  // section (social off, or its domain off) isn't reachable by its shortcut
+  // either, so it has no business appearing here.
+  const visibleSections = $derived(SETTINGS_SECTIONS.filter(isSectionVisible));
   const sectionShortcuts = $derived(
     visibleSections
       .map((section, index) => ({

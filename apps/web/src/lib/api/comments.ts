@@ -83,3 +83,13 @@ export const reportComment = (
     params: { id },
     body: { category, motif, reason },
   });
+
+/** A discussion's comments and replies containing `query`, newest first. */
+export const searchComments = (
+  targetType: CommentTargetType,
+  targetId: string,
+  query: string,
+) =>
+  request<CommentDto[]>(
+    `/comments/${encodeURIComponent(targetType)}/${encodeURIComponent(targetId)}/search?q=${encodeURIComponent(query)}`,
+  );

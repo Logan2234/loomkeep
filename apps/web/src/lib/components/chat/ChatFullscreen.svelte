@@ -2,10 +2,13 @@
   // /app/messages[/<id>]: Messages as a page — the conversation list beside
   // the open conversation. "Réduire" puts it back in the floating panel.
   import { goto } from "$app/navigation";
-  import { getChatUnread, getConversations } from "#lib/api/chat.js";
+  import {
+    getChatUnread,
+    getConversations,
+    getWorkThreads,
+  } from "#lib/api/chat.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { hasAppHistory } from "#lib/backNav.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
   import { layout } from "#lib/layout.svelte.js";
@@ -18,13 +21,16 @@
   import ChatWorkThread from "./ChatWorkThread.svelte";
   import {
     conversationStep,
+    escapeReaches,
     neighbourConversation,
+    neighbourWork,
     shownUnread,
   } from "./conversation-presentation";
 
   let { conversationId }: { conversationId: string | null } = $props();
 
   let composing = $state(false);
+  let root = $state<HTMLElement | null>(null);
   let search = $state("");
 
   const conversationsQuery = createApiQuery(() => ({
@@ -41,6 +47,11 @@
   }));
   const worksUnread = $derived(unreadQuery.data?.works ?? 0);
   const worksTab = $derived(chat.tab === "works");
+  const threadsQuery = createApiQuery(() => ({
+    key: keys.chat.workThreads(),
+    fetch: getWorkThreads,
+  }));
+  const threads = $derived(threadsQuery.data ?? []);
   const shown = $derived(
     conversations.filter((c) =>
       (c.peer?.displayName ?? "")
@@ -55,8 +66,24 @@
   }
 
   function onkeydown(event: KeyboardEvent) {
+    // Escape leaves the page as "Réduire" does, once nothing else wants it.
+    if (event.key === "Escape") {
+      if (!event.defaultPrevented && !layout.compact && escapeReaches(root)) {
+        shrink();
+      }
+      return;
+    }
+
     const step = conversationStep(event);
-    if (!step || worksTab) return;
+    if (!step) return;
+    if (worksTab) {
+      const next = neighbourWork(threads, chat.activeWork, step);
+      if (next) {
+        event.preventDefault();
+        chat.activeWork = next;
+      }
+      return;
+    }
     const next = neighbourConversation(conversations, conversationId, step);
     if (next) {
       event.preventDefault();
@@ -64,10 +91,12 @@
     }
   }
 
+  // Back to where Messages was opened from, however many conversations
+  // were browsed since — not one step back.
   function shrink() {
-    if (conversationId) chat.show(conversationId);
-    if (hasAppHistory()) history.back();
-    else void goto("/app");
+    if (worksTab && chat.activeWork) chat.showWork(chat.activeWork);
+    else if (conversationId) chat.show(conversationId);
+    void goto(chat.returnTo ?? "/app");
   }
 
   // The compact shell shows one column: the list, or the conversation.
@@ -83,6 +112,7 @@
 <!-- One screen tall: the list and the conversation scroll on their own. On
      the compact shell, the bottom bar keeps its share of the height. -->
 <div
+  bind:this={root}
   class="flex min-h-0 {layout.compact
     ? 'h-[calc(100dvh-4.5rem-env(safe-area-inset-bottom))]'
     : 'h-dvh'}">
@@ -112,7 +142,11 @@
           aria-selected={chat.tab === "friends"}
           class="flex h-9 items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-colors duration-150
             {chat.tab === 'friends' ? 'bg-surface-2 text-fg' : 'text-dim'}"
-          onclick={() => (chat.tab = "friends")}>
+          onclick={() => {
+            chat.tab = "friends";
+            // On a phone the list and a conversation share the screen.
+            if (layout.compact && conversationId) void goto("/app/messages");
+          }}>
           {m.common_friends()}
           {#if unread > 0}
             <span
@@ -168,6 +202,7 @@
           <ChatWorkThread
             work={chat.activeWork}
             mode={layout.compact ? "sheet" : "full"}
+            onshrink={shrink}
             onback={() => (chat.activeWork = null)} />
         {/key}
       {:else if worksTab}

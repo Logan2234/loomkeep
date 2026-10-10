@@ -6,6 +6,7 @@ import type {
   ConversationWorkDto,
   EditMessageRequestDto,
   ForwardMessageRequestDto,
+  MarkWorkUnreadRequestDto,
   MessageDto,
   PagedResult,
   RecommendWorkRequestDto,
@@ -141,6 +142,27 @@ export const getWorkThread = (
   targetType: CommentTargetType,
   targetId: string,
 ) => request<WorkThreadDto>(`/chat/works/${targetType}/${id(targetId)}`);
+
+export const muteWorkThread = (
+  targetType: CommentTargetType,
+  targetId: string,
+  muted: boolean,
+) =>
+  request<void>(`/chat/works/${targetType}/${id(targetId)}/mute`, {
+    method: "PUT",
+    body: { muted },
+  });
+
+/** Unread again from this comment on, in the "Œuvres" tab. */
+export const markWorkThreadUnread = (
+  targetType: CommentTargetType,
+  targetId: string,
+  commentId: string,
+) =>
+  request<void>(`/chat/works/${targetType}/${id(targetId)}/unread`, {
+    method: "POST",
+    body: { commentId } satisfies MarkWorkUnreadRequestDto,
+  });
 
 export const markWorkThreadRead = (
   targetType: CommentTargetType,

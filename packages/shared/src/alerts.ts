@@ -101,15 +101,18 @@ export const ALERTS = {
     push: "on",
     audience: "social",
   },
-  // Never pushed: a count going up is no reason to reach for someone's phone.
+  // Sent once, when a comment or a review reaches its threshold — not on
+  // every reaction or vote.
   COMMENT_REACTIONS: {
     group: AlertGroup.ACTIVITY,
     bell: "always",
+    push: "off",
     audience: "social",
   },
   REVIEW_VOTES: {
     group: AlertGroup.ACTIVITY,
     bell: "always",
+    push: "off",
     audience: "social",
   },
 

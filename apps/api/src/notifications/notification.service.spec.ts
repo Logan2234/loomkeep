@@ -529,12 +529,12 @@ describe("NotificationService push", () => {
   it("never pushes a kind that has no push", async () => {
     const { service, push } = makeService({
       locale: "en",
-      alertPrefs: { COMMENT_REACTIONS: { push: true } },
+      alertPrefs: { API_KEYS_REVIEW: { push: true } },
     });
 
     await service.create({
       ...reply,
-      type: NotificationType.COMMENT_REACTIONS,
+      type: NotificationType.API_KEYS_REVIEW,
     });
 
     expect(push.sendToUser).not.toHaveBeenCalled();
