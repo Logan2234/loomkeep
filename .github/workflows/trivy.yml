@@ -58,7 +58,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: scan ${{ matrix.name }} image
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        uses: aquasecurity/trivy-action@c03d123cb480c08c69b054af418ea5e69fe6e57e # v0.36.0
         with:
           image-ref: ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}:${{ steps.vars.outputs.tag }}
           format: sarif
