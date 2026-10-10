@@ -1,11 +1,13 @@
-import type {
-  CommentTargetType,
-  Domain,
-  MessageWorkKind,
-  WorkThreadDto,
+import {
+  ErrorCode,
+  type CommentTargetType,
+  type Domain,
+  type MessageWorkKind,
+  type WorkThreadDto,
 } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { AppException } from "../common/app.exception";
 import {
   CANONICAL_EXTERNAL_ID_SELECT,
   canonicalExternalId,
@@ -23,6 +25,7 @@ type ThreadRow = {
   lastAt: Date | null;
   unread: bigint;
   muted: boolean;
+  readAt: Date | null;
 };
 
 /** The discussions each domain holds: a series' seasons and episodes too. */
@@ -76,6 +79,7 @@ export class WorkThreadService {
         lastAt: null,
         unread: 0n,
         muted: false,
+        readAt: null,
       },
     ]);
     return dto ?? null;
@@ -86,6 +90,30 @@ export class WorkThreadService {
     return rows
       .filter((row) => !row.muted)
       .reduce((sum, row) => sum + Number(row.unread), 0);
+  }
+
+  /** Unread again from one of its comments on, as a conversation can be. */
+  async markUnreadFrom(
+    userId: string,
+    targetType: CommentTargetType,
+    targetId: string,
+    commentId: string,
+  ): Promise<void> {
+    const comment = await this.prisma.comment.findFirst({
+      where: { id: commentId, targetType, targetId, deletedAt: null },
+      select: { createdAt: true },
+    });
+
+    if (!comment) {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
+    }
+
+    const lastReadAt = new Date(comment.createdAt.getTime() - 1);
+    await this.prisma.commentThreadRead.upsert({
+      where: { userId_targetType_targetId: { userId, targetType, targetId } },
+      update: { lastReadAt },
+      create: { userId, targetType, targetId, lastReadAt },
+    });
   }
 
   async setMuted(
@@ -146,6 +174,7 @@ export class WorkThreadService {
       )
       SELECT t."targetType", t."targetId", t."mineAt",
         r."mutedAt" IS NOT NULL AS muted,
+        COALESCE(r."lastReadAt", t."mineAt") AS "readAt",
         (
           SELECT MAX(c."createdAt") FROM "Comment" c
           WHERE c."targetType" = t."targetType"
@@ -199,6 +228,7 @@ export class WorkThreadService {
           ...work,
           unread: Number(row.unread),
           muted: row.muted,
+          lastReadAt: row.readAt?.toISOString() ?? null,
           canParticipate: !!libraryKey && tracked.has(libraryKey),
           lastActivityAt: (row.lastAt ?? row.mineAt).toISOString(),
           lastComment: last

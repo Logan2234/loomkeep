@@ -142,6 +142,28 @@ describe("Work threads (e2e)", () => {
     expect(await unread("alice")).toBe(0);
   });
 
+  it("reads a discussion again from a comment marked unread", async () => {
+    const list = await request(http)
+      .get(`/api/comments/MEDIA/${mediaItemId}`)
+      .set("Cookie", session.alice)
+      .expect(200);
+    const latest = list.body.items[0];
+
+    await request(http)
+      .post(`/api/chat/works/MEDIA/${mediaItemId}/unread`)
+      .set("Cookie", session.alice)
+      .send({ commentId: latest.id })
+      .expect(201);
+
+    const res = await request(http)
+      .get(`/api/chat/works/MEDIA/${mediaItemId}`)
+      .set("Cookie", session.alice)
+      .expect(200);
+    expect(Date.parse(res.body.lastReadAt)).toBe(
+      Date.parse(latest.createdAt) - 1,
+    );
+  });
+
   it("leaves out the discussions of a domain turned off", async () => {
     await prisma.user.updateMany({
       where: { email: alice.email },

@@ -48,6 +48,7 @@ import {
 import {
   EditMessageBody,
   ForwardMessageBody,
+  MarkWorkUnreadBody,
   MuteConversationBody,
   OpenConversationBody,
   ReactMessageBody,
@@ -219,6 +220,21 @@ export class ChatController {
     }
 
     return thread;
+  }
+
+  @Post("works/:type/:id/unread")
+  markWorkThreadUnread(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+    @Body() body: MarkWorkUnreadBody,
+  ): Promise<void> {
+    return this.threads.markUnreadFrom(
+      user.sub,
+      parseTarget(type),
+      id,
+      body.commentId,
+    );
   }
 
   @Put("works/:type/:id/mute")

@@ -106,6 +106,11 @@ export interface WorkThreadDto {
   /** The work's page: a season's or an episode's leads to its series. */
   href: string | null;
   unread: number;
+  /**
+   * Up to when the viewer has read: where the "new" line goes. Null for a
+   * discussion they never took part in.
+   */
+  lastReadAt: string | null;
   /** Muted: its unread still shows on it, but counts nowhere else. */
   muted: boolean;
   /** Writing needs the work in the library (comments' own rule). */
@@ -140,6 +145,11 @@ export interface EditMessageRequestDto {
 }
 
 /** "Recommander": the work goes to each friend in their own conversation. */
+/** `POST /chat/works/:type/:id/unread`: unread again from this comment on. */
+export interface MarkWorkUnreadRequestDto {
+  commentId: string;
+}
+
 export interface RecommendWorkRequestDto {
   /** The work page's path, as for `SendMessageRequestDto.work`. */
   work: string;
