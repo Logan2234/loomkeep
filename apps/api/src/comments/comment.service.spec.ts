@@ -182,7 +182,6 @@ function make(
 
   const notifications = {
     create: vi.fn(),
-    pushOnly: vi.fn(),
     copyFor: () => notificationCopy("fr"),
   } as unknown as NotificationService;
   const xp = stubXp();
@@ -816,6 +815,63 @@ describe("CommentService.participants", () => {
   });
 });
 
+describe("CommentService.search", () => {
+  it("finds a discussion's comments without the ones a block hides", async () => {
+    const { svc, prisma } = make({
+      comment: {
+        findMany: vi.fn().mockResolvedValue([
+          commentRow({ id: "c1", text: "La fin est folle" }),
+          commentRow({
+            id: "c2",
+            text: "Folle, vraiment",
+            authorId: "blocked",
+            author: { ...AUTHOR, id: "blocked" },
+          }),
+        ]),
+      },
+      relations: { blocked: relation({ blocking: true }) },
+    });
+
+    const hits = await svc.search("viewer", "MEDIA" as never, "m1", " folle ");
+
+    expect(hits.map((hit) => hit.id)).toEqual(["c1"]);
+    expect(prisma.comment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          text: { contains: "folle", mode: "insensitive" },
+          deletedAt: null,
+        }),
+      }),
+    );
+  });
+
+  it("doesn't search under the minimum length", async () => {
+    const { svc, prisma } = make();
+    expect(await svc.search("viewer", "MEDIA" as never, "m1", "f")).toEqual([]);
+    expect(prisma.comment.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("CommentService.update", () => {
+  it("only marks a comment edited when its text or spoiler changed", async () => {
+    const existing = commentRow({ authorId: "viewer", text: "Pareil" });
+    const { svc, prisma } = make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue(existing),
+        update: vi.fn().mockResolvedValue(existing),
+      },
+    });
+    const editedFlag = () =>
+      (prisma.comment.update as Mock).mock.calls.at(-1)?.[0].data.edited;
+
+    await svc.update("viewer", "c1", { text: "Pareil" });
+    expect(editedFlag()).toBe(false);
+
+    await svc.update("viewer", "c1", { text: "Pas pareil" });
+    expect(editedFlag()).toBe(true);
+  });
+});
+
 describe("CommentService.remove", () => {
   it("rejects deleting someone else's comment", async () => {
     const { svc } = make({
@@ -1217,12 +1273,11 @@ describe("CommentService — with Messages on", () => {
     text: "thanks",
   };
 
-  it("pushes a reply without a bell entry: the Œuvres tab counts it", async () => {
+  it("still rings the bell for a reply, which the Œuvres tab counts too", async () => {
     const { svc, notifications } = replying();
     await svc.create("viewer", reply);
 
-    expect(notifications.create).not.toHaveBeenCalled();
-    expect(notifications.pushOnly).toHaveBeenCalledWith(
+    expect(notifications.create).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "parentAuthor",
         type: "COMMENT_REPLY",

@@ -63,18 +63,20 @@
   </div>
 
   {#snippet actions()}
-    <button type="button" class="btn btn-ghost" onclick={onclose}>
-      {m.common_cancel()}
-    </button>
-    <button
-      type="button"
-      class="btn btn-primary"
-      disabled={picked.length === 0 || forwardMut.loading}
-      onclick={() => forwardMut.mutate()}>
-      <Icon name="forward" class="h-4 w-4" />
-      {picked.length > 1
-        ? m.chat_forward_to_many({ count: picked.length })
-        : m.chat_forward()}
-    </button>
+    <div class="flex justify-end gap-2">
+      <button type="button" class="btn btn-ghost" onclick={onclose}>
+        {m.common_cancel()}
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        disabled={picked.length === 0 || forwardMut.loading}
+        onclick={() => forwardMut.mutate()}>
+        <Icon name="forward" class="h-4 w-4" />
+        {picked.length > 1
+          ? m.chat_forward_to_many({ count: picked.length })
+          : m.chat_forward()}
+      </button>
+    </div>
   {/snippet}
 </Modal>

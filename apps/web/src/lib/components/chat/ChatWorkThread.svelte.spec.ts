@@ -27,6 +27,8 @@ const THREAD: WorkThreadDto = {
   imageUrl: null,
   href: "/app/media/series/95396#s2e5",
   unread: 3,
+  muted: false,
+  lastReadAt: null,
   canParticipate: true,
   lastActivityAt: "2026-10-09T20:00:00.000Z",
   lastComment: null,

@@ -38,7 +38,7 @@ const props = {
       label: "Comments",
       alerts: [
         { key: "COMMENT_REPLY" as const, label: "Replies" },
-        { key: "COMMENT_REACTIONS" as const, label: "Reactions" },
+        { key: "API_KEYS_REVIEW" as const, label: "API keys to review" },
       ],
     },
     {
@@ -66,7 +66,7 @@ describe("AlertGrid", () => {
   it("offers no push for an alert that never pushes", () => {
     renderWithQuery(AlertGrid, props);
 
-    expect(pushSwitch("Reactions")).toBeNull();
+    expect(pushSwitch("API keys to review")).toBeNull();
   });
 
   it("saves just the flipped alert and channel", async () => {

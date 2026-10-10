@@ -12,7 +12,8 @@
   } from "#lib/api/client.js";
   import { resolveApiError } from "#lib/api/errors.js";
   import { auth } from "#lib/auth.svelte.js";
-  import FocusOverlay from "#lib/components/FocusOverlay.svelte";
+  import Drawer from "#lib/components/Drawer.svelte";
+  import Dropdown from "#lib/components/Dropdown.svelte";
   import RelativeTime from "#lib/components/RelativeTime.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
@@ -21,10 +22,8 @@
   import { toast } from "#lib/toast.svelte.js";
   import {
     COMMENT_EMOTE_DISPLAY,
-    COMMENT_TEXT_MAX_LENGTH,
     type CommentDto,
     type CommentEmote,
-    type CommentMentionDto,
     type CommentTargetType,
     type PagedResult,
     type ReportCategory,
@@ -39,7 +38,11 @@
   import { tick } from "svelte";
   import { fly } from "svelte/transition";
   import Avatar from "./Avatar.svelte";
-  import CommentMentionInput from "./CommentMentionInput.svelte";
+  import { withUserTokens } from "#lib/chat/chat-markdown.js";
+  import ChatMessageText from "./chat/ChatMessageText.svelte";
+  import CommentComposer, { type CommentDraft } from "./CommentComposer.svelte";
+  import CommentShareModal from "./chat/CommentShareModal.svelte";
+  import CommentWorkCards from "./CommentWorkCards.svelte";
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
   import LevelBadge from "./LevelBadge.svelte";
@@ -51,6 +54,10 @@
     canParticipate = false,
     focusCommentId = null,
     showSpoilers = false,
+    seriesHref = null,
+    unreadAfter = null,
+    onmarkunread,
+    share = null,
   }: {
     targetType: CommentTargetType;
     targetId: string;
@@ -59,6 +66,14 @@
     /** The comment addressed by a notification link, when already in the page. */
     focusCommentId?: string | null;
     showSpoilers?: boolean;
+    /** A series' discussion: what an episode code means by default. */
+    seriesHref?: string | null;
+    /** Messages: up to when the viewer had read, for the "new" line. */
+    unreadAfter?: string | null;
+    /** Messages: unread again from this comment on. */
+    onmarkunread?: (comment: CommentDto) => void;
+    /** Messages: the work a comment shared with a friend links to. */
+    share?: { title: string; href: string } | null;
   } = $props();
 
   const queryClient = useQueryClient();
@@ -105,8 +120,23 @@
 
   $effect(() => {
     if (!focusCommentId || !query.data) return;
+    const id = focusCommentId;
     void tick().then(() => {
-      document.getElementById(`comment-${focusCommentId}`)?.scrollIntoView({
+      const target = document.getElementById(`comment-${id}`);
+      // Older than the pages loaded (a search result): read back until it's
+      // there. Each page re-runs this effect.
+      if (!target) {
+        if (query.hasNextPage && !query.isFetchingNextPage) {
+          void query.fetchNextPage();
+        }
+        return;
+      }
+      // Lit for a moment, as a message found in a conversation.
+      highlightedId = id;
+      setTimeout(() => {
+        if (highlightedId === id) highlightedId = null;
+      }, 1600);
+      target.scrollIntoView({
         block: "center",
       });
     });
@@ -126,18 +156,16 @@
   let latestCommentId: string | null = null;
   let showJumpToLatest = $state(false);
   let shouldPinToLatest = false;
+  // Read before a new comment renders: measured after, its own height
+  // would count as distance from the bottom.
+  let atBottom = true;
+  let feedContent = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
     const latest = visibleComments.at(-1)?.id;
     if (!feed || !latest || focusCommentId) return;
 
-    const distanceFromBottom =
-      feed.scrollHeight - feed.scrollTop - feed.clientHeight;
-    if (
-      shouldPinToLatest ||
-      latestCommentId === null ||
-      distanceFromBottom < 80
-    ) {
+    if (shouldPinToLatest || latestCommentId === null || atBottom) {
       void tick().then(() => {
         if (feed) {
           feed.scrollTop = feed.scrollHeight;
@@ -235,9 +263,22 @@
 
   function updateJumpToLatest() {
     if (!feed) return;
-    showJumpToLatest =
-      feed.scrollHeight - feed.scrollTop - feed.clientHeight > 160;
+    const distance = feed.scrollHeight - feed.scrollTop - feed.clientHeight;
+    atBottom = distance < 80;
+    showJumpToLatest = distance > 160;
   }
+
+  // Images and reply previews can grow the feed after a comment arrived:
+  // the bottom stays in view if it was.
+  $effect(() => {
+    if (!feed || !feedContent) return;
+    const el = feed;
+    const observer = new ResizeObserver(() => {
+      if (atBottom && !focusCommentId) el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(feedContent);
+    return () => observer.disconnect();
+  });
 
   function scrollToBottom() {
     if (!feed) return;
@@ -277,18 +318,8 @@
     onSuccess: invalidate,
   }));
 
-  let newText = $state("");
-  let newMentions = $state<CommentMentionDto[]>([]);
-  let newSpoilerTag = $state(false);
   let replyToId = $state<string | null>(null);
-  let replyText = $state("");
-  let replyMentions = $state<CommentMentionDto[]>([]);
-  let replySpoilerTag = $state(false);
   let editingId = $state<string | null>(null);
-  let editText = $state("");
-  let editMentions = $state<CommentMentionDto[]>([]);
-  let editSpoilerTag = $state(false);
-  let reactingId = $state<string | null>(null);
   let revealed = $state<Set<string>>(new Set());
   let confirmDeleteId = $state<string | null>(null);
   let reportingId = $state<string | null>(null);
@@ -303,9 +334,50 @@
     };
   });
 
-  // Long-press focus (touch): centers the pressed comment in a focused
-  // reading mode without making the full panel difficult to scan.
+  // Long press (touch): its actions in a sheet, as for a message in
+  // Messages, where the hover pills can't show.
   let focusedId = $state<string | null>(null);
+  let highlightedId = $state<string | null>(null);
+  let sharing = $state<CommentDto | null>(null);
+
+  // The "new" line, as in a conversation: above the first comment — or the
+  // comment whose replies — someone else wrote since the viewer last read.
+  // Placed once, so reading the discussion doesn't take it away at once.
+  let unreadFrom = $state<string | null>(null);
+  let unreadPlaced = false;
+
+  function unreadThreadOf(after: string): string | null {
+    const newer = (c: CommentDto) =>
+      c.author?.id !== auth.user?.id && c.createdAt > after;
+    return (
+      visibleComments.find((c) => newer(c) || repliesOf(c).some(newer))?.id ??
+      null
+    );
+  }
+
+  $effect(() => {
+    if (unreadPlaced || !query.data) return;
+    unreadPlaced = true;
+    if (!unreadAfter) return;
+    unreadFrom = unreadThreadOf(unreadAfter);
+    if (!unreadFrom) return;
+    // Opens on the line, once the feed went to its bottom and laid out.
+    void tick().then(() =>
+      requestAnimationFrame(() => {
+        const line = feed?.querySelector("[data-unread-line]");
+        if (!line) return;
+        atBottom = false;
+        line.scrollIntoView({ block: "center" });
+      }),
+    );
+  });
+
+  function markUnread(comment: CommentDto) {
+    onmarkunread?.(comment);
+    unreadFrom = unreadThreadOf(
+      new Date(Date.parse(comment.createdAt) - 1).toISOString(),
+    );
+  }
   const focused = $derived.by(() => {
     if (!focusedId) return null;
     for (const c of visibleComments) {
@@ -343,40 +415,6 @@
     revealed = new Set(revealed).add(id);
   }
 
-  function mentionParts(
-    comment: CommentDto,
-  ): { text: string; start: number; username?: string }[] {
-    const text = comment.text ?? "";
-    if (comment.mentions.length === 0) return [{ text, start: 0 }];
-
-    const parts: { text: string; start: number; username?: string }[] = [];
-    let cursor = 0;
-
-    for (const mention of comment.mentions.toSorted(
-      (a, b) => a.start - b.start,
-    )) {
-      const token = `@${mention.username}`;
-      if (
-        mention.start < cursor ||
-        text.slice(mention.start, mention.start + token.length) !== token
-      ) {
-        continue;
-      }
-      if (mention.start > cursor) {
-        parts.push({ text: text.slice(cursor, mention.start), start: cursor });
-      }
-      parts.push({
-        text: token,
-        start: mention.start,
-        username: mention.username,
-      });
-      cursor = mention.start + token.length;
-    }
-    if (cursor < text.length)
-      parts.push({ text: text.slice(cursor), start: cursor });
-    return parts.length > 0 ? parts : [{ text, start: 0 }];
-  }
-
   function expand(node: Element) {
     const style = getComputedStyle(node);
     const height = parseFloat(style.height);
@@ -393,102 +431,89 @@
     };
   }
 
-  async function submitTop() {
-    const text = newText.trim();
-    if (!text || cooldownRemaining > 0) return;
+  async function submitTop(draft: CommentDraft): Promise<boolean> {
     try {
       await createMut.mutateAsync({
         targetType,
         targetId,
-        text,
-        spoilerTag: allowSpoilerTag ? newSpoilerTag : undefined,
-        mentions: newMentions.map(({ id, start }) => ({ userId: id, start })),
+        text: draft.text,
+        spoilerTag: draft.spoilerTag || undefined,
+        mentions: draft.mentions,
       });
-      newText = "";
-      newMentions = [];
-      newSpoilerTag = false;
       startCooldown();
       shouldPinToLatest = true;
       void tick().then(scrollToBottom);
+      return true;
     } catch (err) {
       toast.error(resolveApiError(err));
+      return false;
     }
   }
 
-  async function submitReply(parentId: string) {
-    const text = replyText.trim();
-    if (!text || cooldownRemaining > 0) return;
+  async function submitReply(
+    parentId: string,
+    draft: CommentDraft,
+  ): Promise<boolean> {
     try {
       await createMut.mutateAsync({
         targetType,
         targetId,
         parentId,
-        text,
-        spoilerTag: allowSpoilerTag ? replySpoilerTag : undefined,
-        mentions: replyMentions.map(({ id, start }) => ({ userId: id, start })),
+        text: draft.text,
+        spoilerTag: draft.spoilerTag || undefined,
+        mentions: draft.mentions,
       });
-      replyText = "";
-      replyMentions = [];
-      replySpoilerTag = false;
       replyToId = null;
       startCooldown();
       shouldPinToLatest = true;
       void tick().then(scrollToBottom);
+      return true;
     } catch (err) {
       toast.error(resolveApiError(err));
+      return false;
     }
   }
 
   function startEdit(c: CommentDto) {
     replyToId = null;
-    replyText = "";
-    replyMentions = [];
     editingId = c.id;
-    editText = c.text ?? "";
-    editMentions = c.mentions;
-    editSpoilerTag = c.spoilerTag;
+  }
+
+  // ↑ in an empty field, as in Messages: the viewer's latest comment.
+  function editLastMine() {
+    const mine = [...comments, ...comments.flatMap(repliesOf)]
+      .filter((c) => c.author?.id === auth.user?.id && !c.deleted && c.text)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .at(-1);
+    if (mine) startEdit(mine);
   }
 
   function cancelEdit() {
     editingId = null;
-    editText = "";
-    editMentions = [];
   }
 
   function startReply(id: string) {
-    if (replyToId === id) {
-      replyToId = null;
-      replyText = "";
-      replyMentions = [];
-      return;
-    }
     editingId = null;
-    replyToId = id;
-    replyText = "";
-    replyMentions = [];
-    replySpoilerTag = false;
+    replyToId = replyToId === id ? null : id;
   }
 
   function cancelReply() {
     replyToId = null;
-    replyText = "";
-    replyMentions = [];
   }
 
-  async function submitEdit(id: string) {
-    const text = editText.trim();
-    if (!text) return;
+  async function submitEdit(id: string, draft: CommentDraft): Promise<boolean> {
     try {
       await updateMut.mutateAsync({
         id,
-        text,
-        spoilerTag: allowSpoilerTag ? editSpoilerTag : undefined,
-        mentions: editMentions.map(({ id, start }) => ({ userId: id, start })),
+        text: draft.text,
+        spoilerTag: draft.spoilerTag,
+        mentions: draft.mentions,
       });
       editingId = null;
-      editMentions = [];
+      return true;
     } catch (err) {
       toast.error(resolveApiError(err));
+      return false;
     }
   }
 
@@ -502,8 +527,16 @@
     }
   }
 
+  async function copyText(comment: CommentDto) {
+    try {
+      await navigator.clipboard.writeText(comment.text ?? "");
+      toast.success(m.chat_text_copied());
+    } catch {
+      toast.error(m.chat_copy_failed());
+    }
+  }
+
   async function react(id: string, emote: CommentEmote) {
-    reactingId = null;
     try {
       await reactMut.mutateAsync({ id, emote });
     } catch (err) {
@@ -545,11 +578,113 @@
   }
 </script>
 
-{#snippet actionRow(
-  c: CommentDto,
-  isReply: boolean,
-  forceShow: boolean = false,
-)}
+{#snippet emotePicker(c: CommentDto, onpicked: () => void)}
+  <div class="flex gap-0.5" role="group" aria-label={m.common_react()}>
+    {#each Object.entries(COMMENT_EMOTE_DISPLAY) as [emote, glyph] (emote)}
+      <button
+        type="button"
+        class="hover:bg-surface-2 grid h-9 w-9 place-items-center rounded-full text-lg transition-[transform,background-color] duration-150 hover:scale-110 motion-reduce:transition-none
+          {c.myReaction === emote ? 'bg-accent/20' : ''}"
+        aria-pressed={c.myReaction === emote}
+        onclick={() => {
+          onpicked();
+          if (c.myReaction === emote) void unreact(c.id);
+          else void react(c.id, emote as CommentEmote);
+        }}>
+        {glyph}
+      </button>
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet menuItems(c: CommentDto, isReply: boolean, close: () => void)}
+  {@const mine = c.author?.id === auth.user?.id}
+  {#if !isReply && canParticipate}
+    <button
+      role="menuitem"
+      class="menu-item"
+      onclick={() => {
+        close();
+        startReply(c.id);
+      }}>
+      <Icon name="reply" class="h-4 w-4" />
+      {m.common_reply()}
+    </button>
+  {/if}
+  {#if mine}
+    <button
+      role="menuitem"
+      class="menu-item"
+      onclick={() => {
+        close();
+        startEdit(c);
+      }}>
+      <Icon name="edit" class="h-4 w-4" />
+      {m.common_edit()}
+    </button>
+  {/if}
+  {#if c.text && (mine || !c.masked || showSpoilers || revealed.has(c.id))}
+    <button
+      role="menuitem"
+      class="menu-item"
+      onclick={() => {
+        close();
+        void copyText(c);
+      }}>
+      <Icon name="copy" class="h-4 w-4" />
+      {m.chat_copy_text()}
+    </button>
+  {/if}
+  {#if !mine && onmarkunread}
+    <button
+      role="menuitem"
+      class="menu-item"
+      onclick={() => {
+        close();
+        markUnread(c);
+      }}>
+      <Icon name="mark-unread" class="h-4 w-4" />
+      {m.chat_mark_unread()}
+    </button>
+  {/if}
+  {#if share && c.text}
+    <button
+      role="menuitem"
+      class="menu-item"
+      onclick={() => {
+        close();
+        sharing = c;
+      }}>
+      <Icon name="forward" class="h-4 w-4" />
+      {m.chat_share_comment_ellipsis()}
+    </button>
+  {/if}
+  {#if mine}
+    <button
+      role="menuitem"
+      class="menu-item menu-item-danger border-border border-t"
+      onclick={() => {
+        close();
+        confirmDeleteId = c.id;
+      }}>
+      <Icon name="trash" class="h-4 w-4" />
+      {m.chat_delete_ellipsis()}
+    </button>
+  {:else}
+    <button
+      role="menuitem"
+      class="menu-item menu-item-danger border-border border-t"
+      onclick={() => {
+        close();
+        openReport(c.id);
+      }}>
+      <Icon name="flag" class="h-4 w-4" />
+      {m.common_report()}
+    </button>
+  {/if}
+{/snippet}
+
+{#snippet actionRow(c: CommentDto, isReply: boolean)}
   <div class="relative mt-1 flex flex-wrap items-center gap-1">
     {#each Object.entries(COMMENT_EMOTE_DISPLAY) as [emote, glyph] (emote)}
       {@const count = c.reactions.find((r) => r.emote === emote)?.count ?? 0}
@@ -570,88 +705,64 @@
       {/if}
     {/each}
 
+    <!-- The same two pills as a message in Messages; a long press opens
+         their sheet on touch screens. -->
     <div
-      class="absolute -top-1 right-0 flex items-center gap-1 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 {forceShow ||
-      reactingId === c.id
-        ? 'pointer-events-auto opacity-100'
-        : 'pointer-events-none opacity-0'}">
+      class="pointer-events-none absolute -top-1 right-0 flex items-center gap-1 opacity-0 transition-opacity duration-150 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 has-[[aria-expanded=true]]:pointer-events-auto has-[[aria-expanded=true]]:opacity-100">
       {#if canParticipate}
-        <div class="relative">
+        <Dropdown
+          placement="bottom-end"
+          role="presentation"
+          class="rounded-full! p-1!">
+          {#snippet trigger({ open, toggle, onkeydown })}
+            <button
+              type="button"
+              class="border-border bg-surface text-dim hover:text-fg grid h-7 w-7 place-items-center rounded-full border transition-colors duration-150"
+              aria-label={m.common_react()}
+              aria-haspopup="true"
+              aria-expanded={open}
+              {onkeydown}
+              onclick={toggle}>
+              <Icon name="smile" class="h-4 w-4" />
+            </button>
+          {/snippet}
+          {#snippet children({ close })}
+            {@render emotePicker(c, close)}
+          {/snippet}
+        </Dropdown>
+      {/if}
+      <Dropdown placement="bottom-end" class="min-w-52">
+        {#snippet trigger({ open, toggle, onkeydown })}
           <button
-            class="text-dim hover:text-fg hover:bg-surface-2 grid h-6 w-6 place-items-center rounded-full transition-colors active:scale-95"
-            title={m.common_react()}
-            aria-label={m.common_react()}
-            aria-expanded={reactingId === c.id}
-            onclick={() => (reactingId = reactingId === c.id ? null : c.id)}>
-            <Icon name="plus" class="h-3.5 w-3.5" />
+            type="button"
+            class="border-border bg-surface text-dim hover:text-fg grid h-7 w-7 place-items-center rounded-full border transition-colors duration-150"
+            aria-label={m.common_more_actions()}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            {onkeydown}
+            onclick={toggle}>
+            <Icon name="dots-horizontal" class="h-4 w-4" />
           </button>
-          {#if reactingId === c.id}
-            <div
-              class="bg-surface border-border absolute right-0 bottom-full left-auto z-10 mb-1 flex gap-1 rounded-lg border p-1 shadow-lg">
-              {#each Object.entries(COMMENT_EMOTE_DISPLAY) as [emote, glyph] (emote)}
-                <button
-                  class="hover:bg-surface-2 rounded px-1.5 py-1 text-base transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95"
-                  onclick={() => react(c.id, emote as CommentEmote)}>
-                  {glyph}
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      {#if !isReply && canParticipate}
-        <button
-          class="btn-icon h-6 w-6"
-          title={m.common_reply()}
-          aria-label={m.common_reply()}
-          onclick={() => startReply(c.id)}>
-          <Icon name="reply" class="h-4 w-4" />
-        </button>
-      {/if}
-      {#if c.author?.id === auth.user?.id}
-        <button
-          class="btn-icon h-6 w-6"
-          title={m.common_edit()}
-          aria-label={m.common_edit()}
-          onclick={() => startEdit(c)}>
-          <Icon name="edit" class="h-4 w-4" />
-        </button>
-        <button
-          class="btn-icon hover:text-danger h-6 w-6"
-          title={m.common_delete()}
-          aria-label={m.common_delete()}
-          onclick={() => (confirmDeleteId = c.id)}>
-          <Icon name="trash" class="h-4 w-4" />
-        </button>
-      {:else}
-        <button
-          class="btn-icon h-6 w-6"
-          title={m.common_report()}
-          aria-label={m.common_report()}
-          onclick={() => openReport(c.id)}>
-          <Icon name="flag" class="h-4 w-4" />
-        </button>
-      {/if}
+        {/snippet}
+        {#snippet children({ close })}
+          {@render menuItems(c, isReply, close)}
+        {/snippet}
+      </Dropdown>
     </div>
   </div>
 {/snippet}
 
-{#snippet commentCard(
-  c: CommentDto,
-  isReply: boolean,
-  focused: boolean = false,
-)}
+{#snippet commentCard(c: CommentDto, isReply: boolean)}
   {@const mentioned = c.mentions.some(
     (mention) => mention.id === auth.user?.id,
   )}
   <div
     id="comment-{c.id}"
-    class="group relative overflow-visible {isReply ? 'py-2.5 pl-1' : 'py-3.5'}"
-    use:longpress={{
-      onLongPress: () => !focused && (focusedId = c.id),
-      duration: 1000,
-    }}>
+    class="group relative overflow-visible rounded-lg transition-colors duration-500 [-webkit-touch-callout:none]
+      {isReply ? 'py-2.5 pl-1' : '-mx-2 px-2 py-3.5'}
+      {focusedId === c.id ? 'bg-surface-2' : ''}
+      {highlightedId === c.id ? 'bg-accent/10' : ''}"
+    use:longpress={{ onLongPress: () => (focusedId = c.id), duration: 450 }}>
     {#if c.deleted}
       <p class="text-dim text-sm italic">
         {c.deletedByAdmin ? m.comment_deleted_by_admin() : m.comment_deleted()}
@@ -707,133 +818,67 @@
           </div>
 
           {#if editingId === c.id}
-            <div
-              transition:expand
-              class="border-border bg-surface-2 mt-2 rounded-lg border p-2.5">
-              <div class="relative">
-                <CommentMentionInput
-                  bind:value={editText}
-                  bind:mentions={editMentions}
-                  {targetType}
-                  {targetId}
-                  id="comment-edit-{c.id}"
-                  name="commentText"
-                  label={m.common_edit()}
-                  inputClass="input bg-bg pr-14 text-sm"
-                  onkeydown={(e) => e.key === "Enter" && submitEdit(c.id)} />
-                <span
-                  class="text-dim pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[0.65rem] tabular-nums">
-                  {editText.length}/{COMMENT_TEXT_MAX_LENGTH}
-                </span>
-              </div>
-              <div class="mt-2 flex items-center gap-2">
-                {#if allowSpoilerTag}
-                  <button
-                    type="button"
-                    aria-pressed={editSpoilerTag}
-                    onclick={() => (editSpoilerTag = !editSpoilerTag)}
-                    class="inline-flex h-7 items-center gap-1.5 rounded-md px-1.5 text-xs font-semibold transition-colors {editSpoilerTag
-                      ? 'bg-accent/10 text-accent'
-                      : 'text-dim hover:text-fg hover:bg-bg'}">
-                    <Icon name="eye-off" class="h-3.5 w-3.5" />
-                    {editSpoilerTag
-                      ? m.comment_unmark_spoiler()
-                      : m.comment_mark_spoiler()}
-                  </button>
-                {/if}
-                <div class="ml-auto flex items-center gap-1.5">
-                  <button class="btn btn-ghost btn-sm" onclick={cancelEdit}>
-                    {m.common_cancel()}
-                  </button>
-                  <button
-                    class="btn btn-primary btn-sm"
-                    onclick={() => submitEdit(c.id)}>
-                    {m.common_save()}
-                  </button>
-                </div>
-              </div>
+            <div transition:expand class="mt-2">
+              <CommentComposer
+                id="comment-edit-{c.id}"
+                {targetType}
+                {targetId}
+                label={m.common_edit()}
+                submitLabel={m.common_save()}
+                initial={{
+                  text: c.text ?? "",
+                  spoilerTag: c.spoilerTag,
+                  mentions: c.mentions,
+                }}
+                {allowSpoilerTag}
+                busy={updateMut.isPending}
+                autofocus
+                oncancel={cancelEdit}
+                onsubmit={(draft) => submitEdit(c.id, draft)} />
             </div>
           {:else if c.masked && c.author?.id !== auth.user?.id && !showSpoilers && !revealed.has(c.id)}
+            <!-- The same hatched wall as a spoiler message in Messages. -->
             <button
-              class="border-accent/45 bg-accent/5 text-accent hover:bg-accent/10 mt-2 inline-flex items-center gap-2 border border-dashed px-2.5 py-1.5 text-sm transition-colors"
+              type="button"
+              class="text-fg mt-1.5 flex items-center gap-2 rounded-xl bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--accent)_22%,transparent)_0_8px,var(--surface-2)_8px_16px)] px-3.5 py-2.5 text-sm font-semibold transition-[filter] duration-150 hover:brightness-110"
               onclick={() => reveal(c.id)}>
-              <Icon name="eye-off" class="h-3.5 w-3.5 shrink-0" />
+              <Icon name="eye-off" class="h-4 w-4" />
               {m.comment_reveal_spoiler()}
             </button>
           {:else}
-            <p
-              class="mt-1 text-[0.95rem] leading-6 wrap-break-word whitespace-pre-wrap">
-              {#each mentionParts(c) as part (part.start)}
-                {#if part.username}
-                  <a
-                    href="/app/u/{part.username}"
-                    class="text-accent hover:text-accent/80 font-semibold transition-colors"
-                    >{part.text}</a>
-                {:else}
-                  {part.text}
-                {/if}
-              {/each}
-            </p>
+            <div class="mt-1 text-[0.95rem] leading-6">
+              <ChatMessageText
+                text={withUserTokens(c.text ?? "", c.mentions)}
+                fallbackSeries={seriesHref} />
+            </div>
+            {#if appConfig.chatEnabled}
+              <CommentWorkCards text={c.text ?? ""} />
+            {/if}
           {/if}
 
           {#if editingId !== c.id && replyToId !== c.id}
-            {@render actionRow(c, isReply, focused)}
+            {@render actionRow(c, isReply)}
           {/if}
 
           {#if replyToId === c.id}
-            <div
-              transition:expand
-              class="border-border bg-surface-2 mt-2 rounded-lg border p-2.5">
-              <div class="relative">
-                <CommentMentionInput
-                  bind:value={replyText}
-                  bind:mentions={replyMentions}
-                  {targetType}
-                  {targetId}
-                  id="comment-reply-{c.id}"
-                  name="replyText"
-                  label={m.comment_reply_label()}
-                  inputClass="input bg-bg pr-14 text-sm"
-                  placeholder={!c.author
-                    ? m.comment_reply_placeholder()
-                    : c.author.anonymized
-                      ? m.comment_reply_to({ name: c.author.displayName })
-                      : m.comment_reply_to({ name: `@${c.author.username}` })}
-                  onkeydown={(e) => e.key === "Enter" && submitReply(c.id)} />
-                <span
-                  class="text-dim pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[0.65rem] tabular-nums">
-                  {replyText.length}/{COMMENT_TEXT_MAX_LENGTH}
-                </span>
-              </div>
-              <div class="mt-2 flex items-center gap-2">
-                {#if allowSpoilerTag}
-                  <button
-                    type="button"
-                    aria-pressed={replySpoilerTag}
-                    onclick={() => (replySpoilerTag = !replySpoilerTag)}
-                    class="inline-flex h-7 items-center gap-1.5 rounded-md px-1.5 text-xs font-semibold transition-colors {replySpoilerTag
-                      ? 'bg-accent/10 text-accent'
-                      : 'text-dim hover:text-fg hover:bg-bg'}">
-                    <Icon name="eye-off" class="h-3.5 w-3.5" />
-                    {replySpoilerTag
-                      ? m.comment_unmark_spoiler()
-                      : m.comment_mark_spoiler()}
-                  </button>
-                {/if}
-                <div class="ml-auto flex items-center gap-1.5">
-                  <button class="btn btn-ghost btn-sm" onclick={cancelReply}>
-                    {m.common_cancel()}
-                  </button>
-                  <button
-                    class="btn btn-primary btn-sm"
-                    disabled={!replyText.trim() || cooldownRemaining > 0}
-                    onclick={() => submitReply(c.id)}>
-                    {cooldownRemaining > 0
-                      ? m.common_wait_seconds({ seconds: cooldownRemaining })
-                      : m.common_reply()}
-                  </button>
-                </div>
-              </div>
+            <div transition:expand class="mt-2">
+              <CommentComposer
+                id="comment-reply-{c.id}"
+                {targetType}
+                {targetId}
+                label={m.comment_reply_label()}
+                placeholder={!c.author
+                  ? m.comment_reply_placeholder()
+                  : c.author.anonymized
+                    ? m.comment_reply_to({ name: c.author.displayName })
+                    : m.comment_reply_to({ name: `@${c.author.username}` })}
+                submitLabel={m.common_reply()}
+                {allowSpoilerTag}
+                waitSeconds={cooldownRemaining}
+                busy={createMut.isPending}
+                autofocus
+                oncancel={cancelReply}
+                onsubmit={(draft) => submitReply(c.id, draft)} />
             </div>
           {/if}
         </div>
@@ -848,7 +893,7 @@
       bind:this={feed}
       onscroll={updateJumpToLatest}
       class="h-full overflow-y-auto px-5 sm:px-6">
-      <div class="py-4">
+      <div bind:this={feedContent} class="py-4">
         {#if query.isPending}
           <p class="text-dim text-sm">{m.common_loading()}</p>
         {:else if query.isError}
@@ -883,6 +928,19 @@
                 0,
                 c.replyCount - shownReplies.length,
               )}
+              {#if c.id === unreadFrom}
+                <div
+                  role="separator"
+                  data-unread-line
+                  aria-label={m.chat_unread_from_here()}
+                  class="text-accent my-1 flex items-center gap-2">
+                  <span class="bg-accent h-px flex-1"></span>
+                  <span
+                    class="font-mono text-[0.62rem] font-bold tracking-widest uppercase"
+                    >{m.common_new()}</span>
+                  <span class="bg-accent h-px flex-1"></span>
+                </div>
+              {/if}
               {@render commentCard(c, false)}
               {#if shownReplies.length > 0}
                 <div class="border-border/70 mt-1 ml-7 border-l pl-4">
@@ -925,61 +983,19 @@
 
   <div class="border-border bg-bg shrink-0 border-t px-5 py-4 sm:px-6">
     {#if canParticipate}
-      <div
-        class="comment-composer border-border bg-surface hover:border-fg/25 focus-within:border-fg/25 rounded-xl border px-3 py-2.5 transition-[border-color,background-color]">
-        <div class="flex items-start gap-2.5">
-          <Icon name="message" class="text-accent mt-1 h-4 w-4 shrink-0" />
-          <div class="min-w-0 flex-1">
-            <CommentMentionInput
-              bind:value={newText}
-              bind:mentions={newMentions}
-              {targetType}
-              {targetId}
-              id="comment-add-text"
-              name="commentText"
-              label={m.comment_add_label()}
-              inputClass="comment-composer-input placeholder:text-dim min-h-16 w-full resize-none bg-transparent text-sm leading-5 outline-none focus:outline-none focus:ring-0"
-              placeholder={m.comment_add_placeholder()}
-              multiline
-              rows={2}
-              onkeydown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void submitTop();
-                }
-              }} />
-          </div>
-        </div>
-        <div class="border-border mt-2 flex items-center gap-2 border-t pt-2">
-          {#if allowSpoilerTag}
-            <button
-              type="button"
-              aria-pressed={newSpoilerTag}
-              onclick={() => (newSpoilerTag = !newSpoilerTag)}
-              class="inline-flex h-7 items-center gap-1.5 rounded-md px-1.5 text-xs font-semibold transition-colors {newSpoilerTag
-                ? 'text-accent bg-accent/10'
-                : 'text-dim hover:text-fg hover:bg-surface-2'}">
-              <Icon name="eye-off" class="h-3.5 w-3.5" />
-              {newSpoilerTag
-                ? m.comment_unmark_spoiler()
-                : m.comment_mark_spoiler()}
-            </button>
-          {/if}
-          <span class="timecode text-dim ml-auto text-[0.65rem] tabular-nums">
-            {newText.length}/{COMMENT_TEXT_MAX_LENGTH}
-          </span>
-          <button
-            class="btn btn-primary btn-sm h-8 px-3"
-            disabled={!newText.trim() ||
-              createMut.isPending ||
-              cooldownRemaining > 0}
-            onclick={submitTop}>
-            {cooldownRemaining > 0
-              ? m.common_wait_seconds({ seconds: cooldownRemaining })
-              : m.common_publish()}
-          </button>
-        </div>
-      </div>
+      <CommentComposer
+        id="comment-add-text"
+        {targetType}
+        {targetId}
+        label={m.comment_add_label()}
+        placeholder={m.comment_add_placeholder()}
+        submitLabel={m.common_publish()}
+        {allowSpoilerTag}
+        waitSeconds={cooldownRemaining}
+        busy={createMut.isPending}
+        framed
+        oneditlast={editLastMine}
+        onsubmit={submitTop} />
     {:else}
       <p class="text-dim text-sm">
         {m.comments_track_to_participate()}
@@ -1000,11 +1016,33 @@
 {/if}
 
 {#if focused}
-  <FocusOverlay onclose={() => (focusedId = null)}>
-    {#snippet content()}
-      {@render commentCard(focused.comment, focused.isReply, true)}
-    {/snippet}
-  </FocusOverlay>
+  <!-- Above the Messages sheet (z-50). -->
+  <Drawer onclose={() => (focusedId = null)} zIndex={60}>
+    <div class="flex flex-col gap-2 px-3 pt-1 pb-3">
+      {#if canParticipate}
+        <div class="self-center">
+          {@render emotePicker(focused.comment, () => (focusedId = null))}
+        </div>
+      {/if}
+      <div class="flex flex-col" role="menu">
+        {@render menuItems(
+          focused.comment,
+          focused.isReply,
+          () => (focusedId = null),
+        )}
+      </div>
+    </div>
+  </Drawer>
+{/if}
+
+{#if sharing && share}
+  <CommentShareModal
+    comment={sharing}
+    {targetType}
+    {targetId}
+    title={share.title}
+    href={share.href}
+    onclose={() => (sharing = null)} />
 {/if}
 
 {#if reportingId}
@@ -1015,11 +1053,3 @@
     onClose={() => (reportingId = null)}
     onSubmit={submitReport} />
 {/if}
-
-<style>
-  :global(.comment-composer-input:focus-visible) {
-    outline: none !important;
-    outline-offset: 0;
-    box-shadow: none !important;
-  }
-</style>

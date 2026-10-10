@@ -38,8 +38,22 @@ since you last read it. They count in the Messages button too. A work's
 
 These are the same comments as before, and the same rules: anyone can read
 them, writing needs the work in your library, and a spoiler stays hidden until
-you show spoilers. Replies and mentions no longer go to the bell, since this
-tab counts them; their push, if you turned it on, still comes.
+you show spoilers. Replies and mentions still reach the bell too, and your
+phone if you turned their push on.
+
+A comment is written like a message: the same formatting and shortcuts,
+`||spoilers||` within the text, `/spoiler` to hide all of it, `#` to mention a
+work, links that turn into cards, **Enter** to send and **↑** to edit your last
+one. `@` still names someone from the discussion. An episode code such as
+`S2E5` points at the series the discussion is about, unless the comment names
+another one.
+
+Each comment has the same two buttons as a message: one to react, one for its
+menu (reply, edit, copy the text, mark as unread from there, share it with a
+friend, delete or report). On a phone, press and hold the comment instead. The
+**…** above the discussion leads to the work's page, mutes it (its unread then
+shows on it alone, not in the Messages button) or searches it, as **Ctrl+F**
+does.
 
 ## Writing
 

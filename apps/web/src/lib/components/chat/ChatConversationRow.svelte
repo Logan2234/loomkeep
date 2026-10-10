@@ -7,7 +7,7 @@
     conversationName,
     conversationPreview,
     conversationTime,
-    shownUnread,
+    badgeTone,
   } from "./conversation-presentation";
 
   let {
@@ -28,7 +28,7 @@
       ? (chat.presence[peer.id] ?? conversation.peerOnline)
       : false,
   );
-  const unread = $derived(shownUnread(conversation));
+  const unread = $derived(conversation.unread);
 </script>
 
 <button
@@ -73,7 +73,9 @@
   </span>
   {#if unread > 0}
     <span
-      class="bg-accent text-accent-fg grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1.5 font-mono text-[0.68rem] font-bold">
+      class="grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1.5 font-mono text-[0.68rem] font-bold {badgeTone(
+        conversation.muted,
+      )}">
       {unread > 99 ? "99+" : unread}
     </span>
   {/if}

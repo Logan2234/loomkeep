@@ -54,12 +54,12 @@ describe("isAlertEnabled", () => {
     ).toBe(true);
     expect(
       isAlertEnabled(
-        { COMMENT_REACTIONS: { push: true } },
-        "COMMENT_REACTIONS",
+        { API_KEYS_REVIEW: { push: true } },
+        "API_KEYS_REVIEW",
         "push",
       ),
     ).toBe(false);
-    expect(isAlertToggleable("COMMENT_REACTIONS", "push")).toBe(false);
+    expect(isAlertToggleable("API_KEYS_REVIEW", "push")).toBe(false);
   });
 });
 

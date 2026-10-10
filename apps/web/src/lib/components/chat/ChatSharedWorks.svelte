@@ -7,7 +7,8 @@
   import Modal from "#lib/components/Modal.svelte";
   import { formatDate } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import ChatWorkCard from "./ChatWorkCard.svelte";
+  import type { ConversationWorkDto } from "@loomkeep/shared";
+  import ChatSharedWorkRow from "./ChatSharedWorkRow.svelte";
 
   let {
     conversationId,
@@ -23,42 +24,53 @@
     key: keys.chat.works(conversationId),
     fetch: () => getConversationWorks(conversationId),
   }));
+
+  // A ledger by month of sharing, latest first as the list comes.
+  const months = $derived.by(() => {
+    const out: { label: string; works: ConversationWorkDto[] }[] = [];
+    for (const work of worksQuery.data ?? []) {
+      const label = formatDate(work.sharedAt, {
+        month: "long",
+        year: "numeric",
+      });
+      const last = out.at(-1);
+      if (last?.label === label) last.works.push(work);
+      else out.push({ label, works: [work] });
+    }
+    return out;
+  });
 </script>
 
 <Modal title={m.chat_shared_works()} {onclose}>
   {#if worksQuery.data && worksQuery.data.length > 0}
-    <ul class="flex flex-col gap-3">
-      {#each worksQuery.data as work (work.href)}
-        <li class="flex flex-col gap-1">
-          <ChatWorkCard {work} />
-          <span class="text-dim px-1 font-mono text-[0.65rem]">
-            {m.chat_shared_by({
-              name: work.mine ? m.common_you() : peerName,
-              date: formatDate(work.sharedAt, {
-                day: "2-digit",
-                month: "2-digit",
-                year: "2-digit",
-              }),
-            })}
-          </span>
-        </li>
+    <div class="flex flex-col">
+      {#each months as month (month.label)}
+        <h3
+          class="text-dim mt-2.5 mb-0.5 flex items-center gap-2 font-mono text-[0.66rem] tracking-widest uppercase first:mt-0">
+          {month.label}
+          <span class="bg-border h-px flex-1"></span>
+        </h3>
+        <ul class="flex flex-col">
+          {#each month.works as work (work.href)}
+            <ChatSharedWorkRow {work} {peerName} />
+          {/each}
+        </ul>
       {/each}
-    </ul>
+    </div>
   {:else if worksQuery.loading}
-    <ul class="flex flex-col gap-3" aria-busy="true">
-      {#each [0, 1, 2] as i (i)}
-        <li class="flex flex-col gap-1">
-          <div
-            class="border-border bg-surface flex w-64 max-w-full gap-3 rounded-xl border p-2">
-            <div
-              class="bg-surface-2 h-[78px] w-[52px] animate-pulse rounded-md">
-            </div>
-            <div class="flex flex-1 flex-col gap-2 py-1">
-              <div class="bg-surface-2 h-2.5 w-16 animate-pulse rounded"></div>
-              <div class="bg-surface-2 h-4 w-32 animate-pulse rounded"></div>
-            </div>
-          </div>
-          <div class="bg-surface-2 mx-1 h-2.5 w-36 animate-pulse rounded"></div>
+    <ul class="flex flex-col" aria-busy="true">
+      {#each [0, 1, 2, 3] as i (i)}
+        <li
+          class="border-surface-2 flex items-center gap-3 border-b py-2.5 last:border-b-0">
+          <span
+            class="bg-surface-2 h-[57px] w-[38px] animate-pulse rounded-[5px]"
+          ></span>
+          <span class="flex flex-1 flex-col gap-2">
+            <span class="bg-surface-2 h-3.5 w-36 animate-pulse rounded"></span>
+            <span class="bg-surface-2 h-2.5 w-20 animate-pulse rounded"></span>
+          </span>
+          <span class="bg-surface-2 h-2.5 w-16 animate-pulse rounded"></span>
+          <span class="bg-surface-2 h-7 w-7 animate-pulse rounded-full"></span>
         </li>
       {/each}
     </ul>

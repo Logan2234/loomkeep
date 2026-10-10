@@ -13,6 +13,7 @@
     conversationName,
     conversationPreview,
     conversationTime,
+    badgeTone,
     shownUnread,
     workThreadContext,
     workThreadPreview,
@@ -23,6 +24,12 @@
     conversations,
     threads,
   }: { conversations: ConversationDto[]; threads: WorkThreadDto[] } = $props();
+
+  // A dot on each tab with something unread, whichever is shown.
+  const tabUnread = $derived<Record<ChatTab, boolean>>({
+    friends: conversations.some((c) => shownUnread(c) > 0),
+    works: threads.some((t) => t.unread > 0 && !t.muted),
+  });
 
   const TABS: { id: ChatTab; icon: IconName; label: string }[] = [
     { id: "friends", icon: "users", label: m.common_friends() },
@@ -112,11 +119,17 @@
           aria-selected={selected}
           aria-label={tab.label}
           title={unfolded ? undefined : tab.label}
-          class="flex h-9 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors duration-150
+          class="relative flex h-9 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors duration-150
             {unfolded ? 'min-w-0 flex-1 px-2' : 'w-9'}
             {selected ? 'bg-surface-2 text-fg' : 'text-dim hover:text-fg'}"
           onclick={() => (chat.tab = tab.id)}>
           <Icon name={tab.icon} class="h-4.5 w-4.5 shrink-0" />
+          {#if tabUnread[tab.id]}
+            <span
+              transition:scale={{ duration: reduced ? 0 : 150 }}
+              class="bg-accent ring-surface absolute top-1 right-1 h-2 w-2 rounded-full ring-2"
+              aria-hidden="true"></span>
+          {/if}
           {#if unfolded}
             <span
               in:fade={{ duration: reduced ? 0 : 150, delay: reduced ? 0 : 80 }}
@@ -181,8 +194,16 @@
             </span>
             {#if thread.unread > 0}
               <span
-                class="bg-accent text-accent-fg ring-bg absolute -top-1.5 -right-2.5 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 font-mono text-[0.62rem] font-bold ring-2">
+                class="ring-bg absolute -top-1.5 -right-2.5 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 font-mono text-[0.62rem] font-bold ring-2 {badgeTone(
+                  thread.muted,
+                )}">
                 {thread.unread > 99 ? "99+" : thread.unread}
+              </span>
+            {/if}
+            {#if thread.muted}
+              <span
+                class="bg-surface-2 text-dim ring-bg absolute -bottom-1 -left-1.5 grid h-[18px] w-[18px] place-items-center rounded-full ring-2">
+                <Icon name="bell-off" class="h-2.5 w-2.5" />
               </span>
             {/if}
           </span>
@@ -215,7 +236,7 @@
   {:else}
     {#each shown as conversation (conversation.id)}
       {@const active = chat.activeId === conversation.id && !chat.composing}
-      {@const unread = shownUnread(conversation)}
+      {@const unread = conversation.unread}
       {@const peer = conversation.peer}
       {@const online =
         conversation.peerOnline !== null && peer
@@ -260,7 +281,9 @@
             {/if}
             {#if unread > 0}
               <span
-                class="bg-accent text-accent-fg ring-bg absolute -top-1.5 -right-2 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 font-mono text-[0.62rem] font-bold ring-2">
+                class="ring-bg absolute -top-1.5 -right-2 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 font-mono text-[0.62rem] font-bold ring-2 {badgeTone(
+                  conversation.muted,
+                )}">
                 {unread > 99 ? "99+" : unread}
               </span>
             {/if}
@@ -362,7 +385,7 @@
 
 {#if hovered && !unfolded}
   {@const card = hovered.conversation}
-  {@const unread = shownUnread(card)}
+  {@const unread = card.unread}
   <div
     transition:scale={{ duration: reduced ? 0 : 120, start: 0.96 }}
     class="border-border bg-surface pointer-events-none fixed z-[60] flex w-64 flex-col gap-1 rounded-xl border px-3.5 py-3 shadow-xl"

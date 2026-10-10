@@ -5,6 +5,7 @@ import { GamesModule } from "../games/games.module";
 import { LinksModule } from "../links/links.module";
 import { MusicModule } from "../music/music.module";
 import { ReportsModule } from "../reports/reports.module";
+import { DomainGateModule } from "../users/domain-gate.module";
 import { ChatWorkService } from "./chat-work.service";
 import { ChatController } from "./chat.controller";
 import { ChatModule } from "./chat.module";
@@ -22,6 +23,7 @@ import { WorkThreadService } from "./work-thread.service";
     GamesModule,
     BooksModule,
     MusicModule,
+    DomainGateModule,
   ],
   controllers: [ChatController],
   providers: [ChatWorkService, WorkThreadService],

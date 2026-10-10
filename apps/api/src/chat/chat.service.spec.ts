@@ -546,6 +546,29 @@ describe("ChatService", () => {
     await expectCode(service.remove(ME, "m1"), ErrorCode.ChatForbidden);
   });
 
+  it("only marks a message edited when its text or spoiler changed", async () => {
+    const { service, prisma } = setup();
+    (prisma.message.findUnique as Mock).mockResolvedValue({
+      id: "m1",
+      authorId: ME,
+      conversationId: "cv1",
+      deletedAt: null,
+      pinnedAt: null,
+      createdAt: new Date("2026-10-06T21:34:00Z"),
+      text: "Salut",
+      spoiler: false,
+      edited: false,
+    });
+    const editedFlag = () =>
+      (prisma.message.update as Mock).mock.calls.at(-1)?.[0].data.edited;
+
+    await service.edit(ME, "m1", "Salut");
+    expect(editedFlag()).toBe(false);
+
+    await service.edit(ME, "m1", "Salut !");
+    expect(editedFlag()).toBe(true);
+  });
+
   describe("read receipts and presence are reciprocal", () => {
     it("tells the other member about a read only when both show read receipts", async () => {
       const shared = setup();

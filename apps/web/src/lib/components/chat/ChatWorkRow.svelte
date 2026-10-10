@@ -1,7 +1,9 @@
 <script lang="ts">
+  import Icon from "#lib/components/Icon.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import type { WorkThreadDto } from "@loomkeep/shared";
   import {
+    badgeTone,
     workThreadContext,
     workThreadPreview,
     workThreadTime,
@@ -49,13 +51,20 @@
       </span>
     {/if}
     <span
-      class="block truncate text-[0.8rem] {thread.unread
+      class="flex items-center gap-1 text-[0.8rem] {thread.unread
         ? 'text-fg'
-        : 'text-dim'}">{workThreadPreview(thread)}</span>
+        : 'text-dim'}">
+      {#if thread.muted}
+        <Icon name="bell-off" class="h-3 w-3 shrink-0" />
+      {/if}
+      <span class="truncate">{workThreadPreview(thread)}</span>
+    </span>
   </span>
   {#if thread.unread > 0}
     <span
-      class="bg-accent text-accent-fg grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1.5 font-mono text-[0.68rem] font-bold">
+      class="grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1.5 font-mono text-[0.68rem] font-bold {badgeTone(
+        thread.muted,
+      )}">
       {thread.unread > 99 ? "99+" : thread.unread}
     </span>
   {/if}

@@ -84,6 +84,17 @@ export class CommentController {
     return this.comments.participants(user.sub, parseTarget(type), id, query);
   }
 
+  @Get(":type/:id/search")
+  @ApiOkResponse({ type: CommentResponseDto, isArray: true })
+  search(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+    @Query("q") query = "",
+  ): Promise<CommentDto[]> {
+    return this.comments.search(user.sub, parseTarget(type), id, query);
+  }
+
   @Get(":type/:id")
   @ApiOkResponse({ type: PagedResponseDto(CommentResponseDto) })
   list(

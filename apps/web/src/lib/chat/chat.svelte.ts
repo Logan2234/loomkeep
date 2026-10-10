@@ -33,6 +33,8 @@ class ChatState {
   workOnScreen = $state<string | null>(null);
   /** "Nouveau message": picking a friend instead of reading a conversation. */
   composing = $state(false);
+  /** The last page outside Messages: where "Réduire" goes back to. */
+  returnTo = $state<string | null>(null);
   /** The conversation the full-screen page shows, while it's mounted. */
   fullscreenId = $state<string | null>(null);
   /** Conversations whose other member is typing right now. */
