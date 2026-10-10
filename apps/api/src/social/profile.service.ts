@@ -132,23 +132,13 @@ export class ProfileService {
       domains.push({ domain, visible, count, favorites });
     }
 
-    const activityVisible = resolveFacet(
-      target.profileAccess,
-      this.visibility.audienceFor(
-        settings,
-        Domain.MEDIA,
-        VisibilityFacet.ACTIVITY,
-      ),
-      relation,
-    );
-
-    // The owner always sees their real progress; anyone else needs both the
-    // MEDIA Activité facet visible and the target's own `hideProgression`
-    // preference off. `UserScore` is only read when gamification is actually
-    // on, so a self-hoster running with it off never pays that query.
+    // The owner always sees their real progress; anyone else who reaches the
+    // profile sees it unless the target turned `hideProgression` on — the
+    // same single rule as the leaderboard and the level badge on reviews and
+    // comments. `UserScore` is only read when gamification is actually on, so
+    // a self-hoster running with it off never pays that query.
     const gamificationEnabled = isGamificationEnabled(this.config);
-    const xpVisible =
-      relation.isSelf || (activityVisible && !target.hideProgression);
+    const xpVisible = relation.isSelf || !target.hideProgression;
 
     const [
       activityStats,

@@ -295,7 +295,7 @@
   "settings_privacy_description": "Chi può trovarti e cosa vedono gli altri di te.",
   "settings_privacy_profile_label": "Profilo",
   "settings_hide_progression": "Nascondi la mia progressione",
-  "settings_hide_progression_desc": "Il tuo livello e i tuoi XP restano visibili solo a te; gli altri non li vedono più sul tuo profilo, nelle recensioni o nei commenti.",
+  "settings_hide_progression_desc": "Il tuo livello, i tuoi XP e i tuoi obiettivi restano visibili solo a te: gli altri non li vedono più sul tuo profilo, nelle recensioni o nei commenti, e non compari più in classifica.",
   "settings_privacy_default_reviews": "Visibilità predefinita delle nuove recensioni",
   "settings_privacy_default_reviews_hint": "Usata quando voti un'opera senza indicare la visibilità.",
   "settings_privacy_default_lists": "Visibilità predefinita delle nuove liste",

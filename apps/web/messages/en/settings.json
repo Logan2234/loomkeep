@@ -295,7 +295,7 @@
   "settings_privacy_description": "Who can find you, and what others see about you.",
   "settings_privacy_profile_label": "Profile",
   "settings_hide_progression": "Hide my progression",
-  "settings_hide_progression_desc": "Your level and XP stay visible to you only; others no longer see them on your profile, reviews, or comments.",
+  "settings_hide_progression_desc": "Your level, XP and achievements stay visible to you only: others no longer see them on your profile, reviews or comments, and you no longer appear on the leaderboard.",
   "settings_privacy_default_reviews": "Default visibility for new reviews",
   "settings_privacy_default_reviews_hint": "Used when you rate a work without specifying visibility.",
   "settings_privacy_default_lists": "Default visibility for new lists",

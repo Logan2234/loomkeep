@@ -186,7 +186,9 @@ describe("ProfileService.getProfile xp", () => {
     expect(profile.xp).toBeNull();
   });
 
-  it("hides xp from another viewer when the ACTIVITY facet isn't visible", async () => {
+  it("shows xp to another viewer whatever the ACTIVITY facet says", async () => {
+    // Only `hideProgression` hides progress, as on the leaderboard and the
+    // level badge next to reviews and comments.
     const svc = makeFullProfile({
       rel: relation({}),
       activityAudience: VisibilityAudience.NONE,
@@ -194,7 +196,7 @@ describe("ProfileService.getProfile xp", () => {
       userScoreXp: 250,
     });
     const profile = await svc.getProfile("target", "alice");
-    expect(profile.xp).toBeNull();
+    expect(profile.xp).toBe(250);
   });
 
   it("never touches UserScore and returns null xp when gamification is disabled", async () => {
