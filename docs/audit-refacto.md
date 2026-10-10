@@ -13,7 +13,6 @@
 - **Base saine** : `common/entry-lifecycle.util.ts`, `common/http.util.ts` (`fetchJson`), `lib/format.ts`, `Modal`/`ConfirmationModal` et les helpers TanStack sont bien adoptés. Il n'y a aucun `any` en production API, aucun `@ts-ignore`, et la config ESLint/tsconfig est factorisée.
 - **La dette vient surtout de copies qui ont divergé.** Ces divergences ont déjà produit **plusieurs bugs réels** :
   - liens `/games/…` sans préfixe `/app` dans les listes et les stats ;
-  - plafond du minuteur absent côté web ;
 
 - **Plus gros gisement front ↔ back restant** : les **constructeurs de routes `/app/...`** (environ 55 sites des deux côtés), à partager dans `packages/shared`. Les limites de champs sont désormais communes aux formulaires et aux validateurs API.
 - **À l'inverse, `packages/shared` est surdimensionné côté API** : `dto/api-v1.ts` (21/21 exports API seule), `dto/data-export.ts` (37/38) et environ 270 exports sur 546 ne sont jamais importés par le web, qui type ces routes via OpenAPI. Une règle d'appartenance est à acter.
