@@ -33,10 +33,15 @@ export interface ReviewTargetSummaryDto {
   imageUrl: string | null;
   /**
    * Client route to the work's detail page (e.g. `/games/1234`), or null when
-   * the target has no browsable page yet (SEASON/EPISODE). Built server-side
-   * from the canonical source id so the client needn't know the URL scheme.
+   * the target has no browsable page. Built server-side from the canonical
+   * source id so the client needn't know the URL scheme. A season or episode
+   * resolves to its series' page.
    */
   href: string | null;
+  /** Set for a SEASON or EPISODE target; `title`/`imageUrl` are the series'. */
+  seasonNumber?: number | null;
+  /** Set for an EPISODE target only. */
+  episodeNumber?: number | null;
 }
 
 /** A review plus its resolved target, for the "Mes reviews" screen. */

@@ -834,4 +834,93 @@ describe("ReviewService.listMine — target links", () => {
       "/app/music/mbid-1",
     ]);
   });
+
+  it("resolves a season or episode review to its series, with the numbers", async () => {
+    const row = (targetType: string, targetId: string) => ({
+      id: `r-${targetId}`,
+      userId: VIEWER,
+      targetType,
+      targetId,
+      rating: 8,
+      text: null,
+      visibility: "PUBLIC",
+      spoilerTag: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const prisma = {
+      review: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([row("SEASON", "s1"), row("EPISODE", "e1")]),
+      },
+      reviewVote: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      user: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: VIEWER,
+          username: VIEWER,
+          displayName: VIEWER,
+          avatarUrl: null,
+          hideProgression: false,
+        }),
+      },
+      userScore: { findMany: vi.fn().mockResolvedValue([]) },
+      season: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ id: "s1", number: 2, mediaItemId: "m1" }]),
+      },
+      episode: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "e1",
+            number: 5,
+            season: { number: 3, mediaItemId: "m1" },
+          },
+        ]),
+      },
+      mediaItem: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "m1",
+            title: "Severance",
+            posterUrl: "https://img/severance.jpg",
+            type: "TV",
+            canonicalSource: "TMDB",
+            externalIds: [{ source: "TMDB", externalId: "95396" }],
+          },
+        ]),
+      },
+    } as unknown as PrismaService;
+    const svc = new ReviewService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      stubXp(),
+      CONFIG,
+      stubAchievements(),
+      stubNotifications(),
+    );
+
+    const targets = (await svc.listMine(VIEWER)).map((r) => r.target);
+
+    expect(targets).toEqual([
+      {
+        title: "Severance",
+        imageUrl: "https://img/severance.jpg",
+        href: "/app/media/tv/95396",
+        seasonNumber: 2,
+      },
+      {
+        title: "Severance",
+        imageUrl: "https://img/severance.jpg",
+        href: "/app/media/tv/95396",
+        seasonNumber: 3,
+        episodeNumber: 5,
+      },
+    ]);
+  });
 });

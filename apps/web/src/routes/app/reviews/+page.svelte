@@ -18,6 +18,7 @@
   import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { seasonEpisodeLabel } from "#lib/review-target-label.js";
   import type {
     MyReviewDto,
     ReviewTargetType,
@@ -169,7 +170,7 @@
 
   function metaLine(review: MyReviewDto): string {
     return [
-      TYPE_LABEL[review.targetType],
+      seasonEpisodeLabel(review) ?? TYPE_LABEL[review.targetType],
       formatDate(review.createdAt, DATE_MEDIUM_OPTIONS),
       ...(appConfig.socialEnabled
         ? [
@@ -416,7 +417,7 @@
 {#if editing}
   <ReviewFormModal
     title={editing.target?.title ?? m.reviews_edit()}
-    meta={TYPE_LABEL[editing.targetType]}
+    meta={seasonEpisodeLabel(editing) ?? TYPE_LABEL[editing.targetType]}
     imageUrl={editing.target?.imageUrl ?? null}
     targetType={editing.targetType}
     targetId={editing.targetId}

@@ -517,10 +517,8 @@ export class ReviewService {
 
   /**
    * Resolves display info (title + image) for the work each review targets,
-   * batched per type. SEASON and EPISODE resolve to nothing here — a season
-   * review is creatable from the episode list, and an episode one arrives with
-   * the IMDb import — so they fall back to a null target (rendered
-   * generically, without title or poster).
+   * batched per type. A SEASON or EPISODE resolves to its series' title,
+   * poster and page, plus its own season/episode numbers.
    */
   private async resolveTargets(
     rows: { targetType: string; targetId: string }[],
@@ -553,9 +551,34 @@ export class ReviewService {
       }
     };
 
-    const mediaIds = idsByType.get(ReviewTargetType.MEDIA);
+    const seasonIds = idsByType.get(ReviewTargetType.SEASON);
+    const episodeIds = idsByType.get(ReviewTargetType.EPISODE);
+    const [seasons, episodes] = await Promise.all([
+      seasonIds?.length
+        ? this.prisma.season.findMany({
+            where: { id: { in: seasonIds } },
+            select: { id: true, number: true, mediaItemId: true },
+          })
+        : [],
+      episodeIds?.length
+        ? this.prisma.episode.findMany({
+            where: { id: { in: episodeIds } },
+            select: {
+              id: true,
+              number: true,
+              season: { select: { number: true, mediaItemId: true } },
+            },
+          })
+        : [],
+    ]);
 
-    if (mediaIds?.length) {
+    const mediaIds = [
+      ...(idsByType.get(ReviewTargetType.MEDIA) ?? []),
+      ...seasons.map((s) => s.mediaItemId),
+      ...episodes.map((e) => e.season.mediaItemId),
+    ];
+
+    if (mediaIds.length) {
       const items = await this.prisma.mediaItem.findMany({
         where: { id: { in: mediaIds } },
         select: {
@@ -579,6 +602,31 @@ export class ReviewService {
           ),
         })),
       );
+
+      for (const s of seasons) {
+        const series = map.get(`${ReviewTargetType.MEDIA}:${s.mediaItemId}`);
+
+        if (series) {
+          map.set(`${ReviewTargetType.SEASON}:${s.id}`, {
+            ...series,
+            seasonNumber: s.number,
+          });
+        }
+      }
+
+      for (const e of episodes) {
+        const series = map.get(
+          `${ReviewTargetType.MEDIA}:${e.season.mediaItemId}`,
+        );
+
+        if (series) {
+          map.set(`${ReviewTargetType.EPISODE}:${e.id}`, {
+            ...series,
+            seasonNumber: e.season.number,
+            episodeNumber: e.number,
+          });
+        }
+      }
     }
 
     const gameIds = idsByType.get(ReviewTargetType.GAME);
