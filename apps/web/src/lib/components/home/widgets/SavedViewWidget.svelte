@@ -12,7 +12,18 @@
   import type { BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
   import { savedViewHref } from "#lib/saved-views.js";
-  import type { HomeWidgetDto, SavedViewDto } from "@loomkeep/shared";
+  import {
+    type HomeWidgetDto,
+    type SavedViewDto,
+    type MediaSortKey,
+    type BookSortKey,
+    type GameSortKey,
+    type MusicSortKey,
+    type MediaFilterStatus,
+    type GameFilterStatus,
+    type BookFilterStatus,
+    type MusicStatus,
+  } from "@loomkeep/shared";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
 
@@ -48,7 +59,12 @@
     };
     switch (v.domain) {
       case "MEDIA":
-        return listLibrary({ ...filters, types: v.filters.types }).then((r) =>
+        return listLibrary({
+          ...filters,
+          sort: filters.sort as MediaSortKey,
+          statuses: filters.statuses as MediaFilterStatus[] | undefined,
+          types: v.filters.types,
+        }).then((r) =>
           r.items.map((e) => ({
             id: e.id,
             href: `/app/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`,
@@ -57,7 +73,11 @@
           })),
         );
       case "GAMES":
-        return listGames(filters).then((r) =>
+        return listGames({
+          ...filters,
+          sort: filters.sort as GameSortKey,
+          statuses: filters.statuses as GameFilterStatus[] | undefined,
+        }).then((r) =>
           r.items.map((e) => ({
             id: e.id,
             href: `/app/games/${e.game.sourceId}`,
@@ -66,7 +86,11 @@
           })),
         );
       case "BOOKS":
-        return listBooks(filters).then((r) =>
+        return listBooks({
+          ...filters,
+          sort: filters.sort as BookSortKey,
+          statuses: filters.statuses as BookFilterStatus[] | undefined,
+        }).then((r) =>
           r.items.map((e) => ({
             id: e.id,
             href: `/app/books/${e.book.sourceId}`,
@@ -75,7 +99,11 @@
           })),
         );
       case "MUSIC":
-        return listMusic(filters).then((r) =>
+        return listMusic({
+          ...filters,
+          sort: filters.sort as MusicSortKey,
+          statuses: filters.statuses as MusicStatus[] | undefined,
+        }).then((r) =>
           r.items.map((e) => ({
             id: e.id,
             href: `/app/music/${e.album.sourceId}`,

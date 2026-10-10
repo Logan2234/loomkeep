@@ -128,3 +128,13 @@ export interface MusicDetailDto extends MusicDetailsDto {
   commentTargetId: string | null;
   entry: MusicEntryDto | null;
 }
+
+export const MUSIC_SORT_KEYS = [
+  "added",
+  "title",
+  "artist",
+  "rating",
+  "finished",
+  "status",
+] as const;
+export type MusicSortKey = (typeof MUSIC_SORT_KEYS)[number];

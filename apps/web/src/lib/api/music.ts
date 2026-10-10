@@ -1,13 +1,16 @@
 import { getLocale } from "#lib/paraglide/runtime.js";
-import type {
-  BulkEntriesTargetDto,
-  BulkUpdateEntriesDto,
-  MusicOwnershipStatus,
-  MusicStatus,
-  UpdateMusicEntryDto,
-  UpsertMusicEntryDto,
+import {
+  type BulkEntriesTargetDto,
+  type BulkUpdateEntriesDto,
+  type MusicOwnershipStatus,
+  type MusicSortKey,
+  type MusicStatus,
+  type SortOrder,
+  type UpdateMusicEntryDto,
+  type UpsertMusicEntryDto,
 } from "@loomkeep/shared";
-import { type SortOrder } from "@loomkeep/shared";
+import { pageParam } from "./query-params";
+
 import { typedRequest } from "./generated/typed-request";
 
 export const searchMusic = (query: string) =>
@@ -16,8 +19,8 @@ export const searchMusic = (query: string) =>
 export interface ListMusicFilters {
   query?: string;
   favorite?: boolean;
-  statuses?: string[];
-  sort?: string;
+  statuses?: MusicStatus[];
+  sort?: MusicSortKey;
   order?: SortOrder;
   page?: number;
 }
@@ -31,7 +34,7 @@ export function listMusic(filters: ListMusicFilters = {}) {
       status: filters.statuses,
       sort: filters.sort,
       order: filters.order,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      page: pageParam(filters.page),
     },
   });
 }

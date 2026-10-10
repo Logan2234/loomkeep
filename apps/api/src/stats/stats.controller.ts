@@ -1,18 +1,23 @@
-import type {
-  BookStatsDto,
-  DomainPileDto,
-  GameStatsDto,
-  MusicStatsDto,
-  SocialStatsDto,
-  StatsDomain,
-  StatsOverviewDto,
-  StatsWindow,
-  StatsWorkDto,
-  VideoStatsDto,
-  VideoTemporalDto,
-  WatchStaleness,
+import {
+  type BookStatsDto,
+  type DomainPileDto,
+  type GameStatsDto,
+  type MusicStatsDto,
+  type SocialStatsDto,
+  type StatsDomain,
+  type StatsOverviewDto,
+  type StatsWindow,
+  type StatsWorkDto,
+  type VideoStatsDto,
+  type VideoTemporalDto,
+  type WatchStaleness,
+  Domain,
+  ErrorCode,
+  STATS_DOMAINS,
+  STATS_WINDOWS,
+  WATCH_STALENESS,
 } from "@loomkeep/shared";
-import { Domain, ErrorCode, STATS_DOMAINS } from "@loomkeep/shared";
+
 import { Controller, Get, HttpStatus, Query, UseGuards } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
@@ -35,8 +40,6 @@ import { PileService } from "./pile.service";
 import { StatsService } from "./stats.service";
 
 const DOMAIN_CHOICES = ["ALL", ...STATS_DOMAINS] as const;
-const STALENESS_CHOICES = ["PAUSED", "GHOST"] as const;
-const WINDOW_CHOICES = ["ALL", "YEAR", "MONTH", "WEEK"] as const;
 
 @Controller("stats")
 export class StatsController {
@@ -108,7 +111,7 @@ export class StatsController {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     const kind = parseEnumParam(
       kindParam,
-      STALENESS_CHOICES,
+      WATCH_STALENESS,
       "series kind",
     ) as WatchStaleness;
     return this.statsService.getVideoSeries(user.sub, kind);
@@ -123,7 +126,7 @@ export class StatsController {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     const period = parseEnumParam(
       periodParam,
-      WINDOW_CHOICES,
+      STATS_WINDOWS,
       "stats window",
     ) as StatsWindow;
     const premium = await this.entitlements.isEffectivelyPremium(user.sub);

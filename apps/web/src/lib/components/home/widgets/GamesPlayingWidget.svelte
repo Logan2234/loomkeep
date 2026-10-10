@@ -6,7 +6,11 @@
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import type { BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { HomeWidgetDto, HomeWidgetSort } from "@loomkeep/shared";
+  import {
+    type HomeWidgetDto,
+    type HomeWidgetSort,
+    type GameSortKey,
+  } from "@loomkeep/shared";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
   import { ENTRY_SORTS } from "./sorts";
@@ -15,7 +19,7 @@
 
   const def = HOME_WIDGETS.gamesPlaying;
   // A game's progress is how long it's been played.
-  const SORTS: Partial<Record<HomeWidgetSort, string>> = {
+  const SORTS: Partial<Record<HomeWidgetSort, GameSortKey>> = {
     ...ENTRY_SORTS,
     progress: "playtime",
   };

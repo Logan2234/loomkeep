@@ -1,16 +1,20 @@
 import { getLocale } from "#lib/paraglide/runtime.js";
-import type {
-  BulkEntriesTargetDto,
-  BulkUpdateEntriesDto,
-  CreateGameSessionDto,
-  GameOwnershipStatus,
-  GameStatus,
-  LibrarySagaSort,
-  UpdateGameEntryDto,
-  UpdateGameSessionDto,
-  UpsertGameEntryDto,
+import {
+  type BulkEntriesTargetDto,
+  type BulkUpdateEntriesDto,
+  type CreateGameSessionDto,
+  type GameFilterStatus,
+  type GameOwnershipStatus,
+  type GameSortKey,
+  type GameStatus,
+  type LibrarySagaSort,
+  type SortOrder,
+  type UpdateGameEntryDto,
+  type UpdateGameSessionDto,
+  type UpsertGameEntryDto,
 } from "@loomkeep/shared";
-import { type SortOrder } from "@loomkeep/shared";
+import { pageParam } from "./query-params";
+
 import { typedRequest } from "./generated/typed-request";
 
 export const searchGames = (query: string) =>
@@ -19,8 +23,8 @@ export const searchGames = (query: string) =>
 export interface ListGamesFilters {
   query?: string;
   favorite?: boolean;
-  statuses?: string[];
-  sort?: string;
+  statuses?: GameFilterStatus[];
+  sort?: GameSortKey;
   order?: SortOrder;
   page?: number;
 }
@@ -34,7 +38,7 @@ export function listGames(filters: ListGamesFilters = {}) {
       status: filters.statuses,
       sort: filters.sort,
       order: filters.order,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      page: pageParam(filters.page),
     },
   });
 }

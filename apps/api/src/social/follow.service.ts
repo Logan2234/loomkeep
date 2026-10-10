@@ -5,6 +5,7 @@ import {
   NotificationType,
   type PagedResult,
   ProfileAccess,
+  RealtimeEvent,
   type RelationshipDto,
   type UserSummaryDto,
 } from "@loomkeep/shared";
@@ -150,7 +151,7 @@ export class FollowService {
       // FOLLOW_REQUEST is excluded from the bell feed (NotificationService's
       // own FEED_EXCLUDED_TYPES), so it never triggers that live push either
       // — the pending-requests panel needs its own signal.
-      this.events.emitToUser(target.id, "follow-request-changed");
+      this.events.emitToUser(target.id, RealtimeEvent.FOLLOW_REQUEST_CHANGED);
     }
 
     return this.relationship(viewerId, username);
@@ -172,7 +173,7 @@ export class FollowService {
     // A cancelled request should disappear from the target's pending list
     // live, the same way a new one appears.
     if (existing?.status === "PENDING") {
-      this.events.emitToUser(target.id, "follow-request-changed");
+      this.events.emitToUser(target.id, RealtimeEvent.FOLLOW_REQUEST_CHANGED);
     }
 
     return this.relationship(viewerId, username);
@@ -429,7 +430,7 @@ export class FollowService {
 
     // A declined request leaves the viewer's own pending list too.
     if (existing?.status === "PENDING") {
-      this.events.emitToUser(viewerId, "follow-request-changed");
+      this.events.emitToUser(viewerId, RealtimeEvent.FOLLOW_REQUEST_CHANGED);
     }
 
     return this.relationship(viewerId, username);

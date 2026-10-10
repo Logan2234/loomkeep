@@ -1,6 +1,7 @@
 import {
   ErrorCode,
   MAX_EQUIPPED_BADGES,
+  RealtimeEvent,
   XpReason,
   type AchievementDto,
   type AchievementRarityDto,
@@ -133,7 +134,7 @@ export class AchievementService {
     // Only benefits async grants (nightly sweep, an import completing while
     // another tab is open) — a live user action already gets this instantly
     // via its own mutation's `invalidates: [keys.gamification.pending()]`.
-    this.events.emitToUser(userId, "achievement-unlocked");
+    this.events.emitToUser(userId, RealtimeEvent.ACHIEVEMENT_UNLOCKED);
   }
 
   /**

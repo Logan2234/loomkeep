@@ -1,13 +1,14 @@
 import type {
   BookOwnershipStatus,
   BookSource,
-  BookStatus,
   SessionCycleAction,
   SessionSource,
   TrackingCycleStatus,
 } from "../enums";
+import { BookStatus } from "../enums";
 import type { RatingDto } from "./catalog";
 import type { SessionWeekDayDto } from "./session";
+import { SESSION_FILTER_PAUSED } from "./session";
 
 export const READING_GOAL_LIMITS = { min: 1, max: 1000 } as const;
 export const MAX_PAGE_NUMBER = 100000;
@@ -249,3 +250,18 @@ export interface UpsertReadingGoalDto {
   year: number;
   target: number;
 }
+
+export const BOOK_SORT_KEYS = [
+  "added",
+  "title",
+  "author",
+  "rating",
+  "pages",
+  "progress",
+  "finished",
+  "started",
+  "status",
+] as const;
+export type BookSortKey = (typeof BOOK_SORT_KEYS)[number];
+
+export type BookFilterStatus = BookStatus | typeof SESSION_FILTER_PAUSED;

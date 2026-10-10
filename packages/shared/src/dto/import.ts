@@ -6,6 +6,7 @@ import type {
   MediaType,
 } from "../enums";
 import type { ErrorCode } from "../error-codes";
+import type { ImportJobStatus } from "../realtime";
 
 // Every import source runs through one async job framework: `analyze`
 // parses the export and resolves it against the catalogue into a reviewable
@@ -170,7 +171,7 @@ export interface ImportReport {
 /** An async import job (analyze or commit), polled by the client. */
 export interface ImportJobDto {
   id: string;
-  status: "running" | "completed" | "failed";
+  status: ImportJobStatus;
   /** Items processed so far / total to process. */
   progress: { done: number; total: number };
   /** Populated once an analysis job completes (the plan to review). */

@@ -46,13 +46,15 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { timeLeftToWatch } from "#lib/pile.js";
-  import type { MediaType } from "@loomkeep/shared";
   import {
+    type MediaType,
     isAnimeUnaired,
     isDormant,
     isGhost,
     progressPercent,
+    isMovieUpcoming,
   } from "@loomkeep/shared";
+
   import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
   import ActionBar from "./components/ActionBar.svelte";
@@ -270,9 +272,7 @@
   const upcoming = $derived(
     (isMovie &&
       !!detail?.movieRelease &&
-      (detail.movieRelease.publicDate
-        ? detail.movieRelease.publicDate > today
-        : detail.movieRelease.upcoming)) ||
+      isMovieUpcoming(detail.movieRelease, today)) ||
       (detail?.type === "ANIME" && isAnimeUnaired(detail.airingStatus)),
   );
   const timeLeft = $derived(

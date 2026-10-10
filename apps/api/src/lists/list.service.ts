@@ -10,6 +10,7 @@ import {
   type ListVisibility,
   type MyListDto,
   NotificationType,
+  RealtimeEvent,
   type ReviewTargetSummaryDto,
   type UserSummaryDto,
   XpReason,
@@ -141,7 +142,7 @@ export class ListService {
     await this.achievements.evaluate(userId, ACHIEVEMENT_KEYS_ON_LIST_CREATED);
 
     // create_list is one of the onboarding checklist's steps (OnboardingService).
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return this.toDto(row, await this.author(userId));
   }

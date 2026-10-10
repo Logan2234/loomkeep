@@ -1,25 +1,27 @@
-import type {
-  AdminImportDetails,
-  AdminImportRunDto,
-  ImportAnalyzeRequest,
-  ImportAvailabilityDto,
-  ImportCommitRequest,
-  ImportHistoryRunDto,
-  ImportJobDto,
-  ImportLastRunDto,
-  ImportPlan,
-  ImportQuotaDto,
-  ImportReport,
-  ImportSource,
-  PagedResult,
-} from "@loomkeep/shared";
 import {
   Domain,
   ErrorCode,
   IMPORT_SOURCE_NAMES,
   NotificationType,
+  RealtimeEvent,
   XpReason,
+  type AdminImportDetails,
+  type AdminImportRunDto,
+  type ImportAnalyzeRequest,
+  type ImportAvailabilityDto,
+  type ImportCommitRequest,
+  type ImportHistoryRunDto,
+  type ImportJobDto,
+  type ImportJobStatus,
+  type ImportLastRunDto,
+  type ImportPlan,
+  type ImportProgressEvent,
+  type ImportQuotaDto,
+  type ImportReport,
+  type ImportSource,
+  type PagedResult,
 } from "@loomkeep/shared";
+
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
@@ -51,7 +53,7 @@ interface JobRecord {
   userId: string;
   sourceId: ImportSource;
   kind: "analyze" | "commit";
-  status: "running" | "completed" | "failed";
+  status: ImportJobStatus;
   progress: { done: number; total: number };
   plan: ImportPlan | null;
   report: ImportReport | null;
@@ -517,7 +519,7 @@ export class ImportJobService {
       // this also covers ratings the import itself set via ReviewService,
       // since a full checklist recompute follows any onboarding-updated
       // event rather than one keyed to a specific step.
-      this.events.emitToUser(userId, "onboarding-updated");
+      this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
     }
   }
 
@@ -544,12 +546,12 @@ export class ImportJobService {
   }
 
   private emitProgress(job: JobRecord): void {
-    this.events.emitToUser(job.userId, "import-progress", {
+    this.events.emitToUser(job.userId, RealtimeEvent.IMPORT_PROGRESS, {
       jobId: job.id,
       done: job.progress.done,
       total: job.progress.total,
       status: job.status,
-    });
+    } satisfies ImportProgressEvent);
   }
 
   private async run(job: JobRecord, work: () => Promise<void>): Promise<void> {

@@ -22,10 +22,14 @@ import { JwtService } from "@nestjs/jwt";
 import type { Prisma, User } from "@prisma/client";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import * as bcrypt from "bcryptjs";
-import { randomInt, randomUUID, timingSafeEqual } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import { ApiKeysService } from "../api-keys/api-keys.service";
 import { AppException } from "../common/app.exception";
-import { randomToken, sha256Hex } from "../common/crypto.util";
+import {
+  randomNumericCode,
+  randomToken,
+  sha256Hex,
+} from "../common/crypto.util";
 import { utcDateKey } from "../common/date.util";
 import { normalizeEmail } from "../common/email.util";
 import { HibpService } from "../common/hibp.service";
@@ -199,17 +203,11 @@ export class AuthService {
     await this.mail.sendWelcome(recipient, user.displayName);
 
     if (!emailVerified) {
-      const verifyToken = randomToken(32, "hex");
-      await this.prisma.userToken.create({
-        data: {
-          userId: user.id,
-          type: "EMAIL_VERIFICATION",
-          tokenHash: sha256Hex(verifyToken),
-          expiresAt: new Date(
-            Date.now() + VERIFY_TOKEN_TTL_HOURS * 60 * 60_000,
-          ),
-        },
-      });
+      const verifyToken = await this.issueUserToken(
+        user.id,
+        "EMAIL_VERIFICATION",
+        VERIFY_TOKEN_TTL_HOURS * 60 * 60_000,
+      );
       await this.mail.sendVerifyEmail(recipient, verifyToken);
     }
 
@@ -319,22 +317,11 @@ export class AuthService {
       );
     }
 
-    const verifyToken = randomToken(32, "hex");
-    await this.prisma.$transaction([
-      this.prisma.userToken.deleteMany({
-        where: { userId: user.id, type: "EMAIL_VERIFICATION" },
-      }),
-      this.prisma.userToken.create({
-        data: {
-          userId: user.id,
-          type: "EMAIL_VERIFICATION",
-          tokenHash: sha256Hex(verifyToken),
-          expiresAt: new Date(
-            Date.now() + VERIFY_TOKEN_TTL_HOURS * 60 * 60_000,
-          ),
-        },
-      }),
-    ]);
+    const verifyToken = await this.issueUserToken(
+      user.id,
+      "EMAIL_VERIFICATION",
+      VERIFY_TOKEN_TTL_HOURS * 60 * 60_000,
+    );
     await this.mail.sendVerifyEmail(
       { email: user.email, locale: user.locale },
       verifyToken,
@@ -399,9 +386,7 @@ export class AuthService {
     let emailCodeExpiresAt: Date | undefined;
 
     if (user.mfaEmailEnabled && !user.mfaTotpEnabled && !webauthnAllowed) {
-      const code = randomInt(0, 10 ** OTP_CODE_LENGTH)
-        .toString()
-        .padStart(OTP_CODE_LENGTH, "0");
+      const code = randomNumericCode(OTP_CODE_LENGTH);
       emailCodeHash = sha256Hex(code);
       emailCodeExpiresAt = new Date(
         Date.now() + MFA_EMAIL_CODE_TTL_MINUTES * 60_000,
@@ -455,9 +440,7 @@ export class AuthService {
       );
     }
 
-    const code = randomInt(0, 10 ** OTP_CODE_LENGTH)
-      .toString()
-      .padStart(OTP_CODE_LENGTH, "0");
+    const code = randomNumericCode(OTP_CODE_LENGTH);
     await this.prisma.mfaLoginChallenge.update({
       where: { id: challenge.id },
       data: {
@@ -868,20 +851,11 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) return;
 
-    const token = randomToken(32, "hex");
-    await this.prisma.$transaction([
-      this.prisma.userToken.deleteMany({
-        where: { userId: user.id, type: "PASSWORD_RESET" },
-      }),
-      this.prisma.userToken.create({
-        data: {
-          userId: user.id,
-          type: "PASSWORD_RESET",
-          tokenHash: sha256Hex(token),
-          expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60_000),
-        },
-      }),
-    ]);
+    const token = await this.issueUserToken(
+      user.id,
+      "PASSWORD_RESET",
+      RESET_TOKEN_TTL_MINUTES * 60_000,
+    );
     await this.mail.sendPasswordResetLink(
       { email: user.email, locale: user.locale },
       token,
@@ -1116,6 +1090,26 @@ export class AuthService {
       accessToken: signed.accessToken,
       refreshToken: signed.refreshToken,
     };
+  }
+
+  private async issueUserToken(
+    userId: string,
+    type: "EMAIL_VERIFICATION" | "PASSWORD_RESET",
+    ttlMs: number,
+  ): Promise<string> {
+    const token = randomToken(32, "hex");
+    await this.prisma.$transaction([
+      this.prisma.userToken.deleteMany({ where: { userId, type } }),
+      this.prisma.userToken.create({
+        data: {
+          userId,
+          type,
+          tokenHash: sha256Hex(token),
+          expiresAt: new Date(Date.now() + ttlMs),
+        },
+      }),
+    ]);
+    return token;
   }
 }
 

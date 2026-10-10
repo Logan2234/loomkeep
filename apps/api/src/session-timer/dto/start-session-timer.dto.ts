@@ -1,10 +1,15 @@
-import type { StartSessionTimerDto as Contract } from "@loomkeep/shared";
-import { Domain, SessionCycleAction } from "@loomkeep/shared";
+import {
+  type StartSessionTimerDto as Contract,
+  SESSION_DOMAINS,
+  SessionCycleAction,
+  type SessionDomain,
+} from "@loomkeep/shared";
+
 import { IsIn, IsOptional, IsString } from "class-validator";
 
 export class StartSessionTimerDto implements Contract {
-  @IsIn([Domain.GAMES, Domain.BOOKS])
-  domain!: typeof Domain.GAMES | typeof Domain.BOOKS;
+  @IsIn(SESSION_DOMAINS)
+  domain!: SessionDomain;
 
   @IsString()
   entryId!: string;

@@ -25,6 +25,7 @@ import {
 } from "@loomkeep/shared";
 import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
+import { limitParam, pageParam } from "./query-params";
 
 export type ModerationReasonBody = ModerationReasonRequestDto;
 
@@ -122,8 +123,8 @@ export function getAdminUsers(
       search: filters.search,
       filter:
         filters.filter && filters.filter !== "all" ? filters.filter : undefined,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
-      limit: filters.limit ? String(filters.limit) : undefined,
+      page: pageParam(filters.page),
+      limit: limitParam(filters.limit),
       createdFrom: filters.createdFrom,
       createdTo: filters.createdTo,
       activeFrom: filters.activeFrom,
@@ -143,7 +144,7 @@ export function getAdminInvitations(
     query: {
       q: filters.query || undefined,
       status: filters.status || undefined,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      page: pageParam(filters.page),
     },
   });
 }
@@ -169,8 +170,8 @@ export function getAdminUserOptions(
   return typedRequest("/admin/users/options", {
     query: {
       search: filters.search || undefined,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
-      limit: filters.limit ? String(filters.limit) : undefined,
+      page: pageParam(filters.page),
+      limit: limitParam(filters.limit),
     },
   });
 }
@@ -331,8 +332,8 @@ export function getAdminCache(filters: {
       search: filters.search,
       sort: filters.sort,
       orphans: filters.orphans ? "true" : undefined,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
-      limit: filters.limit ? String(filters.limit) : undefined,
+      page: pageParam(filters.page),
+      limit: limitParam(filters.limit),
     },
   });
 }
@@ -391,8 +392,8 @@ export function getAdminImportRuns(
       from: filters.from,
       to: filters.to,
       userId: filters.userId,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
-      limit: filters.limit ? String(filters.limit) : undefined,
+      page: pageParam(filters.page),
+      limit: limitParam(filters.limit),
     },
   });
 }
@@ -418,8 +419,8 @@ export function getAdminSecurityEvents(
     query: {
       type: filters.type,
       identifier: filters.identifier,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
-      limit: filters.limit ? String(filters.limit) : undefined,
+      page: pageParam(filters.page),
+      limit: limitParam(filters.limit),
     },
   });
 }
@@ -435,8 +436,8 @@ export function getAdminReports(
   return typedRequest("/admin/reports", {
     query: {
       status: filters.status,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
-      limit: filters.limit ? String(filters.limit) : undefined,
+      page: pageParam(filters.page),
+      limit: limitParam(filters.limit),
       reporterId: filters.reporterId,
     },
   });

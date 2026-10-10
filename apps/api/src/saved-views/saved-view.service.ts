@@ -1,8 +1,8 @@
 import {
   BookStatus,
-  EntryStatus,
   ErrorCode,
   GameStatus,
+  MEDIA_FILTER_STATUSES,
   MusicStatus,
   SAVED_VIEW_LIMITS,
   type CreateSavedViewDto,
@@ -19,7 +19,7 @@ import { PrismaService } from "../prisma/prisma.service";
 
 /** The statuses each library filters on — media adds its derived DORMANT and GHOST. */
 const STATUSES: Record<SavedViewDomain, readonly string[]> = {
-  MEDIA: [...Object.values(EntryStatus), "DORMANT", "GHOST"],
+  MEDIA: MEDIA_FILTER_STATUSES,
   GAMES: Object.values(GameStatus),
   BOOKS: Object.values(BookStatus),
   MUSIC: Object.values(MusicStatus),

@@ -2,6 +2,13 @@
   import {
     SESSION_NOTES_MAX_LENGTH,
     MAX_SESSION_DURATION_MINUTES,
+    type CreateGameSessionDto,
+    type FinishSessionTimerDto,
+    type GameEntryDto,
+    type GameSessionDto,
+    type GameSessionMutationDto,
+    type UpdateGameSessionDto,
+    timerMinutes,
   } from "@loomkeep/shared";
 
   import {
@@ -24,14 +31,7 @@
     sessionDateToIso,
   } from "#lib/session-presentation.js";
   import { toast } from "#lib/toast.svelte.js";
-  import type {
-    CreateGameSessionDto,
-    FinishSessionTimerDto,
-    GameEntryDto,
-    GameSessionDto,
-    GameSessionMutationDto,
-    UpdateGameSessionDto,
-  } from "@loomkeep/shared";
+
   import type { QueryKey } from "@tanstack/svelte-query";
   import { fly } from "svelte/transition";
   import Banner from "./Banner.svelte";
@@ -307,7 +307,7 @@
   }
 
   function finishTimedSession(elapsedSeconds: number) {
-    durationMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
+    durationMinutes = timerMinutes(elapsedSeconds);
     notes = "";
     linkToPlaythrough = true;
     restartDropped = false;

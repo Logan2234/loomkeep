@@ -27,10 +27,20 @@ export const RealtimeEvent = {
 } as const;
 export type RealtimeEvent = (typeof RealtimeEvent)[keyof typeof RealtimeEvent];
 
+export const IMPORT_JOB_STATUSES = ["running", "completed", "failed"] as const;
+export type ImportJobStatus = (typeof IMPORT_JOB_STATUSES)[number];
+export const RealtimeCommand = {
+  JOIN_COMMENTS: "join-comments",
+  LEAVE_COMMENTS: "leave-comments",
+  JOIN_LIST: "join-list",
+  LEAVE_LIST: "leave-list",
+} as const;
+
 export interface ImportProgressEvent {
+  jobId: string;
   done: number;
   total: number;
-  status: "running" | "completed" | "failed";
+  status: ImportJobStatus;
 }
 
 export interface CommentPresenceEvent {

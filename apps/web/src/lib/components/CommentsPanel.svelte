@@ -6,9 +6,10 @@
   import { m } from "#lib/paraglide/messages.js";
   import { joinRealtimeRoom, onRealtimeEvent } from "#lib/realtime/socket.js";
   import { revealSpoilersOnOpen } from "#lib/spoiler-default.js";
-  import type {
-    CommentPresenceEvent,
-    CommentTargetType,
+  import {
+    type CommentPresenceEvent,
+    type CommentTargetType,
+    RealtimeCommand,
   } from "@loomkeep/shared";
   import { createQuery } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
@@ -67,10 +68,14 @@
   $effect(() => {
     if (!open) return;
     peopleHere = 1;
-    const leave = joinRealtimeRoom("join-comments", "leave-comments", {
-      targetType,
-      targetId,
-    });
+    const leave = joinRealtimeRoom(
+      RealtimeCommand.JOIN_COMMENTS,
+      RealtimeCommand.LEAVE_COMMENTS,
+      {
+        targetType,
+        targetId,
+      },
+    );
     const off = onRealtimeEvent<CommentPresenceEvent>(
       "comment-presence",
       (event) => {

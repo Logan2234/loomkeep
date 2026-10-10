@@ -1,5 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { isSessionPaused } from "./session";
+import {
+  isSessionPaused,
+  MAX_SESSION_DURATION_MINUTES,
+  timerMinutes,
+} from "./session";
+
+describe("timerMinutes", () => {
+  it.each([
+    [0, 1],
+    [1, 1],
+    [60, 1],
+    [61, 2],
+    [600000, MAX_SESSION_DURATION_MINUTES],
+  ])(
+    "converts %i seconds to %i minutes within the session bounds",
+    (seconds, expected) => expect(timerMinutes(seconds)).toBe(expected),
+  );
+});
 
 describe("isSessionPaused", () => {
   const now = new Date("2026-09-27T12:00:00.000Z");

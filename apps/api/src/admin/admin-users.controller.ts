@@ -1,25 +1,25 @@
-import type {
-  AdminUserCommentDto,
-  AdminUserDto,
-  AdminUserFilter,
-  AdminUserLibraryStatsDto,
-  AdminUserOptionDto,
-  AdminUserPlanDto,
-  AdminUserRoleDto,
-  AdminUserXpDto,
-  MyListDto,
-  MyReviewDto,
-  PagedResult,
-  ReportDto,
-  SessionDto,
-  UserDataExportDto,
-  UserSummaryDto,
-} from "@loomkeep/shared";
 import {
+  type AdminUserCommentDto,
+  type AdminUserDto,
+  type AdminUserFilter,
+  type AdminUserLibraryStatsDto,
+  type AdminUserOptionDto,
+  type AdminUserPlanDto,
+  type AdminUserRoleDto,
+  type AdminUserXpDto,
+  type MyListDto,
+  type MyReviewDto,
+  type PagedResult,
+  type ReportDto,
+  type SessionDto,
+  type UserDataExportDto,
+  type UserSummaryDto,
+  ADMIN_USER_FILTERS,
   ErrorCode,
   ModerationMeasure,
   ReportTargetType,
 } from "@loomkeep/shared";
+
 import {
   Body,
   Controller,
@@ -79,14 +79,6 @@ import { AdminUserXpResponseDto } from "./dto/admin-user-xp-response.dto";
 import { UpdateAdminUserPlanDto } from "./dto/update-admin-user-plan.dto";
 import { UpdateAdminUserRoleDto } from "./dto/update-admin-user-role.dto";
 
-const FILTERS: AdminUserFilter[] = [
-  "all",
-  "admin",
-  "unverified",
-  "never",
-  "premium",
-];
-
 /** Account administration: listing, role, data export and sessions. */
 @AdminOnly()
 @Controller("admin")
@@ -133,7 +125,7 @@ export class AdminUsersController {
       limit: pageLimit,
     } = parsePageQuery(page, limit, DEFAULT_PAGE_SIZE);
     const q = search?.trim();
-    const activeFilter = FILTERS.includes(filter as AdminUserFilter)
+    const activeFilter = ADMIN_USER_FILTERS.includes(filter as AdminUserFilter)
       ? (filter as AdminUserFilter)
       : "all";
 

@@ -1,33 +1,35 @@
-import type {
-  BulkEntriesResultDto,
-  BulkEntriesTargetDto,
-  CalendarEntryDto,
-  CatalogSource,
-  EntryEpisodesResponseDto,
-  EpisodeWatchDto,
-  LibraryDomainCountsDto,
-  LibraryEntryDto,
-  MediaDetailDto,
-  MediaItemDto,
-  MovieReplayDto,
-  PagedResult,
-  PileSummaryDto,
-  ProgressDto,
-} from "@loomkeep/shared";
 import {
+  type BulkEntriesResultDto,
+  type BulkEntriesTargetDto,
+  type CalendarEntryDto,
+  type CatalogSource,
+  type EntryEpisodesResponseDto,
+  type EpisodeWatchDto,
+  type LibraryDomainCountsDto,
+  type LibraryEntryDto,
+  type MediaDetailDto,
+  type MediaItemDto,
+  type MediaSortKey,
+  type MovieReplayDto,
+  type PagedResult,
+  type PileSummaryDto,
+  type ProgressDto,
   ActivityType,
   Domain,
   EntryStatus,
-  episodeRuntimeFor,
+  episodesTimeLeft,
   ErrorCode,
   isAnimeUnaired,
   isDormant,
   isGhost,
   isRuntimeKnown,
+  MEDIA_SORT_KEYS,
+  MEDIA_SYNTHETIC_STATUS,
   MediaType,
   movieReleaseDates,
   movieReleaseInfo,
   progressPercent,
+  RealtimeEvent,
   ReviewTargetType,
   runtimeFor,
   sagaCompletionXp,
@@ -35,6 +37,7 @@ import {
   seriesCompletedXp,
   XpReason,
 } from "@loomkeep/shared";
+
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
   ExternalSource as DbExternalSource,
@@ -106,25 +109,6 @@ type EntryWithMedia = Prisma.LibraryEntryGetPayload<{
   include: typeof ENTRY_INCLUDE;
 }>;
 
-type MediaSortKey =
-  | "recent"
-  | "added"
-  | "title"
-  | "rating"
-  | "progress"
-  | "finished"
-  | "started"
-  | "status";
-const MEDIA_SORT_KEYS = [
-  "recent",
-  "added",
-  "title",
-  "rating",
-  "progress",
-  "finished",
-  "started",
-  "status",
-] as const satisfies readonly MediaSortKey[];
 // Order used by the "Statut" sort.
 const MEDIA_STATUS_SORT_ORDER: EntryStatus[] = [
   "WATCHING",
@@ -298,7 +282,7 @@ export class LibraryService {
     // (see OnboardingService) — pushed unconditionally rather than checking
     // whether onboarding is even still in progress first, since that check
     // would cost as much as the emit is worth avoiding.
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return this.toEntryDto(
       entry,
@@ -442,20 +426,14 @@ export class LibraryService {
         }
 
         const left = episodesByMedia.get(mediaItemId) ?? [];
+        const remaining = episodesTimeLeft(
+          mediaItem.type,
+          mediaItem.runtimeMin,
+          left,
+        );
         return {
-          amount: left.reduce(
-            (sum, e) =>
-              sum +
-              episodeRuntimeFor(
-                mediaItem.type,
-                e.runtimeMin,
-                mediaItem.runtimeMin,
-              ),
-            0,
-          ),
-          estimated: left.some(
-            (e) => !isRuntimeKnown(e.runtimeMin, mediaItem.runtimeMin),
-          ),
+          amount: remaining.minutes,
+          estimated: remaining.estimated,
         };
       }),
     );
@@ -641,9 +619,9 @@ export class LibraryService {
 
     // "DORMANT" and "GHOST" are synthetic refinements of WATCHING.
     const matches = (row: MediaRow, s: string) =>
-      s === "DORMANT"
+      s === MEDIA_SYNTHETIC_STATUS.DORMANT
         ? isDormant(row)
-        : s === "GHOST"
+        : s === MEDIA_SYNTHETIC_STATUS.GHOST
           ? isGhost(row)
           : row.status === s;
     const keep = (row: MediaRow) =>
@@ -781,7 +759,7 @@ export class LibraryService {
       );
     }
 
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return this.toEntryDto(
       entry,
@@ -963,15 +941,9 @@ export class LibraryService {
     }));
     if (seasons.length === 0) return;
 
-    const nowWatched = await this.prisma.episodeWatch.findMany({
-      where: {
-        userId,
-        episodeId: { in: seasons.flatMap((s) => s.episodes.map((e) => e.id)) },
-      },
-      distinct: ["episodeId"],
-      select: { episodeId: true },
+    const nowWatchedIds = await this.watchedEpisodeIds(userId, {
+      episodeId: { in: seasons.flatMap((s) => s.episodes.map((e) => e.id)) },
     });
-    const nowWatchedIds = new Set(nowWatched.map((w) => w.episodeId));
 
     for (const season of seasons) {
       if (season.episodes.length === 0) continue;
@@ -1061,14 +1033,9 @@ export class LibraryService {
       );
     }
 
-    const previouslyWatched = await this.prisma.episodeWatch.findMany({
-      where: { userId, episode: { seasonId: episode.seasonId } },
-      distinct: ["episodeId"],
-      select: { episodeId: true },
+    const previouslyWatchedIds = await this.watchedEpisodeIds(userId, {
+      episode: { seasonId: episode.seasonId },
     });
-    const previouslyWatchedIds = new Set(
-      previouslyWatched.map((w) => w.episodeId),
-    );
 
     const watch = await this.prisma.episodeWatch.create({
       data: {
@@ -1138,14 +1105,9 @@ export class LibraryService {
 
     await this.assertMediaOwnership(userId, season.mediaItemId);
 
-    const previouslyWatched = await this.prisma.episodeWatch.findMany({
-      where: { userId, episodeId: { in: episodes.map((e) => e.id) } },
-      distinct: ["episodeId"],
-      select: { episodeId: true },
+    const previouslyWatchedIds = await this.watchedEpisodeIds(userId, {
+      episodeId: { in: episodes.map((e) => e.id) },
     });
-    const previouslyWatchedIds = new Set(
-      previouslyWatched.map((w) => w.episodeId),
-    );
 
     // Unreleased episodes (future airDate) are silently skipped rather than
     // blocking the whole season.
@@ -1153,7 +1115,7 @@ export class LibraryService {
     const airedIds = episodes
       .filter((e) => !e.airDate || e.airDate <= now)
       .map((e) => e.id);
-    await this.markUnwatched(userId, airedIds);
+    await this.markWatchedIfNew(userId, airedIds);
     await this.syncFinishedAt(
       userId,
       season.mediaItemId,
@@ -1246,7 +1208,7 @@ export class LibraryService {
     }
 
     if (target.season.number === 0) {
-      await this.markUnwatched(userId, [episodeId]);
+      await this.markWatchedIfNew(userId, [episodeId]);
     } else {
       const episodes = await this.prisma.episode.findMany({
         where: {
@@ -1274,16 +1236,11 @@ export class LibraryService {
       // so a season that was already fully watched before this call — but
       // only partially covered by `throughIds` (the target's own season) —
       // isn't under-counted as "newly" finished below.
-      const previouslyWatched = await this.prisma.episodeWatch.findMany({
-        where: { userId, episodeId: { in: episodes.map((e) => e.id) } },
-        distinct: ["episodeId"],
-        select: { episodeId: true },
+      const previouslyWatchedIds = await this.watchedEpisodeIds(userId, {
+        episodeId: { in: episodes.map((e) => e.id) },
       });
-      const previouslyWatchedIds = new Set(
-        previouslyWatched.map((w) => w.episodeId),
-      );
 
-      await this.markUnwatched(userId, throughIds);
+      await this.markWatchedIfNew(userId, throughIds);
       await this.emitSeasonFinishedMilestones(
         userId,
         target.season.mediaItemId,
@@ -1304,17 +1261,26 @@ export class LibraryService {
    * yet, and credit EPISODE_WATCHED for each newly created watch (the batch
    * still respects the daily cap — see `XpService.awardMany`).
    */
-  private async markUnwatched(
+  private async watchedEpisodeIds(
+    userId: string,
+    where: Prisma.EpisodeWatchWhereInput,
+  ): Promise<Set<string>> {
+    const watches = await this.prisma.episodeWatch.findMany({
+      where: { ...where, userId },
+      distinct: ["episodeId"],
+      select: { episodeId: true },
+    });
+    return new Set(watches.map((watch) => watch.episodeId));
+  }
+
+  private async markWatchedIfNew(
     userId: string,
     episodeIds: string[],
   ): Promise<void> {
     if (episodeIds.length === 0) return;
-    const watched = await this.prisma.episodeWatch.findMany({
-      where: { userId, episodeId: { in: episodeIds } },
-      distinct: ["episodeId"],
-      select: { episodeId: true },
+    const watchedIds = await this.watchedEpisodeIds(userId, {
+      episodeId: { in: episodeIds },
     });
-    const watchedIds = new Set(watched.map((w) => w.episodeId));
     const newEpisodeIds = episodeIds.filter((id) => !watchedIds.has(id));
     const toCreate = newEpisodeIds.map((id) => ({ userId, episodeId: id }));
 
@@ -1961,12 +1927,9 @@ export class LibraryService {
       return null; // Movies (or media without any episode listing).
     }
 
-    const watched = await this.prisma.episodeWatch.findMany({
-      where: { userId, episode: regularEpisodes },
-      distinct: ["episodeId"],
-      select: { episodeId: true },
+    const watchedIds = await this.watchedEpisodeIds(userId, {
+      episode: regularEpisodes,
     });
-    const watchedIds = new Set(watched.map((w) => w.episodeId));
 
     // Next up: first unwatched episode that has aired (null airDate = AniList's
     // generated episodes, treated as available).

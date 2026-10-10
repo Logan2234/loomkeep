@@ -40,12 +40,18 @@ export function movieReleaseInfo(
   const cinema = first(local.filter((r) => r.type === 2 || r.type === 3));
   const digital = first(local.filter((r) => r.type === 4));
   return {
-    upcoming:
-      publicDate !== null
-        ? publicDate > now.toISOString().slice(0, 10)
-        : ["Rumored", "Planned", "In Production", "Post Production"].includes(
-            status ?? "",
-          ),
+    upcoming: isMovieUpcoming(
+      {
+        publicDate,
+        upcoming: [
+          "Rumored",
+          "Planned",
+          "In Production",
+          "Post Production",
+        ].includes(status ?? ""),
+      },
+      now,
+    ),
     publicDate,
     localDate: cinema ?? digital,
     localType: cinema ? "cinema" : digital ? "digital" : null,
@@ -60,4 +66,24 @@ export function movieReleaseInfo(
  */
 export function isAnimeUnaired(status: string | null | undefined): boolean {
   return status === "NOT_YET_RELEASED";
+}
+
+/** A caller may supply its local day; API callers default to the UTC day. */
+export function isReleased(
+  date: string,
+  today: string | Date = new Date(),
+): boolean {
+  return (
+    date <=
+    (typeof today === "string" ? today : today.toISOString().slice(0, 10))
+  );
+}
+
+export function isMovieUpcoming(
+  info: Pick<MovieReleaseInfo, "publicDate" | "upcoming">,
+  today: string | Date = new Date(),
+): boolean {
+  return info.publicDate !== null
+    ? !isReleased(info.publicDate, today)
+    : info.upcoming;
 }

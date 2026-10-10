@@ -37,14 +37,21 @@
   } from "#lib/library-view.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { Domain, isSessionPaused, type BookEntryDto } from "@loomkeep/shared";
+  import {
+    Domain,
+    isSessionPaused,
+    type BookEntryDto,
+    type BookSortKey,
+    type BookFilterStatus,
+    SESSION_FILTER_PAUSED,
+  } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
     ...BOOK_STATUS_ORDER.map((value) => ({
       label: BOOK_STATUS_LABELS[value],
       value,
     })),
-    { label: m.media_status_paused(), value: "PAUSED" },
+    { label: m.media_status_paused(), value: SESSION_FILTER_PAUSED },
   ];
 
   function pct(entry: BookEntryDto): number {
@@ -66,7 +73,7 @@
     { label: m.library_sort_finished(), value: "finished" },
     { label: m.library_sort_started(), value: "started" },
     { label: m.common_status(), value: "status" },
-  ];
+  ] satisfies { label: string; value: BookSortKey }[];
 
   const setFavorite = (entry: BookEntryDto, next: boolean) =>
     updateBookEntry(entry.id, { favorite: next });
@@ -166,8 +173,8 @@
     listBooks({
       query: params.query,
       favorite: params.favoritesOnly,
-      statuses: params.statuses,
-      sort: params.sort,
+      statuses: params.statuses as BookFilterStatus[],
+      sort: params.sort as BookSortKey,
       order: params.order,
       page: params.page,
     });
@@ -176,7 +183,7 @@
     getBooksPile({
       query: params.query,
       favorite: params.favoritesOnly,
-      statuses: params.statuses,
+      statuses: params.statuses as BookFilterStatus[],
     });
 
   const mode = $derived(sagasMode(page.url));

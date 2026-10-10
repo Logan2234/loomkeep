@@ -4,9 +4,8 @@
   // this narrows *which* entries count, not how a curve is bucketed.
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import type { StatsWindow } from "@loomkeep/shared";
+  import { type StatsWindow, STATS_WINDOWS } from "@loomkeep/shared";
 
-  const WINDOWS: StatsWindow[] = ["ALL", "YEAR", "MONTH", "WEEK"];
   const LABEL: Record<StatsWindow, string> = {
     ALL: m.common_all(),
     YEAR: m.common_year(),
@@ -33,15 +32,15 @@
   } = $props();
 
   const meta = Object.fromEntries(
-    WINDOWS.map((w) => [w, { label: LABEL[w] }]),
+    STATS_WINDOWS.map((w) => [w, { label: LABEL[w] }]),
   ) as Record<StatsWindow, { label: string }>;
   const activeClass = Object.fromEntries(
-    WINDOWS.map((w) => [w, "bg-surface text-fg shadow-sm"]),
+    STATS_WINDOWS.map((w) => [w, "bg-surface text-fg shadow-sm"]),
   ) as Record<StatsWindow, string>;
 </script>
 
 <SegmentedStatusControl
-  statuses={WINDOWS}
+  statuses={[...STATS_WINDOWS]}
   current={selected}
   disabled={false}
   {meta}

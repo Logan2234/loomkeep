@@ -144,7 +144,7 @@
     const jobId = pollingJobId;
     const jobKey = keys.import.job(source, jobId);
 
-    const apply = (payload: ImportProgressEvent & { jobId: string }) => {
+    const apply = (payload: ImportProgressEvent) => {
       if (payload.jobId !== jobId) return;
       if (payload.status !== "running") {
         void queryClient.invalidateQueries({ queryKey: jobKey });

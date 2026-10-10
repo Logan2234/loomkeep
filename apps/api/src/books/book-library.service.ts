@@ -1,22 +1,26 @@
 import {
+  BOOK_SORT_KEYS,
   type BookDetailDto,
   type BookEntryDto,
+  bookFinishedXp,
   type BookItemDto,
+  type BookSortKey,
   type BookSource,
+  BookStatus,
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
-  type PagedResult,
-  type PileSummaryDto,
-  type ReadingGoalDto,
-  bookFinishedXp,
-  BookStatus,
   Domain,
   DORMANT_AFTER_DAYS,
   MIN_REWARDED_READING_GOAL,
+  type PagedResult,
+  type PileSummaryDto,
+  type ReadingGoalDto,
   readingGoalXp,
+  RealtimeEvent,
   replayXp,
   ReviewTargetType,
   sagaCompletionXp,
+  SESSION_FILTER_PAUSED,
   TrackingCycleStatus,
   XpReason,
 } from "@loomkeep/shared";
@@ -97,27 +101,6 @@ type EntryWithBook = Prisma.BookEntryGetPayload<{
   include: typeof ENTRY_INCLUDE;
 }>;
 
-type BookSortKey =
-  | "added"
-  | "title"
-  | "author"
-  | "rating"
-  | "pages"
-  | "progress"
-  | "finished"
-  | "started"
-  | "status";
-const BOOK_SORT_KEYS = [
-  "added",
-  "title",
-  "author",
-  "rating",
-  "pages",
-  "progress",
-  "finished",
-  "started",
-  "status",
-] as const satisfies readonly BookSortKey[];
 const BOOK_STATUS_SORT_ORDER = [
   "TO_READ",
   "READING",
@@ -447,7 +430,7 @@ export class BookLibraryService {
     // (see OnboardingService) — pushed unconditionally rather than checking
     // whether onboarding is even still in progress first, since that check
     // would cost as much as the emit is worth avoiding.
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return toEntryDto(
       entry,
@@ -611,7 +594,7 @@ export class BookLibraryService {
     const q = searchTerm(filters);
     const statuses = filters.statuses ?? [];
     const persistedStatuses = statuses.filter(
-      (status) => status !== "PAUSED",
+      (status) => status !== SESSION_FILTER_PAUSED,
     ) as DbBookStatus[];
     const statusFilters: Prisma.BookEntryWhereInput[] = [];
 
@@ -619,7 +602,7 @@ export class BookLibraryService {
       statusFilters.push({ status: { in: persistedStatuses } });
     }
 
-    if (statuses.includes("PAUSED")) {
+    if (statuses.includes(SESSION_FILTER_PAUSED)) {
       const cutoff = sinceDaysAgo(new Date(), DORMANT_AFTER_DAYS);
       statusFilters.push({
         status: BookStatus.READING,
@@ -749,7 +732,7 @@ export class BookLibraryService {
       );
     }
 
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return toEntryDto(
       entry,

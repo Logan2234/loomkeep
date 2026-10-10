@@ -29,7 +29,12 @@
     type LibraryItemView,
   } from "#lib/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { Domain, type MusicEntryDto } from "@loomkeep/shared";
+  import {
+    Domain,
+    type MusicEntryDto,
+    type MusicSortKey,
+    type MusicStatus,
+  } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = MUSIC_STATUS_ORDER.map((value) => ({
     label: MUSIC_STATUS_LABELS[value],
@@ -43,7 +48,7 @@
     { label: m.library_rating(), value: "rating" },
     { label: m.music_sort_listened(), value: "finished" },
     { label: m.common_status(), value: "status" },
-  ];
+  ] satisfies { label: string; value: MusicSortKey }[];
 
   const setFavorite = (entry: MusicEntryDto, next: boolean) =>
     updateMusicEntry(entry.id, { favorite: next });
@@ -132,8 +137,8 @@
     listMusic({
       query: params.query,
       favorite: params.favoritesOnly,
-      statuses: params.statuses,
-      sort: params.sort,
+      statuses: params.statuses as MusicStatus[],
+      sort: params.sort as MusicSortKey,
       order: params.order,
       page: params.page,
     });
@@ -142,7 +147,7 @@
     getMusicPile({
       query: params.query,
       favorite: params.favoritesOnly,
-      statuses: params.statuses,
+      statuses: params.statuses as MusicStatus[],
     });
 </script>
 

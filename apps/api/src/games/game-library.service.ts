@@ -1,20 +1,24 @@
 import {
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
-  type GameDetailDto,
-  type GameEntryDto,
-  type GameItemDto,
-  type GameSource,
-  type PagedResult,
-  type PileSummaryDto,
   Domain,
   DORMANT_AFTER_DAYS,
+  GAME_SORT_KEYS,
+  type GameDetailDto,
+  type GameEntryDto,
   gameFinishedXp,
+  type GameItemDto,
   GameOwnershipStatus,
+  type GameSortKey,
+  type GameSource,
   GameStatus,
+  type PagedResult,
+  type PileSummaryDto,
+  RealtimeEvent,
   replayXp,
   ReviewTargetType,
   sagaCompletionXp,
+  SESSION_FILTER_PAUSED,
   TrackingCycleStatus,
   XpReason,
 } from "@loomkeep/shared";
@@ -87,17 +91,6 @@ type EntryWithGame = Prisma.GameEntryGetPayload<{
   include: typeof ENTRY_INCLUDE;
 }>;
 
-type GameSortKey =
-  "added" | "title" | "rating" | "playtime" | "finished" | "started" | "status";
-const GAME_SORT_KEYS = [
-  "added",
-  "title",
-  "rating",
-  "playtime",
-  "finished",
-  "started",
-  "status",
-] as const satisfies readonly GameSortKey[];
 const GAME_STATUS_SORT_ORDER = [
   "BACKLOG",
   "PLAYING",
@@ -366,7 +359,7 @@ export class GameLibraryService {
     // (see OnboardingService) — pushed unconditionally rather than checking
     // whether onboarding is even still in progress first, since that check
     // would cost as much as the emit is worth avoiding.
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return toEntryDto(
       entry,
@@ -548,7 +541,7 @@ export class GameLibraryService {
     const q = searchTerm(filters);
     const statuses = filters.statuses ?? [];
     const persistedStatuses = statuses.filter(
-      (status) => status !== "PAUSED",
+      (status) => status !== SESSION_FILTER_PAUSED,
     ) as DbGameStatus[];
     const statusFilters: Prisma.GameEntryWhereInput[] = [];
 
@@ -556,7 +549,7 @@ export class GameLibraryService {
       statusFilters.push({ status: { in: persistedStatuses } });
     }
 
-    if (statuses.includes("PAUSED")) {
+    if (statuses.includes(SESSION_FILTER_PAUSED)) {
       const cutoff = sinceDaysAgo(new Date(), DORMANT_AFTER_DAYS);
       statusFilters.push({
         status: GameStatus.PLAYING,
@@ -696,7 +689,7 @@ export class GameLibraryService {
       );
     }
 
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return toEntryDto(
       entry,

@@ -1,14 +1,15 @@
 import type {
   GameOwnershipStatus,
   GameSource,
-  GameStatus,
   ReleaseDatePrecision,
   SessionCycleAction,
   SessionSource,
   TrackingCycleStatus,
 } from "../enums";
+import { GameStatus } from "../enums";
 import type { RatingDto } from "./catalog";
 import type { SessionWeekDayDto } from "./session";
+import { SESSION_FILTER_PAUSED } from "./session";
 
 /** A game as returned by a live catalogue search (not persisted). */
 export interface GameSummaryDto {
@@ -221,3 +222,16 @@ export interface GameDetailDto extends GameDetailsDto {
   commentTargetId: string | null;
   entry: GameEntryDto | null;
 }
+
+export const GAME_SORT_KEYS = [
+  "added",
+  "title",
+  "rating",
+  "playtime",
+  "finished",
+  "started",
+  "status",
+] as const;
+export type GameSortKey = (typeof GAME_SORT_KEYS)[number];
+
+export type GameFilterStatus = GameStatus | typeof SESSION_FILTER_PAUSED;

@@ -33,21 +33,25 @@
     type LibraryItemView,
   } from "#lib/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { LibraryEntryDto, MediaType } from "@loomkeep/shared";
   import {
+    type LibraryEntryDto,
+    type MediaType,
     Domain,
     isDormant,
     isGhost,
     MEDIA_BULK_STATUSES,
     progressPercent,
+    type MediaSortKey,
+    type MediaFilterStatus,
+    MEDIA_SYNTHETIC_STATUS,
   } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
     { label: m.library_status_in_progress(), value: "WATCHING" },
     { label: m.media_status_planned(), value: "PLANNED" },
     { label: m.library_status_completed(), value: "COMPLETED" },
-    { label: m.media_status_paused(), value: "DORMANT" },
-    { label: m.media_status_ghost(), value: "GHOST" },
+    { label: m.media_status_paused(), value: MEDIA_SYNTHETIC_STATUS.DORMANT },
+    { label: m.media_status_ghost(), value: MEDIA_SYNTHETIC_STATUS.GHOST },
     { label: m.library_status_dropped(), value: "DROPPED" },
   ];
 
@@ -64,7 +68,7 @@
     { label: m.library_sort_finished(), value: "finished" },
     { label: m.library_sort_started(), value: "started" },
     { label: m.common_status(), value: "status" },
-  ];
+  ] satisfies { label: string; value: MediaSortKey }[];
 
   const TYPE_LABELS: Record<MediaType, string> = {
     MOVIE: m.media_movie(),
@@ -188,9 +192,9 @@
     listLibrary({
       query: params.query,
       favorite: params.favoritesOnly,
-      statuses: params.statuses,
+      statuses: params.statuses as MediaFilterStatus[],
       types: params.extra as MediaType[],
-      sort: params.sort,
+      sort: params.sort as MediaSortKey,
       order: params.order,
       page: params.page,
     });
@@ -199,7 +203,7 @@
     getLibraryPile({
       query: params.query,
       favorite: params.favoritesOnly,
-      statuses: params.statuses,
+      statuses: params.statuses as MediaFilterStatus[],
       types: params.extra as MediaType[],
     });
 </script>

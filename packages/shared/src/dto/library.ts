@@ -1,10 +1,10 @@
 import type {
   CatalogSource,
   Domain,
-  EntryStatus,
   MediaOwnershipStatus,
   MediaType,
 } from "../enums";
+import { EntryStatus } from "../enums";
 import type { GameItemDto } from "./game";
 
 export const ENTRY_NOTES_MAX_LENGTH = 5000;
@@ -195,3 +195,25 @@ export function progressPercent(
   if (!progress || progress.totalEpisodes === 0) return 0;
   return Math.round((progress.watchedEpisodes / progress.totalEpisodes) * 100);
 }
+
+export const MEDIA_SORT_KEYS = [
+  "recent",
+  "added",
+  "title",
+  "rating",
+  "progress",
+  "finished",
+  "started",
+  "status",
+] as const;
+export type MediaSortKey = (typeof MEDIA_SORT_KEYS)[number];
+
+export const MEDIA_SYNTHETIC_STATUS = {
+  DORMANT: "DORMANT",
+  GHOST: "GHOST",
+} as const;
+export const MEDIA_FILTER_STATUSES = [
+  ...Object.values(EntryStatus),
+  ...Object.values(MEDIA_SYNTHETIC_STATUS),
+] as const;
+export type MediaFilterStatus = (typeof MEDIA_FILTER_STATUSES)[number];
