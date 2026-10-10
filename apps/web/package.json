@@ -65,7 +65,7 @@
     "mermaid": "^12.0.0",
     "msw": "^3.0.1",
     "openapi-typescript": "^7.13.0",
-    "svelte": "^5.57.1",
+    "svelte": "^5.57.2",
     "svelte-check": "^4.7.6",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.2",
