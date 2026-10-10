@@ -386,7 +386,10 @@
             {m.landing_open_app()}
           </a>
         {:else}
-          <a href="/login" class="btn btn-ghost" data-umami-event="cta-nav-login">
+          <a
+            href="/login"
+            class="btn btn-ghost"
+            data-umami-event="cta-nav-login">
             {m.common_login()}
           </a>
           {#if showRegister}
