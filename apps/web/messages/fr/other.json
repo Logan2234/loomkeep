@@ -1384,7 +1384,6 @@
   "chat_work_add": "Ajouter {title} à ma bibliothèque",
   "chat_work_added": "{title} est dans ta bibliothèque.",
   "chat_work_in_library": "Dans ta bibliothèque",
-  "chat_work_domain_off": "Le domaine « {domain} » n'est pas activé : active-le dans Paramètres › Domaines pour ouvrir cette fiche.",
   "chat_reco_prompt": "Tape le titre d'une œuvre à joindre.",
   "chat_reco_remove": "Retirer l'œuvre",
   "chat_link_preview": "Aperçu",

@@ -1384,7 +1384,6 @@
   "chat_work_add": "Add {title} to my library",
   "chat_work_added": "{title} is in your library.",
   "chat_work_in_library": "In your library",
-  "chat_work_domain_off": "The {domain} domain is off: turn it on in Settings › Domains to open this page.",
   "chat_reco_prompt": "Type the title of a work to attach.",
   "chat_reco_remove": "Remove the work",
   "chat_link_preview": "Preview",

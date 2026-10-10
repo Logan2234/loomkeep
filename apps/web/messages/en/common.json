@@ -86,6 +86,7 @@
   "common_password_hide": "Hide password",
   "common_manage": "Manage",
   "common_work": "Work",
+  "common_work_domain_off": "The {domain} domain is off: turn it on in Settings › Domains to open this page.",
   "common_season": "Season",
   "common_episode": "Episode",
   "common_sending": "Sending…",

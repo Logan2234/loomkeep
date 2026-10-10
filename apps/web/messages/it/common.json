@@ -86,6 +86,7 @@
   "common_password_hide": "Nascondi password",
   "common_manage": "Gestisci",
   "common_work": "Opera",
+  "common_work_domain_off": "Il dominio «{domain}» non è attivo: attivalo in Impostazioni › Domini per aprire questa scheda.",
   "common_season": "Stagione",
   "common_episode": "Episodio",
   "common_sending": "Invio…",

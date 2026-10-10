@@ -18,6 +18,7 @@
   import Avatar from "#lib/components/Avatar.svelte";
   import Banner from "#lib/components/Banner.svelte";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import DomainOffMark from "#lib/components/DomainOffMark.svelte";
   import Dropdown from "#lib/components/Dropdown.svelte";
   import EmptyState from "#lib/components/EmptyState.svelte";
   import FocusOverlay from "#lib/components/FocusOverlay.svelte";
@@ -27,6 +28,7 @@
   import Poster from "#lib/components/Poster.svelte";
   import ReportModal from "#lib/components/ReportModal.svelte";
   import { appConfig } from "#lib/config.svelte.js";
+  import { isDomainEnabled, targetDomain } from "#lib/domains.js";
   import { m } from "#lib/paraglide/messages.js";
   import { joinRealtimeRoom, onRealtimeEvent } from "#lib/realtime/socket.js";
   import type { ListDto, ListItemDto } from "@loomkeep/shared";
@@ -221,6 +223,13 @@
     });
   }
 
+  // A work of a domain the viewer can't open stays listed — it's still part
+  // of the list — but with a warning instead of a link to its page.
+  function itemHref(item: ListItemDto): string | null {
+    if (!isDomainEnabled(targetDomain(item.targetType))) return null;
+    return item.target?.href ?? null;
+  }
+
   // Poster tile for the COLLECTION grid. `focused` renders the enlarged copy
   // shown inside FocusOverlay on long-press — there the delete button is
   // always visible (no hover on touch) and the poster isn't a link, since
@@ -264,19 +273,27 @@
 {/snippet}
 
 {#snippet gridItem(item: ListItemDto, focused: boolean = false)}
-  <svelte:element
-    this={!focused && item.target?.href ? "a" : "div"}
-    href={!focused ? (item.target?.href ?? undefined) : undefined}>
+  {@const domain = targetDomain(item.targetType)}
+  {@const off = !isDomainEnabled(domain)}
+  {@const href = focused ? null : itemHref(item)}
+  <svelte:element this={href ? "a" : "div"} href={href ?? undefined}>
     <div
-      class="card group-hover:border-accent overflow-hidden transition-colors">
+      class="card overflow-hidden transition-[border-color,opacity] {off
+        ? 'opacity-70'
+        : 'group-hover:border-accent'}">
       <Poster
         src={item.target?.imageUrl ?? null}
         title={item.target?.title ?? "?"}
         alt="" />
     </div>
     {@render addedByMark(item, 24, "ring-bg absolute top-2 left-2 ring-2")}
-    <p class="mt-1.5 truncate text-sm font-semibold">
-      {item.target?.title ?? m.common_work()}
+    <p class="mt-1.5 flex items-center gap-1 text-sm font-semibold">
+      <span class="min-w-0 truncate">
+        {item.target?.title ?? m.common_work()}
+      </span>
+      {#if off}
+        <DomainOffMark {domain} class="-my-1.5 shrink-0" />
+      {/if}
     </p>
   </svelte:element>
   {#if canEditList}
@@ -452,6 +469,9 @@
         onconsider={handleDndConsider}
         onfinalize={handleDndFinalize}>
         {#each dragItems as item, i (item.id)}
+          {@const domain = targetDomain(item.targetType)}
+          {@const off = !isDomainEnabled(domain)}
+          {@const href = itemHref(item)}
           <li class="card flex items-center gap-3 p-3">
             {#if canEditList}
               <Icon name="grip" class="text-dim h-4 w-4 shrink-0 cursor-grab" />
@@ -460,10 +480,13 @@
               {String(i + 1).padStart(2, "0")}
             </span>
             <svelte:element
-              this={item.target?.href ? "a" : "div"}
-              href={item.target?.href ?? undefined}
+              this={href ? "a" : "div"}
+              href={href ?? undefined}
               class="flex min-w-0 flex-1 items-center gap-3">
-              <div class="h-16 w-11 shrink-0 overflow-hidden rounded">
+              <div
+                class="h-16 w-11 shrink-0 overflow-hidden rounded {off
+                  ? 'opacity-70'
+                  : ''}">
                 <Poster
                   src={item.target?.imageUrl ?? null}
                   title={item.target?.title ?? "?"}
@@ -472,6 +495,9 @@
               <p class="min-w-0 truncate font-semibold">
                 {item.target?.title ?? m.common_work()}
               </p>
+              {#if off}
+                <DomainOffMark {domain} class="shrink-0" />
+              {/if}
             </svelte:element>
             {@render addedByMark(item, 22)}
             {#if canEditList}

@@ -1,8 +1,9 @@
+import { auth } from "#lib/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import { toast } from "#lib/toast.svelte.js";
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode, type UserDto } from "@loomkeep/shared";
 import { fireEvent, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
@@ -21,6 +22,7 @@ vi.mock("#lib/realtime/socket.js", () => ({
 }));
 afterEach(() => {
   for (const item of toast.items) toast.dismiss(item.id);
+  auth.user = null;
 });
 
 const items = ["first", "second"].map((id) => ({
@@ -101,4 +103,44 @@ describe("list action failures", () => {
         expect(toast.items.some((item) => item.variant === "error")).toBe(true);
     },
   );
+});
+
+describe("works of a domain the viewer turned off", () => {
+  it("stay listed, with a warning instead of a link", async () => {
+    auth.user = { enabledDomains: ["MEDIA"] } as unknown as UserDto;
+    server.use(
+      http.get(apiUrl("/lists/me/list"), () =>
+        HttpResponse.json({
+          ...list,
+          items: [
+            {
+              ...items[0],
+              targetType: "MEDIA",
+              target: { title: "Dune", imageUrl: null, href: "/app/media/1" },
+            },
+            {
+              ...items[1],
+              target: {
+                title: "Neuromancer",
+                imageUrl: null,
+                href: "/app/books/2",
+              },
+            },
+          ],
+        }),
+      ),
+    );
+    renderWithQuery(ListPage, {});
+    await screen.findAllByText("Neuromancer");
+
+    expect(
+      screen.getByRole("link", { name: /Dune/ }).getAttribute("href"),
+    ).toBe("/app/media/1");
+    expect(screen.queryByRole("link", { name: /Neuromancer/ })).toBe(null);
+    expect(
+      screen.getByRole("img", {
+        name: m.common_work_domain_off({ domain: m.common_Books() }),
+      }),
+    ).toBeTruthy();
+  });
 });

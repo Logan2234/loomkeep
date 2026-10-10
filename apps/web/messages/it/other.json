@@ -1384,7 +1384,6 @@
   "chat_work_add": "Aggiungi {title} alla mia libreria",
   "chat_work_added": "{title} è nella tua libreria.",
   "chat_work_in_library": "Nella tua libreria",
-  "chat_work_domain_off": "Il dominio «{domain}» non è attivo: attivalo in Impostazioni › Domini per aprire questa scheda.",
   "chat_reco_prompt": "Scrivi il titolo di un'opera da allegare.",
   "chat_reco_remove": "Rimuovi l'opera",
   "chat_link_preview": "Anteprima",

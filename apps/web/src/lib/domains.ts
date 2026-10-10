@@ -1,7 +1,8 @@
 import {
+  Domain,
   maintenanceFlag,
   PREMIUM_DOMAINS,
-  type Domain,
+  type ReviewTargetType,
 } from "@loomkeep/shared";
 import { auth } from "./auth.svelte";
 import { DOMAINS } from "./constants/domains";
@@ -62,4 +63,18 @@ export function toggleDomainSelection(current: Domain[], id: Domain): Domain[] {
   return Object.keys(DOMAINS).filter((d) =>
     d === id ? !has : current.includes(d as Domain),
   ) as Domain[];
+}
+
+const DOMAIN_OF_TARGET: Record<ReviewTargetType, Domain> = {
+  MEDIA: Domain.MEDIA,
+  SEASON: Domain.MEDIA,
+  EPISODE: Domain.MEDIA,
+  GAME: Domain.GAMES,
+  BOOK: Domain.BOOKS,
+  MUSIC: Domain.MUSIC,
+};
+
+/** The domain a review or list item's target belongs to. */
+export function targetDomain(type: ReviewTargetType): Domain {
+  return DOMAIN_OF_TARGET[type];
 }

@@ -83,7 +83,7 @@ describe("ChatWorkCard", () => {
     expect(screen.queryByRole("link")).toBe(null);
     expect(
       screen.getByRole("img", {
-        name: m.chat_work_domain_off({ domain: m.common_Games() }),
+        name: m.common_work_domain_off({ domain: m.common_Games() }),
       }),
     ).toBeTruthy();
   });

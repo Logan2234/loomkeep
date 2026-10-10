@@ -97,6 +97,10 @@ function make(
   };
 }
 
+function feedDomains(prisma: PrismaService): unknown {
+  return (prisma.activityEvent.findMany as Mock).mock.calls[0][0].where.domain;
+}
+
 describe("ActivityService.emit", () => {
   it("never lets a feed-write failure escape into the user's action", async () => {
     // emit() is fire-and-forget from every caller: marking an episode watched
@@ -153,11 +157,6 @@ describe("ActivityService.homeFeed", () => {
       (prisma.activityEvent.findMany as Mock).mock.calls[0][0].where,
     ).toMatchObject({ userId: { in: [ACTOR] }, homeFeed: true });
   });
-
-  function feedDomains(prisma: PrismaService): unknown {
-    return (prisma.activityEvent.findMany as Mock).mock.calls[0][0].where
-      .domain;
-  }
 
   it("leaves out the domains the viewer has turned off", async () => {
     // A reader who switched Games off doesn't want a friend's playthroughs
@@ -275,6 +274,16 @@ describe("ActivityService feed building", () => {
     const feed = await service.profileTimeline(VIEWER, target);
 
     expect(feed.items).toEqual([]);
+  });
+
+  it("leaves out the domains the viewer has turned off", async () => {
+    // Same rule as the home feed: a profile's timeline doesn't bring back a
+    // domain the viewer closed — their own profile included.
+    const { service, prisma } = make({ enabledDomains: ["MEDIA", "BOOKS"] });
+
+    await service.profileTimeline(VIEWER, target);
+
+    expect(feedDomains(prisma)).toEqual({ in: ["MEDIA", "BOOKS", "LISTS"] });
   });
 
   it("hydrates the actor onto each entry", async () => {
