@@ -310,6 +310,12 @@
     return () => hero.removeEventListener("pointermove", move);
   });
 
+  // The signed-out buttons render right away; before /api/config answers we
+  // assume registration is open, the common case, so nothing jumps in later.
+  const showRegister = $derived(
+    !bootstrap.ready || appConfig.registrationEnabled,
+  );
+
   $effect(() => {
     void bootstrap.ready;
     void appConfig.registrationEnabled;
@@ -327,14 +333,11 @@
 </script>
 
 {#snippet primaryCta(label: string, event: string, cls: string)}
-  {#if !bootstrap.ready}
-    <!-- Reserve the button slot while /api/config loads to prevent layout shift. -->
-    <span class="{cls} invisible" aria-hidden="true">{label}</span>
-  {:else if auth.isLoggedIn}
+  {#if auth.isLoggedIn}
     <a href="/app" class={cls} data-umami-event="{event}-open-app">
       {m.landing_open_app()}
     </a>
-  {:else if appConfig.registrationEnabled}
+  {:else if showRegister}
     <a href="/register" class={cls} data-umami-event={event}>{label}</a>
   {:else}
     <a href="/login" class={cls} data-umami-event="{event}-login">
@@ -375,33 +378,24 @@
           <Icon name={theme.mode === "dark" ? "sun" : "moon"} class="h-4 w-4" />
         </button>
 
-        {#if !bootstrap.ready}
-          <span class="btn btn-primary invisible" aria-hidden="true">
-            {m.common_login()}
-          </span>
+        {#if auth.isLoggedIn}
+          <a
+            href="/app"
+            class="btn btn-primary"
+            data-umami-event="cta-nav-open-app">
+            {m.landing_open_app()}
+          </a>
         {:else}
-          {#if auth.isLoggedIn}
+          <a href="/login" class="btn btn-ghost" data-umami-event="cta-nav-login">
+            {m.common_login()}
+          </a>
+          {#if showRegister}
             <a
-              href="/app"
-              class="btn btn-primary"
-              data-umami-event="cta-nav-open-app">
-              {m.landing_open_app()}
+              href="/register"
+              data-umami-event="cta-nav-register"
+              class="btn btn-primary hidden sm:inline-flex">
+              {m.common_register()}
             </a>
-          {:else}
-            <a
-              href="/login"
-              class="btn btn-ghost"
-              data-umami-event="cta-nav-login">
-              {m.common_login()}
-            </a>
-            {#if appConfig.registrationEnabled}
-              <a
-                href="/register"
-                data-umami-event="cta-nav-register"
-                class="btn btn-primary hidden sm:inline-flex">
-                {m.common_register()}
-              </a>
-            {/if}
           {/if}
         {/if}
       </div>

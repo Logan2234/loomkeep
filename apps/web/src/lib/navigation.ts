@@ -10,6 +10,8 @@ interface NavItem {
   icon: IconName;
   match(path: string): boolean;
   domain?: Domain;
+  /** Shown while at least one of these domains is enabled (vs. `domain`: that one). */
+  anyDomain?: Domain[];
   /**
    * Domaine planifié sans écran : rendu non cliquable avec un badge « Bientôt ».
    * `href`/`match` restent présents (clé de liste) mais ne sont pas suivis.
@@ -101,7 +103,7 @@ const NAVIGATION: NavSection[] = [
         href: "/app/calendar",
         label: m.common_calendar(),
         icon: "calendar",
-        domain: Domain.MEDIA,
+        anyDomain: [Domain.MEDIA, Domain.GAMES],
         match: (p) => p.startsWith("/app/calendar"),
       },
       {
@@ -138,6 +140,7 @@ interface NavGateOptions {
 
 const isNavItemVisible = (item: NavItem, opts: NavGateOptions): boolean =>
   (!item.domain || opts.isDomainEnabled(item.domain)) &&
+  (!item.anyDomain || item.anyDomain.some(opts.isDomainEnabled)) &&
   (!item.social || opts.socialEnabled) &&
   (!item.gamification || opts.gamificationEnabled);
 
@@ -223,6 +226,8 @@ export interface MobileDestination {
   match(path: string): boolean;
   /** Hidden when the domain is disabled in the user's composition. */
   domain?: Domain;
+  /** Hidden only when every one of these domains is disabled. */
+  anyDomain?: Domain[];
   /** Planned domain with no screen yet: shown dimmed with a "Bientôt" badge. */
   comingSoon?: boolean;
   /** Only surfaced to admins (the /admin entry). */
@@ -313,7 +318,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
     href: "/app/calendar",
     label: m.common_calendar(),
     icon: "calendar",
-    domain: Domain.MEDIA,
+    anyDomain: [Domain.MEDIA, Domain.GAMES],
     match: (p) => p.startsWith("/app/calendar"),
   },
   stats: {
@@ -420,6 +425,7 @@ interface MobileGateOptions {
 
 const isVisible = (d: MobileDestination, opts: MobileGateOptions): boolean =>
   (!d.domain || opts.isDomainEnabled(d.domain)) &&
+  (!d.anyDomain || d.anyDomain.some(opts.isDomainEnabled)) &&
   (!d.adminOnly || opts.isAdmin) &&
   (!d.social || !!opts.socialEnabled) &&
   (!d.gamification || !!opts.gamificationEnabled);

@@ -14,7 +14,6 @@
   import PageHeader from "#lib/components/PageHeader.svelte";
   import PremiumTeaser from "#lib/components/PremiumTeaser.svelte";
   import BookStatsSection from "#lib/components/stats/BookStatsSection.svelte";
-  import DomainFilter from "#lib/components/stats/DomainFilter.svelte";
   import GameStatsSection from "#lib/components/stats/GameStatsSection.svelte";
   import HistogramBars from "#lib/components/stats/HistogramBars.svelte";
   import InsufficientDataNotice from "#lib/components/stats/InsufficientDataNotice.svelte";
@@ -26,6 +25,7 @@
   import StackedBar from "#lib/components/stats/StackedBar.svelte";
   import StatTile from "#lib/components/stats/StatTile.svelte";
   import StatsWorksModal from "#lib/components/stats/StatsWorksModal.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
   import VideoStatsSection from "#lib/components/stats/VideoStatsSection.svelte";
   import VideoTemporalSection from "#lib/components/stats/VideoTemporalSection.svelte";
   import { POSSESSION_STATUS_LABEL } from "#lib/components/stats/possession-labels.js";
@@ -47,13 +47,36 @@
     StatsWindow,
     StatsWorkDto,
   } from "@loomkeep/shared";
-  import { STATS_DOMAINS } from "@loomkeep/shared";
+  import { Domain, STATS_DOMAINS } from "@loomkeep/shared";
 
   type Choice = "ALL" | StatsDomain;
+  // Tabs also carry the planned domains, which are never selectable.
+  type TabValue = Choice | typeof Domain.PODCASTS | typeof Domain.BOARDGAMES;
 
   const enabledDomains = $derived<StatsDomain[]>(
     STATS_DOMAINS.filter((d) => auth.user?.enabledDomains?.includes(d) ?? true),
   );
+
+  // The two domains with no stats yet show up greyed out, and only for
+  // accounts that turned them on — same gate as the live ones.
+  const domainTabs = $derived<
+    { value: TabValue; label: string; disabled?: boolean }[]
+  >([
+    { value: "ALL", label: m.common_all() },
+    ...enabledDomains.map((d) => ({ value: d, label: STATS_DOMAIN_LABEL[d] })),
+    ...(
+      [
+        [Domain.PODCASTS, m.common_Podcasts()],
+        [Domain.BOARDGAMES, m.common_Boardgames()],
+      ] as const
+    )
+      .filter(([d]) => auth.user?.enabledDomains?.includes(d) ?? false)
+      .map(([d, label]) => ({
+        value: d,
+        label,
+        disabled: true,
+      })),
+  ]);
 
   // Gates the "deep analysis" stats (rankings, distributions, temporal
   // breakdowns) — the "counting" stats stay free everywhere. The advanced
@@ -203,23 +226,20 @@
   }
 </script>
 
-<!-- Filter console: sticky, the spine that drives everything below. -->
-<div
-  class="border-border bg-surface/95 sticky top-0 z-20 border-b backdrop-blur">
-  <div
-    class="mx-auto flex max-w-4xl flex-wrap items-center gap-3 px-5 py-3 md:px-8">
-    <DomainFilter
-      {enabledDomains}
-      {selected}
-      onSelect={(c) => (selected = c)} />
-  </div>
-</div>
-
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="stats"
     title={m.common_stats()}
     subtitle={m.stats_subtitle()} />
+
+  <Tabs
+    class="mb-6"
+    label={m.common_stats()}
+    tabs={domainTabs}
+    current={selected}
+    onSelect={(c) => {
+      if (c !== Domain.PODCASTS && c !== Domain.BOARDGAMES) selected = c;
+    }} />
 
   {#if error}
     <Banner variant="error">{error}</Banner>
