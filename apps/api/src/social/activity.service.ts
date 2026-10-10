@@ -265,16 +265,37 @@ export class ActivityService {
 
   /**
    * Keeps only events the viewer may see. Two gates depending on the event's
-   * target: a `"LIST"` event's visibility is its own explicit field (own-scope
-   * pattern, like Review — never facet-derived, see `resolveOwnVisibility`);
-   * everything else is gated by the actor's per-domain Activité facet as
-   * before. Relation/settings are resolved once per actor and reused across
-   * their events (a feed page spans few actors).
+   * target: a `"LIST"` event follows the list itself (own-scope pattern, like
+   * Review — never facet-derived, see `resolveOwnVisibility`); everything
+   * else is gated by the actor's per-domain Activité facet. Relation/settings
+   * are resolved once per user and reused across events (a feed page spans
+   * few actors).
+   *
+   * A list event's actor can be an editor rather than the list's owner, so
+   * the list's audience is read against *its owner's* profile and the
+   * viewer's relation to that owner — the same rule `ListService.listForUser`
+   * applies — never the editor's: a FRIENDS list must not reach the editor's
+   * friends, nor a PUBLIC one escape its owner's private profile or a block.
+   * The viewer's own membership opens the list as it does on the list page,
+   * and a block with the editor still hides their events.
    */
   private async filterVisible(
     viewerId: string,
     rows: EventRow[],
   ): Promise<EventRow[]> {
+    const relationCache = new Map<string, Promise<ViewerRelation>>();
+
+    const relationTo = (user: { id: string; profileAccess: ProfileAccess }) => {
+      let cached = relationCache.get(user.id);
+
+      if (!cached) {
+        cached = this.visibility.getRelation(viewerId, user);
+        relationCache.set(user.id, cached);
+      }
+
+      return cached;
+    };
+
     const actorCache = new Map<
       string,
       { access: ProfileAccess; relation: ViewerRelation } | null
@@ -298,10 +319,10 @@ export class ActivityService {
         return null;
       }
 
-      const relation = await this.visibility.getRelation(viewerId, actor);
+      const access = actor.profileAccess as ProfileAccess;
       const entry = {
-        access: actor.profileAccess as ProfileAccess,
-        relation,
+        access,
+        relation: await relationTo({ id: actor.id, profileAccess: access }),
       };
       actorCache.set(actorId, entry);
       return entry;
@@ -312,16 +333,24 @@ export class ActivityService {
         rows.filter((r) => r.targetType === "LIST").map((r) => r.targetId),
       ),
     ];
-    const listVisibility = listIds.length
-      ? new Map(
-          (
+    const lists = new Map(
+      listIds.length
+        ? (
             await this.prisma.list.findMany({
               where: { id: { in: listIds } },
-              select: { id: true, visibility: true },
+              select: {
+                id: true,
+                visibility: true,
+                user: { select: { id: true, profileAccess: true } },
+                members: {
+                  where: { userId: viewerId },
+                  select: { userId: true },
+                },
+              },
             })
-          ).map((l) => [l.id, l.visibility as ListVisibility]),
-        )
-      : new Map<string, ListVisibility>();
+          ).map((l) => [l.id, l])
+        : [],
+    );
 
     const kept: EventRow[] = [];
 
@@ -330,11 +359,22 @@ export class ActivityService {
       if (!actor) continue;
 
       if (row.targetType === "LIST") {
-        const listVis = listVisibility.get(row.targetId);
+        const list = lists.get(row.targetId);
+        if (!list) continue;
+        if (actor.relation.blocking || actor.relation.blockedByTarget) continue;
+
+        const owner = {
+          id: list.user.id,
+          profileAccess: list.user.profileAccess as ProfileAccess,
+        };
 
         if (
-          listVis &&
-          resolveOwnVisibility(listVis, actor.access, actor.relation)
+          list.members.length > 0 ||
+          resolveOwnVisibility(
+            list.visibility as ListVisibility,
+            owner.profileAccess,
+            await relationTo(owner),
+          )
         ) {
           kept.push(row);
         }
