@@ -43,7 +43,10 @@ if (dsn) {
       integrations.filter(
         (integration) =>
           integration.name !== "BrowserTracing" &&
-          integration.name !== "BrowserSession",
+          integration.name !== "BrowserSession" &&
+          // Our filter deduplicates by request/Error identity. The SDK's
+          // stack-based Dedupe can suppress distinct failed HTTP requests.
+          integration.name !== "Dedupe",
       ),
   });
 
