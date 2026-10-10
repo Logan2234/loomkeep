@@ -237,6 +237,15 @@ function makeForWrite(
     },
     episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
     userScore: { findMany: vi.fn().mockResolvedValue([]) },
+    season: {
+      findUnique: vi.fn().mockResolvedValue({ number: 3, mediaItemId: "m1" }),
+    },
+    episode: {
+      findUnique: vi.fn().mockResolvedValue({
+        number: 5,
+        season: { number: 3, mediaItemId: "m1" },
+      }),
+    },
   } as unknown as PrismaService;
   const activity = { emit: vi.fn() } as unknown as ActivityService;
   const visibility = {} as unknown as VisibilityService;
@@ -295,6 +304,50 @@ describe("ReviewService.upsert — feed and XP", () => {
     await svc.upsert("u1", "MEDIA" as never, "m1", { rating: 8, text: null });
     expect(activity.emit).toHaveBeenCalledTimes(1);
     expect(xp.award).toHaveBeenCalled();
+  });
+
+  it("links the feed entry to its review", async () => {
+    const { svc, activity } = makeForWrite(null);
+    await svc.upsert("u1", "MEDIA" as never, "m1", { rating: 8, text: null });
+    expect(activity.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: "MEDIA",
+        targetId: "m1",
+        level: "WORK",
+        homeFeed: true,
+        sourceType: "Review",
+        sourceId: "r1",
+      }),
+    );
+  });
+
+  it("records a season review against its show", async () => {
+    // The feed only snapshots catalogue works: pointed at the season itself,
+    // the entry was silently never written.
+    const { svc, activity } = makeForWrite(null);
+    await svc.upsert("u1", "SEASON" as never, "s3", { rating: 7, text: null });
+    expect(activity.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: "MEDIA",
+        targetId: "m1",
+        level: "SEASON",
+        homeFeed: false,
+        data: { rating: 7, seasonNumber: 3 },
+      }),
+    );
+  });
+
+  it("records an episode review against its show", async () => {
+    const { svc, activity } = makeForWrite(null);
+    await svc.upsert("u1", "EPISODE" as never, "e5", { rating: 9, text: null });
+    expect(activity.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: "MEDIA",
+        targetId: "m1",
+        level: "EPISODE",
+        data: { rating: 9, seasonNumber: 3, episodeNumber: 5 },
+      }),
+    );
   });
 
   it("stays silent when only the audience or the spoiler tag changed", async () => {
@@ -779,6 +832,95 @@ describe("ReviewService.listMine — target links", () => {
       "/app/games/1942",
       "/app/books/OL1W",
       "/app/music/mbid-1",
+    ]);
+  });
+
+  it("resolves a season or episode review to its series, with the numbers", async () => {
+    const row = (targetType: string, targetId: string) => ({
+      id: `r-${targetId}`,
+      userId: VIEWER,
+      targetType,
+      targetId,
+      rating: 8,
+      text: null,
+      visibility: "PUBLIC",
+      spoilerTag: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const prisma = {
+      review: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([row("SEASON", "s1"), row("EPISODE", "e1")]),
+      },
+      reviewVote: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      user: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: VIEWER,
+          username: VIEWER,
+          displayName: VIEWER,
+          avatarUrl: null,
+          hideProgression: false,
+        }),
+      },
+      userScore: { findMany: vi.fn().mockResolvedValue([]) },
+      season: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ id: "s1", number: 2, mediaItemId: "m1" }]),
+      },
+      episode: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "e1",
+            number: 5,
+            season: { number: 3, mediaItemId: "m1" },
+          },
+        ]),
+      },
+      mediaItem: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "m1",
+            title: "Severance",
+            posterUrl: "https://img/severance.jpg",
+            type: "TV",
+            canonicalSource: "TMDB",
+            externalIds: [{ source: "TMDB", externalId: "95396" }],
+          },
+        ]),
+      },
+    } as unknown as PrismaService;
+    const svc = new ReviewService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      stubXp(),
+      CONFIG,
+      stubAchievements(),
+      stubNotifications(),
+    );
+
+    const targets = (await svc.listMine(VIEWER)).map((r) => r.target);
+
+    expect(targets).toEqual([
+      {
+        title: "Severance",
+        imageUrl: "https://img/severance.jpg",
+        href: "/app/media/tv/95396",
+        seasonNumber: 2,
+      },
+      {
+        title: "Severance",
+        imageUrl: "https://img/severance.jpg",
+        href: "/app/media/tv/95396",
+        seasonNumber: 3,
+        episodeNumber: 5,
+      },
     ]);
   });
 });

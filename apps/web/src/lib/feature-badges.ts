@@ -8,6 +8,7 @@ const SHIPPED = {
   "xp-history": "2026-10-05",
   messages: "2026-10-07",
   "share-work": "2026-10-09",
+  "default-list-visibility": "2026-10-10",
   sagas: "2026-10-03",
   "library-sagas": "2026-10-04",
   "notification-digest": "2026-08-25",

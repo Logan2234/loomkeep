@@ -190,6 +190,8 @@
   "activity_rewatched": "rewatched",
   "activity_favorited": "favorited",
   "activity_reviewed": "rated",
+  "activity_reviewed_episode": "rated episode {episode} of season {season} of",
+  "activity_reviewed_season": "rated season {season} of",
   "activity_progress": "progressed in",
   "activity_progress_count": "progressed ({count})",
   "activity_game_session": "played {minutes} min of",

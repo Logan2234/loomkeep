@@ -186,7 +186,9 @@ describe("ProfileService.getProfile xp", () => {
     expect(profile.xp).toBeNull();
   });
 
-  it("hides xp from another viewer when the ACTIVITY facet isn't visible", async () => {
+  it("shows xp to another viewer whatever the ACTIVITY facet says", async () => {
+    // Only `hideProgression` hides progress, as on the leaderboard and the
+    // level badge next to reviews and comments.
     const svc = makeFullProfile({
       rel: relation({}),
       activityAudience: VisibilityAudience.NONE,
@@ -194,7 +196,7 @@ describe("ProfileService.getProfile xp", () => {
       userScoreXp: 250,
     });
     const profile = await svc.getProfile("target", "alice");
-    expect(profile.xp).toBeNull();
+    expect(profile.xp).toBe(250);
   });
 
   it("never touches UserScore and returns null xp when gamification is disabled", async () => {
@@ -243,5 +245,60 @@ describe("ProfileService.getProfile xp", () => {
 
     expect(profile.xp).toBeNull();
     expect(prisma.userScore.findUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe("ProfileService.getProfile streak", () => {
+  // A stranger viewing a public profile that keeps every facet on "nobody".
+  function makeStatsProfile() {
+    const today = new Date();
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "target",
+          username: "alice",
+          displayName: "Alice",
+          bio: null,
+          profileAccess: "PUBLIC",
+          createdAt: new Date("2024-01-01"),
+          avatarUpdatedAt: null,
+          hideProgression: false,
+          equippedBadgeKeys: [],
+        }),
+      },
+      follow: { count: vi.fn().mockResolvedValue(0) },
+      review: { findMany: vi.fn().mockResolvedValue([]) },
+      comment: { count: vi.fn().mockResolvedValue(0) },
+      list: { findMany: vi.fn().mockResolvedValue([]) },
+      episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
+      gameSession: {
+        findMany: vi.fn().mockResolvedValue([{ occurredAt: today }]),
+      },
+      bookSession: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+
+    const visibility = {
+      getRelation: vi.fn().mockResolvedValue(relation({})),
+      getSettingsMap: vi.fn().mockResolvedValue(new Map()),
+      audienceFor: vi.fn().mockReturnValue(VisibilityAudience.NONE),
+      toRelationshipDto: vi.fn().mockReturnValue({}),
+    } as unknown as VisibilityService;
+    const config = { get: vi.fn() } as unknown as ConfigService;
+
+    return new ProfileService(
+      prisma,
+      visibility,
+      {} as unknown as FollowService,
+      config,
+    );
+  }
+
+  it("shows the streak whatever the facets say", async () => {
+    const svc = makeStatsProfile();
+
+    const { activityStats } = await svc.getProfile("viewer", "alice");
+
+    expect(activityStats.streakDays).toBe(1);
+    expect(activityStats.streakSecuredToday).toBe(true);
   });
 });

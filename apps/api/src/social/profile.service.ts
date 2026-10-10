@@ -132,24 +132,13 @@ export class ProfileService {
       domains.push({ domain, visible, count, favorites });
     }
 
-    const activityVisible = resolveFacet(
-      target.profileAccess,
-      this.visibility.audienceFor(
-        settings,
-        Domain.MEDIA,
-        VisibilityFacet.ACTIVITY,
-      ),
-      relation,
-    );
-
-    // Same gate as activityStats — the owner always sees their real
-    // progress; anyone else needs both the ACTIVITY facet visible and the
-    // target's own `hideProgression` preference off. `UserScore` is only
-    // read when gamification is actually on, so a self-hoster running with
-    // it off never pays that query.
+    // The owner always sees their real progress; anyone else who reaches the
+    // profile sees it unless the target turned `hideProgression` on — the
+    // same single rule as the leaderboard and the level badge on reviews and
+    // comments. `UserScore` is only read when gamification is actually on, so
+    // a self-hoster running with it off never pays that query.
     const gamificationEnabled = isGamificationEnabled(this.config);
-    const xpVisible =
-      relation.isSelf || (activityVisible && !target.hideProgression);
+    const xpVisible = relation.isSelf || !target.hideProgression;
 
     const [
       activityStats,
@@ -159,7 +148,7 @@ export class ProfileService {
       commentsCount,
       listsCount,
     ] = await Promise.all([
-      this.computeActivityStats(target.id, activityVisible),
+      this.computeActivityStats(target.id),
       gamificationEnabled && xpVisible
         ? this.fetchRealXp(target.id)
         : Promise.resolve(null),
@@ -398,14 +387,13 @@ export class ProfileService {
 
   /**
    * The activity streak shown on a profile: consecutive days with a dated
-   * watch (TMDB specials aside), game session or reading session.
+   * watch (TMDB specials aside), game session or reading session. Shown to
+   * anyone who reaches the profile whatever its Activité facets — a run of
+   * days says nothing about what was watched, played or read.
    */
   private async computeActivityStats(
     userId: string,
-    visible: boolean,
   ): Promise<ProfileActivityStatsDto> {
-    if (!visible) return EMPTY_ACTIVITY_STATS;
-
     const [watches, gameSessions, bookSessions] = await Promise.all([
       this.prisma.episodeWatch.findMany({
         where: {

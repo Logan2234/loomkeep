@@ -53,7 +53,7 @@
           {m.common_level()}
           <span class="text-accent">{progress.level}</span>
         </p>
-        {#if activity?.visible}
+        {#if activity}
           <StreakBadge
             days={activity.streakDays}
             securedToday={activity.streakSecuredToday}

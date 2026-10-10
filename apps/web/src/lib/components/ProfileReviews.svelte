@@ -8,6 +8,7 @@
   import { appConfig } from "#lib/config.svelte.js";
   import { isDomainEnabled, targetDomain } from "#lib/domains.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { seasonEpisodeLabel } from "#lib/review-target-label.js";
 
   const PREVIEW_COUNT = 3;
 
@@ -96,7 +97,9 @@
               </div>
               <p class="text-dim flex flex-wrap items-center gap-x-2 text-xs">
                 <span class="timecode uppercase"
-                  >{TYPE_LABEL[review.targetType] ?? review.targetType}</span>
+                  >{seasonEpisodeLabel(review) ??
+                    TYPE_LABEL[review.targetType] ??
+                    review.targetType}</span>
                 {#if appConfig.socialEnabled}
                   <span aria-hidden="true">·</span>
                   <span

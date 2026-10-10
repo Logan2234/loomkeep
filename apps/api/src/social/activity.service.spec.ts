@@ -73,6 +73,7 @@ function make(
       ]),
     },
     list: { findMany: vi.fn().mockResolvedValue([]) },
+    review: { findMany: vi.fn().mockResolvedValue([]) },
     mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
   } as unknown as PrismaService;
 
@@ -463,5 +464,87 @@ describe("ActivityService list events", () => {
     const feed = await service.profileTimeline(VIEWER, target);
 
     expect(feed.items).toHaveLength(1);
+  });
+});
+
+describe("ActivityService review events", () => {
+  const target = { id: ACTOR, profileAccess: ProfileAccess.PUBLIC };
+  const stranger = relation({
+    following: false,
+    followsYou: false,
+    isFriend: false,
+  });
+
+  function reviewEvent(over: Record<string, unknown> = {}) {
+    return eventRow({
+      type: "REVIEWED",
+      data: { rating: 8 },
+      sourceType: "Review",
+      sourceId: "r1",
+      ...over,
+    });
+  }
+
+  it("keeps a friends-only review's rating from a stranger", async () => {
+    // The Activité facet is public, but the review itself isn't.
+    const { service, prisma } = make({
+      events: [reviewEvent()],
+      relation: stranger,
+    });
+    (prisma.review.findMany as Mock).mockResolvedValue([
+      { id: "r1", visibility: "FRIENDS" },
+    ]);
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toEqual([]);
+  });
+
+  it("shows a public review's rating to a stranger", async () => {
+    const { service, prisma } = make({
+      events: [reviewEvent()],
+      relation: stranger,
+    });
+    (prisma.review.findMany as Mock).mockResolvedValue([
+      { id: "r1", visibility: "PUBLIC" },
+    ]);
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toHaveLength(1);
+  });
+
+  it("drops the events of a deleted review", async () => {
+    const { service } = make({ events: [reviewEvent()] });
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toEqual([]);
+  });
+
+  it("matches an event older than the review link on the work", async () => {
+    const { service, prisma } = make({
+      events: [reviewEvent({ sourceType: null, sourceId: null })],
+      relation: stranger,
+    });
+    (prisma.review.findMany as Mock).mockResolvedValue([
+      {
+        userId: ACTOR,
+        targetType: "MEDIA",
+        targetId: "m1",
+        visibility: "FRIENDS",
+      },
+    ]);
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toEqual([]);
+    expect(prisma.review.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: [{ userId: ACTOR, targetType: "MEDIA", targetId: "m1" }],
+        },
+      }),
+    );
   });
 });

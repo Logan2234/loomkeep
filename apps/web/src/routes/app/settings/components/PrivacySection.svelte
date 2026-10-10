@@ -26,6 +26,7 @@
   } from "#lib/privacy-options.js";
   import {
     Domain,
+    type ListVisibility,
     ProfileAccess,
     type ReviewVisibility,
     VisibilityAudience,
@@ -125,6 +126,16 @@
   function setDefaultReviewVisibility(v: ReviewVisibility) {
     if (auth.user?.defaultReviewVisibility === v) return;
     reviewVisibilityMut.mutate(v);
+  }
+
+  const listVisibilityMut = createApiMutation(() => ({
+    mutate: (v: ListVisibility) => updateMe({ defaultListVisibility: v }),
+    errorToast: true,
+  }));
+
+  function setDefaultListVisibility(v: ListVisibility) {
+    if (auth.user?.defaultListVisibility === v) return;
+    listVisibilityMut.mutate(v);
   }
 
   const hideProgressionMut = createApiMutation(() => ({
@@ -244,7 +255,7 @@
             mutation={reviewVisibilityMut}>
             {#snippet control()}
               <SegmentedControl
-                label={m.settings_privacy_scope()}
+                label={m.common_visibility()}
                 options={[
                   { label: m.common_friends(), value: "FRIENDS" },
                   { label: m.common_public(), value: "PUBLIC" },
@@ -252,6 +263,24 @@
                 value={user.defaultReviewVisibility}
                 onChange={(v) =>
                   setDefaultReviewVisibility(v as ReviewVisibility)} />
+            {/snippet}
+          </SettingRow>
+          <SettingRow
+            anchor="list-visibility"
+            label={m.settings_privacy_default_lists()}
+            description={m.settings_privacy_default_lists_hint()}
+            mutation={listVisibilityMut}>
+            {#snippet control()}
+              <SegmentedControl
+                label={m.common_visibility()}
+                options={[
+                  { label: m.common_private(), value: "PRIVATE" },
+                  { label: m.common_friends(), value: "FRIENDS" },
+                  { label: m.common_public(), value: "PUBLIC" },
+                ]}
+                value={user.defaultListVisibility}
+                onChange={(v) =>
+                  setDefaultListVisibility(v as ListVisibility)} />
             {/snippet}
           </SettingRow>
         </div>

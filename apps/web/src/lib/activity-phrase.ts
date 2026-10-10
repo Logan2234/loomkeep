@@ -22,7 +22,19 @@ export function activityPhrase(e: ActivityEventDto): string {
     case "FAVORITED":
       return m.activity_favorited();
     case "REVIEWED":
-      return m.activity_reviewed();
+      if (
+        typeof e.data.seasonNumber === "number" &&
+        typeof e.data.episodeNumber === "number"
+      ) {
+        return m.activity_reviewed_episode({
+          season: e.data.seasonNumber,
+          episode: e.data.episodeNumber,
+        });
+      }
+
+      return typeof e.data.seasonNumber === "number"
+        ? m.activity_reviewed_season({ season: e.data.seasonNumber })
+        : m.activity_reviewed();
     case "PROGRESS":
       if (e.domain === "GAMES" && typeof e.data.durationMinutes === "number") {
         return e.count > 1

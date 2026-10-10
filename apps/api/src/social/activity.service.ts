@@ -9,6 +9,8 @@ import {
   type ListVisibility,
   type PagedResult,
   type ProfileAccess,
+  type ReviewTargetType,
+  type ReviewVisibility,
 } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
@@ -63,6 +65,8 @@ type EventRow = {
   imageUrl: string | null;
   href: string | null;
   data: Prisma.JsonValue;
+  sourceType?: string | null;
+  sourceId?: string | null;
   createdAt: Date;
 };
 
@@ -275,9 +279,12 @@ export class ActivityService {
    * Keeps only events the viewer may see. Two gates depending on the event's
    * target: a `"LIST"` event follows the list itself (own-scope pattern, like
    * Review — never facet-derived, see `resolveOwnVisibility`); everything
-   * else is gated by the actor's per-domain Activité facet. Relation/settings
-   * are resolved once per user and reused across events (a feed page spans
-   * few actors).
+   * else is gated by the actor's per-domain Activité facet. A REVIEWED event
+   * also carries the review's rating, so it must pass the review's own
+   * audience too: a FRIENDS review's rating never reaches a stranger through
+   * a public Activité facet, and a deleted review's events go with it.
+   * Relation/settings are resolved once per user and reused across events (a
+   * feed page spans few actors).
    *
    * A list event's actor can be an editor rather than the list's owner, so
    * the list's audience is read against *its owner's* profile and the
@@ -360,6 +367,8 @@ export class ActivityService {
         : [],
     );
 
+    const reviewVisibility = await this.reviewVisibilityByEvent(rows);
+
     const kept: EventRow[] = [];
 
     for (const row of rows) {
@@ -406,10 +415,89 @@ export class ActivityService {
         ),
         actor.relation,
       );
-      if (ok) kept.push(row);
+      if (!ok) continue;
+
+      if (row.type === "REVIEWED") {
+        const audience = reviewVisibility.get(row.id);
+
+        if (
+          !audience ||
+          !resolveOwnVisibility(audience, actor.access, actor.relation)
+        ) {
+          continue;
+        }
+      }
+
+      kept.push(row);
     }
 
     return kept;
+  }
+
+  /**
+   * The current audience of the review behind each REVIEWED event, keyed by
+   * event id — absent when the review is gone. Events link their review
+   * through `sourceId`; older ones predate that link and are matched on the
+   * review's own unique key (author + work), which only work-level reviews
+   * ever recorded.
+   */
+  private async reviewVisibilityByEvent(
+    rows: EventRow[],
+  ): Promise<Map<string, ReviewVisibility>> {
+    const reviewed = rows.filter((r) => r.type === "REVIEWED");
+    const result = new Map<string, ReviewVisibility>();
+    if (reviewed.length === 0) return result;
+
+    const linked = reviewed.filter((r) => r.sourceType === "Review");
+    const legacy = reviewed.filter((r) => r.sourceType !== "Review");
+
+    const [byId, byWork] = await Promise.all([
+      linked.length
+        ? this.prisma.review.findMany({
+            where: { id: { in: linked.map((r) => r.sourceId ?? "") } },
+            select: { id: true, visibility: true },
+          })
+        : [],
+      legacy.length
+        ? this.prisma.review.findMany({
+            where: {
+              OR: legacy.map((r) => ({
+                userId: r.userId,
+                targetType: r.targetType as ReviewTargetType,
+                targetId: r.targetId,
+              })),
+            },
+            select: {
+              userId: true,
+              targetType: true,
+              targetId: true,
+              visibility: true,
+            },
+          })
+        : [],
+    ]);
+
+    const visibilityById = new Map(byId.map((r) => [r.id, r.visibility]));
+    const workKey = (r: {
+      userId: string | null;
+      targetType: string;
+      targetId: string;
+    }) => `${r.userId}:${r.targetType}:${r.targetId}`;
+    const visibilityByWork = new Map(
+      byWork.map((r) => [workKey(r), r.visibility]),
+    );
+
+    for (const row of linked) {
+      const visibility = visibilityById.get(row.sourceId ?? "");
+      if (visibility) result.set(row.id, visibility as ReviewVisibility);
+    }
+
+    for (const row of legacy) {
+      const visibility = visibilityByWork.get(workKey(row));
+      if (visibility) result.set(row.id, visibility as ReviewVisibility);
+    }
+
+    return result;
   }
 
   private async actors(ids: string[]): Promise<Map<string, ActivityActorDto>> {

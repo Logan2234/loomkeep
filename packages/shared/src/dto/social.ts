@@ -82,10 +82,11 @@ export interface ProfileDomainStatDto {
 
 /**
  * The activity streak shown on a profile (header badge, home widget): dated
- * watches, game sessions and reading sessions, gated as one block by the
- * MEDIA domain's ACTIVITY facet.
+ * watches, game sessions and reading sessions. Shown whatever the ACTIVITY
+ * facets say — only a locked profile withholds it.
  */
 export interface ProfileActivityStatsDto {
+  /** False only on a locked profile, where the streak is withheld. */
   visible: boolean;
   /** Consecutive days (ending today or yesterday) with at least one activity. */
   streakDays: number;
