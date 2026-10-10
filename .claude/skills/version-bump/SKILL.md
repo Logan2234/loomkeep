@@ -12,12 +12,18 @@ this isn't feature work, no branch needed unless Logan says otherwise).
 
 ## 1. Decide the bump
 
-- `git log <last-tag-or-last-CHANGELOG-entry>..HEAD --oneline` (or just read recent merged PRs) to
-  see what shipped since the last version.
+- Read the current version from root `package.json`, then find the previous bump commit (there are
+  no tags): `git log -S'"version": "<current>"' --format='%h %ad %s' -- package.json`.
+- Read the **full** history since that commit, bodies included — never only `--oneline`:
+  `git log <bump>..HEAD --no-merges --format='=== %h %ad %s%n%b' --date=short`. Write it to the
+  scratchpad if it is long.
+- A squashed PR whose body is only a list of titles (or empty) says nothing about what changed:
+  read its real diff (`git show --stat <hash>`, then the key files). Never write a CHANGELOG bullet
+  from a title alone. `docs/` files added by a PR (audits, ADRs) often describe it.
+- Skip dependabot dependency lists and CI-only commits unless user-visible.
 - Minor if a new module/significant capability shipped, patch for smaller fixes/polish — per
   CLAUDE.md. If it's ambiguous, ask Logan rather than guessing (this determines X.Y.**Z** vs
   X.**Y**.0).
-- Read the current version from root `package.json`.
 
 ## 2. Bump package.json in lockstep
 
