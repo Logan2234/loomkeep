@@ -49,7 +49,7 @@ jobs:
             # floating `latest` tag — same "exact commit CI validated"
             # guarantee as the git reset above. Also feeds the Homepage
             # "Version" widget, which reads GIT_SHA baked into the api image.
-            export IMAGE_TAG=$(git rev-parse --short HEAD)
+            export IMAGE_TAG="${DEPLOY_SHA:0:12}"
             docker compose pull
             # --remove-orphans cleans up containers for services dropped from
             # COMPOSE_FILE (e.g. an add-on removed from the VPS .env). It does
