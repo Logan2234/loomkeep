@@ -45,7 +45,7 @@ if (process.env.NODE_ENV === "production" && dsn) {
       // as soon as a release is configured (including GitHub's inferred SHA).
       ...integrations
         .filter((integration) => integration.name !== "ProcessSession")
-        .map((integration): Sentry.Integration => {
+        .map((integration): typeof integration => {
           const processEvent = integration.processEvent;
 
           if (integration.name !== "Dedupe" || !processEvent)

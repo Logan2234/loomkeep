@@ -46,7 +46,7 @@ if (dsn) {
             integration.name !== "BrowserTracing" &&
             integration.name !== "BrowserSession",
         )
-        .map((integration): Sentry.Integration => {
+        .map((integration): typeof integration => {
           const processEvent = integration.processEvent;
 
           if (integration.name !== "Dedupe" || !processEvent)
