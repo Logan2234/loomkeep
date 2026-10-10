@@ -476,14 +476,14 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared
       '@sentry/sveltekit':
-        specifier: ^11.2.0
-        version: 11.2.0(@babel/core@7.29.7(supports-color@10.2.2))(@sveltejs/kit@3.0.1(@opentelemetry/api@1.9.1)(@sveltejs/vite-plugin-svelte@7.3.1(svelte@5.57.2(@typescript-eslint/types@8.70.1))(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1)))(svelte@5.57.2(@typescript-eslint/types@8.70.1))(typescript@6.0.3)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1)))(rollup@4.62.4)(svelte@5.57.2(@typescript-eslint/types@8.70.1))(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1))(webpack@5.106.2(@swc/core@1.16.13(@swc/helpers@0.5.23))(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(uglify-js@3.19.3))
+        specifier: ^11.4.0
+        version: 11.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@sveltejs/kit@3.0.1(@opentelemetry/api@1.9.1)(@sveltejs/vite-plugin-svelte@7.3.1(svelte@5.57.2(@typescript-eslint/types@8.70.1))(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1)))(svelte@5.57.2(@typescript-eslint/types@8.70.1))(typescript@6.0.3)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1)))(rollup@4.62.4)(svelte@5.57.2(@typescript-eslint/types@8.70.1))(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1))(webpack@5.106.2(@swc/core@1.16.13(@swc/helpers@0.5.23))(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(uglify-js@3.19.3))
       '@simplewebauthn/browser':
         specifier: ^14.0.0
         version: 14.0.0
       '@tanstack/svelte-query':
         specifier: ^6.3.1
-        version: 6.3.1(svelte@5.57.1(@typescript-eslint/types@8.70.1))
+        version: 6.3.1(svelte@5.57.2(@typescript-eslint/types@8.70.1))
       qr-scanner:
         specifier: ^1.4.2
         version: 1.4.2
@@ -495,7 +495,7 @@ importers:
         version: 4.8.4(supports-color@10.2.2)
       svelte-dnd-action:
         specifier: ^0.9.80
-        version: 0.9.80(svelte@5.57.1(@typescript-eslint/types@8.70.1))
+        version: 0.9.80(svelte@5.57.2(@typescript-eslint/types@8.70.1))
       unleash-proxy-client:
         specifier: ^3.8.2
         version: 3.8.2
@@ -10148,7 +10148,7 @@ snapshots:
       picomatch: 4.0.7
       retext-smartypants: 6.2.0
       shiki: 4.4.3
-      smol-toml: 1.9.1
+      smol-toml: 1.8.0
       unified: 11.0.5
       yaml: 2.9.1
 
@@ -13229,7 +13229,7 @@ snapshots:
       '@sentry/conventions': 0.25.0
       '@sentry/core': 11.4.0
 
-  '@sentry/svelte@11.4.0(svelte@5.57.1(@typescript-eslint/types@8.70.1))':
+  '@sentry/svelte@11.4.0(svelte@5.57.2(@typescript-eslint/types@8.70.1))':
     dependencies:
       '@sentry/browser': 11.4.0
       '@sentry/conventions': 0.25.0
@@ -13237,7 +13237,7 @@ snapshots:
       magic-string: 0.30.21
       svelte: 5.57.2(@typescript-eslint/types@8.70.1)
 
-  '@sentry/sveltekit@11.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@sveltejs/kit@3.0.0(@opentelemetry/api@1.9.1)(@sveltejs/vite-plugin-svelte@7.3.1(svelte@5.57.1(@typescript-eslint/types@8.70.1))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1)))(svelte@5.57.1(@typescript-eslint/types@8.70.1))(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1)))(rollup@4.62.4)(svelte@5.57.1(@typescript-eslint/types@8.70.1))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1))(webpack@5.106.2(@swc/core@1.16.13(@swc/helpers@0.5.23))(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(uglify-js@3.19.3))':
+  '@sentry/sveltekit@11.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@sveltejs/kit@3.0.1(@opentelemetry/api@1.9.1)(@sveltejs/vite-plugin-svelte@7.3.1(svelte@5.57.2(@typescript-eslint/types@8.70.1))(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1)))(svelte@5.57.2(@typescript-eslint/types@8.70.1))(typescript@6.0.3)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1)))(rollup@4.62.4)(svelte@5.57.2(@typescript-eslint/types@8.70.1))(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1))(webpack@5.106.2(@swc/core@1.16.13(@swc/helpers@0.5.23))(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(uglify-js@3.19.3))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/bundler-plugins': 11.4.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.62.4)(webpack@5.106.2(@swc/core@1.16.13(@swc/helpers@0.5.23))(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(uglify-js@3.19.3))
@@ -13247,7 +13247,7 @@ snapshots:
       '@sentry/node': 11.4.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.62.4)(webpack@5.106.2(@swc/core@1.16.13(@swc/helpers@0.5.23))(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(uglify-js@3.19.3))
       '@sentry/server-runtime-injection': 11.4.0
       '@sentry/server-utils': 11.4.0
-      '@sentry/svelte': 11.4.0(svelte@5.57.1(@typescript-eslint/types@8.70.1))
+      '@sentry/svelte': 11.4.0(svelte@5.57.2(@typescript-eslint/types@8.70.1))
       '@sveltejs/acorn-typescript': 1.0.13(acorn@8.18.0)
       '@sveltejs/kit': 3.0.1(@opentelemetry/api@1.9.1)(@sveltejs/vite-plugin-svelte@7.3.1(svelte@5.57.2(@typescript-eslint/types@8.70.1))(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1)))(svelte@5.57.2(@typescript-eslint/types@8.70.1))(typescript@6.0.3)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1))
       acorn: 8.18.0
@@ -13546,10 +13546,10 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
     optional: true
 
-  '@tanstack/svelte-query@6.3.1(svelte@5.57.1(@typescript-eslint/types@8.70.1))':
+  '@tanstack/svelte-query@6.3.1(svelte@5.57.2(@typescript-eslint/types@8.70.1))':
     dependencies:
       '@tanstack/query-core': 5.104.1
-      svelte: 5.57.1(@typescript-eslint/types@8.70.1)
+      svelte: 5.57.2(@typescript-eslint/types@8.70.1)
 
   '@tanstack/virtual-core@3.17.11': {}
 
@@ -19612,7 +19612,7 @@ snapshots:
     transitivePeerDependencies:
       - picomatch
 
-  svelte-dnd-action@0.9.80(svelte@5.57.1(@typescript-eslint/types@8.70.1)):
+  svelte-dnd-action@0.9.80(svelte@5.57.2(@typescript-eslint/types@8.70.1)):
     dependencies:
       svelte: 5.57.2(@typescript-eslint/types@8.70.1)
 
