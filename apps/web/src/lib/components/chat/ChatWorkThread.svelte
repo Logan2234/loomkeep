@@ -1,7 +1,12 @@
 <script lang="ts">
   // A work's discussion in the "Œuvres" tab: its comments, as on its page,
   // under a header naming the work. Read as long as it's on screen.
-  import { getWorkThread, markWorkThreadRead } from "#lib/api/chat.js";
+  import {
+    getWorkThread,
+    markWorkThreadRead,
+    muteWorkThread,
+  } from "#lib/api/chat.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { searchComments } from "#lib/api/comments.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -51,6 +56,17 @@
     fetch: () => getWorkThread(work.targetType, work.targetId),
   }));
   const thread = $derived(threadQuery.data);
+
+  const muteMut = createApiMutation(() => ({
+    mutate: (muted: boolean) =>
+      muteWorkThread(work.targetType, work.targetId, muted),
+    invalidates: [
+      keys.chat.workThread(work.targetType, work.targetId),
+      keys.chat.workThreads(),
+      keys.chat.unread(),
+    ],
+    errorToast: true,
+  }));
   const context = $derived(thread ? workThreadContext(thread) : null);
 
   let showSpoilers = $state(
@@ -238,6 +254,18 @@
           <Icon name="arrow-right" class="h-4 w-4" />
           {m.chat_work_go_to()}
         </a>
+      {/if}
+      {#if thread}
+        <button
+          role="menuitem"
+          class="menu-item"
+          onclick={() => {
+            close();
+            muteMut.mutate(!thread.muted);
+          }}>
+          <Icon name={thread.muted ? "bell" : "bell-off"} class="h-4 w-4" />
+          {thread.muted ? m.chat_unmute() : m.chat_mute()}
+        </button>
       {/if}
       <button
         role="menuitem"

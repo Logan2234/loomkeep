@@ -12,6 +12,7 @@
   import Banner from "#lib/components/Banner.svelte";
   import LegalLinks from "#lib/components/LegalLinks.svelte";
   import { appConfig } from "#lib/config.svelte.js";
+  import { isDomainEnabled } from "#lib/domains.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import SettingsNav from "./components/SettingsNav.svelte";
@@ -61,7 +62,9 @@
 
   const visibleSections = $derived(
     SETTINGS_SECTIONS.filter(
-      (section) => !section.social || appConfig.socialEnabled,
+      (section) =>
+        (!section.social || appConfig.socialEnabled) &&
+        (!section.domain || isDomainEnabled(section.domain)),
     ),
   );
 

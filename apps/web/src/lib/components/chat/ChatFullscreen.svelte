@@ -2,7 +2,11 @@
   // /app/messages[/<id>]: Messages as a page — the conversation list beside
   // the open conversation. "Réduire" puts it back in the floating panel.
   import { goto } from "$app/navigation";
-  import { getChatUnread, getConversations } from "#lib/api/chat.js";
+  import {
+    getChatUnread,
+    getConversations,
+    getWorkThreads,
+  } from "#lib/api/chat.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
@@ -17,13 +21,16 @@
   import ChatWorkThread from "./ChatWorkThread.svelte";
   import {
     conversationStep,
+    escapeReaches,
     neighbourConversation,
+    neighbourWork,
     shownUnread,
   } from "./conversation-presentation";
 
   let { conversationId }: { conversationId: string | null } = $props();
 
   let composing = $state(false);
+  let root = $state<HTMLElement | null>(null);
   let search = $state("");
 
   const conversationsQuery = createApiQuery(() => ({
@@ -40,6 +47,11 @@
   }));
   const worksUnread = $derived(unreadQuery.data?.works ?? 0);
   const worksTab = $derived(chat.tab === "works");
+  const threadsQuery = createApiQuery(() => ({
+    key: keys.chat.workThreads(),
+    fetch: getWorkThreads,
+  }));
+  const threads = $derived(threadsQuery.data ?? []);
   const shown = $derived(
     conversations.filter((c) =>
       (c.peer?.displayName ?? "")
@@ -54,8 +66,24 @@
   }
 
   function onkeydown(event: KeyboardEvent) {
+    // Escape leaves the page as "Réduire" does, once nothing else wants it.
+    if (event.key === "Escape") {
+      if (!event.defaultPrevented && !layout.compact && escapeReaches(root)) {
+        shrink();
+      }
+      return;
+    }
+
     const step = conversationStep(event);
-    if (!step || worksTab) return;
+    if (!step) return;
+    if (worksTab) {
+      const next = neighbourWork(threads, chat.activeWork, step);
+      if (next) {
+        event.preventDefault();
+        chat.activeWork = next;
+      }
+      return;
+    }
     const next = neighbourConversation(conversations, conversationId, step);
     if (next) {
       event.preventDefault();
@@ -84,6 +112,7 @@
 <!-- One screen tall: the list and the conversation scroll on their own. On
      the compact shell, the bottom bar keeps its share of the height. -->
 <div
+  bind:this={root}
   class="flex min-h-0 {layout.compact
     ? 'h-[calc(100dvh-4.5rem-env(safe-area-inset-bottom))]'
     : 'h-dvh'}">

@@ -1,32 +1,19 @@
 <script lang="ts">
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
-  import { addWorkToLibrary } from "#lib/chat/work-library.js";
+  import { addWorkToLibrary, workDomain } from "#lib/chat/work-library.js";
   import Icon from "#lib/components/Icon.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { isDomainEnabled } from "#lib/domains.js";
   import { m } from "#lib/paraglide/messages.js";
-  import {
-    Domain,
-    type MessageWorkDto,
-    type MessageWorkKind,
-  } from "@loomkeep/shared";
+  import type { MessageWorkDto } from "@loomkeep/shared";
   import { workKindLabel } from "./conversation-presentation";
 
   let { work }: { work: MessageWorkDto } = $props();
 
-  const DOMAIN_OF: Record<MessageWorkKind, Domain> = {
-    MOVIE: Domain.MEDIA,
-    SERIES: Domain.MEDIA,
-    ANIME: Domain.MEDIA,
-    GAME: Domain.GAMES,
-    BOOK: Domain.BOOKS,
-    MUSIC: Domain.MUSIC,
-  };
-
-  const domain = $derived(DOMAIN_OF[work.kind]);
+  const domain = $derived(workDomain(work.kind));
   // A domain the viewer turned off has no page to open.
   const available = $derived(isDomainEnabled(domain));
 

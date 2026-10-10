@@ -112,9 +112,17 @@ export function workThreadPreview(thread: WorkThreadDto): string {
     : text;
 }
 
-/** The unread count worth showing: a muted conversation counts nothing. */
+/**
+ * What a conversation adds to the totals (launcher, tab dot): nothing once
+ * muted. Its own badge still shows its count, dimmed (see `badgeTone`).
+ */
 export function shownUnread(conversation: ConversationDto): number {
   return conversation.muted ? 0 : conversation.unread;
+}
+
+/** An unread badge's colours: amber, or quiet once muted. */
+export function badgeTone(muted: boolean): string {
+  return muted ? "bg-surface-2 text-dim" : "bg-accent text-accent-fg";
 }
 
 /**
@@ -148,6 +156,43 @@ export function shortcutsReach(root: Element | null | undefined): boolean {
     (active.isContentEditable ||
       ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName));
   return !typing;
+}
+
+/**
+ * Whether Escape is Messages' to take: no menu or other dialog open on the
+ * page, and no text being typed (Escape there clears or cancels first).
+ */
+export function escapeReaches(root: Element | null | undefined): boolean {
+  const open = document.querySelector(
+    '[aria-haspopup][aria-expanded="true"], [role="dialog"][aria-modal="true"]',
+  );
+  if (open) return false;
+  const active = document.activeElement;
+
+  if (
+    (active instanceof HTMLInputElement ||
+      active instanceof HTMLTextAreaElement) &&
+    active.value !== ""
+  ) {
+    return false;
+  }
+
+  return shortcutsReach(root);
+}
+
+/** Alt+↑ / Alt+↓ in the "Œuvres" tab: the discussion above or below. */
+export function neighbourWork(
+  threads: WorkThreadDto[],
+  current: { targetType: string; targetId: string } | null,
+  step: 1 | -1,
+): WorkThreadDto | null {
+  if (threads.length === 0) return null;
+  const index = threads.findIndex(
+    (t) =>
+      t.targetType === current?.targetType && t.targetId === current?.targetId,
+  );
+  if (index === -1) return threads[0];
+  return threads[index + step] ?? null;
 }
 
 /** The step Alt+↑ / Alt+↓ asks for, or null for any other key. */

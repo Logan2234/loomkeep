@@ -4,7 +4,26 @@ import {
   upsertLibraryEntry,
   upsertMusicEntry,
 } from "#lib/api/client.js";
-import type { MediaType, MessageWorkDto } from "@loomkeep/shared";
+import {
+  Domain,
+  type MediaType,
+  type MessageWorkDto,
+  type MessageWorkKind,
+} from "@loomkeep/shared";
+
+const DOMAIN_OF: Record<MessageWorkKind, Domain> = {
+  MOVIE: Domain.MEDIA,
+  SERIES: Domain.MEDIA,
+  ANIME: Domain.MEDIA,
+  GAME: Domain.GAMES,
+  BOOK: Domain.BOOKS,
+  MUSIC: Domain.MUSIC,
+};
+
+/** The domain a work belongs to: off, its page can't open. */
+export function workDomain(kind: MessageWorkKind): Domain {
+  return DOMAIN_OF[kind];
+}
 
 const MEDIA_PAGE = /^\/app\/media\/(movie|series|anime)\/([^/?#]+)$/;
 const DOMAIN_PAGE = /^\/app\/(games|books|music)\/([^/?#]+)$/;

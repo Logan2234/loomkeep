@@ -127,14 +127,33 @@
         ?.id ?? null;
     if (!unreadFrom) return;
 
-    // Opens on the line rather than at the bottom.
-    stuckToBottom = false;
+    // Opens on the line rather than at the bottom — from the bottom, once
+    // laid out: left at the top, the older pages would start loading.
     void tick().then(() =>
-      scroller
-        ?.querySelector("[data-unread-line]")
-        ?.scrollIntoView({ block: "center" }),
+      requestAnimationFrame(() => {
+        const line = scroller?.querySelector("[data-unread-line]");
+        if (!line) return;
+        stuckToBottom = false;
+        line.scrollIntoView({ block: "center" });
+      }),
     );
   });
+
+  // Marked unread from a message: the cached conversation says so too, or
+  // reopening it would neither draw the line nor read it again.
+  function markedUnread(from: MessageDto) {
+    unreadFrom = from.id;
+    // Still on screen, it stays unread until a new message or a reopening.
+    readUpTo = messages.at(-1)?.id ?? null;
+    const lastReadAt = new Date(Date.parse(from.createdAt) - 1).toISOString();
+    const unread = messages.filter(
+      (message) => !message.mine && message.createdAt >= from.createdAt,
+    ).length;
+    queryClient.setQueryData<ConversationDto>(
+      keys.chat.conversation(conversationId),
+      (c) => c && { ...c, unread, lastReadAt },
+    );
+  }
 
   // Ctrl+F searches the conversation rather than the page — from the
   // full-screen page, or from inside the panel.
@@ -582,9 +601,11 @@
   <div
     bind:this={scroller}
     {onscroll}
-    class="flex min-h-0 flex-1 flex-col overflow-y-auto py-3
+    class="flex min-h-0 flex-1 flex-col overflow-y-auto pt-3
     {mode === 'full' ? 'px-8' : 'px-4'}">
-    <div bind:this={content} class="flex min-h-full flex-col gap-1">
+    <!-- The bottom padding lives here: a scroller's own is lost under its
+         flex content. -->
+    <div bind:this={content} class="flex min-h-full flex-col gap-1 pb-4">
       <div bind:this={topSentinel} class="h-px shrink-0"></div>
       {#if messagesQuery.isFetchingNextPage}
         <p class="text-dim self-center text-xs">{m.common_loading()}</p>
@@ -632,7 +653,7 @@
                 ? formatTime(conversation.peerLastReadAt)
                 : null}
               onedit={(message) => (editing = message)}
-              onmarkedunread={(message) => (unreadFrom = message.id)}
+              onmarkedunread={markedUnread}
               onreport={(message) => (reporting = message)} />
           </div>
         {/if}

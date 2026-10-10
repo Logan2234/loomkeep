@@ -117,6 +117,11 @@
         }
         return;
       }
+      // Lit for a moment, as a message found in a conversation.
+      highlightedId = id;
+      setTimeout(() => {
+        if (highlightedId === id) highlightedId = null;
+      }, 1600);
       target.scrollIntoView({
         block: "center",
       });
@@ -327,6 +332,7 @@
   // Long press (touch): its actions in a sheet, as for a message in
   // Messages, where the hover pills can't show.
   let focusedId = $state<string | null>(null);
+  let highlightedId = $state<string | null>(null);
   const focused = $derived.by(() => {
     if (!focusedId) return null;
     for (const c of visibleComments) {
@@ -730,9 +736,10 @@
   )}
   <div
     id="comment-{c.id}"
-    class="group relative overflow-visible rounded-lg transition-colors duration-150 [-webkit-touch-callout:none]
-      {isReply ? 'py-2.5 pl-1' : 'py-3.5'}
-      {focusedId === c.id ? 'bg-surface-2' : ''}"
+    class="group relative overflow-visible rounded-lg transition-colors duration-500 [-webkit-touch-callout:none]
+      {isReply ? 'py-2.5 pl-1' : '-mx-2 px-2 py-3.5'}
+      {focusedId === c.id ? 'bg-surface-2' : ''}
+      {highlightedId === c.id ? 'bg-accent/10' : ''}"
     use:longpress={{ onLongPress: () => (focusedId = c.id), duration: 450 }}>
     {#if c.deleted}
       <p class="text-dim text-sm italic">

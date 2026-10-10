@@ -1,9 +1,11 @@
+import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import QueryHarness from "#lib/test/QueryHarness.svelte";
 import { renderWithQuery } from "#lib/test/render.js";
 import type { ConversationDto, MessageDto } from "@loomkeep/shared";
-import { render, screen, waitFor } from "@testing-library/svelte";
+import { render, screen, waitFor, within } from "@testing-library/svelte";
+import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ChatThread from "./ChatThread.svelte";
@@ -68,6 +70,7 @@ let reads = 0;
 
 beforeEach(() => {
   reads = 0;
+  layout.compact = false;
   server.use(
     http.get(apiUrl("/chat/conversations/cv1"), () =>
       HttpResponse.json(CONVERSATION),
@@ -108,5 +111,56 @@ describe("ChatThread", () => {
     expect(
       screen.queryByRole("separator", { name: m.chat_unread_from_here() }),
     ).toBe(null);
+  });
+
+  // Marked unread, left and reopened: it reads again, from the line.
+  it("reads a conversation marked unread once it's reopened", async () => {
+    const mine = { ...message("m3", "2026-10-09T22:00:00.000Z"), mine: true };
+    server.use(
+      http.get(apiUrl("/chat/conversations/cv1"), () =>
+        HttpResponse.json({
+          ...CONVERSATION,
+          lastMessage: mine,
+          unread: 0,
+          lastReadAt: mine.createdAt,
+        }),
+      ),
+      http.get(apiUrl("/chat/conversations/cv1/messages"), () =>
+        HttpResponse.json({
+          items: [mine, ...[...MESSAGES].reverse()],
+          hasMore: false,
+        }),
+      ),
+      http.post(
+        apiUrl("/chat/messages/m2/unread"),
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const user = userEvent.setup();
+    const props = { conversationId: "cv1", mode: "panel" as const };
+    const first = renderWithQuery(ChatThread, props);
+
+    await screen.findByText("Message m2");
+    const bubble = screen
+      .getByText("Message m2")
+      .closest<HTMLElement>("[data-message-id]")!;
+    await user.click(
+      within(bubble).getByRole("button", { name: m.common_more_actions() }),
+    );
+    await user.click(
+      screen.getByRole("menuitem", { name: m.chat_mark_unread() }),
+    );
+    await screen.findByRole("separator", { name: m.chat_unread_from_here() });
+    expect(reads).toBe(0);
+    first.unmount();
+
+    render(QueryHarness, {
+      props: { client: first.client, component: ChatThread, props },
+    });
+
+    expect(
+      await screen.findByRole("separator", { name: m.chat_unread_from_here() }),
+    ).toBeTruthy();
+    await waitFor(() => expect(reads).toBe(1));
   });
 });

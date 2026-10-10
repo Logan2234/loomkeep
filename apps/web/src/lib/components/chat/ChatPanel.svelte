@@ -15,7 +15,9 @@
   import ChatWorkThread from "./ChatWorkThread.svelte";
   import {
     conversationStep,
+    escapeReaches,
     neighbourConversation,
+    neighbourWork,
     shortcutsReach,
   } from "./conversation-presentation";
 
@@ -43,24 +45,30 @@
   let panel = $state<HTMLElement | null>(null);
 
   // Alt+↑/↓ moves between conversations wherever the focus sits, as long as
-  // it isn't typing elsewhere. Escape folds the list, then closes the panel
-  // — only from inside it, and after the composer and the menus handled
-  // theirs.
+  // it isn't typing elsewhere. Escape folds the list, then closes the panel,
+  // after the composer, the menus and the page's own dialogs had theirs.
   function onkeydown(event: KeyboardEvent) {
     const step = conversationStep(event);
-    if (step && chat.tab === "friends" && shortcutsReach(panel)) {
-      const next = neighbourConversation(conversations, chat.activeId, step);
-      if (next) {
-        event.preventDefault();
-        chat.select(next);
+    if (step && shortcutsReach(panel)) {
+      if (chat.tab === "friends") {
+        const next = neighbourConversation(conversations, chat.activeId, step);
+        if (next) {
+          event.preventDefault();
+          chat.select(next);
+        }
+      } else {
+        const next = neighbourWork(threads, chat.activeWork, step);
+        if (next) {
+          event.preventDefault();
+          chat.showWork(next);
+        }
       }
       return;
     }
 
-    if (!panel?.contains(document.activeElement)) return;
     if (event.key !== "Escape" || event.defaultPrevented) return;
     // A menu listens on the window too, after the panel: it closes first.
-    if (panel.querySelector('[aria-haspopup][aria-expanded="true"]')) return;
+    if (!escapeReaches(panel)) return;
     if (chat.drawer) chat.drawer = false;
     else chat.close();
   }

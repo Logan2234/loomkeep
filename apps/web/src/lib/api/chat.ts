@@ -142,6 +142,16 @@ export const getWorkThread = (
   targetId: string,
 ) => request<WorkThreadDto>(`/chat/works/${targetType}/${id(targetId)}`);
 
+export const muteWorkThread = (
+  targetType: CommentTargetType,
+  targetId: string,
+  muted: boolean,
+) =>
+  request<void>(`/chat/works/${targetType}/${id(targetId)}/mute`, {
+    method: "PUT",
+    body: { muted },
+  });
+
 export const markWorkThreadRead = (
   targetType: CommentTargetType,
   targetId: string,

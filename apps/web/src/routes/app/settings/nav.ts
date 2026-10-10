@@ -7,6 +7,7 @@ import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
 import type { isFeatureNew } from "#lib/feature-badges.js";
 import { m } from "#lib/paraglide/messages.js";
 import type { IconName } from "#lib/types/icon-name.js";
+import { Domain } from "@loomkeep/shared";
 type FeatureBadgeKey = Parameters<typeof isFeatureNew>[0];
 /**
  * Below this many unused recovery codes, running out stops being a detail of
@@ -41,6 +42,8 @@ export interface SettingsSectionDef {
   entries: SettingsEntryDef[];
   /** Hidden when the deployment runs with social off. */
   social?: boolean;
+  /** Hidden while the member keeps this domain off. */
+  domain?: Domain;
   newBadgeKey?: FeatureBadgeKey;
   /** Styled as destructive in the rail and on the index. */
   danger?: boolean;
@@ -502,6 +505,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           "where to watch",
         ],
         newBadgeKey: "watch-providers",
+        domain: Domain.MEDIA,
         entries: [
           {
             id: "streaming-region",
