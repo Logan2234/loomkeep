@@ -93,4 +93,37 @@ describe("CommentThread", () => {
       m.chat_delete_ellipsis(),
     ]);
   });
+
+  it("draws the new line above what others wrote since the last read", async () => {
+    auth.user = { id: "me" } as UserDto;
+    server.use(
+      http.get(apiUrl("/comments/MEDIA/m1"), () =>
+        HttpResponse.json({
+          items: [
+            { ...comment("c2", "lea"), createdAt: "2026-10-09T22:00:00.000Z" },
+            comment("c1", "malo"),
+          ],
+          hasMore: false,
+        }),
+      ),
+    );
+    renderWithQuery(CommentThread, {
+      targetType: "MEDIA",
+      targetId: "m1",
+      canParticipate: true,
+      unreadAfter: "2026-10-09T21:00:00.000Z",
+    });
+
+    const line = await screen.findByRole("separator", {
+      name: m.chat_unread_from_here(),
+    });
+    expect(
+      line.compareDocumentPosition(screen.getByText("Commentaire c2")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      line.compareDocumentPosition(screen.getByText("Commentaire c1")) &
+        Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+  });
 });

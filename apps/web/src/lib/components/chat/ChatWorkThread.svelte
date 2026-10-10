@@ -4,6 +4,7 @@
   import {
     getWorkThread,
     markWorkThreadRead,
+    markWorkThreadUnread,
     muteWorkThread,
   } from "#lib/api/chat.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -21,6 +22,7 @@
   import {
     RealtimeEvent,
     type ChatWorkActivityEvent,
+    type CommentDto,
     type CommentPresenceEvent,
     type WorkThreadDto,
   } from "@loomkeep/shared";
@@ -112,21 +114,54 @@
   const isThis = (event: { targetType: string; targetId: string }) =>
     event.targetType === work.targetType && event.targetId === work.targetId;
 
+  // The reading position both caches keep: reopened from them, the
+  // discussion must neither draw an old line nor miss a new one.
+  function patchRead(lastReadAt: string, unread: number) {
+    const patch = (t: WorkThreadDto) => ({ ...t, unread, lastReadAt });
+    queryClient.setQueryData<WorkThreadDto[]>(keys.chat.workThreads(), (list) =>
+      list?.map((t) => (isThis(t) ? patch(t) : t)),
+    );
+    queryClient.setQueryData<WorkThreadDto>(
+      keys.chat.workThread(work.targetType, work.targetId),
+      (t) => t && patch(t),
+    );
+  }
+
   function markRead() {
     void markWorkThreadRead(work.targetType, work.targetId).then(() => {
-      queryClient.setQueryData<WorkThreadDto[]>(
-        keys.chat.workThreads(),
-        (list) => list?.map((t) => (isThis(t) ? { ...t, unread: 0 } : t)),
-      );
+      patchRead(new Date().toISOString(), 0);
       void queryClient.invalidateQueries({ queryKey: keys.chat.unread() });
     });
   }
+
+  function markUnread(comment: CommentDto) {
+    void markWorkThreadUnread(work.targetType, work.targetId, comment.id).then(
+      () => {
+        patchRead(
+          new Date(Date.parse(comment.createdAt) - 1).toISOString(),
+          thread?.unread ?? 0,
+        );
+        void queryClient.invalidateQueries({
+          queryKey: keys.chat.workThreads(),
+        });
+        void queryClient.invalidateQueries({ queryKey: keys.chat.unread() });
+      },
+    );
+  }
+
+  // Where the "new" line goes, read once the discussion is known: then it
+  // reads as seen.
+  let openedReadAt = $state<string | null | undefined>(undefined);
+  $effect(() => {
+    if (openedReadAt !== undefined || !thread) return;
+    openedReadAt = thread.lastReadAt;
+    untrack(markRead);
+  });
 
   $effect(() => {
     const { targetType, targetId } = work;
     const onScreen = `${targetType}:${targetId}`;
     chat.workOnScreen = onScreen;
-    untrack(markRead);
 
     // The room brings the thread's own changes (CommentThread listens to
     // them) and who else is reading it.
@@ -323,11 +358,19 @@
     onclose={() => (searching = false)} />
 {/if}
 
-{#if thread}
+{#if thread && openedReadAt !== undefined}
   <CommentThread
     targetType={work.targetType}
     targetId={work.targetId}
     canParticipate={thread.canParticipate}
     {focusCommentId}
+    unreadAfter={openedReadAt}
+    onmarkunread={markUnread}
+    share={thread.href
+      ? { title: thread.title, href: thread.href.split("#")[0] }
+      : null}
+    seriesHref={thread.kind === "SERIES" || thread.kind === "ANIME"
+      ? (thread.href?.split("#")[0] ?? null)
+      : null}
     {showSpoilers} />
 {/if}

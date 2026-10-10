@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   chatPreview,
   episodeSeries,
+  formatShortcut,
   mentionToken,
   parseChatMarkdown,
+  placeUserMentions,
   readSlashCommand,
   selectionFormats,
   toggleFormat,
+  withUserTokens,
 } from "./chat-markdown";
 
 describe("parseChatMarkdown", () => {
@@ -247,5 +250,70 @@ describe("readSlashCommand", () => {
       text: "/spoilers ne compte pas",
       spoiler: false,
     });
+  });
+});
+
+describe("comment mentions", () => {
+  it("links a comment's mentions where they sit, and leaves stale ones plain", () => {
+    const text = withUserTokens("Salut @lea et @malo", [
+      { username: "lea", start: 6 },
+      { username: "zoe", start: 14 },
+    ]);
+    expect(text).toBe("Salut @[@lea](/app/u/lea) et @malo");
+    expect(parseChatMarkdown(text)).toEqual([
+      { type: "text", text: "Salut " },
+      { type: "user", label: "@lea", href: "/app/u/lea" },
+      { type: "text", text: " et @malo" },
+    ]);
+  });
+
+  it("places each pick on its own @username, skipping longer names", () => {
+    expect(
+      placeUserMentions("@leane puis @lea, encore @lea", [
+        { id: "u1", username: "lea" },
+        { id: "u1", username: "lea" },
+        { id: "u2", username: "malo" },
+      ]),
+    ).toEqual([
+      { userId: "u1", start: 12 },
+      { userId: "u1", start: 25 },
+    ]);
+  });
+});
+
+describe("episode codes in a work's discussion", () => {
+  const series = "/app/media/series/95396";
+
+  it("point at the discussion's series when the comment names no other", () => {
+    expect(episodeSeries(parseChatMarkdown("Ce S2E5 !"), [], series)).toBe(
+      series,
+    );
+  });
+
+  it("point at the one series the comment names instead", () => {
+    const nodes = parseChatMarkdown(
+      "Comme #[Dark](/app/media/series/70523) S1E3",
+    );
+    expect(episodeSeries(nodes, [], series)).toBe("/app/media/series/70523");
+  });
+});
+
+describe("formatShortcut", () => {
+  // Unit tests run in Node, without DOM events: only the read fields matter.
+  const key = (init: Partial<KeyboardEvent>) =>
+    ({
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      altKey: false,
+      ...init,
+    }) as KeyboardEvent;
+
+  it("reads Messages' shortcuts", () => {
+    expect(formatShortcut(key({ key: "b", ctrlKey: true }))).toBe("bold");
+    expect(
+      formatShortcut(key({ key: "X", ctrlKey: true, shiftKey: true })),
+    ).toBe("strike");
+    expect(formatShortcut(key({ key: "b" }))).toBe(null);
   });
 });

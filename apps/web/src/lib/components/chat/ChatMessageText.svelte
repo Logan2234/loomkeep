@@ -12,14 +12,17 @@
   let {
     text,
     cardHrefs = [],
+    fallbackSeries = null,
   }: {
     text: string;
     /** The message's work cards: an episode code may belong to their series. */
     cardHrefs?: string[];
+    /** A work's discussion: the series its episode codes mean by default. */
+    fallbackSeries?: string | null;
   } = $props();
 
   const nodes = $derived(parseChatMarkdown(text));
-  const series = $derived(episodeSeries(nodes, cardHrefs));
+  const series = $derived(episodeSeries(nodes, cardHrefs, fallbackSeries));
   let revealed = $state<Set<ChatNode>>(new Set());
 
   const DOMAIN_OF_SECTION: Record<string, Domain> = {
@@ -54,7 +57,11 @@
           class="text-accent decoration-accent/40 hover:decoration-accent font-semibold underline underline-offset-2 transition-[text-decoration-color] duration-150"
           onclick={() => chat.close()}>#{node.title}</a
         >{:else}<span class="text-dim font-semibold">#{node.title}</span
-        >{/if}{:else if node.type === "episode"}{#if series && opens(series)}<a
+        >{/if}{:else if node.type === "user"}<a
+        href={node.href}
+        class="text-accent hover:text-accent/80 font-semibold transition-colors duration-150"
+        onclick={() => chat.close()}>{node.label}</a
+      >{:else if node.type === "episode"}{#if series && opens(series)}<a
           href="{series}#s{node.season}e{node.episode}"
           class="bg-surface-2 hover:bg-accent/20 rounded px-1 font-mono text-[0.85em] transition-colors duration-150"
           onclick={() => chat.close()}>{node.code}</a

@@ -20,6 +20,7 @@
     type ChatReadEvent,
     type ChatTypingEvent,
     type ChatWorkActivityEvent,
+    type CommentTargetType,
     type ConversationDto,
     type MessageDto,
     type PagedResult,
@@ -146,6 +147,25 @@
     if (!pathname.startsWith("/app/messages")) {
       chat.returnTo = pathname + search + hash;
     }
+  });
+
+  // A comment shared from a work's discussion links back to it:
+  // `?work=TYPE:id&comment=id` on the work's page opens it in Messages.
+  $effect(() => {
+    const target = page.url.searchParams.get("work");
+    if (!target) return;
+    const [targetType, targetId] = target.split(":");
+    if (!targetType || !targetId) return;
+
+    chat.showWork({
+      targetType: targetType as CommentTargetType,
+      targetId,
+      focusCommentId: page.url.searchParams.get("comment"),
+    });
+    const url = new URL(page.url.href);
+    url.searchParams.delete("work");
+    url.searchParams.delete("comment");
+    void goto(url, { replace: true, shallow: true, noScroll: true });
   });
 
   $effect(() => {
