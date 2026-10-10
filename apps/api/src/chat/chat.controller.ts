@@ -221,6 +221,16 @@ export class ChatController {
     return thread;
   }
 
+  @Put("works/:type/:id/mute")
+  muteWorkThread(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+    @Body() body: MuteConversationBody,
+  ): Promise<void> {
+    return this.threads.setMuted(user.sub, parseTarget(type), id, body.muted);
+  }
+
   @Post("works/:type/:id/read")
   readWorkThread(
     @CurrentUser() user: JwtPayload,

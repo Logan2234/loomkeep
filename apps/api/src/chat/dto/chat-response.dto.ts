@@ -85,6 +85,7 @@ export class WorkThreadResponseDto implements WorkThreadDto {
   imageUrl!: string | null;
   href!: string | null;
   unread!: number;
+  muted!: boolean;
   canParticipate!: boolean;
   lastActivityAt!: string;
   lastComment!: WorkThreadLastCommentResponseDto | null;

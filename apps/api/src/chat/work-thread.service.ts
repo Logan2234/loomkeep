@@ -1,5 +1,6 @@
 import type {
   CommentTargetType,
+  Domain,
   MessageWorkKind,
   WorkThreadDto,
 } from "@loomkeep/shared";
@@ -10,6 +11,7 @@ import {
   canonicalExternalId,
 } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
+import { DomainGateService } from "../users/domain-gate.service";
 
 /** Discussions the "Œuvres" tab lists, at most. */
 const WORK_THREADS_MAX = 50;
@@ -20,6 +22,15 @@ type ThreadRow = {
   mineAt: Date;
   lastAt: Date | null;
   unread: bigint;
+  muted: boolean;
+};
+
+/** The discussions each domain holds: a series' seasons and episodes too. */
+const TARGETS_OF: Partial<Record<Domain, CommentTargetType[]>> = {
+  MEDIA: ["MEDIA", "SEASON", "EPISODE"],
+  GAMES: ["GAME"],
+  BOOKS: ["BOOK"],
+  MUSIC: ["MUSIC"],
 };
 
 type Described = Pick<
@@ -38,7 +49,10 @@ const key = (type: string, id: string) => `${type}:${id}`;
  */
 @Injectable()
 export class WorkThreadService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly domains: DomainGateService,
+  ) {}
 
   async list(userId: string): Promise<WorkThreadDto[]> {
     const rows = await this.threads(userId);
@@ -61,6 +75,7 @@ export class WorkThreadService {
         mineAt: new Date(0),
         lastAt: null,
         unread: 0n,
+        muted: false,
       },
     ]);
     return dto ?? null;
@@ -68,7 +83,23 @@ export class WorkThreadService {
 
   async unreadTotal(userId: string): Promise<number> {
     const rows = await this.threads(userId);
-    return rows.reduce((sum, row) => sum + Number(row.unread), 0);
+    return rows
+      .filter((row) => !row.muted)
+      .reduce((sum, row) => sum + Number(row.unread), 0);
+  }
+
+  async setMuted(
+    userId: string,
+    targetType: CommentTargetType,
+    targetId: string,
+    muted: boolean,
+  ): Promise<void> {
+    const mutedAt = muted ? new Date() : null;
+    await this.prisma.commentThreadRead.upsert({
+      where: { userId_targetType_targetId: { userId, targetType, targetId } },
+      update: { mutedAt },
+      create: { userId, targetType, targetId, mutedAt },
+    });
   }
 
   async markRead(
@@ -85,13 +116,20 @@ export class WorkThreadService {
   }
 
   // A mention counts from just before it, so the comment holding it is
-  // unread; a discussion the member wrote in, from their last word.
-  private threads(userId: string): Promise<ThreadRow[]> {
+  // unread; a discussion the member wrote in, from their last word. Only the
+  // domains the member keeps on: a turned-off one has no page to open.
+  private async threads(userId: string): Promise<ThreadRow[]> {
+    const types = (await this.domains.getEnabledDomains(userId)).flatMap(
+      (domain) => TARGETS_OF[domain] ?? [],
+    );
+    if (types.length === 0) return [];
+
     return this.prisma.$queryRaw<ThreadRow[]>`
       WITH mine AS (
         SELECT c."targetType", c."targetId", MAX(c."createdAt") AS at
         FROM "Comment" c
         WHERE c."authorId" = ${userId} AND c."deletedAt" IS NULL
+          AND c."targetType"::text = ANY(${types})
         GROUP BY c."targetType", c."targetId"
         UNION ALL
         SELECT c."targetType", c."targetId",
@@ -99,6 +137,7 @@ export class WorkThreadService {
         FROM "CommentMention" m
         JOIN "Comment" c ON c.id = m."commentId"
         WHERE m."userId" = ${userId} AND c."deletedAt" IS NULL
+          AND c."targetType"::text = ANY(${types})
         GROUP BY c."targetType", c."targetId"
       ), threads AS (
         SELECT "targetType", "targetId", MAX(at) AS "mineAt"
@@ -106,6 +145,7 @@ export class WorkThreadService {
         GROUP BY "targetType", "targetId"
       )
       SELECT t."targetType", t."targetId", t."mineAt",
+        r."mutedAt" IS NOT NULL AS muted,
         (
           SELECT MAX(c."createdAt") FROM "Comment" c
           WHERE c."targetType" = t."targetType"
@@ -158,6 +198,7 @@ export class WorkThreadService {
           targetId: row.targetId,
           ...work,
           unread: Number(row.unread),
+          muted: row.muted,
           canParticipate: !!libraryKey && tracked.has(libraryKey),
           lastActivityAt: (row.lastAt ?? row.mineAt).toISOString(),
           lastComment: last

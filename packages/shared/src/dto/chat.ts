@@ -83,7 +83,7 @@ export interface ConversationDto {
   lastMessageAt: string;
 }
 
-/** `GET /chat/unread`: what the Messages launcher shows. Muted conversations don't count. */
+/** `GET /chat/unread`: what the Messages launcher shows. Muted conversations and discussions don't count. */
 export interface ChatUnreadDto {
   count: number;
   /** Unread in the works' discussions of the "Œuvres" tab. */
@@ -106,6 +106,8 @@ export interface WorkThreadDto {
   /** The work's page: a season's or an episode's leads to its series. */
   href: string | null;
   unread: number;
+  /** Muted: its unread still shows on it, but counts nowhere else. */
+  muted: boolean;
   /** Writing needs the work in the library (comments' own rule). */
   canParticipate: boolean;
   lastActivityAt: string;
