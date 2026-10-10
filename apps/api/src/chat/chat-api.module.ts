@@ -8,6 +8,7 @@ import { ReportsModule } from "../reports/reports.module";
 import { ChatWorkService } from "./chat-work.service";
 import { ChatController } from "./chat.controller";
 import { ChatModule } from "./chat.module";
+import { WorkThreadService } from "./work-thread.service";
 
 // The Messages routes, behind ChatFeatureGuard (social and chat both on).
 // ReportsModule files reports against a message; the catalogue modules turn a
@@ -23,6 +24,6 @@ import { ChatModule } from "./chat.module";
     MusicModule,
   ],
   controllers: [ChatController],
-  providers: [ChatWorkService],
+  providers: [ChatWorkService, WorkThreadService],
 })
 export class ChatApiModule {}

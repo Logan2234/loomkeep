@@ -697,6 +697,7 @@ model User {
   commentReactions           CommentReaction[]
   commentMentions            CommentMention[]
   conversationMemberships    ConversationMember[]
+  commentThreadReads         CommentThreadRead[]
   messages                   Message[]
   messageReactions           MessageReaction[]
   reportsFiled               Report[]               @relation("ReportsFiled")
@@ -887,6 +888,19 @@ model CommentReaction {
 // An explicit recipient selected from the discussion's mention picker. A raw
 // `@handle` in comment text intentionally creates no row and remains plain
 // text: only a deliberate picker choice may link or notify a person.
+// Up to when a member read a work's discussion: the unread count of the
+// "Œuvres" tab in Messages. Writing in a discussion reads it too.
+model CommentThreadRead {
+  userId     String
+  targetType CommentTargetType
+  targetId   String
+  lastReadAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, targetType, targetId])
+}
+
 model CommentMention {
   commentId String
   userId    String

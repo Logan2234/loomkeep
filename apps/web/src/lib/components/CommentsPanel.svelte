@@ -1,13 +1,14 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { getCommentCount } from "#lib/api/client.js";
-  import { auth } from "#lib/auth.svelte.js";
+  import { chat } from "#lib/chat/chat.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { joinRealtimeRoom, onRealtimeEvent } from "#lib/realtime/socket.js";
-  import {
-    SpoilerSensitivity,
-    type CommentPresenceEvent,
-    type CommentTargetType,
+  import { revealSpoilersOnOpen } from "#lib/spoiler-default.js";
+  import type {
+    CommentPresenceEvent,
+    CommentTargetType,
   } from "@loomkeep/shared";
   import { createQuery } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
@@ -89,23 +90,23 @@
   }
 
   function openPanel() {
+    // With Messages on, a work's discussion lives in its "Œuvres" tab.
+    if (appConfig.chatEnabled) {
+      chat.showWork({
+        targetType,
+        targetId,
+        focusCommentId,
+        revealSpoilers: revealSpoilersByDefault,
+      });
+      return;
+    }
+
     window.dispatchEvent(
       new CustomEvent(PANEL_OPEN_EVENT, {
         detail: `${targetType}:${targetId}`,
       }),
     );
-    // An explicit preference overrides the per-item "already finished this"
-    // default; AUTO leaves that default as-is.
-    switch (auth.user?.spoilerSensitivity) {
-      case SpoilerSensitivity.ALWAYS_REVEALED:
-        showSpoilers = true;
-        break;
-      case SpoilerSensitivity.ALWAYS_HIDDEN:
-        showSpoilers = false;
-        break;
-      default:
-        showSpoilers = revealSpoilersByDefault;
-    }
+    showSpoilers = revealSpoilersOnOpen(revealSpoilersByDefault);
     open = true;
   }
 </script>

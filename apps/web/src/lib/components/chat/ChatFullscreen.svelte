@@ -2,7 +2,7 @@
   // /app/messages[/<id>]: Messages as a page — the conversation list beside
   // the open conversation. "Réduire" puts it back in the floating panel.
   import { goto } from "$app/navigation";
-  import { getConversations } from "#lib/api/chat.js";
+  import { getChatUnread, getConversations } from "#lib/api/chat.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { hasAppHistory } from "#lib/backNav.svelte.js";
@@ -14,7 +14,8 @@
   import ChatConversationRow from "./ChatConversationRow.svelte";
   import ChatNewMessage from "./ChatNewMessage.svelte";
   import ChatThread from "./ChatThread.svelte";
-  import ChatWorksSoon from "./ChatWorksSoon.svelte";
+  import ChatWorkList from "./ChatWorkList.svelte";
+  import ChatWorkThread from "./ChatWorkThread.svelte";
   import {
     conversationStep,
     neighbourConversation,
@@ -34,6 +35,12 @@
   const unread = $derived(
     conversations.reduce((sum, c) => sum + shownUnread(c), 0),
   );
+  const unreadQuery = createApiQuery(() => ({
+    key: keys.chat.unread(),
+    fetch: getChatUnread,
+  }));
+  const worksUnread = $derived(unreadQuery.data?.works ?? 0);
+  const worksTab = $derived(chat.tab === "works");
   const shown = $derived(
     conversations.filter((c) =>
       (c.peer?.displayName ?? "")
@@ -49,7 +56,7 @@
 
   function onkeydown(event: KeyboardEvent) {
     const step = conversationStep(event);
-    if (!step) return;
+    if (!step || worksTab) return;
     const next = neighbourConversation(conversations, conversationId, step);
     if (next) {
       event.preventDefault();
@@ -64,8 +71,11 @@
   }
 
   // The compact shell shows one column: the list, or the conversation.
-  const showList = $derived(!layout.compact || (!conversationId && !composing));
-  const showThread = $derived(!layout.compact || !!conversationId || composing);
+  const showList = $derived(
+    !layout.compact ||
+      (worksTab ? !chat.activeWork : !conversationId && !composing),
+  );
+  const showThread = $derived(!layout.compact || !showList);
 </script>
 
 <svelte:window {onkeydown} />
@@ -119,6 +129,12 @@
             {chat.tab === 'works' ? 'bg-surface-2 text-fg' : 'text-dim'}"
           onclick={() => (chat.tab = "works")}>
           {m.common_works()}
+          {#if worksUnread > 0}
+            <span
+              class="bg-accent text-accent-fg grid h-5 min-w-5 place-items-center rounded-full px-1.5 font-mono text-[0.68rem] font-bold">
+              {worksUnread > 99 ? "99+" : worksUnread}
+            </span>
+          {/if}
         </button>
       </div>
       {#if chat.tab === "friends"}
@@ -138,14 +154,29 @@
           {/each}
         </div>
       {:else}
-        <ChatWorksSoon />
+        <ChatWorkList
+          active={chat.activeWork}
+          onselect={(work) => (chat.activeWork = work)} />
       {/if}
     </aside>
   {/if}
 
   {#if showThread}
     <main class="flex min-h-0 min-w-0 flex-1 flex-col">
-      {#if composing}
+      {#if worksTab && chat.activeWork}
+        {#key `${chat.activeWork.targetType}:${chat.activeWork.targetId}`}
+          <ChatWorkThread
+            work={chat.activeWork}
+            mode={layout.compact ? "sheet" : "full"}
+            onback={() => (chat.activeWork = null)} />
+        {/key}
+      {:else if worksTab}
+        <div
+          class="text-dim flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+          <Icon name="tv" class="h-9 w-9" />
+          <p class="max-w-[34ch] text-sm">{m.chat_works_pick()}</p>
+        </div>
+      {:else if composing}
         <ChatNewMessage
           mode={layout.compact ? "sheet" : "full"}
           onopen={open}

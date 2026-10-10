@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { getConversations } from "#lib/api/chat.js";
+  import { getConversations, getWorkThreads } from "#lib/api/chat.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
@@ -11,7 +11,8 @@
   import ChatNewMessage from "./ChatNewMessage.svelte";
   import ChatRail from "./ChatRail.svelte";
   import ChatThread from "./ChatThread.svelte";
-  import ChatWorksSoon from "./ChatWorksSoon.svelte";
+  import ChatWorksEmpty from "./ChatWorksEmpty.svelte";
+  import ChatWorkThread from "./ChatWorkThread.svelte";
   import {
     conversationStep,
     neighbourConversation,
@@ -24,6 +25,12 @@
     fetch: () => getConversations(),
   }));
   const conversations = $derived(conversationsQuery.data?.items ?? []);
+
+  const threadsQuery = createApiQuery(() => ({
+    key: keys.chat.workThreads(),
+    fetch: getWorkThreads,
+  }));
+  const threads = $derived(threadsQuery.data ?? []);
 
   function expand() {
     const id = chat.activeId;
@@ -63,10 +70,17 @@
   class="border-border bg-surface fixed right-6 bottom-[90px] z-40 flex h-[min(640px,calc(100dvh-120px))] max-w-[calc(100vw-3rem)] rounded-2xl border shadow-2xl transition-[width] duration-200 ease-out motion-reduce:transition-none
     {chat.drawer ? 'w-[808px]' : 'w-[600px]'}"
   style="transform-origin: bottom right;">
-  <ChatRail {conversations} />
+  <ChatRail {conversations} {threads} />
 
   <div class="flex min-w-0 flex-1 flex-col overflow-hidden rounded-r-2xl">
-    {#if chat.tab === "works"}
+    {#if chat.tab === "works" && chat.activeWork}
+      {#key `${chat.activeWork.targetType}:${chat.activeWork.targetId}`}
+        <ChatWorkThread
+          work={chat.activeWork}
+          mode="panel"
+          onclose={() => chat.close()} />
+      {/key}
+    {:else if chat.tab === "works"}
       <header
         class="border-border flex shrink-0 items-center gap-2 border-b py-2.5 pr-2.5 pl-4">
         <h2 class="min-w-0 flex-1 font-semibold">{m.common_works()}</h2>
@@ -78,7 +92,15 @@
           <Icon name="x" class="h-4.5 w-4.5" />
         </button>
       </header>
-      <ChatWorksSoon />
+      {#if threads.length > 0}
+        <div
+          class="text-dim flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+          <Icon name="tv" class="h-8 w-8" />
+          <p class="max-w-[32ch] text-sm">{m.chat_works_pick()}</p>
+        </div>
+      {:else if !threadsQuery.loading}
+        <ChatWorksEmpty />
+      {/if}
     {:else if chat.composing}
       <ChatNewMessage
         mode="panel"

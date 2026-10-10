@@ -1,6 +1,17 @@
 import { layout } from "#lib/layout.svelte.js";
+import type { CommentTargetType } from "@loomkeep/shared";
 
 export type ChatTab = "friends" | "works";
+
+/** A work's discussion to open in the "Œuvres" tab. */
+export interface WorkThreadRef {
+  targetType: CommentTargetType;
+  targetId: string;
+  /** The comment a notification or a link points at. */
+  focusCommentId?: string | null;
+  /** The work's page reveals spoilers by default once it's finished. */
+  revealSpoilers?: boolean;
+}
 
 const TYPING_SHOWN_MS = 4000;
 
@@ -16,6 +27,10 @@ class ChatState {
   drawer = $state(false);
   tab = $state<ChatTab>("friends");
   activeId = $state<string | null>(null);
+  /** The work's discussion the "Œuvres" tab shows. */
+  activeWork = $state<WorkThreadRef | null>(null);
+  /** The discussion on screen, read as it moves: `type:id`. */
+  workOnScreen = $state<string | null>(null);
   /** "Nouveau message": picking a friend instead of reading a conversation. */
   composing = $state(false);
   /** The conversation the full-screen page shows, while it's mounted. */
@@ -56,6 +71,15 @@ class ChatState {
   back(): void {
     this.activeId = null;
     this.composing = false;
+  }
+
+  /** Opens Messages on a work's discussion, from its page or a link. */
+  showWork(work: WorkThreadRef): void {
+    this.open = true;
+    this.tab = "works";
+    this.activeWork = work;
+    this.composing = false;
+    this.drawer = false;
   }
 
   newMessage(): void {

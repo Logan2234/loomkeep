@@ -3,6 +3,7 @@ import {
   ErrorCode,
   NotificationType,
   ProfileAccess,
+  RealtimeEvent,
   XpReason,
   type AdminUserCommentDto,
   type CommentDto,
@@ -16,6 +17,7 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
+import { isChatEnabled } from "../chat/chat.config";
 import { AppException } from "../common/app.exception";
 import {
   DEFAULT_PAGE_SIZE,
@@ -451,6 +453,7 @@ export class CommentService {
       mentions.map((mention) => mention.userId),
     );
     this.events.emitToCommentsThread(targetType, targetId, "comment-changed");
+    await this.followThread(authorId, targetType, targetId);
 
     // Checked here rather than left to award() (which credits blindly) —
     // unlike the review text-length case, a too-short comment is a frequent,
@@ -934,6 +937,53 @@ export class CommentService {
     return targetType !== "MUSIC" && spoilerTag;
   }
 
+  /**
+   * With Messages on, a work's discussion lives in its "Œuvres" tab:
+   * writing in it reads it, and everyone else following it — who wrote or
+   * was mentioned in it — sees it move.
+   */
+  private async followThread(
+    authorId: string,
+    targetType: CommentTargetType,
+    targetId: string,
+  ): Promise<void> {
+    if (!isChatEnabled(this.config)) return;
+
+    const lastReadAt = new Date();
+    await this.prisma.commentThreadRead.upsert({
+      where: {
+        userId_targetType_targetId: { userId: authorId, targetType, targetId },
+      },
+      update: { lastReadAt },
+      create: { userId: authorId, targetType, targetId, lastReadAt },
+    });
+
+    const [authors, mentioned] = await Promise.all([
+      this.prisma.comment.findMany({
+        where: { targetType, targetId, authorId: { not: null } },
+        distinct: ["authorId"],
+        select: { authorId: true },
+      }),
+      this.prisma.commentMention.findMany({
+        where: { comment: { targetType, targetId } },
+        distinct: ["userId"],
+        select: { userId: true },
+      }),
+    ]);
+    const followers = new Set([
+      ...authors.flatMap((a) => (a.authorId ? [a.authorId] : [])),
+      ...mentioned.map((m) => m.userId),
+    ]);
+    followers.delete(authorId);
+
+    for (const userId of followers) {
+      this.events.emitToUser(userId, RealtimeEvent.CHAT_WORK_ACTIVITY, {
+        targetType,
+        targetId,
+      });
+    }
+  }
+
   private async notifyOnCreate(
     authorId: string,
     row: CommentRow,
@@ -1070,7 +1120,13 @@ export class CommentService {
     );
     const excerpt = (row.text ?? "").slice(0, EXCERPT_LENGTH);
 
-    await this.notifications.create({
+    // With Messages on, replies and mentions count in its "Œuvres" tab
+    // rather than in the bell; a push still goes to whoever asked for one.
+    const deliver = isChatEnabled(this.config)
+      ? this.notifications.pushOnly.bind(this.notifications)
+      : this.notifications.create.bind(this.notifications);
+
+    await deliver({
       userId: recipientId,
       type,
       title: row.author.displayName,

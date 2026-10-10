@@ -28,8 +28,18 @@ A conversation stays readable but nobody can write in it anymore when:
 - **On a phone**, the **Messages** tab sits beside Notifications in the bottom
   bar.
 
-The **Works** tab will soon gather the discussions about a show, an episode,
-a game or a book you wrote in.
+## Discussions about works
+
+The **Works** tab gathers the discussions about a show, a season, an episode,
+a movie, a game, a book or an album that you wrote in, or where someone
+mentioned you: the latest of your own activity first, each with what was said
+since you last read it. They count in the Messages button too. A work's
+**Discussion** button opens it here, and so does a reply or a mention.
+
+These are the same comments as before, and the same rules: anyone can read
+them, writing needs the work in your library, and a spoiler stays hidden until
+you show spoilers. Replies and mentions no longer go to the bell, since this
+tab counts them; their push, if you turned it on, still comes.
 
 ## Writing
 

@@ -2,7 +2,12 @@ import { chatPreview } from "#lib/chat/chat-markdown.js";
 import { formatDate, formatTime } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
 import { localDayKey } from "#lib/xp-history.js";
-import type { ConversationDto, MessageWorkKind } from "@loomkeep/shared";
+import {
+  episodeCode,
+  type ConversationDto,
+  type MessageWorkKind,
+  type WorkThreadDto,
+} from "@loomkeep/shared";
 
 export function conversationName(conversation: ConversationDto): string {
   return conversation.peer?.displayName ?? m.chat_deleted_account();
@@ -39,12 +44,42 @@ export function workKindLabel(kind: MessageWorkKind): string {
   return KIND_LABELS[kind]();
 }
 
-/** Today's messages by their time, older ones by their day. */
-export function conversationTime(conversation: ConversationDto): string {
-  const at = conversation.lastMessage?.createdAt ?? conversation.lastMessageAt;
+/** Today's activity by its time, older one by its day. */
+function listTime(at: string): string {
   return localDayKey(new Date(at)) === localDayKey(new Date())
     ? formatTime(at)
     : formatDate(at, { day: "2-digit", month: "2-digit" });
+}
+
+export function conversationTime(conversation: ConversationDto): string {
+  return listTime(
+    conversation.lastMessage?.createdAt ?? conversation.lastMessageAt,
+  );
+}
+
+export function workThreadTime(thread: WorkThreadDto): string {
+  return listTime(thread.lastActivityAt);
+}
+
+/** "Saison 2" or "S02E05", for a season's or an episode's discussion. */
+export function workThreadContext(thread: WorkThreadDto): string | null {
+  if (thread.seasonNumber === null) return null;
+  return thread.episodeNumber === null
+    ? `${m.common_season()} ${thread.seasonNumber}`
+    : episodeCode(thread.seasonNumber, thread.episodeNumber);
+}
+
+/** The discussion's last comment, as the "Œuvres" list shows it. */
+export function workThreadPreview(thread: WorkThreadDto): string {
+  const last = thread.lastComment;
+  if (!last) return "";
+
+  const text =
+    last.text === null ? m.chat_work_spoiler() : chatPreview(last.text);
+  if (last.mine) return m.chat_preview_mine({ text });
+  return last.authorName
+    ? m.chat_work_preview({ name: last.authorName, text })
+    : text;
 }
 
 /** The unread count worth showing: a muted conversation counts nothing. */

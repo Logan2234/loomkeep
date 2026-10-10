@@ -1,4 +1,5 @@
 import type { MessageDto } from "./dto/chat";
+import type { CommentTargetType } from "./enums";
 
 // WebSocket event names, shared between the API's EventsGateway (emitter)
 // and the web client's realtime socket (listener). Payloads are kept minimal
@@ -21,6 +22,8 @@ export const RealtimeEvent = {
   CHAT_READ: "chat-read",
   CHAT_TYPING: "chat-typing",
   CHAT_PRESENCE: "chat-presence",
+  // Someone else wrote in a work's discussion the recipient takes part in.
+  CHAT_WORK_ACTIVITY: "chat-work-activity",
 } as const;
 export type RealtimeEvent = (typeof RealtimeEvent)[keyof typeof RealtimeEvent];
 
@@ -59,6 +62,12 @@ export interface ChatReadEvent {
 export interface ChatTypingEvent {
   conversationId: string;
   userId: string;
+}
+
+/** A work's discussion moved: the "Œuvres" tab counts it again. */
+export interface ChatWorkActivityEvent {
+  targetType: CommentTargetType;
+  targetId: string;
 }
 
 /** A friend opened the app somewhere, or closed it everywhere. */

@@ -1,3 +1,4 @@
+import { DEFAULT_INSTANCE_SETTINGS } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { type Mock, vi } from "vitest";
@@ -6,6 +7,7 @@ import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
+import { setStoredInstanceSettings } from "../instance-settings/instance-settings.store";
 import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -168,6 +170,8 @@ function make(
     bookItem: { findUnique: vi.fn().mockResolvedValue(TARGET_ROW) },
     musicItem: { findUnique: vi.fn().mockResolvedValue(TARGET_ROW) },
     userScore: { findMany: vi.fn().mockResolvedValue([]) },
+    commentMention: { findMany: vi.fn().mockResolvedValue([]) },
+    commentThreadRead: { upsert: vi.fn() },
   } as unknown as PrismaService;
 
   const visibility = {
@@ -178,6 +182,7 @@ function make(
 
   const notifications = {
     create: vi.fn(),
+    pushOnly: vi.fn(),
     copyFor: () => notificationCopy("fr"),
   } as unknown as NotificationService;
   const xp = stubXp();
@@ -1166,5 +1171,92 @@ describe("CommentService — realtime push", () => {
       "comment-changed",
     );
     expect(events.emitToCommentsThread).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("CommentService — with Messages on", () => {
+  beforeEach(() => {
+    setStoredInstanceSettings({
+      ...DEFAULT_INSTANCE_SETTINGS,
+      socialEnabled: true,
+      chatEnabled: true,
+    });
+  });
+
+  afterEach(() => {
+    setStoredInstanceSettings({ ...DEFAULT_INSTANCE_SETTINGS });
+  });
+
+  function replying() {
+    return make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "root1",
+          authorId: "parentAuthor",
+          parentId: null,
+        }),
+        create: vi
+          .fn()
+          .mockResolvedValue(
+            commentRow({ id: "reply1", parentId: "root1", authorId: "viewer" }),
+          ),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { authorId: "viewer" },
+            { authorId: "parentAuthor" },
+          ]),
+      },
+    });
+  }
+
+  const reply = {
+    targetType: "MEDIA" as never,
+    targetId: "m1",
+    parentId: "root1",
+    text: "thanks",
+  };
+
+  it("pushes a reply without a bell entry: the Œuvres tab counts it", async () => {
+    const { svc, notifications } = replying();
+    await svc.create("viewer", reply);
+
+    expect(notifications.create).not.toHaveBeenCalled();
+    expect(notifications.pushOnly).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "parentAuthor",
+        type: "COMMENT_REPLY",
+      }),
+    );
+  });
+
+  it("marks the discussion read for its author", async () => {
+    const { svc, prisma } = replying();
+    await svc.create("viewer", reply);
+
+    expect(prisma.commentThreadRead.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId_targetType_targetId: {
+            userId: "viewer",
+            targetType: "MEDIA",
+            targetId: "m1",
+          },
+        },
+      }),
+    );
+  });
+
+  it("tells everyone else following the discussion that it moved", async () => {
+    const { svc, prisma, events } = replying();
+    (prisma.commentMention.findMany as Mock).mockResolvedValue([
+      { userId: "mentioned" },
+    ]);
+    await svc.create("viewer", reply);
+
+    const recipients = (events.emitToUser as Mock).mock.calls
+      .filter(([, event]) => event === "chat-work-activity")
+      .map(([userId]) => userId);
+    expect(recipients.sort()).toEqual(["mentioned", "parentAuthor"]);
   });
 });

@@ -19,6 +19,7 @@
     type ChatPresenceEvent,
     type ChatReadEvent,
     type ChatTypingEvent,
+    type ChatWorkActivityEvent,
     type ConversationDto,
     type MessageDto,
     type PagedResult,
@@ -101,6 +102,14 @@
     chat.markTyping(conversationId);
   }
 
+  // The discussion on screen reads itself (ChatWorkThread); any other one
+  // counts again.
+  function onWorkActivity({ targetType, targetId }: ChatWorkActivityEvent) {
+    if (chat.workOnScreen === `${targetType}:${targetId}`) return;
+    void queryClient.invalidateQueries({ queryKey: keys.chat.workThreads() });
+    void queryClient.invalidateQueries({ queryKey: keys.chat.unread() });
+  }
+
   function onPresence({ userId, online }: ChatPresenceEvent) {
     chat.presence = { ...chat.presence, [userId]: online };
   }
@@ -110,6 +119,10 @@
       onRealtimeEvent<ChatMessageEvent>(RealtimeEvent.CHAT_MESSAGE, onMessage),
       onRealtimeEvent<ChatReadEvent>(RealtimeEvent.CHAT_READ, onRead),
       onRealtimeEvent<ChatTypingEvent>(RealtimeEvent.CHAT_TYPING, onTyping),
+      onRealtimeEvent<ChatWorkActivityEvent>(
+        RealtimeEvent.CHAT_WORK_ACTIVITY,
+        onWorkActivity,
+      ),
       onRealtimeEvent<ChatPresenceEvent>(
         RealtimeEvent.CHAT_PRESENCE,
         onPresence,

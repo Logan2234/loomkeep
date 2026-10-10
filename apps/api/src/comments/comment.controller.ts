@@ -39,7 +39,7 @@ import { CreateCommentBody } from "./dto/create-comment.dto";
 import { ReactCommentBody } from "./dto/react-comment.dto";
 import { UpdateCommentBody } from "./dto/update-comment.dto";
 
-function parseTarget(type: string): CommentTargetTypeT {
+export function parseTarget(type: string): CommentTargetTypeT {
   if (!(Object.values(CommentTargetType) as string[]).includes(type)) {
     throw new AppException(
       HttpStatus.BAD_REQUEST,

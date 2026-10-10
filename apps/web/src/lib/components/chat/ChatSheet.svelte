@@ -1,7 +1,7 @@
 <script lang="ts">
   // Messages on the compact shell: a full-screen veil, list then
   // conversation, opened from the bottom bar's Messages tab.
-  import { getConversations } from "#lib/api/chat.js";
+  import { getChatUnread, getConversations } from "#lib/api/chat.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
@@ -13,7 +13,8 @@
   import ChatConversationRow from "./ChatConversationRow.svelte";
   import ChatNewMessage from "./ChatNewMessage.svelte";
   import ChatThread from "./ChatThread.svelte";
-  import ChatWorksSoon from "./ChatWorksSoon.svelte";
+  import ChatWorkList from "./ChatWorkList.svelte";
+  import ChatWorkThread from "./ChatWorkThread.svelte";
   import { shownUnread } from "./conversation-presentation";
 
   const reduced = prefersReducedMotion();
@@ -26,6 +27,12 @@
   const unread = $derived(
     conversations.reduce((sum, c) => sum + shownUnread(c), 0),
   );
+
+  const unreadQuery = createApiQuery(() => ({
+    key: keys.chat.unread(),
+    fetch: getChatUnread,
+  }));
+  const worksUnread = $derived(unreadQuery.data?.works ?? 0);
 
   let search = $state("");
   const shown = $derived(
@@ -43,7 +50,18 @@
   aria-label={m.chat_title()}
   transition:fly={{ y: 24, duration: reduced ? 0 : 240 }}
   class="bg-surface fixed inset-0 z-50 flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-  {#if chat.composing}
+  {#if chat.tab === "works" && chat.activeWork}
+    {#key `${chat.activeWork.targetType}:${chat.activeWork.targetId}`}
+      <div
+        class="flex min-h-0 flex-1 flex-col"
+        in:fly={{ x: 18, duration: reduced ? 0 : 200 }}>
+        <ChatWorkThread
+          work={chat.activeWork}
+          mode="sheet"
+          onback={() => (chat.activeWork = null)} />
+      </div>
+    {/key}
+  {:else if chat.composing}
     <div
       class="flex min-h-0 flex-1 flex-col"
       in:fly={{ x: 18, duration: reduced ? 0 : 200 }}>
@@ -52,7 +70,7 @@
         onopen={(id) => chat.select(id)}
         onback={() => chat.back()} />
     </div>
-  {:else if chat.activeId}
+  {:else if chat.activeId && chat.tab === "friends"}
     {#key chat.activeId}
       <div
         class="flex min-h-0 flex-1 flex-col"
@@ -111,6 +129,12 @@
             {chat.tab === 'works' ? 'bg-surface-2 text-fg' : 'text-dim'}"
           onclick={() => (chat.tab = "works")}>
           {m.common_works()}
+          {#if worksUnread > 0}
+            <span
+              class="bg-accent text-accent-fg grid h-5 min-w-5 place-items-center rounded-full px-1.5 font-mono text-[0.68rem] font-bold">
+              {worksUnread > 99 ? "99+" : worksUnread}
+            </span>
+          {/if}
         </button>
       </div>
     </div>
@@ -143,7 +167,7 @@
         {/each}
       </div>
     {:else}
-      <ChatWorksSoon />
+      <ChatWorkList onselect={(work) => (chat.activeWork = work)} />
     {/if}
   {/if}
 </div>

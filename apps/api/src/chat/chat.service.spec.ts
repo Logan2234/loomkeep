@@ -75,28 +75,18 @@ function messageRow(over: Record<string, unknown> = {}) {
 }
 
 // The card as a viewer gets it: no target, and whether they track the work.
-const {
-  targetType: _type,
-  targetId: _id,
-  ...SEVERANCE_SEEN
-} = {
-  targetType: "MEDIA",
-  targetId: "media-1",
+const SEVERANCE_SEEN = {
   kind: "SERIES",
   title: "Severance",
   imageUrl: "https://image.tmdb.org/t/p/w342/severance.jpg",
   href: "/app/media/series/95396",
   year: 2022,
-};
+} as const;
 
 const SEVERANCE: WorkCard = {
   targetType: "MEDIA",
   targetId: "media-1",
-  kind: "SERIES",
-  title: "Severance",
-  imageUrl: "https://image.tmdb.org/t/p/w342/severance.jpg",
-  href: "/app/media/series/95396",
-  year: 2022,
+  ...SEVERANCE_SEEN,
 };
 
 function setup(
