@@ -7,7 +7,7 @@ function scrubTelemetryText(value: string): string {
   return (
     value
       // URLs in error messages can include signed links, credentials or searches.
-      .replace(/https?:\/\/[^\s"'<>]+/g, (url) => {
+      .replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s"'<>]+/gi, (url) => {
         try {
           const parsed = new URL(url);
           parsed.username = "";

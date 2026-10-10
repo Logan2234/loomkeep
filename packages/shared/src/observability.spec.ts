@@ -11,7 +11,7 @@ describe("telemetry privacy", () => {
       release: "a".repeat(40),
       environment: "staging",
       message:
-        'Failed https://alice:password@example.com/auth?token=query-secret#private password="password-secret" user@example.com Bearer bearer-secret lk_api-secret',
+        'Failed https://alice:password@example.com/auth?token=query-secret#private password="password-secret" user@example.com Bearer bearer-secret lk_api-secret postgresql://db-user:database-secret@db:5432/loomkeep?password=db-query-secret',
       exception: {
         values: [
           {
@@ -57,6 +57,9 @@ describe("telemetry privacy", () => {
       "context-secret",
       "private-message",
       "extra-secret",
+      "database-secret",
+      "db-query-secret",
+      "db-user",
     ]) {
       expect(payload).not.toContain(secret);
     }
