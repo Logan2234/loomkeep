@@ -8,7 +8,7 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import { DATE_MEDIUM_OPTIONS, formatDate, compareText } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { UserSummaryDto } from "@loomkeep/shared";
@@ -63,7 +63,7 @@
           friend.displayName.toLowerCase().includes(q) ||
           friend.username.toLowerCase().includes(q),
       )
-      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+      .sort((a, b) => compareText(a.displayName, b.displayName));
   });
 
   // The list page underneath shows whether the list has editors (its mute

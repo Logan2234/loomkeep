@@ -1,9 +1,10 @@
+import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
 import { readStorage, writeStorage } from "#lib/local-storage.js";
 import { browser } from "$app/env";
 
-const MOTION_KEY = "lk-a11y-motion";
-const CONTRAST_KEY = "lk-a11y-contrast";
-const DENSITY_KEY = "lk-a11y-density";
+const MOTION_KEY = STORAGE_KEYS.motion;
+const CONTRAST_KEY = STORAGE_KEYS.contrast;
+const DENSITY_KEY = STORAGE_KEYS.density;
 
 export type MotionPreference = "system" | "reduce";
 export type ContrastPreference = "default" | "high";

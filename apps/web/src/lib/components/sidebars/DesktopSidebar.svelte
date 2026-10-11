@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
+
   import { type Snippet } from "svelte";
 
   import { browser } from "$app/env";
   import { readStorage, writeStorage } from "#lib/local-storage.js";
-  import { goto } from "$app/navigation";
+
   import { navigating, page } from "$app/state";
-  import { logout } from "#lib/api/auth.js";
+  import { signOutAndRedirect } from "#lib/api/auth.js";
   import { auth } from "#lib/auth.svelte.js";
   import Avatar from "#lib/components/Avatar.svelte";
   import Icon from "#lib/components/Icon.svelte";
@@ -15,7 +17,10 @@
   import { isDomainEnabled } from "#lib/domains.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
-  import { visibleNavSections } from "#lib/navigation.js";
+  import {
+    visibleNavSections,
+    profileHref as resolveProfileHref,
+  } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
   import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
   import { scale } from "svelte/transition";
@@ -23,7 +28,7 @@
   const reduced = prefersReducedMotion();
 
   let pinned = $state(
-    browser ? readStorage("lk-rail-pinned") === "true" : false,
+    browser ? readStorage(STORAGE_KEYS.railPinned) === "true" : false,
   );
   let hovered = $state(false);
 
@@ -56,19 +61,14 @@
 
   // "Mon profil" only exists when social is enabled — self-host without it
   // still needs a way to the account settings from the sidebar footer.
-  const profileHref = $derived(
-    appConfig.socialEnabled ? "/app/profile" : "/app/settings",
-  );
+  const profileHref = $derived(resolveProfileHref());
 
-  async function signOut() {
-    await logout();
-    await goto("/login");
-  }
+  const signOut = signOutAndRedirect;
 
   function togglePinned() {
     pinned = !pinned;
     if (browser) {
-      writeStorage("lk-rail-pinned", pinned ? "true" : "false");
+      writeStorage(STORAGE_KEYS.railPinned, pinned ? "true" : "false");
     }
   }
 

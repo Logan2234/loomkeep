@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
+
   import { listLibrary } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -8,7 +10,7 @@
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import { bodyOf, type BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { HomeWidgetDto, MediaType } from "@loomkeep/shared";
+  import type { HomeWidgetDto } from "@loomkeep/shared";
   import WidgetShell from "../WidgetShell.svelte";
   import { mediaHref } from "./media";
 
@@ -42,12 +44,6 @@
     );
     return index < 0 ? null : candidates[index];
   });
-
-  const TYPE_LABELS: Record<MediaType, () => string> = {
-    MOVIE: () => m.media_movie(),
-    SERIES: () => m.media_series(),
-    ANIME: () => m.media_anime_label(),
-  };
 
   // Poster beside the text when there's room, above it otherwise; either
   // way as tall as the widget allows.
@@ -84,7 +80,7 @@
       </div>
       <div class="flex min-w-0 flex-col {side ? 'justify-center' : ''}">
         <p class="timecode text-[0.65rem] uppercase">
-          {TYPE_LABELS[pick.mediaItem.type]()}
+          {MEDIA_TYPE_LABEL[pick.mediaItem.type]}
         </p>
         <p
           class="font-display group-hover:text-accent line-clamp-2 font-bold transition-colors">
