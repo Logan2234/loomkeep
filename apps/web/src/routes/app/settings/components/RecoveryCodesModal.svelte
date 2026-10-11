@@ -13,7 +13,11 @@
   }: { codes: string[]; accountEmail: string; onclose: () => void } = $props();
   const copyFeedback = new CopyFeedback();
   const recoveryCopied = $derived(copyFeedback.value === true);
-  $effect(() => () => copyFeedback.reset());
+  $effect(() => {
+    void codes;
+    copyFeedback.reset();
+    return () => copyFeedback.reset();
+  });
   async function copyAllCodes() {
     await copyFeedback.copy(codes.join("\n"), true);
   }
