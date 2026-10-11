@@ -18,8 +18,6 @@
   } from "#lib/chat/emoji.js";
   import {
     deserializeMentions,
-    composerRunClass,
-    composerRuns,
     mentionAtCaret,
     serializeMentions,
     type Mention,
@@ -70,6 +68,7 @@
   import ChatEmojiPicker from "./ChatEmojiPicker.svelte";
   import ChatReviewPicker from "./ChatReviewPicker.svelte";
   import ChatWorkPicker from "./ChatWorkPicker.svelte";
+  import MarkdownField from "./MarkdownField.svelte";
   import { workKindLabel } from "./conversation-presentation";
 
   let {
@@ -92,13 +91,12 @@
   const TYPING_EVERY_MS = 3000;
   const COUNTER_FROM = MESSAGE_TEXT_MAX_LENGTH - 200;
 
-  let textarea = $state<HTMLTextAreaElement | null>(null);
+  let field = $state<MarkdownField | null>(null);
   let picker = $state<ChatWorkPicker | null>(null);
   let reviewPicker = $state<ChatReviewPicker | null>(null);
   let listPicker = $state<ChatListPicker | null>(null);
   let mentionPicker = $state<ChatWorkPicker | null>(null);
   let emojiPicker = $state<ChatEmojiPicker | null>(null);
-  let backdrop = $state<HTMLDivElement | null>(null);
   let value = $state("");
   // Works mentioned with `#`: the field shows `#Title`, the message stores
   // a token (see serializeMentions).
@@ -179,7 +177,6 @@
     mentions = draft.mentions;
     attachment = null;
     declinedLinks = [];
-    void tick().then(autosize);
   });
 
   $effect(() => {
@@ -188,9 +185,8 @@
     value = (editing.spoiler ? "/spoiler " : "") + stored.text;
     mentions = stored.mentions;
     void tick().then(() => {
-      autosize();
-      textarea?.focus();
-      textarea?.setSelectionRange(value.length, value.length);
+      field?.focus();
+      field?.select(value.length);
     });
   });
 
@@ -296,7 +292,6 @@
   function setValue(next: string) {
     value = next;
     saveDraft();
-    void tick().then(autosize);
   }
 
   function saveDraft() {
@@ -305,11 +300,8 @@
 
   function readMention() {
     const caret =
-      textarea &&
-      document.activeElement === textarea &&
-      picking === null &&
-      commands.length === 0
-        ? textarea.selectionStart
+      field?.hasFocus() && picking === null && commands.length === 0
+        ? field.selection().start
         : null;
     const found = caret === null ? null : mentionAtCaret(value, caret);
     mentionAt = found && found.start !== dismissedMentionAt ? found : null;
@@ -321,21 +313,21 @@
   }
 
   function insertEmoji(emoji: Emoji) {
-    if (!emojiAt || !textarea) return;
-    const caret = textarea.selectionStart;
+    if (!emojiAt || !field) return;
+    const caret = field.selection().start;
     const inserted = `${emoji.emoji} `;
     const at = emojiAt.start;
     setValue(value.slice(0, at) + inserted + value.slice(caret));
     emojiAt = null;
     void tick().then(() => {
-      textarea?.focus();
-      textarea?.setSelectionRange(at + inserted.length, at + inserted.length);
+      field?.focus();
+      field?.select(at + inserted.length);
     });
   }
 
   function insertMention(work: MessageWorkDto) {
-    if (!mentionAt || !textarea) return;
-    const caret = textarea.selectionStart;
+    if (!mentionAt || !field) return;
+    const caret = field.selection().start;
     const inserted = `#${work.title} `;
     if (!mentions.some((mention) => mention.title === work.title)) {
       mentions = [...mentions, { title: work.title, href: work.href }];
@@ -347,19 +339,9 @@
     // this one is done.
     dismissedMentionAt = at;
     void tick().then(() => {
-      textarea?.focus();
-      textarea?.setSelectionRange(at + inserted.length, at + inserted.length);
+      field?.focus();
+      field?.select(at + inserted.length);
     });
-  }
-
-  // Where the caret is, so the markers around it show (see composerRuns).
-  let caret = $state<{ start: number; end: number } | null>(null);
-  const runs = $derived(composerRuns(value, mentions, caret));
-
-  function autosize() {
-    if (!textarea) return;
-    textarea.style.height = "auto";
-    textarea.style.height = `${Math.min(textarea.scrollHeight + 2, 160)}px`;
   }
 
   function send() {
@@ -382,37 +364,36 @@
   function attach(next: Attachment) {
     attachment = next;
     setValue("");
-    textarea?.focus();
+    field?.focus();
   }
 
   function pick(command: Command) {
     if (!command.available) return;
     setValue(`/${command.id} `);
-    textarea?.focus();
+    void tick().then(() => {
+      field?.focus();
+      field?.select(value.length);
+    });
   }
 
   function format(kind: ChatFormat) {
-    if (!textarea) return;
-    const { selectionStart, selectionEnd } = textarea;
+    if (!field) return;
+    const { start: selectionStart, end: selectionEnd } = field.selection();
     if (selectionStart === selectionEnd) return;
     mentionAt = null;
 
     const next = toggleFormat(value, selectionStart, selectionEnd, kind);
     setValue(next.value);
     void tick().then(() => {
-      textarea?.focus();
-      textarea?.setSelectionRange(next.start, next.end);
+      field?.focus();
+      field?.select(next.start, next.end);
       placeSelectionBar();
     });
   }
 
   function placeSelectionBar() {
-    caret =
-      textarea && document.activeElement === textarea
-        ? { start: textarea.selectionStart, end: textarea.selectionEnd }
-        : null;
     readMention();
-    selectionBar = selectionBarAt(textarea, value);
+    selectionBar = selectionBarAt(field, value);
   }
 
   function announceTyping() {
@@ -424,15 +405,12 @@
 
   function oninput() {
     const completed =
-      textarea && completeShortcode(value, textarea.selectionStart);
+      field && completeShortcode(value, field.selection().start);
     if (completed) {
       value = completed.value;
-      void tick().then(() =>
-        textarea?.setSelectionRange(completed.caret, completed.caret),
-      );
+      void tick().then(() => field?.select(completed.caret));
     }
     saveDraft();
-    autosize();
     placeSelectionBar();
     if (value.trim()) announceTyping();
   }
@@ -501,8 +479,6 @@
     }
   }
 </script>
-
-<svelte:document onselectionchange={placeSelectionBar} />
 
 <div class="border-border relative shrink-0 border-t px-3 pt-2.5 pb-3">
   {#if editing}
@@ -686,40 +662,23 @@
         </div>
       {/if}
 
-      <label for="chat-composer-{conversationId}" class="sr-only">
-        {m.chat_message_label()}
-      </label>
-      <!-- Under the transparent field, the same text in the same box, drawn
-           as it'll read once sent: the field only lends it its caret. -->
-      <div
-        bind:this={backdrop}
-        aria-hidden="true"
-        class="bg-bg pointer-events-none absolute inset-0 overflow-hidden rounded-[1.2rem] border border-transparent px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap
-          {layout.compact ? 'text-base' : ''}">
-        {#each runs as run, i (i)}<span class={composerRunClass(run)}
-            >{run.text}</span
-          >{/each}&#8203;
-      </div>
-      <textarea
-        id="chat-composer-{conversationId}"
-        bind:this={textarea}
+      <MarkdownField
+        bind:this={field}
         bind:value
-        rows="1"
-        maxlength={MESSAGE_TEXT_MAX_LENGTH}
+        label={m.chat_message_label()}
         placeholder={m.chat_composer_placeholder({ name: peerName })}
-        class="border-border focus:border-accent selection:bg-accent/30 caret-fg placeholder:text-dim relative block w-full resize-none [scrollbar-width:none] rounded-[1.2rem] border bg-transparent px-3.5 py-2 text-sm leading-relaxed text-transparent transition-colors duration-150 outline-none
+        {mentions}
+        maxLength={MESSAGE_TEXT_MAX_LENGTH}
+        class="border-border focus-within:border-accent selection:bg-accent/30 bg-bg block w-full rounded-[1.2rem] border px-3.5 py-2 text-sm leading-relaxed transition-colors duration-150
           {layout.compact ? 'text-base' : ''}"
         {oninput}
+        onselect={placeSelectionBar}
         {onkeydown}
-        onscroll={() => {
-          if (backdrop && textarea) backdrop.scrollTop = textarea.scrollTop;
-        }}
         onblur={() => {
           selectionBar = null;
-          caret = null;
           mentionAt = null;
           emojiAt = null;
-        }}></textarea>
+        }} />
     </div>
     <button
       type="button"

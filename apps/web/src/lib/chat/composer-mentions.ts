@@ -50,21 +50,20 @@ export function mentionAtCaret(
   return { start: caret - typed[1].length - 1, query: typed[1] };
 }
 
-/** A stretch of the composer's text drawn one way under the field. */
+/** A stretch of the composer's text drawn one way in the field. */
 export interface ComposerRun {
   text: string;
   styles: LiveStyle[];
   /** A link or a mentioned work: underlined. */
   underlined: boolean;
-  /** A marker of a span the caret is out of: kept, but not drawn. */
+  /** A marker of a span the caret is out of: kept in the text, not shown. */
   hidden: boolean;
 }
 
 /**
- * The composer's text in runs for the layer drawn under the field: styled as
- * it'll read once sent, its links and mentions underlined. A span's markers
- * only show while the caret (or the selection) touches it; elsewhere they
- * still take their place, the field holding them, but aren't drawn.
+ * The composer's text in runs, styled as it'll read once sent, its links and
+ * mentions underlined. A span's markers only show while the caret (or the
+ * selection) touches it; elsewhere the field hides them, place included.
  */
 export function composerRuns(
   text: string,
@@ -118,20 +117,18 @@ export function composerRuns(
 
 const STYLE_CLASS: Record<LiveStyle, string> = {
   marker: "text-dim",
-  // A stroke rather than a heavier weight, and the font's synthesized
-  // oblique for italic: neither changes a character's width, so the text
-  // under the field stays in line with its caret.
-  strong: "[-webkit-text-stroke:0.45px_currentColor]",
+  strong: "font-bold",
+  // The body font ships no italic face: the browser slants it, which the app
+  // otherwise forbids (`font-synthesis: none`).
   em: "italic [font-synthesis:style]",
   strike: "line-through",
-  code: "bg-surface-2 text-accent rounded-sm",
+  code: "bg-surface-2 text-accent rounded-sm px-0.5 font-mono text-[0.9em]",
   spoiler:
     "rounded-sm bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--accent)_22%,transparent)_0_6px,transparent_6px_12px)]",
 };
 
-/** The classes a run is drawn with under the field. */
+/** The classes a visible run is drawn with in the field. */
 export function composerRunClass(run: ComposerRun): string {
-  if (run.hidden) return "text-transparent";
   return [
     ...run.styles.map((style) => STYLE_CLASS[style]),
     run.underlined

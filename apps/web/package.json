@@ -37,6 +37,9 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.13",
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
     "@fontsource-variable/hanken-grotesk": "^5.3.0",
     "@fontsource/space-mono": "^5.3.0",
