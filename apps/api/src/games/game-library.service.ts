@@ -2,7 +2,6 @@ import {
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
   Domain,
-  DORMANT_AFTER_DAYS,
   GAME_SORT_KEYS,
   type GameDetailDto,
   type GameEntryDto,
@@ -31,7 +30,7 @@ import {
   assertBulkTarget,
   assertBulkUpdate,
 } from "../common/bulk-entries.util";
-import { sinceDaysAgo, toDateOrNull } from "../common/date.util";
+import { toDateOrNull } from "../common/date.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters,
@@ -41,6 +40,7 @@ import {
   awardNewEntryXp,
   emitEntryActivity,
   listEntryPage,
+  pausedStatusClause,
   polymorphicTargetCleanup,
   RECENTLY_UPDATED_FIRST,
   searchTerm,
@@ -550,14 +550,7 @@ export class GameLibraryService {
     }
 
     if (statuses.includes(SESSION_FILTER_PAUSED)) {
-      const cutoff = sinceDaysAgo(new Date(), DORMANT_AFTER_DAYS);
-      statusFilters.push({
-        status: GameStatus.PLAYING,
-        sessions: {
-          some: { occurredAt: { lt: cutoff } },
-          none: { occurredAt: { gte: cutoff } },
-        },
-      });
+      statusFilters.push(pausedStatusClause(GameStatus.PLAYING, new Date()));
     }
 
     return {

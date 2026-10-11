@@ -1,6 +1,7 @@
+import type { Locale } from "../locale";
 // Sections have separate endpoints, refresh cadences, and failure modes.
 
-import type { Locale, ProfileAccess, ReportCategory } from "../enums";
+import type { ProfileAccess, ReportCategory } from "../enums";
 import type { TrendPeriod, TrendPointDto } from "./admin";
 import type { RatingBucketDto, StatsDomain } from "./stats";
 

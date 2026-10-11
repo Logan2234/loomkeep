@@ -200,7 +200,7 @@ enum CommentTargetType {
 }
 
 // Fixed reaction set for comments (backlog: a full emoji picker). Display
-// glyphs live in shared code (COMMENT_EMOTE_DISPLAY) — this enum stores the
+// glyphs live in web code (COMMENT_EMOTE_DISPLAY) — this enum stores the
 // identifier, not the glyph.
 enum CommentEmote {
   LIKE

@@ -3,12 +3,12 @@ import {
   DigestCadence,
   Domain,
   ListVisibility,
-  Locale,
   ProfileAccess,
   ReviewVisibility,
   Role,
   SpoilerSensitivity,
 } from "../enums";
+import type { Locale } from "../locale";
 import type { HomeLayoutDto } from "./home-layout";
 
 export const USER_LIMITS = { displayName: 50, username: 50, bio: 500 } as const;

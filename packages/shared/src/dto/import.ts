@@ -1,10 +1,4 @@
-import type {
-  BookStatus,
-  Domain,
-  EntryStatus,
-  GameStatus,
-  MediaType,
-} from "../enums";
+import type { BookStatus, Domain, GameStatus, MediaType } from "../enums";
 import type { ErrorCode } from "../error-codes";
 import type { ImportJobStatus } from "../realtime";
 
@@ -285,14 +279,4 @@ export interface TvTimeImportFilesDto {
   rewatchedCsv?: string;
   /** `user_tv_show_data.csv` — show names + TVDB id + episodes-seen count (watchlist detection). */
   showsCsv?: string;
-}
-
-/** Map a series' watched/total regular episodes to a library entry status. */
-export function entryStatusFromProgress(
-  watched: number,
-  total: number,
-): EntryStatus {
-  if (watched === 0) return "PLANNED";
-  if (total > 0 && watched >= total) return "COMPLETED";
-  return "WATCHING";
 }

@@ -8,17 +8,14 @@ import type {
   ImportSource,
   MediaType,
 } from "@loomkeep/shared";
-import {
-  Domain,
-  entryStatusFromProgress,
-  ReviewTargetType,
-} from "@loomkeep/shared";
+import { Domain, ReviewTargetType } from "@loomkeep/shared";
 import { Logger } from "@nestjs/common";
 import type { ExternalSource as DbExternalSource } from "@prisma/client";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { mapWithConcurrency } from "../../../common/concurrency.util";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
+import { entryStatusFromProgress } from "../../entry-status.util";
 import type {
   CommitDecisions,
   ImportReq,

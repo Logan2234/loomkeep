@@ -1,6 +1,7 @@
 import type { Domain, PagedResult, ReviewTargetType } from "@loomkeep/shared";
 import {
   ActivityType,
+  DORMANT_AFTER_DAYS,
   ErrorCode,
   XpReason,
   type SortOrder,
@@ -12,6 +13,7 @@ import type { PrismaService } from "../prisma/prisma.service";
 import { classifyStatusTransition } from "../social/activity-transition.util";
 import type { ActivityService } from "../social/activity.service";
 import { AppException } from "./app.exception";
+import { sinceDaysAgo } from "./date.util";
 import { safeLang } from "./locale.util";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "./pagination.util";
 import { toQueryArray } from "./query-array.util";
@@ -351,4 +353,18 @@ export function polymorphicTargetCleanup(
       data: { text: null, deletedAt: new Date() },
     }),
   ];
+}
+
+export function pausedStatusClause<T extends string>(
+  activeStatus: T,
+  now: Date,
+) {
+  const cutoff = sinceDaysAgo(now, DORMANT_AFTER_DAYS);
+  return {
+    status: activeStatus,
+    sessions: {
+      some: { occurredAt: { lt: cutoff } },
+      none: { occurredAt: { gte: cutoff } },
+    },
+  };
 }

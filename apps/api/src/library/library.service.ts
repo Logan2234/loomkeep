@@ -681,17 +681,12 @@ export class LibraryService {
     } = {};
 
     if (dto.movieReleaseAlertsEnabled !== undefined) {
-      const user = await this.prisma.user.findUniqueOrThrow({
-        where: { id: userId },
-        select: { watchRegion: true },
-      });
+      const region = await this.movieRegion(userId, acceptLanguage);
       reminder = {
         movieReleaseReminderAt: dto.movieReleaseAlertsEnabled
           ? (owned.movieReleaseReminderAt ?? new Date())
           : null,
-        movieReleaseRegion: dto.movieReleaseAlertsEnabled
-          ? resolveWatchRegion(user.watchRegion ?? undefined, acceptLanguage)
-          : null,
+        movieReleaseRegion: dto.movieReleaseAlertsEnabled ? region : null,
       };
     }
 

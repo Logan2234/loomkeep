@@ -4,7 +4,8 @@ import type {
   PublicKeyCredentialRequestOptionsJSON,
   RegistrationResponseJSON,
 } from "@simplewebauthn/browser";
-import type { Locale, SecurityEventType } from "../enums";
+import type { SecurityEventType } from "../enums";
+import type { Locale } from "../locale";
 import type { UserDto } from "./user";
 
 export const OTP_CODE_LENGTH = 6;

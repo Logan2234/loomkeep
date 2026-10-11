@@ -22,6 +22,7 @@ import { AppException } from "../common/app.exception";
 import { toPagedResult } from "../common/pagination.util";
 import { sessionPeriodMinutes } from "../common/session-period.util";
 import { normalizeSessionNotes, sessionDate } from "../common/session.util";
+import { GAME_STATUS_BY_CYCLE } from "../common/tracking-cycle-status.util";
 import { SessionXpService } from "../gamification/session-xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
@@ -211,12 +212,7 @@ export class GameSessionService {
           });
           lifecycleData = previous
             ? {
-                status:
-                  previous.status === TrackingCycleStatus.COMPLETED
-                    ? "COMPLETED"
-                    : previous.status === TrackingCycleStatus.DROPPED
-                      ? "DROPPED"
-                      : "PLAYING",
+                status: GAME_STATUS_BY_CYCLE[previous.status],
               }
             : { status: "BACKLOG", startedAt: null };
         } else {
