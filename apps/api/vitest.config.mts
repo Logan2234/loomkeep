@@ -1,30 +1,14 @@
-import swc from "unplugin-swc";
-import { defineConfig } from "vitest/config";
+import { defineConfig, mergeConfig } from "vitest/config";
+import base from "./vitest.base.mjs";
 
-export default defineConfig({
-  plugins: [
-    swc.vite({
-      jsc: {
-        target: "esnext",
-        transform: {
-          decoratorMetadata: true,
-          legacyDecorator: true,
-        },
+export default mergeConfig(
+  base,
+  defineConfig({
+    test: {
+      include: ["src/**/*.spec.ts"],
+      coverage: {
+        reportsDirectory: "./coverage",
       },
-    }),
-  ],
-  test: {
-    globals: true,
-    root: "./",
-    include: ["src/**/*.spec.ts"],
-    environment: "node",
-    coverage: {
-      provider: "v8",
-      reportsDirectory: "./coverage",
-      include: ["src/**/*.{ts,js}"],
-      // Codecov reads lcov, which Vitest's v8 defaults omit.
-      reporter: ["lcov", "text", "html"],
-      exclude: ["src/**/*.spec.ts"]
     },
-  },
-});
+  }),
+);

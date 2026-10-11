@@ -10,6 +10,7 @@ export default defineConfig({
       provider: "v8",
       reportsDirectory: "./coverage",
       include: ["src/**/*.ts"],
+      exclude: ["src/**/*.spec.ts"],
       // Codecov reads lcov, which Vitest's v8 defaults omit.
       reporter: ["lcov", "text", "html"],
     },
