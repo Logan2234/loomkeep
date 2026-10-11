@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+
   import { untrack } from "svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
@@ -23,7 +25,7 @@
     adminTemplateFieldLabel,
     groupAdminEmailTemplates,
   } from "#lib/constants/admin-presentation.js";
-  import { debounce } from "#lib/debounce.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { languageName } from "#lib/locales.js";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -85,7 +87,9 @@
   let previewError = $state<string | null>(null);
   let previewTab = $state<"html" | "text">("html");
 
-  let copied = $state(false);
+  const copyFeedback = new CopyFeedback();
+  const copied = $derived(copyFeedback.value === true);
+  $effect(() => () => copyFeedback.reset());
 
   let testTo = $state("");
   let emailLocale = $state<Locale>(getLocale());
@@ -105,7 +109,10 @@
       );
   }
 
-  const debouncedLoadPreview = debounce(() => void loadPreview(), 300);
+  const debouncedLoadPreview = debounce(
+    () => void loadPreview(),
+    SEARCH_DEBOUNCE_MS,
+  );
 
   function onFieldInput(key: string, value: string) {
     fieldValues = { ...fieldValues, [key]: value };
@@ -138,14 +145,7 @@
   async function copyPreview() {
     const content = previewTab === "html" ? previewHtml : previewText;
     if (!content) return;
-    try {
-      await navigator.clipboard.writeText(content);
-    } catch (error) {
-      previewError = resolveApiError(error);
-      return;
-    }
-    copied = true;
-    setTimeout(() => (copied = false), 1500);
+    await copyFeedback.copy(content, true, 1500);
   }
 
   const sendTestEmailMut = createApiMutation(() => ({

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { debounce } from "#lib/debounce.js";
+
   import { DEFAULT_PAGE_SIZE } from "@loomkeep/shared";
 
   import {
@@ -30,11 +32,13 @@
   let selectedLabel = $state<string | undefined>();
   let syncedValue = $state<string | null>(null);
 
+  const searchDebounce = debounce((next: string) => {
+    search = next;
+  }, 250);
   $effect(() => {
     const candidate = pendingSearch.trim();
-    const next = candidate.length >= 2 ? candidate : "";
-    const timeout = window.setTimeout(() => (search = next), 250);
-    return () => window.clearTimeout(timeout);
+    searchDebounce.call(candidate.length >= 2 ? candidate : "");
+    return () => searchDebounce.cancel();
   });
 
   const usersQuery = createApiInfiniteQuery(() => ({

@@ -1,6 +1,8 @@
 <script
   lang="ts"
   generics="T extends { period: TrendPeriod; points: TrendPointDto[] }">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   // A curve card owning its own bucket-size picker: /admin/stats has no global
   // period selector, so each temporal card re-queries its own endpoint. The
   // payload carries the default (weekly) curve; picking another period
@@ -28,7 +30,7 @@
     footer: Snippet<[T]>;
   } = $props();
 
-  const PERIODS: { value: TrendPeriod; label: string }[] = [
+  const PERIODS: SelectOption<TrendPeriod>[] = [
     { value: "day", label: m.common_day() },
     { value: "week", label: m.common_week() },
     { value: "month", label: m.common_month() },

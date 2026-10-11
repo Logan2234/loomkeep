@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { keys } from "#lib/api/keys.js";
@@ -13,7 +15,7 @@
   import QuickAddPanel from "#lib/components/QuickAddPanel.svelte";
   import ScanIsbnModal from "#lib/components/ScanIsbnModal.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
-  import { debounce } from "#lib/debounce.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { isDomainEnabled } from "#lib/domains.js";
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -83,7 +85,7 @@
       replace: true,
       reset: false,
     });
-  }, 300);
+  }, SEARCH_DEBOUNCE_MS);
   $effect(() => {
     void query;
     void domain;
@@ -116,13 +118,13 @@
       { label: m.media_anime(), value: "ANIME" },
     ];
   type BookMode = "title" | "author" | "isbn";
-  const BOOK_MODE_OPTIONS: { label: string; value: BookMode }[] = [
+  const BOOK_MODE_OPTIONS: SelectOption<BookMode>[] = [
     { label: m.common_title(), value: "title" },
     { label: m.book_author(), value: "author" },
     { label: m.book_isbn(), value: "isbn" },
   ];
   type GameMode = "title" | "studio" | "franchise";
-  const GAME_MODE_OPTIONS: { label: string; value: GameMode }[] = [
+  const GAME_MODE_OPTIONS: SelectOption<GameMode>[] = [
     { label: m.common_title(), value: "title" },
     { label: m.media_studio(), value: "studio" },
     { label: m.game_franchise(), value: "franchise" },

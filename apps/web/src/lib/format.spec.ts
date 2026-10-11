@@ -4,15 +4,36 @@ import {
   formatBytes,
   formatDurationMs,
   formatHours,
+  formatLanguage,
+  formatPercent,
   formatRelative,
   formatRuntimeTimecode,
   joinMeta,
+  percentParts,
+  presentParts,
 } from "./format";
 import { getLocale, overwriteGetLocale } from "./paraglide/runtime.js";
 
 vi.mock("./auth.svelte", () => ({ auth: { user: { locale: "en" } } }));
 const originalGetLocale = getLocale;
 const originalUser = auth.user;
+
+describe("localized presentation helpers", () => {
+  it("formats percentages and keeps separate KPI units", () => {
+    expect(formatPercent(12.3, {}, "en-US")).toBe("12.3%");
+    expect(formatPercent(12.3, {}, "fr-FR").replace(/\s/g, " ")).toBe("12,3 %");
+    expect(percentParts(12.3, "de-DE")).toEqual({ value: "12,3", unit: "%" });
+  });
+
+  it("caches language names separately for each display locale", () => {
+    expect(formatLanguage("fr", "en-US")).toBe("French");
+    expect(formatLanguage("fr", "fr-FR")).toBe("français");
+  });
+
+  it("keeps zero-valued metadata while omitting missing parts", () => {
+    expect(presentParts("", null, 0, "2026", undefined)).toEqual(["0", "2026"]);
+  });
+});
 afterEach(() => {
   auth.user = originalUser;
   overwriteGetLocale(originalGetLocale);

@@ -6,7 +6,7 @@
   import { exportMyData, exportMyDataCsv } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
-  import { downloadBlob } from "#lib/download.js";
+  import { downloadBlob, datedFilename } from "#lib/download.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
   import { Domain } from "@loomkeep/shared";
@@ -18,7 +18,7 @@
       downloadBlob(
         JSON.stringify(data, null, 2),
         "application/json",
-        `loomkeep-export-${new Date().toISOString().slice(0, 10)}.json`,
+        datedFilename(`loomkeep-export`, "json"),
       );
       toast.success(m.settings_export_success());
     },
@@ -59,7 +59,7 @@
       downloadBlob(
         csv,
         "text/csv",
-        `loomkeep-${args.slug}-${new Date().toISOString().slice(0, 10)}.csv`,
+        datedFilename(`loomkeep-${args.slug}`, "csv"),
       );
       toast.success(m.settings_export_success());
     },

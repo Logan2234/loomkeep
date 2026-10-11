@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { localDateInput } from "#lib/date.js";
   import { updateMe } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -10,7 +12,7 @@
   import SettingRow from "../components/SettingRow.svelte";
   import SettingsSection from "../components/SettingsSection.svelte";
 
-  const SPOILER_OPTIONS: { label: string; value: SpoilerSensitivity }[] = [
+  const SPOILER_OPTIONS: SelectOption<SpoilerSensitivity>[] = [
     { label: m.settings_spoiler_auto(), value: SpoilerSensitivity.AUTO },
     {
       label: m.settings_spoiler_always_hidden(),

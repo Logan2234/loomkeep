@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
@@ -20,7 +22,7 @@
   import PageHeader from "#lib/components/PageHeader.svelte";
   import TabPanels from "#lib/components/TabPanels.svelte";
   import Tabs from "#lib/components/Tabs.svelte";
-  import { debounce } from "#lib/debounce.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { formatDate } from "#lib/format.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
@@ -48,7 +50,7 @@
       ? "invitations"
       : "accounts",
   );
-  const TABS: { value: Tab; label: string }[] = [
+  const TABS: SelectOption<Tab>[] = [
     { value: "accounts", label: m.admin_users_tab_accounts() },
     { value: "invitations", label: m.admin_users_tab_invitations() },
   ];
@@ -150,7 +152,7 @@
       replace: true,
       reset: false,
     });
-  }, 300);
+  }, SEARCH_DEBOUNCE_MS);
   $effect(() => {
     queryFilterDebounce.cancel();
     query = page.url.searchParams.get("q") ?? "";
@@ -228,7 +230,7 @@
     return hoursAgo < 1 ? "bg-success" : "bg-dim";
   }
 
-  const FILTERS: { value: AdminUserFilter; label: string }[] = [
+  const FILTERS: SelectOption<AdminUserFilter>[] = [
     { value: "all", label: m.common_all() },
     { value: "admin", label: m.common_admin() },
     { value: "unverified", label: m.admin_users_unverified() },

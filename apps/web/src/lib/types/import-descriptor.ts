@@ -1,3 +1,4 @@
+import { type FeatureBadgeKey } from "#lib/feature-badges.js";
 import type { Domain } from "@loomkeep/shared";
 
 export type ImportSourceDescriptor = {
@@ -15,7 +16,7 @@ export type ImportSourceDescriptor = {
     one: string;
     many: string;
   };
-  newBadgeKey?: string;
+  newBadgeKey?: FeatureBadgeKey;
   /** The docs page walking through this source's import. */
   guide?: string;
 };

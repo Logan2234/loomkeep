@@ -32,7 +32,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import { ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX } from "#lib/components/overlay-layers.js";
   import SidePanel from "#lib/components/SidePanel.svelte";
-  import { downloadBlob } from "#lib/download.js";
+  import { downloadBlob, datedFilename } from "#lib/download.js";
   import { formatDate, formatDateTime, formatNumber } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
@@ -215,7 +215,7 @@
       downloadBlob(
         JSON.stringify(data, null, 2),
         "application/json",
-        `loomkeep-export-${user.username}-${new Date().toISOString().slice(0, 10)}.json`,
+        datedFilename(`loomkeep-export-${user.username}`, "json"),
       );
     },
   }));

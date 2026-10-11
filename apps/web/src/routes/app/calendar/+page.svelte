@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import {
     getCalendar,
     updateGameEntry,
@@ -119,7 +121,7 @@
     ).size;
   }
 
-  const filterTabs = $derived<{ value: CalendarFilter; label: string }[]>([
+  const filterTabs = $derived<SelectOption<CalendarFilter>[]>([
     { value: "all", label: `${m.calendar_filter_all()} (${showCount("all")})` },
     {
       value: "series",

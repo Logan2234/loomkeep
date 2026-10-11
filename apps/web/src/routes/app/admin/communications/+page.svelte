@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { adminFilterHref } from "#lib/admin-filter-url.js";
@@ -10,7 +12,7 @@
   import PushTab from "./components/PushTab.svelte";
 
   type Tab = "email" | "push";
-  const tabs: { value: Tab; label: string }[] = [
+  const tabs: SelectOption<Tab>[] = [
     { value: "email", label: m.common_email() },
     { value: "push", label: m.admin_communications_push() },
   ];

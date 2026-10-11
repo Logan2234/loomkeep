@@ -1,3 +1,7 @@
+import { labeledOptions } from "#lib/options.js";
+
+import { type SelectOption } from "#lib/types/select-option.js";
+
 import {
   bulkUpdateLibraryEntries,
   deleteBookEntry,
@@ -24,6 +28,7 @@ import {
   MEDIA_STATUS_META,
   MUSIC_STATUS_LABELS,
 } from "#lib/constants/status-labels.js";
+import { presentParts } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
 import type {
   BookStatus,
@@ -80,7 +85,7 @@ interface QuickAddView {
 export interface QuickAddDomain {
   listType: ListItemTargetType;
   /** "Dropped" is left out on purpose: nobody adds a work to drop it. */
-  statuses: { value: string; label: string }[];
+  statuses: SelectOption[];
   /** Every status the domain has, for an entry already in another one. */
   labels: Record<string, string>;
   /** What picking "completed" does beyond the status, when it does more. */
@@ -95,12 +100,6 @@ export interface QuickAddDomain {
   setStatus: (entryId: string, status: string) => Promise<unknown>;
   remove: (entryId: string) => Promise<unknown>;
 }
-
-const compact = (values: (string | number | null | undefined)[]) =>
-  values.filter((v) => v !== null && v !== undefined && v !== "").map(String);
-
-const pick = <T extends string>(labels: Record<T, string>, values: T[]) =>
-  values.map((value) => ({ value, label: labels[value] }));
 
 type MediaDetail = Awaited<ReturnType<typeof getMediaDetail>>;
 type GameDetail = Awaited<ReturnType<typeof getGameDetail>>;
@@ -142,7 +141,7 @@ function mediaDomain(type: MediaType, id: string): QuickAddDomain {
       return {
         title: d.title,
         posterUrl: d.posterUrl,
-        meta: compact([MEDIA_KIND[type](), d.year]),
+        meta: presentParts(MEDIA_KIND[type](), d.year),
         entryId: d.entry?.id ?? null,
         itemId: d.entry?.mediaItem.id ?? null,
         status: d.entry?.status ?? null,
@@ -171,7 +170,7 @@ function mediaDomain(type: MediaType, id: string): QuickAddDomain {
 function gameDomain(id: string): QuickAddDomain {
   return {
     listType: "GAME",
-    statuses: pick<GameStatus>(GAME_STATUS_LABELS, [
+    statuses: labeledOptions<GameStatus>(GAME_STATUS_LABELS, [
       "BACKLOG",
       "PLAYING",
       "COMPLETED",
@@ -185,7 +184,7 @@ function gameDomain(id: string): QuickAddDomain {
       return {
         title: d.title,
         posterUrl: d.coverUrl,
-        meta: compact([m.common_game(), d.year, d.developers[0]]),
+        meta: presentParts(m.common_game(), d.year, d.developers[0]),
         entryId: d.entry?.id ?? null,
         itemId: d.entry?.game.id ?? null,
         status: d.entry?.status ?? null,
@@ -211,7 +210,7 @@ function gameDomain(id: string): QuickAddDomain {
 function bookDomain(id: string): QuickAddDomain {
   return {
     listType: "BOOK",
-    statuses: pick<BookStatus>(BOOK_STATUS_LABELS, [
+    statuses: labeledOptions<BookStatus>(BOOK_STATUS_LABELS, [
       "TO_READ",
       "READING",
       "READ",
@@ -227,7 +226,7 @@ function bookDomain(id: string): QuickAddDomain {
       return {
         title: d.title,
         posterUrl: d.coverUrl,
-        meta: compact([m.common_book(), d.year, d.authors[0]]),
+        meta: presentParts(m.common_book(), d.year, d.authors[0]),
         entryId: d.entry?.id ?? null,
         itemId: d.entry?.book.id ?? null,
         status: d.entry?.status ?? null,
@@ -260,7 +259,10 @@ function bookDomain(id: string): QuickAddDomain {
 function musicDomain(id: string): QuickAddDomain {
   return {
     listType: "MUSIC",
-    statuses: pick<MusicStatus>(MUSIC_STATUS_LABELS, ["TO_LISTEN", "LISTENED"]),
+    statuses: labeledOptions<MusicStatus>(MUSIC_STATUS_LABELS, [
+      "TO_LISTEN",
+      "LISTENED",
+    ]),
     labels: MUSIC_STATUS_LABELS,
     completedHint: null,
     key: keys.music.detail("musicbrainz", id),
@@ -270,7 +272,7 @@ function musicDomain(id: string): QuickAddDomain {
       return {
         title: d.title,
         posterUrl: d.coverUrl,
-        meta: compact([m.music_album(), d.year, d.artists[0]]),
+        meta: presentParts(m.music_album(), d.year, d.artists[0]),
         entryId: d.entry?.id ?? null,
         itemId: d.entry?.album.id ?? null,
         status: d.entry?.status ?? null,

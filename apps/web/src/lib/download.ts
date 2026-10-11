@@ -12,3 +12,12 @@ export function downloadBlob(
   a.click();
   URL.revokeObjectURL(url);
 }
+
+/** Keeps the UTC date used by existing export filenames. */
+export function datedFilename(
+  stem: string,
+  extension: string,
+  date = new Date(),
+): string {
+  return `${stem}-${date.toISOString().slice(0, 10)}.${extension}`;
+}

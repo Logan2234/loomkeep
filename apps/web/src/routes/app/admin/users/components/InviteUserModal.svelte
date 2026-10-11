@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+
   import { createAdminInvitation } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -50,8 +54,9 @@
   let validity = $state<Validity>(7);
 
   let qrSvg = $state("");
-  let copied = $state(false);
-  let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+  const copyFeedback = new CopyFeedback();
+  const copied = $derived(copyFeedback.value === true);
+  $effect(() => () => copyFeedback.reset());
   let emailInput = $state<HTMLInputElement>();
 
   const createMut = createApiMutation(() => ({
@@ -76,7 +81,7 @@
       icon: "link" as const,
     },
   ];
-  const VALIDITIES: { value: `${Validity}`; label: string }[] = [
+  const VALIDITIES: SelectOption<`${Validity}`>[] = [
     { value: "1", label: m.admin_invitations_validity_1() },
     { value: "7", label: m.admin_invitations_validity_7() },
     { value: "30", label: m.admin_invitations_validity_30() },
@@ -106,8 +111,6 @@
     };
   });
 
-  $effect(() => () => clearTimeout(copiedTimer));
-
   function submit(event: SubmitEvent) {
     event.preventDefault();
     if (!canSubmit) return;
@@ -131,10 +134,7 @@
 
   async function copyLink() {
     if (!result) return;
-    await navigator.clipboard.writeText(result.url);
-    copied = true;
-    clearTimeout(copiedTimer);
-    copiedTimer = setTimeout(() => (copied = false), 2000);
+    await copyFeedback.copy(result.url, true);
   }
 
   async function shareLink() {
@@ -154,7 +154,7 @@
     email = "";
     label = "";
     places = 1;
-    copied = false;
+    copyFeedback.reset();
     createMut.reset();
     queueMicrotask(() => emailInput?.focus());
   }

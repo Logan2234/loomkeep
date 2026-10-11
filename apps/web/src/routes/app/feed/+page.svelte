@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { labeledOptions } from "#lib/options.js";
+
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { getFeed } from "#lib/api/client.js";
@@ -25,9 +29,9 @@
       (d) => !DOMAINS[d].comingSoon && isDomainEnabled(d),
     ),
   );
-  const tabs = $derived<{ value: Tab; label: string }[]>([
+  const tabs = $derived<SelectOption<Tab>[]>([
     { value: "ALL", label: m.common_all() },
-    ...domainTabs.map((d) => ({ value: d, label: DOMAINS[d].label })),
+    ...labeledOptions(DOMAINS, domainTabs),
   ]);
 
   // In the URL so the tab survives a reload and a shared link. A domain the

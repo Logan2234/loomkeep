@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { page } from "$app/state";
   import {
     accessibility,
@@ -49,15 +51,15 @@
 
   const LOCALE_OPTIONS = languageOptions();
 
-  const MOTION_OPTIONS: { label: string; value: MotionPreference }[] = [
+  const MOTION_OPTIONS: SelectOption<MotionPreference>[] = [
     { label: m.common_system(), value: "system" },
     { label: m.settings_accessibility_reduced_motion(), value: "reduce" },
   ];
-  const CONTRAST_OPTIONS: { label: string; value: ContrastPreference }[] = [
+  const CONTRAST_OPTIONS: SelectOption<ContrastPreference>[] = [
     { label: m.common_default(), value: "default" },
     { label: m.settings_accessibility_high_contrast(), value: "high" },
   ];
-  const DENSITY_OPTIONS: { label: string; value: DensityPreference }[] = [
+  const DENSITY_OPTIONS: SelectOption<DensityPreference>[] = [
     { label: m.settings_accessibility_density_compact(), value: "compact" },
     { label: m.common_default(), value: "default" },
     {

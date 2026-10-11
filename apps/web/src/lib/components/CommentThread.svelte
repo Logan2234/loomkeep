@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Cooldown } from "#lib/cooldown.svelte.js";
+
   import { longpress } from "#lib/actions/longpress.js";
   import {
     createComment,
@@ -394,21 +396,11 @@
   // /comments) — shared between the top-level composer and replies, since
   // it's the same rate-limited endpoint. Client-only, self-paced; lost on
   // reload is an accepted edge case.
-  let cooldownUntil = $state(0);
-  let cooldownRemaining = $state(0);
-
-  function tickCooldown() {
-    const remaining = Math.max(
-      0,
-      Math.ceil((cooldownUntil - Date.now()) / 1000),
-    );
-    cooldownRemaining = remaining;
-    if (remaining > 0) setTimeout(tickCooldown, 250);
-  }
+  const cooldown = new Cooldown();
+  $effect(() => () => cooldown.stop());
 
   function startCooldown() {
-    cooldownUntil = Date.now() + 5000;
-    tickCooldown();
+    cooldown.start(5);
   }
 
   function reveal(id: string) {
@@ -874,7 +866,7 @@
                     : m.comment_reply_to({ name: `@${c.author.username}` })}
                 submitLabel={m.common_reply()}
                 {allowSpoilerTag}
-                waitSeconds={cooldownRemaining}
+                waitSeconds={cooldown.remaining}
                 busy={createMut.isPending}
                 autofocus
                 oncancel={cancelReply}
@@ -991,7 +983,7 @@
         placeholder={m.comment_add_placeholder()}
         submitLabel={m.common_publish()}
         {allowSpoilerTag}
-        waitSeconds={cooldownRemaining}
+        waitSeconds={cooldown.remaining}
         busy={createMut.isPending}
         framed
         oneditlast={editLastMine}

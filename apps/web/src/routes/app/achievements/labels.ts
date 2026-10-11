@@ -4,7 +4,7 @@
 // renders on its own — this file keeps only what depends on this route's
 // own concepts (AchievementGroup, family sections).
 import { entryIcon } from "#lib/achievement-labels.js";
-import { formatDate, formatNumber } from "#lib/format.js";
+import { formatDate, formatNumber, formatPercent } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
 import type { IconName } from "#lib/types/icon-name.js";
 import type {
@@ -164,11 +164,4 @@ export function rarityLabel(
 export function rarityPercent(rarity: AchievementRarityDto): string {
   const percent = formatPercent(rarity.percent);
   return rarity.upperBound ? `< ${percent}` : percent;
-}
-
-function formatPercent(percent: number): string {
-  return formatNumber(percent / 100, {
-    style: "percent",
-    maximumFractionDigits: 1,
-  });
 }

@@ -1,3 +1,5 @@
+export const SEARCH_DEBOUNCE_MS = 300;
+
 // Tiny debounce helper for the search panels: coalesces rapid calls into one
 // deferred call, with an explicit cancel for cleanup / eager paths.
 

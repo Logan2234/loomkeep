@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { labeledOptions } from "#lib/options.js";
+
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import {
     batchDeleteReviews,
     batchSetReviewVisibility,
@@ -15,7 +19,11 @@
   import SegmentedControl from "#lib/components/SegmentedControl.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { isDomainEnabled, targetDomain } from "#lib/domains.js";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import {
+    DATE_MEDIUM_OPTIONS,
+    formatDate,
+    formatNumber,
+  } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { seasonEpisodeLabel } from "#lib/review-target-label.js";
@@ -70,16 +78,17 @@
     value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
   const groupOptions = $derived(
-    (["all", "media", "games", "books", "music"] as const)
-      .filter(
+    labeledOptions(
+      GROUP_LABEL,
+      (["all", "media", "games", "books", "music"] as const).filter(
         (value) =>
           value === "all" ||
           reviews.some((review) => groupOf(review.targetType) === value),
-      )
-      .map((value) => ({ value, label: GROUP_LABEL[value] })),
+      ),
+    ),
   );
 
-  const SORT_OPTIONS: { value: Sort; label: string }[] = [
+  const SORT_OPTIONS: SelectOption<Sort>[] = [
     { value: "recent", label: m.reviews_sort_recent() },
     { value: "best", label: m.reviews_sort_best() },
   ];
@@ -104,7 +113,7 @@
       reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
     return {
       count: reviews.length,
-      average: average.toLocaleString(undefined, { maximumFractionDigits: 1 }),
+      average: formatNumber(average, { maximumFractionDigits: 1 }),
       public: reviews.filter((review) => review.visibility === "PUBLIC").length,
     };
   });

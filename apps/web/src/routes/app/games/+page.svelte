@@ -1,4 +1,10 @@
 <script lang="ts">
+  import { labeledOptions } from "#lib/options.js";
+
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { EMBEDDED_SEARCH_LIMIT } from "#lib/constants/search.js";
+
   import { page } from "$app/state";
   import { getGamesPile, listGames } from "#lib/api/client.js";
   import {
@@ -33,6 +39,7 @@
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
+    COMMON_LIBRARY_SORTS,
   } from "#lib/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -45,22 +52,19 @@
   } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
-    ...GAME_STATUS_ORDER.map((value) => ({
-      label: GAME_STATUS_LABELS[value],
-      value,
-    })),
+    ...labeledOptions(GAME_STATUS_LABELS, GAME_STATUS_ORDER),
     { label: m.media_status_paused(), value: SESSION_FILTER_PAUSED },
   ];
 
   const SORTS = [
-    { label: m.library_sort_added(), value: "added" },
-    { label: m.common_title(), value: "title" },
-    { label: m.library_rating(), value: "rating" },
+    { label: COMMON_LIBRARY_SORTS.added, value: "added" },
+    { label: COMMON_LIBRARY_SORTS.title, value: "title" },
+    { label: COMMON_LIBRARY_SORTS.rating, value: "rating" },
     { label: m.game_playtime(), value: "playtime" },
-    { label: m.library_sort_finished(), value: "finished" },
-    { label: m.library_sort_started(), value: "started" },
-    { label: m.common_status(), value: "status" },
-  ] satisfies { label: string; value: GameSortKey }[];
+    { label: COMMON_LIBRARY_SORTS.finished, value: "finished" },
+    { label: COMMON_LIBRARY_SORTS.started, value: "started" },
+    { label: COMMON_LIBRARY_SORTS.status, value: "status" },
+  ] satisfies SelectOption<GameSortKey>[];
 
   const setFavorite = (entry: GameEntryDto, next: boolean) =>
     updateGameEntry(entry.id, { favorite: next });
@@ -209,7 +213,7 @@
       {@render modeSwitch()}
     {/snippet}
     {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
-      <GameSearchPanel {query} limit={10} {onResults} />
+      <GameSearchPanel {query} limit={EMBEDDED_SEARCH_LIMIT} {onResults} />
     {/snippet}
     {#snippet card(
       entry: GameEntryDto,

@@ -15,7 +15,12 @@
     adminServiceLabel,
     adminServiceDetail,
   } from "#lib/constants/admin-presentation.js";
-  import { formatNumber, formatTime } from "#lib/format.js";
+  import {
+    formatNumber,
+    formatTime,
+    formatPercent,
+    percentParts,
+  } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { ServiceStatusDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -74,8 +79,7 @@
       label: m.admin_services_kpi_calls_today(),
     },
     {
-      value: String(busiestQuota),
-      unit: "%",
+      ...percentParts(busiestQuota),
       label: m.admin_services_kpi_busiest_quota(),
       alert: busiestQuota >= 80,
     },
@@ -93,7 +97,7 @@
         value: quotaUsage(s),
         display: `${formatNumber(quotaUsage(s))} / ${formatNumber(s.limit?.max ?? 0)}`,
         badge: {
-          text: `${s.percentUsed ?? 0} %`,
+          text: formatPercent(s.percentUsed ?? 0),
           tone: ((s.percentUsed ?? 0) >= 80 ? "warn" : "neutral") as
             "warn" | "neutral",
         },
@@ -300,7 +304,7 @@
                         value={s.percentUsed}
                         label={m.common_selection_summary({
                           label: adminServiceLabel(s.key, s.label),
-                          selection: `${s.percentUsed}%`,
+                          selection: formatPercent(s.percentUsed),
                         })}
                         height="h-px"
                         track="bg-border/60"
@@ -312,7 +316,7 @@
                         {s.limit.window === "day"
                           ? m.admin_period_today()
                           : m.admin_period_this_month()}
-                        ({s.percentUsed}%)
+                        ({formatPercent(s.percentUsed)})
                       </p>
                     {:else}
                       <p class="timecode text-xs">

@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+
   import { API_URL, createApiKey } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -50,8 +54,9 @@
   let expiration = $state<ExpirationChoice>(DEFAULT_EXPIRATION);
   let customDate = $state("");
   let created = $state<CreatedApiKeyDto | null>(null);
-  let copied = $state(false);
-  let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+  const copyFeedback = new CopyFeedback();
+  const copied = $derived(copyFeedback.value === true);
+  $effect(() => () => copyFeedback.reset());
 
   const createMut = createApiMutation(() => ({
     mutate: createApiKey,
@@ -60,7 +65,7 @@
     onSuccess: (data) => (created = data),
   }));
 
-  const EXPIRATIONS: { value: ExpirationChoice; label: string }[] = [
+  const EXPIRATIONS: SelectOption<ExpirationChoice>[] = [
     { value: "30", label: m.settings_api_keys_expiration_30() },
     { value: "90", label: m.settings_api_keys_expiration_90() },
     { value: "365", label: m.settings_api_keys_expiration_365() },
@@ -77,8 +82,6 @@
       readable.size > 0 &&
       (expiration !== "custom" || customDate !== ""),
   );
-
-  $effect(() => () => clearTimeout(copiedTimer));
 
   function toggle(resource: ApiKeyResource) {
     const next = new Set(readable);
@@ -103,10 +106,7 @@
 
   async function copySecret() {
     if (!created) return;
-    await navigator.clipboard.writeText(created.secret);
-    copied = true;
-    clearTimeout(copiedTimer);
-    copiedTimer = setTimeout(() => (copied = false), 2000);
+    await copyFeedback.copy(created.secret, true);
   }
 </script>
 

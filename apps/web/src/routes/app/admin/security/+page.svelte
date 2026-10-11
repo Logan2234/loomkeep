@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
@@ -18,7 +20,7 @@
   import RankBars from "#lib/components/stats/RankBars.svelte";
   import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
   import { formatDateTime, formatNumber } from "#lib/format.js";
-  import { debounce } from "#lib/debounce.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type {
@@ -99,7 +101,9 @@
   const identifierFilter = $derived(
     page.url.searchParams.get("identifier") ?? "",
   );
-  let copiedEventId = $state<string | null>(null);
+  const copyFeedback = new CopyFeedback<string>();
+  const copiedEventId = $derived(copyFeedback.value);
+  $effect(() => () => copyFeedback.reset());
 
   async function copyEvent(event: SecurityEventDto) {
     const content = [
@@ -111,11 +115,7 @@
     ]
       .filter(Boolean)
       .join("\n");
-    await navigator.clipboard.writeText(content);
-    copiedEventId = event.id;
-    setTimeout(() => {
-      if (copiedEventId === event.id) copiedEventId = null;
-    }, 1500);
+    await copyFeedback.copy(content, event.id, 1500);
   }
 
   const eventsQuery = createApiInfiniteQuery<
@@ -170,7 +170,7 @@
       adminFilterHref(page.url, { identifier: identifierInput.trim() || null }),
       { replace: true, reset: false },
     );
-  }, 300);
+  }, SEARCH_DEBOUNCE_MS);
   $effect(() => {
     identifierDebounce.cancel();
     identifierInput = page.url.searchParams.get("identifier") ?? "";

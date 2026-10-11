@@ -31,10 +31,10 @@ const SHIPPED = {
   "alert-settings": "2026-10-02",
 };
 
-type FeatureBadgeKey = keyof typeof SHIPPED;
+export type FeatureBadgeKey = keyof typeof SHIPPED;
 
-export function isFeatureNew(key: string): boolean {
-  const shippedAt = SHIPPED[key as FeatureBadgeKey];
+export function isFeatureNew(key: FeatureBadgeKey): boolean {
+  const shippedAt = SHIPPED[key];
   if (!shippedAt) return false;
   const ageDays = (Date.now() - new Date(shippedAt).getTime()) / 86_400_000;
   return ageDays >= 0 && ageDays < NEW_BADGE_DAYS;

@@ -1,4 +1,10 @@
 <script lang="ts">
+  import { labeledOptions } from "#lib/options.js";
+
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { EMBEDDED_SEARCH_LIMIT } from "#lib/constants/search.js";
+
   import { page } from "$app/state";
   import {
     bulkDeleteBookEntries,
@@ -34,6 +40,7 @@
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
+    COMMON_LIBRARY_SORTS,
   } from "#lib/library-view.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -47,10 +54,7 @@
   } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
-    ...BOOK_STATUS_ORDER.map((value) => ({
-      label: BOOK_STATUS_LABELS[value],
-      value,
-    })),
+    ...labeledOptions(BOOK_STATUS_LABELS, BOOK_STATUS_ORDER),
     { label: m.media_status_paused(), value: SESSION_FILTER_PAUSED },
   ];
 
@@ -64,16 +68,16 @@
   }
 
   const SORTS = [
-    { label: m.library_sort_added(), value: "added" },
-    { label: m.common_title(), value: "title" },
+    { label: COMMON_LIBRARY_SORTS.added, value: "added" },
+    { label: COMMON_LIBRARY_SORTS.title, value: "title" },
     { label: m.book_author(), value: "author" },
-    { label: m.library_rating(), value: "rating" },
+    { label: COMMON_LIBRARY_SORTS.rating, value: "rating" },
     { label: m.book_page_count(), value: "pages" },
     { label: m.book_reading_progress(), value: "progress" },
-    { label: m.library_sort_finished(), value: "finished" },
-    { label: m.library_sort_started(), value: "started" },
-    { label: m.common_status(), value: "status" },
-  ] satisfies { label: string; value: BookSortKey }[];
+    { label: COMMON_LIBRARY_SORTS.finished, value: "finished" },
+    { label: COMMON_LIBRARY_SORTS.started, value: "started" },
+    { label: COMMON_LIBRARY_SORTS.status, value: "status" },
+  ] satisfies SelectOption<BookSortKey>[];
 
   const setFavorite = (entry: BookEntryDto, next: boolean) =>
     updateBookEntry(entry.id, { favorite: next });
@@ -222,7 +226,7 @@
       </div>
     {/snippet}
     {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
-      <BookSearchPanel {query} limit={10} {onResults} />
+      <BookSearchPanel {query} limit={EMBEDDED_SEARCH_LIMIT} {onResults} />
     {/snippet}
     {#snippet card(
       entry: BookEntryDto,

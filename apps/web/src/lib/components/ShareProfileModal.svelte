@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+
   import { m } from "#lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
@@ -12,7 +14,9 @@
 
   let url = $derived(profileUrl(username));
   let qrSvg = $state("");
-  let copied = $state(false);
+  const copyFeedback = new CopyFeedback();
+  const copied = $derived(copyFeedback.value === true);
+  $effect(() => () => copyFeedback.reset());
 
   $effect(() => {
     const target = url;
@@ -38,9 +42,7 @@
   }
 
   async function copyLink() {
-    await navigator.clipboard.writeText(url);
-    copied = true;
-    setTimeout(() => (copied = false), 2000);
+    await copyFeedback.copy(url, true);
   }
 </script>
 

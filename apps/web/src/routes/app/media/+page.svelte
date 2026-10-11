@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { EMBEDDED_SEARCH_LIMIT } from "#lib/constants/search.js";
+
   import { page } from "$app/state";
   import { getLibraryPile, listLibrary } from "#lib/api/client.js";
   import {
@@ -31,6 +35,7 @@
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
+    COMMON_LIBRARY_SORTS,
   } from "#lib/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -61,14 +66,14 @@
 
   const SORTS = [
     { label: m.media_sort_watched(), value: "recent" },
-    { label: m.library_sort_added(), value: "added" },
-    { label: m.common_title(), value: "title" },
-    { label: m.library_rating(), value: "rating" },
+    { label: COMMON_LIBRARY_SORTS.added, value: "added" },
+    { label: COMMON_LIBRARY_SORTS.title, value: "title" },
+    { label: COMMON_LIBRARY_SORTS.rating, value: "rating" },
     { label: m.stats_progression(), value: "progress" },
-    { label: m.library_sort_finished(), value: "finished" },
-    { label: m.library_sort_started(), value: "started" },
-    { label: m.common_status(), value: "status" },
-  ] satisfies { label: string; value: MediaSortKey }[];
+    { label: COMMON_LIBRARY_SORTS.finished, value: "finished" },
+    { label: COMMON_LIBRARY_SORTS.started, value: "started" },
+    { label: COMMON_LIBRARY_SORTS.status, value: "status" },
+  ] satisfies SelectOption<MediaSortKey>[];
 
   const TYPE_LABELS: Record<MediaType, string> = {
     MOVIE: m.media_movie(),
@@ -238,7 +243,7 @@
       {@render modeSwitch()}
     {/snippet}
     {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
-      <MediaSearchPanel {query} limit={10} {onResults} />
+      <MediaSearchPanel {query} limit={EMBEDDED_SEARCH_LIMIT} {onResults} />
     {/snippet}
     {#snippet card(
       entry: LibraryEntryDto,

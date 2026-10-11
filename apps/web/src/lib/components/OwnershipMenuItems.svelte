@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { OWNERSHIP_SOURCE_MAX_LENGTH } from "@loomkeep/shared";
 
   // The items of an ownership menu, for a Dropdown with role="menu": one
@@ -15,7 +17,7 @@
     source = null,
     onPick,
   }: {
-    options: { value: string; label: string }[];
+    options: SelectOption[];
     sourcesByStatus: Record<string, string[]>;
     /** The current value, checked in the menu; null when there's none (bulk). */
     status?: string | null;

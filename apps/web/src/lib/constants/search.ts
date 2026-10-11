@@ -1,0 +1,1 @@
+export const EMBEDDED_SEARCH_LIMIT = 10;

@@ -9,7 +9,10 @@ import { describe, expect, it, vi } from "vitest";
 import MigrationExportCard from "./MigrationExportCard.svelte";
 
 vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
-vi.mock("#lib/download.js", () => ({ downloadBlob: vi.fn() }));
+vi.mock("#lib/download.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("#lib/download.js")>();
+  return { ...actual, downloadBlob: vi.fn() };
+});
 
 function answer(path: string, names: string[]) {
   const asked: (string | null)[] = [];

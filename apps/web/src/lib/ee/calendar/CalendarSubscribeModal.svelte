@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+
   import { API_URL } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -15,7 +17,9 @@
 
   let confirmingRegenerate = $state(false);
   // Which of the three links was just copied, for its button's feedback.
-  let copied = $state<Link | null>(null);
+  const copyFeedback = new CopyFeedback<Link>();
+  const copied = $derived(copyFeedback.value);
+  $effect(() => () => copyFeedback.reset());
 
   const tokenQuery = createApiQuery(() => ({
     key: keys.calendarSubscribe.token(),
@@ -37,19 +41,15 @@
 
   async function copyLink(link: Link) {
     if (!token) return;
-    await navigator.clipboard.writeText(linkUrl(link, token));
-    copied = link;
-    setTimeout(() => {
-      if (copied === link) copied = null;
-    }, 2000);
+    await copyFeedback.copy(linkUrl(link, token), link);
   }
 
   const regenerateMut = createApiMutation(() => ({
     mutate: regenerateCalendarToken,
     onSuccess: async (result) => {
       confirmingRegenerate = false;
-      await navigator.clipboard.writeText(calendarUrl(result.token));
-      toast.success(m.subscription_link_regenerated());
+      if (await copyFeedback.copy(calendarUrl(result.token), "ics"))
+        toast.success(m.subscription_link_regenerated());
     },
   }));
 

@@ -14,7 +14,7 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
   import { Cooldown } from "#lib/cooldown.svelte.js";
-  import { debounce } from "#lib/debounce.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import Icon from "#lib/components/Icon.svelte";
   import Modal from "#lib/components/Modal.svelte";
   import PasswordInput from "#lib/components/PasswordInput.svelte";
@@ -64,7 +64,7 @@
     } catch {
       if (usernameInput.trim() === value) usernameCheck = "error";
     }
-  }, 400);
+  }, SEARCH_DEBOUNCE_MS);
 
   function onUsernameInput() {
     const value = usernameInput.trim();

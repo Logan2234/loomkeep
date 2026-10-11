@@ -1,4 +1,10 @@
 <script lang="ts">
+  import {
+    readSessionStorage,
+    writeSessionStorage,
+    removeSessionStorage,
+  } from "#lib/local-storage.js";
+
   import { browser } from "$app/env";
   import { goto } from "$app/navigation";
   import { completeOnboarding, updateMe } from "#lib/api/client.js";
@@ -42,14 +48,14 @@
 
   function readStoredStep(): number {
     if (!browser) return 0;
-    const n = Number(sessionStorage.getItem(STEP_STORAGE_KEY));
+    const n = Number(readSessionStorage(STEP_STORAGE_KEY));
     return Number.isInteger(n) && n >= 0 && n < STEPS.length ? n : 0;
   }
 
   let activeIndex = $state(readStoredStep());
 
   $effect(() => {
-    if (browser) sessionStorage.setItem(STEP_STORAGE_KEY, String(activeIndex));
+    if (browser) writeSessionStorage(STEP_STORAGE_KEY, String(activeIndex));
   });
 
   const stepId = $derived(STEPS[activeIndex].id);
@@ -217,7 +223,7 @@
 
   async function finish() {
     await completeOnboarding();
-    if (browser) sessionStorage.removeItem(STEP_STORAGE_KEY);
+    if (browser) removeSessionStorage(STEP_STORAGE_KEY);
   }
 </script>
 

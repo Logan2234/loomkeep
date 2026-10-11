@@ -1,4 +1,6 @@
 <script lang="ts" generics="T extends string">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   // Underlined tab strip. Scrolls sideways rather than wrapping when the tabs
   // outgrow a phone screen — hence the baseline drawn as an inset shadow: a
   // bottom border pulled under the tabs with a negative margin would be
@@ -13,7 +15,7 @@
     idPrefix,
     class: className = "",
   }: {
-    tabs: { value: T; label: string; disabled?: boolean }[];
+    tabs: (SelectOption<T> & { disabled?: boolean })[];
     current: T;
     onSelect: (value: T) => void;
     /** Accessible name of the tab list. */

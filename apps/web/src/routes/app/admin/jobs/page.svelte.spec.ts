@@ -78,7 +78,7 @@ it("shows compact job cards with server timing and only blocks the running job",
   ).toBeTruthy();
   const cards = container.querySelectorAll("section.card");
   expect(cards).toHaveLength(2);
-  expect(within(cards[0] as HTMLElement).getByText("20 %")).toBeTruthy();
+  expect(within(cards[0] as HTMLElement).getByText("20%")).toBeTruthy();
   expect(
     within(cards[1] as HTMLElement).getByRole("button", {
       name: m.admin_jobs_running(),

@@ -15,7 +15,7 @@
   import PosterGrid from "#lib/components/PosterGrid.svelte";
   import ProviderMark from "#lib/components/ProviderMark.svelte";
   import { IGDB_API } from "#lib/constants/external-links.js";
-  import { debounce } from "#lib/debounce.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { GameSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
@@ -38,8 +38,6 @@
     mode?: "title" | "studio" | "franchise";
   } = $props();
 
-  const DEBOUNCE_MS = 300;
-
   // `query`/`mode` (raw) drive the input; `queryFilter` (debounced) is the
   // formatted string that actually drives the fetch — same split as
   // LibraryBrowser/MediaSearchPanel. `studio:"…"`/`franchise:"…"` are parsed
@@ -49,7 +47,7 @@
   let queryFilter = $state("");
   const debouncedQueryFilter = debounce((q: string) => {
     queryFilter = q;
-  }, DEBOUNCE_MS);
+  }, SEARCH_DEBOUNCE_MS);
 
   $effect(() => {
     const q = query.trim();

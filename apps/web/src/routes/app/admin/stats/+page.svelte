@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   // /admin/stats — "Salle des machines": the instance's operations console.
   // Four dense sections (Comptes · Catalogue · Social · Système) under a KPI
   // strip, each section loading (and failing) on its own endpoint. Metrics
@@ -84,12 +86,11 @@
    * exists when social is on: with it off there is no moderation queue at all.
    */
   const kpis = $derived.by(() => {
-    const tiles: {
-      value: string;
+    const tiles: (SelectOption & {
       unit?: string;
-      label: string;
+
       alert?: boolean;
-    }[] = [];
+    })[] = [];
 
     if (accounts) {
       tiles.push(

@@ -5,7 +5,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import Switch from "#lib/components/Switch.svelte";
-  import { downloadBlob } from "#lib/download.js";
+  import { downloadBlob, datedFilename } from "#lib/download.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
@@ -41,13 +41,17 @@
   const DOWNLOAD_GAP_MS = 300;
 
   async function downloadAll({ files }: MigrationExportDto) {
-    const date = new Date().toISOString().slice(0, 10);
+    const date = new Date();
 
     for (const [index, file] of files.entries()) {
       if (index > 0) {
         await new Promise((resolve) => setTimeout(resolve, DOWNLOAD_GAP_MS));
       }
-      downloadBlob(file.csv, "text/csv", `loomkeep-${file.name}-${date}.csv`);
+      downloadBlob(
+        file.csv,
+        "text/csv",
+        datedFilename(`loomkeep-${file.name}`, "csv", date),
+      );
     }
   }
 
