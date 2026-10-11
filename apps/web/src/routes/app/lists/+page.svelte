@@ -1,4 +1,11 @@
 <script lang="ts">
+  import { listComparator } from "#lib/list-sort.js";
+
+  import {
+    LIST_KIND_LABEL,
+    LIST_VISIBILITY_LABEL,
+  } from "#lib/constants/list-labels.js";
+
   import { getEditableLists } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -11,28 +18,19 @@
   import { appConfig } from "#lib/config.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { getLocale } from "#lib/paraglide/runtime.js";
+
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { fade } from "svelte/transition";
 
-  const KIND_LABEL: Record<string, string> = {
-    RANKED: m.lists_kind_ranked(),
-    COLLECTION: m.lists_kind_collection(),
-  };
-  const VISIBILITY_LABEL: Record<string, string> = {
-    PRIVATE: m.common_private(),
-    FRIENDS: m.common_friends(),
-    PUBLIC: m.common_public(),
-  };
   const KIND_OPTIONS = [
-    { label: m.lists_kind_ranked(), value: "RANKED" },
-    { label: m.lists_kind_collection(), value: "COLLECTION" },
+    { label: LIST_KIND_LABEL.RANKED, value: "RANKED" },
+    { label: LIST_KIND_LABEL.COLLECTION, value: "COLLECTION" },
   ];
   const VISIBILITY_OPTIONS = [
-    { label: m.common_private(), value: "PRIVATE" },
-    { label: m.common_friends(), value: "FRIENDS" },
-    { label: m.common_public(), value: "PUBLIC" },
+    { label: LIST_VISIBILITY_LABEL.PRIVATE, value: "PRIVATE" },
+    { label: LIST_VISIBILITY_LABEL.FRIENDS, value: "FRIENDS" },
+    { label: LIST_VISIBILITY_LABEL.PUBLIC, value: "PUBLIC" },
   ];
   const SORT_OPTIONS = [
     { label: m.lists_sort_updated(), value: "updatedAt" },
@@ -66,18 +64,7 @@
     if (visibilityFilter.length > 0)
       out = out.filter((l) => visibilityFilter.includes(l.visibility));
 
-    return [...out].sort((a, b) => {
-      switch (sort) {
-        case "createdAt":
-          return b.createdAt.localeCompare(a.createdAt);
-        case "itemCount":
-          return b.itemCount - a.itemCount;
-        case "title":
-          return a.title.localeCompare(b.title, getLocale());
-        default:
-          return b.updatedAt.localeCompare(a.updatedAt);
-      }
-    });
+    return [...out].sort(listComparator(sort));
   });
 
   function handleCreated() {
@@ -169,7 +156,7 @@
           </div>
           <p class="mt-1.5 truncate text-sm font-semibold">{list.title}</p>
           <p class="text-dim flex flex-wrap items-center gap-x-1.5 text-xs">
-            <span class="timecode uppercase">{KIND_LABEL[list.kind]}</span>
+            <span class="timecode uppercase">{LIST_KIND_LABEL[list.kind]}</span>
             <span aria-hidden="true">·</span>
             <span
               >{list.itemCount}
@@ -178,7 +165,7 @@
                 : m.lists_works_singular()}</span>
             {#if appConfig.socialEnabled}
               <span aria-hidden="true">·</span>
-              <span>{VISIBILITY_LABEL[list.visibility]}</span>
+              <span>{LIST_VISIBILITY_LABEL[list.visibility]}</span>
             {/if}
             {#if list.role === "EDITOR"}
               <span aria-hidden="true">·</span>

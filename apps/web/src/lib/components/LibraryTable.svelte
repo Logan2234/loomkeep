@@ -1,4 +1,6 @@
 <script lang="ts" generics="T">
+  import { TABLET_QUERY } from "#lib/constants/media-queries.js";
+
   // The table and compact modes of LibraryBrowser. Below md a table doesn't
   // fit, so both render as rows: a thumbnail (table) or text only (compact)
   // with the status, rating and progress on one line.
@@ -50,7 +52,7 @@
     compact?: boolean;
   } = $props();
 
-  const wide = new MediaQuery("min-width: 768px");
+  const wide = new MediaQuery(TABLET_QUERY);
   const reduced = prefersReducedMotion();
   const editing = $derived(!!edit && !selection.active);
 

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { typedEntries } from "#lib/object.js";
+
   import { page } from "$app/state";
   import {
     getGhostSwitchImpact,
@@ -166,8 +168,8 @@
   // or the early-access ones on a free account) would still show a row here
   // even though it's absent everywhere else in the app.
   const visibleDomainEntries = $derived(
-    Object.entries(DOMAINS).filter(([id]) =>
-      auth.user?.enabledDomains.includes(id as Domain),
+    typedEntries(DOMAINS).filter(([id]) =>
+      auth.user?.enabledDomains.includes(id),
     ) as [Domain, (typeof DOMAINS)[Domain]][],
   );
 </script>
@@ -231,13 +233,13 @@
             <div
               class="mt-4 flex w-full flex-wrap justify-between gap-4 md:flex-col">
               {#each FACETS as f (f.id)}
-                {@const current = audienceOf(domainId as Domain, f.id)}
+                {@const current = audienceOf(domainId, f.id)}
                 <div>
                   <p
                     class="text-dim mb-1.5 text-xs font-semibold tracking-wide uppercase">
                     {f.label}
                   </p>
-                  {@render audienceSegmented(domainId as Domain, f.id, current)}
+                  {@render audienceSegmented(domainId, f.id, current)}
                 </div>
               {/each}
             </div>

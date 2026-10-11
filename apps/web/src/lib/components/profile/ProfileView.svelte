@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type ListTile } from "#lib/components/profile/list-tile.js";
+
   import { goto } from "$app/navigation";
   import {
     blockUser,
@@ -35,11 +37,7 @@
   import { appConfig } from "#lib/config.svelte.js";
   import { formatDate, MONTH_YEAR_OPTIONS } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type {
-    MyListDto,
-    RelationshipDto,
-    SocialProfileDto,
-  } from "@loomkeep/shared";
+  import type { RelationshipDto, SocialProfileDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import LevelCard from "../LevelCard.svelte";
   import XpHistoryModal from "../XpHistoryModal.svelte";
@@ -101,9 +99,6 @@
   // "Tout voir" tile isn't part of this scrollable set at all: on desktop
   // it's rendered as a fixed element to the left of the carousel, on mobile
   // it's replaced by a "Gérer" link next to the section heading.
-  type ListTile =
-    | { kind: "create"; key: "create" }
-    | { kind: "list"; key: string; list: MyListDto };
   const listTiles = $derived<ListTile[]>(
     selfManage
       ? [

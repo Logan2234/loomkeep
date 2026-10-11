@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { recordFrom } from "#lib/object.js";
+
   import {
     addListItem,
     getEditableLists,
@@ -246,15 +248,15 @@
         statuses={offered}
         current={status ?? ""}
         disabled={saveMut.loading}
-        meta={Object.fromEntries(
-          domain.statuses.map((s) => [s.value, { label: s.label }]),
+        meta={recordFrom(
+          domain.statuses.map((s) => s.value),
+          (_, index) => ({ label: domain.statuses[index].label }),
         )}
-        desc={Object.fromEntries(
-          domain.statuses.map((s) => [s.value, s.label]),
+        desc={recordFrom(
+          domain.statuses.map((s) => s.value),
+          (_, index) => domain.statuses[index].label,
         )}
-        activeClass={Object.fromEntries(
-          offered.map((s) => [s, "bg-surface text-fg shadow-sm"]),
-        )}
+        activeClass={recordFrom(offered, () => "bg-surface text-fg shadow-sm")}
         onSelect={(next) => (pickedStatus = next)} />
       {#if domain.completedHint && status === "COMPLETED" && view.status !== "COMPLETED"}
         <Banner variant="info">{domain.completedHint}</Banner>

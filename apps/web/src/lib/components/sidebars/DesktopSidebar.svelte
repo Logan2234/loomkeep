@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type Snippet } from "svelte";
+
   import { browser } from "$app/env";
   import { readStorage, writeStorage } from "#lib/local-storage.js";
   import { goto } from "$app/navigation";
@@ -39,7 +41,7 @@
   const inSettings = $derived(page.url.pathname.startsWith("/app/settings"));
   let expanded = $derived((pinned && !inSettings) || hovered);
 
-  let { children } = $props();
+  let { children }: { children: Snippet } = $props();
 
   const reportsPending = useReportsPendingCount();
 

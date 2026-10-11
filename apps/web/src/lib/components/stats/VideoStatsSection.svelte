@@ -8,10 +8,11 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { getVideoSeries, getVideoStats } from "#lib/api/stats.js";
-  import type {
-    DomainStatusBreakdownDto,
-    StatsWorkDto,
-    WatchStaleness,
+  import {
+    type DomainStatusBreakdownDto,
+    type StatsWorkDto,
+    type WatchStaleness,
+    type MediaType,
   } from "@loomkeep/shared";
   import PremiumTeaser from "../PremiumTeaser.svelte";
   import RankBars from "./RankBars.svelte";
@@ -42,12 +43,12 @@
   const hours = $derived(video ? Math.round(video.totalMinutes / 60) : 0);
   const days = $derived(video ? Math.round(video.totalMinutes / 1440) : 0);
 
-  const TYPE_LABEL: Record<string, string> = {
+  const TYPE_LABEL: Record<MediaType, string> = {
     MOVIE: m.media_movies(),
     SERIES: m.media_series_plural(),
     ANIME: m.media_anime(),
   };
-  const TYPE_TINT: Record<string, string> = {
+  const TYPE_TINT: Record<MediaType, string> = {
     SERIES: "var(--stat-media)",
     ANIME: "color-mix(in srgb, var(--stat-media) 55%, var(--surface))",
     MOVIE: "color-mix(in srgb, var(--stat-media) 25%, var(--surface))",

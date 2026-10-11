@@ -1,4 +1,6 @@
 <script module lang="ts">
+  import { TABLET_QUERY } from "#lib/constants/media-queries.js";
+
   import { type SelectOption } from "#lib/types/select-option.js";
 
   import { type IconName } from "#lib/types/icon-name.js";
@@ -466,7 +468,7 @@
   }
 
   // ── Table columns and in-place editing
-  const wide = new MediaQuery("min-width: 768px");
+  const wide = new MediaQuery(TABLET_QUERY);
   const defaultColumns = $derived(
     columns.filter((c) => !c.defaultHidden).map((c) => c.key),
   );

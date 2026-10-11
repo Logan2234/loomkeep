@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { MediaQuery } from "svelte/reactivity";
+
+  import { DESKTOP_QUERY } from "#lib/constants/media-queries.js";
+
   // The settings index. On a phone it is the whole navigation: account
   // health first, then the five groups with each section's current value
   // under its name. On a desktop the rail already shows that list, so the
@@ -16,7 +20,7 @@
   import { auth } from "#lib/auth.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
-  import { DOMAINS } from "#lib/constants/domains.js";
+  import { DOMAIN_IDS } from "#lib/constants/domains.js";
   import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
   import { languageName } from "#lib/locales.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -37,17 +41,16 @@
     if (target) void goto(target, { replace: true });
   });
 
+  const desktop = new MediaQuery(DESKTOP_QUERY);
   $effect(() => {
-    if (!browser || page.url.hash) return;
-    const wide = window.matchMedia("(min-width: 1024px)");
-    const openFirstSection = () => {
-      if (wide.matches && page.url.pathname === "/app/settings") {
-        void goto(sectionHref("security"), { replace: true });
-      }
-    };
-    openFirstSection();
-    wide.addEventListener("change", openFirstSection);
-    return () => wide.removeEventListener("change", openFirstSection);
+    if (
+      browser &&
+      !page.url.hash &&
+      desktop.current &&
+      page.url.pathname === "/app/settings"
+    ) {
+      void goto(sectionHref("security"), { replace: true });
+    }
   });
 
   const mfaQuery = createApiQuery(() => ({
@@ -117,7 +120,7 @@
     domains: auth.user
       ? m.settings_preview_domains({
           count: auth.user.enabledDomains.length,
-          total: Object.keys(DOMAINS).length,
+          total: DOMAIN_IDS.length,
         })
       : undefined,
     communications: auth.user

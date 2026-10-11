@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type LayoutProps } from "./$types";
+
   import { page } from "$app/state";
   import * as env from "$app/env/public";
   import { bootstrap } from "#lib/bootstrap.svelte.js";
@@ -19,7 +21,7 @@
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import "../app.css";
 
-  let { children } = $props();
+  let { children }: LayoutProps = $props();
 
   $effect(() => {
     bootstrap.start();

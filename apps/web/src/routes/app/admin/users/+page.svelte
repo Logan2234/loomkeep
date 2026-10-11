@@ -5,7 +5,7 @@
   import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/admin-filter-url.js";
+  import { adminFilterHref, enumParam } from "#lib/url-params.js";
   import {
     ADMIN_USER_ADVANCED_KEYS,
     localDayBoundary,
@@ -82,12 +82,8 @@
 
   let query = $state(page.url.searchParams.get("q") ?? "");
   const queryFilter = $derived(page.url.searchParams.get("q") ?? "");
-  const filter = $derived<AdminUserFilter>(
-    ADMIN_USER_FILTERS.includes(
-      (page.url.searchParams.get("filter") ?? "") as AdminUserFilter,
-    )
-      ? (page.url.searchParams.get("filter") as AdminUserFilter)
-      : "all",
+  const filter = $derived(
+    enumParam(page.url.searchParams, "filter", ADMIN_USER_FILTERS, "all"),
   );
   const advanced = $derived<AdminUserAdvancedFilters>({
     createdFrom: page.url.searchParams.get("createdFrom") ?? "",

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type LayoutProps } from "./$types";
+
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { auth } from "#lib/auth.svelte.js";
@@ -7,7 +9,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import AdminPageShell from "./AdminPageShell.svelte";
 
-  let { children } = $props();
+  let { children }: LayoutProps = $props();
 
   $effect(() => {
     if (auth.user && !auth.isAdmin) void goto("/app");

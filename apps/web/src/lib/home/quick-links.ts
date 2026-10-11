@@ -1,3 +1,4 @@
+import { DOMAINS } from "#lib/constants/domains.js";
 import { m } from "#lib/paraglide/messages.js";
 import type { IconName } from "#lib/types/icon-name.js";
 import type { HomeQuickLinkDto } from "@loomkeep/shared";
@@ -70,30 +71,30 @@ const APP_DESTINATIONS: AppDestination[] = [
   },
   {
     id: "media",
-    href: "/app/media",
-    label: () => m.common_Media(),
-    icon: "tv",
+    href: DOMAINS.MEDIA.href,
+    label: () => DOMAINS.MEDIA.label,
+    icon: DOMAINS.MEDIA.icon,
     domain: Domain.MEDIA,
   },
   {
     id: "games",
-    href: "/app/games",
-    label: () => m.common_Games(),
-    icon: "gamepad",
+    href: DOMAINS.GAMES.href,
+    label: () => DOMAINS.GAMES.label,
+    icon: DOMAINS.GAMES.icon,
     domain: Domain.GAMES,
   },
   {
     id: "books",
-    href: "/app/books",
-    label: () => m.common_Books(),
-    icon: "book",
+    href: DOMAINS.BOOKS.href,
+    label: () => DOMAINS.BOOKS.label,
+    icon: DOMAINS.BOOKS.icon,
     domain: Domain.BOOKS,
   },
   {
     id: "music",
-    href: "/app/music",
-    label: () => m.common_Music(),
-    icon: "music",
+    href: DOMAINS.MUSIC.href,
+    label: () => DOMAINS.MUSIC.label,
+    icon: DOMAINS.MUSIC.icon,
     domain: Domain.MUSIC,
   },
   {

@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    LIST_KIND_LABEL,
+    LIST_VISIBILITY_LABEL,
+  } from "#lib/constants/list-labels.js";
+
   import { type SelectOption } from "#lib/types/select-option.js";
 
   import { LIST_LIMITS } from "@loomkeep/shared";
@@ -50,12 +55,12 @@
   const KINDS: (SelectOption<ListKind> & { hint: string })[] = [
     {
       value: "COLLECTION",
-      label: m.lists_kind_collection(),
+      label: LIST_KIND_LABEL.COLLECTION,
       hint: m.lists_collection_hint(),
     },
     {
       value: "RANKED",
-      label: m.lists_kind_ranked(),
+      label: LIST_KIND_LABEL.RANKED,
       hint: m.lists_ranked_hint(),
     },
   ];
@@ -63,9 +68,9 @@
   const VISIBILITY_OPTIONS: (SelectOption<ListVisibility> & {
     icon: "lock" | "users" | "globe";
   })[] = [
-    { value: "PRIVATE", label: m.common_private(), icon: "lock" },
-    { value: "FRIENDS", label: m.common_friends(), icon: "users" },
-    { value: "PUBLIC", label: m.common_public(), icon: "globe" },
+    { value: "PRIVATE", label: LIST_VISIBILITY_LABEL.PRIVATE, icon: "lock" },
+    { value: "FRIENDS", label: LIST_VISIBILITY_LABEL.FRIENDS, icon: "users" },
+    { value: "PUBLIC", label: LIST_VISIBILITY_LABEL.PUBLIC, icon: "globe" },
   ];
 
   const VISIBILITY_HINT: Record<ListVisibility, string> = {

@@ -15,12 +15,8 @@
     selfManage: boolean | undefined;
   } = $props();
 
-  const DOMAIN_HREF: Partial<Record<Domain, string>> = {
-    MEDIA: "/app/media",
-    GAMES: "/app/games",
-    BOOKS: "/app/books",
-    MUSIC: "/app/music",
-  };
+  const domainHref = (domain: Domain) =>
+    DOMAINS[domain].comingSoon ? undefined : DOMAINS[domain].href;
 
   // The viewer's own domains, in their own order — whoever's profile this
   // is: a domain they turned off stays out of here as out of the rest of the
@@ -73,7 +69,7 @@
 
   <div class="divide-border/70 mt-4 flex flex-col divide-y">
     {#each rows as { domain, stat } (domain)}
-      {@const href = selfManage && stat ? DOMAIN_HREF[domain] : undefined}
+      {@const href = selfManage && stat ? domainHref(domain) : undefined}
       {@const color = DOMAINS[domain].accent}
       <svelte:element
         this={href ? "a" : "div"}

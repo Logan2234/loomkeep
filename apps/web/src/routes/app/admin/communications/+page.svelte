@@ -3,7 +3,7 @@
 
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/admin-filter-url.js";
+  import { adminFilterHref } from "#lib/url-params.js";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import TabPanels from "#lib/components/TabPanels.svelte";
   import Tabs from "#lib/components/Tabs.svelte";

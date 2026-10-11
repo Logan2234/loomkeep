@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { DOMAINS } from "#lib/constants/domains.js";
+
   import { labeledOptions } from "#lib/options.js";
 
   import {
@@ -91,15 +93,6 @@
   }));
   const quotaUsed = $derived(quotaQuery.data?.[descriptor.domain] === true);
   const premiumLocked = $derived(auth.isPremiumLocked);
-
-  const DOMAIN_TO_HREF = {
-    [Domain.MEDIA]: "/app/media",
-    [Domain.GAMES]: "/app/games",
-    [Domain.BOOKS]: "/app/books",
-    [Domain.MUSIC]: "/app/music",
-    [Domain.BOARDGAMES]: "/app/boardgames",
-    [Domain.PODCASTS]: "/app/podcasts",
-  };
 
   let analyzeJobId = $state<string | null>(null);
   let job = $state<ImportJobDto | null>(null);
@@ -685,7 +678,7 @@
         <p class="text-dim mt-4 text-sm">{m.import_steam_no_sessions()}</p>
       {/if}
       <div class="mt-5 flex gap-2">
-        <a href={DOMAIN_TO_HREF[descriptor.domain]} class="btn btn-primary"
+        <a href={DOMAINS[descriptor.domain].href} class="btn btn-primary"
           >{m.library_view_own()}</a>
         <button class="btn btn-ghost" onclick={reset}>{m.import_new()}</button>
       </div>

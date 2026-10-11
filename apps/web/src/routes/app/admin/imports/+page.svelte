@@ -5,7 +5,7 @@
   import Banner from "#lib/components/Banner.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/admin-filter-url.js";
+  import { adminFilterHref } from "#lib/url-params.js";
   import {
     getAdminImportRuns,
     getAdminImportSummary,

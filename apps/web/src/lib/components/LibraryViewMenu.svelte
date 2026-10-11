@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { TABLET_QUERY } from "#lib/constants/media-queries.js";
+
   // "Affichage" menu at the end of a library's sort row: picks how the list
   // is rendered, without adding a row above the results.
   import { isFeatureNew } from "#lib/feature-badges.js";
@@ -39,7 +41,7 @@
   } = $props();
 
   // Below md the table renders as rows, and the trigger drops its label.
-  const wide = new MediaQuery("min-width: 768px");
+  const wide = new MediaQuery(TABLET_QUERY);
 
   const ICONS: Record<LibraryViewMode, IconName> = {
     cards: "library",

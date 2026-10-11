@@ -4,7 +4,7 @@
   import { untrack } from "svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/admin-filter-url.js";
+  import { adminFilterHref } from "#lib/url-params.js";
   import { foldAdminSearch } from "#lib/admin-search.js";
   import FieldError from "#lib/components/FieldError.svelte";
   import AdminQueryError from "../../AdminQueryError.svelte";

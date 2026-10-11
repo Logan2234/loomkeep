@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { listComparator } from "#lib/list-sort.js";
+
   import { getEditableLists } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -6,8 +8,8 @@
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import type { BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { getLocale } from "#lib/paraglide/runtime.js";
-  import type { HomeWidgetDto, MyListDto } from "@loomkeep/shared";
+
+  import type { HomeWidgetDto } from "@loomkeep/shared";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
 
@@ -19,18 +21,10 @@
     key: keys.lists.editable(),
     fetch: getEditableLists,
   }));
-  // Same orders as the "Mes listes" page, the most recently changed first
-  // by default.
-  const COMPARE: Record<string, (a: MyListDto, b: MyListDto) => number> = {
-    recent: (a, b) => b.updatedAt.localeCompare(a.updatedAt),
-    created: (a, b) => b.createdAt.localeCompare(a.createdAt),
-    size: (a, b) => b.itemCount - a.itemCount,
-    title: (a, b) => a.title.localeCompare(b.title, getLocale()),
-  };
   const lists = $derived(
     (listsQuery.data ?? [])
       .filter((list) => !widget.config?.ownOnly || list.role === "OWNER")
-      .sort(COMPARE[widget.config?.sort ?? "recent"] ?? COMPARE.recent),
+      .sort(listComparator(widget.config?.sort ?? "recent")),
   );
 
   const count = (n: number) =>

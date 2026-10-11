@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/admin-filter-url.js";
+  import { adminFilterHref } from "#lib/url-params.js";
   import Combobox from "#lib/components/Combobox.svelte";
   import AdminFilterBar from "../../AdminFilterBar.svelte";
   import {

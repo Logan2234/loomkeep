@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { typedEntries } from "#lib/object.js";
+
   import { type SelectOption } from "#lib/types/select-option.js";
 
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/admin-filter-url.js";
+  import { adminFilterHref } from "#lib/url-params.js";
   import {
     deleteAdminCacheItem,
     deleteAdminCacheOrphans,
@@ -50,8 +52,8 @@
   ];
 
   const domainIcon = (d: Domain): IconName => DOMAINS[d]?.icon ?? "tv";
-  const domainTabs = Object.entries(DOMAINS).map(([value, domain]) => ({
-    value: value as Domain,
+  const domainTabs = typedEntries(DOMAINS).map(([value, domain]) => ({
+    value: value,
     label: domain.comingSoon
       ? `${domain.label} · ${m.common_coming_soon()}`
       : domain.label,

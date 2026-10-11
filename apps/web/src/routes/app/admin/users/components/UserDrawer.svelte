@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type ActivityKind } from "./activity-kind";
+
   import {
     adjustAdminUserXp,
     deleteAdminUser,
@@ -44,9 +46,6 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import DeleteUserModal from "./DeleteUserModal.svelte";
   import UserActivityModal from "./UserActivityModal.svelte";
-
-  type ActivityKind =
-    "reviews" | "comments" | "followers" | "following" | "lists" | "reports";
 
   let {
     user,

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type Snippet } from "svelte";
+
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { logout } from "#lib/api/auth.js";
@@ -13,7 +15,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
 
-  let { children } = $props();
+  let { children }: { children: Snippet } = $props();
 
   const reportsPending = useReportsPendingCount();
 

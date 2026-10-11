@@ -14,3 +14,13 @@ export function adminFilterHref(
   const search = params.toString();
   return `${url.pathname}${search ? `?${search}` : ""}${url.hash}`;
 }
+
+export function enumParam<K extends string, F extends K | null>(
+  params: Pick<URLSearchParams, "get">,
+  key: string,
+  allowed: readonly K[],
+  fallback: F,
+): K | F {
+  const requested = params.get(key);
+  return allowed.find((value) => value === requested) ?? fallback;
+}
