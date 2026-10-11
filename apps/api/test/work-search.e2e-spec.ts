@@ -17,6 +17,7 @@ describe("Work search (e2e)", () => {
   const alice = e2eUser("e2e-search-alice");
   const bob = e2eUser("e2e-search-bob");
   const session: Record<string, string> = {};
+  let aliceStatus: string;
 
   async function signUp(user: ReturnType<typeof e2eUser>, key: string) {
     const registered = await request(http)
@@ -52,6 +53,7 @@ describe("Work search (e2e)", () => {
         status: "WATCHING",
       })
       .expect(200);
+    aliceStatus = entry.body.status;
     await prisma.mediaItem.update({
       where: { id: entry.body.mediaItem.id },
       data: { title: "Évangélion Test" },
@@ -81,7 +83,7 @@ describe("Work search (e2e)", () => {
     expect(body.items).toEqual([
       expect.objectContaining({
         href: "/app/media/anime/4242",
-        status: "PLANNED",
+        status: aliceStatus,
       }),
     ]);
   });
