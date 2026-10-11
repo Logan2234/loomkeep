@@ -1402,6 +1402,7 @@
   "chat_review_quote_open": "“",
   "chat_review_quote_close": "”",
   "chat_review_spoiler": "Review with spoilers · Show",
+  "chat_review_read_full": "Read the full review",
   "chat_review_rating": "{rating} out of 10",
   "chat_review_gone": "This review was deleted.",
   "chat_review_preview": "Review: {title}",

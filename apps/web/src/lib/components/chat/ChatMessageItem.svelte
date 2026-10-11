@@ -11,6 +11,7 @@
   import Drawer from "#lib/components/Drawer.svelte";
   import Dropdown from "#lib/components/Dropdown.svelte";
   import Icon from "#lib/components/Icon.svelte";
+  import { isJumboEmoji } from "#lib/chat/emoji.js";
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -91,6 +92,15 @@
   }));
 
   const hasActions = $derived(!message.deleted && (writable || !message.mine));
+  // A few emoji alone read as a reaction: large, out of the bubble.
+  const jumbo = $derived(
+    !!message.text &&
+      message.works.length === 0 &&
+      !message.review &&
+      !message.list &&
+      !message.gone &&
+      isJumboEmoji(message.text),
+  );
   const EMOTES = Object.entries(COMMENT_EMOTE_DISPLAY) as [
     CommentEmote,
     string,
@@ -321,11 +331,14 @@
       {:else}
         <div
           in:fade={{ duration: reduced ? 0 : 150 }}
-          class="flex flex-col gap-1.5 rounded-2xl text-sm leading-relaxed transition-shadow duration-150
-            {message.text ? 'px-3 py-2' : 'p-1.5'}
-            {message.mine
-            ? 'bg-accent/20 text-fg rounded-br-md'
-            : 'bg-surface-2 rounded-bl-md'}
+          class="flex flex-col gap-1.5 rounded-2xl transition-shadow duration-150
+            {jumbo
+            ? 'text-[2.5rem] leading-tight'
+            : `text-sm leading-relaxed ${message.text ? 'px-3 py-2' : 'p-1.5'} ${
+                message.mine
+                  ? 'bg-accent/20 text-fg rounded-br-md'
+                  : 'bg-surface-2 rounded-bl-md'
+              }`}
             {sheetOpen ? 'ring-accent ring-2' : ''}">
           {#if message.text}
             <ChatMessageText

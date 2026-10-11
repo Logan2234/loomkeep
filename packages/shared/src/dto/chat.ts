@@ -38,6 +38,8 @@ export interface MessageWorkDto {
 
 /** A review attached with `/review`: always its author's, read as it is now. */
 export interface MessageReviewDto {
+  /** Anchors "Lire la critique entière" on the work's page (`#review-<id>`). */
+  id: string;
   rating: number;
   text: string | null;
   /** Tagged as a spoiler by its author: the card hides its text until revealed. */

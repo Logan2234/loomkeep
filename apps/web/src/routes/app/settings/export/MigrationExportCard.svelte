@@ -10,7 +10,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
   import type { MigrationExportDto } from "@loomkeep/shared";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
 
   type Service = "letterboxd" | "goodreads";
 

@@ -20,7 +20,7 @@
   import { dragHandle, dragHandleZone } from "svelte-dnd-action";
   import { flip } from "svelte/animate";
   import { cubicOut } from "svelte/easing";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
 
   const premiumLocked = $derived(auth.isPremiumLocked);
   const reduced = prefersReducedMotion();

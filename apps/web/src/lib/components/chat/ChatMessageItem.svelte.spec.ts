@@ -140,6 +140,7 @@ describe("ChatMessageItem", () => {
       mine: false,
       text: null,
       review: {
+        id: "r1",
         rating: 9.5,
         text: "Le moment où la boucle s'explique.",
         spoiler: true,
@@ -165,6 +166,19 @@ describe("ChatMessageItem", () => {
     expect(
       screen.getByRole("link", { name: "Outer Wilds" }).getAttribute("href"),
     ).toBe("/app/games/11737");
+    expect(
+      screen
+        .getByRole("link", { name: m.chat_review_read_full() })
+        .getAttribute("href"),
+    ).toBe("/app/games/11737#review-r1");
+  });
+
+  it("shows a few emoji alone in large, out of the bubble", () => {
+    renderMessage({ ...MINE, text: "🔥🔥" });
+
+    const big = screen.getByText("🔥🔥").closest('[class*="text-[2.5rem]"]');
+    expect(big).not.toBe(null);
+    expect(big?.className).not.toContain("bg-accent/20");
   });
 
   it("shows a list's first works, the rest counted", () => {

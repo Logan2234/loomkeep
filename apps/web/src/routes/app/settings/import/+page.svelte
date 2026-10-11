@@ -19,7 +19,7 @@
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import SettingsSection from "../components/SettingsSection.svelte";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
   import type { ImportSourceDescriptor } from "#lib/types/import-descriptor.js";
   import {
     Domain,

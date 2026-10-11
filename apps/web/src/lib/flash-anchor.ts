@@ -34,7 +34,7 @@ export function clearPreviousFlash(
 /**
  * Brings the row the URL fragment names into view and flashes it once, so a
  * search result that points at one control inside a section says which one it
- * meant.
+ * meant — or a review a message links to, among a work's others.
  *
  * Driven by the hash passed in rather than read off `location`: clicking a
  * result for the section you are already on changes only the fragment, which

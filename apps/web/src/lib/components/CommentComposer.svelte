@@ -28,6 +28,12 @@
     serializeMentions,
     type Mention,
   } from "#lib/chat/composer-mentions.js";
+  import {
+    completeShortcode,
+    emojiAtCaret,
+    findEmoji,
+    type Emoji,
+  } from "#lib/chat/emoji.js";
   import { appConfig } from "#lib/config.svelte.js";
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
@@ -42,6 +48,7 @@
   import { tick } from "svelte";
   import { scale } from "svelte/transition";
   import Avatar from "./Avatar.svelte";
+  import ChatEmojiPicker from "./chat/ChatEmojiPicker.svelte";
   import ChatWorkPicker from "./chat/ChatWorkPicker.svelte";
   import FormatSelectionBar, {
     selectionBarAt,
@@ -99,6 +106,7 @@
   let textarea = $state<HTMLTextAreaElement | null>(null);
   let backdrop = $state<HTMLDivElement | null>(null);
   let workPicker = $state<ChatWorkPicker | null>(null);
+  let emojiPicker = $state<ChatEmojiPicker | null>(null);
   let value = $state("");
   let spoilerTag = $state(false);
   // Works mentioned with `#` show as `#Title` and go as tokens; people
@@ -107,6 +115,8 @@
   let people = $state<{ id: string; username: string }[]>([]);
   let workAt = $state<{ start: number; query: string } | null>(null);
   let dismissedWorkAt = $state<number | null>(null);
+  let emojiAt = $state<{ start: number; query: string } | null>(null);
+  let dismissedEmojiAt = $state<number | null>(null);
   let personAt = $state<{ start: number; query: string } | null>(null);
   let candidates = $state<UserSummaryDto[]>([]);
   let activeCandidate = $state(0);
@@ -139,6 +149,7 @@
       serialized.length <= COMMENT_TEXT_MAX_LENGTH,
   );
   const runs = $derived(highlightRuns(value, works));
+  const emojis = $derived(emojiAt ? findEmoji(emojiAt.query) : []);
 
   function autosize() {
     if (!textarea) return;
@@ -154,10 +165,15 @@
   function readMentions() {
     if (!textarea || document.activeElement !== textarea) {
       workAt = null;
+      emojiAt = null;
       personAt = null;
       return;
     }
     const caret = textarea.selectionStart;
+
+    const emoji = emojiAtCaret(value, caret);
+    emojiAt = emoji && emoji.start !== dismissedEmojiAt ? emoji : null;
+    if (!emoji) dismissedEmojiAt = null;
 
     const work = appConfig.chatEnabled ? mentionAtCaret(value, caret) : null;
     workAt = work && work.start !== dismissedWorkAt ? work : null;
@@ -212,6 +228,12 @@
     dismissedWorkAt = at;
   }
 
+  function pickEmoji(emoji: Emoji) {
+    if (!emojiAt) return;
+    insert(emojiAt.start, `${emoji.emoji} `);
+    emojiAt = null;
+  }
+
   function pickPerson(person: UserSummaryDto) {
     if (!personAt) return;
     people = [...people, { id: person.id, username: person.username }];
@@ -255,6 +277,9 @@
 
   function onkeydown(event: KeyboardEvent) {
     if (workAt && workPicker?.handleKey(event)) return;
+    if (emojiAt && emojis.length > 0 && emojiPicker?.handleKey(event)) {
+      return;
+    }
 
     if (personAt && candidates.length > 0) {
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -327,6 +352,16 @@
         oncancel={() => {
           dismissedWorkAt = workAt?.start ?? null;
           workAt = null;
+        }} />
+    {:else if emojiAt && emojis.length > 0}
+      <ChatEmojiPicker
+        bind:this={emojiPicker}
+        {emojis}
+        query={emojiAt.query}
+        onpick={pickEmoji}
+        oncancel={() => {
+          dismissedEmojiAt = emojiAt?.start ?? null;
+          emojiAt = null;
         }} />
     {:else if personAt && candidates.length > 0}
       <div
@@ -412,6 +447,14 @@
       class="placeholder:text-dim selection:bg-accent/30 relative block w-full resize-none [scrollbar-width:none] bg-transparent text-sm leading-relaxed outline-none
         {layout.compact ? 'text-base' : ''}"
       oninput={() => {
+        const completed =
+          textarea && completeShortcode(value, textarea.selectionStart);
+        if (completed) {
+          value = completed.value;
+          void tick().then(() =>
+            textarea?.setSelectionRange(completed.caret, completed.caret),
+          );
+        }
         autosize();
         onselectionchange();
       }}
@@ -422,6 +465,7 @@
       onblur={() => {
         selectionBar = null;
         workAt = null;
+        emojiAt = null;
         setTimeout(() => {
           personAt = null;
           candidates = [];

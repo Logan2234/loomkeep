@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { completeShortcode, emojiAtCaret, findEmoji } from "./emoji";
+import {
+  completeShortcode,
+  emojiAtCaret,
+  findEmoji,
+  isJumboEmoji,
+} from "./emoji";
 
 describe("emoji shortcodes", () => {
   it("finds a name's own start before one of its words or a keyword", () => {
@@ -25,5 +30,15 @@ describe("emoji shortcodes", () => {
       caret: 11,
     });
     expect(completeShortcode("Un :truc:", 9)).toBeNull();
+  });
+
+  it("shows one to three emoji alone in large", () => {
+    expect(isJumboEmoji("🔥")).toBe(true);
+    expect(isJumboEmoji("😂 😂 😂")).toBe(true);
+    // Joined and flagged emoji count as one each.
+    expect(isJumboEmoji("❤️‍🔥🇫🇷")).toBe(true);
+    expect(isJumboEmoji("🔥🔥🔥🔥")).toBe(false);
+    expect(isJumboEmoji("Trop 🔥")).toBe(false);
+    expect(isJumboEmoji("12")).toBe(false);
   });
 });

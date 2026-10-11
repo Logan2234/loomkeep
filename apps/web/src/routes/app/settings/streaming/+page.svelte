@@ -18,7 +18,7 @@
   import { flip } from "svelte/animate";
   import { backOut } from "svelte/easing";
   import { scale, slide } from "svelte/transition";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
 
   const reduced = prefersReducedMotion();
 

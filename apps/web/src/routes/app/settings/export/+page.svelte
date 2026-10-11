@@ -12,7 +12,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
   import { Domain } from "@loomkeep/shared";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
 
   const exportMut = createApiMutation(() => ({
     mutate: exportMyData,

@@ -11,12 +11,16 @@
   let { review, mine }: { review: MessageReviewDto; mine: boolean } = $props();
 
   const reduced = prefersReducedMotion();
-  // Past six lines or so, the quote folds; "Lire la suite" unfolds it here.
-  const LONG = 280;
 
   let revealed = $state(false);
-  let expanded = $state(false);
   const title = $derived(review.target ? reviewedTitle(review.target) : "");
+  // A season's or an episode's review lives in its episode list, not among
+  // the work's: only a work's own review has a place to land on.
+  const fullHref = $derived(
+    review.target?.href && (review.target.seasonNumber ?? null) === null
+      ? `${review.target.href}#review-${review.id}`
+      : null,
+  );
 
   function cellTone(cell: number) {
     if (cell <= review.rating) return "bg-accent";
@@ -41,21 +45,11 @@
   {:else if review.text}
     <blockquote
       in:fade={{ duration: reduced ? 0 : 150 }}
-      class="font-display text-[1.02rem] leading-snug font-semibold whitespace-pre-line
-        {expanded ? '' : 'line-clamp-6'}">
+      class="font-display line-clamp-6 text-[1.02rem] leading-snug font-semibold whitespace-pre-line">
       <span class="text-accent">{m.chat_review_quote_open()}</span
       >{review.text}<span class="text-accent"
         >{m.chat_review_quote_close()}</span>
     </blockquote>
-    {#if review.text.length > LONG}
-      <button
-        type="button"
-        class="text-accent -mt-1 self-start text-xs font-semibold hover:underline"
-        aria-expanded={expanded}
-        onclick={() => (expanded = !expanded)}>
-        {expanded ? m.reviews_read_less() : m.reviews_read_more()}
-      </button>
-    {/if}
   {/if}
 
   <span
@@ -93,4 +87,16 @@
       {ratingLabel(review.rating)}
     </span>
   </figcaption>
+
+  {#if fullHref}
+    <a
+      href={fullHref}
+      class="text-accent group -mt-0.5 flex items-center gap-1 self-start text-xs font-semibold no-underline"
+      onclick={() => chat.close()}>
+      {m.chat_review_read_full()}
+      <Icon
+        name="arrow-right"
+        class="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+    </a>
+  {/if}
 </figure>

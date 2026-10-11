@@ -523,6 +523,7 @@ export class ReviewService {
       rows.map((r) => [
         r.id,
         {
+          id: r.id,
           rating: r.rating,
           text: r.text,
           spoiler: r.spoilerTag,

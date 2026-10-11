@@ -17,7 +17,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import SettingRow from "../components/SettingRow.svelte";
   import SettingsSection from "../components/SettingsSection.svelte";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
 
   const LINKS = [
     {
