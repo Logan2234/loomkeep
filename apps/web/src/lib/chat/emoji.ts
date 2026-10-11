@@ -670,3 +670,18 @@ export function completeShortcode(
     caret: start + emoji.emoji.length,
   };
 }
+
+const PICTOGRAPH = /^(\p{Extended_Pictographic}|\p{Regional_Indicator})/u;
+const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+
+/** One to three emoji and nothing else: a message shown large, without its bubble. */
+export function isJumboEmoji(text: string): boolean {
+  const parts = [...graphemes.segment(text.replace(/\s/g, ""))].map(
+    (part) => part.segment,
+  );
+  return (
+    parts.length > 0 &&
+    parts.length <= 3 &&
+    parts.every((part) => PICTOGRAPH.test(part))
+  );
+}

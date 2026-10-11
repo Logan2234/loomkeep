@@ -2,7 +2,7 @@
   import { page } from "$app/state";
   import { m } from "#lib/paraglide/messages.js";
   import SettingsSection from "../components/SettingsSection.svelte";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
 
   const BRAND_ICONS = {
     kofi: {

@@ -5,7 +5,7 @@
   import type { IconName } from "#lib/types/icon-name.js";
   import type { Snippet } from "svelte";
   import { fly } from "svelte/transition";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
   import SavedIndicator from "./SavedIndicator.svelte";
 
   /** Just enough of createApiMutation()'s surface to drive a row. */

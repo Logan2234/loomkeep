@@ -15,7 +15,7 @@
   import RelativeTime from "#lib/components/RelativeTime.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { deviceLabel, type SessionDto } from "@loomkeep/shared";
-  import { flashAnchor } from "../../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
   import SettingsSection from "../../components/SettingsSection.svelte";
 
   const sessionsQuery = createApiQuery(() => ({

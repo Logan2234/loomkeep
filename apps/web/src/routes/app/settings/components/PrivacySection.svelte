@@ -36,7 +36,7 @@
     type VisibilitySettingsDto,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
   import SettingRow from "./SettingRow.svelte";
 
   let showModesModal = $state(false);

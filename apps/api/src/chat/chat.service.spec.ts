@@ -389,6 +389,7 @@ describe("ChatService", () => {
 
   describe("review and list cards", () => {
     const REVIEW = {
+      id: "r1",
       rating: 8.5,
       text: "Plus lente, plus ambitieuse.",
       spoiler: false,

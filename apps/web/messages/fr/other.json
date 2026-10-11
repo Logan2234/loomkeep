@@ -1402,6 +1402,7 @@
   "chat_review_quote_open": "« ",
   "chat_review_quote_close": " »",
   "chat_review_spoiler": "Critique avec spoilers · Afficher",
+  "chat_review_read_full": "Lire la critique entière",
   "chat_review_rating": "{rating} sur 10",
   "chat_review_gone": "Cette critique a été supprimée.",
   "chat_review_preview": "Critique : {title}",

@@ -12,7 +12,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import type { ProviderBrandKey } from "#lib/provider-brands.js";
   import SettingsSection from "../components/SettingsSection.svelte";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
 
   // TMDB's notice text is quoted verbatim by their API Terms of Use and kept
   // identical across locales for that reason — see messages/*.json.

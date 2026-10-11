@@ -30,7 +30,7 @@
     USER_LIMITS,
     OTP_CODE_LENGTH,
   } from "@loomkeep/shared";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
   import { sectionHref } from "../nav";
 
   type SecurityModal = "username" | "email" | "password" | null;

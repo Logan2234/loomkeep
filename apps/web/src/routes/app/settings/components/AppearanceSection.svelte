@@ -37,7 +37,7 @@
   } from "#lib/navStyle.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { prefersReducedMotion } from "#lib/motion.js";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
   import SettingRow from "./SettingRow.svelte";
   import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
   import {

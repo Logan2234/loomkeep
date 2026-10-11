@@ -40,6 +40,7 @@ export class ConversationWorkResponseDto
 }
 
 export class MessageReviewResponseDto implements MessageReviewDto {
+  id!: string;
   rating!: number;
   text!: string | null;
   spoiler!: boolean;

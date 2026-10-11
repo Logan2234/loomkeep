@@ -2,12 +2,11 @@
   import { keys } from "#lib/api/keys.js";
   import { getEditableLists } from "#lib/api/lists.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { listShareable, matchingTitle } from "#lib/chat/attachments.js";
   import {
-    listShareable,
-    matchingTitle,
-    workCount,
-  } from "#lib/chat/attachments.js";
-  import { LIST_VISIBILITY_LABEL } from "#lib/constants/list-labels.js";
+    LIST_VISIBILITY_LABEL,
+    workCountLabel,
+  } from "#lib/constants/list-labels.js";
   import Icon from "#lib/components/Icon.svelte";
   import ListCoverGrid from "#lib/components/ListCoverGrid.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -62,7 +61,7 @@
       <span class="block truncate text-sm font-semibold">{list.title}</span>
       <span class="text-dim block truncate text-xs">
         {listShareable(list)
-          ? `${workCount(list.itemCount)}${list.kind === "RANKED" ? ` · ${m.lists_kind_ranked()}` : ""}`
+          ? `${workCountLabel(list.itemCount)}${list.kind === "RANKED" ? ` · ${m.lists_kind_ranked()}` : ""}`
           : m.chat_list_private({ name: peerName })}
       </span>
     </span>

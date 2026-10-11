@@ -1,4 +1,5 @@
 import { layout } from "#lib/layout.svelte.js";
+import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import { screen, waitFor } from "@testing-library/svelte";
@@ -44,6 +45,19 @@ describe("CommentComposer", () => {
       { text: "Quelle **fin**\nvraiment", spoilerTag: false, mentions: [] },
     ]);
     await waitFor(() => expect((field as HTMLTextAreaElement).value).toBe(""));
+  });
+
+  it("completes emoji from their :shortcode:, as Messages does", async () => {
+    const user = userEvent.setup();
+    const { sent, field } = setup();
+
+    await user.type(field, "Trop :popc");
+    expect(screen.getByRole("listbox", { name: m.chat_emoji() })).toBeTruthy();
+    await user.keyboard("{Enter}");
+    await user.type(field, "et :fire:");
+    await user.keyboard("{Enter}");
+
+    expect(sent[0]).toMatchObject({ text: "Trop 🍿 et 🔥" });
   });
 
   it("masks the whole comment with /spoiler", async () => {

@@ -8,7 +8,6 @@
     listShareable,
     ratingLabel,
     reviewedTitle,
-    workCount,
   } from "#lib/chat/attachments.js";
   import { chatDrafts as drafts } from "#lib/chat/chat.svelte.js";
   import {
@@ -40,7 +39,10 @@
   import ListCoverGrid from "#lib/components/ListCoverGrid.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import Poster from "#lib/components/Poster.svelte";
-  import { LIST_VISIBILITY_LABEL } from "#lib/constants/list-labels.js";
+  import {
+    LIST_VISIBILITY_LABEL,
+    workCountLabel,
+  } from "#lib/constants/list-labels.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
@@ -64,7 +66,7 @@
     type SelectionBar,
   } from "./FormatSelectionBar.svelte";
   import ChatListPicker from "./ChatListPicker.svelte";
-  import ChatPicker from "./ChatPicker.svelte";
+  import ChatEmojiPicker from "./ChatEmojiPicker.svelte";
   import ChatReviewPicker from "./ChatReviewPicker.svelte";
   import ChatWorkPicker from "./ChatWorkPicker.svelte";
   import { workKindLabel } from "./conversation-presentation";
@@ -90,12 +92,11 @@
   const COUNTER_FROM = MESSAGE_TEXT_MAX_LENGTH - 200;
 
   let textarea = $state<HTMLTextAreaElement | null>(null);
-  type KeyHandler = { handleKey: (event: KeyboardEvent) => boolean };
   let picker = $state<ChatWorkPicker | null>(null);
   let reviewPicker = $state<ChatReviewPicker | null>(null);
   let listPicker = $state<ChatListPicker | null>(null);
   let mentionPicker = $state<ChatWorkPicker | null>(null);
-  let emojiPicker = $state<KeyHandler | null>(null);
+  let emojiPicker = $state<ChatEmojiPicker | null>(null);
   let backdrop = $state<HTMLDivElement | null>(null);
   let value = $state("");
   // Works mentioned with `#`: the field shows `#Title`, the message stores
@@ -579,7 +580,7 @@
     {@render chip(
       attachment.list.previewImageUrls,
       attachment.list.title,
-      `${workCount(attachment.list.itemCount)} · ${LIST_VISIBILITY_LABEL[attachment.list.visibility]}`,
+      `${workCountLabel(attachment.list.itemCount)} · ${LIST_VISIBILITY_LABEL[attachment.list.visibility]}`,
       m.chat_list_remove(),
       () => (attachment = null),
       false,
@@ -625,34 +626,15 @@
           oncancel={() => setValue("")} />
       {/if}
       {#if emojiAt && emojis.length > 0}
-        <ChatPicker
+        <ChatEmojiPicker
           bind:this={emojiPicker}
-          items={emojis}
-          key={(emoji) => emoji.name}
-          label={m.chat_emoji()}
-          empty=""
+          {emojis}
+          query={emojiAt.query}
           onpick={insertEmoji}
           oncancel={() => {
             dismissedEmojiAt = emojiAt?.start ?? null;
             emojiAt = null;
-          }}>
-          {#snippet row(emoji, highlighted)}
-            {@const at = emoji.name.indexOf(emojiAt?.query.toLowerCase() ?? "")}
-            <span class="w-7 shrink-0 text-center text-[1.35rem] leading-none"
-              >{emoji.emoji}</span>
-            <span class="min-w-0 flex-1 truncate font-mono text-sm"
-              >:{#if at === -1}{emoji.name}{:else}{emoji.name.slice(0, at)}<b
-                  class="text-accent"
-                  >{emoji.name.slice(at, at + (emojiAt?.query.length ?? 0))}</b
-                >{emoji.name.slice(
-                  at + (emojiAt?.query.length ?? 0),
-                )}{/if}:</span>
-            <span
-              class="text-dim font-mono text-xs transition-opacity duration-150
-                {highlighted ? 'opacity-100' : 'opacity-0'}"
-              aria-hidden="true">↵</span>
-          {/snippet}
-        </ChatPicker>
+          }} />
       {/if}
       {#if mentionAt}
         <ChatWorkPicker

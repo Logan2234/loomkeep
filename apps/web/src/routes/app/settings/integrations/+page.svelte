@@ -23,7 +23,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import type { IconName } from "#lib/types/icon-name.js";
   import type { ApiKeyDto } from "@loomkeep/shared";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
   import SettingsSection from "../components/SettingsSection.svelte";
   import { expiryState, RECIPES, type Recipe } from "./api-key-form";
   import ApiKeyCreateModal from "./components/ApiKeyCreateModal.svelte";
