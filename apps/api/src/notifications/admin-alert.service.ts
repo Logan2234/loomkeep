@@ -1,11 +1,8 @@
-import {
-  type AlertKey,
-  type AlertPrefs,
-  isAlertEnabled,
-} from "@loomkeep/shared";
+import { type AlertKey, isAlertEnabled } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import type { MailRecipient } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { readAlertPrefs } from "./alert-prefs.util";
 import { type NotificationCopy, notificationCopy } from "./notification-copy";
 import { type PushPayload, PushService } from "./push.service";
 
@@ -43,7 +40,7 @@ export class AdminAlertService {
 
     await Promise.all(
       admins.map(async (admin) => {
-        const prefs = admin.alertPrefs as AlertPrefs;
+        const prefs = readAlertPrefs(admin.alertPrefs);
 
         if (isAlertEnabled(prefs, key, "email")) {
           await send.email({ email: admin.email, locale: admin.locale });

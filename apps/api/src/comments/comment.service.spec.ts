@@ -5,8 +5,6 @@ import { type Mock, vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
-import type { AchievementService } from "../gamification/achievements/achievement.service";
-import type { XpService } from "../gamification/xp.service";
 import { setStoredInstanceSettings } from "../instance-settings/instance-settings.store";
 import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
@@ -14,19 +12,8 @@ import type { PrismaService } from "../prisma/prisma.service";
 import { BlockService } from "../social/block.service";
 import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
+import { stubAchievements, stubXp } from "../test-utils/stubs";
 import { CommentService, REPLY_PREVIEW_LIMIT } from "./comment.service";
-
-function stubXp(): XpService {
-  return {
-    award: vi.fn(),
-    awardMany: vi.fn(),
-    revokeBySource: vi.fn(),
-  } as unknown as XpService;
-}
-
-function stubAchievements(): AchievementService {
-  return { evaluate: vi.fn() } as unknown as AchievementService;
-}
 
 const TARGET_ROW = {
   id: "target-1",

@@ -1,6 +1,7 @@
 import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { mockFetchByUrl as routedFetch } from "../../test-utils/mock-fetch";
 import { IgdbProvider } from "./igdb.provider";
 
 // Node defines global fetch lazily, which confuses vi.spyOn on restore;
@@ -10,26 +11,7 @@ const originalFetch = global.fetch;
 // Every details call also asks /game_time_to_beats; a test that doesn't
 // care about it gets "no submissions" rather than an unexpected-call error.
 function mockFetchByUrl(routes: Record<string, unknown>): Mock {
-  const withDefaults = { "/game_time_to_beats": [], ...routes };
-  const fn = vi.fn((input: RequestInfo | URL) => {
-    const url = String(input);
-    const match = Object.entries(withDefaults).find(([pathPart]) =>
-      url.includes(pathPart),
-    );
-
-    if (!match) {
-      throw new Error(`Unexpected fetch call in test: ${url}`);
-    }
-
-    return Promise.resolve(
-      new Response(JSON.stringify(match[1]), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-  });
-  global.fetch = fn as unknown as typeof fetch;
-  return fn;
+  return routedFetch({ "/game_time_to_beats": [], ...routes });
 }
 
 const TOKEN_RESPONSE = { access_token: "app-token", expires_in: 3600 };

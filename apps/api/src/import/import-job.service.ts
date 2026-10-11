@@ -21,10 +21,10 @@ import {
   type ImportSource,
   type PagedResult,
 } from "@loomkeep/shared";
+import { toJsonInput } from "../common/json.util";
 
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { toPagedResult, type ParsedPage } from "../common/pagination.util";
@@ -489,10 +489,10 @@ export class ImportJobService {
           : null,
         error: job.error,
         details: job.details
-          ? ({
+          ? toJsonInput({
               ...job.details,
               report: job.report,
-            } as unknown as Prisma.InputJsonValue)
+            })
           : undefined,
         startedAt: new Date(job.startedAt),
         finishedAt: new Date(job.finishedAt ?? Date.now()),

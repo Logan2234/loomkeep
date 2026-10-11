@@ -1,5 +1,4 @@
 import {
-  type AlertPrefs,
   DigestCadence,
   episodeCode,
   ErrorCode,
@@ -24,12 +23,14 @@ import {
   CANONICAL_EXTERNAL_ID_SELECT,
   canonicalExternalId,
 } from "../common/external-id.util";
+import { jsonObject, toJsonInput } from "../common/json.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { isSuspended } from "../users/suspension.util";
+import { readAlertPrefs } from "./alert-prefs.util";
 import { type NotificationCopy, notificationCopy } from "./notification-copy";
 import {
   type NewEpisodeNotification,
@@ -424,7 +425,7 @@ export class NotificationService {
       if (
         !isSuspended(user) &&
         isAlertEnabled(
-          user.alertPrefs as AlertPrefs,
+          readAlertPrefs(user.alertPrefs),
           NotificationType.SAGA_SEQUEL_ANNOUNCED,
           "email",
         )
@@ -735,7 +736,7 @@ export class NotificationService {
 
     if (!existing) return this.create(input);
 
-    const previous = (existing.data ?? {}) as Record<string, unknown>;
+    const previous = jsonObject(existing.data);
     const count = (typeof previous.count === "number" ? previous.count : 1) + 1;
     const { body, data } = regroup(count);
 
@@ -743,7 +744,7 @@ export class NotificationService {
       where: { id: existing.id },
       data: {
         body: body ?? null,
-        data: { ...(data ?? {}), count } as Prisma.InputJsonValue,
+        data: toJsonInput({ ...(data ?? {}), count }),
         createdAt: new Date(),
       },
     });
@@ -762,7 +763,7 @@ export class NotificationService {
     if (
       !user ||
       isSuspended(user) ||
-      !isAlertEnabled(user.alertPrefs as AlertPrefs, input.type, "push")
+      !isAlertEnabled(readAlertPrefs(user.alertPrefs), input.type, "push")
     ) {
       return;
     }
@@ -794,7 +795,7 @@ export class NotificationService {
           body: input.body ?? null,
           url: input.url ?? null,
           dedupeKey: input.dedupeKey ?? null,
-          data: (input.data ?? {}) as Prisma.InputJsonValue,
+          data: toJsonInput(input.data ?? {}),
         },
       ],
       skipDuplicates: true,
@@ -872,7 +873,7 @@ function pushTitle(
 }
 
 function toDto(n: Notification): NotificationDto {
-  const data = (n.data ?? {}) as Record<string, unknown>;
+  const data = jsonObject(n.data);
   // NEW_EPISODE stores the real air date to show instead of the scan time.
   const airDate = typeof data.airDate === "string" ? data.airDate : null;
   return {

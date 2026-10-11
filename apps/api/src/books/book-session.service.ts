@@ -22,6 +22,11 @@ import {
 } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { addDays, utcDateKey } from "../common/date.util";
+import {
+  assertEntryOwnership,
+  assertSessionOwnership,
+  syncCycleCompletionXp,
+} from "../common/entry-lifecycle.util";
 import { localDayOrUtc } from "../common/local-day.util";
 import { toPagedResult } from "../common/pagination.util";
 import { bookSessionAggregate } from "../common/session-aggregate.util";
@@ -29,7 +34,6 @@ import { sessionPeriodMinutes } from "../common/session-period.util";
 import { normalizeSessionNotes, sessionDate } from "../common/session.util";
 import { BOOK_STATUS_BY_CYCLE } from "../common/tracking-cycle-status.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
-import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import { SessionXpService } from "../gamification/session-xp.service";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -368,13 +372,16 @@ export class BookSessionService {
   ): Promise<void> {
     if (!completed || !reading) return;
 
-    const reason =
-      reading.number === 1 ? XpReason.BOOK_FINISHED : XpReason.BOOK_REPLAYED;
-    await this.xp.award(userId, reason, reading.id);
-    await this.achievements.evaluate(
+    await syncCycleCompletionXp(this.xp, this.achievements, {
       userId,
-      ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
-    );
+      previousStatus: null,
+      nextStatus: BookStatus.READ,
+      completedStatus: BookStatus.READ,
+      cycle: reading,
+      sourceType: "BookReading",
+      firstReason: XpReason.BOOK_FINISHED,
+      replayReason: XpReason.BOOK_REPLAYED,
+    });
   }
 
   private async summary(
@@ -541,74 +548,49 @@ export class BookSessionService {
     };
   }
 
-  private async ownedEntry(userId: string, entryId: string) {
-    const entry = await this.prisma.bookEntry.findUnique({
-      where: { id: entryId },
-      select: {
-        id: true,
-        userId: true,
-        bookItemId: true,
-        status: true,
-        startedAt: true,
-        editionKey: true,
-        referencePageCount: true,
-        readingBaselinePage: true,
-        currentPage: true,
-        finishedAt: true,
-      },
-    });
-
-    if (!entry) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibraryEntryNotFound,
-      );
-    }
-
-    if (entry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibraryEntryForbidden,
-      );
-    }
-
-    return entry;
+  private ownedEntry(userId: string, entryId: string) {
+    return assertEntryOwnership(userId, () =>
+      this.prisma.bookEntry.findUnique({
+        where: { id: entryId },
+        select: {
+          id: true,
+          userId: true,
+          bookItemId: true,
+          status: true,
+          startedAt: true,
+          editionKey: true,
+          referencePageCount: true,
+          readingBaselinePage: true,
+          currentPage: true,
+          finishedAt: true,
+        },
+      }),
+    );
   }
 
-  private async ownedSession(userId: string, sessionId: string) {
-    const session = await this.prisma.bookSession.findUnique({
-      where: { id: sessionId },
-      include: {
-        bookEntry: { select: { userId: true, referencePageCount: true } },
-        reading: {
-          select: {
-            id: true,
-            number: true,
-            status: true,
-            editionKey: true,
-            referencePageCount: true,
-            baselinePage: true,
-            currentPage: true,
+  private ownedSession(userId: string, sessionId: string) {
+    return assertSessionOwnership(
+      userId,
+      () =>
+        this.prisma.bookSession.findUnique({
+          where: { id: sessionId },
+          include: {
+            bookEntry: { select: { userId: true, referencePageCount: true } },
+            reading: {
+              select: {
+                id: true,
+                number: true,
+                status: true,
+                editionKey: true,
+                referencePageCount: true,
+                baselinePage: true,
+                currentPage: true,
+              },
+            },
           },
-        },
-      },
-    });
-
-    if (!session) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibrarySessionNotFound,
-      );
-    }
-
-    if (session.bookEntry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibrarySessionForbidden,
-      );
-    }
-
-    return session;
+        }),
+      (session) => session.bookEntry.userId,
+    );
   }
 
   private async resolveReading(

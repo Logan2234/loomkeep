@@ -1,7 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared";
-import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { PrismaService } from "../../prisma/prisma.service";
+import { makeConfig } from "../../test-utils/stubs";
 import type { AchievementService } from "../achievements/achievement.service";
 import { OnboardingService } from "./onboarding.service";
 
@@ -20,12 +20,6 @@ const ALL_DONE = {
   create_list: true,
   comment: true,
 };
-
-function makeConfig(values: Record<string, string> = {}): ConfigService {
-  return {
-    get: vi.fn((key: string) => values[key]),
-  } as unknown as ConfigService;
-}
 
 function makeService(
   opts: {

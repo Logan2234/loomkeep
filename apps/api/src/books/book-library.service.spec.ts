@@ -1,27 +1,9 @@
 import { vi } from "vitest";
-import type { EventsGateway } from "../events/events.gateway";
-import type { AchievementService } from "../gamification/achievements/achievement.service";
-import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
 import type { AgeGateService } from "../users/age-gate.service";
 import type { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
-
-function stubXp(): XpService {
-  return {
-    award: vi.fn(),
-    awardMany: vi.fn(),
-    revokeBySource: vi.fn(),
-  } as unknown as XpService;
-}
-
-function stubAchievements(): AchievementService {
-  return { evaluate: vi.fn() } as unknown as AchievementService;
-}
-
-function stubEvents(): EventsGateway {
-  return { emitToUser: vi.fn() } as unknown as EventsGateway;
-}
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   const id = (overrides.id as string) ?? "entry-1";
@@ -163,9 +145,9 @@ describe("BookLibraryService — finishedAt sync", () => {
     const findUnique = vi
       .fn()
       // assertEntryOwnership
-      .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
-      // updateEntry's own "before" lookup
       .mockResolvedValueOnce({
+        id: "e1",
+        userId: "user-1",
         status: "TO_READ",
         favorite: false,
         finishedAt: null,
@@ -222,6 +204,7 @@ describe("BookLibraryService — finishedAt sync", () => {
     });
 
     expect(result.finishedAt).not.toBeNull();
+    expect(findUnique).toHaveBeenCalledTimes(1);
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ finishedAt: expect.any(Date) }),
@@ -233,10 +216,12 @@ describe("BookLibraryService — finishedAt sync", () => {
     const entryRow = makeRow({ id: "e1", status: "TO_READ" });
     const explicit = "2026-01-15T00:00:00.000Z";
 
-    const findUnique = vi
-      .fn()
-      .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
-      .mockResolvedValueOnce({ status: "TO_READ", favorite: false });
+    const findUnique = vi.fn().mockResolvedValueOnce({
+      id: "e1",
+      userId: "user-1",
+      status: "TO_READ",
+      favorite: false,
+    });
     const update = vi.fn().mockResolvedValueOnce({
       ...entryRow,
       status: "READ",

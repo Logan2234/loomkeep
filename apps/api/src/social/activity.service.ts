@@ -18,6 +18,7 @@ import {
   CANONICAL_EXTERNAL_ID_SELECT,
   canonicalExternalId,
 } from "../common/external-id.util";
+import { jsonObject, toJsonInput } from "../common/json.util";
 import {
   parsePageQuery,
   toPagedResult,
@@ -110,7 +111,7 @@ export class ActivityService {
           title: snap.title,
           imageUrl: snap.imageUrl,
           href: snap.href,
-          data: (input.data ?? {}) as Prisma.InputJsonValue,
+          data: toJsonInput(input.data ?? {}),
           sourceType: input.sourceType,
           sourceId: input.sourceId,
         },
@@ -131,7 +132,7 @@ export class ActivityService {
     try {
       await this.prisma.activityEvent.updateMany({
         where: { sourceType, sourceId },
-        data: { data: data as Prisma.InputJsonValue },
+        data: { data: toJsonInput(data) },
       });
     } catch (err) {
       this.logger.error(
@@ -262,7 +263,7 @@ export class ActivityService {
       title: e.title,
       imageUrl: e.imageUrl,
       href: e.href,
-      data: (e.data ?? {}) as Record<string, unknown>,
+      data: jsonObject(e.data),
       createdAt: e.createdAt.toISOString(),
       actor: actors.get(e.userId) ?? {
         username: "",

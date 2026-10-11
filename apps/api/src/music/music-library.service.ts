@@ -15,6 +15,7 @@ import {
   ReviewTargetType,
   XpReason,
 } from "@loomkeep/shared";
+import { revokeEntryXp } from "../common/entry-lifecycle.util";
 
 import { Injectable } from "@nestjs/common";
 import type {
@@ -396,11 +397,12 @@ export class MusicLibraryService {
   }
 
   async getEntry(userId: string, entryId: string): Promise<MusicEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
-    const entry = await this.prisma.musicEntry.findUniqueOrThrow({
-      where: { id: entryId },
-      include: ENTRY_INCLUDE,
-    });
+    const entry = await assertEntryOwnership(userId, () =>
+      this.prisma.musicEntry.findUnique({
+        where: { id: entryId },
+        include: ENTRY_INCLUDE,
+      }),
+    );
     return toEntryDto(
       entry,
       await this.reviews.getRating(
@@ -416,12 +418,7 @@ export class MusicLibraryService {
     entryId: string,
     dto: UpdateMusicEntryDto,
   ): Promise<MusicEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
-
-    const before = await this.prisma.musicEntry.findUnique({
-      where: { id: entryId },
-      select: { status: true, favorite: true },
-    });
+    const before = await this.assertEntryOwnership(userId, entryId);
 
     const entry = await this.prisma.musicEntry.update({
       where: { id: entryId },
@@ -499,12 +496,11 @@ export class MusicLibraryService {
       this.prisma.musicEntry.delete({ where: { id: entryId } }),
     ]);
 
-    await this.xp.revokeBySource("MusicEntry", [entryId]); // ALBUM_LISTENED
-    await this.xp.revokeBySource("Entry", [entryId]); // WORK_ADDED
-    await this.xp.revokeBySource(
-      "Review",
-      reviews.map((r) => r.id),
-    ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
+    await revokeEntryXp(this.xp, [
+      { sourceType: "MusicEntry", ids: [entryId] },
+      { sourceType: "Entry", ids: [entryId] },
+      { sourceType: "Review", ids: reviews.map((r) => r.id) },
+    ]);
   }
 
   /**

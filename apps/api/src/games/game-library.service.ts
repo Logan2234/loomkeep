@@ -43,7 +43,9 @@ import {
   pausedStatusClause,
   polymorphicTargetCleanup,
   RECENTLY_UPDATED_FIRST,
+  revokeEntryXp,
   searchTerm,
+  syncCycleCompletionXp,
   titleContains,
 } from "../common/entry-lifecycle.util";
 import { compareTitles, timeMs } from "../common/sort.util";
@@ -307,14 +309,6 @@ export class GameLibraryService {
       nextFavorite: entry.favorite,
     });
 
-    if (
-      before?.status === GameStatus.COMPLETED &&
-      entry.status !== GameStatus.COMPLETED &&
-      statusPlaythrough
-    ) {
-      await this.xp.revokeBySource("GamePlaythrough", [statusPlaythrough.id]);
-    }
-
     if (before === null) {
       await awardNewEntryXp(this.xp, {
         userId,
@@ -325,24 +319,19 @@ export class GameLibraryService {
     }
 
     if (
-      before?.status !== GameStatus.COMPLETED &&
-      entry.status === GameStatus.COMPLETED &&
-      statusPlaythrough
+      statusPlaythrough &&
+      (await syncCycleCompletionXp(this.xp, this.achievements, {
+        userId,
+        previousStatus: before?.status,
+        nextStatus: entry.status,
+        completedStatus: GameStatus.COMPLETED,
+        cycle: statusPlaythrough,
+        sourceType: "GamePlaythrough",
+        firstReason: XpReason.GAME_FINISHED,
+        replayReason: XpReason.GAME_REPLAYED,
+        amount: (reason) => this.finishXp(entry.gameItemId, reason),
+      }))
     ) {
-      const reason =
-        statusPlaythrough.number === 1
-          ? XpReason.GAME_FINISHED
-          : XpReason.GAME_REPLAYED;
-      await this.xp.award(
-        userId,
-        reason,
-        statusPlaythrough.id,
-        await this.finishXp(entry.gameItemId, reason),
-      );
-      await this.achievements.evaluate(
-        userId,
-        ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
-      );
       await this.awardSagaIfCompleted(userId, entry.gameItemId);
     }
 
@@ -562,11 +551,12 @@ export class GameLibraryService {
   }
 
   async getEntry(userId: string, entryId: string): Promise<GameEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
-    const entry = await this.prisma.gameEntry.findUniqueOrThrow({
-      where: { id: entryId },
-      include: ENTRY_INCLUDE,
-    });
+    const entry = await assertEntryOwnership(userId, () =>
+      this.prisma.gameEntry.findUnique({
+        where: { id: entryId },
+        include: ENTRY_INCLUDE,
+      }),
+    );
     return toEntryDto(
       entry,
       await this.reviews.getRating(
@@ -597,10 +587,7 @@ export class GameLibraryService {
       await assertGameReleased(this.prisma, owned.gameItemId);
     }
 
-    const before = await this.prisma.gameEntry.findUnique({
-      where: { id: entryId },
-      select: { status: true, favorite: true, finishedAt: true },
-    });
+    const before = owned;
 
     const completedPlaythrough =
       dto.status && before?.status !== dto.status
@@ -642,34 +629,19 @@ export class GameLibraryService {
     });
 
     if (
-      before?.status === GameStatus.COMPLETED &&
-      entry.status !== GameStatus.COMPLETED &&
-      completedPlaythrough
-    ) {
-      await this.xp.revokeBySource("GamePlaythrough", [
-        completedPlaythrough.id,
-      ]);
-    }
-
-    if (
-      before?.status !== GameStatus.COMPLETED &&
-      entry.status === GameStatus.COMPLETED &&
-      completedPlaythrough
-    ) {
-      const reason =
-        completedPlaythrough.number === 1
-          ? XpReason.GAME_FINISHED
-          : XpReason.GAME_REPLAYED;
-      await this.xp.award(
+      completedPlaythrough &&
+      (await syncCycleCompletionXp(this.xp, this.achievements, {
         userId,
-        reason,
-        completedPlaythrough.id,
-        await this.finishXp(entry.gameItemId, reason),
-      );
-      await this.achievements.evaluate(
-        userId,
-        ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
-      );
+        previousStatus: before?.status,
+        nextStatus: entry.status,
+        completedStatus: GameStatus.COMPLETED,
+        cycle: completedPlaythrough,
+        sourceType: "GamePlaythrough",
+        firstReason: XpReason.GAME_FINISHED,
+        replayReason: XpReason.GAME_REPLAYED,
+        amount: (reason) => this.finishXp(entry.gameItemId, reason),
+      }))
+    ) {
       await this.awardSagaIfCompleted(userId, entry.gameItemId);
     }
 
@@ -721,15 +693,14 @@ export class GameLibraryService {
       this.prisma.gameEntry.delete({ where: { id: entryId } }),
     ]);
 
-    await this.xp.revokeBySource("Entry", [entryId]); // WORK_ADDED
-    await this.xp.revokeBySource(
-      "GamePlaythrough",
-      playthroughs.map((playthrough) => playthrough.id),
-    ); // GAME_FINISHED / GAME_REPLAYED
-    await this.xp.revokeBySource(
-      "Review",
-      reviews.map((r) => r.id),
-    ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
+    await revokeEntryXp(this.xp, [
+      { sourceType: "Entry", ids: [entryId] },
+      {
+        sourceType: "GamePlaythrough",
+        ids: playthroughs.map((playthrough) => playthrough.id),
+      },
+      { sourceType: "Review", ids: reviews.map((r) => r.id) },
+    ]);
     await Promise.all(
       sessions.map((session) =>
         this.activity.deleteLinked("GameSession", session.id),

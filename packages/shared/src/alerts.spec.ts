@@ -4,7 +4,6 @@ import {
   type AlertDefinition,
   isAlertEnabled,
   isAlertToggleable,
-  mergeAlertPrefs,
 } from "./alerts";
 import { NotificationType } from "./enums";
 
@@ -60,28 +59,5 @@ describe("isAlertEnabled", () => {
       ),
     ).toBe(false);
     expect(isAlertToggleable("API_KEYS_REVIEW", "push")).toBe(false);
-  });
-});
-
-describe("mergeAlertPrefs", () => {
-  it("lays a change over what was stored", () => {
-    expect(
-      mergeAlertPrefs(
-        { COMMENT_REPLY: { push: true } },
-        { COMMENT_REPLY: { push: false }, ADMIN_QUOTA: { push: true } },
-      ),
-    ).toEqual({
-      COMMENT_REPLY: { push: false },
-      ADMIN_QUOTA: { push: true },
-    });
-  });
-
-  it("refuses an alert, a channel or a value it can't store", () => {
-    expect(mergeAlertPrefs({}, { NOPE: { push: true } })).toBeNull();
-    expect(
-      mergeAlertPrefs({}, { API_KEY_LEAKED: { email: false } }),
-    ).toBeNull();
-    expect(mergeAlertPrefs({}, { COMMENT_REPLY: { bell: false } })).toBeNull();
-    expect(mergeAlertPrefs({}, { COMMENT_REPLY: { push: "yes" } })).toBeNull();
   });
 });

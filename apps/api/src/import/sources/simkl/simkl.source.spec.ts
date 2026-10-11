@@ -1,36 +1,15 @@
 import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
 import { ConfigService } from "@nestjs/config";
-import { vi, type Mock } from "vitest";
+import { vi } from "vitest";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import type { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { PrismaService } from "../../../prisma/prisma.service";
+import { mockFetchByUrl } from "../../../test-utils/mock-fetch";
 import { ImportJobService } from "../../import-job.service";
 import { MediaMatchResolver } from "../media/media-match-resolver";
 import { SimklImportSource } from "./simkl.source";
 
 const originalFetch = global.fetch;
-
-function mockFetchByUrl(routes: Record<string, unknown>): Mock {
-  const fn = vi.fn((input: RequestInfo | URL) => {
-    const url = String(input);
-    const match = Object.entries(routes).find(([part]) => url.includes(part));
-    if (!match) throw new Error(`Unexpected fetch call in test: ${url}`);
-    const [, body] = match;
-
-    if (typeof body === "number") {
-      return Promise.resolve(new Response(null, { status: body }));
-    }
-
-    return Promise.resolve(
-      new Response(JSON.stringify(body), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-  });
-  global.fetch = fn as unknown as typeof fetch;
-  return fn;
-}
 
 function makeService(env: Record<string, string> = {}) {
   const prisma = {
@@ -196,7 +175,7 @@ describe("SimklImportSource (via ImportJobService)", () => {
 
   it("fails the job with a clear error when the code exchange fails", async () => {
     const { service } = makeService();
-    mockFetchByUrl({ "oauth/token": 400 });
+    mockFetchByUrl({ "oauth/token": new Response(null, { status: 400 }) });
 
     const started = await service.startAnalyze("u1", "simkl", {
       input: "stale-code",
@@ -211,7 +190,9 @@ describe("SimklImportSource (via ImportJobService)", () => {
     const { service } = makeService({
       WEB_ORIGIN: "http://localhost:5173,https://dev.loomkeep.app",
     });
-    const fetchMock = mockFetchByUrl({ "oauth/token": 400 });
+    const fetchMock = mockFetchByUrl({
+      "oauth/token": new Response(null, { status: 400 }),
+    });
 
     const started = await service.startAnalyze("u1", "simkl", {
       input: "code",

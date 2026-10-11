@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { vi } from "vitest";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { mockFetchByUrl } from "../../test-utils/mock-fetch";
 import { OmdbService } from "../omdb.service";
 import { TmdbProvider } from "./tmdb.provider";
 
@@ -16,26 +17,6 @@ function fixture(name: string): unknown {
 // Node defines global fetch lazily, which confuses vi.spyOn on restore;
 // plain assignment + manual restore is more reliable.
 const originalFetch = global.fetch;
-
-function mockFetchByUrl(routes: Record<string, unknown>): void {
-  global.fetch = vi.fn((input: RequestInfo | URL) => {
-    const url = String(input);
-    const match = Object.entries(routes).find(([pathPart]) =>
-      url.includes(pathPart),
-    );
-
-    if (!match) {
-      throw new Error(`Unexpected fetch call in test: ${url}`);
-    }
-
-    return Promise.resolve(
-      new Response(JSON.stringify(match[1]), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-  }) as typeof fetch;
-}
 
 describe("TmdbProvider", () => {
   let provider: TmdbProvider;

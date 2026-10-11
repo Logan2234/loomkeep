@@ -1,15 +1,8 @@
-import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { uniqueConstraintError } from "../test-utils/prisma-errors";
 import { NewsletterService } from "./newsletter.service";
-
-function uniqueConstraintError(): Prisma.PrismaClientKnownRequestError {
-  return new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
-    code: "P2002",
-    clientVersion: "test",
-  });
-}
 
 describe("NewsletterService.handleChangelogPublished", () => {
   function makeService(

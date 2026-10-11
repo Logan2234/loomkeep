@@ -3,33 +3,13 @@ import { HttpStatus } from "@nestjs/common";
 import { vi } from "vitest";
 import type { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
-import type { EventsGateway } from "../events/events.gateway";
-import type { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
-import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
 import type { ActivityService } from "../social/activity.service";
+import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
 import type { AgeGateService } from "../users/age-gate.service";
 import { LibraryService } from "./library.service";
-
-function stubXp(): XpService {
-  return {
-    award: vi.fn(),
-    awardMany: vi.fn(),
-    revokeBySource: vi.fn(),
-  } as unknown as XpService;
-}
-
-function stubAchievements(): AchievementService {
-  return {
-    evaluate: vi.fn(),
-  } as unknown as AchievementService;
-}
-
-function stubEvents(): EventsGateway {
-  return { emitToUser: vi.fn() } as unknown as EventsGateway;
-}
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   const id = (overrides.id as string) ?? "entry-1";
@@ -67,9 +47,12 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
     const findUnique = vi
       .fn()
       // assertEntryOwnership
-      .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
-      // updateEntry's own "before" lookup
-      .mockResolvedValueOnce({ status: "PLANNED", favorite: false })
+      .mockResolvedValueOnce({
+        id: "e1",
+        userId: "user-1",
+        status: "PLANNED",
+        favorite: false,
+      })
       // syncFinishedAt's lookup, post-write
       .mockResolvedValueOnce({ status: "COMPLETED", finishedAt: null });
     const update = vi
@@ -109,6 +92,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
     });
 
     expect(result.finishedAt).not.toBeNull();
+    expect(findUnique).toHaveBeenCalledTimes(2);
     expect(update).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ data: { finishedAt: expect.any(Date) } }),
@@ -119,10 +103,12 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
     const entryRow = makeRow({ id: "e1", type: "MOVIE", status: "PLANNED" });
     const explicit = "2026-01-15T00:00:00.000Z";
 
-    const findUnique = vi
-      .fn()
-      .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
-      .mockResolvedValueOnce({ status: "PLANNED", favorite: false });
+    const findUnique = vi.fn().mockResolvedValueOnce({
+      id: "e1",
+      userId: "user-1",
+      status: "PLANNED",
+      favorite: false,
+    });
     const update = vi.fn().mockResolvedValueOnce({
       ...entryRow,
       status: "COMPLETED",
@@ -610,16 +596,10 @@ describe("LibraryService — XP wiring", () => {
   it("awards MOVIE_REPLAYED on addReplay and revokes it on deleteReplay", async () => {
     const prisma = {
       libraryEntry: {
-        // assertEntryOwnership (called once from addReplay, once from the
-        // getEntry() it returns) and getEntry's own findUniqueOrThrow.
         findUnique: vi.fn().mockResolvedValue({
-          id: "entry-1",
+          ...entryRow({ status: "COMPLETED" }),
           userId: "user-1",
-          mediaItemId: "media-1",
         }),
-        findUniqueOrThrow: vi
-          .fn()
-          .mockResolvedValue(entryRow({ status: "COMPLETED" })),
       },
       mediaItem: {
         findUnique: vi.fn().mockResolvedValue(null),
@@ -660,6 +640,11 @@ describe("LibraryService — XP wiring", () => {
       "user-1",
       "MOVIE_REPLAYED",
       "replay-1",
+    );
+
+    expect(prisma.libraryEntry.findUnique).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ include: expect.any(Object) }),
     );
 
     await service.deleteReplay("user-1", "replay-1");

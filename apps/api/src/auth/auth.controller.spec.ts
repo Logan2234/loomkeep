@@ -1,8 +1,9 @@
 import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus } from "@nestjs/common";
-import type { FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyRequest } from "fastify";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
+import { fakeReply } from "../test-utils/fake-reply";
 import { setAuthCookies } from "./auth-cookies";
 import { AuthController } from "./auth.controller";
 import type { AuthService } from "./auth.service";
@@ -21,16 +22,6 @@ const USER = { id: "u1", email: "alice@example.com" } as never;
  * and whether they end up as `Set-Cookie` — or are wiped — is decided here.
  * A fake reply records the headers so that decision is observable.
  */
-function fakeReply() {
-  const headers: Record<string, unknown> = {};
-  const reply = {
-    header: vi.fn((name: string, value: unknown) => {
-      headers[name] = value;
-      return reply;
-    }),
-  } as unknown as FastifyReply & { header: ReturnType<typeof vi.fn> };
-  return { reply, headers };
-}
 
 function request(cookie?: string): FastifyRequest {
   return { headers: cookie ? { cookie } : {} } as unknown as FastifyRequest;

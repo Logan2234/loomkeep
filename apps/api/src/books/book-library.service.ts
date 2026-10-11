@@ -50,7 +50,9 @@ import {
   pausedStatusClause,
   polymorphicTargetCleanup,
   RECENTLY_UPDATED_FIRST,
+  revokeEntryXp,
   searchTerm,
+  syncCycleCompletionXp,
   titleContains,
 } from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
@@ -374,14 +376,6 @@ export class BookLibraryService {
       nextFavorite: entry.favorite,
     });
 
-    if (
-      before?.status === BookStatus.READ &&
-      entry.status !== BookStatus.READ &&
-      statusReading
-    ) {
-      await this.xp.revokeBySource("BookReading", [statusReading.id]);
-    }
-
     if (before === null) {
       await awardNewEntryXp(this.xp, {
         userId,
@@ -392,24 +386,20 @@ export class BookLibraryService {
     }
 
     if (
-      before?.status !== BookStatus.READ &&
-      entry.status === BookStatus.READ &&
-      statusReading
+      statusReading &&
+      (await syncCycleCompletionXp(this.xp, this.achievements, {
+        userId,
+        previousStatus: before?.status,
+        nextStatus: entry.status,
+        completedStatus: BookStatus.READ,
+        cycle: statusReading,
+        sourceType: "BookReading",
+        firstReason: XpReason.BOOK_FINISHED,
+        replayReason: XpReason.BOOK_REPLAYED,
+        amount: (reason) =>
+          this.finishXp(entry.bookItemId, statusReading, reason),
+      }))
     ) {
-      const reason =
-        statusReading.number === 1
-          ? XpReason.BOOK_FINISHED
-          : XpReason.BOOK_REPLAYED;
-      await this.xp.award(
-        userId,
-        reason,
-        statusReading.id,
-        await this.finishXp(entry.bookItemId, statusReading, reason),
-      );
-      await this.achievements.evaluate(
-        userId,
-        ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
-      );
       await this.awardFinishMilestones(
         userId,
         entry.bookItemId,
@@ -615,11 +605,12 @@ export class BookLibraryService {
   }
 
   async getEntry(userId: string, entryId: string): Promise<BookEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
-    const entry = await this.prisma.bookEntry.findUniqueOrThrow({
-      where: { id: entryId },
-      include: ENTRY_INCLUDE,
-    });
+    const entry = await assertEntryOwnership(userId, () =>
+      this.prisma.bookEntry.findUnique({
+        where: { id: entryId },
+        include: ENTRY_INCLUDE,
+      }),
+    );
     return toEntryDto(
       entry,
       await this.reviews.getRating(
@@ -635,12 +626,7 @@ export class BookLibraryService {
     entryId: string,
     dto: UpdateBookEntryDto,
   ): Promise<BookEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
-
-    const before = await this.prisma.bookEntry.findUnique({
-      where: { id: entryId },
-      select: { status: true, favorite: true, finishedAt: true },
-    });
+    const before = await this.assertEntryOwnership(userId, entryId);
 
     const completedReading =
       dto.status && before?.status !== dto.status
@@ -683,32 +669,20 @@ export class BookLibraryService {
     });
 
     if (
-      before?.status === BookStatus.READ &&
-      entry.status !== BookStatus.READ &&
-      completedReading
-    ) {
-      await this.xp.revokeBySource("BookReading", [completedReading.id]);
-    }
-
-    if (
-      before?.status !== BookStatus.READ &&
-      entry.status === BookStatus.READ &&
-      completedReading
-    ) {
-      const reason =
-        completedReading.number === 1
-          ? XpReason.BOOK_FINISHED
-          : XpReason.BOOK_REPLAYED;
-      await this.xp.award(
+      completedReading &&
+      (await syncCycleCompletionXp(this.xp, this.achievements, {
         userId,
-        reason,
-        completedReading.id,
-        await this.finishXp(entry.bookItemId, completedReading, reason),
-      );
-      await this.achievements.evaluate(
-        userId,
-        ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
-      );
+        previousStatus: before?.status,
+        nextStatus: entry.status,
+        completedStatus: BookStatus.READ,
+        cycle: completedReading,
+        sourceType: "BookReading",
+        firstReason: XpReason.BOOK_FINISHED,
+        replayReason: XpReason.BOOK_REPLAYED,
+        amount: (reason) =>
+          this.finishXp(entry.bookItemId, completedReading, reason),
+      }))
+    ) {
       await this.awardFinishMilestones(
         userId,
         entry.bookItemId,
@@ -764,15 +738,11 @@ export class BookLibraryService {
       this.prisma.bookEntry.delete({ where: { id: entryId } }),
     ]);
 
-    await this.xp.revokeBySource("Entry", [entryId]); // WORK_ADDED
-    await this.xp.revokeBySource(
-      "BookReading",
-      readings.map((reading) => reading.id),
-    ); // BOOK_FINISHED / BOOK_REPLAYED
-    await this.xp.revokeBySource(
-      "Review",
-      reviews.map((r) => r.id),
-    ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
+    await revokeEntryXp(this.xp, [
+      { sourceType: "Entry", ids: [entryId] },
+      { sourceType: "BookReading", ids: readings.map((reading) => reading.id) },
+      { sourceType: "Review", ids: reviews.map((r) => r.id) },
+    ]);
     await Promise.all(
       sessions.map((session) =>
         this.activity.deleteLinked("BookSession", session.id),

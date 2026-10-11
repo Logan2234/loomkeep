@@ -6,19 +6,21 @@ import type {
 import {
   ActivityType,
   Domain,
-  ErrorCode,
   ReviewTargetType,
   SessionCycleAction,
   TrackingCycleStatus,
 } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import {
   SessionSource,
   type GamePlaythrough,
   type GameSession,
   type Prisma,
 } from "@prisma/client";
-import { AppException } from "../common/app.exception";
+import {
+  assertEntryOwnership,
+  assertSessionOwnership,
+} from "../common/entry-lifecycle.util";
 import { toPagedResult } from "../common/pagination.util";
 import { sessionPeriodMinutes } from "../common/session-period.util";
 import { normalizeSessionNotes, sessionDate } from "../common/session.util";
@@ -296,71 +298,46 @@ export class GameSessionService {
     };
   }
 
-  private async ownedEntry(userId: string, entryId: string) {
-    const entry = await this.prisma.gameEntry.findUnique({
-      where: { id: entryId },
-      select: {
-        id: true,
-        userId: true,
-        gameItemId: true,
-        status: true,
-        startedAt: true,
-        playtimeMinutes: true,
-        trackedPlaytimeMinutes: true,
-        steamPlaytimeMinutes: true,
-        finishedAt: true,
-      },
-    });
-
-    if (!entry) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibraryEntryNotFound,
-      );
-    }
-
-    if (entry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibraryEntryForbidden,
-      );
-    }
-
-    return entry;
+  private ownedEntry(userId: string, entryId: string) {
+    return assertEntryOwnership(userId, () =>
+      this.prisma.gameEntry.findUnique({
+        where: { id: entryId },
+        select: {
+          id: true,
+          userId: true,
+          gameItemId: true,
+          status: true,
+          startedAt: true,
+          playtimeMinutes: true,
+          trackedPlaytimeMinutes: true,
+          steamPlaytimeMinutes: true,
+          finishedAt: true,
+        },
+      }),
+    );
   }
 
-  private async ownedSession(userId: string, sessionId: string) {
-    const session = await this.prisma.gameSession.findUnique({
-      where: { id: sessionId },
-      include: {
-        gameEntry: {
-          select: {
-            userId: true,
-            status: true,
-            steamPlaytimeMinutes: true,
+  private ownedSession(userId: string, sessionId: string) {
+    return assertSessionOwnership(
+      userId,
+      () =>
+        this.prisma.gameSession.findUnique({
+          where: { id: sessionId },
+          include: {
+            gameEntry: {
+              select: {
+                userId: true,
+                status: true,
+                steamPlaytimeMinutes: true,
+              },
+            },
+            playthrough: {
+              select: { number: true, status: true },
+            },
           },
-        },
-        playthrough: {
-          select: { number: true, status: true },
-        },
-      },
-    });
-
-    if (!session) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibrarySessionNotFound,
-      );
-    }
-
-    if (session.gameEntry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibrarySessionForbidden,
-      );
-    }
-
-    return session;
+        }),
+      (session) => session.gameEntry.userId,
+    );
   }
 
   private async resolvePlaythrough(
