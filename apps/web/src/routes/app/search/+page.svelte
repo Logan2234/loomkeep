@@ -1,8 +1,6 @@
 <script lang="ts">
   import { enumParam } from "#lib/url-params.js";
 
-  import { typedEntries } from "#lib/object.js";
-
   import { type SelectOption } from "#lib/types/select-option.js";
 
   import { goto } from "$app/navigation";
@@ -11,43 +9,57 @@
   import { resolveLink } from "#lib/api/links.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import BookSearchPanel from "#lib/components/search/BookSearchPanel.svelte";
   import GameSearchPanel from "#lib/components/search/GameSearchPanel.svelte";
   import MediaSearchPanel from "#lib/components/search/MediaSearchPanel.svelte";
   import MusicSearchPanel from "#lib/components/search/MusicSearchPanel.svelte";
+  import UnifiedSearchPanel from "#lib/components/search/UnifiedSearchPanel.svelte";
   import QuickAddPanel from "#lib/components/QuickAddPanel.svelte";
   import ScanIsbnModal from "#lib/components/ScanIsbnModal.svelte";
   import { DOMAINS, DOMAIN_IDS } from "#lib/constants/domains.js";
   import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
-  import { isDomainEnabled } from "#lib/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domains.js";
+  import { auth } from "#lib/auth.svelte.js";
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { quickAddTarget } from "#lib/quick-add.js";
   import { isPastedLink } from "#lib/share-link.js";
   import { Domain, type MediaType } from "@loomkeep/shared";
 
+  // The "Tout" tab: every domain at once, by shelves (UnifiedSearchPanel).
+  const ALL = "ALL";
+  type Tab = Domain | typeof ALL;
+
   // Only the domains the user keeps enabled are searchable (mirrors the nav;
-  // the API enforces the same gate on the search endpoints).
+  // the API enforces the same gate on the search endpoints), in the order
+  // they gave them in their settings.
   const enabledTabs = $derived(
-    typedEntries(DOMAINS).filter(([d, _]) => isDomainEnabled(d)),
+    orderedDomains(auth.user?.domainOrder)
+      .filter(isDomainEnabled)
+      .map((d) => [d, DOMAINS[d]] as const),
   );
+  const hasAllTab = $derived(enabledTabs.length > 1);
 
   // `type` preselects the domain tab (e.g. linked from a library page's
   // "Chercher un jeu" / empty-search-preview "Voir plus"), same idea as
-  // `query` prefilling the search box.
+  // `query` prefilling the search box. Without one, every domain at once.
   const initialDomain = enumParam(
     page.url.searchParams,
     "type",
     DOMAIN_IDS,
-    Domain.MEDIA,
+    ALL,
   );
 
   let query = $state(page.url.searchParams.get("query") ?? "");
-  let domain = $state<Domain>(initialDomain);
+  let domain = $state<Tab>(initialDomain);
 
   const placeholder = $derived(
-    m.search_placeholder({ domain: DOMAINS[domain].searchHint }),
+    domain === ALL
+      ? m.search_placeholder_all()
+      : m.search_placeholder({ domain: DOMAINS[domain].searchHint }),
   );
 
   const pastedLink = $derived(isPastedLink(query) ? query.trim() : null);
@@ -67,12 +79,16 @@
   );
 
   // Planned domains show a "coming soon" placeholder instead of a search panel.
-  const comingSoon = $derived(DOMAINS[domain]?.comingSoon ?? false);
+  const comingSoon = $derived(
+    domain !== ALL && (DOMAINS[domain].comingSoon ?? false),
+  );
 
   // If the active domain gets disabled (or was never enabled), fall back to the
-  // first enabled one so the panel below always matches a visible tab.
+  // first enabled one so the panel below always matches a visible tab — and
+  // with a single domain, "Tout" would only repeat it.
   $effect(() => {
-    if (!isDomainEnabled(domain) && enabledTabs.length > 0) {
+    const stale = domain === ALL ? !hasAllTab : !isDomainEnabled(domain);
+    if (stale && enabledTabs.length > 0) {
       domain = enabledTabs[0][0];
     }
   });
@@ -84,7 +100,7 @@
   const debouncedSyncUrl = debounce(() => {
     const params = new URLSearchParams();
     if (query.trim()) params.set("query", query.trim());
-    if (domain !== Domain.MEDIA) params.set("type", domain);
+    if (domain !== ALL) params.set("type", domain);
     const qs = params.toString();
     void goto(qs ? `?${qs}` : page.url.pathname, {
       replace: true,
@@ -105,9 +121,9 @@
       (event.currentTarget as HTMLInputElement).blur();
       return;
     }
-    if (event.key === "Tab" && enabledTabs.length > 1) {
+    if (event.key === "Tab" && hasAllTab) {
       event.preventDefault();
-      const ids = enabledTabs.map(([d]) => d);
+      const ids: Tab[] = [ALL, ...enabledTabs.map(([d]) => d)];
       const i = ids.indexOf(domain);
       domain = ids[(i + (event.shiftKey ? -1 : 1) + ids.length) % ids.length];
     }
@@ -211,9 +227,18 @@
 
   <div
     class="guichet mb-5"
-    style={`--domain-accent: ${DOMAINS[domain].accent}`}>
-    {#if enabledTabs.length > 1}
+    style={`--domain-accent: ${domain === ALL ? "var(--accent)" : DOMAINS[domain].accent}`}>
+    {#if hasAllTab}
       <div class="guichet-tabs no-scrollbar">
+        <button
+          type="button"
+          class="guichet-tab"
+          class:guichet-tab-active={domain === ALL}
+          onclick={() => (domain = ALL)}>
+          <Icon name="search" class="h-3.5 w-3.5" />
+          {m.search_tab_all()}
+          {#if isFeatureNew("unified-search")}<NewBadge />{/if}
+        </button>
         {#each enabledTabs as tab (tab[0])}
           <button
             type="button"
@@ -230,7 +255,7 @@
       </div>
     {/if}
 
-    <div class="guichet-bar" class:guichet-bar-solo={enabledTabs.length <= 1}>
+    <div class="guichet-bar" class:guichet-bar-solo={!hasAllTab}>
       <Icon name="search" class="text-dim h-5 w-5 shrink-0" />
       <div class="guichet-input-wrap">
         <input
@@ -243,7 +268,7 @@
           onkeydown={handleSearchKeydown}
           class="guichet-input" />
 
-        {#if enabledTabs.length > 1}
+        {#if hasAllTab}
           <!-- Overlaid, not a flex sibling — as a real layout child it would
                steal width (and thus click area) from the input even while
                invisible, leaving a dead zone that doesn't focus it. -->
@@ -353,6 +378,11 @@
         {m.search_coming_soon_desc()}
       </p>
     </div>
+  {:else if domain === ALL}
+    <UnifiedSearchPanel
+      {query}
+      order={enabledTabs.map(([d]) => d)}
+      onseeall={(d) => (domain = d)} />
   {:else if domain === Domain.MEDIA}
     <MediaSearchPanel {query} type={mediaType} />
   {:else if domain === Domain.GAMES}

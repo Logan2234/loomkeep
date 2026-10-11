@@ -32,7 +32,9 @@ const DOMAIN_PAGE = /^\/app\/(games|books|music)\/([^/?#]+)$/;
  * Adds a work from a card to the viewer's library, where each domain starts
  * it: to watch, to play, to read, to listen — as a saga's "Add" does.
  */
-export async function addWorkToLibrary(work: MessageWorkDto): Promise<void> {
+export async function addWorkToLibrary(
+  work: Pick<MessageWorkDto, "href">,
+): Promise<void> {
   const media = MEDIA_PAGE.exec(work.href);
 
   if (media) {
