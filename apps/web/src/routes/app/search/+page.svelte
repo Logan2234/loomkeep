@@ -46,12 +46,8 @@
   // `type` preselects the domain tab (e.g. linked from a library page's
   // "Chercher un jeu" / empty-search-preview "Voir plus"), same idea as
   // `query` prefilling the search box. Without one, every domain at once.
-  const initialDomain = enumParam(
-    page.url.searchParams,
-    "type",
-    DOMAIN_IDS,
-    ALL,
-  );
+  const initialDomain =
+    enumParam(page.url.searchParams, "type", DOMAIN_IDS, null) ?? ALL;
 
   let query = $state(page.url.searchParams.get("query") ?? "");
   let domain = $state<Tab>(initialDomain);

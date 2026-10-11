@@ -59,8 +59,8 @@
     enabled
       ? shelves(
           order,
-          allQuery.data ?? localQuery.data,
-          allQuery.data !== undefined,
+          allQuery.data ?? localQuery.data ?? undefined,
+          !!allQuery.data,
         )
       : [],
   );
