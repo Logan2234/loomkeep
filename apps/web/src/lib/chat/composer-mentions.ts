@@ -1,4 +1,4 @@
-import { mentionToken } from "./chat-markdown";
+import { liveStyles, mentionToken, type LiveStyle } from "./chat-markdown";
 
 /** A work mentioned while writing: shown as `#Title`, sent as a token. */
 export interface Mention {
@@ -50,15 +50,27 @@ export function mentionAtCaret(
   return { start: caret - typed[1].length - 1, query: typed[1] };
 }
 
-/** The composer's text in runs, its links and mentions marked for the underline. */
-export function highlightRuns(
-  text: string,
-  mentions: Mention[],
-): { text: string; marked: boolean }[] {
-  const ranges: [number, number][] = [];
+/** A stretch of the composer's text drawn one way under the field. */
+export interface ComposerRun {
+  text: string;
+  styles: LiveStyle[];
+  /** A link or a mentioned work: underlined. */
+  underlined: boolean;
+}
+
+/**
+ * The composer's text in runs for the layer drawn under the field: styled as
+ * it'll read once sent, its links and mentions underlined.
+ */
+export function composerRuns(text: string, mentions: Mention[]): ComposerRun[] {
+  const underlined = Array.from({ length: text.length }, () => false);
+
+  const underline = (from: number, to: number) => {
+    for (let k = from; k < to; k++) underlined[k] = true;
+  };
 
   for (const match of text.matchAll(LINK)) {
-    ranges.push([match.index, match.index + match[0].length]);
+    underline(match.index, match.index + match[0].length);
   }
 
   for (const { title } of mentions) {
@@ -66,29 +78,51 @@ export function highlightRuns(
     let at = text.indexOf(needle);
 
     while (at !== -1) {
-      ranges.push([at, at + needle.length]);
+      underline(at, at + needle.length);
       at = text.indexOf(needle, at + needle.length);
     }
   }
 
-  ranges.sort((a, b) => a[0] - b[0]);
-  const runs: { text: string; marked: boolean }[] = [];
-  let cursor = 0;
+  const styles = liveStyles(text);
+  const keyOf = (k: number) =>
+    `${underlined[k]}|${[...styles[k]].sort().join(",")}`;
+  const runs: ComposerRun[] = [];
+  let start = 0;
 
-  for (const [start, end] of ranges) {
-    if (start < cursor) continue;
-
-    if (start > cursor) {
-      runs.push({ text: text.slice(cursor, start), marked: false });
-    }
-
-    runs.push({ text: text.slice(start, end), marked: true });
-    cursor = end;
-  }
-
-  if (cursor < text.length) {
-    runs.push({ text: text.slice(cursor), marked: false });
+  for (let k = 1; k <= text.length; k++) {
+    if (k < text.length && keyOf(k) === keyOf(start)) continue;
+    runs.push({
+      text: text.slice(start, k),
+      styles: [...styles[start]].sort(),
+      underlined: underlined[start],
+    });
+    start = k;
   }
 
   return runs;
+}
+
+const STYLE_CLASS: Record<LiveStyle, string> = {
+  marker: "text-dim",
+  // A stroke rather than a heavier weight, and the font's synthesized
+  // oblique for italic: neither changes a character's width, so the text
+  // under the field stays in line with its caret.
+  strong: "[-webkit-text-stroke:0.45px_currentColor]",
+  em: "italic [font-synthesis:style]",
+  strike: "line-through",
+  code: "bg-surface-2 text-accent rounded-sm",
+  spoiler:
+    "rounded-sm bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--accent)_22%,transparent)_0_6px,transparent_6px_12px)]",
+};
+
+/** The classes a run is drawn with under the field. */
+export function composerRunClass(run: ComposerRun): string {
+  return [
+    ...run.styles.map((style) => STYLE_CLASS[style]),
+    run.underlined
+      ? "decoration-accent underline decoration-2 underline-offset-[3px]"
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 }

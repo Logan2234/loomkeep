@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  composerRuns,
   deserializeMentions,
-  highlightRuns,
   mentionAtCaret,
   serializeMentions,
 } from "./composer-mentions";
@@ -31,13 +31,72 @@ describe("composer mentions", () => {
     expect(mentionAtCaret("#", 1)).toBe(null);
   });
 
-  it("marks links and mentions for the underline", () => {
-    expect(highlightRuns("Vu #Dune sur https://x.org !", [DUNE])).toEqual([
-      { text: "Vu ", marked: false },
-      { text: "#Dune", marked: true },
-      { text: " sur ", marked: false },
-      { text: "https://x.org", marked: true },
-      { text: " !", marked: false },
+  it("underlines links and mentions", () => {
+    expect(
+      composerRuns("Vu #Dune sur https://x.org !", [DUNE]).map((run) => [
+        run.text,
+        run.underlined,
+      ]),
+    ).toEqual([
+      ["Vu ", false],
+      ["#Dune", true],
+      [" sur ", false],
+      ["https://x.org", true],
+      [" !", false],
+    ]);
+  });
+
+  it("styles the text as it'll read once sent, its markers dimmed", () => {
+    const runs = composerRuns("Le **final** de ||Dark|| et `S1`", []);
+
+    expect(runs.map((run) => [run.text, run.styles.join("+")])).toEqual([
+      ["Le ", ""],
+      ["**", "marker"],
+      ["final", "strong"],
+      ["**", "marker"],
+      [" de ", ""],
+      ["||", "marker"],
+      ["Dark", "spoiler"],
+      ["||", "marker"],
+      [" et ", ""],
+      ["`", "marker"],
+      ["S1", "code"],
+      ["`", "marker"],
+    ]);
+  });
+
+  it("dims a quote's or a list's prefix and nests bold in italic", () => {
+    const runs = composerRuns("> *un **gros** mot*\n- point", []);
+
+    expect(runs.map((run) => [run.text, run.styles.join("+")])).toEqual([
+      ["> *", "marker"],
+      ["un ", "em"],
+      ["**", "em+marker"],
+      ["gros", "em+strong"],
+      ["**", "em+marker"],
+      [" mot", "em"],
+      ["*", "marker"],
+      ["\n", ""],
+      ["- ", "marker"],
+      ["point", ""],
+    ]);
+  });
+
+  // Counted in UTF-16 units, as the field counts: an emoji takes two.
+  it("keeps its styles in place after an emoji", () => {
+    const runs = composerRuns("🔥 **ok**", []);
+
+    expect(runs.map((run) => [run.text, run.styles.join("+")])).toEqual([
+      ["🔥 ", ""],
+      ["**", "marker"],
+      ["ok", "strong"],
+      ["**", "marker"],
+    ]);
+  });
+
+  it("leaves an unclosed marker as it is", () => {
+    expect(composerRuns("2 * 3 **", [])).toEqual([
+      { text: "2 * 3 **", styles: [], underlined: false },
     ]);
   });
 });

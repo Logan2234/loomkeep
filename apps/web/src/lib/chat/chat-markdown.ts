@@ -258,6 +258,92 @@ function findClose(
   return -1;
 }
 
+/** How a character of the composer reads while typing, before it's sent. */
+export type LiveStyle =
+  "marker" | "strong" | "em" | "strike" | "code" | "spoiler";
+
+/**
+ * The composer's text styled as it'll read once sent, character by
+ * character: the markers stay, dimmed. Read line by line, as most of what
+ * people type spans one; a fenced block is code from fence to fence.
+ */
+export function liveStyles(source: string): Set<LiveStyle>[] {
+  const styles = Array.from(
+    { length: source.length },
+    () => new Set<LiveStyle>(),
+  );
+
+  const mark = (from: number, to: number, style: LiveStyle) => {
+    for (let k = from; k < to; k++) styles[k].add(style);
+  };
+
+  const scan = (start: number, end: number) => {
+    let i = start;
+
+    while (i < end) {
+      if (source[i] === "`") {
+        const close = source.indexOf("`", i + 1);
+
+        if (close !== -1 && close < end && close > i + 1) {
+          mark(i, i + 1, "marker");
+          mark(i + 1, close, "code");
+          mark(close, close + 1, "marker");
+          i = close + 1;
+          continue;
+        }
+      }
+
+      LINK.lastIndex = i;
+      const link = (source[i] === "h" && LINK.exec(source)) || null;
+
+      if (link && i + link[0].length <= end) {
+        i += link[0].length;
+        continue;
+      }
+
+      const marker = MARKERS.find(([token]) => source.startsWith(token, i));
+
+      if (marker) {
+        const [token, types] = marker;
+        const close = findClose(source, token, i + token.length, end);
+
+        if (close !== -1) {
+          mark(i, i + token.length, "marker");
+          mark(close, close + token.length, "marker");
+          for (const type of types) mark(i + token.length, close, type);
+          scan(i + token.length, close);
+          i = close + token.length;
+          continue;
+        }
+      }
+
+      i++;
+    }
+  };
+
+  let offset = 0;
+  let fenced = false;
+
+  for (const line of source.split("\n")) {
+    const end = offset + line.length;
+
+    if (line.startsWith("```")) {
+      mark(offset, end, "marker");
+      fenced = !fenced;
+    } else if (fenced) {
+      mark(offset, end, "code");
+    } else {
+      const prefix = /^(?:> ?|[-*] )/.exec(line);
+      if (prefix) mark(offset, offset + prefix[0].length, "marker");
+      scan(offset + (prefix?.[0].length ?? 0), end);
+    }
+
+    offset = end + 1;
+  }
+
+  return styles;
+}
+
 /** One line for a conversation list: spoilers dotted out, markers dropped. */
 export function chatPreview(source: string): string {
   return flatten(parseChatMarkdown(source));

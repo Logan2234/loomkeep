@@ -23,7 +23,8 @@
   } from "#lib/chat/chat-markdown.js";
   import {
     deserializeMentions,
-    highlightRuns,
+    composerRunClass,
+    composerRuns,
     mentionAtCaret,
     serializeMentions,
     type Mention,
@@ -148,7 +149,7 @@
     readSlashCommand(serialized).text.length > 0 &&
       serialized.length <= COMMENT_TEXT_MAX_LENGTH,
   );
-  const runs = $derived(highlightRuns(value, works));
+  const runs = $derived(composerRuns(value, works));
   const emojis = $derived(emojiAt ? findEmoji(emojiAt.query) : []);
 
   function autosize() {
@@ -426,17 +427,16 @@
     {/if}
 
     <label for={id} class="sr-only">{label}</label>
-    <!-- Under the field, the same text in the same box, invisible but for
-         the underline of its links and mentioned works. -->
+    <!-- Under the transparent field, the same text in the same box, drawn
+         as it'll read once posted: the field only lends it its caret. -->
     <div
       bind:this={backdrop}
       aria-hidden="true"
-      class="pointer-events-none absolute inset-0 overflow-hidden text-sm leading-relaxed break-words whitespace-pre-wrap text-transparent
+      class="pointer-events-none absolute inset-0 overflow-hidden text-sm leading-relaxed break-words whitespace-pre-wrap
         {layout.compact ? 'text-base' : ''}">
-      {#each runs as run, i (i)}{#if run.marked}<span
-            class="decoration-accent underline decoration-2 underline-offset-[3px]"
-            >{run.text}</span
-          >{:else}{run.text}{/if}{/each}&#8203;
+      {#each runs as run, i (i)}<span class={composerRunClass(run)}
+          >{run.text}</span
+        >{/each}&#8203;
     </div>
     <textarea
       {id}
@@ -444,7 +444,7 @@
       bind:value
       rows={framed ? 2 : 1}
       {placeholder}
-      class="placeholder:text-dim selection:bg-accent/30 relative block w-full resize-none [scrollbar-width:none] bg-transparent text-sm leading-relaxed outline-none
+      class="placeholder:text-dim selection:bg-accent/30 caret-fg relative block w-full resize-none [scrollbar-width:none] bg-transparent text-sm leading-relaxed text-transparent outline-none
         {layout.compact ? 'text-base' : ''}"
       oninput={() => {
         const completed =

@@ -18,7 +18,8 @@
   } from "#lib/chat/emoji.js";
   import {
     deserializeMentions,
-    highlightRuns,
+    composerRunClass,
+    composerRuns,
     mentionAtCaret,
     serializeMentions,
     type Mention,
@@ -351,7 +352,7 @@
     });
   }
 
-  const runs = $derived(highlightRuns(value, mentions));
+  const runs = $derived(composerRuns(value, mentions));
 
   function autosize() {
     if (!textarea) return;
@@ -682,17 +683,16 @@
       <label for="chat-composer-{conversationId}" class="sr-only">
         {m.chat_message_label()}
       </label>
-      <!-- Under the field, the same text in the same box, invisible but for
-           the underline of its links and mentions. -->
+      <!-- Under the transparent field, the same text in the same box, drawn
+           as it'll read once sent: the field only lends it its caret. -->
       <div
         bind:this={backdrop}
         aria-hidden="true"
-        class="bg-bg pointer-events-none absolute inset-0 overflow-hidden rounded-[1.2rem] border border-transparent px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap text-transparent
+        class="bg-bg pointer-events-none absolute inset-0 overflow-hidden rounded-[1.2rem] border border-transparent px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap
           {layout.compact ? 'text-base' : ''}">
-        {#each runs as run, i (i)}{#if run.marked}<span
-              class="decoration-accent underline decoration-2 underline-offset-[3px]"
-              >{run.text}</span
-            >{:else}{run.text}{/if}{/each}&#8203;
+        {#each runs as run, i (i)}<span class={composerRunClass(run)}
+            >{run.text}</span
+          >{/each}&#8203;
       </div>
       <textarea
         id="chat-composer-{conversationId}"
@@ -701,7 +701,7 @@
         rows="1"
         maxlength={MESSAGE_TEXT_MAX_LENGTH}
         placeholder={m.chat_composer_placeholder({ name: peerName })}
-        class="border-border focus:border-accent selection:bg-accent/30 relative block w-full resize-none [scrollbar-width:none] rounded-[1.2rem] border bg-transparent px-3.5 py-2 text-sm leading-relaxed transition-colors duration-150 outline-none
+        class="border-border focus:border-accent selection:bg-accent/30 caret-fg placeholder:text-dim relative block w-full resize-none [scrollbar-width:none] rounded-[1.2rem] border bg-transparent px-3.5 py-2 text-sm leading-relaxed text-transparent transition-colors duration-150 outline-none
           {layout.compact ? 'text-base' : ''}"
         {oninput}
         {onkeydown}
