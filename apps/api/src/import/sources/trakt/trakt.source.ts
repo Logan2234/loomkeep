@@ -8,7 +8,6 @@ import type { ParsedImport } from "../../media-import-model";
 import { readZipEntriesMatching } from "../../zip";
 import { MediaImportSource } from "../media/media-import.source";
 import { MediaMatchResolver } from "../media/media-match-resolver";
-import { buildImportMovies, buildImportShows } from "./parse-trakt-export";
 import type {
   TraktFavoriteEntry,
   TraktHistoryEntry,
@@ -16,6 +15,7 @@ import type {
   TraktShowRatingEntry,
   TraktWatchlistEntry,
 } from "./trakt-export.types";
+import { buildImportMovies, buildImportShows } from "./trakt.parser";
 
 const WATCHLIST_FILE = "lists-watchlist.json";
 const FAVORITES_FILE = "lists-favorites.json";

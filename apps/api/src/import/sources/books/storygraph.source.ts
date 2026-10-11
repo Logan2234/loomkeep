@@ -7,7 +7,7 @@ import { BookCsvSource } from "./book-csv.source";
 import {
   parseStoryGraphCsv,
   type ParsedStoryGraphRow,
-} from "./storygraph-parse";
+} from "./storygraph.parser";
 
 /**
  * StoryGraph CSV import. Only the CSV parsing is source-specific; the

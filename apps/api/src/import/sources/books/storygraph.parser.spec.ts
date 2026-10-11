@@ -1,4 +1,4 @@
-import { parseStoryGraphCsv } from "./storygraph-parse";
+import { parseStoryGraphCsv } from "./storygraph.parser";
 
 const HEADER =
   "Title,Authors,Contributors,ISBN/UID,Format,Read Status,Date Added,Last Date Read,Dates Read,Read Count,Moods,Pace,Character- or Plot-Driven?,Strong Character Development?,Loveable Characters?,Diverse Characters?,Flawed Characters?,Star Rating,Review,Content Warnings,Content Warning Description,Tags,Owned?";

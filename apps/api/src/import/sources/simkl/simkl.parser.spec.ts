@@ -1,5 +1,5 @@
-import { buildImportMovies, buildImportShows } from "./parse-simkl";
 import type { SimklAllItemsResponse } from "./simkl-api.types";
+import { buildImportMovies, buildImportShows } from "./simkl.parser";
 
 describe("buildImportShows", () => {
   it("flattens watched seasons/episodes for a show", () => {

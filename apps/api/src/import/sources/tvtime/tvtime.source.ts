@@ -16,7 +16,7 @@ import {
   parseTvTimeExport,
   type ParsedMovie,
   type ParsedShow,
-} from "./parse-export";
+} from "./tvtime.parser";
 
 const FILE_NAMES: Record<keyof TvTimeImportFilesDto, string> = {
   episodesCsv: "tracking-prod-records-v2.csv",

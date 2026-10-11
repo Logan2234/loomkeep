@@ -1,8 +1,8 @@
-import { buildImportMovies, buildImportShows } from "./parse-trakt-export";
 import type {
   TraktHistoryEntry,
   TraktWatchlistEntry,
 } from "./trakt-export.types";
+import { buildImportMovies, buildImportShows } from "./trakt.parser";
 
 describe("buildImportShows", () => {
   it("groups episode watch events by show, folding rewatches into a count", () => {

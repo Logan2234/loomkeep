@@ -1,4 +1,4 @@
-import { parseBabelioCsv } from "./babelio-parse";
+import { parseBabelioCsv } from "./babelio.parser";
 
 const HEADER =
   '"ISBN";"Titre";"Auteur";"Editeur";"Date de publication";"Date d`entrée dans Babelio";"Statut";"Note"';

@@ -1,8 +1,8 @@
 import { CatalogSource, MediaType } from "@loomkeep/shared";
 import { vi } from "vitest";
 import { AnilistMatchResolver } from "./anilist-match-resolver";
+import { parseMyAnimeListXml } from "./myanimelist.parser";
 import { MyAnimeListImportSource } from "./myanimelist.source";
-import { parseMyAnimeListXml } from "./parse-myanimelist-xml";
 
 const EXPORT = `<?xml version="1.0" encoding="UTF-8"?>
 <myanimelist>
