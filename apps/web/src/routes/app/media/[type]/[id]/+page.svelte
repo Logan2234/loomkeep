@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { buildGallery, galleryIndex } from "#lib/gallery.js";
+
+  import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
+  import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
+
   import { localDateInput } from "#lib/date.js";
   import { page } from "$app/state";
   import {
@@ -63,12 +68,6 @@
   import EpisodesSection from "./components/EpisodesSection.svelte";
   import WhereToWatch from "./components/WhereToWatch.svelte";
 
-  const TYPE_LABELS: Record<MediaType, string> = {
-    MOVIE: m.media_movie(),
-    SERIES: m.media_series(),
-    ANIME: m.media_anime_label(),
-  };
-
   const DIRECTOR_LABELS: Record<MediaType, string> = {
     MOVIE: m.media_directed_by(),
     SERIES: m.media_created_by(),
@@ -94,13 +93,6 @@
 
   // Brand-ish colors per rating source (no official logos — those are
   // trademarked). Literal classes so Tailwind picks them up.
-  const RATING_STYLES: Record<string, string> = {
-    TMDB: "bg-[#01d277] text-black",
-    IMDb: "bg-[#f5c518] text-black",
-    RT: "bg-[#fa320a] text-white",
-    Metacritic: "bg-[#66cc33] text-black",
-    AniList: "bg-[#02a9ff] text-white",
-  };
 
   const queryClient = useQueryClient();
 
@@ -114,26 +106,22 @@
 
   // Poster + backdrop + extras' backdrop gallery (TMDB only), deduped, for the
   // lightbox carousel.
-  const galleryImages = $derived.by(() => {
-    if (!detail) return [];
-    const urls: string[] = [];
-    if (detail.posterUrl) urls.push(detail.posterUrl);
-    if (detail.backdropUrl && !urls.includes(detail.backdropUrl)) {
-      urls.push(detail.backdropUrl);
-    }
-    for (const img of extras?.images ?? []) {
-      if (!urls.includes(img)) urls.push(img);
-    }
-    return urls.map((src) => ({ src, alt: detail!.title }));
-  });
+  const galleryImages = $derived(
+    detail
+      ? buildGallery(detail.title, [
+          { src: detail.posterUrl || null },
+          { src: detail.backdropUrl || null },
+          ...(extras?.images ?? []).map((src) => ({ src })),
+        ])
+      : [],
+  );
 
   let lightboxOpen = $state(false);
   let lightboxIndex = $state(0);
 
   function openLightbox(url: string | null) {
     if (!url) return;
-    const i = galleryImages.findIndex((img) => img.src === url);
-    lightboxIndex = (i >= 0 ? i : 0) + trailerOffset;
+    lightboxIndex = galleryIndex(galleryImages, url, trailerOffset);
     lightboxOpen = true;
   }
 
@@ -259,7 +247,7 @@
 
   const entry = $derived(detail?.entry ?? null);
   const reviewMeta = $derived(
-    detail ? joinMeta(TYPE_LABELS[detail.type], detail.year) : "",
+    detail ? joinMeta(MEDIA_TYPE_LABEL[detail.type], detail.year) : "",
   );
   const isMovie = $derived(detail?.type === "MOVIE");
   let today = $state(localDateInput());
@@ -417,7 +405,7 @@
         <div class="flex flex-wrap items-center gap-2">
           <span
             class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur">
-            {TYPE_LABELS[detail.type]}
+            {MEDIA_TYPE_LABEL[detail.type]}
           </span>
           {#if upcoming}
             <span
@@ -504,21 +492,7 @@
                 workImageUrl={detail.posterUrl}
                 overlay />
             {/if}
-            {#each extras?.ratings ?? [] as r (r.source)}
-              <svelte:element
-                this={r.url ? "a" : "span"}
-                href={r.url}
-                target={r.url ? "_blank" : undefined}
-                rel={r.url ? "noopener noreferrer" : undefined}
-                class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold {RATING_STYLES[
-                  r.source
-                ] ?? 'bg-white/15 text-white'} {r.url
-                  ? 'transition-opacity hover:opacity-80'
-                  : ''}">
-                <span>{r.source}</span>
-                <span class="tabular-nums opacity-90">{r.score}</span>
-              </svelte:element>
-            {/each}
+            <ExternalRatingChips ratings={extras?.ratings ?? []} overlay />
           </div>
           {#if hasOmdbRatings}
             <a

@@ -1,4 +1,8 @@
 <script lang="ts">
+  import KpiStripSkeleton from "#lib/components/stats/KpiStripSkeleton.svelte";
+  import RankBarsSkeleton from "#lib/components/stats/RankBarsSkeleton.svelte";
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import Tooltip from "#lib/components/Tooltip.svelte";
   import ImportDetailModal from "./ImportDetailModal.svelte";
@@ -232,23 +236,12 @@
     {/if}
   {:else if summaryQuery.loading}
     <div class="animate-pulse">
-      <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-        {#each { length: 4 } as _, i (i)}
-          <div class="card h-20 space-y-3 p-4">
-            <div class="skeleton h-6 w-2/5 rounded"></div>
-            <div class="skeleton h-3 w-3/4 rounded"></div>
-          </div>
-        {/each}
-      </div>
-      <div class="card mb-5 space-y-4 p-4">
-        <div class="skeleton h-3 w-2/5 rounded"></div>
-        {#each { length: 3 } as _, i (i)}
-          <div class="space-y-2">
-            <div class="skeleton h-4 w-2/5 rounded"></div>
-            <div class="skeleton h-2 w-full rounded"></div>
-          </div>
-        {/each}
-      </div>
+      <KpiStripSkeleton count={4} />
+      <RankBarsSkeleton
+        count={3}
+        titleClass="skeleton h-3 w-2/5 rounded"
+        labelClass="skeleton h-4 w-2/5 rounded"
+        withValue={false} />
     </div>
   {/if}
 
@@ -383,14 +376,7 @@
     </ul>
 
     {#if runsQuery.hasNextPage}
-      <button
-        class="btn btn-ghost mt-4 w-full"
-        disabled={runsQuery.isFetchingNextPage}
-        onclick={() => runsQuery.fetchNextPage()}>
-        {runsQuery.isFetchingNextPage
-          ? m.common_loading()
-          : m.common_load_more()}
-      </button>
+      <LoadMoreButton query={runsQuery} class="btn btn-ghost mt-4 w-full" />
     {/if}
   {/if}
 </div>

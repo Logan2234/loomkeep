@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { buildGallery, galleryIndex } from "#lib/gallery.js";
+
+  import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
+  import DetailsCard from "#lib/components/DetailsCard.svelte";
+  import WorkSocialSection from "#lib/components/WorkSocialSection.svelte";
   import { page } from "$app/state";
   import {
     ApiError,
@@ -14,7 +19,7 @@
   import { goBack } from "#lib/backNav.svelte.js";
   import { toCarouselItems } from "#lib/carousel.js";
   import Banner from "#lib/components/Banner.svelte";
-  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
   import GameSessionDock from "#lib/components/GameSessionDock.svelte";
@@ -27,14 +32,14 @@
   import Poster from "#lib/components/Poster.svelte";
   import ProviderMark from "#lib/components/ProviderMark.svelte";
   import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
-  import ReviewsSection from "#lib/components/ReviewsSection.svelte";
+
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "#lib/components/TrackingPanel.svelte";
   import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
   import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
   import { gameWork } from "#lib/chat/work-search.js";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+
   import { IGDB_API } from "#lib/constants/external-links.js";
   import {
     GAME_OWNERSHIP_SOURCES,
@@ -70,10 +75,6 @@
 
   // Brand-ish colors per rating source (no official logos — those are
   // trademarked). Literal classes so Tailwind picks them up.
-  const RATING_STYLES: Record<string, string> = {
-    IGDB: "bg-[#9147ff] text-white",
-    Critiques: "bg-[#66cc33] text-black",
-  };
 
   let confirmRemove = $state(false);
   let statusEditorOpen = $state(false);
@@ -137,16 +138,15 @@
   const hasSidePanels = $derived(hasMeta || !!detail?.timeToBeat);
 
   // Cover + backdrop + screenshots, deduped, for the lightbox carousel.
-  const galleryImages = $derived.by(() => {
-    if (!detail) return [];
-    const urls: string[] = [];
-    if (detail.coverUrl) urls.push(detail.coverUrl);
-    if (detail.backdropUrl && !urls.includes(detail.backdropUrl)) {
-      urls.push(detail.backdropUrl);
-    }
-    for (const s of detail.screenshots) if (!urls.includes(s)) urls.push(s);
-    return urls.map((src) => ({ src, alt: detail!.title }));
-  });
+  const galleryImages = $derived(
+    detail
+      ? buildGallery(detail.title, [
+          { src: detail.coverUrl || null },
+          { src: detail.backdropUrl || null },
+          ...detail.screenshots.map((src) => ({ src })),
+        ])
+      : [],
+  );
 
   let lightboxOpen = $state(false);
   let lightboxIndex = $state(0);
@@ -157,8 +157,7 @@
 
   function openLightbox(url: string | null) {
     if (!url) return;
-    const i = galleryImages.findIndex((img) => img.src === url);
-    lightboxIndex = (i >= 0 ? i : 0) + trailerOffset;
+    lightboxIndex = galleryIndex(galleryImages, url, trailerOffset);
     lightboxOpen = true;
   }
 
@@ -353,21 +352,7 @@
                     workMeta={reviewMeta}
                     workImageUrl={detail.coverUrl} />
                 {/if}
-                {#each detail.ratings as r (r.source)}
-                  <svelte:element
-                    this={r.url ? "a" : "span"}
-                    href={r.url}
-                    target={r.url ? "_blank" : undefined}
-                    rel={r.url ? "noopener noreferrer" : undefined}
-                    class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold {RATING_STYLES[
-                      r.source
-                    ] ?? 'bg-surface-2 text-fg'} {r.url
-                      ? 'transition-opacity hover:opacity-80'
-                      : ''}">
-                    <span>{r.source}</span>
-                    <span class="tabular-nums opacity-90">{r.score}</span>
-                  </svelte:element>
-                {/each}
+                <ExternalRatingChips ratings={detail.ratings} />
               </div>
             {/if}
             {#if detail.platforms.length > 0}
@@ -547,31 +532,14 @@
           {m.datasource_igdb_notice()}
         </a>
 
-        {#if entry && !upcoming}
-          <ReviewsSection
-            targetType="GAME"
-            targetId={entry.game.id}
-            workTitle={detail.title}
-            workMeta={reviewMeta}
-            workImageUrl={detail.coverUrl}>
-            {#snippet actions()}
-              {#if appConfig.socialEnabled && detail.commentTargetId}
-                <CommentsPanel
-                  targetType="GAME"
-                  targetId={detail.commentTargetId}
-                  title={detail.title}
-                  canParticipate={!!entry} />
-              {/if}
-            {/snippet}
-          </ReviewsSection>
-        {/if}
-        {#if appConfig.socialEnabled && detail.commentTargetId && (!entry || upcoming)}
-          <CommentsPanel
-            targetType="GAME"
-            targetId={detail.commentTargetId}
-            title={detail.title}
-            canParticipate={!!entry} />
-        {/if}
+        <WorkSocialSection
+          targetType="GAME"
+          reviewTargetId={entry && !upcoming ? entry.game.id : null}
+          commentTargetId={detail.commentTargetId}
+          title={detail.title}
+          meta={reviewMeta}
+          imageUrl={detail.coverUrl}
+          canParticipate={!!entry} />
       </div>
 
       {#snippet bellButton(entry: GameEntryDto)}
@@ -639,61 +607,56 @@
         </div>
       {/snippet}
       {#snippet detailsPanel()}
-        <div class="card p-4">
-          <h2 class="font-display text-sm font-bold tracking-tight">
-            {m.common_details()}
-          </h2>
-          <dl class="mt-3 flex flex-col gap-3">
-            {#if detail && detail.developers.length > 0}
-              <div>
-                <dt class="timecode text-xs">{m.media_developer()}</dt>
-                <dd class="mt-0.5 text-sm">
-                  {detail.developers.join(", ")}
-                </dd>
-              </div>
-            {/if}
-            {#if detail && detail.publishers.length > 0}
-              <div>
-                <dt class="timecode text-xs">{m.media_publisher()}</dt>
-                <dd class="mt-0.5 text-sm">
-                  {detail.publishers.join(", ")}
-                </dd>
-              </div>
-            {/if}
-            {#if detail && detail.gameModes.length > 0}
-              <div>
-                <dt class="timecode text-xs">{m.game_play_modes()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.gameModes.join(", ")}</dd>
-              </div>
-            {/if}
-            {#if detail && detail.playerPerspectives.length > 0}
-              <div>
-                <dt class="timecode text-xs">{m.game_view()}</dt>
-                <dd class="mt-0.5 text-sm">
-                  {detail.playerPerspectives.join(", ")}
-                </dd>
-              </div>
-            {/if}
-            {#if detail && detail.multiplayerModes.length > 0}
-              <div>
-                <dt class="timecode text-xs">{m.game_multiplayer()}</dt>
-                <dd class="mt-0.5 text-sm">
-                  {detail.multiplayerModes.join(", ")}
-                </dd>
-              </div>
-            {/if}
+        <DetailsCard>
+          {#if detail && detail.developers.length > 0}
+            <div>
+              <dt class="timecode text-xs">{m.media_developer()}</dt>
+              <dd class="mt-0.5 text-sm">
+                {detail.developers.join(", ")}
+              </dd>
+            </div>
+          {/if}
+          {#if detail && detail.publishers.length > 0}
+            <div>
+              <dt class="timecode text-xs">{m.media_publisher()}</dt>
+              <dd class="mt-0.5 text-sm">
+                {detail.publishers.join(", ")}
+              </dd>
+            </div>
+          {/if}
+          {#if detail && detail.gameModes.length > 0}
+            <div>
+              <dt class="timecode text-xs">{m.game_play_modes()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.gameModes.join(", ")}</dd>
+            </div>
+          {/if}
+          {#if detail && detail.playerPerspectives.length > 0}
+            <div>
+              <dt class="timecode text-xs">{m.game_view()}</dt>
+              <dd class="mt-0.5 text-sm">
+                {detail.playerPerspectives.join(", ")}
+              </dd>
+            </div>
+          {/if}
+          {#if detail && detail.multiplayerModes.length > 0}
+            <div>
+              <dt class="timecode text-xs">{m.game_multiplayer()}</dt>
+              <dd class="mt-0.5 text-sm">
+                {detail.multiplayerModes.join(", ")}
+              </dd>
+            </div>
+          {/if}
 
-            {#if detail && detail.website}
-              <a
-                href={detail.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="link-accent mt-0.5 w-fit text-xs decoration-1">
-                {m.media_official_site()}
-              </a>
-            {/if}
-          </dl>
-        </div>
+          {#if detail && detail.website}
+            <a
+              href={detail.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="link-accent mt-0.5 w-fit text-xs decoration-1">
+              {m.media_official_site()}
+            </a>
+          {/if}
+        </DetailsCard>
       {/snippet}
       {#if hasSidePanels}
         <div class="hidden md:block">

@@ -10,7 +10,7 @@
   import { auth } from "#lib/auth.svelte.js";
   import Combobox from "#lib/components/Combobox.svelte";
   import Icon from "#lib/components/Icon.svelte";
-  import { formatRegion } from "#lib/format.js";
+  import { formatRegion, compareText } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { createWatchProviderToggle } from "#lib/watch-provider-toggle.svelte.js";
@@ -35,7 +35,7 @@
   const regionOptions = $derived(
     (catalog?.regions ?? [])
       .map((code) => ({ code, name: formatRegion(code) }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
+      .sort((a, b) => compareText(a.name, b.name)),
   );
   const regionChoices = $derived([
     {

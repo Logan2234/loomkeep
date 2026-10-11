@@ -1,4 +1,6 @@
 <script lang="ts">
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
   import { type SelectOption } from "#lib/types/select-option.js";
 
   import { goto } from "$app/navigation";
@@ -104,12 +106,7 @@
 
       {#if feed.hasNextPage}
         <div class="mt-4 flex justify-center">
-          <button
-            class="btn btn-ghost"
-            disabled={feed.isFetchingNextPage}
-            onclick={() => feed.fetchNextPage()}>
-            {feed.isFetchingNextPage ? m.common_loading() : m.common_see_more()}
-          </button>
+          <LoadMoreButton query={feed} class="btn btn-ghost" />
         </div>
       {/if}
     {/if}
