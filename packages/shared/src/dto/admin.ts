@@ -1,4 +1,5 @@
-import type { Domain, Locale, Plan, Role, SecurityEventType } from "../enums";
+import type { Domain, Plan, Role, SecurityEventType } from "../enums";
+import type { Locale } from "../locale";
 import type { PagedResult } from "./pagination";
 
 export const INVITATION_LABEL_MAX_LENGTH = 60;

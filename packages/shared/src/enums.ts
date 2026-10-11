@@ -525,16 +525,6 @@ export const CommentEmote = {
 } as const;
 export type CommentEmote = (typeof CommentEmote)[keyof typeof CommentEmote];
 
-/** Display glyph for each CommentEmote, in a fixed picker order. */
-export const COMMENT_EMOTE_DISPLAY: Record<CommentEmote, string> = {
-  LIKE: "👍",
-  LOVE: "❤️",
-  LAUGH: "😂",
-  WOW: "😮",
-  SAD: "😢",
-  DISLIKE: "👎",
-};
-
 /** Max length of a comment's text (frontend + backend DTO). */
 export const COMMENT_TEXT_MAX_LENGTH = 500;
 
@@ -840,14 +830,9 @@ export const ListVisibility = {
 export type ListVisibility =
   (typeof ListVisibility)[keyof typeof ListVisibility];
 
-export const Locale = ["fr", "en", "it"] as const;
-export type Locale = (typeof Locale)[number];
-
-// Mirrors XpEntry.reason, a String column so new reasons need no migration.
-// Amount, cap, and source rules live in xp-rules.ts.
-
 /**
- * Every source of XP the app can credit. See `xp-rules.ts` for the amount,
+ * Every source of XP the app can credit. Mirrors XpEntry.reason, a String
+ * column so new reasons need no migration. See `xp-rules.ts` for the amount,
  * daily cap and source table backing each one. `ADMIN_ADJUSTMENT` has no
  * automatic caller by design — it exists so an admin can correct a total by
  * hand.

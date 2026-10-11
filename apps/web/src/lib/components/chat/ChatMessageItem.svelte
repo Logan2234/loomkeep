@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { COMMENT_EMOTE_DISPLAY } from "#lib/constants/comment-emotes.js";
   import {
     deleteMessage,
     markUnreadFrom,
@@ -16,11 +17,7 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
-  import {
-    COMMENT_EMOTE_DISPLAY,
-    type CommentEmote,
-    type MessageDto,
-  } from "@loomkeep/shared";
+  import { type CommentEmote, type MessageDto } from "@loomkeep/shared";
   import { fade, scale } from "svelte/transition";
   import ChatForwardModal from "./ChatForwardModal.svelte";
   import ChatMessageText from "./ChatMessageText.svelte";

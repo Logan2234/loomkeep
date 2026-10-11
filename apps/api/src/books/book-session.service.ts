@@ -27,6 +27,7 @@ import { toPagedResult } from "../common/pagination.util";
 import { bookSessionAggregate } from "../common/session-aggregate.util";
 import { sessionPeriodMinutes } from "../common/session-period.util";
 import { normalizeSessionNotes, sessionDate } from "../common/session.util";
+import { BOOK_STATUS_BY_CYCLE } from "../common/tracking-cycle-status.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import { SessionXpService } from "../gamification/session-xp.service";
@@ -253,12 +254,7 @@ export class BookSessionService {
           where: { id: session.bookEntryId },
           data: previous
             ? {
-                status:
-                  previous.status === TrackingCycleStatus.COMPLETED
-                    ? BookStatus.READ
-                    : previous.status === TrackingCycleStatus.DROPPED
-                      ? BookStatus.DROPPED
-                      : BookStatus.READING,
+                status: BOOK_STATUS_BY_CYCLE[previous.status],
                 currentPage: previous.currentPage,
                 editionKey: previous.editionKey,
                 referencePageCount: previous.referencePageCount,

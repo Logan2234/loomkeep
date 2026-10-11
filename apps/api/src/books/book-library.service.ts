@@ -10,7 +10,6 @@ import {
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
   Domain,
-  DORMANT_AFTER_DAYS,
   MIN_REWARDED_READING_GOAL,
   type PagedResult,
   type PileSummaryDto,
@@ -48,6 +47,7 @@ import {
   awardNewEntryXp,
   emitEntryActivity,
   listEntryPage,
+  pausedStatusClause,
   polymorphicTargetCleanup,
   RECENTLY_UPDATED_FIRST,
   searchTerm,
@@ -603,14 +603,7 @@ export class BookLibraryService {
     }
 
     if (statuses.includes(SESSION_FILTER_PAUSED)) {
-      const cutoff = sinceDaysAgo(new Date(), DORMANT_AFTER_DAYS);
-      statusFilters.push({
-        status: BookStatus.READING,
-        sessions: {
-          some: { occurredAt: { lt: cutoff } },
-          none: { occurredAt: { gte: cutoff } },
-        },
-      });
+      statusFilters.push(pausedStatusClause(BookStatus.READING, new Date()));
     }
 
     return {

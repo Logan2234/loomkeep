@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { COMMENT_EMOTE_DISPLAY } from "#lib/constants/comment-emotes.js";
   import { inView } from "#lib/actions/inView.js";
 
   import { keys } from "#lib/api/keys.js";
@@ -27,7 +28,6 @@
   import { onRealtimeEvent } from "#lib/realtime/socket.js";
   import { toast } from "#lib/toast.svelte.js";
   import {
-    COMMENT_EMOTE_DISPLAY,
     type CommentDto,
     type CommentEmote,
     type CommentTargetType,

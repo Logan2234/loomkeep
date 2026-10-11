@@ -1,4 +1,5 @@
-import { Locale } from "./enums";
+export const Locale = ["fr", "en", "it"] as const;
+export type Locale = (typeof Locale)[number];
 
 // The region each locale formats dates and numbers with, and asks TMDB for.
 // A locale missing here uses its bare code ("it"), which both accept.
