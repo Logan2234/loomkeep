@@ -7,12 +7,16 @@ import {
   type ConversationDto,
   type ConversationReadOnlyReason,
   type ConversationWorkDto,
+  type Domain,
   ErrorCode,
   FollowStatus,
   isAlertEnabled,
   type MessageDto,
   type MessageListDto,
+  type MessagePickDto,
+  type MessagePollDto,
   type MessageReviewDto,
+  type MessageSagaRefDto,
   type MessageWorkKind,
   type PagedResult,
   PINNED_MESSAGES_MAX,
@@ -65,6 +69,31 @@ const MESSAGE_INCLUDE = {
       year: true,
     },
   },
+  poll: {
+    select: {
+      question: true,
+      options: {
+        orderBy: { position: "asc" },
+        select: { id: true, text: true, href: true, imageUrl: true },
+      },
+      votes: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          optionId: true,
+          userId: true,
+          user: {
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              profileAccess: true,
+              avatarUpdatedAt: true,
+            },
+          },
+        },
+      },
+    },
+  },
 } as const satisfies Prisma.MessageInclude;
 
 type MessageRow = Prisma.MessageGetPayload<{
@@ -81,11 +110,36 @@ type MessageCards = {
 };
 
 /** What a message carries besides its text. */
-type MessageAttachment = {
-  /** The card attached by hand, which lets `text` be empty. */
+export type MessageAttachment = {
+  /** The card attached by hand (or drawn by /pick), which lets `text` be empty. */
   work?: WorkCard | null;
   reviewId?: string;
   listId?: string;
+  /** /poll, its works already turned into cards. */
+  poll?: PollDraft;
+  /** /saga, checked to be a saga the author can see. */
+  saga?: { domain: Domain; key: string };
+  /** /pick: what `work` was drawn from. */
+  pick?: { domain: Domain; shared: boolean; count: number };
+  /** /where: where `work` can be watched. */
+  where?: boolean;
+};
+
+export type PollDraft = {
+  question: string;
+  options: { text: string; work: WorkCard | null }[];
+};
+
+/** What the /saga and /where cards read of their message. */
+export type CommandMessage = {
+  id: string;
+  sagaDomain: Domain | null;
+  sagaKey: string | null;
+  whereWork: boolean;
+  /** The first card: the work /where is about. */
+  work: { targetType: string; targetId: string; href: string } | null;
+  /** The conversation's members, the viewer among them. */
+  memberIds: string[];
 };
 
 type Viewer = {
@@ -265,7 +319,15 @@ export class ChatService {
     conversationId: string,
     text: string | null,
     spoiler = false,
-    { work = null, reviewId, listId }: MessageAttachment = {},
+    {
+      work = null,
+      reviewId,
+      listId,
+      poll,
+      saga,
+      pick,
+      where = false,
+    }: MessageAttachment = {},
   ): Promise<MessageDto> {
     const membership = await this.membership(authorId, conversationId);
     if (reviewId) await this.ensureOwnReview(authorId, reviewId);
@@ -281,6 +343,13 @@ export class ChatService {
       embeds: work ? [{ ...work, position: 0 }] : [],
       reviewId,
       listId,
+      poll,
+      sagaDomain: saga?.domain,
+      sagaKey: saga?.key,
+      pickDomain: pick?.domain,
+      pickShared: pick?.shared,
+      pickCount: pick?.count,
+      whereWork: where,
     });
     return this.dtoFor(row, authorId);
   }
@@ -295,6 +364,13 @@ export class ChatService {
       embeds: (WorkCard & { position: number })[];
       reviewId?: string | null;
       listId?: string | null;
+      poll?: PollDraft;
+      sagaDomain?: Domain | null;
+      sagaKey?: string | null;
+      pickDomain?: Domain | null;
+      pickShared?: boolean | null;
+      pickCount?: number | null;
+      whereWork?: boolean;
     },
   ): Promise<MessageRow> {
     const { conversationId } = membership;
@@ -312,6 +388,27 @@ export class ChatService {
           forwarded: message.forwarded ?? false,
           reviewId: message.reviewId,
           listId: message.listId,
+          sagaDomain: message.sagaDomain,
+          sagaKey: message.sagaKey,
+          pickDomain: message.pickDomain,
+          pickShared: message.pickShared,
+          pickCount: message.pickCount,
+          whereWork: message.whereWork ?? false,
+          poll: message.poll
+            ? {
+                create: {
+                  question: message.poll.question,
+                  options: {
+                    create: message.poll.options.map((option, position) => ({
+                      position,
+                      text: option.work?.title ?? option.text,
+                      href: option.work?.href,
+                      imageUrl: option.work?.imageUrl,
+                    })),
+                  },
+                },
+              }
+            : undefined,
           createdAt: now,
           embeds:
             message.embeds.length > 0 ? { create: message.embeds } : undefined,
@@ -446,6 +543,88 @@ export class ChatService {
     await this.publishById(membership, message.id);
   }
 
+  /** A /poll vote; voting again for the option already chosen takes it back. */
+  async vote(
+    userId: string,
+    messageId: string,
+    optionId: string,
+  ): Promise<MessageDto> {
+    const { message, membership } = await this.memberMessage(userId, messageId);
+    await this.ensureWritable(userId, peerOf(membership, userId));
+    const poll = await this.prisma.messagePoll.findUnique({
+      where: { messageId: message.id },
+      select: {
+        id: true,
+        options: { select: { id: true } },
+        votes: { where: { userId }, select: { optionId: true } },
+      },
+    });
+
+    if (!poll?.options.some((option) => option.id === optionId)) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.ChatPollOptionNotFound,
+      );
+    }
+
+    if (poll.votes[0]?.optionId === optionId) {
+      await this.prisma.messagePollVote.delete({
+        where: { pollId_userId: { pollId: poll.id, userId } },
+      });
+    } else {
+      await this.prisma.messagePollVote.upsert({
+        where: { pollId_userId: { pollId: poll.id, userId } },
+        create: { pollId: poll.id, optionId, userId },
+        update: { optionId, createdAt: new Date() },
+      });
+    }
+
+    await this.publishById(membership, message.id);
+    const row = await this.prisma.message.findUniqueOrThrow({
+      where: { id: message.id },
+      include: MESSAGE_INCLUDE,
+    });
+    return this.dtoFor(row, userId);
+  }
+
+  /** What a /saga or /where card reads of its message, for a member. */
+  async commandMessage(
+    viewerId: string,
+    messageId: string,
+  ): Promise<CommandMessage> {
+    const { message, membership } = await this.memberMessage(
+      viewerId,
+      messageId,
+    );
+    const row = await this.prisma.message.findUniqueOrThrow({
+      where: { id: message.id },
+      select: {
+        id: true,
+        sagaDomain: true,
+        sagaKey: true,
+        whereWork: true,
+        embeds: {
+          where: { position: 0 },
+          select: { targetType: true, targetId: true, href: true },
+        },
+      },
+    });
+    return {
+      id: row.id,
+      sagaDomain: row.sagaDomain as Domain | null,
+      sagaKey: row.sagaKey,
+      whereWork: row.whereWork,
+      work: row.embeds[0] ?? null,
+      memberIds: membership.conversation.members.map((m) => m.userId),
+    };
+  }
+
+  /** The conversation's members, the viewer among them (who /pick draws for). */
+  async memberIds(viewerId: string, conversationId: string): Promise<string[]> {
+    const membership = await this.membership(viewerId, conversationId);
+    return membership.conversation.members.map((m) => m.userId);
+  }
+
   /** The conversation's pinned messages, last pinned first. */
   async pins(viewerId: string, conversationId: string): Promise<MessageDto[]> {
     await this.membership(viewerId, conversationId);
@@ -544,7 +723,10 @@ export class ChatService {
     const { message } = await this.memberMessage(userId, messageId);
     const original = await this.prisma.message.findUniqueOrThrow({
       where: { id: message.id },
-      include: { embeds: { orderBy: { position: "asc" } } },
+      include: {
+        embeds: { orderBy: { position: "asc" } },
+        poll: { select: { question: true } },
+      },
     });
 
     const memberships: Membership[] = [];
@@ -564,11 +746,18 @@ export class ChatService {
 
     for (const membership of memberships) {
       await this.deliver(userId, membership, {
-        text: original.text,
+        // A poll's votes belong to its conversation: its question goes on.
+        text: original.text ?? original.poll?.question ?? null,
         spoiler: original.spoiler,
         forwarded: true,
         reviewId: original.reviewId,
         listId: original.listId,
+        sagaDomain: original.sagaDomain,
+        sagaKey: original.sagaKey,
+        pickDomain: original.pickDomain,
+        pickShared: original.pickShared,
+        pickCount: original.pickCount,
+        whereWork: original.whereWork,
         embeds: original.embeds.map((embed) => ({
           targetType: embed.targetType,
           targetId: embed.targetId,
@@ -727,9 +916,23 @@ export class ChatService {
     await this.prisma.messageEmbed.deleteMany({
       where: { message: { authorId: userId } },
     });
+    await this.prisma.messagePoll.deleteMany({
+      where: { message: { authorId: userId } },
+    });
     await this.prisma.message.updateMany({
       where: { authorId: userId, deletedAt: null },
-      data: { text: null, reviewId: null, listId: null, deletedAt: new Date() },
+      data: {
+        text: null,
+        reviewId: null,
+        listId: null,
+        sagaDomain: null,
+        sagaKey: null,
+        pickDomain: null,
+        pickShared: null,
+        pickCount: null,
+        whereWork: false,
+        deletedAt: new Date(),
+      },
     });
   }
 
@@ -1071,6 +1274,7 @@ export class ChatService {
   ): Promise<MessageRow> {
     await db.messageReaction.deleteMany({ where: { messageId } });
     await db.messageEmbed.deleteMany({ where: { messageId } });
+    await db.messagePoll.deleteMany({ where: { messageId } });
     return db.message.update({
       where: { id: messageId },
       data: {
@@ -1080,6 +1284,12 @@ export class ChatService {
         pinnedAt: null,
         reviewId: null,
         listId: null,
+        sagaDomain: null,
+        sagaKey: null,
+        pickDomain: null,
+        pickShared: null,
+        pickCount: null,
+        whereWork: false,
       },
       include: MESSAGE_INCLUDE,
     });
@@ -1230,9 +1440,44 @@ function toMessageDto(
     list,
     gone:
       row.reviewId && !review ? "review" : row.listId && !list ? "list" : null,
+    poll: row.deletedAt ? null : toPollDto(row.poll, viewerId),
+    saga:
+      !row.deletedAt && row.sagaDomain && row.sagaKey
+        ? {
+            domain: row.sagaDomain as MessageSagaRefDto["domain"],
+            key: row.sagaKey,
+          }
+        : null,
+    pick:
+      !row.deletedAt && row.pickDomain
+        ? {
+            domain: row.pickDomain as MessagePickDto["domain"],
+            shared: row.pickShared ?? false,
+            count: row.pickCount ?? 0,
+          }
+        : null,
+    where: !row.deletedAt && row.whereWork,
     pinned: row.pinnedAt !== null,
     forwarded: row.forwarded,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function toPollDto(
+  poll: MessageRow["poll"],
+  viewerId: string,
+): MessagePollDto | null {
+  if (!poll) return null;
+  return {
+    question: poll.question,
+    options: poll.options.map((option) => ({
+      ...option,
+      voters: poll.votes
+        .filter((vote) => vote.optionId === option.id)
+        .map((vote) => toUserSummaryDto(vote.user)),
+    })),
+    myVote:
+      poll.votes.find((vote) => vote.userId === viewerId)?.optionId ?? null,
   };
 }

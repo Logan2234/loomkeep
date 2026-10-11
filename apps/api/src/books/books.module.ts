@@ -35,6 +35,7 @@ import { OpenLibraryProvider } from "./providers/open-library.provider";
     BookItemService,
     BookLibraryService,
     BookSessionService,
+    BookSagaService,
     OpenLibraryProvider,
   ],
 })

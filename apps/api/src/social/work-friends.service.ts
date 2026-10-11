@@ -95,6 +95,18 @@ export class WorkFriendsService {
     };
   }
 
+  /**
+   * Among `ids`, the viewer's friends whose library in `domain` the viewer
+   * may see — what Messages' /saga and /pick read of the other members.
+   */
+  async friendsSharingLibrary(viewerId: string, ids: string[], domain: Domain) {
+    const friends = new Set(await this.follow.listFriendIds(viewerId));
+    return this.sharingLibrary(
+      ids.filter((id) => friends.has(id)),
+      domain,
+    );
+  }
+
   /** The friends whose library facet for `domain` the viewer may see. */
   private async sharingLibrary(ids: string[], domain: Domain) {
     if (ids.length === 0) return [];

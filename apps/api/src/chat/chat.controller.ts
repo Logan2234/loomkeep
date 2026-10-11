@@ -4,7 +4,10 @@ import {
   type ConversationWorkDto,
   ErrorCode,
   type MessageDto,
+  type MessageSagaDto,
+  type MessageWhereDto,
   type PagedResult,
+  type PickResultDto,
   type RecommendWorkResultDto,
   type UserSummaryDto,
   type WorkThreadDto,
@@ -14,6 +17,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpStatus,
   Param,
   Post,
@@ -38,6 +42,7 @@ import {
 } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
+import { ChatCommandsService } from "./chat-commands.service";
 import { ChatFeatureGuard } from "./chat-feature.guard";
 import { ChatWorkService } from "./chat-work.service";
 import {
@@ -51,15 +56,20 @@ import {
   MarkWorkUnreadBody,
   MuteConversationBody,
   OpenConversationBody,
+  PickBody,
   ReactMessageBody,
   RecommendWorkBody,
   SendMessageBody,
+  VotePollBody,
 } from "./dto/chat-request.dto";
 import {
   ChatUnreadResponseDto,
   ConversationResponseDto,
   ConversationWorkResponseDto,
   MessageResponseDto,
+  MessageSagaResponseDto,
+  MessageWhereResponseDto,
+  PickResultResponseDto,
   RecommendWorkResultResponseDto,
   WorkThreadResponseDto,
 } from "./dto/chat-response.dto";
@@ -71,6 +81,7 @@ export class ChatController {
   constructor(
     private readonly chat: ChatService,
     private readonly works: ChatWorkService,
+    private readonly commands: ChatCommandsService,
     private readonly threads: WorkThreadService,
     private readonly reports: ReportService,
   ) {}
@@ -131,17 +142,99 @@ export class ChatController {
     @Param("id") id: string,
     @Body() body: SendMessageBody,
   ): Promise<MessageDto> {
-    const work = body.work ? await this.works.required(body.work) : null;
+    const picked = body.pick
+      ? await this.commands.pickedWork(
+          user.sub,
+          id,
+          body.pick.domain,
+          body.pick.shared,
+          body.pick.work,
+        )
+      : null;
+    const work = picked
+      ? picked.card
+      : body.where
+        ? await this.commands.whereWork(body.where)
+        : body.work
+          ? await this.works.required(body.work)
+          : null;
+    if (body.saga)
+      await this.commands.ensureSaga(body.saga.domain, body.saga.key);
+    const poll = body.poll
+      ? {
+          question: body.poll.question.trim(),
+          options: await Promise.all(
+            body.poll.options.map(async (option) => ({
+              text: option.text?.trim() ?? "",
+              work: option.work ? await this.works.required(option.work) : null,
+            })),
+          ),
+        }
+      : undefined;
     const text = body.text?.trim() ? body.text : null;
     const message = await this.chat.send(user.sub, id, text, body.spoiler, {
       work,
       reviewId: body.review,
       listId: body.list,
+      poll,
+      saga: body.saga,
+      pick:
+        body.pick && picked
+          ? {
+              domain: body.pick.domain,
+              shared: body.pick.shared,
+              count: picked.count,
+            }
+          : undefined,
+      where: !!body.where,
     });
 
     if (text) this.works.refreshLinkedWorks(message.id, text, body.skipLinks);
 
     return message;
+  }
+
+  /** /pick's draw, before it's sent: a work of the pile, and both counts. */
+  @Post("conversations/:id/pick")
+  @ApiCreatedResponse({ type: PickResultResponseDto })
+  pick(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: PickBody,
+  ): Promise<PickResultDto> {
+    return this.commands.draw(user.sub, id, body.domain, body.shared);
+  }
+
+  /** A /poll vote; the option already chosen takes the vote back. */
+  @Put("messages/:id/vote")
+  @ApiOkResponse({ type: MessageResponseDto })
+  vote(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: VotePollBody,
+  ): Promise<MessageDto> {
+    return this.chat.vote(user.sub, id, body.option);
+  }
+
+  /** A /saga card: the saga, with each member's progress the viewer may see. */
+  @Get("messages/:id/saga")
+  @ApiOkResponse({ type: MessageSagaResponseDto })
+  saga(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<MessageSagaDto> {
+    return this.commands.saga(user.sub, id);
+  }
+
+  /** A /where card: the work's offers in the viewer's region, with the members who have each. */
+  @Get("messages/:id/where")
+  @ApiOkResponse({ type: MessageWhereResponseDto })
+  where(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Headers("accept-language") acceptLanguage?: string,
+  ): Promise<MessageWhereDto> {
+    return this.commands.where(user.sub, id, acceptLanguage);
   }
 
   /** "Recommander": the work goes to each friend, in their own conversation. */

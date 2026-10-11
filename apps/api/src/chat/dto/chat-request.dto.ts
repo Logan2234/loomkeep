@@ -1,17 +1,29 @@
 import {
   CommentEmote,
+  MESSAGE_TEXT_MAX_LENGTH,
+  POLL_OPTION_MAX_LENGTH,
+  POLL_OPTIONS_MAX,
+  POLL_OPTIONS_MIN,
+  POLL_QUESTION_MAX_LENGTH,
+  RECOMMEND_MAX_FRIENDS,
   type CommentEmote as CommentEmoteT,
   type EditMessageRequestDto,
   type ForwardMessageRequestDto,
-  MESSAGE_TEXT_MAX_LENGTH,
   type MarkWorkUnreadRequestDto,
+  type MessageSagaRefDto,
   type MuteConversationRequestDto,
   type OpenConversationRequestDto,
-  RECOMMEND_MAX_FRIENDS,
+  type PickDomain,
+  type PickRequestDto,
   type ReactMessageRequestDto,
   type RecommendWorkRequestDto,
+  type SagaDomain,
   type SendMessageRequestDto,
+  type SendPickRequestDto,
+  type SendPollRequestDto,
+  type VotePollRequestDto,
 } from "@loomkeep/shared";
+import { Type } from "class-transformer";
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -25,6 +37,7 @@ import {
   MaxLength,
   MinLength,
   ValidateIf,
+  ValidateNested,
 } from "class-validator";
 
 // A work page's path, the way the web links to it.
@@ -55,11 +68,80 @@ export class EditMessageBody implements EditMessageRequestDto {
   skipLinks?: string[];
 }
 
-/** The text may be left out when a work, a review or a list goes with it. */
+const SAGA_DOMAINS: SagaDomain[] = ["MEDIA", "GAMES", "BOOKS"];
+const PICK_DOMAINS: PickDomain[] = ["MEDIA", "GAMES", "BOOKS", "MUSIC"];
+
+/** An option is text, or a work by its page's path. */
+export class PollOptionBody {
+  @ValidateIf((option: PollOptionBody) => !option.work)
+  @IsString()
+  @Matches(/\S/)
+  @MaxLength(POLL_OPTION_MAX_LENGTH)
+  text?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(WORK_PATH)
+  work?: string;
+}
+
+export class SendPollBody implements SendPollRequestDto {
+  @IsString()
+  @Matches(/\S/)
+  @MaxLength(POLL_QUESTION_MAX_LENGTH)
+  question!: string;
+
+  @IsArray()
+  @ArrayMinSize(POLL_OPTIONS_MIN)
+  @ArrayMaxSize(POLL_OPTIONS_MAX)
+  @ValidateNested({ each: true })
+  @Type(() => PollOptionBody)
+  options!: PollOptionBody[];
+}
+
+export class SagaRefBody implements MessageSagaRefDto {
+  @IsIn(SAGA_DOMAINS)
+  domain!: SagaDomain;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(60)
+  key!: string;
+}
+
+export class PickBody implements PickRequestDto {
+  @IsIn(PICK_DOMAINS)
+  domain!: PickDomain;
+
+  @IsBoolean()
+  shared!: boolean;
+}
+
+export class SendPickBody extends PickBody implements SendPickRequestDto {
+  @IsString()
+  @Matches(WORK_PATH)
+  work!: string;
+}
+
+export class VotePollBody implements VotePollRequestDto {
+  @IsString()
+  @MinLength(1)
+  option!: string;
+}
+
+/** The text may be left out when something else goes with it. */
 export class SendMessageBody implements SendMessageRequestDto {
   @ValidateIf(
     (body: SendMessageBody) =>
-      !(body.work || body.review || body.list) || body.text !== undefined,
+      !(
+        body.work ||
+        body.review ||
+        body.list ||
+        body.poll ||
+        body.saga ||
+        body.pick ||
+        body.where
+      ) || body.text !== undefined,
   )
   @IsString()
   @MinLength(1)
@@ -85,6 +167,26 @@ export class SendMessageBody implements SendMessageRequestDto {
   @IsString()
   @MinLength(1)
   list?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SendPollBody)
+  poll?: SendPollBody;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SagaRefBody)
+  saga?: SagaRefBody;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SendPickBody)
+  pick?: SendPickBody;
+
+  @IsOptional()
+  @IsString()
+  @Matches(WORK_PATH)
+  where?: string;
 
   @IsOptional()
   @IsArray()

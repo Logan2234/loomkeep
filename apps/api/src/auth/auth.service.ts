@@ -1153,6 +1153,7 @@ export function toUserDto(user: User): UserDto {
     hideProgression: user.hideProgression,
     chatShowPresence: user.chatShowPresence,
     chatShowReadReceipts: user.chatShowReadReceipts,
+    chatShareWatchProviders: user.chatShareWatchProviders,
     feedbackWidget: user.feedbackWidget,
     spoilerSensitivity:
       user.spoilerSensitivity as UserDto["spoilerSensitivity"],

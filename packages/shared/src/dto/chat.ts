@@ -1,10 +1,12 @@
 import type {
   CommentEmote,
   CommentTargetType,
+  Domain,
   ListKind,
   ListVisibility,
   MediaType,
 } from "../enums";
+import type { WatchProviderDto } from "./catalog";
 import type { CommentReactionSummaryDto } from "./comment";
 import type { ReviewTargetSummaryDto } from "./review";
 import type { UserSummaryDto } from "./social";
@@ -79,6 +81,52 @@ export interface MessageListDto {
  */
 export type MessageGoneAttachment = "review" | "list";
 
+/** Options a `/poll` has, at least and at most. */
+export const POLL_OPTIONS_MIN = 2;
+export const POLL_OPTIONS_MAX = 5;
+export const POLL_QUESTION_MAX_LENGTH = 200;
+export const POLL_OPTION_MAX_LENGTH = 80;
+
+/** A `/poll` option: text, or a work shown with its poster. */
+export interface MessagePollOptionDto {
+  id: string;
+  text: string;
+  /** The work's page, for an option that's a work. */
+  href: string | null;
+  imageUrl: string | null;
+  voters: UserSummaryDto[];
+}
+
+/** A `/poll`: votes stay open, a member changes theirs by voting again. */
+export interface MessagePollDto {
+  question: string;
+  options: MessagePollOptionDto[];
+  /** The option the viewer voted for. */
+  myVote: string | null;
+}
+
+/** Domains `/saga` shares a saga of. */
+export type SagaDomain = Extract<Domain, "MEDIA" | "GAMES" | "BOOKS">;
+
+/** A saga shared with `/saga`; its card is read from `GET /chat/messages/:id/saga`. */
+export interface MessageSagaRefDto {
+  domain: SagaDomain;
+  /** `TMDB:10194`, `ANILIST:16498`, `IGDB:18` or an Open Library series id. */
+  key: string;
+}
+
+/** Domains `/pick` draws in: the ones with a pile. */
+export type PickDomain = Extract<Domain, "MEDIA" | "GAMES" | "BOOKS" | "MUSIC">;
+
+/** What a `/pick` drew from; the work drawn is the message's first card. */
+export interface MessagePickDto {
+  domain: PickDomain;
+  /** Only from the works every member has in their own pile. */
+  shared: boolean;
+  /** How many works the draw was among. */
+  count: number;
+}
+
 export interface MessageDto {
   id: string;
   conversationId: string;
@@ -106,6 +154,14 @@ export interface MessageDto {
   /** Attached with `/list`. */
   list: MessageListDto | null;
   gone: MessageGoneAttachment | null;
+  poll: MessagePollDto | null;
+  saga: MessageSagaRefDto | null;
+  pick: MessagePickDto | null;
+  /**
+   * `/where`: where the first card's work can be watched, read from
+   * `GET /chat/messages/:id/where`.
+   */
+  where: boolean;
   /** Pinned in the conversation, by either member. */
   pinned: boolean;
   /** Copied from another conversation by "Transférer". */
@@ -193,8 +249,91 @@ export interface SendMessageRequestDto {
   review?: string;
   /** A list both members may see, by id (`/list`). */
   list?: string;
+  /** `/poll`: the question goes here rather than in `text`. */
+  poll?: SendPollRequestDto;
+  saga?: MessageSagaRefDto;
+  /** `/pick`: a work drawn by `POST /chat/conversations/:id/pick`. */
+  pick?: SendPickRequestDto;
+  /** `/where`: a film's or a series' page path (`/app/media/movie/603`). */
+  where?: string;
   /** Links whose card the writer turned down: they stay plain links. */
   skipLinks?: string[];
+}
+
+export interface SendPollRequestDto {
+  question: string;
+  /** Text, or a work's page path for an option that's a work. */
+  options: { text?: string; work?: string }[];
+}
+
+export interface SendPickRequestDto {
+  domain: PickDomain;
+  shared: boolean;
+  /** The work drawn, by its page path. */
+  work: string;
+}
+
+/** `POST /chat/conversations/:id/pick`: a draw, before it's sent. */
+export interface PickRequestDto {
+  domain: PickDomain;
+  shared: boolean;
+}
+
+export interface PickResultDto {
+  /** Null when there's nothing to draw from. */
+  work: MessageWorkDto | null;
+  /** Works in the author's own pile. */
+  mine: number;
+  /**
+   * Works every member has in their pile; 0 also when a member doesn't let
+   * the author see their library in this domain.
+   */
+  shared: number;
+}
+
+/** `PUT /chat/messages/:id/vote`. */
+export interface VotePollRequestDto {
+  option: string;
+}
+
+/** Where someone stands in a work of a saga. */
+export type SagaStep = "done" | "active" | "none";
+
+/** `GET /chat/messages/:id/saga`: the saga with each member's progress. */
+export interface MessageSagaDto {
+  domain: SagaDomain;
+  title: string;
+  /** In viewing (or reading, release) order. */
+  works: {
+    title: string;
+    imageUrl: string | null;
+    href: string | null;
+    /** Announced, not out yet. */
+    upcoming: boolean;
+  }[];
+  /**
+   * One row per member whose library in this domain the viewer may see, the
+   * viewer first; `steps` follows `works`.
+   */
+  members: { user: UserSummaryDto; mine: boolean; steps: SagaStep[] }[];
+}
+
+/** How a platform offers a work. */
+export type WatchOfferKind = "flatrate" | "free" | "ads" | "rent" | "buy";
+
+/** `GET /chat/messages/:id/where`: who can watch the work, and where. */
+export interface MessageWhereDto {
+  /** The viewer's region the offers are for ("FR"). */
+  region: string;
+  /** Platforms a member has first, then the rest by kind. */
+  offers: {
+    provider: WatchProviderDto;
+    kind: WatchOfferKind;
+    /** Members who share their platforms and have this one. */
+    members: UserSummaryDto[];
+  }[];
+  /** JustWatch's page for the region, which the offers come from. */
+  link: string | null;
 }
 
 export interface EditMessageRequestDto {

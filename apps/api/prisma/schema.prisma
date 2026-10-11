@@ -504,6 +504,9 @@ model User {
   // no longer sees either from anyone else.
   chatShowPresence              Boolean            @default(true)
   chatShowReadReceipts          Boolean            @default(true)
+  // Messages' /where: friends see which of `watchProviderIds` this account
+  // has. Off by default — a subscription list is the account's own business.
+  chatShareWatchProviders       Boolean            @default(false)
   // Shows the feedback (Quackback) launcher. An instance without
   // PUBLIC_QUACKBACK_URL has no launcher at all, whatever this says.
   feedbackWidget                Boolean            @default(true)
@@ -711,6 +714,7 @@ model User {
   moderationDecisionsMade    ModerationDecision[]   @relation("ModerationDecisionAdmin")
   entitlement                UserEntitlement?
   subscriptions              Subscription[]
+  pollVotes                  MessagePollVote[]
   xpEntries                  XpEntry[]
   score                      UserScore?
   achievements               UserAchievement[]
@@ -974,6 +978,18 @@ model Message {
   // the message must still say what it carried.
   reviewId       String?
   listId         String?
+  // /saga: a saga (`Saga`, `GameSaga` or an Open Library series key), read
+  // live with each member's progress — see ChatCommandsService.saga.
+  sagaDomain     Domain?
+  sagaKey        String?
+  // /pick: the first card was drawn from the author's pile (with `pickShared`,
+  // only from the works every member has in theirs), out of `pickCount`.
+  pickDomain     Domain?
+  pickShared     Boolean?
+  pickCount      Int?
+  // /where: where the first card's work can be watched, read live for each
+  // viewer with the platforms the members share.
+  whereWork      Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -981,6 +997,7 @@ model Message {
   author       User?             @relation(fields: [authorId], references: [id], onDelete: SetNull)
   reactions    MessageReaction[]
   embeds       MessageEmbed[]
+  poll         MessagePoll?
 
   @@index([conversationId, createdAt])
   @@index([conversationId, pinnedAt])
@@ -1021,6 +1038,49 @@ model MessageEmbed {
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([messageId])
+}
+
+// /poll: a question and its options, the question standing in for the
+// message's text. Votes stay open: a member changes theirs by voting again.
+model MessagePoll {
+  id        String              @id @default(cuid())
+  messageId String              @unique
+  question  String
+  createdAt DateTime            @default(now())
+
+  message Message             @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  options MessagePollOption[]
+  votes   MessagePollVote[]
+}
+
+// An option is text, or a work (snapshot of its card, like MessageEmbed).
+model MessagePollOption {
+  id       String  @id @default(cuid())
+  pollId   String
+  position Int
+  text     String
+  href     String?
+  imageUrl String?
+
+  poll  MessagePoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes MessagePollVote[]
+
+  @@index([pollId])
+}
+
+model MessagePollVote {
+  id        String   @id @default(cuid())
+  pollId    String
+  optionId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  poll   MessagePoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option MessagePollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId])
+  @@index([optionId])
 }
 
 // Social (P4): a user-submitted report against a polymorphic target — a

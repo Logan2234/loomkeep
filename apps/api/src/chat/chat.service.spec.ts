@@ -169,6 +169,11 @@ function setup(
       update: vi.fn().mockResolvedValue(messageRow()),
     },
     review: { findFirst: vi.fn().mockResolvedValue({ id: "r1" }) },
+    messagePoll: {
+      findUnique: vi.fn(),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+    messagePollVote: { upsert: vi.fn(), delete: vi.fn() },
     messageReaction: { deleteMany: vi.fn() },
     messageEmbed: {
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
@@ -478,6 +483,120 @@ describe("ChatService", () => {
         [null, null, "list"],
         [null, null, "review"],
       ]);
+    });
+  });
+
+  describe("/poll", () => {
+    const POLL = {
+      question: "On regarde quoi ?",
+      options: [
+        { id: "o1", text: "Severance", href: SEVERANCE.href, imageUrl: null },
+        { id: "o2", text: "Un vieux Pixar", href: null, imageUrl: null },
+      ],
+      votes: [
+        { optionId: "o1", userId: LEA, user: peer(LEA) },
+        { optionId: "o2", userId: ME, user: peer(ME) },
+      ],
+    };
+
+    it("sends the question as a poll, a work option as its card", async () => {
+      const { service, prisma } = setup();
+
+      await service.send(ME, "cv1", null, false, {
+        poll: {
+          question: "On regarde quoi ?",
+          options: [
+            { text: "", work: SEVERANCE },
+            { text: "Un vieux Pixar", work: null },
+          ],
+        },
+      });
+
+      expect(prisma.message.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            text: null,
+            poll: {
+              create: {
+                question: "On regarde quoi ?",
+                options: {
+                  create: [
+                    {
+                      position: 0,
+                      text: "Severance",
+                      href: SEVERANCE.href,
+                      imageUrl: SEVERANCE.imageUrl,
+                    },
+                    {
+                      position: 1,
+                      text: "Un vieux Pixar",
+                      href: undefined,
+                      imageUrl: undefined,
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+        }),
+      );
+    });
+
+    it("shows who voted what, and the viewer's own vote", async () => {
+      const { service, prisma } = setup();
+      (prisma.message.findMany as Mock).mockResolvedValue([
+        messageRow({ text: null, poll: POLL }),
+      ]);
+
+      const [message] = (
+        await service.messages(
+          ME,
+          "cv1",
+          parsePageQuery(undefined, undefined, 40),
+        )
+      ).items;
+
+      expect(message.poll?.myVote).toBe("o2");
+      expect(
+        message.poll?.options.map((o) => o.voters.map((v) => v.username)),
+      ).toEqual([[LEA], [ME]]);
+    });
+
+    it("takes a vote back when the same option is voted again", async () => {
+      const { service, prisma } = setup();
+      (prisma.messagePoll.findUnique as Mock).mockResolvedValue({
+        id: "poll1",
+        options: [{ id: "o1" }, { id: "o2" }],
+        votes: [{ optionId: "o1" }],
+      });
+      (prisma.message.findUniqueOrThrow as Mock).mockResolvedValue(
+        messageRow({ poll: POLL }),
+      );
+
+      await service.vote(ME, "m1", "o1");
+      expect(prisma.messagePollVote.delete).toHaveBeenCalled();
+      expect(prisma.messagePollVote.upsert).not.toHaveBeenCalled();
+
+      await service.vote(ME, "m1", "o2");
+      expect(prisma.messagePollVote.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: { pollId: "poll1", optionId: "o2", userId: ME },
+        }),
+      );
+    });
+
+    it("refuses an option that isn't the poll's", async () => {
+      const { service, prisma } = setup();
+      (prisma.messagePoll.findUnique as Mock).mockResolvedValue({
+        id: "poll1",
+        options: [{ id: "o1" }],
+        votes: [],
+      });
+
+      await expectCode(
+        service.vote(ME, "m1", "elsewhere"),
+        ErrorCode.ChatPollOptionNotFound,
+      );
     });
   });
 

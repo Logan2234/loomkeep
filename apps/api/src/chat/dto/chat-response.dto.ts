@@ -11,10 +11,21 @@ import type {
   MessageGoneAttachment,
   MessageListDto,
   MessageListWorkDto,
+  MessagePickDto,
+  MessagePollDto,
+  MessagePollOptionDto,
   MessageReviewDto,
+  MessageSagaDto,
+  MessageSagaRefDto,
+  MessageWhereDto,
   MessageWorkDto,
   MessageWorkKind,
+  PickDomain,
+  PickResultDto,
   RecommendWorkResultDto,
+  SagaDomain,
+  SagaStep,
+  WatchOfferKind,
   WorkThreadDto,
 } from "@loomkeep/shared";
 import { CommentReactionSummaryResponseDto } from "../../comments/dto/comment-reaction-summary-response.dto";
@@ -64,6 +75,75 @@ export class MessageListResponseDto implements MessageListDto {
   updatedAt!: string;
 }
 
+class MessagePollOptionResponseDto implements MessagePollOptionDto {
+  id!: string;
+  text!: string;
+  href!: string | null;
+  imageUrl!: string | null;
+  voters!: UserSummaryResponseDto[];
+}
+
+class MessagePollResponseDto implements MessagePollDto {
+  question!: string;
+  options!: MessagePollOptionResponseDto[];
+  myVote!: string | null;
+}
+
+class MessageSagaRefResponseDto implements MessageSagaRefDto {
+  domain!: SagaDomain;
+  key!: string;
+}
+
+class MessagePickResponseDto implements MessagePickDto {
+  domain!: PickDomain;
+  shared!: boolean;
+  count!: number;
+}
+
+export class PickResultResponseDto implements PickResultDto {
+  work!: MessageWorkResponseDto | null;
+  mine!: number;
+  shared!: number;
+}
+
+class MessageSagaWorkResponseDto {
+  title!: string;
+  imageUrl!: string | null;
+  href!: string | null;
+  upcoming!: boolean;
+}
+
+class MessageSagaMemberResponseDto {
+  user!: UserSummaryResponseDto;
+  mine!: boolean;
+  steps!: SagaStep[];
+}
+
+export class MessageSagaResponseDto implements MessageSagaDto {
+  domain!: SagaDomain;
+  title!: string;
+  works!: MessageSagaWorkResponseDto[];
+  members!: MessageSagaMemberResponseDto[];
+}
+
+class WatchOfferProviderResponseDto {
+  id!: number;
+  name!: string;
+  logoUrl!: string | null;
+}
+
+class MessageWhereOfferResponseDto {
+  provider!: WatchOfferProviderResponseDto;
+  kind!: WatchOfferKind;
+  members!: UserSummaryResponseDto[];
+}
+
+export class MessageWhereResponseDto implements MessageWhereDto {
+  region!: string;
+  offers!: MessageWhereOfferResponseDto[];
+  link!: string | null;
+}
+
 export class MessageResponseDto implements MessageDto {
   id!: string;
   conversationId!: string;
@@ -80,6 +160,10 @@ export class MessageResponseDto implements MessageDto {
   review!: MessageReviewResponseDto | null;
   list!: MessageListResponseDto | null;
   gone!: MessageGoneAttachment | null;
+  poll!: MessagePollResponseDto | null;
+  saga!: MessageSagaRefResponseDto | null;
+  pick!: MessagePickResponseDto | null;
+  where!: boolean;
   pinned!: boolean;
   forwarded!: boolean;
   createdAt!: string;
