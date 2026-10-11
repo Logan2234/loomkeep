@@ -6,7 +6,7 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { flipChildren } from "#lib/actions/flipChildren.js";
+  import { flipChildren } from "#lib/actions/flip-children.js";
   import { auth } from "#lib/auth.svelte.js";
   import Combobox from "#lib/components/Combobox.svelte";
   import Icon from "#lib/components/Icon.svelte";

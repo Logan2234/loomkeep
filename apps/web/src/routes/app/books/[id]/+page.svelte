@@ -15,7 +15,7 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import BookSagaSection from "./components/BookSagaSection.svelte";
-  import { goBack } from "#lib/backNav.svelte.js";
+  import { goBack } from "#lib/back-nav.svelte.js";
   import { toCarouselItems } from "#lib/carousel.js";
   import Banner from "#lib/components/Banner.svelte";
   import BookSessionDock from "#lib/components/BookSessionDock.svelte";
@@ -165,9 +165,6 @@
     onRemoveSuccess: () => (confirmRemove = false),
   });
 
-  // Every action but "remove" shared one `saving` flag before the move to
-  // the centralized API layer — kept combined here rather than split
-  // per-button, since that's what the template already disables on.
   const saving = $derived(addMut.loading || patchMut.loading);
   const statusCorrections = $derived(
     entry

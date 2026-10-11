@@ -22,7 +22,7 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
-  import { goBack } from "#lib/backNav.svelte.js";
+  import { goBack } from "#lib/back-nav.svelte.js";
   import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
   import Banner from "#lib/components/Banner.svelte";
   import CommentsPanel from "#lib/components/CommentsPanel.svelte";

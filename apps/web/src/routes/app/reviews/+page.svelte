@@ -26,7 +26,7 @@
     isDomainEnabled,
     orderedDomains,
     targetDomain,
-  } from "#lib/domains.js";
+  } from "#lib/domain-availability.js";
   import {
     DATE_MEDIUM_OPTIONS,
     formatDate,

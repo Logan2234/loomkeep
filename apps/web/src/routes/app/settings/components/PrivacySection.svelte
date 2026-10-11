@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { orderedDomains } from "#lib/domains.js";
+  import { orderedDomains } from "#lib/domain-availability.js";
 
   import { page } from "$app/state";
   import {

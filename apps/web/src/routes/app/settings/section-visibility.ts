@@ -1,5 +1,5 @@
 import { appConfig } from "#lib/config.svelte.js";
-import { isDomainEnabled } from "#lib/domains.js";
+import { isDomainEnabled } from "#lib/domain-availability.js";
 import type { SettingsSectionDef } from "./nav";
 
 /**

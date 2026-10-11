@@ -20,7 +20,7 @@
   import SegmentedControl from "#lib/components/SegmentedControl.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { THEME_DEFINITIONS } from "#lib/constants/theme-definitions.js";
-  import { isDomainEnabled } from "#lib/domains.js";
+  import { isDomainEnabled } from "#lib/domain-availability.js";
   import { useEeLock } from "#lib/ee/license.svelte.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { languageOptions } from "#lib/locales.js";
@@ -34,7 +34,7 @@
     NAV_STYLE_META,
     navStyle,
     type NavStyle,
-  } from "#lib/navStyle.svelte.js";
+  } from "#lib/nav-style.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { flashAnchor } from "#lib/flash-anchor.js";

@@ -17,7 +17,7 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { goBack } from "#lib/backNav.svelte.js";
+  import { goBack } from "#lib/back-nav.svelte.js";
   import { toCarouselItems } from "#lib/carousel.js";
   import Banner from "#lib/components/Banner.svelte";
   import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
