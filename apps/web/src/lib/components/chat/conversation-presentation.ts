@@ -10,6 +10,7 @@ import {
   type MessageWorkKind,
   type WorkThreadDto,
 } from "@loomkeep/shared";
+import { typingInField } from "./MarkdownField.svelte";
 
 export function conversationName(conversation: ConversationDto): string {
   return conversation.peer?.displayName ?? m.chat_deleted_account();
@@ -172,14 +173,12 @@ export function escapeReaches(root: Element | null | undefined): boolean {
   );
   if (open) return false;
   const active = document.activeElement;
+  const typed =
+    active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement
+      ? active.value !== ""
+      : typingInField(active);
 
-  if (
-    (active instanceof HTMLInputElement ||
-      active instanceof HTMLTextAreaElement) &&
-    active.value !== ""
-  ) {
-    return false;
-  }
+  if (typed) return false;
 
   return shortcutsReach(root);
 }

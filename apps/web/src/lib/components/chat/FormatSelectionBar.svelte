@@ -1,7 +1,6 @@
 <script lang="ts" module>
   import type { ChatFormat } from "#lib/chat/chat-markdown.js";
   import { selectionFormats } from "#lib/chat/chat-markdown.js";
-  import { caretPosition } from "./caret-position";
 
   export interface SelectionBar {
     left: number;
@@ -9,32 +8,31 @@
     active: ChatFormat[];
   }
 
-  /** Where the bar goes over a textarea's selection, or null without one. */
+  /** What the bar needs to know of a composer's field (see MarkdownField). */
+  interface Field {
+    hasFocus(): boolean;
+    selection(): { start: number; end: number };
+    coordsAt(offset: number): { left: number; top: number } | null;
+  }
+
+  /** Where the bar goes over a field's selection, or null without one. */
   export function selectionBarAt(
-    textarea: HTMLTextAreaElement | null,
+    field: Field | null,
     value: string,
   ): SelectionBar | null {
-    if (
-      !textarea ||
-      document.activeElement !== textarea ||
-      textarea.selectionStart === textarea.selectionEnd
-    ) {
-      return null;
-    }
+    if (!field?.hasFocus()) return null;
+    const { start, end } = field.selection();
+    if (start === end) return null;
 
-    const box = textarea.getBoundingClientRect();
-    const start = caretPosition(textarea, textarea.selectionStart);
-    const end = caretPosition(textarea, textarea.selectionEnd);
+    const from = field.coordsAt(start);
+    const to = field.coordsAt(end);
+    if (!from || !to) return null;
     const middle =
-      start.top === end.top ? (start.left + end.left) / 2 : start.left + 60;
+      from.top === to.top ? (from.left + to.left) / 2 : from.left + 60;
     return {
-      left: Math.max(8, Math.min(box.left + middle - 110, innerWidth - 228)),
-      top: Math.max(8, box.top + start.top - 46),
-      active: selectionFormats(
-        value,
-        textarea.selectionStart,
-        textarea.selectionEnd,
-      ),
+      left: Math.max(8, Math.min(middle - 110, innerWidth - 228)),
+      top: Math.max(8, from.top - 46),
+      active: selectionFormats(value, start, end),
     };
   }
 </script>
