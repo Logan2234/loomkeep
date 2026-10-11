@@ -7,7 +7,7 @@
   import { auth } from "#lib/auth.svelte.js";
   import Combobox from "#lib/components/Combobox.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
-  import { isDomainEnabled, orderedDomains } from "#lib/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
 
   let { viewId = $bindable() }: { viewId: string | undefined } = $props();

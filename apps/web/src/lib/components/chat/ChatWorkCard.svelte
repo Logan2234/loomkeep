@@ -5,7 +5,7 @@
   import DomainOffMark from "#lib/components/DomainOffMark.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import Poster from "#lib/components/Poster.svelte";
-  import { isDomainEnabled } from "#lib/domains.js";
+  import { isDomainEnabled } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { MessageWorkDto } from "@loomkeep/shared";
   import { workKindLabel } from "./conversation-presentation";

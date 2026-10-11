@@ -7,7 +7,7 @@ const componentSource = (name: string) =>
 describe("dialog focus contract", () => {
   it("shares focus management across every dialog primitive", () => {
     const action = readFileSync(
-      new URL("../actions/dialogFocus.ts", import.meta.url),
+      new URL("../actions/dialog-focus.ts", import.meta.url),
       "utf8",
     );
 

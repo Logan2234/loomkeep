@@ -2,7 +2,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
-  import { domainOffReason } from "#lib/domains.js";
+  import { domainOffReason } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { Domain } from "@loomkeep/shared";
 
