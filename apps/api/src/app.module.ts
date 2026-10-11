@@ -39,6 +39,7 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { PublicApiModule } from "./public-api/public-api.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { SavedViewsModule } from "./saved-views/saved-view.module";
+import { SearchModule } from "./search/search.module";
 import { SessionTimerModule } from "./session-timer/session-timer.module";
 import { SocialModule } from "./social/social.module";
 import { StatsModule } from "./stats/stats.module";
@@ -89,6 +90,7 @@ import { UsersModule } from "./users/users.module";
     ChatApiModule,
     ListsModule,
     SavedViewsModule,
+    SearchModule,
     SessionTimerModule,
     StatsModule,
     NewsletterModule,
