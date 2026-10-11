@@ -8,6 +8,8 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
+import type { AchievementService } from "../gamification/achievements/achievement.service";
+import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { classifyStatusTransition } from "../social/activity-transition.util";
@@ -367,4 +369,76 @@ export function pausedStatusClause<T extends string>(
       none: { occurredAt: { gte: cutoff } },
     },
   };
+}
+
+export async function assertSessionOwnership<T>(
+  userId: string,
+  findSession: () => Promise<T | null>,
+  ownerId: (session: T) => string,
+): Promise<T> {
+  const session = await findSession();
+  if (!session)
+    throw new AppException(
+      HttpStatus.NOT_FOUND,
+      ErrorCode.LibrarySessionNotFound,
+    );
+  if (ownerId(session) !== userId)
+    throw new AppException(
+      HttpStatus.FORBIDDEN,
+      ErrorCode.LibrarySessionForbidden,
+    );
+  return session;
+}
+
+export async function syncCycleCompletionXp(
+  xp: XpService,
+  achievements: AchievementService,
+  args: {
+    userId: string;
+    previousStatus: string | null | undefined;
+    nextStatus: string;
+    completedStatus: string;
+    cycle: { id: string; number: number } | null | undefined;
+    sourceType: "GamePlaythrough" | "BookReading";
+    firstReason: XpReason;
+    replayReason: XpReason;
+    amount?: (reason: XpReason) => Promise<number>;
+  },
+): Promise<boolean> {
+  if (!args.cycle) return false;
+
+  if (
+    args.previousStatus === args.completedStatus &&
+    args.nextStatus !== args.completedStatus
+  ) {
+    await xp.revokeBySource(args.sourceType, [args.cycle.id]);
+  }
+
+  if (
+    args.previousStatus === args.completedStatus ||
+    args.nextStatus !== args.completedStatus
+  )
+    return false;
+  const reason = args.cycle.number === 1 ? args.firstReason : args.replayReason;
+  if (args.amount)
+    await xp.award(
+      args.userId,
+      reason,
+      args.cycle.id,
+      await args.amount(reason),
+    );
+  else await xp.award(args.userId, reason, args.cycle.id);
+  await achievements.evaluate(
+    args.userId,
+    ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
+  );
+  return true;
+}
+
+export async function revokeEntryXp(
+  xp: XpService,
+  sources: { sourceType: string; ids: string[] }[],
+): Promise<void> {
+  for (const source of sources)
+    await xp.revokeBySource(source.sourceType, source.ids);
 }
