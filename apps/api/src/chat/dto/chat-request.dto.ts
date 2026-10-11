@@ -55,9 +55,12 @@ export class EditMessageBody implements EditMessageRequestDto {
   skipLinks?: string[];
 }
 
-/** The text may be left out when a work goes with it. */
+/** The text may be left out when a work, a review or a list goes with it. */
 export class SendMessageBody implements SendMessageRequestDto {
-  @ValidateIf((body: SendMessageBody) => !body.work || body.text !== undefined)
+  @ValidateIf(
+    (body: SendMessageBody) =>
+      !(body.work || body.review || body.list) || body.text !== undefined,
+  )
   @IsString()
   @MinLength(1)
   @MaxLength(MESSAGE_TEXT_MAX_LENGTH)
@@ -72,6 +75,16 @@ export class SendMessageBody implements SendMessageRequestDto {
   @IsString()
   @Matches(WORK_PATH)
   work?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  review?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  list?: string;
 
   @IsOptional()
   @IsArray()

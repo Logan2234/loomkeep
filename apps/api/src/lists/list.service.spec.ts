@@ -176,6 +176,64 @@ describe("ListService.getForViewer — own-visibility gate", () => {
   });
 });
 
+describe("ListService.messageCards — a list attached to a message", () => {
+  function make(rows: ReturnType<typeof listRow>[]) {
+    const prisma = {
+      list: { findMany: vi.fn().mockResolvedValue(rows) },
+    } as unknown as PrismaService;
+    const visibility = {
+      getRelation: vi
+        .fn()
+        .mockResolvedValue(
+          relation({ following: true, followsYou: true, isFriend: true }),
+        ),
+    } as unknown as VisibilityService;
+    return new ListService(
+      prisma,
+      visibility,
+      { emit: vi.fn() } as unknown as ActivityService,
+      fakeConfig(),
+      fakeNotifications(),
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      stubFollow(),
+    );
+  }
+
+  const row = (over: Partial<Record<string, unknown>>) =>
+    listRow({
+      user: { id: "author", profileAccess: "PUBLIC", displayName: "Léa" },
+      _count: { items: 13 },
+      ...over,
+    });
+
+  it("leaves out a PRIVATE list, unless the viewer edits it", async () => {
+    const svc = make([
+      row({ id: "private", visibility: "PRIVATE" }),
+      row({
+        id: "edited",
+        visibility: "PRIVATE",
+        members: [{ userId: VIEWER }],
+      }),
+      row({ id: "friends", visibility: "FRIENDS" }),
+    ]);
+
+    const cards = await svc.messageCards(VIEWER, [
+      "private",
+      "edited",
+      "friends",
+    ]);
+
+    expect([...cards.keys()]).toEqual(["edited", "friends"]);
+    expect(cards.get("friends")).toMatchObject({
+      itemCount: 13,
+      ownerName: "Léa",
+      mine: false,
+    });
+  });
+});
+
 describe("ListService.listForUser — editor lists on a profile", () => {
   function userSummary(id: string) {
     return {

@@ -8,6 +8,8 @@ import {
   type ListMemberDto,
   type ListViewerRole,
   type ListVisibility,
+  MESSAGE_LIST_WORKS,
+  type MessageListDto,
   type MyListDto,
   NotificationType,
   RealtimeEvent,
@@ -436,6 +438,67 @@ export class ListService {
         role: r.userId === user.id ? ("OWNER" as const) : ("EDITOR" as const),
       };
     });
+  }
+
+  /**
+   * Lists as a message's card shows them to the viewer, by id: the ones still
+   * there that they may see — own, edited, or open to them by their owner's
+   * audience.
+   */
+  async messageCards(
+    viewerId: string,
+    ids: string[],
+  ): Promise<Map<string, MessageListDto>> {
+    if (ids.length === 0) return new Map();
+    const rows = await this.prisma.list.findMany({
+      where: { id: { in: ids } },
+      include: {
+        user: { select: AUTHOR_SELECT },
+        members: { where: { userId: viewerId }, select: { userId: true } },
+        items: { orderBy: { position: "asc" }, take: MESSAGE_LIST_WORKS },
+        _count: { select: { items: true } },
+      },
+    });
+
+    const visible: typeof rows = [];
+
+    for (const row of rows) {
+      if (
+        row.userId === viewerId ||
+        row.members.length > 0 ||
+        resolveOwnVisibility(
+          row.visibility as ListVisibility,
+          row.user.profileAccess,
+          await this.visibility.getRelation(viewerId, row.user),
+        )
+      ) {
+        visible.push(row);
+      }
+    }
+
+    const targets = await this.resolveTargets(visible.flatMap((r) => r.items));
+    return new Map(
+      visible.map((r) => [
+        r.id,
+        {
+          id: r.id,
+          title: r.title,
+          kind: r.kind as MessageListDto["kind"],
+          visibility: r.visibility as ListVisibility,
+          itemCount: r._count.items,
+          works: r.items.map((i) => {
+            const target = targets.get(`${i.targetType}:${i.targetId}`);
+            return {
+              title: target?.title ?? "",
+              imageUrl: target?.imageUrl ?? null,
+            };
+          }),
+          ownerName: r.user.displayName,
+          mine: r.userId === viewerId,
+          updatedAt: r.updatedAt.toISOString(),
+        },
+      ]),
+    );
   }
 
   /** Which of the user's editable lists already contain this target, keyed by list id. */

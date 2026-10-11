@@ -133,13 +133,11 @@ export class ChatController {
   ): Promise<MessageDto> {
     const work = body.work ? await this.works.required(body.work) : null;
     const text = body.text?.trim() ? body.text : null;
-    const message = await this.chat.send(
-      user.sub,
-      id,
-      text,
-      body.spoiler,
+    const message = await this.chat.send(user.sub, id, text, body.spoiler, {
       work,
-    );
+      reviewId: body.review,
+      listId: body.list,
+    });
 
     if (text) this.works.refreshLinkedWorks(message.id, text, body.skipLinks);
 

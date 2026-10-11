@@ -1,5 +1,12 @@
-import type { CommentEmote, CommentTargetType, MediaType } from "../enums";
+import type {
+  CommentEmote,
+  CommentTargetType,
+  ListKind,
+  ListVisibility,
+  MediaType,
+} from "../enums";
 import type { CommentReactionSummaryDto } from "./comment";
+import type { ReviewTargetSummaryDto } from "./review";
 import type { UserSummaryDto } from "./social";
 
 /** Max length of a message's text (frontend + backend DTO). */
@@ -29,6 +36,47 @@ export interface MessageWorkDto {
   inLibrary: boolean;
 }
 
+/** A review attached with `/review`: always its author's, read as it is now. */
+export interface MessageReviewDto {
+  rating: number;
+  text: string | null;
+  /** Tagged as a spoiler by its author: the card hides its text until revealed. */
+  spoiler: boolean;
+  /** The reviewed work; a season or an episode adds its numbers. */
+  target: ReviewTargetSummaryDto | null;
+}
+
+/** A work on a list's card. */
+export interface MessageListWorkDto {
+  title: string;
+  imageUrl: string | null;
+}
+
+/** Works a list's card shows, at most. */
+export const MESSAGE_LIST_WORKS = 5;
+
+/** A list attached with `/list`, read as it is now. */
+export interface MessageListDto {
+  id: string;
+  title: string;
+  kind: ListKind;
+  visibility: ListVisibility;
+  itemCount: number;
+  /** Its first works, in the list's order (`MESSAGE_LIST_WORKS` at most). */
+  works: MessageListWorkDto[];
+  /** The list's owner. */
+  ownerName: string;
+  /** The list is the viewer's own. */
+  mine: boolean;
+  updatedAt: string;
+}
+
+/**
+ * What a message carried and can't show anymore: a review deleted since, or a
+ * list deleted or no longer visible to the viewer.
+ */
+export type MessageGoneAttachment = "review" | "list";
+
 export interface MessageDto {
   id: string;
   conversationId: string;
@@ -51,6 +99,11 @@ export interface MessageDto {
   myReaction: CommentEmote | null;
   /** The attached work first, then the work links found in the text. */
   works: MessageWorkDto[];
+  /** Attached with `/review`. */
+  review: MessageReviewDto | null;
+  /** Attached with `/list`. */
+  list: MessageListDto | null;
+  gone: MessageGoneAttachment | null;
   /** Pinned in the conversation, by either member. */
   pinned: boolean;
   /** Copied from another conversation by "Transférer". */
@@ -129,11 +182,15 @@ export interface OpenConversationRequestDto {
 }
 
 export interface SendMessageRequestDto {
-  /** Optional when a work is attached. */
+  /** Optional when a work, a review or a list is attached. */
   text?: string;
   spoiler?: boolean;
   /** A work page's path (`/app/games/1942`), attached to the message as a card. */
   work?: string;
+  /** One of the author's reviews, by id (`/review`). */
+  review?: string;
+  /** A list both members may see, by id (`/list`). */
+  list?: string;
   /** Links whose card the writer turned down: they stay plain links. */
   skipLinks?: string[];
 }
