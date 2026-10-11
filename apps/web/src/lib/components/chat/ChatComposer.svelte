@@ -352,7 +352,9 @@
     });
   }
 
-  const runs = $derived(composerRuns(value, mentions));
+  // Where the caret is, so the markers around it show (see composerRuns).
+  let caret = $state<{ start: number; end: number } | null>(null);
+  const runs = $derived(composerRuns(value, mentions, caret));
 
   function autosize() {
     if (!textarea) return;
@@ -405,6 +407,10 @@
   }
 
   function placeSelectionBar() {
+    caret =
+      textarea && document.activeElement === textarea
+        ? { start: textarea.selectionStart, end: textarea.selectionEnd }
+        : null;
     readMention();
     selectionBar = selectionBarAt(textarea, value);
   }
@@ -710,6 +716,7 @@
         }}
         onblur={() => {
           selectionBar = null;
+          caret = null;
           mentionAt = null;
           emojiAt = null;
         }}></textarea>

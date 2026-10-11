@@ -56,13 +56,21 @@ export interface ComposerRun {
   styles: LiveStyle[];
   /** A link or a mentioned work: underlined. */
   underlined: boolean;
+  /** A marker of a span the caret is out of: kept, but not drawn. */
+  hidden: boolean;
 }
 
 /**
  * The composer's text in runs for the layer drawn under the field: styled as
- * it'll read once sent, its links and mentions underlined.
+ * it'll read once sent, its links and mentions underlined. A span's markers
+ * only show while the caret (or the selection) touches it; elsewhere they
+ * still take their place, the field holding them, but aren't drawn.
  */
-export function composerRuns(text: string, mentions: Mention[]): ComposerRun[] {
+export function composerRuns(
+  text: string,
+  mentions: Mention[],
+  caret: { start: number; end: number } | null = null,
+): ComposerRun[] {
   const underlined = Array.from({ length: text.length }, () => false);
 
   const underline = (from: number, to: number) => {
@@ -83,9 +91,14 @@ export function composerRuns(text: string, mentions: Mention[]): ComposerRun[] {
     }
   }
 
-  const styles = liveStyles(text);
+  const { styles, spanOf, spans } = liveStyles(text);
+  const hidden = spanOf.map((index) => {
+    if (index === -1) return false;
+    const { from, to } = spans[index];
+    return !caret || caret.end < from || caret.start > to;
+  });
   const keyOf = (k: number) =>
-    `${underlined[k]}|${[...styles[k]].sort().join(",")}`;
+    `${underlined[k]}|${hidden[k]}|${[...styles[k]].sort().join(",")}`;
   const runs: ComposerRun[] = [];
   let start = 0;
 
@@ -95,6 +108,7 @@ export function composerRuns(text: string, mentions: Mention[]): ComposerRun[] {
       text: text.slice(start, k),
       styles: [...styles[start]].sort(),
       underlined: underlined[start],
+      hidden: hidden[start],
     });
     start = k;
   }
@@ -117,6 +131,7 @@ const STYLE_CLASS: Record<LiveStyle, string> = {
 
 /** The classes a run is drawn with under the field. */
 export function composerRunClass(run: ComposerRun): string {
+  if (run.hidden) return "text-transparent";
   return [
     ...run.styles.map((style) => STYLE_CLASS[style]),
     run.underlined

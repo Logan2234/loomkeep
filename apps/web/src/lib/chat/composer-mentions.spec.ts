@@ -69,7 +69,9 @@ describe("composer mentions", () => {
     const runs = composerRuns("> *un **gros** mot*\n- point", []);
 
     expect(runs.map((run) => [run.text, run.styles.join("+")])).toEqual([
-      ["> *", "marker"],
+      // The quote's prefix always shows; the star hides with its span.
+      ["> ", "marker"],
+      ["*", "marker"],
       ["un ", "em"],
       ["**", "em+marker"],
       ["gros", "em+strong"],
@@ -96,7 +98,44 @@ describe("composer mentions", () => {
 
   it("leaves an unclosed marker as it is", () => {
     expect(composerRuns("2 * 3 **", [])).toEqual([
-      { text: "2 * 3 **", styles: [], underlined: false },
+      { text: "2 * 3 **", styles: [], underlined: false, hidden: false },
+    ]);
+  });
+
+  it("shows a span's markers only while the caret is in it", () => {
+    const text = "Le **final** de ||Dark||";
+    const hiddenMarkers = (caret: { start: number; end: number } | null) =>
+      composerRuns(text, [], caret)
+        .filter((run) => run.styles.includes("marker"))
+        .map((run) => run.hidden);
+
+    // Away from both spans, or out of the field: none drawn.
+    expect(hiddenMarkers(null)).toEqual([true, true, true, true]);
+    expect(hiddenMarkers({ start: 1, end: 1 })).toEqual([
+      true,
+      true,
+      true,
+      true,
+    ]);
+    // Inside "final", or right after its closing stars: its own two show.
+    expect(hiddenMarkers({ start: 7, end: 7 })).toEqual([
+      false,
+      false,
+      true,
+      true,
+    ]);
+    expect(hiddenMarkers({ start: 12, end: 12 })).toEqual([
+      false,
+      false,
+      true,
+      true,
+    ]);
+    // A selection over both shows all four.
+    expect(hiddenMarkers({ start: 5, end: 20 })).toEqual([
+      false,
+      false,
+      false,
+      false,
     ]);
   });
 });

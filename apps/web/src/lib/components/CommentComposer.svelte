@@ -149,7 +149,9 @@
     readSlashCommand(serialized).text.length > 0 &&
       serialized.length <= COMMENT_TEXT_MAX_LENGTH,
   );
-  const runs = $derived(composerRuns(value, works));
+  // Where the caret is, so the markers around it show (see composerRuns).
+  let caret = $state<{ start: number; end: number } | null>(null);
+  const runs = $derived(composerRuns(value, works, caret));
   const emojis = $derived(emojiAt ? findEmoji(emojiAt.query) : []);
 
   function autosize() {
@@ -257,6 +259,10 @@
   }
 
   function onselectionchange() {
+    caret =
+      textarea && document.activeElement === textarea
+        ? { start: textarea.selectionStart, end: textarea.selectionEnd }
+        : null;
     readMentions();
     selectionBar = selectionBarAt(textarea, value);
   }
@@ -464,6 +470,7 @@
       }}
       onblur={() => {
         selectionBar = null;
+        caret = null;
         workAt = null;
         emojiAt = null;
         setTimeout(() => {

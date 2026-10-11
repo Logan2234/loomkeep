@@ -264,14 +264,29 @@ export type LiveStyle =
 
 /**
  * The composer's text styled as it'll read once sent, character by
- * character: the markers stay, dimmed. Read line by line, as most of what
+ * character. Each inline marker also knows the span it opens or closes
+ * (`spanOf`, -1 for any other character), so the composer can show a span's
+ * markers only while the caret is in it. Read line by line, as most of what
  * people type spans one; a fenced block is code from fence to fence.
  */
-export function liveStyles(source: string): Set<LiveStyle>[] {
+export function liveStyles(source: string): {
+  styles: Set<LiveStyle>[];
+  spanOf: number[];
+  spans: { from: number; to: number }[];
+} {
   const styles = Array.from(
     { length: source.length },
     () => new Set<LiveStyle>(),
   );
+  const spanOf = Array.from({ length: source.length }, () => -1);
+  const spans: { from: number; to: number }[] = [];
+
+  // The markers around [from, to) belong to one span.
+  const span = (from: number, to: number, open: number, close: number) => {
+    const index = spans.push({ from, to }) - 1;
+    for (let k = from; k < from + open; k++) spanOf[k] = index;
+    for (let k = to - close; k < to; k++) spanOf[k] = index;
+  };
 
   const mark = (from: number, to: number, style: LiveStyle) => {
     for (let k = from; k < to; k++) styles[k].add(style);
@@ -288,6 +303,7 @@ export function liveStyles(source: string): Set<LiveStyle>[] {
           mark(i, i + 1, "marker");
           mark(i + 1, close, "code");
           mark(close, close + 1, "marker");
+          span(i, close + 1, 1, 1);
           i = close + 1;
           continue;
         }
@@ -311,6 +327,7 @@ export function liveStyles(source: string): Set<LiveStyle>[] {
           mark(i, i + token.length, "marker");
           mark(close, close + token.length, "marker");
           for (const type of types) mark(i + token.length, close, type);
+          span(i, close + token.length, token.length, token.length);
           scan(i + token.length, close);
           i = close + token.length;
           continue;
@@ -341,7 +358,7 @@ export function liveStyles(source: string): Set<LiveStyle>[] {
     offset = end + 1;
   }
 
-  return styles;
+  return { styles, spanOf, spans };
 }
 
 /** One line for a conversation list: spoilers dotted out, markers dropped. */
