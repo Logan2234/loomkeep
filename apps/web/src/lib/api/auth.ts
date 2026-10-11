@@ -349,7 +349,7 @@ export const getAccountSecurityEvents = (page: number) =>
     query: { page: pageParam(page) },
   });
 
-export async function logout(): Promise<void> {
+async function logout(): Promise<void> {
   await typedRequest("/auth/logout", { method: "POST", withAuth: false }).catch(
     () => undefined,
   );
