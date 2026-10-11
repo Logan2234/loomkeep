@@ -1,5 +1,6 @@
 import { auth } from "#lib/auth.svelte.js";
 import { appConfig } from "#lib/config.svelte.js";
+import { formatNumber } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
@@ -73,6 +74,53 @@ const titles = () =>
     .map((item) => item.querySelector(".font-display")?.textContent?.trim());
 
 describe("Reviews page", () => {
+  it("keeps domain filters visible before the first review", async () => {
+    auth.user = {
+      enabledDomains: ["MEDIA", "PODCASTS"],
+      domainOrder: ["PODCASTS", "MEDIA"],
+    } as UserDto;
+    server.use(http.get(apiUrl("/reviews/me"), () => HttpResponse.json([])));
+    renderWithQuery(ReviewsPage, {});
+    await screen.findByText(m.reviews_empty());
+    const group = screen.getByRole("group", {
+      name: m.reviews_filter_domain(),
+    });
+    expect(
+      within(group).getByRole("button", { name: m.common_Podcasts() }),
+    ).toBeTruthy();
+  });
+
+  it("orders domain filters and includes enabled planned domains", async () => {
+    auth.user = {
+      enabledDomains: ["MEDIA", "GAMES", "PODCASTS"],
+      domainOrder: ["PODCASTS", "GAMES", "MEDIA"],
+    } as UserDto;
+    renderWithQuery(ReviewsPage, {});
+    const group = await screen.findByRole("group", {
+      name: m.reviews_filter_domain(),
+    });
+    expect(
+      within(group)
+        .getAllByRole("button")
+        .map((button) => button.textContent?.trim()),
+    ).toEqual([
+      m.common_all(),
+      m.common_Podcasts(),
+      m.common_Games(),
+      m.common_Media(),
+    ]);
+    expect(
+      (
+        within(group).getByRole("button", {
+          name: m.common_Podcasts(),
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    expect(
+      within(group).queryByRole("button", { name: m.common_Boardgames() }),
+    ).toBeNull();
+  });
+
   it("sums up the reviews in the subtitle", async () => {
     renderWithQuery(ReviewsPage, {});
 
@@ -81,7 +129,7 @@ describe("Reviews page", () => {
         [
           m.reviews_count_other({ count: 3 }),
           m.reviews_page_average({
-            average: (25 / 3).toLocaleString(undefined, {
+            average: formatNumber(25 / 3, {
               maximumFractionDigits: 1,
             }),
           }),

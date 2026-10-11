@@ -4,12 +4,9 @@ import {
   type ReviewTargetType,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
-import { BookItemService } from "../books/book-item.service";
-import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
-import { GameItemService } from "../games/game-item.service";
 import { LinkResolverService } from "../links/link-resolver.service";
-import { MusicItemService } from "../music/music-item.service";
+import { WorkPageService } from "../links/work-page.service";
 import { ChatService } from "./chat.service";
 
 /** What a message keeps of a work: enough to draw its card without a lookup. */
@@ -28,8 +25,6 @@ const MAX_LINKED_WORKS = 3;
 // Links looked at, at most: each unknown one costs a catalogue call.
 const MAX_SCANNED_LINKS = 10;
 
-const MEDIA_PATH = /^\/app\/media\/(movie|series|anime)\/([^/?#\s]+)$/;
-const DOMAIN_PATH = /^\/app\/(games|books|music)\/([^/?#\s]+)$/;
 const LINK = /https?:\/\/[^\s<>]+[^\s<>.,;:!?)\]'"]/g;
 
 /**
@@ -45,10 +40,7 @@ export class ChatWorkService {
   constructor(
     private readonly chat: ChatService,
     private readonly links: LinkResolverService,
-    private readonly media: MediaItemService,
-    private readonly games: GameItemService,
-    private readonly books: BookItemService,
-    private readonly music: MusicItemService,
+    private readonly pages: WorkPageService,
   ) {}
 
   /** The card for a work attached by hand; 404 when there's none to make. */
@@ -97,51 +89,16 @@ export class ChatWorkService {
   }
 
   private async card(href: string): Promise<WorkCard | null> {
-    const media = MEDIA_PATH.exec(href);
-
-    if (media) {
-      const type = media[1].toUpperCase() as "MOVIE" | "SERIES" | "ANIME";
-      const item = await this.media.upsertFromSource(
-        type === "ANIME" ? "ANILIST" : "TMDB",
-        media[2],
-        type,
-      );
-      return item.isAdult
-        ? null
-        : {
-            targetType: "MEDIA",
-            targetId: item.id,
-            kind: type,
-            title: item.title,
-            imageUrl: item.posterUrl,
-            href,
-            year: item.releaseDate?.getUTCFullYear() ?? null,
-          };
-    }
-
-    const domain = DOMAIN_PATH.exec(href);
-    if (!domain) return null;
-    const [, section, sourceId] = domain;
-
-    const item =
-      section === "games"
-        ? await this.games.upsertFromSource("IGDB", sourceId)
-        : section === "books"
-          ? await this.books.upsertFromSource("OPEN_LIBRARY", sourceId)
-          : await this.music.upsertFromSource("MUSICBRAINZ", sourceId);
-    if ("isAdult" in item && item.isAdult) return null;
-
-    const targetType = (
-      { games: "GAME", books: "BOOK", music: "MUSIC" } as const
-    )[section as "games" | "books" | "music"];
+    const work = await this.pages.cache(href);
+    if (!work || work.isAdult) return null;
     return {
-      targetType,
-      targetId: item.id,
-      kind: targetType,
-      title: item.title,
-      imageUrl: item.coverUrl,
-      href,
-      year: item.releaseDate?.getUTCFullYear() ?? null,
+      targetType: work.targetType,
+      targetId: work.targetId,
+      kind: work.kind,
+      title: work.title,
+      imageUrl: work.imageUrl,
+      href: work.href,
+      year: work.year,
     };
   }
 }

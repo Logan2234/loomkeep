@@ -14,12 +14,17 @@
   import { createDomainToggle } from "#lib/domain-toggle.svelte.js";
   import { orderedDomains } from "#lib/domains.js";
   import { liveFlags } from "#lib/feature-flags-live.svelte.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { Domain, PREMIUM_DOMAINS, maintenanceFlag } from "@loomkeep/shared";
   import { dragHandle, dragHandleZone } from "svelte-dnd-action";
+  import { flip } from "svelte/animate";
+  import { cubicOut } from "svelte/easing";
   import { flashAnchor } from "../flash-anchor";
 
   const premiumLocked = $derived(auth.isPremiumLocked);
+  const reduced = prefersReducedMotion();
+  const flipDurationMs = $derived(reduced ? 0 : 220);
 
   // What switching a domain off would take out of the navigation. Best
   // effort: a failed count leaves the tiles as they were rather than
@@ -61,10 +66,15 @@
   // stays in canonical order on purpose (toggleDomainSelection rebuilds it),
   // so this is a separate preference rather than repurposing it.
   interface DomainItem {
-    id: Domain;
+    id: string;
+    // The drag placeholder replaces id; keep the domain to render its tile.
+    domain: Domain;
   }
   const items = $derived(
-    orderedDomains(auth.user?.domainOrder).map((id) => ({ id })),
+    orderedDomains(auth.user?.domainOrder).map((domain) => ({
+      id: domain,
+      domain,
+    })),
   );
   // Writable derived: svelte-dnd-action reassigns it mid-drag, and it
   // otherwise tracks `items` (e.g. after a save from another tab).
@@ -74,17 +84,18 @@
     mutate: (domainOrder: Domain[]) => updateMe({ domainOrder }),
   }));
 
-  function normalizeDomainItems(items: DomainItem[]): DomainItem[] {
-    return items.filter(({ id }) => id in DOMAINS);
-  }
-
   function handleDndConsider(e: CustomEvent<{ items: DomainItem[] }>) {
-    dragItems = normalizeDomainItems(e.detail.items);
+    dragItems = e.detail.items;
   }
 
   function handleDndFinalize(e: CustomEvent<{ items: DomainItem[] }>) {
-    dragItems = normalizeDomainItems(e.detail.items);
-    reorderMut.mutate(dragItems.map((d) => d.id));
+    dragItems = e.detail.items;
+    reorderMut.mutate(dragItems.map((d) => d.domain));
+  }
+
+  function highlightDraggedTile(element: HTMLElement | undefined) {
+    const tile = element?.querySelector<HTMLElement>(".domain-tile");
+    if (tile) tile.dataset.dragging = "true";
   }
 </script>
 
@@ -95,12 +106,15 @@
       use:dragHandleZone={{
         items: dragItems,
         dragDisabled: reorderMut.loading,
-        flipDurationMs: 150,
+        flipDurationMs,
+        dropTargetStyle: {},
+        transformDraggedElement: highlightDraggedTile,
         type: "domain-tiles",
       }}
       onconsider={handleDndConsider}
       onfinalize={handleDndFinalize}>
-      {#each dragItems as { id } (id)}
+      {#each dragItems as item (item.id)}
+        {@const id = item.domain}
         {@const d = DOMAINS[id]}
         {@const domain = id}
         {@const on = auth.user.enabledDomains.includes(id)}
@@ -111,78 +125,99 @@
           !inMaintenance &&
           premiumLocked &&
           PREMIUM_DOMAINS.includes(id)}
-        {#snippet domainButton()}
-          <div
-            id={`domain-${id}`}
-            use:flashAnchor={{ anchor: `domain-${id}`, hash: page.url.hash }}
-            style:--domain-color={DOMAIN_ACCENT[domain]}
-            class="domain-tile border-border relative min-h-36 rounded-xl border transition-[border-color,background-color]"
-            class:domain-tile-selected={on}>
-            <span
-              use:dragHandle
-              aria-label={m.common_reorder()}
-              class="btn-icon absolute top-2 right-2 z-10 cursor-grab touch-none active:cursor-grabbing">
-              <Icon name="grip" class="h-3.5 w-3.5" />
-            </span>
-            {#if inMaintenance}
+        <div
+          class="min-w-0"
+          animate:flip={{ duration: flipDurationMs, easing: cubicOut }}>
+          {#snippet domainButton()}
+            <div
+              id={`domain-${id}`}
+              use:flashAnchor={{ anchor: `domain-${id}`, hash: page.url.hash }}
+              style:--domain-color={DOMAIN_ACCENT[domain]}
+              style:--drag-scale={reduced ? 1 : 1.02}
+              style:--drag-duration={reduced ? "0ms" : "150ms"}
+              data-dragging="false"
+              class="domain-tile border-border relative h-full min-h-36 rounded-xl border transition-[border-color,background-color]"
+              class:domain-tile-selected={on}>
               <span
-                class="bg-surface-2 text-dim absolute -top-1.5 -right-1.5 z-10 rounded-full p-1">
-                <Icon name="lock" class="h-3 w-3" />
+                use:dragHandle
+                aria-label={m.common_reorder()}
+                class="btn-icon absolute top-2 right-2 z-10 cursor-grab touch-none active:cursor-grabbing">
+                <Icon name="grip" class="h-3.5 w-3.5" />
               </span>
-            {:else if d.comingSoon && !showLock}
-              <span
-                class="bg-surface-2 text-dim absolute -top-1.5 -right-1.5 z-10 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">
-                {m.common_coming_soon()}
-              </span>
-            {/if}
-            <button
-              type="button"
-              class="flex h-full w-full flex-col justify-between rounded-xl p-4 pt-8 text-left disabled:pointer-events-none disabled:opacity-50"
-              aria-pressed={on}
-              disabled={isLast || inMaintenance || showLock}
-              title={inMaintenance
-                ? m.settings_domain_temporarily_unavailable()
-                : isLast
-                  ? m.settings_domain_last_required()
-                  : undefined}
-              onclick={() => domainToggle.toggle(id)}>
-              <Icon name={d.icon} class="domain-tile-icon h-6 w-6" />
-              <span class="block">
-                <span class="block text-sm font-semibold">{d.label}</span>
-                <span class="text-dim mt-1 block text-xs font-normal">
-                  {DOMAIN_DESCRIPTIONS[domain]}
+              {#if inMaintenance}
+                <span
+                  class="bg-surface-2 text-dim absolute -top-1.5 -right-1.5 z-10 rounded-full p-1">
+                  <Icon name="lock" class="h-3 w-3" />
                 </span>
-              </span>
-              <span class="text-dim block min-h-4 text-xs">
-                {#if countsQuery.loading && !d.comingSoon}
-                  <span class="skeleton block h-3 w-12 rounded"></span>
-                {:else if (counts[id] ?? 0) > 0}
-                  <span class="timecode text-[0.65rem]">
-                    {trackedLabel(counts[id] ?? 0)}
+              {:else if d.comingSoon && !showLock}
+                <span
+                  class="bg-surface-2 text-dim absolute -top-1.5 -right-1.5 z-10 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">
+                  {m.common_coming_soon()}
+                </span>
+              {/if}
+              <button
+                type="button"
+                class="flex h-full w-full flex-col justify-between rounded-xl p-4 pt-8 text-left disabled:pointer-events-none disabled:opacity-50"
+                aria-pressed={on}
+                disabled={isLast || inMaintenance || showLock}
+                title={inMaintenance
+                  ? m.settings_domain_temporarily_unavailable()
+                  : isLast
+                    ? m.settings_domain_last_required()
+                    : undefined}
+                onclick={() => domainToggle.toggle(id)}>
+                <Icon name={d.icon} class="domain-tile-icon h-6 w-6" />
+                <span class="block">
+                  <span class="block text-sm font-semibold">{d.label}</span>
+                  <span class="text-dim mt-1 block text-xs font-normal">
+                    {DOMAIN_DESCRIPTIONS[domain]}
                   </span>
-                {/if}
-              </span>
-            </button>
-          </div>
-        {/snippet}
-        {#if showLock}
-          <Tooltip text={m.premium_locked()}>
+                </span>
+                <span class="text-dim block min-h-4 text-xs">
+                  {#if countsQuery.loading && !d.comingSoon}
+                    <span class="skeleton block h-3 w-12 rounded"></span>
+                  {:else if (counts[id] ?? 0) > 0}
+                    <span class="timecode text-[0.65rem]">
+                      {trackedLabel(counts[id] ?? 0)}
+                    </span>
+                  {/if}
+                </span>
+              </button>
+            </div>
+          {/snippet}
+          {#if showLock}
+            <Tooltip text={m.premium_locked()}>
+              {@render domainButton()}
+              <PremiumLockBadge />
+            </Tooltip>
+          {:else}
             {@render domainButton()}
-            <PremiumLockBadge />
-          </Tooltip>
-        {:else}
-          {@render domainButton()}
-        {/if}
+          {/if}
+        </div>
       {/each}
-      {#if domainToggle.error || reorderMut.error}
-        <p class="text-danger text-sm sm:col-span-2 lg:col-span-3">
-          {domainToggle.error || reorderMut.error}
-        </p>
-      {/if}
     </div>
+    {#if domainToggle.error || reorderMut.error}
+      <p class="text-danger mt-3 text-sm">
+        {domainToggle.error || reorderMut.error}
+      </p>
+    {/if}
   {/if}
 
   <style>
+    .domain-tile:global([data-dragging="true"]) {
+      box-shadow: 0 8px 24px color-mix(in srgb, var(--fg) 18%, transparent);
+      animation: drag-lift var(--drag-duration) ease-out both;
+    }
+
+    @keyframes drag-lift {
+      from {
+        transform: scale(1);
+      }
+      to {
+        transform: scale(var(--drag-scale));
+      }
+    }
+
     .domain-tile-selected {
       border-color: color-mix(in srgb, var(--domain-color) 60%, var(--border));
       background: color-mix(in srgb, var(--domain-color) 11%, transparent);

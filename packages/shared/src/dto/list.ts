@@ -102,3 +102,12 @@ export interface UpdateListDto {
 
 /** Which of the user's own lists already contain a target, keyed by list id (value = item id). */
 export type ListMembershipDto = Record<string, string>;
+
+/**
+ * `POST /lists/:id/works`: a work by its page's path, cached when it isn't
+ * yet — added to the list without the viewer tracking it.
+ */
+export interface AddListWorkRequestDto {
+  /** A work page's path, e.g. `/app/games/11737`. */
+  work: string;
+}

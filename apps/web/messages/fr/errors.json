@@ -117,6 +117,7 @@
   "apierr_lists_forbidden": "Cette liste appartient à un autre compte.",
   "apierr_lists_item_not_found": "Cet élément est introuvable dans la liste.",
   "apierr_lists_item_already_exists": "Cet élément est déjà dans la liste.",
+  "apierr_lists_work_not_found": "Cette œuvre est introuvable dans son catalogue.",
   "apierr_lists_reorder_mismatch": "L'ordre envoyé ne correspond pas aux éléments actuels de la liste.",
   "apierr_lists_stale": "Cette liste a été modifiée entre-temps, recharge la page.",
   "apierr_lists_cannot_add_self": "Tu ne peux pas t'ajouter toi-même à cette liste.",

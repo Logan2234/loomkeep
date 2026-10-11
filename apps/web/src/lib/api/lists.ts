@@ -42,6 +42,14 @@ export const addListItem = (
     body: { targetType, targetId },
   });
 
+/** A work found by search, by its page's path: added without tracking it. */
+export const addWorkToList = (listId: string, work: string) =>
+  typedRequest("/lists/{id}/works", {
+    method: "POST",
+    params: { id: listId },
+    body: { work },
+  });
+
 export const removeListItem = (listId: string, itemId: string): Promise<void> =>
   typedRequest("/lists/{id}/items/{itemId}", {
     method: "DELETE",

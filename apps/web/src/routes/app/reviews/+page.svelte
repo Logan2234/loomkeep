@@ -3,8 +3,6 @@
 
   import { DOMAINS } from "#lib/constants/domains.js";
 
-  import { labeledOptions } from "#lib/options.js";
-
   import { type SelectOption } from "#lib/types/select-option.js";
 
   import {
@@ -15,6 +13,7 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
   import DomainOffMark from "#lib/components/DomainOffMark.svelte";
   import EmptyState from "#lib/components/EmptyState.svelte";
   import Icon from "#lib/components/Icon.svelte";
@@ -22,7 +21,11 @@
   import ReviewFormModal from "#lib/components/ReviewFormModal.svelte";
   import SegmentedControl from "#lib/components/SegmentedControl.svelte";
   import { appConfig } from "#lib/config.svelte.js";
-  import { isDomainEnabled, targetDomain } from "#lib/domains.js";
+  import {
+    isDomainEnabled,
+    orderedDomains,
+    targetDomain,
+  } from "#lib/domains.js";
   import {
     DATE_MEDIUM_OPTIONS,
     formatDate,
@@ -36,25 +39,18 @@
     type ReviewTargetType,
     type ReviewVisibility,
     REVIEW_TARGET_DOMAIN,
+    type Domain,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { fade, fly, slide } from "svelte/transition";
 
-  type Group = "all" | "media" | "games" | "books" | "music";
+  type Group = "all" | Lowercase<Domain>;
   type Sort = "recent" | "best";
 
   // Seasons and episodes sit with the films and series they belong to.
   const groupOf = (target: ReviewTargetType) =>
     REVIEW_TARGET_DOMAIN[target].toLowerCase();
-
-  const GROUP_LABEL: Record<Group, string> = {
-    all: m.common_all(),
-    media: DOMAINS.MEDIA.label,
-    games: DOMAINS.GAMES.label,
-    books: DOMAINS.BOOKS.label,
-    music: DOMAINS.MUSIC.label,
-  };
 
   const reduced = prefersReducedMotion();
 
@@ -72,16 +68,23 @@
   const normalize = (value: string) =>
     value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
-  const groupOptions = $derived(
-    labeledOptions(
-      GROUP_LABEL,
-      (["all", "media", "games", "books", "music"] as const).filter(
-        (value) =>
-          value === "all" ||
-          reviews.some((review) => groupOf(review.targetType) === value),
-      ),
-    ),
-  );
+  const groupOptions = $derived([
+    { value: "all" as const, label: m.common_all() },
+    ...orderedDomains(auth.user?.domainOrder)
+      .filter(
+        (domain) =>
+          isDomainEnabled(domain) ||
+          reviews.some((review) => targetDomain(review.targetType) === domain),
+      )
+      .map((domain) => ({
+        value: domain.toLowerCase() as Group,
+        label: DOMAINS[domain].label,
+        disabled: DOMAINS[domain].comingSoon,
+        disabledReason: DOMAINS[domain].comingSoon
+          ? m.common_coming_soon()
+          : undefined,
+      })),
+  ]);
 
   const SORT_OPTIONS: SelectOption<Sort>[] = [
     { value: "recent", label: m.reviews_sort_recent() },
@@ -198,6 +201,17 @@
     title={m.profile_reviews_title()}
     {subtitle} />
 
+  {#if groupOptions.length > 1}
+    <div class="mb-4">
+      <SegmentedControl
+        class="max-w-full overflow-x-auto"
+        label={m.reviews_filter_domain()}
+        options={groupOptions}
+        value={group}
+        onChange={(next) => (group = next)} />
+    </div>
+  {/if}
+
   {#if loading}
     <div class="space-y-3">
       {#each Array(4) as _, i (i)}
@@ -238,13 +252,6 @@
         </button>
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        {#if groupOptions.length > 2}
-          <SegmentedControl
-            label={m.reviews_filter_domain()}
-            options={groupOptions}
-            value={group}
-            onChange={(next) => (group = next)} />
-        {/if}
         <SegmentedControl
           class="ml-auto"
           label={m.reviews_sort_label()}

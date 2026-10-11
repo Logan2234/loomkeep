@@ -36,6 +36,7 @@
     type NavStyle,
   } from "#lib/navStyle.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { flashAnchor } from "../flash-anchor";
   import SettingRow from "./SettingRow.svelte";
   import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
@@ -44,10 +45,14 @@
     MOBILE_NAV_SHORTCUT_LIMITS,
     REQUIRED_SHORTCUT,
   } from "@loomkeep/shared";
-  import { dndzone } from "svelte-dnd-action";
+  import { dragHandle, dragHandleZone } from "svelte-dnd-action";
+  import { flip } from "svelte/animate";
+  import { cubicOut } from "svelte/easing";
 
   const eeLock = useEeLock();
   const navStyleLocked = $derived(eeLock.locked);
+  const reduced = prefersReducedMotion();
+  const flipDurationMs = $derived(reduced ? 0 : 220);
 
   const LOCALE_OPTIONS = languageOptions();
 
@@ -128,6 +133,11 @@
   function handleDndFinalize(e: CustomEvent<{ items: MobileDestination[] }>) {
     dragItems = e.detail.items;
     void save(dragItems.map((d) => d.id));
+  }
+
+  function highlightDraggedShortcut(element: HTMLElement | undefined) {
+    const row = element?.querySelector<HTMLElement>(".mobile-shortcut");
+    if (row) row.dataset.dragging = "true";
   }
 
   function remove(id: string) {
@@ -317,41 +327,58 @@
 
     <ul
       class="divide-border divide-y"
-      use:dndzone={{
+      use:dragHandleZone={{
         items: dragItems,
         dragDisabled: saveShortcutsMut.loading,
-        flipDurationMs: 150,
+        flipDurationMs,
+        dropTargetStyle: {},
+        transformDraggedElement: highlightDraggedShortcut,
+        type: "mobile-shortcuts",
       }}
       onconsider={handleDndConsider}
       onfinalize={handleDndFinalize}>
       {#each dragItems as item (item.id)}
         {@const locked = item.id === REQUIRED_SHORTCUT}
-        <li class="flex items-center gap-3 py-2.5">
-          <Icon name="grip" class="text-dim h-4 w-4 shrink-0 cursor-grab" />
-          <Icon name={item.icon} class="text-accent h-5 w-5 shrink-0" />
-          <span class="min-w-0 flex-1 truncate font-semibold">
-            {item.label}
-            {#if locked}
-              <span class="text-dim ml-1 text-xs font-normal"
-                >· {m.settings_nav_always_visible()}</span>
-            {/if}
-          </span>
+        <li
+          aria-label={item.label}
+          class="py-1"
+          animate:flip={{ duration: flipDurationMs, easing: cubicOut }}>
+          <div
+            class="mobile-shortcut flex items-center gap-3 rounded-lg px-2 py-1.5"
+            style:--drag-scale={reduced ? 1 : 1.02}
+            style:--drag-duration={reduced ? "0ms" : "150ms"}
+            data-dragging="false">
+            <span
+              use:dragHandle
+              aria-label={m.common_reorder()}
+              class="btn-icon text-dim shrink-0 cursor-grab touch-none active:cursor-grabbing">
+              <Icon name="grip" class="h-4 w-4" />
+            </span>
+            <Icon name={item.icon} class="text-accent h-5 w-5 shrink-0" />
+            <span class="min-w-0 flex-1 truncate font-semibold">
+              {item.label}
+              {#if locked}
+                <span class="text-dim ml-1 text-xs font-normal"
+                  >· {m.settings_nav_always_visible()}</span>
+              {/if}
+            </span>
 
-          <button
-            type="button"
-            class="hover:bg-danger/10 hover:text-danger text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-30"
-            aria-label={m.common_remove()}
-            disabled={saveShortcutsMut.loading || locked || !canRemove}
-            title={locked
-              ? m.settings_nav_menu_cannot_remove()
-              : !canRemove
-                ? m.settings_nav_min_shortcuts({
-                    min: MOBILE_NAV_SHORTCUT_LIMITS.min,
-                  })
-                : undefined}
-            onclick={() => remove(item.id)}>
-            <Icon name="x" class="h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              class="hover:bg-danger/10 hover:text-danger text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-30"
+              aria-label={m.common_remove()}
+              disabled={saveShortcutsMut.loading || locked || !canRemove}
+              title={locked
+                ? m.settings_nav_menu_cannot_remove()
+                : !canRemove
+                  ? m.settings_nav_min_shortcuts({
+                      min: MOBILE_NAV_SHORTCUT_LIMITS.min,
+                    })
+                  : undefined}
+              onclick={() => remove(item.id)}>
+              <Icon name="x" class="h-4 w-4" />
+            </button>
+          </div>
         </li>
       {/each}
     </ul>
@@ -391,3 +418,20 @@
     {/if}
   </section>
 </div>
+
+<style>
+  .mobile-shortcut:global([data-dragging="true"]) {
+    background: var(--surface);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--fg) 18%, transparent);
+    animation: drag-lift var(--drag-duration) ease-out both;
+  }
+
+  @keyframes drag-lift {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(var(--drag-scale));
+    }
+  }
+</style>

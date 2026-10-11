@@ -74,6 +74,43 @@ afterEach(() => {
 });
 
 describe("calendar page", () => {
+  it.each([true, false])(
+    "keeps video tabs together when games first is %s",
+    async (gamesFirst) => {
+      auth.user = {
+        domainOrder: gamesFirst ? ["GAMES", "MEDIA"] : ["MEDIA", "GAMES"],
+      } as UserDto;
+      serveCalendar([
+        upcoming("e1", "Lanterns", 1, 1),
+        upcoming("g1", "Future game", 0, 1, {
+          mediaItem: null,
+          game: {
+            id: "g1",
+            title: "Future game",
+            coverUrl: null,
+            canonicalSource: "IGDB",
+            sourceId: "1",
+          },
+        }),
+      ]);
+      renderWithQuery(CalendarPage, {});
+      await screen.findByRole("link", { name: /Future game/ });
+      const video = [
+        `${m.calendar_filter_series()} (1)`,
+        `${m.calendar_filter_anime()} (0)`,
+        `${m.media_movie()} (0)`,
+      ];
+      const game = `${m.common_Games()} (1)`;
+      expect(
+        screen.getAllByRole("tab").map((tab) => tab.textContent?.trim()),
+      ).toEqual([
+        `${m.calendar_filter_all()} (2)`,
+        ...(gamesFirst ? [game, ...video] : [...video, game]),
+        `${m.calendar_alerts_muted()} (0)`,
+      ]);
+    },
+  );
+
   it("shows a movie release and toggles its opt-in instead of episode muting", async () => {
     serveCalendar([
       upcoming("movie-1", "Future movie", 0, 1, {

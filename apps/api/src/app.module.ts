@@ -29,6 +29,7 @@ import { ImportModule } from "./import/import.module";
 import { InstanceSettingsModule } from "./instance-settings/instance-settings.module";
 import { LibraryModule } from "./library/library.module";
 import { LinksModule } from "./links/links.module";
+import { ListWorksModule } from "./lists/list-works.module";
 import { ListsModule } from "./lists/list.module";
 import { MailModule } from "./mail/mail.module";
 import { MetricsModule } from "./metrics/metrics.module";
@@ -39,6 +40,7 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { PublicApiModule } from "./public-api/public-api.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { SavedViewsModule } from "./saved-views/saved-view.module";
+import { SearchModule } from "./search/search.module";
 import { SessionTimerModule } from "./session-timer/session-timer.module";
 import { SocialModule } from "./social/social.module";
 import { StatsModule } from "./stats/stats.module";
@@ -88,7 +90,9 @@ import { UsersModule } from "./users/users.module";
     CommentsModule,
     ChatApiModule,
     ListsModule,
+    ListWorksModule,
     SavedViewsModule,
+    SearchModule,
     SessionTimerModule,
     StatsModule,
     NewsletterModule,

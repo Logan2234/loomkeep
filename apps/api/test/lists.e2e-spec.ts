@@ -186,4 +186,31 @@ describe("Collaborative lists (e2e)", () => {
     expect(owner.body.collaborative).toBe(false);
     expect(owner.body.items).toHaveLength(1);
   });
+
+  it("adds a work found by search without tracking it", async () => {
+    await as("carol")
+      .patch("/api/users/me")
+      .send({ enabledDomains: ["MEDIA"] })
+      .expect(200);
+    const own = await as("carol")
+      .post("/api/lists")
+      .send({ title: "Un jour", kind: "COLLECTION", visibility: "PRIVATE" })
+      .expect(201);
+
+    await as("carol")
+      .post(`/api/lists/${own.body.id}/works`)
+      .send({ work: "/app/media/anime/7777" })
+      .expect(201);
+    await as("carol")
+      .post(`/api/lists/${own.body.id}/works`)
+      .send({ work: "/app/u/someone" })
+      .expect(404);
+
+    const detail = await as("carol")
+      .get(`/api/lists/me/${own.body.id}`)
+      .expect(200);
+    expect(detail.body.items).toHaveLength(1);
+    const library = await as("carol").get("/api/library").expect(200);
+    expect(library.body.items).toEqual([]);
+  });
 });

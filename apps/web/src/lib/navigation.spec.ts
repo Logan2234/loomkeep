@@ -12,6 +12,31 @@ afterEach(() => {
 });
 
 describe("mobile shortcut choices", () => {
+  it("orders domain pills without moving the other destinations", () => {
+    auth.user = {
+      domainOrder: [Domain.MUSIC, Domain.GAMES, Domain.MEDIA, Domain.BOOKS],
+    } as never;
+    expect(
+      resolveShortcutChoices({
+        isDomainEnabled: () => true,
+        isAdmin: false,
+        socialEnabled: false,
+        gamificationEnabled: false,
+      }).map((choice) => choice.id),
+    ).toEqual([
+      "home",
+      "search",
+      "music",
+      "games",
+      "media",
+      "books",
+      "calendar",
+      "stats",
+      "profile",
+      "settings",
+    ]);
+  });
+
   it("includes social destinations when their features are available", () => {
     const choices = resolveShortcutChoices({
       isDomainEnabled: () => true,

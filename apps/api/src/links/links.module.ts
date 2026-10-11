@@ -5,11 +5,12 @@ import { GamesModule } from "../games/games.module";
 import { MusicModule } from "../music/music.module";
 import { LinkResolverService } from "./link-resolver.service";
 import { LinksController } from "./links.controller";
+import { WorkPageService } from "./work-page.service";
 
 @Module({
   imports: [CatalogModule, GamesModule, BooksModule, MusicModule],
   controllers: [LinksController],
-  providers: [LinkResolverService],
-  exports: [LinkResolverService],
+  providers: [LinkResolverService, WorkPageService],
+  exports: [LinkResolverService, WorkPageService],
 })
 export class LinksModule {}
