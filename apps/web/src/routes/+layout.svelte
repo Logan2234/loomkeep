@@ -7,11 +7,11 @@
   import NewsBanner from "#lib/components/NewsBanner.svelte";
   import Toast from "#lib/components/Toast.svelte";
   import { layout } from "#lib/layout.svelte.js";
-  import { navStyle } from "#lib/navStyle.svelte.js";
+  import { navStyle } from "#lib/nav-style.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { regionalLocale } from "@loomkeep/shared";
-  import { queryClient } from "#lib/queryClient.js";
+  import { queryClient } from "#lib/query-client.js";
   import { accessibility } from "#lib/accessibility.svelte.js";
   import { theme } from "#lib/theme.svelte.js";
   import "@fontsource-variable/bricolage-grotesque/wght.css";

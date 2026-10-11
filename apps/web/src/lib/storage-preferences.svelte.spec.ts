@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { accessibility } from "./accessibility.svelte";
-import { navStyle } from "./navStyle.svelte";
+import { navStyle } from "./nav-style.svelte";
 import { theme } from "./theme.svelte";
 
 vi.mock("$app/env", () => ({ browser: true }));

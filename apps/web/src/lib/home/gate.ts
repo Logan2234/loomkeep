@@ -1,6 +1,6 @@
 import { auth } from "#lib/auth.svelte.js";
 import { appConfig } from "#lib/config.svelte.js";
-import { isDomainEnabled } from "#lib/domains.js";
+import { isDomainEnabled } from "#lib/domain-availability.js";
 import type { HomeGate } from "./widgets";
 
 /** The gate for the signed-in user — read it inside a `$derived` to track it. */

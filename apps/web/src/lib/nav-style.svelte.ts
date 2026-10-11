@@ -1,0 +1,53 @@
+import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
+import { readStorage, writeStorage } from "#lib/local-storage.js";
+import { m } from "#lib/paraglide/messages.js";
+import { browser } from "$app/env";
+
+const STORAGE_KEY = STORAGE_KEYS.navStyle;
+
+export type NavStyle = "marquee" | "dock" | "board";
+
+export const NAV_STYLE_META: Record<
+  NavStyle,
+  { label: string; blurb: string; premium: boolean }
+> = {
+  marquee: {
+    label: m.nav_style_marquee(),
+    blurb: m.nav_style_marquee_description(),
+    premium: false,
+  },
+  dock: {
+    label: m.nav_style_dock(),
+    blurb: m.nav_style_dock_description(),
+    premium: true,
+  },
+  board: {
+    label: m.nav_style_board(),
+    blurb: m.nav_style_board_description(),
+    premium: true,
+  },
+};
+
+// Cosmetic-only preference — kept in localStorage rather than on the user
+// record (like the rail's "pinned" flag), since it doesn't need to sync
+// across devices. Premium gating is applied by the caller (auth.isPremium +
+// the "premium-features" flag aren't known here), not by this store.
+class NavStyleState {
+  choice = $state<NavStyle>("marquee");
+
+  init(): void {
+    if (!browser) return;
+    const saved = readStorage(STORAGE_KEY);
+
+    if (saved === "marquee" || saved === "dock" || saved === "board") {
+      this.choice = saved;
+    }
+  }
+
+  set(style: NavStyle): void {
+    this.choice = style;
+    if (browser) writeStorage(STORAGE_KEY, style);
+  }
+}
+
+export const navStyle = new NavStyleState();

@@ -2,7 +2,7 @@
   import { page } from "$app/state";
   import Icon from "#lib/components/Icon.svelte";
   import { appConfig } from "#lib/config.svelte.js";
-  import { isDomainEnabled } from "#lib/domains.js";
+  import { isDomainEnabled } from "#lib/domain-availability.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { visibleNavItems } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";

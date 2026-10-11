@@ -4,7 +4,7 @@
   import ProgrammeBoardMobileBar from "#lib/ee/nav/ProgrammeBoardMobileBar.svelte";
   import ProjectorDockMobileBar from "#lib/ee/nav/ProjectorDockMobileBar.svelte";
   import { useOnboardingChecklist } from "#lib/gamification/onboarding-checklist.svelte.js";
-  import type { NavStyle } from "#lib/navStyle.svelte.js";
+  import type { NavStyle } from "#lib/nav-style.svelte.js";
   import type { Snippet } from "svelte";
   import BottomNavigation from "./BottomNavigation.svelte";
   import MenuSheet from "./MenuSheet.svelte";

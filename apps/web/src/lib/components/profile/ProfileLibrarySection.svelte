@@ -3,7 +3,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import ProfileSectionHeading from "#lib/components/profile/ProfileSectionHeading.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
-  import { isDomainEnabled, orderedDomains } from "#lib/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { Domain, ProfileDomainStatDto } from "@loomkeep/shared";
 
