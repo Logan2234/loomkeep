@@ -29,6 +29,7 @@ import { ImportModule } from "./import/import.module";
 import { InstanceSettingsModule } from "./instance-settings/instance-settings.module";
 import { LibraryModule } from "./library/library.module";
 import { LinksModule } from "./links/links.module";
+import { ListWorksModule } from "./lists/list-works.module";
 import { ListsModule } from "./lists/list.module";
 import { MailModule } from "./mail/mail.module";
 import { MetricsModule } from "./metrics/metrics.module";
@@ -89,6 +90,7 @@ import { UsersModule } from "./users/users.module";
     CommentsModule,
     ChatApiModule,
     ListsModule,
+    ListWorksModule,
     SavedViewsModule,
     SearchModule,
     SessionTimerModule,

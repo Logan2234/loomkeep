@@ -10,6 +10,7 @@ import { AppException } from "../common/app.exception";
 import type { GameItemService } from "../games/game-item.service";
 import type { IgdbProvider } from "../games/providers/igdb.provider";
 import { LinkResolverService } from "../links/link-resolver.service";
+import { WorkPageService } from "../links/work-page.service";
 import type { MusicItemService } from "../music/music-item.service";
 import type { MusicBrainzProvider } from "../music/providers/musicbrainz.provider";
 import { ChatWorkService } from "./chat-work.service";
@@ -55,10 +56,12 @@ function setup() {
     service: new ChatWorkService(
       chat,
       links,
-      media,
-      games,
-      {} as BookItemService,
-      {} as MusicItemService,
+      new WorkPageService(
+        media,
+        games,
+        {} as BookItemService,
+        {} as MusicItemService,
+      ),
     ),
     chat,
     media,
