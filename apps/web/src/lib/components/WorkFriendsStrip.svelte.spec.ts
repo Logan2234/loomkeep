@@ -131,6 +131,53 @@ describe("WorkFriendsStrip", () => {
     expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(2);
   });
 
+  it("says in words what a single friend did with a game", async () => {
+    answer({
+      seasons: [],
+      me: null,
+      friends: [
+        friend("lea", {
+          status: "COMPLETED",
+          playtimeMinutes: 1440,
+          rating: 10,
+        }),
+      ],
+    });
+    renderWithQuery(WorkFriendsStrip, {
+      domain: "GAMES",
+      targetType: "GAME",
+      targetId: "g1",
+    });
+
+    const toggle = await screen.findByRole("button", { expanded: false });
+    expect(toggle.textContent).toContain(m.work_friends_did_games_done());
+    expect(toggle.textContent).toContain("10/10");
+  });
+
+  it("names a few friends and counts them by status", async () => {
+    answer({
+      seasons: [],
+      me: null,
+      friends: [
+        friend("lea", { status: "COMPLETED" }),
+        friend("max", { status: "PLAYING" }),
+        friend("sam", { status: "BACKLOG" }),
+        friend("nora", { status: "COMPLETED" }),
+      ],
+    });
+    renderWithQuery(WorkFriendsStrip, {
+      domain: "GAMES",
+      targetType: "GAME",
+      targetId: "g1",
+    });
+
+    const toggle = await screen.findByRole("button", { expanded: false });
+    expect(toggle.textContent).toContain(
+      m.work_friends_names_more_many({ first: "Lea", second: "Max", count: 2 }),
+    );
+    expect(screen.getByLabelText(/: 2$/)).toBeTruthy();
+  });
+
   it("refetches once the viewer's own entry moved", async () => {
     let calls = 0;
     server.use(

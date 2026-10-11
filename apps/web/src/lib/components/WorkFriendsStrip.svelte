@@ -7,15 +7,18 @@
   import Icon from "#lib/components/Icon.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
-  import { formatNumber } from "#lib/format.js";
+  import { formatHours, formatNumber, formatRelative } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
+    didLabel,
     isAhead,
     lanes,
+    namesLabel,
     positionOf,
     progressLabel,
     reelMode,
+    toneCounts,
     type WorkDomain,
   } from "#lib/social/work-friends.js";
   import type {
@@ -139,6 +142,29 @@
   const unplaced = $derived(
     people.filter((p) => !p.me && position(p) === null),
   );
+
+  // Marking episodes fills the cells one after the other, from where the
+  // viewer was: each cell waits its turn after that one.
+  const myCell = $derived(
+    data?.me?.season === season ? (data.me.episode ?? 0) : 0,
+  );
+  let fillFrom = $state(0);
+  let lastCell: number | null = null;
+  $effect.pre(() => {
+    const current = myCell;
+    if (lastCell !== null && current !== lastCell) fillFrom = lastCell;
+    lastCell = current;
+  });
+  const STEP_MS = 90;
+
+  const TONE_CLASS = {
+    idle: "bg-surface-2 text-dim",
+    active: "bg-accent/12 text-accent",
+    done: "bg-success/12 text-success",
+    dropped: "bg-danger/10 text-danger",
+  } as const;
+  const rating = (r: number) =>
+    `${formatNumber(r, { maximumFractionDigits: 1 })}/10`;
 </script>
 
 {#snippet face(p: Person, size: number)}
@@ -149,10 +175,11 @@
   <svelte:element
     this={p.href ? "a" : "span"}
     href={p.href}
-    class="pin absolute top-0 -translate-x-1/2 transition-transform duration-150 hover:-translate-y-0.5 motion-reduce:transition-none"
+    class="pin absolute top-0 -translate-x-1/2 hover:-translate-y-0.5"
     style:left="calc({left * 100}% + {nudge * 14}px)"
     aria-label={label(p)}
-    data-tip={label(p)}>
+    data-tip={label(p)}
+    data-edge={left < 0.2 ? "start" : left > 0.8 ? "end" : null}>
     {@render face(p, 26)}
   </svelte:element>
 {/snippet}
@@ -173,12 +200,14 @@
 
 {#if data && data.friends.length > 0}
   <section
-    class="border-border bg-surface mt-4 overflow-hidden rounded-xl border"
+    class="border-border bg-surface mt-4 rounded-xl border"
     aria-label={m.work_friends_toggle()}
     in:fade={{ duration: reduced ? 0 : 180 }}>
     <button
       type="button"
-      class="hover:bg-surface-2/60 grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 px-4 py-2.5 text-left transition-colors duration-150 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+      class="hover:bg-surface-2/60 grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 px-4 py-2.5 text-left transition-colors duration-150 sm:grid-cols-[minmax(0,1fr)_auto_auto] {open
+        ? 'rounded-t-xl'
+        : 'rounded-xl'}"
       aria-expanded={open}
       onclick={() => (open = !open)}>
       {#if placed.length > 0}
@@ -186,13 +215,13 @@
         <span class="relative col-span-2 h-7 sm:col-span-1" aria-hidden="true">
           <span class="bg-surface-2 absolute inset-x-0 top-3 h-1 rounded-full">
             <span
-              class="bg-accent absolute inset-y-0 left-0 rounded-full"
+              class="bg-accent absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none"
               style:width="{(data.me ? (position(people[0]) ?? 0) : 0) * 100}%"
             ></span>
           </span>
           {#each placed as p (p.key)}
             <span
-              class="absolute top-0.5 -translate-x-1/2"
+              class="absolute top-0.5 -translate-x-1/2 transition-[left] duration-700 ease-out motion-reduce:transition-none"
               style:left="{Math.min(
                 98,
                 Math.max(2, (position(p) ?? 0) * 100),
@@ -201,27 +230,74 @@
             </span>
           {/each}
         </span>
+      {:else if data.friends.length === 1}
+        <!-- One friend, said in words: who did what, and when. -->
+        {@const f = friendOf(data.friends[0])}
+        <span
+          class="col-span-2 flex min-w-0 items-center gap-2.5 sm:col-span-1">
+          {@render face(f, 26)}
+          <span class="min-w-0 text-sm">
+            <b class="font-semibold">{f.name}</b>
+            {didLabel(domain, f)}
+            {#if f.playtimeMinutes}
+              <span class="text-dim">· {formatHours(f.playtimeMinutes)}</span>
+            {/if}
+            {#if f.rating !== null}
+              · <span class="text-accent font-mono font-bold"
+                >{rating(f.rating)}</span>
+            {/if}
+            <span class="text-dim">· {formatRelative(f.updatedAt)}</span>
+          </span>
+        </span>
       {:else}
-        <span class="flex" aria-hidden="true">
-          {#each data.friends.slice(0, 5) as f (f.user.id)}
-            <span class="-mr-1.5">
-              <Avatar seed={f.user.username} url={f.user.avatarUrl} size={24} />
-            </span>
-          {/each}
+        <!-- Many friends: the first faces and names, then a count per status. -->
+        <span
+          class="col-span-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 sm:col-span-1">
+          <span class="flex shrink-0 items-center" aria-hidden="true">
+            {#each data.friends.slice(0, 5) as f (f.user.id)}
+              <span class="-mr-1.5">
+                <Avatar
+                  seed={f.user.username}
+                  url={f.user.avatarUrl}
+                  size={24} />
+              </span>
+            {/each}
+            {#if data.friends.length > 5}
+              <span class="text-dim ml-3 font-mono text-xs"
+                >+{data.friends.length - 5}</span>
+            {/if}
+          </span>
+          <span class="min-w-0 truncate text-sm font-semibold">
+            {namesLabel(data.friends.map((f) => f.user.displayName))}
+          </span>
+          <span class="flex gap-1.5">
+            {#each toneCounts(domain, data.friends) as c (c.tone)}
+              <span
+                class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-xs font-bold {TONE_CLASS[
+                  c.tone
+                ]}"
+                title={c.label}
+                aria-label="{c.label} : {c.count}">
+                <Icon name={c.icon} class="h-3 w-3" />{c.count}
+              </span>
+            {/each}
+          </span>
         </span>
       {/if}
       <span
         class="text-dim flex items-center gap-1.5 text-sm whitespace-nowrap">
-        {data.friends.length > 1
-          ? m.work_friends_count_many({ count: data.friends.length })
-          : m.work_friends_count_one()}
-        {#if ahead > 0}
-          ·
-          <b class="text-accent font-semibold">
-            {ahead > 1
-              ? m.work_friends_ahead_many({ count: ahead })
-              : m.work_friends_ahead_one()}
-          </b>
+        {#if mode !== "lanes"}
+          {data.friends.length > 1
+            ? m.work_friends_count_many({ count: data.friends.length })
+            : m.work_friends_count_one()}
+          {#if ahead > 0}
+            ·
+            <b class="text-accent font-semibold">
+              {ahead > 1
+                ? m.work_friends_ahead_many({ count: ahead })
+                : m.work_friends_ahead_one()}
+            </b>
+          {/if}
         {/if}
         {#if isFeatureNew("work-friends")}<NewBadge />{/if}
       </span>
@@ -235,7 +311,7 @@
     {#if open}
       <div
         transition:slide={{ duration: reduced ? 0 : 220 }}
-        class="bg-surface-2/50 border-border flex flex-col gap-3 border-t px-4 py-3.5">
+        class="bg-surface-2/50 border-border flex flex-col gap-3 rounded-b-xl border-t px-4 py-3.5">
         {#if mode !== "lanes"}
           <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
             <h3 class="font-display font-bold">
@@ -276,12 +352,14 @@
               style:grid-template-columns="repeat({episodes}, minmax(0, 1fr))">
               {#each { length: episodes } as _, i (i)}
                 <span
-                  class="h-4 rounded-sm border {data.me?.season === season &&
-                  data.me.episode === i + 1
+                  class="h-4 rounded-sm border transition-colors duration-300 motion-reduce:transition-none {data
+                    .me?.season === season && data.me.episode === i + 1
                     ? 'bg-accent border-accent'
                     : seenUpTo(season, i + 1)
                       ? 'bg-accent/40 border-transparent'
-                      : 'bg-surface border-border'}"></span>
+                      : 'bg-surface border-border'}"
+                  style:transition-delay="{Math.max(0, i + 1 - fillFrom) *
+                    STEP_MS}ms"></span>
               {/each}
             </div>
           </div>
@@ -298,7 +376,7 @@
             <div
               class="bg-surface border-border relative h-4 overflow-hidden rounded-full border">
               <span
-                class="bg-accent absolute inset-y-0 left-0"
+                class="bg-accent absolute inset-y-0 left-0 transition-[width] duration-700 ease-out motion-reduce:transition-none"
                 style:width="{(data.me ? (position(people[0]) ?? 0) : 0) *
                   100}%"></span>
             </div>
@@ -370,5 +448,35 @@
   .pin:focus-visible::after {
     opacity: 1;
     transform: translate(-50%, 0);
+  }
+
+  /* Near an edge, the name hangs inward rather than past the block. */
+  .pin[data-edge="start"]::after {
+    left: 0;
+    transform: translate(0, 3px);
+  }
+
+  .pin[data-edge="end"]::after {
+    left: auto;
+    right: 0;
+    transform: translate(0, 3px);
+  }
+
+  .pin[data-edge]:hover::after,
+  .pin[data-edge]:focus-visible::after {
+    transform: translate(0, 0);
+  }
+
+  /* The viewer's face slides to their new episode or page. */
+  .pin {
+    transition:
+      left 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform 0.15s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pin {
+      transition: none;
+    }
   }
 </style>

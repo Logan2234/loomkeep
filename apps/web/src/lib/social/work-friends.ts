@@ -117,3 +117,77 @@ export function lanes<T extends WorkProgressDto>(
     return { tone: t, title: titles.join(" · "), people: inLane };
   }).filter((lane) => lane.people.length > 0);
 }
+
+const DID: Record<WorkDomain, Partial<Record<StatusTone, () => string>>> = {
+  MEDIA: {
+    done: m.work_friends_did_media_done,
+    active: m.work_friends_did_media_active,
+    idle: m.work_friends_did_media_idle,
+    dropped: m.work_friends_did_media_dropped,
+  },
+  BOOKS: {
+    done: m.work_friends_did_books_done,
+    active: m.work_friends_did_books_active,
+    idle: m.work_friends_did_books_idle,
+    dropped: m.work_friends_did_books_dropped,
+  },
+  GAMES: {
+    done: m.work_friends_did_games_done,
+    active: m.work_friends_did_games_active,
+    idle: m.work_friends_did_games_idle,
+    dropped: m.work_friends_did_games_dropped,
+  },
+  MUSIC: {
+    done: m.work_friends_did_music_done,
+    idle: m.work_friends_did_music_idle,
+  },
+};
+
+/** What someone did with the work, said after their name: "l'a terminé". */
+export function didLabel(domain: WorkDomain, p: WorkProgressDto): string {
+  return DID[domain][toneOf(domain, p)]?.() ?? progressLabel(domain, p);
+}
+
+/** "Léa", "Léa et Max", "Léa, Max et 3 autres": the folded line's names. */
+export function namesLabel(names: string[]): string {
+  const [first, second] = names;
+  if (names.length === 1) return first;
+  if (names.length === 2) return m.work_friends_names_two({ first, second });
+  return names.length === 3
+    ? m.work_friends_names_more_one({ first, second })
+    : m.work_friends_names_more_many({
+        first,
+        second,
+        count: names.length - 2,
+      });
+}
+
+export interface ToneCount {
+  tone: StatusTone;
+  label: string;
+  icon: (typeof STATUS_LOOKS)[WorkDomain][string]["icon"];
+  count: number;
+}
+
+/** How many friends per status, done first: the folded line's counters. */
+export function toneCounts(
+  domain: WorkDomain,
+  people: WorkProgressDto[],
+): ToneCount[] {
+  return (["done", "active", "idle", "dropped"] as const).flatMap((tone) => {
+    const status = Object.entries(STATUS_LOOKS[domain])
+      .filter(([, l]) => l.tone === tone)
+      .at(-1);
+    const count = people.filter((p) => toneOf(domain, p) === tone).length;
+    return status && count > 0
+      ? [
+          {
+            tone,
+            label: LABELS[domain][status[0]].label,
+            icon: status[1].icon,
+            count,
+          },
+        ]
+      : [];
+  });
+}

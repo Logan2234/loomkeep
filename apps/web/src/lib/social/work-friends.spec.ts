@@ -1,11 +1,15 @@
+import { m } from "#lib/paraglide/messages.js";
 import type { WorkFriendsDto, WorkProgressDto } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
 import {
+  didLabel,
   isAhead,
   lanes,
+  namesLabel,
   positionOf,
   progressLabel,
   reelMode,
+  toneCounts,
 } from "./work-friends";
 
 const p = (o: Partial<WorkProgressDto>): WorkProgressDto => ({
@@ -125,5 +129,38 @@ describe("reelMode", () => {
       }),
     ).toBe("pages");
     expect(reelMode({ friends: [], me: null, seasons: [] })).toBe("lanes");
+  });
+});
+
+describe("folded line words", () => {
+  it("says what someone did, in the domain's verb", () => {
+    expect(didLabel("GAMES", p({ status: "COMPLETED" }))).toBe(
+      m.work_friends_did_games_done(),
+    );
+    expect(didLabel("MUSIC", p({ status: "TO_LISTEN" }))).toBe(
+      m.work_friends_did_music_idle(),
+    );
+  });
+
+  it("names two, then counts the rest", () => {
+    expect(namesLabel(["Léa"])).toBe("Léa");
+    expect(namesLabel(["Léa", "Max"])).toBe(
+      m.work_friends_names_two({ first: "Léa", second: "Max" }),
+    );
+    expect(namesLabel(["Léa", "Max", "Sam", "Nora"])).toBe(
+      m.work_friends_names_more_many({ first: "Léa", second: "Max", count: 2 }),
+    );
+  });
+
+  it("counts by status, done first", () => {
+    const counts = toneCounts("GAMES", [
+      p({ status: "BACKLOG" }),
+      p({ status: "COMPLETED" }),
+      p({ status: "COMPLETED" }),
+    ]);
+    expect(counts.map((c) => [c.tone, c.count])).toEqual([
+      ["done", 2],
+      ["idle", 1],
+    ]);
   });
 });
