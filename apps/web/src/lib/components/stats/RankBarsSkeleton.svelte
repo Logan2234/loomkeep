@@ -18,11 +18,17 @@
 
 <div class={cardClass}>
   <div class={titleClass}></div>
-  {#each { length: count } as _, i (i)}<div class="space-y-2">
-      {#if withValue}<div class="flex justify-between gap-4">
+  {#each { length: count } as _, i (i)}
+    <div class="space-y-2">
+      {#if withValue}
+        <div class="flex justify-between gap-4">
           <div class={labelClass}></div>
           <div class={valueClass}></div>
-        </div>{:else}<div class={labelClass}></div>{/if}
+        </div>
+      {:else}
+        <div class={labelClass}></div>
+      {/if}
       <div class="skeleton h-2 w-full rounded"></div>
-    </div>{/each}
+    </div>
+  {/each}
 </div>

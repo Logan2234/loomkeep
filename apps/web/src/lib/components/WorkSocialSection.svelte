@@ -22,18 +22,26 @@
 </script>
 
 {#snippet comments()}
-  {#if appConfig.socialEnabled && commentTargetId}<CommentsPanel
+  {#if appConfig.socialEnabled && commentTargetId}
+    <CommentsPanel
       {targetType}
       targetId={commentTargetId}
       {title}
-      {canParticipate} />{/if}
+      {canParticipate} />
+  {/if}
 {/snippet}
+
 {#if reviewTargetId}
   <ReviewsSection
     {targetType}
     targetId={reviewTargetId}
     workTitle={title}
     workMeta={meta}
-    workImageUrl={imageUrl}
-    >{#snippet actions()}{@render comments()}{/snippet}</ReviewsSection>
-{:else}{@render comments()}{/if}
+    workImageUrl={imageUrl}>
+    {#snippet actions()}
+      {@render comments()}
+    {/snippet}
+  </ReviewsSection>
+{:else}
+  {@render comments()}
+{/if}

@@ -13,8 +13,10 @@
 </script>
 
 <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-  {#each { length: count } as _, i (i)}<div class={cardClass}>
+  {#each { length: count } as _, i (i)}
+    <div class={cardClass}>
       <div class={valueClass}></div>
       <div class={labelClass}></div>
-    </div>{/each}
+    </div>
+  {/each}
 </div>

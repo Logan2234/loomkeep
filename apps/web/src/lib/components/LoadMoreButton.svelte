@@ -16,7 +16,6 @@
   type="button"
   class={className}
   disabled={query.isFetchingNextPage}
-  onclick={() => query.fetchNextPage()}
-  >{query.isFetchingNextPage
-    ? m.common_loading()
-    : m.common_load_more()}</button>
+  onclick={() => query.fetchNextPage()}>
+  {query.isFetchingNextPage ? m.common_loading() : m.common_load_more()}
+</button>
