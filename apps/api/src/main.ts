@@ -179,7 +179,7 @@ async function bootstrap() {
       reply.send(publicApiDocument),
     );
 
-  // Swagger UI on /docs, dev-only. @nestjs/swagger is a production dependency
+  // Swagger UI on /swagger, dev-only. @nestjs/swagger is a production dependency
   // regardless (the nest-cli swagger plugin injects it into every compiled
   // file using @Api* decorators), but the UI itself is still gated to dev.
   if (isDev) {

@@ -16,7 +16,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
-  import { isDomainEnabled } from "#lib/domains.js";
+  import { isDomainEnabled } from "#lib/domain-availability.js";
   import { isFeatureNew, type FeatureBadgeKey } from "#lib/feature-badges.js";
   import { resolveMenuGroups } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";

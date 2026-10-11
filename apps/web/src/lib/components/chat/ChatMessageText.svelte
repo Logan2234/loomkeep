@@ -5,7 +5,7 @@
     type ChatNode,
   } from "#lib/chat/chat-markdown.js";
   import { chat } from "#lib/chat/chat.svelte.js";
-  import { isDomainEnabled } from "#lib/domains.js";
+  import { isDomainEnabled } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
   import { Domain } from "@loomkeep/shared";
 

@@ -8,7 +8,7 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
-  import { isDomainEnabled } from "#lib/domains.js";
+  import { isDomainEnabled } from "#lib/domain-availability.js";
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import type { BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";

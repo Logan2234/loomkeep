@@ -440,13 +440,6 @@ export class LibraryService {
   }
 
   /**
-   * Media can't let Postgres filter everything: the status is derived from
-   * watch progress and the search matches the translated title. Every entry
-   * is read as a light row, its progress counted in SQL, then `keep` applies
-   * what SQL couldn't — shared by the list and the pile so the header's
-   * figure always covers exactly what the list shows.
-   */
-  /**
    * Applies one change to every targeted entry, each through updateEntry
    * (or the list's addItem), so the side effects match a single update's.
    */
@@ -555,6 +548,13 @@ export class LibraryService {
     return seasons.length > 0;
   }
 
+  /**
+   * Media can't let Postgres filter everything: the status is derived from
+   * watch progress and the search matches the translated title. Every entry
+   * is read as a light row, its progress counted in SQL, then `keep` applies
+   * what SQL couldn't — shared by the list and the pile so the header's
+   * figure always covers exactly what the list shows.
+   */
   private filteredRows(userId: string, filters: ListEntriesFilters) {
     const q = searchTerm(filters)?.toLowerCase();
     const where: Prisma.LibraryEntryWhereInput = {
@@ -1594,22 +1594,6 @@ export class LibraryService {
   }
 
   /**
-   * Batched form of `computeProgress` + `lastWatchedAt` for `listEntries`:
-   * that call site was doing 2-3 DB round trips *per entry* (fine for
-   * `getEntry`'s single row, but a query storm across a whole library),
-   * so this fetches every relevant episode/watch once and reduces them
-   * per media item in memory instead.
-   */
-  /**
-   * Per media: its regular episodes, how many of them the user watched, and
-   * their last viewing of any episode (specials included) — the counts
-   * computeProgressBatch derives, without loading every episode and watch.
-   */
-  /**
-   * The viewer's effective status for each of these catalogue works they
-   * track, keyed by source id — the same derivation as the library list.
-   */
-  /**
    * SAGA_COMPLETED once the item's saga (a film collection, an anime's main
    * line) has every released work seen and nothing announced. Checked on each
    * finish, the only moment it can become true; once per saga.
@@ -1666,6 +1650,10 @@ export class LibraryService {
     );
   }
 
+  /**
+   * The viewer's effective status for each of these catalogue works they
+   * track, keyed by source id — the same derivation as the library list.
+   */
   async statusesBySourceId(
     userId: string,
     source: CatalogSource,
@@ -1727,6 +1715,11 @@ export class LibraryService {
     return statuses;
   }
 
+  /**
+   * Per media: its regular episodes, how many of them the user watched, and
+   * their last viewing of any episode (specials included) — the counts
+   * computeProgressBatch derives, without loading every episode and watch.
+   */
   private async progressCounts(
     userId: string,
     mediaItemIds: string[],
@@ -1796,6 +1789,13 @@ export class LibraryService {
     return new Map(rows.map((r) => [r.mediaItemId, Number(r.behind)]));
   }
 
+  /**
+   * Batched form of `computeProgress` + `lastWatchedAt` for `listEntries`:
+   * that call site was doing 2-3 DB round trips *per entry* (fine for
+   * `getEntry`'s single row, but a query storm across a whole library),
+   * so this fetches every relevant episode/watch once and reduces them
+   * per media item in memory instead.
+   */
   private async computeProgressBatch(
     userId: string,
     mediaItemIds: string[],

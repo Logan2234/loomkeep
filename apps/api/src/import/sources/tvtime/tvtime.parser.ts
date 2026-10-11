@@ -1,5 +1,5 @@
 import type { TvTimeImportFilesDto } from "@loomkeep/shared";
-import { parseCsv } from "../../csv";
+import { parseCsv } from "../../../common/csv.util";
 import { earlierOf } from "../../import-date.util";
 
 /** One distinct watched episode of a show, with its rewatch count folded in. */

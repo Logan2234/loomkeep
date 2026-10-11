@@ -1,16 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  bookSessionAggregate,
-  gameSessionAggregate,
-} from "./session-aggregate.util";
-
-describe("gameSessionAggregate", () => {
-  it("sums dated sessions without merging the Steam counter", () => {
-    expect(
-      gameSessionAggregate([{ durationMinutes: 30 }, { durationMinutes: 90 }]),
-    ).toEqual({ trackedMinutes: 120 });
-  });
-});
+import { bookSessionAggregate } from "./session-aggregate.util";
 
 describe("bookSessionAggregate", () => {
   it("advances quantity sessions from the persisted baseline", () => {

@@ -1,5 +1,5 @@
 import type { BookOwnershipStatus, BookStatus } from "@loomkeep/shared";
-import { parseCsv } from "../../csv";
+import { parseCsv } from "../../../common/csv.util";
 import { parseStarRatingToTen, wellFormedIsbn } from "./csv-field.util";
 
 export interface ParsedBabelioRow {

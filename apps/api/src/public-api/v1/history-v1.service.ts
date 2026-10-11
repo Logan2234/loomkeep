@@ -13,7 +13,7 @@ import { canonicalExternalId } from "../../common/external-id.util";
 import { ValidationException } from "../../common/validation.exception";
 import { PrismaService } from "../../prisma/prisma.service";
 import { LibraryV1Service, webOriginOf } from "./library-v1.service";
-import { albumWork, bookWork, gameWork, mediaWork } from "./mappers";
+import { albumWork, bookWork, gameWork, mediaWork } from "./v1.mapper";
 import { WorkTitlesService } from "./work-titles.service";
 
 export interface HistoryV1Query {

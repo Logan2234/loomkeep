@@ -10,9 +10,9 @@
   // screen, unclickable, after closing).
   import type { Snippet } from "svelte";
   import { onMount } from "svelte";
-  import { dialogFocus } from "#lib/actions/dialogFocus.js";
+  import { dialogFocus } from "#lib/actions/dialog-focus.js";
   import { portal } from "#lib/actions/portal.js";
-  import { scrollLock } from "#lib/actions/scrollLock.js";
+  import { scrollLock } from "#lib/actions/scroll-lock.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
 

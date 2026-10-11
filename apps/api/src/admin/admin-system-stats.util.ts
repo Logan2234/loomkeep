@@ -37,12 +37,3 @@ export function providerCallRows(
     })
     .sort((a, b) => b.calls - a.calls || a.provider.localeCompare(b.provider));
 }
-
-/**
- * Share (0-100) of `part` within `total`, or null when there is nothing to
- * divide. Null rather than 0: "no notification was ever sent" and "none was
- * ever read" are different signals.
- */
-export function shareOrNull(part: number, total: number): number | null {
-  return total === 0 ? null : Math.round((part / total) * 100);
-}

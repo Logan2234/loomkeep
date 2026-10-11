@@ -9,7 +9,7 @@ import {
   type ResolvedMatch,
 } from "../media/media-import.source";
 import { AnilistMatchResolver } from "./anilist-match-resolver";
-import { parseMyAnimeListXml } from "./parse-myanimelist-xml";
+import { parseMyAnimeListXml } from "./myanimelist.parser";
 
 /** MyAnimeList's anime XML export, reconciled exclusively through AniList. */
 @Injectable()

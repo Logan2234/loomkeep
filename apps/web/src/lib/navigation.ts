@@ -3,7 +3,7 @@ import { DOMAINS } from "#lib/constants/domains.js";
 import { type FeatureBadgeKey } from "#lib/feature-badges.js";
 import { Domain, REQUIRED_SHORTCUT } from "@loomkeep/shared";
 import { auth } from "./auth.svelte";
-import { orderedDomains } from "./domains";
+import { orderedDomains } from "./domain-availability";
 import { m } from "./paraglide/messages.js";
 import type { IconName } from "./types/icon-name";
 

@@ -4,7 +4,7 @@ import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import { AgeGateService } from "../../../users/age-gate.service";
 import { BookCsvSource } from "./book-csv.source";
-import { parseGoodreadsCsv, type ParsedGoodreadsRow } from "./goodreads-parse";
+import { parseGoodreadsCsv, type ParsedGoodreadsRow } from "./goodreads.parser";
 
 /**
  * Goodreads CSV import. Only the CSV parsing is source-specific; the

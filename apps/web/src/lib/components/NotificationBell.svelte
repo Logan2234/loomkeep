@@ -27,7 +27,7 @@
     getFollowRequests,
     rejectFollowRequest,
   } from "#lib/api/social.js";
-  import { isDomainEnabled, pathDomain } from "#lib/domains.js";
+  import { isDomainEnabled, pathDomain } from "#lib/domain-availability.js";
   import { formatDate } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";

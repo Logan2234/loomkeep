@@ -43,6 +43,9 @@ pnpm check                                     # global typecheck (tsc on api/sh
 pnpm knip                                      # dead code / unused dependency detection
 ```
 
+Knip's root `rxjs` exception covers the peer declaration in
+`pnpm-workspace.yaml` for `@nestjs/platform-fastify`, not an API import.
+
 e2e tests reuse the dev Postgres but run in an isolated `e2e` schema
 (`apps/api/test/global-setup.js`), so they never touch dev data.
 
@@ -100,8 +103,8 @@ fix does.
 - Errors are typed codes (`packages/shared/src/error-codes.ts`,
   `ErrorCode.AuthInvalidCredentials`-style, `domain.reason`), thrown via
   `AppException` and caught by the global `AllExceptionsFilter`. The web
-  derives the i18n key mechanically from the code
-  (`errorCodeToMessageKey()`, `apps/web/src/lib/api/errors.ts`) — never
+  maps each code explicitly to an i18n message in
+  `apps/web/src/lib/api/errors.ts` — never
   display API-supplied text directly; adding a failure mode means adding a
   code here, not a bespoke string.
 

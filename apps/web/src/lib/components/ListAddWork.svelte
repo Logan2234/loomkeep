@@ -7,7 +7,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
-  import { isDomainEnabled, orderedDomains } from "#lib/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
   import { shelves } from "#lib/search/unified-search.js";
   import { createWorkSearch } from "#lib/search/work-search.svelte.js";

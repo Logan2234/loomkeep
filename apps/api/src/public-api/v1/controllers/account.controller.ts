@@ -39,9 +39,9 @@ import {
 import { ExportRateLimitGuard } from "../export-rate-limit.guard";
 import { webOriginOf } from "../library-v1.service";
 import { ListsV1Service } from "../lists-v1.service";
-import { toTarget, webUrl } from "../mappers";
 import { ProfileV1Service } from "../profile-v1.service";
 import { StatsV1Service } from "../stats-v1.service";
+import { toTarget, webUrl } from "../v1.mapper";
 import { WorkTitlesService } from "../work-titles.service";
 
 const REVIEW_TARGETS: Record<StatsDomain, ReviewTargetType[]> = {

@@ -1,6 +1,6 @@
 import { vi, type Mock } from "vitest";
-import { parseCsv } from "../import/csv";
-import { parseGoodreadsCsv } from "../import/sources/books/goodreads-parse";
+import { parseCsv } from "../common/csv.util";
+import { parseGoodreadsCsv } from "../import/sources/books/goodreads.parser";
 import type { PrismaService } from "../prisma/prisma.service";
 import { MigrationExportService } from "./migration-export.service";
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextFocusIndex } from "./dialogFocus";
+import { nextFocusIndex } from "./dialog-focus";
 
 describe("dialogFocus", () => {
   it("wraps focus in both directions", () => {

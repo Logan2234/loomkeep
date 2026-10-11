@@ -6,7 +6,7 @@ import {
   isDomainEnabled,
   orderedDomains,
   pathDomain,
-} from "./domains";
+} from "./domain-availability";
 
 // Unleash's live flags, the only input here that isn't the user itself.
 const { isEnabled } = vi.hoisted(() => ({ isEnabled: vi.fn(() => false) }));

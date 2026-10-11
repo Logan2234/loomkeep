@@ -40,7 +40,7 @@ import {
   fromMediaEntry,
   fromMusicEntry,
   mediaWork,
-} from "./mappers";
+} from "./v1.mapper";
 import { WorkTitlesService } from "./work-titles.service";
 
 export interface LibraryV1Query {

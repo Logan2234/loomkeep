@@ -1,4 +1,4 @@
-import { parseTvTimeExport } from "./parse-export";
+import { parseTvTimeExport } from "./tvtime.parser";
 
 // Minimal headers mirroring the real TV Time files (only the columns the parser
 // reads need to be present).

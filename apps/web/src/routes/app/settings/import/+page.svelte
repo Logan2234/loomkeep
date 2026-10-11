@@ -15,7 +15,7 @@
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
-  import { isDomainEnabled, orderedDomains } from "#lib/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import SettingsSection from "../components/SettingsSection.svelte";

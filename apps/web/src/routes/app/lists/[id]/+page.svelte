@@ -34,7 +34,7 @@
   import Poster from "#lib/components/Poster.svelte";
   import ReportModal from "#lib/components/ReportModal.svelte";
   import { appConfig } from "#lib/config.svelte.js";
-  import { isDomainEnabled, targetDomain } from "#lib/domains.js";
+  import { isDomainEnabled, targetDomain } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
   import { joinRealtimeRoom, onRealtimeEvent } from "#lib/realtime/socket.js";
   import {

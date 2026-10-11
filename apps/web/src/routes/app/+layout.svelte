@@ -6,7 +6,7 @@
   import { scanNotifications } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { auth } from "#lib/auth.svelte.js";
-  import { trackBackHistory } from "#lib/backNav.svelte.js";
+  import { trackBackHistory } from "#lib/back-nav.svelte.js";
   import { bootstrap } from "#lib/bootstrap.svelte.js";
   import BootSplash from "#lib/components/BootSplash.svelte";
   import ChatLauncher from "#lib/components/chat/ChatLauncher.svelte";
@@ -28,7 +28,7 @@
   import ProjectorDockDesktop from "#lib/ee/nav/ProjectorDockDesktop.svelte";
   import TermsReacceptance from "#lib/components/TermsReacceptance.svelte";
   import WidgetIdentify from "#lib/components/WidgetIdentify.svelte";
-  import { navStyle } from "#lib/navStyle.svelte.js";
+  import { navStyle } from "#lib/nav-style.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { LEGAL_VERSION } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -40,7 +40,7 @@
     !!auth.user && auth.user.acceptedTermsVersion !== LEGAL_VERSION,
   );
 
-  // "Dock" and "Programme" are premium nav skins (see navStyle.svelte.ts) —
+  // "Dock" and "Programme" are premium nav skins (see nav-style.svelte.ts) —
   // fall back to the free "Marquee" rail whenever the flag is on and the
   // account isn't premium, regardless of what's still saved in
   // localStorage (e.g. a lapsed subscription).

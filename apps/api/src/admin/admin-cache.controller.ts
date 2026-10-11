@@ -454,9 +454,8 @@ export class AdminCacheController {
    * Deletes an orphaned cached item (no account references it). Referenced
    * items 409 — a delete would strand another user's library/watch history.
    * Same 409 when a review/comment/activity row still targets it: those
-   * outlive a library entry today (only MEDIA's own `deleteEntry` cleans
-   * them up on removal, games/books/music don't yet — see admin memory),
-   * so an orphan can still carry content the delete would otherwise orphan
+   * can still exist independently of a library entry, so an orphaned cached
+   * item can carry content the delete would otherwise orphan
    * forever (no FK, nothing else would ever clean it up).
    */
   @HttpCode(HttpStatus.NO_CONTENT)

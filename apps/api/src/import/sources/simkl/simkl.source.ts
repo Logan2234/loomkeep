@@ -11,9 +11,9 @@ import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";
 import { MediaImportSource } from "../media/media-import.source";
 import { MediaMatchResolver } from "../media/media-match-resolver";
-import { buildImportMovies, buildImportShows } from "./parse-simkl";
 import type { SimklAllItemsResponse } from "./simkl-api.types";
 import { simklRedirectUri } from "./simkl-oauth.util";
+import { buildImportMovies, buildImportShows } from "./simkl.parser";
 
 export const SIMKL_API = "https://api.simkl.com";
 

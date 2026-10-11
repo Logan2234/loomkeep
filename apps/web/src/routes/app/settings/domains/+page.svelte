@@ -12,7 +12,7 @@
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { createDomainToggle } from "#lib/domain-toggle.svelte.js";
-  import { orderedDomains } from "#lib/domains.js";
+  import { orderedDomains } from "#lib/domain-availability.js";
   import { liveFlags } from "#lib/feature-flags-live.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";

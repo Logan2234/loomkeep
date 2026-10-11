@@ -12,7 +12,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import ProfileSectionHeading from "#lib/components/profile/ProfileSectionHeading.svelte";
   import { appConfig } from "#lib/config.svelte.js";
-  import { isDomainEnabled, targetDomain } from "#lib/domains.js";
+  import { isDomainEnabled, targetDomain } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
   import { seasonEpisodeLabel } from "#lib/review-target-label.js";
 

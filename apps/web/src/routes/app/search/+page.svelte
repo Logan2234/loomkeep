@@ -24,7 +24,7 @@
   import ScanIsbnModal from "#lib/components/ScanIsbnModal.svelte";
   import { DOMAINS, DOMAIN_IDS } from "#lib/constants/domains.js";
   import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
-  import { isDomainEnabled, orderedDomains } from "#lib/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import { auth } from "#lib/auth.svelte.js";
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";

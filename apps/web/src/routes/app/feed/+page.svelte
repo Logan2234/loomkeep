@@ -16,7 +16,7 @@
   import TabPanels from "#lib/components/TabPanels.svelte";
   import Tabs from "#lib/components/Tabs.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
-  import { isDomainEnabled, orderedDomains } from "#lib/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { ActivityEventDto, Domain, PagedResult } from "@loomkeep/shared";
 

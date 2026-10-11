@@ -8,17 +8,6 @@ interface ReadingSession extends DurationSession {
   endPage: number | null;
 }
 
-export function gameSessionAggregate(sessions: DurationSession[]): {
-  trackedMinutes: number;
-} {
-  return {
-    trackedMinutes: sessions.reduce(
-      (total, session) => total + session.durationMinutes,
-      0,
-    ),
-  };
-}
-
 export function bookSessionAggregate(
   baselinePage: number,
   referencePageCount: number | null,

@@ -3,7 +3,7 @@
 
   import { type SelectOption } from "#lib/types/select-option.js";
   import { auth } from "#lib/auth.svelte.js";
-  import { orderedDomains } from "#lib/domains.js";
+  import { orderedDomains } from "#lib/domain-availability.js";
 
   import {
     getCalendar,

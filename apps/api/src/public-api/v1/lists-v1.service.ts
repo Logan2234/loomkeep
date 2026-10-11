@@ -11,7 +11,7 @@ import { AppException } from "../../common/app.exception";
 import { ListService } from "../../lists/list.service";
 import { isSocialEnabled } from "../../social/social.config";
 import { webOriginOf } from "./library-v1.service";
-import { toTarget } from "./mappers";
+import { toTarget } from "./v1.mapper";
 import { WorkTitlesService } from "./work-titles.service";
 
 /**

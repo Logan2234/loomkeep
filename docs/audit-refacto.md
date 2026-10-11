@@ -23,7 +23,7 @@
   - le `switch` à 4 domaines répété 6 fois dans `admin-cache.controller.ts` ;
   - les 11 boutons « charger plus ».
 - **Fichiers à découper en priorité** : `library.service.ts` (2163 l.), `mail.service.ts` (1929), `achievements/registry.ts` (1677), `data-export.service.ts` (une méthode de 746 l.), `LibraryBrowser.svelte` (1062), `CommentThread.svelte` (1025).
-- **Inventaire total** : 93 pistes, dont 4 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
+- **Inventaire total** : 83 pistes, dont 4 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
 
 ---
 
@@ -151,9 +151,6 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | RF-28 | 5   | Découper `LibraryBrowser.svelte` (1062 l.)                                                          | moyen  | M      | moyen  | P2       |
 | RF-29 | 5   | Découper `CommentThread.svelte` (1025 l.)                                                           | moyen  | M      | moyen  | P3       |
 | RF-31 | 5   | Divers découpages faibles (landing, search, drawers admin, navigation.ts, api/admin.ts, indicateur) | faible | M      | faible | P3       |
-| RT-01 | 5   | Code mort : `extractMentions`, `gameSessionAggregate`, `canAccessProfile`, `shareOrNull`            | faible | S      | faible | P1       |
-| RT-02 | 5   | Spec orphelin `gamification/level.util.spec.ts`                                                     | faible | S      | faible | P1       |
-| RT-03 | 5   | Script `graph` cassé + dépendance `tsconfig-paths` inutile                                          | faible | S      | faible | P1       |
 | RT-04 | 5   | Champs d'import hérités (`subtitle`, `sub`) + chaînes FR/EN en dur côté API                         | moyen  | S      | faible | P2       |
 | RT-05 | 5   | Shims de compatibilité à dater (`LegacyBackupFileDto`, `loomkeep.tokens`)                           | faible | S      | faible | P3       |
 | RT-07 | 5   | Barrel `lib/api/client.ts` (118 imports) : statut à trancher                                        | moyen  | M      | faible | P2       |
@@ -161,25 +158,18 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | RT-09 | 5   | `@simplewebauthn/browser` en devDependency de shared                                                | faible | S      | faible | P2       |
 | RT-10 | 5   | `apps/docs` hors du lockstep de version (1.9.0)                                                     | faible | S      | faible | P2       |
 | RT-11 | 5   | ≈75 entrées obsolètes dans `minimumReleaseAgeExclude`                                               | faible | S      | faible | P2       |
-| RT-12 | 5   | knip `ignoreDependencies: ["rxjs"]` mal placé                                                       | faible | S      | faible | P3       |
-| RT-13 | 5   | Configs vitest dupliquées + couverture shared incluant les specs                                    | faible | S      | faible | P3       |
 | RT-14 | 5   | Sévérité `no-unused-vars` différente web ↔ base                                                     | faible | S      | faible | P3       |
 | RT-15 | 5   | Style de test API incohérent (globals vs imports)                                                   | faible | S      | faible | P3       |
-| RT-16 | 5   | Fichiers camelCase dans le web (6)                                                                  | faible | S      | faible | P3       |
 | RT-17 | 5   | `apps/web/src/lib/` : 76 fichiers à plat → sous-dossiers                                            | moyen  | M      | moyen  | P3       |
 | RT-18 | 5   | `lib/components/` : ≈120 composants à plat + modules `.ts`                                          | moyen  | M      | moyen  | P3       |
-| RT-19 | 5   | `lib/domains.ts` vs `lib/constants/domains.ts`                                                      | faible | S      | faible | P3       |
-| RT-20 | 5   | Nommage des parseurs d'import incohérent ; CSV dispersé                                             | faible | S      | faible | P3       |
-| RT-21 | 5   | Specs « par fonctionnalité » sans fichier source correspondant                                      | faible | S      | faible | P3       |
 | RT-22 | 5   | Exports inutiles (48 API, 19 web)                                                                   | faible | S      | faible | P3       |
 | RT-23 | 5   | `shared/enums.ts` (858 l.) mélange enums, constantes et logique report                              | moyen  | S      | faible | P2       |
 | RT-24 | 5   | `Locale` défini dans `enums.ts` alors que `locale.ts` existe                                        | faible | S      | faible | P3       |
 | RT-25 | 5   | `shared/dto/admin.ts` (618 l.) mélange 8 sous-domaines                                              | faible | S      | faible | P3       |
-| RT-26 | 5   | Commentaires faux ou orphelins (liste)                                                              | faible | S      | faible | P2       |
 | RT-27 | 5   | `apps/docs` importe shared par chemin relatif profond ; Dockerfiles                                 | faible | S      | faible | P3       |
 | RT-28 | 5   | 🐛 `detectLocale` ignore l'italien                                                                  | faible | S      | faible | P1       |
 
-**Total : 93 pistes**, dont 4 marquées 🐛. Par priorité : 1 P0, 14 P1, 38 P2 et 40 P3.
+**Total : 83 pistes**, dont 4 marquées 🐛. Par priorité : 1 P0, 11 P1, 37 P2 et 34 P3.
 
 | Axe                | Nombre de pistes    |
 | ------------------ | ------------------- |
@@ -187,7 +177,7 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | Axe 2 (helpers)    | 7 (3 back, 4 front) |
 | Axe 3 (constantes) | 3 (1 back, 2 front) |
 | Axe 4 (types)      | 4 (3 back, 1 front) |
-| Axe 5 (refactors)  | 65                  |
+| Axe 5 (refactors)  | 55                  |
 
 ---
 
@@ -767,27 +757,6 @@ Valeur faible pour l'ensemble.
 
 #### Transverse
 
-**RT-01 — Code mort**
-
-- **Constat** : 4 fonctions ne sont importées que par leur propre spec :
-  - `apps/api/src/comments/mention.util.ts:6` (`extractMentions`, le fichier entier, devenu inutile depuis que les mentions sont structurées) ;
-  - `common/session-aggregate.util.ts:11` (`gameSessionAggregate`, alors que `bookSessionAggregate` est utilisé) ;
-  - `social/visibility.util.ts:74` (`canAccessProfile`) ;
-  - `admin/admin-system-stats.util.ts:46` (`shareOrNull`).
-- **Proposition** : supprimer ces fonctions et leurs tests.
-
-**RT-02 — Spec orphelin**
-
-- **Constat** : `apps/api/src/gamification/level.util.spec.ts` ; il n'existe plus de `level.util.ts`. Il teste des fonctions de shared déjà couvertes par `packages/shared/src/level.spec.ts`.
-- **Proposition** : reporter les seules assertions uniques (les seuils calibrés), puis supprimer le fichier.
-
-**RT-03 — Outillage cassé ou inutile**
-
-- **Constat** :
-  - `apps/api/package.json:34` déclare un script `graph` qui pointe vers `scripts/graph.ts`, un fichier **inexistant**.
-  - `tsconfig-paths` (`package.json:89`) est inutile : aucun `paths` n'est défini dans les tsconfig.
-- **Proposition** : retirer le script, puis la dépendance et les `-r tsconfig-paths/register` (`package.json:29`, `prisma.config.ts:9`).
-
 **RT-04 — Champs d'import hérités**
 
 - **Constat** :
@@ -826,19 +795,6 @@ Valeur faible pour l'ensemble.
 - **Constat** : dans `pnpm-workspace.yaml`, environ 75 entrées absentes du lockfile (typescript 7.0.2 et ses 20 binaires, vite 8.1.3, eslint 10.10.0, `@sentry/*` 10.73.0, `@swc/*` 1.16.2…). Le commentaire de l'override `fastify` cite 5.12.3, alors que l'API est en ^5.12.5.
 - **Proposition** : purger les entrées obsolètes et mettre le commentaire à jour.
 
-**RT-12 — knip**
-
-- **Constat** : `.knip.json` déclare `"ignoreDependencies": ["rxjs"]` sur le workspace racine, qui n'a pas `rxjs` (c'est `apps/api` qui l'a).
-- **Proposition** : vérifier avec `pnpm knip` en local, puis déplacer ou supprimer.
-
-**RT-13 — Configs vitest**
-
-- **Constat** :
-  - `apps/api/vitest.config.mts:5-15` et `vitest.config.e2e.mts:5-15` ont un bloc swc identique.
-  - Le bloc de couverture est répété dans 4 configs.
-  - `packages/shared/vitest.config.mts:12` **n'exclut pas** les specs de la couverture.
-- **Proposition** : `mergeConfig` pour l'e2e, et ajouter l'exclusion dans shared.
-
 **RT-14 — Sévérité ESLint**
 
 - **Constat** : `apps/web/eslint.config.mjs:52-55` passe `no-unused-vars` en `error`, alors que la base (`eslint.config.base.mjs:59`) le met en `warn`.
@@ -848,11 +804,6 @@ Valeur faible pour l'ensemble.
 
 - **Constat** : l'API a `globals: true`, mais 16 specs sur 206 importent quand même `describe`/`it` depuis `vitest`.
 - **Proposition** : uniformiser.
-
-**RT-16 — Fichiers en camelCase**
-
-- **Constat** : `lib/backNav.svelte.ts`, `lib/navStyle.svelte.ts`, `lib/queryClient.ts` et `lib/actions/{dialogFocus,flipChildren,scrollLock}.ts`, alors que le reste est en kebab-case.
-- **Proposition** : les renommer (environ 23 imports à toucher). Sous Windows, `git mv` doit se faire en deux temps.
 
 **RT-17 — `lib/` à plat**
 
@@ -864,24 +815,6 @@ Valeur faible pour l'ensemble.
 
 - **Constat** : environ 120 composants à plat, avec des modules `.ts` de logique au même niveau.
 - **Proposition** : `components/{library,review,list,comments,overlay,session}/`.
-
-**RT-19 — Deux fichiers `domains.ts`**
-
-- **Constat** : `lib/domains.ts` (logique) et `lib/constants/domains.ts` (`DOMAINS`) portent le même nom.
-- **Proposition** : renommer le premier en `domain-availability.ts`.
-
-**RT-20 — Nommage côté import**
-
-- **Constat** :
-  - parseurs d'import en `<x>-parse.ts` (books) contre `parse-<x>.ts` (simkl, trakt, myanimelist, tvtime) ;
-  - CSV réparti entre `import/csv.ts` (`parseCsv`) et `common/csv.util.ts` (`toCsv`) ;
-  - `public-api/v1/mappers.ts` contre `*.mapper.ts` ailleurs.
-- **Proposition** : `<source>.parser.ts`, réunir le CSV dans `common/csv.util.ts`, et renommer en `v1.mapper.ts`.
-
-**RT-21 — Specs par fonctionnalité**
-
-- **Constat** : `library/upcoming-movie.spec.ts` et `reviews/upcoming-movie.spec.ts` (même nom dans deux domaines), `library/movie-calendar.spec.ts` et `notifications/movie-release.spec.ts`.
-- **Proposition** : adopter `<service>.<feature>.spec.ts`.
 
 **RT-22 — Exports inutiles**
 
@@ -904,15 +837,6 @@ Valeur faible pour l'ensemble.
 
 - **Proposition** : le découper en `admin-{services,comms,jobs,cache,users,backups}.ts`. Les résumés iraient dans `admin-stats.ts`. `PublicStatsSummaryDto` (l.610) n'est pas un DTO admin.
 
-**RT-26 — Commentaires faux ou orphelins, à corriger**
-
-- `admin/admin-cache.controller.ts:450-455` : « games/books/music don't yet », faux.
-- `main.ts:181` : « Swagger UI on /docs », alors que le chemin réel est `swagger` (l.200).
-- `library.service.ts:464-470` et `1566-1572` : JSDoc empilées sur la mauvaise méthode.
-- `routes/app/lists/[id]/+page.svelte:214-217` : commentaire orphelin.
-- `books/[id]/+page.svelte:149-151` : obsolète.
-- **CLAUDE.md** : affirme que le web dérive la clé i18n via `errorCodeToMessageKey()`, alors que le web utilise une map explicite `MESSAGES` (`lib/api/errors.ts:13,320`) et que la fonction ne sert qu'aux specs.
-
 **RT-27 — Docs et Dockerfiles**
 
 - **Constat** :
@@ -934,7 +858,6 @@ Pistes à fort rendement et faible effort (S, risque faible), à traiter en prem
 | #   | ID                             | Pourquoi                                                        |
 | --- | ------------------------------ | --------------------------------------------------------------- |
 | 1   | SH-05 + HB-20 (première étape) | 🐛 liens morts dans les listes et les stats ; `workPath` unique |
-| 4   | RT-01, RT-02, RT-03            | suppression pure de code mort                                   |
 
 ---
 
@@ -946,7 +869,7 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 | ---------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------- |
 | **L0a** 🐛 | SH-05 côté API seulement : `workPath` dans `common/work-href.util.ts`, branché dans `list.service` et `stats.service`  | —                                    | Test rouge d'abord. Minimal, pour corriger vite.               |
 | **L0g** 🐛 | Textes : RT-28, SH-27 (filtre serveur et import)                                                                       | —                                    |                                                                |
-| **L1** ∥   | Nettoyage : RT-01, RT-02, RT-03, RT-11, RT-12, RT-13, RT-14, RT-26, SH-38 (`XP_RULE_LIST`)                             | —                                    | Aucun risque fonctionnel.                                      |
+| **L1** ∥   | Nettoyage : RT-11, RT-14, SH-38 (`XP_RULE_LIST`)                                                                       | —                                    | Aucun risque fonctionnel.                                      |
 | **L2**     | shared, constantes de contrat : SH-29/CB-01 (`shared/date.ts`)                                                         | —                                    | Un seul `build:package`.                                       |
 | **L3**     | shared, routes et présentation : SH-05 complet (`shared/routes.ts`, migration de L0a et du web), SH-08, HF-07          | L0a                                  | Supprime `home/widgets/media.ts`.                              |
 | **L4**     | shared, unions : SH-32                                                                                                 | L2                                   | Typage des `List*Filters` web.                                 |
@@ -963,7 +886,7 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 | **L16**    | Web découpages : RF-24, RF-25, RF-26, RF-28, RF-29, RF-31                                                              | L15 pour RF-25                       |                                                                |
 | **L17**    | Déplacements « shared → app » : SH-33, 34, 35, 36, 37, 39, 40 + RT-04, RT-23, RT-24, RT-25                             | décision SH-35                       |                                                                |
 | **L18**    | Dépendances et build : RT-08, RT-09, RT-10                                                                             | —                                    | RT-08 demande un `docker build`.                               |
-| **L19**    | Structure (mécanique, en dernier) : RT-07 (codemod `client.ts`), RT-16, RT-17, RT-18, RT-19, RT-20, RT-21, RT-22       | tout le reste                        | Conflits garantis avec les PR en cours ; à faire seul et vite. |
+| **L19**    | Structure (mécanique, en dernier) : RT-07 (codemod `client.ts`), RT-17, RT-18, RT-22                                   | tout le reste                        | Conflits garantis avec les PR en cours ; à faire seul et vite. |
 
 **Décisions à prendre avant les lots concernés** :
 
@@ -995,6 +918,7 @@ Ces numéros restent uniquement pour guider les pistes qui en dépendent ; ils n
 
 | Sujet examiné                                                                                                                                             | Raison du rejet                                                                                                                                                                     |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Exception Knip `rxjs` à la racine                                                                                                                         | Nécessaire pour la déclaration de peer `@nestjs/platform-fastify` dans `pnpm-workspace.yaml` ; la déplacer vers l’API ou la supprimer fait échouer Knip.                            |
 | Classe de base commune aux 4 services de bibliothèque                                                                                                     | Le raisonnement en tête de `entry-lifecycle.util.ts` tient : MEDIA diverge sur presque chaque appel Prisma. Les helpers libres sont le bon niveau.                                  |
 | Fusion de `syncPlaythroughStatus` / `syncReadingStatus` ; classe de base `*-item`                                                                         | Les delegates Prisma génériques imposent des casts : le coût de typage dépasse le gain. On n'extrait que les tables et le TTL (RB-05, RB-09).                                       |
 | `admin.service.ts:82-356` (getter de 275 l.)                                                                                                              | Table déclarative de sondes (`specs`) : une donnée, pas une logique.                                                                                                                |

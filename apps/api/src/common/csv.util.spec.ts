@@ -1,4 +1,4 @@
-import { parseCsv } from "./csv";
+import { parseCsv } from "./csv.util";
 
 describe("parseCsv", () => {
   it("parses a simple table into header-keyed records", () => {

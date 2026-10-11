@@ -2,7 +2,7 @@
   import { page } from "$app/state";
   import { auth } from "#lib/auth.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
-  import { isDomainEnabled } from "#lib/domains.js";
+  import { isDomainEnabled } from "#lib/domain-availability.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import {
     DEFAULT_BOTTOM_SHORTCUTS,
