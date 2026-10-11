@@ -4,7 +4,19 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { upsertMessage, type MessagePages } from "#lib/chat/chat-cache.js";
+  import {
+    listShareable,
+    ratingLabel,
+    reviewedTitle,
+    workCount,
+  } from "#lib/chat/attachments.js";
   import { chatDrafts as drafts } from "#lib/chat/chat.svelte.js";
+  import {
+    completeShortcode,
+    emojiAtCaret,
+    findEmoji,
+    type Emoji,
+  } from "#lib/chat/emoji.js";
   import {
     deserializeMentions,
     highlightRuns,
@@ -25,7 +37,11 @@
     type ChatFormat,
   } from "#lib/chat/chat-markdown.js";
   import Icon from "#lib/components/Icon.svelte";
+  import ListCoverGrid from "#lib/components/ListCoverGrid.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
   import Poster from "#lib/components/Poster.svelte";
+  import { LIST_VISIBILITY_LABEL } from "#lib/constants/list-labels.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -35,6 +51,9 @@
     MESSAGE_TEXT_MAX_LENGTH,
     type MessageDto,
     type MessageWorkDto,
+    type MyListDto,
+    type MyReviewDto,
+    type ReviewTargetSummaryDto,
     type SendMessageRequestDto,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -44,6 +63,9 @@
     selectionBarAt,
     type SelectionBar,
   } from "./FormatSelectionBar.svelte";
+  import ChatListPicker from "./ChatListPicker.svelte";
+  import ChatPicker from "./ChatPicker.svelte";
+  import ChatReviewPicker from "./ChatReviewPicker.svelte";
   import ChatWorkPicker from "./ChatWorkPicker.svelte";
   import { workKindLabel } from "./conversation-presentation";
 
@@ -68,8 +90,12 @@
   const COUNTER_FROM = MESSAGE_TEXT_MAX_LENGTH - 200;
 
   let textarea = $state<HTMLTextAreaElement | null>(null);
+  type KeyHandler = { handleKey: (event: KeyboardEvent) => boolean };
   let picker = $state<ChatWorkPicker | null>(null);
+  let reviewPicker = $state<ChatReviewPicker | null>(null);
+  let listPicker = $state<ChatListPicker | null>(null);
   let mentionPicker = $state<ChatWorkPicker | null>(null);
+  let emojiPicker = $state<KeyHandler | null>(null);
   let backdrop = $state<HTMLDivElement | null>(null);
   let value = $state("");
   // Works mentioned with `#`: the field shows `#Title`, the message stores
@@ -77,8 +103,20 @@
   let mentions = $state<Mention[]>([]);
   let mentionAt = $state<{ start: number; query: string } | null>(null);
   let dismissedMentionAt = $state<number | null>(null);
-  // The work `/reco` attached: sent as a card with the message.
-  let attached = $state<MessageWorkDto | null>(null);
+  let emojiAt = $state<{ start: number; query: string } | null>(null);
+  let dismissedEmojiAt = $state<number | null>(null);
+  // What `/reco`, `/review` or `/list` attached: sent as a card with the message.
+  type Attachment =
+    | { kind: "work"; work: MessageWorkDto }
+    | {
+        kind: "review";
+        review: MyReviewDto & { target: ReviewTargetSummaryDto };
+      }
+    | { kind: "list"; list: MyListDto };
+  let attachment = $state<Attachment | null>(null);
+  const attachedHref = $derived(
+    attachment?.kind === "work" ? attachment.work.href : null,
+  );
   // Links whose card the writer turned down: they go as plain links.
   let declinedLinks = $state<string[]>([]);
   let previewedLinks = $state<string[]>([]);
@@ -92,7 +130,11 @@
     label: string;
     hint: string;
     available: boolean;
+    isNew?: boolean;
   }
+
+  // Commands that attach something: a message being edited keeps its own.
+  const ATTACHING = ["reco", "review", "list"];
 
   const COMMANDS: Command[] = [
     {
@@ -109,6 +151,22 @@
       hint: m.chat_command_reco(),
       available: true,
     },
+    {
+      id: "review",
+      icon: "star",
+      label: "/review",
+      hint: m.chat_command_review(),
+      available: true,
+      isNew: isFeatureNew("chat-review-list"),
+    },
+    {
+      id: "list",
+      icon: "list",
+      label: "/list",
+      hint: m.chat_command_list(),
+      available: true,
+      isNew: isFeatureNew("chat-review-list"),
+    },
   ];
 
   $effect(() => {
@@ -117,7 +175,7 @@
     const draft = deserializeMentions(drafts.get(id) ?? "");
     value = draft.text;
     mentions = draft.mentions;
-    attached = null;
+    attachment = null;
     declinedLinks = [];
     void tick().then(autosize);
   });
@@ -140,15 +198,20 @@
       ? COMMANDS.filter(
           (c) =>
             c.id.startsWith(typed[1].toLowerCase()) &&
-            !(editing && c.id === "reco"),
+            !(editing && ATTACHING.includes(c.id)),
         )
       : [];
   });
 
-  // What follows `/reco `, while a work is being looked for.
-  const recoQuery = $derived(
-    editing ? null : (/^\/reco\s([\s\S]*)$/.exec(value)?.[1] ?? null),
-  );
+  // What follows `/reco `, `/review ` or `/list `, while something to attach
+  // is being looked for.
+  const picking = $derived.by(() => {
+    const typed = editing
+      ? null
+      : /^\/(reco|review|list)\s([\s\S]*)$/.exec(value);
+    return typed ? { command: typed[1], query: typed[2] } : null;
+  });
+  const emojis = $derived(emojiAt ? findEmoji(emojiAt.query) : []);
 
   $effect(() => {
     if (!commands.some((c) => c.id === highlighted && c.available)) {
@@ -192,7 +255,7 @@
         (preview, index, all) =>
           preview.work !== null &&
           candidates.includes(preview.url) &&
-          preview.work.href !== attached?.href &&
+          preview.work.href !== attachedHref &&
           all.findIndex((other) => other.work?.href === preview.work?.href) ===
             index,
       )
@@ -201,8 +264,8 @@
   );
 
   const sendable = $derived(
-    recoQuery === null &&
-      (readSlashCommand(value).text.length > 0 || attached !== null),
+    picking === null &&
+      (readSlashCommand(value).text.length > 0 || attachment !== null),
   );
 
   const sendMut = createApiMutation(() => ({
@@ -220,7 +283,7 @@
         (data) => upsertMessage(data, message),
       );
       if (editing) oncanceledit();
-      attached = null;
+      attachment = null;
       declinedLinks = [];
       mentions = [];
       setValue("");
@@ -239,15 +302,33 @@
   }
 
   function readMention() {
-    const found =
+    const typing =
       textarea &&
       document.activeElement === textarea &&
-      recoQuery === null &&
-      commands.length === 0
-        ? mentionAtCaret(value, textarea.selectionStart)
-        : null;
+      picking === null &&
+      commands.length === 0;
+    const found = typing
+      ? mentionAtCaret(value, textarea.selectionStart)
+      : null;
     mentionAt = found && found.start !== dismissedMentionAt ? found : null;
     if (!found) dismissedMentionAt = null;
+
+    const emoji = typing ? emojiAtCaret(value, textarea.selectionStart) : null;
+    emojiAt = emoji && emoji.start !== dismissedEmojiAt ? emoji : null;
+    if (!emoji) dismissedEmojiAt = null;
+  }
+
+  function insertEmoji(emoji: Emoji) {
+    if (!emojiAt || !textarea) return;
+    const caret = textarea.selectionStart;
+    const inserted = `${emoji.emoji} `;
+    const at = emojiAt.start;
+    setValue(value.slice(0, at) + inserted + value.slice(caret));
+    emojiAt = null;
+    void tick().then(() => {
+      textarea?.focus();
+      textarea?.setSelectionRange(at + inserted.length, at + inserted.length);
+    });
   }
 
   function insertMention(work: MessageWorkDto) {
@@ -285,15 +366,17 @@
     sendMut.mutate({
       text: text || undefined,
       spoiler,
-      work: attached?.href,
+      work: attachedHref ?? undefined,
+      review: attachment?.kind === "review" ? attachment.review.id : undefined,
+      list: attachment?.kind === "list" ? attachment.list.id : undefined,
       skipLinks: declinedLinks.some((url) => links.includes(url))
         ? declinedLinks.filter((url) => links.includes(url))
         : undefined,
     });
   }
 
-  function attach(work: MessageWorkDto) {
-    attached = work;
+  function attach(next: Attachment) {
+    attachment = next;
     setValue("");
     textarea?.focus();
   }
@@ -332,6 +415,14 @@
   }
 
   function oninput() {
+    const completed =
+      textarea && completeShortcode(value, textarea.selectionStart);
+    if (completed) {
+      value = completed.value;
+      void tick().then(() =>
+        textarea?.setSelectionRange(completed.caret, completed.caret),
+      );
+    }
     saveDraft();
     autosize();
     placeSelectionBar();
@@ -339,8 +430,15 @@
   }
 
   function onkeydown(event: KeyboardEvent) {
-    if (recoQuery !== null && picker?.handleKey(event)) return;
+    if (picking?.command === "reco" && picker?.handleKey(event)) return;
+    if (picking?.command === "review" && reviewPicker?.handleKey(event)) {
+      return;
+    }
+    if (picking?.command === "list" && listPicker?.handleKey(event)) return;
     if (mentionAt && mentionPicker?.handleKey(event)) return;
+    if (emojiAt && emojis.length > 0 && emojiPicker?.handleKey(event)) {
+      return;
+    }
 
     if (commands.length > 0) {
       const available = commands.filter((c) => c.available);
@@ -381,6 +479,9 @@
     ) {
       event.preventDefault();
       oneditlast?.();
+    } else if (event.key === "Backspace" && value === "" && attachment) {
+      event.preventDefault();
+      attachment = null;
     } else if (event.key === "Escape" && editing) {
       event.preventDefault();
       setValue("");
@@ -415,8 +516,10 @@
     </div>
   {/if}
 
-  {#snippet workChip(
-    work: MessageWorkDto,
+  {#snippet chip(
+    images: (string | null)[],
+    title: string,
+    detail: string,
     removeLabel: string,
     onremove: () => void,
     linked: boolean,
@@ -427,7 +530,13 @@
         {linked ? 'border-border border-dashed' : 'border-accent bg-accent/10'}"
       style="transform-origin: bottom left;">
       <span class="w-[22px] shrink-0 overflow-hidden rounded-sm">
-        <Poster src={work.imageUrl} title={work.title} alt="" caption={false} />
+        {#if images.length > 1}
+          <ListCoverGrid
+            images={images.filter((src) => src !== null)}
+            {title} />
+        {:else}
+          <Poster src={images[0] ?? null} {title} alt="" caption={false} />
+        {/if}
       </span>
       <span class="min-w-0 flex-1 truncate">
         {#if linked}
@@ -435,8 +544,8 @@
             class="text-dim mr-1 font-mono text-[0.62rem] font-bold tracking-wider uppercase"
             >{m.chat_link_preview()}</span>
         {/if}
-        <b class="font-semibold">{work.title}</b>
-        <span class="text-dim">· {workKindLabel(work.kind)}</span>
+        <b class="font-semibold">{title}</b>
+        <span class="text-dim">· {detail}</span>
       </span>
       <button
         type="button"
@@ -448,17 +557,39 @@
     </div>
   {/snippet}
 
-  {#if attached}
-    {@render workChip(
-      attached,
+  {#if attachment?.kind === "work"}
+    {@render chip(
+      [attachment.work.imageUrl],
+      attachment.work.title,
+      workKindLabel(attachment.work.kind),
       m.chat_reco_remove(),
-      () => (attached = null),
+      () => (attachment = null),
+      false,
+    )}
+  {:else if attachment?.kind === "review"}
+    {@render chip(
+      [attachment.review.target.imageUrl],
+      reviewedTitle(attachment.review.target),
+      `${m.chat_review_mine()} · ${ratingLabel(attachment.review.rating)}/10`,
+      m.chat_review_remove(),
+      () => (attachment = null),
+      false,
+    )}
+  {:else if attachment?.kind === "list"}
+    {@render chip(
+      attachment.list.previewImageUrls,
+      attachment.list.title,
+      `${workCount(attachment.list.itemCount)} · ${LIST_VISIBILITY_LABEL[attachment.list.visibility]}`,
+      m.chat_list_remove(),
+      () => (attachment = null),
       false,
     )}
   {/if}
   {#each previews as preview (preview.url)}
-    {@render workChip(
-      preview.work,
+    {@render chip(
+      [preview.work.imageUrl],
+      preview.work.title,
+      workKindLabel(preview.work.kind),
       m.chat_link_preview_remove(),
       () => (declinedLinks = [...declinedLinks, preview.url]),
       true,
@@ -467,12 +598,61 @@
 
   <div class="flex items-end gap-2">
     <div class="relative min-w-0 flex-1">
-      {#if recoQuery !== null}
+      {#if picking?.command === "reco"}
         <ChatWorkPicker
           bind:this={picker}
-          query={recoQuery}
-          onpick={attach}
+          query={picking.query}
+          onpick={(work) => attach({ kind: "work", work })}
           oncancel={() => setValue("")} />
+      {:else if picking?.command === "review"}
+        <ChatReviewPicker
+          bind:this={reviewPicker}
+          query={picking.query}
+          onpick={(review) =>
+            review.target &&
+            attach({
+              kind: "review",
+              review: { ...review, target: review.target },
+            })}
+          oncancel={() => setValue("")} />
+      {:else if picking?.command === "list"}
+        <ChatListPicker
+          bind:this={listPicker}
+          query={picking.query}
+          {peerName}
+          onpick={(list) =>
+            listShareable(list) && attach({ kind: "list", list })}
+          oncancel={() => setValue("")} />
+      {/if}
+      {#if emojiAt && emojis.length > 0}
+        <ChatPicker
+          bind:this={emojiPicker}
+          items={emojis}
+          key={(emoji) => emoji.name}
+          label={m.chat_emoji()}
+          empty=""
+          onpick={insertEmoji}
+          oncancel={() => {
+            dismissedEmojiAt = emojiAt?.start ?? null;
+            emojiAt = null;
+          }}>
+          {#snippet row(emoji, highlighted)}
+            {@const at = emoji.name.indexOf(emojiAt?.query.toLowerCase() ?? "")}
+            <span class="w-7 shrink-0 text-center text-[1.35rem] leading-none"
+              >{emoji.emoji}</span>
+            <span class="min-w-0 flex-1 truncate font-mono text-sm"
+              >:{#if at === -1}{emoji.name}{:else}{emoji.name.slice(0, at)}<b
+                  class="text-accent"
+                  >{emoji.name.slice(at, at + (emojiAt?.query.length ?? 0))}</b
+                >{emoji.name.slice(
+                  at + (emojiAt?.query.length ?? 0),
+                )}{/if}:</span>
+            <span
+              class="text-dim font-mono text-xs transition-opacity duration-150
+                {highlighted ? 'opacity-100' : 'opacity-0'}"
+              aria-hidden="true">↵</span>
+          {/snippet}
+        </ChatPicker>
       {/if}
       {#if mentionAt}
         <ChatWorkPicker
@@ -508,7 +688,8 @@
                 <Icon name={command.icon} class="h-4 w-4" />
               </span>
               <span class="min-w-0">
-                <span class="block text-sm font-semibold">{command.label}</span>
+                <span class="flex items-center gap-1.5 text-sm font-semibold"
+                  >{command.label}{#if command.isNew}<NewBadge />{/if}</span>
                 <span class="text-dim block text-xs">{command.hint}</span>
               </span>
             </button>
@@ -548,6 +729,7 @@
         onblur={() => {
           selectionBar = null;
           mentionAt = null;
+          emojiAt = null;
         }}></textarea>
     </div>
     <button

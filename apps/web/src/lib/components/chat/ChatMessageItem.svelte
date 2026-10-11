@@ -23,6 +23,8 @@
   import { fade, scale } from "svelte/transition";
   import ChatForwardModal from "./ChatForwardModal.svelte";
   import ChatMessageText from "./ChatMessageText.svelte";
+  import ChatListCard from "./ChatListCard.svelte";
+  import ChatReviewCard from "./ChatReviewCard.svelte";
   import ChatWorkCard from "./ChatWorkCard.svelte";
 
   let {
@@ -335,6 +337,18 @@
               <ChatWorkCard {work} />
             </div>
           {/each}
+          {#if message.review}
+            <ChatReviewCard review={message.review} mine={message.mine} />
+          {:else if message.list}
+            <ChatListCard list={message.list} />
+          {:else if message.gone}
+            <p
+              class="border-border text-dim rounded-xl border border-dashed px-3 py-2 text-sm italic">
+              {message.gone === "review"
+                ? m.chat_review_gone()
+                : m.chat_list_gone()}
+            </p>
+          {/if}
         </div>
       {/if}
     </div>

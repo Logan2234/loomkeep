@@ -56,7 +56,11 @@ export function conversationPreview(conversation: ConversationDto): string {
       ? m.chat_spoiler_reveal()
       : last.text
         ? chatPreview(last.text)
-        : (last.works[0]?.title ?? "");
+        : last.review
+          ? m.chat_review_preview({ title: last.review.target?.title ?? "" })
+          : last.list
+            ? m.chat_list_preview({ title: last.list.title })
+            : (last.works[0]?.title ?? "");
 
   return last.mine && !last.deleted ? m.chat_preview_mine({ text }) : text;
 }

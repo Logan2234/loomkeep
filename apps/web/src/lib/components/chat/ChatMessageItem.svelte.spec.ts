@@ -1,3 +1,4 @@
+import { ratingLabel } from "#lib/chat/attachments.js";
 import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
@@ -27,6 +28,9 @@ const MINE: MessageDto = {
   reactions: [],
   myReaction: null,
   works: [],
+  review: null,
+  list: null,
+  gone: null,
   pinned: false,
   forwarded: false,
   createdAt: "2026-10-09T21:14:00.000Z",
@@ -129,6 +133,71 @@ describe("ChatMessageItem", () => {
   });
 
   // A phone has no hover: a long press opens the same actions in a sheet.
+  it("quotes a review, behind a wall when it spoils", async () => {
+    const user = userEvent.setup();
+    renderMessage({
+      ...MINE,
+      mine: false,
+      text: null,
+      review: {
+        rating: 9.5,
+        text: "Le moment où la boucle s'explique.",
+        spoiler: true,
+        target: {
+          title: "Outer Wilds",
+          imageUrl: null,
+          href: "/app/games/11737",
+        },
+      },
+    });
+
+    expect(screen.queryByText(/la boucle/)).toBe(null);
+    expect(
+      screen.getByRole("img", {
+        name: m.chat_review_rating({ rating: ratingLabel(9.5) }),
+      }),
+    ).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", { name: m.chat_review_spoiler() }),
+    );
+
+    expect(screen.getByText(/la boucle/)).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Outer Wilds" }).getAttribute("href"),
+    ).toBe("/app/games/11737");
+  });
+
+  it("shows a list's first works, the rest counted", () => {
+    renderMessage({
+      ...MINE,
+      text: null,
+      list: {
+        id: "l1",
+        title: "Octobre qui fait peur",
+        kind: "RANKED",
+        visibility: "FRIENDS",
+        itemCount: 13,
+        works: ["Hérédité", "The Thing", "Get Out", "Midsommar", "Alien"].map(
+          (title) => ({ title, imageUrl: null }),
+        ),
+        ownerName: "Moi",
+        mine: true,
+        updatedAt: "2026-10-08T10:00:00.000Z",
+      },
+    });
+
+    const card = screen.getByRole("link", { name: /Octobre qui fait peur/ });
+    expect(card.getAttribute("href")).toBe("/app/lists/l1");
+    expect(card.textContent).toContain("+9");
+    expect(card.textContent).toContain(m.chat_list_by_you());
+  });
+
+  it("says when the list it carried is out of sight", () => {
+    renderMessage({ ...MINE, text: null, gone: "list" });
+
+    expect(screen.getByText(m.chat_list_gone())).toBeTruthy();
+  });
+
   it("opens the actions on a long press on a phone", async () => {
     layout.compact = true;
     renderMessage();
