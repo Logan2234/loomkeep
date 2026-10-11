@@ -1,6 +1,7 @@
 import { chatDrafts } from "#lib/chat/chat.svelte.js";
 import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
+import { fieldText, focusField, selectInField } from "#lib/test/field.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import type {
@@ -113,35 +114,37 @@ function list(id: string, title: string, visibility: ListVisibility) {
   } satisfies MyListDto;
 }
 
-function renderComposer(oneditlast = vi.fn()) {
+async function renderComposer(oneditlast = vi.fn()) {
   renderWithQuery(ChatComposer, {
     conversationId: "cv1",
     peerName: "Léa",
     oncanceledit: vi.fn(),
     oneditlast,
   });
-  return screen.getByRole<HTMLTextAreaElement>("textbox", {
+  const box = await screen.findByRole("textbox", {
     name: m.chat_message_label(),
   });
+  await focusField(box);
+  return box;
 }
 
 describe("ChatComposer", () => {
   it("offers the commands on /, and sends a /spoiler message masked", async () => {
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "/");
+    await user.type(box, "/", { skipClick: true });
     expect(screen.getByRole("option", { name: /\/spoiler/ })).toBeTruthy();
 
     await user.keyboard("{Enter}");
-    expect(box.value).toBe("/spoiler ");
+    expect(fieldText(box)).toBe("/spoiler ");
 
-    await user.type(box, "Mark reste{Enter}");
+    await user.type(box, "Mark reste{Enter}", { skipClick: true });
 
     await waitFor(() =>
       expect(sent).toEqual([{ text: "Mark reste", spoiler: true }]),
     );
-    expect(box.value).toBe("");
+    expect(fieldText(box)).toBe("");
   });
 
   it("attaches the work /reco finds, and sends it with the message", async () => {
@@ -164,14 +167,14 @@ describe("ChatComposer", () => {
       ),
     );
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "/reco outer");
+    await user.type(box, "/reco outer", { skipClick: true });
     const result = await screen.findByRole("option", { name: /Outer Wilds/ });
     await user.click(result);
 
-    expect(box.value).toBe("");
-    await user.type(box, "Celui-là{Enter}");
+    expect(fieldText(box)).toBe("");
+    await user.type(box, "Celui-là{Enter}", { skipClick: true });
 
     await waitFor(() =>
       expect(sent).toEqual([
@@ -204,9 +207,9 @@ describe("ChatComposer", () => {
       ),
     );
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "/reco outer");
+    await user.type(box, "/reco outer", { skipClick: true });
 
     expect(
       await screen.findByRole("option", { name: /Outer Wilds/ }),
@@ -239,7 +242,7 @@ describe("ChatComposer", () => {
       ),
     );
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
     await user.type(
       box,
@@ -276,7 +279,7 @@ describe("ChatComposer", () => {
       ),
     );
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
     await user.type(
       box,
@@ -314,15 +317,19 @@ describe("ChatComposer", () => {
       ),
     );
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "Regarde https://loomkeep.app/app/games/11737");
+    await user.type(box, "Regarde https://loomkeep.app/app/games/11737", {
+      skipClick: true,
+    });
     await screen.findByText("Outer Wilds", {}, { timeout: 2000 });
     await user.click(
       screen.getByRole("button", { name: m.chat_link_preview_remove() }),
     );
     expect(screen.queryByText("Outer Wilds")).toBe(null);
-    await user.type(box, "{Enter}");
+    // Back into the field, the button having taken the focus.
+    await focusField(box);
+    await user.type(box, "{Enter}", { skipClick: true });
 
     await waitFor(() =>
       expect(sent).toEqual([
@@ -355,11 +362,11 @@ describe("ChatComposer", () => {
       ),
     );
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "Regarde #seve");
+    await user.type(box, "Regarde #seve", { skipClick: true });
     await user.click(await screen.findByRole("option", { name: /Severance/ }));
-    expect(box.value).toBe("Regarde #Severance ");
+    expect(fieldText(box)).toBe("Regarde #Severance ");
     // The browser reports the caret moving after the insertion: the search
     // mustn't come back for the mention just made.
     box.focus();
@@ -367,7 +374,7 @@ describe("ChatComposer", () => {
     await tick();
     expect(screen.queryByText(m.chat_reco_prompt())).toBe(null);
     expect(screen.queryByRole("listbox")).toBe(null);
-    await user.type(box, "S01E09{Enter}");
+    await user.type(box, "S01E09{Enter}", { skipClick: true });
 
     await waitFor(() =>
       expect(sent).toEqual([
@@ -389,15 +396,15 @@ describe("ChatComposer", () => {
       ),
     );
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "/review sev");
+    await user.type(box, "/review sev", { skipClick: true });
     expect(screen.queryByRole("option", { name: /Outer Wilds/ })).toBe(null);
     await user.keyboard("{Enter}");
 
-    expect(box.value).toBe("");
+    expect(fieldText(box)).toBe("");
     expect(screen.getByText("Severance")).toBeTruthy();
-    await user.type(box, "Mon avis{Enter}");
+    await user.type(box, "Mon avis{Enter}", { skipClick: true });
 
     await waitFor(() =>
       expect(sent).toEqual([
@@ -416,9 +423,9 @@ describe("ChatComposer", () => {
       ),
     );
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "/list ");
+    await user.type(box, "/list ", { skipClick: true });
     const hidden = await screen.findByRole("option", {
       name: /Plaisirs coupables/,
     });
@@ -433,32 +440,32 @@ describe("ChatComposer", () => {
 
   it("completes an emoji from its :shortcode:", async () => {
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "Trop :popc");
+    await user.type(box, "Trop :popc", { skipClick: true });
     expect(screen.getByRole("listbox", { name: m.chat_emoji() })).toBeTruthy();
     await user.keyboard("{Enter}");
-    expect(box.value).toBe("Trop 🍿 ");
+    expect(fieldText(box)).toBe("Trop 🍿 ");
 
     // Typed whole, the code turns into its emoji on its own.
-    await user.type(box, "et :fire:");
-    expect(box.value).toBe("Trop 🍿 et 🔥");
+    await user.type(box, "et :fire:", { skipClick: true });
+    expect(fieldText(box)).toBe("Trop 🍿 et 🔥");
   });
 
   it("leaves a time alone: no emoji after a digit's colon", async () => {
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "à 12:30");
+    await user.type(box, "à 12:30", { skipClick: true });
     expect(screen.queryByRole("listbox")).toBe(null);
   });
 
   it("edits the last message on ↑ in an empty field only", async () => {
     const user = userEvent.setup();
     const oneditlast = vi.fn();
-    const box = renderComposer(oneditlast);
+    const box = await renderComposer(oneditlast);
 
-    await user.type(box, "a{ArrowUp}");
+    await user.type(box, "a{ArrowUp}", { skipClick: true });
     expect(oneditlast).not.toHaveBeenCalled();
 
     await user.clear(box);
@@ -468,51 +475,51 @@ describe("ChatComposer", () => {
 
   it("takes bold off with the shortcut that put it on", async () => {
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "un mot");
-    box.setSelectionRange(3, 6);
+    await user.type(box, "un mot", { skipClick: true });
+    selectInField(box, 3, 6);
     await user.keyboard("{Control>}b{/Control}");
-    expect(box.value).toBe("un **mot**");
+    expect(fieldText(box)).toBe("un **mot**");
 
     await user.keyboard("{Control>}b{/Control}");
-    expect(box.value).toBe("un mot");
+    expect(fieldText(box)).toBe("un mot");
   });
 
   it("wraps the selection in the shortcut's marker", async () => {
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "La fin");
-    box.setSelectionRange(3, 6);
+    await user.type(box, "La fin", { skipClick: true });
+    selectInField(box, 3, 6);
     await user.keyboard("{Control>}{Shift>}s{/Shift}{/Control}");
 
-    expect(box.value).toBe("La ||fin||");
+    expect(fieldText(box)).toBe("La ||fin||");
   });
 
   it("strikes with Ctrl+Shift+X and marks code with Ctrl+E", async () => {
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "La fin");
-    box.setSelectionRange(3, 6);
+    await user.type(box, "La fin", { skipClick: true });
+    selectInField(box, 3, 6);
     await user.keyboard("{Control>}{Shift>}x{/Shift}{/Control}");
-    expect(box.value).toBe("La ~~fin~~");
+    expect(fieldText(box)).toBe("La ~~fin~~");
 
-    box.setSelectionRange(5, 8);
+    selectInField(box, 5, 8);
     await user.keyboard("{Control>}e{/Control}");
-    expect(box.value).toBe("La ~~`fin`~~");
+    expect(fieldText(box)).toBe("La ~~`fin`~~");
   });
 
   // On a phone, Enter writes a new line: the send button sits right there.
   it("keeps Enter for new lines on the compact shell", async () => {
     layout.compact = true;
     const user = userEvent.setup();
-    const box = renderComposer();
+    const box = await renderComposer();
 
-    await user.type(box, "Salut{Enter}");
+    await user.type(box, "Salut{Enter}", { skipClick: true });
 
     expect(sent).toEqual([]);
-    expect(box.value).toBe("Salut\n");
+    expect(fieldText(box)).toBe("Salut\n");
   });
 });

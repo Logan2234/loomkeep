@@ -18,6 +18,28 @@ vi.mock("@sentry/sveltekit", () => ({ captureException: vi.fn() }));
 // Animations API for Svelte's JS transitions to drive.
 document.documentElement.classList.add("a11y-reduce-motion");
 
+// Browsers queue `selectionchange` as a task; happy-dom fires it on the spot,
+// in the middle of whatever moved the selection. CodeMirror (the composers'
+// field) reads the selection on that event and can't while it's still
+// writing its own DOM, so the event goes out the way a browser sends it:
+// later, and once for however many changes happened meanwhile.
+const dispatch = document.dispatchEvent.bind(document);
+let selectionChangeQueued = false;
+
+document.dispatchEvent = (event: Event) => {
+  if (event.type !== "selectionchange") return dispatch(event);
+
+  if (!selectionChangeQueued) {
+    selectionChangeQueued = true;
+    setTimeout(() => {
+      selectionChangeQueued = false;
+      dispatch(event);
+    });
+  }
+
+  return true;
+};
+
 // A request no test declared fails the test rather than silently hanging on
 // a real network call.
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));

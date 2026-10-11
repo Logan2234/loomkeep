@@ -23,7 +23,6 @@
   } from "#lib/chat/chat-markdown.js";
   import {
     deserializeMentions,
-    highlightRuns,
     mentionAtCaret,
     serializeMentions,
     type Mention,
@@ -50,6 +49,7 @@
   import Avatar from "./Avatar.svelte";
   import ChatEmojiPicker from "./chat/ChatEmojiPicker.svelte";
   import ChatWorkPicker from "./chat/ChatWorkPicker.svelte";
+  import MarkdownField from "./chat/MarkdownField.svelte";
   import FormatSelectionBar, {
     selectionBarAt,
     type SelectionBar,
@@ -103,8 +103,7 @@
   // A command's name, the same in every language.
   const SPOILER_COMMAND = "/spoiler";
 
-  let textarea = $state<HTMLTextAreaElement | null>(null);
-  let backdrop = $state<HTMLDivElement | null>(null);
+  let field = $state<MarkdownField | null>(null);
   let workPicker = $state<ChatWorkPicker | null>(null);
   let emojiPicker = $state<ChatEmojiPicker | null>(null);
   let value = $state("");
@@ -133,11 +132,10 @@
   });
 
   $effect(() => {
-    if (!autofocus || !textarea) return;
+    if (!autofocus || !field) return;
     void tick().then(() => {
-      autosize();
-      textarea?.focus();
-      textarea?.setSelectionRange(value.length, value.length);
+      field?.focus();
+      field?.select(value.length);
     });
   });
 
@@ -148,28 +146,20 @@
     readSlashCommand(serialized).text.length > 0 &&
       serialized.length <= COMMENT_TEXT_MAX_LENGTH,
   );
-  const runs = $derived(highlightRuns(value, works));
   const emojis = $derived(emojiAt ? findEmoji(emojiAt.query) : []);
-
-  function autosize() {
-    if (!textarea) return;
-    textarea.style.height = "auto";
-    textarea.style.height = `${Math.min(textarea.scrollHeight + 2, 160)}px`;
-  }
 
   function setValue(next: string) {
     value = next;
-    void tick().then(autosize);
   }
 
   function readMentions() {
-    if (!textarea || document.activeElement !== textarea) {
+    if (!field?.hasFocus()) {
       workAt = null;
       emojiAt = null;
       personAt = null;
       return;
     }
-    const caret = textarea.selectionStart;
+    const caret = field.selection().start;
 
     const emoji = emojiAtCaret(value, caret);
     emojiAt = emoji && emoji.start !== dismissedEmojiAt ? emoji : null;
@@ -208,12 +198,12 @@
   }
 
   function insert(at: number, inserted: string) {
-    if (!textarea) return;
-    const caret = textarea.selectionStart;
+    if (!field) return;
+    const caret = field.selection().start;
     setValue(value.slice(0, at) + inserted + value.slice(caret));
     void tick().then(() => {
-      textarea?.focus();
-      textarea?.setSelectionRange(at + inserted.length, at + inserted.length);
+      field?.focus();
+      field?.select(at + inserted.length);
     });
   }
 
@@ -243,21 +233,21 @@
   }
 
   function format(kind: ChatFormat) {
-    if (!textarea) return;
-    const { selectionStart, selectionEnd } = textarea;
+    if (!field) return;
+    const { start: selectionStart, end: selectionEnd } = field.selection();
     if (selectionStart === selectionEnd) return;
     const next = toggleFormat(value, selectionStart, selectionEnd, kind);
     setValue(next.value);
     void tick().then(() => {
-      textarea?.focus();
-      textarea?.setSelectionRange(next.start, next.end);
-      selectionBar = selectionBarAt(textarea, value);
+      field?.focus();
+      field?.select(next.start, next.end);
+      selectionBar = selectionBarAt(field, value);
     });
   }
 
   function onselectionchange() {
     readMentions();
-    selectionBar = selectionBarAt(textarea, value);
+    selectionBar = selectionBarAt(field, value);
   }
 
   async function submit() {
@@ -335,8 +325,6 @@
   }
 </script>
 
-<svelte:document {onselectionchange} />
-
 <div
   class="flex flex-col gap-2 rounded-xl border transition-[border-color] duration-150
     {framed
@@ -410,7 +398,10 @@
           onmousedown={(e) => e.preventDefault()}
           onclick={() => {
             setValue(`${SPOILER_COMMAND} `);
-            textarea?.focus();
+            void tick().then(() => {
+              field?.focus();
+              field?.select(value.length);
+            });
           }}>
           <span
             class="bg-surface grid h-8 w-8 shrink-0 place-items-center rounded-lg">
@@ -425,43 +416,25 @@
       </div>
     {/if}
 
-    <label for={id} class="sr-only">{label}</label>
-    <!-- Under the field, the same text in the same box, invisible but for
-         the underline of its links and mentioned works. -->
-    <div
-      bind:this={backdrop}
-      aria-hidden="true"
-      class="pointer-events-none absolute inset-0 overflow-hidden text-sm leading-relaxed break-words whitespace-pre-wrap text-transparent
-        {layout.compact ? 'text-base' : ''}">
-      {#each runs as run, i (i)}{#if run.marked}<span
-            class="decoration-accent underline decoration-2 underline-offset-[3px]"
-            >{run.text}</span
-          >{:else}{run.text}{/if}{/each}&#8203;
-    </div>
-    <textarea
-      {id}
-      bind:this={textarea}
+    <MarkdownField
+      bind:this={field}
       bind:value
-      rows={framed ? 2 : 1}
+      {label}
       {placeholder}
-      class="placeholder:text-dim selection:bg-accent/30 relative block w-full resize-none [scrollbar-width:none] bg-transparent text-sm leading-relaxed outline-none
+      mentions={works}
+      class="selection:bg-accent/30 block w-full text-sm leading-relaxed
+        {framed ? '[&_.cm-content]:min-h-[3.25em]' : ''}
         {layout.compact ? 'text-base' : ''}"
       oninput={() => {
         const completed =
-          textarea && completeShortcode(value, textarea.selectionStart);
+          field && completeShortcode(value, field.selection().start);
         if (completed) {
           value = completed.value;
-          void tick().then(() =>
-            textarea?.setSelectionRange(completed.caret, completed.caret),
-          );
+          void tick().then(() => field?.select(completed.caret));
         }
-        autosize();
-        onselectionchange();
       }}
+      onselect={onselectionchange}
       {onkeydown}
-      onscroll={() => {
-        if (backdrop && textarea) backdrop.scrollTop = textarea.scrollTop;
-      }}
       onblur={() => {
         selectionBar = null;
         workAt = null;
@@ -470,7 +443,7 @@
           personAt = null;
           candidates = [];
         }, 120);
-      }}></textarea>
+      }} />
   </div>
 
   <div

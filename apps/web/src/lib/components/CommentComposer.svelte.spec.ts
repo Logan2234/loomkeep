@@ -1,5 +1,6 @@
 import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
+import { fieldText, focusField } from "#lib/test/field.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import { screen, waitFor } from "@testing-library/svelte";
@@ -17,7 +18,7 @@ beforeEach(() => {
   layout.compact = false;
 });
 
-function setup() {
+async function setup() {
   const sent: CommentDraft[] = [];
   renderWithQuery(CommentComposer, {
     id: "composer",
@@ -30,31 +31,35 @@ function setup() {
       return Promise.resolve(true);
     },
   });
-  return { sent, field: screen.getByRole("textbox", { name: "Comment" }) };
+  const field = await screen.findByRole("textbox", { name: "Comment" });
+  await focusField(field);
+  return { sent, field };
 }
 
 describe("CommentComposer", () => {
   it("sends on Enter, as Messages does, and empties", async () => {
     const user = userEvent.setup();
-    const { sent, field } = setup();
+    const { sent, field } = await setup();
 
-    await user.type(field, "Quelle **fin**{Shift>}{Enter}{/Shift}vraiment");
+    await user.type(field, "Quelle **fin**{Shift>}{Enter}{/Shift}vraiment", {
+      skipClick: true,
+    });
     await user.keyboard("{Enter}");
 
     expect(sent).toEqual([
       { text: "Quelle **fin**\nvraiment", spoilerTag: false, mentions: [] },
     ]);
-    await waitFor(() => expect((field as HTMLTextAreaElement).value).toBe(""));
+    await waitFor(() => expect(fieldText(field)).toBe(""));
   });
 
   it("completes emoji from their :shortcode:, as Messages does", async () => {
     const user = userEvent.setup();
-    const { sent, field } = setup();
+    const { sent, field } = await setup();
 
-    await user.type(field, "Trop :popc");
+    await user.type(field, "Trop :popc", { skipClick: true });
     expect(screen.getByRole("listbox", { name: m.chat_emoji() })).toBeTruthy();
     await user.keyboard("{Enter}");
-    await user.type(field, "et :fire:");
+    await user.type(field, "et :fire:", { skipClick: true });
     await user.keyboard("{Enter}");
 
     expect(sent[0]).toMatchObject({ text: "Trop 🍿 et 🔥" });
@@ -62,9 +67,9 @@ describe("CommentComposer", () => {
 
   it("masks the whole comment with /spoiler", async () => {
     const user = userEvent.setup();
-    const { sent, field } = setup();
+    const { sent, field } = await setup();
 
-    await user.type(field, "/spoiler Il meurt à la fin");
+    await user.type(field, "/spoiler Il meurt à la fin", { skipClick: true });
     await user.keyboard("{Enter}");
 
     expect(sent[0]).toMatchObject({
@@ -88,11 +93,11 @@ describe("CommentComposer", () => {
       ),
     );
     const user = userEvent.setup();
-    const { sent, field } = setup();
+    const { sent, field } = await setup();
 
-    await user.type(field, "Merci @le");
+    await user.type(field, "Merci @le", { skipClick: true });
     await user.click(await screen.findByRole("option", { name: /Léa/ }));
-    await user.type(field, "!");
+    await user.type(field, "!", { skipClick: true });
     await user.keyboard("{Enter}");
 
     expect(sent[0]).toMatchObject({
