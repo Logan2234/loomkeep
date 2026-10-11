@@ -20,3 +20,10 @@ export const LIST_VISIBILITY_LABEL: Record<ListVisibility, string> = {
     return m.common_public();
   },
 };
+
+/** "1 œuvre", "13 œuvres". */
+export function workCountLabel(count: number): string {
+  return count === 1
+    ? m.lists_work_count_one({ count })
+    : m.lists_work_count_many({ count });
+}

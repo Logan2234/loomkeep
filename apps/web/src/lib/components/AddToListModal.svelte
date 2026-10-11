@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { LIST_VISIBILITY_LABEL } from "#lib/constants/list-labels.js";
+  import {
+    LIST_VISIBILITY_LABEL,
+    workCountLabel,
+  } from "#lib/constants/list-labels.js";
 
   import {
     addListItem,
@@ -110,12 +113,6 @@
   function create() {
     if (canCreate) createMut.mutate(newTitle);
   }
-
-  function workCount(count: number) {
-    return count === 1
-      ? m.lists_work_count_one({ count })
-      : m.lists_work_count_many({ count });
-  }
 </script>
 
 {#snippet row(list: MyListDto)}
@@ -134,7 +131,9 @@
         {#if list.role === "EDITOR"}
           {m.list_owned_by_editor({ name: list.author.displayName })} ·
         {/if}
-        {workCount(list.itemCount)} · {LIST_VISIBILITY_LABEL[list.visibility]}
+        {workCountLabel(list.itemCount)} · {LIST_VISIBILITY_LABEL[
+          list.visibility
+        ]}
       </span>
     </span>
     <Switch

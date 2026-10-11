@@ -49,9 +49,3 @@ export function reviewChoices(
 export function listShareable(list: MyListDto): boolean {
   return list.visibility !== "PRIVATE";
 }
-
-export function workCount(count: number): string {
-  return count === 1
-    ? m.lists_work_count_one({ count })
-    : m.lists_work_count_many({ count });
-}
