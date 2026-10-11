@@ -1,9 +1,8 @@
 <script lang="ts">
   import { type Snippet } from "svelte";
 
-  import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { logout } from "#lib/api/auth.js";
+  import { signOutAndRedirect } from "#lib/api/auth.js";
   import { auth } from "#lib/auth.svelte.js";
   import Avatar from "#lib/components/Avatar.svelte";
   import Icon from "#lib/components/Icon.svelte";
@@ -11,7 +10,10 @@
   import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
   import { isDomainEnabled } from "#lib/domains.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
-  import { visibleNavSections } from "#lib/navigation.js";
+  import {
+    visibleNavSections,
+    profileHref as resolveProfileHref,
+  } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
   import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
 
@@ -22,9 +24,7 @@
   const reportsPending = useReportsPendingCount();
 
   const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
-  const profileHref = $derived(
-    appConfig.socialEnabled ? "/app/profile" : "/app/settings",
-  );
+  const profileHref = $derived(resolveProfileHref());
   const visibleSections = $derived(
     visibleNavSections(
       {
@@ -36,10 +36,7 @@
     ),
   );
 
-  async function signOut() {
-    await logout();
-    await goto("/login");
-  }
+  const signOut = signOutAndRedirect;
 </script>
 
 {#snippet railIcon(item: {

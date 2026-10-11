@@ -1,3 +1,4 @@
+import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
 import { labeledOptions } from "#lib/options.js";
 
 import { type SelectOption } from "#lib/types/select-option.js";
@@ -106,12 +107,6 @@ type GameDetail = Awaited<ReturnType<typeof getGameDetail>>;
 type BookDetail = Awaited<ReturnType<typeof getBookDetail>>;
 type MusicDetail = Awaited<ReturnType<typeof getMusicDetail>>;
 
-const MEDIA_KIND: Record<MediaType, () => string> = {
-  MOVIE: m.media_movie,
-  SERIES: m.media_series,
-  ANIME: m.media_anime,
-};
-
 // A series is "seen" once its aired episodes are: the bulk endpoint marks
 // them, as the library's bulk "Terminé" does. A plain status patch wouldn't.
 function setMediaStatus(entryId: string, status: string) {
@@ -141,7 +136,7 @@ function mediaDomain(type: MediaType, id: string): QuickAddDomain {
       return {
         title: d.title,
         posterUrl: d.posterUrl,
-        meta: presentParts(MEDIA_KIND[type](), d.year),
+        meta: presentParts(MEDIA_TYPE_LABEL[type], d.year),
         entryId: d.entry?.id ?? null,
         itemId: d.entry?.mediaItem.id ?? null,
         status: d.entry?.status ?? null,

@@ -1,5 +1,10 @@
 <script lang="ts">
   import {
+    STORAGE_KEYS,
+    LEGACY_STORAGE_KEYS,
+  } from "#lib/constants/storage-keys.js";
+
+  import {
     readSessionStorage,
     writeSessionStorage,
     removeSessionStorage,
@@ -19,7 +24,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
   import { disablePush, enablePush, isPushSupported } from "#lib/push.js";
-  import type { ImportSourceDescriptor } from "#lib/types/import-descriptor.js";
+  import type { AvailableImportSourceDescriptor } from "#lib/types/import-descriptor.js";
   import { DigestCadence, Domain, type Locale } from "@loomkeep/shared";
   import Combobox from "../Combobox.svelte";
   import Icon from "../Icon.svelte";
@@ -44,11 +49,13 @@
   // Survives the full-page reload that a language change triggers (setLocale
   // navigates/reloads by design — see AppearanceSection) so switching FR/EN
   // mid-wizard doesn't bounce the user back to step 1.
-  const STEP_STORAGE_KEY = "loomkeep.onboarding-step";
+  const STEP_STORAGE_KEY = STORAGE_KEYS.onboardingStep;
 
   function readStoredStep(): number {
     if (!browser) return 0;
-    const n = Number(readSessionStorage(STEP_STORAGE_KEY));
+    const n = Number(
+      readSessionStorage(STEP_STORAGE_KEY, LEGACY_STORAGE_KEYS.onboardingStep),
+    );
     return Number.isInteger(n) && n >= 0 && n < STEPS.length ? n : 0;
   }
 
@@ -190,11 +197,11 @@
 
   const importSources = $derived(
     (() => {
-      const map = new Map<Domain, ImportSourceDescriptor[]>();
+      const map = new Map<Domain, AvailableImportSourceDescriptor[]>();
 
       for (const importSourceDescriptor of Object.values(IMPORTS_DEFINITION)) {
         if (
-          importSourceDescriptor.href &&
+          !importSourceDescriptor.comingSoon &&
           auth.user?.enabledDomains.includes(importSourceDescriptor.domain)
         ) {
           if (!map.has(importSourceDescriptor.domain)) {

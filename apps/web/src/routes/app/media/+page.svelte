@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
+
   import { recordFrom } from "#lib/object.js";
 
   import { type SelectOption } from "#lib/types/select-option.js";
@@ -77,12 +79,6 @@
     { label: COMMON_LIBRARY_SORTS.status, value: "status" },
   ] satisfies SelectOption<MediaSortKey>[];
 
-  const TYPE_LABELS: Record<MediaType, string> = {
-    MOVIE: m.media_movie(),
-    SERIES: m.media_series(),
-    ANIME: m.media_anime(),
-  };
-
   const mediaHref = (entry: LibraryEntryDto) =>
     `/app/media/${entry.mediaItem.type.toLowerCase()}/${entry.mediaItem.sourceId}`;
 
@@ -93,7 +89,7 @@
     upcoming: entry.mediaItem.upcoming,
     href: mediaHref(entry),
     title: entry.mediaItem.title,
-    subtitle: TYPE_LABELS[entry.mediaItem.type],
+    subtitle: MEDIA_TYPE_LABEL[entry.mediaItem.type],
     imageUrl: entry.mediaItem.posterUrl,
     status: {
       value: entry.status,

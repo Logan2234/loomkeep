@@ -1,4 +1,6 @@
 <script lang="ts">
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
   import { type SelectOption } from "#lib/types/select-option.js";
 
   import AdminFilterBar from "../AdminFilterBar.svelte";
@@ -544,15 +546,9 @@
         </div>
 
         {#if usersQuery.hasNextPage}
-          <button
-            transition:fade={{ duration: reduced ? 0 : 120 }}
-            class="btn btn-ghost mt-4 w-full"
-            disabled={usersQuery.isFetchingNextPage}
-            onclick={() => usersQuery.fetchNextPage()}>
-            {usersQuery.isFetchingNextPage
-              ? m.common_loading()
-              : m.common_load_more()}
-          </button>
+          <LoadMoreButton
+            query={usersQuery}
+            class="btn btn-ghost mt-4 w-full" />
         {/if}
       {/if}
     {/if}

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { auth } from "./auth.svelte";
 import {
+  compareText,
   formatBytes,
   formatDurationMs,
   formatHours,
@@ -105,5 +106,20 @@ describe("localized formatting", () => {
     auth.user = null;
     overwriteGetLocale(() => "en");
     expect(formatBytes(1536)).toBe("1.5 KB");
+  });
+});
+
+describe("localized text comparison", () => {
+  it("sorts accented labels using the active UI language", () => {
+    overwriteGetLocale(() => "fr");
+    expect(["zèbre", "éclair", "abricot"].sort(compareText)).toEqual([
+      "abricot",
+      "éclair",
+      "zèbre",
+    ]);
+    overwriteGetLocale(() => "it");
+    expect(Math.sign(compareText("éclair", "zèbre"))).toBe(
+      Math.sign(new Intl.Collator("it").compare("éclair", "zèbre")),
+    );
   });
 });

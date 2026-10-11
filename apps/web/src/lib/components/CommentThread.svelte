@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { keys } from "#lib/api/keys.js";
+
   import { Cooldown } from "#lib/cooldown.svelte.js";
 
   import { longpress } from "#lib/actions/longpress.js";
@@ -80,8 +82,8 @@
 
   const queryClient = useQueryClient();
   const reduced = prefersReducedMotion();
-  const key = $derived(["comments", targetType, targetId] as const);
-  const countKey = $derived(["comment-count", targetType, targetId] as const);
+  const key = $derived(keys.comments.thread(targetType, targetId));
+  const countKey = $derived(keys.comments.count(targetType, targetId));
 
   const expanded = true;
   let feed = $state<HTMLDivElement | null>(null);

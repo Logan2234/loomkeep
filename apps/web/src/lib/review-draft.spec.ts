@@ -21,6 +21,20 @@ describe("review drafts", () => {
 
   const draft = { rating: 7, text: "Half-written", spoilerTag: true };
 
+  it("migrates legacy drafts while keeping them scoped to the account", () => {
+    store.set("loomkeep.reviewDraft.u1.MEDIA:m1", JSON.stringify(draft));
+    expect(readReviewDraft("u2", "MEDIA", "m1")).toBeNull();
+    expect(readReviewDraft("u1", "MEDIA", "m1")).toEqual(draft);
+    expect(store.has("loomkeep.reviewDraft.u1.MEDIA:m1")).toBe(false);
+    expect(store.get("lk-review-draft-u1.MEDIA:m1")).toBe(
+      JSON.stringify(draft),
+    );
+  });
+  it("clears an unread legacy draft without resurrecting it", () => {
+    store.set("loomkeep.reviewDraft.u1.MEDIA:m1", JSON.stringify(draft));
+    clearReviewDraft("u1", "MEDIA", "m1");
+    expect(readReviewDraft("u1", "MEDIA", "m1")).toBeNull();
+  });
   it("round-trips a draft per target", () => {
     writeReviewDraft("u1", "MEDIA", "m1", draft);
     expect(readReviewDraft("u1", "MEDIA", "m1")).toEqual(draft);

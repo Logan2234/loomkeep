@@ -1,3 +1,7 @@
+import {
+  LEGACY_STORAGE_KEYS,
+  STORAGE_KEYS,
+} from "#lib/constants/storage-keys.js";
 /**
  * "Last known value" tracking shared by rise-only reactions:
  * the level-up bubble and the streak badge. Factored out rather than written
@@ -30,11 +34,14 @@ export function compareToLastKnown(
   return "same";
 }
 
-const PREFIX = "loomkeep.lastKnown.";
+const PREFIX = STORAGE_KEYS.lastKnownPrefix;
 
 /** Null when nothing is stored, unreadable, or not a number. */
 export function readLastKnown(key: string): number | null {
-  const raw = readStorage(PREFIX + key);
+  const raw = readStorage(
+    PREFIX + key,
+    LEGACY_STORAGE_KEYS.lastKnownPrefix + key,
+  );
   if (raw === null) return null;
 
   const value = Number(raw);

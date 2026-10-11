@@ -48,6 +48,7 @@
 
       // Apply the saved (or system) theme before first paint to avoid a flash.
       try {
+        // Keep these keys in sync with lib/constants/storage-keys.ts.
         const saved = localStorage.getItem("lk-theme");
         const dark = saved
           ? saved === "dark"

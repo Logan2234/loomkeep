@@ -1,4 +1,6 @@
 <script lang="ts">
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
   import { typedEntries } from "#lib/object.js";
 
   import { type SelectOption } from "#lib/types/select-option.js";
@@ -415,14 +417,7 @@
     </ul>
 
     {#if cacheQuery.hasNextPage}
-      <button
-        class="btn btn-ghost mt-4 w-full"
-        disabled={cacheQuery.isFetchingNextPage}
-        onclick={() => cacheQuery.fetchNextPage()}>
-        {cacheQuery.isFetchingNextPage
-          ? m.common_loading()
-          : m.common_load_more()}
-      </button>
+      <LoadMoreButton query={cacheQuery} class="btn btn-ghost mt-4 w-full" />
     {/if}
   {/if}
 </div>

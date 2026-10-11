@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
+
   import { enumParam } from "#lib/url-params.js";
 
   import { type SelectOption } from "#lib/types/select-option.js";
@@ -127,13 +129,10 @@
 
   // The sous-filtre lives inside the bar itself (right edge), not below it —
   // Musique has no search-by criteria of its own yet.
-  const MEDIA_TYPE_OPTIONS: { label: string; value: MediaType | undefined }[] =
-    [
-      { label: m.common_all(), value: undefined },
-      { label: m.media_movies(), value: "MOVIE" },
-      { label: m.media_series_plural(), value: "SERIES" },
-      { label: m.media_anime(), value: "ANIME" },
-    ];
+  const TYPE_OPTIONS = [
+    { label: m.common_all(), value: undefined },
+    ...MEDIA_TYPE_OPTIONS,
+  ];
   type BookMode = "title" | "author" | "isbn";
   const BOOK_MODE_OPTIONS: SelectOption<BookMode>[] = [
     { label: m.common_title(), value: "title" },
@@ -161,7 +160,7 @@
   );
   const filterLabel = $derived(
     domain === Domain.MEDIA
-      ? (MEDIA_TYPE_OPTIONS.find((o) => o.value === mediaType)?.label ??
+      ? (TYPE_OPTIONS.find((o) => o.value === mediaType)?.label ??
           m.common_all())
       : domain === Domain.BOOKS
         ? (BOOK_MODE_OPTIONS.find((o) => o.value === bookMode)?.label ??
@@ -289,7 +288,7 @@
           {#if filterOpen}
             <div bind:this={filterMenuEl} class="guichet-filter-menu shadow-xl">
               {#if domain === Domain.MEDIA}
-                {#each MEDIA_TYPE_OPTIONS as opt (opt.label)}
+                {#each TYPE_OPTIONS as opt (opt.label)}
                   <button
                     type="button"
                     class="guichet-filter-option"

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
   import { getBlockedUsers, unblockUser } from "#lib/api/client.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -73,14 +75,7 @@
 
     {#if blockedQuery.hasNextPage}
       <div class="mt-5 flex justify-center">
-        <button
-          class="btn btn-ghost"
-          disabled={blockedQuery.isFetchingNextPage}
-          onclick={() => blockedQuery.fetchNextPage()}>
-          {blockedQuery.isFetchingNextPage
-            ? m.common_loading()
-            : m.common_see_more()}
-        </button>
+        <LoadMoreButton query={blockedQuery} class="btn btn-ghost" />
       </div>
     {/if}
   {/if}

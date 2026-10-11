@@ -1,3 +1,6 @@
+import { goto } from "$app/navigation";
+
+import { LEGACY_STORAGE_KEYS } from "#lib/constants/storage-keys.js";
 import { browser } from "$app/env";
 import type {
   AccountDeletionSummaryDto,
@@ -40,7 +43,7 @@ export async function initAuth(): Promise<boolean> {
   if (browser) {
     // Tokens written by previous releases are no longer used after the
     // HttpOnly-cookie migration, so remove the durable XSS-readable copy.
-    removeStorage("loomkeep.tokens");
+    removeStorage(LEGACY_STORAGE_KEYS.tokens);
   }
 
   try {
@@ -346,10 +349,15 @@ export const getAccountSecurityEvents = (page: number) =>
     query: { page: pageParam(page) },
   });
 
-export async function logout(): Promise<void> {
+async function logout(): Promise<void> {
   await typedRequest("/auth/logout", { method: "POST", withAuth: false }).catch(
     () => undefined,
   );
 
   auth.clear();
+}
+
+export async function signOutAndRedirect(): Promise<void> {
+  await logout();
+  await goto("/login");
 }

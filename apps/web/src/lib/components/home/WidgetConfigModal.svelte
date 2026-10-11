@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
+
   import { type SelectOption } from "#lib/types/select-option.js";
 
   // A widget's own settings, beyond its size and place. Edits a copy: the
@@ -75,11 +77,7 @@
     onclose();
   }
 
-  const MEDIA_TYPES: SelectOption<MediaType>[] = [
-    { value: "MOVIE", label: m.media_movies() },
-    { value: "SERIES", label: m.media_series_plural() },
-    { value: "ANIME", label: m.media_anime() },
-  ];
+  const MEDIA_TYPES = MEDIA_TYPE_OPTIONS;
   const SCOPES: SelectOption<LeaderboardScope>[] = [
     { value: "friends", label: m.common_friends() },
     { value: "global", label: m.gamification_leaderboard_tab_global() },

@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
 import { type SelectOption } from "#lib/types/select-option.js";
 
 import { m } from "#lib/paraglide/messages.js";
@@ -21,8 +22,7 @@ export type LibraryViewMode = (typeof LIBRARY_VIEW_MODES)[number];
 
 // One key per library, and per device rather than per account: the table
 // can suit the desktop while the cards stay on the phone.
-const storageKey = (domain: SavedViewDomain) =>
-  `lk-library-view-${domain.toLowerCase()}`;
+const storageKey = STORAGE_KEYS.libraryView;
 
 function isViewMode(value: string | null): value is LibraryViewMode {
   return LIBRARY_VIEW_MODES.some((mode) => mode === value);
@@ -40,8 +40,7 @@ export function writeLibraryViewMode(
   writeStorage(storageKey(domain), mode);
 }
 
-const columnsKey = (domain: SavedViewDomain) =>
-  `lk-library-columns-${domain.toLowerCase()}`;
+const columnsKey = STORAGE_KEYS.libraryColumns;
 
 /** The table's visible column keys, or null when never customised (or unreadable). */
 export function readLibraryColumns(domain: SavedViewDomain): string[] | null {

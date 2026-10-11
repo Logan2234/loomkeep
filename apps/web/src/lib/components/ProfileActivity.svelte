@@ -1,4 +1,6 @@
 <script lang="ts">
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
   import { activityTargetHue } from "#lib/constants/review-targets.js";
 
   import { activityPhrase, activityRating } from "#lib/activity-phrase.js";
@@ -133,14 +135,7 @@
     </ul>
     {#if activity.hasNextPage}
       <div class="mt-3 flex justify-center">
-        <button
-          class="btn btn-ghost btn-sm"
-          disabled={activity.isFetchingNextPage}
-          onclick={() => activity.fetchNextPage()}>
-          {activity.isFetchingNextPage
-            ? m.common_loading()
-            : m.common_see_more()}
-        </button>
+        <LoadMoreButton query={activity} class="btn btn-ghost btn-sm" />
       </div>
     {/if}
   </section>

@@ -148,8 +148,10 @@
           <div class="flex flex-col gap-2">
             {#each sources as source (source.label)}
               {@const available =
-                !!source.href && availability[source.type] !== false && !usedUp}
-              {#if available}
+                !source.comingSoon &&
+                availability[source.type] !== false &&
+                !usedUp}
+              {#if !source.comingSoon && available}
                 <a
                   id={`import-source-${source.type}`}
                   use:flashAnchor={{
@@ -201,9 +203,9 @@
                   {:else}
                     <span
                       class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                      {source.href
-                        ? m.common_unavailable()
-                        : m.common_coming_soon()}
+                      {source.comingSoon
+                        ? m.common_coming_soon()
+                        : m.common_unavailable()}
                     </span>
                   {/if}
                 </div>

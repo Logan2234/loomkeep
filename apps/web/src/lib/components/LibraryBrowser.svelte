@@ -1,4 +1,6 @@
 <script module lang="ts">
+  import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
+
   import { TABLET_QUERY } from "#lib/constants/media-queries.js";
 
   import { type SelectOption } from "#lib/types/select-option.js";
@@ -219,11 +221,7 @@
     queryFilter = query.trim();
   }, SEARCH_DEBOUNCE_MS);
 
-  const TYPE_OPTIONS: SelectOption<MediaType>[] = [
-    { label: m.media_movies(), value: "MOVIE" },
-    { label: m.media_series_plural(), value: "SERIES" },
-    { label: m.media_anime(), value: "ANIME" },
-  ];
+  const TYPE_OPTIONS = MEDIA_TYPE_OPTIONS;
 
   // Mirrors the current filters/sort/query into the URL so navigating back
   // here — either the browser's back button or a page's "← retour" link —
@@ -440,7 +438,7 @@
   // instead, and put the flag back if the save fails.
   function patchFavorite(key: string, favorite: boolean) {
     queryClient.setQueriesData<InfiniteData<PagedResult<T>>>(
-      { queryKey: ["library", "browse", domain] },
+      { queryKey: keys.library.browseDomain(domain) },
       (data) =>
         data?.pages
           ? {
@@ -523,7 +521,7 @@
         ownershipSource?: string | null;
       };
     }) => bulk!.update({ ids: [keyOf(entry)], ...action }),
-    invalidates: [["library"]],
+    invalidates: [keys.library.all()],
     errorToast: true,
     onSuccess: (_result, { entry, action }) => {
       clearTimeout(savedTimer);
@@ -548,7 +546,7 @@
 
   const bulkMut = createApiMutation(() => ({
     mutate: (dto: BulkUpdateEntriesDto) => bulk!.update(dto),
-    invalidates: [["library"]],
+    invalidates: [keys.library.all()],
     successToast: resultMessage,
     errorToast: true,
   }));
@@ -573,7 +571,7 @@
       toast.dismiss(undoToast);
       try {
         await bulk!.remove(target);
-        await queryClient.invalidateQueries({ queryKey: ["library"] });
+        await queryClient.invalidateQueries({ queryKey: keys.library.all() });
       } catch (err) {
         toast.error(resolveApiError(err));
       } finally {

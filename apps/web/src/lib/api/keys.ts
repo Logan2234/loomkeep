@@ -76,6 +76,10 @@ export const keys = {
     job: (source: string, jobId: string) =>
       ["import", "job", source, jobId] as const,
   },
+  comments: {
+    thread: (type: string, id: string) => ["comments", type, id] as const,
+    count: (type: string, id: string) => ["comment-count", type, id] as const,
+  },
   account: {
     deletionSummary: () => ["account", "deletion-summary"] as const,
   },
@@ -111,6 +115,7 @@ export const keys = {
       ["saved-views", "content", id, filters] as const,
   },
   lists: {
+    all: () => ["lists"] as const,
     editable: () => ["lists", "editable"] as const,
     membership: (targetType: string, targetId: string) =>
       ["lists", "membership", targetType, targetId] as const,
@@ -190,6 +195,8 @@ export const keys = {
       ["profile", "connections", username, kind] as const,
   },
   library: {
+    all: () => ["library"] as const,
+    browseDomain: (domain: string) => ["library", "browse", domain] as const,
     domainCounts: () => ["library", "domain-counts"] as const,
     watching: () => ["library", "watching"] as const,
     plannedMovies: () => ["library", "planned-movies"] as const,

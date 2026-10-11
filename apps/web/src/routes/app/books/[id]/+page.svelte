@@ -1,4 +1,7 @@
 <script lang="ts">
+  import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
+  import DetailsCard from "#lib/components/DetailsCard.svelte";
+  import WorkSocialSection from "#lib/components/WorkSocialSection.svelte";
   import { page } from "$app/state";
   import {
     deleteBookEntry,
@@ -16,7 +19,7 @@
   import Banner from "#lib/components/Banner.svelte";
   import BookSessionDock from "#lib/components/BookSessionDock.svelte";
   import Combobox from "#lib/components/Combobox.svelte";
-  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
   import Icon from "#lib/components/Icon.svelte";
@@ -26,16 +29,16 @@
   import NoteField from "#lib/components/NoteField.svelte";
   import OwnershipField from "#lib/components/OwnershipField.svelte";
   import Poster from "#lib/components/Poster.svelte";
-  import ProviderMark from "#lib/components/ProviderMark.svelte";
+
   import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
-  import ReviewsSection from "#lib/components/ReviewsSection.svelte";
+
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "#lib/components/TrackingPanel.svelte";
   import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
   import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
   import { bookWork } from "#lib/chat/work-search.js";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+
   import {
     BOOK_OWNERSHIP_SOURCES,
     BOOK_OWNERSHIP_STATUS_OPTIONS,
@@ -47,7 +50,7 @@
     BOOK_STATUS_ORDER as STATUS_ORDER,
   } from "#lib/constants/status-labels.js";
   import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
-  import { joinMeta } from "#lib/format.js";
+  import { joinMeta, compareText } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     BOOK_DIRECT_STATUS_TARGETS,
@@ -58,13 +61,6 @@
   // Open Library is the only book source today; the web route carries just
   // the work id (e.g. "OL893414W").
   const SOURCE = "open_library";
-
-  const RATING_STYLES: Record<string, string> = {
-    "Open Library": "bg-[#e1dcc5] text-black",
-  };
-  const RATING_BRANDS = {
-    "Open Library": "openlibrary",
-  } as const;
 
   let confirmRemove = $state(false);
   let statusEditorOpen = $state(false);
@@ -118,7 +114,7 @@
     },
     ...editions
       .map((e) => ({ value: e.key, label: e.language ?? e.title }))
-      .sort((a, b) => a.label.localeCompare(b.label)),
+      .sort((a, b) => compareText(a.label, b.label)),
   ]);
 
   const entry = $derived(detail?.entry ?? null);
@@ -320,29 +316,7 @@
                     workMeta={reviewMeta}
                     workImageUrl={detail.coverUrl} />
                 {/if}
-                {#each detail.ratings as r (r.source)}
-                  <svelte:element
-                    this={r.url ? "a" : "span"}
-                    href={r.url}
-                    target={r.url ? "_blank" : undefined}
-                    rel={r.url ? "noopener noreferrer" : undefined}
-                    class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold {RATING_STYLES[
-                      r.source
-                    ] ?? 'bg-surface-2 text-fg'} {r.url
-                      ? 'transition-opacity hover:opacity-80'
-                      : ''}">
-                    {#if RATING_BRANDS[r.source as keyof typeof RATING_BRANDS]}
-                      <ProviderMark
-                        brand={RATING_BRANDS[
-                          r.source as keyof typeof RATING_BRANDS
-                        ]}
-                        decorative
-                        class="h-3.5 w-3.5 shrink-0" />
-                    {/if}
-                    <span>{r.source}</span>
-                    <span class="tabular-nums opacity-90">{r.score}</span>
-                  </svelte:element>
-                {/each}
+                <ExternalRatingChips ratings={detail.ratings} providerMarks />
               </div>
             {/if}
           </div>
@@ -463,127 +437,105 @@
           </div>
         {/if}
 
-        {#if entry}
-          <ReviewsSection
-            targetType="BOOK"
-            targetId={entry.book.id}
-            workTitle={detail.title}
-            workMeta={reviewMeta}
-            workImageUrl={detail.coverUrl}>
-            {#snippet actions()}
-              {#if appConfig.socialEnabled && detail.commentTargetId}
-                <CommentsPanel
-                  targetType="BOOK"
-                  targetId={detail.commentTargetId}
-                  title={detail.title}
-                  canParticipate={!!entry} />
-              {/if}
-            {/snippet}
-          </ReviewsSection>
-        {/if}
-        {#if appConfig.socialEnabled && detail.commentTargetId && !entry}
-          <CommentsPanel
-            targetType="BOOK"
-            targetId={detail.commentTargetId}
-            title={detail.title}
-            canParticipate={!!entry} />
-        {/if}
+        <WorkSocialSection
+          targetType="BOOK"
+          reviewTargetId={entry?.book.id ?? null}
+          commentTargetId={detail.commentTargetId}
+          title={detail.title}
+          meta={reviewMeta}
+          imageUrl={detail.coverUrl}
+          canParticipate={!!entry} />
       </div>
 
       <!-- Details panel, desktop position: sidebar next to the main column. -->
       {#snippet detailsPanel()}
-        <div class="card p-4">
-          <h2 class="font-display text-sm font-bold tracking-tight">
-            {m.common_details()}
-          </h2>
-          <dl class="mt-3 flex flex-col gap-3">
-            {#if detail?.publisher}
-              <div>
-                <dt class="timecode text-xs">{m.media_publisher()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.publisher}</dd>
-              </div>
-            {/if}
-            {#if detail?.pageCount}
-              <div>
-                <dt class="timecode text-xs">{m.book_pages()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.pageCount}</dd>
-              </div>
-            {/if}
-            {#if detail?.series}
-              <div>
-                <dt class="timecode text-xs">{m.book_collection()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.series}</dd>
-              </div>
-            {/if}
-            {#if editions.length > 0}
-              <div>
-                <dt class="timecode flex items-center gap-1.5 text-xs">
-                  {m.common_language()}
-                </dt>
-                <dd class="mt-1.5">
-                  <Combobox
-                    label={m.common_language()}
-                    options={editionOptions}
-                    values={[selectedEdition ?? ""]}
-                    searchable={editionOptions.length > 6}
-                    disabled={bookQuery.loading}
-                    onChange={([value]) =>
-                      (selectedEdition = value || undefined)} />
-                </dd>
-              </div>
-            {:else if detail?.language}
-              <div>
-                <dt class="timecode text-xs">{m.common_language()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.language}</dd>
-              </div>
-            {/if}
-            {#if detail?.isbn}
-              <div>
-                <dt class="timecode text-xs">{m.book_isbn()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.isbn}</dd>
-              </div>
-            {/if}
-            {#if detail?.editionCount}
-              <div>
-                <dt class="timecode text-xs">{m.book_editions()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.editionCount}</dd>
-              </div>
-            {/if}
-          </dl>
-
-          {#if detail.website || detail.readOnlineUrl || detail.externalLinks.length > 0}
-            <div
-              class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-              {#if detail.website}
-                <a
-                  href={detail.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="link-accent inline-flex items-center decoration-1">
-                  {m.book_open_library_link()}
-                </a>
-              {/if}
-              {#if detail.readOnlineUrl}
-                <a
-                  href={detail.readOnlineUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="link-accent inline-flex items-center decoration-1">
-                  {m.book_read_online()}
-                </a>
-              {/if}
-              {#each detail.externalLinks as link (link.label)}
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="link-accent inline-flex items-center gap-1 decoration-1">
-                  {link.label} ↗
-                </a>
-              {/each}
+        <DetailsCard>
+          {#if detail?.publisher}
+            <div>
+              <dt class="timecode text-xs">{m.media_publisher()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.publisher}</dd>
             </div>
           {/if}
-        </div>
+          {#if detail?.pageCount}
+            <div>
+              <dt class="timecode text-xs">{m.book_pages()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.pageCount}</dd>
+            </div>
+          {/if}
+          {#if detail?.series}
+            <div>
+              <dt class="timecode text-xs">{m.book_collection()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.series}</dd>
+            </div>
+          {/if}
+          {#if editions.length > 0}
+            <div>
+              <dt class="timecode flex items-center gap-1.5 text-xs">
+                {m.common_language()}
+              </dt>
+              <dd class="mt-1.5">
+                <Combobox
+                  label={m.common_language()}
+                  options={editionOptions}
+                  values={[selectedEdition ?? ""]}
+                  searchable={editionOptions.length > 6}
+                  disabled={bookQuery.loading}
+                  onChange={([value]) =>
+                    (selectedEdition = value || undefined)} />
+              </dd>
+            </div>
+          {:else if detail?.language}
+            <div>
+              <dt class="timecode text-xs">{m.common_language()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.language}</dd>
+            </div>
+          {/if}
+          {#if detail?.isbn}
+            <div>
+              <dt class="timecode text-xs">{m.book_isbn()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.isbn}</dd>
+            </div>
+          {/if}
+          {#if detail?.editionCount}
+            <div>
+              <dt class="timecode text-xs">{m.book_editions()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.editionCount}</dd>
+            </div>
+          {/if}
+
+          {#snippet footer()}{#if detail.website || detail.readOnlineUrl || detail.externalLinks.length > 0}
+              <div
+                class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                {#if detail.website}
+                  <a
+                    href={detail.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="link-accent inline-flex items-center decoration-1">
+                    {m.book_open_library_link()}
+                  </a>
+                {/if}
+                {#if detail.readOnlineUrl}
+                  <a
+                    href={detail.readOnlineUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="link-accent inline-flex items-center decoration-1">
+                    {m.book_read_online()}
+                  </a>
+                {/if}
+                {#each detail.externalLinks as link (link.label)}
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="link-accent inline-flex items-center gap-1 decoration-1">
+                    {link.label} ↗
+                  </a>
+                {/each}
+              </div>
+            {/if}{/snippet}
+        </DetailsCard>
       {/snippet}
       {#if hasMeta}
         <div class="hidden md:block">

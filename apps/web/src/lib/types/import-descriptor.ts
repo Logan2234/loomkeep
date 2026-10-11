@@ -1,10 +1,14 @@
 import { type FeatureBadgeKey } from "#lib/feature-badges.js";
 import type { Domain } from "@loomkeep/shared";
 
-export type ImportSourceDescriptor = {
+type ImportSourceBase = {
   domain: Domain;
   label: string;
   description: string;
+};
+
+export type AvailableImportSourceDescriptor = ImportSourceBase & {
+  comingSoon?: false;
   href: string;
   input: {
     type: "csv" | "xml" | "zip" | "steamId" | "oauth";
@@ -20,3 +24,7 @@ export type ImportSourceDescriptor = {
   /** The docs page walking through this source's import. */
   guide?: string;
 };
+
+export type ImportSourceDescriptor =
+  | AvailableImportSourceDescriptor
+  | (ImportSourceBase & { comingSoon: true; newBadgeKey?: FeatureBadgeKey });

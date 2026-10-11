@@ -42,7 +42,7 @@ describe("last-known storage", () => {
   it("round-trips a value under a namespaced key", () => {
     writeLastKnown("level:u1", 14);
     expect(readLastKnown("level:u1")).toBe(14);
-    expect([...store.keys()]).toEqual(["loomkeep.lastKnown.level:u1"]);
+    expect([...store.keys()]).toEqual(["lk-last-known-level:u1"]);
   });
 
   it("keys are per subject, so two users never share a marker", () => {
