@@ -1,7 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus } from "@nestjs/common";
-import type { FastifyReply } from "fastify";
 import { vi } from "vitest";
+import { fakeReply } from "../../test-utils/fake-reply";
 import { CalendarFeedController } from "./calendar-feed.controller";
 import type { CalendarFeedService } from "./calendar-feed.service";
 
@@ -10,20 +10,6 @@ import type { CalendarFeedService } from "./calendar-feed.service";
  * `@Public()` so a calendar client can poll it by URL, which makes the token
  * the only thing standing between a stranger and someone's watchlist.
  */
-function fakeReply() {
-  const headers: Record<string, string> = {};
-  const reply = {
-    header: vi.fn((name: string, value: string) => {
-      headers[name] = value;
-      return reply;
-    }),
-    send: vi.fn(),
-  } as unknown as FastifyReply & {
-    header: ReturnType<typeof vi.fn>;
-    send: ReturnType<typeof vi.fn>;
-  };
-  return { reply, headers };
-}
 
 function makeController(getCalendarIcs = vi.fn(), getReleasesFeed = vi.fn()) {
   const service = {

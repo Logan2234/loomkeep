@@ -7,27 +7,12 @@ import { GameItemService } from "../../../games/game-item.service";
 import type { ProviderGameDetails } from "../../../games/providers/game-provider.types";
 import { IgdbProvider } from "../../../games/providers/igdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
+import { mockFetchByUrl } from "../../../test-utils/mock-fetch";
 import { AgeGateService } from "../../../users/age-gate.service";
 import { ImportJobService } from "../../import-job.service";
 import { SteamImportSource } from "./steam.source";
 
 const originalFetch = global.fetch;
-
-function mockFetchByUrl(routes: Record<string, unknown>): Mock {
-  const fn = vi.fn((input: RequestInfo | URL) => {
-    const url = String(input);
-    const match = Object.entries(routes).find(([part]) => url.includes(part));
-    if (!match) throw new Error(`Unexpected fetch call in test: ${url}`);
-    return Promise.resolve(
-      new Response(JSON.stringify(match[1]), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-  });
-  global.fetch = fn as unknown as typeof fetch;
-  return fn;
-}
 
 function detail(id: string, adult = false): ProviderGameDetails {
   return {

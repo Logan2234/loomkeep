@@ -1,23 +1,11 @@
 import { XpReason } from "@loomkeep/shared";
-import type { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { uniqueConstraintError } from "../test-utils/prisma-errors";
+import { makeConfig } from "../test-utils/stubs";
 import { XpService } from "./xp.service";
-
-function uniqueConstraintError(): Prisma.PrismaClientKnownRequestError {
-  return new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
-    code: "P2002",
-    clientVersion: "test",
-  });
-}
-
-function makeConfig(values: Record<string, string> = {}): ConfigService {
-  return {
-    get: vi.fn((key: string) => values[key]),
-  } as unknown as ConfigService;
-}
 
 function makeService(configValues: Record<string, string> = {}) {
   const prisma = {

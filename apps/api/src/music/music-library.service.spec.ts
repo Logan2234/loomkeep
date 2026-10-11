@@ -1,21 +1,8 @@
 import { vi } from "vitest";
-import type { EventsGateway } from "../events/events.gateway";
-import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { stubEvents, stubXp } from "../test-utils/stubs";
 import type { MusicItemService } from "./music-item.service";
 import { MusicLibraryService } from "./music-library.service";
-
-function stubXp(): XpService {
-  return {
-    award: vi.fn(),
-    awardMany: vi.fn(),
-    revokeBySource: vi.fn(),
-  } as unknown as XpService;
-}
-
-function stubEvents(): EventsGateway {
-  return { emitToUser: vi.fn() } as unknown as EventsGateway;
-}
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   const id = (overrides.id as string) ?? "entry-1";

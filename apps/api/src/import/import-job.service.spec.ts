@@ -5,32 +5,11 @@ import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import { parsePageQuery } from "../common/pagination.util";
 import type { EntitlementService } from "../entitlements/entitlement.service";
-import type { EventsGateway } from "../events/events.gateway";
-import type { AchievementService } from "../gamification/achievements/achievement.service";
-import type { XpService } from "../gamification/xp.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
 import { ImportJobService } from "./import-job.service";
 import type { ImportReq } from "./import-source";
-
-function stubXp(): XpService {
-  return {
-    award: vi.fn(),
-    awardMany: vi.fn(),
-    revokeBySource: vi.fn(),
-  } as unknown as XpService;
-}
-
-function stubAchievements(): AchievementService {
-  return { evaluate: vi.fn() } as unknown as AchievementService;
-}
-
-function stubEvents(online = true): EventsGateway {
-  return {
-    emitToUser: vi.fn(),
-    isOnline: vi.fn().mockResolvedValue(online),
-  } as unknown as EventsGateway;
-}
 
 function stubNotifications(): NotificationService {
   return { create: vi.fn() } as unknown as NotificationService;

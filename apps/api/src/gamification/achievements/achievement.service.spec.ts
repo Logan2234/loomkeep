@@ -1,10 +1,10 @@
 import { ErrorCode } from "@loomkeep/shared";
-import type { ConfigService } from "@nestjs/config";
-import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { EventsGateway } from "../../events/events.gateway";
 import type { JobRunService } from "../../jobs/job-run.service";
 import type { PrismaService } from "../../prisma/prisma.service";
+import { uniqueConstraintError } from "../../test-utils/prisma-errors";
+import { makeConfig } from "../../test-utils/stubs";
 import type { XpService } from "../xp.service";
 import { AchievementService } from "./achievement.service";
 import { RARITY_ACTIVE_WINDOW_DAYS } from "./rarity.util";
@@ -32,19 +32,6 @@ vi.mock("./registry", async (importOriginal) => {
     ACHIEVEMENT_LIST: [...actual.ACHIEVEMENT_LIST, socialGatedDefinition],
   };
 });
-
-function uniqueConstraintError(): Prisma.PrismaClientKnownRequestError {
-  return new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
-    code: "P2002",
-    clientVersion: "test",
-  });
-}
-
-function makeConfig(values: Record<string, string> = {}): ConfigService {
-  return {
-    get: vi.fn((key: string) => values[key]),
-  } as unknown as ConfigService;
-}
 
 function makeService(configValues: Record<string, string> = {}) {
   const prisma = {

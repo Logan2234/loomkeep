@@ -1,6 +1,7 @@
 import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { mockFetchByUrl } from "../../test-utils/mock-fetch";
 import { OpenLibraryProvider } from "./open-library.provider";
 
 // Node defines global fetch lazily, which confuses vi.spyOn on restore;
@@ -21,25 +22,6 @@ function mockFetch(payload: unknown, ok = true): Mock {
 }
 
 /** Route responses by a substring of the request URL (query string included). */
-function mockFetchByUrl(routes: [string, unknown][]): Mock {
-  const fn = vi.fn((input: RequestInfo | URL) => {
-    const url = String(input);
-    const match = routes.find(([part]) => url.includes(part));
-
-    if (!match) {
-      throw new Error(`Unexpected fetch call in test: ${url}`);
-    }
-
-    return Promise.resolve(
-      new Response(JSON.stringify(match[1]), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-  });
-  global.fetch = fn as unknown as typeof fetch;
-  return fn;
-}
 
 /** Returns a different status/payload on each successive call, in order. */
 function mockFetchSequence(

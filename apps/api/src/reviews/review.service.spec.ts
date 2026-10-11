@@ -1,27 +1,14 @@
 import type { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { vi } from "vitest";
-import type { AchievementService } from "../gamification/achievements/achievement.service";
-import type { XpService } from "../gamification/xp.service";
 import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ActivityService } from "../social/activity.service";
 import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
+import { stubAchievements, stubXp } from "../test-utils/stubs";
 import { ReviewService } from "./review.service";
-
-function stubXp(): XpService {
-  return {
-    award: vi.fn(),
-    awardMany: vi.fn(),
-    revokeBySource: vi.fn(),
-  } as unknown as XpService;
-}
-
-function stubAchievements(): AchievementService {
-  return { evaluate: vi.fn() } as unknown as AchievementService;
-}
 
 // Not exercised by most of these tests — kept plain so isGamificationEnabled
 // resolves to `false` (config unset, flag fallback false), matching the

@@ -1,8 +1,5 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
-import type { EventsGateway } from "../events/events.gateway";
-import type { AchievementService } from "../gamification/achievements/achievement.service";
-import type { XpService } from "../gamification/xp.service";
 import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -10,27 +7,8 @@ import type { ActivityService } from "../social/activity.service";
 import type { FollowService } from "../social/follow.service";
 import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
+import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
 import { ListService } from "./list.service";
-
-function stubXp(): XpService {
-  return {
-    award: vi.fn(),
-    awardMany: vi.fn(),
-    revokeBySource: vi.fn(),
-  } as unknown as XpService;
-}
-
-function stubAchievements(): AchievementService {
-  return { evaluate: vi.fn() } as unknown as AchievementService;
-}
-
-function stubEvents(): EventsGateway {
-  return {
-    emitToList: vi.fn(),
-    emitToUser: vi.fn(),
-    evictFromList: vi.fn(),
-  } as unknown as EventsGateway;
-}
 
 /** `friend` is the owner's friend unless a test says otherwise. */
 function stubFollow(friendIds: string[] = ["friend"]): FollowService {

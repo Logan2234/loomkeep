@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
+import { fakeReply } from "../test-utils/fake-reply";
 import { UsersController } from "./users.controller";
 import type { UsersService } from "./users.service";
 
@@ -39,15 +40,6 @@ function makeController() {
   return { controller: new UsersController(users, {} as never), users };
 }
 
-function fakeReply() {
-  const reply = {
-    header: vi.fn().mockReturnThis(),
-    type: vi.fn().mockReturnThis(),
-    send: vi.fn().mockReturnThis(),
-  };
-  return reply as unknown as import("fastify").FastifyReply;
-}
-
 describe("UsersController — delegation to UsersService", () => {
   const userId = "user-1";
   const payload = jwtPayload(userId);
@@ -72,7 +64,7 @@ describe("UsersController — delegation to UsersService", () => {
 
   it("getAvatar streams the resolved buffer with the public-image headers", async () => {
     const { controller, users } = makeController();
-    const reply = fakeReply();
+    const reply = fakeReply(true).reply;
 
     await controller.getAvatar("target-id", reply);
 
