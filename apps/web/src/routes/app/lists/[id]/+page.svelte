@@ -28,6 +28,7 @@
   import EmptyState from "#lib/components/EmptyState.svelte";
   import FocusOverlay from "#lib/components/FocusOverlay.svelte";
   import Icon from "#lib/components/Icon.svelte";
+  import ListAddWorkButton from "#lib/components/ListAddWorkButton.svelte";
   import ListFormModal from "#lib/components/ListFormModal.svelte";
   import ListMembersModal from "#lib/components/ListMembersModal.svelte";
   import Poster from "#lib/components/Poster.svelte";
@@ -115,6 +116,15 @@
   const canEditList = $derived(role !== "VIEWER");
   const isOwner = $derived(role === "OWNER");
   const isModerator = $derived(role === "MODERATOR");
+  // Moderation removes what a list shouldn't hold; it never adds to it.
+  const canAdd = $derived(role === "OWNER" || role === "EDITOR");
+  const inList = $derived(
+    new Set(
+      (list?.items ?? []).flatMap((item) =>
+        item.target?.href ? [item.target.href] : [],
+      ),
+    ),
+  );
 
   let reporting = $state(false);
   const reportMut = createApiMutation(() => ({
@@ -380,6 +390,9 @@
         {/if}
       </div>
       <div class="flex shrink-0 gap-2">
+        {#if canAdd}
+          <ListAddWorkButton listId={list.id} title={list.title} {inList} />
+        {/if}
         {#if isOwner && appConfig.socialEnabled}
           <button
             class="btn btn-ghost"

@@ -117,6 +117,7 @@
   "apierr_lists_forbidden": "Questa lista appartiene a un altro account.",
   "apierr_lists_item_not_found": "Impossibile trovare questo elemento nella lista.",
   "apierr_lists_item_already_exists": "Questo elemento è già nella lista.",
+  "apierr_lists_work_not_found": "Impossibile trovare quest'opera nel suo catalogo.",
   "apierr_lists_reorder_mismatch": "L'ordine inviato non corrisponde agli elementi attuali della lista.",
   "apierr_lists_stale": "Questa lista è cambiata nel frattempo, ricarica la pagina.",
   "apierr_lists_cannot_add_self": "Non puoi aggiungere te stesso a questa lista.",

@@ -1,8 +1,5 @@
 <script lang="ts">
-  import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { searchWorks } from "#lib/api/search.js";
   import { addWorkToLibrary } from "#lib/chat/work-library.js";
   import Banner from "#lib/components/Banner.svelte";
   import { workKindLabel } from "#lib/components/chat/conversation-presentation.js";
@@ -10,10 +7,10 @@
   import Icon from "#lib/components/Icon.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
-  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { shelves, statusLabel } from "#lib/search/unified-search.js";
+  import { createWorkSearch } from "#lib/search/work-search.svelte.js";
   import type { Domain, WorkSearchHitDto } from "@loomkeep/shared";
   import { fade, fly } from "svelte/transition";
 
@@ -29,40 +26,10 @@
     onseeall: (domain: Domain) => void;
   } = $props();
 
-  const MIN_LENGTH = 2;
   const reduced = prefersReducedMotion();
-
-  let searched = $state("");
-  const debounced = debounce(
-    (value: string) => (searched = value),
-    SEARCH_DEBOUNCE_MS,
-  );
-  $effect(() => debounced.call(query.trim()));
-
-  const enabled = $derived(searched.length >= MIN_LENGTH);
-
-  // What the instance knows answers at once; the catalogues' fuller answer
-  // takes its place when it comes.
-  const localQuery = createApiQuery(() => ({
-    key: keys.search.works(searched, "local"),
-    fetch: () => searchWorks(searched, "local"),
-    enabled,
-    keepPreviousData: true,
-  }));
-  const allQuery = createApiQuery(() => ({
-    key: keys.search.works(searched, "all"),
-    fetch: () => searchWorks(searched, "all"),
-    enabled,
-  }));
-
+  const search = createWorkSearch(() => query);
   const list = $derived(
-    enabled
-      ? shelves(
-          order,
-          allQuery.data ?? localQuery.data ?? undefined,
-          !!allQuery.data,
-        )
-      : [],
+    search.enabled ? shelves(order, search.answer, search.settled) : [],
   );
 
   const addMut = createApiMutation(() => ({
@@ -72,11 +39,11 @@
   }));
 </script>
 
-{#if !enabled}
+{#if !search.enabled}
   <EmptyState>{m.search_all_hint()}</EmptyState>
-{:else if allQuery.error}
-  <Banner variant="error">{allQuery.error}</Banner>
-{:else if list.length === 0 && allQuery.data}
+{:else if search.error}
+  <Banner variant="error">{search.error}</Banner>
+{:else if list.length === 0 && search.settled}
   <p class="timecode text-sm">{m.common_no_results()}.</p>
 {:else}
   <div class="grid gap-x-10 gap-y-7 md:grid-cols-2">
