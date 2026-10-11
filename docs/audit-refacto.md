@@ -207,13 +207,13 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 
 **Total : 119 pistes**, dont 6 marquées 🐛. Par priorité : 1 P0, 17 P1, 49 P2 et 52 P3.
 
-| Axe                | Nombre de pistes      |
-| ------------------ | --------------------- |
-| Axe 1 (partagé)    | 14                    |
-| Axe 2 (helpers)    | 11 (3 back, 8 front)  |
-| Axe 3 (constantes) | 12 (1 back, 11 front) |
-| Axe 4 (types)      | 13 (3 back, 10 front) |
-| Axe 5 (refactors)  | 84                    |
+| Axe                | Nombre de pistes    |
+| ------------------ | ------------------- |
+| Axe 1 (partagé)    | 14                  |
+| Axe 2 (helpers)    | 9 (3 back, 6 front) |
+| Axe 3 (constantes) | 6 (1 back, 5 front) |
+| Axe 4 (types)      | 6 (3 back, 3 front) |
+| Axe 5 (refactors)  | 84                  |
 
 ---
 
