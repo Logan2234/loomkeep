@@ -9,7 +9,8 @@ import {
 import { HttpStatus } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
-import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
+
+import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { classifyStatusTransition } from "../social/activity-transition.util";

@@ -28,7 +28,8 @@ import {
 } from "../common/external-id.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
-import { ACHIEVEMENT_KEYS_ON_LIST_CREATED } from "../gamification/achievements/registry";
+
+import { ACHIEVEMENT_KEYS_ON_LIST_CREATED } from "../gamification/achievements/triggers";
 import { XpService } from "../gamification/xp.service";
 import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";

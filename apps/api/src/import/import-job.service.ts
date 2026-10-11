@@ -31,7 +31,8 @@ import { toPagedResult, type ParsedPage } from "../common/pagination.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
-import { ACHIEVEMENT_KEYS_ON_IMPORT_COMPLETED } from "../gamification/achievements/registry";
+
+import { ACHIEVEMENT_KEYS_ON_IMPORT_COMPLETED } from "../gamification/achievements/triggers";
 import { XpService } from "../gamification/xp.service";
 import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";

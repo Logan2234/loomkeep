@@ -78,7 +78,8 @@ import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { toGameItemDto } from "../games/game-item.mapper";
 import { AchievementService } from "../gamification/achievements/achievement.service";
-import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
+
+import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import {
   isSeasonComplete,
   isSeriesComplete,
