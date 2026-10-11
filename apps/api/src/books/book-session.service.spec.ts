@@ -1,5 +1,5 @@
 import { ErrorCode } from "@loomkeep/shared";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { vi } from "vitest";
 import { BookSessionService } from "./book-session.service";
 
 describe("BookSessionService", () => {

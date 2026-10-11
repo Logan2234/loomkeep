@@ -1,7 +1,6 @@
 import { INSTANCE_SETTING_ENV } from "@loomkeep/shared";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
 
 // The api container only sees the variables docker-compose.yml lists under
 // its `environment`: one set in .env but missing there never reaches it,

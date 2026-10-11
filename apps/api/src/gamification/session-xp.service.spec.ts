@@ -1,5 +1,5 @@
 import { XpReason } from "@loomkeep/shared";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { vi } from "vitest";
 import { SessionXpService } from "./session-xp.service";
 
 describe("SessionXpService", () => {

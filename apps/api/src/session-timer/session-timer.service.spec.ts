@@ -1,6 +1,6 @@
 import { Domain, ErrorCode } from "@loomkeep/shared";
 import { SessionSource, type SessionTimer } from "@prisma/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { vi } from "vitest";
 import type { BookSessionService } from "../books/book-session.service";
 import type { GameSessionService } from "../games/game-session.service";
 import type { PrismaService } from "../prisma/prisma.service";

@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { resolveCopyLocale } from "./copy-locale.util";
 
 describe("resolveCopyLocale", () => {
