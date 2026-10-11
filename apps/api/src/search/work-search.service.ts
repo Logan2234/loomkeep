@@ -27,8 +27,11 @@ import {
   type WorkCandidate,
 } from "./work-search-ranking";
 
-/** Works returned, at most, every domain mixed. */
-const MAX_HITS = 30;
+/**
+ * Works returned per domain, at most: a domain whose titles match less well
+ * still shows its best ones.
+ */
+const MAX_PER_DOMAIN = 10;
 /** The instance's own works looked at per domain, at most. */
 const LOCAL_PER_DOMAIN = 10;
 /** A catalogue's results kept per source, at most. */
@@ -229,9 +232,13 @@ export class WorkSearchService {
       }
     }
 
-    const ranked = rankWorks([...byHref.values()], raw, query).slice(
-      0,
-      MAX_HITS,
+    const kept = new Map<SearchDomain, number>();
+    const ranked = rankWorks([...byHref.values()], raw, query).filter(
+      ({ domain }) => {
+        const count = (kept.get(domain) ?? 0) + 1;
+        kept.set(domain, count);
+        return count <= MAX_PER_DOMAIN;
+      },
     );
     await this.withStatuses(userId, ranked);
 

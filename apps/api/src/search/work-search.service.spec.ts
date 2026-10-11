@@ -89,6 +89,29 @@ describe("WorkSearchService", () => {
     expect(result.unavailable).toEqual([]);
   });
 
+  it("keeps each domain's best works, however many another one has", async () => {
+    const { service, tmdb } = setup({
+      localMedia: Array.from({ length: 10 }, (_, i) => ({
+        source: "TMDB",
+        sourceId: `local-${i}`,
+        kind: "MOVIE",
+        title: "Dune",
+        imageUrl: null,
+        year: 2021,
+        isAdult: false,
+        trackers: 1,
+      })),
+    });
+    tmdb.search.mockResolvedValueOnce(
+      Array.from({ length: 12 }, (_, i) => ({ ...DUNE, sourceId: `${i}` })),
+    );
+
+    const result = await service.search("u1", "dune", { catalogs: true });
+
+    expect(result.items.filter((hit) => hit.kind === "MOVIE")).toHaveLength(10);
+    expect(result.items.map((hit) => hit.kind)).toContain("MUSIC");
+  });
+
   it("asks a catalogue once for the same query typed again", async () => {
     const { service, tmdb } = setup();
 
