@@ -83,7 +83,7 @@
   const queryClient = useQueryClient();
   const reduced = prefersReducedMotion();
   const key = $derived(keys.comments.thread(targetType, targetId));
-  const countKey = $derived(keys.comments.count(targetType, targetId) as const);
+  const countKey = $derived(keys.comments.count(targetType, targetId));
 
   const expanded = true;
   let feed = $state<HTMLDivElement | null>(null);

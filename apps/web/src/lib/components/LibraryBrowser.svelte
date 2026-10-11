@@ -1,6 +1,4 @@
 <script module lang="ts">
-  import { keys } from "#lib/api/keys.js";
-
   import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
 
   import { TABLET_QUERY } from "#lib/constants/media-queries.js";

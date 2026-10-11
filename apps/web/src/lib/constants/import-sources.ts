@@ -137,3 +137,9 @@ export const IMPORTS_DEFINITION = {
     description: m.import_source_boardgamegeek_description(),
   },
 } satisfies Record<ImportSource, ImportSourceDescriptor>;
+
+export type AvailableImportSource = {
+  [
+    K in ImportSource
+  ]: (typeof IMPORTS_DEFINITION)[K]["comingSoon"] extends false ? K : never;
+}[ImportSource];

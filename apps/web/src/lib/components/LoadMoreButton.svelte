@@ -6,7 +6,7 @@
   }: {
     query: {
       isFetchingNextPage: boolean;
-      fetchNextPage: () => Promise<unknown>;
+      fetchNextPage: () => void;
     };
     class?: string;
   } = $props();

@@ -23,7 +23,11 @@
   import Icon from "#lib/components/Icon.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import ProgressBar from "#lib/components/ProgressBar.svelte";
-  import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
+  import {
+    IMPORTS_DEFINITION,
+    type AvailableImportSource,
+  } from "#lib/constants/import-sources.js";
+  import type { AvailableImportSourceDescriptor } from "#lib/types/import-descriptor.js";
   import { formatNumber } from "#lib/format.js";
   import { readImportFile } from "#lib/import-file.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -37,7 +41,6 @@
     type ImportPlan,
     type ImportPlanItem,
     type ImportProgressEvent,
-    type ImportSource,
     type MediaSummaryDto,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -68,7 +71,8 @@
     source,
     intro,
     autoInput,
-  }: { source: ImportSource; intro?: Snippet; autoInput?: string } = $props();
+  }: { source: AvailableImportSource; intro?: Snippet; autoInput?: string } =
+    $props();
 
   type Phase = "input" | "analyzing" | "review" | "committing" | "done";
   let phase = $state<Phase>("input");
@@ -84,7 +88,8 @@
   let fileError = $state<string | null>(null);
   let dragOver = $state(false);
 
-  const descriptor = IMPORTS_DEFINITION[source];
+  const descriptor: AvailableImportSourceDescriptor =
+    IMPORTS_DEFINITION[source];
   const queryClient = useQueryClient();
 
   const quotaQuery = createApiQuery(() => ({
