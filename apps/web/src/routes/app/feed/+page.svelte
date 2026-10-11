@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { labeledOptions } from "#lib/options.js";
-
   import { type SelectOption } from "#lib/types/select-option.js";
 
   import { goto } from "$app/navigation";
@@ -22,23 +20,25 @@
 
   type Tab = "ALL" | Domain;
 
-  // Only domains the viewer keeps enabled — the API leaves the others out of
-  // the feed altogether, so a tab for one would always be empty.
   const domainTabs = $derived(
-    orderedDomains(auth.user?.domainOrder).filter(
-      (d) => !DOMAINS[d].comingSoon && isDomainEnabled(d),
-    ),
+    orderedDomains(auth.user?.domainOrder).filter(isDomainEnabled),
   );
-  const tabs = $derived<SelectOption<Tab>[]>([
+  const tabs = $derived<(SelectOption<Tab> & { disabled?: boolean })[]>([
     { value: "ALL", label: m.common_all() },
-    ...labeledOptions(DOMAINS, domainTabs),
+    ...domainTabs.map((value) => ({
+      value,
+      label: DOMAINS[value].label,
+      disabled: DOMAINS[value].comingSoon,
+    })),
   ]);
 
   // In the URL so the tab survives a reload and a shared link. A domain the
   // viewer has since turned off falls back to every domain.
   const domain = $derived.by<Domain | null>(() => {
     const requested = page.url.searchParams.get("domain");
-    return domainTabs.find((d) => d === requested) ?? null;
+    return (
+      domainTabs.find((d) => d === requested && !DOMAINS[d].comingSoon) ?? null
+    );
   });
 
   function changeTab(next: Tab) {

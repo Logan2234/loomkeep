@@ -446,10 +446,22 @@ export const resolveBottomShortcuts = (
 //  visible (enabled domains / admin). Used by the settings config UI.
 export const resolveShortcutChoices = (
   opts: MobileGateOptions,
-): MobileDestination[] =>
-  BOTTOM_SHORTCUT_CHOICES.map((id) => MOBILE_DESTINATIONS[id]).filter((d) =>
-    isVisible(d, opts),
+): MobileDestination[] => {
+  const choices = BOTTOM_SHORTCUT_CHOICES.map(
+    (id) => MOBILE_DESTINATIONS[id],
+  ).filter((d) => isVisible(d, opts));
+  const rank = new Map(
+    orderedDomains(auth.user?.domainOrder).map((domain, index) => [
+      domain,
+      index,
+    ]),
   );
+  const domains = choices
+    .filter((d) => d.domain)
+    .sort((a, b) => rank.get(a.domain!)! - rank.get(b.domain!)!);
+  let index = 0;
+  return choices.map((d) => (d.domain ? domains[index++] : d));
+};
 
 // Launcher sheet groups with their visible destinations (coming-soon kept —
 //  they render dimmed with a "Bientôt" badge when their domain is enabled).

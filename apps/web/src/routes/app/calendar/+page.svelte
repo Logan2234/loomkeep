@@ -1,5 +1,7 @@
 <script lang="ts">
   import { type SelectOption } from "#lib/types/select-option.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { orderedDomains } from "#lib/domains.js";
 
   import {
     getCalendar,
@@ -121,8 +123,7 @@
     ).size;
   }
 
-  const filterTabs = $derived<SelectOption<CalendarFilter>[]>([
-    { value: "all", label: `${m.calendar_filter_all()} (${showCount("all")})` },
+  const videoTabs = $derived<SelectOption<CalendarFilter>[]>([
     {
       value: "series",
       label: `${m.calendar_filter_series()} (${showCount("series")})`,
@@ -135,15 +136,23 @@
       value: "movie",
       label: `${m.media_movie()} (${showCount("movie")})`,
     },
-    // Only once a game is coming: most libraries track no game at all.
-    ...(showCount("game") > 0
-      ? [
-          {
-            value: "game" as const,
-            label: `${m.common_Games()} (${showCount("game")})`,
-          },
-        ]
-      : []),
+  ]);
+  const filterTabs = $derived<SelectOption<CalendarFilter>[]>([
+    { value: "all", label: `${m.calendar_filter_all()} (${showCount("all")})` },
+    ...orderedDomains(auth.user?.domainOrder).flatMap(
+      (domain): SelectOption<CalendarFilter>[] => {
+        if (domain === "MEDIA") return videoTabs;
+        if (domain === "GAMES" && showCount("game") > 0) {
+          return [
+            {
+              value: "game",
+              label: `${m.common_Games()} (${showCount("game")})`,
+            },
+          ];
+        }
+        return [];
+      },
+    ),
     {
       value: "muted",
       label: `${m.calendar_alerts_muted()} (${showCount("muted")})`,

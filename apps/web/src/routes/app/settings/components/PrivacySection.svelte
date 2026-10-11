@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { typedEntries } from "#lib/object.js";
+  import { orderedDomains } from "#lib/domains.js";
 
   import { page } from "$app/state";
   import {
@@ -168,9 +168,9 @@
   // or the early-access ones on a free account) would still show a row here
   // even though it's absent everywhere else in the app.
   const visibleDomainEntries = $derived(
-    typedEntries(DOMAINS).filter(([id]) =>
-      auth.user?.enabledDomains.includes(id),
-    ) as [Domain, (typeof DOMAINS)[Domain]][],
+    orderedDomains(auth.user?.domainOrder)
+      .filter((id) => auth.user?.enabledDomains.includes(id))
+      .map((id): [Domain, (typeof DOMAINS)[Domain]] => [id, DOMAINS[id]]),
   );
 </script>
 

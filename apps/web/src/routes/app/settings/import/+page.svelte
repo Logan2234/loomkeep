@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { typedEntries } from "#lib/object.js";
-
   import {
     getImportAvailability,
     getImportQuota,
@@ -17,7 +15,7 @@
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
-  import { isDomainEnabled } from "#lib/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domains.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import SettingsSection from "../components/SettingsSection.svelte";
@@ -44,6 +42,12 @@
       return prev;
     },
     {} as Record<Domain, (ImportSourceDescriptor & { type: ImportSource })[]>,
+  );
+
+  const orderedGroups = $derived(
+    orderedDomains(auth.user?.domainOrder)
+      .filter((domain) => groups[domain]?.length)
+      .map((domain) => ({ domain, sources: groups[domain] })),
   );
 
   // A source absent from this map needs no server config of its own, so it
@@ -128,7 +132,7 @@
   {/if}
 
   <div class="flex flex-col gap-8">
-    {#each typedEntries(groups) as [domain, sources] (domain)}
+    {#each orderedGroups as { domain, sources } (domain)}
       {#if isDomainEnabled(domain)}
         {@const usedUp = premiumLocked && quota[domain] === true}
         <section>
