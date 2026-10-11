@@ -11,6 +11,7 @@ import {
   canonicalExternalId,
   toExternalIdDtos,
 } from "../common/external-id.util";
+import { jsonObject } from "../common/json.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 
@@ -572,7 +573,7 @@ export class DataExportService {
         title: n.title,
         body: n.body,
         url: n.url,
-        data: (n.data ?? {}) as Record<string, unknown>,
+        data: jsonObject(n.data),
         createdAt: n.createdAt.toISOString(),
       })),
       reviews: reviewRows.map((r) => ({
@@ -709,7 +710,7 @@ export class DataExportService {
         source: entitlementRow.source,
         grantedAt: entitlementRow.grantedAt?.toISOString() ?? null,
         expiresAt: entitlementRow.expiresAt?.toISOString() ?? null,
-        overrides: (entitlementRow.overrides ?? {}) as Record<string, unknown>,
+        overrides: jsonObject(entitlementRow.overrides),
       },
       subscriptions: subscriptionRows.map((s) => ({
         provider: s.provider,

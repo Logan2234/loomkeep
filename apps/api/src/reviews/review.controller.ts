@@ -13,7 +13,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpStatus,
   Param,
   Post,
   Put,
@@ -25,7 +24,7 @@ import {
   CurrentUser,
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
-import { AppException } from "../common/app.exception";
+import { parseEnumParam } from "../common/parse-enum-param.util";
 import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
@@ -45,16 +44,12 @@ import { VoteReviewBody } from "./dto/vote-review.dto";
 import { ReviewService } from "./review.service";
 
 function parseTarget(type: string): ReviewTargetType {
-  if (!(Object.values(ReviewTargetType) as string[]).includes(type)) {
-    throw new AppException(
-      HttpStatus.BAD_REQUEST,
-      ErrorCode.ReviewUnknownTargetType,
-      undefined,
-      "Unknown review target type",
-    );
-  }
-
-  return type as ReviewTargetType;
+  return parseEnumParam(type, Object.values(ReviewTargetType), "target type", {
+    caseSensitive: true,
+    errorCode: ErrorCode.ReviewUnknownTargetType,
+    includeDetails: false,
+    message: "Unknown review target type",
+  });
 }
 
 @Controller("reviews")

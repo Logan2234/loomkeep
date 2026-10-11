@@ -1,5 +1,4 @@
 import {
-  type AlertPrefs,
   CHAT_SEARCH_MIN_LENGTH,
   type ChatMessageEvent,
   type ChatReadEvent,
@@ -27,6 +26,7 @@ import { AppException } from "../common/app.exception";
 import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { EventsGateway } from "../events/events.gateway";
 import { ListService } from "../lists/list.service";
+import { readAlertPrefs } from "../notifications/alert-prefs.util";
 import { notificationCopy } from "../notifications/notification-copy";
 import { PushService } from "../notifications/push.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -1148,7 +1148,7 @@ export class ChatService {
       member?.mutedAt ||
       isSuspended(recipient) ||
       !isAlertEnabled(
-        recipient.alertPrefs as AlertPrefs,
+        readAlertPrefs(recipient.alertPrefs),
         "CHAT_MESSAGE",
         "push",
       )

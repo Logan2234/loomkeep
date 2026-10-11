@@ -3,7 +3,6 @@ import {
   ErrorCode,
   HOME_GRID_COLUMNS,
   LEGAL_VERSION,
-  mergeAlertPrefs,
   OTP_CODE_LENGTH,
   RealtimeEvent,
   REQUIRED_SHORTCUT,
@@ -11,7 +10,6 @@ import {
   UsernameAvailabilityDto,
   XpReason,
   type AccountDeletionSummaryDto,
-  type AlertPrefs,
   type CsvExportDto,
   type EntitlementDto,
   type SocialProfileDto,
@@ -32,6 +30,10 @@ import { EntitlementService } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { XpService } from "../gamification/xp.service";
 import { MailService } from "../mail/mail.service";
+import {
+  mergeAlertPrefs,
+  readAlertPrefs,
+} from "../notifications/alert-prefs.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { ProfileService } from "../social/profile.service";
@@ -52,6 +54,7 @@ import type { HomeLayoutBody } from "./dto/home-layout.dto";
 import type { UpdateUserDto } from "./dto/update-user.dto";
 import type { UpdateUsernameDto } from "./dto/update-username.dto";
 import type { UploadAvatarDto } from "./dto/upload-avatar.dto";
+import { toHomeLayoutJson } from "./home-layout.util";
 import { signWidgetToken } from "./widget-token.util";
 
 // Decoded byte ceiling for an uploaded avatar — base64 for this is checked by
@@ -287,7 +290,7 @@ export class UsersService {
       }));
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { homeLayout: { widgets } as unknown as Prisma.InputJsonValue },
+      data: { homeLayout: toHomeLayoutJson({ widgets }) },
     });
     return toUserDto(user);
   }
@@ -376,7 +379,7 @@ export class UsersService {
     }
 
     const alertPrefs = dto.alertPrefs
-      ? mergeAlertPrefs(current.alertPrefs as AlertPrefs, dto.alertPrefs)
+      ? mergeAlertPrefs(readAlertPrefs(current.alertPrefs), dto.alertPrefs)
       : undefined;
 
     if (alertPrefs === null) {

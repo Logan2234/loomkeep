@@ -4,7 +4,11 @@ import type {
   InstanceSettingsValues,
   UpdateInstanceSettingsDto,
 } from "@loomkeep/shared";
-import { ErrorCode, INSTANCE_SETTING_ENV } from "@loomkeep/shared";
+import {
+  DEFAULT_INSTANCE_SETTINGS,
+  ErrorCode,
+  INSTANCE_SETTING_ENV,
+} from "@loomkeep/shared";
 import { HttpStatus, Injectable, type OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { InstanceSettings } from "@prisma/client";
@@ -56,9 +60,10 @@ export class InstanceSettingsService implements OnModuleInit {
     }
 
     return {
-      values: Object.fromEntries(
-        KEYS.map((key) => [key, this.get(key)]),
-      ) as unknown as InstanceSettingsValues,
+      values: KEYS.reduce(
+        (values, key) => ({ ...values, [key]: this.get(key) }),
+        { ...DEFAULT_INSTANCE_SETTINGS },
+      ),
       lockedBy,
     };
   }

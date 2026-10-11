@@ -9,7 +9,6 @@ import type {
   WebauthnMfaOptionsResponseDto,
 } from "@loomkeep/shared";
 import {
-  type AlertPrefs,
   deviceLabel,
   ErrorCode,
   LEGAL_VERSION,
@@ -37,11 +36,13 @@ import { isUniqueViolation } from "../common/prisma-error.util";
 import { EventsGateway } from "../events/events.gateway";
 import { MailService } from "../mail/mail.service";
 import { AdminAlertService } from "../notifications/admin-alert.service";
+import { readAlertPrefs } from "../notifications/alert-prefs.util";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { isSocialEnabled } from "../social/social.config";
 import { avatarUrl } from "../users/avatar.util";
+import { readHomeLayout } from "../users/home-layout.util";
 import { assertNotSuspended, isSuspended } from "../users/suspension.util";
 import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
 import type { JwtPayload } from "./decorators/current-user.decorator";
@@ -1130,7 +1131,7 @@ export function toUserDto(user: User): UserDto {
     notifyEmail: user.notifyEmail as UserDto["notifyEmail"],
     notifyPush: user.notifyPush as UserDto["notifyPush"],
     notifyNewsletter: user.notifyNewsletter,
-    alertPrefs: user.alertPrefs as AlertPrefs,
+    alertPrefs: readAlertPrefs(user.alertPrefs),
     timezone: user.timezone,
     emailVerified: user.emailVerified,
     role: user.role,
@@ -1158,6 +1159,6 @@ export function toUserDto(user: User): UserDto {
     domainOrder: user.domainOrder as UserDto["domainOrder"],
     watchRegion: user.watchRegion,
     watchProviderIds: user.watchProviderIds,
-    homeLayout: user.homeLayout as unknown as UserDto["homeLayout"],
+    homeLayout: readHomeLayout(user.homeLayout),
   };
 }

@@ -11,7 +11,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpStatus,
   Param,
   Post,
   Put,
@@ -24,10 +23,10 @@ import {
   CurrentUser,
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
-import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
+import { parseEnumParam } from "../common/parse-enum-param.util";
 import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
@@ -40,14 +39,12 @@ import { ReactCommentBody } from "./dto/react-comment.dto";
 import { UpdateCommentBody } from "./dto/update-comment.dto";
 
 export function parseTarget(type: string): CommentTargetTypeT {
-  if (!(Object.values(CommentTargetType) as string[]).includes(type)) {
-    throw new AppException(
-      HttpStatus.BAD_REQUEST,
-      ErrorCode.CommentUnknownTargetType,
-    );
-  }
-
-  return type as CommentTargetTypeT;
+  return parseEnumParam(type, Object.values(CommentTargetType), "target type", {
+    caseSensitive: true,
+    errorCode: ErrorCode.CommentUnknownTargetType,
+    includeDetails: false,
+    message: ErrorCode.CommentUnknownTargetType,
+  });
 }
 
 // Comments only make sense between people, so — unlike reviews — there is no

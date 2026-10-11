@@ -6,6 +6,7 @@ import type { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { sinceDaysAgo } from "../common/date.util";
+import { toJsonInput } from "../common/json.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
@@ -212,7 +213,7 @@ export class XpService {
       amount,
       title: subject?.title ?? null,
       href: subject?.href ?? null,
-      data: (subject?.data ?? {}) as Prisma.InputJsonValue,
+      data: toJsonInput(subject?.data ?? {}),
     };
     const cap = rule.dailyCap;
 
@@ -404,7 +405,7 @@ export class XpService {
             data: {
               title: subject.title,
               href: subject.href,
-              data: subject.data as Prisma.InputJsonValue,
+              data: toJsonInput(subject.data),
             },
           });
         }

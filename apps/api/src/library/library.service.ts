@@ -37,6 +37,7 @@ import {
   seriesCompletedXp,
   XpReason,
 } from "@loomkeep/shared";
+import { revokeEntryXp } from "../common/entry-lifecycle.util";
 
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
@@ -641,11 +642,12 @@ export class LibraryService {
   }
 
   async getEntry(userId: string, entryId: string): Promise<LibraryEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
-    const entry = await this.prisma.libraryEntry.findUniqueOrThrow({
-      where: { id: entryId },
-      include: ENTRY_INCLUDE,
-    });
+    const entry = await assertEntryOwnership(userId, () =>
+      this.prisma.libraryEntry.findUnique({
+        where: { id: entryId },
+        include: ENTRY_INCLUDE,
+      }),
+    );
     return this.toEntryDto(
       entry,
       await this.computeProgress(userId, entry.mediaItemId),
@@ -690,10 +692,7 @@ export class LibraryService {
       };
     }
 
-    const before = await this.prisma.libraryEntry.findUnique({
-      where: { id: entryId },
-      select: { status: true, favorite: true },
-    });
+    const before = owned;
 
     const entry = await this.prisma.libraryEntry.update({
       where: { id: entryId },
@@ -827,15 +826,11 @@ export class LibraryService {
     // must wipe every reason anchored to it, unlike unwatching a single
     // season/episode, which only ever revokes its own reason.
     await this.xp.revokeBySource("LibraryEntry", [entryId]);
-    await this.xp.revokeBySource("Entry", [entryId]); // WORK_ADDED
-    await this.xp.revokeBySource(
-      "Season",
-      seasons.map((s) => s.id),
-    );
-    await this.xp.revokeBySource(
-      "Review",
-      reviews.map((r) => r.id),
-    ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
+    await revokeEntryXp(this.xp, [
+      { sourceType: "Entry", ids: [entryId] },
+      { sourceType: "Season", ids: seasons.map((s) => s.id) },
+      { sourceType: "Review", ids: reviews.map((r) => r.id) },
+    ]);
   }
 
   /** Emits the status milestone + FAVORITED events for a media entry write. */

@@ -14,6 +14,7 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type { Prisma, SavedView } from "@prisma/client";
 import { AppException } from "../common/app.exception";
+import { toJsonInput } from "../common/json.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -38,7 +39,7 @@ function understoodFilters(
     statuses: filters.statuses?.filter((s) => STATUSES[domain].includes(s)),
     types: domain === "MEDIA" ? filters.types : undefined,
   };
-  return understood as Prisma.InputJsonValue;
+  return toJsonInput(understood);
 }
 
 function toDto(row: SavedView): SavedViewDto {

@@ -10,6 +10,8 @@ import {
   ADMIN_CACHE_SORTS,
   ErrorCode,
 } from "@loomkeep/shared";
+import { canonicalExternalId } from "../common/external-id.util";
+import { parseEnumParam } from "../common/parse-enum-param.util";
 
 import {
   Controller,
@@ -627,8 +629,11 @@ export class AdminCacheController {
     canonicalSource: string,
     externalIds: { source: string; externalId: string }[],
   ): string {
-    const match = externalIds.find((e) => e.source === canonicalSource);
-    return match?.externalId ?? externalIds[0]?.externalId ?? "";
+    return canonicalExternalId(
+      { canonicalSource },
+      externalIds,
+      externalIds[0]?.externalId ?? "",
+    );
   }
 
   private forceRefresh(domain: CacheDomain, id: string): Promise<unknown> {
@@ -700,16 +705,10 @@ export class AdminCacheController {
   }
 
   private domainOrThrow(domain: string): CacheDomain {
-    if (!DOMAINS.includes(domain as CacheDomain)) {
-      throw new AppException(
-        HttpStatus.BAD_REQUEST,
-        ErrorCode.InvalidParam,
-        { label: "cache domain", value: domain },
-        `Unknown cache domain: ${domain}`,
-      );
-    }
-
-    return domain as CacheDomain;
+    return parseEnumParam(domain, DOMAINS, "cache domain", {
+      caseSensitive: true,
+      message: `Unknown cache domain: ${domain}`,
+    });
   }
 
   private toDto(
