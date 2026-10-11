@@ -1,6 +1,7 @@
 import {
   CatalogSource,
   Domain,
+  type MediaType,
   type MessageWorkKind,
   type WorkSearchResultDto,
 } from "@loomkeep/shared";
@@ -10,6 +11,7 @@ import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { sleep } from "../common/async.util";
 import { GameItemService } from "../games/game-item.service";
+import { LibraryService } from "../library/library.service";
 import { MusicItemService } from "../music/music-item.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AgeGateService } from "../users/age-gate.service";
@@ -163,6 +165,7 @@ export class WorkSearchService {
     private readonly games: GameItemService,
     private readonly books: BookItemService,
     private readonly music: MusicItemService,
+    private readonly library: LibraryService,
   ) {}
 
   /** `catalogs: false`: the instance's own works only, for a first answer. */
@@ -402,38 +405,79 @@ export class WorkSearchService {
     }
   }
 
-  /** Fills in the viewer's library status of the works they track. */
+  /**
+   * Fills in the viewer's library status of the works they track. A series'
+   * status is derived from its episodes, as the library shows it: the media
+   * ones come from LibraryService, not the stored column.
+   */
   private async withStatuses(
     userId: string,
     refs: WorkCandidate[],
   ): Promise<void> {
-    const rows = await Promise.all(
-      SEARCH_DOMAINS.map((domain) => {
-        const ids = refs
-          .filter((ref) => ref.domain === domain)
-          .map((ref) => ref.sourceId);
-        if (ids.length === 0) return [];
-        const t = TABLES[domain];
+    const rows = await Promise.all([
+      ...SEARCH_DOMAINS.filter((domain) => domain !== Domain.MEDIA).map(
+        (domain) => {
+          const ids = refs
+            .filter((ref) => ref.domain === domain)
+            .map((ref) => ref.sourceId);
+          if (ids.length === 0) return [];
+          const t = TABLES[domain];
 
-        return this.prisma.$queryRaw<StatusRow[]>`
-          SELECT
-            x.source::text AS source,
-            x."externalId" AS "sourceId",
-            ${t.kind} AS kind,
-            e.status::text AS status
-          FROM ${t.entries} e
-          JOIN ${t.item} i ON i.id = e.${t.itemKey}
-          JOIN ${t.externals} x
-            ON x.${t.itemKey} = i.id AND x.source::text = i."canonicalSource"::text
-          WHERE e."userId" = ${userId} AND x."externalId" = ANY(${ids})
-        `;
-      }),
-    );
+          return this.prisma.$queryRaw<StatusRow[]>`
+            SELECT
+              x.source::text AS source,
+              x."externalId" AS "sourceId",
+              ${t.kind} AS kind,
+              e.status::text AS status
+            FROM ${t.entries} e
+            JOIN ${t.item} i ON i.id = e.${t.itemKey}
+            JOIN ${t.externals} x
+              ON x.${t.itemKey} = i.id AND x.source::text = i."canonicalSource"::text
+            WHERE e."userId" = ${userId} AND x."externalId" = ANY(${ids})
+          `;
+        },
+      ),
+      this.mediaStatuses(
+        userId,
+        refs.filter((ref) => ref.domain === Domain.MEDIA),
+      ),
+    ]);
     const statuses = new Map(rows.flat().map((row) => [refKey(row), row]));
 
     for (const ref of refs) {
       ref.hit.status =
         statuses.get(refKey({ ...ref, kind: ref.hit.kind }))?.status ?? null;
     }
+  }
+
+  private async mediaStatuses(
+    userId: string,
+    refs: WorkCandidate[],
+  ): Promise<StatusRow[]> {
+    const groups = new Map<string, WorkCandidate[]>();
+
+    for (const ref of refs) {
+      const key = `${ref.source}:${ref.hit.kind}`;
+      groups.set(key, [...(groups.get(key) ?? []), ref]);
+    }
+
+    const lists = await Promise.all(
+      [...groups.values()].map(async (group) => {
+        const { source, hit } = group[0];
+        const statuses = await this.library.statusesBySourceId(
+          userId,
+          source as CatalogSource,
+          hit.kind as MediaType,
+          group.map((ref) => ref.sourceId),
+        );
+        return [...statuses].map(([sourceId, status]) => ({
+          source,
+          sourceId,
+          kind: hit.kind,
+          status,
+        }));
+      }),
+    );
+    return lists.flat();
   }
 }

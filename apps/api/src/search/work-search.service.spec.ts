@@ -8,6 +8,7 @@ import { vi } from "vitest";
 import type { BookItemService } from "../books/book-item.service";
 import type { MediaItemService } from "../catalog/media-item.service";
 import type { GameItemService } from "../games/game-item.service";
+import type { LibraryService } from "../library/library.service";
 import type { MusicItemService } from "../music/music-item.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { AgeGateService } from "../users/age-gate.service";
@@ -40,13 +41,13 @@ const readsTable = (values: unknown[], table: string) =>
 function setup({
   domains = ["MEDIA", "MUSIC"] as Domain[],
   localMedia = [] as object[],
-  mediaStatuses = [] as object[],
+  mediaStatuses = new Map<string, string>(),
 } = {}) {
   const queryRaw = vi.fn(
     async (strings: TemplateStringsArray, ...values: unknown[]) => {
       const sql = strings.join("");
       if (!readsTable(values, "MediaItem")) return [];
-      return sql.includes("LIMIT") ? localMedia : mediaStatuses;
+      return sql.includes("LIMIT") ? localMedia : [];
     },
   );
   const tmdb = { search: vi.fn(async () => [DUNE]) };
@@ -56,6 +57,9 @@ function setup({
   } as unknown as MediaItemService;
   const music = { search: vi.fn(async () => [ALBUM]) };
   const books = { search: vi.fn(async () => []) };
+  const library = {
+    statusesBySourceId: vi.fn(async () => mediaStatuses),
+  };
 
   const service = new WorkSearchService(
     { $queryRaw: queryRaw } as unknown as PrismaService,
@@ -67,9 +71,10 @@ function setup({
     {} as GameItemService,
     books as unknown as BookItemService,
     music as unknown as MusicItemService,
+    library as unknown as LibraryService,
   );
 
-  return { service, tmdb, music, books };
+  return { service, tmdb, music, books, library };
 }
 
 describe("WorkSearchService", () => {
@@ -141,7 +146,7 @@ describe("WorkSearchService", () => {
   });
 
   it("shows a work known to the instance once, with the viewer's status", async () => {
-    const { service } = setup({
+    const { service, library } = setup({
       localMedia: [
         {
           source: "TMDB",
@@ -154,14 +159,7 @@ describe("WorkSearchService", () => {
           trackers: 4,
         },
       ],
-      mediaStatuses: [
-        {
-          source: "TMDB",
-          sourceId: "438631",
-          kind: "MOVIE",
-          status: "COMPLETED",
-        },
-      ],
+      mediaStatuses: new Map([["438631", "COMPLETED"]]),
     });
 
     const result = await service.search("u1", "dune", { catalogs: true });
@@ -169,6 +167,13 @@ describe("WorkSearchService", () => {
     expect(
       result.items.filter((hit) => hit.href === "/app/media/movie/438631"),
     ).toEqual([expect.objectContaining({ status: "COMPLETED" })]);
+    // Derived from the episodes, as the library shows it — not the column.
+    expect(library.statusesBySourceId).toHaveBeenCalledWith(
+      "u1",
+      "TMDB",
+      "MOVIE",
+      ["438631"],
+    );
   });
 
   it("asks no catalogue for the instance's works only", async () => {
