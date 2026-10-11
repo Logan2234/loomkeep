@@ -15,6 +15,7 @@
   import { toCarouselItems } from "#lib/carousel.js";
   import Banner from "#lib/components/Banner.svelte";
   import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
   import GameSessionDock from "#lib/components/GameSessionDock.svelte";
@@ -382,6 +383,13 @@
             {/if}
           </div>
         </div>
+
+        {#if appConfig.socialEnabled && detail.commentTargetId}
+          <WorkFriendsStrip
+            domain="GAMES"
+            targetType="GAME"
+            targetId={detail.commentTargetId} />
+        {/if}
 
         {#if detail.overview}
           <p class="text-dim mt-6 max-w-2xl whitespace-pre-line">

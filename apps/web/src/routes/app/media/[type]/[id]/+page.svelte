@@ -21,6 +21,7 @@
   import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
   import Banner from "#lib/components/Banner.svelte";
   import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
   import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
   import { mediaWork } from "#lib/chat/work-search.js";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
@@ -574,6 +575,13 @@
   </ActionBar>
 
   <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
+    {#if appConfig.socialEnabled && detail.commentTargetId}
+      <WorkFriendsStrip
+        domain="MEDIA"
+        targetType="MEDIA"
+        targetId={detail.commentTargetId} />
+    {/if}
+
     {#if entry?.progress && !upcoming}
       <div class="mt-6 max-w-sm">
         <ProgressBar value={pct} label={m.common_progress()} />

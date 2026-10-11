@@ -17,6 +17,7 @@
   import BookSessionDock from "#lib/components/BookSessionDock.svelte";
   import Combobox from "#lib/components/Combobox.svelte";
   import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
   import Icon from "#lib/components/Icon.svelte";
@@ -347,6 +348,13 @@
             {/if}
           </div>
         </div>
+
+        {#if appConfig.socialEnabled && detail.commentTargetId}
+          <WorkFriendsStrip
+            domain="BOOKS"
+            targetType="BOOK"
+            targetId={detail.commentTargetId} />
+        {/if}
 
         {#if detail.firstSentence}
           <p
