@@ -9,7 +9,10 @@
     MUSIC_STATUS_DESC,
     MUSIC_STATUS_META,
   } from "#lib/constants/status-labels.js";
-  import type { IconName } from "#lib/types/icon-name.js";
+  import {
+    STATUS_LOOKS,
+    type StatusTone,
+  } from "#lib/constants/status-looks.js";
   import type {
     BookStatus,
     EntryStatus,
@@ -17,9 +20,6 @@
     MusicStatus,
   } from "@loomkeep/shared";
   import Icon from "./Icon.svelte";
-
-  type Tone = "idle" | "active" | "done" | "dropped";
-  type Look = { tone: Tone; icon: IconName };
 
   let {
     domain,
@@ -37,32 +37,6 @@
     class?: string;
   } = $props();
 
-  const LOOKS: Record<typeof domain, Record<string, Look>> = {
-    MEDIA: {
-      PLANNED: { tone: "idle", icon: "tv" },
-      WATCHING: { tone: "active", icon: "play" },
-      UP_TO_DATE: { tone: "done", icon: "calendar" },
-      COMPLETED: { tone: "done", icon: "check" },
-      DROPPED: { tone: "dropped", icon: "x" },
-    },
-    BOOKS: {
-      TO_READ: { tone: "idle", icon: "book" },
-      READING: { tone: "active", icon: "book-open" },
-      READ: { tone: "done", icon: "check" },
-      DROPPED: { tone: "dropped", icon: "x" },
-    },
-    GAMES: {
-      BACKLOG: { tone: "idle", icon: "gamepad" },
-      PLAYING: { tone: "active", icon: "play" },
-      COMPLETED: { tone: "done", icon: "check" },
-      DROPPED: { tone: "dropped", icon: "x" },
-    },
-    MUSIC: {
-      TO_LISTEN: { tone: "idle", icon: "music" },
-      LISTENED: { tone: "done", icon: "check" },
-    },
-  };
-
   const TEXTS: Record<
     typeof domain,
     { meta: Record<string, { label: string }>; desc: Record<string, string> }
@@ -73,7 +47,7 @@
     MUSIC: { meta: MUSIC_STATUS_META, desc: MUSIC_STATUS_DESC },
   };
 
-  const TONES: Record<Tone, string> = {
+  const TONES: Record<StatusTone, string> = {
     idle: "bg-surface-2 text-dim",
     active: "bg-accent/12 text-accent",
     done: "bg-success/12 text-success",
@@ -81,14 +55,14 @@
   };
 
   // Solid fills: the theme's tinted ones vanish on a dark backdrop in light mode.
-  const TONES_ON_IMAGE: Record<Tone, string> = {
+  const TONES_ON_IMAGE: Record<StatusTone, string> = {
     idle: "bg-white/15 text-white backdrop-blur",
     active: "bg-accent text-accent-fg",
     done: "bg-success text-bg",
     dropped: "bg-danger text-bg",
   };
 
-  const look = $derived(LOOKS[domain][status]);
+  const look = $derived(STATUS_LOOKS[domain][status]);
   const label = $derived(TEXTS[domain].meta[status].label);
   const description = $derived(TEXTS[domain].desc[status]);
 </script>
