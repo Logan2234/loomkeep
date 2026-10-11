@@ -49,7 +49,7 @@ beforeEach(() => {
           authorId: "me",
           mine: true,
           text: body.text ?? null,
-          spoiler: body.spoiler,
+          spoiler: body.spoiler ?? false,
           edited: false,
           deleted: false,
           deletedByAdmin: false,
