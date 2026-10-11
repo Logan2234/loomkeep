@@ -1,6 +1,6 @@
 <script lang="ts">
-  // The search page's bar in one row: the domain picked first, as there, then
-  // Entrée opens the search on that domain with the words typed.
+  // The search page's bar in one row: "Tout" or a domain picked first, as
+  // there, then Entrée opens the search on it with the words typed.
   import { goto } from "$app/navigation";
   import { auth } from "#lib/auth.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
@@ -17,26 +17,41 @@
       (d) => !DOMAINS[d].comingSoon && isDomainEnabled(d),
     ),
   );
-  let picked = $state<Domain | null>(null);
-  // The user's first domain until they pick one — and again if the picked one
-  // gets turned off.
+  // Every domain at once, as the search page's first tab — only worth
+  // offering with more than one.
+  const ALL = "ALL";
+  const hasAll = $derived(choices.length > 1);
+
+  let picked = $state<Domain | typeof ALL | null>(null);
+  // "Tout" (or the only domain) until they pick one — and again if the picked
+  // one gets turned off.
   const domain = $derived(
-    picked && choices.includes(picked) ? picked : choices[0],
+    picked === ALL || (picked && choices.includes(picked))
+      ? picked
+      : hasAll
+        ? ALL
+        : choices[0],
   );
   let query = $state("");
 
   // Names beside the icons once there's room for them all; below that, the
   // magnifier gives its room to the words typed.
-  const labelled = $derived(size.width >= 200 + choices.length * 96);
+  const labelled = $derived(
+    size.width >= 200 + (choices.length + Number(hasAll)) * 96,
+  );
   const narrow = $derived(size.width < 320);
   const placeholder = $derived(
-    domain ? m.search_placeholder({ domain: DOMAINS[domain].searchHint }) : "",
+    domain === ALL
+      ? m.search_placeholder_all()
+      : domain
+        ? m.search_placeholder({ domain: DOMAINS[domain].searchHint })
+        : "",
   );
 
   function submit(event: SubmitEvent) {
     event.preventDefault();
     if (!domain) return;
-    const params = new URLSearchParams({ type: domain });
+    const params = new URLSearchParams(domain === ALL ? {} : { type: domain });
     if (query.trim()) params.set("query", query.trim());
     void goto(`/app/search?${params}`);
   }
@@ -46,13 +61,26 @@
   <form
     role="search"
     class="bar card"
-    style={`--domain-accent: ${DOMAINS[domain].accent}`}
+    style={`--domain-accent: ${domain === ALL ? "var(--accent)" : DOMAINS[domain].accent}`}
     onsubmit={submit}>
-    {#if choices.length > 1}
+    {#if hasAll}
       <div
         class="domains"
         role="group"
         aria-label={m.home_quick_search_domains()}>
+        <button
+          type="button"
+          class="domain"
+          class:active={domain === ALL}
+          aria-pressed={domain === ALL}
+          aria-label={labelled ? undefined : m.search_tab_all()}
+          title={m.search_tab_all()}
+          onclick={() => (picked = ALL)}>
+          <Icon name="search" class="h-3.5 w-3.5 shrink-0" />
+          {#if labelled}
+            <span>{m.search_tab_all()}</span>
+          {/if}
+        </button>
         {#each choices as choice (choice)}
           <button
             type="button"
