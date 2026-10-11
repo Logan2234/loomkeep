@@ -172,3 +172,36 @@ export interface UpdateVisibilitySettingsDto {
   profileAccess?: ProfileAccess;
   settings?: VisibilitySettingItemDto[];
 }
+
+/** Where someone stands with a work, in its domain's own terms. */
+export interface WorkProgressDto {
+  /** The domain's status value (EntryStatus, GameStatus, BookStatus…). */
+  status: string;
+  /** A series: the furthest episode seen, specials aside. */
+  season: number | null;
+  episode: number | null;
+  /** A book: the page reached, out of `pageCount` when known. */
+  page: number | null;
+  pageCount: number | null;
+  /** A game: time played. */
+  playtimeMinutes: number | null;
+  /** Last time they moved on it. */
+  updatedAt: string;
+}
+
+/** A friend who tracks the work, as their library visibility allows. */
+export interface WorkFriendDto extends WorkProgressDto {
+  user: UserSummaryDto;
+  /** Their rating, only when they published a review the viewer may read. */
+  rating: number | null;
+}
+
+/** `GET /social/works/:type/:id/friends`. */
+export interface WorkFriendsDto {
+  /** Most recently active first. */
+  friends: WorkFriendDto[];
+  /** The viewer's own progress, to place them among their friends. */
+  me: WorkProgressDto | null;
+  /** A series: episodes per season, specials aside; empty otherwise. */
+  seasons: number[];
+}
