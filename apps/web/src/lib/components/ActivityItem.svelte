@@ -52,6 +52,7 @@
         title={event.title}
         alt=""
         caption={false}
+        containerClass="h-14 w-10"
         class="h-14 w-10 rounded object-cover" />
     </svelte:element>
   {/if}
