@@ -2,10 +2,12 @@ import {
   type ActivityEventDto,
   type ConnectionDto,
   type FollowRequestDto,
+  type ListItemTargetType,
   type PagedResult,
   type RelationshipDto,
   type SocialProfileDto,
   type UserSummaryDto,
+  type WorkFriendsDto,
   Domain,
 } from "@loomkeep/shared";
 import {
@@ -37,11 +39,20 @@ import { ConnectionResponseDto } from "./dto/connection-response.dto";
 import { FollowRequestResponseDto } from "./dto/follow-request-response.dto";
 import { RelationshipResponseDto } from "./dto/relationship-response.dto";
 import { SocialProfileResponseDto } from "./dto/social-profile-response.dto";
+import { WorkFriendsResponseDto } from "./dto/work-friends-response.dto";
 import { FollowService } from "./follow.service";
 import { ProfileService } from "./profile.service";
 import { SocialFeatureGuard } from "./social-feature.guard";
+import { WorkFriendsService } from "./work-friends.service";
 
 // The whole controller is gated behind SOCIAL_ENABLED (404 when off).
+const WORK_TYPES: readonly ListItemTargetType[] = [
+  "MEDIA",
+  "GAME",
+  "BOOK",
+  "MUSIC",
+];
+
 @UseGuards(SocialFeatureGuard)
 @Controller("social")
 export class SocialController {
@@ -50,6 +61,7 @@ export class SocialController {
     private readonly profiles: ProfileService,
     private readonly activity: ActivityService,
     private readonly reports: ReportService,
+    private readonly workFriendsService: WorkFriendsService,
   ) {}
 
   /**
@@ -91,6 +103,21 @@ export class SocialController {
     if (!target) return { items: [], hasMore: false };
     const parsed = parsePageQuery(page, limit, FEED_PAGE_SIZE);
     return this.activity.profileTimeline(user.sub, target, parsed);
+  }
+
+  /** The friends who track a work, for its page: progress and rating. */
+  @Get("works/:type/:id/friends")
+  @ApiOkResponse({ type: WorkFriendsResponseDto })
+  workFriends(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+  ): Promise<WorkFriendsDto> {
+    return this.workFriendsService.forWork(
+      user.sub,
+      parseEnumParam<ListItemTargetType>(type, WORK_TYPES, "type"),
+      id,
+    );
   }
 
   @Get("requests")

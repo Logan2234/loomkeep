@@ -1,4 +1,5 @@
 import type {
+  ListItemTargetType,
   PagedResult,
   ReportCategory,
   ReportMotif,
@@ -103,3 +104,9 @@ export const updatePrivacySettings = (body: UpdateVisibilitySettingsDto) =>
 
 export const getGhostSwitchImpact = () =>
   typedRequest("/social/me/privacy/ghost-impact");
+
+/** The friends who track a work, where their library visibility allows. */
+export const getWorkFriends = (targetType: ListItemTargetType, id: string) =>
+  typedRequest("/social/works/{type}/{id}/friends", {
+    params: { type: targetType, id },
+  });

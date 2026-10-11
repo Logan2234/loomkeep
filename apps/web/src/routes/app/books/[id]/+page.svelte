@@ -20,7 +20,8 @@
   import Banner from "#lib/components/Banner.svelte";
   import BookSessionDock from "#lib/components/BookSessionDock.svelte";
   import Combobox from "#lib/components/Combobox.svelte";
-
+  import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
   import Icon from "#lib/components/Icon.svelte";
@@ -316,6 +317,14 @@
             {/if}
           </div>
         </div>
+
+        {#if appConfig.socialEnabled && detail.commentTargetId}
+          <WorkFriendsStrip
+            domain="BOOKS"
+            targetType="BOOK"
+            targetId={detail.commentTargetId}
+            revision={`${entry?.status}:${entry?.currentPage}`} />
+        {/if}
 
         {#if detail.firstSentence}
           <p

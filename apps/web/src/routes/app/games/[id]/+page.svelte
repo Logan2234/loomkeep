@@ -20,7 +20,8 @@
   import { goBack } from "#lib/backNav.svelte.js";
   import { toCarouselItems } from "#lib/carousel.js";
   import Banner from "#lib/components/Banner.svelte";
-
+  import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
   import GameSessionDock from "#lib/components/GameSessionDock.svelte";
@@ -362,6 +363,14 @@
             {/if}
           </div>
         </div>
+
+        {#if appConfig.socialEnabled && detail.commentTargetId}
+          <WorkFriendsStrip
+            domain="GAMES"
+            targetType="GAME"
+            targetId={detail.commentTargetId}
+            revision={`${entry?.status}:${entry?.playtimeMinutes}`} />
+        {/if}
 
         {#if detail.overview}
           <p class="text-dim mt-6 max-w-2xl whitespace-pre-line">

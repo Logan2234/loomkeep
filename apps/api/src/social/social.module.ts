@@ -14,6 +14,7 @@ import { PrivacyService } from "./privacy.service";
 import { ProfileService } from "./profile.service";
 import { SocialController } from "./social.controller";
 import { VisibilityService } from "./visibility.service";
+import { WorkFriendsService } from "./work-friends.service";
 
 // Social routes are gated behind SOCIAL_ENABLED through SocialFeatureGuard.
 // The leaderboard lives here rather than in GamificationModule: it's inherently
@@ -37,6 +38,7 @@ import { VisibilityService } from "./visibility.service";
     PrivacyService,
     ActivityService,
     LeaderboardService,
+    WorkFriendsService,
   ],
   exports: [
     BlockService,

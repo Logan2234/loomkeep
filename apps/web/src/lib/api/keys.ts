@@ -186,6 +186,8 @@ export const keys = {
   social: {
     followRequests: () => ["social", "follow-requests"] as const,
     blockedUsers: () => ["social", "blocked-users"] as const,
+    workFriends: (targetType: string, targetId: string) =>
+      ["social", "work-friends", targetType, targetId] as const,
   },
   profile: {
     activity: (username: string) => ["profile", "activity", username] as const,
