@@ -213,7 +213,6 @@
   "list_members_no_match": "Aucun ami ne correspond.",
   "list_owned_by_editor": "Liste de {name}",
   "list_leave": "Quitter la liste",
-  "list_add_work": "Ajouter",
   "list_add_work_title": "Ajouter à « {title} »",
   "list_add_work_hint": "Cherche une œuvre dans tous tes domaines : elle rejoint la liste sans entrer dans ta bibliothèque.",
   "list_add_work_in_list": "Déjà dans la liste",

@@ -48,7 +48,7 @@
     aria-haspopup="dialog"
     onclick={() => (open = !open)}>
     <Icon name="plus" class="h-4 w-4" />
-    {m.list_add_work()}
+    {m.common_add()}
   </button>
 
   {#if open && !layout.compact}

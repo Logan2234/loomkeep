@@ -213,7 +213,6 @@
   "list_members_no_match": "No friend matches.",
   "list_owned_by_editor": "{name}'s list",
   "list_leave": "Leave list",
-  "list_add_work": "Add",
   "list_add_work_title": "Add to “{title}”",
   "list_add_work_hint": "Search a work across all your domains: it joins the list without going into your library.",
   "list_add_work_in_list": "Already in the list",
