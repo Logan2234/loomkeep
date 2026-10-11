@@ -106,7 +106,7 @@
 
   // Poster + backdrop + extras' backdrop gallery (TMDB only), deduped, for the
   // lightbox carousel.
-  const galleryImages = $derived(
+  const galleryImages = $derived.by(() =>
     detail
       ? buildGallery(detail.title, [
           { src: detail.posterUrl || null },
