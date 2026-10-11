@@ -1,7 +1,8 @@
+import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
 import { readStorage, writeStorage } from "#lib/local-storage.js";
 import { browser } from "$app/env";
 
-const STORAGE_KEY = "lk-theme";
+const STORAGE_KEY = STORAGE_KEYS.theme;
 export const THEME_COLOR = { light: "#f7f5f3", dark: "#0c0d10" } as const;
 
 type Mode = "light" | "dark";

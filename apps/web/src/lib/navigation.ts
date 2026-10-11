@@ -1,3 +1,4 @@
+import { appConfig } from "#lib/config.svelte.js";
 import { DOMAINS } from "#lib/constants/domains.js";
 import { type FeatureBadgeKey } from "#lib/feature-badges.js";
 import { Domain, REQUIRED_SHORTCUT } from "@loomkeep/shared";
@@ -474,4 +475,8 @@ export function resolveMenuGroups(
       .map((id) => MOBILE_DESTINATIONS[id])
       .filter((d) => isVisible(d, opts)),
   })).filter((g) => g.items.length > 0);
+}
+
+export function profileHref(): string {
+  return appConfig.socialEnabled ? "/app/profile" : "/app/settings";
 }
