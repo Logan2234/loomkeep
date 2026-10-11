@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { keys } from "#lib/api/keys.js";
+
   // The review modal, opened from a library table row: a rating lives in
   // the entry's review, so editing it goes through the same form as the
   // work's page. Waits for the viewer's review, if any, before opening.
@@ -24,7 +26,7 @@
 
   // The row's rating comes from the library list: refetch it.
   function refreshLibrary() {
-    void queryClient.invalidateQueries({ queryKey: ["library"] });
+    void queryClient.invalidateQueries({ queryKey: keys.library.all() });
   }
 </script>
 

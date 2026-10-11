@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { keys } from "#lib/api/keys.js";
+
   import { page } from "$app/state";
   import { getCommentCount } from "#lib/api/client.js";
   import { chat } from "#lib/chat/chat.svelte.js";
@@ -46,7 +48,7 @@
       : m.comments_people_here({ count: peopleHere }),
   );
   const count = createQuery(() => ({
-    queryKey: ["comment-count", targetType, targetId],
+    queryKey: keys.comments.count(targetType, targetId),
     queryFn: () => getCommentCount(targetType, targetId),
   }));
 

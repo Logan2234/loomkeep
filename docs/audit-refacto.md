@@ -23,7 +23,7 @@
   - le `switch` à 4 domaines répété 6 fois dans `admin-cache.controller.ts` ;
   - les 11 boutons « charger plus ».
 - **Fichiers à découper en priorité** : `library.service.ts` (2163 l.), `mail.service.ts` (1929), `achievements/registry.ts` (1677), `data-export.service.ts` (une méthode de 746 l.), `LibraryBrowser.svelte` (1062), `CommentThread.svelte` (1025).
-- **Inventaire total** : 119 pistes, dont 6 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
+- **Inventaire total** : 107 pistes, dont 5 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
 
 ---
 
@@ -106,20 +106,15 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | HF-07 | 2   | Helpers coincés dans `home/widgets/media.ts` mais réécrits ≈30 fois                                 | moyen  | S      | faible | P1       |
 | HF-08 | 2   | Pluriel à la main ≈60 sites, règle incohérente (`> 1` vs `=== 1`)                                   | fort   | L      | moyen  | P2       |
 | HF-11 | 2   | Durées et horloges formatées à la main, `formatSessionMinutes` non localisé                         | moyen  | S      | faible | P2       |
-| HF-14 | 2   | Déconnexion + redirection ×5, `profileHref` ×3                                                      | faible | S      | faible | P2       |
-| HF-18 | 2   | `localeCompare` sans collation cohérente ×5                                                         | faible | S      | faible | P3       |
 | CB-01 | 3   | `MINUTE/HOUR/DAY_MS` redéfinis ≈35 fois (API + web + shared)                                        | moyen  | S      | faible | P2       |
-| CF-01 | 3   | Clés de stockage éparpillées (3 conventions de préfixe)                                             | moyen  | S      | faible | P2       |
 | CF-03 | 3   | 171 durées de transition, 16 valeurs distinctes                                                     | moyen  | L      | moyen  | P3       |
 | CF-06 | 3   | URL feedback en dur malgré `external-links.ts`                                                      | faible | S      | faible | P3       |
-| CF-10 | 3   | 🐛 Libellés `MediaType` ×10, libellé anime incohérent                                               | moyen  | S      | faible | P1       |
 | CF-14 | 3   | Placeholder `"—"` ×21                                                                               | faible | S      | faible | P3       |
 | TB-01 | 4   | `as unknown as` sur `homeLayout` et `instance-settings`                                             | faible | S      | faible | P2       |
 | TB-02 | 4   | `alertPrefs as AlertPrefs` ×4                                                                       | faible | S      | faible | P2       |
 | TB-03 | 4   | Colonnes JSON castées ×11                                                                           | faible | S      | faible | P3       |
 | TF-07 | 4   | `"ALL" \| StatsDomain` dupliqué                                                                     | faible | S      | faible | P3       |
 | TF-12 | 4   | `quick-add.ts` : 8 casts `raw as XDetail`                                                           | faible | M      | moyen  | P3       |
-| TF-13 | 4   | `ImportSourceDescriptor` ment (7 casts sur les sources « bientôt »)                                 | moyen  | S      | faible | P2       |
 | RB-03 | 5   | `ownedEntry` / `ownedSession` contournent `assertEntryOwnership`                                    | moyen  | S      | faible | P2       |
 | RB-04 | 5   | Bloc XP de fin de cycle copié ×4                                                                    | moyen  | M      | moyen  | P2       |
 | RB-05 | 5   | Tables cycle → statut d'entrée                                                                      | faible | S      | faible | P3       |
@@ -149,17 +144,10 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | RB-30 | 5   | `public-api/v1/dto/responses.dto.ts` (871 l.) à découper                                            | faible | S      | faible | P3       |
 | RF-01 | 5   | Docks de session jeu/livre dupliqués (≈1 800 l.)                                                    | fort   | L      | moyen  | P1       |
 | RF-02 | 5   | Coque commune des pages détail                                                                      | fort   | M      | moyen  | P1       |
-| RF-03 | 5   | Bloc avis/commentaires ×3 (+ `canParticipate` constant)                                             | faible | S      | faible | P2       |
-| RF-04 | 5   | Notes externes : balisage ×3 et `RATING_STYLES` ×3                                                  | moyen  | S      | faible | P2       |
-| RF-05 | 5   | Carte « Détails » ×3                                                                                | faible | S      | faible | P3       |
 | RF-06 | 5   | Correction de statut identique jeux/livres                                                          | moyen  | S      | faible | P2       |
-| RF-07 | 5   | Galerie/lightbox ×3                                                                                 | faible | S      | faible | P3       |
 | RF-09 | 5   | Widgets Resume/ToWatch : erreurs avalées, `busy` manuel                                             | faible | S      | faible | P2       |
 | RF-10 | 5   | `ImportWizard.runSearch` / `CommentMentionInput` / pseudo : requêtes manuelles                      | faible | S      | faible | P3       |
-| RF-11 | 5   | Clés de requête hors `keys.ts`                                                                      | faible | S      | faible | P2       |
-| RF-12 | 5   | `LoadMoreButton` : 11 copies, 2 libellés                                                            | moyen  | S      | faible | P1       |
 | RF-13 | 5   | Action `use:inView` ×3                                                                              | faible | S      | faible | P3       |
-| RF-14 | 5   | Squelettes KPI ×5 pages admin                                                                       | faible | S      | faible | P3       |
 | RF-15 | 5   | Pastille de statut admin ×12 → classe `.pill`                                                       | faible | S      | faible | P3       |
 | RF-16 | 5   | `AvatarLightbox` réimplémente `Lightbox` (focus non piégé)                                          | moyen  | S      | faible | P2       |
 | RF-17 | 5   | Page de recherche : dropdown et onglets sans ARIA                                                   | moyen  | M      | faible | P2       |
@@ -205,15 +193,15 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | RT-27 | 5   | `apps/docs` importe shared par chemin relatif profond ; Dockerfiles                                 | faible | S      | faible | P3       |
 | RT-28 | 5   | 🐛 `detectLocale` ignore l'italien                                                                  | faible | S      | faible | P1       |
 
-**Total : 119 pistes**, dont 6 marquées 🐛. Par priorité : 1 P0, 17 P1, 49 P2 et 52 P3.
+**Total : 107 pistes**, dont 5 marquées 🐛. Par priorité : 1 P0, 15 P1, 43 P2 et 48 P3.
 
 | Axe                | Nombre de pistes    |
 | ------------------ | ------------------- |
 | Axe 1 (partagé)    | 14                  |
-| Axe 2 (helpers)    | 9 (3 back, 6 front) |
-| Axe 3 (constantes) | 6 (1 back, 5 front) |
-| Axe 4 (types)      | 6 (3 back, 3 front) |
-| Axe 5 (refactors)  | 84                  |
+| Axe 2 (helpers)    | 7 (3 back, 4 front) |
+| Axe 3 (constantes) | 4 (1 back, 3 front) |
+| Axe 4 (types)      | 5 (3 back, 2 front) |
+| Axe 5 (refactors)  | 77                  |
 
 ---
 
@@ -422,16 +410,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
   - `formatSessionMinutes` (`session-presentation.ts:16-20`) a `"min"` et `"h"` en dur, donc **n'est pas localisé**.
 - **Proposition** : `formatClock(seconds)` dans `format.ts` ; `formatSessionMinutes` réécrit avec `m.*`.
 
-**HF-14 — Déconnexion et redirection**
-
-- **Constat** : la séquence est copiée 5 fois : `ProfileView.svelte:228-231`, `DesktopSidebar.svelte:60-63`, `MenuSheet.svelte:42-46`, `ee/nav/ProgrammeBoardDesktop.svelte:37-40` et `ee/nav/ProjectorDockDesktop.svelte:35-38`. Le calcul de `profileHref` est triplé (`DesktopSidebar:56`, `ProgrammeBoardDesktop:23`, `ProjectorDockDesktop:21`).
-- **Proposition** : `signOutAndRedirect()` dans `lib/api/auth.ts`, et `profileHref()` dans `lib/navigation.ts`.
-
-**HF-18 — Collation**
-
-- **Constat** : `localeCompare` avec `getLocale()` dans `MyListsWidget.svelte:28` et `lists/+page.svelte:76`, mais sans locale dans `ListMembersModal.svelte:66`, `books/[id]/+page.svelte:114` et `settings/streaming/+page.svelte:38`.
-- **Proposition** : `compareText(a, b)` dans `format.ts`, avec un `Intl.Collator` mis en cache.
-
 ---
 
 ### Axe 3 — Constantes
@@ -451,17 +429,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 
 #### Front
 
-**CF-01 — Clés de stockage**
-
-- **Constat** : trois conventions coexistent :
-  - préfixe `lk-*` : `accessibility.svelte.ts:3-5`, `theme.svelte.ts:3`, `navStyle.svelte.ts:4`, `DesktopSidebar.svelte:23,68` (littéral répété 2 fois) et `library-view.ts:21,48` ;
-  - préfixe `loomkeep.*` : `last-known.ts:34`, `OnboardingWizard.svelte:41` et `api/auth.ts:41` ;
-  - sans préfixe : `NewsBanner.svelte:20`.
-- **Proposition** : `lib/constants/storage-keys.ts`.
-- **Pièges** :
-  - **ne pas renommer les valeurs**, sous peine de perdre les préférences enregistrées ;
-  - `app.html:51,60,63,66` relit `lk-theme` et `lk-a11y-*` en script inline : ajouter un commentaire de synchronisation.
-
 **CF-03 — Durées de transition**
 
 - **Constat** : 171 occurrences de `duration: reduced ? 0 : N`, avec 16 valeurs distinctes. Les plus fréquentes sont 180 (×27), 120 (×24), 220 (×23) et 200 (×21).
@@ -472,16 +439,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 
 - **Constat** : `WidgetIdentify.svelte:31` écrit l'URL en dur.
 - **Proposition** : `` `${FEEDBACK_URL}/api/widget/sdk.js` ``.
-
-**CF-10 — 🐛 Libellés de `MediaType`**
-
-- **Constat** : 10 déclarations :
-  - au singulier : `TonightPickWidget.svelte:42-46`, `MediaSearchPanel.svelte:48-52`, `calendar/+page.svelte:126-130`, `media/+page.svelte:69-73`, `media/[type]/[id]/+page.svelte:55-59` et `quick-add.ts:109-113` ;
-  - au pluriel : `LibraryBrowser.svelte:217-221`, `search/+page.svelte:112-118`, `WidgetConfigModal.svelte:76-80` et `VideoStatsSection.svelte:45-49`.
-
-  **Incohérence** : les tables au singulier de `media/+page.svelte:72` et `quick-add.ts:112` utilisent `m.media_anime()` (« Anime », forme de liste) au lieu de `m.media_anime_label()` (« Animé »).
-
-- **Proposition** : `lib/constants/media-types.ts` → `MEDIA_TYPE_LABEL`, `MEDIA_TYPE_PLURAL_LABEL` et `MEDIA_TYPE_OPTIONS`.
 
 **CF-14 — Placeholder `"—"`**
 
@@ -529,11 +486,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 - **Constat** : 8 casts `raw as XDetail` (`lib/quick-add.ts:140-277`), parce que `detail: unknown`.
 - **Proposition** : `QuickAddDomain<TDetail>`.
 - **Risque** : moyen, à cause de la variance générique.
-
-**TF-13 — `ImportSourceDescriptor` ment**
-
-- **Constat** : `lib/constants/import-sources.ts:33-126` contient 7 casts `as ImportSourceDescriptor` sur des sources « bientôt » sans `href`/`input`/`noun`. S'y ajoutent des `m.…() as string` superflus.
-- **Proposition** : une union discriminée `comingSoon: true`, dans `lib/types/import-descriptor.ts`.
 
 ---
 
@@ -774,30 +726,10 @@ Les pistes RB-10 et RB-20 à RB-29 en couvrent la majorité.
 - **Proposition** : `lib/components/detail/DetailLayout.svelte` (snippets `hero`, `main` et `aside`, ce dernier rendu aux deux positions) et `DetailHero.svelte`.
 - **Exception** : la page média (hero en overlay, ActionBar) ne partage que l'erreur, la confirmation, le head et le squelette.
 
-**RF-03 — Bloc avis et commentaires**
-
-- **Constat** : `games 463-487`, `books 426-450` et `music 344-368`. `canParticipate={!!entry}` est **constant** dans chaque branche : toujours vrai dans `{#if entry}`, toujours faux dans `{#if … && !entry}`, aux lignes 476/486, 439/449 et 357/367.
-- **Proposition** : `WorkSocialSection.svelte`.
-
-**RF-04 — Notes externes**
-
-- **Constat** : le balisage `<svelte:element this={r.url ? "a" : "span"}>` est répété dans `books/[id] 297-319`, `games/[id] 292-306` et `media/[type]/[id] 503-517`, et `RATING_STYLES` dans `games 60-63`, `books 58-63` et `media 86-92`.
-- **Proposition** : `RATING_SOURCE_STYLES` dans `lib/provider-brands.ts` et un composant `ExternalRatingChips.svelte` avec une variante `overlay`. Les classes Tailwind doivent rester littérales.
-
-**RF-05 — Carte « Détails »**
-
-- **Constat** : `games 501-557`, `books 454-548` et `music 372-421`, plus les `hasMeta`.
-- **Proposition** : `DetailsCard.svelte`.
-
 **RF-06 — Correction de statut**
 
 - **Constat** : identique entre jeux et livres : `statusCorrections` (`155-170`/`153-168`), `openStatusCorrection`, les actions de `TrackingPanel` (`372-405`/`355-388`) et le modal (`577-596`/`568-587`).
 - **Proposition** : `cycleAwareStatusCorrections()` dans `lib/status-corrections.ts`, qui a déjà un spec, et `StatusCorrectionModal.svelte`.
-
-**RF-07 — Galerie**
-
-- **Constat** : `games 107-136`, `media 104-132` et `music 87-104`.
-- **Proposition** : `lib/gallery.ts`, pur et testé.
 
 **RF-09 — Widgets d'accueil**
 
@@ -809,31 +741,10 @@ Les pistes RB-10 et RB-20 à RB-29 en couvrent la majorité.
 - **Constat** : `ImportWizard.runSearch` (`371-394`), `CommentMentionInput.svelte:158-182` (garde de course par `requestId` faite à la main) et `SecuritySection.svelte:53-73` (vérification du pseudo).
 - **Proposition** : `createApiQuery` sur les clés existantes `keys.*.search` et `keys.comments.participants`.
 
-**RF-11 — Clés de requête hors de `keys.ts`**
-
-- **Constat** : `CommentsPanel.svelte:47`, `CommentThread.svelte:66-67` (l'exception TanStack porte sur le TanStack brut, pas sur les clés), `LibraryBrowser.svelte:439,522,547,568`, `LibraryReviewEditor.svelte:27` et `QuickAddPanel.svelte:99`.
-- **Proposition** : `keys.comments.{thread,count,participants}`, `keys.library.all()` et `keys.library.browseDomain(d)`.
-
-**RF-12 — `LoadMoreButton`**
-
-- **Constat** : 11 copies :
-  - `admin/cache 395-404`, `admin/imports 252-261`, `admin/reports 482-491`, `admin/security 342-351`, `admin/users 522-532`, `InvitationsPanel 273-283`
-  - `feed 101-110`, `settings/activity 140-149`, `settings/blocked-users 74-85`, `settings/import/history 117-128`
-  - `ProfileActivity 139-150`
-
-  Libellés incohérents (`common_load_more` contre `common_see_more`), largeur variable, et **aucun `type="button"`**.
-
-- **Proposition** : `LoadMoreButton.svelte`, qui prend l'objet infinite query.
-
 **RF-13 — `use:inView`**
 
 - **Constat** : `LibraryBrowser 319-331` est identique à `MediaSearchPanel 151-163`, et `CommentThread 212-234` en a une variante avec `root`.
 - **Proposition** : `lib/actions/inView.ts`.
-
-**RF-14 — Squelettes KPI**
-
-- **Constat** : 5 pages admin : `reports 293-316`, `security 227-248`, `imports 142-162`, `stats 147-156` et `services 177-186`.
-- **Proposition** : `KpiStripSkeleton.svelte` et `RankBarsSkeleton.svelte` dans `lib/components/stats/`.
 
 **RF-15 — Pastille de statut**
 
@@ -1105,9 +1016,7 @@ Pistes à fort rendement et faible effort (S, risque faible), à traiter en prem
 | #   | ID                             | Pourquoi                                                        |
 | --- | ------------------------------ | --------------------------------------------------------------- |
 | 1   | SH-05 + HB-20 (première étape) | 🐛 liens morts dans les listes et les stats ; `workPath` unique |
-| 3   | CF-10, RT-28                   | incohérences de texte visibles (Anime/Animé, italien)           |
 | 4   | RT-01, RT-02, RT-03            | suppression pure de code mort                                   |
-| 5   | RF-12, RF-21                   | 11 boutons et 5 modals → 2 composants                           |
 
 ---
 
@@ -1119,7 +1028,7 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 | ---------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------- |
 | **L0a** 🐛 | SH-05 côté API seulement : `workPath` dans `common/work-href.util.ts`, branché dans `list.service` et `stats.service`  | —                                    | Test rouge d'abord. Minimal, pour corriger vite.               |
 | **L0f** 🐛 | Front : RF-23                                                                                                          | —                                    | Tests unitaires et de composant.                               |
-| **L0g** 🐛 | Textes : CF-10, RT-28, SH-27 (filtre serveur et import)                                                                | —                                    |                                                                |
+| **L0g** 🐛 | Textes : RT-28, SH-27 (filtre serveur et import)                                                                       | —                                    |                                                                |
 | **L1** ∥   | Nettoyage : RT-01, RT-02, RT-03, RT-11, RT-12, RT-13, RT-14, RT-26, SH-38 (`XP_RULE_LIST`)                             | —                                    | Aucun risque fonctionnel.                                      |
 | **L2**     | shared, constantes de contrat : SH-29/CB-01 (`shared/date.ts`)                                                         | —                                    | Un seul `build:package`.                                       |
 | **L3**     | shared, routes et présentation : SH-05 complet (`shared/routes.ts`, migration de L0a et du web), SH-08, HF-07          | L0a                                  | Supprime `home/widgets/media.ts`.                              |
@@ -1129,10 +1038,10 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 | **L8**     | API services transverses : HB-20 (`resolveWorkTargets`), RB-18, RB-03, RB-04, RB-06, RB-07, RB-08, RB-09, RB-11, RB-12 | L3, L5                               | Une PR par thème.                                              |
 | **L9**     | API admin : RB-14, RB-15, RB-16, RB-17, RB-19                                                                          | L5, L8                               | RB-19 après décision sur la maintenance.                       |
 | **L10**    | API découpages : RB-10, RB-20 à RB-30                                                                                  | L8 (RB-23, RB-24, RB-28 après HB-20) | Une PR par fichier, sans changement de comportement.           |
-| **L11** ∥  | Web helpers : HF-05, 08 (par lots), 11, 14, 18                                                                         | L2 pour HF-05                        | HF-08 en plusieurs PR.                                         |
-| **L12** ∥  | Web constantes : CF-01, 03, 06, 10, 14                                                                                 | —                                    | CF-03 en dernier, progressif.                                  |
-| **L13** ∥  | Web types : TF-07, 12, 13                                                                                              | —                                    |                                                                |
-| **L14**    | Web petits composants : RF-03, 04, 05, 07, 09 à 17, 19 à 22                                                            | L12                                  |                                                                |
+| **L11** ∥  | Web helpers : HF-05, 08 (par lots), 11                                                                                 | L2 pour HF-05                        | HF-08 en plusieurs PR.                                         |
+| **L12** ∥  | Web constantes : CF-03, 06, 14                                                                                         | —                                    | CF-03 en dernier, progressif.                                  |
+| **L13** ∥  | Web types : TF-07, 12                                                                                                  | —                                    |                                                                |
+| **L14**    | Web petits composants : RF-09, 10, 13, 15, 16, 17, 19 à 22                                                             | L12                                  |                                                                |
 | **L15**    | Web gros composants : RF-01 (avec test de caractérisation), RF-02, RF-06, RF-18                                        | L3, L14                              | Une PR par composant.                                          |
 | **L16**    | Web découpages : RF-24 à RF-31                                                                                         | L15 pour RF-25                       |                                                                |
 | **L17**    | Déplacements « shared → app » : SH-33, 34, 35, 36, 37, 39, 40 + RT-04, RT-23, RT-24, RT-25                             | décision SH-35                       |                                                                |
@@ -1197,8 +1106,8 @@ Ces numéros restent uniquement pour guider les pistes qui en dépendent ; ils n
 | `HomeLayoutEditor` (718 l.)                                                                                                                               | Les maths de grille sont déjà dans `lib/home/grid.ts` ; le reste est de la colle DOM.                                                                                               |
 | Hero de la page média                                                                                                                                     | Design en overlay volontairement distinct (RF-02).                                                                                                                                  |
 | Sélecteurs de domaine (onboarding contre réglages), tuiles et chips `aria-pressed`                                                                        | Visuels différents ; la logique `domainToggle` et la classe `.chip` sont déjà partagées.                                                                                            |
-| `AdminList` générique (reports, security, imports)                                                                                                        | Sur-ingénierie ; on se limite à RF-12, RF-14 et RF-15.                                                                                                                              |
-| `CommentThread` en TanStack brut                                                                                                                          | Exception documentée (seules les clés sont concernées, RF-11).                                                                                                                      |
+| `AdminList` générique (reports, security, imports)                                                                                                        | Sur-ingénierie ; on réutilise les boutons de pagination et squelettes communs ; seule RF-15 reste à traiter.                                                                        |
+| `CommentThread` en TanStack brut                                                                                                                          | Exception documentée (les clés ont été centralisées dans `keys.comments`).                                                                                                          |
 | try/catch légitimes du web (scan ISBN, `QuickAddPanel` parsing d'URL, `safeRedirect`, `navigator.share`, Mermaid, rollback optimiste de `LibraryBrowser`) | API d'appareil ou de navigateur, ou logique optimiste, et non des appels à l'API.                                                                                                   |
 | `Intl.DateTimeFormat`, `downloadBlob`, `staleTime`, z-index, durées de toast                                                                              | Déjà centralisés.                                                                                                                                                                   |
 | URLs d'images TMDB/IGDB côté web                                                                                                                          | Seulement dans `landing-mock-data.ts` ; le web reçoit des URLs complètes.                                                                                                           |

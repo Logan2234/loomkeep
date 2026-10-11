@@ -1,14 +1,14 @@
 <script lang="ts">
+  import { signOutAndRedirect } from "#lib/api/auth.js";
+
   import { type ListTile } from "#lib/components/profile/list-tile.js";
 
-  import { goto } from "$app/navigation";
   import {
     blockUser,
     followUser,
     getMyProfile,
     getProfile,
     getUserLists,
-    logout,
     reportUser,
     unblockUser,
     unfollowUser,
@@ -221,10 +221,7 @@
     blockMut.mutate();
   }
 
-  async function signOut() {
-    await logout();
-    await goto("/login");
-  }
+  const signOut = signOutAndRedirect;
 
   let shareModalOpen = $state(false);
   let scanModalOpen = $state(false);

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import KpiStripSkeleton from "#lib/components/stats/KpiStripSkeleton.svelte";
   import { type SelectOption } from "#lib/types/select-option.js";
 
   // /admin/stats — "Salle des machines": the instance's operations console.
@@ -147,14 +148,11 @@
 
   {#if loading && !accounts && !catalogue && !social && !system}
     <div class="animate-pulse">
-      <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-        {#each { length: 5 } as _, i (i)}
-          <div class="card h-24 space-y-3 p-4">
-            <div class="skeleton h-7 w-2/5 rounded"></div>
-            <div class="skeleton h-3 w-4/5 rounded"></div>
-          </div>
-        {/each}
-      </div>
+      <KpiStripSkeleton
+        count={5}
+        cardClass="card h-24 space-y-3 p-4"
+        valueClass="skeleton h-7 w-2/5 rounded"
+        labelClass="skeleton h-3 w-4/5 rounded" />
       <section class="border-border border-t py-6">
         <div class="skeleton mb-4 h-3 w-36 rounded"></div>
         <div class="grid gap-3.5 lg:grid-cols-2">

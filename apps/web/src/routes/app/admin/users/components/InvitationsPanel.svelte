@@ -1,4 +1,6 @@
 <script lang="ts">
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { adminFilterHref } from "#lib/url-params.js";
@@ -346,15 +348,9 @@
   </ul>
 
   {#if invitationsQuery.hasNextPage}
-    <button
-      transition:fade={{ duration: reduced ? 0 : 120 }}
-      class="btn btn-ghost mt-4 w-full"
-      disabled={invitationsQuery.isFetchingNextPage}
-      onclick={() => invitationsQuery.fetchNextPage()}>
-      {invitationsQuery.isFetchingNextPage
-        ? m.common_loading()
-        : m.common_load_more()}
-    </button>
+    <LoadMoreButton
+      query={invitationsQuery}
+      class="btn btn-ghost mt-4 w-full" />
   {/if}
 {/if}
 

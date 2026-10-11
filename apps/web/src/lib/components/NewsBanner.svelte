@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    STORAGE_KEYS,
+    LEGACY_STORAGE_KEYS,
+  } from "#lib/constants/storage-keys.js";
+
   // The site-wide announcement strip (see #lib/news-banner for the flag and
   // its payload). Mounted once, in the root layout, above every page.
   import { page } from "$app/state";
@@ -18,9 +23,11 @@
   import Icon from "./Icon.svelte";
   import { readStorage, writeStorage } from "#lib/local-storage.js";
 
-  const DISMISSED_KEY = "news-banner-dismissed";
+  const DISMISSED_KEY = STORAGE_KEYS.dismissedNews;
 
-  let dismissedId = $state(readStorage(DISMISSED_KEY));
+  let dismissedId = $state(
+    readStorage(DISMISSED_KEY, LEGACY_STORAGE_KEYS.dismissedNews),
+  );
 
   function dismiss(id: string) {
     dismissedId = id;

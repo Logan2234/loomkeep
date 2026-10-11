@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
+
   import { type SelectOption } from "#lib/types/select-option.js";
   import { auth } from "#lib/auth.svelte.js";
   import { orderedDomains } from "#lib/domains.js";
@@ -35,7 +37,7 @@
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { formatDate } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { CalendarEntryDto, MediaType } from "@loomkeep/shared";
+  import type { CalendarEntryDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import {
     type CalendarDay,
@@ -164,12 +166,6 @@
   );
   const hasAny = $derived(days.some((d) => d.items.length > 0));
 
-  const TYPE_LABELS: Record<MediaType, () => string> = {
-    MOVIE: () => m.media_movie(),
-    SERIES: () => m.media_series(),
-    ANIME: () => m.media_anime_label(),
-  };
-
   const WEEKDAY_LONG_OPTIONS: Intl.DateTimeFormatOptions = { weekday: "long" };
   const WEEKDAY_SHORT_OPTIONS: Intl.DateTimeFormatOptions = {
     weekday: "short",
@@ -205,7 +201,7 @@
 {#snippet badges(e: CalendarEntryDto)}
   <span
     class="border-border text-dim shrink-0 rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold">
-    {e.mediaItem ? TYPE_LABELS[e.mediaItem.type]() : m.game_type()}
+    {e.mediaItem ? MEDIA_TYPE_LABEL[e.mediaItem.type] : m.game_type()}
   </span>
   {#if e.episodesBehind > 0}
     <span

@@ -1,3 +1,7 @@
+import {
+  LEGACY_STORAGE_KEYS,
+  STORAGE_KEYS,
+} from "#lib/constants/storage-keys.js";
 import type { ReviewTargetType } from "@loomkeep/shared";
 import { readStorage, removeStorage, writeStorage } from "./local-storage";
 
@@ -16,7 +20,7 @@ const keyOf = (
   userId: string,
   targetType: ReviewTargetType,
   targetId: string,
-) => `loomkeep.reviewDraft.${userId}.${targetType}:${targetId}`;
+) => `${STORAGE_KEYS.reviewDraftPrefix}${userId}.${targetType}:${targetId}`;
 
 function isDraft(value: unknown): value is ReviewDraft {
   const d = value as ReviewDraft | null;
@@ -35,7 +39,10 @@ export function readReviewDraft(
   targetType: ReviewTargetType,
   targetId: string,
 ): ReviewDraft | null {
-  const raw = readStorage(keyOf(userId, targetType, targetId));
+  const raw = readStorage(
+    keyOf(userId, targetType, targetId),
+    `${LEGACY_STORAGE_KEYS.reviewDraftPrefix}${userId}.${targetType}:${targetId}`,
+  );
   if (raw === null) return null;
 
   try {
@@ -61,4 +68,7 @@ export function clearReviewDraft(
   targetId: string,
 ): void {
   removeStorage(keyOf(userId, targetType, targetId));
+  removeStorage(
+    `${LEGACY_STORAGE_KEYS.reviewDraftPrefix}${userId}.${targetType}:${targetId}`,
+  );
 }

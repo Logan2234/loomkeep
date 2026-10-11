@@ -56,3 +56,14 @@ export const PROVIDER_BRANDS = {
 } as const;
 
 export type ProviderBrandKey = keyof typeof PROVIDER_BRANDS;
+
+export const RATING_SOURCE_STYLES: Record<string, string> = {
+  IGDB: "bg-[#9147ff] text-white",
+  Critiques: "bg-[#66cc33] text-black",
+  "Open Library": "bg-[#e1dcc5] text-black",
+  TMDB: "bg-[#01d277] text-black",
+  IMDb: "bg-[#f5c518] text-black",
+  RT: "bg-[#fa320a] text-white",
+  Metacritic: "bg-[#66cc33] text-black",
+  AniList: "bg-[#02a9ff] text-white",
+};

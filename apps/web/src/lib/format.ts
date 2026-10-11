@@ -335,3 +335,17 @@ export function percentParts(
       .join(""),
   };
 }
+
+const collators = new Map<string, Intl.Collator>();
+
+export function compareText(a: string, b: string): number {
+  const locale = getLocale();
+  let collator = collators.get(locale);
+
+  if (!collator) {
+    collator = new Intl.Collator(locale);
+    collators.set(locale, collator);
+  }
+
+  return collator.compare(a, b);
+}

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
   import { getAccountSecurityEvents } from "#lib/api/client.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
@@ -138,14 +140,7 @@
     </ul>
 
     {#if eventsQuery.hasNextPage}
-      <button
-        class="btn btn-ghost mt-4 w-full"
-        disabled={eventsQuery.isFetchingNextPage}
-        onclick={() => eventsQuery.fetchNextPage()}>
-        {eventsQuery.isFetchingNextPage
-          ? m.common_loading()
-          : m.common_load_more()}
-      </button>
+      <LoadMoreButton query={eventsQuery} class="btn btn-ghost mt-4 w-full" />
     {/if}
   {/if}
 </SettingsSection>

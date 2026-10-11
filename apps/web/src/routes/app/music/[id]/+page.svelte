@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { buildGallery, galleryIndex } from "#lib/gallery.js";
+
+  import DetailsCard from "#lib/components/DetailsCard.svelte";
+  import WorkSocialSection from "#lib/components/WorkSocialSection.svelte";
   import { page } from "$app/state";
   import {
     deleteMusicEntry,
@@ -11,8 +15,8 @@
   import { goBack } from "#lib/backNav.svelte.js";
   import { toCarouselItems } from "#lib/carousel.js";
   import Banner from "#lib/components/Banner.svelte";
-  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
   import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
   import Icon from "#lib/components/Icon.svelte";
@@ -23,13 +27,13 @@
   import OwnershipField from "#lib/components/OwnershipField.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
-  import ReviewsSection from "#lib/components/ReviewsSection.svelte";
+
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "#lib/components/TrackingPanel.svelte";
   import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
   import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
   import { musicWork } from "#lib/chat/work-search.js";
-  import { appConfig } from "#lib/config.svelte.js";
+
   import {
     MUSIC_OWNERSHIP_SOURCES,
     MUSIC_OWNERSHIP_STATUS_OPTIONS,
@@ -91,21 +95,25 @@
   );
 
   // Front cover + any archived extras (back, booklet…), for one lightbox gallery.
-  const galleryImages = $derived.by(() => {
-    if (!detail) return [];
-    const images: { src: string; alt: string }[] = [];
-    if (detail.coverUrl)
-      images.push({ src: detail.coverUrl, alt: detail.title });
-    for (const img of detail.extraCoverImages) {
-      images.push({ src: img.url, alt: `${detail.title} — ${img.type}` });
-    }
-    return images;
-  });
+  const galleryImages = $derived(
+    detail
+      ? buildGallery(
+          detail.title,
+          [
+            { src: detail.coverUrl || null },
+            ...detail.extraCoverImages.map((image) => ({
+              src: image.url,
+              alt: `${detail.title} — ${image.type}`,
+            })),
+          ],
+          false,
+        )
+      : [],
+  );
 
   function openLightbox(url: string | null) {
     if (!url) return;
-    const i = galleryImages.findIndex((img) => img.src === url);
-    lightboxIndex = i >= 0 ? i : 0;
+    lightboxIndex = galleryIndex(galleryImages, url);
     lightboxOpen = true;
   }
 
@@ -356,83 +364,61 @@
           title={m.music_same_artist()}
           items={toCarouselItems(detail.sameArtistAlbums, "/app/music")} />
 
-        {#if entry}
-          <ReviewsSection
-            targetType="MUSIC"
-            targetId={entry.album.id}
-            workTitle={detail.title}
-            workMeta={reviewMeta}
-            workImageUrl={detail.coverUrl}>
-            {#snippet actions()}
-              {#if appConfig.socialEnabled && detail.commentTargetId}
-                <CommentsPanel
-                  targetType="MUSIC"
-                  targetId={detail.commentTargetId}
-                  title={detail.title}
-                  canParticipate={!!entry} />
-              {/if}
-            {/snippet}
-          </ReviewsSection>
-        {/if}
-        {#if appConfig.socialEnabled && detail.commentTargetId && !entry}
-          <CommentsPanel
-            targetType="MUSIC"
-            targetId={detail.commentTargetId}
-            title={detail.title}
-            canParticipate={!!entry} />
-        {/if}
+        <WorkSocialSection
+          targetType="MUSIC"
+          reviewTargetId={entry?.album.id ?? null}
+          commentTargetId={detail.commentTargetId}
+          title={detail.title}
+          meta={reviewMeta}
+          imageUrl={detail.coverUrl}
+          canParticipate={!!entry} />
       </div>
 
       <!-- Details panel, desktop position: sidebar next to the main column. -->
       {#snippet detailsPanel()}
-        <div class="card p-4">
-          <h2 class="font-display text-sm font-bold tracking-tight">
-            {m.common_details()}
-          </h2>
-          <dl class="mt-3 flex flex-col gap-3">
-            {#if detail && detail.label}
-              <div>
-                <dt class="timecode text-xs">{m.music_label()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.label}</dd>
-              </div>
-            {/if}
-            {#if detail && detail.catalogNumber}
-              <div>
-                <dt class="timecode text-xs">{m.music_catalog_number()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.catalogNumber}</dd>
-              </div>
-            {/if}
-            {#if detail && detail.tags.length > 0}
-              <div>
-                <dt class="timecode text-xs">{m.music_tags()}</dt>
-                <dd class="mt-1.5 flex flex-wrap gap-1.5">
-                  {#each detail.tags as tag (tag)}
-                    <span
-                      class="bg-surface-2 text-dim rounded-md px-2 py-0.5 text-xs">
-                      {tag}
-                    </span>
-                  {/each}
-                </dd>
-              </div>
-            {/if}
-            {#if detail && detail.externalLinks.length > 0}
-              <div>
-                <dt class="timecode text-xs">{m.common_links()}</dt>
-                <dd class="mt-1.5 flex flex-wrap gap-2">
-                  {#each detail.externalLinks as link (link.url)}
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors">
-                      {link.label} ↗
-                    </a>
-                  {/each}
-                </dd>
-              </div>
-            {/if}
-          </dl>
-        </div>
+        <DetailsCard>
+          {#if detail && detail.label}
+            <div>
+              <dt class="timecode text-xs">{m.music_label()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.label}</dd>
+            </div>
+          {/if}
+          {#if detail && detail.catalogNumber}
+            <div>
+              <dt class="timecode text-xs">{m.music_catalog_number()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.catalogNumber}</dd>
+            </div>
+          {/if}
+          {#if detail && detail.tags.length > 0}
+            <div>
+              <dt class="timecode text-xs">{m.music_tags()}</dt>
+              <dd class="mt-1.5 flex flex-wrap gap-1.5">
+                {#each detail.tags as tag (tag)}
+                  <span
+                    class="bg-surface-2 text-dim rounded-md px-2 py-0.5 text-xs">
+                    {tag}
+                  </span>
+                {/each}
+              </dd>
+            </div>
+          {/if}
+          {#if detail && detail.externalLinks.length > 0}
+            <div>
+              <dt class="timecode text-xs">{m.common_links()}</dt>
+              <dd class="mt-1.5 flex flex-wrap gap-2">
+                {#each detail.externalLinks as link (link.url)}
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors">
+                    {link.label} ↗
+                  </a>
+                {/each}
+              </dd>
+            </div>
+          {/if}
+        </DetailsCard>
       {/snippet}
       {#if hasMeta}
         <div class="hidden md:block">

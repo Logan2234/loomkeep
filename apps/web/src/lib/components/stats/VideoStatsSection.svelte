@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { MEDIA_TYPE_PLURAL_LABEL } from "#lib/constants/media-types.js";
+
   import { m } from "#lib/paraglide/messages.js";
   // "Vidéo — en détail" section of /stats. Self-contained: fetches on mount,
   // reuses the MEDIA status breakdown already loaded by the overview (avoids
@@ -43,11 +45,6 @@
   const hours = $derived(video ? Math.round(video.totalMinutes / 60) : 0);
   const days = $derived(video ? Math.round(video.totalMinutes / 1440) : 0);
 
-  const TYPE_LABEL: Record<MediaType, string> = {
-    MOVIE: m.media_movies(),
-    SERIES: m.media_series_plural(),
-    ANIME: m.media_anime(),
-  };
   const TYPE_TINT: Record<MediaType, string> = {
     SERIES: "var(--stat-media)",
     ANIME: "color-mix(in srgb, var(--stat-media) 55%, var(--surface))",
@@ -57,7 +54,7 @@
   const typeSegments = $derived(
     video
       ? video.typeSplit.map((t) => ({
-          label: TYPE_LABEL[t.type] ?? t.type,
+          label: MEDIA_TYPE_PLURAL_LABEL[t.type] ?? t.type,
           color: TYPE_TINT[t.type] ?? "var(--stat-media)",
           value: Math.round(t.minutes / 60),
           altValue: t.count,

@@ -8,9 +8,9 @@
   // reachable on a phone. Admin lives here — it has no bottom-bar slot by
   // default. Notifications aren't a destination at all: see the fixed bell
   // (NotificationBell.svelte) in the root layout instead.
-  import { goto } from "$app/navigation";
+
   import { page } from "$app/state";
-  import { logout } from "#lib/api/auth.js";
+  import { signOutAndRedirect } from "#lib/api/auth.js";
   import { auth } from "#lib/auth.svelte.js";
   import Drawer from "#lib/components/Drawer.svelte";
   import Icon from "#lib/components/Icon.svelte";
@@ -42,8 +42,7 @@
 
   async function signOut() {
     close();
-    await logout();
-    await goto("/login");
+    await signOutAndRedirect();
   }
 
   $effect(() => {

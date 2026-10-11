@@ -99,7 +99,11 @@
   }
   let saved = $state<Saved | null>(null);
 
-  const invalidates = $derived([[domain.key[0]], ["library"], ["lists"]]);
+  const invalidates = $derived([
+    [domain.key[0]],
+    keys.library.all(),
+    keys.lists.all(),
+  ]);
 
   const saveMut = createApiMutation(() => ({
     mutate: async (): Promise<Saved> => {

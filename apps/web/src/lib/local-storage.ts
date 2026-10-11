@@ -3,10 +3,10 @@
 // stores per-device conveniences, so a failed read is "nothing stored" and a
 // failed write is silently dropped.
 
-export function readStorage(key: string): string | null {
+export function readStorage(key: string, legacyKey?: string): string | null {
   try {
     if (typeof localStorage === "undefined") return null;
-    return localStorage.getItem(key);
+    return readMigratedValue(localStorage, key, legacyKey);
   } catch {
     return null;
   }
@@ -30,11 +30,14 @@ export function removeStorage(key: string): void {
   }
 }
 
-export function readSessionStorage(key: string): string | null {
+export function readSessionStorage(
+  key: string,
+  legacyKey?: string,
+): string | null {
   try {
     return typeof sessionStorage === "undefined"
       ? null
-      : sessionStorage.getItem(key);
+      : readMigratedValue(sessionStorage, key, legacyKey);
   } catch {
     return null;
   }
@@ -55,4 +58,26 @@ export function removeSessionStorage(key: string): void {
   } catch {
     /* Storage is optional for per-device conveniences. */
   }
+}
+
+function readMigratedValue(
+  storage: Storage,
+  key: string,
+  legacyKey?: string,
+): string | null {
+  const current = storage.getItem(key);
+  if (!legacyKey) return current;
+  const previous = current === null ? storage.getItem(legacyKey) : null;
+  const value = current ?? previous;
+
+  if (value !== null) {
+    try {
+      if (current === null) storage.setItem(key, value);
+      storage.removeItem(legacyKey);
+    } catch {
+      /* Keep the old value readable when storage refuses migration. */
+    }
+  }
+
+  return value;
 }

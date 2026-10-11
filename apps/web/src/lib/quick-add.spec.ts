@@ -24,3 +24,26 @@ describe("quickAddTarget", () => {
     expect(quickAddTarget("/app/media/series/95396/season/1")).toBeNull();
   });
 });
+
+describe("anime quick-add metadata", () => {
+  it("uses the French singular kind label for one anime", async () => {
+    const { getLocale, overwriteGetLocale } =
+      await import("#lib/paraglide/runtime.js");
+    const originalGetLocale = getLocale;
+    const { quickAddDomain } = await import("./quick-add");
+    overwriteGetLocale(() => "fr");
+
+    try {
+      expect(
+        quickAddDomain({ domain: "MEDIA", type: "ANIME", id: "20" }).view({
+          title: "Naruto",
+          posterUrl: null,
+          year: 2002,
+          entry: null,
+        }).meta[0],
+      ).toBe("Animé");
+    } finally {
+      overwriteGetLocale(originalGetLocale);
+    }
+  });
+});

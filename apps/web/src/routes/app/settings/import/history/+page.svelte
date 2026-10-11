@@ -1,4 +1,6 @@
 <script lang="ts">
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
   import { getImportHistory } from "#lib/api/client.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
@@ -116,14 +118,7 @@
 
     {#if historyQuery.hasNextPage}
       <div class="mt-5 flex justify-center">
-        <button
-          class="btn btn-ghost"
-          disabled={historyQuery.isFetchingNextPage}
-          onclick={() => historyQuery.fetchNextPage()}>
-          {historyQuery.isFetchingNextPage
-            ? m.common_loading()
-            : m.common_see_more()}
-        </button>
+        <LoadMoreButton query={historyQuery} class="btn btn-ghost" />
       </div>
     {/if}
   {/if}

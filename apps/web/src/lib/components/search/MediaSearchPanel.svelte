@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
+
   import {
     fetchAllPages,
     listLibrary,
@@ -44,12 +46,6 @@
     onResults?: (count: number) => void;
     type?: MediaType;
   } = $props();
-
-  const TYPE_LABELS: Record<MediaType, string> = {
-    MOVIE: m.media_movie(),
-    SERIES: m.media_series(),
-    ANIME: m.media_anime_label(),
-  };
 
   // `query` (prop) is the raw input; `queryFilter` is the debounced value
   // that actually drives the fetch — type changes bypass the debounce.
@@ -197,7 +193,7 @@
           <span class="font-display text-sm leading-tight font-semibold"
             >{media.title}</span>
           <span class="timecode text-xs">
-            {TYPE_LABELS[media.type]}{#if media.year}
+            {MEDIA_TYPE_LABEL[media.type]}{#if media.year}
               &nbsp;· {media.year}{/if}
           </span>
         </div>

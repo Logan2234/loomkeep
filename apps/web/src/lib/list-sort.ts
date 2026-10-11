@@ -1,4 +1,4 @@
-import { getLocale } from "#lib/paraglide/runtime.js";
+import { compareText } from "#lib/format.js";
 import type { MyListDto } from "@loomkeep/shared";
 const comparators = {
   recent: (a: MyListDto, b: MyListDto) =>
@@ -6,8 +6,7 @@ const comparators = {
   created: (a: MyListDto, b: MyListDto) =>
     b.createdAt.localeCompare(a.createdAt),
   size: (a: MyListDto, b: MyListDto) => b.itemCount - a.itemCount,
-  title: (a: MyListDto, b: MyListDto) =>
-    a.title.localeCompare(b.title, getLocale()),
+  title: (a: MyListDto, b: MyListDto) => compareText(a.title, b.title),
 };
 
 export function listComparator(sort: string) {
