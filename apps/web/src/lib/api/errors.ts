@@ -176,6 +176,7 @@ const MESSAGES = {
   [ErrorCode.ListForbidden]: () => m.apierr_lists_forbidden(),
   [ErrorCode.ListItemNotFound]: () => m.apierr_lists_item_not_found(),
   [ErrorCode.ListItemAlreadyExists]: () => m.apierr_lists_item_already_exists(),
+  [ErrorCode.ListWorkNotFound]: () => m.apierr_lists_work_not_found(),
   [ErrorCode.ListReorderMismatch]: () => m.apierr_lists_reorder_mismatch(),
   [ErrorCode.ListStale]: () => m.apierr_lists_stale(),
   [ErrorCode.ListCannotAddSelf]: () => m.apierr_lists_cannot_add_self(),

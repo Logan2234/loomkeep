@@ -135,8 +135,8 @@
     void save(dragItems.map((d) => d.id));
   }
 
-  function highlightDraggedShortcut(element: HTMLElement) {
-    const row = element.querySelector<HTMLElement>(".mobile-shortcut");
+  function highlightDraggedShortcut(element: HTMLElement | undefined) {
+    const row = element?.querySelector<HTMLElement>(".mobile-shortcut");
     if (row) row.dataset.dragging = "true";
   }
 

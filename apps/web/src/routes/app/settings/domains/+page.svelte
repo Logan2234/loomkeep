@@ -93,8 +93,8 @@
     reorderMut.mutate(dragItems.map((d) => d.domain));
   }
 
-  function highlightDraggedTile(element: HTMLElement) {
-    const tile = element.querySelector<HTMLElement>(".domain-tile");
+  function highlightDraggedTile(element: HTMLElement | undefined) {
+    const tile = element?.querySelector<HTMLElement>(".domain-tile");
     if (tile) tile.dataset.dragging = "true";
   }
 </script>
