@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SettingsLinkRow from "./SettingsLinkRow.svelte";
   import { page } from "$app/state";
   import {
     changeEmail,
@@ -317,10 +318,12 @@
   </p>
   <ul class="card divide-border divide-y">
     <li>
-      <a
+      <SettingsLinkRow
+        icon="monitor"
+        iconClass="text-accent h-5 w-5 shrink-0"
+        chevronClass="text-dim h-5 w-5 shrink-0"
         href={sectionHref("security/devices")}
         class="hover:bg-surface-2 flex items-center gap-3 px-4 py-3.5 transition-colors">
-        <Icon name="monitor" class="text-accent h-5 w-5 shrink-0" />
         <span class="min-w-0 flex-1">
           <span class="block font-semibold">
             {m.settings_sessions_title()}
@@ -329,14 +332,15 @@
             {sessionsPreview ?? m.settings_open_sessions_description()}
           </span>
         </span>
-        <Icon name="chevron-right" class="text-dim h-5 w-5 shrink-0" />
-      </a>
+      </SettingsLinkRow>
     </li>
     <li>
-      <a
+      <SettingsLinkRow
+        icon="activity"
+        iconClass="text-accent h-5 w-5 shrink-0"
+        chevronClass="text-dim h-5 w-5 shrink-0"
         href={sectionHref("security/activity")}
         class="hover:bg-surface-2 flex items-center gap-3 px-4 py-3.5 transition-colors">
-        <Icon name="activity" class="text-accent h-5 w-5 shrink-0" />
         <span class="min-w-0 flex-1">
           <span class="block font-semibold">
             {m.settings_activity_title()}
@@ -345,8 +349,7 @@
             {m.settings_activity_description()}
           </span>
         </span>
-        <Icon name="chevron-right" class="text-dim h-5 w-5 shrink-0" />
-      </a>
+      </SettingsLinkRow>
     </li>
   </ul>
 

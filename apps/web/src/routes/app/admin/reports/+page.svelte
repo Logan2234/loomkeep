@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ModerationStatementFields from "#lib/components/admin/ModerationStatementFields.svelte";
   import KpiStripSkeleton from "#lib/components/stats/KpiStripSkeleton.svelte";
   import RankBarsSkeleton from "#lib/components/stats/RankBarsSkeleton.svelte";
   import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
@@ -41,7 +42,6 @@
   import UserSelector from "#lib/components/UserSelector.svelte";
   import {
     defaultModerationBasis,
-    MODERATION_LEGAL_BASIS_LABELS,
     REPORT_CATEGORY_LABELS,
     REPORT_MOTIF_LABELS,
     REPORT_PROFILE_PART_LABELS,
@@ -60,7 +60,7 @@
   } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
   import { flip } from "svelte/animate";
-  import { fade, fly, slide } from "svelte/transition";
+  import { fade, slide } from "svelte/transition";
 
   const reduced = prefersReducedMotion();
   const STATUS_OPTIONS = [
@@ -403,10 +403,7 @@
           out:fade|global={{ duration: reduced ? 0 : 100 }}
           class="card p-3.5">
           <div class="flex flex-wrap items-center gap-2">
-            <span
-              class="rounded-full border px-2 py-0.5 text-xs font-bold {REPORT_STATUS_COLORS[
-                r.status
-              ]}">
+            <span class="pill {REPORT_STATUS_COLORS[r.status]}">
               {REPORT_STATUS_LABELS[r.status]}
             </span>
             <span class="text-dim text-xs">
@@ -635,47 +632,16 @@
       </p>
     {/if}
 
-    <label class="mt-4 block text-sm font-semibold" for="takedown-reason">
-      {m.admin_moderation_facts()}
-    </label>
-    <textarea
-      id="takedown-reason"
-      name="reasonText"
-      bind:value={takeDownReasonText}
-      rows="3"
-      class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-      placeholder={m.admin_reports_reason_placeholder()}></textarea>
-    {@render fieldError(takeDownMut.fieldErrors.reasonText)}
-
-    <span class="mt-3 block text-sm font-semibold">
-      {m.admin_moderation_basis()}
-    </span>
-    <Combobox
-      label={m.admin_moderation_basis()}
-      name="legalBasis"
-      options={Object.entries(MODERATION_LEGAL_BASIS_LABELS).map(
-        ([value, label]) => ({
-          label,
-          value,
-        }),
-      )}
-      values={[takeDownLegalBasis]}
-      onChange={(v) => (takeDownLegalBasis = v[0] as ModerationLegalBasis)} />
-    {@render fieldError(takeDownMut.fieldErrors.legalBasis)}
-
-    {#if takeDownLegalBasis === "TOS_BREACH"}
-      <label class="mt-3 block text-sm font-semibold" for="takedown-clause">
-        {m.admin_moderation_terms_clause()}
-      </label>
-      <input
-        id="takedown-clause"
-        type="text"
-        name="tosClause"
-        bind:value={takeDownTosClause}
-        class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-        placeholder={m.moderation_terms_conduct()} />
-      {@render fieldError(takeDownMut.fieldErrors.tosClause)}
-    {/if}
+    <ModerationStatementFields
+      idPrefix="takedown"
+      bind:reasonText={takeDownReasonText}
+      bind:legalBasis={takeDownLegalBasis}
+      bind:tosClause={takeDownTosClause}
+      disabled={false}
+      reasonPlaceholder={m.admin_reports_reason_placeholder()}
+      clausePlaceholder={m.moderation_terms_conduct()}
+      inlineErrors
+      fieldErrors={takeDownMut.fieldErrors} />
 
     {#if takeDownMut.error}
       <Banner variant="error" class="mt-3">{takeDownMut.error}</Banner>
@@ -783,15 +749,5 @@
         aria-label={m.admin_reports_suspend_end()}
         bind:value={suspendDate} />
     </div>
-  {/if}
-{/snippet}
-
-{#snippet fieldError(message: string | undefined)}
-  {#if message}
-    <p
-      class="text-danger mt-1 text-xs"
-      transition:fly={{ y: reduced ? 0 : -4, duration: reduced ? 0 : 160 }}>
-      {message}
-    </p>
   {/if}
 {/snippet}

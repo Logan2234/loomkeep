@@ -1,4 +1,5 @@
 <script module lang="ts">
+  import SettingsLinkRow from "./SettingsLinkRow.svelte";
   let persistedIndicator: { top: number; height: number } | null = null;
 </script>
 
@@ -8,7 +9,7 @@
   // entries, measured off `aria-current="page"` — the same mechanism as the
   // global sidebar's, so the two rails behave alike when they sit together.
   import { page } from "$app/state";
-  import Icon from "#lib/components/Icon.svelte";
+
   import NewBadge from "#lib/components/NewBadge.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
@@ -173,15 +174,15 @@
           {#each group.sections as section (section.slug)}
             {@const shortcut = shortcutFor(section.slug)}
             <li>
-              <a
+              <SettingsLinkRow
+                icon={section.icon}
+                iconClass="h-5 w-5 shrink-0 {section.danger
+                  ? 'text-danger'
+                  : 'text-accent'}"
+                chevronClass="text-dim h-5 w-5 shrink-0"
                 href={sectionHref(section.slug)}
                 onclick={() => settingsSearch.clear()}
                 class="hover:bg-surface-2 flex items-center gap-3 px-3.5 py-3 transition-colors">
-                <Icon
-                  name={section.icon}
-                  class="h-5 w-5 shrink-0 {section.danger
-                    ? 'text-danger'
-                    : 'text-accent'}" />
                 <span class="min-w-0 flex-1">
                   <span
                     class="flex items-center gap-2 font-semibold {section.danger
@@ -209,8 +210,7 @@
                     class="bg-warning h-2 w-2 shrink-0 rounded-full"
                     aria-hidden="true"></span>
                 {/if}
-                <Icon name="chevron-right" class="text-dim h-5 w-5 shrink-0" />
-              </a>
+              </SettingsLinkRow>
             </li>
           {/each}
         </ul>

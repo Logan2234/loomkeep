@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type Snippet } from "svelte";
+
   // 2:3 poster. Falls back to a deterministic gradient (stable per title) with
   // the title set in the display face, so a missing artwork still reads well.
   let {
@@ -8,6 +10,8 @@
     class: cls = "",
     adult = false,
     caption = true,
+    fallback,
+    containerClass = "",
   }: {
     src?: string | null;
     title: string;
@@ -18,6 +22,8 @@
     adult?: boolean;
     /** Sets the title on the fallback gradient; off for thumbnails too small to read it. */
     caption?: boolean;
+    fallback?: Snippet;
+    containerClass?: string;
   } = $props();
 
   const resolvedAlt = $derived(alt ?? title);
@@ -34,7 +40,7 @@
   });
 </script>
 
-<div class="relative">
+<div class="relative {containerClass}">
   {#if src && !failed}
     <img
       {src}
@@ -42,6 +48,8 @@
       loading="lazy"
       onerror={() => (failed = true)}
       class="bg-surface-2 aspect-2/3 w-full object-cover {cls}" />
+  {:else if fallback}
+    {@render fallback()}
   {:else}
     <div
       role={resolvedAlt === "" ? undefined : "img"}

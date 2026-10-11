@@ -173,10 +173,8 @@
         {#each reportsAgainst as r (r.id)}
           <li class="border-border rounded-lg border p-3 text-sm">
             <div class="flex items-center gap-2">
-              <span
-                class="rounded-full border px-2 py-0.5 text-xs font-bold {REPORT_STATUS_COLORS[
-                  r.status
-                ]}">{REPORT_STATUS_LABELS[r.status]}</span>
+              <span class="pill {REPORT_STATUS_COLORS[r.status]}"
+                >{REPORT_STATUS_LABELS[r.status]}</span>
               <span class="text-dim ml-auto text-xs"
                 >{formatDate(r.createdAt)}</span>
             </div>

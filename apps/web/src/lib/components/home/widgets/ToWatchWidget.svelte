@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+
   import {
     listLibrary,
     updateLibraryEntry,
@@ -61,7 +63,6 @@
       .slice(0, LIMIT),
   );
 
-  let busy = $state<string | null>(null);
   let carousel = $state<{ scrollToStart: () => void }>();
 
   /**
@@ -69,34 +70,30 @@
    * just the watching list — the entry moves to the front, so the strip
    * scrolls back to keep it in view.
    */
-  async function resume(entry: LibraryEntryDto) {
-    const next = entry.progress?.nextEpisode;
-    if (!next) return;
-    busy = entry.id;
-    try {
-      await watchEpisode(next.episodeId);
+  const resumeMut = createApiMutation(() => ({
+    mutate: async (entry: LibraryEntryDto) => {
+      await watchEpisode(entry.progress!.nextEpisode!.episodeId);
       await queryClient.refetchQueries({ queryKey: keys.library.watching() });
       await tick();
       carousel?.scrollToStart();
-    } catch {
-      // The card stays as it was.
-    } finally {
-      busy = null;
-    }
+    },
+    errorToast: true,
+  }));
+  function resume(entry: LibraryEntryDto) {
+    if (entry.progress?.nextEpisode) resumeMut.mutate(entry);
   }
 
-  async function markMovieSeen(entry: LibraryEntryDto) {
-    busy = entry.id;
-    try {
+  const movieSeenMut = createApiMutation(() => ({
+    mutate: async (entry: LibraryEntryDto) => {
       await updateLibraryEntry(entry.id, { status: "COMPLETED" });
       await queryClient.invalidateQueries({
         queryKey: keys.library.plannedMovies(),
       });
-    } catch {
-      // The card stays as it was.
-    } finally {
-      busy = null;
-    }
+    },
+    errorToast: true,
+  }));
+  function markMovieSeen(entry: LibraryEntryDto) {
+    movieSeenMut.mutate(entry);
   }
 </script>
 
@@ -144,7 +141,7 @@
           class="btn btn-primary btn-sm {variant === 'strip'
             ? 'h-6 w-full'
             : 'shrink-0'}"
-          disabled={busy === e.id}
+          disabled={resumeMut.loading && resumeMut.variables?.id === e.id}
           onclick={() => resume(e)}>
           ▶ {epCode(next)}
         </button>
@@ -154,7 +151,7 @@
           class="btn btn-primary btn-sm {variant === 'strip'
             ? 'h-6 w-full'
             : 'shrink-0'}"
-          disabled={busy === e.id}
+          disabled={movieSeenMut.loading && movieSeenMut.variables?.id === e.id}
           onclick={() => markMovieSeen(e)}>
           {m.home_mark_seen()}
         </button>

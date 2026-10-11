@@ -172,7 +172,7 @@
         bind:value={pushTitle}
         placeholder="Loomkeep (admin)"
         maxlength={PUSH_LIMITS.title}
-        class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
+        class="input text-sm" />
     </div>
 
     <div>
@@ -188,8 +188,7 @@
         placeholder={m.admin_communications_test_placeholder()}
         maxlength={PUSH_LIMITS.body}
         rows="2"
-        class="border-border bg-surface w-full resize-none rounded-lg border px-3 py-2 text-sm"
-      ></textarea>
+        class="input resize-none text-sm"></textarea>
     </div>
 
     {#if email && devicesQuery.error}<AdminQueryError
@@ -289,7 +288,7 @@
         bind:value={broadcastTitle}
         placeholder="Loomkeep (admin)"
         maxlength={PUSH_LIMITS.title}
-        class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
+        class="input text-sm" />
     </div>
 
     <div>
@@ -305,8 +304,7 @@
         placeholder={m.admin_communications_broadcast_placeholder()}
         maxlength={PUSH_LIMITS.body}
         rows="2"
-        class="border-border bg-surface w-full resize-none rounded-lg border px-3 py-2 text-sm"
-      ></textarea>
+        class="input resize-none text-sm"></textarea>
     </div>
 
     <button

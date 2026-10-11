@@ -1,4 +1,5 @@
 <script lang="ts">
+  import StatusCorrectionModal from "#lib/components/StatusCorrectionModal.svelte";
   import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
   import DetailsCard from "#lib/components/DetailsCard.svelte";
   import WorkSocialSection from "#lib/components/WorkSocialSection.svelte";
@@ -25,7 +26,7 @@
   import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import Lightbox from "#lib/components/Lightbox.svelte";
-  import Modal from "#lib/components/Modal.svelte";
+
   import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
   import NoteField from "#lib/components/NoteField.svelte";
   import OwnershipField from "#lib/components/OwnershipField.svelte";
@@ -33,7 +34,6 @@
 
   import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
 
-  import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "#lib/components/TrackingPanel.svelte";
   import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
   import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
@@ -55,8 +55,8 @@
   import { m } from "#lib/paraglide/messages.js";
   import {
     BOOK_DIRECT_STATUS_TARGETS,
-    getStatusCorrections,
     statusCorrectionLabel,
+    cycleAwareStatusCorrections,
   } from "#lib/status-corrections.js";
 
   // Open Library is the only book source today; the web route carries just
@@ -171,17 +171,12 @@
   const saving = $derived(addMut.loading || patchMut.loading);
   const statusCorrections = $derived(
     entry
-      ? getStatusCorrections(
+      ? cycleAwareStatusCorrections(
           STATUS_ORDER,
           entry.status,
           BOOK_DIRECT_STATUS_TARGETS[entry.status],
-        ).filter(
-          (status) =>
-            status !== "TO_READ" ||
-            !entry.readings.some(
-              (reading) =>
-                reading.status === "ACTIVE" && reading.sessionCount > 0,
-            ),
+          "TO_READ",
+          entry.readings,
         )
       : [],
   );
@@ -573,24 +568,18 @@
   {/if}
 
   {#if statusEditorOpen && entry}
-    <Modal
-      title={m.tracking_correct_status()}
-      onclose={() => (statusEditorOpen = false)}>
-      <p class="text-dim mb-4 text-sm">
-        {m.tracking_correct_status_help()}
-      </p>
-      <SegmentedStatusControl
-        statuses={statusCorrections}
-        current={entry.status}
-        disabled={saving}
-        meta={STATUS_META}
-        desc={STATUS_DESC}
-        activeClass={SEG_ACTIVE}
-        onSelect={(status) => {
-          statusEditorOpen = false;
-          patchMut.mutate({ status });
-        }} />
-    </Modal>
+    <StatusCorrectionModal
+      onclose={() => (statusEditorOpen = false)}
+      statuses={statusCorrections}
+      current={entry.status}
+      disabled={saving}
+      meta={STATUS_META}
+      desc={STATUS_DESC}
+      activeClass={SEG_ACTIVE}
+      onSelect={(status) => {
+        statusEditorOpen = false;
+        patchMut.mutate({ status });
+      }} />
   {/if}
 
   {#if lightboxOpen && detail.coverUrl}

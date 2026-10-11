@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { typedEntries } from "#lib/object.js";
+
   import { type ActivityKind } from "./activity-kind";
 
   import {
@@ -63,61 +65,69 @@
   let avatarLightbox = $state(false);
   const queryClient = useQueryClient();
 
-  const ACTIVITY_SECTIONS: { kind: ActivityKind; label: string }[] = [
-    { kind: "reviews", label: m.admin_users_reviews() },
-    { kind: "comments", label: m.common_comments() },
-    { kind: "following", label: m.profile_connections_following_title() },
-    { kind: "followers", label: m.profile_connections_followers_title() },
-    { kind: "lists", label: m.common_lists() },
-    { kind: "reports", label: m.admin_users_reports_received() },
-  ];
-
-  function activityCount(kind: ActivityKind): number {
-    if (kind === "reviews") return reviews.length;
-    if (kind === "comments") return comments.length;
-    if (kind === "following") return following.length;
-    if (kind === "followers") return followers.length;
-    if (kind === "lists") return lists.length;
-    return reportsAgainst.length;
+  const ACTIVITY = {
+    reviews: {
+      label: m.admin_users_reviews(),
+      query: () => reviewsQuery,
+      count: () => reviews.length,
+      key: keys.admin.userReviews,
+    },
+    comments: {
+      label: m.common_comments(),
+      query: () => commentsQuery,
+      count: () => comments.length,
+      key: keys.admin.userComments,
+    },
+    following: {
+      label: m.profile_connections_following_title(),
+      query: () => followingQuery,
+      count: () => following.length,
+      key: keys.admin.userFollowing,
+    },
+    followers: {
+      label: m.profile_connections_followers_title(),
+      query: () => followersQuery,
+      count: () => followers.length,
+      key: keys.admin.userFollowers,
+    },
+    lists: {
+      label: m.common_lists(),
+      query: () => listsQuery,
+      count: () => lists.length,
+      key: keys.admin.userLists,
+    },
+    reports: {
+      label: m.admin_users_reports_received(),
+      query: () => reportsAgainstQuery,
+      count: () => reportsAgainst.length,
+      key: keys.admin.userReportsAgainst,
+    },
+  } satisfies Record<
+    ActivityKind,
+    {
+      label: string;
+      query: () => { data: unknown; error: string | null; loading: boolean };
+      count: () => number;
+      key: (id: string) => readonly unknown[];
+    }
+  >;
+  const ACTIVITY_SECTIONS = typedEntries(ACTIVITY).map(
+    ([kind, definition]) => ({ kind, label: definition.label }),
+  );
+  function activityCount(kind: ActivityKind) {
+    return ACTIVITY[kind].count();
   }
-
-  function activityError(kind: ActivityKind): string | null {
-    if (kind === "reviews") return reviewsQuery.error;
-    if (kind === "comments") return commentsQuery.error;
-    if (kind === "followers") return followersQuery.error;
-    if (kind === "following") return followingQuery.error;
-    if (kind === "lists") return listsQuery.error;
-    return reportsAgainstQuery.error;
+  function activityError(kind: ActivityKind) {
+    return ACTIVITY[kind].query().error;
   }
-
-  function activityLoading(kind: ActivityKind): boolean {
-    if (kind === "reviews") return reviewsQuery.loading;
-    if (kind === "comments") return commentsQuery.loading;
-    if (kind === "followers") return followersQuery.loading;
-    if (kind === "following") return followingQuery.loading;
-    if (kind === "lists") return listsQuery.loading;
-    return reportsAgainstQuery.loading;
+  function activityLoading(kind: ActivityKind) {
+    return ACTIVITY[kind].query().loading;
   }
-
-  function activityHasData(kind: ActivityKind): boolean {
-    if (kind === "reviews") return reviewsQuery.data !== null;
-    if (kind === "comments") return commentsQuery.data !== null;
-    if (kind === "followers") return followersQuery.data !== null;
-    if (kind === "following") return followingQuery.data !== null;
-    if (kind === "lists") return listsQuery.data !== null;
-    return reportsAgainstQuery.data !== null;
+  function activityHasData(kind: ActivityKind) {
+    return ACTIVITY[kind].query().data !== null;
   }
-
   function retryActivity(kind: ActivityKind) {
-    const key = {
-      reviews: keys.admin.userReviews,
-      comments: keys.admin.userComments,
-      followers: keys.admin.userFollowers,
-      following: keys.admin.userFollowing,
-      lists: keys.admin.userLists,
-      reports: keys.admin.userReportsAgainst,
-    }[kind](user.id);
-    void queryClient.refetchQueries({ queryKey: key });
+    void queryClient.refetchQueries({ queryKey: ACTIVITY[kind].key(user.id) });
   }
 
   const sessionsQuery = createApiQuery(() => ({

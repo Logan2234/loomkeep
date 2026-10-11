@@ -43,7 +43,7 @@ describe("shared component contracts", () => {
     },
   );
 
-  it.each(["Modal", "Drawer", "FocusOverlay", "Lightbox"])(
+  it.each(["Modal", "Drawer", "FocusOverlay", "LightboxFrame"])(
     "%s uses the shared focus contract exactly once",
     (component) => {
       expect(componentSource(component).match(/use:dialogFocus/g)).toHaveLength(
@@ -134,13 +134,25 @@ describe("shared component contracts", () => {
     expect(heading).not.toContain("<NewBadge");
   });
 
-  it("portals the lightbox while preserving focus and scroll contracts", () => {
-    const source = componentSource("Lightbox");
+  it("portals the shared lightbox frame while preserving focus and scroll contracts", () => {
+    const source = componentSource("LightboxFrame");
 
     expect(source).toContain("use:portal");
     expect(source).toContain("use:scrollLock");
     expect(source).toContain("use:dialogFocus");
   });
+
+  it.each(["Lightbox", "AvatarLightbox"])(
+    "%s delegates its overlay to exactly one shared lightbox frame",
+    (component) => {
+      const source = componentSource(component);
+
+      expect(source.match(/<LightboxFrame\b/g)).toHaveLength(1);
+      expect(source).not.toContain("use:dialogFocus");
+      expect(source).not.toContain("use:portal");
+      expect(source).not.toContain("use:scrollLock");
+    },
+  );
 
   it.each(["CardRowSkeleton", "PosterGridSkeleton"])(
     "%s exposes one named busy region and hides its placeholder artwork",

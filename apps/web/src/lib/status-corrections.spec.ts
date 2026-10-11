@@ -2,6 +2,7 @@ import { m } from "#lib/paraglide/messages.js";
 import { describe, expect, it } from "vitest";
 import {
   BOOK_DIRECT_STATUS_TARGETS,
+  cycleAwareStatusCorrections,
   GAME_DIRECT_STATUS_TARGETS,
   getStatusCorrections,
   statusCorrectionLabel,
@@ -73,5 +74,42 @@ describe("statusCorrectionLabel", () => {
     expect(statusCorrectionLabel(["BACKLOG", "COMPLETED"], "x")).toBe(
       m.tracking_correct_status(),
     );
+  });
+});
+
+describe("cycle-aware corrections", () => {
+  it("does not reset a work with an active session history", () => {
+    expect(
+      cycleAwareStatusCorrections(
+        GAME_STATUSES,
+        "PLAYING",
+        GAME_DIRECT_STATUS_TARGETS.PLAYING,
+        "BACKLOG",
+        [{ status: "ACTIVE", sessionCount: 1 }],
+      ),
+    ).toEqual([]);
+    expect(
+      cycleAwareStatusCorrections(
+        BOOK_STATUSES,
+        "READING",
+        BOOK_DIRECT_STATUS_TARGETS.READING,
+        "TO_READ",
+        [{ status: "ACTIVE", sessionCount: 1 }],
+      ),
+    ).toEqual([]);
+  });
+  it("allows reset for empty active cycles and completed historical cycles", () => {
+    expect(
+      cycleAwareStatusCorrections(
+        GAME_STATUSES,
+        "PLAYING",
+        GAME_DIRECT_STATUS_TARGETS.PLAYING,
+        "BACKLOG",
+        [
+          { status: "ACTIVE", sessionCount: 0 },
+          { status: "COMPLETED", sessionCount: 3 },
+        ],
+      ),
+    ).toEqual(["BACKLOG"]);
   });
 });

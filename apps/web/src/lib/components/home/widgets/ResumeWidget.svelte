@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { useQueryClient } from "@tanstack/svelte-query";
+
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+
   import { listLibrary, watchEpisode } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -12,7 +16,6 @@
     MEDIA_SYNTHETIC_STATUS,
   } from "@loomkeep/shared";
 
-  import { useQueryClient } from "@tanstack/svelte-query";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
   import { epCode, mediaHref } from "./media";
@@ -20,7 +23,6 @@
   let { size }: { size: BoxSize } = $props();
 
   const def = HOME_WIDGETS.resume;
-  const queryClient = useQueryClient();
 
   // "DORMANT" is resolved server-side — filtering the watching list here
   // would miss the shows past its first page, which are exactly the old ones.
@@ -49,23 +51,19 @@
   const pausedDays = (e: LibraryEntryDto) =>
     Math.floor((Date.now() - lastWatched(e)) / DAY_MS);
 
-  let busy = $state<string | null>(null);
-
-  async function resume(entry: LibraryEntryDto) {
-    const next = entry.progress?.nextEpisode;
-    if (!next) return;
-    busy = entry.id;
-    try {
-      await watchEpisode(next.episodeId);
+  const queryClient = useQueryClient();
+  const resumeMut = createApiMutation(() => ({
+    mutate: async (entry: LibraryEntryDto) => {
+      await watchEpisode(entry.progress!.nextEpisode!.episodeId);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: keys.library.dormant() }),
         queryClient.invalidateQueries({ queryKey: keys.library.watching() }),
       ]);
-    } catch {
-      // The card stays as it was.
-    } finally {
-      busy = null;
-    }
+    },
+    errorToast: true,
+  }));
+  function resume(entry: LibraryEntryDto) {
+    if (entry.progress?.nextEpisode) resumeMut.mutate(entry);
   }
 </script>
 
@@ -101,7 +99,7 @@
           class="btn btn-primary btn-sm {variant === 'strip'
             ? 'h-6 w-full'
             : 'shrink-0'}"
-          disabled={busy === e.id}
+          disabled={resumeMut.loading && resumeMut.variables?.id === e.id}
           onclick={() => resume(e)}>
           ▶ {epCode(next)}
         </button>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Poster from "#lib/components/Poster.svelte";
   import { REVIEW_TARGET_LABEL } from "#lib/constants/review-targets.js";
 
   import { DOMAINS } from "#lib/constants/domains.js";
@@ -301,22 +302,24 @@
             this={href ? "a" : "div"}
             href={href ?? undefined}
             class="flex min-w-0 flex-1 items-start gap-4 {href ? 'group' : ''}">
-            {#if review.target?.imageUrl}
-              <img
-                src={review.target.imageUrl}
-                alt=""
-                loading="lazy"
-                class="h-24 w-16 shrink-0 rounded object-cover {off
-                  ? 'opacity-70'
-                  : ''}" />
-            {:else}
-              <div
-                class="bg-surface-2 text-dim flex h-24 w-16 shrink-0 items-center justify-center rounded font-mono text-xs {off
-                  ? 'opacity-70'
-                  : ''}">
-                {REVIEW_TARGET_LABEL[review.targetType]?.[0] ?? "?"}
-              </div>
-            {/if}
+            <Poster
+              src={review.target?.imageUrl}
+              title={review.target?.title ?? m.common_work()}
+              alt=""
+              caption={false}
+              containerClass="h-24 w-16 shrink-0"
+              class="h-24 w-16 shrink-0 rounded object-cover {off
+                ? 'opacity-70'
+                : ''}">
+              {#snippet fallback()}
+                <div
+                  class="bg-surface-2 text-dim flex h-24 w-16 shrink-0 items-center justify-center rounded font-mono text-xs {off
+                    ? 'opacity-70'
+                    : ''}">
+                  {REVIEW_TARGET_LABEL[review.targetType]?.[0] ?? "?"}
+                </div>
+              {/snippet}
+            </Poster>
 
             <div class="min-w-0 flex-1">
               <p class="timecode text-micro tracking-wide uppercase">

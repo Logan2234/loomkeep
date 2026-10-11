@@ -53,3 +53,5 @@ export const STATUS_BUCKET_COLOR: Record<StatsStatusBucket, string> = {
   DONE: "var(--success)",
   DROPPED: "var(--danger)",
 };
+
+export type StatsDomainChoice = "ALL" | StatsDomain;

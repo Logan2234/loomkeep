@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Poster from "#lib/components/Poster.svelte";
   import {
     REVIEW_TARGET_LABEL,
     REVIEW_TARGET_HUE,
@@ -54,22 +55,25 @@
             class="flex min-w-0 flex-1 items-center gap-3 {href
               ? 'group'
               : ''}">
-            {#if review.target?.imageUrl}
-              <img
-                src={review.target.imageUrl}
-                alt=""
-                class="h-16 w-12 shrink-0 rounded-md object-cover {off
-                  ? 'opacity-70'
-                  : ''}" />
-            {:else}
-              {@const hue =
-                REVIEW_TARGET_HUE[review.targetType] ?? "var(--dim)"}
-              <div
-                class="flex h-16 w-12 shrink-0 items-center justify-center rounded-md font-mono text-sm font-bold"
-                style="background: linear-gradient(155deg, color-mix(in srgb, {hue} 55%, var(--surface-2)), color-mix(in srgb, {hue} 12%, var(--surface-2))); color: color-mix(in srgb, {hue} 85%, var(--fg));">
-                {REVIEW_TARGET_LABEL[review.targetType]?.[0] ?? "?"}
-              </div>
-            {/if}
+            <Poster
+              src={review.target?.imageUrl}
+              title={review.target?.title ?? m.common_work()}
+              alt=""
+              caption={false}
+              containerClass="h-16 w-12 shrink-0"
+              class="h-16 w-12 shrink-0 rounded-md object-cover {off
+                ? 'opacity-70'
+                : ''}">
+              {#snippet fallback()}
+                {@const hue =
+                  REVIEW_TARGET_HUE[review.targetType] ?? "var(--dim)"}
+                <div
+                  class="flex h-16 w-12 shrink-0 items-center justify-center rounded-md font-mono text-sm font-bold"
+                  style="background: linear-gradient(155deg, color-mix(in srgb, {hue} 55%, var(--surface-2)), color-mix(in srgb, {hue} 12%, var(--surface-2))); color: color-mix(in srgb, {hue} 85%, var(--fg));">
+                  {REVIEW_TARGET_LABEL[review.targetType]?.[0] ?? "?"}
+                </div>
+              {/snippet}
+            </Poster>
 
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1">

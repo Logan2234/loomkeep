@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Poster from "#lib/components/Poster.svelte";
   import { activityPhrase, activityRating } from "#lib/activity-phrase.js";
   import Avatar from "#lib/components/Avatar.svelte";
   import RelativeTime from "#lib/components/RelativeTime.svelte";
@@ -46,7 +47,13 @@
       this={event.href ? "a" : "div"}
       href={event.href ?? undefined}
       class="shrink-0">
-      <img src={event.imageUrl} alt="" class="h-14 w-10 rounded object-cover" />
+      <Poster
+        src={event.imageUrl}
+        title={event.title}
+        alt=""
+        caption={false}
+        containerClass="h-14 w-10"
+        class="h-14 w-10 rounded object-cover" />
     </svelte:element>
   {/if}
 </li>

@@ -1,8 +1,9 @@
 <script lang="ts">
+  import ModerationStatementFields from "#lib/components/admin/ModerationStatementFields.svelte";
   import Banner from "#lib/components/Banner.svelte";
-  import Combobox from "#lib/components/Combobox.svelte";
+
   import Modal from "#lib/components/Modal.svelte";
-  import { MODERATION_LEGAL_BASIS_LABELS } from "#lib/constants/report-labels.js";
+
   import { m } from "#lib/paraglide/messages.js";
   import type { ModerationLegalBasis } from "@loomkeep/shared";
 
@@ -65,50 +66,20 @@
       bind:value={confirmText}
       disabled={busy}
       placeholder={username}
-      class="border-border bg-surface mt-3 w-full rounded-lg border px-3 py-2 text-sm" />
+      class="input mt-3 text-sm" />
 
     <p class="text-dim mt-4 text-xs">
       {m.admin_users_statement_description()}
     </p>
-    <label class="mt-2 block text-sm font-semibold" for="delete-reason">
-      {m.admin_moderation_facts()}
-    </label>
-    <textarea
-      id="delete-reason"
-      name="reasonText"
-      bind:value={reasonText}
+    <ModerationStatementFields
+      idPrefix="delete"
+      bind:reasonText
+      bind:legalBasis
+      bind:tosClause
       disabled={busy}
-      rows="3"
-      class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-      placeholder={m.admin_users_reason_placeholder()}></textarea>
-    <span class="mt-3 block text-sm font-semibold">
-      {m.admin_moderation_basis()}
-    </span>
-    <Combobox
-      label={m.admin_moderation_basis()}
-      name="legalBasis"
-      options={Object.entries(MODERATION_LEGAL_BASIS_LABELS).map(
-        ([value, label]) => ({
-          label,
-          value,
-        }),
-      )}
-      values={[legalBasis]}
-      disabled={busy}
-      onChange={(v) => (legalBasis = v[0] as ModerationLegalBasis)} />
-    {#if legalBasis === "TOS_BREACH"}
-      <label class="mt-3 block text-sm font-semibold" for="delete-clause">
-        {m.admin_moderation_terms_clause()}
-      </label>
-      <input
-        id="delete-clause"
-        type="text"
-        name="tosClause"
-        bind:value={tosClause}
-        disabled={busy}
-        class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-        placeholder={m.admin_users_clause_placeholder()} />
-    {/if}
+      reasonPlaceholder={m.admin_users_reason_placeholder()}
+      clausePlaceholder={m.admin_users_clause_placeholder()}
+      reasonMargin="mt-2" />
 
     {#if error}
       <Banner variant="error" class="mt-3">{error}</Banner>

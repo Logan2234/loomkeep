@@ -1,19 +1,16 @@
-import type {
-  StatsDomain,
-  StatsWindow,
-  WatchStaleness,
-} from "@loomkeep/shared";
+import { type StatsDomainChoice } from "#lib/components/stats/stats-domain.js";
+import type { StatsWindow, WatchStaleness } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
 /** What's left in each enabled domain's pile, unfiltered. */
-export const getStatsPiles = (domain: StatsDomain | "ALL" = "ALL") =>
+export const getStatsPiles = (domain: StatsDomainChoice = "ALL") =>
   typedRequest("/stats/pile", { query: { domain } });
 
-export const getStatsOverview = (domain: StatsDomain | "ALL" = "ALL") =>
+export const getStatsOverview = (domain: StatsDomainChoice = "ALL") =>
   typedRequest("/stats/overview", { query: { domain } });
 
 export const getStatsWorksByRating = (
-  domain: StatsDomain | "ALL",
+  domain: StatsDomainChoice,
   rating: number,
 ) =>
   typedRequest("/stats/works", {
@@ -21,7 +18,7 @@ export const getStatsWorksByRating = (
   });
 
 export const getStatsWorksByDecade = (
-  domain: StatsDomain | "ALL",
+  domain: StatsDomainChoice,
   decade: number,
 ) =>
   typedRequest("/stats/works", {

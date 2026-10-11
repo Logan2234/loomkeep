@@ -37,6 +37,7 @@
     STATUS_BUCKET_COLOR,
     STATUS_BUCKET_LABEL,
     STATUS_BUCKET_ORDER,
+    type StatsDomainChoice,
   } from "#lib/components/stats/stats-domain.js";
   import { appConfig } from "#lib/config.svelte.js";
   import { useEeLock } from "#lib/ee/license.svelte.js";
@@ -51,9 +52,9 @@
   } from "@loomkeep/shared";
   import { Domain, STATS_DOMAINS } from "@loomkeep/shared";
 
-  type Choice = "ALL" | StatsDomain;
   // Tabs also carry the planned domains, which are never selectable.
-  type TabValue = Choice | typeof Domain.PODCASTS | typeof Domain.BOARDGAMES;
+  type TabValue =
+    StatsDomainChoice | typeof Domain.PODCASTS | typeof Domain.BOARDGAMES;
 
   const enabledDomains = $derived<StatsDomain[]>(
     STATS_DOMAINS.filter((d) => auth.user?.enabledDomains?.includes(d) ?? true),
@@ -89,7 +90,7 @@
   const eeLock = useEeLock();
   const statsLocked = $derived(eeLock.locked);
 
-  let selected = $state<Choice>("ALL");
+  let selected = $state<StatsDomainChoice>("ALL");
   // Narrows the "Activité dans le temps" weekday/hour curves only — see
   // PeriodFilter.
   let period = $state<StatsWindow>("ALL");
