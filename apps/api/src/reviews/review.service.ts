@@ -1,6 +1,7 @@
 import {
   ActivityType,
   ErrorCode,
+  type MessageReviewDto,
   type MyReviewDto,
   NotificationType,
   REVIEW_TARGET_DOMAIN,
@@ -505,6 +506,30 @@ export class ReviewService {
       ...this.toDto(r, author, voteMap.get(r.id) ?? { score: 0, myVote: null }),
       target: targets.get(`${r.targetType}:${r.targetId}`) ?? null,
     }));
+  }
+
+  /**
+   * Reviews as a message's card shows them, by id: the ones still there. A
+   * review sent in a conversation was shared on purpose by its author, so its
+   * own audience doesn't apply.
+   */
+  async messageCards(ids: string[]): Promise<Map<string, MessageReviewDto>> {
+    if (ids.length === 0) return new Map();
+    const rows = await this.prisma.review.findMany({
+      where: { id: { in: ids } },
+    });
+    const targets = await this.resolveTargets(rows);
+    return new Map(
+      rows.map((r) => [
+        r.id,
+        {
+          rating: r.rating,
+          text: r.text,
+          spoiler: r.spoilerTag,
+          target: targets.get(`${r.targetType}:${r.targetId}`) ?? null,
+        },
+      ]),
+    );
   }
 
   /**

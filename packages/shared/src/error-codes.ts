@@ -87,6 +87,10 @@ export const ErrorCode = {
   ChatReadOnly: "chat.read_only",
   /** The attached work isn't a page Loomkeep knows, or is an 18+ title. */
   ChatWorkNotFound: "chat.work_not_found",
+  /** `/review` attaches one of the author's own reviews, and only those. */
+  ChatReviewNotFound: "chat.review_not_found",
+  /** The list attached with `/list` isn't one both members may see. */
+  ChatListNotShareable: "chat.list_not_shareable",
   /** A conversation keeps a limited number of pinned messages. */
   ChatPinLimit: "chat.pin_limit",
   /** A message goes forward to other conversations, not back to its own. */

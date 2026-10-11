@@ -3,9 +3,11 @@ import { type Mock, vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import { parsePageQuery } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
+import type { ListService } from "../lists/list.service";
 import { notificationCopy } from "../notifications/notification-copy";
 import type { PushService } from "../notifications/push.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import type { ReviewService } from "../reviews/review.service";
 import type { BlockService } from "../social/block.service";
 import type { WorkCard } from "./chat-work.service";
 import { ChatService } from "./chat.service";
@@ -70,6 +72,8 @@ function messageRow(over: Record<string, unknown> = {}) {
     embeds: [],
     pinnedAt: null,
     forwarded: false,
+    reviewId: null,
+    listId: null,
     ...over,
   };
 }
@@ -164,6 +168,7 @@ function setup(
       findMany: vi.fn().mockResolvedValue([]),
       update: vi.fn().mockResolvedValue(messageRow()),
     },
+    review: { findFirst: vi.fn().mockResolvedValue({ id: "r1" }) },
     messageReaction: { deleteMany: vi.fn() },
     messageEmbed: {
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
@@ -192,12 +197,20 @@ function setup(
     isOnline: vi.fn().mockResolvedValue(online),
   } as unknown as EventsGateway;
   const push = { sendToUser: vi.fn() } as unknown as PushService;
+  const reviews = {
+    messageCards: vi.fn().mockResolvedValue(new Map()),
+  } as unknown as ReviewService;
+  const lists = {
+    messageCards: vi.fn().mockResolvedValue(new Map()),
+  } as unknown as ListService;
 
   return {
-    service: new ChatService(prisma, blocks, events, push),
+    service: new ChatService(prisma, blocks, events, push, reviews, lists),
     prisma,
     events,
     push,
+    reviews,
+    lists,
   };
 }
 
@@ -304,7 +317,9 @@ describe("ChatService", () => {
         messageRow({ text: null, embeds: [SEVERANCE] }),
       );
 
-      const message = await service.send(ME, "cv1", null, false, SEVERANCE);
+      const message = await service.send(ME, "cv1", null, false, {
+        work: SEVERANCE,
+      });
 
       expect(prisma.message.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -369,6 +384,99 @@ describe("ChatService", () => {
       );
 
       expect(page.items[0].works).toEqual([]);
+    });
+  });
+
+  describe("review and list cards", () => {
+    const REVIEW = {
+      rating: 8.5,
+      text: "Plus lente, plus ambitieuse.",
+      spoiler: false,
+      target: {
+        title: "Severance",
+        imageUrl: null,
+        href: "/app/media/series/95396",
+      },
+    };
+    const LIST = {
+      id: "l1",
+      title: "Octobre qui fait peur",
+      kind: "RANKED",
+      visibility: "FRIENDS",
+      itemCount: 13,
+      works: [],
+      ownerName: "Moi",
+      mine: true,
+      updatedAt: "2026-10-08T10:00:00.000Z",
+    };
+
+    it("attaches only one of the author's own reviews", async () => {
+      const { service, prisma } = setup();
+      (prisma.review.findFirst as Mock).mockResolvedValue(null);
+
+      await expectCode(
+        service.send(ME, "cv1", null, false, { reviewId: "r-of-lea" }),
+        ErrorCode.ChatReviewNotFound,
+      );
+      expect(prisma.review.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "r-of-lea", userId: ME } }),
+      );
+      expect(prisma.message.create).not.toHaveBeenCalled();
+    });
+
+    it("shows the review as it is now", async () => {
+      const { service, prisma, reviews } = setup();
+      (prisma.message.create as Mock).mockResolvedValue(
+        messageRow({ text: null, reviewId: "r1" }),
+      );
+      (reviews.messageCards as Mock).mockResolvedValue(
+        new Map([["r1", REVIEW]]),
+      );
+
+      const message = await service.send(ME, "cv1", null, false, {
+        reviewId: "r1",
+      });
+
+      expect(prisma.message.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ reviewId: "r1" }),
+        }),
+      );
+      expect(message.review).toEqual(REVIEW);
+      expect(message.gone).toBeNull();
+    });
+
+    // A FRIENDS list shows to Léa, a PRIVATE one wouldn't: it'd be a dead card.
+    it("attaches a list only when both members may open it", async () => {
+      const { service, prisma, lists } = setup();
+      (lists.messageCards as Mock).mockImplementation(async (viewerId) =>
+        viewerId === ME ? new Map([["l1", LIST]]) : new Map(),
+      );
+
+      await expectCode(
+        service.send(ME, "cv1", null, false, { listId: "l1" }),
+        ErrorCode.ChatListNotShareable,
+      );
+      expect(prisma.message.create).not.toHaveBeenCalled();
+    });
+
+    it("says what a message carried once its list is out of sight", async () => {
+      const { service, prisma } = setup();
+      (prisma.message.findMany as Mock).mockResolvedValue([
+        messageRow({ text: null, listId: "l1" }),
+        messageRow({ id: "m2", text: null, reviewId: "r1" }),
+      ]);
+
+      const page = await service.messages(
+        ME,
+        "cv1",
+        parsePageQuery(undefined, undefined, 40),
+      );
+
+      expect(page.items.map((m) => [m.list, m.review, m.gone])).toEqual([
+        [null, null, "list"],
+        [null, null, "review"],
+      ]);
     });
   });
 

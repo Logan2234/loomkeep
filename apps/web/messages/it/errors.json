@@ -215,6 +215,8 @@
   "apierr_chat_forbidden": "Solo l'autore di un messaggio può modificarlo o eliminarlo.",
   "apierr_chat_read_only": "Questa conversazione è in sola lettura.",
   "apierr_chat_work_not_found": "Quest'opera non può essere allegata a un messaggio.",
+  "apierr_chat_review_not_found": "Puoi allegare solo una delle tue recensioni.",
+  "apierr_chat_list_not_shareable": "Il tuo amico non può vedere questa lista, quindi non può essere condivisa qui.",
   "apierr_chat_pin_limit": "Questa conversazione ha già 50 messaggi fissati: sbloccane uno prima.",
   "apierr_chat_forward_to_origin": "Un messaggio non può essere inoltrato nella sua stessa conversazione."
 }

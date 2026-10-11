@@ -11,6 +11,7 @@ const SHIPPED = {
   "default-list-visibility": "2026-10-10",
   "unified-search": "2026-10-11",
   "work-friends": "2026-10-11",
+  "chat-review-list": "2026-10-11",
   sagas: "2026-10-03",
   "library-sagas": "2026-10-04",
   "admin-user-filters": "2026-09-23",

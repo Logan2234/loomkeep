@@ -12,6 +12,8 @@ import {
   FollowStatus,
   isAlertEnabled,
   type MessageDto,
+  type MessageListDto,
+  type MessageReviewDto,
   type MessageWorkKind,
   type PagedResult,
   PINNED_MESSAGES_MAX,
@@ -24,9 +26,11 @@ import { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { EventsGateway } from "../events/events.gateway";
+import { ListService } from "../lists/list.service";
 import { notificationCopy } from "../notifications/notification-copy";
 import { PushService } from "../notifications/push.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { ReviewService } from "../reviews/review.service";
 import { BlockService } from "../social/block.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 import { isSuspended } from "../users/suspension.util";
@@ -66,6 +70,23 @@ const MESSAGE_INCLUDE = {
 type MessageRow = Prisma.MessageGetPayload<{
   include: typeof MESSAGE_INCLUDE;
 }>;
+
+/** What drawing messages for one viewer needs beyond their rows. */
+type MessageCards = {
+  /** The works among their cards the viewer already tracks. */
+  owned: ReadonlySet<string>;
+  reviews: ReadonlyMap<string, MessageReviewDto>;
+  /** Only the lists the viewer may see. */
+  lists: ReadonlyMap<string, MessageListDto>;
+};
+
+/** What a message carries besides its text. */
+type MessageAttachment = {
+  /** The card attached by hand, which lets `text` be empty. */
+  work?: WorkCard | null;
+  reviewId?: string;
+  listId?: string;
+};
 
 type Viewer = {
   id: string;
@@ -118,6 +139,8 @@ export class ChatService {
     private readonly blocks: BlockService,
     private readonly events: EventsGateway,
     private readonly push: PushService,
+    private readonly reviews: ReviewService,
+    private readonly lists: ListService,
   ) {}
 
   /** The viewer's conversations that have at least one message, most recent first. */
@@ -229,26 +252,35 @@ export class ChatService {
       include: MESSAGE_INCLUDE,
     });
     const { items, hasMore } = toPagedResult(rows, page.limit);
-    const owned = await this.ownedWorks(viewerId, embedsOf(items));
+    const cards = await this.cardsFor(viewerId, items);
     return {
-      items: items.map((row) => toMessageDto(row, viewerId, owned)),
+      items: items.map((row) => toMessageDto(row, viewerId, cards)),
       hasMore,
     };
   }
 
-  /** `work`: the card attached by hand, which lets `text` be empty. */
+  /** An attachment lets `text` be empty. */
   async send(
     authorId: string,
     conversationId: string,
     text: string | null,
     spoiler = false,
-    work: WorkCard | null = null,
+    { work = null, reviewId, listId }: MessageAttachment = {},
   ): Promise<MessageDto> {
     const membership = await this.membership(authorId, conversationId);
+    if (reviewId) await this.ensureOwnReview(authorId, reviewId);
+
+    if (listId) {
+      const peer = peerOf(membership, authorId);
+      await this.ensureSharedList(listId, [authorId, peer?.userId]);
+    }
+
     const row = await this.deliver(authorId, membership, {
       text,
       spoiler,
       embeds: work ? [{ ...work, position: 0 }] : [],
+      reviewId,
+      listId,
     });
     return this.dtoFor(row, authorId);
   }
@@ -261,6 +293,8 @@ export class ChatService {
       spoiler: boolean;
       forwarded?: boolean;
       embeds: (WorkCard & { position: number })[];
+      reviewId?: string | null;
+      listId?: string | null;
     },
   ): Promise<MessageRow> {
     const { conversationId } = membership;
@@ -276,6 +310,8 @@ export class ChatService {
           text: message.text,
           spoiler: message.spoiler,
           forwarded: message.forwarded ?? false,
+          reviewId: message.reviewId,
+          listId: message.listId,
           createdAt: now,
           embeds:
             message.embeds.length > 0 ? { create: message.embeds } : undefined,
@@ -342,7 +378,7 @@ export class ChatService {
     }
 
     for (const conversation of conversations) {
-      await this.send(authorId, conversation.id, text, false, work);
+      await this.send(authorId, conversation.id, text, false, { work });
     }
 
     return conversations.length;
@@ -419,8 +455,8 @@ export class ChatService {
       take: PINNED_MESSAGES_MAX,
       include: MESSAGE_INCLUDE,
     });
-    const owned = await this.ownedWorks(viewerId, embedsOf(rows));
-    return rows.map((row) => toMessageDto(row, viewerId, owned));
+    const cards = await this.cardsFor(viewerId, rows);
+    return rows.map((row) => toMessageDto(row, viewerId, cards));
   }
 
   /** Messages whose text holds the query, newest first. */
@@ -443,8 +479,8 @@ export class ChatService {
       take: MESSAGE_PAGE_SIZE,
       include: MESSAGE_INCLUDE,
     });
-    const owned = await this.ownedWorks(viewerId, embedsOf(rows));
-    return rows.map((row) => toMessageDto(row, viewerId, owned));
+    const cards = await this.cardsFor(viewerId, rows);
+    return rows.map((row) => toMessageDto(row, viewerId, cards));
   }
 
   /** Every work shared in the conversation, once each, last shared first. */
@@ -531,6 +567,8 @@ export class ChatService {
         text: original.text,
         spoiler: original.spoiler,
         forwarded: true,
+        reviewId: original.reviewId,
+        listId: original.listId,
         embeds: original.embeds.map((embed) => ({
           targetType: embed.targetType,
           targetId: embed.targetId,
@@ -691,7 +729,7 @@ export class ChatService {
     });
     await this.prisma.message.updateMany({
       where: { authorId: userId, deletedAt: null },
-      data: { text: null, deletedAt: new Date() },
+      data: { text: null, reviewId: null, listId: null, deletedAt: new Date() },
     });
   }
 
@@ -702,11 +740,62 @@ export class ChatService {
   }
 
   private async dtoFor(row: MessageRow, viewerId: string): Promise<MessageDto> {
-    return toMessageDto(
-      row,
-      viewerId,
-      await this.ownedWorks(viewerId, row.embeds),
-    );
+    return toMessageDto(row, viewerId, await this.cardsFor(viewerId, [row]));
+  }
+
+  private async cardsFor(
+    viewerId: string,
+    rows: MessageRow[],
+  ): Promise<MessageCards> {
+    const live = rows.filter((row) => !row.deletedAt);
+    const idsOf = (ids: (string | null)[]) => [
+      ...new Set(ids.filter((id): id is string => id !== null)),
+    ];
+    const [owned, reviews, lists] = await Promise.all([
+      this.ownedWorks(
+        viewerId,
+        live.flatMap((row) => row.embeds),
+      ),
+      this.reviews.messageCards(idsOf(live.map((row) => row.reviewId))),
+      this.lists.messageCards(viewerId, idsOf(live.map((row) => row.listId))),
+    ]);
+    return { owned, reviews, lists };
+  }
+
+  private async ensureOwnReview(
+    authorId: string,
+    reviewId: string,
+  ): Promise<void> {
+    const review = await this.prisma.review.findFirst({
+      where: { id: reviewId, userId: authorId },
+      select: { id: true },
+    });
+
+    if (!review) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.ChatReviewNotFound,
+      );
+    }
+  }
+
+  /** A list goes into a conversation only when both members may open it. */
+  private async ensureSharedList(
+    listId: string,
+    memberIds: (string | undefined)[],
+  ): Promise<void> {
+    for (const userId of memberIds) {
+      const visible =
+        userId !== undefined &&
+        (await this.lists.messageCards(userId, [listId])).has(listId);
+
+      if (!visible) {
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          ErrorCode.ChatListNotShareable,
+        );
+      }
+    }
   }
 
   /** The works among these cards the viewer already tracks. */
@@ -925,7 +1014,7 @@ export class ChatService {
     const lastByConversation = new Map(
       lastMessages.map((m) => [m.conversationId, m]),
     );
-    const owned = await this.ownedWorks(viewer.id, embedsOf(lastMessages));
+    const cards = await this.cardsFor(viewer.id, lastMessages);
 
     return Promise.all(
       memberships.map(async (m): Promise<ConversationDto> => {
@@ -944,7 +1033,7 @@ export class ChatService {
             peer && showsReadReceipts(viewer, peer.user)
               ? peer.lastReadAt.toISOString()
               : null,
-          lastMessage: last ? toMessageDto(last, viewer.id, owned) : null,
+          lastMessage: last ? toMessageDto(last, viewer.id, cards) : null,
           unread: unread.get(m.conversationId) ?? 0,
           lastReadAt: m.lastReadAt.toISOString(),
           muted: m.mutedAt !== null,
@@ -989,6 +1078,8 @@ export class ChatService {
         deletedAt: new Date(),
         deletedByAdmin: byAdmin,
         pinnedAt: null,
+        reviewId: null,
+        listId: null,
       },
       include: MESSAGE_INCLUDE,
     });
@@ -1079,10 +1170,6 @@ export class ChatService {
   }
 }
 
-function embedsOf(rows: MessageRow[]) {
-  return rows.flatMap((row) => row.embeds);
-}
-
 function peerOf(
   membership: Membership,
   viewerId: string,
@@ -1102,7 +1189,7 @@ function showsReadReceipts(
 function toMessageDto(
   row: MessageRow,
   viewerId: string,
-  owned: ReadonlySet<string>,
+  cards: MessageCards,
 ): MessageDto {
   const counts = new Map<CommentEmote, number>();
   let myReaction: CommentEmote | null = null;
@@ -1115,6 +1202,10 @@ function toMessageDto(
   const reactions: CommentReactionSummaryDto[] = [...counts].map(
     ([emote, count]) => ({ emote, count }),
   );
+  const review = row.reviewId
+    ? (cards.reviews.get(row.reviewId) ?? null)
+    : null;
+  const list = row.listId ? (cards.lists.get(row.listId) ?? null) : null;
 
   return {
     id: row.id,
@@ -1133,8 +1224,12 @@ function toMessageDto(
       : row.embeds.map(({ targetType, targetId, ...embed }) => ({
           ...embed,
           kind: embed.kind as MessageWorkKind,
-          inLibrary: owned.has(`${targetType}:${targetId}`),
+          inLibrary: cards.owned.has(`${targetType}:${targetId}`),
         })),
+    review,
+    list,
+    gone:
+      row.reviewId && !review ? "review" : row.listId && !list ? "list" : null,
     pinned: row.pinnedAt !== null,
     forwarded: row.forwarded,
     createdAt: row.createdAt.toISOString(),

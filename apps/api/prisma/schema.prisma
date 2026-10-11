@@ -969,6 +969,11 @@ model Message {
   pinnedAt       DateTime?
   // Copied from another conversation by "Transférer": says so, never by whom.
   forwarded      Boolean   @default(false)
+  // Attached with /review (one of the author's reviews) or /list. Plain ids,
+  // not relations: the card is read live, and once the review or list is gone
+  // the message must still say what it carried.
+  reviewId       String?
+  listId         String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
