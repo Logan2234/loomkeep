@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { inView } from "#lib/actions/inView.js";
+
   import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
 
   import {
@@ -98,7 +100,6 @@
   });
   const shown = $derived(limit ? results.slice(0, limit) : results);
   const searched = $derived(!!queryFilter);
-  let sentinel = $state<HTMLElement | null>(null);
 
   $effect(() => {
     onResults?.(results.length);
@@ -143,18 +144,6 @@
   });
 
   // Infinite scroll: load the next page when the sentinel nears the viewport.
-  $effect(() => {
-    const el = sentinel;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) searchQuery.fetchNextPage();
-      },
-      { rootMargin: "400px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  });
 </script>
 
 {#if searchQuery.error}
@@ -220,7 +209,13 @@
 
   {#if searchQuery.hasNextPage && !limit}
     <!-- Sentinel: entering the viewport triggers the next page. -->
-    <div bind:this={sentinel} class="h-10"></div>
+    <div
+      use:inView={{
+        onEnter: () => searchQuery.fetchNextPage(),
+        rootMargin: "400px",
+      }}
+      class="h-10">
+    </div>
   {/if}
   {#if searchQuery.isFetchingNextPage && !limit}
     <PosterGrid>

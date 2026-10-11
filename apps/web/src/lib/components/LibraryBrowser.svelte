@@ -1,4 +1,6 @@
 <script module lang="ts">
+  import { inView } from "#lib/actions/inView.js";
+
   import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
 
   import { TABLET_QUERY } from "#lib/constants/media-queries.js";
@@ -173,8 +175,6 @@
   let queryFilter = $state(initialParams.get("q") ?? "");
   let activeViewId = $state(initialParams.get("view"));
 
-  let sentinel = $state<HTMLElement | null>(null);
-
   // Extra "type" filter, owned by the page and passed to LibraryBrowser.
   let types = $state<MediaType[]>(
     (initialParams.get("type")?.split(",").filter(Boolean) as MediaType[]) ??
@@ -319,18 +319,6 @@
   });
 
   // Infinite scroll: load the next page when the sentinel nears the viewport.
-  $effect(() => {
-    const el = sentinel;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) browseQuery.fetchNextPage();
-      },
-      { rootMargin: "400px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  });
 
   // ── Selection mode (UX-04)
   const UNDO_DELAY_MS = 6000;
@@ -994,7 +982,13 @@
     {/key}
     {#if browseQuery.hasNextPage}
       <!-- Sentinel: entering the viewport triggers the next page. -->
-      <div bind:this={sentinel} class="absolute h-10"></div>
+      <div
+        use:inView={{
+          onEnter: () => browseQuery.fetchNextPage(),
+          rootMargin: "400px",
+        }}
+        class="absolute h-10">
+      </div>
     {/if}
     {#if loadingMore}
       <div class="mt-4">

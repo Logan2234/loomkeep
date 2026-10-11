@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyState from "#lib/components/EmptyState.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
 
   import { labeledOptions } from "#lib/options.js";
@@ -556,10 +557,9 @@
     </section>
   {:else if phase === "review" && plan}
     {#if plan.groups.length === 0}
-      <div
-        class="border-border text-dim mt-6 mb-24 rounded-xl border border-dashed px-6 py-12 text-center">
+      <EmptyState padding="py-12" class="mt-6 mb-24">
         {m.import_export_empty()}
-      </div>
+      </EmptyState>
     {:else if filterUnresolved && unresolvedRemaining === 0}
       <div
         class="border-border text-dim mt-2 mb-24 rounded-xl border border-dashed px-6 py-12 text-center text-sm">

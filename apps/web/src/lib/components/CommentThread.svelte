@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { inView } from "#lib/actions/inView.js";
+
   import { keys } from "#lib/api/keys.js";
 
   import { Cooldown } from "#lib/cooldown.svelte.js";
@@ -239,30 +241,6 @@
       feed.scrollTop = scrollTop + feed.scrollHeight - scrollHeight;
       updateJumpToLatest();
     }
-  }
-
-  function loadOlderWhenVisible(
-    node: HTMLElement,
-    root: HTMLDivElement | null,
-  ) {
-    let observer: IntersectionObserver | undefined;
-
-    function observe(scrollRoot: HTMLDivElement | null) {
-      observer?.disconnect();
-      observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry?.isIntersecting) void loadOlder();
-        },
-        { root: scrollRoot, rootMargin: "160px 0px 0px" },
-      );
-      observer.observe(node);
-    }
-
-    observe(root);
-    return {
-      update: observe,
-      destroy: () => observer?.disconnect(),
-    };
   }
 
   function updateJumpToLatest() {
@@ -903,7 +881,13 @@
           <p class="text-dim text-sm">{m.comments_empty()}</p>
         {:else}
           {#if query.hasNextPage}
-            <div use:loadOlderWhenVisible={feed} class="mb-2 text-center">
+            <div
+              use:inView={{
+                onEnter: () => void loadOlder(),
+                root: feed,
+                rootMargin: "160px 0px 0px",
+              }}
+              class="mb-2 text-center">
               <button
                 class="timecode text-dim hover:text-fg text-xs"
                 disabled={query.isFetchingNextPage}

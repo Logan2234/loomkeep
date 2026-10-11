@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Poster from "#lib/components/Poster.svelte";
   import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
 
   import { activityTargetHue } from "#lib/constants/review-targets.js";
@@ -113,23 +114,27 @@
             </p>
           </div>
 
-          {#if event.imageUrl}
-            <svelte:element
-              this={event.href ? "a" : "div"}
-              href={event.href ?? undefined}
-              class="shrink-0">
-              <img
-                src={event.imageUrl}
-                alt=""
-                class="h-14 w-10 rounded-md object-cover" />
-            </svelte:element>
-          {:else}
+          {#snippet eventCoverFallback()}
             <div
               class="h-14 w-10 shrink-0 rounded-md"
               style="background: linear-gradient(155deg, color-mix(in srgb, {hue} 55%, var(--surface-2)), color-mix(in srgb, {hue} 10%, var(--surface-2)))"
               aria-hidden="true">
             </div>
-          {/if}
+          {/snippet}
+          {#if event.imageUrl}
+            <svelte:element
+              this={event.href ? "a" : "div"}
+              href={event.href ?? undefined}
+              class="shrink-0">
+              <Poster
+                src={event.imageUrl}
+                title={event.title}
+                alt=""
+                caption={false}
+                class="h-14 w-10 rounded-md object-cover"
+                fallback={eventCoverFallback} />
+            </svelte:element>
+          {:else}{@render eventCoverFallback()}{/if}
         </li>
       {/each}
     </ul>
