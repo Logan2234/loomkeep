@@ -95,7 +95,7 @@
           {
             ...data.me,
             key: "me",
-            name: m.work_friends_you(),
+            name: m.common_you(),
             username: auth.user?.username ?? "",
             avatarUrl: auth.user?.avatarUrl ?? null,
             href: null,
@@ -176,7 +176,7 @@
     this={p.href ? "a" : "span"}
     href={p.href}
     class="pin absolute top-0 -translate-x-1/2 hover:-translate-y-0.5"
-    style:left="calc({left * 100}% + {nudge * 14}px)"
+    style:left={`calc(${left * 100}% + ${nudge * 14}px)`}
     aria-label={label(p)}
     data-tip={label(p)}
     data-edge={left < 0.2 ? "start" : left > 0.8 ? "end" : null}>
@@ -329,7 +329,8 @@
                       {season === i + 1
                       ? 'bg-fg text-bg border-fg'
                       : 'border-border text-dim hover:text-fg bg-surface'}"
-                    onclick={() => (picked = i + 1)}>S{i + 1}</button>
+                    onclick={() => (picked = i + 1)}
+                    >{m.work_friends_season_tab({ season: i + 1 })}</button>
                 {/each}
               </span>
             {/if}
@@ -349,7 +350,7 @@
             {/each}
             <div
               class="grid gap-1"
-              style:grid-template-columns="repeat({episodes}, minmax(0, 1fr))">
+              style:grid-template-columns={`repeat(${episodes}, minmax(0, 1fr))`}>
               {#each { length: episodes } as _, i (i)}
                 <span
                   class="h-4 rounded-sm border transition-colors duration-300 motion-reduce:transition-none {data
@@ -358,14 +359,18 @@
                     : seenUpTo(season, i + 1)
                       ? 'bg-accent/40 border-transparent'
                       : 'bg-surface border-border'}"
-                  style:transition-delay="{Math.max(0, i + 1 - fillFrom) *
-                    STEP_MS}ms"></span>
+                  style:transition-delay={`${Math.max(0, i + 1 - fillFrom) * STEP_MS}ms`}
+                ></span>
               {/each}
             </div>
           </div>
           <div class="text-dim flex justify-between font-mono text-xs">
-            <span>E1</span><span>E{Math.ceil(episodes / 2)}</span><span
-              >E{episodes}</span>
+            <span>{m.work_friends_episode_tick({ episode: 1 })}</span>
+            <span
+              >{m.work_friends_episode_tick({
+                episode: Math.ceil(episodes / 2),
+              })}</span>
+            <span>{m.work_friends_episode_tick({ episode: episodes })}</span>
           </div>
           {@render others(elsewhere)}
         {:else if mode === "pages"}

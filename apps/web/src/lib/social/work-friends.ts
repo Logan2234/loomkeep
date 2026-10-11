@@ -18,7 +18,7 @@ const LABELS: Record<WorkDomain, Record<string, { label: string }>> = {
   MUSIC: MUSIC_STATUS_META,
 };
 
-export const toneOf = (domain: WorkDomain, p: WorkProgressDto): StatusTone =>
+const toneOf = (domain: WorkDomain, p: WorkProgressDto): StatusTone =>
   STATUS_LOOKS[domain][p.status]?.tone ?? "idle";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
