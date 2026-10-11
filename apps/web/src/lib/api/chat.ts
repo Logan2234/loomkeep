@@ -8,7 +8,11 @@ import type {
   ForwardMessageRequestDto,
   MarkWorkUnreadRequestDto,
   MessageDto,
+  MessageSagaDto,
+  MessageWhereDto,
   PagedResult,
+  PickRequestDto,
+  PickResultDto,
   RecommendWorkRequestDto,
   RecommendWorkResultDto,
   ReportCategory,
@@ -48,6 +52,26 @@ export const sendMessage = (
     method: "POST",
     body,
   });
+
+/** `/pick`: a work drawn from the pile, before it's sent. */
+export const drawPick = (conversationId: string, body: PickRequestDto) =>
+  request<PickResultDto>(`/chat/conversations/${id(conversationId)}/pick`, {
+    method: "POST",
+    body,
+  });
+
+/** A `/poll` vote; the option already chosen takes it back. */
+export const votePoll = (messageId: string, option: string) =>
+  request<MessageDto>(`/chat/messages/${id(messageId)}/vote`, {
+    method: "PUT",
+    body: { option },
+  });
+
+export const getMessageSaga = (messageId: string) =>
+  request<MessageSagaDto>(`/chat/messages/${id(messageId)}/saga`);
+
+export const getMessageWhere = (messageId: string) =>
+  request<MessageWhereDto>(`/chat/messages/${id(messageId)}/where`);
 
 export const editMessage = (messageId: string, body: EditMessageRequestDto) =>
   request<MessageDto>(`/chat/messages/${id(messageId)}`, {

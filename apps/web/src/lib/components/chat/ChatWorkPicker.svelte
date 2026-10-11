@@ -4,7 +4,7 @@
   import { findWorks } from "#lib/chat/work-search.js";
   import Poster from "#lib/components/Poster.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MessageWorkDto } from "@loomkeep/shared";
+  import type { MessageWorkDto, MessageWorkKind } from "@loomkeep/shared";
   import ChatPicker from "./ChatPicker.svelte";
   import { workKindLabel } from "./conversation-presentation";
 
@@ -13,6 +13,7 @@
     onpick,
     oncancel,
     holdsEnter = true,
+    kinds,
   }: {
     /** What follows `/reco ` or `#`. */
     query: string;
@@ -23,6 +24,8 @@
      * message to send. A `#` that matches nothing is just text, though.
      */
     holdsEnter?: boolean;
+    /** Only these kinds of works (`/where`: films and series). */
+    kinds?: readonly MessageWorkKind[];
   } = $props();
 
   const MIN_LENGTH = 2;
@@ -53,7 +56,9 @@
   }));
   const works = $derived(
     searched.length >= MIN_LENGTH
-      ? (allQuery.data ?? localQuery.data ?? [])
+      ? (allQuery.data ?? localQuery.data ?? []).filter(
+          (work) => !kinds || kinds.includes(work.kind),
+        )
       : [],
   );
 

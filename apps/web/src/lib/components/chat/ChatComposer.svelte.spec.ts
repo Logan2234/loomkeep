@@ -37,10 +37,10 @@ beforeEach(() => {
       async ({ request }) => {
         const body = (await request.json()) as {
           text?: string;
-          spoiler: boolean;
           work?: string;
           review?: string;
           list?: string;
+          spoiler?: boolean;
         };
         sent.push(body);
         return HttpResponse.json({
@@ -59,6 +59,10 @@ beforeEach(() => {
           review: null,
           list: null,
           gone: null,
+          poll: null,
+          saga: null,
+          pick: null,
+          where: false,
           pinned: false,
           forwarded: false,
           createdAt: "2026-10-07T10:00:00.000Z",
@@ -458,6 +462,227 @@ describe("ChatComposer", () => {
 
     await user.type(box, "à 12:30", { skipClick: true });
     expect(screen.queryByRole("listbox")).toBe(null);
+  });
+
+  it("writes a /poll: the question in the field, a work among the options", async () => {
+    server.use(
+      http.get(apiUrl("/search/works"), () =>
+        HttpResponse.json({
+          items: [
+            {
+              kind: "SERIES",
+              title: "Severance",
+              imageUrl: null,
+              href: "/app/media/series/95396",
+              year: 2022,
+              isAdult: false,
+              status: null,
+            },
+          ],
+          unavailable: [],
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    const box = await renderComposer();
+
+    await user.type(box, "/poll", { skipClick: true });
+    await user.keyboard("{Enter}");
+    expect(screen.getByText(m.chat_poll_builder())).toBeTruthy();
+    await user.type(box, "On regarde quoi ?", { skipClick: true });
+
+    await user.type(
+      screen.getByRole("textbox", {
+        name: m.chat_poll_option_label({ number: 1 }),
+      }),
+      "#seve",
+    );
+    await user.click(await screen.findByRole("option", { name: /Severance/ }));
+    // One option is not a poll.
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: m.common_send() })
+        .disabled,
+    ).toBe(true);
+    await user.type(
+      screen.getByRole("textbox", {
+        name: m.chat_poll_option_label({ number: 2 }),
+      }),
+      "Un vieux Pixar",
+    );
+    await user.click(screen.getByRole("button", { name: m.common_send() }));
+
+    await waitFor(() =>
+      expect(sent).toEqual([
+        {
+          poll: {
+            question: "On regarde quoi ?",
+            options: [
+              { work: "/app/media/series/95396" },
+              { text: "Un vieux Pixar" },
+            ],
+          },
+        },
+      ]),
+    );
+  });
+
+  it("caps a /poll at five options", async () => {
+    const user = userEvent.setup();
+    const box = await renderComposer();
+
+    await user.type(box, "/poll", { skipClick: true });
+    await user.keyboard("{Enter}");
+
+    for (let i = 0; i < 3; i++) {
+      await user.click(screen.getByRole("button", { name: m.chat_poll_add() }));
+    }
+
+    expect(screen.queryByRole("button", { name: m.chat_poll_add() })).toBe(
+      null,
+    );
+    expect(screen.getByText(m.chat_poll_max({ max: 5 }))).toBeTruthy();
+  });
+
+  it("draws with /pick once a domain is picked, from the pile or what's in common", async () => {
+    const draws: unknown[] = [];
+    server.use(
+      http.post(apiUrl("/chat/conversations/cv1/pick"), async ({ request }) => {
+        const body = (await request.json()) as { shared: boolean };
+        draws.push(body);
+        return HttpResponse.json({
+          work: {
+            kind: "MOVIE",
+            title: body.shared ? "Dune : Deuxième partie" : "Perfect Days",
+            imageUrl: null,
+            href: body.shared
+              ? "/app/media/movie/693134"
+              : "/app/media/movie/976893",
+            year: 2023,
+            inLibrary: true,
+          },
+          mine: 6,
+          shared: 3,
+        });
+      }),
+    );
+    const user = userEvent.setup();
+    const box = await renderComposer();
+
+    await user.type(box, "/pick", { skipClick: true });
+    await user.keyboard("{Enter}");
+    expect(
+      await screen.findByRole("option", { name: /\/pick video/ }),
+    ).toBeTruthy();
+    // No domain, no message.
+    await user.keyboard("{Escape}");
+    await user.type(box, "/pick ", { skipClick: true });
+    await user.keyboard("{Enter}");
+
+    expect(await screen.findByText("Perfect Days")).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", {
+        name: m.chat_pick_scope_shared({ count: 3 }),
+      }),
+    );
+    expect(await screen.findByText("Dune : Deuxième partie")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: m.common_send() }));
+
+    await waitFor(() =>
+      expect(sent).toEqual([
+        {
+          spoiler: false,
+          pick: {
+            domain: "MEDIA",
+            shared: true,
+            work: "/app/media/movie/693134",
+          },
+        },
+      ]),
+    );
+    expect(draws).toEqual([
+      { domain: "MEDIA", shared: false },
+      { domain: "MEDIA", shared: true },
+    ]);
+  });
+
+  it("looks only for films and series with /where", async () => {
+    const hit = (kind: string, title: string, href: string) => ({
+      kind,
+      title,
+      imageUrl: null,
+      href,
+      year: 2024,
+      isAdult: false,
+      status: null,
+    });
+    server.use(
+      http.get(apiUrl("/search/works"), () =>
+        HttpResponse.json({
+          items: [
+            hit("GAME", "Dune: Awakening", "/app/games/250616"),
+            hit("MOVIE", "Dune : Deuxième partie", "/app/media/movie/693134"),
+          ],
+          unavailable: [],
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    const box = await renderComposer();
+
+    await user.type(box, "/where dune", { skipClick: true });
+    await screen.findByRole("option", { name: /Deuxième partie/ });
+    expect(screen.queryByRole("option", { name: /Awakening/ })).toBe(null);
+    await user.keyboard("{Enter}{Enter}");
+
+    await waitFor(() =>
+      expect(sent).toEqual([
+        { spoiler: false, where: "/app/media/movie/693134" },
+      ]),
+    );
+  });
+
+  it("shares one of the viewer's sagas with /saga", async () => {
+    const sagas = (key: string, title: string) => ({
+      inProgress: [
+        {
+          key,
+          title,
+          members: [{ title, posterUrl: null, coverUrl: null }],
+          next: null,
+          seen: 1,
+          released: 3,
+          lastActivityAt: "2026-10-01T00:00:00.000Z",
+          finishedAt: null,
+        },
+      ],
+      waiting: [],
+      finished: [],
+    });
+    server.use(
+      http.get(apiUrl("/library/sagas"), () =>
+        HttpResponse.json(sagas("TMDB:119", "Le Seigneur des anneaux")),
+      ),
+      http.get(apiUrl("/games/sagas"), () =>
+        HttpResponse.json(sagas("IGDB:6", "The Witcher")),
+      ),
+      http.get(apiUrl("/books/sagas"), () =>
+        HttpResponse.json({ inProgress: [], waiting: [], finished: [] }),
+      ),
+    );
+    const user = userEvent.setup();
+    const box = await renderComposer();
+
+    await user.type(box, "/saga witch", { skipClick: true });
+    await user.click(
+      await screen.findByRole("option", { name: /The Witcher/ }),
+    );
+    await user.keyboard("{Enter}");
+
+    await waitFor(() =>
+      expect(sent).toEqual([
+        { spoiler: false, saga: { domain: "GAMES", key: "IGDB:6" } },
+      ]),
+    );
   });
 
   it("edits the last message on ↑ in an empty field only", async () => {

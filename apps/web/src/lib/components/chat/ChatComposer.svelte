@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { editMessage, sendMessage } from "#lib/api/chat.js";
+  import { drawPick, editMessage, sendMessage } from "#lib/api/chat.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -10,6 +10,14 @@
     reviewedTitle,
   } from "#lib/chat/attachments.js";
   import { chatDrafts as drafts } from "#lib/chat/chat.svelte.js";
+  import {
+    pickChoices,
+    pollReady,
+    WHERE_KINDS,
+    type PickChoice,
+    type PollOptionDraft,
+    type SagaChoice,
+  } from "#lib/chat/commands.js";
   import {
     completeShortcode,
     emojiAtCaret,
@@ -42,6 +50,9 @@
     LIST_VISIBILITY_LABEL,
     workCountLabel,
   } from "#lib/constants/list-labels.js";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
@@ -54,6 +65,7 @@
     type MessageWorkDto,
     type MyListDto,
     type MyReviewDto,
+    type PickDomain,
     type ReviewTargetSummaryDto,
     type SendMessageRequestDto,
   } from "@loomkeep/shared";
@@ -65,6 +77,10 @@
     type SelectionBar,
   } from "./FormatSelectionBar.svelte";
   import ChatListPicker from "./ChatListPicker.svelte";
+  import ChatPickChip from "./ChatPickChip.svelte";
+  import ChatPicker from "./ChatPicker.svelte";
+  import ChatPollBuilder from "./ChatPollBuilder.svelte";
+  import ChatSagaPicker from "./ChatSagaPicker.svelte";
   import ChatEmojiPicker from "./ChatEmojiPicker.svelte";
   import ChatReviewPicker from "./ChatReviewPicker.svelte";
   import ChatWorkPicker from "./ChatWorkPicker.svelte";
@@ -95,6 +111,11 @@
   let picker = $state<ChatWorkPicker | null>(null);
   let reviewPicker = $state<ChatReviewPicker | null>(null);
   let listPicker = $state<ChatListPicker | null>(null);
+  let sagaPicker = $state<ChatSagaPicker | null>(null);
+  let wherePicker = $state<ChatWorkPicker | null>(null);
+  let pickPicker = $state<{
+    handleKey: (event: KeyboardEvent) => boolean;
+  } | null>(null);
   let mentionPicker = $state<ChatWorkPicker | null>(null);
   let emojiPicker = $state<ChatEmojiPicker | null>(null);
   let value = $state("");
@@ -112,8 +133,21 @@
         kind: "review";
         review: MyReviewDto & { target: ReviewTargetSummaryDto };
       }
-    | { kind: "list"; list: MyListDto };
+    | { kind: "list"; list: MyListDto }
+    | { kind: "saga"; saga: SagaChoice }
+    | { kind: "where"; work: MessageWorkDto }
+    | {
+        kind: "pick";
+        domain: PickDomain;
+        shared: boolean;
+        /** Null while drawing, or with nothing to draw from. */
+        work: MessageWorkDto | null;
+        mine: number;
+        sharedCount: number;
+      };
   let attachment = $state<Attachment | null>(null);
+  // `/poll`'s options while one is written; the question is the field's text.
+  let pollOptions = $state<PollOptionDraft[] | null>(null);
   const attachedHref = $derived(
     attachment?.kind === "work" ? attachment.work.href : null,
   );
@@ -134,7 +168,7 @@
   }
 
   // Commands that attach something: a message being edited keeps its own.
-  const ATTACHING = ["reco", "review", "list"];
+  const ATTACHING = ["reco", "review", "list", "poll", "saga", "pick", "where"];
 
   const COMMANDS: Command[] = [
     {
@@ -167,6 +201,38 @@
       available: true,
       isNew: isFeatureNew("chat-review-list"),
     },
+    {
+      id: "poll",
+      icon: "stats",
+      label: "/poll",
+      hint: m.chat_command_poll(),
+      available: true,
+      isNew: isFeatureNew("chat-commands"),
+    },
+    {
+      id: "saga",
+      icon: "rows",
+      label: "/saga",
+      hint: m.chat_command_saga(),
+      available: true,
+      isNew: isFeatureNew("chat-commands"),
+    },
+    {
+      id: "pick",
+      icon: "sparkles",
+      label: "/pick",
+      hint: m.chat_command_pick(),
+      available: true,
+      isNew: isFeatureNew("chat-commands"),
+    },
+    {
+      id: "where",
+      icon: "monitor",
+      label: "/where",
+      hint: m.chat_command_where(),
+      available: true,
+      isNew: isFeatureNew("chat-commands"),
+    },
   ];
 
   $effect(() => {
@@ -176,6 +242,7 @@
     value = draft.text;
     mentions = draft.mentions;
     attachment = null;
+    pollOptions = null;
     declinedLinks = [];
   });
 
@@ -201,14 +268,24 @@
       : [];
   });
 
-  // What follows `/reco `, `/review ` or `/list `, while something to attach
-  // is being looked for.
+  // What follows `/reco `, `/review `, `/list `, `/saga `, `/where ` or
+  // `/pick `, while something to attach is being looked for.
   const picking = $derived.by(() => {
     const typed = editing
       ? null
-      : /^\/(reco|review|list)\s([\s\S]*)$/.exec(value);
+      : /^\/(reco|review|list|saga|where|pick)\s([\s\S]*)$/.exec(value);
     return typed ? { command: typed[1], query: typed[2] } : null;
   });
+  // `/pick` needs a domain: the viewer's, in their order.
+  const pickOptions = $derived(
+    picking?.command === "pick"
+      ? pickChoices(
+          orderedDomains(auth.user?.domainOrder),
+          isDomainEnabled,
+          picking.query,
+        )
+      : [],
+  );
   const emojis = $derived(emojiAt ? findEmoji(emojiAt.query) : []);
 
   $effect(() => {
@@ -262,8 +339,12 @@
   );
 
   const sendable = $derived(
-    picking === null &&
-      (readSlashCommand(value).text.length > 0 || attachment !== null),
+    pollOptions
+      ? pollReady(value, pollOptions)
+      : picking === null &&
+          (attachment?.kind === "pick"
+            ? attachment.work !== null
+            : readSlashCommand(value).text.length > 0 || attachment !== null),
   );
 
   const sendMut = createApiMutation(() => ({
@@ -282,6 +363,7 @@
       );
       if (editing) oncanceledit();
       attachment = null;
+      pollOptions = null;
       declinedLinks = [];
       mentions = [];
       setValue("");
@@ -346,10 +428,40 @@
 
   function send() {
     if (!sendable || sendMut.loading) return;
+
+    if (pollOptions) {
+      sendMut.mutate({
+        poll: {
+          question: value.trim(),
+          options: pollOptions
+            .filter((option) => option.work || option.text.trim())
+            .map((option) =>
+              option.work
+                ? { work: option.work.href }
+                : { text: option.text.trim() },
+            ),
+        },
+      });
+      return;
+    }
+
     const { text, spoiler } = readSlashCommand(
       serializeMentions(value, mentions),
     );
     sendMut.mutate({
+      saga:
+        attachment?.kind === "saga"
+          ? { domain: attachment.saga.domain, key: attachment.saga.key }
+          : undefined,
+      where: attachment?.kind === "where" ? attachment.work.href : undefined,
+      pick:
+        attachment?.kind === "pick" && attachment.work
+          ? {
+              domain: attachment.domain,
+              shared: attachment.shared,
+              work: attachment.work.href,
+            }
+          : undefined,
       text: text || undefined,
       spoiler,
       work: attachedHref ?? undefined,
@@ -367,8 +479,57 @@
     field?.focus();
   }
 
+  const drawMut = createApiMutation(() => ({
+    mutate: (args: { domain: PickDomain; shared: boolean }) =>
+      drawPick(conversationId, args),
+    onSuccess: (result, args) => {
+      // A later draw (another scope, another go) wins over this one.
+      if (attachment?.kind !== "pick" || attachment.domain !== args.domain) {
+        return;
+      }
+      attachment = {
+        ...attachment,
+        shared: args.shared,
+        work: result.work,
+        mine: result.mine,
+        sharedCount: result.shared,
+      };
+    },
+    errorToast: true,
+  }));
+
+  function draw(domain: PickDomain, shared: boolean) {
+    attachment = {
+      kind: "pick",
+      domain,
+      shared,
+      work: null,
+      mine: attachment?.kind === "pick" ? attachment.mine : 0,
+      sharedCount: attachment?.kind === "pick" ? attachment.sharedCount : 0,
+    };
+    drawMut.mutate({ domain, shared });
+  }
+
+  function startPick(choice: PickChoice) {
+    setValue("");
+    draw(choice.domain, false);
+    field?.focus();
+  }
+
   function pick(command: Command) {
     if (!command.available) return;
+
+    if (command.id === "poll") {
+      attachment = null;
+      pollOptions = [
+        { text: "", work: null },
+        { text: "", work: null },
+      ];
+      setValue("");
+      field?.focus();
+      return;
+    }
+
     setValue(`/${command.id} `);
     void tick().then(() => {
       field?.focus();
@@ -421,6 +582,16 @@
       return;
     }
     if (picking?.command === "list" && listPicker?.handleKey(event)) return;
+    if (picking?.command === "saga" && sagaPicker?.handleKey(event)) return;
+    if (picking?.command === "where" && wherePicker?.handleKey(event)) return;
+    if (picking?.command === "pick") {
+      if (pickPicker?.handleKey(event)) return;
+      // `/pick` alone is no message: a domain has to be picked.
+      if (event.key === "Enter") {
+        event.preventDefault();
+        return;
+      }
+    }
     if (mentionAt && mentionPicker?.handleKey(event)) return;
     if (emojiAt && emojis.length > 0 && emojiPicker?.handleKey(event)) {
       return;
@@ -468,6 +639,9 @@
     } else if (event.key === "Backspace" && value === "" && attachment) {
       event.preventDefault();
       attachment = null;
+    } else if (event.key === "Escape" && pollOptions) {
+      event.preventDefault();
+      pollOptions = null;
     } else if (event.key === "Escape" && editing) {
       event.preventDefault();
       setValue("");
@@ -568,6 +742,44 @@
       () => (attachment = null),
       false,
     )}
+  {:else if attachment?.kind === "saga"}
+    {@render chip(
+      [attachment.saga.imageUrl],
+      attachment.saga.title,
+      `${DOMAINS[attachment.saga.domain].label} · ${attachment.saga.seen}/${attachment.saga.released}`,
+      m.chat_saga_remove(),
+      () => (attachment = null),
+      false,
+    )}
+  {:else if attachment?.kind === "where"}
+    {@render chip(
+      [attachment.work.imageUrl],
+      attachment.work.title,
+      m.chat_where_attached(),
+      m.chat_reco_remove(),
+      () => (attachment = null),
+      false,
+    )}
+  {:else if attachment?.kind === "pick"}
+    {@const drawn = attachment}
+    <ChatPickChip
+      domain={drawn.domain}
+      shared={drawn.shared}
+      work={drawn.work}
+      mine={drawn.mine}
+      sharedCount={drawn.sharedCount}
+      drawing={drawMut.loading}
+      onscope={(shared) => draw(drawn.domain, shared)}
+      onreroll={() => draw(drawn.domain, drawn.shared)}
+      onremove={() => (attachment = null)} />
+  {/if}
+  {#if pollOptions}
+    <ChatPollBuilder
+      bind:options={pollOptions}
+      oncancel={() => {
+        pollOptions = null;
+        field?.focus();
+      }} />
   {/if}
   {#each previews as preview (preview.url)}
     {@render chip(
@@ -607,6 +819,45 @@
           onpick={(list) =>
             listShareable(list) && attach({ kind: "list", list })}
           oncancel={() => setValue("")} />
+      {:else if picking?.command === "saga"}
+        <ChatSagaPicker
+          bind:this={sagaPicker}
+          query={picking.query}
+          onpick={(saga) => attach({ kind: "saga", saga })}
+          oncancel={() => setValue("")} />
+      {:else if picking?.command === "where"}
+        <ChatWorkPicker
+          bind:this={wherePicker}
+          query={picking.query}
+          kinds={WHERE_KINDS}
+          onpick={(work) => attach({ kind: "where", work })}
+          oncancel={() => setValue("")} />
+      {:else if picking?.command === "pick"}
+        <ChatPicker
+          bind:this={pickPicker}
+          items={pickOptions}
+          key={(choice) => choice.name}
+          label={m.chat_pick_choose()}
+          title={m.chat_pick_choose()}
+          empty={m.chat_pick_empty()}
+          onpick={startPick}
+          oncancel={() => setValue("")}>
+          {#snippet row(choice)}
+            <span
+              class="grid h-8 w-8 shrink-0 place-items-center rounded-lg"
+              style:background-color={`color-mix(in srgb, ${DOMAINS[choice.domain].accent} 18%, transparent)`}
+              style:color={DOMAINS[choice.domain].accent}>
+              <Icon name={DOMAINS[choice.domain].icon} class="h-4 w-4" />
+            </span>
+            <span class="min-w-0">
+              <span class="block text-sm font-semibold"
+                >{`/pick ${choice.name}`}</span>
+              <span class="text-dim block text-xs">
+                {choice.label} · {choice.pile}
+              </span>
+            </span>
+          {/snippet}
+        </ChatPicker>
       {/if}
       {#if emojiAt && emojis.length > 0}
         <ChatEmojiPicker
@@ -666,7 +917,9 @@
         bind:this={field}
         bind:value
         label={m.chat_message_label()}
-        placeholder={m.chat_composer_placeholder({ name: peerName })}
+        placeholder={pollOptions
+          ? m.chat_poll_question()
+          : m.chat_composer_placeholder({ name: peerName })}
         {mentions}
         maxLength={MESSAGE_TEXT_MAX_LENGTH}
         class="border-border focus-within:border-accent selection:bg-accent/30 bg-bg block w-full rounded-[1.2rem] border px-3.5 py-2 text-sm leading-relaxed transition-colors duration-150

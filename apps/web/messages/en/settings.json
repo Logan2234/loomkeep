@@ -561,6 +561,8 @@
   "settings_chat_presence_desc": "Your friends also see when you're typing. Reciprocal: turned off, you no longer see theirs either.",
   "settings_chat_read_receipts": "Show when I've read a message",
   "settings_chat_read_receipts_desc": "Reciprocal: turned off, you no longer see your friends' \"Seen\" either.",
+  "settings_chat_share_providers": "Share my platforms with my friends",
+  "settings_chat_share_providers_desc": "Your friends see your streaming platforms on Messages' /where cards. Switched off, you don't show on them.",
   "settings_feedback_widget": "\"Give feedback\" button",
   "settings_feedback_widget_desc": "The bottom-right button that opens the feedback board. Hidden, it stays reachable from this page.",
   "settings_alert_chat_message": "A message from a friend",

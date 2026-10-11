@@ -217,6 +217,10 @@
   "apierr_chat_work_not_found": "Cette œuvre ne peut pas être jointe à un message.",
   "apierr_chat_review_not_found": "Tu ne peux joindre qu'une de tes propres critiques.",
   "apierr_chat_list_not_shareable": "Ton ami ne peut pas voir cette liste : elle ne peut pas être partagée ici.",
+  "apierr_chat_poll_option_not_found": "Cette option ne fait pas partie du sondage.",
+  "apierr_chat_saga_not_found": "Cette saga est introuvable.",
+  "apierr_chat_pick_not_in_pile": "Cette œuvre n'est plus dans la pile du tirage : relance-le.",
+  "apierr_chat_where_not_video": "/where ne concerne que les films et les séries.",
   "apierr_chat_pin_limit": "Cette conversation a déjà 50 messages épinglés : désépingle-en un d'abord.",
   "apierr_chat_forward_to_origin": "Un message ne peut pas être transféré dans sa propre conversation."
 }

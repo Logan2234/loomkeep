@@ -161,6 +161,12 @@
     errorToast: true,
   }));
 
+  const chatShareProvidersMut = createApiMutation(() => ({
+    mutate: (chatShareWatchProviders: boolean) =>
+      updateMe({ chatShareWatchProviders }),
+    errorToast: true,
+  }));
+
   let isPrivate = $derived(settings?.profileAccess !== ProfileAccess.PUBLIC);
 
   // Only domains the user actually kept visible (see enabledDomains on
@@ -342,6 +348,18 @@
               label={m.settings_chat_read_receipts()}
               checked={chatUser.chatShowReadReceipts}
               onChange={(value) => chatReadReceiptsMut.mutate(value)} />
+          {/snippet}
+        </SettingRow>
+        <SettingRow
+          anchor="chat-share-providers"
+          label={m.settings_chat_share_providers()}
+          description={m.settings_chat_share_providers_desc()}
+          mutation={chatShareProvidersMut}>
+          {#snippet control()}
+            <Switch
+              label={m.settings_chat_share_providers()}
+              checked={chatUser.chatShareWatchProviders}
+              onChange={(value) => chatShareProvidersMut.mutate(value)} />
           {/snippet}
         </SettingRow>
       </div>

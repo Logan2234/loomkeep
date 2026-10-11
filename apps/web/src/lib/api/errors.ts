@@ -168,6 +168,11 @@ const MESSAGES = {
   [ErrorCode.ChatWorkNotFound]: () => m.apierr_chat_work_not_found(),
   [ErrorCode.ChatReviewNotFound]: () => m.apierr_chat_review_not_found(),
   [ErrorCode.ChatListNotShareable]: () => m.apierr_chat_list_not_shareable(),
+  [ErrorCode.ChatPollOptionNotFound]: () =>
+    m.apierr_chat_poll_option_not_found(),
+  [ErrorCode.ChatSagaNotFound]: () => m.apierr_chat_saga_not_found(),
+  [ErrorCode.ChatPickNotInPile]: () => m.apierr_chat_pick_not_in_pile(),
+  [ErrorCode.ChatWhereNotVideo]: () => m.apierr_chat_where_not_video(),
   [ErrorCode.ChatPinLimit]: () => m.apierr_chat_pin_limit(),
   [ErrorCode.ChatForwardToOrigin]: () => m.apierr_chat_forward_to_origin(),
   [ErrorCode.ListInvalidMembershipTarget]: () =>

@@ -561,6 +561,8 @@
   "settings_chat_presence_desc": "I tuoi amici vedono anche quando scrivi. Reciproco: disattivato, non vedi più nemmeno la loro presenza.",
   "settings_chat_read_receipts": "Mostra quando ho letto un messaggio",
   "settings_chat_read_receipts_desc": "Reciproco: disattivato, non vedi più nemmeno i «Visto» dei tuoi amici.",
+  "settings_chat_share_providers": "Condividi le mie piattaforme con i miei amici",
+  "settings_chat_share_providers_desc": "I tuoi amici vedono le tue piattaforme di streaming sulle schede /where di Messaggi. Disattivato, non ci compari.",
   "settings_feedback_widget": "Pulsante «Lascia un feedback»",
   "settings_feedback_widget_desc": "Il pulsante in basso a destra che apre la bacheca dei feedback. Nascosto, resta raggiungibile da questa pagina.",
   "settings_alert_chat_message": "Un messaggio da un amico",
