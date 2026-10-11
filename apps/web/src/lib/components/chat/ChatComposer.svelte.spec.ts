@@ -104,6 +104,7 @@ function list(id: string, title: string, visibility: ListVisibility) {
       id: "me",
       username: "me",
       displayName: "Moi",
+      profileAccess: "PUBLIC",
       avatarUrl: null,
     },
     itemCount: 13,

@@ -302,18 +302,18 @@
   }
 
   function readMention() {
-    const typing =
+    const caret =
       textarea &&
       document.activeElement === textarea &&
       picking === null &&
-      commands.length === 0;
-    const found = typing
-      ? mentionAtCaret(value, textarea.selectionStart)
-      : null;
+      commands.length === 0
+        ? textarea.selectionStart
+        : null;
+    const found = caret === null ? null : mentionAtCaret(value, caret);
     mentionAt = found && found.start !== dismissedMentionAt ? found : null;
     if (!found) dismissedMentionAt = null;
 
-    const emoji = typing ? emojiAtCaret(value, textarea.selectionStart) : null;
+    const emoji = caret === null ? null : emojiAtCaret(value, caret);
     emojiAt = emoji && emoji.start !== dismissedEmojiAt ? emoji : null;
     if (!emoji) dismissedEmojiAt = null;
   }
