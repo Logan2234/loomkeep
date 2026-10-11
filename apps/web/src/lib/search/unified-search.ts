@@ -24,7 +24,7 @@ const SEARCHABLE: Domain[] = [
 ];
 
 /** Works a shelf shows; the rest is the domain's own tab away. */
-export const SHELF_SIZE = 3;
+export const SHELF_SIZE = 5;
 
 export type Shelf =
   | { domain: Domain; state: "results"; hits: WorkSearchHitDto[] }

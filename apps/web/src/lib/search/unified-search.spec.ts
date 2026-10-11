@@ -32,14 +32,14 @@ describe("shelves", () => {
 
   it(`keeps ${SHELF_SIZE} works a shelf, in the ranked order`, () => {
     const answer = {
-      items: ["A", "B", "C", "D"].map((t) => hit("GAME", t)),
+      items: ["A", "B", "C", "D", "E", "F"].map((t) => hit("GAME", t)),
       unavailable: [],
     };
 
     const [shelf] = shelves(["GAMES"], answer, true);
 
     expect(shelf.state === "results" && shelf.hits.map((h) => h.title)).toEqual(
-      ["A", "B", "C"],
+      ["A", "B", "C", "D", "E"],
     );
   });
 
