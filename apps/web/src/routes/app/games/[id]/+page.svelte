@@ -1,4 +1,5 @@
 <script lang="ts">
+  import StatusCorrectionModal from "#lib/components/StatusCorrectionModal.svelte";
   import { buildGallery, galleryIndex } from "#lib/gallery.js";
 
   import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
@@ -25,7 +26,7 @@
   import GameSessionDock from "#lib/components/GameSessionDock.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import Lightbox from "#lib/components/Lightbox.svelte";
-  import Modal from "#lib/components/Modal.svelte";
+
   import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
   import NoteField from "#lib/components/NoteField.svelte";
   import OwnershipField from "#lib/components/OwnershipField.svelte";
@@ -33,7 +34,6 @@
   import ProviderMark from "#lib/components/ProviderMark.svelte";
   import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
 
-  import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "#lib/components/TrackingPanel.svelte";
   import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
   import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
@@ -62,8 +62,8 @@
   import { m } from "#lib/paraglide/messages.js";
   import {
     GAME_DIRECT_STATUS_TARGETS,
-    getStatusCorrections,
     statusCorrectionLabel,
+    cycleAwareStatusCorrections,
   } from "#lib/status-corrections.js";
   import type { GameEntryDto } from "@loomkeep/shared";
   import { slide } from "svelte/transition";
@@ -198,17 +198,12 @@
   );
   const statusCorrections = $derived(
     entry
-      ? getStatusCorrections(
+      ? cycleAwareStatusCorrections(
           STATUS_ORDER,
           entry.status,
           GAME_DIRECT_STATUS_TARGETS[entry.status],
-        ).filter(
-          (status) =>
-            status !== "BACKLOG" ||
-            !entry.playthroughs.some(
-              (playthrough) =>
-                playthrough.status === "ACTIVE" && playthrough.sessionCount > 0,
-            ),
+          "BACKLOG",
+          entry.playthroughs,
         )
       : [],
   );
@@ -685,24 +680,18 @@
   {/if}
 
   {#if statusEditorOpen && entry}
-    <Modal
-      title={m.tracking_correct_status()}
-      onclose={() => (statusEditorOpen = false)}>
-      <p class="text-dim mb-4 text-sm">
-        {m.tracking_correct_status_help()}
-      </p>
-      <SegmentedStatusControl
-        statuses={statusCorrections}
-        current={entry.status}
-        disabled={saving}
-        meta={STATUS_META}
-        desc={STATUS_DESC}
-        activeClass={SEG_ACTIVE}
-        onSelect={(status) => {
-          statusEditorOpen = false;
-          patchMut.mutate({ status });
-        }} />
-    </Modal>
+    <StatusCorrectionModal
+      onclose={() => (statusEditorOpen = false)}
+      statuses={statusCorrections}
+      current={entry.status}
+      disabled={saving}
+      meta={STATUS_META}
+      desc={STATUS_DESC}
+      activeClass={SEG_ACTIVE}
+      onSelect={(status) => {
+        statusEditorOpen = false;
+        patchMut.mutate({ status });
+      }} />
   {/if}
 
   {#if lightboxOpen}

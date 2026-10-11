@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyState from "#lib/components/EmptyState.svelte";
   import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
 
   import { enumParam } from "#lib/url-params.js";
@@ -363,8 +364,7 @@
       </a>
     </section>
   {:else if comingSoon}
-    <div
-      class="border-border text-dim flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-14 text-center">
+    <EmptyState padding="py-14" class="flex flex-col items-center gap-2">
       <Icon
         name={domain === Domain.PODCASTS ? "podcast" : "boardgame"}
         class="text-dim/60 h-8 w-8" />
@@ -372,7 +372,7 @@
       <p class="max-w-xs text-sm">
         {m.search_coming_soon_desc()}
       </p>
-    </div>
+    </EmptyState>
   {:else if domain === ALL}
     <UnifiedSearchPanel
       {query}

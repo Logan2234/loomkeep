@@ -361,27 +361,25 @@
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="text-fg truncate font-semibold">{item.title}</span>
-                <span
-                  class="border-border text-dim rounded-full border px-2 py-0.5 text-xs font-bold">
+                <span class="pill border-border text-dim">
                   {item.canonicalSource}
                 </span>
                 {#if item.stale}
                   <span
-                    class="border-accent/40 bg-accent/10 text-accent flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold">
+                    class="pill border-accent/40 bg-accent/10 text-accent flex items-center gap-1">
                     <span class="bg-accent h-1.5 w-1.5 rounded-full"></span>
                     {m.admin_cache_stale()}
                   </span>
                 {/if}
                 {#if item.referenceCount === 0}
-                  <span
-                    class="border-border text-dim rounded-full border px-2 py-0.5 text-xs font-bold">
+                  <span class="pill border-border text-dim">
                     {m.admin_cache_orphan()}
                   </span>
                 {/if}
                 {#if item.cachedLocales.length > 1}
                   <span
                     title={item.cachedLocales.join(", ")}
-                    class="border-border text-dim rounded-full border px-2 py-0.5 text-xs font-bold">
+                    class="pill border-border text-dim">
                     {item.cachedLocales.length}
                     {m.admin_cache_languages_suffix()}
                   </span>
@@ -471,19 +469,16 @@
               <p class="text-dim mt-1 text-xs">{detail.canonicalSource}</p>
               <div class="mt-1.5 flex flex-wrap gap-1.5">
                 {#if detail.stale}
-                  <span
-                    class="border-accent/40 bg-accent/10 text-accent rounded-full border px-2 py-0.5 text-xs font-bold">
+                  <span class="pill border-accent/40 bg-accent/10 text-accent">
                     {m.admin_cache_stale()}
                   </span>
                 {/if}
-                <span
-                  class="border-border text-dim rounded-full border px-2 py-0.5 text-xs font-bold">
+                <span class="pill border-border text-dim">
                   {detail.referenceCount}
                   {m.admin_accounts_suffix()}
                 </span>
                 {#if detail.cachedLocales.length > 1}
-                  <span
-                    class="border-border text-dim rounded-full border px-2 py-0.5 text-xs font-bold">
+                  <span class="pill border-border text-dim">
                     {m.admin_cache_languages()}
                     {detail.cachedLocales.join(", ")}
                   </span>

@@ -311,8 +311,7 @@
         <li class="card p-3.5">
           <div class="flex flex-wrap items-center gap-2">
             <span
-              class="rounded-full border px-2 py-0.5 text-xs font-bold {run.status ===
-              'SUCCESS'
+              class="pill {run.status === 'SUCCESS'
                 ? 'border-success/40 bg-success/10 text-success'
                 : run.status === 'RUNNING'
                   ? 'border-accent/40 bg-accent/10 text-accent'
@@ -334,8 +333,7 @@
             {/if}
             {#if run.overwrite}
               <Tooltip text={m.admin_imports_overwrite_help()}
-                ><span
-                  class="border-accent/40 bg-accent/10 text-accent rounded-full border px-2 py-0.5 text-xs font-bold">
+                ><span class="pill border-accent/40 bg-accent/10 text-accent">
                   {m.admin_imports_overwrite()}
                 </span></Tooltip>
             {/if}

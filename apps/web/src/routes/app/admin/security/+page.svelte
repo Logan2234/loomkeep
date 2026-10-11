@@ -329,10 +329,7 @@
           out:fade|global={{ duration: reduced ? 0 : 100 }}
           class="card p-3.5">
           <div class="flex flex-wrap items-center gap-2">
-            <span
-              class="rounded-full border px-2 py-0.5 text-xs font-bold {TYPE_COLORS[
-                e.type
-              ]}">
+            <span class="pill {TYPE_COLORS[e.type]}">
               {TYPE_LABELS[e.type]}
             </span>
             {#if e.identifier}

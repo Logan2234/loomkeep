@@ -60,7 +60,7 @@
               title={review.target?.title ?? m.common_work()}
               alt=""
               caption={false}
-              containerClass="shrink-0"
+              containerClass="h-16 w-12 shrink-0"
               class="h-16 w-12 shrink-0 rounded-md object-cover {off
                 ? 'opacity-70'
                 : ''}">

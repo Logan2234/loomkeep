@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+  import RecoveryCodesModal from "./RecoveryCodesModal.svelte";
+  import MfaTotpSetupModal from "./MfaTotpSetupModal.svelte";
+  import PasswordConfirmModal from "./PasswordConfirmModal.svelte";
 
-  import {
-    WEBAUTHN_NAME_MAX_LENGTH,
-    OTP_CODE_LENGTH,
-    RECOVERY_CODE_LENGTH,
-  } from "@loomkeep/shared";
+  import { WEBAUTHN_NAME_MAX_LENGTH } from "@loomkeep/shared";
 
   import {
     confirmTotp,
@@ -26,11 +24,11 @@
   import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import Modal from "#lib/components/Modal.svelte";
-  import PasswordInput from "#lib/components/PasswordInput.svelte";
+
   import Switch from "#lib/components/Switch.svelte";
-  import { downloadBlob, datedFilename } from "#lib/download.js";
+
   import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
-  import { normalizeCodeInput } from "#lib/one-time-code.js";
+
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
   import type { MfaStatusDto, WebauthnCredentialDto } from "@loomkeep/shared";
@@ -184,13 +182,9 @@
   }
 
   let revealedCodes = $state<string[]>([]);
-  const copyFeedback = new CopyFeedback();
-  const recoveryCopied = $derived(copyFeedback.value === true);
-  $effect(() => () => copyFeedback.reset());
 
   function openRecoveryReveal(codes: string[]) {
     revealedCodes = codes;
-    copyFeedback.reset();
     openModal = "recovery-reveal";
   }
 
@@ -212,34 +206,6 @@
 
   function confirmRegenerate() {
     regenerateMut.mutate({ currentPassword: sensitivePasswordInput });
-  }
-
-  async function copyAllCodes() {
-    await copyFeedback.copy(revealedCodes.join("\n"), true);
-  }
-
-  const groupCode = (code: string): string =>
-    `${code.slice(0, RECOVERY_CODE_LENGTH / 2)}-${code.slice(RECOVERY_CODE_LENGTH / 2)}`;
-
-  /**
-   * Plain text rather than PDF: it needs no dependency, prints fine, and is
-   * readable from a password manager's secure note — which is where these
-   * belong. Shown once and never again, so a copy-to-clipboard alone loses
-   * them to the next thing the user copies.
-   */
-  function downloadCodes() {
-    const header = [
-      m.settings_mfa_recovery_file_header({ account: auth.user?.email ?? "" }),
-      m.settings_mfa_recovery_file_generated({
-        date: formatDate(new Date().toISOString()),
-      }),
-      "",
-    ];
-    downloadBlob(
-      [...header, ...revealedCodes.map(groupCode), ""].join("\r\n"),
-      "text/plain;charset=utf-8",
-      datedFilename(`loomkeep-recovery-codes`, "txt"),
-    );
   }
 
   let webauthnNameInput = $state("");
@@ -544,171 +510,40 @@
 {/if}
 
 {#if openModal === "totp-setup"}
-  <Modal title={m.settings_mfa_totp_setup_title()} onclose={closeModal}>
-    {#if totpStep === "scan"}
-      <div class="flex flex-col items-center gap-4">
-        {#if totpQrSvg}
-          <div class="qr-frame rounded-xl bg-white p-3">
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html totpQrSvg}
-          </div>
-        {:else}
-          <div class="bg-surface-2 h-48 w-48 animate-pulse rounded-xl"></div>
-        {/if}
-        <p class="text-dim max-w-xs text-center text-sm">
-          {m.settings_mfa_totp_scan_hint()}
-        </p>
-        {#if totpSecret}
-          <p class="w-full text-center">
-            <span class="text-dim text-xs"
-              >{m.settings_mfa_totp_manual_entry_label()}</span>
-            <span class="block font-mono text-sm tracking-widest select-all">
-              {totpSecret}
-            </span>
-          </p>
-        {/if}
-        <button
-          type="button"
-          class="btn btn-primary w-full"
-          disabled={!totpQrSvg}
-          onclick={() => (totpStep = "confirm")}>
-          {m.common_next()}
-        </button>
-      </div>
-    {:else}
-      <form
-        class="flex flex-col gap-3"
-        onsubmit={(e) => {
-          e.preventDefault();
-          confirmTotpSetup();
-        }}>
-        <p class="text-sm">{m.settings_mfa_totp_confirm_hint()}</p>
-        <label class="block">
-          <span class="mb-1.5 block text-sm font-semibold">
-            {m.common_code()}
-          </span>
-          <input
-            type="text"
-            name="code"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            minlength={OTP_CODE_LENGTH}
-            required
-            enterkeyhint="done"
-            class="input font-mono text-lg tracking-[0.3em]"
-            placeholder="000000"
-            value={totpCodeInput}
-            oninput={(e) =>
-              (totpCodeInput = normalizeCodeInput(
-                e.currentTarget,
-                OTP_CODE_LENGTH,
-              ))} />
-        </label>
-        {#if totpConfirmMut.error}
-          <p class="text-danger text-sm">
-            {m.settings_mfa_totp_invalid_code()}
-          </p>
-        {/if}
-        <div class="mt-2 flex justify-end gap-2">
-          <button
-            type="button"
-            class="btn btn-ghost"
-            onclick={() => (totpStep = "scan")}>
-            {m.common_back()}
-          </button>
-          <button
-            type="submit"
-            class="btn btn-primary"
-            disabled={totpConfirmMut.loading ||
-              totpCodeInput.trim().length !== OTP_CODE_LENGTH}>
-            {totpConfirmMut.loading
-              ? m.common_save_loading()
-              : m.common_enable()}
-          </button>
-        </div>
-      </form>
-    {/if}
-  </Modal>
+  <MfaTotpSetupModal
+    bind:step={totpStep}
+    bind:code={totpCodeInput}
+    qrSvg={totpQrSvg}
+    secret={totpSecret}
+    busy={totpConfirmMut.loading}
+    invalid={!!totpConfirmMut.error}
+    onconfirm={confirmTotpSetup}
+    onclose={closeModal} />
 {/if}
 
 {#if openModal === "totp-disable"}
-  <Modal title={m.settings_mfa_totp_disable_title()} onclose={closeModal}>
-    <form
-      class="flex flex-col gap-3"
-      onsubmit={(e) => {
-        e.preventDefault();
-        confirmTotpDisable();
-      }}>
-      <p class="text-sm">{m.settings_mfa_totp_disable_hint()}</p>
-      <label class="block">
-        <span class="mb-1.5 block text-sm font-semibold">
-          {m.common_current_password()}
-        </span>
-        <PasswordInput
-          name="currentPassword"
-          autocomplete="current-password"
-          enterkeyhint="done"
-          minlength={1}
-          required
-          bind:value={disablePasswordInput} />
-      </label>
-      {#if totpDisableMut.error}
-        <p class="text-danger text-sm">{totpDisableMut.error}</p>
-      {/if}
-      <div class="mt-2 flex justify-end gap-2">
-        <button type="button" class="btn btn-ghost" onclick={closeModal}>
-          {m.common_cancel()}
-        </button>
-        <button
-          type="submit"
-          class="btn btn-danger"
-          disabled={totpDisableMut.loading || !disablePasswordInput}>
-          {totpDisableMut.loading
-            ? m.common_save_loading()
-            : m.common_disable()}
-        </button>
-      </div>
-    </form>
-  </Modal>
+  <PasswordConfirmModal
+    title={m.settings_mfa_totp_disable_title()}
+    description={m.settings_mfa_totp_disable_hint()}
+    bind:password={disablePasswordInput}
+    busy={totpDisableMut.loading}
+    error={totpDisableMut.error}
+    confirmLabel={m.common_disable()}
+    danger
+    onconfirm={confirmTotpDisable}
+    onclose={closeModal} />
 {/if}
 
 {#if openModal === "email-confirm"}
-  <Modal title={m.auth_mfa_email_label()} onclose={closeModal}>
-    <form
-      class="flex flex-col gap-3"
-      onsubmit={(e) => {
-        e.preventDefault();
-        confirmEmailMfa();
-      }}>
-      <p class="text-sm">{m.settings_mfa_email_desc()}</p>
-      <label class="block">
-        <span class="mb-1.5 block text-sm font-semibold">
-          {m.common_current_password()}
-        </span>
-        <PasswordInput
-          name="currentPassword"
-          autocomplete="current-password"
-          enterkeyhint="done"
-          minlength={1}
-          required
-          bind:value={sensitivePasswordInput} />
-      </label>
-      {#if emailMfaMut.error}
-        <p class="text-danger text-sm">{emailMfaMut.error}</p>
-      {/if}
-      <div class="mt-2 flex justify-end gap-2">
-        <button type="button" class="btn btn-ghost" onclick={closeModal}>
-          {m.common_cancel()}
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          disabled={emailMfaMut.loading || !sensitivePasswordInput}>
-          {emailMfaMut.loading ? m.common_save_loading() : m.common_confirm()}
-        </button>
-      </div>
-    </form>
-  </Modal>
+  <PasswordConfirmModal
+    title={m.auth_mfa_email_label()}
+    description={m.settings_mfa_email_desc()}
+    bind:password={sensitivePasswordInput}
+    busy={emailMfaMut.loading}
+    error={emailMfaMut.error}
+    confirmLabel={m.common_confirm()}
+    onconfirm={confirmEmailMfa}
+    onclose={closeModal} />
 {/if}
 
 {#if openModal === "webauthn-add"}
@@ -793,164 +628,46 @@
 {/if}
 
 {#if openModal === "webauthn-remove"}
-  <Modal title={m.settings_mfa_webauthn_remove_title()} onclose={closeModal}>
-    <form
-      class="flex flex-col gap-3"
-      onsubmit={(e) => {
-        e.preventDefault();
-        confirmWebauthnRemove();
-      }}>
-      <p class="text-sm">{m.settings_mfa_webauthn_remove_hint()}</p>
-      <label class="block">
-        <span class="mb-1.5 block text-sm font-semibold">
-          {m.common_current_password()}
-        </span>
-        <PasswordInput
-          name="currentPassword"
-          autocomplete="current-password"
-          enterkeyhint="done"
-          minlength={1}
-          required
-          bind:value={sensitivePasswordInput} />
-      </label>
-      {#if webauthnRemoveMut.error}
-        <p class="text-danger text-sm">{webauthnRemoveMut.error}</p>
-      {/if}
-      <div class="mt-2 flex justify-end gap-2">
-        <button type="button" class="btn btn-ghost" onclick={closeModal}>
-          {m.common_cancel()}
-        </button>
-        <button
-          type="submit"
-          class="btn btn-danger"
-          disabled={webauthnRemoveMut.loading || !sensitivePasswordInput}>
-          {webauthnRemoveMut.loading
-            ? m.common_save_loading()
-            : m.common_delete()}
-        </button>
-      </div>
-    </form>
-  </Modal>
+  <PasswordConfirmModal
+    title={m.settings_mfa_webauthn_remove_title()}
+    description={m.settings_mfa_webauthn_remove_hint()}
+    bind:password={sensitivePasswordInput}
+    busy={webauthnRemoveMut.loading}
+    error={webauthnRemoveMut.error}
+    confirmLabel={m.common_delete()}
+    danger
+    onconfirm={confirmWebauthnRemove}
+    onclose={closeModal} />
 {/if}
 
 {#if openModal === "passwordless-confirm"}
-  <Modal title={m.settings_mfa_passwordless_label()} onclose={closeModal}>
-    <form
-      class="flex flex-col gap-3"
-      onsubmit={(e) => {
-        e.preventDefault();
-        confirmPasswordless();
-      }}>
-      <p class="text-sm">{m.settings_mfa_passwordless_confirm_hint()}</p>
-      <label class="block">
-        <span class="mb-1.5 block text-sm font-semibold">
-          {m.common_current_password()}
-        </span>
-        <PasswordInput
-          name="currentPassword"
-          autocomplete="current-password"
-          enterkeyhint="done"
-          minlength={1}
-          required
-          bind:value={sensitivePasswordInput} />
-      </label>
-      {#if passwordlessMut.error}
-        <p class="text-danger text-sm">{passwordlessMut.error}</p>
-      {/if}
-      <div class="mt-2 flex justify-end gap-2">
-        <button type="button" class="btn btn-ghost" onclick={closeModal}>
-          {m.common_cancel()}
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          disabled={passwordlessMut.loading || !sensitivePasswordInput}>
-          {passwordlessMut.loading
-            ? m.common_save_loading()
-            : m.common_confirm()}
-        </button>
-      </div>
-    </form>
-  </Modal>
+  <PasswordConfirmModal
+    title={m.settings_mfa_passwordless_label()}
+    description={m.settings_mfa_passwordless_confirm_hint()}
+    bind:password={sensitivePasswordInput}
+    busy={passwordlessMut.loading}
+    error={passwordlessMut.error}
+    confirmLabel={m.common_confirm()}
+    onconfirm={confirmPasswordless}
+    onclose={closeModal} />
 {/if}
 
 {#if openModal === "recovery-regenerate-confirm"}
-  <Modal
+  <PasswordConfirmModal
     title={m.settings_mfa_recovery_regenerate_confirm_title()}
-    onclose={closeModal}>
-    <form
-      class="flex flex-col gap-3"
-      onsubmit={(e) => {
-        e.preventDefault();
-        confirmRegenerate();
-      }}>
-      <p class="text-sm">
-        {m.settings_mfa_recovery_regenerate_confirm_message()}
-      </p>
-      <label class="block">
-        <span class="mb-1.5 block text-sm font-semibold">
-          {m.common_current_password()}
-        </span>
-        <PasswordInput
-          name="currentPassword"
-          autocomplete="current-password"
-          enterkeyhint="done"
-          minlength={1}
-          required
-          bind:value={sensitivePasswordInput} />
-      </label>
-      {#if regenerateMut.error}
-        <p class="text-danger text-sm">{regenerateMut.error}</p>
-      {/if}
-      <div class="mt-2 flex justify-end gap-2">
-        <button type="button" class="btn btn-ghost" onclick={closeModal}>
-          {m.common_cancel()}
-        </button>
-        <button
-          type="submit"
-          class="btn btn-danger"
-          disabled={regenerateMut.loading || !sensitivePasswordInput}>
-          {regenerateMut.loading
-            ? m.common_save_loading()
-            : m.common_regenerate()}
-        </button>
-      </div>
-    </form>
-  </Modal>
+    description={m.settings_mfa_recovery_regenerate_confirm_message()}
+    bind:password={sensitivePasswordInput}
+    busy={regenerateMut.loading}
+    error={regenerateMut.error}
+    confirmLabel={m.common_regenerate()}
+    danger
+    onconfirm={confirmRegenerate}
+    onclose={closeModal} />
 {/if}
 
 {#if openModal === "recovery-reveal"}
-  <Modal title={m.settings_mfa_recovery_reveal_title()} onclose={closeModal}>
-    <p class="text-dim mb-4 text-sm">{m.settings_mfa_recovery_reveal_hint()}</p>
-    <div
-      class="border-border bg-surface-2 grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-dashed p-4">
-      {#each revealedCodes as code (code)}
-        <p class="text-center font-mono text-sm tracking-wider tabular-nums">
-          {groupCode(code)}
-        </p>
-      {/each}
-    </div>
-    <div class="mt-4 flex flex-col gap-2">
-      <button class="btn btn-ghost w-full" onclick={copyAllCodes}>
-        <Icon name={recoveryCopied ? "check" : "link"} class="h-4 w-4" />
-        {recoveryCopied
-          ? m.common_copied()
-          : m.settings_mfa_recovery_copy_all()}
-      </button>
-      <button class="btn btn-ghost w-full" onclick={downloadCodes}>
-        <Icon name="download" class="h-4 w-4" />
-        {m.settings_mfa_recovery_download()}
-      </button>
-      <button class="btn btn-primary w-full" onclick={closeModal}>
-        {m.settings_mfa_recovery_acknowledge()}
-      </button>
-    </div>
-  </Modal>
+  <RecoveryCodesModal
+    codes={revealedCodes}
+    accountEmail={auth.user?.email ?? ""}
+    onclose={closeModal} />
 {/if}
-
-<style>
-  .qr-frame :global(svg) {
-    width: 200px;
-    height: 200px;
-  }
-</style>

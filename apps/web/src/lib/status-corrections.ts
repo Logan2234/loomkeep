@@ -37,3 +37,18 @@ export function statusCorrectionLabel(
   if (corrections.length === 0) return null;
   return corrections.length === 1 ? singleLabel : m.tracking_correct_status();
 }
+
+export function cycleAwareStatusCorrections<T extends string>(
+  statuses: readonly T[],
+  current: T,
+  directTargets: readonly T[] | undefined,
+  resetStatus: T,
+  cycles: readonly { status: string; sessionCount: number }[],
+): T[] {
+  const hasActiveSessions = cycles.some(
+    (cycle) => cycle.status === "ACTIVE" && cycle.sessionCount > 0,
+  );
+  return getStatusCorrections(statuses, current, directTargets).filter(
+    (status) => status !== resetStatus || !hasActiveSessions,
+  );
+}

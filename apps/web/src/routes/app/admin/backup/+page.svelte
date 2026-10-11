@@ -357,7 +357,7 @@
         bind:value={confirmText}
         disabled={restoreMut.loading}
         placeholder={CONFIRM_PHRASE}
-        class="border-border bg-surface mt-3 w-full rounded-lg border px-3 py-2 text-sm" />
+        class="input mt-3 text-sm" />
       <label class="mt-3 block">
         <span class="mb-1.5 block text-sm font-semibold">
           {m.common_current_password()}
