@@ -80,8 +80,9 @@ entry the bare code is used, which works but loses regional formatting.
 Add the code to `COPY_LOCALES` in `apps/api/src/common/copy-locale.util.ts`: the
 compiler then lists every table missing it. Today:
 
-- `apps/api/src/mail/mail.i18n.ts` — `MAIL_COPY` (~165 lines per locale, with
-  functions for plurals and interpolation)
+- `apps/api/src/mail/copy/<locale>.ts` — locale copy implementing `MailCopy`
+  from `copy/types.ts`, with functions for plurals and interpolation; register it
+  in `copy/index.ts` (`MAIL_COPY`). `mail.i18n.ts` remains the import facade.
 - `apps/api/src/notifications/notification-copy.ts` — `COPY`
 - `apps/api/src/ee/calendar/calendar-feed.service.ts` — `FEED_COPY`
 - `apps/api/src/ee/social/activity-feed.service.ts` — `FEED_COPY` (verbs + phrases)

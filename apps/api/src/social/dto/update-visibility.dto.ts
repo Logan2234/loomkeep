@@ -1,3 +1,4 @@
+import type { UpdateVisibilitySettingsDto } from "@loomkeep/shared";
 import {
   type Domain,
   Domain as DomainEnum,
@@ -22,7 +23,7 @@ class VisibilitySettingItem {
   audience!: VisibilityAudience;
 }
 
-export class UpdateVisibilitySettingsBody {
+export class UpdateVisibilitySettingsBody implements UpdateVisibilitySettingsDto {
   @IsOptional()
   @IsIn(Object.values(ProfileAccessEnum))
   profileAccess?: ProfileAccess;

@@ -1,7 +1,8 @@
+import type { CommentMentionInputDto } from "@loomkeep/shared";
 import { Type } from "class-transformer";
 import { IsInt, IsString, Min } from "class-validator";
 
-export class CommentMentionBody {
+export class CommentMentionBody implements CommentMentionInputDto {
   @IsString()
   userId!: string;
 
