@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    REVIEW_TARGET_LABEL,
+    REVIEW_TARGET_HUE,
+  } from "#lib/constants/review-targets.js";
+
   import { getMyReviews } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -11,24 +16,6 @@
   import { seasonEpisodeLabel } from "#lib/review-target-label.js";
 
   const PREVIEW_COUNT = 3;
-
-  const TYPE_LABEL: Record<string, string> = {
-    MEDIA: m.common_Media(),
-    GAME: m.common_Games(),
-    BOOK: m.common_Books(),
-    MUSIC: m.common_Music(),
-    SEASON: m.common_season(),
-    EPISODE: m.common_episode(),
-  };
-
-  const TYPE_HUE: Record<string, string> = {
-    MEDIA: "var(--stat-media)",
-    SEASON: "var(--stat-media)",
-    EPISODE: "var(--stat-media)",
-    GAME: "var(--stat-games)",
-    BOOK: "var(--stat-books)",
-    MUSIC: "var(--stat-music)",
-  };
 
   const reviewsQuery = createApiQuery(() => ({
     key: keys.profile.myReviews(),
@@ -75,11 +62,12 @@
                   ? 'opacity-70'
                   : ''}" />
             {:else}
-              {@const hue = TYPE_HUE[review.targetType] ?? "var(--dim)"}
+              {@const hue =
+                REVIEW_TARGET_HUE[review.targetType] ?? "var(--dim)"}
               <div
                 class="flex h-16 w-12 shrink-0 items-center justify-center rounded-md font-mono text-sm font-bold"
                 style="background: linear-gradient(155deg, color-mix(in srgb, {hue} 55%, var(--surface-2)), color-mix(in srgb, {hue} 12%, var(--surface-2))); color: color-mix(in srgb, {hue} 85%, var(--fg));">
-                {TYPE_LABEL[review.targetType]?.[0] ?? "?"}
+                {REVIEW_TARGET_LABEL[review.targetType]?.[0] ?? "?"}
               </div>
             {/if}
 
@@ -98,7 +86,7 @@
               <p class="text-dim flex flex-wrap items-center gap-x-2 text-xs">
                 <span class="timecode uppercase"
                   >{seasonEpisodeLabel(review) ??
-                    TYPE_LABEL[review.targetType] ??
+                    REVIEW_TARGET_LABEL[review.targetType] ??
                     review.targetType}</span>
                 {#if appConfig.socialEnabled}
                   <span aria-hidden="true">·</span>

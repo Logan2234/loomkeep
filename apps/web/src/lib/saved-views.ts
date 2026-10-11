@@ -1,16 +1,7 @@
-import type {
-  SavedViewDomain,
-  SavedViewDto,
-  SavedViewFiltersDto,
-} from "@loomkeep/shared";
+import { DOMAINS } from "#lib/constants/domains.js";
+import type { SavedViewDto, SavedViewFiltersDto } from "@loomkeep/shared";
 
 /** Each domain's library page. */
-const LIBRARY_HREF: Record<SavedViewDomain, string> = {
-  MEDIA: "/app/media",
-  GAMES: "/app/games",
-  BOOKS: "/app/books",
-  MUSIC: "/app/music",
-};
 
 /**
  * The filters as a library page's address carries them: only what differs
@@ -40,7 +31,7 @@ export function filtersToSearchParams(
 export function savedViewHref(view: SavedViewDto): string {
   const params = filtersToSearchParams(view.filters);
   params.set("view", view.id);
-  return `${LIBRARY_HREF[view.domain]}?${params}`;
+  return `${DOMAINS[view.domain].href}?${params}`;
 }
 
 /**

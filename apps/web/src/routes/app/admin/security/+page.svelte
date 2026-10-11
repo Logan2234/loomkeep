@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { typedEntries } from "#lib/object.js";
+
   import { CopyFeedback } from "#lib/clipboard.svelte.js";
 
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/admin-filter-url.js";
+  import { adminFilterHref, enumParam } from "#lib/url-params.js";
   import {
     getAdminSecurityEvents,
     getAdminSecuritySummary,
@@ -92,10 +94,13 @@
     })),
   ];
 
-  const activeType = $derived<SecurityEventType | null>(
-    Object.hasOwn(TYPE_LABELS, page.url.searchParams.get("type") ?? "")
-      ? (page.url.searchParams.get("type") as SecurityEventType)
-      : null,
+  const activeType = $derived(
+    enumParam(
+      page.url.searchParams,
+      "type",
+      typedEntries(TYPE_LABELS).map(([key]) => key),
+      null,
+    ),
   );
   let identifierInput = $state(page.url.searchParams.get("identifier") ?? "");
   const identifierFilter = $derived(

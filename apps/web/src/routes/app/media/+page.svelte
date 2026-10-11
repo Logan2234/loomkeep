@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { recordFrom } from "#lib/object.js";
+
   import { type SelectOption } from "#lib/types/select-option.js";
 
   import { EMBEDDED_SEARCH_LIMIT } from "#lib/constants/search.js";
@@ -27,7 +29,11 @@
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
   } from "#lib/constants/ownership-sources.js";
-  import { MEDIA_STATUS_META } from "#lib/constants/status-labels.js";
+  import {
+    MEDIA_STATUS_META,
+    MEDIA_STATUS_ORDER,
+    mediaFilterLabel,
+  } from "#lib/constants/status-labels.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
   import {
@@ -48,21 +54,17 @@
     progressPercent,
     type MediaSortKey,
     type MediaFilterStatus,
-    MEDIA_SYNTHETIC_STATUS,
   } from "@loomkeep/shared";
 
-  const STATUS_OPTIONS = [
-    { label: m.library_status_in_progress(), value: "WATCHING" },
-    { label: m.media_status_planned(), value: "PLANNED" },
-    { label: m.library_status_completed(), value: "COMPLETED" },
-    { label: m.media_status_paused(), value: MEDIA_SYNTHETIC_STATUS.DORMANT },
-    { label: m.media_status_ghost(), value: MEDIA_SYNTHETIC_STATUS.GHOST },
-    { label: m.library_status_dropped(), value: "DROPPED" },
-  ];
+  const STATUS_OPTIONS = MEDIA_STATUS_ORDER.map((value) => ({
+    value,
+    label: mediaFilterLabel(value),
+  }));
 
-  const STATUS_LABELS = Object.fromEntries(
-    STATUS_OPTIONS.map((o) => [o.value, o.label]),
-  ) as Record<string, string>;
+  const STATUS_LABELS: Partial<Record<MediaFilterStatus, string>> = recordFrom(
+    MEDIA_STATUS_ORDER,
+    mediaFilterLabel,
+  );
 
   const SORTS = [
     { label: m.media_sort_watched(), value: "recent" },

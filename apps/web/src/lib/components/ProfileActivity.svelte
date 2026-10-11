@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { activityTargetHue } from "#lib/constants/review-targets.js";
+
   import { activityPhrase, activityRating } from "#lib/activity-phrase.js";
   import { getUserActivity } from "#lib/api/client.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
@@ -37,13 +39,6 @@
     getNextPageParam: (last, allPages) =>
       last.hasMore ? allPages.length + 1 : undefined,
   }));
-
-  const DOMAIN_HUE: Record<string, string> = {
-    MEDIA: "var(--stat-media)",
-    GAME: "var(--stat-games)",
-    BOOK: "var(--stat-books)",
-    MUSIC: "var(--stat-music)",
-  };
 </script>
 
 {#if !activity.loading && activity.data.length > 0}
@@ -76,7 +71,7 @@
     <ul class="border-border ml-3.5 flex flex-col border-l pl-7">
       {#each activity.data as event (event.id)}
         {@const rating = activityRating(event)}
-        {@const hue = DOMAIN_HUE[event.targetType] ?? "var(--dim)"}
+        {@const hue = activityTargetHue(event.targetType)}
         <li class="relative flex items-center gap-3 py-2.5">
           <a
             href="/app/u/{event.actor.username}"

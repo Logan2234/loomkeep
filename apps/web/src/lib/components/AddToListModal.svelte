@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { LIST_VISIBILITY_LABEL } from "#lib/constants/list-labels.js";
+
   import {
     addListItem,
     createList,
@@ -11,11 +13,7 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type {
-    ListItemTargetType,
-    ListVisibility,
-    MyListDto,
-  } from "@loomkeep/shared";
+  import type { ListItemTargetType, MyListDto } from "@loomkeep/shared";
   import { flip } from "svelte/animate";
   import { fade, slide } from "svelte/transition";
   import Icon from "./Icon.svelte";
@@ -37,12 +35,6 @@
   } = $props();
 
   const reduced = prefersReducedMotion();
-
-  const VISIBILITY_LABEL: Record<ListVisibility, string> = {
-    PRIVATE: m.common_private(),
-    FRIENDS: m.common_friends(),
-    PUBLIC: m.common_public(),
-  };
 
   let query = $state("");
 
@@ -142,7 +134,7 @@
         {#if list.role === "EDITOR"}
           {m.list_owned_by_editor({ name: list.author.displayName })} ·
         {/if}
-        {workCount(list.itemCount)} · {VISIBILITY_LABEL[list.visibility]}
+        {workCount(list.itemCount)} · {LIST_VISIBILITY_LABEL[list.visibility]}
       </span>
     </span>
     <Switch

@@ -1,4 +1,5 @@
-import { DOMAINS } from "#lib/constants/domains.js";
+import { DOMAINS, DOMAIN_IDS } from "#lib/constants/domains.js";
+import { enumParam } from "#lib/url-params.js";
 import { Domain, type AdminCacheSort } from "@loomkeep/shared";
 
 export function parseCacheFilters(params: Pick<URLSearchParams, "get">): {
@@ -7,16 +8,18 @@ export function parseCacheFilters(params: Pick<URLSearchParams, "get">): {
   orphansOnly: boolean;
   search: string;
 } {
-  const requestedDomain = params.get("domain") as Domain;
-  const domain =
-    DOMAINS[requestedDomain] && !DOMAINS[requestedDomain].comingSoon
-      ? requestedDomain
-      : Domain.MEDIA;
-  const requestedSort = params.get("sort");
-  const sort: AdminCacheSort =
-    requestedSort === "recent" || requestedSort === "title"
-      ? requestedSort
-      : "stale";
+  const domain = enumParam(
+    params,
+    "domain",
+    DOMAIN_IDS.filter((id) => !DOMAINS[id].comingSoon),
+    Domain.MEDIA,
+  );
+  const sort: AdminCacheSort = enumParam(
+    params,
+    "sort",
+    ["recent", "title", "stale"] as const,
+    "stale",
+  );
 
   return {
     domain,

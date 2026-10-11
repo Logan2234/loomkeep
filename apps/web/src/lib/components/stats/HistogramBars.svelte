@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { type ChartDatum } from "#lib/types/chart.js";
+
   import { formatNumber } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   let {
     bars,
     onSelect,
   }: {
-    bars: { label: string; value: number }[];
+    bars: ChartDatum[];
     onSelect?: (label: string) => void;
   } = $props();
 

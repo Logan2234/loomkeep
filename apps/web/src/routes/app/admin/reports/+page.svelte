@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { typedEntries } from "#lib/object.js";
+
   import { labeledOptions } from "#lib/options.js";
 
   import { type ReportResolution, USER_LIMITS } from "@loomkeep/shared";
@@ -8,7 +10,7 @@
   import { appConfig } from "#lib/config.svelte.js";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/admin-filter-url.js";
+  import { adminFilterHref, enumParam } from "#lib/url-params.js";
   import {
     deleteAdminUser,
     getAdminReports,
@@ -67,12 +69,13 @@
     ),
   ];
 
-  const activeStatus = $derived<ReportStatus>(
-    Object.keys(REPORT_STATUS_LABELS).includes(
-      page.url.searchParams.get("status") ?? "",
-    )
-      ? (page.url.searchParams.get("status") as ReportStatus)
-      : "PENDING",
+  const activeStatus = $derived(
+    enumParam(
+      page.url.searchParams,
+      "status",
+      typedEntries(REPORT_STATUS_LABELS).map(([key]) => key),
+      "PENDING",
+    ),
   );
   const reporterId = $derived(page.url.searchParams.get("reporter") || null);
 

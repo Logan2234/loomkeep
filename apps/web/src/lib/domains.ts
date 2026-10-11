@@ -1,3 +1,4 @@
+import { DOMAIN_IDS } from "#lib/constants/domains.js";
 import {
   Domain,
   maintenanceFlag,
@@ -5,7 +6,6 @@ import {
   type ReviewTargetType,
 } from "@loomkeep/shared";
 import { auth } from "./auth.svelte";
-import { DOMAINS } from "./constants/domains";
 import { liveFlags } from "./feature-flags-live.svelte";
 
 /**
@@ -55,7 +55,7 @@ export function domainOffReason(
  * keeps its canonical position at the end rather than being dropped.
  */
 export function orderedDomains(preference: Domain[] | undefined): Domain[] {
-  const canonical = Object.keys(DOMAINS) as Domain[];
+  const canonical = [...DOMAIN_IDS];
   if (!preference?.length) return canonical;
   const rank = new Map(preference.map((d, i) => [d, i]));
   return [...canonical].sort(
@@ -72,9 +72,7 @@ export function orderedDomains(preference: Domain[] | undefined): Domain[] {
 export function toggleDomainSelection(current: Domain[], id: Domain): Domain[] {
   const has = current.includes(id);
   if (has && current.length === 1) return current;
-  return Object.keys(DOMAINS).filter((d) =>
-    d === id ? !has : current.includes(d as Domain),
-  ) as Domain[];
+  return DOMAIN_IDS.filter((d) => (d === id ? !has : current.includes(d)));
 }
 
 const DOMAIN_OF_TARGET: Record<ReviewTargetType, Domain> = {

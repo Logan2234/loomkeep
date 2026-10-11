@@ -1,9 +1,10 @@
 import { m } from "#lib/paraglide/messages.js";
-import type {
-  BookStatus,
-  EntryStatus,
-  GameStatus,
-  MusicStatus,
+import {
+  type BookStatus,
+  type EntryStatus,
+  type GameStatus,
+  type MediaFilterStatus,
+  type MusicStatus,
 } from "@loomkeep/shared";
 
 export const MEDIA_STATUS_META: Record<
@@ -152,3 +153,18 @@ export const MUSIC_STATUS_SEG_ACTIVE: Record<MusicStatus, string> = {
   TO_LISTEN: "bg-surface text-fg shadow-sm",
   LISTENED: "bg-success/20 text-success",
 };
+
+export const MEDIA_STATUS_ORDER = [
+  "WATCHING",
+  "PLANNED",
+  "COMPLETED",
+  "DORMANT",
+  "GHOST",
+  "DROPPED",
+] as const satisfies readonly MediaFilterStatus[];
+
+export function mediaFilterLabel(status: MediaFilterStatus): string {
+  if (status === "DORMANT") return m.media_status_paused();
+  if (status === "GHOST") return m.media_status_ghost();
+  return MEDIA_STATUS_META[status].label;
+}

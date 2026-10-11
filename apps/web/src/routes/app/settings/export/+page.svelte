@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { DOMAINS } from "#lib/constants/domains.js";
+
   import SettingsSection from "../components/SettingsSection.svelte";
   import MigrationExportCard from "./MigrationExportCard.svelte";
 
@@ -35,18 +37,18 @@
       label: m.settings_export_media_label(),
       slug: "media",
     },
-    { domain: Domain.BOOKS, label: m.common_Books(), slug: "books" },
-    { domain: Domain.GAMES, label: m.common_Games(), slug: "games" },
-    { domain: Domain.MUSIC, label: m.common_Music(), slug: "music" },
+    { domain: Domain.BOOKS, label: DOMAINS.BOOKS.label, slug: "books" },
+    { domain: Domain.GAMES, label: DOMAINS.GAMES.label, slug: "games" },
+    { domain: Domain.MUSIC, label: DOMAINS.MUSIC.label, slug: "music" },
     {
       domain: Domain.PODCASTS,
-      label: m.common_Podcasts(),
+      label: DOMAINS.PODCASTS.label,
       slug: "podcasts",
       comingSoon: true,
     },
     {
       domain: Domain.BOARDGAMES,
-      label: m.common_Boardgames(),
+      label: DOMAINS.BOARDGAMES.label,
       slug: "boardgames",
       comingSoon: true,
     },

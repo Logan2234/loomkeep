@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    LIST_KIND_LABEL,
+    LIST_VISIBILITY_LABEL,
+  } from "#lib/constants/list-labels.js";
+
   import { page } from "$app/state";
   import { longpress } from "#lib/actions/longpress.js";
   import {
@@ -38,16 +43,6 @@
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { dndzone } from "svelte-dnd-action";
-
-  const KIND_LABEL: Record<string, string> = {
-    RANKED: m.lists_kind_ranked(),
-    COLLECTION: m.lists_kind_collection(),
-  };
-  const VISIBILITY_LABEL: Record<string, string> = {
-    PRIVATE: m.common_private(),
-    FRIENDS: m.common_friends(),
-    PUBLIC: m.common_public(),
-  };
 
   const id = $derived(page.params.id ?? "");
   const detailKey = $derived(keys.lists.detail(id));
@@ -360,10 +355,10 @@
           </h1>
         </div>
         <p class="text-dim mt-1 flex flex-wrap items-center gap-x-2 text-sm">
-          <span class="timecode uppercase">{KIND_LABEL[list.kind]}</span>
+          <span class="timecode uppercase">{LIST_KIND_LABEL[list.kind]}</span>
           {#if appConfig.socialEnabled}
             <span aria-hidden="true">·</span>
-            <span>{VISIBILITY_LABEL[list.visibility]}</span>
+            <span>{LIST_VISIBILITY_LABEL[list.visibility]}</span>
           {/if}
           {#if role !== "OWNER"}
             <span aria-hidden="true">·</span>

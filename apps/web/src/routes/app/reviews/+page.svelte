@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { REVIEW_TARGET_LABEL } from "#lib/constants/review-targets.js";
+
+  import { DOMAINS } from "#lib/constants/domains.js";
+
   import { labeledOptions } from "#lib/options.js";
 
   import { type SelectOption } from "#lib/types/select-option.js";
@@ -40,25 +44,16 @@
   type Group = "all" | "media" | "games" | "books" | "music";
   type Sort = "recent" | "best";
 
-  const TYPE_LABEL: Record<ReviewTargetType, string> = {
-    MEDIA: m.common_Media(),
-    GAME: m.common_Games(),
-    BOOK: m.common_Books(),
-    MUSIC: m.common_Music(),
-    SEASON: m.common_season(),
-    EPISODE: m.common_episode(),
-  };
-
   // Seasons and episodes sit with the films and series they belong to.
   const groupOf = (target: ReviewTargetType) =>
     REVIEW_TARGET_DOMAIN[target].toLowerCase();
 
   const GROUP_LABEL: Record<Group, string> = {
     all: m.common_all(),
-    media: m.common_Media(),
-    games: m.common_Games(),
-    books: m.common_Books(),
-    music: m.common_Music(),
+    media: DOMAINS.MEDIA.label,
+    games: DOMAINS.GAMES.label,
+    books: DOMAINS.BOOKS.label,
+    music: DOMAINS.MUSIC.label,
   };
 
   const reduced = prefersReducedMotion();
@@ -174,7 +169,7 @@
 
   function metaLine(review: MyReviewDto): string {
     return [
-      seasonEpisodeLabel(review) ?? TYPE_LABEL[review.targetType],
+      seasonEpisodeLabel(review) ?? REVIEW_TARGET_LABEL[review.targetType],
       formatDate(review.createdAt, DATE_MEDIUM_OPTIONS),
       ...(appConfig.socialEnabled
         ? [
@@ -312,7 +307,7 @@
                 class="bg-surface-2 text-dim flex h-24 w-16 shrink-0 items-center justify-center rounded font-mono text-xs {off
                   ? 'opacity-70'
                   : ''}">
-                {TYPE_LABEL[review.targetType]?.[0] ?? "?"}
+                {REVIEW_TARGET_LABEL[review.targetType]?.[0] ?? "?"}
               </div>
             {/if}
 
@@ -421,7 +416,8 @@
 {#if editing}
   <ReviewFormModal
     title={editing.target?.title ?? m.reviews_edit()}
-    meta={seasonEpisodeLabel(editing) ?? TYPE_LABEL[editing.targetType]}
+    meta={seasonEpisodeLabel(editing) ??
+      REVIEW_TARGET_LABEL[editing.targetType]}
     imageUrl={editing.target?.imageUrl ?? null}
     targetType={editing.targetType}
     targetId={editing.targetId}

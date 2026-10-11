@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { recordFrom } from "#lib/object.js";
+
   // Time-window filter for /stats all-time aggregates (Tout/Année/Mois/
   // Semaine). Distinct from the trend-curve period pickers (bucket size) —
   // this narrows *which* entries count, not how a curve is bucketed.
@@ -31,12 +33,11 @@
     onSelect: (window: StatsWindow) => void;
   } = $props();
 
-  const meta = Object.fromEntries(
-    STATS_WINDOWS.map((w) => [w, { label: LABEL[w] }]),
-  ) as Record<StatsWindow, { label: string }>;
-  const activeClass = Object.fromEntries(
-    STATS_WINDOWS.map((w) => [w, "bg-surface text-fg shadow-sm"]),
-  ) as Record<StatsWindow, string>;
+  const meta = recordFrom(STATS_WINDOWS, (w) => ({ label: LABEL[w] }));
+  const activeClass = recordFrom(
+    STATS_WINDOWS,
+    () => "bg-surface text-fg shadow-sm",
+  );
 </script>
 
 <SegmentedStatusControl

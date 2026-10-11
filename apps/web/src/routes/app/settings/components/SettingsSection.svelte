@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { browser } from "$app/env";
+  import { MediaQuery } from "svelte/reactivity";
+
+  import { TABLET_QUERY } from "#lib/constants/media-queries.js";
+
   import PageHeader from "#lib/components/PageHeader.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import type { Snippet } from "svelte";
@@ -8,19 +11,7 @@
   let { slug, children }: { slug: string; children: Snippet } = $props();
 
   const section = $derived(findSection(slug));
-  let isDesktop = $state(false);
-
-  $effect(() => {
-    if (!browser) return;
-
-    const media = window.matchMedia("(min-width: 768px)");
-    const update = () => (isDesktop = media.matches);
-
-    update();
-    media.addEventListener("change", update);
-
-    return () => media.removeEventListener("change", update);
-  });
+  const desktop = new MediaQuery(TABLET_QUERY);
 </script>
 
 {#if section}
@@ -31,7 +22,7 @@
     isNew={section.newBadgeKey ? isFeatureNew(section.newBadgeKey) : false}
     back={section.parent
       ? sectionHref(section.parent)
-      : isDesktop
+      : desktop.current
         ? "/app/profile"
         : "/app/settings"}
     class="mb-6" />

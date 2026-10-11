@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type ChartDatum } from "#lib/types/chart.js";
+
   import { m } from "#lib/paraglide/messages.js";
   // Single-series line chart over an SVG viewbox — reusable for any
   // {label,value}[] series (weekday/hour curves, monthly minutes…). Shows a
@@ -9,7 +11,7 @@
     height = 120,
     labelCount = 4,
   }: {
-    points: { label: string; value: number }[];
+    points: ChartDatum[];
     color?: string;
     height?: number;
     labelCount?: number;

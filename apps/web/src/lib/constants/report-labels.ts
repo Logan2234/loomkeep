@@ -1,3 +1,4 @@
+import { recordFrom } from "#lib/object.js";
 import { m } from "#lib/paraglide/messages.js";
 import { type SelectOption } from "#lib/types/select-option.js";
 import type {
@@ -126,9 +127,10 @@ export const REPORT_PROFILE_PARTS: (SelectOption<ReportProfilePart> & {
   },
 ];
 
-export const REPORT_PROFILE_PART_LABELS = Object.fromEntries(
-  REPORT_PROFILE_PARTS.map((part) => [part.value, part.label]),
-) as Record<ReportProfilePart, string>;
+export const REPORT_PROFILE_PART_LABELS = recordFrom(
+  REPORT_PROFILE_PARTS.map((part) => part.value),
+  (_, index) => REPORT_PROFILE_PARTS[index].label,
+);
 
 export const REPORT_TARGET_LABELS: Record<ReportTargetType, string> = {
   COMMENT: m.report_target_comment(),

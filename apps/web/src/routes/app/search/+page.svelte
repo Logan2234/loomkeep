@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { enumParam } from "#lib/url-params.js";
+
+  import { typedEntries } from "#lib/object.js";
+
   import { type SelectOption } from "#lib/types/select-option.js";
 
   import { goto } from "$app/navigation";
@@ -14,7 +18,7 @@
   import MusicSearchPanel from "#lib/components/search/MusicSearchPanel.svelte";
   import QuickAddPanel from "#lib/components/QuickAddPanel.svelte";
   import ScanIsbnModal from "#lib/components/ScanIsbnModal.svelte";
-  import { DOMAINS } from "#lib/constants/domains.js";
+  import { DOMAINS, DOMAIN_IDS } from "#lib/constants/domains.js";
   import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { isDomainEnabled } from "#lib/domains.js";
   import { layout } from "#lib/layout.svelte.js";
@@ -26,17 +30,18 @@
   // Only the domains the user keeps enabled are searchable (mirrors the nav;
   // the API enforces the same gate on the search endpoints).
   const enabledTabs = $derived(
-    Object.entries(DOMAINS).filter(([d, _]) => isDomainEnabled(d as Domain)),
+    typedEntries(DOMAINS).filter(([d, _]) => isDomainEnabled(d)),
   );
 
   // `type` preselects the domain tab (e.g. linked from a library page's
   // "Chercher un jeu" / empty-search-preview "Voir plus"), same idea as
   // `query` prefilling the search box.
-  const typeParam = page.url.searchParams.get("type");
-  const initialDomain =
-    typeParam && Object.keys(DOMAINS).some((t) => t === typeParam)
-      ? (typeParam as Domain)
-      : Domain.MEDIA;
+  const initialDomain = enumParam(
+    page.url.searchParams,
+    "type",
+    DOMAIN_IDS,
+    Domain.MEDIA,
+  );
 
   let query = $state(page.url.searchParams.get("query") ?? "");
   let domain = $state<Domain>(initialDomain);
@@ -68,7 +73,7 @@
   // first enabled one so the panel below always matches a visible tab.
   $effect(() => {
     if (!isDomainEnabled(domain) && enabledTabs.length > 0) {
-      domain = enabledTabs[0][0] as Domain;
+      domain = enabledTabs[0][0];
     }
   });
 
@@ -102,7 +107,7 @@
     }
     if (event.key === "Tab" && enabledTabs.length > 1) {
       event.preventDefault();
-      const ids = enabledTabs.map(([d]) => d as Domain);
+      const ids = enabledTabs.map(([d]) => d);
       const i = ids.indexOf(domain);
       domain = ids[(i + (event.shiftKey ? -1 : 1) + ids.length) % ids.length];
     }
@@ -214,7 +219,7 @@
             type="button"
             class="guichet-tab"
             class:guichet-tab-active={domain === tab[0]}
-            onclick={() => (domain = tab[0] as Domain)}>
+            onclick={() => (domain = tab[0])}>
             <Icon name={tab[1].icon} class="h-3.5 w-3.5" />
             {tab[1].label}
             {#if tab[1].comingSoon}

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type ChartDatum } from "#lib/types/chart.js";
+
   import { m } from "#lib/paraglide/messages.js";
   import { formatNumber } from "#lib/format.js";
   import ProgressBar from "#lib/components/ProgressBar.svelte";
@@ -7,17 +9,14 @@
     items,
     initialCount = 5,
   }: {
-    items: {
-      label: string;
-      /** Drives the bar width; also what's printed unless `display` overrides it. */
-      value: number;
+    items: (ChartDatum & {
       /** Any CSS colour (e.g. a domain token); overrides the accent fill. */
       color?: string;
       /** Printed instead of `value` when the raw number isn't readable ("64 Mo"). */
       display?: string;
       /** Small qualifier pinned after the label (a quota share, "sans limite"…). */
       badge?: { text: string; tone?: "neutral" | "warn" };
-    }[];
+    })[];
     initialCount?: number;
   } = $props();
 

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { typedEntries } from "#lib/object.js";
+
   import {
     getImportAvailability,
     getImportQuota,
@@ -126,12 +128,12 @@
   {/if}
 
   <div class="flex flex-col gap-8">
-    {#each Object.entries(groups) as [domain, sources] (domain)}
-      {#if isDomainEnabled(domain as Domain)}
-        {@const usedUp = premiumLocked && quota[domain as Domain] === true}
+    {#each typedEntries(groups) as [domain, sources] (domain)}
+      {#if isDomainEnabled(domain)}
+        {@const usedUp = premiumLocked && quota[domain] === true}
         <section>
           <p class="timecode mb-3 flex items-center gap-2 text-xs uppercase">
-            {DOMAINS[domain as Domain].label}
+            {DOMAINS[domain].label}
             {#if premiumLocked && !usedUp}
               <span
                 class="bg-surface-2 text-dim rounded-full px-2 py-0.5 text-[0.65rem] font-semibold normal-case">
@@ -153,7 +155,7 @@
                   href={source.href}
                   class="border-border bg-bg hover:border-accent hover:bg-surface-2 flex items-center gap-3 rounded-lg border p-4 transition-colors">
                   <Icon
-                    name={DOMAINS[domain as Domain].icon}
+                    name={DOMAINS[domain].icon}
                     class="text-accent h-6 w-6" />
                   <span class="flex-1">
                     <span class="flex items-center gap-2 font-semibold">
@@ -174,9 +176,7 @@
                     hash: page.url.hash,
                   }}
                   class="border-border bg-bg flex items-center gap-3 rounded-lg border p-4 opacity-60">
-                  <Icon
-                    name={DOMAINS[domain as Domain].icon}
-                    class="text-dim h-6 w-6" />
+                  <Icon name={DOMAINS[domain].icon} class="text-dim h-6 w-6" />
                   <span class="flex-1">
                     <span class="flex items-center gap-2 font-semibold">
                       {source.label}

@@ -23,7 +23,7 @@
   - le `switch` à 4 domaines répété 6 fois dans `admin-cache.controller.ts` ;
   - les 11 boutons « charger plus ».
 - **Fichiers à découper en priorité** : `library.service.ts` (2163 l.), `mail.service.ts` (1929), `achievements/registry.ts` (1677), `data-export.service.ts` (une méthode de 746 l.), `LibraryBrowser.svelte` (1062), `CommentThread.svelte` (1025).
-- **Inventaire total** : 134 pistes, dont 6 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
+- **Inventaire total** : 119 pistes, dont 6 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
 
 ---
 
@@ -107,34 +107,19 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | HF-08 | 2   | Pluriel à la main ≈60 sites, règle incohérente (`> 1` vs `=== 1`)                                   | fort   | L      | moyen  | P2       |
 | HF-11 | 2   | Durées et horloges formatées à la main, `formatSessionMinutes` non localisé                         | moyen  | S      | faible | P2       |
 | HF-14 | 2   | Déconnexion + redirection ×5, `profileHref` ×3                                                      | faible | S      | faible | P2       |
-| HF-17 | 2   | Comparateurs de listes ×2 (clés différentes)                                                        | faible | S      | faible | P3       |
 | HF-18 | 2   | `localeCompare` sans collation cohérente ×5                                                         | faible | S      | faible | P3       |
-| HF-19 | 2   | Paramètres d'URL énumérés validés à la main ×5                                                      | faible | S      | faible | P2       |
 | CB-01 | 3   | `MINUTE/HOUR/DAY_MS` redéfinis ≈35 fois (API + web + shared)                                        | moyen  | S      | faible | P2       |
 | CF-01 | 3   | Clés de stockage éparpillées (3 conventions de préfixe)                                             | moyen  | S      | faible | P2       |
 | CF-03 | 3   | 171 durées de transition, 16 valeurs distinctes                                                     | moyen  | L      | moyen  | P3       |
-| CF-04 | 3   | Media queries en dur + `matchMedia` manuel                                                          | faible | S      | faible | P3       |
 | CF-06 | 3   | URL feedback en dur malgré `external-links.ts`                                                      | faible | S      | faible | P3       |
-| CF-07 | 3   | Domaine → page bibliothèque mappé ×3 (+ nav)                                                        | moyen  | S      | faible | P2       |
-| CF-08 | 3   | Libellé/icône/teinte de domaine re-déclarés (6 fichiers)                                            | moyen  | S      | faible | P1       |
-| CF-09 | 3   | Libellé/teinte par `ReviewTargetType` dupliqués                                                     | faible | S      | faible | P2       |
 | CF-10 | 3   | 🐛 Libellés `MediaType` ×10, libellé anime incohérent                                               | moyen  | S      | faible | P1       |
-| CF-11 | 3   | Libellés de liste (genre, visibilité) ×4                                                            | faible | S      | faible | P2       |
-| CF-13 | 3   | Options de statut média réécrites (`MEDIA_STATUS_META` existe)                                      | faible | S      | faible | P3       |
 | CF-14 | 3   | Placeholder `"—"` ×21                                                                               | faible | S      | faible | P3       |
 | TB-01 | 4   | `as unknown as` sur `homeLayout` et `instance-settings`                                             | faible | S      | faible | P2       |
 | TB-02 | 4   | `alertPrefs as AlertPrefs` ×4                                                                       | faible | S      | faible | P2       |
 | TB-03 | 4   | Colonnes JSON castées ×11                                                                           | faible | S      | faible | P3       |
-| TF-03 | 4   | Points de graphique dupliqués ×4                                                                    | faible | S      | faible | P3       |
-| TF-04 | 4   | `ListTile` dupliqué                                                                                 | faible | S      | faible | P3       |
-| TF-05 | 4   | `ActivityKind` dupliqué                                                                             | faible | S      | faible | P3       |
 | TF-07 | 4   | `"ALL" \| StatsDomain` dupliqué                                                                     | faible | S      | faible | P3       |
-| TF-09 | 4   | ≈20 casts `as Domain` dus à `Object.keys(DOMAINS)`                                                  | faible | S      | faible | P2       |
-| TF-10 | 4   | `Object.fromEntries(...) as Record` ×8                                                              | faible | S      | faible | P3       |
-| TF-11 | 4   | `Record<string, …>` sur des clés typées                                                             | faible | S      | faible | P3       |
 | TF-12 | 4   | `quick-add.ts` : 8 casts `raw as XDetail`                                                           | faible | M      | moyen  | P3       |
 | TF-13 | 4   | `ImportSourceDescriptor` ment (7 casts sur les sources « bientôt »)                                 | moyen  | S      | faible | P2       |
-| TF-14 | 4   | `$props()` non typés (3 composants + 10 layouts)                                                    | faible | S      | faible | P3       |
 | RB-03 | 5   | `ownedEntry` / `ownedSession` contournent `assertEntryOwnership`                                    | moyen  | S      | faible | P2       |
 | RB-04 | 5   | Bloc XP de fin de cycle copié ×4                                                                    | moyen  | M      | moyen  | P2       |
 | RB-05 | 5   | Tables cycle → statut d'entrée                                                                      | faible | S      | faible | P3       |
@@ -220,7 +205,7 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | RT-27 | 5   | `apps/docs` importe shared par chemin relatif profond ; Dockerfiles                                 | faible | S      | faible | P3       |
 | RT-28 | 5   | 🐛 `detectLocale` ignore l'italien                                                                  | faible | S      | faible | P1       |
 
-**Total : 134 pistes**, dont 6 marquées 🐛. Par priorité : 1 P0, 18 P1, 54 P2 et 61 P3.
+**Total : 119 pistes**, dont 6 marquées 🐛. Par priorité : 1 P0, 17 P1, 49 P2 et 52 P3.
 
 | Axe                | Nombre de pistes      |
 | ------------------ | --------------------- |
@@ -442,22 +427,10 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 - **Constat** : la séquence est copiée 5 fois : `ProfileView.svelte:228-231`, `DesktopSidebar.svelte:60-63`, `MenuSheet.svelte:42-46`, `ee/nav/ProgrammeBoardDesktop.svelte:37-40` et `ee/nav/ProjectorDockDesktop.svelte:35-38`. Le calcul de `profileHref` est triplé (`DesktopSidebar:56`, `ProgrammeBoardDesktop:23`, `ProjectorDockDesktop:21`).
 - **Proposition** : `signOutAndRedirect()` dans `lib/api/auth.ts`, et `profileHref()` dans `lib/navigation.ts`.
 
-**HF-17 — Comparateurs de listes**
-
-- **Constat** : `home/widgets/MyListsWidget.svelte:24-29` et `routes/app/lists/+page.svelte:69-80`, avec des clés différentes pour les mêmes tris.
-- **Proposition** : `LIST_COMPARATORS` dans `lib/list-sort.ts`. Il faut mapper les valeurs persistées de `widget.config.sort`.
-
 **HF-18 — Collation**
 
 - **Constat** : `localeCompare` avec `getLocale()` dans `MyListsWidget.svelte:28` et `lists/+page.svelte:76`, mais sans locale dans `ListMembersModal.svelte:66`, `books/[id]/+page.svelte:114` et `settings/streaming/+page.svelte:38`.
 - **Proposition** : `compareText(a, b)` dans `format.ts`, avec un `Intl.Collator` mis en cache.
-
-**HF-19 — Paramètres d'URL énumérés**
-
-- **Constat** :
-  - `admin/reports/+page.svelte:60-66`, `admin/security/+page.svelte:93-95`, `admin/cache/cache-filters.ts:10` et `search/+page.svelte:33-36`.
-  - `admin/users/+page.svelte:82-87` écrit en dur une liste qui duplique `AdminUserFilter`.
-- **Proposition** : `enumParam(params, key, allowed, fallback)` dans `lib/admin-filter-url.ts`, à renommer `lib/url-params.ts`.
 
 ---
 
@@ -495,36 +468,10 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 - **Proposition** : une échelle `MOTION_MS` et un helper `motionMs(ms, reduced)` dans `lib/motion.ts`.
 - **Risque** : churn élevé. Introduire d'abord le helper sans changer les valeurs.
 
-**CF-04 — Media queries**
-
-- **Constat** :
-  - `MediaQuery("min-width: 768px")` est utilisé dans `LibraryBrowser.svelte:467`, `LibraryTable.svelte:53` et `LibraryViewMenu.svelte:39`.
-  - Des listeners manuels sont posés dans `settings/components/SettingsSection.svelte:16-23` et `settings/+page.svelte:39-47`.
-- **Proposition** : `lib/constants/media-queries.ts`.
-- **À laisser** : `layout.svelte.ts:21` (`COMPACT_QUERY`), différente à dessein ; Tooltip, RelativeTime et PosterRail, qui lisent la valeur une seule fois exprès.
-
 **CF-06 — URL du widget feedback**
 
 - **Constat** : `WidgetIdentify.svelte:31` écrit l'URL en dur.
 - **Proposition** : `` `${FEEDBACK_URL}/api/widget/sdk.js` ``.
-
-**CF-07 — Domaine → page de bibliothèque**
-
-- **Constat** : 3 mappings : `ImportWizard.svelte:92-99`, `profile/ProfileLibrarySection.svelte:25-30` et `lib/saved-views.ts:8-13`. S'y ajoutent `lib/navigation.ts:52-88,263-303` et `lib/home/quick-links.ts:73-94`.
-- **Proposition** : ajouter `href` à `DOMAINS` (`lib/constants/domains.ts`).
-
-**CF-08 — Libellé, icône et teinte de domaine**
-
-- **Constat** :
-  - `ProfileLibrarySection.svelte:16-23,32-39,41-46` contient 3 copies exactes de `DOMAINS[*]`.
-  - Autres copies : `settings/export/+page.svelte:27-52`, `reviews/+page.svelte:51-57`, `stats/stats-domain.ts:9-29` (son commentaire de découplage ne tient plus) et `lib/navigation.ts` (12 occurrences).
-- **Proposition** : lire `DOMAINS[d]`.
-- **Bénéfice** : ajouter un domaine touche 1 fichier au lieu de 6.
-
-**CF-09 — Libellés et teintes par type de critique**
-
-- **Constat** : `TYPE_LABEL` dans `ProfileReviews.svelte:12-19` et `reviews/+page.svelte:31-38` ; `TYPE_HUE` dans `ProfileReviews.svelte:21-28` ; `DOMAIN_HUE` dans `ProfileActivity.svelte:41-46`.
-- **Proposition** : `lib/constants/review-targets.ts`.
 
 **CF-10 — 🐛 Libellés de `MediaType`**
 
@@ -535,16 +482,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
   **Incohérence** : les tables au singulier de `media/+page.svelte:72` et `quick-add.ts:112` utilisent `m.media_anime()` (« Anime », forme de liste) au lieu de `m.media_anime_label()` (« Animé »).
 
 - **Proposition** : `lib/constants/media-types.ts` → `MEDIA_TYPE_LABEL`, `MEDIA_TYPE_PLURAL_LABEL` et `MEDIA_TYPE_OPTIONS`.
-
-**CF-11 — Libellés de liste**
-
-- **Constat** : `KIND_LABEL` et `VISIBILITY_LABEL` dans `lists/+page.svelte:19-27` et `lists/[id]/+page.svelte:36-44` ; `AddToListModal.svelte:41-45` ; les options dans `lists/+page.svelte:28-35` et `ListFormModal.svelte:52-75`.
-- **Proposition** : `lib/constants/list-labels.ts`.
-
-**CF-13 — Options de statut média**
-
-- **Constat** : `media/+page.svelte:38-49` reconstruit les options via `Object.fromEntries … as Record`.
-- **Proposition** : `MEDIA_STATUS_ORDER` dans `lib/constants/status-labels.ts`, comme pour les autres domaines.
 
 **CF-14 — Placeholder `"—"`**
 
@@ -582,41 +519,10 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 
 #### Front
 
-**TF-03 — Points de graphique**
-
-- **Constat** : `stats/HistogramBars.svelte:8`, `LineChart.svelte:12`, `RankBars.svelte:10-13` et `StackedBar.svelte:5-8`.
-- **Proposition** : `ChartDatum`, dans `stats-domain.ts` ou `lib/types/chart.ts`.
-
-**TF-04 — `ListTile`**
-
-- **Constat** : `profile/ProfileView.svelte:104-106` et `ProfileListsSection.svelte:9-11`.
-- **Proposition** : l'exporter depuis un `<script module>` ou un `.ts` voisin.
-
-**TF-05 — `ActivityKind`**
-
-- **Constat** : `admin/users/components/UserActivityModal.svelte:22-23` et `UserDrawer.svelte:48-49`.
-- **Proposition** : un `.ts` local au dossier.
-
 **TF-07 — `"ALL" | StatsDomain`**
 
 - **Constat** : `stats/DomainFilter.svelte:11` et `routes/app/stats/+page.svelte:52`.
 - **Proposition** : `StatsDomainChoice` dans `stats-domain.ts`.
-
-**TF-09 — `as Domain`**
-
-- **Constat** : environ 20 casts dus à `Object.keys/entries(DOMAINS)`, dans `lib/domains.ts:41,58-60`, `search/+page.svelte:27-216`, `admin/cache:215,233`, `PrivacySection.svelte:147-218`, `settings/+page.svelte:122` et `settings/import/+page.svelte:44-178`.
-- **Proposition** : `DOMAIN_IDS` (un seul cast) dans `lib/constants/domains.ts`, et `typedEntries` dans `lib/object.ts`.
-
-**TF-10 — `Object.fromEntries(...) as Record`**
-
-- **Constat** : 8 occurrences, dans `stats/DomainFilter.svelte:25-48`, `PeriodFilter.svelte:35-40`, `constants/report-labels.ts:130-132`, `media/+page.svelte:47-49` et `QuickAddPanel.svelte:248-256`.
-- **Proposition** : `recordFrom(keys, fn)` dans `lib/object.ts`.
-- **Cause racine** : l'API à trois records parallèles de `SegmentedStatusControl`.
-
-**TF-11 — `Record<string, …>` sur des clés typées**
-
-- **Constat** : `ProfileLibrarySection`, `ProfileActivity`, `ProfileReviews`, `VideoStatsSection.svelte:45,50`, `lists/+page.svelte:19,23` et `lists/[id]/+page.svelte:36,40`.
-- **Proposition** : `Record<Domain | MediaType | ListKind…, …>`. Les pistes CF-08 à CF-11 le règlent de fait.
 
 **TF-12 — `quick-add.ts`**
 
@@ -628,11 +534,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 
 - **Constat** : `lib/constants/import-sources.ts:33-126` contient 7 casts `as ImportSourceDescriptor` sur des sources « bientôt » sans `href`/`input`/`noun`. S'y ajoutent des `m.…() as string` superflus.
 - **Proposition** : une union discriminée `comingSoon: true`, dans `lib/types/import-descriptor.ts`.
-
-**TF-14 — `$props()` non typés**
-
-- **Constat** : 3 composants (`DesktopSidebar.svelte:41`, `ee/nav/ProgrammeBoardDesktop.svelte:16`, `ProjectorDockDesktop.svelte:16`) et environ 10 layouts.
-- **Proposition** : `{ children }: { children: Snippet }`, et le `LayoutProps` de `./$types` pour les layouts.
 
 ---
 
@@ -1207,7 +1108,6 @@ Pistes à fort rendement et faible effort (S, risque faible), à traiter en prem
 | 3   | CF-10, RT-28                   | incohérences de texte visibles (Anime/Animé, italien)           |
 | 4   | RT-01, RT-02, RT-03            | suppression pure de code mort                                   |
 | 5   | RF-12, RF-21                   | 11 boutons et 5 modals → 2 composants                           |
-| 6   | CF-08                          | source unique des domaines                                      |
 
 ---
 
@@ -1229,9 +1129,9 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 | **L8**     | API services transverses : HB-20 (`resolveWorkTargets`), RB-18, RB-03, RB-04, RB-06, RB-07, RB-08, RB-09, RB-11, RB-12 | L3, L5                               | Une PR par thème.                                              |
 | **L9**     | API admin : RB-14, RB-15, RB-16, RB-17, RB-19                                                                          | L5, L8                               | RB-19 après décision sur la maintenance.                       |
 | **L10**    | API découpages : RB-10, RB-20 à RB-30                                                                                  | L8 (RB-23, RB-24, RB-28 après HB-20) | Une PR par fichier, sans changement de comportement.           |
-| **L11** ∥  | Web helpers : HF-05, 08 (par lots), 11, 14, 17, 18, 19                                                                 | L2 pour HF-05                        | HF-08 en plusieurs PR.                                         |
-| **L12** ∥  | Web constantes : CF-01, 03, 04, 06 à 11, 13, 14                                                                        | —                                    | CF-03 en dernier, progressif.                                  |
-| **L13** ∥  | Web types : TF-03, 04, 05, 07, 09 à 14                                                                                 | L12 (TF-09, TF-11)                   |                                                                |
+| **L11** ∥  | Web helpers : HF-05, 08 (par lots), 11, 14, 18                                                                         | L2 pour HF-05                        | HF-08 en plusieurs PR.                                         |
+| **L12** ∥  | Web constantes : CF-01, 03, 06, 10, 14                                                                                 | —                                    | CF-03 en dernier, progressif.                                  |
+| **L13** ∥  | Web types : TF-07, 12, 13                                                                                              | —                                    |                                                                |
 | **L14**    | Web petits composants : RF-03, 04, 05, 07, 09 à 17, 19 à 22                                                            | L12                                  |                                                                |
 | **L15**    | Web gros composants : RF-01 (avec test de caractérisation), RF-02, RF-06, RF-18                                        | L3, L14                              | Une PR par composant.                                          |
 | **L16**    | Web découpages : RF-24 à RF-31                                                                                         | L15 pour RF-25                       |                                                                |

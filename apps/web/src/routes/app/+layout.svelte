@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type LayoutProps } from "./$types";
+
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { scanNotifications } from "#lib/api/client.js";
@@ -48,7 +50,7 @@
     navStyleLocked ? "marquee" : navStyle.choice,
   );
 
-  let { children } = $props();
+  let { children }: LayoutProps = $props();
 
   trackBackHistory();
 

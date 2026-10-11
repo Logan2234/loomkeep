@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type ActivityKind } from "./activity-kind";
+
   import type {
     getAdminUserComments,
     getAdminUserFollowers,
@@ -18,9 +20,6 @@
   } from "#lib/constants/report-labels.js";
   import { formatDate } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-
-  type ActivityKind =
-    "reviews" | "comments" | "followers" | "following" | "lists" | "reports";
 
   let {
     kind,
