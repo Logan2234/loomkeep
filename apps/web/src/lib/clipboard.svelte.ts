@@ -1,7 +1,7 @@
 import { m } from "#lib/paraglide/messages.js";
 import { toast } from "#lib/toast.svelte.js";
 
-export const COPY_FEEDBACK_MS = 2000;
+const COPY_FEEDBACK_MS = 2000;
 
 export class CopyFeedback<T = true> {
   value = $state<T | null>(null);
