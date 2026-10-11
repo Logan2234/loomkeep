@@ -90,3 +90,9 @@ export interface AdminUserCommentDto {
   href: string | null;
   createdAt: string;
 }
+
+/** Max length of a comment's text (frontend + backend DTO). */
+export const COMMENT_TEXT_MAX_LENGTH = 500;
+
+/** How many reactions on one comment trigger the aggregated notification. */
+export const COMMENT_REACTION_NOTIFY_THRESHOLD = 10;

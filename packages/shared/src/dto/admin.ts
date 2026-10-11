@@ -1,648 +1,82 @@
-import type { Domain, Plan, Role, SecurityEventType } from "../enums";
-import type { Locale } from "../locale";
-import type { PagedResult } from "./pagination";
-
-export const INVITATION_LABEL_MAX_LENGTH = 60;
-
-/** Which app area a dependency powers, for grouping in the admin services page. */
-export type ServiceArea =
-  | "Vidéo"
-  | "Jeux"
-  | "Livres"
-  | "Musique"
-  | "Podcasts"
-  | "Jeux de société"
-  | "Système";
-
-/** Billing window a documented provider quota resets on. */
-export type QuotaWindow = "day" | "month";
-
-/** Health of one external dependency, as surfaced by the admin services page. */
-/**
- * Why a service is not usable, when the reason is generic enough to have a
- * translation. Anything provider-specific travels in `detail` instead, as the
- * raw (redacted) message — untranslatable by nature, and what an operator
- * actually needs to see.
- */
-export type ServiceProbeFailure =
-  "missingKey" | "invalid" | "timeout" | "network" | "refused";
-
-/**
- * EE license details (docs/adr/0001-open-core-agpl.md), exposed by
- * `EntitlementService.getLicenseStatus()` — the AGPL core's only window into
- * `ee/licensing`, set from there without the core importing `ee/`.
- */
-export interface LicenseStatusDto {
-  /** Who the key was issued to (LicensePayload#licensee). */
-  licensee: string;
-  /** ISO datetime. */
-  expiresAt: string;
-  /** Self-host key: every account of the instance is premium. */
-  instanceWide: boolean;
-  /** Still before `expiresAt`, or within its grace period. */
-  current: boolean;
-}
-
-export interface ServiceStatusDto {
-  /** Stable identifier, e.g. "tmdb". */
-  key: string;
-  /** Human label, e.g. "TMDB". */
-  label: string;
-  area: ServiceArea;
-  /**
-   * Whether the app hard-fails for its area without this service. `false` for
-   * optional enrichers (OMDb ratings) and keyless fallbacks (AniList).
-   */
-  required: boolean;
-  /** Its API key/credentials are present in the environment. */
-  configured: boolean;
-  /** Generic reason for a failure, translated by the client. */
-  failure?: ServiceProbeFailure;
-  /**
-   * Live probe result: `true`/`false` when probed, `null` when not probed
-   * (unconfigured, or nothing cheap to ping).
-   */
-  reachable: boolean | null;
-  /** Short human note (missing key, HTTP status, error reason…). */
-  detail?: string;
-  /** Round-trip time of the live probe, in ms. Absent when not probed. */
-  latencyMs?: number;
-  /** Where to obtain the missing key/credentials, shown when `!configured`. */
-  keyUrl?: string;
-  /** Calls recorded today (UTC). Absent for services with no call-based quota (e.g. webPush). */
-  today?: number;
-  /** Calls recorded this calendar month (UTC). Absent alongside `today`. */
-  thisMonth?: number;
-  /** Documented free-tier quota, when publicly known; absent otherwise. */
-  limit?: { max: number; window: QuotaWindow };
-  /** `today` or `thisMonth` (matching `limit.window`) relative to `limit.max`, as a percentage. Present only when `limit` is set. */
-  percentUsed?: number;
-  /**
-   * Planned-but-unbuilt provider (podcasts, board games): shown with a "Bientôt"
-   * badge and never probed. When set, `configured`/`reachable` are meaningless.
-   */
-  comingSoon?: boolean;
-  /** Present only for the "license" service, once a key is set and verified. */
-  license?: LicenseStatusDto;
-  /**
-   * For a service backed by several independent keys rather than one (e.g.
-   * Healthchecks.io: one ping URL per scheduled job) — how many are set, out
-   * of how many exist. `configured` is then `partial.configured > 0`.
-   */
-  partial?: { configured: number; total: number };
-}
-
-export interface ServiceStatusResponseDto {
-  services: ServiceStatusDto[];
-  /** When the probes ran (ISO 8601). */
-  checkedAt: string;
-}
-
-export interface MailTemplateFieldDto {
-  key: string;
-  label: string;
-  default: string;
-  /** Renders as a `<textarea>` in the admin gallery instead of a single-line input. */
-  multiline?: boolean;
-}
-
-export interface MailTemplateInfoDto {
-  key: string;
-  label: string;
-  fields: MailTemplateFieldDto[];
-}
-
-export interface MailTemplateListResponseDto {
-  templates: MailTemplateInfoDto[];
-  /** Whether SMTP is configured — test-send is disabled otherwise. */
-  smtpConfigured: boolean;
-}
-
-/** Rendered preview of one template (with sample data, possibly overridden), never sent. */
-export interface MailTemplatePreviewDto {
-  subject: string;
-  html: string;
-  text: string;
-}
-
-export interface SendTestEmailRequestDto {
-  to: string;
-  locale: Locale;
-  /** Overrides for the template's editable sample fields, by field key. */
-  values?: Record<string, string>;
-}
-
-/** Which registered account to target when sending an admin test push. */
-export interface SendAdminTestPushRequestDto {
-  email: string;
-  /** Defaults to a canned admin-test message when omitted. */
-  title?: string;
-  body?: string;
-}
-
-/** Outcome of the push send to one of the account's subscribed devices. */
-export interface AdminPushSendOutcomeDto {
-  userAgent: string | null;
-  ok: boolean;
-  /** Present when `ok` is false (rejected/expired subscription, send error…). */
-  error?: string;
-}
-
-export interface AdminPushSendResponseDto {
-  /** How many devices the account had subscribed at send time. */
-  subscriptionCount: number;
-  results: AdminPushSendOutcomeDto[];
-}
-
-/** A push sent to every subscribed device on the instance, not just one account. */
-export interface SendAdminBroadcastPushRequestDto {
-  /** Defaults to a canned admin-broadcast message when omitted. */
-  title?: string;
-  body?: string;
-}
-
-export interface AdminPushBroadcastResponseDto {
-  /** Distinct accounts targeted (at least one active subscription). */
-  accountCount: number;
-  /** Total devices targeted, across all those accounts. */
-  deviceCount: number;
-  successCount: number;
-  failureCount: number;
-}
-
-export interface AdminPushDeviceDto {
-  id: string;
-  userAgent: string | null;
-  createdAt: string;
-}
-
-/**
- * Locally-generated architecture diagrams (Mermaid source), for the admin
- * schema page. Both are gitignored dev artifacts — `null` when not generated
- * yet (or not shipped in this deployment).
- */
-export interface SchemaGraphResponseDto {
-  /** Prisma ERD, from `docs/erd.md` (regenerated by `prisma generate`). */
-  erd: string | null;
-}
-
-export type JobStatus = "SUCCESS" | "FAILURE";
-
-export interface JobRunDto {
-  id: string;
-  jobKey: string;
-  startedAt: string;
-  finishedAt: string;
-  status: JobStatus;
-  /** Short human outcome, e.g. "3 notification(s) créée(s)". */
-  summary: string | null;
-  /** Present only when `status` is "FAILURE". */
-  error: string | null;
-}
-
-/**
- * One background job the admin can inspect/trigger, with its recent runs.
- *
- * Labels are derived from `key` by the web. Execution times and the effective
- * scheduler time zone come from the server.
- */
-export interface JobDto {
-  key: string;
-  /** Most recent runs first. */
-  runs: JobRunDto[];
-  runningSince: string | null;
-  timeZone: string | null;
-  nextRunAt: string | null;
-  /** First scheduled slot without a recorded run; null while running or on time. */
-  overdueSince: string | null;
-}
-
-export interface JobListResponseDto {
-  jobs: JobDto[];
-}
-
-/** Bucket granularity for the admin trend charts. */
-export const TREND_PERIODS = ["day", "week", "month", "year"] as const;
-export type TrendPeriod = (typeof TREND_PERIODS)[number];
-
-export interface TrendPointDto {
-  /** ISO date (UTC) of the bucket's start. */
-  periodStart: string;
-  count: number;
-}
-
-/**
- * The few instance counters the admin *dashboard* (/admin) and
- * /admin/communications need for their status strips, not a statistics
- * payload. Everything analytical lives on /admin/stats (dto/admin-stats.ts).
- */
-export interface AdminOverviewDto {
-  accounts: number;
-  /** Accounts created since the start of the current weekly bucket. */
-  newAccountsThisWeek: number;
-  /** Accounts with at least one push subscription. */
-  accountsWithPush: number;
-  /** Push subscription rows (an account can have several devices). */
-  pushDevices: number;
-  /** Cached works across all four domains. */
-  cachedItems: number;
-}
-
-export interface AdminCacheItemDto {
-  id: string;
-  domain: Domain;
-  title: string;
-  coverUrl: string | null;
-  canonicalSource: string;
-  lastSyncedAt: string;
-  createdAt: string;
-  /** Distinct library/game/book/music entries pointing at this item, across every account. */
-  referenceCount: number;
-  /** Past the 24h refresh TTL. */
-  stale: boolean;
-  /**
-   * MEDIA only: locales this item's title/overview/genres are cached in —
-   * the base row's own locale first (always "en" today), then any
-   * MediaItemTranslation rows. Empty for other domains, which cache one
-   * language only.
-   */
-  cachedLocales: string[];
-}
-
-/** How the cache list is ordered. `stale` (default) surfaces the least-fresh first. */
-export const ADMIN_CACHE_SORTS = ["stale", "recent", "title"] as const;
-export type AdminCacheSort = (typeof ADMIN_CACHE_SORTS)[number];
-
-export interface AdminCacheListResponseDto extends PagedResult<AdminCacheItemDto> {
-  /** How many items in this domain are past the 24h TTL — drives the "resync stale" action. */
-  staleTotal: number;
-  /** How many items in this domain have zero references — drives the "delete orphans" action. */
-  orphanTotal: number;
-}
-
-export interface AdminCacheExternalIdDto {
-  source: string;
-  externalId: string;
-}
-
-/**
- * Full detail of one cached item, shown in the admin cache drawer. Deliberately
- * light on catalogue metadata (overview, genres…) — that lives on the item's own
- * Loomkeep page, linked via `detailPath`; the drawer focuses on cache state.
- */
-export interface AdminCacheItemDetailDto extends AdminCacheItemDto {
-  /** When the DB row itself last changed (distinct from `lastSyncedAt`). */
-  updatedAt: string;
-  externalIds: AdminCacheExternalIdDto[];
-  /** MEDIA only: seasons with their episode counts. Empty for other domains. */
-  seasons: { number: number; title: string | null; episodeCount: number }[];
-  /** In-app path to this item's public Loomkeep page (e.g. `/media/series/1396`). */
-  detailPath: string;
-}
-
-/** Outcome of re-syncing every stale item in a domain. */
-export interface AdminCacheResyncStaleResultDto {
-  /** Items that refreshed successfully. */
-  resynced: number;
-  /** Items whose source refresh failed (left untouched). */
-  failed: number;
-}
-
-/** Outcome of purging every orphaned (unreferenced) item in a domain. */
-export interface AdminCacheDeleteOrphansResultDto {
-  /** Items removed from the cache. */
-  deleted: number;
-  /** Orphans left alone because a review/comment/activity row still targets them. */
-  skipped: number;
-}
-
-export interface AdminUserDto {
-  id: string;
-  email: string;
-  username: string;
-  displayName: string;
-  avatarUrl: string | null;
-  emailVerified: boolean;
-  role: Role;
-  /** Paid tier (docs/adr/0001-open-core-agpl.md) — set from this same panel. */
-  plan: Plan;
-  createdAt: string;
-  /** `User.lastActiveAt` — bumped on register/login/refresh, null if never signed in. */
-  lastActiveAt: string | null;
-  /** Set once the inactivity reminder email has been sent, null otherwise. */
-  inactivityWarningSentAt: string | null;
-  /** End of a moderation suspension still in force, null otherwise. */
-  suspendedUntil: string | null;
-  /** Total XP (`UserScore`), 0 before any gain. */
-  xp: number;
-  /** The invitation this account signed up through — null for an open registration. */
-  invitation: AdminUserInvitationDto | null;
-}
-
-export interface AdminUserInvitationDto {
-  label: string | null;
-  /** Display name of whoever minted it — null once that account is deleted. */
-  createdByName: string | null;
-}
-
-/**
- * Derived, never stored: `revoked` wins over everything, then `used` (every
- * place taken), then `expired`; a multi-use link that still has room is
- * `pending` even after its first redemption.
- */
-export type AdminInvitationStatus = "pending" | "used" | "expired" | "revoked";
-
-export interface AdminInvitationDto {
-  id: string;
-  /** Only this address may redeem it; null for a link shared by hand. */
-  email: string | null;
-  label: string | null;
-  maxUses: number;
-  useCount: number;
-  status: AdminInvitationStatus;
-  expiresAt: string;
-  revokedAt: string | null;
-  /** Last time the link was mailed — null if it was only ever copied. */
-  emailedAt: string | null;
-  createdAt: string;
-  /** Display name of whoever minted it — null once that account is deleted. */
-  createdByName: string | null;
-  /** Accounts created through it, oldest first. */
-  redeemedBy: AdminInvitationRedeemerDto[];
-}
-
-export interface AdminInvitationRedeemerDto {
-  id: string;
-  username: string;
-  displayName: string;
-  avatarUrl: string | null;
-}
-
-export interface CreateAdminInvitationRequestDto {
-  /** Optional: binds the invitation to this address and mails it the link. */
-  email?: string;
-  label?: string;
-  /** 1..INVITATION_MAX_USES. */
-  maxUses: number;
-  /** One of INVITATION_VALIDITY_DAYS. */
-  validityDays: number;
-}
-
-/**
- * Returned on creation and renewal only: the raw link exists nowhere else
- * (the database keeps its hash), so this is the one chance to copy it.
- */
-export interface AdminInvitationLinkDto {
-  invitation: AdminInvitationDto;
-  url: string;
-  /** Whether the link was mailed — false without an email or without SMTP. */
-  emailed: boolean;
-}
-
-/** Validity choices offered when minting an invitation, in days. */
-export const INVITATION_VALIDITY_DAYS = [1, 7, 30] as const;
-/** Upper bound on the places of one multi-use ("family") link. */
-export const INVITATION_MAX_USES = 20;
-
-/** A manual XP correction: a signed amount, never zero. */
-export interface AdjustAdminUserXpRequestDto {
-  amount: number;
-}
-
-/** The account's total XP once an adjustment is applied. */
-export interface AdminUserXpDto {
-  xp: number;
-}
-
-/** Extra server-side filter for the admin users list, on top of free-text search. */
-export const ADMIN_USER_FILTERS = [
-  "all",
-  "admin",
-  "unverified",
-  "never",
-  "premium",
-] as const;
-export type AdminUserFilter = (typeof ADMIN_USER_FILTERS)[number];
-
-/** Compact breakdown of the works saved in one account's libraries. */
-export interface AdminUserLibraryStatsDto {
-  movies: number;
-  series: number;
-  anime: number;
-  games: number;
-  books: number;
-  music: number;
-  total: number;
-}
-
-/** Minimal account result returned by the paginated admin picker search. */
-export interface AdminUserOptionDto {
-  id: string;
-  displayName: string;
-  email: string;
-}
-
-export interface UpdateAdminUserRoleRequestDto {
-  role: Role;
-}
-
-export interface AdminUserRoleDto {
-  role: Role;
-}
-
-export interface UpdateAdminUserPlanRequestDto {
-  plan: Plan;
-}
-
-export interface AdminUserPlanDto {
-  plan: Plan;
-}
-
-/**
- * One persisted backup dump on disk, for the admin "Sauvegarde" page's
- * list/download/delete UI. Produced by the daily `backup.run` cron (also
- * triggerable on demand from /admin/jobs or the Sauvegarde page itself) —
- * pruned to the 7 most recent.
- */
-export interface AdminBackupFileDto {
-  id: string;
-  filename: string;
-  sizeBytes: number;
-  createdAt: string;
-  status: "AVAILABLE" | "MISSING";
-}
-
-export interface AdminOrphanBackupFileDto {
-  filename: string;
-  sizeBytes: number;
-  createdAt: string;
-}
-
-export interface AdminBackupInventoryDto {
-  files: AdminBackupFileDto[];
-  orphans: AdminOrphanBackupFileDto[];
-}
-
-/**
- * Age-encrypted, ASCII-armored content of one persisted backup, for
- * download — never plain SQL. Decrypt locally with
- * `age -d -o dump.sql <file>` before restoring.
- */
-export interface AdminBackupFileContentDto {
-  filename: string;
-  content: string;
-}
-
-/** Replaces the entire instance database with a previously downloaded dump. */
-export interface AdminBackupRestoreRequestDto {
-  sql: string;
-  currentPassword: string;
-}
-
-export interface SecurityEventDto {
-  id: string;
-  type: SecurityEventType;
-  /** Null once the account has since been deleted (USER_DELETED itself, or any earlier event on it). */
-  userId: string | null;
-  /** For LOGIN_FAILED, the string actually typed. Otherwise derived from the linked account's current email — null once the account is deleted. */
-  identifier: string | null;
-  /** Free-form context, e.g. the old → new email on an EMAIL_CHANGED event. */
-  detail: string | null;
-  userAgent: string | null;
-  createdAt: string;
-}
-
-export type AdminImportStatus = JobStatus | "RUNNING";
-
-export interface AdminImportDetails {
-  items: { title: string; state: "selected" | "ignored" | "unresolved" }[];
-  report: import("./import").ImportReport | null;
-}
-
-export interface AdminImportDetailDto extends AdminImportRunDto {
-  details: AdminImportDetails | null;
-}
-
-export interface AdminImportRunDto {
-  id: string;
-  /** Null once the account has since been deleted. */
-  userId: string | null;
-  /** The linked account's current email — null once the account is deleted. */
-  identifier: string | null;
-  /** Import source id ("tvtime", "storygraph", "goodreads", "steam"). */
-  sourceId: string;
-  status: AdminImportStatus;
-  /** Present on an active in-memory import, before it is persisted. */
-  phase?: "analyze" | "commit";
-  /** Items actually written, regardless of outcome. */
-  itemCount: number;
-  /** Whether the commit wiped the domain's library first (destructive replace). */
-  overwrite: boolean;
-  /** Human summary joined from the report's tiles; null on failure. */
-  summary: string | null;
-  /** Present only when `status` is "FAILURE". */
-  error: string | null;
-  startedAt: string;
-  finishedAt: string | null;
-  progress?: { done: number; total: number };
-}
-
-/** Committed imports for one source, all accounts and all time. */
-export interface AdminImportSourceStatDto {
-  /** Import source id ("tvtime", "storygraph", "goodreads", "steam"). */
-  sourceId: string;
-  runs: number;
-  /** Items written by those runs. */
-  items: number;
-}
-
-/**
- * Header summary of the admin "Imports" page. Computed over every logged run,
- * never over the page currently displayed — the list is paginated and filtered,
- * so a client-side total would drift as soon as the admin scrolls or filters.
- */
-export interface AdminImportSummaryDto {
-  total: number;
-  success: number;
-  failure: number;
-  /** Share (0-100) of runs that succeeded; null while nothing was ever imported. */
-  successPercent: number | null;
-  /** Most items first. */
-  bySource: AdminImportSourceStatDto[];
-}
-
-export interface AdminTopReporterDto {
-  username: string;
-  reports: number;
-}
-
-/**
- * Header summary of the admin "Signalements" page, over the whole queue rather
- * than the cursor page on screen. Same figures as the /admin/stats "Social"
- * moderation card (they share the API-side helpers), plus the reporter ranking
- * that only makes sense next to the queue itself.
- */
-export interface AdminReportsSummaryDto {
-  pending: number;
-  resolved: number;
-  dismissed: number;
-  /** Median hours between filing and closing; null while nothing is closed. */
-  medianResolutionHours: number | null;
-  /** Share (0-100) of closed reports acted on rather than dismissed; null while nothing is closed. */
-  foundedPercent: number | null;
-  topReporters: AdminTopReporterDto[];
-}
-
-export interface AdminFailedLoginTargetDto {
-  /** Email or username the failed attempts were made against. */
-  identifier: string;
-  failures: number;
-}
-
-/**
- * Header summary of the admin "Sécurité" page. Scoped to LOGIN_FAILED: the other
- * event types are deliberate account actions the log already reads well as a
- * list, whereas failed logins only mean something as a rate. The three windows
- * mirror the ones /admin/stats uses for account activity (24 h / 7 j / 30 j).
- */
-export interface AdminSecuritySummaryDto {
-  loginFailed24h: number;
-  loginFailed7d: number;
-  loginFailed30d: number;
-  /** Every failed login ever logged. */
-  loginFailedTotal: number;
-  /** Most-targeted identifiers over the last 7 days, most failures first. */
-  topTargets7d: AdminFailedLoginTargetDto[];
-}
-
-export interface AdminPushUserAgentStatDto {
-  /** Browser family derived from the stored user-agent ("Chrome", "Safari", "Inconnu"…). */
-  label: string;
-  count: number;
-}
-
-/**
- * Header summary of the "Push" tab of admin "Communications". Active
- * subscriptions only, and deliberately no alive/dead ratio: a subscription the
- * push service rejects is deleted on the spot (see `PushService`), so a dead one
- * leaves no row to count.
- */
-export interface AdminPushSummaryDto {
-  /** Subscription rows on the instance (an account can have several devices). */
-  subscriptions: number;
-  /** Distinct accounts with at least one subscription. */
-  accounts: number;
-  /** Most devices first. */
-  byUserAgent: AdminPushUserAgentStatDto[];
-}
-
-/** `GET /public-stats/summary` response — minimal, cheap counters for the Homepage widget. */
-export interface PublicStatsSummaryDto {
-  status: "ok";
-  userCount: number;
-  openReports: number;
-  newUsers7d: number;
-  /** "<healthy>/<total>" of live (non comingSoon) external services. */
-  operational: string;
-  gitSha: string;
-}
+export {
+  AdminBackupFileContentDto,
+  AdminBackupFileDto,
+  AdminBackupInventoryDto,
+  AdminBackupRestoreRequestDto,
+  AdminOrphanBackupFileDto,
+} from "./admin-backups";
+export {
+  ADMIN_CACHE_SORTS,
+  AdminCacheDeleteOrphansResultDto,
+  AdminCacheExternalIdDto,
+  AdminCacheItemDetailDto,
+  AdminCacheItemDto,
+  AdminCacheListResponseDto,
+  AdminCacheResyncStaleResultDto,
+  AdminCacheSort,
+} from "./admin-cache";
+export {
+  AdminPushBroadcastResponseDto,
+  AdminPushDeviceDto,
+  AdminPushSendOutcomeDto,
+  AdminPushSendResponseDto,
+  MailTemplateFieldDto,
+  MailTemplateInfoDto,
+  MailTemplateListResponseDto,
+  MailTemplatePreviewDto,
+  SendAdminBroadcastPushRequestDto,
+  SendAdminTestPushRequestDto,
+  SendTestEmailRequestDto,
+} from "./admin-comms";
+export { JobDto, JobListResponseDto, JobRunDto, JobStatus } from "./admin-jobs";
+export {
+  LicenseStatusDto,
+  QuotaWindow,
+  SchemaGraphResponseDto,
+  ServiceArea,
+  ServiceProbeFailure,
+  ServiceStatusDto,
+  ServiceStatusResponseDto,
+} from "./admin-services";
+export {
+  AdminFailedLoginTargetDto,
+  AdminImportDetailDto,
+  AdminImportDetails,
+  AdminImportRunDto,
+  AdminImportSourceStatDto,
+  AdminImportStatus,
+  AdminImportSummaryDto,
+  AdminOverviewDto,
+  AdminPushSummaryDto,
+  AdminPushUserAgentStatDto,
+  AdminReportsSummaryDto,
+  AdminSecuritySummaryDto,
+  AdminTopReporterDto,
+  TREND_PERIODS,
+  TrendPeriod,
+  TrendPointDto,
+} from "./admin-stats-details";
+export {
+  ADMIN_USER_FILTERS,
+  AdjustAdminUserXpRequestDto,
+  AdminInvitationDto,
+  AdminInvitationLinkDto,
+  AdminInvitationRedeemerDto,
+  AdminInvitationStatus,
+  AdminUserDto,
+  AdminUserFilter,
+  AdminUserInvitationDto,
+  AdminUserLibraryStatsDto,
+  AdminUserOptionDto,
+  AdminUserPlanDto,
+  AdminUserRoleDto,
+  AdminUserXpDto,
+  CreateAdminInvitationRequestDto,
+  INVITATION_LABEL_MAX_LENGTH,
+  INVITATION_MAX_USES,
+  INVITATION_VALIDITY_DAYS,
+  SecurityEventDto,
+  UpdateAdminUserPlanRequestDto,
+  UpdateAdminUserRoleRequestDto,
+} from "./admin-users";
+export { PublicStatsSummaryDto } from "./public-stats";
