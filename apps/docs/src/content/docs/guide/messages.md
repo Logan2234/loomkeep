@@ -81,8 +81,35 @@ applied to text that already has it, it takes it off. Links become
 clickable; no preview is fetched, so a link you receive never contacts the
 site behind it until you open it.
 
-Typing **/** at the start of a message opens the commands. **/spoiler** hides
-the whole message behind a "tap to see" until your friend chooses to read it.
+Typing **/** at the start of a message opens the commands:
+
+- **/spoiler** hides the whole message behind a "tap to see" until your
+  friend chooses to read it.
+- **/reco**, **/review**, **/list**: a work, one of your reviews, one of your
+  lists (see [Sharing a work](#sharing-a-work)).
+- **/poll**: the question goes in the field, two to five options above it. An
+  option starting with `#` becomes a work, shown with its poster. Everyone
+  votes with a tap, sees who chose what, and changes their vote by tapping
+  another option.
+- **/saga**: one of your sagas — films and anime, games, book series — with
+  its works in order and a progress row for each of you. A poster opens its
+  work.
+- **/pick video**, **/pick games**, **/pick books**, **/pick music**: a work
+  drawn at random from your pile — what you plan to watch, play, read or
+  listen to. Only the domains you turned on are offered, in your order. The
+  draw shows before you send it: draw again, or draw only among the works
+  you both have in your piles (**In common**).
+- **/where**: a film or a series, with the platforms it's on in your region
+  and, on each, the faces of the friends who have it — for those who share
+  their platforms (see [What the other side sees](#what-the-other-side-sees)).
+
+Typing `:` and two letters offers emoji by their code (`:fire` → 🔥); a code
+typed in full turns into its emoji on its own. A message of one to three
+emoji alone shows them large.
+
+The field shows the formatting as you type: bold in bold, a spoiler hatched.
+The markers (`**`, `||`…) only show while the cursor is inside what they
+format.
 
 Hover a message for its 😊 (react, one reaction each) and **⋯**; on a phone,
 press and hold it. The **⋯** edits, copies the text, forwards it to other
@@ -114,6 +141,9 @@ what it is, its year, and a link to its page.
   device's own share sheet.
 - **/reco** in a message: type the title, pick the work, and it goes with what
   you write.
+- **/review** and **/list**: one of your reviews, quoted with its rating (a
+  link opens it in full on the work's page), or one of your lists, as a strip
+  of its first works. Both stay up to date; a private list can't be shared.
 - **#** inside a sentence: type `#` and a few letters of a title, pick the
   work, and its name becomes a link to its page — without a card.
 - **A link** to a work's page, on Loomkeep or on TMDB, IMDb, AniList, Steam,
@@ -139,6 +169,12 @@ By default your friends see when you have the app open, when you're typing,
 and when you've read their messages. Both are settings in **Settings ›
 Privacy › Messages**, and both are mutual: hide yours, and you no longer see
 theirs.
+
+Your streaming platforms (**Settings › Streaming**) stay yours unless you
+switch on **Share my platforms with my friends** in the same section: then a
+**/where** card shows your face on the platforms you have. On a **/saga**
+card or an **In common** draw, a friend's library only counts where their
+library's visibility lets you see it.
 
 A new message reaches you by push only while you have Loomkeep open nowhere,
 and the push never contains the text. Turn it off, or mute a single
