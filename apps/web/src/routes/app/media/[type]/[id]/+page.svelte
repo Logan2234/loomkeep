@@ -553,7 +553,8 @@
       <WorkFriendsStrip
         domain="MEDIA"
         targetType="MEDIA"
-        targetId={detail.commentTargetId} />
+        targetId={detail.commentTargetId}
+        revision={`${entry?.status}:${entry?.progress?.watchedEpisodes}`} />
     {/if}
 
     {#if entry?.progress && !upcoming}

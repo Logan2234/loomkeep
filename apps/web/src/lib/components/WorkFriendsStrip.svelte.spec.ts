@@ -131,6 +131,32 @@ describe("WorkFriendsStrip", () => {
     expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(2);
   });
 
+  it("refetches once the viewer's own entry moved", async () => {
+    let calls = 0;
+    server.use(
+      http.get(apiUrl("/social/works/:type/:id/friends"), () => {
+        calls += 1;
+        return HttpResponse.json({
+          seasons: [],
+          me: null,
+          friends: [friend("lea", { status: "COMPLETED" })],
+        });
+      }),
+    );
+    const props = $state({
+      domain: "GAMES" as const,
+      targetType: "GAME" as const,
+      targetId: "g1",
+      revision: "BACKLOG:0",
+    });
+    renderWithQuery(WorkFriendsStrip, props);
+    await screen.findByRole("button", { expanded: false });
+
+    props.revision = "PLAYING:60";
+
+    await vi.waitFor(() => expect(calls).toBe(2));
+  });
+
   it("shows nothing when no friend tracks the work", async () => {
     answer({ seasons: [], me: null, friends: [] });
     const { container } = renderWithQuery(WorkFriendsStrip, {

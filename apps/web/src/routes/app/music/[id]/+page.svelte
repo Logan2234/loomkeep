@@ -250,7 +250,8 @@
           <WorkFriendsStrip
             domain="MUSIC"
             targetType="MUSIC"
-            targetId={detail.commentTargetId} />
+            targetId={detail.commentTargetId}
+            revision={entry?.status ?? ""} />
         {/if}
 
         {#if !entry}

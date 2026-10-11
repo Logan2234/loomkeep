@@ -23,6 +23,7 @@
     WorkFriendDto,
     WorkProgressDto,
   } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { fade, slide } from "svelte/transition";
 
   // Where the viewer's friends stand with this work, folded into one line
@@ -32,10 +33,13 @@
     domain,
     targetType,
     targetId,
+    revision = "",
   }: {
     domain: WorkDomain;
     targetType: ListItemTargetType;
     targetId: string;
+    /** Changes with the viewer's own entry: their place on the reel follows. */
+    revision?: string;
   } = $props();
 
   const reduced = prefersReducedMotion();
@@ -47,6 +51,20 @@
     fetch: () => getWorkFriends(targetType, targetId),
   }));
   const data = $derived(query.data);
+
+  // Watching an episode or changing a status happens elsewhere on the page:
+  // the reel refetches once the page's own entry moved.
+  const queryClient = useQueryClient();
+  let seenRevision: string | null = null;
+  $effect(() => {
+    const current = revision;
+    if (seenRevision !== null && current !== seenRevision) {
+      void queryClient.invalidateQueries({
+        queryKey: keys.social.workFriends(targetType, targetId),
+      });
+    }
+    seenRevision = current;
+  });
 
   /** Everyone on the reel: the viewer first, then their friends. */
   type Person = WorkProgressDto & {
@@ -131,12 +149,7 @@
   <svelte:element
     this={p.href ? "a" : "span"}
     href={p.href}
-    class="pin absolute top-0 -translate-x-1/2 rounded-full transition-transform duration-150 hover:-translate-y-0.5 motion-reduce:transition-none
-      {p.me
-      ? 'ring-accent ring-2'
-      : !p.me && data && isAhead(domain, data, p)
-        ? 'ring-accent/60 ring-2'
-        : 'ring-surface-2 ring-2'}"
+    class="pin absolute top-0 -translate-x-1/2 transition-transform duration-150 hover:-translate-y-0.5 motion-reduce:transition-none"
     style:left="calc({left * 100}% + {nudge * 14}px)"
     aria-label={label(p)}
     data-tip={label(p)}>
@@ -179,11 +192,7 @@
           </span>
           {#each placed as p (p.key)}
             <span
-              class="absolute top-0.5 -translate-x-1/2 rounded-full ring-2 {p.me
-                ? 'ring-accent'
-                : isAhead(domain, data, p)
-                  ? 'ring-accent/60'
-                  : 'ring-surface'}"
+              class="absolute top-0.5 -translate-x-1/2"
               style:left="{Math.min(
                 98,
                 Math.max(2, (position(p) ?? 0) * 100),
@@ -195,7 +204,7 @@
       {:else}
         <span class="flex" aria-hidden="true">
           {#each data.friends.slice(0, 5) as f (f.user.id)}
-            <span class="ring-surface -mr-1.5 rounded-full ring-2">
+            <span class="-mr-1.5">
               <Avatar seed={f.user.username} url={f.user.avatarUrl} size={24} />
             </span>
           {/each}
@@ -234,13 +243,6 @@
                 ? m.work_friends_season({ season, count: episodes })
                 : m.work_friends_pages({ count: pageCount ?? 0 })}
             </h3>
-            {#if ahead > 0}
-              <span
-                class="text-accent flex items-center gap-1.5 text-sm font-semibold">
-                <Icon name="warning" class="h-4 w-4" />
-                {m.work_friends_spoiler()}
-              </span>
-            {/if}
             {#if mode === "episodes" && data.seasons.length > 1}
               <span class="ml-auto flex gap-1" role="group">
                 {#each data.seasons as _, i (i)}
@@ -318,10 +320,7 @@
                 <ul class="flex flex-col gap-1.5">
                   {#each lane.people as p (p.key)}
                     <li class="flex min-w-0 items-center gap-2 text-sm">
-                      <span
-                        class="shrink-0 rounded-full {p.me
-                          ? 'ring-accent ring-2'
-                          : ''}">
+                      <span class="shrink-0">
                         {@render face(p, 24)}
                       </span>
                       <svelte:element

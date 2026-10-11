@@ -373,7 +373,8 @@
           <WorkFriendsStrip
             domain="GAMES"
             targetType="GAME"
-            targetId={detail.commentTargetId} />
+            targetId={detail.commentTargetId}
+            revision={`${entry?.status}:${entry?.playtimeMinutes}`} />
         {/if}
 
         {#if detail.overview}

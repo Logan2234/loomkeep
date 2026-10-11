@@ -327,7 +327,8 @@
           <WorkFriendsStrip
             domain="BOOKS"
             targetType="BOOK"
-            targetId={detail.commentTargetId} />
+            targetId={detail.commentTargetId}
+            revision={`${entry?.status}:${entry?.currentPage}`} />
         {/if}
 
         {#if detail.firstSentence}
