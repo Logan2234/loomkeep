@@ -165,11 +165,14 @@ export const keys = {
       ["chat", "work-thread", targetType, targetId] as const,
     search: (id: string, query: string) =>
       ["chat", "search", id, query] as const,
-    // Outside ["chat"]: a reconnection refetches what's under it, and this
-    // one is catalogue searches.
-    workSearch: (query: string) => ["chat-work-search", query] as const,
     linkPreviews: (urls: string[]) => ["chat-link-previews", ...urls] as const,
     linkPreview: (url: string) => ["chat-link-preview", url] as const,
+  },
+  // Outside ["chat"]: a reconnection refetches what's under it, and these
+  // are catalogue searches.
+  search: {
+    works: (query: string, scope: "local" | "all") =>
+      ["search", "works", scope, query] as const,
   },
   notifications: {
     feed: () => ["notifications", "feed"] as const,

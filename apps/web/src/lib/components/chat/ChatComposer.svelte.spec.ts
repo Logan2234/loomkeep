@@ -95,28 +95,21 @@ describe("ChatComposer", () => {
 
   it("attaches the work /reco finds, and sends it with the message", async () => {
     server.use(
-      http.get(apiUrl("/catalog/search"), () =>
-        HttpResponse.json({ items: [], hasMore: false }),
-      ),
-      http.get(apiUrl("/games/search"), () =>
+      http.get(apiUrl("/search/works"), () =>
         HttpResponse.json({
-          results: [
+          items: [
             {
-              source: "IGDB",
-              sourceId: "11737",
+              kind: "GAME",
               title: "Outer Wilds",
+              imageUrl: null,
+              href: "/app/games/11737",
               year: 2019,
-              coverUrl: null,
               isAdult: false,
+              status: null,
             },
           ],
+          unavailable: [],
         }),
-      ),
-      http.get(apiUrl("/books/search"), () =>
-        HttpResponse.json({ results: [] }),
-      ),
-      http.get(apiUrl("/music/search"), () =>
-        HttpResponse.json({ results: [] }),
       ),
     );
     const user = userEvent.setup();
@@ -134,6 +127,45 @@ describe("ChatComposer", () => {
         { text: "Celui-là", spoiler: false, work: "/app/games/11737" },
       ]),
     );
+  });
+
+  it("offers what the instance knows before the catalogues answer, 18+ left out", async () => {
+    const hit = (title: string, href: string, isAdult = false) => ({
+      kind: "GAME",
+      title,
+      imageUrl: null,
+      href,
+      year: 2019,
+      isAdult,
+      status: null,
+    });
+    const answer = (...items: ReturnType<typeof hit>[]) =>
+      HttpResponse.json({ items, unavailable: [] });
+    let catalogsAnswer!: (response: Response) => void;
+    server.use(
+      http.get(apiUrl("/search/works"), ({ request }) =>
+        new URL(request.url).searchParams.get("scope") === "local"
+          ? answer(
+              hit("Outer Limits", "/app/games/1", true),
+              hit("Outer Wilds", "/app/games/11737"),
+            )
+          : new Promise<Response>((resolve) => (catalogsAnswer = resolve)),
+      ),
+    );
+    const user = userEvent.setup();
+    const box = renderComposer();
+
+    await user.type(box, "/reco outer");
+
+    expect(
+      await screen.findByRole("option", { name: /Outer Wilds/ }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("option", { name: /Outer Limits/ })).toBe(null);
+
+    catalogsAnswer(answer(hit("Outer Worlds", "/app/games/7")));
+    expect(
+      await screen.findByRole("option", { name: /Outer Worlds/ }),
+    ).toBeTruthy();
   });
 
   it("previews each of the first links", async () => {
@@ -254,30 +286,21 @@ describe("ChatComposer", () => {
 
   it("mentions a work with #, and sends it as a token", async () => {
     server.use(
-      http.get(apiUrl("/catalog/search"), () =>
+      http.get(apiUrl("/search/works"), () =>
         HttpResponse.json({
           items: [
             {
-              source: "TMDB",
-              sourceId: "95396",
-              type: "SERIES",
+              kind: "SERIES",
               title: "Severance",
+              imageUrl: null,
+              href: "/app/media/series/95396",
               year: 2022,
-              posterUrl: null,
               isAdult: false,
+              status: null,
             },
           ],
-          hasMore: false,
+          unavailable: [],
         }),
-      ),
-      http.get(apiUrl("/games/search"), () =>
-        HttpResponse.json({ results: [] }),
-      ),
-      http.get(apiUrl("/books/search"), () =>
-        HttpResponse.json({ results: [] }),
-      ),
-      http.get(apiUrl("/music/search"), () =>
-        HttpResponse.json({ results: [] }),
       ),
     );
     const user = userEvent.setup();

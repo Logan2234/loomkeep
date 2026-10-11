@@ -1,11 +1,10 @@
-import { getBookDetail, searchBooks } from "#lib/api/books.js";
-import { getMediaDetail, searchCatalog } from "#lib/api/catalog.js";
-import { getGameDetail, searchGames } from "#lib/api/games.js";
+import { getBookDetail } from "#lib/api/books.js";
+import { getMediaDetail } from "#lib/api/catalog.js";
+import { getGameDetail } from "#lib/api/games.js";
 import { resolveLink } from "#lib/api/links.js";
-import { getMusicDetail, searchMusic } from "#lib/api/music.js";
-import { isDomainEnabled } from "#lib/domains.js";
+import { getMusicDetail } from "#lib/api/music.js";
+import { searchWorks } from "#lib/api/search.js";
 import {
-  Domain,
   type BookSummaryDto,
   type GameSummaryDto,
   type MediaSummaryDto,
@@ -13,9 +12,6 @@ import {
   type MessageWorkDto,
   type MusicSummaryDto,
 } from "@loomkeep/shared";
-
-/** Results kept per domain, so one domain's long list doesn't hide the others. */
-const PER_DOMAIN = 3;
 
 export const mediaWork = (media: MediaSummaryDto): MessageWorkDto => ({
   kind: media.type,
@@ -55,50 +51,24 @@ export const musicWork = (album: MusicSummaryDto): MessageWorkDto => ({
 });
 
 /**
- * `/reco`: the works matching `query` across the domains the user keeps on.
- * A domain whose search fails is left out rather than failing the others.
- * 18+ titles are left out too: they never become a card.
+ * `/reco` and `#`: the works matching `query` across the domains the user
+ * keeps on. 18+ titles are left out: they never become a card.
  */
-export async function searchWorks(query: string): Promise<MessageWorkDto[]> {
-  const take = <T extends { title: string; isAdult?: boolean }>(
-    items: T[],
-    toWork: (item: T) => MessageWorkDto,
-  ) =>
-    items
-      .filter((item) => !item.isAdult)
-      .slice(0, PER_DOMAIN)
-      .map(toWork);
-
-  const searches: Promise<MessageWorkDto[]>[] = [];
-
-  if (isDomainEnabled(Domain.MEDIA)) {
-    searches.push(
-      searchCatalog(query).then((page) => take(page.items, mediaWork)),
-    );
-  }
-
-  if (isDomainEnabled(Domain.GAMES)) {
-    searches.push(
-      searchGames(query).then(({ results }) => take(results, gameWork)),
-    );
-  }
-
-  if (isDomainEnabled(Domain.BOOKS)) {
-    searches.push(
-      searchBooks(query).then(({ results }) => take(results, bookWork)),
-    );
-  }
-
-  if (isDomainEnabled(Domain.MUSIC)) {
-    searches.push(
-      searchMusic(query).then(({ results }) => take(results, musicWork)),
-    );
-  }
-
-  const settled = await Promise.allSettled(searches);
-  return settled.flatMap((result) =>
-    result.status === "fulfilled" ? result.value : [],
-  );
+export async function findWorks(
+  query: string,
+  scope: "local" | "all",
+): Promise<MessageWorkDto[]> {
+  const { items } = await searchWorks(query, scope);
+  return items
+    .filter((hit) => !hit.isAdult)
+    .map((hit) => ({
+      kind: hit.kind,
+      title: hit.title,
+      imageUrl: hit.imageUrl,
+      href: hit.href,
+      year: hit.year,
+      inLibrary: false,
+    }));
 }
 
 /** Cards the API makes from a message's links, at most. */

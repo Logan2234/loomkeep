@@ -1,7 +1,7 @@
 <script lang="ts">
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { searchWorks } from "#lib/chat/work-search.js";
+  import { findWorks } from "#lib/chat/work-search.js";
   import Poster from "#lib/components/Poster.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -47,14 +47,23 @@
     return () => clearTimeout(timer);
   });
 
-  const worksQuery = createApiQuery(() => ({
-    key: keys.chat.workSearch(searched),
-    fetch: () => searchWorks(searched),
+  // What the instance knows answers at once; the catalogues' fuller answer
+  // takes its place when it comes.
+  const localQuery = createApiQuery(() => ({
+    key: keys.search.works(searched, "local"),
+    fetch: () => findWorks(searched, "local"),
     enabled: searched.length >= MIN_LENGTH,
     keepPreviousData: true,
   }));
+  const allQuery = createApiQuery(() => ({
+    key: keys.search.works(searched, "all"),
+    fetch: () => findWorks(searched, "all"),
+    enabled: searched.length >= MIN_LENGTH,
+  }));
   const works = $derived(
-    searched.length >= MIN_LENGTH ? (worksQuery.data ?? []) : [],
+    searched.length >= MIN_LENGTH
+      ? (allQuery.data ?? localQuery.data ?? [])
+      : [],
   );
 
   $effect(() => {
@@ -127,7 +136,7 @@
     <p class="text-dim px-2.5 py-2 text-sm" aria-live="polite">
       {searched.length < MIN_LENGTH
         ? m.chat_reco_prompt()
-        : worksQuery.loading
+        : allQuery.loading
           ? m.common_loading()
           : m.common_no_results()}
     </p>
