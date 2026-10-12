@@ -445,6 +445,33 @@ describe("AnilistProvider", () => {
       expect(extras.studios).toEqual([]);
       expect(extras.relations).toEqual([]);
     });
+
+    // AniList lists Made in Abyss's Bilibili TV page twice (ID 97986).
+    it("lists a link AniList repeats only once", async () => {
+      const bilibili = {
+        site: "Bilibili TV",
+        url: "https://www.bilibili.tv/media/37179",
+      };
+      mockFetch({
+        data: {
+          Media: {
+            recommendations: { nodes: [] },
+            externalLinks: [bilibili, bilibili],
+          },
+        },
+      });
+
+      const extras = await provider.getExtras(
+        "97986",
+        MediaType.ANIME,
+        undefined,
+        "FR",
+      );
+
+      expect(extras.externalLinks).toEqual([
+        { name: "Bilibili TV", url: bilibili.url },
+      ]);
+    });
   });
 
   describe("getSaga", () => {
