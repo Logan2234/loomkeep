@@ -120,5 +120,5 @@ export function pollReady(
   return question.trim().length > 0 && filled.length >= POLL_OPTIONS_MIN;
 }
 
-/** Films, series and anime: what `/where` looks for. */
-export const WHERE_KINDS = ["MOVIE", "SERIES", "ANIME"] as const;
+/** What `/where` looks for: TMDB's films and series, the ones with platforms. */
+export const WHERE_KINDS = ["MOVIE", "SERIES"] as const;

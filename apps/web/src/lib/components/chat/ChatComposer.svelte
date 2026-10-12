@@ -66,6 +66,7 @@
     type MyListDto,
     type MyReviewDto,
     type PickDomain,
+    type PickReelWorkDto,
     type ReviewTargetSummaryDto,
     type SendMessageRequestDto,
   } from "@loomkeep/shared";
@@ -142,10 +143,14 @@
         shared: boolean;
         /** Null while drawing, or with nothing to draw from. */
         work: MessageWorkDto | null;
+        /** Null until the draw answers. */
+        reel: PickReelWorkDto[] | null;
         mine: number;
         sharedCount: number;
       };
   let attachment = $state<Attachment | null>(null);
+  // The /pick reel still turning: what it lands on isn't shown yet.
+  let pickRolling = $state(false);
   // `/poll`'s options while one is written; the question is the field's text.
   let pollOptions = $state<PollOptionDraft[] | null>(null);
   const attachedHref = $derived(
@@ -343,7 +348,7 @@
       ? pollReady(value, pollOptions)
       : picking === null &&
           (attachment?.kind === "pick"
-            ? attachment.work !== null
+            ? attachment.work !== null && !pickRolling
             : readSlashCommand(value).text.length > 0 || attachment !== null),
   );
 
@@ -491,9 +496,13 @@
         ...attachment,
         shared: args.shared,
         work: result.work,
+        reel: result.reel,
         mine: result.mine,
         sharedCount: result.shared,
       };
+    },
+    onError: () => {
+      if (attachment?.kind === "pick") attachment = { ...attachment, reel: [] };
     },
     errorToast: true,
   }));
@@ -504,6 +513,7 @@
       domain,
       shared,
       work: null,
+      reel: null,
       mine: attachment?.kind === "pick" ? attachment.mine : 0,
       sharedCount: attachment?.kind === "pick" ? attachment.sharedCount : 0,
     };
@@ -766,9 +776,11 @@
       domain={drawn.domain}
       shared={drawn.shared}
       work={drawn.work}
+      reel={drawn.reel ?? []}
+      bind:rolling={pickRolling}
       mine={drawn.mine}
       sharedCount={drawn.sharedCount}
-      drawing={drawMut.loading}
+      drawing={drawMut.loading || drawn.reel === null}
       onscope={(shared) => draw(drawn.domain, shared)}
       onreroll={() => draw(drawn.domain, drawn.shared)}
       onremove={() => (attachment = null)} />

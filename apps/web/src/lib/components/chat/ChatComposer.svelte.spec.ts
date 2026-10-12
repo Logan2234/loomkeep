@@ -14,7 +14,15 @@ import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { tick } from "svelte";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from "vitest";
 import ChatComposer from "./ChatComposer.svelte";
 
 const { emit } = vi.hoisted(() => ({ emit: vi.fn() }));
@@ -560,6 +568,7 @@ describe("ChatComposer", () => {
             year: 2023,
             inLibrary: true,
           },
+          reel: [],
           mine: 6,
           shared: 3,
         });
@@ -605,6 +614,44 @@ describe("ChatComposer", () => {
     ]);
   });
 
+  it("rolls through the pile before landing on the draw, sendable only then", async () => {
+    server.use(
+      http.post(apiUrl("/chat/conversations/cv1/pick"), () =>
+        HttpResponse.json({
+          work: {
+            kind: "MOVIE",
+            title: "Perfect Days",
+            imageUrl: null,
+            href: "/app/media/movie/976893",
+            year: 2023,
+            inLibrary: true,
+          },
+          reel: [{ title: "Shōgun", imageUrl: null }],
+          mine: 2,
+          shared: 0,
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    const box = await renderComposer();
+    const send = () => screen.getByRole("button", { name: m.common_send() });
+    // The reel only turns for those who let things move.
+    document.documentElement.classList.remove("a11y-reduce-motion");
+    onTestFinished(() =>
+      document.documentElement.classList.add("a11y-reduce-motion"),
+    );
+
+    await user.type(box, "/pick ", { skipClick: true });
+    await user.keyboard("{Enter}");
+
+    expect(await screen.findByText("Shōgun")).toBeTruthy();
+    expect(send()).toHaveProperty("disabled", true);
+    await waitFor(() => expect(send()).toHaveProperty("disabled", false), {
+      timeout: 3000,
+    });
+    expect(screen.getByText("Perfect Days")).toBeTruthy();
+  });
+
   it("looks only for films and series with /where", async () => {
     const hit = (kind: string, title: string, href: string) => ({
       kind,
@@ -620,6 +667,7 @@ describe("ChatComposer", () => {
         HttpResponse.json({
           items: [
             hit("GAME", "Dune: Awakening", "/app/games/250616"),
+            hit("ANIME", "Dune: The Anime", "/app/media/anime/1"),
             hit("MOVIE", "Dune : Deuxième partie", "/app/media/movie/693134"),
           ],
           unavailable: [],
@@ -632,6 +680,7 @@ describe("ChatComposer", () => {
     await user.type(box, "/where dune", { skipClick: true });
     await screen.findByRole("option", { name: /Deuxième partie/ });
     expect(screen.queryByRole("option", { name: /Awakening/ })).toBe(null);
+    expect(screen.queryByRole("option", { name: /The Anime/ })).toBe(null);
     await user.keyboard("{Enter}{Enter}");
 
     await waitFor(() =>

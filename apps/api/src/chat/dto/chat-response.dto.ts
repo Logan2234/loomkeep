@@ -100,8 +100,14 @@ class MessagePickResponseDto implements MessagePickDto {
   count!: number;
 }
 
+class PickReelWorkResponseDto {
+  title!: string;
+  imageUrl!: string | null;
+}
+
 export class PickResultResponseDto implements PickResultDto {
   work!: MessageWorkResponseDto | null;
+  reel!: PickReelWorkResponseDto[];
   mine!: number;
   shared!: number;
 }

@@ -1,6 +1,5 @@
 import {
   type BookStatus,
-  type CatalogSource,
   Domain,
   type EntryStatus,
   ErrorCode,
@@ -66,7 +65,11 @@ const OFFER_ORDER: WatchOfferKind[] = [
 ];
 const WITH_MEMBERS = new Set<WatchOfferKind>(["flatrate", "free", "ads"]);
 
-const MEDIA_PATH = /^\/app\/media\/(movie|series|anime)\/([^/?#\s]+)$/;
+// Works shown rolling by before a /pick lands, at most.
+const REEL_SIZE = 8;
+
+// Anime are left out: AniList knows no streaming platform per country.
+const MEDIA_PATH = /^\/app\/media\/(movie|series)\/([^/?#\s]+)$/;
 
 type SagaWork = {
   title: string;
@@ -106,8 +109,15 @@ export class ChatCommandsService {
     const pools = await this.pools(viewerId, conversationId, domain);
     const pool = shared ? pools.shared : pools.mine;
     const card = await this.drawCard(domain, [...pool]);
+    const reel = card
+      ? await this.reel(
+          domain,
+          [...pool].filter((id) => id !== card.targetId),
+        )
+      : [];
     return {
       work: card ? { ...card, inLibrary: true } : null,
+      reel: reel.map(({ title, imageUrl }) => ({ title, imageUrl })),
       mine: pools.mine.size,
       shared: pools.shared.size,
     };
@@ -208,7 +218,6 @@ export class ChatCommandsService {
     if (!path) throw notFound();
 
     const [, kind, sourceId] = path;
-    const source: CatalogSource = kind === "anime" ? "ANILIST" : "TMDB";
     const type = kind.toUpperCase() as MediaType;
     const [viewer, sharing] = await Promise.all([
       this.prisma.user.findUniqueOrThrow({
@@ -222,7 +231,7 @@ export class ChatCommandsService {
       acceptLanguage,
     );
     const { watchProviders } = await this.media
-      .providerFor(source)
+      .providerFor("TMDB")
       .getExtras(sourceId, type, undefined, region);
 
     const offers = OFFER_ORDER.flatMap((offerKind) =>
@@ -333,6 +342,28 @@ export class ChatCommandsService {
     }
 
     return null;
+  }
+
+  /** A few other works of the pool, at random, in no particular order. */
+  private async reel(domain: PickDomain, pool: string[]): Promise<WorkCard[]> {
+    const left = [...pool];
+    const sample: string[] = [];
+
+    while (left.length > 0 && sample.length < REEL_SIZE) {
+      sample.push(...left.splice(Math.floor(Math.random() * left.length), 1));
+    }
+
+    const cards = await Promise.all(
+      sample.map(async (id) => {
+        const href = await resolveWorkHref(
+          this.prisma,
+          PICK_TARGET[domain],
+          id,
+        );
+        return href ? this.works.required(href).catch(() => null) : null;
+      }),
+    );
+    return cards.filter((card): card is WorkCard => card !== null);
   }
 
   /** The viewer, then the other members whose library in `domain` they may see. */
