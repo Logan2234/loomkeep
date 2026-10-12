@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { sessionPeriodMinutes } from "./session-period.util";
 
 describe("sessionPeriodMinutes", () => {

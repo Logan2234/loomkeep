@@ -1,8 +1,12 @@
+import type { BulkUpdateEntriesDto } from "@loomkeep/shared";
 import { BookOwnershipStatus, BookStatus } from "@loomkeep/shared";
 import { IsIn, IsOptional } from "class-validator";
 import { BulkUpdateEntriesBaseBody } from "../../common/dto/bulk-entries.dto";
 
-export class BulkUpdateBookEntriesBody extends BulkUpdateEntriesBaseBody {
+export class BulkUpdateBookEntriesBody
+  extends BulkUpdateEntriesBaseBody
+  implements BulkUpdateEntriesDto
+{
   @IsOptional()
   @IsIn(Object.values(BookStatus))
   status?: BookStatus;

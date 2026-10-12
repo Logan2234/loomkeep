@@ -1,3 +1,4 @@
+import type { CreateListDto } from "@loomkeep/shared";
 import {
   LIST_LIMITS,
   ListKind,
@@ -13,7 +14,7 @@ import {
   MinLength,
 } from "class-validator";
 
-export class CreateListBody {
+export class CreateListBody implements CreateListDto {
   @IsString()
   @MinLength(1)
   @MaxLength(LIST_LIMITS.title)

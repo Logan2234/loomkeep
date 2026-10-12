@@ -1,3 +1,4 @@
+import type { UpdateListDto } from "@loomkeep/shared";
 import {
   LIST_LIMITS,
   ListKind,
@@ -13,7 +14,7 @@ import {
   MinLength,
 } from "class-validator";
 
-export class UpdateListBody {
+export class UpdateListBody implements UpdateListDto {
   @IsOptional()
   @IsString()
   @MinLength(1)

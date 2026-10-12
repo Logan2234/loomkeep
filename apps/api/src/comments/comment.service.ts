@@ -29,7 +29,8 @@ import {
 import { resolveWorkHref, workTargetExists } from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
-import { ACHIEVEMENT_KEYS_ON_COMMENT_POSTED } from "../gamification/achievements/registry";
+
+import { ACHIEVEMENT_KEYS_ON_COMMENT_POSTED } from "../gamification/achievements/triggers";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { fetchXpByUser, withXp } from "../gamification/xp-lookup.util";
 import { XpService } from "../gamification/xp.service";

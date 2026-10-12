@@ -28,10 +28,11 @@ import {
 import { resolveWorkHref } from "../common/work-href.util";
 import { assertGameReleased } from "../games/game-release.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
+
 import {
   ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,
   ACHIEVEMENT_KEYS_ON_REVIEW_WRITTEN,
-} from "../gamification/achievements/registry";
+} from "../gamification/achievements/triggers";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { fetchXpByUser, withXp } from "../gamification/xp-lookup.util";
 import { wordCount } from "../gamification/xp-verifiers";

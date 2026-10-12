@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { ReportMotif } from "./enums";
 import {
   isReportCategoryAllowed,
   REPORT_CATEGORY_MOTIFS,
-  ReportMotif,
-} from "./enums";
+} from "./report-categories";
 
 describe("isReportCategoryAllowed", () => {
   it("only offers the misleading-review category for reviews", () => {

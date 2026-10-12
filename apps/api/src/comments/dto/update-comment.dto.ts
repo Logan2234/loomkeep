@@ -1,3 +1,4 @@
+import type { UpdateCommentDto } from "@loomkeep/shared";
 import { COMMENT_TEXT_MAX_LENGTH } from "@loomkeep/shared";
 import { Type } from "class-transformer";
 import {
@@ -14,7 +15,7 @@ import {
 } from "class-validator";
 import { CommentMentionBody } from "./comment-mention.dto";
 
-export class UpdateCommentBody {
+export class UpdateCommentBody implements UpdateCommentDto {
   @IsString()
   @MinLength(1)
   @MaxLength(COMMENT_TEXT_MAX_LENGTH)

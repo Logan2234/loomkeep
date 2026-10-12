@@ -1,6 +1,6 @@
 import { DEFAULT_INSTANCE_SETTINGS } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
-import { afterEach, vi } from "vitest";
+import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { InstanceSettingsService } from "./instance-settings.service";
 import { setStoredInstanceSettings } from "./instance-settings.store";

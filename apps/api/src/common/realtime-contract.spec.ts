@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
-import { describe, expect, it } from "vitest";
 
 describe("import progress contract", () => {
   it("requires a string jobId so clients can distinguish concurrent jobs", () => {

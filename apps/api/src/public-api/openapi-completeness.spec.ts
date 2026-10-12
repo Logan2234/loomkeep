@@ -1,5 +1,5 @@
 import type { OpenAPIObject } from "@nestjs/swagger";
-import { describe, expect, it } from "vitest";
+
 import { undocumentedParts } from "./openapi-completeness";
 
 function document(overrides: Partial<OpenAPIObject> = {}): OpenAPIObject {

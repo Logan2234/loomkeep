@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, vi } from "vitest";
+import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ApiKeyAuthService, hashApiKey } from "./api-key-auth.service";
 import { generateApiKeySecret } from "./api-key-format";

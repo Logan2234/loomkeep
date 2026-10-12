@@ -3,7 +3,7 @@ import type { ConfigService } from "@nestjs/config";
 import type { JwtService } from "@nestjs/jwt";
 import type { FastifyReply } from "fastify";
 import type { Socket } from "socket.io";
-import { afterEach, beforeEach, vi } from "vitest";
+import { vi } from "vitest";
 import { setAuthCookies } from "../auth/auth-cookies";
 import { SessionCacheService } from "../auth/session-cache.service";
 import type { MetricsService } from "../metrics/metrics.service";

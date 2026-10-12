@@ -1,3 +1,4 @@
+import type { BulkUpdateEntriesDto } from "@loomkeep/shared";
 import {
   BULK_ENTRIES_MAX_IDS,
   type BulkEntriesResultDto,
@@ -30,7 +31,10 @@ export class BulkEntriesTargetBody implements BulkEntriesTargetDto {
 }
 
 /** What every domain's bulk update accepts besides its own `status` and `ownershipStatus`. */
-export class BulkUpdateEntriesBaseBody extends BulkEntriesTargetBody {
+export class BulkUpdateEntriesBaseBody
+  extends BulkEntriesTargetBody
+  implements BulkUpdateEntriesDto
+{
   @IsOptional()
   @IsBoolean()
   favorite?: boolean;

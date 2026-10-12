@@ -88,3 +88,9 @@ export const REVIEW_TARGET_DOMAIN: Record<ReviewTargetType, StatsDomain> = {
   BOOK: "BOOKS",
   MUSIC: "MUSIC",
 };
+
+/** Max length of a review's optional text (frontend + backend DTO). */
+export const REVIEW_TEXT_MAX_LENGTH = 2000;
+
+/** How many upvotes on one review trigger the aggregated notification. */
+export const REVIEW_VOTE_NOTIFY_THRESHOLD = 10;

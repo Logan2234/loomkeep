@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { generateApiKeySecret, isWellFormedApiKey } from "./api-key-format";
 
 describe("API key format", () => {

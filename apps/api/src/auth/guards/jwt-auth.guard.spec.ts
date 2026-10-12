@@ -3,7 +3,7 @@ import type { ConfigService } from "@nestjs/config";
 import type { Reflector } from "@nestjs/core";
 import type { JwtService } from "@nestjs/jwt";
 import type { FastifyReply } from "fastify";
-import { afterEach, beforeEach, vi } from "vitest";
+import { vi } from "vitest";
 import {
   API_KEY_ACCESS_KEY,
   type ApiKeyAccess,

@@ -21,6 +21,7 @@ export const Domain = {
   PODCASTS: "PODCASTS",
   BOARDGAMES: "BOARDGAMES",
 } as const;
+
 export type Domain = (typeof Domain)[keyof typeof Domain];
 
 /**
@@ -45,6 +46,7 @@ export const Role = {
   USER: "USER",
   ADMIN: "ADMIN",
 } as const;
+
 export type Role = (typeof Role)[keyof typeof Role];
 
 /**
@@ -56,6 +58,7 @@ export const Plan = {
   FREE: "FREE",
   PREMIUM: "PREMIUM",
 } as const;
+
 export type Plan = (typeof Plan)[keyof typeof Plan];
 
 /**
@@ -70,6 +73,7 @@ export const DigestCadence = {
   WEEKLY: "WEEKLY",
   DAILY: "DAILY",
 } as const;
+
 export type DigestCadence = (typeof DigestCadence)[keyof typeof DigestCadence];
 
 /**
@@ -116,6 +120,7 @@ export const NotificationType = {
   /** Your review crossed the upvote notification threshold. `data.count`. */
   REVIEW_VOTES: "REVIEW_VOTES",
 } as const;
+
 export type NotificationType =
   (typeof NotificationType)[keyof typeof NotificationType];
 
@@ -144,6 +149,7 @@ export const ActivityType = {
    */
   SEASON_FINISHED: "SEASON_FINISHED",
 } as const;
+
 export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType];
 
 export const SessionSource = {
@@ -151,6 +157,7 @@ export const SessionSource = {
   TIMER: "TIMER",
   IMPORT: "IMPORT",
 } as const;
+
 export type SessionSource = (typeof SessionSource)[keyof typeof SessionSource];
 
 export const TrackingCycleStatus = {
@@ -158,6 +165,7 @@ export const TrackingCycleStatus = {
   COMPLETED: "COMPLETED",
   DROPPED: "DROPPED",
 } as const;
+
 export type TrackingCycleStatus =
   (typeof TrackingCycleStatus)[keyof typeof TrackingCycleStatus];
 
@@ -166,6 +174,7 @@ export const SessionCycleAction = {
   RESTART: "RESTART",
   HISTORY_ONLY: "HISTORY_ONLY",
 } as const;
+
 export type SessionCycleAction =
   (typeof SessionCycleAction)[keyof typeof SessionCycleAction];
 
@@ -175,6 +184,7 @@ export const MediaType = {
   SERIES: "SERIES",
   ANIME: "ANIME",
 } as const;
+
 export type MediaType = (typeof MediaType)[keyof typeof MediaType];
 
 /**
@@ -188,6 +198,7 @@ export const MediaSource = {
   TVDB: "TVDB",
   IMDB: "IMDB",
 } as const;
+
 export type MediaSource = (typeof MediaSource)[keyof typeof MediaSource];
 
 /** Sources the catalogue can be queried from (canonical only). */
@@ -195,11 +206,13 @@ export const CatalogSource = {
   TMDB: MediaSource.TMDB,
   ANILIST: MediaSource.ANILIST,
 } as const;
+
 export type CatalogSource = (typeof CatalogSource)[keyof typeof CatalogSource];
 
 export const GameSource = {
   IGDB: "IGDB",
 } as const;
+
 export type GameSource = (typeof GameSource)[keyof typeof GameSource];
 
 /**
@@ -213,6 +226,7 @@ export const GameStatus = {
   COMPLETED: "COMPLETED",
   DROPPED: "DROPPED",
 } as const;
+
 export type GameStatus = (typeof GameStatus)[keyof typeof GameStatus];
 
 /**
@@ -227,6 +241,7 @@ export const GameOwnershipStatus = {
   SUBSCRIPTION: "SUBSCRIPTION",
   BORROWED: "BORROWED",
 } as const;
+
 export type GameOwnershipStatus =
   (typeof GameOwnershipStatus)[keyof typeof GameOwnershipStatus];
 
@@ -242,12 +257,14 @@ export const ReleaseDatePrecision = {
   /** Announced, not dated. */
   TBD: "TBD",
 } as const;
+
 export type ReleaseDatePrecision =
   (typeof ReleaseDatePrecision)[keyof typeof ReleaseDatePrecision];
 
 export const BookSource = {
   OPEN_LIBRARY: "OPEN_LIBRARY",
 } as const;
+
 export type BookSource = (typeof BookSource)[keyof typeof BookSource];
 
 /**
@@ -262,6 +279,7 @@ export const BookStatus = {
   READ: "READ",
   DROPPED: "DROPPED",
 } as const;
+
 export type BookStatus = (typeof BookStatus)[keyof typeof BookStatus];
 
 /**
@@ -276,6 +294,7 @@ export const BookOwnershipStatus = {
   AUDIO: "AUDIO",
   BORROWED: "BORROWED",
 } as const;
+
 export type BookOwnershipStatus =
   (typeof BookOwnershipStatus)[keyof typeof BookOwnershipStatus];
 
@@ -296,6 +315,7 @@ export const EntryStatus = {
   DROPPED: "DROPPED",
   UP_TO_DATE: "UP_TO_DATE",
 } as const;
+
 export type EntryStatus = (typeof EntryStatus)[keyof typeof EntryStatus];
 
 /**
@@ -310,12 +330,14 @@ export const MediaOwnershipStatus = {
   STREAMING: "STREAMING",
   BORROWED: "BORROWED",
 } as const;
+
 export type MediaOwnershipStatus =
   (typeof MediaOwnershipStatus)[keyof typeof MediaOwnershipStatus];
 
 export const MusicSource = {
   MUSICBRAINZ: "MUSICBRAINZ",
 } as const;
+
 export type MusicSource = (typeof MusicSource)[keyof typeof MusicSource];
 
 /**
@@ -328,6 +350,7 @@ export const MusicStatus = {
   TO_LISTEN: "TO_LISTEN",
   LISTENED: "LISTENED",
 } as const;
+
 export type MusicStatus = (typeof MusicStatus)[keyof typeof MusicStatus];
 
 /**
@@ -342,6 +365,7 @@ export const MusicOwnershipStatus = {
   STREAMING: "STREAMING",
   BORROWED: "BORROWED",
 } as const;
+
 export type MusicOwnershipStatus =
   (typeof MusicOwnershipStatus)[keyof typeof MusicOwnershipStatus];
 
@@ -380,6 +404,7 @@ export const SecurityEventType = {
   // Revoked automatically: GitHub's secret scanning found the key in public.
   API_KEY_LEAKED: "API_KEY_LEAKED",
 } as const;
+
 export type SecurityEventType =
   (typeof SecurityEventType)[keyof typeof SecurityEventType];
 
@@ -400,6 +425,7 @@ export const ProfileAccess = {
   PRIVATE: "PRIVATE",
   GHOST: "GHOST",
 } as const;
+
 export type ProfileAccess = (typeof ProfileAccess)[keyof typeof ProfileAccess];
 
 /**
@@ -412,6 +438,7 @@ export const VisibilityAudience = {
   FRIENDS: "FRIENDS",
   NONE: "NONE",
 } as const;
+
 export type VisibilityAudience =
   (typeof VisibilityAudience)[keyof typeof VisibilityAudience];
 
@@ -428,6 +455,7 @@ export const VisibilityFacet = {
   LIBRARY: "LIBRARY",
   ACTIVITY: "ACTIVITY",
 } as const;
+
 export type VisibilityFacet =
   (typeof VisibilityFacet)[keyof typeof VisibilityFacet];
 
@@ -439,6 +467,7 @@ export const FollowStatus = {
   PENDING: "PENDING",
   ACCEPTED: "ACCEPTED",
 } as const;
+
 export type FollowStatus = (typeof FollowStatus)[keyof typeof FollowStatus];
 
 /**
@@ -453,6 +482,7 @@ export const ReviewTargetType = {
   BOOK: "BOOK",
   MUSIC: "MUSIC",
 } as const;
+
 export type ReviewTargetType =
   (typeof ReviewTargetType)[keyof typeof ReviewTargetType];
 
@@ -466,11 +496,9 @@ export const ReviewVisibility = {
   FRIENDS: "FRIENDS",
   PUBLIC: "PUBLIC",
 } as const;
+
 export type ReviewVisibility =
   (typeof ReviewVisibility)[keyof typeof ReviewVisibility];
-
-/** Max length of a review's optional text (frontend + backend DTO). */
-export const REVIEW_TEXT_MAX_LENGTH = 2000;
 
 /**
  * How spoiler-tagged reviews and comments are masked for the reader by
@@ -484,6 +512,7 @@ export const SpoilerSensitivity = {
   ALWAYS_HIDDEN: "ALWAYS_HIDDEN",
   ALWAYS_REVEALED: "ALWAYS_REVEALED",
 } as const;
+
 export type SpoilerSensitivity =
   (typeof SpoilerSensitivity)[keyof typeof SpoilerSensitivity];
 
@@ -496,6 +525,7 @@ export const ReviewVoteValue = {
   UP: "UP",
   DOWN: "DOWN",
 } as const;
+
 export type ReviewVoteValue =
   (typeof ReviewVoteValue)[keyof typeof ReviewVoteValue];
 
@@ -511,6 +541,7 @@ export const CommentTargetType = {
   BOOK: "BOOK",
   MUSIC: "MUSIC",
 } as const;
+
 export type CommentTargetType =
   (typeof CommentTargetType)[keyof typeof CommentTargetType];
 
@@ -523,16 +554,8 @@ export const CommentEmote = {
   SAD: "SAD",
   DISLIKE: "DISLIKE",
 } as const;
+
 export type CommentEmote = (typeof CommentEmote)[keyof typeof CommentEmote];
-
-/** Max length of a comment's text (frontend + backend DTO). */
-export const COMMENT_TEXT_MAX_LENGTH = 500;
-
-/** How many reactions on one comment trigger the aggregated notification. */
-export const COMMENT_REACTION_NOTIFY_THRESHOLD = 10;
-
-/** How many upvotes on one review trigger the aggregated notification. */
-export const REVIEW_VOTE_NOTIFY_THRESHOLD = 10;
 
 /** What a report targets. */
 export const ReportTargetType = {
@@ -542,6 +565,7 @@ export const ReportTargetType = {
   LIST: "LIST",
   MESSAGE: "MESSAGE",
 } as const;
+
 export type ReportTargetType =
   (typeof ReportTargetType)[keyof typeof ReportTargetType];
 
@@ -551,6 +575,7 @@ export const ReportStatus = {
   RESOLVED: "RESOLVED",
   DISMISSED: "DISMISSED",
 } as const;
+
 export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus];
 
 /**
@@ -570,6 +595,7 @@ export const ModerationMeasure = {
   ACCOUNT_SUSPENDED: "ACCOUNT_SUSPENDED",
   ACCOUNT_DELETED: "ACCOUNT_DELETED",
 } as const;
+
 export type ModerationMeasure =
   (typeof ModerationMeasure)[keyof typeof ModerationMeasure];
 
@@ -581,6 +607,7 @@ export const ModerationLegalBasis = {
   ILLEGAL_CONTENT: "ILLEGAL_CONTENT",
   TOS_BREACH: "TOS_BREACH",
 } as const;
+
 export type ModerationLegalBasis =
   (typeof ModerationLegalBasis)[keyof typeof ModerationLegalBasis];
 
@@ -606,6 +633,7 @@ export const ReportCategory = {
   NONCOMPLIANT_ACCOUNT: "NONCOMPLIANT_ACCOUNT",
   OTHER: "OTHER",
 } as const;
+
 export type ReportCategory =
   (typeof ReportCategory)[keyof typeof ReportCategory];
 
@@ -641,106 +669,8 @@ export const ReportMotif = {
   ACCOUNT_BAN_EVASION: "ACCOUNT_BAN_EVASION",
   ACCOUNT_MANIPULATION: "ACCOUNT_MANIPULATION",
 } as const;
+
 export type ReportMotif = (typeof ReportMotif)[keyof typeof ReportMotif];
-
-/**
- * Which ReportMotif values are valid under each ReportCategory — the single
- * source of truth for both the picker UI (category -> motif options) and
- * server-side validation (ReportService.create rejects a mismatched pair).
- * OTHER maps to an empty list: it has no motif, only the free-text `reason`.
- */
-export const REPORT_CATEGORY_MOTIFS: Record<ReportCategory, ReportMotif[]> = {
-  SPAM: [
-    ReportMotif.SPAM_PROMOTIONAL,
-    ReportMotif.SPAM_SUSPICIOUS_LINK,
-    ReportMotif.SPAM_REPEATED,
-  ],
-  ILLEGAL_CONTENT: [
-    ReportMotif.ILLEGAL_PIRACY_LINK,
-    ReportMotif.ILLEGAL_TERRORISM,
-    ReportMotif.ILLEGAL_DEFAMATION,
-    ReportMotif.ILLEGAL_OTHER,
-  ],
-  HARASSMENT: [
-    ReportMotif.HARASSMENT_INSULTS,
-    ReportMotif.HARASSMENT_THREATS,
-    ReportMotif.HARASSMENT_STALKING,
-    ReportMotif.HARASSMENT_DOXXING,
-  ],
-  HATE_SPEECH: [
-    ReportMotif.HATE_RACISM,
-    ReportMotif.HATE_SEXISM_LGBTQ,
-    ReportMotif.HATE_OTHER,
-  ],
-  SEXUAL_CONTENT: [ReportMotif.SEXUAL_EXPLICIT],
-  VIOLENCE: [ReportMotif.VIOLENCE_GRAPHIC],
-  MINOR_ENDANGERMENT: [
-    ReportMotif.MINOR_ENDANGERMENT_CONTENT,
-    ReportMotif.MINOR_ENDANGERMENT_SOLICITATION,
-  ],
-  SPOILER: [ReportMotif.SPOILER_UNTAGGED],
-  IMPERSONATION: [ReportMotif.IMPERSONATION_REAL_PERSON],
-  MISINFORMATION: [ReportMotif.MISINFORMATION_FALSE_FACT],
-  STOLEN_CONTENT: [
-    ReportMotif.STOLEN_CONTENT_PLAGIARIZED,
-    ReportMotif.STOLEN_CONTENT_IMAGE,
-  ],
-  MISLEADING_REVIEW: [
-    ReportMotif.MISLEADING_REVIEW_MANIPULATION,
-    ReportMotif.MISLEADING_REVIEW_OFF_TOPIC,
-  ],
-  NONCOMPLIANT_ACCOUNT: [
-    ReportMotif.ACCOUNT_BOT,
-    ReportMotif.ACCOUNT_UNDERAGE,
-    ReportMotif.ACCOUNT_BAN_EVASION,
-    ReportMotif.ACCOUNT_MANIPULATION,
-  ],
-  OTHER: [],
-};
-
-/** Motifs whose free-text `reason` is mandatory, like the OTHER category's. */
-export const REPORT_MOTIFS_REQUIRING_REASON: ReportMotif[] = [
-  ReportMotif.ILLEGAL_OTHER,
-];
-
-/**
- * Categories that only make sense for some target types (a comment has no
- * rating to manipulate, a list can't impersonate anyone). Any category not
- * listed applies to every target. Shared by the picker UI and
- * ReportService.create's validation.
- */
-const REPORT_CATEGORY_TARGETS: Partial<
-  Record<ReportCategory, ReportTargetType[]>
-> = {
-  MISLEADING_REVIEW: [ReportTargetType.REVIEW],
-  SPOILER: [
-    ReportTargetType.COMMENT,
-    ReportTargetType.REVIEW,
-    ReportTargetType.LIST,
-  ],
-  IMPERSONATION: [
-    ReportTargetType.COMMENT,
-    ReportTargetType.REVIEW,
-    ReportTargetType.USER,
-  ],
-  MISINFORMATION: [ReportTargetType.COMMENT, ReportTargetType.REVIEW],
-  NONCOMPLIANT_ACCOUNT: [ReportTargetType.USER],
-};
-
-/** Motifs narrower than their category: only lists and profiles carry an image. */
-const REPORT_MOTIF_TARGETS: Partial<Record<ReportMotif, ReportTargetType[]>> = {
-  STOLEN_CONTENT_IMAGE: [ReportTargetType.USER, ReportTargetType.LIST],
-};
-
-/** The motifs of `category` that apply to `targetType`, in picker order. */
-export function reportMotifsFor(
-  category: ReportCategory,
-  targetType: ReportTargetType,
-): ReportMotif[] {
-  return REPORT_CATEGORY_MOTIFS[category].filter(
-    (motif) => REPORT_MOTIF_TARGETS[motif]?.includes(targetType) ?? true,
-  );
-}
 
 /**
  * The part of a profile a USER report is about, picked before the category:
@@ -753,58 +683,9 @@ export const ReportProfilePart = {
   BIO: "BIO",
   BEHAVIOUR: "BEHAVIOUR",
 } as const;
+
 export type ReportProfilePart =
   (typeof ReportProfilePart)[keyof typeof ReportProfilePart];
-
-export const REPORT_PROFILE_PART_CATEGORIES: Record<
-  ReportProfilePart,
-  ReportCategory[]
-> = {
-  NAME: [
-    "SPAM",
-    "ILLEGAL_CONTENT",
-    "HARASSMENT",
-    "HATE_SPEECH",
-    "SEXUAL_CONTENT",
-    "IMPERSONATION",
-    "OTHER",
-  ],
-  PHOTO: [
-    "ILLEGAL_CONTENT",
-    "HATE_SPEECH",
-    "SEXUAL_CONTENT",
-    "VIOLENCE",
-    "MINOR_ENDANGERMENT",
-    "IMPERSONATION",
-    "STOLEN_CONTENT",
-    "OTHER",
-  ],
-  BIO: [
-    "SPAM",
-    "ILLEGAL_CONTENT",
-    "HARASSMENT",
-    "HATE_SPEECH",
-    "SEXUAL_CONTENT",
-    "MINOR_ENDANGERMENT",
-    "STOLEN_CONTENT",
-    "OTHER",
-  ],
-  BEHAVIOUR: [
-    "SPAM",
-    "HARASSMENT",
-    "MINOR_ENDANGERMENT",
-    "IMPERSONATION",
-    "NONCOMPLIANT_ACCOUNT",
-    "OTHER",
-  ],
-};
-
-export function isReportCategoryAllowed(
-  category: ReportCategory,
-  targetType: ReportTargetType,
-): boolean {
-  return REPORT_CATEGORY_TARGETS[category]?.includes(targetType) ?? true;
-}
 
 /**
  * A list's kind: RANKED shows explicit rank order (drag-to-reorder, "top
@@ -815,6 +696,7 @@ export const ListKind = {
   RANKED: "RANKED",
   COLLECTION: "COLLECTION",
 } as const;
+
 export type ListKind = (typeof ListKind)[keyof typeof ListKind];
 
 /**
@@ -827,6 +709,7 @@ export const ListVisibility = {
   FRIENDS: "FRIENDS",
   PUBLIC: "PUBLIC",
 } as const;
+
 export type ListVisibility =
   (typeof ListVisibility)[keyof typeof ListVisibility];
 
@@ -865,4 +748,5 @@ export const XpReason = {
   READING_GOAL_REACHED: "READING_GOAL_REACHED",
   ADMIN_ADJUSTMENT: "ADMIN_ADJUSTMENT",
 } as const;
+
 export type XpReason = (typeof XpReason)[keyof typeof XpReason];

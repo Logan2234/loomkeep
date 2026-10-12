@@ -50,6 +50,7 @@ export * from "./locale";
 export * from "./movie-release";
 export * from "./password";
 export * from "./realtime";
+export * from "./report-categories";
 export * from "./runtime";
 export * from "./validation-constraints";
 export * from "./xp-rules";

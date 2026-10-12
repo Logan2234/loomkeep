@@ -1,5 +1,5 @@
 import { ProfileAccess } from "@loomkeep/shared";
-import { describe, expect, it, vi } from "vitest";
+import { vi } from "vitest";
 import type { PrismaService } from "../../prisma/prisma.service";
 import type { FollowService } from "../follow.service";
 import { LeaderboardService, periodRange } from "./leaderboard.service";

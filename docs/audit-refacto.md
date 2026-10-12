@@ -22,8 +22,8 @@
   - 5 modals de mot de passe dans `MfaSection` ;
   - le `switch` à 4 domaines répété 6 fois dans `admin-cache.controller.ts` ;
   - les 11 boutons « charger plus ».
-- **Fichiers à découper en priorité** : `library.service.ts` (2163 l.), `mail.service.ts` (1929), `achievements/registry.ts` (1677), `data-export.service.ts` (une méthode de 746 l.), `LibraryBrowser.svelte` (1062), `CommentThread.svelte` (1025).
-- **Inventaire total** : 67 pistes, dont 4 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
+- **Fichiers à découper en priorité** : `library.service.ts` (2163 l.), `mail.service.ts` (1929), `data-export.service.ts` (une méthode de 746 l.), `LibraryBrowser.svelte` (1062), `CommentThread.svelte` (1025).
+- **Inventaire total** : 59 pistes, dont 4 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
 
 ---
 
@@ -90,7 +90,6 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | SH-08 | 1   | 🐛 Pourcentage de lecture livre ×4, variantes divergentes (borne)                                   | moyen  | S      | faible | P1       |
 | SH-27 | 1   | 🐛 Normalisation sans accents ×6 ; filtre serveur et import non normalisés                          | moyen  | S      | faible | P1       |
 | SH-29 | 1   | Jour local `YYYY-MM-DD` : regex de contrat et fabrication de la clé                                 | moyen  | S      | faible | P2       |
-| SH-32 | 1   | 23 classes `*Body` sur 28 n'implémentent pas le DTO de requête shared                               | moyen  | M      | faible | P2       |
 | SH-33 | 1   | `dto/api-v1.ts` utilisé par l'API seule → `public-api/v1`                                           | moyen  | S      | faible | P2       |
 | SH-34 | 1   | `dto/data-export.ts` : 37/38 exports API seule                                                      | moyen  | M      | faible | P2       |
 | SH-35 | 1   | Petits fichiers shared API seule + règle d'appartenance à acter                                     | moyen  | M      | faible | P2       |
@@ -115,8 +114,6 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | RB-18 | 5   | Résolution « profil visible ou 404 » ×9                                                             | moyen  | S      | faible | P1       |
 | RB-19 | 5   | `domainGate.assertEnabled` ×34 → `@RequireDomain`                                                   | moyen  | M      | moyen  | P2       |
 | RB-20 | 5   | Découper `mail.service.ts` (1929 l.)                                                                | moyen  | M      | faible | P2       |
-| RB-21 | 5   | Découper `mail.i18n.ts` (1208 l.) par langue                                                        | moyen  | S      | faible | P2       |
-| RB-22 | 5   | Découper `achievements/registry.ts` (1677 l.)                                                       | moyen  | M      | faible | P2       |
 | RB-23 | 5   | Découper `list.service.ts` (1121 l.)                                                                | moyen  | M      | faible | P3       |
 | RB-24 | 5   | Découper `comment.service.ts` (1123 l.)                                                             | moyen  | M      | faible | P3       |
 | RB-25 | 5   | Découper `auth.service.ts` (1174 l.)                                                                | moyen  | L      | moyen  | P3       |
@@ -124,7 +121,6 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | RB-27 | 5   | `data-export.buildExport` : une méthode de 746 lignes                                               | moyen  | M      | faible | P2       |
 | RB-28 | 5   | Sortir `RatingService` / `ReviewVoteService` de `review.service.ts`                                 | moyen  | M      | moyen  | P3       |
 | RB-29 | 5   | `stats.service` : 4 `fetch*Rows` quasi identiques                                                   | moyen  | M      | faible | P3       |
-| RB-30 | 5   | `public-api/v1/dto/responses.dto.ts` (871 l.) à découper                                            | faible | S      | faible | P3       |
 | RF-01 | 5   | Docks de session jeu/livre dupliqués (≈1 800 l.)                                                    | fort   | L      | moyen  | P1       |
 | RF-02 | 5   | Coque commune des pages détail                                                                      | fort   | M      | moyen  | P1       |
 | RF-10 | 5   | `ImportWizard.runSearch` / `CommentMentionInput` / pseudo : requêtes manuelles                      | faible | S      | faible | P3       |
@@ -142,26 +138,22 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 | RT-08 | 5   | Libs navigateur dans les `dependencies` web (image Docker)                                          | moyen  | S      | moyen  | P2       |
 | RT-09 | 5   | `@simplewebauthn/browser` en devDependency de shared                                                | faible | S      | faible | P2       |
 | RT-10 | 5   | `apps/docs` hors du lockstep de version (1.9.0)                                                     | faible | S      | faible | P2       |
-| RT-11 | 5   | ≈75 entrées obsolètes dans `minimumReleaseAgeExclude`                                               | faible | S      | faible | P2       |
 | RT-14 | 5   | Sévérité `no-unused-vars` différente web ↔ base                                                     | faible | S      | faible | P3       |
-| RT-15 | 5   | Style de test API incohérent (globals vs imports)                                                   | faible | S      | faible | P3       |
 | RT-17 | 5   | `apps/web/src/lib/` : 76 fichiers à plat → sous-dossiers                                            | moyen  | M      | moyen  | P3       |
 | RT-18 | 5   | `lib/components/` : ≈120 composants à plat + modules `.ts`                                          | moyen  | M      | moyen  | P3       |
 | RT-22 | 5   | Exports inutiles (48 API, 19 web)                                                                   | faible | S      | faible | P3       |
-| RT-23 | 5   | `shared/enums.ts` (858 l.) mélange enums, constantes et logique report                              | moyen  | S      | faible | P2       |
-| RT-25 | 5   | `shared/dto/admin.ts` (618 l.) mélange 8 sous-domaines                                              | faible | S      | faible | P3       |
 | RT-27 | 5   | `apps/docs` importe shared par chemin relatif profond ; Dockerfiles                                 | faible | S      | faible | P3       |
 | RT-28 | 5   | 🐛 `detectLocale` ignore l'italien                                                                  | faible | S      | faible | P1       |
 
-**Total : 67 pistes**, dont 4 marquées 🐛. Par priorité : 1 P0, 11 P1, 30 P2 et 25 P3.
+**Total : 59 pistes**, dont 4 marquées 🐛. Par priorité : 1 P0, 11 P1, 25 P2 et 22 P3.
 
 | Axe                | Nombre de pistes    |
 | ------------------ | ------------------- |
-| Axe 1 (partagé)    | 11                  |
+| Axe 1 (partagé)    | 10                  |
 | Axe 2 (helpers)    | 5 (1 back, 4 front) |
 | Axe 3 (constantes) | 3 (1 back, 2 front) |
 | Axe 4 (types)      | 1 (front)           |
-| Axe 5 (refactors)  | 47                  |
+| Axe 5 (refactors)  | 40                  |
 
 ---
 
@@ -246,14 +238,6 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
   - `OnThisDayWidget.svelte` envoie une clé locale à l'API via `lib/date.ts` → `localDateInput` (HF-04 résolue, voir §7). SH-29 doit préserver ce jour local lors du déplacement vers shared.
 - **Proposition** : `LOCAL_DAY_RE` et `localDayKey(date, timeZone?)` dans un nouveau `packages/shared/src/date.ts`. Implémentation par Intl, sans dépendance. Ce module accueillerait aussi `DAY_MS` (CB-01).
 
-#### SH-32 — Contrats de requête non garantis
-
-- **Constat** :
-  - Les `*ResponseDto` font `implements`, et un spec le verrouille. En revanche, seules **5 classes `*Body` sur 28** implémentent leur DTO de requête shared.
-  - Exemple : `CreateCommentDto` (`shared/dto/comment.ts:72`) contre `CreateCommentBody` (`apps/api/src/comments/dto/create-comment.dto.ts:22`) ; `CreateListDto` (`dto/list.ts:86`) contre `CreateListBody` (`lists/dto/create-list.dto.ts:15`).
-  - Conséquence : le web envoie une forme que rien ne relie au validateur.
-- **Proposition** : ajouter `implements` et l'étendre au spec `response-dto-implements`, ou supprimer les interfaces de requête shared que le web n'importe pas (voir SH-35).
-
 #### SH-33 — `dto/api-v1.ts` réservé à l'API
 
 - **Constat** : 21 exports sur 21 ne sont importés que par `apps/api/src/public-api/v1/**`. Le web et la doc ne les importent jamais, la doc lisant `openapi-v1.json`.
@@ -270,7 +254,7 @@ loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22,
 #### SH-35 — Fichiers shared réservés à l'API + règle d'appartenance
 
 - **Constat** :
-  - Plusieurs fichiers ne sont importés que par l'API : `dto/config.ts`, `dto/entitlement.ts`, `dto/ee.ts`, `dto/link.ts`, `dto/newsletter.ts`, `dto/push.ts`, `runtime.ts:runtimeFor` et `dto/admin.ts:PublicStatsSummaryDto` (l.610).
+  - Plusieurs fichiers ne sont importés que par l'API : `dto/config.ts`, `dto/entitlement.ts`, `dto/ee.ts`, `dto/link.ts`, `dto/newsletter.ts`, `dto/push.ts`, `runtime.ts:runtimeFor` et `dto/public-stats.ts:PublicStatsSummaryDto` (l.610).
   - Pour ces routes, le web passe par `typedRequest` et les types OpenAPI.
   - Au total, environ 270 exports sur 546 ne sont importés que par l'API, et ils existent surtout pour le `implements` des `*ResponseDto`.
 - **Proposition** : **décision à prendre**, puis à documenter dans le CLAUDE.md. Option recommandée : « une interface de réponse peut rester dans shared tant qu'une classe API l'implémente (contrat documenté) ; une donnée runtime ou une fonction n'y va que si les deux côtés l'utilisent ». Une fois la règle actée, migrer domaine par domaine.
@@ -350,7 +334,7 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 **CB-01 — Durées en millisecondes**
 
 - **Constat** :
-  - `DAY_MS` reste déclaré localement 8 fois : `common/date.util.ts`, `admin/admin-accounts-stats.service.ts`, `admin-stats.util.ts`, `api-key-lifecycle.service.ts`, `ee/licensing/license-key.ts`, `achievements/registry.ts`, `stats/on-this-day.util.ts` et `video-temporal.util.ts`.
+  - `DAY_MS` reste déclaré localement 8 fois : `common/date.util.ts`, `admin/admin-accounts-stats.service.ts`, `admin-stats.util.ts`, `api-key-lifecycle.service.ts`, `ee/licensing/license-key.ts`, `achievements/checks/shared.ts`, `stats/on-this-day.util.ts` et `video-temporal.util.ts`.
   - Les calculs inlinés de jours restent notamment dans `auth.service.ts`, `video-stats.util.ts`, `ee/stats/aggregates.util.ts` et `mail.service.ts` ; les TTL catalogue utilisent déjà `common/catalog-sync.util.ts` (CB-02 résolue, voir §7).
   - D’autres durées en dur : `HOUR_MS` (`admin-social-stats.util.ts`) et `× 60_000` dans auth, webauthn et users.
   - Voir le repère HB-08 : les décalages de jours sont déjà mutualisés, mais leur unité reste locale à l’API.
@@ -461,15 +445,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
   - layout `1755-1900` → `mail-layout.ts`.
 - `MailService` garde la configuration, le transport et les `send*`.
 
-**RB-21 — `mail/mail.i18n.ts` (1208 l.)**
-
-- **Proposition** : `mail/copy/{types,fr,en,it,index}.ts`, découpé selon les sections actuelles : interface `25-234`, fr `236-559`, en `560-878`, it `879-1208`. Mettre à jour le skill `add-locale`.
-
-**RB-22 — `gamification/achievements/registry.ts` (1677 l.)**
-
-- **Découpage proposé** : checks `50-1024` → `checks/{media,finishers,streaks,social,profile,seasonal}.ts` ; `ACHIEVEMENTS` `1026-1548` → `definitions.ts` ; déclencheurs `1549-1677` → `triggers.ts`.
-- **Bénéfice** : les services de bibliothèque importent un fichier léger.
-
 **RB-23 — `lists/list.service.ts` (1121 l.)**
 
 - **Proposition** : `ListMemberService` (`633-796`) et la résolution des cibles (`954-1120`, voir HB-20). Garder `ListService` comme façade, car il est injecté dans 4 services de bibliothèque, dans `AccountDeletion` et dans `admin-reports`.
@@ -506,11 +481,6 @@ Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, 
 **RB-29 — `stats/stats.service.ts` (873 l.)**
 
 - **Proposition** : factoriser les 4 `fetch*Rows` quasi identiques (`245-393`) et extraire `VideoStatsService` (`394-644`).
-
-**RB-30 — `public-api/v1/dto/responses.dto.ts` (871 l.)**
-
-- **Constat** : c'est la seule exception à la règle « un DTO par fichier ».
-- **Proposition** : le découper par ressource.
 
 **Méthodes de plus de 100 lignes, pour référence** :
 
@@ -688,20 +658,10 @@ Valeur faible pour l'ensemble.
 - **Constat** : `apps/docs/package.json:3` est en `1.9.0`, alors que les autres paquets sont en `1.10.0`. Ni le CLAUDE.md (« quatre package.json ») ni le skill `version-bump` ne listent docs.
 - **Proposition** : l'inclure dans le lockstep, ou l'exclure explicitement par écrit.
 
-**RT-11 — `minimumReleaseAgeExclude`**
-
-- **Constat** : dans `pnpm-workspace.yaml`, environ 75 entrées absentes du lockfile (typescript 7.0.2 et ses 20 binaires, vite 8.1.3, eslint 10.10.0, `@sentry/*` 10.73.0, `@swc/*` 1.16.2…). Le commentaire de l'override `fastify` cite 5.12.3, alors que l'API est en ^5.12.5.
-- **Proposition** : purger les entrées obsolètes et mettre le commentaire à jour.
-
 **RT-14 — Sévérité ESLint**
 
 - **Constat** : `apps/web/eslint.config.mjs:52-55` passe `no-unused-vars` en `error`, alors que la base (`eslint.config.base.mjs:59`) le met en `warn`.
 - **Proposition** : unifier dans la base.
-
-**RT-15 — Style de test**
-
-- **Constat** : l'API a `globals: true`, mais 16 specs sur 206 importent quand même `describe`/`it` depuis `vitest`.
-- **Proposition** : uniformiser.
 
 **RT-17 — `lib/` à plat**
 
@@ -718,17 +678,6 @@ Valeur faible pour l'ensemble.
 
 - **Constat** : 48 côté API (par exemple `mail.service.ts:19,29,53,83,173`, `responses.dto.ts:42…`) et 19 côté web.
 - **Proposition** : retirer `export`. Cosmétique.
-
-**RT-23 — `shared/enums.ts` (858 l.)**
-
-- **Constat** : le fichier mélange enums, constantes et logique.
-  - La logique report (l.527-800, avec `reportMotifsFor` et `isReportCategoryAllowed`) a déjà son spec, `report-categories.spec.ts`, mais pas de fichier source correspondant.
-  - Des constantes non-enum : `REVIEW_TEXT_MAX_LENGTH` (452), `COMMENT_TEXT_MAX_LENGTH` (518) et des seuils (521, 524).
-- **Proposition** : `report-categories.ts`, et ranger les constantes dans `dto/review.ts` / `dto/comment.ts`. Le barrel reste inchangé.
-
-**RT-25 — `shared/dto/admin.ts` (618 l.)**
-
-- **Proposition** : le découper en `admin-{services,comms,jobs,cache,users,backups}.ts`. Les résumés iraient dans `admin-stats.ts`. `PublicStatsSummaryDto` (l.610) n'est pas un DTO admin.
 
 **RT-27 — Docs et Dockerfiles**
 
@@ -762,20 +711,19 @@ Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les 
 | ---------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------- |
 | **L0a** 🐛 | SH-05 côté API seulement : `workPath` dans `common/work-href.util.ts`, branché dans `list.service` et `stats.service` | —                                    | Test rouge d'abord. Minimal, pour corriger vite.               |
 | **L0g** 🐛 | Textes : RT-28, SH-27 (filtre serveur et import)                                                                      | —                                    |                                                                |
-| **L1** ∥   | Nettoyage : RT-11, RT-14, SH-38 (`XP_RULE_LIST`)                                                                      | —                                    | Aucun risque fonctionnel.                                      |
+| **L1** ∥   | Nettoyage : RT-14, SH-38 (`XP_RULE_LIST`)                                                                      | —                                    | Aucun risque fonctionnel.                                      |
 | **L2**     | shared, constantes de contrat : SH-29/CB-01 (`shared/date.ts`)                                                        | —                                    | Un seul `build:package`.                                       |
 | **L3**     | shared, routes et présentation : SH-05 complet (`shared/routes.ts`, migration de L0a et du web), SH-08, HF-07         | L0a                                  | Supprime `home/widgets/media.ts`.                              |
-| **L4**     | shared, unions : SH-32                                                                                                | L2                                   | Typage des `List*Filters` web.                                 |
 | **L8**     | API services transverses : HB-20 (`resolveWorkTargets`), RB-18, RB-09, RB-11                                          | L3                                   | Une PR par thème.                                              |
 | **L9**     | API admin : RB-14, RB-15, RB-16, RB-17, RB-19                                                                         | L8                                   | RB-19 après décision sur la maintenance.                       |
-| **L10**    | API découpages : RB-10, RB-20 à RB-30                                                                                 | L8 (RB-23, RB-24, RB-28 après HB-20) | Une PR par fichier, sans changement de comportement.           |
+| **L10**    | API découpages : RB-10, RB-20, RB-23, RB-24, RB-25, RB-26, RB-27, RB-28 et RB-29                                                                                 | L8 (RB-23, RB-24, RB-28 après HB-20) | Une PR par fichier, sans changement de comportement.           |
 | **L11** ∥  | Web helpers : HF-05, 08 (par lots), 11                                                                                | L2 pour HF-05                        | HF-08 en plusieurs PR.                                         |
 | **L12** ∥  | Web constantes : CF-03, 14                                                                                            | —                                    | CF-03 en dernier, progressif.                                  |
 | **L13** ∥  | Web types : TF-12                                                                                                     | —                                    |                                                                |
 | **L14**    | Web petits composants : RF-10, RF-17                                                                                  | L12                                  |                                                                |
 | **L15**    | Web gros composants : RF-01 (avec test de caractérisation), RF-02, RF-18                                              | L3, L14                              | Une PR par composant.                                          |
 | **L16**    | Web découpages : RF-24, RF-25, RF-26, RF-28, RF-29, RF-31                                                             | L15 pour RF-25                       |                                                                |
-| **L17**    | Déplacements « shared → app » : SH-33, SH-34, SH-35, SH-39 + RT-04, RT-23, RT-25                                      | décision SH-35                       |                                                                |
+| **L17**    | Déplacements « shared → app » : SH-33, SH-34, SH-35, SH-39 + RT-04, | décision SH-35                       |                                                                |
 | **L18**    | Dépendances et build : RT-08, RT-09, RT-10                                                                            | —                                    | RT-08 demande un `docker build`.                               |
 | **L19**    | Structure (mécanique, en dernier) : RT-07 (codemod `client.ts`), RT-17, RT-18, RT-22                                  | tout le reste                        | Conflits garantis avec les PR en cours ; à faire seul et vite. |
 

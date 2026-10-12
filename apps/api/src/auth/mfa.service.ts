@@ -10,7 +10,8 @@ import { randomInt } from "node:crypto";
 import { Secret, TOTP } from "otpauth";
 import { AppException } from "../common/app.exception";
 import { AchievementService } from "../gamification/achievements/achievement.service";
-import { ACHIEVEMENT_KEYS_ON_TOTP_ENABLED } from "../gamification/achievements/registry";
+
+import { ACHIEVEMENT_KEYS_ON_TOTP_ENABLED } from "../gamification/achievements/triggers";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
