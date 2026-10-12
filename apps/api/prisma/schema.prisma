@@ -1841,6 +1841,22 @@ model Saga {
   syncedAt  DateTime     @default(now())
   createdAt DateTime     @default(now())
   members   SagaMember[]
+  translations SagaTranslation[]
+}
+
+// A film saga's titles in another language, kept so the library's sagas view
+// doesn't wait on one TMDB request per saga after each restart.
+model SagaTranslation {
+  sagaKey      String
+  locale       String
+  title        String
+  // Each work's title, by TMDB id.
+  memberTitles Json
+  updatedAt    DateTime @updatedAt
+
+  saga Saga @relation(fields: [sagaKey], references: [key], onDelete: Cascade)
+
+  @@id([sagaKey, locale])
 }
 
 model SagaMember {

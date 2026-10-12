@@ -49,6 +49,10 @@ function makeService(allowAdult = false) {
   const prisma = {
     libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
     saga: { findMany: vi.fn().mockResolvedValue([]) },
+    sagaTranslation: {
+      findMany: vi.fn().mockResolvedValue([]),
+      upsert: vi.fn().mockResolvedValue({}),
+    },
   };
   const service = new SagaService(
     prisma as unknown as PrismaService,
@@ -248,5 +252,82 @@ describe("SagaService", () => {
       ["1", "2"],
       "fr",
     );
+    expect(prisma.sagaTranslation.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: {
+          sagaKey: "TMDB:726871",
+          locale: "fr",
+          title: "Dune - Saga",
+          memberTitles: { "1": "Dune", "2": "Dune : Deuxième partie" },
+        },
+      }),
+    );
+  });
+
+  describe("a saved translation", () => {
+    function withDuneSaga(memberTitles: Record<string, string>) {
+      const setup = makeService(true);
+      const film = (sourceId: string) => ({
+        sagaKey: "TMDB:726871",
+        source: "TMDB",
+        sourceId,
+        type: "MOVIE",
+        position: Number(sourceId),
+        title: `Saved ${sourceId}`,
+        posterUrl: null,
+        releaseDate: "2020-01-01",
+        format: null,
+        episodes: null,
+        isAdult: false,
+        upcoming: false,
+      });
+      setup.prisma.libraryEntry.findMany.mockResolvedValue([
+        {
+          updatedAt: new Date("2026-10-01"),
+          mediaItem: { sagaKey: "TMDB:726871" },
+        },
+      ]);
+      setup.prisma.saga.findMany.mockResolvedValue([
+        {
+          key: "TMDB:726871",
+          title: "Dune Collection",
+          members: [film("1"), film("2")],
+        },
+      ]);
+      setup.prisma.sagaTranslation.findMany.mockResolvedValue([
+        {
+          sagaKey: "TMDB:726871",
+          locale: "fr",
+          title: "Dune - Saga",
+          memberTitles,
+        },
+      ]);
+      setup.library.statusesBySourceId.mockResolvedValue(
+        new Map([["1", "COMPLETED"]]),
+      );
+      return setup;
+    }
+
+    it("is read back without asking TMDB again", async () => {
+      const { service, sagas } = withDuneSaga({
+        "1": "Dune",
+        "2": "Dune : Deuxième partie",
+      });
+
+      const result = await service.listSagas("user-1", { lang: "fr" });
+
+      expect(result.inProgress.map((s) => [s.title, s.next?.title])).toEqual([
+        ["Dune - Saga", "Dune : Deuxième partie"],
+      ]);
+      expect(sagas.readCollection).not.toHaveBeenCalled();
+    });
+
+    it("is asked again once a work joined the saga", async () => {
+      const { service, sagas } = withDuneSaga({ "1": "Dune" });
+
+      await service.listSagas("user-1", { lang: "fr" });
+
+      expect(sagas.readCollection).toHaveBeenCalledOnce();
+    });
   });
 });

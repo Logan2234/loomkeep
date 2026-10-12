@@ -21,6 +21,8 @@ import {
   sagaProgress,
 } from "./saga-progress.util";
 
+type SagaTitles = { title: string; members: Record<string, string> };
+
 export interface LibrarySagaFilters {
   types?: MediaType[];
   q?: string;
@@ -143,15 +145,12 @@ export class SagaService {
 
     for (const saga of sagas) {
       const translation = translated.get(saga.key);
-      const titles = new Map(
-        translation?.members.map((m) => [m.sourceId, m.title]),
-      );
       const title = translation?.title ?? saga.title;
       const members = saga.members
         .filter((m) => allowAdult || !m.isAdult)
         .map((m) => ({
           ...toMemberDto(m, statuses.get(`${m.type}:${m.sourceId}`)),
-          title: titles.get(m.sourceId) ?? m.title,
+          title: translation?.members[m.sourceId] ?? m.title,
         }));
 
       if (
@@ -188,17 +187,35 @@ export class SagaService {
 
   /**
    * Film sagas are saved in TMDB's base language; anime titles don't change
-   * with it. A translation is one collection request per saga and language a
-   * day, cached and shared — and a failed one just keeps the saved titles.
+   * with it. A saga is translated once per language and kept, then asked
+   * again only when a work joined it — a failed request just keeps the saved
+   * titles.
    */
   private async translations(
     sagas: { key: string; members: SagaMember[] }[],
     lang: string | undefined,
-  ): Promise<Map<string, MediaSagaDto>> {
+  ): Promise<Map<string, SagaTitles>> {
     const films = sagas.filter((saga) => saga.key.startsWith("TMDB:"));
     if (!lang || lang === "en" || films.length === 0) return new Map();
 
-    const read = await mapWithConcurrency(films, 4, (saga) =>
+    const stored = await this.prisma.sagaTranslation.findMany({
+      where: { locale: lang, sagaKey: { in: films.map((saga) => saga.key) } },
+    });
+    const translated = new Map<string, SagaTitles>(
+      stored.map((row) => [
+        row.sagaKey,
+        {
+          title: row.title,
+          members: row.memberTitles as Record<string, string>,
+        },
+      ]),
+    );
+    const missing = films.filter((saga) => {
+      const titles = translated.get(saga.key)?.members;
+      return !titles || saga.members.some((m) => !(m.sourceId in titles));
+    });
+
+    const read = await mapWithConcurrency(missing, 4, (saga) =>
       this.sagas
         .readCollection(
           saga.key,
@@ -207,12 +224,35 @@ export class SagaService {
         )
         .catch(() => null),
     );
-    return new Map(
-      films.flatMap((saga, i) => {
-        const translation = read[i];
-        return translation ? [[saga.key, translation] as const] : [];
+    await Promise.all(
+      missing.map(async (saga, i) => {
+        const collection = read[i];
+        if (!collection) return;
+        const titles: SagaTitles = {
+          title: collection.title,
+          members: Object.fromEntries(
+            collection.members.map((m) => [m.sourceId, m.title]),
+          ),
+        };
+        translated.set(saga.key, titles);
+        // Two requests can translate the same saga at once: one save is enough.
+        await this.prisma.sagaTranslation
+          .upsert({
+            where: { sagaKey_locale: { sagaKey: saga.key, locale: lang } },
+            create: {
+              sagaKey: saga.key,
+              locale: lang,
+              title: titles.title,
+              memberTitles: titles.members,
+            },
+            update: { title: titles.title, memberTitles: titles.members },
+          })
+          .catch((err) =>
+            this.logger.warn(`Saga translation not saved: ${saga.key}`, err),
+          );
       }),
     );
+    return translated;
   }
 
   private async statusesOf(
