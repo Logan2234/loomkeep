@@ -29,6 +29,7 @@ const { emit } = vi.hoisted(() => ({ emit: vi.fn() }));
 vi.mock("#lib/realtime/socket.js", () => ({ socket: { emit } }));
 vi.mock("svelte/transition", () => ({
   fade: () => ({ duration: 0 }),
+  fly: () => ({ duration: 0 }),
   scale: () => ({ duration: 0 }),
 }));
 
