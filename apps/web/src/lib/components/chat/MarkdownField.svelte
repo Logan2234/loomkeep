@@ -294,4 +294,10 @@
   class={cls}
   data-markdown-field
   data-empty={value === "" ? "true" : "false"}>
+  {#if !view}
+    <!-- Keeps the field's line while the editor loads. -->
+    <p class="text-dim truncate" aria-hidden="true">
+      {value || placeholder || " "}
+    </p>
+  {/if}
 </div>
