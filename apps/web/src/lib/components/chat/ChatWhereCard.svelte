@@ -78,11 +78,9 @@
             >{offer.provider.name}</span>
           <span class="text-dim block text-xs">{KIND[offer.kind]()}</span>
         </span>
-        <span class="flex -space-x-1.5">
+        <span class="flex gap-0.5">
           {#each offer.members as member (member.id)}
-            <span
-              class="ring-surface-2 rounded-full ring-2"
-              title={member.displayName}>
+            <span class="flex" title={member.displayName}>
               <Avatar seed={member.username} url={member.avatarUrl} size={22} />
             </span>
           {/each}

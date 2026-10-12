@@ -69,11 +69,9 @@
       {/if}
       <span class="relative min-w-0 flex-1 truncate">{option.text}</span>
       {#if option.voters.length > 0}
-        <span class="relative flex -space-x-1.5" aria-hidden="true">
+        <span class="relative flex gap-0.5" aria-hidden="true">
           {#each option.voters as voter (voter.id)}
-            <span class="ring-surface rounded-full ring-2">
-              <Avatar seed={voter.username} url={voter.avatarUrl} size={20} />
-            </span>
+            <Avatar seed={voter.username} url={voter.avatarUrl} size={20} />
           {/each}
         </span>
       {/if}
