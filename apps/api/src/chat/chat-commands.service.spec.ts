@@ -116,6 +116,18 @@ describe("ChatCommandsService", () => {
       expect(["dune", "perfect-days"]).toContain(result.work?.title);
     });
 
+    it("brings the rest of the pile along, for the draw to roll through", async () => {
+      const { service } = setup();
+
+      const result = await service.draw(ME, "cv1", "MEDIA", false);
+
+      expect(result.reel.map((work) => work.title).sort()).toEqual(
+        ["dune", "perfect-days", "shogun"]
+          .filter((id) => id !== result.work?.title)
+          .sort(),
+      );
+    });
+
     it("has nothing in common with a member whose library is hidden", async () => {
       const { service } = setup({ leaVisible: false });
 
@@ -145,6 +157,19 @@ describe("ChatCommandsService", () => {
   });
 
   describe("/where", () => {
+    // AniList knows no streaming platform per country, unlike TMDB.
+    it("only takes films and series", async () => {
+      const { service } = setup();
+
+      await expectCode(
+        service.whereWork("/app/media/anime/97986"),
+        ErrorCode.ChatWhereNotVideo,
+      );
+      await expect(
+        service.whereWork("/app/media/series/1399"),
+      ).resolves.toBeTruthy();
+    });
+
     it("puts the platforms members have first, with the members who share them", async () => {
       const { service, prisma, chat, extras } = setup();
       (chat.commandMessage as Mock).mockResolvedValue({

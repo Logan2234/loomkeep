@@ -12,6 +12,15 @@ async function setup() {
 }
 
 describe("MarkdownField", () => {
+  // The editor's code loads on its own; an empty box collapsed to its border.
+  it("keeps its line, with the placeholder, while the editor loads", async () => {
+    render(MarkdownField, { label: "Message", placeholder: "Écris à Léa" });
+
+    expect(screen.getByText("Écris à Léa")).toBeTruthy();
+    expect(screen.queryByRole("textbox")).toBe(null);
+    await screen.findByRole("textbox", { name: "Message" });
+  });
+
   it("drops a span's markers, place and all, until the caret goes in", async () => {
     const user = userEvent.setup();
     const box = await setup();

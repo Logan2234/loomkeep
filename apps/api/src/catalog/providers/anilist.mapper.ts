@@ -223,6 +223,8 @@ export function toExtras(
       .map((n) => toSummary(n)),
     externalLinks: (media?.externalLinks ?? [])
       .filter((l): l is { site: string; url: string } => !!l.url)
+      // AniList sometimes lists the same page twice.
+      .filter((l, i, links) => links.findIndex((o) => o.url === l.url) === i)
       .map((l) => ({ name: l.site, url: l.url })),
     tags: (media?.tags ?? [])
       .filter((t) => !t.isMediaSpoiler)

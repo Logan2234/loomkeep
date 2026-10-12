@@ -39,3 +39,20 @@ if (dsn) {
 }
 
 export const handleError = Sentry.handleErrorWithSentry();
+
+// A tab opened before a deploy asks for code the new version no longer serves
+// (the service worker drops it as it takes over): the chat field would never
+// load its editor. Reloading picks the current version up — once a minute at
+// most, should the code really be missing.
+const RELOADED_AT = "loomkeep:preload-reload";
+window.addEventListener("vite:preloadError", () => {
+  try {
+    const last = Number(sessionStorage.getItem(RELOADED_AT));
+    if (Date.now() - last < 60_000) return;
+    sessionStorage.setItem(RELOADED_AT, String(Date.now()));
+  } catch {
+    return;
+  }
+
+  location.reload();
+});

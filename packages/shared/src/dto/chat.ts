@@ -279,9 +279,16 @@ export interface PickRequestDto {
   shared: boolean;
 }
 
+export interface PickReelWorkDto {
+  title: string;
+  imageUrl: string | null;
+}
+
 export interface PickResultDto {
   /** Null when there's nothing to draw from. */
   work: MessageWorkDto | null;
+  /** A few other works of the same pile, rolled through before `work` shows. */
+  reel: PickReelWorkDto[];
   /** Works in the author's own pile. */
   mine: number;
   /**
