@@ -35,7 +35,7 @@
     "check": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@fastify/helmet": "^13.1.1",
+    "@fastify/helmet": "^13.1.2",
     "@loomkeep/shared": "workspace:*",
     "@nestjs/common": "^12.1.2",
     "@nestjs/config": "^12.0.1",
@@ -58,7 +58,7 @@
     "dotenv": "^18.0.6",
     "fastify": "^5.12.5",
     "nestjs-pino": "^5.3.1",
-    "nodemailer": "^10.0.15",
+    "nodemailer": "^10.0.16",
     "otpauth": "^9.5.2",
     "pino-http": "^11.0.0",
     "prisma": "^7.10.0",
