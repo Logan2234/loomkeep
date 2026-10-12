@@ -413,6 +413,7 @@ export class UsersService {
         hideProgression: dto.hideProgression,
         chatShowPresence: dto.chatShowPresence,
         chatShowReadReceipts: dto.chatShowReadReceipts,
+        chatShareWatchProviders: dto.chatShareWatchProviders,
         feedbackWidget: dto.feedbackWidget,
         spoilerSensitivity: dto.spoilerSensitivity,
         domainOrder: dto.domainOrder,

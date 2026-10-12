@@ -31,6 +31,10 @@ const MINE: MessageDto = {
   review: null,
   list: null,
   gone: null,
+  poll: null,
+  saga: null,
+  pick: null,
+  where: false,
   pinned: false,
   forwarded: false,
   createdAt: "2026-10-09T21:14:00.000Z",
@@ -210,6 +214,181 @@ describe("ChatMessageItem", () => {
     renderMessage({ ...MINE, text: null, gone: "list" });
 
     expect(screen.getByText(m.chat_list_gone())).toBeTruthy();
+  });
+
+  it("votes on a poll, and shows who voted what", async () => {
+    let voted: unknown = null;
+    server.use(
+      http.put(apiUrl("/chat/messages/m1/vote"), async ({ request }) => {
+        voted = await request.json();
+        return HttpResponse.json(MINE);
+      }),
+    );
+    const lea = {
+      id: "lea",
+      username: "lea",
+      displayName: "Léa",
+      avatarUrl: null,
+      profileAccess: "PUBLIC" as const,
+    };
+    const user = userEvent.setup();
+    renderMessage({
+      ...MINE,
+      text: null,
+      poll: {
+        question: "On regarde quoi ?",
+        options: [
+          {
+            id: "o1",
+            text: "Severance",
+            href: "/app/media/series/95396",
+            imageUrl: null,
+            voters: [lea],
+          },
+          {
+            id: "o2",
+            text: "Un vieux Pixar",
+            href: null,
+            imageUrl: null,
+            voters: [],
+          },
+        ],
+        myVote: null,
+      },
+    });
+
+    expect(
+      screen.getByRole("button", { name: /Severance/ }).textContent,
+    ).toContain("100%");
+    await user.click(screen.getByRole("button", { name: /Un vieux Pixar/ }));
+
+    await waitFor(() => expect(voted).toEqual({ option: "o2" }));
+  });
+
+  it("shows each member's progress through a shared saga", async () => {
+    server.use(
+      http.get(apiUrl("/chat/messages/m1/saga"), () =>
+        HttpResponse.json({
+          domain: "GAMES",
+          title: "The Witcher",
+          works: ["The Witcher", "The Witcher 2", "The Witcher 3"].map(
+            (title, i) => ({
+              title,
+              imageUrl: null,
+              href: `/app/games/${i + 1}`,
+              upcoming: false,
+            }),
+          ),
+          members: [
+            {
+              user: {
+                id: "me",
+                username: "me",
+                displayName: "Moi",
+                avatarUrl: null,
+                profileAccess: "PUBLIC",
+              },
+              mine: true,
+              steps: ["done", "done", "active"],
+            },
+          ],
+        }),
+      ),
+    );
+    renderMessage({
+      ...MINE,
+      text: null,
+      saga: { domain: "GAMES", key: "IGDB:6" },
+    });
+
+    expect(await screen.findByText("The Witcher")).toBeTruthy();
+    expect(
+      screen
+        .getByRole("link", {
+          name: m.chat_saga_open({ title: "The Witcher 3" }),
+        })
+        .getAttribute("href"),
+    ).toBe("/app/games/3");
+    expect(screen.getByText("2/3")).toBeTruthy();
+  });
+
+  it("says what a /pick was drawn among", () => {
+    renderMessage({
+      ...MINE,
+      text: null,
+      works: [
+        {
+          kind: "MOVIE",
+          title: "Perfect Days",
+          imageUrl: null,
+          href: "/app/media/movie/976893",
+          year: 2023,
+          inLibrary: true,
+        },
+      ],
+      pick: { domain: "MEDIA", shared: true, count: 3 },
+    });
+
+    expect(
+      screen.getByText(m.chat_pick_shared_many({ count: 3 })),
+    ).toBeTruthy();
+    // The draw is its own card, not also a work card.
+    expect(screen.getAllByRole("link", { name: /Perfect Days/ })).toHaveLength(
+      1,
+    );
+  });
+
+  it("lists where a work can be watched, with the members who have each platform", async () => {
+    server.use(
+      http.get(apiUrl("/chat/messages/m1/where"), () =>
+        HttpResponse.json({
+          region: "FR",
+          offers: [
+            {
+              provider: { id: 381, name: "Canal+", logoUrl: null },
+              kind: "flatrate",
+              members: [
+                {
+                  id: "lea",
+                  username: "lea",
+                  displayName: "Léa",
+                  avatarUrl: null,
+                  profileAccess: "PUBLIC",
+                },
+              ],
+            },
+            {
+              provider: { id: 119, name: "Prime Video", logoUrl: null },
+              kind: "rent",
+              members: [],
+            },
+          ],
+          link: "https://www.themoviedb.org/movie/693134/watch?locale=FR",
+        }),
+      ),
+    );
+    renderMessage({
+      ...MINE,
+      text: null,
+      works: [
+        {
+          kind: "MOVIE",
+          title: "Dune : Deuxième partie",
+          imageUrl: null,
+          href: "/app/media/movie/693134",
+          year: 2024,
+          inLibrary: false,
+        },
+      ],
+      where: true,
+    });
+
+    expect(await screen.findByText("Canal+")).toBeTruthy();
+    expect(screen.getByText(m.media_rent())).toBeTruthy();
+    expect(screen.getByTitle("Léa")).toBeTruthy();
+    expect(
+      screen.getByText(m.media_watch_attribution({ region: "FR" })),
+    ).toBeTruthy();
   });
 
   it("opens the actions on a long press on a phone", async () => {

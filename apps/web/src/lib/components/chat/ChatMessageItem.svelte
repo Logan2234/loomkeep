@@ -22,6 +22,10 @@
   import ChatForwardModal from "./ChatForwardModal.svelte";
   import ChatMessageText from "./ChatMessageText.svelte";
   import ChatListCard from "./ChatListCard.svelte";
+  import ChatPickCard from "./ChatPickCard.svelte";
+  import ChatPollCard from "./ChatPollCard.svelte";
+  import ChatSagaCard from "./ChatSagaCard.svelte";
+  import ChatWhereCard from "./ChatWhereCard.svelte";
   import ChatReviewCard from "./ChatReviewCard.svelte";
   import ChatWorkCard from "./ChatWorkCard.svelte";
 
@@ -89,6 +93,10 @@
   }));
 
   const hasActions = $derived(!message.deleted && (writable || !message.mine));
+  // /pick and /where draw their work as their own card.
+  const commandCard = $derived(
+    (!!message.pick || message.where) && message.works.length > 0,
+  );
   // A few emoji alone read as a reaction: large, out of the bubble.
   const jumbo = $derived(
     !!message.text &&
@@ -342,11 +350,22 @@
               text={message.text}
               cardHrefs={message.works.map((work) => work.href)} />
           {/if}
-          {#each message.works as work (work.href)}
+          {#if message.pick && message.works[0]}
+            <ChatPickCard pick={message.pick} work={message.works[0]} />
+          {:else if message.where && message.works[0]}
+            <ChatWhereCard messageId={message.id} work={message.works[0]} />
+          {/if}
+          {#each commandCard ? message.works.slice(1) : message.works as work (work.href)}
             <div in:fade={{ duration: reduced ? 0 : 150 }}>
               <ChatWorkCard {work} />
             </div>
           {/each}
+          {#if message.poll}
+            <ChatPollCard {message} poll={message.poll} {writable} />
+          {/if}
+          {#if message.saga}
+            <ChatSagaCard messageId={message.id} />
+          {/if}
           {#if message.review}
             <ChatReviewCard review={message.review} mine={message.mine} />
           {:else if message.list}

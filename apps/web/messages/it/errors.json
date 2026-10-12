@@ -217,6 +217,10 @@
   "apierr_chat_work_not_found": "Quest'opera non può essere allegata a un messaggio.",
   "apierr_chat_review_not_found": "Puoi allegare solo una delle tue recensioni.",
   "apierr_chat_list_not_shareable": "Il tuo amico non può vedere questa lista, quindi non può essere condivisa qui.",
+  "apierr_chat_poll_option_not_found": "Questa opzione non fa parte del sondaggio.",
+  "apierr_chat_saga_not_found": "Questa saga non si trova.",
+  "apierr_chat_pick_not_in_pile": "Quest'opera non è più nella pila dell'estrazione: estrai di nuovo.",
+  "apierr_chat_where_not_video": "/where riguarda solo film e serie.",
   "apierr_chat_pin_limit": "Questa conversazione ha già 50 messaggi fissati: sbloccane uno prima.",
   "apierr_chat_forward_to_origin": "Un messaggio non può essere inoltrato nella sua stessa conversazione."
 }

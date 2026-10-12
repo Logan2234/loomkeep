@@ -109,6 +109,8 @@ export interface UserDto {
   chatShowPresence: boolean;
   /** Whether friends see when this account read their messages. Reciprocal too. */
   chatShowReadReceipts: boolean;
+  /** Whether friends see this account's platforms (`watchProviderIds`) on a `/where` card. */
+  chatShareWatchProviders: boolean;
   /** Shows the feedback launcher, on an instance that has one. */
   feedbackWidget: boolean;
   /** Overrides reviews/comments' per-context spoiler-reveal default. */
@@ -162,6 +164,8 @@ export interface UpdateUserRequestDto {
   chatShowPresence?: boolean;
   /** See `UserDto.chatShowReadReceipts`. */
   chatShowReadReceipts?: boolean;
+  /** See `UserDto.chatShareWatchProviders`. */
+  chatShareWatchProviders?: boolean;
   /** See `UserDto.feedbackWidget`. */
   feedbackWidget?: boolean;
   /** See `UserDto.spoilerSensitivity`. */

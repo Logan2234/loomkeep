@@ -46,6 +46,7 @@ import { WorkFriendsService } from "./work-friends.service";
     ActivityService,
     FollowService,
     ProfileService,
+    WorkFriendsService,
   ],
 })
 export class SocialModule {}

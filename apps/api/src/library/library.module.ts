@@ -21,6 +21,6 @@ import { SagaService } from "./saga.service";
   ],
   controllers: [LibraryController, MediaController],
   providers: [LibraryService, SagaService],
-  exports: [LibraryService],
+  exports: [LibraryService, SagaService],
 })
 export class LibraryModule {}

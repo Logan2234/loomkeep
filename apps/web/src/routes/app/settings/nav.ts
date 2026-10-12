@@ -256,6 +256,19 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
             label: m.settings_chat_read_receipts(),
             keywords: ["messages", "chat", "vu", "lu", "read", "seen"],
           },
+          {
+            id: "chat-share-providers",
+            label: m.settings_chat_share_providers(),
+            keywords: [
+              "messages",
+              "chat",
+              "where",
+              "streaming",
+              "plateformes",
+              "abonnements",
+              "netflix",
+            ],
+          },
         ],
       },
       {

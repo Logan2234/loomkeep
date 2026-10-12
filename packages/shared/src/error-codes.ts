@@ -91,6 +91,14 @@ export const ErrorCode = {
   ChatReviewNotFound: "chat.review_not_found",
   /** The list attached with `/list` isn't one both members may see. */
   ChatListNotShareable: "chat.list_not_shareable",
+  /** The /poll option voted for isn't one of the message's. */
+  ChatPollOptionNotFound: "chat.poll_option_not_found",
+  /** The saga shared with /saga isn't one Loomkeep knows. */
+  ChatSagaNotFound: "chat.saga_not_found",
+  /** The work sent with /pick isn't in the pile it was drawn from. */
+  ChatPickNotInPile: "chat.pick_not_in_pile",
+  /** /where is about films and series: the work given isn't one. */
+  ChatWhereNotVideo: "chat.where_not_video",
   /** A conversation keeps a limited number of pinned messages. */
   ChatPinLimit: "chat.pin_limit",
   /** A message goes forward to other conversations, not back to its own. */

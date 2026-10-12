@@ -188,6 +188,13 @@ export class UserResponseDto implements UserDto {
   chatShowReadReceipts!: boolean;
 
   /**
+   * Friends see which of `watchProviderIds` this account has, on a `/where`
+   * card in Messages. Off by default.
+   * @example false
+   */
+  chatShareWatchProviders!: boolean;
+
+  /**
    * The feedback launcher is shown, on an instance that has one.
    * @example true
    */

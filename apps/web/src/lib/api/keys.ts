@@ -172,6 +172,10 @@ export const keys = {
       ["chat", "search", id, query] as const,
     linkPreviews: (urls: string[]) => ["chat-link-previews", ...urls] as const,
     linkPreview: (url: string) => ["chat-link-preview", url] as const,
+    messageSaga: (messageId: string) =>
+      ["chat", "message-saga", messageId] as const,
+    messageWhere: (messageId: string) =>
+      ["chat", "message-where", messageId] as const,
   },
   // Outside ["chat"]: a reconnection refetches what's under it, and these
   // are catalogue searches.

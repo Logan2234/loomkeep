@@ -61,42 +61,43 @@
     {/each}
   </span>
 
-  <figcaption class="text-dim flex items-center gap-2 text-[0.82rem]">
-    {#if review.target}
-      <span
-        class="aspect-square w-[22px] shrink-0 overflow-hidden rounded-full">
-        <Poster
-          src={review.target.imageUrl}
-          title={review.target.title}
-          alt=""
-          caption={false} />
-      </span>
-    {/if}
-    <span class="min-w-0 truncate">
-      {#if review.target?.href}
-        <a
-          href={review.target.href}
-          class="text-fg hover:text-accent font-semibold no-underline transition-colors duration-150"
-          onclick={() => chat.close()}>{title}</a>
-      {:else}
-        <b class="text-fg font-semibold">{title}</b>
+  <figcaption class="flex flex-col gap-2">
+    <span class="text-dim flex items-center gap-2 text-[0.82rem]">
+      {#if review.target}
+        <span
+          class="aspect-square w-[22px] shrink-0 overflow-hidden rounded-full">
+          <Poster
+            src={review.target.imageUrl}
+            title={review.target.title}
+            alt=""
+            caption={false} />
+        </span>
       {/if}
-      · {mine ? m.chat_review_mine() : m.chat_review_theirs()}
+      <span class="min-w-0 truncate">
+        {#if review.target?.href}
+          <a
+            href={review.target.href}
+            class="text-fg hover:text-accent font-semibold no-underline transition-colors duration-150"
+            onclick={() => chat.close()}>{title}</a>
+        {:else}
+          <b class="text-fg font-semibold">{title}</b>
+        {/if}
+        · {mine ? m.chat_review_mine() : m.chat_review_theirs()}
+      </span>
+      <span class="text-accent ml-auto shrink-0 font-mono text-base font-bold">
+        {ratingLabel(review.rating)}
+      </span>
     </span>
-    <span class="text-accent ml-auto shrink-0 font-mono text-base font-bold">
-      {ratingLabel(review.rating)}
-    </span>
+    {#if fullHref}
+      <a
+        href={fullHref}
+        class="text-accent group -mt-0.5 flex items-center gap-1 self-start text-xs font-semibold no-underline"
+        onclick={() => chat.close()}>
+        {m.chat_review_read_full()}
+        <Icon
+          name="arrow-right"
+          class="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+      </a>
+    {/if}
   </figcaption>
-
-  {#if fullHref}
-    <a
-      href={fullHref}
-      class="text-accent group -mt-0.5 flex items-center gap-1 self-start text-xs font-semibold no-underline"
-      onclick={() => chat.close()}>
-      {m.chat_review_read_full()}
-      <Icon
-        name="arrow-right"
-        class="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" />
-    </a>
-  {/if}
 </figure>

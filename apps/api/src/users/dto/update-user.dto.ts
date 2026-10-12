@@ -125,6 +125,10 @@ export class UpdateUserDto implements UpdateUserRequestDto {
 
   @IsOptional()
   @IsBoolean()
+  chatShareWatchProviders?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   feedbackWidget?: boolean;
 
   @IsOptional()

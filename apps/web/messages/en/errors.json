@@ -217,6 +217,10 @@
   "apierr_chat_work_not_found": "This work can't be attached to a message.",
   "apierr_chat_review_not_found": "You can only attach one of your own reviews.",
   "apierr_chat_list_not_shareable": "Your friend can't see this list, so it can't be shared here.",
+  "apierr_chat_poll_option_not_found": "That option isn't part of the poll.",
+  "apierr_chat_saga_not_found": "That saga can't be found.",
+  "apierr_chat_pick_not_in_pile": "That work is no longer in the pile it was drawn from: draw again.",
+  "apierr_chat_where_not_video": "/where is about films and series only.",
   "apierr_chat_pin_limit": "This conversation already has 50 pinned messages: unpin one first.",
   "apierr_chat_forward_to_origin": "A message can't be forwarded into its own conversation."
 }

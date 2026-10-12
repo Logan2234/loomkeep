@@ -35,6 +35,7 @@ import { IgdbProvider } from "./providers/igdb.provider";
     GameItemService,
     GameLibraryService,
     GameSessionService,
+    GameSagaService,
     IgdbProvider,
   ],
 })
