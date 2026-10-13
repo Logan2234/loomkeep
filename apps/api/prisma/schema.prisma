@@ -1895,6 +1895,20 @@ model SagaMember {
   @@index([announcedAt, notifiedAt])
 }
 
+// A book series as Open Library last described it, per language: kept so the
+// sagas view doesn't wait on one Open Library search per series after each
+// restart (see BookSagaService).
+model BookSeries {
+  key       String
+  locale    String
+  // The series (ProviderBookSeries), or null when Open Library has none
+  // under this key.
+  series    Json?
+  fetchedAt DateTime
+
+  @@id([key, locale])
+}
+
 // A game series (IGDB collection) one of whose main games a user tracks:
 // saved so the refresh job can tell a newly announced game from the rest,
 // like Saga for films and anime.

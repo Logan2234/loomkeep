@@ -21,8 +21,43 @@ const POTTER: ProviderBookSeries = {
   members: [volume("OL1W", 1), volume("OL2W", 2), volume("OL3W", 3)],
 };
 
-function makeService(statuses: Record<string, string>) {
+type SavedSeries = {
+  key: string;
+  locale: string;
+  series: unknown;
+  fetchedAt: Date;
+};
+
+const DAY = 24 * 60 * 60 * 1000;
+
+function makeService(
+  statuses: Record<string, string>,
+  saved: SavedSeries[] = [],
+) {
   const getSeries = vi.fn().mockResolvedValue(POTTER);
+  const rows = new Map(saved.map((row) => [`${row.key}:${row.locale}`, row]));
+  const bookSeries = {
+    findUnique: vi.fn(
+      ({ where }: { where: { key_locale: { key: string; locale: string } } }) =>
+        Promise.resolve(
+          rows.get(`${where.key_locale.key}:${where.key_locale.locale}`) ??
+            null,
+        ),
+    ),
+    findMany: vi.fn(
+      ({ where }: { where: { key: { in: string[] }; locale: string } }) =>
+        Promise.resolve(
+          where.key.in.flatMap((key) => {
+            const row = rows.get(`${key}:${where.locale}`);
+            return row ? [row] : [];
+          }),
+        ),
+    ),
+    upsert: vi.fn(({ create }: { create: SavedSeries }) => {
+      rows.set(`${create.key}:${create.locale}`, create);
+      return Promise.resolve(create);
+    }),
+  };
   const bookEntryFindMany = vi.fn((args: { select: object }) =>
     Promise.resolve(
       "status" in args.select
@@ -42,6 +77,7 @@ function makeService(statuses: Record<string, string>) {
   const prisma = {
     bookEntry: { findMany: bookEntryFindMany },
     bookItem: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    bookSeries,
   };
   const service = new BookSagaService(
     prisma as unknown as PrismaService,
@@ -51,14 +87,53 @@ function makeService(statuses: Record<string, string>) {
 }
 
 describe("BookSagaService", () => {
-  it("reads a series once a day per language", async () => {
+  it("reads a series from Open Library once per language, then from the database", async () => {
     const { service, getSeries } = makeService({});
 
     await service.getSaga("u1", "OL326110L", "fr");
     await service.getSaga("u1", "OL326110L", "fr");
+    await service.listSagas("u1", { lang: "fr" });
 
     expect(getSeries).toHaveBeenCalledOnce();
     expect(getSeries).toHaveBeenCalledWith("OL326110L", "fr");
+  });
+
+  // A restart used to empty the cache: the sagas view then waited on one
+  // Open Library search per series.
+  it("lists saved series without waiting on Open Library", async () => {
+    const { service, getSeries } = makeService({ OL1W: "READ" }, [
+      {
+        key: "OL326110L",
+        locale: "en",
+        series: POTTER,
+        fetchedAt: new Date(Date.now() - DAY),
+      },
+    ]);
+
+    const sagas = await service.listSagas("u1");
+
+    expect(sagas.inProgress.map((s) => s.key)).toEqual(["OL326110L"]);
+    expect(getSeries).not.toHaveBeenCalled();
+  });
+
+  it("serves a series saved over a week ago, and reads it again behind", async () => {
+    const stale = { ...POTTER, title: "Harry Potter (old)" };
+    const { service, getSeries, prisma } = makeService({}, [
+      {
+        key: "OL326110L",
+        locale: "en",
+        series: stale,
+        fetchedAt: new Date(Date.now() - 8 * DAY),
+      },
+    ]);
+
+    const saga = await service.getSaga("u1", "OL326110L");
+
+    expect(saga?.title).toBe("Harry Potter (old)");
+    await vi.waitFor(() =>
+      expect(prisma.bookSeries.upsert).toHaveBeenCalledOnce(),
+    );
+    expect(getSeries).toHaveBeenCalledWith("OL326110L", "en");
   });
 
   it("gives each volume the reader's status and ties the tracked ones to the series", async () => {
