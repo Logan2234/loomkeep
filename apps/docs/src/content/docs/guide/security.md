@@ -33,6 +33,28 @@ save them somewhere safe, and generate new ones when you run low.
 Once you have added a security key or passkey, you can sign in **with it
 alone**, no password. Turn it on in **Settings › Two-factor authentication**.
 
+## Confirming it's you
+
+Some actions ask you to confirm it's really you, even though you're signed
+in: creating an API key, changing your email, adding or removing a security
+method, regenerating recovery codes, signing other devices out, and deleting
+your account. Someone who got hold of your session in a browser can't do any
+of these on their own.
+
+Loomkeep offers the strongest way you've set up first (a security key or
+passkey, then your authenticator app, then your password) and remembers the
+one you used last. **Use another way** lists the others. Recovery codes and
+email codes don't work here: the first are kept for a lost device, the
+second land in a mailbox someone else may have access to.
+
+Once confirmed, nothing is asked again for **10 minutes** on that device;
+**Settings** shows how long is left. Signing in counts as a confirmation.
+Deleting your account always asks, however recently you confirmed.
+
+An authenticator app's code only works once, whether at sign-in or for a
+confirmation: wait for the next one. After 5 wrong attempts in a row, the
+device is signed out and you get an email.
+
 ## Keeping an eye on your account
 
 - **Settings › Connected devices** lists the devices signed in, and signs
@@ -42,19 +64,14 @@ alone**, no password. Turn it on in **Settings › Two-factor authentication**.
   added or removed, API keys created or revoked.
 - You get an **email** when someone signs in from a new device.
 
-Sensitive changes, like turning off a security method, ask for your
-password again.
-
 ## Considered
 
 Not planned yet, but considered:
 
 - **Signing in with your own identity provider** (OpenID Connect: Authelia,
   Authentik, Keycloak…), mostly for self-hosted instances.
-- **Confirming it's you again** before the most sensitive actions, like
-  creating an API key or changing your email, even within a session.
 
-Vote for them or suggest others on the
+Vote for it or suggest others on the
 [feature requests board](https://feedback.loomkeep.app/board/feature-requests).
 
 ## API keys and subscription links

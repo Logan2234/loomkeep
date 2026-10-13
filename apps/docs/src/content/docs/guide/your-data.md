@@ -33,7 +33,7 @@ To save the complete archive every night without thinking about it, use the
 ## Deleting your account
 
 **Settings › Delete my account** erases your account at once, after you
-confirm with your password. Before confirming, you can see exactly what is
+[confirm it's you](/guide/security/#confirming-its-you). Before confirming, you can see exactly what is
 deleted and what stays:
 
 - **Right away**: every session is closed; API keys and passkeys stop
