@@ -72,8 +72,15 @@ export async function request<T>(
     throw error;
   }
 
-  // Expired access token: try one refresh, then replay the request.
-  if (response.status === 401 && options.withAuth !== false && !retried) {
+  // Expired access token: try one refresh, then replay the request. Not on a
+  // 401 that says something else (a wrong current password, a bad code):
+  // that one would only go again, and count twice against its rate limit.
+  if (
+    response.status === 401 &&
+    options.withAuth !== false &&
+    !retried &&
+    (await isAccessTokenProblem(response))
+  ) {
     const refreshed = await tryRefresh();
 
     if (refreshed) {
@@ -128,6 +135,20 @@ export async function request<T>(
   // status code.
   const text = await response.text();
   return (text ? JSON.parse(text) : undefined) as T;
+}
+
+const ACCESS_TOKEN_CODES: ReadonlySet<string> = new Set([
+  ErrorCode.AuthMissingAccessToken,
+  ErrorCode.AuthInvalidAccessToken,
+]);
+
+/** A 401 about the session itself; one without a code is taken as such. */
+async function isAccessTokenProblem(response: Response): Promise<boolean> {
+  const body = (await response
+    .clone()
+    .json()
+    .catch(() => null)) as Partial<ApiErrorBody> | null;
+  return !body?.code || ACCESS_TOKEN_CODES.has(body.code);
 }
 
 // 5xx and network failures only: everything else (401/403/404/409/429) is an

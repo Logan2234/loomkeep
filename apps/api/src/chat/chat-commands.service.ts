@@ -174,7 +174,11 @@ export class ChatCommandsService {
   }
 
   /** A /saga card as the viewer sees it. */
-  async saga(viewerId: string, messageId: string): Promise<MessageSagaDto> {
+  async saga(
+    viewerId: string,
+    messageId: string,
+    lang?: string,
+  ): Promise<MessageSagaDto> {
     const message = await this.chat.commandMessage(viewerId, messageId);
     const domain = message.sagaDomain as SagaDomain | null;
     if (!domain || !message.sagaKey) throw notFound();
@@ -185,7 +189,7 @@ export class ChatCommandsService {
       domain,
     );
     const read = await Promise.all(
-      members.map((m) => this.readSaga(m.id, domain, message.sagaKey!)),
+      members.map((m) => this.readSaga(m.id, domain, message.sagaKey!, lang)),
     );
     const viewerSaga = read[0];
     if (!viewerSaga) throw notFound();
@@ -389,20 +393,12 @@ export class ChatCommandsService {
     userId: string,
     domain: SagaDomain,
     key: string,
+    lang: string | undefined,
   ): Promise<{ title: string; works: SagaWork[] } | null> {
     switch (domain) {
       case Domain.MEDIA: {
-        const member = await this.prisma.sagaMember.findFirst({
-          where: { sagaKey: key },
-          orderBy: { position: "asc" },
-          select: { type: true, sourceId: true },
-        });
-        if (!member) return null;
-        const saga = await this.mediaSagas.getSaga(
-          userId,
-          member.type as MediaType,
-          member.sourceId,
-        );
+        // As saved: one read per member, the source asked nothing.
+        const saga = await this.mediaSagas.savedSaga(userId, key, lang);
         return saga
           ? {
               title: saga.title,
@@ -440,7 +436,7 @@ export class ChatCommandsService {
       }
 
       case Domain.BOOKS: {
-        const saga = await this.bookSagas.getSaga(userId, key);
+        const saga = await this.bookSagas.getSaga(userId, key, lang);
         return saga
           ? {
               title: saga.title,

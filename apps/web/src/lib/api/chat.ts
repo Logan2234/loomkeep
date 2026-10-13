@@ -21,6 +21,7 @@ import type {
   UserSummaryDto,
   WorkThreadDto,
 } from "@loomkeep/shared";
+import { getLocale } from "../paraglide/runtime.js";
 import { request } from "./core";
 
 const id = (value: string) => encodeURIComponent(value);
@@ -68,7 +69,9 @@ export const votePoll = (messageId: string, option: string) =>
   });
 
 export const getMessageSaga = (messageId: string) =>
-  request<MessageSagaDto>(`/chat/messages/${id(messageId)}/saga`);
+  request<MessageSagaDto>(
+    `/chat/messages/${id(messageId)}/saga?lang=${getLocale()}`,
+  );
 
 export const getMessageWhere = (messageId: string) =>
   request<MessageWhereDto>(`/chat/messages/${id(messageId)}/where`);

@@ -3,6 +3,7 @@ import {
   type ConversationDto,
   type ConversationWorkDto,
   ErrorCode,
+  Locale,
   type MessageDto,
   type MessageSagaDto,
   type MessageWhereDto,
@@ -222,8 +223,13 @@ export class ChatController {
   saga(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
+    @Query("lang") lang?: string,
   ): Promise<MessageSagaDto> {
-    return this.commands.saga(user.sub, id);
+    return this.commands.saga(
+      user.sub,
+      id,
+      Locale.includes(lang as Locale) ? lang : undefined,
+    );
   }
 
   /** A /where card: the work's offers in the viewer's region, with the members who have each. */

@@ -7,6 +7,7 @@ import type {
 } from "@loomkeep/shared";
 import { type SortOrder } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import {
   completedSagaWorks,
@@ -18,9 +19,9 @@ import { PrismaService } from "../prisma/prisma.service";
 import { BookItemService } from "./book-item.service";
 import type { ProviderBookSeries } from "./providers/book-provider.types";
 
-// Same freshness as a cached BookItem.
-const SERIES_TTL_MS = 24 * 60 * 60 * 1000;
-const MAX_CACHED_SERIES = 5000;
+// A published series rarely changes; an announced volume shows up within
+// this, read again in the background once a saved series is older.
+const SERIES_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const BOOK_SAGA_STATUS: SagaStatusReader<BookSagaMemberDto> = {
   isSeen: (m) => m.status === "READ",
@@ -36,17 +37,15 @@ export interface LibraryBookSagaFilters {
 
 /**
  * Book series as the reader sees them: the one on a book's page, and the
- * ones started across their library. Open Library is read live and cached a
- * day per series and language — nothing of a series is saved but which one
- * each tracked book belongs to (`BookItem.seriesKey`).
+ * ones started across their library. Each series is read from Open Library
+ * once per language and saved (`BookSeries`), so a restart doesn't make the
+ * sagas view wait on one search per series again.
  */
 @Injectable()
 export class BookSagaService {
   private readonly logger = new Logger(BookSagaService.name);
-  private readonly cache = new Map<
-    string,
-    { fetchedAt: number; series: ProviderBookSeries | null }
-  >();
+  // Series being read again in the background, so a busy view asks once.
+  private readonly refreshing = new Set<string>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -117,14 +116,7 @@ export class BookSagaService {
       }
     }
 
-    const keys = [...lastActivity.keys()];
-    const read = await mapWithConcurrency(keys, 4, (key) =>
-      this.read(key, filters.lang).catch((err) => {
-        this.logger.warn(`Series read failed: ${key}`, err);
-        return null;
-      }),
-    );
-    const series = read.filter((s): s is ProviderBookSeries => s !== null);
+    const series = await this.readMany([...lastActivity.keys()], filters.lang);
     const statuses = await this.statusesBySourceId(
       userId,
       series.flatMap((s) => s.members.map((m) => m.sourceId)),
@@ -178,24 +170,70 @@ export class BookSagaService {
     seriesKey: string,
     lang = "en",
   ): Promise<ProviderBookSeries | null> {
-    const cacheKey = `${seriesKey}:${lang}`;
-    const cached = this.cache.get(cacheKey);
+    const saved = await this.prisma.bookSeries.findUnique({
+      where: { key_locale: { key: seriesKey, locale: lang } },
+    });
+    if (!saved) return this.fetch(seriesKey, lang);
+    this.refreshIfStale(saved);
+    return saved.series as ProviderBookSeries | null;
+  }
 
-    if (cached && Date.now() - cached.fetchedAt < SERIES_TTL_MS) {
-      return cached.series;
-    }
+  /** The series saved, and the ones never read in this language asked for now. */
+  private async readMany(
+    seriesKeys: string[],
+    lang = "en",
+  ): Promise<ProviderBookSeries[]> {
+    const saved = await this.prisma.bookSeries.findMany({
+      where: { key: { in: seriesKeys }, locale: lang },
+    });
+    const savedKeys = new Set(saved.map((row) => row.key));
+    saved.forEach((row) => this.refreshIfStale(row));
 
+    const fetched = await mapWithConcurrency(
+      seriesKeys.filter((key) => !savedKeys.has(key)),
+      4,
+      (key) =>
+        this.fetch(key, lang).catch((err) => {
+          this.logger.warn(`Series read failed: ${key}`, err);
+          return null;
+        }),
+    );
+    return [
+      ...saved.map((row) => row.series as ProviderBookSeries | null),
+      ...fetched,
+    ].filter((series): series is ProviderBookSeries => series !== null);
+  }
+
+  private async fetch(
+    seriesKey: string,
+    lang: string,
+  ): Promise<ProviderBookSeries | null> {
     const series = await this.books.providerFor().getSeries(seriesKey, lang);
-    // Re-inserted so the oldest entries are the first to go.
-    this.cache.delete(cacheKey);
-    this.cache.set(cacheKey, { fetchedAt: Date.now(), series });
-
-    for (const key of this.cache.keys()) {
-      if (this.cache.size <= MAX_CACHED_SERIES) break;
-      this.cache.delete(key);
-    }
-
+    const data = {
+      series: (series as Prisma.InputJsonValue | null) ?? Prisma.DbNull,
+      fetchedAt: new Date(),
+    };
+    await this.prisma.bookSeries.upsert({
+      where: { key_locale: { key: seriesKey, locale: lang } },
+      create: { key: seriesKey, locale: lang, ...data },
+      update: data,
+    });
     return series;
+  }
+
+  private refreshIfStale(saved: {
+    key: string;
+    locale: string;
+    fetchedAt: Date;
+  }): void {
+    const id = `${saved.key}:${saved.locale}`;
+    if (Date.now() - saved.fetchedAt.getTime() < SERIES_TTL_MS) return;
+    if (this.refreshing.has(id)) return;
+
+    this.refreshing.add(id);
+    this.fetch(saved.key, saved.locale)
+      .catch((err) => this.logger.warn(`Series refresh failed: ${id}`, err))
+      .finally(() => this.refreshing.delete(id));
   }
 
   private async statusesBySourceId(
