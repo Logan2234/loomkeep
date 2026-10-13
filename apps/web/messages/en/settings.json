@@ -565,7 +565,5 @@
   "settings_feedback_widget_desc": "The bottom-right button that opens the feedback board. Hidden, it stays reachable from this page.",
   "settings_alert_chat_message": "A message from a friend",
   "settings_alert_chat_message_hint": "Only while the app is open nowhere, without the message's text.",
-  "settings_reauth_confirmed": "Identity confirmed",
-  "settings_reauth_confirmed_hint": "Sensitive actions won't ask again until the countdown ends.",
   "settings_activity_event_reauth_locked": "Identity confirmation locked after too many tries"
 }

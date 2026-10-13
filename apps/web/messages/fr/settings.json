@@ -565,7 +565,5 @@
   "settings_feedback_widget_desc": "Le bouton en bas à droite qui ouvre le tableau des retours. Masqué, il reste accessible depuis cette page.",
   "settings_alert_chat_message": "Un message d'un ami",
   "settings_alert_chat_message_hint": "Seulement quand l'app n'est ouverte nulle part, sans le texte du message.",
-  "settings_reauth_confirmed": "Identité confirmée",
-  "settings_reauth_confirmed_hint": "Les actions sensibles ne redemandent rien jusqu'à la fin du décompte.",
   "settings_activity_event_reauth_locked": "Confirmation d'identité bloquée après trop d'essais"
 }

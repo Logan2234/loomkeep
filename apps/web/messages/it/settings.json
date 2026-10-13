@@ -565,7 +565,5 @@
   "settings_feedback_widget_desc": "Il pulsante in basso a destra che apre la bacheca dei feedback. Nascosto, resta raggiungibile da questa pagina.",
   "settings_alert_chat_message": "Un messaggio da un amico",
   "settings_alert_chat_message_hint": "Solo quando l'app non è aperta da nessuna parte, senza il testo del messaggio.",
-  "settings_reauth_confirmed": "Identità confermata",
-  "settings_reauth_confirmed_hint": "Le azioni sensibili non chiedono nulla fino alla fine del conto alla rovescia.",
   "settings_activity_event_reauth_locked": "Conferma dell'identità bloccata dopo troppi tentativi"
 }
