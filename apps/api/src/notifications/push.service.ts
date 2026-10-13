@@ -13,6 +13,8 @@ export interface PushPayload {
   url: string;
   /** Pushes sharing a tag replace each other on the device (one per conversation). */
   tag?: string;
+  /** The bell entry it announces, so opening the push can mark it read. */
+  notificationId?: string;
 }
 
 export interface PushDevice {
@@ -33,6 +35,7 @@ export class PushService {
   private readonly logger = new Logger(PushService.name);
   private readonly enabled: boolean = false;
   private readonly vapidPublicKey: string = "";
+  private badgeSource: ((userId: string) => Promise<number>) | null = null;
 
   constructor(private readonly prisma: PrismaService) {
     const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } = process.env;
@@ -50,6 +53,15 @@ export class PushService {
       // Self-host without HTTPS/VAPID configured: push is a no-op, in-app stays available.
       this.logger.warn("VAPID keys not set — push notifications are disabled");
     }
+  }
+
+  /**
+   * What the installed app's icon badge should show, sent with every push so
+   * the service worker can set it while the app is closed. Handed in by
+   * AppBadgeService: the count includes chat, which pushes through here too.
+   */
+  setBadgeSource(source: (userId: string) => Promise<number>): void {
+    this.badgeSource = source;
   }
 
   publicKey(): string {
@@ -119,6 +131,8 @@ export class PushService {
       where: { userId },
     });
     if (!this.enabled || subscriptions.length === 0) return [];
+    const badge = await this.badgeSource?.(userId);
+    const body = JSON.stringify({ ...payload, badge });
 
     return Promise.all(
       subscriptions.map(async (sub): Promise<PushSendOutcome> => {
@@ -140,7 +154,7 @@ export class PushService {
               endpoint: sub.endpoint,
               keys: { p256dh: sub.p256dh, auth: sub.auth },
             },
-            JSON.stringify(payload),
+            body,
           );
           return { userAgent: sub.userAgent, ok: true };
         } catch (err) {

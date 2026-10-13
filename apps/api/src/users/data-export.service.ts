@@ -575,6 +575,7 @@ export class DataExportService {
         url: n.url,
         data: jsonObject(n.data),
         createdAt: n.createdAt.toISOString(),
+        readAt: n.readAt?.toISOString() ?? null,
       })),
       reviews: reviewRows.map((r) => ({
         targetType: r.targetType as ReviewTargetType,

@@ -20,6 +20,7 @@ function makeService(opts: {
   listMemberships?: { id: string; listId: string; userId: string }[];
 }) {
   const create = vi.fn().mockResolvedValue(undefined);
+  const settleFollowRequest = vi.fn().mockResolvedValue(undefined);
 
   const prisma = {
     user: {
@@ -62,7 +63,9 @@ function makeService(opts: {
           (opts.targetAccess === "PUBLIC" ? "ACCEPTED" : "PENDING"),
       }),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
   } as unknown as PrismaService;
@@ -74,6 +77,7 @@ function makeService(opts: {
 
   const notifications = {
     create,
+    settleFollowRequest,
     copyFor: () => notificationCopy("fr"),
   } as unknown as NotificationService;
   const achievements = {
@@ -98,6 +102,7 @@ function makeService(opts: {
     ),
     prisma,
     create,
+    settleFollowRequest,
     achievements,
     events,
   };
@@ -192,7 +197,7 @@ describe("FollowService notifications", () => {
 
 describe("FollowService.unfollow", () => {
   it("pushes a live update to the target when cancelling a pending request", async () => {
-    const { service, prisma, events } = makeService({
+    const { service, prisma, events, settleFollowRequest } = makeService({
       targetAccess: "PRIVATE",
     });
     (prisma.follow.findUnique as Mock).mockResolvedValue({
@@ -205,6 +210,7 @@ describe("FollowService.unfollow", () => {
       "target",
       "follow-request-changed",
     );
+    expect(settleFollowRequest).toHaveBeenCalledWith("target", "viewer");
   });
 
   it("pushes nothing when unfollowing an already-accepted relationship", async () => {
@@ -240,7 +246,7 @@ describe("FollowService.removeFollower", () => {
   });
 
   it("refreshes the viewer's own pending list when it declines a request", async () => {
-    const { service, prisma, events } = makeService({
+    const { service, prisma, events, settleFollowRequest } = makeService({
       targetAccess: "PUBLIC",
     });
     (prisma.follow.findUnique as Mock).mockResolvedValue({
@@ -253,6 +259,7 @@ describe("FollowService.removeFollower", () => {
       "viewer",
       "follow-request-changed",
     );
+    expect(settleFollowRequest).toHaveBeenCalledWith("viewer", "target");
   });
 });
 
@@ -348,6 +355,17 @@ describe("FollowService.block", () => {
     expect(events.evictFromList).toHaveBeenCalledWith("target-list", "viewer");
     expect(events.evictFromList).toHaveBeenCalledWith("viewer-list", "target");
   });
+
+  it("settles a pending request either way, which the block deleted", async () => {
+    const { service, settleFollowRequest } = makeService({
+      targetAccess: "PUBLIC",
+    });
+
+    await service.block("viewer", "target-username");
+
+    expect(settleFollowRequest).toHaveBeenCalledWith("viewer", "target");
+    expect(settleFollowRequest).toHaveBeenCalledWith("target", "viewer");
+  });
 });
 
 describe("FollowService.listBlocked", () => {
@@ -393,7 +411,7 @@ describe("FollowService.listBlocked", () => {
 
 describe("FollowService.acceptRequest", () => {
   it("posts a FOLLOW_ACCEPTED notification to the requester on approval", async () => {
-    const { service, prisma, create } = makeService({
+    const { service, prisma, create, settleFollowRequest } = makeService({
       targetAccess: "PRIVATE",
     });
     (prisma.follow.findUnique as Mock).mockResolvedValue({
@@ -410,5 +428,35 @@ describe("FollowService.acceptRequest", () => {
         dedupeKey: "accept:me",
       }),
     );
+    expect(settleFollowRequest).toHaveBeenCalledWith("me", "requester");
+  });
+});
+
+describe("FollowService.rejectRequest", () => {
+  it("settles the request's notification once the request is gone", async () => {
+    const { service, prisma, settleFollowRequest } = makeService({
+      targetAccess: "PRIVATE",
+    });
+    (prisma.follow.findFirst as Mock).mockResolvedValue({
+      followerId: "requester",
+    });
+
+    await service.rejectRequest("me", "f1");
+
+    expect(prisma.follow.delete).toHaveBeenCalledWith({ where: { id: "f1" } });
+    expect(settleFollowRequest).toHaveBeenCalledWith("me", "requester");
+  });
+
+  it("answers 404 for a request that isn't pending for this account", async () => {
+    const { service, prisma, settleFollowRequest } = makeService({
+      targetAccess: "PRIVATE",
+    });
+    (prisma.follow.findFirst as Mock).mockResolvedValue(null);
+
+    await expect(service.rejectRequest("me", "f1")).rejects.toMatchObject({
+      code: "social.follow_request_not_found",
+    });
+    expect(prisma.follow.delete).not.toHaveBeenCalled();
+    expect(settleFollowRequest).not.toHaveBeenCalled();
   });
 });

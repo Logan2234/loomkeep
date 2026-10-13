@@ -1002,7 +1002,7 @@ describe("CommentService.react", () => {
   });
 
   it("notifies the author once the reaction count reaches the threshold", async () => {
-    const { svc, notifications } = make({
+    const { svc, prisma, notifications } = make({
       comment: {
         findUnique: vi
           .fn()
@@ -1017,9 +1017,21 @@ describe("CommentService.react", () => {
       },
       reaction: { count: vi.fn().mockResolvedValue(10) },
     });
+    (prisma.mediaItem.findUnique as Mock).mockResolvedValue({
+      ...TARGET_ROW,
+      title: "Severance",
+      externalIds: [{ source: "TMDB", externalId: "95396" }],
+    });
     await svc.react("someone", "c1", "LIKE" as never);
+    // The count and the work travel as data: the bell words them in the
+    // reader's own language.
     expect(notifications.create).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "author", type: "COMMENT_REACTIONS" }),
+      expect.objectContaining({
+        userId: "author",
+        type: "COMMENT_REACTIONS",
+        url: "/app/media/series/95396?comment=c1&commentTarget=MEDIA:m1",
+        data: { count: 10, workTitle: "Severance" },
+      }),
     );
   });
 
@@ -1261,13 +1273,19 @@ describe("CommentService — with Messages on", () => {
   };
 
   it("still rings the bell for a reply, which the Œuvres tab counts too", async () => {
-    const { svc, notifications } = replying();
+    const { svc, prisma, notifications } = replying();
+    (prisma.mediaItem.findUnique as Mock).mockResolvedValue({
+      ...TARGET_ROW,
+      title: "Severance",
+      externalIds: [{ source: "TMDB", externalId: "95396" }],
+    });
     await svc.create("viewer", reply);
 
     expect(notifications.create).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "parentAuthor",
         type: "COMMENT_REPLY",
+        data: expect.objectContaining({ workTitle: "Severance" }),
       }),
     );
   });

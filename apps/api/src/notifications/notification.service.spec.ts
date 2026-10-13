@@ -288,79 +288,75 @@ describe("NotificationService.scan", () => {
   });
 });
 
-describe("NotificationService — bell feed (read = deleted)", () => {
-  function makeService() {
+const BELL_TYPES = {
+  notIn: [
+    NotificationType.NEW_EPISODE,
+    NotificationType.NEW_MOVIE,
+    NotificationType.NEW_GAME,
+    NotificationType.FOLLOW_REQUEST,
+  ],
+};
+
+describe("NotificationService — bell and history", () => {
+  function makeService(over: { seenAt?: Date | null; row?: unknown } = {}) {
     const prisma = {
       notification: {
         findMany: vi.fn().mockResolvedValue([]),
+        findFirst: vi
+          .fn()
+          .mockResolvedValue(
+            "row" in over ? over.row : { readAt: null as Date | null },
+          ),
         count: vi.fn().mockResolvedValue(0),
+        update: vi.fn().mockResolvedValue({}),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
+      user: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ notificationsSeenAt: over.seenAt ?? null }),
+        update: vi.fn().mockResolvedValue({}),
+      },
     } as unknown as PrismaService;
+    const events = { emitToUser: vi.fn() } as unknown as EventsGateway;
     const service = new NotificationService(
       prisma,
       jobRunsStub,
-      eventsStub,
+      events,
       pushStub,
       {} as never,
     );
-    return { service, prisma };
+    return { service, prisma, events };
   }
 
-  it("excludes NEW_EPISODE and FOLLOW_REQUEST from the feed", async () => {
-    const { service, prisma } = makeService();
-    await service.feed("u1");
-    expect(prisma.notification.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          userId: "u1",
-          type: {
-            notIn: [
-              NotificationType.NEW_EPISODE,
-              NotificationType.NEW_MOVIE,
-              NotificationType.NEW_GAME,
-              NotificationType.FOLLOW_REQUEST,
-            ],
-          },
-        },
-      }),
-    );
+  const row = (id: string, readAt: Date | null = null) => ({
+    id,
+    type: "FOLLOW",
+    title: "Alice",
+    body: null,
+    url: null,
+    data: {},
+    createdAt: new Date("2026-10-13T20:00:00Z"),
+    readAt,
   });
 
-  it("reports every pending row as unread (existence = unread)", async () => {
+  it("lists only unread entries in the bell feed, releases and requests left out", async () => {
     const { service, prisma } = makeService();
-    (prisma.notification.count as Mock).mockResolvedValueOnce(2);
-    (prisma.notification.findMany as Mock).mockResolvedValueOnce([
-      {
-        id: "n1",
-        type: "FOLLOW",
-        title: "Alice",
-        data: {},
-        createdAt: new Date(),
-      },
-      {
-        id: "n2",
-        type: "FOLLOW",
-        title: "Bob",
-        data: {},
-        createdAt: new Date(),
-      },
-    ]);
-    const feed = await service.feed("u1");
-    expect(feed.unread).toBe(2);
-    expect(feed.notifications).toHaveLength(2);
+
+    await service.feed("u1");
+
+    expect(prisma.notification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "u1", type: BELL_TYPES, readAt: null },
+      }),
+    );
   });
 
   it("counts unread past the feed cap instead of stopping at the listed rows", async () => {
     const { service, prisma } = makeService();
     (prisma.notification.findMany as Mock).mockResolvedValueOnce(
-      Array.from({ length: 50 }, (_, i) => ({
-        id: `n${i}`,
-        type: "FOLLOW",
-        title: "Alice",
-        data: {},
-        createdAt: new Date(),
-      })),
+      Array.from({ length: 50 }, (_, i) => row(`n${i}`)),
     );
     (prisma.notification.count as Mock).mockResolvedValueOnce(137);
 
@@ -370,48 +366,213 @@ describe("NotificationService — bell feed (read = deleted)", () => {
     expect(feed.unread).toBe(137);
   });
 
-  it("markRead deletes the row", async () => {
+  it("keeps read entries in the history, with when they were read", async () => {
     const { service, prisma } = makeService();
-    await service.markRead("u1", "n1");
-    expect(prisma.notification.deleteMany).toHaveBeenCalledWith({
-      where: { id: "n1", userId: "u1" },
+    const readAt = new Date("2026-10-13T21:00:00Z");
+    (prisma.notification.findMany as Mock).mockResolvedValueOnce([
+      row("n1"),
+      row("n2", readAt),
+      row("n3", readAt),
+    ]);
+
+    const page = await service.history(
+      "u1",
+      { page: 1, limit: 2, skip: 0, take: 2 },
+      false,
+    );
+
+    expect(prisma.notification.findMany).toHaveBeenCalledWith({
+      where: { userId: "u1", type: BELL_TYPES },
+      orderBy: { createdAt: "desc" },
+      skip: 0,
+      take: 3,
+    });
+    expect(page.hasMore).toBe(true);
+    expect(page.items.map((n) => [n.id, n.readAt])).toEqual([
+      ["n1", null],
+      ["n2", readAt.toISOString()],
+    ]);
+  });
+
+  it("filters the history down to unread entries on request", async () => {
+    const { service, prisma } = makeService();
+
+    await service.history(
+      "u1",
+      { page: 2, limit: 20, skip: 20, take: 20 },
+      true,
+    );
+
+    expect(
+      (prisma.notification.findMany as Mock).mock.calls[0][0].where,
+    ).toEqual({ userId: "u1", type: BELL_TYPES, readAt: null });
+  });
+
+  it("counts as unseen only what arrived after the bell was last opened", async () => {
+    const seenAt = new Date("2026-10-13T18:00:00Z");
+    const { service, prisma } = makeService({ seenAt });
+    (prisma.notification.count as Mock)
+      .mockResolvedValueOnce(5)
+      .mockResolvedValueOnce(2);
+
+    expect(await service.counts("u1")).toEqual({ unread: 5, unseen: 2 });
+    expect((prisma.notification.count as Mock).mock.calls[1][0].where).toEqual({
+      userId: "u1",
+      type: BELL_TYPES,
+      readAt: null,
+      createdAt: { gt: seenAt },
     });
   });
 
-  it("markRead throws when nothing was deleted", async () => {
-    const { service, prisma } = makeService();
-    (prisma.notification.deleteMany as Mock).mockResolvedValueOnce({
-      count: 0,
+  it("counts every unread entry as unseen until the bell is first opened", async () => {
+    const { service, prisma } = makeService({ seenAt: null });
+    (prisma.notification.count as Mock).mockResolvedValueOnce(4);
+
+    expect(await service.counts("u1")).toEqual({ unread: 4, unseen: 4 });
+    expect(prisma.notification.count).toHaveBeenCalledOnce();
+  });
+
+  it("opening the bell marks everything seen, on every device", async () => {
+    const { service, prisma, events } = makeService();
+
+    await service.markSeen("u1");
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      data: { notificationsSeenAt: expect.any(Date) },
     });
+    expect(events.emitToUser).toHaveBeenCalledWith("u1", "notification");
+  });
+
+  it("marks an entry read instead of deleting it", async () => {
+    const { service, prisma, events } = makeService();
+
+    await service.markRead("u1", "n1");
+
+    expect(prisma.notification.findFirst).toHaveBeenCalledWith({
+      where: { id: "n1", userId: "u1" },
+      select: { readAt: true },
+    });
+    expect(prisma.notification.update).toHaveBeenCalledWith({
+      where: { id: "n1" },
+      data: { readAt: expect.any(Date) },
+    });
+    expect(prisma.notification.deleteMany).not.toHaveBeenCalled();
+    expect(events.emitToUser).toHaveBeenCalledWith("u1", "notification");
+  });
+
+  it("keeps the first read date when an entry is read again", async () => {
+    const { service, prisma } = makeService({
+      row: { readAt: new Date("2026-10-01T00:00:00Z") },
+    });
+
+    await service.markRead("u1", "n1");
+
+    expect(prisma.notification.update).not.toHaveBeenCalled();
+  });
+
+  it("marks a read entry unread again", async () => {
+    const { service, prisma } = makeService({
+      row: { readAt: new Date("2026-10-01T00:00:00Z") },
+    });
+
+    await service.markUnread("u1", "n1");
+
+    expect(prisma.notification.update).toHaveBeenCalledWith({
+      where: { id: "n1" },
+      data: { readAt: null },
+    });
+  });
+
+  it("answers 404 for someone else's entry", async () => {
+    const { service } = makeService({ row: null });
+
     await expect(service.markRead("u1", "missing")).rejects.toBeInstanceOf(
+      AppException,
+    );
+    await expect(service.markUnread("u1", "missing")).rejects.toBeInstanceOf(
       AppException,
     );
   });
 
-  it("markAllRead deletes every bell-visible row for the user", async () => {
+  it("marks every unread bell entry read at once", async () => {
     const { service, prisma } = makeService();
+
     await service.markAllRead("u1");
+
+    expect(prisma.notification.updateMany).toHaveBeenCalledWith({
+      where: { userId: "u1", type: BELL_TYPES, readAt: null },
+      data: { readAt: expect.any(Date) },
+    });
+    expect(prisma.notification.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("deletes one entry of the account on request, and 404s otherwise", async () => {
+    const { service, prisma } = makeService();
+
+    await service.remove("u1", "n1");
     expect(prisma.notification.deleteMany).toHaveBeenCalledWith({
+      where: { id: "n1", userId: "u1" },
+    });
+
+    (prisma.notification.deleteMany as Mock).mockResolvedValueOnce({
+      count: 0,
+    });
+    await expect(service.remove("u1", "missing")).rejects.toBeInstanceOf(
+      AppException,
+    );
+  });
+
+  it("reads a follow request's hidden row once the request is settled", async () => {
+    const { service, prisma } = makeService();
+
+    await service.settleFollowRequest("me", "requester");
+
+    expect(prisma.notification.updateMany).toHaveBeenCalledWith({
+      where: { userId: "me", dedupeKey: "request:requester", readAt: null },
+      data: { readAt: expect.any(Date) },
+    });
+  });
+});
+
+describe("NotificationService.purge", () => {
+  it("drops what was read 90 days ago and releases past 30 days, never unread entries", async () => {
+    const deleteMany = vi.fn().mockResolvedValue({ count: 2 });
+    const service = new NotificationService(
+      { notification: { deleteMany } } as unknown as PrismaService,
+      jobRunsStub,
+      eventsStub,
+      pushStub,
+      {} as never,
+    );
+    const now = new Date("2026-10-14T07:00:00Z");
+
+    await service.purge(now);
+
+    expect(deleteMany).toHaveBeenCalledTimes(2);
+    expect(deleteMany).toHaveBeenCalledWith({
+      where: { readAt: { lt: new Date("2026-07-16T07:00:00Z") } },
+    });
+    expect(deleteMany).toHaveBeenCalledWith({
       where: {
-        userId: "u1",
         type: {
-          notIn: [
+          in: [
             NotificationType.NEW_EPISODE,
             NotificationType.NEW_MOVIE,
             NotificationType.NEW_GAME,
-            NotificationType.FOLLOW_REQUEST,
           ],
         },
+        createdAt: { lt: new Date("2026-09-14T07:00:00Z") },
       },
     });
   });
 });
 
 describe("NotificationService.create — realtime push", () => {
-  function makeService(createManyCount: number) {
+  function makeService(created: { id: string }[]) {
     const prisma = {
       notification: {
-        createMany: vi.fn().mockResolvedValue({ count: createManyCount }),
+        createManyAndReturn: vi.fn().mockResolvedValue(created),
       },
       user: { findUnique: vi.fn().mockResolvedValue(null) },
     } as unknown as PrismaService;
@@ -427,7 +588,7 @@ describe("NotificationService.create — realtime push", () => {
   }
 
   it("pushes a live event for a bell-visible kind that was actually created", async () => {
-    const { service, events } = makeService(1);
+    const { service, events } = makeService([{ id: "n1" }]);
     await service.create({
       userId: "u1",
       type: NotificationType.FOLLOW,
@@ -436,8 +597,8 @@ describe("NotificationService.create — realtime push", () => {
     expect(events.emitToUser).toHaveBeenCalledWith("u1", "notification");
   });
 
-  it("skips the push when createMany deduped the row away", async () => {
-    const { service, events } = makeService(0);
+  it("skips the push when the dedupe key was already taken", async () => {
+    const { service, events } = makeService([]);
     await service.create({
       userId: "u1",
       type: NotificationType.FOLLOW,
@@ -447,7 +608,7 @@ describe("NotificationService.create — realtime push", () => {
   });
 
   it("skips the push for a kind the bell feed never shows", async () => {
-    const { service, events } = makeService(1);
+    const { service, events } = makeService([{ id: "n1" }]);
     await service.create({
       userId: "u1",
       type: NotificationType.NEW_EPISODE,
@@ -457,19 +618,21 @@ describe("NotificationService.create — realtime push", () => {
   });
 
   it("writes on the caller's transaction without publishing before commit", async () => {
-    const { service, events, prisma } = makeService(1);
+    const { service, events, prisma } = makeService([{ id: "n1" }]);
     const tx = {
-      notification: { createMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      notification: {
+        createManyAndReturn: vi.fn().mockResolvedValue([{ id: "n9" }]),
+      },
     } as unknown as Prisma.TransactionClient;
 
-    await service.createInTransaction(tx, {
+    const id = await service.createInTransaction(tx, {
       userId: "u1",
       type: NotificationType.REPORT_RESOLVED,
       title: "Ton signalement a été traité",
     });
 
-    expect(tx.notification.createMany).toHaveBeenCalled();
-    expect(prisma.notification.createMany).not.toHaveBeenCalled();
+    expect(id).toBe("n9");
+    expect(prisma.notification.createManyAndReturn).not.toHaveBeenCalled();
     expect(events.emitToUser).not.toHaveBeenCalled();
     service.publishCreated("u1", NotificationType.REPORT_RESOLVED);
     expect(events.emitToUser).toHaveBeenCalledWith("u1", "notification");
@@ -480,7 +643,7 @@ describe("NotificationService push", () => {
   function makeService(user: { locale: string; alertPrefs: unknown } | null) {
     const prisma = {
       notification: {
-        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+        createManyAndReturn: vi.fn().mockResolvedValue([{ id: "n1" }]),
       },
       user: { findUnique: vi.fn().mockResolvedValue(user) },
     } as unknown as PrismaService;
@@ -511,10 +674,12 @@ describe("NotificationService push", () => {
 
     await service.create(reply);
 
+    // The id lets opening the push mark the bell entry read.
     expect(push.sendToUser).toHaveBeenCalledWith("u1", {
       title: "Alice replied to you",
       body: "Totally agree",
       url: "/app/media/series/42",
+      notificationId: "n1",
     });
   });
 
@@ -542,34 +707,56 @@ describe("NotificationService push", () => {
 });
 
 describe("NotificationService.createOrGroup", () => {
-  it("rewrites the unread entry with the new total instead of adding one", async () => {
+  function makeService(existing: unknown) {
     const prisma = {
       notification: {
-        findUnique: vi.fn().mockResolvedValue({ id: "n1", data: { count: 2 } }),
+        findUnique: vi.fn().mockResolvedValue(existing),
         update: vi.fn(),
-        createMany: vi.fn(),
+        createManyAndReturn: vi.fn(),
+      },
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          locale: "en",
+          alertPrefs: { LIST_ITEM_ADDED: { push: true } },
+          suspendedUntil: null,
+        }),
       },
     } as unknown as PrismaService;
+    const push = { sendToUser: vi.fn() } as unknown as PushService;
     const service = new NotificationService(
       prisma,
       jobRunsStub,
       eventsStub,
-      pushStub,
+      push,
       {} as never,
     );
+    return { service, prisma, push };
+  }
 
-    await service.createOrGroup(
-      {
-        userId: "u1",
-        type: NotificationType.LIST_ITEM_ADDED,
-        title: "Bob",
-        body: "added Dune",
-        dedupeKey: "list-items:l1:bob",
-      },
-      (count) => ({ body: `added ${count} titles`, data: { listTitle: "L" } }),
-    );
+  const added = {
+    userId: "u1",
+    type: NotificationType.LIST_ITEM_ADDED,
+    title: "Bob",
+    body: "added Dune",
+    url: "/app/lists/l1",
+    dedupeKey: "list-items:l1:bob",
+    data: { listTitle: "L", itemTitle: "Dune" },
+  };
+  const regroup = (count: number) => ({
+    body: `added ${count} titles`,
+    data: { listTitle: "L" },
+  });
 
-    expect(prisma.notification.createMany).not.toHaveBeenCalled();
+  it("rewrites the unread entry with the new total instead of adding one", async () => {
+    const { service, prisma, push } = makeService({
+      id: "n1",
+      data: { count: 2 },
+      readAt: null,
+    });
+
+    await service.createOrGroup(added, regroup);
+
+    expect(prisma.notification.createManyAndReturn).not.toHaveBeenCalled();
     expect(prisma.notification.update).toHaveBeenCalledWith({
       where: { id: "n1" },
       data: {
@@ -578,5 +765,34 @@ describe("NotificationService.createOrGroup", () => {
         createdAt: expect.any(Date),
       },
     });
+    expect(push.sendToUser).not.toHaveBeenCalled();
+  });
+
+  it("starts a new group once the previous one was read, and pushes it", async () => {
+    // Left as it was, the read row would hold the key: every later title
+    // added to that list by that editor would go unnoticed for 90 days.
+    const { service, prisma, push } = makeService({
+      id: "n1",
+      data: { count: 4 },
+      readAt: new Date("2026-10-10T00:00:00Z"),
+    });
+
+    await service.createOrGroup(added, regroup);
+
+    expect(prisma.notification.update).toHaveBeenCalledWith({
+      where: { id: "n1" },
+      data: {
+        title: "Bob",
+        body: "added Dune",
+        url: "/app/lists/l1",
+        data: { listTitle: "L", itemTitle: "Dune" },
+        createdAt: expect.any(Date),
+        readAt: null,
+      },
+    });
+    expect(push.sendToUser).toHaveBeenCalledWith(
+      "u1",
+      expect.objectContaining({ notificationId: "n1" }),
+    );
   });
 });

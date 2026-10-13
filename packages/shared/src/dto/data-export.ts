@@ -180,6 +180,7 @@ export interface DataExportNotification {
   /** Kind-specific extras (episode airDate, social actor identity…). */
   data: Record<string, unknown>;
   createdAt: string;
+  readAt: string | null;
 }
 
 export interface DataExportReview {

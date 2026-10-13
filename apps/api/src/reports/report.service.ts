@@ -345,6 +345,7 @@ export class ReportService {
       title: copy.title,
       body: status === "RESOLVED" ? copy.resolved : copy.dismissed,
       dedupeKey: `report:${id}:resolved`,
+      data: { outcome: status },
     });
     return created ? report.reporter.id : null;
   }

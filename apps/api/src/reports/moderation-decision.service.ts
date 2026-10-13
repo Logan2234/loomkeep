@@ -67,6 +67,7 @@ export class ModerationDecisionService {
         title: this.notificationTitle(input.measure, copy),
         body: input.reasonText,
         url: "/app/settings",
+        data: { measure: input.measure },
       });
     }
   }
@@ -112,6 +113,8 @@ export class ModerationDecisionService {
       body: first.reasonText,
       url: "/app/settings",
       dedupeKey: `moderation:${first.reportId}`,
+      // Several measures at once read as one generic title.
+      data: { measure: inputs.length === 1 ? first.measure : null },
     });
     return decisions;
   }

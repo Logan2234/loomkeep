@@ -26,7 +26,11 @@ import {
   toPagedResult,
   type ParsedPage,
 } from "../common/pagination.util";
-import { resolveWorkHref, workTargetExists } from "../common/work-href.util";
+import {
+  resolveWorkHref,
+  resolveWorkLink,
+  workTargetExists,
+} from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
@@ -1152,7 +1156,7 @@ export class CommentService {
     // (the acting, authenticated user), so this never actually fires.
     if (!row.author) return;
 
-    const url = await resolveWorkHref(
+    const work = await resolveWorkLink(
       this.prisma,
       row.targetType,
       row.targetId,
@@ -1164,13 +1168,14 @@ export class CommentService {
       type,
       title: row.author.displayName,
       body: excerpt,
-      url: url
-        ? `${url}?comment=${row.id}&commentTarget=${row.targetType}:${row.targetId}`
+      url: work
+        ? `${work.href}?comment=${row.id}&commentTarget=${row.targetType}:${row.targetId}`
         : null,
       dedupeKey: `${type.toLowerCase()}:${row.id}:${recipientId}`,
       data: {
         actorUsername: row.author.username,
         actorDisplayName: row.author.displayName,
+        workTitle: work?.title ?? null,
       },
     });
   }
@@ -1193,7 +1198,7 @@ export class CommentService {
     });
     if (!comment) return;
 
-    const url = await resolveWorkHref(
+    const work = await resolveWorkLink(
       this.prisma,
       comment.targetType,
       comment.targetId,
@@ -1206,10 +1211,14 @@ export class CommentService {
       type: NotificationType.COMMENT_REACTIONS,
       title: copy.title,
       body: copy.body(COMMENT_REACTION_NOTIFY_THRESHOLD),
-      url: url
-        ? `${url}?comment=${commentId}&commentTarget=${comment.targetType}:${comment.targetId}`
+      url: work
+        ? `${work.href}?comment=${commentId}&commentTarget=${comment.targetType}:${comment.targetId}`
         : null,
       dedupeKey: `reactions:${commentId}:${COMMENT_REACTION_NOTIFY_THRESHOLD}`,
+      data: {
+        count: COMMENT_REACTION_NOTIFY_THRESHOLD,
+        workTitle: work?.title ?? null,
+      },
     });
   }
 }

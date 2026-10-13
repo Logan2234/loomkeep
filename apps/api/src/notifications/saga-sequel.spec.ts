@@ -49,6 +49,7 @@ function makeService({
     },
     notification: {
       createMany: vi.fn().mockResolvedValue({ count: 1 }),
+      createManyAndReturn: vi.fn().mockResolvedValue([{ id: "n1" }]),
     },
     user: {
       findUnique: vi.fn().mockResolvedValue({
@@ -88,7 +89,7 @@ describe("NotificationService · sequel announcements", () => {
 
     await service.scanAll();
 
-    expect(prisma.notification.createMany).toHaveBeenCalledWith(
+    expect(prisma.notification.createManyAndReturn).toHaveBeenCalledWith(
       expect.objectContaining({
         data: [
           expect.objectContaining({
@@ -159,7 +160,7 @@ describe("NotificationService · sequel announcements", () => {
 
     await service.scanAll();
 
-    expect(prisma.notification.createMany).toHaveBeenCalledWith(
+    expect(prisma.notification.createManyAndReturn).toHaveBeenCalledWith(
       expect.objectContaining({
         data: [
           expect.objectContaining({

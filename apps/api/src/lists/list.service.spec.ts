@@ -841,6 +841,7 @@ describe("ListService member management — owner only", () => {
       expect.objectContaining({
         userId: "friend",
         type: "LIST_MEMBER_ADDED",
+        data: expect.objectContaining({ listTitle: "Top 10" }),
       }),
     );
     expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");

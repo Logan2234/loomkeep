@@ -217,6 +217,8 @@ export interface ApiV1NotificationDto {
   /** The episode's air date for a new episode, else when it was created. */
   date: string;
   createdAt: string;
+  /** When it was read, or null while unread. */
+  readAt: string | null;
 }
 
 export interface ApiV1NotificationsDto {
