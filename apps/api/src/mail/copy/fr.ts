@@ -240,6 +240,8 @@ export const FR_COPY: MailCopy = {
         "Un code de secours vient de servir à se connecter à ton compte.",
       MFA_CHALLENGE_LOCKED:
         "Quelqu'un a saisi ton mot de passe correctement, puis a échoué plusieurs fois au second facteur. La connexion a été bloquée.",
+      REAUTH_LOCKED:
+        "Sur un appareil connecté à ton compte, quelqu'un a échoué plusieurs fois à confirmer ton identité avant une action sensible. Cet appareil a été déconnecté.",
     },
     hint: "Si c'est toi, tu n'as rien à faire. Sinon, change ton mot de passe tout de suite et vérifie tes réglages de sécurité.",
     lockedHint:

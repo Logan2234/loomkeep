@@ -21,7 +21,6 @@ import {
   verifyAuthenticationResponse,
   verifyRegistrationResponse,
 } from "@simplewebauthn/server";
-import * as bcrypt from "bcryptjs";
 import { AppException } from "../common/app.exception";
 import { webOrigins } from "../common/web-origin.util";
 import { notificationCopy } from "../notifications/notification-copy";
@@ -214,11 +213,8 @@ export class WebauthnService {
   async removeCredential(
     userId: string,
     credentialId: string,
-    currentPassword: string,
     currentSessionId?: string,
   ): Promise<RemoveWebauthnCredentialResponseDto> {
-    await this.assertCurrentPassword(userId, currentPassword);
-
     const row = await this.prisma.webauthnCredential.findUnique({
       where: { id: credentialId },
     });
@@ -274,7 +270,7 @@ export class WebauthnService {
 
   /**
    * Relabelling is not a security-changing action (unlike add/remove), so it
-   * skips the current-password confirmation those require.
+   * skips the identity confirmation those require.
    */
   async renameCredential(
     userId: string,
@@ -310,11 +306,8 @@ export class WebauthnService {
   async setPasswordless(
     userId: string,
     enabled: boolean,
-    currentPassword: string,
     currentSessionId?: string,
   ): Promise<void> {
-    await this.assertCurrentPassword(userId, currentPassword);
-
     if (enabled && !(await this.hasCredentials(userId))) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
@@ -474,21 +467,32 @@ export class WebauthnService {
     };
   }
 
-  private async assertCurrentPassword(
+  /** An assertion challenge for a signed-in user confirming it's them. */
+  async reauthOptions(
     userId: string,
-    currentPassword: string,
+  ): Promise<WebauthnLoginOptionsResponseDto> {
+    return this.createLoginChallenge(userId, null);
+  }
+
+  /** Checks a confirmation's assertion came from one of this user's keys. */
+  async verifyReauth(
+    userId: string,
+    webauthnChallengeId: string,
+    response: AuthenticationResponseJSON,
   ): Promise<void> {
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { passwordHash: true },
+    const challenge = await this.prisma.webauthnChallenge.findUnique({
+      where: { id: webauthnChallengeId },
+      select: { userId: true },
     });
 
-    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    if (challenge?.userId !== userId) {
       throw new AppException(
         HttpStatus.UNAUTHORIZED,
-        ErrorCode.AuthCurrentPasswordIncorrect,
+        ErrorCode.AuthWebauthnVerificationFailed,
       );
     }
+
+    await this.verifyLoginAssertion(webauthnChallengeId, response);
   }
 }
 

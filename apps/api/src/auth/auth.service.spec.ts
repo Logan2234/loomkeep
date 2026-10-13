@@ -150,7 +150,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
   } as unknown as HibpService;
 
   const mfa = {
-    validateTotpCode: vi.fn(),
+    acceptTotpCode: vi.fn(),
     verifyRecoveryCode: vi.fn().mockResolvedValue(false),
   } as unknown as MfaService;
 
@@ -1507,7 +1507,7 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
-    (mfa.validateTotpCode as Mock).mockReturnValue(true);
+    (mfa.acceptTotpCode as Mock).mockResolvedValue("accepted");
 
     const result = await service.verifyMfaLogin("challenge-1", "123456");
 
@@ -1532,7 +1532,7 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
-    (mfa.validateTotpCode as Mock).mockReturnValue(false);
+    (mfa.acceptTotpCode as Mock).mockResolvedValue("invalid");
     (mfa.verifyRecoveryCode as Mock).mockResolvedValue(true);
 
     const result = await service.verifyMfaLogin("challenge-1", "ABCDE12345");
@@ -1553,7 +1553,7 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
-    (mfa.validateTotpCode as Mock).mockReturnValue(false);
+    (mfa.acceptTotpCode as Mock).mockResolvedValue("invalid");
     (mfa.verifyRecoveryCode as Mock).mockResolvedValue(false);
 
     await expect(
@@ -1580,7 +1580,7 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
-    (mfa.validateTotpCode as Mock).mockReturnValue(false);
+    (mfa.acceptTotpCode as Mock).mockResolvedValue("invalid");
     (mfa.verifyRecoveryCode as Mock).mockResolvedValue(false);
 
     await expect(

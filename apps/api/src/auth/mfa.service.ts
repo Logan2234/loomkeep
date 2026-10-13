@@ -127,25 +127,17 @@ export class MfaService {
 
   async disableTotp(
     userId: string,
-    currentPassword: string,
     currentSessionId?: string,
     userAgent?: string,
   ): Promise<void> {
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-    });
-
-    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
-      throw new AppException(
-        HttpStatus.UNAUTHORIZED,
-        ErrorCode.AuthCurrentPasswordIncorrect,
-      );
-    }
-
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
-        data: { mfaTotpEnabled: false, mfaTotpSecretEnc: null },
+        data: {
+          mfaTotpEnabled: false,
+          mfaTotpSecretEnc: null,
+          mfaTotpLastStep: null,
+        },
       }),
       this.deleteOtherSessionsQuery(userId, currentSessionId),
     ]);
@@ -159,12 +151,9 @@ export class MfaService {
   async setEmailMfaEnabled(
     userId: string,
     enabled: boolean,
-    currentPassword: string,
     currentSessionId?: string,
     userAgent?: string,
   ): Promise<{ recoveryCodes?: string[] }> {
-    await this.assertCurrentPassword(userId, currentPassword);
-
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
@@ -206,12 +195,9 @@ export class MfaService {
   /** Generates a fresh batch of 10, deleting any existing ones first. */
   async regenerateRecoveryCodes(
     userId: string,
-    currentPassword: string,
     currentSessionId?: string,
     userAgent?: string,
   ): Promise<string[]> {
-    await this.assertCurrentPassword(userId, currentPassword);
-
     const codes = await this.generateRecoveryCodes(userId, {
       deleteExisting: true,
       revokeSessions: true,
@@ -285,23 +271,6 @@ export class MfaService {
     });
   }
 
-  private async assertCurrentPassword(
-    userId: string,
-    currentPassword: string,
-  ): Promise<void> {
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { passwordHash: true },
-    });
-
-    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
-      throw new AppException(
-        HttpStatus.UNAUTHORIZED,
-        ErrorCode.AuthCurrentPasswordIncorrect,
-      );
-    }
-  }
-
   /** Normalizes (strips separators, uppercases), matches, and deletes the consumed row. */
   async verifyRecoveryCode(userId: string, rawCode: string): Promise<boolean> {
     const normalized = rawCode.replace(/[\s-]/g, "").toUpperCase();
@@ -328,7 +297,34 @@ export class MfaService {
 
   /** Decrypts the stored secret and validates a live 6-digit TOTP code, +-1 step of drift. */
   validateTotpCode(mfaTotpSecretEnc: string, code: string): boolean {
-    if (!/^\d{6}$/.test(code)) return false;
+    return this.totpStep(mfaTotpSecretEnc, code) !== null;
+  }
+
+  /**
+   * A live code, accepted once: the step it was generated for, or an earlier
+   * one, can't serve again — whether it served at sign-in or at a confirmation.
+   */
+  async acceptTotpCode(
+    userId: string,
+    mfaTotpSecretEnc: string,
+    code: string,
+  ): Promise<"accepted" | "invalid" | "reused"> {
+    const step = this.totpStep(mfaTotpSecretEnc, code);
+    if (step === null) return "invalid";
+
+    const { count } = await this.prisma.user.updateMany({
+      where: {
+        id: userId,
+        OR: [{ mfaTotpLastStep: null }, { mfaTotpLastStep: { lt: step } }],
+      },
+      data: { mfaTotpLastStep: step },
+    });
+    return count === 1 ? "accepted" : "reused";
+  }
+
+  /** The 30-second step a live code was generated for, or null. */
+  private totpStep(mfaTotpSecretEnc: string, code: string): number | null {
+    if (!/^\d{6}$/.test(code)) return null;
     const secret = decryptTotpSecret(mfaTotpSecretEnc, this.getEncryptionKey());
     const totp = new TOTP({
       issuer: TOTP_ISSUER,
@@ -337,7 +333,8 @@ export class MfaService {
       period: 30,
       secret: Secret.fromBase32(secret),
     });
-    return totp.validate({ token: code, window: 1 }) !== null;
+    const delta = totp.validate({ token: code, window: 1 });
+    return delta === null ? null : totp.counter() + delta;
   }
 }
 

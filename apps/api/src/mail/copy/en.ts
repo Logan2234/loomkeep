@@ -234,6 +234,8 @@ export const EN_COPY: MailCopy = {
         "A recovery code was just used to sign in to your account.",
       MFA_CHALLENGE_LOCKED:
         "Someone entered your password correctly, then failed the second factor several times. The sign-in was blocked.",
+      REAUTH_LOCKED:
+        "On a device signed in to your account, someone failed several times to confirm your identity before a sensitive action. That device was signed out.",
     },
     hint: "If this was you, there's nothing to do. If not, change your password right away and check your security settings.",
     lockedHint:

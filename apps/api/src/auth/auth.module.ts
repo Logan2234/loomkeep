@@ -11,6 +11,8 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { InvitationService } from "./invitation.service";
 import { MfaService } from "./mfa.service";
+import { ReauthController } from "./reauth.controller";
+import { ReauthService } from "./reauth.service";
 import { SessionsController } from "./sessions.controller";
 import { TurnstileService } from "./turnstile.service";
 import { VerificationController } from "./verification.controller";
@@ -30,13 +32,19 @@ import { WebauthnService } from "./webauthn.service";
     NotificationModule,
     AdminAlertModule,
   ],
-  controllers: [AuthController, SessionsController, VerificationController],
+  controllers: [
+    AuthController,
+    SessionsController,
+    VerificationController,
+    ReauthController,
+  ],
   providers: [
     AuthService,
     TurnstileService,
     MfaService,
     WebauthnService,
     InvitationService,
+    ReauthService,
   ],
   exports: [AuthService, MfaService, WebauthnService, InvitationService],
 })

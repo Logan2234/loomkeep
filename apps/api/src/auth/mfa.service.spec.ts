@@ -95,10 +95,7 @@ describe("MfaService recovery codes", () => {
   // enough that this can flirt with the default 5s timeout under load.
   it("generates 10 codes of 10 chars using only unambiguous characters", async () => {
     const { service, prisma } = makeService();
-    const codes = await service.regenerateRecoveryCodes(
-      "user-1",
-      CURRENT_PASSWORD,
-    );
+    const codes = await service.regenerateRecoveryCodes("user-1");
 
     expect(codes).toHaveLength(RECOVERY_CODE_COUNT);
 
@@ -114,10 +111,7 @@ describe("MfaService recovery codes", () => {
 
   it("consumes a matching recovery code and deletes it (single-use)", async () => {
     const { service } = makeService();
-    const [code] = await service.regenerateRecoveryCodes(
-      "user-1",
-      CURRENT_PASSWORD,
-    );
+    const [code] = await service.regenerateRecoveryCodes("user-1");
 
     await expect(service.verifyRecoveryCode("user-1", code)).resolves.toBe(
       true,
@@ -130,10 +124,7 @@ describe("MfaService recovery codes", () => {
 
   it("normalizes separators and case before matching", async () => {
     const { service } = makeService();
-    const [code] = await service.regenerateRecoveryCodes(
-      "user-1",
-      CURRENT_PASSWORD,
-    );
+    const [code] = await service.regenerateRecoveryCodes("user-1");
     const dashed = `${code.slice(0, 5)}-${code.slice(5)}`.toLowerCase();
 
     await expect(service.verifyRecoveryCode("user-1", dashed)).resolves.toBe(
@@ -143,11 +134,8 @@ describe("MfaService recovery codes", () => {
 
   it("regenerate deletes the old batch entirely rather than keeping it alongside", async () => {
     const { service, prisma } = makeService();
-    const [firstCode] = await service.regenerateRecoveryCodes(
-      "user-1",
-      CURRENT_PASSWORD,
-    );
-    await service.regenerateRecoveryCodes("user-1", CURRENT_PASSWORD);
+    const [firstCode] = await service.regenerateRecoveryCodes("user-1");
+    await service.regenerateRecoveryCodes("user-1");
 
     expect(prisma.mfaRecoveryCode.deleteMany).toHaveBeenCalledTimes(2);
     await expect(service.verifyRecoveryCode("user-1", firstCode)).resolves.toBe(
@@ -194,7 +182,6 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
     const second = await service.setEmailMfaEnabled(
       "user-1",
       true,
-      CURRENT_PASSWORD,
       "session-1",
     );
     expect(second.recoveryCodes).toBeUndefined();
@@ -204,26 +191,6 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
     // Really bcrypt-hashes every recovery code (pure-JS bcryptjs): past the
     // default 5s under CI coverage instrumentation.
   }, 20_000);
-
-  it("rejects an incorrect password before changing email MFA", async () => {
-    const { service, prisma } = makeService();
-    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(makeUser());
-
-    await expect(
-      service.setEmailMfaEnabled("user-1", true, "wrong", "session-1"),
-    ).rejects.toMatchObject({ code: "auth.current_password_incorrect" });
-    expect(prisma.user.update).not.toHaveBeenCalled();
-  });
-
-  it("rejects an incorrect password before regenerating recovery codes", async () => {
-    const { service, prisma } = makeService();
-    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(makeUser());
-
-    await expect(
-      service.regenerateRecoveryCodes("user-1", "wrong", "session-1"),
-    ).rejects.toMatchObject({ code: "auth.current_password_incorrect" });
-    expect(prisma.mfaRecoveryCode.create).not.toHaveBeenCalled();
-  });
 
   it("evaluates locked_down right after a TOTP confirmation", async () => {
     const { service, prisma, achievements } = makeService();
@@ -266,26 +233,18 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
 });
 
 describe("MfaService.disableTotp", () => {
-  it("rejects with the wrong current password", async () => {
+  it("clears the stored secret, its last step and the flag", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
-      makeUser({ passwordHash: await bcrypt.hash("correct", 4) }),
-    );
 
-    await expect(service.disableTotp("user-1", "wrong")).rejects.toThrow();
-  });
-
-  it("clears the stored secret and flag on success", async () => {
-    const { service, prisma } = makeService();
-    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
-      makeUser({ passwordHash: await bcrypt.hash("correct", 4) }),
-    );
-
-    await service.disableTotp("user-1", "correct", "session-1");
+    await service.disableTotp("user-1", "session-1");
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
-      data: { mfaTotpEnabled: false, mfaTotpSecretEnc: null },
+      data: {
+        mfaTotpEnabled: false,
+        mfaTotpSecretEnc: null,
+        mfaTotpLastStep: null,
+      },
     });
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { userId: "user-1", id: { not: "session-1" } },
@@ -293,24 +252,70 @@ describe("MfaService.disableTotp", () => {
   });
 });
 
-// Both directions require the current password; the earlier test covers failure.
 describe("MfaService.setEmailMfaEnabled — disabling", () => {
-  it("clears the flag on a correct password", async () => {
+  it("clears the flag", async () => {
     const { service, prisma } = makeService();
     (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
       makeUser({ mfaEmailEnabled: true }),
     );
 
-    await service.setEmailMfaEnabled(
-      "user-1",
-      false,
-      CURRENT_PASSWORD,
-      "session-1",
-    );
+    await service.setEmailMfaEnabled("user-1", false, "session-1");
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: { mfaEmailEnabled: false },
     });
+  });
+});
+
+describe("MfaService.acceptTotpCode", () => {
+  function withSecret() {
+    const setup = makeService();
+    const secret = new Secret({ size: 20 });
+    const totp = new TOTP({ secret, algorithm: "SHA1", digits: 6, period: 30 });
+    const enc = encryptTotpSecret(
+      secret.base32,
+      Buffer.from(ENCRYPTION_KEY, "base64"),
+    );
+    return { ...setup, totp, enc };
+  }
+
+  it("accepts a live code once, then refuses it", async () => {
+    const { service, prisma, totp, enc } = withSecret();
+    const updateMany = vi
+      .fn()
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 });
+    (prisma.user as unknown as { updateMany: Mock }).updateMany = updateMany;
+    const code = totp.generate();
+
+    await expect(service.acceptTotpCode("user-1", enc, code)).resolves.toBe(
+      "accepted",
+    );
+    await expect(service.acceptTotpCode("user-1", enc, code)).resolves.toBe(
+      "reused",
+    );
+    // Only a step later than the last one served moves it forward.
+    expect(updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "user-1",
+        OR: [
+          { mfaTotpLastStep: null },
+          { mfaTotpLastStep: { lt: totp.counter() } },
+        ],
+      },
+      data: { mfaTotpLastStep: totp.counter() },
+    });
+  });
+
+  it("refuses a wrong code without touching the account", async () => {
+    const { service, prisma, enc } = withSecret();
+    const updateMany = vi.fn();
+    (prisma.user as unknown as { updateMany: Mock }).updateMany = updateMany;
+
+    await expect(service.acceptTotpCode("user-1", enc, "000000")).resolves.toBe(
+      "invalid",
+    );
+    expect(updateMany).not.toHaveBeenCalled();
   });
 });

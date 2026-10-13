@@ -16,6 +16,7 @@ import {
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { RequireRecentAuth } from "../auth/recent-auth.guard";
 import { ApiKeysService } from "./api-keys.service";
 import { ApiRateLimitService } from "./api-rate-limit.service";
 import { ApiKeyQuotaResponseDto } from "./dto/api-key-quota-response.dto";
@@ -46,6 +47,8 @@ export class ApiKeysController {
     return this.rateLimit.quota(user.sub);
   }
 
+  // A key outlives the session that made it: a stolen cookie mustn't mint one.
+  @RequireRecentAuth()
   @Post()
   @ApiCreatedResponse({ type: CreatedApiKeyResponseDto })
   create(

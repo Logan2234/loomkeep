@@ -1,10 +1,9 @@
-import {
-  ErrorCode,
-  type AdminBackupFileContentDto,
-  type AdminBackupInventoryDto,
-  type AdminOverviewDto,
-  type SchemaGraphResponseDto,
-  type ServiceStatusResponseDto,
+import type {
+  AdminBackupFileContentDto,
+  AdminBackupInventoryDto,
+  AdminOverviewDto,
+  SchemaGraphResponseDto,
+  ServiceStatusResponseDto,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -17,13 +16,7 @@ import {
   Post,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
-import * as bcrypt from "bcryptjs";
-import {
-  CurrentUser,
-  type JwtPayload,
-} from "../auth/decorators/current-user.decorator";
-import { AppException } from "../common/app.exception";
-import { PrismaService } from "../prisma/prisma.service";
+import { RequireRecentAuth } from "../auth/recent-auth.guard";
 import { AdminOnly } from "./admin-only.decorator";
 import { AdminOverviewService } from "./admin-overview.service";
 import { AdminService } from "./admin.service";
@@ -43,7 +36,6 @@ export class AdminSystemController {
     private readonly admin: AdminService,
     private readonly overview: AdminOverviewService,
     private readonly backup: BackupService,
-    private readonly prisma: PrismaService,
   ) {}
 
   /** Persisted backup dumps on disk (BACKUP_DIR), most recent first — up to 7, pruned by the daily job. */
@@ -78,24 +70,10 @@ export class AdminSystemController {
    * Replaces the entire instance database with a previously downloaded dump.
    * Irreversible — the frontend requires a typed confirmation before calling this.
    */
+  @RequireRecentAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("backup/restore")
-  async restoreBackup(
-    @CurrentUser() payload: JwtPayload,
-    @Body() dto: RestoreBackupDto,
-  ): Promise<void> {
-    const admin = await this.prisma.user.findUniqueOrThrow({
-      where: { id: payload.sub },
-      select: { passwordHash: true },
-    });
-
-    if (!(await bcrypt.compare(dto.currentPassword, admin.passwordHash))) {
-      throw new AppException(
-        HttpStatus.UNAUTHORIZED,
-        ErrorCode.AuthCurrentPasswordIncorrect,
-      );
-    }
-
+  async restoreBackup(@Body() dto: RestoreBackupDto): Promise<void> {
     await this.backup.restore(dto.sql);
   }
 

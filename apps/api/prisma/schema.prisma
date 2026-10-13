@@ -662,6 +662,9 @@ model User {
   // from a fresh QR scan rather than silently reviving a stale secret.
   mfaTotpEnabled      Boolean @default(false)
   mfaTotpSecretEnc    String?
+  // The last 30-second TOTP step a code was accepted for: a code is refused
+  // once its step, or a later one, has served (sign-in or confirmation).
+  mfaTotpLastStep     Int?
   mfaEmailEnabled     Boolean @default(false)
   // True only lets login skip the password step outright — enforced in
   // WebauthnService, not by this column alone: it must never be true while
@@ -1403,6 +1406,11 @@ model RefreshToken {
   // Bumped on every rotation — the session's "last active" timestamp.
   lastUsedAt DateTime @default(now())
   createdAt  DateTime @default(now())
+  // When the person last proved it's them on this session (sign-in, or the
+  // confirmation sensitive actions ask for — see RecentAuthGuard).
+  reauthenticatedAt DateTime?
+  // Failed confirmations in a row; the session is signed out at the limit.
+  reauthFailures    Int      @default(0)
 
   user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   consumedTokens ConsumedRefreshToken[]
@@ -1567,6 +1575,7 @@ enum SecurityEventType {
   MFA_RECOVERY_CODES_REGENERATED
   MFA_RECOVERY_CODE_USED
   MFA_CHALLENGE_LOCKED
+  REAUTH_LOCKED
   API_KEY_CREATED
   API_KEY_REVOKED
   API_KEY_LEAKED

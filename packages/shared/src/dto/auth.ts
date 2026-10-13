@@ -58,7 +58,6 @@ export interface AuthResultResponseDto {
 
 export interface ChangeEmailRequestDto {
   newEmail: string;
-  currentPassword: string;
 }
 
 export interface ConfirmEmailChangeRequestDto {
@@ -68,11 +67,6 @@ export interface ConfirmEmailChangeRequestDto {
 export interface ChangePasswordRequestDto {
   currentPassword: string;
   newPassword: string;
-}
-
-export interface DeleteAccountRequestDto {
-  /** Re-confirmed before wiping the account and all its data. */
-  currentPassword: string;
 }
 
 export interface ForgotPasswordRequestDto {
@@ -142,17 +136,13 @@ export interface WebauthnRegistrationVerifyResponseDto {
   recoveryCodes?: string[];
 }
 
-export interface RemoveWebauthnCredentialRequestDto {
-  currentPassword: string;
-}
-
 export interface RemoveWebauthnCredentialResponseDto {
   /** True when removing this credential left zero — `passwordlessEnabled` was force-disabled server-side. */
   passwordlessDisabled: boolean;
 }
 
 export interface RenameWebauthnCredentialRequestDto {
-  /** The new user-chosen label — no password confirmation, this isn't a security-changing action. */
+  /** The new user-chosen label — no identity confirmation, this isn't a security-changing action. */
   name: string;
 }
 
@@ -162,7 +152,6 @@ export interface RenameWebauthnCredentialResponseDto {
 
 export interface SetPasswordlessRequestDto {
   enabled: boolean;
-  currentPassword: string;
 }
 
 /** Step 1 of the WebAuthn 2nd factor at login: given a pending `MfaLoginChallenge`, the assertion challenge. */
@@ -210,13 +199,8 @@ export interface ConfirmTotpResponseDto {
   recoveryCodes?: string[];
 }
 
-export interface DisableTotpRequestDto {
-  currentPassword: string;
-}
-
 export interface SetEmailMfaRequestDto {
   enabled: boolean;
-  currentPassword: string;
 }
 
 export interface SetEmailMfaResponseDto {
@@ -225,10 +209,6 @@ export interface SetEmailMfaResponseDto {
 
 export interface RegenerateRecoveryCodesResponseDto {
   codes: string[];
-}
-
-export interface RegenerateRecoveryCodesRequestDto {
-  currentPassword: string;
 }
 
 /** One active refresh-token session, i.e. one signed-in device. */
@@ -259,4 +239,40 @@ export interface AccountSecurityEventDto {
   ip: string | null;
   userAgent: string | null;
   createdAt: string;
+}
+
+/**
+ * How the signed-in user can prove it's them again before a sensitive action,
+ * strongest first. Recovery and e-mail codes don't count: the first are kept
+ * for a lost factor, the second land in a mailbox a session thief may hold.
+ */
+export const REAUTH_METHODS = ["webauthn", "totp", "password"] as const;
+export type ReauthMethod = (typeof REAUTH_METHODS)[number];
+
+/** How long a confirmation lets sensitive actions through on its session. */
+export const REAUTH_WINDOW_MS = 10 * 60 * 1000;
+
+/** `GET /auth/reauth`. */
+export interface ReauthStatusDto {
+  /** The methods the account has, strongest first; `password` is always there. */
+  methods: ReauthMethod[];
+  /** When this session's confirmation runs out; null when there's none. */
+  confirmedUntil: string | null;
+}
+
+/** `POST /auth/reauth`: the proof for one method. */
+export interface ReauthRequestDto {
+  method: ReauthMethod;
+  /** With `password`. */
+  password?: string;
+  /** With `totp`: the authenticator app's current code. */
+  code?: string;
+  /** With `webauthn`: from `POST /auth/reauth/webauthn-options`. */
+  webauthnChallengeId?: string;
+  /** With `webauthn`: the browser's assertion. */
+  response?: AuthenticationResponseJSON;
+}
+
+export interface ReauthResultDto {
+  confirmedUntil: string;
 }

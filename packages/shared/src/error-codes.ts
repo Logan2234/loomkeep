@@ -23,6 +23,13 @@ export const ErrorCode = {
   AuthInvalidResetToken: "auth.invalid_reset_token",
   AuthMfaTotpNotInProgress: "auth.mfa_totp_not_in_progress",
   AuthCurrentPasswordIncorrect: "auth.current_password_incorrect",
+  // A sensitive action asked for a confirmation this session doesn't have, or
+  // has had for too long (see RecentAuthGuard).
+  AuthReauthRequired: "auth.reauth_required",
+  // Too many failed confirmations: the session was signed out.
+  AuthReauthTooManyAttempts: "auth.reauth_too_many_attempts",
+  // The authenticator app's code was already used, at sign-in or a confirmation.
+  AuthTotpCodeReused: "auth.totp_code_reused",
   AuthMissingAccessToken: "auth.missing_access_token",
   AuthInvalidAccessToken: "auth.invalid_access_token",
   AuthMissingExceptParam: "auth.missing_except_param",
@@ -249,6 +256,9 @@ export const ErrorCode = {
   // client-side only — never emitted by the API, thrown by apps/web's
   // request() when the fetch itself fails (see apps/web/src/lib/api/core.ts)
   NetworkOffline: "network.offline",
+  // client-side only: the person closed the identity confirmation a sensitive
+  // action asked for (see apps/web/src/lib/auth/reauth.svelte.ts)
+  AuthReauthCancelled: "auth.reauth_cancelled",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

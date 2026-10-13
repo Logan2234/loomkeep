@@ -156,9 +156,8 @@ describe("UsersController — delegation to UsersService", () => {
 
   it("deleteAccount", () => {
     const { controller, users } = makeController();
-    const dto = { currentPassword: "pw" };
-    void controller.deleteAccount(payload, dto, "some-ua");
-    expect(users.deleteAccount).toHaveBeenCalledWith(userId, dto, "some-ua");
+    void controller.deleteAccount(payload, "some-ua");
+    expect(users.deleteAccount).toHaveBeenCalledWith(userId, "some-ua");
   });
 
   it("checkUsernameAvailability", () => {

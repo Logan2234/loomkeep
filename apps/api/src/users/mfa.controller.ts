@@ -24,16 +24,14 @@ import { Throttle } from "@nestjs/throttler";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { MfaService } from "../auth/mfa.service";
+import { RequireRecentAuth } from "../auth/recent-auth.guard";
 import { WebauthnService } from "../auth/webauthn.service";
 import { SENSITIVE_ACTION_THROTTLE } from "../common/throttle.constants";
 import { ConfirmTotpResultDto } from "./dto/confirm-totp-response.dto";
 import { ConfirmTotpDto } from "./dto/confirm-totp.dto";
-import { DisableTotpDto } from "./dto/disable-totp.dto";
 import { MfaStatusResponseDto } from "./dto/mfa-status-response.dto";
 import { RegenerateRecoveryCodesResultDto } from "./dto/regenerate-recovery-codes-response.dto";
-import { RegenerateRecoveryCodesDto } from "./dto/regenerate-recovery-codes.dto";
 import { RemoveWebauthnCredentialResultDto } from "./dto/remove-webauthn-credential-response.dto";
-import { RemoveWebauthnCredentialDto } from "./dto/remove-webauthn-credential.dto";
 import { RenameWebauthnCredentialResultDto } from "./dto/rename-webauthn-credential-response.dto";
 import { RenameWebauthnCredentialDto } from "./dto/rename-webauthn-credential.dto";
 import { SetEmailMfaResultDto } from "./dto/set-email-mfa-response.dto";
@@ -62,6 +60,7 @@ export class MfaController {
     return { ...status, ...webauthn };
   }
 
+  @RequireRecentAuth()
   @Post("totp/setup")
   @ApiCreatedResponse({ type: TotpSetupResponseDto })
   setupTotp(@CurrentUser() payload: JwtPayload): Promise<TotpSetupDto> {
@@ -83,20 +82,16 @@ export class MfaController {
     );
   }
 
+  @RequireRecentAuth()
   @Post("totp/disable")
   async disableTotp(
     @CurrentUser() payload: JwtPayload,
-    @Body() dto: DisableTotpDto,
     @Headers("user-agent") userAgent?: string,
   ): Promise<void> {
-    await this.mfaService.disableTotp(
-      payload.sub,
-      dto.currentPassword,
-      payload.sid,
-      userAgent,
-    );
+    await this.mfaService.disableTotp(payload.sub, payload.sid, userAgent);
   }
 
+  @RequireRecentAuth()
   @Patch("email")
   @ApiOkResponse({ type: SetEmailMfaResultDto })
   setEmailMfa(
@@ -107,7 +102,6 @@ export class MfaController {
     return this.mfaService.setEmailMfaEnabled(
       payload.sub,
       dto.enabled,
-      dto.currentPassword,
       payload.sid,
       userAgent,
     );
@@ -115,23 +109,23 @@ export class MfaController {
 
   // Authenticated-only, but still a sensitive/spammy-if-abused action.
   @Throttle(SENSITIVE_ACTION_THROTTLE)
+  @RequireRecentAuth()
   @Post("recovery-codes/regenerate")
   @ApiCreatedResponse({ type: RegenerateRecoveryCodesResultDto })
   async regenerateRecoveryCodes(
     @CurrentUser() payload: JwtPayload,
-    @Body() dto: RegenerateRecoveryCodesDto,
     @Headers("user-agent") userAgent?: string,
   ): Promise<RegenerateRecoveryCodesResponseDto> {
     return {
       codes: await this.mfaService.regenerateRecoveryCodes(
         payload.sub,
-        dto.currentPassword,
         payload.sid,
         userAgent,
       ),
     };
   }
 
+  @RequireRecentAuth()
   @Post("webauthn/register-options")
   @ApiCreatedResponse({ type: WebauthnRegistrationOptionsResponseDto })
   registerWebauthnOptions(
@@ -153,17 +147,16 @@ export class MfaController {
     return this.webauthnService.verifyRegistration(payload.sub, dto);
   }
 
+  @RequireRecentAuth()
   @Delete("webauthn/:credentialId")
   @ApiOkResponse({ type: RemoveWebauthnCredentialResultDto })
   removeWebauthnCredential(
     @CurrentUser() payload: JwtPayload,
     @Param("credentialId") credentialId: string,
-    @Body() dto: RemoveWebauthnCredentialDto,
   ): Promise<RemoveWebauthnCredentialResponseDto> {
     return this.webauthnService.removeCredential(
       payload.sub,
       credentialId,
-      dto.currentPassword,
       payload.sid,
     );
   }
@@ -182,6 +175,7 @@ export class MfaController {
     );
   }
 
+  @RequireRecentAuth()
   @Patch("passwordless")
   async setPasswordless(
     @CurrentUser() payload: JwtPayload,
@@ -190,7 +184,6 @@ export class MfaController {
     await this.webauthnService.setPasswordless(
       payload.sub,
       dto.enabled,
-      dto.currentPassword,
       payload.sid,
     );
   }
