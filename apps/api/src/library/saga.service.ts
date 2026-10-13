@@ -124,18 +124,14 @@ export class SagaService {
     }
 
     const q = filters.q?.trim().toLowerCase();
-    const sagas = await this.prisma.saga.findMany({
-      where: { key: { in: [...lastActivity.keys()] } },
-      include: { members: { orderBy: { position: "asc" } } },
-    });
-    const allowAdult = await this.ageGate.allowsAdultContent(userId);
-    const [statuses, translated] = await Promise.all([
-      this.statusesOf(
-        userId,
-        sagas.flatMap((saga) => saga.members),
-      ),
-      this.translations(sagas, filters.lang),
-    ]);
+    const sagas = await this.viewerSagas(
+      userId,
+      await this.prisma.saga.findMany({
+        where: { key: { in: [...lastActivity.keys()] } },
+        include: { members: { orderBy: { position: "asc" } } },
+      }),
+      filters.lang,
+    );
 
     const result: LibrarySagasDto = {
       inProgress: [],
@@ -143,16 +139,7 @@ export class SagaService {
       finished: [],
     };
 
-    for (const saga of sagas) {
-      const translation = translated.get(saga.key);
-      const title = translation?.title ?? saga.title;
-      const members = saga.members
-        .filter((m) => allowAdult || !m.isAdult)
-        .map((m) => ({
-          ...toMemberDto(m, statuses.get(`${m.type}:${m.sourceId}`)),
-          title: translation?.members[m.sourceId] ?? m.title,
-        }));
-
+    for (const { key, title, members } of sagas) {
       if (
         q &&
         !title.toLowerCase().includes(q) &&
@@ -164,14 +151,14 @@ export class SagaService {
       const progress = sagaProgress(members, MEDIA_SAGA_STATUS);
       if (progress.state === "none") continue;
       result[progress.state].push({
-        key: saga.key,
+        key,
         title,
         members,
         next: progress.next,
         seen: progress.seen,
         released: progress.released,
-        lastActivityAt: lastActivity.get(saga.key)!.toISOString(),
-        finishedAt: lastFinished.get(saga.key)?.toISOString() ?? null,
+        lastActivityAt: lastActivity.get(key)!.toISOString(),
+        finishedAt: lastFinished.get(key)?.toISOString() ?? null,
       });
     }
 
@@ -183,6 +170,54 @@ export class SagaService {
     }
 
     return result;
+  }
+
+  /**
+   * A saga as saved, the way the viewer sees it: what a /saga card shows,
+   * without asking TMDB or AniList again.
+   */
+  async savedSaga(
+    userId: string,
+    key: string,
+    lang?: string,
+  ): Promise<MediaSagaDto | null> {
+    const saga = await this.prisma.saga.findUnique({
+      where: { key },
+      include: { members: { orderBy: { position: "asc" } } },
+    });
+    if (!saga) return null;
+    const [viewed] = await this.viewerSagas(userId, [saga], lang);
+    return viewed;
+  }
+
+  /** Saved sagas in the viewer's language, with their status on each work. */
+  private async viewerSagas(
+    userId: string,
+    sagas: { key: string; title: string; members: SagaMember[] }[],
+    lang: string | undefined,
+  ): Promise<MediaSagaDto[]> {
+    const [allowAdult, statuses, translated] = await Promise.all([
+      this.ageGate.allowsAdultContent(userId),
+      this.statusesOf(
+        userId,
+        sagas.flatMap((saga) => saga.members),
+      ),
+      this.translations(sagas, lang),
+    ]);
+
+    return sagas.map((saga) => {
+      const translation = translated.get(saga.key);
+      return {
+        key: saga.key,
+        title: translation?.title ?? saga.title,
+        members: saga.members
+          .filter((m) => allowAdult || !m.isAdult)
+          .map((m) => ({
+            ...toMemberDto(m, statuses.get(`${m.type}:${m.sourceId}`)),
+            title: translation?.members[m.sourceId] ?? m.title,
+          })),
+      };
+    });
   }
 
   /**

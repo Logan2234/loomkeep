@@ -58,9 +58,6 @@ function setup({ leaVisible = true } = {}) {
       ),
       findMany: vi.fn(),
     },
-    sagaMember: {
-      findFirst: vi.fn().mockResolvedValue({ type: "MOVIE", sourceId: "120" }),
-    },
   } as unknown as PrismaService;
   const chat = {
     memberIds: vi.fn().mockResolvedValue([ME, LEA]),
@@ -79,7 +76,7 @@ function setup({ leaVisible = true } = {}) {
   const follow = {
     listFriendIds: vi.fn().mockResolvedValue([LEA]),
   } as unknown as FollowService;
-  const mediaSagas = { getSaga: vi.fn() } as unknown as SagaService;
+  const mediaSagas = { savedSaga: vi.fn() } as unknown as SagaService;
   const extras = { getExtras: vi.fn() };
   const media = {
     providerFor: vi.fn(() => extras),
@@ -257,13 +254,16 @@ describe("ChatCommandsService", () => {
         work: null,
         memberIds: [ME, LEA],
       });
-      (mediaSagas.getSaga as Mock).mockImplementation((userId: string) =>
+      (mediaSagas.savedSaga as Mock).mockImplementation((userId: string) =>
         userId === ME
           ? saga(["COMPLETED", "WATCHING", null])
           : saga(["COMPLETED", "COMPLETED", "PLANNED"]),
       );
 
-      const card = await service.saga(ME, "m1");
+      const card = await service.saga(ME, "m1", "fr");
+
+      // Read as saved, in the viewer's language: TMDB's base titles are English.
+      expect(mediaSagas.savedSaga).toHaveBeenCalledWith(ME, "TMDB:120", "fr");
 
       expect(card.works.map((w) => w.href)).toEqual([
         "/app/media/movie/120",
@@ -286,7 +286,7 @@ describe("ChatCommandsService", () => {
         work: null,
         memberIds: [ME, LEA],
       });
-      (mediaSagas.getSaga as Mock).mockResolvedValue(saga(["COMPLETED"]));
+      (mediaSagas.savedSaga as Mock).mockResolvedValue(saga(["COMPLETED"]));
 
       const card = await service.saga(ME, "m1");
 
