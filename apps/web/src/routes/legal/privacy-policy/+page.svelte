@@ -13,7 +13,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 03/10/2026</em></p>
+    <p><em>Dernière mise à jour : 14/10/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -542,6 +542,11 @@
             ><td>Données de suivi</td><td
               >Jusqu'à suppression du compte ou suppression des données
               concernées</td
+            ></tr>
+          <tr
+            ><td>Notifications dans l'application</td><td
+              >Jusqu'à leur suppression par l'utilisateur, et au plus 90 jours
+              après leur lecture</td
             ></tr>
           <tr
             ><td>Contenus sociaux</td><td
