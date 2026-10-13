@@ -1493,5 +1493,22 @@
   "chat_format_code": "Code · Ctrl+E",
   "chat_format_spoiler": "Spoiler · Ctrl+Shift+S",
   "chat_write_to": "Write to {name}",
-  "report_target_message": "Message"
+  "report_target_message": "Message",
+  "reauth_title": "Confirm it's you",
+  "reauth_reason_api_key": "An API key gives lasting access to your account.",
+  "reauth_reason_sessions": "The devices concerned will be signed out.",
+  "reauth_reason_email": "Your email address is how you sign in and recover your account.",
+  "reauth_reason_mfa": "This changes how you sign in.",
+  "reauth_reason_restore": "Restoring replaces the instance's whole database.",
+  "reauth_reason_delete": "Deleting your account can't be undone.",
+  "reauth_reason_default": "This action affects your account's security.",
+  "reauth_window_note": "Then nothing will be asked again for 10 minutes on this device.",
+  "reauth_other_method": "Use another way",
+  "reauth_other_methods": "Other ways",
+  "reauth_webauthn_use": "Use my security key",
+  "reauth_webauthn_hint": "Your physical key, or Touch ID, Face ID, Windows Hello…",
+  "reauth_webauthn_cancelled": "The check was cancelled. Try again, or use another way.",
+  "reauth_password_desc": "Your account's password.",
+  "reauth_done": "It's you",
+  "reauth_sign_in_again": "Sign in again"
 }

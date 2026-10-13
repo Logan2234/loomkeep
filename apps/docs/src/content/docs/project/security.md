@@ -27,6 +27,10 @@ Only the latest `main` is supported: there are no maintained older releases.
   encrypted at rest. Administrators must use it.
 - **API keys** are stored hashed, read-only, limited to the resources they
   were granted, and revoked automatically when GitHub finds one in public.
+- **Sensitive actions** (API keys, email, security methods, signing other
+  devices out, deleting the account) ask the person to confirm it's them
+  within the last 10 minutes, with a passkey, an authenticator code or the
+  password. An authenticator code works once.
 - **Every sensitive action** is logged, and visible to its account.
 - **Backups** are encrypted before they touch the disk, for a key the server
   never holds.

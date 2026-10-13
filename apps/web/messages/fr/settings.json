@@ -8,7 +8,7 @@
   "settings_mfa_totp_confirm_hint": "Saisis le code affiché par ton application pour confirmer l'activation.",
   "settings_mfa_totp_invalid_code": "Code invalide, réessaie.",
   "settings_mfa_totp_disable_title": "Désactiver l'application d'authentification",
-  "settings_mfa_totp_disable_hint": "Confirme ton mot de passe pour désactiver cette méthode.",
+  "settings_mfa_totp_disable_hint": "Ton compte ne te demandera plus de code de cette application à la connexion.",
   "settings_mfa_email_desc": "Reçois un code à usage unique par email à chaque connexion.",
   "settings_mfa_recovery_title": "Codes de secours",
   "settings_mfa_recovery_hint": "À utiliser si tu perds l'accès à ta méthode habituelle. Chaque code ne fonctionne qu'une fois.",
@@ -32,11 +32,10 @@
   "settings_mfa_webauthn_name_label": "Nom de la clé",
   "settings_mfa_webauthn_rename_title": "Renommer cette clé",
   "settings_mfa_webauthn_remove_title": "Supprimer cette clé ?",
-  "settings_mfa_webauthn_remove_hint": "Confirme ton mot de passe. Si c'est ta dernière clé, la connexion sans mot de passe sera désactivée.",
+  "settings_mfa_webauthn_remove_hint": "Si c'est ta dernière clé, la connexion sans mot de passe sera désactivée.",
   "settings_mfa_passwordless_label": "Connexion sans mot de passe",
   "settings_mfa_passwordless_desc": "Se connecter uniquement avec une clé enregistrée ci-dessus, sans mot de passe.",
   "settings_mfa_passwordless_needs_credential": "Ajoute au moins une clé pour activer cette option.",
-  "settings_mfa_passwordless_confirm_hint": "Confirme ton mot de passe pour changer ce réglage.",
   "settings_mfa_passwordless_enabled_toast": "Connexion sans mot de passe activée",
   "settings_mfa_passwordless_disabled_toast": "Connexion sans mot de passe désactivée",
   "settings_section_content": "Contenu",
@@ -165,7 +164,6 @@
   "settings_delete_account_modal_title": "Supprimer le compte",
   "settings_delete_account_modal_description": "Ton compte, ton profil et toutes les données qui t'appartiennent en propre seront définitivement supprimés. Tes notes, commentaires et signalements resteront visibles mais seront détachés de ton identité (« Utilisateur supprimé »). Cette action ne peut pas être annulée.",
   "settings_delete_account_details_unavailable": "Détail indisponible pour le moment.",
-  "settings_delete_account_password_label": "Confirme avec ton mot de passe",
   "settings_delete_account_deleting": "Suppression…",
   "settings_delete_account_confirm": "Supprimer définitivement",
   "settings_delete_account_success": "Compte supprimé.",
@@ -566,5 +564,6 @@
   "settings_feedback_widget": "Bouton « Donner un avis »",
   "settings_feedback_widget_desc": "Le bouton en bas à droite qui ouvre le tableau des retours. Masqué, il reste accessible depuis cette page.",
   "settings_alert_chat_message": "Un message d'un ami",
-  "settings_alert_chat_message_hint": "Seulement quand l'app n'est ouverte nulle part, sans le texte du message."
+  "settings_alert_chat_message_hint": "Seulement quand l'app n'est ouverte nulle part, sans le texte du message.",
+  "settings_activity_event_reauth_locked": "Confirmation d'identité bloquée après trop d'essais"
 }

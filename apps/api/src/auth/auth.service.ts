@@ -491,7 +491,11 @@ export class AuthService {
       challenge.totpAllowed &&
       /^\d{6}$/.test(rawCode) &&
       challenge.user.mfaTotpSecretEnc !== null &&
-      this.mfa.validateTotpCode(challenge.user.mfaTotpSecretEnc, rawCode);
+      (await this.mfa.acceptTotpCode(
+        challenge.userId,
+        challenge.user.mfaTotpSecretEnc,
+        rawCode,
+      )) === "accepted";
     const emailVerified =
       challenge.emailAllowed &&
       challenge.emailCodeHash !== null &&
@@ -1085,6 +1089,9 @@ export class AuthService {
         jti: signed.jti,
         userAgent: userAgent ?? null,
         expiresAt: signed.expiresAt,
+        // Signing in is the strongest proof there is: sensitive actions
+        // right after it don't ask again.
+        reauthenticatedAt: new Date(),
       },
     });
     return {

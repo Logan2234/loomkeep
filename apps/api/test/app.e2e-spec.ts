@@ -2,20 +2,27 @@ import { ErrorCode } from "@loomkeep/shared";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { ANIME_SUMMARY, authCookies, createE2eApp, e2eUser } from "./e2e-app";
+import {
+  ANIME_SUMMARY,
+  authCookies,
+  createE2eApp,
+  e2eUser,
+  type E2eApp,
+} from "./e2e-app";
 
 describe("Loomkeep API (e2e)", () => {
   let app: INestApplication<App>;
   let http: App;
 
   const user = e2eUser("e2e");
+  let prisma: E2eApp["prisma"];
   let sessionCookies: string;
   let entryId: string;
   let firstEpisodeId: string;
   let firstSeasonId: string;
 
   beforeAll(async () => {
-    ({ app, http } = await createE2eApp());
+    ({ app, http, prisma } = await createE2eApp());
   });
 
   afterAll(async () => {
@@ -605,17 +612,33 @@ describe("Loomkeep API (e2e)", () => {
       .expect(201);
     const victimCookies = authCookies(registered);
 
-    // Wrong password is rejected — deletion is guarded like a credential change.
+    // Signing in counted as a confirmation; a few minutes on, it no longer
+    // does for something this final.
+    await prisma.refreshToken.updateMany({
+      where: { user: { email: victim.email } },
+      data: { reauthenticatedAt: new Date(Date.now() - 3 * 60_000) },
+    });
     await request(http)
       .delete("/api/users/me")
       .set("Cookie", victimCookies)
-      .send({ currentPassword: "wrong" })
-      .expect(401);
+      .expect(403)
+      .expect(({ body }) =>
+        expect(body.code).toBe(ErrorCode.AuthReauthRequired),
+      );
+    await request(http)
+      .post("/api/auth/reauth")
+      .set("Cookie", victimCookies)
+      .send({ method: "password", password: "wrong" })
+      .expect(400);
+    await request(http)
+      .post("/api/auth/reauth")
+      .set("Cookie", victimCookies)
+      .send({ method: "password", password: victim.password })
+      .expect(200);
 
     await request(http)
       .delete("/api/users/me")
       .set("Cookie", victimCookies)
-      .send({ currentPassword: victim.password })
       .expect(204);
 
     // Every session went with the account: the access token, though not

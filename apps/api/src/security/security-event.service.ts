@@ -31,7 +31,7 @@ const TARGETS_WINDOW_DAYS = 7;
 /** How long an event is kept, for the account owner and the admin alike. */
 const RETENTION_DAYS = 365;
 
-/** A locked second factor emails at most once per this window: an attacker retrying mustn't flood the inbox. */
+/** A lock emails at most once per this window: an attacker retrying mustn't flood the inbox. */
 const LOCKED_ALERT_WINDOW_MS = 60 * 60 * 1000;
 
 export interface RecordSecurityEventParams {
@@ -105,7 +105,7 @@ export class SecurityEventService {
     const event = SECURITY_ALERT_EVENTS.find((e) => e === type);
     if (!event) return null;
 
-    if (event === "MFA_CHALLENGE_LOCKED") {
+    if (event === "MFA_CHALLENGE_LOCKED" || event === "REAUTH_LOCKED") {
       const recent = await this.prisma.securityEvent.count({
         where: {
           userId,

@@ -1,8 +1,5 @@
 import type {
   ConfirmTotpRequestDto,
-  DisableTotpRequestDto,
-  RegenerateRecoveryCodesRequestDto,
-  RemoveWebauthnCredentialRequestDto,
   RenameWebauthnCredentialRequestDto,
   RenameWebauthnCredentialResponseDto,
   SetEmailMfaRequestDto,
@@ -31,8 +28,8 @@ export async function confirmTotp(body: ConfirmTotpRequestDto) {
   return result;
 }
 
-export async function disableTotp(body: DisableTotpRequestDto): Promise<void> {
-  await typedRequest("/users/me/mfa/totp/disable", { method: "POST", body });
+export async function disableTotp(): Promise<void> {
+  await typedRequest("/users/me/mfa/totp/disable", { method: "POST" });
   if (auth.user) auth.user = { ...auth.user, mfaTotpEnabled: false };
 }
 
@@ -45,13 +42,8 @@ export async function setEmailMfa(body: SetEmailMfaRequestDto) {
   return result;
 }
 
-export const regenerateRecoveryCodes = (
-  body: RegenerateRecoveryCodesRequestDto,
-) =>
-  typedRequest("/users/me/mfa/recovery-codes/regenerate", {
-    method: "POST",
-    body,
-  });
+export const regenerateRecoveryCodes = () =>
+  typedRequest("/users/me/mfa/recovery-codes/regenerate", { method: "POST" });
 
 /** Runs the full "add a passkey" ceremony: fetch options, prompt the browser, verify. */
 export async function registerWebauthnCredential(
@@ -71,14 +63,10 @@ export async function registerWebauthnCredential(
   });
 }
 
-export const removeWebauthnCredential = (
-  credentialId: string,
-  body: RemoveWebauthnCredentialRequestDto,
-) =>
+export const removeWebauthnCredential = (credentialId: string) =>
   typedRequest("/users/me/mfa/webauthn/{credentialId}", {
     method: "DELETE",
     params: { credentialId },
-    body,
   });
 
 export const setPasswordless = (body: SetPasswordlessRequestDto) =>

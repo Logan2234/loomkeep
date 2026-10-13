@@ -37,6 +37,10 @@ const MESSAGES = {
     m.apierr_auth_mfa_totp_not_in_progress(),
   [ErrorCode.AuthCurrentPasswordIncorrect]: () =>
     m.apierr_auth_current_password_incorrect(),
+  [ErrorCode.AuthReauthRequired]: () => m.apierr_auth_reauth_required(),
+  [ErrorCode.AuthReauthTooManyAttempts]: () =>
+    m.apierr_auth_reauth_too_many_attempts(),
+  [ErrorCode.AuthTotpCodeReused]: () => m.apierr_auth_totp_code_reused(),
   [ErrorCode.AuthMissingAccessToken]: () =>
     m.apierr_auth_missing_access_token(),
   [ErrorCode.AuthInvalidAccessToken]: () =>
@@ -285,6 +289,7 @@ const MESSAGES = {
   [ErrorCode.ValidationFailed]: () => m.apierr_validation_failed(),
   [ErrorCode.InternalError]: () => m.apierr_internal_error(),
   [ErrorCode.NetworkOffline]: () => m.apierr_network_offline(),
+  [ErrorCode.AuthReauthCancelled]: () => m.apierr_auth_reauth_cancelled(),
   [ErrorCode.GamificationAchievementNotFound]: () =>
     m.apierr_gamification_achievement_not_found(),
   [ErrorCode.GamificationXpBelowZero]: () =>

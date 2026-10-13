@@ -222,5 +222,9 @@
   "apierr_chat_pick_not_in_pile": "Cette œuvre n'est plus dans la pile du tirage : relance-le.",
   "apierr_chat_where_not_video": "/where ne concerne que les films et les séries.",
   "apierr_chat_pin_limit": "Cette conversation a déjà 50 messages épinglés : désépingle-en un d'abord.",
-  "apierr_chat_forward_to_origin": "Un message ne peut pas être transféré dans sa propre conversation."
+  "apierr_chat_forward_to_origin": "Un message ne peut pas être transféré dans sa propre conversation.",
+  "apierr_auth_reauth_required": "Confirme ton identité pour continuer.",
+  "apierr_auth_reauth_too_many_attempts": "Trop de tentatives : cet appareil a été déconnecté. Reconnecte-toi.",
+  "apierr_auth_totp_code_reused": "Ce code vient de servir. Attends le suivant dans ton application.",
+  "apierr_auth_reauth_cancelled": "Action annulée : ton identité n'a pas été confirmée."
 }

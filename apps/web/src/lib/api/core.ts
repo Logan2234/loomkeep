@@ -4,6 +4,7 @@ import { ErrorCode } from "@loomkeep/shared";
 import * as Sentry from "@sentry/sveltekit";
 import { auth } from "../auth.svelte";
 import { getLocale } from "../paraglide/runtime.js";
+import { reauth, reauthReason } from "../reauth.svelte";
 
 export const API_URL = env.PUBLIC_API_URL ?? "http://localhost:3000/api";
 
@@ -38,6 +39,7 @@ export async function request<T>(
   path: string,
   options: RequestOptions = {},
   retried = false,
+  reauthenticated = false,
 ): Promise<T> {
   const headers: Record<string, string> = {
     "Accept-Language": getLocale(),
@@ -98,6 +100,23 @@ export async function request<T>(
       body?.requestId,
       Number.isFinite(retryAfterSeconds) ? retryAfterSeconds : undefined,
     );
+
+    // A sensitive action this session hasn't confirmed lately: once the
+    // person confirms it's them, the same request goes again.
+    if (error.code === ErrorCode.AuthReauthRequired && !reauthenticated) {
+      const reason = reauthReason(options.method ?? "GET", path);
+
+      if (await reauth.confirm(reason)) {
+        return request<T>(path, options, retried, true);
+      }
+
+      throw new ApiError(
+        403,
+        "Identity confirmation cancelled",
+        ErrorCode.AuthReauthCancelled,
+      );
+    }
+
     reportToGlitchTip(error);
     throw error;
   }

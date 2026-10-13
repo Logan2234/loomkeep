@@ -8,7 +8,7 @@
   "settings_mfa_totp_confirm_hint": "Inserisci il codice mostrato dalla tua app per confermare l'attivazione.",
   "settings_mfa_totp_invalid_code": "Codice non valido, riprova.",
   "settings_mfa_totp_disable_title": "Disattiva l'app di autenticazione",
-  "settings_mfa_totp_disable_hint": "Conferma la password per disattivare questo metodo.",
+  "settings_mfa_totp_disable_hint": "L'accesso non chiederà più un codice da questa app.",
   "settings_mfa_email_desc": "Ricevi un codice monouso via email a ogni accesso.",
   "settings_mfa_recovery_title": "Codici di recupero",
   "settings_mfa_recovery_hint": "Usali se perdi l'accesso al tuo metodo abituale. Ogni codice funziona una sola volta.",
@@ -32,11 +32,10 @@
   "settings_mfa_webauthn_name_label": "Nome della chiave",
   "settings_mfa_webauthn_rename_title": "Rinomina questa chiave",
   "settings_mfa_webauthn_remove_title": "Rimuovere questa chiave?",
-  "settings_mfa_webauthn_remove_hint": "Conferma la password. Se è la tua ultima chiave, l'accesso senza password verrà disattivato.",
+  "settings_mfa_webauthn_remove_hint": "Se è la tua ultima chiave, l'accesso senza password verrà disattivato.",
   "settings_mfa_passwordless_label": "Accesso senza password",
   "settings_mfa_passwordless_desc": "Accedi solo con una chiave registrata qui sopra, senza password.",
   "settings_mfa_passwordless_needs_credential": "Aggiungi prima una chiave di sicurezza per attivarlo.",
-  "settings_mfa_passwordless_confirm_hint": "Conferma la password per cambiare questa impostazione.",
   "settings_mfa_passwordless_enabled_toast": "Accesso senza password attivato",
   "settings_mfa_passwordless_disabled_toast": "Accesso senza password disattivato",
   "settings_section_content": "Contenuti",
@@ -165,7 +164,6 @@
   "settings_delete_account_modal_title": "Elimina l'account",
   "settings_delete_account_modal_description": "Il tuo account, il profilo e tutti i dati che possiedi verranno eliminati definitivamente. Le tue recensioni, i tuoi commenti e le tue segnalazioni resteranno visibili ma scollegati dalla tua identità (\"Utente eliminato\"). Questa azione non può essere annullata.",
   "settings_delete_account_details_unavailable": "Dettagli non disponibili al momento.",
-  "settings_delete_account_password_label": "Conferma con la tua password",
   "settings_delete_account_deleting": "Eliminazione…",
   "settings_delete_account_confirm": "Elimina definitivamente",
   "settings_delete_account_success": "Account eliminato.",
@@ -566,5 +564,6 @@
   "settings_feedback_widget": "Pulsante «Lascia un feedback»",
   "settings_feedback_widget_desc": "Il pulsante in basso a destra che apre la bacheca dei feedback. Nascosto, resta raggiungibile da questa pagina.",
   "settings_alert_chat_message": "Un messaggio da un amico",
-  "settings_alert_chat_message_hint": "Solo quando l'app non è aperta da nessuna parte, senza il testo del messaggio."
+  "settings_alert_chat_message_hint": "Solo quando l'app non è aperta da nessuna parte, senza il testo del messaggio.",
+  "settings_activity_event_reauth_locked": "Conferma dell'identità bloccata dopo troppi tentativi"
 }

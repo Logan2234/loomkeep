@@ -399,6 +399,8 @@ export const SecurityEventType = {
   // A pending MfaLoginChallenge was deleted for exceeding MAX_MFA_CHALLENGE_ATTEMPTS —
   // the 2nd-factor equivalent of LOGIN_FAILED's brute-force signal.
   MFA_CHALLENGE_LOCKED: "MFA_CHALLENGE_LOCKED",
+  // Too many failed identity confirmations: the session that tried was signed out.
+  REAUTH_LOCKED: "REAUTH_LOCKED",
   API_KEY_CREATED: "API_KEY_CREATED",
   API_KEY_REVOKED: "API_KEY_REVOKED",
   // Revoked automatically: GitHub's secret scanning found the key in public.

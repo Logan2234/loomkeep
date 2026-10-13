@@ -242,6 +242,8 @@ export const IT_COPY: MailCopy = {
         "Un codice di recupero è appena servito per accedere al tuo account.",
       MFA_CHALLENGE_LOCKED:
         "Qualcuno ha inserito correttamente la tua password, poi ha fallito più volte il secondo fattore. L'accesso è stato bloccato.",
+      REAUTH_LOCKED:
+        "Su un dispositivo connesso al tuo account, qualcuno non è riuscito più volte a confermare la tua identità prima di un'azione sensibile. Quel dispositivo è stato disconnesso.",
     },
     hint: "Se sei stato tu, non devi fare nulla. Altrimenti cambia subito la password e controlla le impostazioni di sicurezza.",
     lockedHint:

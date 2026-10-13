@@ -764,5 +764,6 @@
   "admin_jobs_history_duration": "Durata",
   "admin_settings_chat": "Messaggi",
   "admin_settings_chat_hint": "Messaggi privati tra amici (richiede Social). Salvati non cifrati nel database dell'istanza.",
-  "admin_reports_message_context": "Messaggi attorno a quello segnalato"
+  "admin_reports_message_context": "Messaggi attorno a quello segnalato",
+  "admin_security_reauth_locked": "Conferma dell'identità bloccata (troppi tentativi)"
 }

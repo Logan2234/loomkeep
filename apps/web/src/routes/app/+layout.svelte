@@ -20,6 +20,7 @@
   import OnboardingWidget from "#lib/components/onboarding/OnboardingWidget.svelte";
   import OnboardingWizard from "#lib/components/onboarding/OnboardingWizard.svelte";
   import RealtimeConnection from "#lib/components/RealtimeConnection.svelte";
+  import ReauthModal from "#lib/components/ReauthModal.svelte";
   import DesktopSidebar from "#lib/components/sidebars/DesktopSidebar.svelte";
   import { layout } from "#lib/layout.svelte.js";
   import MobileLayout from "#lib/components/sidebars/MobileLayout.svelte";
@@ -30,6 +31,7 @@
   import WidgetIdentify from "#lib/components/WidgetIdentify.svelte";
   import { navStyle } from "#lib/nav-style.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { reauth } from "#lib/reauth.svelte.js";
   import { LEGAL_VERSION } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import UnlockBubble from "./components/UnlockBubble.svelte";
@@ -151,5 +153,9 @@
       overflowVisible>
       <OnboardingWizard />
     </Modal>
+  {/if}
+
+  {#if reauth.reason}
+    <ReauthModal reason={reauth.reason} />
   {/if}
 {/if}

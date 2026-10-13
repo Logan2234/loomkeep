@@ -32,6 +32,7 @@ describe("UsersService — email change", () => {
     prisma = {
       user: {
         findUnique: vi.fn(),
+        findUniqueOrThrow: vi.fn(),
         update: vi.fn(),
       },
       emailChangeRequest: {
@@ -75,48 +76,29 @@ describe("UsersService — email change", () => {
   });
 
   describe("changeEmail", () => {
-    it("rejects an incorrect current password without creating a request", async () => {
-      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
-        id: userId,
-        passwordHash,
-      });
-
-      await expect(
-        service.changeEmail(userId, {
-          newEmail: "new@example.com",
-          currentPassword: "wrong",
-        }),
-      ).rejects.toBeInstanceOf(AppException);
-
-      expect(prisma.emailChangeRequest.create).not.toHaveBeenCalled();
-    });
-
     it("rejects submitting the current email unchanged", async () => {
-      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
+      (prisma.user.findUniqueOrThrow as Mock).mockResolvedValueOnce({
         id: userId,
         email: "current@example.com",
         passwordHash,
       });
 
       await expect(
-        service.changeEmail(userId, {
-          newEmail: "current@example.com",
-          currentPassword: "correct-password",
-        }),
+        service.changeEmail(userId, { newEmail: "current@example.com" }),
       ).rejects.toBeInstanceOf(AppException);
 
       expect(prisma.emailChangeRequest.create).not.toHaveBeenCalled();
     });
 
     it("creates a pending request and emails the code, without touching User.email", async () => {
-      (prisma.user.findUnique as Mock)
-        .mockResolvedValueOnce({ id: userId, passwordHash, locale: "en" }) // current user
-        .mockResolvedValueOnce(null); // no email collision
-
-      await service.changeEmail(userId, {
-        newEmail: "new@example.com",
-        currentPassword: "correct-password",
+      (prisma.user.findUniqueOrThrow as Mock).mockResolvedValueOnce({
+        id: userId,
+        passwordHash,
+        locale: "en",
       });
+      (prisma.user.findUnique as Mock).mockResolvedValueOnce(null); // no email collision
+
+      await service.changeEmail(userId, { newEmail: "new@example.com" });
 
       expect(prisma.user.update).not.toHaveBeenCalled();
       expect(prisma.emailChangeRequest.deleteMany).toHaveBeenCalledWith({
@@ -804,18 +786,8 @@ describe("UsersService — deleteAccount", () => {
     );
   });
 
-  it("rejects an incorrect current password without deleting anything", async () => {
-    await expect(
-      service.deleteAccount(userId, { currentPassword: "wrong" }),
-    ).rejects.toBeInstanceOf(AppException);
-
-    expect(accountDeletion.deleteAccount).not.toHaveBeenCalled();
-  });
-
   it("delegates to AccountDeletionService", async () => {
-    await service.deleteAccount(userId, {
-      currentPassword: "correct-password",
-    });
+    await service.deleteAccount(userId);
 
     expect(accountDeletion.deleteAccount).toHaveBeenCalledWith(
       userId,

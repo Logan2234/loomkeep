@@ -1,7 +1,6 @@
 <script lang="ts">
   import RecoveryCodesModal from "./RecoveryCodesModal.svelte";
   import MfaTotpSetupModal from "./MfaTotpSetupModal.svelte";
-  import PasswordConfirmModal from "./PasswordConfirmModal.svelte";
 
   import { WEBAUTHN_NAME_MAX_LENGTH } from "@loomkeep/shared";
 
@@ -22,6 +21,7 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
   import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import Modal from "#lib/components/Modal.svelte";
 
@@ -47,13 +47,11 @@
   type MfaModal =
     | "totp-setup"
     | "totp-disable"
-    | "email-confirm"
     | "recovery-regenerate-confirm"
     | "recovery-reveal"
     | "webauthn-add"
     | "webauthn-remove"
     | "webauthn-rename"
-    | "passwordless-confirm"
     | null;
 
   let openModal = $state<MfaModal>(null);
@@ -127,19 +125,9 @@
     totpConfirmMut.mutate(totpCodeInput.trim());
   }
 
-  let disablePasswordInput = $state("");
-  let sensitivePasswordInput = $state("");
-  let pendingEmailEnabled = $state(false);
-
-  function openTotpDisable() {
-    disablePasswordInput = "";
-    totpDisableMut.reset();
-    openModal = "totp-disable";
-  }
-
   const totpDisableMut = createApiMutation(() => ({
-    mutate: () => disableTotp({ currentPassword: disablePasswordInput }),
-    coveredFields: ["currentPassword"],
+    mutate: disableTotp,
+    errorToast: true,
     onSuccess: () => {
       patchStatus({ totpEnabled: false });
       openModal = null;
@@ -147,39 +135,14 @@
     },
   }));
 
-  function confirmTotpDisable() {
-    totpDisableMut.mutate();
-  }
-
   const emailMfaMut = createApiMutation(() => ({
-    mutate: (input: { enabled: boolean; currentPassword: string }) =>
-      setEmailMfa(input),
-    coveredFields: ["currentPassword"],
+    mutate: (enabled: boolean) => setEmailMfa({ enabled }),
     errorToast: true,
-    onSuccess: ({ recoveryCodes }, input) => {
-      patchStatus({ emailEnabled: input.enabled });
-      sensitivePasswordInput = "";
-      if (recoveryCodes) {
-        openRecoveryReveal(recoveryCodes);
-      } else {
-        openModal = null;
-      }
+    onSuccess: ({ recoveryCodes }, enabled) => {
+      patchStatus({ emailEnabled: enabled });
+      if (recoveryCodes) openRecoveryReveal(recoveryCodes);
     },
   }));
-
-  function onToggleEmail(next: boolean) {
-    pendingEmailEnabled = next;
-    sensitivePasswordInput = "";
-    emailMfaMut.reset();
-    openModal = "email-confirm";
-  }
-
-  function confirmEmailMfa() {
-    emailMfaMut.mutate({
-      enabled: pendingEmailEnabled,
-      currentPassword: sensitivePasswordInput,
-    });
-  }
 
   let revealedCodes = $state<string[]>([]);
 
@@ -193,20 +156,9 @@
     errorToast: true,
     onSuccess: ({ codes }) => {
       patchStatus({ recoveryCodesRemaining: codes.length });
-      sensitivePasswordInput = "";
       openRecoveryReveal(codes);
     },
   }));
-
-  function openRecoveryRegenerate() {
-    sensitivePasswordInput = "";
-    regenerateMut.reset();
-    openModal = "recovery-regenerate-confirm";
-  }
-
-  function confirmRegenerate() {
-    regenerateMut.mutate({ currentPassword: sensitivePasswordInput });
-  }
 
   let webauthnNameInput = $state("");
   let pendingRemoveCredential = $state<WebauthnCredentialDto | null>(null);
@@ -240,11 +192,8 @@
   }
 
   const webauthnRemoveMut = createApiMutation(() => ({
-    mutate: () =>
-      removeWebauthnCredential(pendingRemoveCredential!.id, {
-        currentPassword: sensitivePasswordInput,
-      }),
-    coveredFields: ["currentPassword"],
+    mutate: () => removeWebauthnCredential(pendingRemoveCredential!.id),
+    errorToast: true,
     onSuccess: (result) => {
       patchStatus({
         webauthnCredentials: (status?.webauthnCredentials ?? []).filter(
@@ -252,7 +201,6 @@
         ),
         ...(result.passwordlessDisabled ? { passwordlessEnabled: false } : {}),
       });
-      sensitivePasswordInput = "";
       openModal = null;
       toast.success(
         result.passwordlessDisabled
@@ -264,13 +212,7 @@
 
   function openWebauthnRemove(credential: WebauthnCredentialDto) {
     pendingRemoveCredential = credential;
-    sensitivePasswordInput = "";
-    webauthnRemoveMut.reset();
     openModal = "webauthn-remove";
-  }
-
-  function confirmWebauthnRemove() {
-    webauthnRemoveMut.mutate();
   }
 
   let pendingRenameCredential = $state<WebauthnCredentialDto | null>(null);
@@ -302,40 +244,20 @@
     webauthnRenameMut.mutate(name);
   }
 
-  let pendingPasswordlessEnabled = $state(false);
-
   const passwordlessMut = createApiMutation(() => ({
-    mutate: () =>
-      setPasswordless({
-        enabled: pendingPasswordlessEnabled,
-        currentPassword: sensitivePasswordInput,
-      }),
-    coveredFields: ["currentPassword"],
-    onSuccess: () => {
-      patchStatus({ passwordlessEnabled: pendingPasswordlessEnabled });
-      sensitivePasswordInput = "";
-      openModal = null;
+    mutate: (enabled: boolean) => setPasswordless({ enabled }),
+    errorToast: true,
+    onSuccess: (_result, enabled) => {
+      patchStatus({ passwordlessEnabled: enabled });
       toast.success(
-        pendingPasswordlessEnabled
+        enabled
           ? m.settings_mfa_passwordless_enabled_toast()
           : m.settings_mfa_passwordless_disabled_toast(),
       );
     },
   }));
 
-  function onTogglePasswordless(next: boolean) {
-    pendingPasswordlessEnabled = next;
-    sensitivePasswordInput = "";
-    passwordlessMut.reset();
-    openModal = "passwordless-confirm";
-  }
-
-  function confirmPasswordless() {
-    passwordlessMut.mutate();
-  }
-
   function closeModal() {
-    sensitivePasswordInput = "";
     openModal = null;
   }
 
@@ -370,7 +292,7 @@
               label={m.auth_mfa_totp_label()}
               checked={status?.totpEnabled || false}
               onChange={(next) =>
-                next ? openTotpSetup() : openTotpDisable()} />
+                next ? openTotpSetup() : (openModal = "totp-disable")} />
           {/snippet}
         </SettingRow>
 
@@ -383,7 +305,8 @@
             <Switch
               label={m.auth_mfa_email_label()}
               checked={status?.emailEnabled || false}
-              onChange={onToggleEmail} />
+              disabled={emailMfaMut.loading}
+              onChange={(next) => emailMfaMut.mutate(next)} />
           {/snippet}
         </SettingRow>
       </div>
@@ -474,8 +397,10 @@
               <Switch
                 label={m.settings_mfa_passwordless_label()}
                 checked={status?.passwordlessEnabled || false}
-                disabled={!status || status.webauthnCredentials.length === 0}
-                onChange={onTogglePasswordless} />
+                disabled={!status ||
+                  status.webauthnCredentials.length === 0 ||
+                  passwordlessMut.loading}
+                onChange={(next) => passwordlessMut.mutate(next)} />
             {/snippet}
           </SettingRow>
         </div>
@@ -499,7 +424,7 @@
           {#snippet control()}
             <button
               class="link-accent shrink-0 text-sm"
-              onclick={openRecoveryRegenerate}>
+              onclick={() => (openModal = "recovery-regenerate-confirm")}>
               {m.common_regenerate()}
             </button>
           {/snippet}
@@ -522,28 +447,14 @@
 {/if}
 
 {#if openModal === "totp-disable"}
-  <PasswordConfirmModal
+  <ConfirmationModal
     title={m.settings_mfa_totp_disable_title()}
-    description={m.settings_mfa_totp_disable_hint()}
-    bind:password={disablePasswordInput}
-    busy={totpDisableMut.loading}
-    error={totpDisableMut.error}
+    message={m.settings_mfa_totp_disable_hint()}
     confirmLabel={m.common_disable()}
     danger
-    onconfirm={confirmTotpDisable}
-    onclose={closeModal} />
-{/if}
-
-{#if openModal === "email-confirm"}
-  <PasswordConfirmModal
-    title={m.auth_mfa_email_label()}
-    description={m.settings_mfa_email_desc()}
-    bind:password={sensitivePasswordInput}
-    busy={emailMfaMut.loading}
-    error={emailMfaMut.error}
-    confirmLabel={m.common_confirm()}
-    onconfirm={confirmEmailMfa}
-    onclose={closeModal} />
+    busy={totpDisableMut.loading}
+    onConfirm={() => totpDisableMut.mutate()}
+    onCancel={closeModal} />
 {/if}
 
 {#if openModal === "webauthn-add"}
@@ -628,41 +539,25 @@
 {/if}
 
 {#if openModal === "webauthn-remove"}
-  <PasswordConfirmModal
+  <ConfirmationModal
     title={m.settings_mfa_webauthn_remove_title()}
-    description={m.settings_mfa_webauthn_remove_hint()}
-    bind:password={sensitivePasswordInput}
-    busy={webauthnRemoveMut.loading}
-    error={webauthnRemoveMut.error}
+    message={m.settings_mfa_webauthn_remove_hint()}
     confirmLabel={m.common_delete()}
     danger
-    onconfirm={confirmWebauthnRemove}
-    onclose={closeModal} />
-{/if}
-
-{#if openModal === "passwordless-confirm"}
-  <PasswordConfirmModal
-    title={m.settings_mfa_passwordless_label()}
-    description={m.settings_mfa_passwordless_confirm_hint()}
-    bind:password={sensitivePasswordInput}
-    busy={passwordlessMut.loading}
-    error={passwordlessMut.error}
-    confirmLabel={m.common_confirm()}
-    onconfirm={confirmPasswordless}
-    onclose={closeModal} />
+    busy={webauthnRemoveMut.loading}
+    onConfirm={() => webauthnRemoveMut.mutate()}
+    onCancel={closeModal} />
 {/if}
 
 {#if openModal === "recovery-regenerate-confirm"}
-  <PasswordConfirmModal
+  <ConfirmationModal
     title={m.settings_mfa_recovery_regenerate_confirm_title()}
-    description={m.settings_mfa_recovery_regenerate_confirm_message()}
-    bind:password={sensitivePasswordInput}
-    busy={regenerateMut.loading}
-    error={regenerateMut.error}
+    message={m.settings_mfa_recovery_regenerate_confirm_message()}
     confirmLabel={m.common_regenerate()}
     danger
-    onconfirm={confirmRegenerate}
-    onclose={closeModal} />
+    busy={regenerateMut.loading}
+    onConfirm={() => regenerateMut.mutate()}
+    onCancel={closeModal} />
 {/if}
 
 {#if openModal === "recovery-reveal"}

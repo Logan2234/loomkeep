@@ -119,10 +119,6 @@ describe("email change confirmation code", () => {
       }),
       "new@example.com",
     );
-    await user.type(
-      form.querySelector<HTMLInputElement>('input[name="currentPassword"]')!,
-      "hunter2",
-    );
     await user.click(
       within(form).getByRole("button", { name: m.common_save() }),
     );

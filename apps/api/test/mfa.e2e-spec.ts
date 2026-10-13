@@ -24,9 +24,13 @@ describe("MFA (e2e)", () => {
   let sessionCookies: string;
   let totpSecret: string;
   let recoveryCodes: string[];
+  let signInCode: string;
 
-  /** A code valid right now for the secret the API just issued. */
-  function currentCode(secret = totpSecret): string {
+  /**
+   * A code valid right now for the secret the API just issued — or the next
+   * one, which the API takes too, for when the current one already served.
+   */
+  function currentCode(secret = totpSecret, stepsAhead = 0): string {
     return new TOTP({
       issuer: "Loomkeep",
       label: user.email,
@@ -34,7 +38,7 @@ describe("MFA (e2e)", () => {
       digits: 6,
       period: 30,
       secret: Secret.fromBase32(secret),
-    }).generate();
+    }).generate({ timestamp: Date.now() + stepsAhead * 30_000 });
   }
 
   beforeAll(async () => {
@@ -135,9 +139,10 @@ describe("MFA (e2e)", () => {
       .send({ identifier: user.email, password: user.password })
       .expect(200);
 
+    signInCode = currentCode();
     const verified = await request(http)
       .post("/api/auth/mfa/verify")
-      .send({ challengeId: login.body.challengeId, code: currentCode() })
+      .send({ challengeId: login.body.challengeId, code: signInCode })
       .expect(200);
 
     expect(verified.body.user.email).toBe(user.email);
@@ -147,6 +152,18 @@ describe("MFA (e2e)", () => {
       .get("/api/users/me")
       .set("Cookie", authCookies(verified))
       .expect(200);
+  });
+
+  it("refuses a code that already served", async () => {
+    const login = await request(http)
+      .post("/api/auth/login")
+      .send({ identifier: user.email, password: user.password })
+      .expect(200);
+
+    await request(http)
+      .post("/api/auth/mfa/verify")
+      .send({ challengeId: login.body.challengeId, code: signInCode })
+      .expect(401);
   });
 
   it("accepts a recovery code in place of the authenticator", async () => {
@@ -177,21 +194,23 @@ describe("MFA (e2e)", () => {
       .expect(401);
   });
 
-  it("turns MFA back off with the account password", async () => {
+  it("turns MFA back off right after signing in", async () => {
     const login = await request(http)
       .post("/api/auth/login")
       .send({ identifier: user.email, password: user.password })
       .expect(200);
     const verified = await request(http)
       .post("/api/auth/mfa/verify")
-      .send({ challengeId: login.body.challengeId, code: currentCode() })
+      .send({
+        challengeId: login.body.challengeId,
+        code: currentCode(totpSecret, 1),
+      })
       .expect(200);
     const cookies = authCookies(verified);
 
     await request(http)
       .post("/api/users/me/mfa/totp/disable")
       .set("Cookie", cookies)
-      .send({ currentPassword: user.password })
       .expect(201);
 
     const status = await request(http)

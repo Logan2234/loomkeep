@@ -49,7 +49,6 @@ import { DataExportService } from "./data-export.service";
 import type { ChangeEmailDto } from "./dto/change-email.dto";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
 import type { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";
-import type { DeleteAccountDto } from "./dto/delete-account.dto";
 import type { HomeLayoutBody } from "./dto/home-layout.dto";
 import type { UpdateUserDto } from "./dto/update-user.dto";
 import type { UpdateUsernameDto } from "./dto/update-username.dto";
@@ -450,7 +449,9 @@ export class UsersService {
    * the new address; see confirmEmailChange().
    */
   async changeEmail(userId: string, dto: ChangeEmailDto): Promise<void> {
-    const current = await this.requireVerifiedUser(userId, dto.currentPassword);
+    const current = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
 
     if (dto.newEmail === current.email) {
       throw new AppException(
@@ -813,13 +814,7 @@ export class UsersService {
    * editor first (see ListService.reassignOwnedListsOnAccountDeletion), so
    * shared work doesn't vanish because one collaborator left.
    */
-  async deleteAccount(
-    userId: string,
-    dto: DeleteAccountDto,
-    userAgent?: string,
-  ): Promise<void> {
-    await this.requireVerifiedUser(userId, dto.currentPassword);
-
+  async deleteAccount(userId: string, userAgent?: string): Promise<void> {
     await this.accountDeletion.deleteAccount(
       userId,
       "self",
@@ -871,9 +866,8 @@ export class UsersService {
   }
 
   /**
-   * Loads the account and re-confirms its password — the shared guard for the
-   * sensitive self-service actions (email/password change, deletion), where
-   * the current password is required since email doubles as the login id.
+   * Loads the account and re-confirms its password, which a password change
+   * still asks for itself on top of any recent confirmation.
    */
   private async requireVerifiedUser(
     userId: string,

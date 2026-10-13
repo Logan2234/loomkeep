@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   reviewDraftPrefix: "lk-review-draft-",
   onboardingStep: "lk-onboarding-step",
   dismissedNews: "lk-news-banner-dismissed",
+  reauthMethod: "lk-reauth-method",
   libraryView: (domain: SavedViewDomain) =>
     `lk-library-view-${domain.toLowerCase()}`,
   libraryColumns: (domain: SavedViewDomain) =>

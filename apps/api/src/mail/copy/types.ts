@@ -13,6 +13,7 @@ export const SECURITY_ALERT_EVENTS = [
   "MFA_RECOVERY_CODES_REGENERATED",
   "MFA_RECOVERY_CODE_USED",
   "MFA_CHALLENGE_LOCKED",
+  "REAUTH_LOCKED",
 ] as const satisfies readonly SecurityEventType[];
 
 export type SecurityAlertEvent = (typeof SECURITY_ALERT_EVENTS)[number];

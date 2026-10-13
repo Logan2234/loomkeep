@@ -93,14 +93,12 @@
   }
 
   let emailInput = $state("");
-  let emailPasswordInput = $state("");
   let emailAlreadyCurrentError = $state("");
   let emailStep: "form" | "code" = $state("form");
   let emailCodeInput = $state("");
 
   function openEmailModal() {
     emailInput = "";
-    emailPasswordInput = "";
     emailAlreadyCurrentError = "";
     saveEmailMut.reset();
     emailStep = "form";
@@ -110,12 +108,8 @@
   }
 
   const saveEmailMut = createApiMutation(() => ({
-    mutate: () =>
-      changeEmail({
-        newEmail: emailInput.trim(),
-        currentPassword: emailPasswordInput,
-      }),
-    coveredFields: ["newEmail", "currentPassword"],
+    mutate: () => changeEmail({ newEmail: emailInput.trim() }),
+    coveredFields: ["newEmail"],
     onSuccess: () => (emailStep = "code"),
   }));
 
@@ -438,18 +432,6 @@
               {m.settings_email_verification_desc()}
             </p>
           </label>
-          <label class="block">
-            <span class="mb-1.5 block text-sm font-semibold">
-              {m.common_current_password()}
-            </span>
-            <PasswordInput
-              name="currentPassword"
-              autocomplete="current-password"
-              enterkeyhint="next"
-              minlength={1}
-              required
-              bind:value={emailPasswordInput} />
-          </label>
           {#if emailError}
             <p class="text-danger text-sm">{emailError}</p>
           {/if}
@@ -462,8 +444,7 @@
               class="btn btn-primary"
               disabled={saveEmailMut.loading ||
                 !emailInput.trim() ||
-                emailInput.trim() === auth.user?.email ||
-                !emailPasswordInput}>
+                emailInput.trim() === auth.user?.email}>
               {saveEmailMut.loading ? m.common_save_loading() : m.common_save()}
             </button>
           </div>

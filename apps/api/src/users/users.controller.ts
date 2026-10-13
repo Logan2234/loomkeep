@@ -30,6 +30,7 @@ import type { FastifyReply } from "fastify";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
+import { RequireRecentAuth } from "../auth/recent-auth.guard";
 import {
   EXPORT_THROTTLE,
   SENSITIVE_ACTION_THROTTLE,
@@ -41,7 +42,6 @@ import { ChangePasswordDto } from "./dto/change-password.dto";
 import { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";
 import { CsvExportResponseDto } from "./dto/csv-export-response.dto";
 import { UserDataExportResponseDto } from "./dto/data-export/user-data-export-response.dto";
-import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { EntitlementResponseDto } from "./dto/entitlement-response.dto";
 import { HomeLayoutBody } from "./dto/home-layout.dto";
 import { MigrationExportResponseDto } from "./dto/migration-export-response.dto";
@@ -53,6 +53,10 @@ import { UsernameAvailabilityResponseDto } from "./dto/username-availability-res
 import { WidgetTokenResponseDto } from "./dto/widget-token-response.dto";
 import { MigrationExportService } from "./migration-export.service";
 import { UsersService } from "./users.service";
+
+// Deleting the account can't be undone: the web always asks for a
+// confirmation first, and the server takes none older than this.
+const DELETE_ACCOUNT_REAUTH_MS = 2 * 60 * 1000;
 
 @Controller("users")
 export class UsersController {
@@ -264,10 +268,9 @@ export class UsersController {
    * identifier. Doesn't change the email yet — sends a confirmation code to
    * the new address; see confirmEmailChange().
    */
-  // Every call bcrypt.compare()s the current password (requireVerifiedUser)
-  // — the global 60/min default let a stolen access token burn 60 bcrypt
-  // hashes/min against it.
+  // Every call mails a code to the new address.
   @Throttle(SENSITIVE_ACTION_THROTTLE)
+  @RequireRecentAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Patch("me/email")
   changeEmail(
@@ -317,8 +320,8 @@ export class UsersController {
   }
 
   /**
-   * Permanently deletes the account. The current password is re-confirmed since
-   * this is irreversible. All owned rows (library entries, watches, refresh
+   * Permanently deletes the account. Being irreversible, it wants a
+   * confirmation of the last two minutes, not the usual ten. All owned rows (library entries, watches, refresh
    * tokens, notifications) go with it via `onDelete: Cascade`; Review/Comment/
    * Report are detached (SetNull) instead of deleted — see deletionSummary()
    * above — and the shared MediaItem cache is untouched. A list with editors
@@ -326,14 +329,14 @@ export class UsersController {
    * editor first (see ListService.reassignOwnedListsOnAccountDeletion), so
    * shared work doesn't vanish because one collaborator left.
    */
+  @RequireRecentAuth(DELETE_ACCOUNT_REAUTH_MS)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete("me")
   deleteAccount(
     @CurrentUser() payload: JwtPayload,
-    @Body() dto: DeleteAccountDto,
     @Headers("user-agent") userAgent?: string,
   ): Promise<void> {
-    return this.users.deleteAccount(payload.sub, dto, userAgent);
+    return this.users.deleteAccount(payload.sub, userAgent);
   }
 
   /** Live check backing the debounced availability hint in the username form. */
