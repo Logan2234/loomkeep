@@ -6,9 +6,12 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
 import MfaSection from "./MfaSection.svelte";
-describe("MFA confirmation orchestration", () => {
-  it("passes the confirmed password through the extracted modal before disabling TOTP", async () => {
-    let payload: unknown;
+
+describe("MFA settings", () => {
+  // The password is no longer typed here: the server asks for a confirmation
+  // of identity when this session needs one (see ReauthModal).
+  it("asks before disabling the authenticator app, then disables it", async () => {
+    let disabled = false;
     server.use(
       http.get(apiUrl("/users/me/mfa"), () =>
         HttpResponse.json({
@@ -19,8 +22,8 @@ describe("MFA confirmation orchestration", () => {
           recoveryCodesRemaining: 4,
         }),
       ),
-      http.post(apiUrl("/users/me/mfa/totp/disable"), async ({ request }) => {
-        payload = await request.json();
+      http.post(apiUrl("/users/me/mfa/totp/disable"), () => {
+        disabled = true;
         return new HttpResponse(null, { status: 204 });
       }),
     );
@@ -32,18 +35,13 @@ describe("MFA confirmation orchestration", () => {
     const dialog = await screen.findByRole("dialog", {
       name: m.settings_mfa_totp_disable_title(),
     });
-    await user.type(
-      within(dialog).getByLabelText(m.common_current_password(), {
-        selector: "input",
-      }),
-      "test-password",
-    );
+    expect(disabled).toBe(false);
+
     await user.click(
       within(dialog).getByRole("button", { name: m.common_disable() }),
     );
-    await waitFor(() =>
-      expect(payload).toEqual({ currentPassword: "test-password" }),
-    );
+
+    await waitFor(() => expect(disabled).toBe(true));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });

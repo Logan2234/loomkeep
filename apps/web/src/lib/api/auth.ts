@@ -8,12 +8,12 @@ import type {
   ChangePasswordRequestDto,
   ConfirmEmailChangeRequestDto,
   CreateApiKeyDto,
-  DeleteAccountRequestDto,
   Domain,
   HomeLayoutDto,
   LoginRequestDto,
   LoginResponseDto,
   MfaVerifyRequestDto,
+  ReauthRequestDto,
   RegisterRequestDto,
   UpdateUsernameRequestDto,
   UpdateUserRequestDto,
@@ -316,11 +316,28 @@ export const getAccountDeletionSummary =
   (): Promise<AccountDeletionSummaryDto> =>
     typedRequest("/users/me/deletion-summary");
 
-export async function deleteAccount(
-  body: DeleteAccountRequestDto,
-): Promise<void> {
-  await typedRequest("/users/me", { method: "DELETE", body });
+export async function deleteAccount(): Promise<void> {
+  await typedRequest("/users/me", { method: "DELETE" });
   auth.clear();
+}
+
+/** The methods to confirm it's you with, and this session's confirmation. */
+export const getReauthStatus = () => typedRequest("/auth/reauth");
+
+export const confirmReauth = (body: ReauthRequestDto) =>
+  typedRequest("/auth/reauth", { method: "POST", body });
+
+/** Confirming with a passkey: a challenge, the browser's signature, the check. */
+export async function confirmReauthWithPasskey() {
+  const { webauthnChallengeId, options } = await typedRequest(
+    "/auth/reauth/webauthn-options",
+    { method: "POST" },
+  );
+  const response = await startAuthentication({
+    // Same opaque-JSON cast as verifyWebauthnMfaLogin above.
+    optionsJSON: options as unknown as PublicKeyCredentialRequestOptionsJSON,
+  });
+  return confirmReauth({ method: "webauthn", webauthnChallengeId, response });
 }
 
 export const getSessions = () => typedRequest("/auth/sessions");

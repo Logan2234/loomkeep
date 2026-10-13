@@ -222,5 +222,9 @@
   "apierr_chat_pick_not_in_pile": "That work is no longer in the pile it was drawn from: draw again.",
   "apierr_chat_where_not_video": "/where is about films and series only.",
   "apierr_chat_pin_limit": "This conversation already has 50 pinned messages: unpin one first.",
-  "apierr_chat_forward_to_origin": "A message can't be forwarded into its own conversation."
+  "apierr_chat_forward_to_origin": "A message can't be forwarded into its own conversation.",
+  "apierr_auth_reauth_required": "Confirm your identity to continue.",
+  "apierr_auth_reauth_too_many_attempts": "Too many attempts: this device was signed out. Sign in again.",
+  "apierr_auth_totp_code_reused": "This code was just used. Wait for the next one in your app.",
+  "apierr_auth_reauth_cancelled": "Action cancelled: your identity wasn't confirmed."
 }

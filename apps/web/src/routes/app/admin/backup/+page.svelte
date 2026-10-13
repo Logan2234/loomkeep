@@ -15,7 +15,6 @@
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import Modal from "#lib/components/Modal.svelte";
-  import PasswordInput from "#lib/components/PasswordInput.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import { downloadBlob } from "#lib/download.js";
   import {
@@ -56,7 +55,6 @@
   let pendingFile = $state<File | null>(null);
   let showRestoreModal = $state(false);
   let confirmText = $state("");
-  let restorePasswordInput = $state("");
   let restoreDone = $state(false);
 
   const runNowMut = createApiMutation(() => ({
@@ -113,7 +111,6 @@
     if (!file) return;
     pendingFile = file;
     confirmText = "";
-    restorePasswordInput = "";
     restoreMut.reset();
     restoreDone = false;
     showRestoreModal = true;
@@ -123,20 +120,13 @@
     if (restoreMut.loading) return;
     showRestoreModal = false;
     pendingFile = null;
-    restorePasswordInput = "";
     if (fileInput) fileInput.value = "";
   }
 
   const restoreMut = createApiMutation(() => ({
-    mutate: async ({
-      file,
-      currentPassword,
-    }: {
-      file: File;
-      currentPassword: string;
-    }) => restoreAdminBackup({ sql: await file.text(), currentPassword }),
+    mutate: async (file: File) =>
+      restoreAdminBackup({ sql: await file.text() }),
     onSuccess: () => {
-      restorePasswordInput = "";
       restoreDone = true;
       toast.success(m.admin_backup_restored());
     },
@@ -144,10 +134,7 @@
 
   function confirmRestore() {
     if (!pendingFile || confirmText !== CONFIRM_PHRASE) return;
-    restoreMut.mutate({
-      file: pendingFile,
-      currentPassword: restorePasswordInput,
-    });
+    restoreMut.mutate(pendingFile);
   }
 </script>
 
@@ -358,18 +345,6 @@
         disabled={restoreMut.loading}
         placeholder={CONFIRM_PHRASE}
         class="input mt-3 text-sm" />
-      <label class="mt-3 block">
-        <span class="mb-1.5 block text-sm font-semibold">
-          {m.common_current_password()}
-        </span>
-        <PasswordInput
-          name="currentPassword"
-          autocomplete="current-password"
-          enterkeyhint="done"
-          minlength={1}
-          required
-          bind:value={restorePasswordInput} />
-      </label>
       {#if restoreMut.error}
         <Banner variant="error" class="mt-3">{restoreMut.error}</Banner>
       {/if}
@@ -393,9 +368,7 @@
           <button
             type="button"
             class="btn btn-danger"
-            disabled={restoreMut.loading ||
-              confirmText !== CONFIRM_PHRASE ||
-              !restorePasswordInput}
+            disabled={restoreMut.loading || confirmText !== CONFIRM_PHRASE}
             onclick={confirmRestore}>
             {restoreMut.loading
               ? m.admin_backup_restoring()

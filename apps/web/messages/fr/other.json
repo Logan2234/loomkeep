@@ -1493,5 +1493,22 @@
   "chat_format_code": "Code · Ctrl+E",
   "chat_format_spoiler": "Spoiler · Ctrl+Maj+S",
   "chat_write_to": "Écrire à {name}",
-  "report_target_message": "Message"
+  "report_target_message": "Message",
+  "reauth_title": "Confirme que c'est toi",
+  "reauth_reason_api_key": "Une clé d'API ouvre un accès durable à ton compte.",
+  "reauth_reason_sessions": "Les appareils concernés seront déconnectés.",
+  "reauth_reason_email": "Ton adresse e-mail sert à te connecter et à récupérer ton compte.",
+  "reauth_reason_mfa": "Cette action change la façon dont tu te connectes.",
+  "reauth_reason_restore": "La restauration remplace toute la base de l'instance.",
+  "reauth_reason_delete": "La suppression de ton compte est définitive.",
+  "reauth_reason_default": "Cette action touche à la sécurité de ton compte.",
+  "reauth_window_note": "Ensuite, rien ne te sera redemandé pendant 10 minutes sur cet appareil.",
+  "reauth_other_method": "Utiliser un autre moyen",
+  "reauth_other_methods": "Autres moyens",
+  "reauth_webauthn_use": "Utiliser ma clé de sécurité",
+  "reauth_webauthn_hint": "Ta clé physique, ou Touch ID, Face ID, Windows Hello…",
+  "reauth_webauthn_cancelled": "La vérification a été annulée. Réessaie, ou utilise un autre moyen.",
+  "reauth_password_desc": "Le mot de passe de ton compte.",
+  "reauth_done": "C'est bien toi",
+  "reauth_sign_in_again": "Me reconnecter"
 }

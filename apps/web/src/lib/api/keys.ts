@@ -85,6 +85,7 @@ export const keys = {
   },
   mfa: {
     status: () => ["mfa", "status"] as const,
+    reauth: () => ["mfa", "reauth"] as const,
   },
   sessions: {
     all: () => ["sessions", "all"] as const,

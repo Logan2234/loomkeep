@@ -764,5 +764,6 @@
   "admin_jobs_history_duration": "Duration",
   "admin_settings_chat": "Messages",
   "admin_settings_chat_hint": "Private messages between friends (needs Social). Stored unencrypted in the instance's database.",
-  "admin_reports_message_context": "Messages around the reported one"
+  "admin_reports_message_context": "Messages around the reported one",
+  "admin_security_reauth_locked": "Identity confirmation locked (too many attempts)"
 }

@@ -13,6 +13,7 @@
   import LegalLinks from "#lib/components/LegalLinks.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
+  import ReauthChip from "./components/ReauthChip.svelte";
   import SettingsNav from "./components/SettingsNav.svelte";
   import SettingsSearchField from "./components/SettingsSearchField.svelte";
   import SettingsSearchResults from "./components/SettingsSearchResults.svelte";
@@ -118,8 +119,9 @@
       <!-- The index *is* the nav on a phone, so the rail only ever shows from
            lg up; below that it would be a second copy of the same list. -->
       <aside class="hidden lg:sticky lg:top-8 lg:block lg:h-fit">
-        <div class="mb-4">
+        <div class="mb-4 flex flex-col gap-3">
           <SettingsSearchField id="settings-search-rail" />
+          <ReauthChip />
         </div>
         <SettingsNav variant="rail" {alerts} />
       </aside>
@@ -127,8 +129,9 @@
       <div class="min-w-0 lg:flex lg:flex-col">
         <!-- On a phone the field rides above the content instead, since the
              rail it normally sits in isn't rendered. -->
-        <div class="mb-6 lg:hidden">
+        <div class="mb-6 flex flex-col gap-3 lg:hidden">
           <SettingsSearchField id="settings-search-content" />
+          <ReauthChip />
         </div>
 
         {#if settingsSearch.active}

@@ -8,9 +8,9 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
   import Modal from "#lib/components/Modal.svelte";
-  import PasswordInput from "#lib/components/PasswordInput.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { reauth } from "#lib/reauth.svelte.js";
   import { toast } from "#lib/toast.svelte.js";
   import type {
     AccountDeletionAnonymizedCategory,
@@ -126,7 +126,6 @@
   const reduced = prefersReducedMotion();
 
   let showModal = $state(false);
-  let deletePasswordInput = $state("");
   // An accordion: every step starts closed, and opening one closes the other.
   let openStep = $state<Step | null>(null);
 
@@ -139,7 +138,6 @@
   const summaryLoading = $derived(summaryQuery.loading);
 
   function openDeleteModal() {
-    deletePasswordInput = "";
     openStep = null;
     deleteMut.reset();
     showModal = true;
@@ -154,8 +152,7 @@
   }
 
   const deleteMut = createApiMutation(() => ({
-    mutate: () => deleteAccount({ currentPassword: deletePasswordInput }),
-    coveredFields: ["currentPassword"],
+    mutate: deleteAccount,
     onSuccess: () => {
       toast.success(m.settings_delete_account_success());
       void goto("/login");
@@ -305,9 +302,12 @@
     <Modal title={m.settings_delete_account_modal_title()} onclose={closeModal}>
       <form
         class="flex flex-col gap-4"
-        onsubmit={(e) => {
+        onsubmit={async (e) => {
           e.preventDefault();
-          deleteMut.mutate();
+          // Asked every time, however recently the person confirmed.
+          if (await reauth.confirm(m.reauth_reason_delete())) {
+            deleteMut.mutate();
+          }
         }}>
         <a
           href="/app/settings/export"
@@ -391,18 +391,6 @@
           {/if}
         </div>
 
-        <label class="block">
-          <span class="mb-1.5 block text-sm font-semibold">
-            {m.settings_delete_account_password_label()}
-          </span>
-          <PasswordInput
-            name="currentPassword"
-            autocomplete="current-password"
-            enterkeyhint="done"
-            minlength={1}
-            required
-            bind:value={deletePasswordInput} />
-        </label>
         {#if deleteMut.error}
           <p class="text-danger text-sm">{deleteMut.error}</p>
         {/if}
@@ -413,7 +401,7 @@
           <button
             type="submit"
             class="btn btn-danger"
-            disabled={deleteMut.loading || !deletePasswordInput}>
+            disabled={deleteMut.loading}>
             {deleteMut.loading
               ? m.settings_delete_account_deleting()
               : m.settings_delete_account_confirm()}

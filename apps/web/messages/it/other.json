@@ -1493,5 +1493,22 @@
   "chat_format_code": "Codice · Ctrl+E",
   "chat_format_spoiler": "Spoiler · Ctrl+Maiusc+S",
   "chat_write_to": "Scrivi a {name}",
-  "report_target_message": "Messaggio"
+  "report_target_message": "Messaggio",
+  "reauth_title": "Conferma che sei tu",
+  "reauth_reason_api_key": "Una chiave API apre un accesso duraturo al tuo account.",
+  "reauth_reason_sessions": "I dispositivi interessati verranno disconnessi.",
+  "reauth_reason_email": "Il tuo indirizzo email serve per accedere e recuperare l'account.",
+  "reauth_reason_mfa": "Questa azione cambia il modo in cui accedi.",
+  "reauth_reason_restore": "Il ripristino sostituisce l'intero database dell'istanza.",
+  "reauth_reason_delete": "L'eliminazione del tuo account è definitiva.",
+  "reauth_reason_default": "Questa azione riguarda la sicurezza del tuo account.",
+  "reauth_window_note": "Poi non ti verrà chiesto nulla per 10 minuti su questo dispositivo.",
+  "reauth_other_method": "Usa un altro metodo",
+  "reauth_other_methods": "Altri metodi",
+  "reauth_webauthn_use": "Usa la mia chiave di sicurezza",
+  "reauth_webauthn_hint": "La tua chiave fisica, oppure Touch ID, Face ID, Windows Hello…",
+  "reauth_webauthn_cancelled": "La verifica è stata annullata. Riprova o usa un altro metodo.",
+  "reauth_password_desc": "La password del tuo account.",
+  "reauth_done": "Sei proprio tu",
+  "reauth_sign_in_again": "Accedi di nuovo"
 }

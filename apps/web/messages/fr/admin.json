@@ -764,5 +764,6 @@
   "admin_jobs_history_duration": "Durée",
   "admin_settings_chat": "Messages",
   "admin_settings_chat_hint": "Messages privés entre amis (nécessite Social). Stockés non chiffrés dans la base de l'instance.",
-  "admin_reports_message_context": "Messages autour du message signalé"
+  "admin_reports_message_context": "Messages autour du message signalé",
+  "admin_security_reauth_locked": "Confirmation d'identité verrouillée (trop de tentatives)"
 }

@@ -222,5 +222,9 @@
   "apierr_chat_pick_not_in_pile": "Quest'opera non è più nella pila dell'estrazione: estrai di nuovo.",
   "apierr_chat_where_not_video": "/where riguarda solo film e serie.",
   "apierr_chat_pin_limit": "Questa conversazione ha già 50 messaggi fissati: sbloccane uno prima.",
-  "apierr_chat_forward_to_origin": "Un messaggio non può essere inoltrato nella sua stessa conversazione."
+  "apierr_chat_forward_to_origin": "Un messaggio non può essere inoltrato nella sua stessa conversazione.",
+  "apierr_auth_reauth_required": "Conferma la tua identità per continuare.",
+  "apierr_auth_reauth_too_many_attempts": "Troppi tentativi: questo dispositivo è stato disconnesso. Accedi di nuovo.",
+  "apierr_auth_totp_code_reused": "Questo codice è appena stato usato. Attendi il prossimo nella tua app.",
+  "apierr_auth_reauth_cancelled": "Azione annullata: la tua identità non è stata confermata."
 }
