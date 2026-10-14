@@ -11,6 +11,8 @@ export interface ToastItem {
   variant: ToastVariant;
   duration: number;
   actions: ToastAction[];
+  /** Runs once the toast leaves, after any action it ran. */
+  onClose?: () => void;
 }
 
 interface ToastTimer {
@@ -31,9 +33,10 @@ export class ToastStore {
     variant: ToastVariant = "info",
     duration = 4000,
     actions: ToastAction[] = [],
+    onClose?: () => void,
   ): number {
     const id = this.#nextId++;
-    this.items.push({ id, message, variant, duration, actions });
+    this.items.push({ id, message, variant, duration, actions, onClose });
 
     if (duration > 0) {
       this.#timers.set(id, { handle: null, endsAt: 0, remaining: duration });
@@ -81,15 +84,17 @@ export class ToastStore {
     const item = this.items.find((toast) => toast.id === id);
     const action = item?.actions[index];
     if (!action) return;
-    this.dismiss(id);
     action.onSelect();
+    this.dismiss(id);
   }
 
   dismiss(id: number): void {
     const timer = this.#timers.get(id);
     if (timer?.handle) clearTimeout(timer.handle);
     this.#timers.delete(id);
+    const item = this.items.find((t) => t.id === id);
     this.items = this.items.filter((t) => t.id !== id);
+    item?.onClose?.();
   }
 }
 

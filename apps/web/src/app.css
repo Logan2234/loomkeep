@@ -228,6 +228,14 @@ body {
   .link-accent {
     @apply text-accent font-semibold underline decoration-transparent decoration-2 underline-offset-4 transition-colors hover:decoration-current disabled:pointer-events-none disabled:opacity-50;
   }
+  /* Lit with the accent while a row arriving sets `--row-flash` (see
+     notifications/transitions.ts), over whatever background it has. */
+  .row-flash {
+    background-image: linear-gradient(
+      color-mix(in srgb, var(--color-accent) var(--row-flash, 0%), transparent),
+      color-mix(in srgb, var(--color-accent) var(--row-flash, 0%), transparent)
+    );
+  }
   /* Loading placeholder; pair with sizing utilities (and `rounded` when the
      real content isn't square-cornered, e.g. text-line placeholders). */
   .skeleton {

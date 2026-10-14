@@ -20,9 +20,18 @@ export const page = {
 // so the run would hang instead of failing.
 const NAVIGATION_LOOP = 50;
 
-export const goto = vi.fn(async (href: string) => {
+// SvelteKit 3 throws on the options it replaced (`replace`, `reset: false`).
+const REMOVED_OPTIONS = ["replaceState", "noScroll", "keepFocus"];
+
+export const goto = vi.fn(async (href: string | URL, opts: object = {}) => {
   if (goto.mock.calls.length > NAVIGATION_LOOP) {
     throw new Error(`goto() called ${NAVIGATION_LOOP} times: navigation loop`);
+  }
+
+  const removed = REMOVED_OPTIONS.filter((option) => option in opts);
+
+  if (removed.length > 0) {
+    throw new Error(`goto() options removed in SvelteKit 3: ${removed}`);
   }
 
   // SvelteKit only updates `page` once the navigation resolves, never within
