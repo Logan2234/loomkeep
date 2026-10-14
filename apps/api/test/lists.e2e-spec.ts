@@ -43,9 +43,11 @@ describe("Collaborative lists (e2e)", () => {
   });
 
   async function listNotificationsOf(who: Who) {
-    const res = await as(who).get("/api/notifications").expect(200);
+    const res = await as(who)
+      .get("/api/notifications/history?unread=true")
+      .expect(200);
     return (
-      res.body.notifications as {
+      res.body.items as {
         id: string;
         type: string;
         data: { itemTitle?: string };
