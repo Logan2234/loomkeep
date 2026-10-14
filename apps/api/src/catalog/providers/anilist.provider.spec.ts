@@ -120,7 +120,106 @@ describe("AnilistProvider", () => {
       runtimeMin: null,
       overview: null,
       stillUrl: null,
+      voteAverage: null,
+      voteCount: null,
+      episodeType: null,
+      streamingUrl: null,
+      streamingSite: null,
     });
+  });
+
+  it("takes each episode's thumbnail, link and broadcast time by its number", async () => {
+    mockFetch({
+      data: {
+        Media: {
+          id: 999,
+          title: { romaji: "Show", english: null },
+          coverImage: {},
+          status: "RELEASING",
+          episodes: 3,
+          startDate: { year: 2026, month: 1, day: 5 },
+          streamingEpisodes: [
+            {
+              title: "Episode 2 - Second",
+              thumbnail: "https://img.example/2.jpg",
+              url: "https://cr.example/2",
+              site: "Crunchyroll",
+            },
+            {
+              title: "Episode 1 - First",
+              thumbnail: "https://img.example/1.jpg",
+              url: "https://cr.example/1",
+              site: "Crunchyroll",
+            },
+          ],
+          // Starts mid-run, like many shows' schedules on AniList.
+          airingSchedule: {
+            pageInfo: { hasNextPage: false },
+            nodes: [
+              { episode: 2, airingAt: 1_767_600_000 },
+              { episode: 3, airingAt: 1_768_204_800 },
+            ],
+          },
+        },
+      },
+    });
+
+    const details = await provider.getDetails("999");
+    const [first, second, third] = details.seasons[0].episodes;
+
+    expect(first).toMatchObject({
+      title: "First",
+      stillUrl: "https://img.example/1.jpg",
+      streamingUrl: "https://cr.example/1",
+      streamingSite: "Crunchyroll",
+      airDate: null,
+    });
+    expect(second).toMatchObject({
+      title: "Second",
+      stillUrl: "https://img.example/2.jpg",
+      airDate: new Date(1_767_600_000 * 1000).toISOString(),
+    });
+    expect(third).toMatchObject({
+      title: null,
+      stillUrl: null,
+      streamingUrl: null,
+      airDate: new Date(1_768_204_800 * 1000).toISOString(),
+    });
+  });
+
+  it("follows a long show's airing schedule over its next pages", async () => {
+    const page = (episode: number, hasNextPage: boolean) => ({
+      pageInfo: { hasNextPage },
+      nodes: [{ episode, airingAt: 1_767_600_000 + episode }],
+    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          data: {
+            Media: {
+              id: 999,
+              title: { romaji: "Long Show", english: null },
+              coverImage: {},
+              episodes: 2,
+              streamingEpisodes: [],
+              airingSchedule: page(1, true),
+            },
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({ data: { Media: { airingSchedule: page(2, false) } } }),
+      );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const details = await provider.getDetails("999");
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(details.seasons[0].episodes.map((e) => e.airDate)).toEqual([
+      new Date((1_767_600_000 + 1) * 1000).toISOString(),
+      new Date((1_767_600_000 + 2) * 1000).toISOString(),
+    ]);
   });
 
   it("fails fast on a 429 instead of waiting out AniList's minute-long ban", async () => {

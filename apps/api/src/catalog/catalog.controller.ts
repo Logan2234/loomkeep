@@ -2,6 +2,7 @@ import {
   CastDetailDto,
   CatalogSource,
   Domain,
+  EpisodeMediaDto,
   ErrorCode,
   MediaExtrasDto,
   MediaType,
@@ -14,6 +15,7 @@ import {
   Headers,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Query,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
@@ -27,6 +29,7 @@ import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { DomainGateService } from "../users/domain-gate.service";
 import { CastDetailResponseDto } from "./dto/cast-detail-response.dto";
+import { EpisodeMediaResponseDto } from "./dto/episode-media-response.dto";
 import { MediaExtrasResponseDto } from "./dto/media-extras-response.dto";
 import { MediaSummaryResponseDto } from "./dto/media-summary-response.dto";
 import { SearchQueryDto } from "./dto/search-query.dto";
@@ -138,6 +141,21 @@ export class CatalogController {
       ...detail,
       knownFor: filterAdultContent(detail.knownFor, allowAdult),
     };
+  }
+
+  /**
+   * A series episode's stills and videos (TMDB), live and briefly cached —
+   * one TMDB call per episode, so only fetched when its side panel opens.
+   */
+  @Get("tmdb/:id/seasons/:season/episodes/:episode/media")
+  @ApiOkResponse({ type: EpisodeMediaResponseDto })
+  async getEpisodeMedia(
+    @Param("id") id: string,
+    @Param("season", ParseIntPipe) season: number,
+    @Param("episode", ParseIntPipe) episode: number,
+    @Query("lang") lang?: string,
+  ): Promise<EpisodeMediaDto> {
+    return this.tmdb.getEpisodeMedia(id, season, episode, safeLang(lang));
   }
 
   /** Live extras (where to watch, cast, similar) — nothing is persisted. */

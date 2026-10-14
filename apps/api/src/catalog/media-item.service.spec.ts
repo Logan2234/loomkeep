@@ -415,6 +415,90 @@ describe("MediaItemService.translationFor", () => {
   });
 });
 
+describe("MediaItemService season and episode translations", () => {
+  it("stores a series' localized seasons and episodes, never TMDB's placeholders", async () => {
+    const prisma = {
+      mediaItemTranslation: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn().mockResolvedValue({ title: "Les Veilleurs" }),
+      },
+      season: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "s1",
+            number: 1,
+            title: "Season 1",
+            overview: "The watch begins.",
+            episodes: [
+              { id: "e1", number: 1, title: "The Relief" },
+              { id: "e2", number: 2, title: "The Register" },
+              { id: "e3", number: 3, title: "Low Current" },
+            ],
+          },
+        ]),
+      },
+      seasonTranslation: { upsert: vi.fn() },
+      episodeTranslation: {
+        deleteMany: vi.fn().mockReturnValue("delete"),
+        createMany: vi.fn().mockReturnValue("create"),
+      },
+      $transaction: vi.fn(),
+    };
+    const localized = {
+      ...PROVIDER_DETAILS,
+      seasons: [
+        {
+          number: 1,
+          title: "Saison 1",
+          overview: "  ",
+          episodes: [
+            { number: 1, title: "La Relève", overview: "Inès prend la garde." },
+            // TMDB's stand-in when the episode has no French title.
+            { number: 2, title: "Épisode 2", overview: "" },
+            { number: 3, title: "Low Current", overview: null },
+          ],
+        },
+      ],
+    };
+    const service = new MediaItemService(
+      prisma as unknown as PrismaService,
+      { getDetails: vi.fn().mockResolvedValue(localized) } as never,
+      undefined as never,
+      jobRunsStub,
+      undefined as never,
+    );
+
+    await service.translationFor("m1", "TMDB", "42", "SERIES", "fr");
+
+    expect(prisma.seasonTranslation.upsert).toHaveBeenCalledWith({
+      where: { seasonId_locale: { seasonId: "s1", locale: "fr" } },
+      update: { title: "Saison 1", overview: null },
+      create: {
+        seasonId: "s1",
+        locale: "fr",
+        title: "Saison 1",
+        overview: null,
+      },
+    });
+    expect(prisma.episodeTranslation.deleteMany).toHaveBeenCalledWith({
+      where: { locale: "fr", episodeId: { in: ["e1", "e2", "e3"] } },
+    });
+    // Episodes 2 and 3 have nothing of their own in French: no row, so the
+    // English title shows rather than a placeholder or a duplicate.
+    expect(prisma.episodeTranslation.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          episodeId: "e1",
+          locale: "fr",
+          title: "La Relève",
+          overview: "Inès prend la garde.",
+        },
+      ],
+    });
+    expect(prisma.$transaction).toHaveBeenCalledWith(["delete", "create"]);
+  });
+});
+
 describe("MediaItemService.translatedTitles", () => {
   it("skips the DB for the default locale or an empty id list", async () => {
     const findMany = vi.fn();

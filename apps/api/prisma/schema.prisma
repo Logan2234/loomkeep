@@ -1997,15 +1997,38 @@ model MediaExternalId {
 }
 
 model Season {
-  id          String  @id @default(cuid())
+  id          String    @id @default(cuid())
   mediaItemId String
   number      Int
   title       String?
+  // TMDB only: AniList entries are one season each, whose synopsis and cover
+  // are the MediaItem's own.
+  overview    String?
+  posterUrl   String?
+  airDate     DateTime?
+  // The source's own average score (TMDB, /10).
+  voteAverage Float?
 
-  mediaItem MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
-  episodes  Episode[]
+  mediaItem    MediaItem           @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+  episodes     Episode[]
+  translations SeasonTranslation[]
 
   @@unique([mediaItemId, number])
+}
+
+// A season's title/overview in a non-default locale, cached alongside
+// MediaItemTranslation and refreshed on the same cycle (see
+// MediaItemService.translationFor).
+model SeasonTranslation {
+  id       String  @id @default(cuid())
+  seasonId String
+  locale   String
+  title    String?
+  overview String?
+
+  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([seasonId, locale])
 }
 
 model Episode {
@@ -2018,16 +2041,39 @@ model Episode {
   // AniList only has a per-title duration, copied onto every episode). Stats
   // fall back to MediaItem.runtimeMin, then a per-type default, when null.
   runtimeMin Int?
-  // Stored for the upcoming season display rework, not shown yet. Always in
-  // the provider's default language (English): the season endpoint is
-  // queried without one, and there is no per-episode translation table.
+  // Default language (English) here; other locales in EpisodeTranslation.
   overview   String?
+  // TMDB still, or AniList's Crunchyroll thumbnail.
   stillUrl   String?
+  // The source's own score (TMDB, /10) and its vote count; null when nobody
+  // has voted yet.
+  voteAverage   Float?
+  voteCount     Int?
+  // TMDB's "standard" / "mid_season" / "finale". Not displayed for now.
+  episodeType   String?
+  // Where to stream it (AniList's Crunchyroll links).
+  streamingUrl  String?
+  streamingSite String?
 
-  season  Season         @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  watches EpisodeWatch[]
+  season       Season               @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  watches      EpisodeWatch[]
+  translations EpisodeTranslation[]
 
   @@unique([seasonId, number])
+}
+
+// An episode's title/overview in a non-default locale. A null field means
+// the source has no translation for it, and the base row's English stands.
+model EpisodeTranslation {
+  id        String  @id @default(cuid())
+  episodeId String
+  locale    String
+  title     String?
+  overview  String?
+
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@unique([episodeId, locale])
 }
 
 model LibraryEntry {

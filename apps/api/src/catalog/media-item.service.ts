@@ -20,6 +20,7 @@ import type {
   CatalogProvider,
   ProviderEpisode,
   ProviderMediaDetails,
+  ProviderSeason,
 } from "./providers/provider.types";
 import { TmdbProvider } from "./providers/tmdb.provider";
 import { SagaSyncService } from "./saga-sync.service";
@@ -207,11 +208,76 @@ export class MediaItemService {
       type,
       locale,
     );
-    return this.prisma.mediaItemTranslation.upsert({
+    const translation = await this.prisma.mediaItemTranslation.upsert({
       where: { mediaItemId_locale: { mediaItemId, locale } },
       update: this.translationFields(details),
       create: { mediaItemId, locale, ...this.translationFields(details) },
     });
+    await this.storeSeasonTranslations(mediaItemId, locale, details);
+    return translation;
+  }
+
+  /**
+   * Season and episode titles/synopses from a localized fetch, stored next
+   * to the base (English) rows. Episodes are rewritten in one go per locale
+   * — one delete and one insert, whatever the show's length.
+   */
+  private async storeSeasonTranslations(
+    mediaItemId: string,
+    locale: string,
+    details: ProviderMediaDetails,
+  ): Promise<void> {
+    if (details.seasons.length === 0) return;
+
+    const stored = await this.prisma.season.findMany({
+      where: { mediaItemId },
+      select: {
+        id: true,
+        number: true,
+        title: true,
+        overview: true,
+        episodes: { select: { id: true, number: true, title: true } },
+      },
+    });
+    const byNumber = new Map(stored.map((s) => [s.number, s]));
+
+    const episodeRows: Prisma.EpisodeTranslationCreateManyInput[] = [];
+
+    for (const season of details.seasons) {
+      const base = byNumber.get(season.number);
+      if (!base) continue;
+
+      const fields = {
+        title: localizedText(season.title, base.title),
+        overview: localizedText(season.overview, base.overview),
+      };
+      await this.prisma.seasonTranslation.upsert({
+        where: { seasonId_locale: { seasonId: base.id, locale } },
+        update: fields,
+        create: { seasonId: base.id, locale, ...fields },
+      });
+
+      const episodes = new Map(base.episodes.map((e) => [e.number, e]));
+
+      for (const episode of season.episodes) {
+        const target = episodes.get(episode.number);
+        if (!target) continue;
+        const title = localizedEpisodeTitle(episode.title, target.title);
+        const overview = episode.overview?.trim() || null;
+
+        if (title || overview) {
+          episodeRows.push({ episodeId: target.id, locale, title, overview });
+        }
+      }
+    }
+
+    const episodeIds = stored.flatMap((s) => s.episodes.map((e) => e.id));
+    await this.prisma.$transaction([
+      this.prisma.episodeTranslation.deleteMany({
+        where: { locale, episodeId: { in: episodeIds } },
+      }),
+      this.prisma.episodeTranslation.createMany({ data: episodeRows }),
+    ]);
   }
 
   /**
@@ -265,12 +331,22 @@ export class MediaItemService {
         id: null,
         number: season.number,
         title: season.title,
+        overview: season.overview,
+        posterUrl: season.posterUrl,
+        airDate: season.airDate,
+        voteAverage: season.voteAverage,
         episodes: season.episodes.map((episode) => ({
           id: null,
           number: episode.number,
           title: episode.title,
           airDate: episode.airDate,
           runtimeMin: episode.runtimeMin,
+          overview: episode.overview,
+          stillUrl: episode.stillUrl,
+          voteAverage: episode.voteAverage,
+          voteCount: episode.voteCount,
+          streamingUrl: episode.streamingUrl,
+          streamingSite: episode.streamingSite,
         })),
       })),
     };
@@ -364,7 +440,7 @@ export class MediaItemService {
         seasons: {
           create: details.seasons.map((season) => ({
             number: season.number,
-            title: season.title,
+            ...seasonFields(season),
             episodes: {
               create: season.episodes.map((episode) => ({
                 number: episode.number,
@@ -413,8 +489,12 @@ export class MediaItemService {
     for (const season of details.seasons) {
       const storedSeason = await this.prisma.season.upsert({
         where: { mediaItemId_number: { mediaItemId, number: season.number } },
-        update: { title: season.title },
-        create: { mediaItemId, number: season.number, title: season.title },
+        update: seasonFields(season),
+        create: {
+          mediaItemId,
+          number: season.number,
+          ...seasonFields(season),
+        },
       });
 
       await this.syncEpisodes(storedSeason.id, season.episodes);
@@ -438,6 +518,7 @@ export class MediaItemService {
           where: { mediaItemId_locale: { mediaItemId, locale } },
           data: this.translationFields(localized),
         });
+        await this.storeSeasonTranslations(mediaItemId, locale, localized);
       } catch (err) {
         this.logger.error(
           `Translation refresh failed for media ${mediaItemId} (${locale})`,
@@ -477,6 +558,11 @@ export class MediaItemService {
         runtimeMin: true,
         overview: true,
         stillUrl: true,
+        voteAverage: true,
+        voteCount: true,
+        episodeType: true,
+        streamingUrl: true,
+        streamingSite: true,
       },
     });
     const byNumber = new Map(stored.map((e) => [e.number, e]));
@@ -547,9 +633,33 @@ export class MediaItemService {
   }
 }
 
+function seasonFields(season: ProviderSeason) {
+  return {
+    title: season.title,
+    overview: season.overview,
+    posterUrl: season.posterUrl,
+    airDate: season.airDate ? new Date(season.airDate) : null,
+    voteAverage: season.voteAverage,
+  };
+}
+
+// Every provider field the episode row mirrors; `airDate` is compared by
+// time, the rest by value.
+const EPISODE_FIELDS = [
+  "title",
+  "runtimeMin",
+  "overview",
+  "stillUrl",
+  "voteAverage",
+  "voteCount",
+  "episodeType",
+  "streamingUrl",
+  "streamingSite",
+] as const;
+
 type EpisodeFields = Pick<
   Prisma.EpisodeCreateManyInput,
-  "title" | "runtimeMin" | "overview" | "stillUrl"
+  (typeof EPISODE_FIELDS)[number]
 > & { airDate: Date | null };
 
 function episodeFields(episode: ProviderEpisode): EpisodeFields {
@@ -559,15 +669,39 @@ function episodeFields(episode: ProviderEpisode): EpisodeFields {
     runtimeMin: episode.runtimeMin,
     overview: episode.overview,
     stillUrl: episode.stillUrl,
+    voteAverage: episode.voteAverage,
+    voteCount: episode.voteCount,
+    episodeType: episode.episodeType,
+    streamingUrl: episode.streamingUrl,
+    streamingSite: episode.streamingSite,
   };
 }
 
 function episodeChanged(current: EpisodeFields, next: EpisodeFields): boolean {
   return (
-    current.title !== next.title ||
     current.airDate?.getTime() !== next.airDate?.getTime() ||
-    current.runtimeMin !== next.runtimeMin ||
-    current.overview !== next.overview ||
-    current.stillUrl !== next.stillUrl
+    EPISODE_FIELDS.some((field) => current[field] !== next[field])
   );
+}
+
+/** A localized text worth storing: present, and not just the English one again. */
+function localizedText(
+  localized: string | null,
+  base: string | null,
+): string | null {
+  const text = localized?.trim() || null;
+  return text && text !== base ? text : null;
+}
+
+// What TMDB answers for an episode with no title in the requested language
+// ("Épisode 5", "Episodio 5"): a placeholder, never worth replacing the
+// English title with.
+const GENERIC_EPISODE_TITLE = /^(episode|épisode|episodio)\s+\d+$/iu;
+
+function localizedEpisodeTitle(
+  localized: string | null,
+  base: string | null,
+): string | null {
+  const text = localizedText(localized, base);
+  return text && !GENERIC_EPISODE_TITLE.test(text) ? text : null;
 }

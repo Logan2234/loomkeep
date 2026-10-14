@@ -70,7 +70,11 @@ const DETAILS_QUERY = `
       duration
       startDate { year month day }
       nextAiringEpisode { episode }
-      streamingEpisodes { title url }
+      streamingEpisodes { title thumbnail url site }
+      airingSchedule(perPage: 50) {
+        pageInfo { hasNextPage }
+        nodes { episode airingAt }
+      }
       isAdult
       # Only to spot streaming episodes AniList copied across a franchise.
       relations {
@@ -81,6 +85,24 @@ const DETAILS_QUERY = `
     }
   }
 `;
+
+// The rest of a long show's airing schedule (the details query brings the
+// first page).
+const SCHEDULE_QUERY = `
+  query ($id: Int, $page: Int) {
+    Media(id: $id, type: ANIME) {
+      airingSchedule(perPage: 50, page: $page) {
+        pageInfo { hasNextPage }
+        nodes { episode airingAt }
+      }
+    }
+  }
+`;
+
+// A long-running show (One Piece) has dozens of schedule pages; past this
+// many, the remaining episodes simply keep no broadcast time rather than
+// holding a refresh on a string of throttled requests.
+const MAX_SCHEDULE_PAGES = 4;
 
 const MAL_ID_QUERY = `
   query ($idMal: Int) {
@@ -245,6 +267,23 @@ export class AnilistProvider implements CatalogProvider {
         HttpStatus.NOT_FOUND,
         ErrorCode.CatalogItemNotFound,
       );
+    }
+
+    const schedule = media.airingSchedule;
+
+    for (
+      let page = 2;
+      schedule?.pageInfo?.hasNextPage && page <= MAX_SCHEDULE_PAGES;
+      page++
+    ) {
+      const next = await this.query<{
+        Media: Pick<AnilistFranchiseMedia, "airingSchedule"> | null;
+      }>(SCHEDULE_QUERY, { id: media.id, page });
+      schedule.nodes = [
+        ...(schedule.nodes ?? []),
+        ...(next.Media?.airingSchedule?.nodes ?? []),
+      ];
+      schedule.pageInfo = next.Media?.airingSchedule?.pageInfo;
     }
 
     return toMediaDetails(media);

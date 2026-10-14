@@ -1,5 +1,6 @@
 import {
   ActivityType,
+  type CommunityRatingDto,
   ErrorCode,
   type MessageReviewDto,
   type MyReviewDto,
@@ -41,6 +42,7 @@ import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
+import { isSocialEnabled } from "../social/social.config";
 import { VisibilityService } from "../social/visibility.service";
 import { resolveReviewVisibility } from "../social/visibility.util";
 import { toUserSummaryDto } from "../users/avatar.util";
@@ -821,6 +823,86 @@ export class ReviewService {
     }
 
     return visible;
+  }
+
+  /**
+   * Per target: how many reviews the viewer can see, their average, and the
+   * viewer's own rating — for lists of episodes/seasons, in one query. Same
+   * visibility rules as `listForTarget`. With social features off, reviews
+   * are private to their author, so only the viewer's own rating is given.
+   */
+  async communityRatings(
+    viewerId: string,
+    targetType: ReviewTargetType,
+    targetIds: string[],
+  ): Promise<Map<string, CommunityRatingDto>> {
+    const result = new Map<string, CommunityRatingDto>();
+    if (targetIds.length === 0) return result;
+
+    const social = isSocialEnabled(this.config);
+    const rows = await this.prisma.review.findMany({
+      where: {
+        targetType,
+        targetId: { in: targetIds },
+        ...(social ? {} : { userId: viewerId }),
+      },
+      select: {
+        targetId: true,
+        rating: true,
+        visibility: true,
+        user: { select: { id: true, profileAccess: true } },
+      },
+    });
+
+    // One relationship lookup per author, not per review.
+    const canSee = new Map<string, Promise<boolean>>();
+
+    const visible = (row: (typeof rows)[number]): Promise<boolean> => {
+      const author = row.user;
+      if (!author || author.id === viewerId) return Promise.resolve(true);
+      const key = `${author.id}:${row.visibility}`;
+      let check = canSee.get(key);
+
+      if (!check) {
+        check = this.visibility
+          .getRelation(viewerId, author)
+          .then((relation) =>
+            resolveReviewVisibility(
+              row.visibility,
+              author.profileAccess,
+              relation,
+            ),
+          );
+        canSee.set(key, check);
+      }
+
+      return check;
+    };
+
+    const ratings = new Map<string, number[]>();
+    const mine = new Map<string, number>();
+
+    for (const row of rows) {
+      if (row.user?.id === viewerId) mine.set(row.targetId, row.rating);
+      if (!(await visible(row))) continue;
+      const list = ratings.get(row.targetId);
+      if (list) list.push(row.rating);
+      else ratings.set(row.targetId, [row.rating]);
+    }
+
+    for (const targetId of targetIds) {
+      const list = ratings.get(targetId) ?? [];
+      result.set(targetId, {
+        reviewCount: social ? list.length : null,
+        reviewAverage:
+          social && list.length > 0
+            ? list.reduce((sum, r) => sum + r, 0) / list.length
+            : null,
+        myRating: mine.get(targetId) ?? null,
+      });
+    }
+
+    return result;
   }
 
   // Library entry DTO ratings are projected from reviews.

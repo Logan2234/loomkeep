@@ -210,6 +210,14 @@ describe("TmdbProvider", () => {
 
     expect(details.seasons.map((s) => s.number)).toEqual([0, 1]);
     const seasonOne = details.seasons.find((s) => s.number === 1);
+    expect(seasonOne).toMatchObject({
+      title: "Season 1",
+      overview:
+        "High school chemistry teacher Walter White's life is suddenly transformed.",
+      posterUrl: "https://image.tmdb.org/t/p/w500/season1.jpg",
+      airDate: "2008-01-20",
+      voteAverage: 8.3,
+    });
     expect(seasonOne?.episodes).toEqual([
       {
         number: 1,
@@ -219,6 +227,11 @@ describe("TmdbProvider", () => {
         overview:
           "A high school chemistry teacher learns he has terminal cancer.",
         stillUrl: null,
+        voteAverage: 8.1,
+        voteCount: 210,
+        episodeType: "standard",
+        streamingUrl: null,
+        streamingSite: null,
       },
       {
         number: 2,
@@ -227,8 +240,75 @@ describe("TmdbProvider", () => {
         runtimeMin: 48,
         overview: "Walt and Jesse attempt to dispose of the bodies.",
         stillUrl: null,
+        voteAverage: 8.2,
+        voteCount: 180,
+        episodeType: "finale",
+        streamingUrl: null,
+        streamingSite: null,
       },
     ]);
+  });
+
+  it("queries the episode listings in the requested language", async () => {
+    const fetchMock = mockFetchByUrl({
+      "/tv/1396/season/0": fixture("tmdb-season-0.json"),
+      "/tv/1396/season/1": fixture("tmdb-season-1.json"),
+      "/tv/1396": fixture("tmdb-tv-details.json"),
+    });
+
+    await provider.getDetails("1396", MediaType.SERIES, "fr");
+
+    const seasonCall = fetchMock.mock.calls
+      .map(([input]) => new URL(String(input)))
+      .find((url) => url.pathname.endsWith("/season/1"));
+    expect(seasonCall?.searchParams.get("language")).toBe("fr-FR");
+  });
+
+  it("drops the score of an episode nobody has voted on", async () => {
+    mockFetchByUrl({
+      "/tv/1396/season/0": { episodes: [] },
+      "/tv/1396/season/1": {
+        vote_average: 0,
+        episodes: [{ episode_number: 1, vote_average: 0, vote_count: 0 }],
+      },
+      "/tv/1396": fixture("tmdb-tv-details.json"),
+    });
+
+    const details = await provider.getDetails("1396", MediaType.SERIES);
+
+    const season = details.seasons.find((s) => s.number === 1);
+    expect(season?.voteAverage).toBeNull();
+    expect(season?.episodes[0]).toMatchObject({
+      voteAverage: null,
+      voteCount: null,
+    });
+  });
+
+  it("maps an episode's stills and YouTube videos, the main still first", async () => {
+    mockFetchByUrl({
+      "/tv/1396/season/1/episode/1": {
+        still_path: "/main.jpg",
+        images: {
+          stills: [{ file_path: "/main.jpg" }, { file_path: "/other.jpg" }],
+        },
+        videos: {
+          results: [
+            { site: "YouTube", type: "Trailer", key: "abc" },
+            { site: "Vimeo", type: "Clip", key: "def" },
+          ],
+        },
+      },
+    });
+
+    const media = await provider.getEpisodeMedia("1396", 1, 1, "fr");
+
+    expect(media).toEqual({
+      images: [
+        "https://image.tmdb.org/t/p/w780/main.jpg",
+        "https://image.tmdb.org/t/p/w780/other.jpg",
+      ],
+      videos: [{ key: "abc", type: "Trailer" }],
+    });
   });
 
   it("falls back to the median episode runtime, specials excluded, when episode_run_time is empty", async () => {

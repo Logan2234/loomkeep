@@ -13,15 +13,33 @@ export type ProviderExternalId = GenericProviderExternalId<MediaSource>;
 export interface ProviderEpisode {
   number: number;
   title: string | null;
+  /**
+   * A calendar date ("2024-03-08") from TMDB, or a full ISO timestamp when
+   * the source knows the exact broadcast time (AniList's airing schedule).
+   */
   airDate: string | null;
   runtimeMin: number | null;
   overview: string | null;
   stillUrl: string | null;
+  /** The source's own community score (TMDB, /10) and its vote count. */
+  voteAverage: number | null;
+  voteCount: number | null;
+  /** TMDB's "standard" / "mid_season" / "finale"; null elsewhere. */
+  episodeType: string | null;
+  /** Where to stream this episode (AniList's Crunchyroll links). */
+  streamingUrl: string | null;
+  streamingSite: string | null;
 }
 
 export interface ProviderSeason {
   number: number;
   title: string | null;
+  overview: string | null;
+  posterUrl: string | null;
+  /** First broadcast of the season ("2024-03-08"). */
+  airDate: string | null;
+  /** The source's own average score (TMDB, /10). */
+  voteAverage: number | null;
   episodes: ProviderEpisode[];
 }
 

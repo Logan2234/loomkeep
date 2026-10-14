@@ -33,7 +33,17 @@ export interface AnilistMedia {
     day?: number | null;
   };
   nextAiringEpisode?: { episode: number } | null;
-  streamingEpisodes?: { title?: string | null; url?: string | null }[];
+  streamingEpisodes?: {
+    title?: string | null;
+    thumbnail?: string | null;
+    url?: string | null;
+    site?: string | null;
+  }[];
+  /** Broadcast times, `airingAt` in Unix seconds. Can start mid-run. */
+  airingSchedule?: {
+    pageInfo?: { hasNextPage?: boolean | null } | null;
+    nodes?: { episode: number; airingAt: number }[] | null;
+  } | null;
   isAdult?: boolean;
 }
 
@@ -147,7 +157,17 @@ export function toMediaDetails(
     // entries, linked through the saga), so its single generated season
     // carries the entry's own name rather than a misleading "Season 1".
     seasons: [
-      { number: 1, title: summary.title, episodes: buildEpisodes(media) },
+      {
+        number: 1,
+        title: summary.title,
+        // The entry's own synopsis and cover already show on the page; a
+        // season-level copy would only repeat them.
+        overview: null,
+        posterUrl: null,
+        airDate: toIsoDate(media.startDate),
+        voteAverage: null,
+        episodes: buildEpisodes(media),
+      },
     ],
   };
 }
@@ -257,27 +277,51 @@ export function toCastDetail(staff: AnilistStaff): CastDetailDto {
 }
 
 /**
- * AniList has no full per-episode listing: it exposes an episode count and,
- * for some titles, streaming episode names. Episodes are generated 1..N as a
- * single season, with names when available.
+ * AniList has no full per-episode listing: it exposes an episode count, an
+ * airing schedule (broadcast times, often only part of the run) and, for
+ * some titles, streaming episodes (name, thumbnail, link). Episodes are
+ * generated 1..N as a single season, with whatever of those exists.
  */
 function buildEpisodes(media: AnilistFranchiseMedia): ProviderEpisode[] {
   const aired = media.nextAiringEpisode
     ? media.nextAiringEpisode.episode - 1
     : null;
   const count = media.episodes ?? aired ?? media.streamingEpisodes?.length ?? 0;
-  const titles = sharesStreamingEpisodes(media)
-    ? new Map<number, string>()
-    : streamingTitlesByNumber(media.streamingEpisodes ?? [], count);
+  const streaming = sharesStreamingEpisodes(media)
+    ? new Map<number, StreamingEpisode>()
+    : streamingEpisodesByNumber(media.streamingEpisodes ?? [], count);
+  const airingAt = new Map(
+    (media.airingSchedule?.nodes ?? []).map((node) => [
+      node.episode,
+      node.airingAt,
+    ]),
+  );
 
-  return Array.from({ length: count }, (_, index) => ({
-    number: index + 1,
-    title: titles.get(index + 1) ?? null,
-    airDate: null,
-    runtimeMin: media.duration ?? null,
-    overview: null,
-    stillUrl: null,
-  }));
+  return Array.from({ length: count }, (_, index) => {
+    const number = index + 1;
+    const stream = streaming.get(number);
+    const airing = airingAt.get(number);
+    return {
+      number,
+      title: stream?.name ?? null,
+      airDate: airing ? new Date(airing * 1000).toISOString() : null,
+      runtimeMin: media.duration ?? null,
+      overview: null,
+      stillUrl: stream?.thumbnail ?? null,
+      voteAverage: null,
+      voteCount: null,
+      episodeType: null,
+      streamingUrl: stream?.url ?? null,
+      streamingSite: stream?.url ? (stream.site ?? null) : null,
+    };
+  });
+}
+
+interface StreamingEpisode {
+  name: string | null;
+  thumbnail: string | null;
+  url: string | null;
+  site: string | null;
 }
 
 /**
@@ -307,23 +351,30 @@ function sharesStreamingEpisodes(media: AnilistFranchiseMedia): boolean {
 const STREAMING_TITLE = /^\s*Episode\s+(\d+)\s*(?:[-–—:]\s*(.*))?$/i;
 
 /**
- * Keys streaming episode names by the number written in their title, never by
- * their position: AniList returns them in no guaranteed order (often newest
- * first). A name with no readable number is dropped — no name beats the wrong
- * one. A later cour listed under its own AniList entry often keeps the show's
- * absolute numbering (episodes 13–24 for a 12-episode entry), so when the
- * numbers overshoot the count they're shifted to start at 1.
+ * Keys streaming episodes (name, thumbnail, link) by the number written in
+ * their title, never by their position: AniList returns them in no
+ * guaranteed order (often newest first). One with no readable number is
+ * dropped — nothing beats the wrong episode's. A later cour listed under its
+ * own AniList entry often keeps the show's absolute numbering (episodes
+ * 13–24 for a 12-episode entry), so when the numbers overshoot the count
+ * they're shifted to start at 1.
  */
-function streamingTitlesByNumber(
+function streamingEpisodesByNumber(
   streamingEpisodes: NonNullable<AnilistMedia["streamingEpisodes"]>,
   count: number,
-): Map<number, string> {
-  const parsed: { number: number; name: string | null }[] = [];
+): Map<number, StreamingEpisode> {
+  const parsed: ({ number: number } & StreamingEpisode)[] = [];
 
-  for (const { title } of streamingEpisodes) {
+  for (const { title, thumbnail, url, site } of streamingEpisodes) {
     const match = title ? STREAMING_TITLE.exec(title) : null;
     if (!match) continue;
-    parsed.push({ number: Number(match[1]), name: match[2]?.trim() || null });
+    parsed.push({
+      number: Number(match[1]),
+      name: match[2]?.trim() || null,
+      thumbnail: thumbnail || null,
+      url: url || null,
+      site: site || null,
+    });
   }
 
   if (parsed.length === 0) return new Map();
@@ -331,13 +382,17 @@ function streamingTitlesByNumber(
   const numbers = parsed.map((episode) => episode.number);
   const offset = Math.max(...numbers) > count ? Math.min(...numbers) - 1 : 0;
 
-  const titles = new Map<number, string>();
+  const byNumber = new Map<number, StreamingEpisode>();
 
-  for (const { number, name } of parsed) {
-    if (name && !titles.has(number - offset)) titles.set(number - offset, name);
+  for (const { number, ...episode } of parsed) {
+    const kept = byNumber.get(number - offset);
+
+    if (!kept || (!kept.name && episode.name)) {
+      byNumber.set(number - offset, episode);
+    }
   }
 
-  return titles;
+  return byNumber;
 }
 
 /** Staff credited with the exact role "Director" (case-insensitive). */

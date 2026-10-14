@@ -1,5 +1,6 @@
 import type {
   CastDetailDto,
+  EpisodeMediaDto,
   MediaExtrasDto,
   MediaSagaDto,
   WatchProviderDto,
@@ -23,6 +24,7 @@ import type {
 } from "./provider.types";
 import {
   toCastDetail,
+  toEpisodeMedia,
   toExtras,
   toMovieDetails,
   toMovieSagaMember,
@@ -32,6 +34,7 @@ import {
   toTvSummary,
   toWatchProviders,
   type TmdbCollection,
+  type TmdbEpisodeMedia,
   type TmdbExtras,
   type TmdbFindResult,
   type TmdbMovieDetails,
@@ -49,10 +52,20 @@ export const TMDB_API_URL = "https://api.themoviedb.org/3";
 // time someone opens their services settings.
 const WATCH_LIST_TTL_MS = 24 * 60 * 60 * 1000;
 
+const EPISODE_MEDIA_TTL_MS = 6 * 60 * 60 * 1000;
+const EPISODE_MEDIA_CACHE_SIZE = 500;
+
 /** Films and (western) series, from The Movie Database. */
 @Injectable()
 export class TmdbProvider implements CatalogProvider {
   readonly source = CatalogSource.TMDB;
+
+  // Episode galleries barely move either, and a panel tends to be reopened
+  // while browsing a season.
+  private readonly episodeMedia = new Map<
+    string,
+    { fetchedAt: number; media: EpisodeMediaDto }
+  >();
 
   private readonly watchProviderLists = new Map<
     string,
@@ -272,18 +285,58 @@ export class TmdbProvider implements CatalogProvider {
       language: regionalLocale(lang),
     });
 
-    // Episode lists live on per-season endpoints.
+    // Episode lists live on per-season endpoints. Same language as the show
+    // itself, so a translation fetch also brings episode titles/synopses.
     const seasons: ProviderSeason[] = await Promise.all(
       (tv.seasons ?? []).map(async (season) => {
         const detail = await this.get<TmdbSeasonDetails>(
           `/tv/${sourceId}/season/${season.season_number}`,
-          {},
+          { language: regionalLocale(lang) },
         );
         return toTvSeason(season, detail);
       }),
     );
 
     return toTvDetails(tv, seasons);
+  }
+
+  /**
+   * One episode's stills and videos, live (one call per episode, so only
+   * when its side panel opens). Images are requested in every language:
+   * stills carry no text, and a language filter drops most of them.
+   */
+  async getEpisodeMedia(
+    sourceId: string,
+    seasonNumber: number,
+    episodeNumber: number,
+    lang?: string,
+  ): Promise<EpisodeMediaDto> {
+    const cacheKey = `${sourceId}:${seasonNumber}:${episodeNumber}:${lang ?? ""}`;
+    const cached = this.episodeMedia.get(cacheKey);
+
+    if (cached && Date.now() - cached.fetchedAt < EPISODE_MEDIA_TTL_MS) {
+      return cached.media;
+    }
+
+    const data = await this.get<TmdbEpisodeMedia>(
+      `/tv/${sourceId}/season/${seasonNumber}/episode/${episodeNumber}`,
+      {
+        append_to_response: "images,videos",
+        include_image_language: "null",
+        include_video_language: `${lang ?? "en"},en,null`,
+        language: regionalLocale(lang),
+      },
+    );
+    const media = toEpisodeMedia(data);
+    // Oldest entry out first (a Map iterates in insertion order).
+    this.episodeMedia.delete(cacheKey);
+    this.episodeMedia.set(cacheKey, { fetchedAt: Date.now(), media });
+
+    if (this.episodeMedia.size > EPISODE_MEDIA_CACHE_SIZE) {
+      this.episodeMedia.delete(this.episodeMedia.keys().next().value!);
+    }
+
+    return media;
   }
 
   /** Live extras (where to watch, cast, similar) in a single append call. */
