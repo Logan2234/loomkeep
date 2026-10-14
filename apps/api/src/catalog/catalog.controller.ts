@@ -150,12 +150,19 @@ export class CatalogController {
   @Get("tmdb/:id/seasons/:season/episodes/:episode/media")
   @ApiOkResponse({ type: EpisodeMediaResponseDto })
   async getEpisodeMedia(
-    @Param("id") id: string,
+    // All three are numbers on TMDB: parsed as such, nothing else from the
+    // URL can reach the TMDB request path.
+    @Param("id", ParseIntPipe) id: number,
     @Param("season", ParseIntPipe) season: number,
     @Param("episode", ParseIntPipe) episode: number,
     @Query("lang") lang?: string,
   ): Promise<EpisodeMediaDto> {
-    return this.tmdb.getEpisodeMedia(id, season, episode, safeLang(lang));
+    return this.tmdb.getEpisodeMedia(
+      String(id),
+      season,
+      episode,
+      safeLang(lang),
+    );
   }
 
   /** Live extras (where to watch, cast, similar) — nothing is persisted. */
