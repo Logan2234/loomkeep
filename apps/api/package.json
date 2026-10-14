@@ -71,12 +71,12 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "@fastify/static": "^10.1.5",
+    "@fastify/static": "^10.1.6",
     "@nestjs/cli": "^12.0.8",
     "@nestjs/schematics": "^12.0.6",
     "@nestjs/testing": "^12.1.2",
-    "@swc/core": "^1.16.13",
-    "@types/node": "^26.6.4",
+    "@swc/core": "^1.16.18",
+    "@types/node": "^26.6.5",
     "@types/nodemailer": "^8.0.2",
     "@types/supertest": "^7.2.1",
     "@types/web-push": "^3.6.4",
