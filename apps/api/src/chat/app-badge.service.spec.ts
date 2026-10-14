@@ -5,6 +5,7 @@ import type { PushService } from "../notifications/push.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { AppBadgeService } from "./app-badge.service";
 import type { ChatService } from "./chat.service";
+import type { WorkThreadService } from "./work-thread.service";
 
 function makeService(chatEnabled: boolean) {
   const prisma = {
@@ -22,26 +23,36 @@ function makeService(chatEnabled: boolean) {
   const chat = {
     unreadTotal: vi.fn().mockResolvedValue(3),
   } as unknown as ChatService;
+  const threads = {
+    unreadTotal: vi.fn().mockResolvedValue(4),
+  } as unknown as WorkThreadService;
   const push = { setBadgeSource: vi.fn() } as unknown as PushService;
   return {
-    service: new AppBadgeService(prisma, config, notifications, chat, push),
+    service: new AppBadgeService(
+      prisma,
+      config,
+      notifications,
+      chat,
+      threads,
+      push,
+    ),
     prisma,
     push,
   };
 }
 
 describe("AppBadgeService", () => {
-  it("adds up the bell's badge and the unread messages", async () => {
+  it("adds up the bell's badge and the Messages tab's", async () => {
     const { service, prisma } = makeService(true);
 
-    // 2 new entries + 1 pending follow request + 3 messages.
-    expect(await service.count("u1")).toBe(6);
+    // 2 new entries + 1 pending follow request + 3 messages + 4 discussions.
+    expect(await service.count("u1")).toBe(10);
     expect(prisma.follow.count).toHaveBeenCalledWith({
       where: { followeeId: "u1", status: "PENDING" },
     });
   });
 
-  it("leaves messages out on an instance without chat", async () => {
+  it("leaves Messages out on an instance without chat", async () => {
     const { service } = makeService(false);
 
     expect(await service.count("u1")).toBe(3);
