@@ -26,6 +26,17 @@ export function getMediaExtras(
   });
 }
 
+/** A TMDB series episode's stills and videos, live. */
+export const getEpisodeMedia = (
+  sourceId: string,
+  season: number,
+  episode: number,
+) =>
+  typedRequest("/catalog/tmdb/{id}/seasons/{season}/episodes/{episode}/media", {
+    params: { id: sourceId, season: String(season), episode: String(episode) },
+    query: { lang: getLocale() },
+  });
+
 export const getWatchProviderCatalog = (region: string | undefined) =>
   typedRequest("/catalog/watch-providers", { query: { region } });
 

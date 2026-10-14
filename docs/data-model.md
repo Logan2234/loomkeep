@@ -32,14 +32,16 @@ aux commentaires dans `schema.prisma`, qui restent la source de vérité.
 
 ## Médias (films/séries/anime)
 
-| Table             | Description                                                                     |
-| ----------------- | ------------------------------------------------------------------------------- |
-| `MediaItem`       | Œuvre média mise en cache localement dès qu'un `User` la référence.             |
-| `MediaExternalId` | ID externe (TMDB/AniList/TVDB/IMDB) rattaché à un `MediaItem`.                  |
-| `Season`          | Saison d'un `MediaItem`.                                                        |
-| `Episode`         | Épisode d'une `Season`.                                                         |
-| `LibraryEntry`    | Entrée de bibliothèque reliant un `User` à un `MediaItem` (statut, notes…).     |
-| `EpisodeWatch`    | Un visionnage d'un `Episode` par un `User` (une ligne par vue, rewatch inclus). |
+| Table                | Description                                                                     |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `MediaItem`          | Œuvre média mise en cache localement dès qu'un `User` la référence.             |
+| `MediaExternalId`    | ID externe (TMDB/AniList/TVDB/IMDB) rattaché à un `MediaItem`.                  |
+| `Season`             | Saison d'un `MediaItem`.                                                        |
+| `SeasonTranslation`  | Titre/synopsis d'une `Season` dans une autre langue que l'anglais.              |
+| `Episode`            | Épisode d'une `Season`.                                                         |
+| `EpisodeTranslation` | Titre/synopsis d'un `Episode` dans une autre langue que l'anglais.              |
+| `LibraryEntry`       | Entrée de bibliothèque reliant un `User` à un `MediaItem` (statut, notes…).     |
+| `EpisodeWatch`       | Un visionnage d'un `Episode` par un `User` (une ligne par vue, rewatch inclus). |
 
 ## Jeux vidéo
 

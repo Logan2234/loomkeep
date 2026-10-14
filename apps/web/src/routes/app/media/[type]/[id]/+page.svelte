@@ -286,7 +286,7 @@
   );
 
   // Powers the action bar's "Continuer" shortcut only — the episode
-  // accordion (EpisodesSection) has its own copy for its per-row actions.
+  // list (EpisodesSection) has its own copy for its per-row actions.
   const continueWatchingMut = createApiMutation(() => ({
     mutate: (episodeId: string) => watchEpisode(episodeId),
     onSuccess: () => reload(),
@@ -742,6 +742,8 @@
       <EpisodesSection
         seasons={orderedSeasons}
         {entry}
+        mediaType={detail.type}
+        sourceId={id}
         {reload}
         onError={(m) => (episodesError = m)} />
     {/if}
