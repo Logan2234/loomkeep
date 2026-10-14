@@ -157,7 +157,7 @@ export interface MediaExtrasDto {
 }
 
 /** What the catalogue source itself knows about one episode. */
-export interface EpisodeSourceDetailsDto {
+interface EpisodeSourceDetailsDto {
   /** Synopsis, in the viewer's language when the source has it (TMDB). */
   overview: string | null;
   /** TMDB still, or AniList's Crunchyroll thumbnail. */
@@ -171,7 +171,7 @@ export interface EpisodeSourceDetailsDto {
 }
 
 /** What the catalogue source itself knows about one season (TMDB only). */
-export interface SeasonSourceDetailsDto {
+interface SeasonSourceDetailsDto {
   overview: string | null;
   posterUrl: string | null;
   /** First broadcast ("2024-03-08T00:00:00.000Z"). */
