@@ -700,6 +700,7 @@ describe("ReportService.resolve", () => {
         title: "Ton signalement a été traité",
         body: "Nous n'avons pas donné suite à ton signalement.",
         dedupeKey: "report:r1:resolved",
+        data: { outcome: "DISMISSED" },
       }),
     );
     expect(notifications.publishCreated).toHaveBeenCalledWith(

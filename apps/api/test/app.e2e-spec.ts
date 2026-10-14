@@ -458,6 +458,31 @@ describe("Loomkeep API (e2e)", () => {
       .post("/api/notifications/read")
       .set("Cookie", sessionCookies)
       .expect(204);
+
+    const history = await request(http)
+      .get("/api/notifications/history?unread=true")
+      .set("Cookie", sessionCookies)
+      .expect(200);
+    expect(history.body).toEqual({ items: [], hasMore: false });
+
+    await request(http)
+      .post("/api/notifications/seen")
+      .set("Cookie", sessionCookies)
+      .expect(204);
+    const counts = await request(http)
+      .get("/api/notifications/counts")
+      .set("Cookie", sessionCookies)
+      .expect(200);
+    expect(counts.body).toEqual({ unread: 0, unseen: 0 });
+
+    await request(http)
+      .patch("/api/notifications/missing/unread")
+      .set("Cookie", sessionCookies)
+      .expect(404);
+    await request(http)
+      .delete("/api/notifications/missing")
+      .set("Cookie", sessionCookies)
+      .expect(404);
   });
 
   it("media extras: returns where-to-watch, cast and similar", async () => {

@@ -80,7 +80,11 @@ describe("ModerationDecisionService.record", () => {
       }),
     );
     expect(notifications.create).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "u1", type: "MODERATION_ACTION" }),
+      expect.objectContaining({
+        userId: "u1",
+        type: "MODERATION_ACTION",
+        data: { measure: "COMMENT_REMOVED" },
+      }),
     );
   });
 
@@ -122,6 +126,7 @@ describe("ModerationDecisionService report notice", () => {
         userId: "u1",
         type: "MODERATION_ACTION",
         dedupeKey: "moderation:r1",
+        data: { measure: "COMMENT_REMOVED" },
       }),
     );
     expect(mail.sendModerationDecision).not.toHaveBeenCalled();

@@ -475,6 +475,7 @@ describe("ReviewService.vote", () => {
         type: "REVIEW_VOTES",
         body: "10 upvotes",
         dedupeKey: "review-votes:r1:10",
+        data: { count: 10, workTitle: null },
       }),
     );
 

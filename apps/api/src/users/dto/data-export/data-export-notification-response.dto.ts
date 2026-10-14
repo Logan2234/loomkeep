@@ -33,4 +33,10 @@ export class DataExportNotificationResponseDto implements DataExportNotification
    * @example "2026-09-30T21:00:00.000Z"
    */
   createdAt!: string;
+
+  /**
+   * When it was read, or null while unread.
+   * @example "2026-10-01T08:12:00.000Z"
+   */
+  readAt!: string | null;
 }

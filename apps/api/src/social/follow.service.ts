@@ -174,6 +174,7 @@ export class FollowService {
     // A cancelled request should disappear from the target's pending list
     // live, the same way a new one appears.
     if (existing?.status === "PENDING") {
+      await this.notifications.settleFollowRequest(target.id, viewerId);
       this.events.emitToUser(target.id, RealtimeEvent.FOLLOW_REQUEST_CHANGED);
     }
 
@@ -200,6 +201,7 @@ export class FollowService {
       where: { id: followId },
       data: { status: "ACCEPTED" },
     });
+    await this.notifications.settleFollowRequest(userId, follow.followerId);
 
     // Tell the requester their request was approved (they can now see us).
     await this.notifyActor(follow.followerId, userId, {
@@ -260,14 +262,18 @@ export class FollowService {
   }
 
   async rejectRequest(userId: string, followId: string): Promise<void> {
-    const { count } = await this.prisma.follow.deleteMany({
+    const request = await this.prisma.follow.findFirst({
       where: { id: followId, followeeId: userId, status: "PENDING" },
+      select: { followerId: true },
     });
-    if (count === 0)
+    if (!request)
       throw new AppException(
         HttpStatus.NOT_FOUND,
         ErrorCode.SocialFollowRequestNotFound,
       );
+
+    await this.prisma.follow.delete({ where: { id: followId } });
+    await this.notifications.settleFollowRequest(userId, request.followerId);
   }
 
   /**
@@ -332,6 +338,9 @@ export class FollowService {
       this.events.emitToList(membership.listId, "list-updated");
       await this.events.evictFromList(membership.listId, membership.userId);
     }
+
+    await this.notifications.settleFollowRequest(viewerId, target.id);
+    await this.notifications.settleFollowRequest(target.id, viewerId);
 
     return this.relationship(viewerId, username);
   }
@@ -431,6 +440,7 @@ export class FollowService {
 
     // A declined request leaves the viewer's own pending list too.
     if (existing?.status === "PENDING") {
+      await this.notifications.settleFollowRequest(viewerId, follower.id);
       this.events.emitToUser(viewerId, RealtimeEvent.FOLLOW_REQUEST_CHANGED);
     }
 

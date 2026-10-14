@@ -9,4 +9,5 @@ export class NotificationResponseDto implements NotificationDto {
   data!: Record<string, unknown>;
   timestamp!: string;
   createdAt!: string;
+  readAt!: string | null;
 }

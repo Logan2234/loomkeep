@@ -810,6 +810,7 @@ export class ListService {
       data: {
         actorUsername: owner.username,
         actorDisplayName: owner.displayName,
+        listTitle: list.title,
       },
     });
 

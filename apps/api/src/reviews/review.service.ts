@@ -25,7 +25,7 @@ import {
   CANONICAL_EXTERNAL_ID_SELECT,
   canonicalExternalId,
 } from "../common/external-id.util";
-import { resolveWorkHref } from "../common/work-href.util";
+import { resolveWorkLink } from "../common/work-href.util";
 import { assertGameReleased } from "../games/game-release.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
@@ -257,18 +257,19 @@ export class ReviewService {
     if (count !== REVIEW_VOTE_NOTIFY_THRESHOLD) return;
 
     const copy = (await this.notifications.copyFor(authorId)).reviewVotes;
+    const work = await resolveWorkLink(
+      this.prisma,
+      target.targetType,
+      target.targetId,
+    );
     await this.notifications.create({
       userId: authorId,
       type: NotificationType.REVIEW_VOTES,
       title: copy.title,
       body: copy.body(count),
-      url: await resolveWorkHref(
-        this.prisma,
-        target.targetType,
-        target.targetId,
-      ),
+      url: work?.href ?? null,
       dedupeKey: `review-votes:${reviewId}:${count}`,
-      data: { count },
+      data: { count, workTitle: work?.title ?? null },
     });
   }
 

@@ -22,6 +22,7 @@ each job's recent runs and runs one by hand.
 | Reports digest           | 7 a.m.        | Emails administrators the pending moderation reports, if there are any.                                              | `HEALTHCHECKS_REPORTS_DIGEST_URL`                  |
 | Security log clean-up    | 6 a.m.        | Deletes security log entries older than a year.                                                                      | —                                                  |
 | Invitations clean-up     | 6:30 a.m.     | Deletes invitations left unused for 30 days after they expired or were revoked.                                      | —                                                  |
+| Notifications clean-up   | 7 a.m.        | Deletes notifications read over 90 days ago, and new-release records once 30 days old.                               | —                                                  |
 
 To be alerted when a job stops running, see
 [Monitoring](/self-hosting/optional-services/monitoring/#scheduled-jobs).

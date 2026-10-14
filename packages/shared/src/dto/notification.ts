@@ -21,10 +21,19 @@ export interface NotificationDto {
   timestamp: string;
   /** ISO creation date (when the row was written). */
   createdAt: string;
+  /** ISO date it was read, or null while unread. */
+  readAt: string | null;
 }
 
+/** The bell's unread entries, newest first. */
 export interface NotificationFeedDto {
   notifications: NotificationDto[];
   /** Count of unread notifications. */
   unread: number;
+}
+
+export interface NotificationCountsDto {
+  unread: number;
+  /** Arrived since the bell or the notifications page was last opened. */
+  unseen: number;
 }

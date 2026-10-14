@@ -45,7 +45,11 @@ describe("Collaborative lists (e2e)", () => {
   async function listNotificationsOf(who: Who) {
     const res = await as(who).get("/api/notifications").expect(200);
     return (
-      res.body.notifications as { type: string; data: { itemTitle?: string } }[]
+      res.body.notifications as {
+        id: string;
+        type: string;
+        data: { itemTitle?: string };
+      }[]
     ).filter((n) => n.type === "LIST_ITEM_ADDED");
   }
 
@@ -158,6 +162,20 @@ describe("Collaborative lists (e2e)", () => {
     expect(aliceGot[0].data.itemTitle).toBe("Test Anime");
 
     expect(await listNotificationsOf("bob")).toHaveLength(0);
+  });
+
+  it("tells the owner again once they've read the previous addition", async () => {
+    const [entry] = await listNotificationsOf("alice");
+    await as("alice").patch(`/api/notifications/${entry.id}/read`).expect(204);
+    expect(await listNotificationsOf("alice")).toHaveLength(0);
+
+    const detail = await as("alice").get(`/api/lists/me/${listId}`).expect(200);
+    await as("bob")
+      .delete(`/api/lists/${listId}/items/${detail.body.items[0].id}`)
+      .expect(200);
+    await addWork("bob").expect(201);
+
+    expect(await listNotificationsOf("alice")).toHaveLength(1);
   });
 
   it("stays quiet for a collaborator who muted the list", async () => {

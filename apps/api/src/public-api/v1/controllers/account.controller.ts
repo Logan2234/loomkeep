@@ -16,6 +16,7 @@ import { ApiOperation, ApiParam } from "@nestjs/swagger";
 import { PublicApi } from "../../../api-keys/public-api.decorator";
 import type { JwtPayload } from "../../../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../../../auth/decorators/current-user.decorator";
+import { parsePageQuery } from "../../../common/pagination.util";
 import { GamificationFeatureGuard } from "../../../gamification/gamification-feature.guard";
 import { NotificationService } from "../../../notifications/notification.service";
 import { ReviewService } from "../../../reviews/review.service";
@@ -43,6 +44,8 @@ import { ProfileV1Service } from "../profile-v1.service";
 import { StatsV1Service } from "../stats-v1.service";
 import { toTarget, webUrl } from "../v1.mapper";
 import { WorkTitlesService } from "../work-titles.service";
+
+const NOTIFICATIONS_LIMIT = 50;
 
 const REVIEW_TARGETS: Record<StatsDomain, ReviewTargetType[]> = {
   MEDIA: ["MEDIA", "SEASON", "EPISODE"],
@@ -219,14 +222,21 @@ export class NotificationsV1Controller {
     operationId: "getNotifications",
     summary: "The caller's notification bell",
     description:
-      "The most recent notifications, newest first, with how many are still unread.",
+      "The 50 most recent notifications, read or not, newest first, with how many are still unread. Read ones are kept 90 days.",
   })
   @ApiV1OkResponse({ type: ApiV1NotificationsResponseDto })
   async list(@CurrentUser() user: JwtPayload): Promise<ApiV1NotificationsDto> {
-    const feed = await this.notifications.feed(user.sub);
+    const [page, counts] = await Promise.all([
+      this.notifications.history(
+        user.sub,
+        parsePageQuery(undefined, undefined, NOTIFICATIONS_LIMIT),
+        false,
+      ),
+      this.notifications.counts(user.sub),
+    ]);
     return {
-      unread: feed.unread,
-      items: feed.notifications.map((n) => ({
+      unread: counts.unread,
+      items: page.items.map((n) => ({
         id: n.id,
         type: n.type,
         title: n.title,
@@ -234,6 +244,7 @@ export class NotificationsV1Controller {
         url: n.url ? webUrl(this.webOrigin, n.url) : null,
         date: n.timestamp,
         createdAt: n.createdAt,
+        readAt: n.readAt,
       })),
     };
   }

@@ -19,6 +19,7 @@ const notification = (
   data: {},
   timestamp: "2026-08-31T00:00:00Z",
   createdAt: "2026-08-31T00:00:00Z",
+  readAt: null,
 });
 
 describe("notification presentation", () => {

@@ -8,9 +8,11 @@ import {
   type MediaType,
   movieReleaseDates,
   movieReleaseInfo,
+  type NotificationCountsDto,
   type NotificationDto,
   type NotificationFeedDto,
   NotificationType,
+  type PagedResult,
   RealtimeEvent,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
@@ -24,6 +26,7 @@ import {
   canonicalExternalId,
 } from "../common/external-id.util";
 import { jsonObject, toJsonInput } from "../common/json.util";
+import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
@@ -42,13 +45,26 @@ import { PushService } from "./push.service";
 const WINDOW_DAYS = 14;
 /** Most recent notifications returned in the feed. */
 const FEED_LIMIT = 50;
-/** Kinds excluded from the bell feed: NEW_EPISODE (push/email only) and FOLLOW_REQUEST (superseded by the live, actionable `Follow` list). */
-const FEED_EXCLUDED_TYPES: NotificationType[] = [
+/** Rows that only feed the push/email digest. */
+const RELEASE_TYPES: NotificationType[] = [
   NotificationType.NEW_EPISODE,
   NotificationType.NEW_MOVIE,
   NotificationType.NEW_GAME,
+];
+/** Kinds excluded from the bell feed: releases (push/email only) and FOLLOW_REQUEST (superseded by the live, actionable `Follow` list). */
+const FEED_EXCLUDED_TYPES: NotificationType[] = [
+  ...RELEASE_TYPES,
   NotificationType.FOLLOW_REQUEST,
 ];
+/** How long a read entry stays in the history. */
+const READ_RETENTION_DAYS = 90;
+/**
+ * How long a release row is kept. It must outlast the scan's window, or the
+ * next scan would recreate it and send the release again; by then even a
+ * weekly digest has gone out.
+ */
+const RELEASE_RETENTION_DAYS = 30;
+const NOTIFICATIONS_PURGE_CRON = "0 7 * * *";
 
 type CreateNotificationInput = {
   userId: string;
@@ -711,9 +727,11 @@ export class NotificationService {
    * post notifications without knowing the storage shape.
    */
   async create(input: CreateNotificationInput): Promise<void> {
-    if (await this.createInTransaction(this.prisma, input)) {
+    const id = await this.createInTransaction(this.prisma, input);
+
+    if (id) {
       this.publishCreated(input.userId, input.type);
-      await this.pushIfWanted(input);
+      await this.pushIfWanted(input, id);
     }
   }
 
@@ -721,7 +739,8 @@ export class NotificationService {
    * Like {@link create}, but folds into the recipient's unread row with the
    * same `dedupeKey` rather than adding another: `regroup` rewrites it for
    * the new total, and the row moves back to the top. Only the first one
-   * pushes.
+   * pushes. Once read, the row starts a new group instead: left as it was,
+   * it would hold the key and keep every later addition silent.
    */
   async createOrGroup(
     input: CreateNotificationInput & { dedupeKey: string },
@@ -731,10 +750,27 @@ export class NotificationService {
       where: {
         userId_dedupeKey: { userId: input.userId, dedupeKey: input.dedupeKey },
       },
-      select: { id: true, data: true },
+      select: { id: true, data: true, readAt: true },
     });
 
     if (!existing) return this.create(input);
+
+    if (existing.readAt) {
+      await this.prisma.notification.update({
+        where: { id: existing.id },
+        data: {
+          title: input.title,
+          body: input.body ?? null,
+          url: input.url ?? null,
+          data: toJsonInput(input.data ?? {}),
+          createdAt: new Date(),
+          readAt: null,
+        },
+      });
+      this.publishCreated(input.userId, input.type);
+      await this.pushIfWanted(input, existing.id);
+      return;
+    }
 
     const previous = jsonObject(existing.data);
     const count = (typeof previous.count === "number" ? previous.count : 1) + 1;
@@ -752,7 +788,10 @@ export class NotificationService {
   }
 
   /** Pushes a new bell entry too, when the recipient chose to for its kind. */
-  private async pushIfWanted(input: CreateNotificationInput): Promise<void> {
+  private async pushIfWanted(
+    input: CreateNotificationInput,
+    notificationId: string,
+  ): Promise<void> {
     if (!isAlertToggleable(input.type, "push")) return;
 
     const user = await this.prisma.user.findUnique({
@@ -773,6 +812,7 @@ export class NotificationService {
         title: pushTitle(input, notificationCopy(user.locale)),
         body: input.body ?? "",
         url: input.url ?? "/app",
+        notificationId,
       });
     } catch (err) {
       // The bell entry is saved: a push service failing mustn't fail the
@@ -781,12 +821,17 @@ export class NotificationService {
     }
   }
 
-  /** Persists a notification alongside the caller's transaction; publish only after commit. */
+  /**
+   * Persists a notification alongside the caller's transaction; publish only
+   * after commit. Returns its id, or null when its `dedupeKey` was taken.
+   */
   async createInTransaction(
     db: PrismaService | Prisma.TransactionClient,
     input: CreateNotificationInput,
-  ): Promise<boolean> {
-    const { count } = await db.notification.createMany({
+  ): Promise<string | null> {
+    // skipDuplicates rather than catching the unique violation, which would
+    // abort the caller's transaction.
+    const [row] = await db.notification.createManyAndReturn({
       data: [
         {
           userId: input.userId,
@@ -799,9 +844,10 @@ export class NotificationService {
         },
       ],
       skipDuplicates: true,
+      select: { id: true },
     });
 
-    return count > 0;
+    return row?.id ?? null;
   }
 
   publishCreated(userId: string, type: NotificationType): void {
@@ -812,15 +858,12 @@ export class NotificationService {
   }
 
   /**
-   * The bell feed: every kind except NEW_EPISODE (push/email only) and
-   * FOLLOW_REQUEST (superseded by the live, actionable `Follow` list). A row
-   * that exists is by definition unread — reading deletes it.
+   * The bell's unread entries: every kind except the releases (push/email
+   * only) and FOLLOW_REQUEST (superseded by the live, actionable `Follow`
+   * list).
    */
   async feed(userId: string): Promise<NotificationFeedDto> {
-    const where: Prisma.NotificationWhereInput = {
-      userId,
-      type: { notIn: FEED_EXCLUDED_TYPES },
-    };
+    const where = { ...bellWhere(userId), readAt: null };
     // Counted separately: the list is capped at FEED_LIMIT, so `rows.length`
     // would freeze the bell badge at 50 once the user passes that many.
     const [rows, unread] = await Promise.all([
@@ -834,16 +877,93 @@ export class NotificationService {
     return { notifications: rows.map(toDto), unread };
   }
 
-  async markAllRead(userId: string): Promise<void> {
-    await this.prisma.notification.deleteMany({
-      where: {
-        userId,
-        type: { notIn: FEED_EXCLUDED_TYPES },
-      },
+  /** Every bell entry still kept, read or not, newest first. */
+  async history(
+    userId: string,
+    { skip, take, limit }: ParsedPage,
+    unreadOnly: boolean,
+  ): Promise<PagedResult<NotificationDto>> {
+    const rows = await this.prisma.notification.findMany({
+      where: { ...bellWhere(userId), ...(unreadOnly ? { readAt: null } : {}) },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: take + 1,
     });
+    const page = toPagedResult(rows, limit);
+    return { ...page, items: page.items.map(toDto) };
   }
 
-  async markRead(userId: string, id: string): Promise<void> {
+  /** Unseen: arrived since the bell or the notifications page was last opened. */
+  async counts(userId: string): Promise<NotificationCountsDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { notificationsSeenAt: true },
+    });
+    const unreadWhere = { ...bellWhere(userId), readAt: null };
+    const seenAt = user?.notificationsSeenAt;
+    const [unread, unseen] = await Promise.all([
+      this.prisma.notification.count({ where: unreadWhere }),
+      seenAt
+        ? this.prisma.notification.count({
+            where: { ...unreadWhere, createdAt: { gt: seenAt } },
+          })
+        : null,
+    ]);
+    return { unread, unseen: unseen ?? unread };
+  }
+
+  async markSeen(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { notificationsSeenAt: new Date() },
+    });
+    this.publishChanged(userId);
+  }
+
+  async markAllRead(userId: string): Promise<void> {
+    await this.prisma.notification.updateMany({
+      where: { ...bellWhere(userId), readAt: null },
+      data: { readAt: new Date() },
+    });
+    this.publishChanged(userId);
+  }
+
+  markRead(userId: string, id: string): Promise<void> {
+    return this.setRead(userId, id, true);
+  }
+
+  markUnread(userId: string, id: string): Promise<void> {
+    return this.setRead(userId, id, false);
+  }
+
+  private async setRead(
+    userId: string,
+    id: string,
+    read: boolean,
+  ): Promise<void> {
+    const row = await this.prisma.notification.findFirst({
+      where: { id, userId },
+      select: { readAt: true },
+    });
+
+    if (!row) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.NotificationNotFound,
+      );
+    }
+
+    // Reading twice keeps the first date: the 90 days run from it.
+    if ((row.readAt !== null) === read) return;
+
+    await this.prisma.notification.update({
+      where: { id },
+      data: { readAt: read ? new Date() : null },
+    });
+    this.publishChanged(userId);
+  }
+
+  async remove(userId: string, id: string): Promise<void> {
     const { count } = await this.prisma.notification.deleteMany({
       where: { id, userId },
     });
@@ -854,7 +974,60 @@ export class NotificationService {
         ErrorCode.NotificationNotFound,
       );
     }
+
+    this.publishChanged(userId);
   }
+
+  /**
+   * A follow request answered, withdrawn or blocked: its row, which the bell
+   * never shows, counts as read from now on, so the purge takes it in 90
+   * days.
+   */
+  async settleFollowRequest(
+    recipientId: string,
+    followerId: string,
+  ): Promise<void> {
+    await this.prisma.notification.updateMany({
+      where: {
+        userId: recipientId,
+        dedupeKey: `request:${followerId}`,
+        readAt: null,
+      },
+      data: { readAt: new Date() },
+    });
+  }
+
+  /**
+   * Daily: drops what was read over {@link READ_RETENTION_DAYS} days ago,
+   * and the release rows the digest is done with. Unread entries stay: the
+   * inactive-account purge bounds them.
+   */
+  @Cron(NOTIFICATIONS_PURGE_CRON)
+  async purge(now = new Date()): Promise<void> {
+    const [read, releases] = await Promise.all([
+      this.prisma.notification.deleteMany({
+        where: { readAt: { lt: sinceDaysAgo(now, READ_RETENTION_DAYS) } },
+      }),
+      this.prisma.notification.deleteMany({
+        where: {
+          type: { in: RELEASE_TYPES },
+          createdAt: { lt: sinceDaysAgo(now, RELEASE_RETENTION_DAYS) },
+        },
+      }),
+    ]);
+    const count = read.count + releases.count;
+
+    if (count > 0) this.logger.log(`Purged ${count} notifications`);
+  }
+
+  /** Lets the account's other devices refresh their bell and badge. */
+  private publishChanged(userId: string): void {
+    this.events.emitToUser(userId, RealtimeEvent.NOTIFICATION);
+  }
+}
+
+function bellWhere(userId: string): Prisma.NotificationWhereInput {
+  return { userId, type: { notIn: FEED_EXCLUDED_TYPES } };
 }
 
 /** A comment's bell entry is titled with its author alone: the push says why. */
@@ -885,5 +1058,6 @@ function toDto(n: Notification): NotificationDto {
     data,
     timestamp: airDate ?? n.createdAt.toISOString(),
     createdAt: n.createdAt.toISOString(),
+    readAt: n.readAt?.toISOString() ?? null,
   };
 }
