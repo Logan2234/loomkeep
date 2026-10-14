@@ -54,7 +54,7 @@ export function rowIn(
 }
 
 /** The bell's panel, opening from the corner it hangs from. */
-export function panelIn(): TransitionConfig {
+export function panelIn(_node: Element): TransitionConfig {
   return {
     duration: prefersReducedMotion() ? 0 : 220,
     easing: cubicOut,
@@ -63,7 +63,7 @@ export function panelIn(): TransitionConfig {
   };
 }
 
-export function panelOut(): TransitionConfig {
+export function panelOut(_node: Element): TransitionConfig {
   return {
     duration: prefersReducedMotion() ? 0 : 150,
     easing: cubicIn,
