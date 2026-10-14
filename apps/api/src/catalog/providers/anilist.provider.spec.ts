@@ -187,6 +187,36 @@ describe("AnilistProvider", () => {
     });
   });
 
+  it("drops a streaming link that isn't a web address", async () => {
+    mockFetch({
+      data: {
+        Media: {
+          id: 999,
+          title: { romaji: "Show", english: null },
+          coverImage: {},
+          episodes: 1,
+          streamingEpisodes: [
+            {
+              title: "Episode 1 - First",
+              thumbnail: "data:image/svg+xml,<svg/>",
+              url: "javascript:alert(1)",
+              site: "Crunchyroll",
+            },
+          ],
+        },
+      },
+    });
+
+    const details = await provider.getDetails("999");
+
+    expect(details.seasons[0].episodes[0]).toMatchObject({
+      title: "First",
+      stillUrl: null,
+      streamingUrl: null,
+      streamingSite: null,
+    });
+  });
+
   it("follows a long show's airing schedule over its next pages", async () => {
     const page = (episode: number, hasNextPage: boolean) => ({
       pageInfo: { hasNextPage },

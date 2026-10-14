@@ -371,8 +371,8 @@ function streamingEpisodesByNumber(
     parsed.push({
       number: Number(match[1]),
       name: match[2]?.trim() || null,
-      thumbnail: thumbnail || null,
-      url: url || null,
+      thumbnail: webUrl(thumbnail),
+      url: webUrl(url),
       site: site || null,
     });
   }
@@ -393,6 +393,11 @@ function streamingEpisodesByNumber(
   }
 
   return byNumber;
+}
+
+/** An http(s) link, the only kind the page will render as a link or image. */
+function webUrl(url: string | null | undefined): string | null {
+  return url && /^https?:\/\//i.test(url) ? url : null;
 }
 
 /** Staff credited with the exact role "Director" (case-insensitive). */
