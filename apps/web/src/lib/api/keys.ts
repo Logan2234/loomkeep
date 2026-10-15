@@ -64,6 +64,10 @@ export const keys = {
       ["media", "extras", source, sourceId, region] as const,
     saga: (type: string, sourceId: string, tracked: boolean) =>
       ["media", "saga", type, sourceId, tracked] as const,
+    episodeMedia: (sourceId: string, season: number, episode: number) =>
+      ["media", "episode-media", sourceId, season, episode] as const,
+    seasonImages: (sourceId: string, season: number) =>
+      ["media", "season-images", sourceId, season] as const,
   },
   calendar: {
     upcoming: () => ["calendar", "upcoming"] as const,

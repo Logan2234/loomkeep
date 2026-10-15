@@ -16,7 +16,7 @@
   "engines": {
     "node": ">=22.17"
   },
-  "packageManager": "pnpm@12.8.1",
+  "packageManager": "pnpm@12.11.2",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Logan2234/loomkeep.git"

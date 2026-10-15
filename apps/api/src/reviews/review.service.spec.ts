@@ -912,3 +912,99 @@ describe("ReviewService.listMine — target links", () => {
     ]);
   });
 });
+
+describe("ReviewService.communityRatings", () => {
+  function makeRatings(rows: unknown[], socialEnabled: boolean) {
+    const prisma = {
+      review: { findMany: vi.fn().mockResolvedValue(rows) },
+    } as unknown as PrismaService;
+    const config = {
+      get: vi.fn((key: string) =>
+        key === "SOCIAL_ENABLED" ? String(socialEnabled) : undefined,
+      ),
+    } as unknown as ConfigService;
+    const visibility = {
+      getRelation: vi.fn((_v: string, target: { id: string }) =>
+        Promise.resolve(
+          target.id === "friend"
+            ? relation({ isFriend: true, following: true, followsYou: true })
+            : relation({}),
+        ),
+      ),
+    } as unknown as VisibilityService;
+    const svc = new ReviewService(
+      prisma,
+      visibility,
+      { emit: vi.fn() } as unknown as ActivityService,
+      stubXp(),
+      config,
+      stubAchievements(),
+      stubNotifications(),
+    );
+    return { svc, prisma, visibility };
+  }
+
+  const row = (
+    targetId: string,
+    authorId: string,
+    rating: number,
+    visibility: string,
+  ) => ({
+    targetId,
+    rating,
+    visibility,
+    user: { id: authorId, profileAccess: "PUBLIC" },
+  });
+
+  it("counts and averages only the reviews the viewer may see, with their own rating apart", async () => {
+    const { svc, visibility } = makeRatings(
+      [
+        row("e1", VIEWER, 8, "FRIENDS"),
+        row("e1", "friend", 6, "FRIENDS"),
+        row("e1", "stranger", 2, "FRIENDS"),
+        row("e1", "stranger", 10, "PUBLIC"),
+      ],
+      true,
+    );
+
+    const ratings = await svc.communityRatings(VIEWER, "EPISODE" as never, [
+      "e1",
+      "e2",
+    ]);
+
+    expect(ratings.get("e1")).toEqual({
+      reviewCount: 3,
+      reviewAverage: 8,
+      myRating: 8,
+    });
+    expect(ratings.get("e2")).toEqual({
+      reviewCount: 0,
+      reviewAverage: null,
+      myRating: null,
+    });
+    // One lookup per author and audience, not per review.
+    expect(visibility.getRelation).toHaveBeenCalledTimes(3);
+  });
+
+  it("gives only the viewer's own rating when social features are off", async () => {
+    const { svc, prisma } = makeRatings(
+      [row("e1", VIEWER, 7, "PUBLIC")],
+      false,
+    );
+
+    const ratings = await svc.communityRatings(VIEWER, "EPISODE" as never, [
+      "e1",
+    ]);
+
+    expect(prisma.review.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: VIEWER }),
+      }),
+    );
+    expect(ratings.get("e1")).toEqual({
+      reviewCount: null,
+      reviewAverage: null,
+      myRating: 7,
+    });
+  });
+});

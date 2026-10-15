@@ -54,6 +54,10 @@ const ANIME_DETAILS: ProviderMediaDetails = {
     {
       number: 1,
       title: null,
+      overview: null,
+      posterUrl: null,
+      airDate: null,
+      voteAverage: null,
       episodes: [
         {
           number: 1,
@@ -62,6 +66,11 @@ const ANIME_DETAILS: ProviderMediaDetails = {
           runtimeMin: 24,
           overview: null,
           stillUrl: null,
+          voteAverage: null,
+          voteCount: null,
+          episodeType: null,
+          streamingUrl: null,
+          streamingSite: null,
         },
         {
           number: 2,
@@ -70,6 +79,11 @@ const ANIME_DETAILS: ProviderMediaDetails = {
           runtimeMin: 24,
           overview: null,
           stillUrl: null,
+          voteAverage: null,
+          voteCount: null,
+          episodeType: null,
+          streamingUrl: null,
+          streamingSite: null,
         },
         {
           number: 3,
@@ -78,6 +92,11 @@ const ANIME_DETAILS: ProviderMediaDetails = {
           runtimeMin: 24,
           overview: null,
           stillUrl: null,
+          voteAverage: null,
+          voteCount: null,
+          episodeType: null,
+          streamingUrl: null,
+          streamingSite: null,
         },
       ],
     },

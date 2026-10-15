@@ -77,8 +77,30 @@ describe("timeLeftToWatch", () => {
     title: null,
     airDate,
     runtimeMin,
+    overview: null,
+    stillUrl: null,
+    voteAverage: null,
+    voteCount: null,
+    streamingUrl: null,
+    streamingSite: null,
+    reviewCount: null,
+    reviewAverage: null,
+    myRating: null,
     watchCount,
     watches: [],
+  });
+  const season = (number: number, episodes: ReturnType<typeof episode>[]) => ({
+    id: `s${number}`,
+    number,
+    title: null,
+    overview: null,
+    posterUrl: null,
+    airDate: null,
+    voteAverage: null,
+    reviewCount: null,
+    reviewAverage: null,
+    myRating: null,
+    episodes,
   });
 
   it("times the aired, unwatched episodes, specials aside", () => {
@@ -86,18 +108,13 @@ describe("timeLeftToWatch", () => {
       "SERIES",
       45,
       [
-        { id: "s0", number: 0, title: null, episodes: [episode(1, 90)] },
-        {
-          id: "s1",
-          number: 1,
-          title: null,
-          episodes: [
-            episode(1, 48, 1),
-            episode(2, 47),
-            episode(3, 40),
-            episode(4, 40, 0, "2026-12-01"),
-          ],
-        },
+        season(0, [episode(1, 90)]),
+        season(1, [
+          episode(1, 48, 1),
+          episode(2, 47),
+          episode(3, 40),
+          episode(4, 40, 0, "2026-12-01"),
+        ]),
       ],
       NOW,
     );
@@ -109,7 +126,7 @@ describe("timeLeftToWatch", () => {
     const left = timeLeftToWatch(
       "ANIME",
       null,
-      [{ id: "s1", number: 1, title: null, episodes: [episode(1, null)] }],
+      [season(1, [episode(1, null)])],
       NOW,
     );
 
@@ -118,12 +135,7 @@ describe("timeLeftToWatch", () => {
 
   it("is null once everything aired has been watched", () => {
     expect(
-      timeLeftToWatch(
-        "SERIES",
-        45,
-        [{ id: "s1", number: 1, title: null, episodes: [episode(1, 45, 1)] }],
-        NOW,
-      ),
+      timeLeftToWatch("SERIES", 45, [season(1, [episode(1, 45, 1)])], NOW),
     ).toBeNull();
   });
 });

@@ -7,6 +7,7 @@
   import { fade } from "svelte/transition";
   import type { Snippet } from "svelte";
   import Icon from "./Icon.svelte";
+  import { LIGHTBOX_Z_INDEX } from "./overlay-layers";
   let {
     label,
     children,
@@ -30,7 +31,8 @@
   use:portal
   use:scrollLock
   use:dialogFocus={{ initialFocus: closeButton, onEscape: onClose }}
-  class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+  class="fixed inset-0 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+  style="z-index: {LIGHTBOX_Z_INDEX}"
   in:fade={{ duration: reduced ? 0 : 140 }}
   out:fade={{ duration: reduced ? 0 : 120 }}
   role="dialog"

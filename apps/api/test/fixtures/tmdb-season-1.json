@@ -12,21 +12,26 @@
       "runtime": 58,
       "season_number": 1,
       "show_id": 1396,
-      "vote_average": 8.1
+      "vote_average": 8.1,
+      "vote_count": 210
     },
     {
       "air_date": "2008-01-27",
       "episode_number": 2,
-      "episode_type": "standard",
+      "episode_type": "finale",
       "id": 62086,
       "name": "Cat's in the Bag...",
       "overview": "Walt and Jesse attempt to dispose of the bodies.",
       "runtime": 48,
       "season_number": 1,
       "show_id": 1396,
-      "vote_average": 8.2
+      "vote_average": 8.2,
+      "vote_count": 180
     }
   ],
   "name": "Season 1",
-  "season_number": 1
+  "season_number": 1,
+  "overview": "High school chemistry teacher Walter White's life is suddenly transformed.",
+  "poster_path": "/season1.jpg",
+  "vote_average": 8.3
 }

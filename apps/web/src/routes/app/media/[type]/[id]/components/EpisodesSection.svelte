@@ -2,6 +2,7 @@
   import { episodeCode } from "@loomkeep/shared";
 
   import {
+    getSeasonImages,
     unwatchEpisode,
     unwatchSeason,
     watchEpisode,
@@ -9,44 +10,72 @@
     watchThrough,
   } from "#lib/api/client.js";
   import { resolveApiError } from "#lib/api/errors.js";
+  import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import ClampedText from "#lib/components/ClampedText.svelte";
   import CommentsPanel from "#lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
-  import Dropdown from "#lib/components/Dropdown.svelte";
   import Icon from "#lib/components/Icon.svelte";
+  import Lightbox from "#lib/components/Lightbox.svelte";
   import Modal from "#lib/components/Modal.svelte";
-  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
   import ReviewsSection from "#lib/components/ReviewsSection.svelte";
   import { appConfig } from "#lib/config.svelte.js";
-  import {
-    DATE_MEDIUM_OPTIONS,
-    formatDate,
-    formatRuntimeTimecode,
-  } from "#lib/format.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type {
     LibraryEntryDto,
+    MediaDetailEpisodeDto,
     MediaDetailSeasonDto,
+    MediaType,
     ReviewTargetType,
   } from "@loomkeep/shared";
-  import { tick } from "svelte";
-  import { SvelteDate, SvelteSet } from "svelte/reactivity";
+  import { tick, untrack } from "svelte";
+  import { cubicOut } from "svelte/easing";
   import { fly, slide } from "svelte/transition";
+  import { airDateLabel, scoreLabel } from "./episode-format";
+  import EpisodePanel from "./EpisodePanel.svelte";
+  import EpisodeRow from "./EpisodeRow.svelte";
+  import {
+    defaultSeasonNumber,
+    isAired,
+    largeTmdbImage,
+    playlist,
+    runProgress,
+    unwatchedGapCount,
+  } from "./episodes";
 
   const reduced = prefersReducedMotion();
 
   let {
     seasons,
     entry,
+    mediaType,
+    sourceId,
     reload,
     onError,
   }: {
     seasons: MediaDetailSeasonDto[];
     entry: LibraryEntryDto | null;
+    mediaType: MediaType;
+    /** The route's catalogue id (TMDB for a series, AniList for an anime). */
+    sourceId: string;
     reload: () => Promise<void>;
     onError: (message: string) => void;
   } = $props();
+
+  // Anime air dates are exact broadcast times (AniList's schedule).
+  const exactTime = $derived(mediaType === "ANIME");
+  const tmdbSourceId = $derived(mediaType === "SERIES" ? sourceId : null);
+
+  // "Now" for aired/upcoming checks, kept current while the page stays open.
+  let now = $state(new Date());
+  $effect(() => {
+    const timer = setInterval(() => (now = new Date()), 60_000);
+    return () => clearInterval(timer);
+  });
 
   const markWatchedMut = createApiMutation(() => ({
     mutate: (episodeId: string) => watchEpisode(episodeId),
@@ -90,8 +119,42 @@
     );
   }
 
-  // Collapsed by default; several seasons can be expanded independently.
-  let expandedSeasons = new SvelteSet<number>();
+  const seasonLabel = (season: MediaDetailSeasonDto) =>
+    season.title ?? `${m.common_season()} ${season.number}`;
+  const episodeTitle = (episode: MediaDetailEpisodeDto) =>
+    episode.title ?? `${m.common_episode()} ${episode.number}`;
+
+  // One season open at most, or none — the page stays short. On arrival:
+  // the season being watched, nothing for a show not started or up to date.
+  let selectedSeason = $state<number | null>(
+    untrack(() => defaultSeasonNumber(seasons, new Date())),
+  );
+  const current = $derived(
+    seasons.find((s) => s.number === selectedSeason) ?? null,
+  );
+  function toggleSeason(seasonNumber: number) {
+    selectedSeason = selectedSeason === seasonNumber ? null : seasonNumber;
+  }
+
+  // A season's posters, in a lightbox from its own poster (TMDB only): the
+  // one shown first, then the rest once fetched.
+  let posterLightbox = $state<number | null>(null);
+  const seasonImagesQuery = createApiQuery(() => ({
+    key: keys.media.seasonImages(tmdbSourceId ?? "", posterLightbox ?? -1),
+    fetch: () => getSeasonImages(tmdbSourceId!, posterLightbox!),
+    enabled: !!tmdbSourceId && posterLightbox !== null,
+    retry: 0,
+  }));
+  const posterImages = $derived.by(() => {
+    const season = seasons.find((s) => s.number === posterLightbox);
+    if (!season?.posterUrl) return [];
+    const fileOf = (url: string) => url.slice(url.lastIndexOf("/"));
+    const main = largeTmdbImage(season.posterUrl);
+    const rest = (seasonImagesQuery.data?.images ?? []).filter(
+      (url) => fileOf(url) !== fileOf(main),
+    );
+    return [main, ...rest].map((src) => ({ src, alt: seasonLabel(season) }));
+  });
 
   // `#s2e5` (an episode code in a message links here): open the season and
   // bring the episode into view, lit for a moment.
@@ -101,7 +164,7 @@
     if (!target) return;
     const season = Number(target[1]);
     const key = `s${season}e${Number(target[2])}`;
-    expandedSeasons.add(season);
+    untrack(() => (selectedSeason = season));
     void tick().then(() => {
       document
         .getElementById(`episode-${key}`)
@@ -110,12 +173,26 @@
       setTimeout(() => (highlightedEpisode = null), 2000);
     });
   });
-  function toggleSeason(seasonNumber: number) {
-    if (expandedSeasons.has(seasonNumber)) {
-      expandedSeasons.delete(seasonNumber);
-    } else {
-      expandedSeasons.add(seasonNumber);
-    }
+
+  // The episode whose side panel is open.
+  let openEpisode = $state<{ season: number; episode: number } | null>(null);
+  const panel = $derived.by(() => {
+    if (!openEpisode) return null;
+    const { season: sn, episode: en } = openEpisode;
+    const season = seasons.find((s) => s.number === sn);
+    const episode = season?.episodes.find((e) => e.number === en);
+    if (!season || !episode) return null;
+    // Previous/next walk the whole run: past a season's last episode comes
+    // the next season's first.
+    const run = playlist(seasons, sn);
+    const at = run.findIndex((p) => p.season === sn && p.episode === en);
+    return { season, episode, before: run[at - 1], after: run[at + 1] };
+  });
+
+  /** Opens an episode's panel, the list following it into its season. */
+  function openPanel(target: { season: number; episode: number }) {
+    openEpisode = target;
+    selectedSeason = target.season;
   }
 
   let confirmUnwatchSeasonId = $state<string | null>(null);
@@ -126,14 +203,21 @@
   let catchup = $state<{ episodeId: string; count: number } | null>(null);
   let declinedCatchup = $state(false);
 
-  // Same idea for a season/episode's own review — discreet (icon-triggered
-  // modal), never inlined in the row.
+  // A season's or episode's own review opens in a modal, never inline.
   let reviewTarget = $state<{
     type: ReviewTargetType;
     id: string;
     label: string;
   } | null>(null);
 
+  function closeReview() {
+    reviewTarget = null;
+    // Its rating feeds the counts and averages shown here.
+    void reload();
+  }
+
+  const seasonWatchedCount = (season: MediaDetailSeasonDto) =>
+    season.episodes.filter((e) => e.watchCount > 0).length;
   const seasonWatched = (season: MediaDetailSeasonDto) =>
     season.episodes.length > 0 &&
     season.episodes.every((ep) => ep.watchCount > 0);
@@ -158,50 +242,19 @@
     return () => clearTimeout(timer);
   });
 
-  const seasonWatchedCount = (season: MediaDetailSeasonDto) =>
-    season.episodes.filter((e) => e.watchCount > 0).length;
+  const progress = $derived(runProgress(seasons, now));
+  const progressLabel = $derived(
+    progress.watched === 0
+      ? m.media_episodes_not_started()
+      : progress.watched >= progress.aired
+        ? m.media_episodes_up_to_date()
+        : m.media_episodes_progress(progress),
+  );
 
-  // How many regular episodes *before* this one are still unwatched — drives
-  // the catch-up prompt. Specials are not part of the linear run.
-  function unwatchedGapCount(seasonNumber: number, episodeNumber: number) {
-    let count = 0;
-    for (const s of seasons) {
-      if (s.number === 0) continue;
-      for (const ep of s.episodes) {
-        const before =
-          s.number < seasonNumber ||
-          (s.number === seasonNumber && ep.number < episodeNumber);
-        if (before && ep.watchCount === 0) count++;
-      }
-    }
-    return count;
-  }
-
-  // Calendar-day count until an episode's air date; 0 (or negative) once it's
-  // aired, matching the backend's `airDate <= now` gate.
-  function daysUntilAir(airDate: string): number {
-    const airStart = new SvelteDate(airDate);
-    airStart.setHours(0, 0, 0, 0);
-    const todayStart = new SvelteDate();
-    todayStart.setHours(0, 0, 0, 0);
-    return Math.round((airStart.getTime() - todayStart.getTime()) / 86_400_000);
-  }
-
-  // Label shown instead of the watch button while an episode hasn't aired yet;
-  // null once it can be marked (aired, or airDate unknown as with AniList).
-  function upcomingLabel(airDate: string | null): string | null {
-    if (!airDate) return null;
-    const days = daysUntilAir(airDate);
-    if (days <= 0) return null;
-    return days === 1 ? m.common_tomorrow() : m.media_airing_in_days({ days });
-  }
-
-  // This tick lands when an episode is marked. It is the
-  // most repeated action in the app, and it's what makes the season bar's
-  // move (and its completion accent, on the last episode) read as one
-  // gesture rather than two unrelated redraws. Gated on "the episode that
-  // was just marked" so a page load doesn't pop every tick already there.
-  const CHECK_POP_MS = 420;
+  // Ticks land when an episode is marked — gated on "the episode that was
+  // just marked" so a page load doesn't pop every tick already there.
+  // Long enough for the row's reward animation (EpisodeRow) to play out.
+  const CHECK_POP_MS = 600;
   let justWatchedId = $state<string | null>(null);
 
   function popCheck(episodeId: string) {
@@ -216,20 +269,22 @@
     markWatchedMut.mutate(episodeId);
   }
 
-  // Entry point for the primary "Marquer vu" button — asks first if it would
-  // silently skip over earlier unwatched episodes.
+  /**
+   * Entry point for every "Marquer vu" — asks first if it would silently
+   * skip over earlier unwatched episodes. Whether it went straight through.
+   */
   function requestMarkWatched(
     seasonNumber: number,
     episodeNumber: number,
     episodeId: string,
-  ) {
-    const gap =
-      seasonNumber > 0 ? unwatchedGapCount(seasonNumber, episodeNumber) : 0;
+  ): boolean {
+    const gap = unwatchedGapCount(seasons, seasonNumber, episodeNumber);
     if (gap > 0 && !declinedCatchup) {
       catchup = { episodeId, count: gap };
-    } else {
-      markWatched(episodeId);
+      return false;
     }
+    markWatched(episodeId);
+    return true;
   }
 
   function confirmCatchupYes() {
@@ -263,280 +318,312 @@
     onError("");
     markUnwatchMut.mutate(episodeId);
   }
+
+  function reviewEpisode(
+    season: MediaDetailSeasonDto,
+    episode: MediaDetailEpisodeDto,
+  ) {
+    if (!episode.id) return;
+    reviewTarget = {
+      type: "EPISODE",
+      id: episode.id,
+      label: episodeCode(season.number, episode.number),
+    };
+  }
+
+  function neighbour(target: { season: number; episode: number } | undefined) {
+    if (!target) return null;
+    const episode = seasons
+      .find((s) => s.number === target.season)
+      ?.episodes.find((e) => e.number === target.episode);
+    if (!episode) return null;
+    return {
+      code: episodeCode(target.season, target.episode),
+      title: episodeTitle(episode),
+      go: () => openPanel(target),
+    };
+  }
 </script>
 
-<h2 class="font-display mt-10 mb-4 text-xl font-bold">{m.media_episodes()}</h2>
-<div class="flex flex-col gap-4 pb-4">
+<h2
+  class="font-display mt-10 mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xl font-bold">
+  {m.media_episodes()}
+  {#if isFeatureNew("episode-details")}<NewBadge />{/if}
+  {#if entry}
+    <span class="text-dim font-sans text-sm font-medium">{progressLabel}</span>
+  {/if}
+</h2>
+
+<!-- Season cards: one open at most; clicking the open one closes it. They
+     wrap onto new rows rather than scroll, so every season stays in reach. -->
+<div class="grid grid-cols-2 gap-2.5 pb-2 sm:grid-cols-3 md:grid-cols-4">
   {#each seasons.filter((s) => s.episodes.length > 0) as season (season.number)}
-    {@const expanded = expandedSeasons.has(season.number)}
-    <div class="card">
-      <div
-        role="button"
-        tabindex="0"
-        aria-expanded={expanded}
-        class="font-display relative cursor-pointer rounded-[inherit] px-4 pt-2.5 pb-3 font-semibold [&::-webkit-details-marker]:hidden {expanded
-          ? 'border-border rounded-b-none border-b'
-          : ''}"
-        onclick={() => toggleSeason(season.number)}
-        onkeydown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            toggleSeason(season.number);
-          }
-        }}>
-        <div class="flex items-center gap-3">
-          <Icon
-            name="chevron-right"
-            class="text-dim h-4 w-4 shrink-0 transition-transform {expanded
-              ? 'rotate-90'
-              : ''}" />
-          <span class="min-w-0 flex-1 truncate">
-            {season.title ?? `${m.common_season()} ${season.number}`}
-          </span>
-          {#if entry}
-            <span class="timecode shrink-0 text-xs">
-              {seasonWatchedCount(season)}/{season.episodes.length}
+    {@const open = selectedSeason === season.number}
+    {@const watchedCount = seasonWatchedCount(season)}
+    <button
+      type="button"
+      class="bg-surface relative flex min-w-0 items-center gap-3 overflow-hidden rounded-xl border py-2 pr-3 pl-2 text-left transition-colors duration-150
+        {open
+        ? 'border-accent bg-accent/10'
+        : 'border-border hover:border-dim/50'}"
+      aria-expanded={open}
+      onclick={() => toggleSeason(season.number)}>
+      {#if season.posterUrl}
+        <img
+          src={season.posterUrl}
+          alt=""
+          loading="lazy"
+          class="h-14 w-[2.4rem] shrink-0 rounded object-cover" />
+      {:else}
+        <span
+          aria-hidden="true"
+          class="timecode bg-surface-2 text-dim grid h-14 w-[2.4rem] shrink-0 place-items-center rounded text-xs">
+          {season.number}
+        </span>
+      {/if}
+      <span class="min-w-0">
+        <span class="block truncate text-sm font-semibold">
+          {seasonLabel(season)}
+        </span>
+        <span class="timecode text-dim mt-0.5 block text-[0.7rem]">
+          {#if entry}{watchedCount}/{season.episodes
+              .length}{:else}{m.media_season_episode_count({
+              count: season.episodes.length,
+            })}{/if}{#if season.voteAverage !== null}
+            · TMDB {scoreLabel(season.voteAverage)}{/if}
+        </span>
+      </span>
+      {#if entry}
+        <span class="bg-border absolute inset-x-0 bottom-0 h-[3px]">
+          <span
+            class="block h-full transition-[width] duration-300 ease-out motion-reduce:transition-none
+              {watchedCount === season.episodes.length
+              ? 'bg-success'
+              : 'bg-accent'}"
+            style="width: {Math.round(
+              (watchedCount / season.episodes.length) * 100,
+            )}%"></span>
+        </span>
+      {/if}
+    </button>
+  {/each}
+</div>
+
+{#if current}
+  {@const season = current}
+  {@const pending = season.episodes.filter(
+    (e) => e.id && e.watchCount === 0 && isAired(e, now),
+  )}
+  {@const watchedCount = seasonWatchedCount(season)}
+  <!-- A whole season unfolds at once: a little slower than a menu, so the
+       eye follows the list growing. -->
+  <div
+    transition:slide|global={{
+      duration: reduced ? 0 : 300,
+      easing: cubicOut,
+    }}>
+    <section
+      class="border-border bg-surface mt-3 grid grid-cols-[3.75rem_minmax(0,1fr)] gap-x-4 gap-y-2 rounded-xl border p-3 sm:grid-cols-[5.75rem_minmax(0,1fr)] sm:p-4">
+      {#if season.posterUrl && tmdbSourceId}
+        {@const seasonNumber = season.number}
+        <button
+          type="button"
+          class="group row-span-2 self-start overflow-hidden rounded-lg sm:row-span-3"
+          aria-label={m.media_season_images()}
+          onclick={() => (posterLightbox = seasonNumber)}>
+          <img
+            src={season.posterUrl}
+            alt=""
+            class="w-full object-cover transition-transform duration-200 ease-out group-hover:scale-105 motion-reduce:transition-none" />
+        </button>
+      {:else if season.posterUrl}
+        <img
+          src={season.posterUrl}
+          alt=""
+          class="row-span-2 w-full self-start rounded-lg object-cover sm:row-span-3" />
+      {:else}
+        <span
+          class="bg-surface-2 row-span-2 aspect-[2/3] w-full rounded-lg sm:row-span-3"
+        ></span>
+      {/if}
+      <div class="min-w-0">
+        <p class="timecode text-dim text-[0.68rem] uppercase">
+          {exactTime ? m.media_anime_synopsis() : m.media_season_synopsis()}
+        </p>
+        <p
+          class="timecode text-dim mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[0.7rem]">
+          {#if season.airDate}
+            <span>
+              {m.media_season_premiere({
+                date: airDateLabel(season.airDate, false, true),
+              })}
             </span>
           {/if}
-          {#if entry && season.id}
-            <button
-              class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95"
-              aria-label={m.media_season_review()}
-              onclick={(e) => {
-                e.stopPropagation();
-                reviewTarget = {
-                  type: "SEASON",
-                  id: season.id!,
-                  label:
-                    season.title ?? `${m.common_season()} ${season.number}`,
-                };
-              }}>
-              <Icon name="star" class="h-4 w-4" />
-            </button>
+          <span
+            >{m.media_season_episode_count({
+              count: season.episodes.length,
+            })}</span>
+          {#if season.voteAverage !== null}
+            <span
+              >{m.media_score_tmdb({
+                score: scoreLabel(season.voteAverage),
+              })}</span>
           {/if}
-          {#if appConfig.socialEnabled && season.id}
-            <CommentsPanel
-              targetType="SEASON"
-              targetId={season.id}
-              title={season.title ?? `${m.common_season()} ${season.number}`}
-              canParticipate={!!entry}
-              revealSpoilersByDefault={seasonWatched(season)}
-              compact />
+          {#if season.reviewAverage !== null}
+            <span
+              >{m.media_score_loomkeep({
+                score: scoreLabel(season.reviewAverage),
+              })}</span>
           {/if}
-          {#if entry && season.id}
-            {@const seasonId = season.id}
-            <Dropdown placement="bottom-end" class="min-w-64">
-              {#snippet trigger({ open, toggle, onkeydown })}
-                <button
-                  class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95"
-                  aria-label={m.media_season_more_actions()}
-                  {onkeydown}
-                  aria-haspopup="menu"
-                  aria-expanded={open}
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    toggle(e);
-                  }}>
-                  <Icon name="dots-vertical" class="h-4 w-4" />
-                </button>
-              {/snippet}
-              {#snippet children({ close })}
-                {#if !seasonWatched(season)}
-                  <button
-                    role="menuitem"
-                    class="menu-item"
-                    disabled={markSeasonMut.loading &&
-                      markSeasonMut.variables === seasonId}
-                    onclick={() => {
-                      close();
-                      markSeason(seasonId);
-                    }}>
-                    <Icon name="check" class="h-4 w-4" />
-                    {m.media_mark_season_watched()}
-                  </button>
-                {/if}
-                {#if seasonWatchedCount(season) > 0}
-                  <button
-                    role="menuitem"
-                    class="menu-item menu-item-danger border-border border-t"
-                    onclick={() => {
-                      close();
-                      confirmUnwatchSeasonId = seasonId;
-                    }}>
-                    <Icon name="x" class="h-4 w-4" />
-                    {m.media_undo_season()}
-                  </button>
-                {/if}
-              {/snippet}
-            </Dropdown>
-          {/if}
+        </p>
+      </div>
+
+      {#if season.overview}
+        <div class="col-span-2 min-w-0 sm:col-span-1 sm:col-start-2">
+          {#key season.number}
+            <ClampedText
+              text={season.overview}
+              class="text-sm leading-relaxed" />
+          {/key}
         </div>
-        {#if entry && season.episodes.length > 0}
-          {@const seasonPct = Math.round(
-            (seasonWatchedCount(season) / season.episodes.length) * 100,
-          )}
-          <ProgressBar
-            value={seasonPct}
-            label={m.common_selection_summary({
-              label: m.common_progress(),
-              selection:
-                season.title ?? `${m.common_season()} ${season.number}`,
-            })}
-            height="h-1"
-            track="bg-border"
-            rounded={false}
-            class="absolute inset-x-0 bottom-0" />
-          {#if justFinished === season.number}
-            <!-- The glowing bar alone read as "the fill stopped moving". The
-                 congratulation is said in words, once, where the click
-                 happened — not as a bubble: finishing a season often unlocks
-                 an achievement too, and one gesture must not produce two
-                 notifications competing at the top of the screen. -->
-            <p
-              class="text-accent mt-1.5 flex items-center gap-1.5 text-xs font-bold"
-              transition:fly|global={{
-                y: reduced ? 0 : -6,
-                duration: reduced ? 0 : 220,
-              }}>
-              <Icon name="trophy" class="h-3.5 w-3.5" />
-              {m.media_season_finished()}
-            </p>
+      {/if}
+
+      <div
+        class="col-span-2 flex flex-wrap items-center gap-1 sm:col-span-1 sm:col-start-2">
+        {#if entry && season.id}
+          {@const seasonId = season.id}
+          <button
+            type="button"
+            class="hover:bg-surface-2 inline-flex h-7 items-center gap-1 rounded-full px-1.5 text-xs transition-colors active:scale-95 motion-reduce:transition-none
+              {season.myRating !== null
+              ? 'text-accent'
+              : 'text-dim hover:text-fg'}"
+            aria-label={m.media_season_review()}
+            title={m.media_season_review()}
+            onclick={() =>
+              (reviewTarget = {
+                type: "SEASON",
+                id: seasonId,
+                label: seasonLabel(season),
+              })}>
+            <Icon name="star" class="h-3.5 w-3.5" />
+            {#if season.reviewCount !== null}
+              <span class="timecode leading-none tabular-nums"
+                >{season.reviewCount}</span>
+            {:else if season.myRating !== null}
+              <span class="timecode leading-none tabular-nums"
+                >{scoreLabel(season.myRating)}</span>
+            {/if}
+          </button>
+        {/if}
+        {#if appConfig.socialEnabled && season.id}
+          <CommentsPanel
+            targetType="SEASON"
+            targetId={season.id}
+            title={seasonLabel(season)}
+            canParticipate={!!entry}
+            revealSpoilersByDefault={seasonWatched(season)}
+            compact />
+        {/if}
+        {#if justFinished === season.number}
+          <!-- Said in words, once, where the click happened — finishing a
+               season often unlocks an achievement too, and one gesture must
+               not produce two notifications competing at the top. -->
+          <p
+            class="text-accent flex items-center gap-1.5 text-xs font-bold"
+            transition:fly|global={{
+              y: reduced ? 0 : -6,
+              duration: reduced ? 0 : 220,
+            }}>
+            <Icon name="trophy" class="h-3.5 w-3.5" />
+            {m.media_season_finished()}
+          </p>
+        {/if}
+        {#if entry && season.id}
+          {@const seasonId = season.id}
+          {#if pending.length > 0}
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm ml-auto"
+              disabled={markSeasonMut.loading &&
+                markSeasonMut.variables === seasonId}
+              onclick={() => markSeason(seasonId)}>
+              <Icon name="check" class="h-4 w-4" />
+              {m.media_mark_aired_watched()}
+            </button>
+          {:else if watchedCount > 0}
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm hover:text-danger ml-auto"
+              onclick={() => (confirmUnwatchSeasonId = seasonId)}>
+              {m.media_undo_season()}
+            </button>
           {/if}
         {/if}
       </div>
-      {#if expanded}
-        <ul transition:slide|global={{ duration: reduced ? 0 : 200 }}>
-          {#each season.episodes as episode (episode.number)}
-            {@const watched = episode.watchCount > 0}
-            <li
-              id="episode-s{season.number}e{episode.number}"
-              class="border-border scroll-mt-24 border-b transition-colors duration-500 last:border-b-0
-                {highlightedEpisode === `s${season.number}e${episode.number}`
-                ? 'bg-accent/15'
-                : ''}">
-              <!-- One row on a wide viewport, two stacked lines on a phone: the
-                   number, the watched-on date and up to four action buttons
-                   left the title a few dozen pixels at 375px, and nothing at
-                   all once an episode was watched. -->
-              <div
-                class="flex flex-col gap-1 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-3">
-                <div class="flex min-w-0 items-center gap-3">
-                  <span class="timecode w-14 shrink-0 text-sm">
-                    {episodeCode(season.number, episode.number)}
-                  </span>
-                  <span class="min-w-0 flex-1 truncate text-sm">
-                    {episode.title ?? `${m.common_episode()} ${episode.number}`}
-                    {#if episode.watchCount > 1}
-                      <span class="text-success">×{episode.watchCount}</span>
-                    {/if}
-                  </span>
-                  {#if episode.runtimeMin}
-                    <span class="timecode shrink-0 text-xs">
-                      <span class="sr-only">{m.media_episode_runtime()}</span>
-                      {formatRuntimeTimecode(episode.runtimeMin)}
-                    </span>
-                  {/if}
-                </div>
+    </section>
 
-                <!-- Right-aligned on its own line: indenting it under the
-                     title instead left an odd gap mid-row. -->
-                <div
-                  class="flex items-center justify-end gap-1 sm:ml-auto sm:justify-start">
-                  {#if watched && episode.id}
-                    <span
-                      class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
-                      <span
-                        class="inline-flex {justWatchedId === episode.id
-                          ? 'episode-check-pop'
-                          : ''}">
-                        <Icon name="check" class="h-4 w-4" />
-                      </span>
-                      {#if episode.watches[0].watchedAt}
-                        {formatDate(
-                          episode.watches[0].watchedAt,
-                          DATE_MEDIUM_OPTIONS,
-                        )}
-                      {/if}
-                    </span>
-                  {/if}
-                  {#if entry && episode.id}
-                    <button
-                      class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95"
-                      aria-label={m.media_episode_review()}
-                      onclick={() => {
-                        reviewTarget = {
-                          type: "EPISODE",
-                          id: episode.id!,
-                          label: episodeCode(season.number, episode.number),
-                        };
-                      }}>
-                      <Icon name="star" class="h-4 w-4" />
-                    </button>
-                  {/if}
-                  {#if appConfig.socialEnabled && episode.id}
-                    <span class={watched ? "" : "mr-1"}>
-                      <CommentsPanel
-                        targetType="EPISODE"
-                        targetId={episode.id}
-                        title={`${episodeCode(season.number, episode.number)}${episode.title ? ` · ${episode.title}` : ""}`}
-                        canParticipate={!!entry}
-                        revealSpoilersByDefault={watched}
-                        compact />
-                    </span>
-                  {/if}
-                  {#if entry && episode.id}
-                    {@const upcoming =
-                      !watched && upcomingLabel(episode.airDate)}
-                    {#if upcoming}
-                      <span
-                        class="border-border text-dim shrink-0 rounded-lg border px-2.5 py-1 text-xs"
-                        title={m.media_not_aired()}>
-                        {upcoming}
-                      </span>
-                    {:else if watched}
-                      <!-- Rare, secondary actions on an already-watched episode:
-                       two quiet icon buttons rather than a hidden menu. -->
-                      <div class="flex shrink-0 items-center gap-1">
-                        <button
-                          class="btn-icon"
-                          title={m.media_rewatch()}
-                          aria-label={m.media_rewatch()}
-                          disabled={episodeBusy(episode.id!)}
-                          onclick={() => markWatched(episode.id!)}>
-                          <Icon name="refresh" class="h-4 w-4" />
-                        </button>
-                        <button
-                          class="btn-icon hover:text-danger"
-                          title={m.media_undo_watch()}
-                          aria-label={m.media_undo_watch()}
-                          disabled={episodeBusy(episode.id!)}
-                          onclick={() => markUnwatch(episode.id!)}>
-                          <Icon name="x" class="h-4 w-4" />
-                        </button>
-                      </div>
-                    {:else}
-                      <button
-                        class="btn btn-primary btn-sm shrink-0"
-                        disabled={episodeBusy(episode.id!)}
-                        onclick={() =>
-                          requestMarkWatched(
-                            season.number,
-                            episode.number,
-                            episode.id!,
-                          )}>
-                        {m.media_mark_watched_short()}
-                      </button>
-                    {/if}
-                  {/if}
-                </div>
-              </div>
-            </li>
-          {/each}
-        </ul>
-      {/if}
-    </div>
-  {/each}
-</div>
+    <ul class="card mt-3 mb-4 overflow-hidden">
+      {#each season.episodes as episode (episode.number)}
+        <EpisodeRow
+          {episode}
+          seasonNumber={season.number}
+          code={episodeCode(season.number, episode.number)}
+          {exactTime}
+          tracked={!!entry}
+          {now}
+          selected={openEpisode?.season === season.number &&
+            openEpisode.episode === episode.number}
+          highlighted={highlightedEpisode ===
+            `s${season.number}e${episode.number}`}
+          justWatched={!!episode.id && justWatchedId === episode.id}
+          busy={!!episode.id && episodeBusy(episode.id)}
+          onOpen={() =>
+            openEpisode?.season === season.number &&
+            openEpisode.episode === episode.number
+              ? (openEpisode = null)
+              : openPanel({ season: season.number, episode: episode.number })}
+          onMark={() =>
+            episode.id &&
+            requestMarkWatched(season.number, episode.number, episode.id)}
+          onReview={() => reviewEpisode(season, episode)} />
+      {/each}
+    </ul>
+  </div>
+{/if}
+
+{#if panel}
+  {@const { season, episode, before, after } = panel}
+  <EpisodePanel
+    {episode}
+    seasonNumber={season.number}
+    code={episodeCode(season.number, episode.number)}
+    {exactTime}
+    tracked={!!entry}
+    {now}
+    {tmdbSourceId}
+    busy={!!episode.id && episodeBusy(episode.id)}
+    previous={neighbour(before)}
+    next={neighbour(after)}
+    onClose={() => (openEpisode = null)}
+    onMark={() => {
+      if (!episode.id) return;
+      // Straight through: move on to the next one, as when watching.
+      const done = requestMarkWatched(
+        season.number,
+        episode.number,
+        episode.id,
+      );
+      if (done && after) openPanel(after);
+    }}
+    onRewatch={() => episode.id && markWatched(episode.id)}
+    onUndo={() => episode.id && markUnwatch(episode.id)}
+    onReview={() => reviewEpisode(season, episode)} />
+{/if}
+
+{#if posterLightbox !== null && posterImages.length > 0}
+  <Lightbox images={posterImages} onClose={() => (posterLightbox = null)} />
+{/if}
 
 {#if catchup}
   {@const c = catchup}
@@ -564,7 +651,7 @@
 {#if reviewTarget}
   <Modal
     title={m.media_review_title({ target: reviewTarget.label })}
-    onclose={() => (reviewTarget = null)}>
+    onclose={closeReview}>
     <ReviewsSection
       targetType={reviewTarget.type}
       targetId={reviewTarget.id}
@@ -572,27 +659,3 @@
       compact />
   </Modal>
 {/if}
-
-<style>
-  /* Tight and short on purpose: this fires several times a session, so it
-     has to read as a confirmation, not a celebration — no bounce past the
-     overshoot, no confetti. prefers-reduced-motion is handled globally in
-     app.css. */
-  .episode-check-pop {
-    animation: episode-check-pop 400ms cubic-bezier(0.2, 0.9, 0.3, 1);
-  }
-
-  @keyframes episode-check-pop {
-    0% {
-      transform: scale(0.45);
-      opacity: 0.3;
-    }
-    55% {
-      transform: scale(1.22);
-      opacity: 1;
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-</style>

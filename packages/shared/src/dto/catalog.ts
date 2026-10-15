@@ -156,21 +156,76 @@ export interface MediaExtrasDto {
   tags: string[];
 }
 
-interface EpisodeDto {
+/** What the catalogue source itself knows about one episode. */
+interface EpisodeSourceDetailsDto {
+  /** Synopsis, in the viewer's language when the source has it (TMDB). */
+  overview: string | null;
+  /** TMDB still, or AniList's Crunchyroll thumbnail. */
+  stillUrl: string | null;
+  /** The source's own score (TMDB, /10); null when nobody has voted yet. */
+  voteAverage: number | null;
+  voteCount: number | null;
+  /** Where to stream it (AniList's Crunchyroll links). */
+  streamingUrl: string | null;
+  streamingSite: string | null;
+}
+
+/** What the catalogue source itself knows about one season (TMDB only). */
+interface SeasonSourceDetailsDto {
+  overview: string | null;
+  posterUrl: string | null;
+  /** First broadcast ("2024-03-08T00:00:00.000Z"). */
+  airDate: string | null;
+  /** The source's own average score (TMDB, /10). */
+  voteAverage: number | null;
+}
+
+interface EpisodeDto extends EpisodeSourceDetailsDto {
   /** Internal ID, only present once the media is persisted. */
   id: string | null;
   number: number;
   title: string | null;
+  /**
+   * A date (TMDB, midnight UTC), or an exact broadcast time for anime
+   * (AniList's airing schedule).
+   */
   airDate: string | null;
   /** The episode's own length in minutes, when the source gives one. */
   runtimeMin: number | null;
 }
 
-interface SeasonDto {
+interface SeasonDto extends SeasonSourceDetailsDto {
   id: string | null;
   number: number;
   title: string | null;
   episodes: EpisodeDto[];
+}
+
+/** An episode's live image gallery and videos (TMDB), for its side panel. */
+export interface EpisodeMediaDto {
+  /** Stills, largest useful size, the main one first. */
+  images: string[];
+  /** YouTube videos (trailers, teasers, clips). */
+  videos: { key: string; type: string }[];
+}
+
+/** A season's posters (TMDB), for its lightbox. */
+export interface SeasonImagesDto {
+  /** The season's posters, its main one first. */
+  images: string[];
+}
+
+/** The Loomkeep community's ratings of an episode or season. */
+export interface CommunityRatingDto {
+  /**
+   * Reviews the viewer can see; null when the instance has social features
+   * off (reviews are then private to their author).
+   */
+  reviewCount: number | null;
+  /** Their average rating (/10); null when there is none. */
+  reviewAverage: number | null;
+  /** The viewer's own rating (/10), when they reviewed it. */
+  myRating: number | null;
 }
 
 /** Full media details, fetched live from the source (seasons included for series/anime). */
@@ -188,7 +243,8 @@ export interface MediaDetailsDto extends MediaSummaryDto {
 }
 
 /** One episode on the unified media page, carrying the user's watch history. */
-export interface MediaDetailEpisodeDto {
+export interface MediaDetailEpisodeDto
+  extends EpisodeSourceDetailsDto, CommunityRatingDto {
   /** null until the media is persisted (i.e. not yet in anyone's library). */
   id: string | null;
   number: number;
@@ -201,7 +257,8 @@ export interface MediaDetailEpisodeDto {
   watches: EpisodeWatchDto[];
 }
 
-export interface MediaDetailSeasonDto {
+export interface MediaDetailSeasonDto
+  extends SeasonSourceDetailsDto, CommunityRatingDto {
   id: string | null;
   number: number;
   title: string | null;

@@ -1,9 +1,11 @@
 import type {
   CastDetailDto,
+  EpisodeMediaDto,
   MediaExtrasDto,
   MediaSummaryDto,
   RatingDto,
   SagaMemberDto,
+  SeasonImagesDto,
   WatchProviderDto,
 } from "@loomkeep/shared";
 import { CatalogSource, MediaSource, MediaType } from "@loomkeep/shared";
@@ -21,6 +23,8 @@ const IMAGE_SIZE = {
   poster: "w500",
   backdrop: "w1280",
   still: "w300",
+  stillLarge: "w780",
+  posterLarge: "w780",
   profile: "w185",
   logo: "w92",
 } as const;
@@ -112,6 +116,11 @@ interface TmdbContentRatingsResult {
 }
 
 export interface TmdbSeasonDetails {
+  name?: string | null;
+  overview?: string | null;
+  poster_path?: string | null;
+  air_date?: string | null;
+  vote_average?: number | null;
   episodes?: {
     episode_number: number;
     name?: string | null;
@@ -119,7 +128,22 @@ export interface TmdbSeasonDetails {
     runtime?: number | null;
     overview?: string | null;
     still_path?: string | null;
+    vote_average?: number | null;
+    vote_count?: number | null;
+    episode_type?: string | null;
   }[];
+}
+
+/** `/tv/{id}/season/{s}/images`. */
+export interface TmdbSeasonImages {
+  posters?: { file_path: string }[];
+}
+
+/** `/tv/{id}/season/{s}/episode/{e}` with `images,videos` appended. */
+export interface TmdbEpisodeMedia {
+  still_path?: string | null;
+  images?: { stills?: { file_path: string }[] };
+  videos?: { results?: TmdbVideo[] };
 }
 
 export interface TmdbWatchProvider {
@@ -345,7 +369,14 @@ export function toTvSeason(
 ): ProviderSeason {
   return {
     number: season.season_number,
-    title: season.name ?? null,
+    title: detail.name ?? season.name ?? null,
+    overview: detail.overview?.trim() || null,
+    posterUrl: detail.poster_path
+      ? tmdbImage(detail.poster_path, IMAGE_SIZE.poster)
+      : null,
+    airDate: detail.air_date || null,
+    // TMDB reports 0 for "nobody voted yet", indistinguishable from a real 0.
+    voteAverage: detail.vote_average || null,
     episodes: (detail.episodes ?? []).map((e) => ({
       number: e.episode_number,
       title: e.name ?? null,
@@ -354,7 +385,41 @@ export function toTvSeason(
       runtimeMin: e.runtime || null,
       overview: e.overview?.trim() || null,
       stillUrl: e.still_path ? tmdbImage(e.still_path, IMAGE_SIZE.still) : null,
+      voteAverage: e.vote_count ? (e.vote_average ?? null) : null,
+      voteCount: e.vote_count || null,
+      episodeType: e.episode_type ?? null,
+      streamingUrl: null,
+      streamingSite: null,
     })),
+  };
+}
+
+/** A season's posters, in TMDB's order (best rated first). */
+export function toSeasonImages(data: TmdbSeasonImages): SeasonImagesDto {
+  return {
+    images: [...new Set((data.posters ?? []).map((p) => p.file_path))].map(
+      (path) => tmdbImage(path, IMAGE_SIZE.posterLarge),
+    ),
+  };
+}
+
+/**
+ * One episode's image gallery and videos, fetched live when its side panel
+ * opens (one TMDB call per episode — never at sync time). Videos are kept to
+ * YouTube, the only site the trailer lightbox embeds.
+ */
+export function toEpisodeMedia(data: TmdbEpisodeMedia): EpisodeMediaDto {
+  const paths = [
+    ...(data.still_path ? [data.still_path] : []),
+    ...(data.images?.stills ?? []).map((s) => s.file_path),
+  ];
+  return {
+    images: [...new Set(paths)].map((path) =>
+      tmdbImage(path, IMAGE_SIZE.stillLarge),
+    ),
+    videos: (data.videos?.results ?? [])
+      .filter((v) => v.site === "YouTube")
+      .map((v) => ({ key: v.key, type: v.type })),
   };
 }
 

@@ -2139,16 +2139,13 @@ export class LibraryService {
       airingFinished: normalizeAiringFinished(details.status),
       runtimeMin: details.runtimeMin,
       isAdult: details.isAdult,
+      // Nothing persisted yet, so no reviews either.
       seasons: details.seasons.map((season) => ({
-        id: null,
-        number: season.number,
-        title: season.title,
+        ...season,
+        ...NO_COMMUNITY_RATING,
         episodes: season.episodes.map((episode) => ({
-          id: null,
-          number: episode.number,
-          title: episode.title,
-          airDate: episode.airDate,
-          runtimeMin: episode.runtimeMin,
+          ...episode,
+          ...NO_COMMUNITY_RATING,
           watchCount: 0,
           watches: [],
         })),
@@ -2179,13 +2176,18 @@ export class LibraryService {
         )
       : null;
 
+    // Season/episode translations exist only for the locales translationFor
+    // has cached (never the base row's own English).
+    const locale = translation && lang ? lang : "";
     const seasons = await this.prisma.season.findMany({
       where: { mediaItemId: media.id },
       orderBy: { number: "asc" },
       include: {
+        translations: { where: { locale } },
         episodes: {
           orderBy: { number: "asc" },
           include: {
+            translations: { where: { locale } },
             watches: {
               where: { userId },
               orderBy: { watchedAt: { sort: "desc", nulls: "last" } },
@@ -2195,6 +2197,18 @@ export class LibraryService {
         },
       },
     });
+    const [seasonRatings, episodeRatings] = await Promise.all([
+      this.reviews.communityRatings(
+        userId,
+        ReviewTargetType.SEASON,
+        seasons.map((s) => s.id),
+      ),
+      this.reviews.communityRatings(
+        userId,
+        ReviewTargetType.EPISODE,
+        seasons.flatMap((s) => s.episodes.map((e) => e.id)),
+      ),
+    ]);
 
     const entryRow = await this.prisma.libraryEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
@@ -2241,13 +2255,25 @@ export class LibraryService {
       seasons: seasons.map((season) => ({
         id: season.id,
         number: season.number,
-        title: season.title,
+        title: season.translations[0]?.title ?? season.title,
+        overview: season.translations[0]?.overview ?? season.overview,
+        posterUrl: season.posterUrl,
+        airDate: season.airDate?.toISOString() ?? null,
+        voteAverage: season.voteAverage,
+        ...(seasonRatings.get(season.id) ?? NO_COMMUNITY_RATING),
         episodes: season.episodes.map((episode) => ({
           id: episode.id,
           number: episode.number,
-          title: episode.title,
+          title: episode.translations[0]?.title ?? episode.title,
           airDate: episode.airDate?.toISOString() ?? null,
           runtimeMin: episode.runtimeMin,
+          overview: episode.translations[0]?.overview ?? episode.overview,
+          stillUrl: episode.stillUrl,
+          voteAverage: episode.voteAverage,
+          voteCount: episode.voteCount,
+          streamingUrl: episode.streamingUrl,
+          streamingSite: episode.streamingSite,
+          ...(episodeRatings.get(episode.id) ?? NO_COMMUNITY_RATING),
           watchCount: episode.watches.length,
           watches: episode.watches.map((w) => ({
             id: w.id,
@@ -2272,6 +2298,12 @@ export class LibraryService {
     return resolveWatchRegion(user.watchRegion ?? undefined, acceptLanguage);
   }
 }
+
+const NO_COMMUNITY_RATING = {
+  reviewCount: null,
+  reviewAverage: null,
+  myRating: null,
+} as const;
 
 function toMediaItemDto(
   media: MediaItem & { externalIds: MediaExternalId[] },

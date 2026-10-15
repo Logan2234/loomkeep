@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX,
+  LIGHTBOX_Z_INDEX,
   MODAL_Z_INDEX,
+  TOOLTIP_Z_INDEX,
 } from "./overlay-layers";
 
 const componentSource = (name: string) =>
@@ -12,6 +14,16 @@ describe("overlay layers", () => {
   it("reserves a layer above an elevated side panel for nested modals", () => {
     expect(MODAL_Z_INDEX).toBeGreaterThan(
       ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX + 1,
+    );
+  });
+
+  it("stacks tooltips above modals, and lightboxes above everything", () => {
+    // A modal's mobile Drawer puts its panel at z-index + 10.
+    expect(TOOLTIP_Z_INDEX).toBeGreaterThan(MODAL_Z_INDEX + 10);
+    expect(LIGHTBOX_Z_INDEX).toBeGreaterThan(TOOLTIP_Z_INDEX);
+    expect(LIGHTBOX_Z_INDEX).toBeLessThanOrEqual(2_147_483_647);
+    expect(componentSource("LightboxFrame.svelte")).toContain(
+      "z-index: {LIGHTBOX_Z_INDEX}",
     );
   });
 

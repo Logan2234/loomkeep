@@ -26,6 +26,24 @@ export function getMediaExtras(
   });
 }
 
+/** A TMDB series episode's stills and videos, live. */
+export const getEpisodeMedia = (
+  sourceId: string,
+  season: number,
+  episode: number,
+) =>
+  typedRequest("/catalog/tmdb/{id}/seasons/{season}/episodes/{episode}/media", {
+    params: { id: sourceId, season: String(season), episode: String(episode) },
+    query: { lang: getLocale() },
+  });
+
+/** A TMDB series season's posters, live. */
+export const getSeasonImages = (sourceId: string, season: number) =>
+  typedRequest("/catalog/tmdb/{id}/seasons/{season}/images", {
+    params: { id: sourceId, season: String(season) },
+    query: { lang: getLocale() },
+  });
+
 export const getWatchProviderCatalog = (region: string | undefined) =>
   typedRequest("/catalog/watch-providers", { query: { region } });
 
