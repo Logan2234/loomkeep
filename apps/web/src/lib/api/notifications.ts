@@ -2,7 +2,7 @@ import type { PushSubscriptionRequestDto } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
 /** Looks for new releases now: they go out by push and email, not the bell. */
-export const scanNotifications = (): Promise<void> =>
+export const scanNotifications = () =>
   typedRequest("/notifications/scan", { method: "POST" });
 
 /** Every entry still kept, newest first; `unread` keeps the unread ones. */
