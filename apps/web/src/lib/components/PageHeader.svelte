@@ -7,6 +7,7 @@
   import type { Snippet } from "svelte";
   import Icon from "./Icon.svelte";
 
+  import { goBack } from "#lib/back-nav.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import NewBadge from "./NewBadge.svelte";
 
@@ -16,6 +17,7 @@
     subtitle,
     actions,
     back,
+    backInHistory = false,
     isNew = false,
     documentTitle,
     class: cls = "mb-8",
@@ -27,6 +29,9 @@
     /** Where the "<" leads. Set on pages reached from another one (the
      * profile hub, a settings sub-page), omitted on nav destinations. */
     back?: string;
+    /** The "<" returns to the previous page instead, `back` only serving a
+     * page loaded fresh: for a page reached from anywhere. */
+    backInHistory?: boolean;
     /** Shows a "Nouveau" pill next to the title — see feature-badges.ts. */
     isNew?: boolean;
     /** Overrides the <title>, for headings that don't read well in a tab
@@ -53,6 +58,7 @@
       {#if back}
         <a
           href={back}
+          onclick={backInHistory ? goBack : undefined}
           class="text-dim hover:text-fg -ml-1 flex h-lh shrink-0 items-center transition-all hover:-translate-x-0.5 hover:scale-105 active:scale-90"
           aria-label={back === "/app/admin"
             ? m.admin_back_to_overview()

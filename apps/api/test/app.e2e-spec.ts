@@ -441,18 +441,11 @@ describe("Loomkeep API (e2e)", () => {
     expect(firstEp.watches[0].watchedAt).toBeDefined();
   });
 
-  it("notifications: scan and feed respond", async () => {
-    const scan = await request(http)
+  it("notifications: scan, history and counts respond", async () => {
+    await request(http)
       .post("/api/notifications/scan")
       .set("Cookie", sessionCookies)
-      .expect(201);
-    expect(Array.isArray(scan.body.notifications)).toBe(true);
-    expect(typeof scan.body.unread).toBe("number");
-
-    await request(http)
-      .get("/api/notifications")
-      .set("Cookie", sessionCookies)
-      .expect(200);
+      .expect(204);
 
     await request(http)
       .post("/api/notifications/read")

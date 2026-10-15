@@ -189,7 +189,12 @@ export const keys = {
       ["search", "works", scope, query] as const,
   },
   notifications: {
-    feed: () => ["notifications", "feed"] as const,
+    /** Prefix of everything the bell and the notifications page show. */
+    entries: () => ["notifications", "entries"] as const,
+    counts: () => ["notifications", "entries", "counts"] as const,
+    preview: () => ["notifications", "entries", "preview"] as const,
+    history: (unread: boolean) =>
+      ["notifications", "entries", "history", unread] as const,
     pushDevices: () => ["notifications", "push-devices"] as const,
   },
   social: {

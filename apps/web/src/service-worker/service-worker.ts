@@ -27,25 +27,54 @@ interface PushPayload {
   locale?: string;
   /** Pushes sharing a tag replace each other, e.g. one per conversation. */
   tag?: string;
+  /** The bell entry it announces: opening the push marks it read. */
+  notificationId?: string;
+  /** What the installed app's icon badge shows now. */
+  badge?: number;
 }
 
-// A "new episode" push from the API: show a notification carrying the deep link.
+// A push from the API: show a notification carrying the deep link.
 self.addEventListener("push", (event) => {
   if (!event.data) return;
   const payload = event.data.json() as PushPayload;
 
   event.waitUntil(
-    self.registration.showNotification(payload.title, {
-      body: payload.body,
-      icon: "/favicon.svg",
-      badge: "/favicon.svg",
-      data: { url: payload.url },
-      dir: "auto",
-      lang: payload.locale,
-      tag: payload.tag ?? "loomkeep",
-    }),
+    Promise.all([
+      self.registration.showNotification(payload.title, {
+        body: payload.body,
+        icon: "/favicon.svg",
+        badge: "/favicon.svg",
+        data: { url: openUrl(payload) },
+        dir: "auto",
+        lang: payload.locale,
+        tag: payload.tag ?? "loomkeep",
+      }),
+      // While the app is closed, only a push can bring the icon up to date.
+      updateAppBadge(payload.badge),
+    ]),
   );
 });
+
+/** The app reads `notification` on arrival, marks that entry read and drops it. */
+function openUrl({ url, notificationId }: PushPayload): string {
+  if (!notificationId) return url;
+  const target = new URL(url, self.location.origin);
+  target.searchParams.set("notification", notificationId);
+  return target.pathname + target.search + target.hash;
+}
+
+async function updateAppBadge(count: number | undefined): Promise<void> {
+  if (count === undefined) return;
+  const nav = self.navigator as WorkerNavigator & {
+    setAppBadge?: (count?: number) => Promise<void>;
+    clearAppBadge?: () => Promise<void>;
+  };
+  try {
+    await (count > 0 ? nav.setAppBadge?.(count) : nav.clearAppBadge?.());
+  } catch {
+    // Not installed, or no badge on this platform.
+  }
+}
 
 // Focus an existing tab if the app is already open, otherwise open the link.
 self.addEventListener("notificationclick", (event) => {

@@ -2,7 +2,6 @@ import {
   DEFAULT_PAGE_SIZE,
   type NotificationCountsDto,
   type NotificationDto,
-  type NotificationFeedDto,
   type PagedResult,
   type PushDeviceCountDto,
   type PushPublicKeyDto,
@@ -20,14 +19,13 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
-import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
+import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
 import { NotificationCountsResponseDto } from "./dto/notification-counts-response.dto";
-import { NotificationFeedResponseDto } from "./dto/notification-feed-response.dto";
 import { NotificationResponseDto } from "./dto/notification-response.dto";
 import { PushDeviceCountResponseDto } from "./dto/push-device-count-response.dto";
 import { PushPublicKeyResponseDto } from "./dto/push-public-key-response.dto";
@@ -83,17 +81,11 @@ export class NotificationController {
     await this.push.unsubscribe(user.sub, endpoint);
   }
 
+  /** Looks for new releases now rather than at the next hourly scan. */
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Post("scan")
-  @ApiCreatedResponse({ type: NotificationFeedResponseDto })
-  async scan(@CurrentUser() user: JwtPayload): Promise<NotificationFeedDto> {
+  async scan(@CurrentUser() user: JwtPayload): Promise<void> {
     await this.notifications.scan(user.sub);
-    return this.notifications.feed(user.sub);
-  }
-
-  @Get()
-  @ApiOkResponse({ type: NotificationFeedResponseDto })
-  feed(@CurrentUser() user: JwtPayload): Promise<NotificationFeedDto> {
-    return this.notifications.feed(user.sub);
   }
 
   /** The notifications page: every entry kept, read or not (`unread=true` for the unread ones). */

@@ -341,31 +341,6 @@ describe("NotificationService — bell and history", () => {
     readAt,
   });
 
-  it("lists only unread entries in the bell feed, releases and requests left out", async () => {
-    const { service, prisma } = makeService();
-
-    await service.feed("u1");
-
-    expect(prisma.notification.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { userId: "u1", type: BELL_TYPES, readAt: null },
-      }),
-    );
-  });
-
-  it("counts unread past the feed cap instead of stopping at the listed rows", async () => {
-    const { service, prisma } = makeService();
-    (prisma.notification.findMany as Mock).mockResolvedValueOnce(
-      Array.from({ length: 50 }, (_, i) => row(`n${i}`)),
-    );
-    (prisma.notification.count as Mock).mockResolvedValueOnce(137);
-
-    const feed = await service.feed("u1");
-
-    expect(feed.notifications).toHaveLength(50);
-    expect(feed.unread).toBe(137);
-  });
-
   it("keeps read entries in the history, with when they were read", async () => {
     const { service, prisma } = makeService();
     const readAt = new Date("2026-10-13T21:00:00Z");

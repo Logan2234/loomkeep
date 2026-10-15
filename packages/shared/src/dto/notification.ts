@@ -25,13 +25,6 @@ export interface NotificationDto {
   readAt: string | null;
 }
 
-/** The bell's unread entries, newest first. */
-export interface NotificationFeedDto {
-  notifications: NotificationDto[];
-  /** Count of unread notifications. */
-  unread: number;
-}
-
 export interface NotificationCountsDto {
   unread: number;
   /** Arrived since the bell or the notifications page was last opened. */

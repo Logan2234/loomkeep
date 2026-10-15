@@ -24,7 +24,7 @@
 
     const catchUp = () => {
       void queryClient.invalidateQueries({
-        queryKey: keys.notifications.feed(),
+        queryKey: keys.notifications.entries(),
       });
       void queryClient.invalidateQueries({
         queryKey: keys.gamification.pending(),
