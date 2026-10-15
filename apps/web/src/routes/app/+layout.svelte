@@ -4,7 +4,6 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { scanNotifications } from "#lib/api/client.js";
-  import { keys } from "#lib/api/keys.js";
   import { auth } from "#lib/auth.svelte.js";
   import { trackBackHistory } from "#lib/back-nav.svelte.js";
   import { bootstrap } from "#lib/bootstrap.svelte.js";
@@ -33,10 +32,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { reauth } from "#lib/reauth.svelte.js";
   import { LEGAL_VERSION } from "@loomkeep/shared";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import UnlockBubble from "./components/UnlockBubble.svelte";
-
-  const queryClient = useQueryClient();
 
   const needsTermsReacceptance = $derived(
     !!auth.user && auth.user.acceptedTermsVersion !== LEGAL_VERSION,
@@ -69,18 +65,11 @@
       );
   });
 
-  // Once logged in, trigger this user's episode scan (push/email digest
-  // only — NEW_EPISODE rows never reach the in-app bell, see
-  // NotificationService.feed()) instead of waiting for the hourly cron.
-  // The endpoint also returns the current bell feed as a bonus, which is
-  // written straight into NotificationBell's query cache so it doesn't
-  // need a second round trip.
+  // Once logged in, trigger this user's release scan (push/email digest
+  // only — release rows never reach the in-app bell) instead of waiting for
+  // the hourly cron.
   $effect(() => {
-    if (bootstrap.ready && auth.isLoggedIn) {
-      void scanNotifications().then((feed) =>
-        queryClient.setQueryData(keys.notifications.feed(), feed),
-      );
-    }
+    if (bootstrap.ready && auth.isLoggedIn) void scanNotifications();
   });
 </script>
 

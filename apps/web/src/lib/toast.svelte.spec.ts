@@ -61,4 +61,31 @@ describe("ToastStore actions", () => {
     expect(add).not.toHaveBeenCalled();
     expect(store.items).toEqual([]);
   });
+
+  it("closes after the action ran, so an undo lands before what it undoes", () => {
+    const store = new ToastStore();
+    const calls: string[] = [];
+    const id = store.show(
+      "Notification deleted",
+      "info",
+      5000,
+      [{ label: "Undo", onSelect: () => calls.push("undo") }],
+      () => calls.push("close"),
+    );
+
+    store.selectAction(id);
+
+    expect(calls).toEqual(["undo", "close"]);
+  });
+
+  it("closes once when its time runs out", () => {
+    vi.useFakeTimers();
+    const store = new ToastStore();
+    const onClose = vi.fn();
+    store.show("Notification deleted", "info", 5000, [], onClose);
+
+    vi.advanceTimersByTime(5000);
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
 });

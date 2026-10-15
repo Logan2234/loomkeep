@@ -13,6 +13,7 @@ const SHIPPED = {
   "work-friends": "2026-10-11",
   "chat-review-list": "2026-10-11",
   "chat-commands": "2026-10-11",
+  "notification-history": "2026-10-14",
   sagas: "2026-10-03",
   "library-sagas": "2026-10-04",
   "admin-user-filters": "2026-09-23",

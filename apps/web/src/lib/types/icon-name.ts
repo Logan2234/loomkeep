@@ -94,4 +94,13 @@ export type IconName =
   | "rss"
   | "table"
   | "wall"
-  | "rows";
+  | "rows"
+  | "at"
+  | "heart"
+  | "thumbs-up"
+  | "user-plus"
+  | "user-check"
+  | "list-plus"
+  | "clapperboard"
+  | "ticket"
+  | "check-check";

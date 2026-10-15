@@ -10,7 +10,6 @@ import {
   movieReleaseInfo,
   type NotificationCountsDto,
   type NotificationDto,
-  type NotificationFeedDto,
   NotificationType,
   type PagedResult,
   RealtimeEvent,
@@ -43,8 +42,6 @@ import { PushService } from "./push.service";
 
 /** How far back a scan looks, so following an old show never floods the feed. */
 const WINDOW_DAYS = 14;
-/** Most recent notifications returned in the feed. */
-const FEED_LIMIT = 50;
 /** Rows that only feed the push/email digest. */
 const RELEASE_TYPES: NotificationType[] = [
   NotificationType.NEW_EPISODE,
@@ -855,26 +852,6 @@ export class NotificationService {
     if (!FEED_EXCLUDED_TYPES.includes(type)) {
       this.events.emitToUser(userId, RealtimeEvent.NOTIFICATION);
     }
-  }
-
-  /**
-   * The bell's unread entries: every kind except the releases (push/email
-   * only) and FOLLOW_REQUEST (superseded by the live, actionable `Follow`
-   * list).
-   */
-  async feed(userId: string): Promise<NotificationFeedDto> {
-    const where = { ...bellWhere(userId), readAt: null };
-    // Counted separately: the list is capped at FEED_LIMIT, so `rows.length`
-    // would freeze the bell badge at 50 once the user passes that many.
-    const [rows, unread] = await Promise.all([
-      this.prisma.notification.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        take: FEED_LIMIT,
-      }),
-      this.prisma.notification.count({ where }),
-    ]);
-    return { notifications: rows.map(toDto), unread };
   }
 
   /** Every bell entry still kept, read or not, newest first. */
