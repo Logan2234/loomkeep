@@ -255,6 +255,15 @@
         {#if (tracked && episode.id && watched) || episode.streamingUrl}
           <div class="mt-5 flex flex-wrap gap-2">
             {#if tracked && episode.id && watched}
+              <!-- Same reading order as the timeline below: taking one away
+                   on the left, adding one on the right. -->
+              <button
+                type="button"
+                class="btn btn-ghost"
+                disabled={busy}
+                onclick={onUndo}>
+                {m.media_undo_watch()}
+              </button>
               <button
                 type="button"
                 class="btn btn-ghost"
@@ -262,13 +271,6 @@
                 onclick={onRewatch}>
                 <Icon name="refresh" class="h-4 w-4" />
                 {m.media_rewatch()}
-              </button>
-              <button
-                type="button"
-                class="btn btn-ghost"
-                disabled={busy}
-                onclick={onUndo}>
-                {m.media_undo_watch()}
               </button>
             {/if}
             {#if episode.streamingUrl && episode.streamingSite}

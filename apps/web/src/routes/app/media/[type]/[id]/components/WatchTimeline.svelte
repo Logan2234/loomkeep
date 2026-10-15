@@ -43,16 +43,18 @@
 <ol class="flex overflow-x-auto pt-1 pb-1">
   {#each history as watch, i (watch.id)}
     <li class="relative w-30 shrink-0 pr-3">
-      <!-- The line back to the previous dot. Not wrapped in an {#if}: a
+      <!-- The line back to the previous dot, under both dots (it belongs to
+           the later item, which would otherwise paint it over the earlier
+           dot). Not wrapped in an {#if}: a
            local transition only plays with its own block, and the line has
            to draw as its dot travels. The first dot simply has none. -->
       <span
-        class="bg-border absolute top-[4px] -left-30 h-px w-30 origin-left
+        class="bg-border absolute top-[4px] -left-30 z-0 h-px w-30 origin-left
           {i === 0 ? 'hidden' : ''}"
         aria-hidden="true"
         transition:draw></span>
       <span
-        class="bg-success ring-bg relative block h-2.5 w-2.5 rounded-full ring-4"
+        class="bg-success ring-bg relative z-10 block h-2.5 w-2.5 rounded-full ring-4"
         aria-hidden="true"
         transition:travel={{ first: i === 0 }}></span>
       <span
