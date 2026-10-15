@@ -33,6 +33,7 @@
     ReviewTargetType,
   } from "@loomkeep/shared";
   import { tick, untrack } from "svelte";
+  import { cubicOut } from "svelte/easing";
   import { fly, slide } from "svelte/transition";
   import { airDateLabel, scoreLabel } from "./episode-format";
   import EpisodePanel from "./EpisodePanel.svelte";
@@ -414,7 +415,13 @@
     (e) => e.id && e.watchCount === 0 && isAired(e, now),
   )}
   {@const watchedCount = seasonWatchedCount(season)}
-  <div transition:slide|global={{ duration: reduced ? 0 : 200 }}>
+  <!-- A whole season unfolds at once: a little slower than a menu, so the
+       eye follows the list growing. -->
+  <div
+    transition:slide|global={{
+      duration: reduced ? 0 : 300,
+      easing: cubicOut,
+    }}>
     <section
       class="border-border bg-surface mt-3 grid grid-cols-[3.75rem_minmax(0,1fr)] gap-x-4 gap-y-2 rounded-xl border p-3 sm:grid-cols-[5.75rem_minmax(0,1fr)] sm:p-4">
       {#if season.posterUrl && tmdbSourceId}

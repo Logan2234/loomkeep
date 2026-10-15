@@ -56,6 +56,30 @@
 
   const reduced = prefersReducedMotion();
 
+  // Desktop: ← and → step through the episodes, unless the keys belong to
+  // something else — a field being typed in, or a dialog opened on top
+  // (the lightbox, a review) that has its own use for them.
+  function onKeydown(event: KeyboardEvent) {
+    if (layout.compact || event.defaultPrevented) return;
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+      return;
+    }
+    const target = event.target as HTMLElement | null;
+    if (
+      target?.isContentEditable ||
+      target?.closest("input, textarea, select")
+    ) {
+      return;
+    }
+    if (document.querySelectorAll('[role="dialog"]').length > 1) return;
+
+    const step = event.key === "ArrowLeft" ? previous : next;
+    if (!step) return;
+    event.preventDefault();
+    step.go();
+  }
+
   const title = $derived(
     episode.title ?? `${m.common_episode()} ${episode.number}`,
   );
@@ -87,6 +111,8 @@
       : null,
   );
 </script>
+
+<svelte:window onkeydown={onKeydown} />
 
 <SidePanel
   onclose={onClose}

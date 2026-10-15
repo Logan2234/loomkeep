@@ -1,5 +1,6 @@
 import { ApiError } from "#lib/api/core.js";
 import { resolveApiError } from "#lib/api/errors.js";
+import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
@@ -339,6 +340,60 @@ describe("EpisodesSection", () => {
     expect(
       within(panel()).getByRole("heading", { name: /Episode 1\.2/ }),
     ).toBeTruthy();
+  });
+
+  it("steps through episodes with the arrow keys on desktop", async () => {
+    layout.compact = false;
+
+    try {
+      const { user } = renderSection([season(1, [1])]);
+      await user.click(screen.getByRole("button", { name: "Episode 1.2" }));
+
+      await user.keyboard("{ArrowRight}");
+      expect(
+        within(panel()).getByRole("heading", { name: /Episode 1\.3/ }),
+      ).toBeTruthy();
+
+      await user.keyboard("{ArrowLeft}{ArrowLeft}");
+      expect(
+        within(panel()).getByRole("heading", { name: /Episode 1\.1/ }),
+      ).toBeTruthy();
+    } finally {
+      layout.compact = true;
+    }
+  });
+
+  it("opens every poster of a season from its own", async () => {
+    server.use(
+      http.get(apiUrl("/catalog/tmdb/:id/seasons/:season/images"), () =>
+        HttpResponse.json({
+          images: [
+            "https://image.tmdb.org/t/p/w780/main.jpg",
+            "https://image.tmdb.org/t/p/w780/other.jpg",
+          ],
+        }),
+      ),
+    );
+    const s = season(1, [1]);
+    s.posterUrl = "https://image.tmdb.org/t/p/w500/main.jpg";
+    const { user } = renderSection([s]);
+
+    await user.click(
+      screen.getByRole("button", { name: m.media_season_images() }),
+    );
+
+    // The poster shown first, then the other one — not the same one twice.
+    expect(
+      await screen.findByRole("button", { name: m.common_image_next() }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: m.common_image_number({ index: 2 }) }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("button", {
+        name: m.common_image_number({ index: 3 }),
+      }),
+    ).toBeNull();
   });
 
   it("marks the aired episodes of a season from its summary", async () => {

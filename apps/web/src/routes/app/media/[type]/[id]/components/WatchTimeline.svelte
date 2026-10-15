@@ -6,9 +6,10 @@
   import { cubicOut } from "svelte/easing";
   import { fade } from "svelte/transition";
 
-  // An episode's viewings as a line of dots, oldest first. A rewatch grows a
-  // new dot out of the last one, drawing the line as it travels to its
-  // place; undoing it pulls the dot back in (the same transition, reversed).
+  // An episode's viewings as a line of dots, oldest first, joined by a faint
+  // line that stays out of the way. A rewatch grows a new dot out of the
+  // last one, drawing the line as it travels to its place; undoing it pulls
+  // the dot back in (the same transition, reversed).
   let { watches }: { watches: EpisodeWatchDto[] } = $props();
 
   const reduced = prefersReducedMotion();
@@ -42,12 +43,14 @@
 <ol class="flex overflow-x-auto pt-1 pb-1">
   {#each history as watch, i (watch.id)}
     <li class="relative w-30 shrink-0 pr-3">
-      {#if i > 0}
-        <span
-          class="bg-success/50 absolute top-[4px] -left-30 h-0.5 w-30 origin-left"
-          aria-hidden="true"
-          transition:draw></span>
-      {/if}
+      <!-- The line back to the previous dot. Not wrapped in an {#if}: a
+           local transition only plays with its own block, and the line has
+           to draw as its dot travels. The first dot simply has none. -->
+      <span
+        class="bg-border absolute top-[4px] -left-30 h-px w-30 origin-left
+          {i === 0 ? 'hidden' : ''}"
+        aria-hidden="true"
+        transition:draw></span>
       <span
         class="bg-success ring-bg relative block h-2.5 w-2.5 rounded-full ring-4"
         aria-hidden="true"
