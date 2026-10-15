@@ -284,6 +284,22 @@ describe("TmdbProvider", () => {
     });
   });
 
+  it("maps a season's posters, deduplicated, in the viewer's language first", async () => {
+    const fetchMock = mockFetchByUrl({
+      "/tv/1396/season/2/images": {
+        posters: [{ file_path: "/fr.jpg" }, { file_path: "/fr.jpg" }],
+      },
+    });
+
+    const images = await provider.getSeasonImages("1396", 2, "fr");
+
+    expect(images).toEqual({
+      images: ["https://image.tmdb.org/t/p/w780/fr.jpg"],
+    });
+    const url = new URL(String(fetchMock.mock.calls[0][0]));
+    expect(url.searchParams.get("include_image_language")).toBe("fr,en,null");
+  });
+
   it("maps an episode's stills and YouTube videos, the main still first", async () => {
     mockFetchByUrl({
       "/tv/1396/season/1/episode/1": {

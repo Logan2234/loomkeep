@@ -2,6 +2,7 @@
   import { episodeCode } from "@loomkeep/shared";
 
   import {
+    getSeasonImages,
     unwatchEpisode,
     unwatchSeason,
     watchEpisode,
@@ -9,10 +10,14 @@
     watchThrough,
   } from "#lib/api/client.js";
   import { resolveApiError } from "#lib/api/errors.js";
+  import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import ClampedText from "#lib/components/ClampedText.svelte";
   import CommentsPanel from "#lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import Icon from "#lib/components/Icon.svelte";
+  import Lightbox from "#lib/components/Lightbox.svelte";
   import Modal from "#lib/components/Modal.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import ReviewsSection from "#lib/components/ReviewsSection.svelte";
@@ -35,6 +40,8 @@
   import {
     defaultSeasonNumber,
     isAired,
+    largeTmdbImage,
+    playlist,
     runProgress,
     unwatchedGapCount,
   } from "./episodes";
@@ -124,12 +131,29 @@
   const current = $derived(
     seasons.find((s) => s.number === selectedSeason) ?? null,
   );
-  let overviewOpen = $state(false);
-
   function toggleSeason(seasonNumber: number) {
     selectedSeason = selectedSeason === seasonNumber ? null : seasonNumber;
-    overviewOpen = false;
   }
+
+  // A season's posters, in a lightbox from its own poster (TMDB only): the
+  // one shown first, then the rest once fetched.
+  let posterLightbox = $state<number | null>(null);
+  const seasonImagesQuery = createApiQuery(() => ({
+    key: keys.media.seasonImages(tmdbSourceId ?? "", posterLightbox ?? -1),
+    fetch: () => getSeasonImages(tmdbSourceId!, posterLightbox!),
+    enabled: !!tmdbSourceId && posterLightbox !== null,
+    retry: 0,
+  }));
+  const posterImages = $derived.by(() => {
+    const season = seasons.find((s) => s.number === posterLightbox);
+    if (!season?.posterUrl) return [];
+    const fileOf = (url: string) => url.slice(url.lastIndexOf("/"));
+    const main = largeTmdbImage(season.posterUrl);
+    const rest = (seasonImagesQuery.data?.images ?? []).filter(
+      (url) => fileOf(url) !== fileOf(main),
+    );
+    return [main, ...rest].map((src) => ({ src, alt: seasonLabel(season) }));
+  });
 
   // `#s2e5` (an episode code in a message links here): open the season and
   // bring the episode into view, lit for a moment.
@@ -149,13 +173,26 @@
     });
   });
 
-  // The episode whose side panel is open, by number within the open season.
-  let openEpisode = $state<number | null>(null);
-  const panelIndex = $derived(
-    current && openEpisode !== null
-      ? current.episodes.findIndex((e) => e.number === openEpisode)
-      : -1,
-  );
+  // The episode whose side panel is open.
+  let openEpisode = $state<{ season: number; episode: number } | null>(null);
+  const panel = $derived.by(() => {
+    if (!openEpisode) return null;
+    const { season: sn, episode: en } = openEpisode;
+    const season = seasons.find((s) => s.number === sn);
+    const episode = season?.episodes.find((e) => e.number === en);
+    if (!season || !episode) return null;
+    // Previous/next walk the whole run: past a season's last episode comes
+    // the next season's first.
+    const run = playlist(seasons, sn);
+    const at = run.findIndex((p) => p.season === sn && p.episode === en);
+    return { season, episode, before: run[at - 1], after: run[at + 1] };
+  });
+
+  /** Opens an episode's panel, the list following it into its season. */
+  function openPanel(target: { season: number; episode: number }) {
+    openEpisode = target;
+    selectedSeason = target.season;
+  }
 
   let confirmUnwatchSeasonId = $state<string | null>(null);
 
@@ -215,7 +252,8 @@
 
   // Ticks land when an episode is marked — gated on "the episode that was
   // just marked" so a page load doesn't pop every tick already there.
-  const CHECK_POP_MS = 420;
+  // Long enough for the row's reward animation (EpisodeRow) to play out.
+  const CHECK_POP_MS = 600;
   let justWatchedId = $state<string | null>(null);
 
   function popCheck(episodeId: string) {
@@ -292,13 +330,16 @@
     };
   }
 
-  function neighbour(season: MediaDetailSeasonDto, index: number) {
-    const episode = season.episodes[index];
+  function neighbour(target: { season: number; episode: number } | undefined) {
+    if (!target) return null;
+    const episode = seasons
+      .find((s) => s.number === target.season)
+      ?.episodes.find((e) => e.number === target.episode);
     if (!episode) return null;
     return {
-      code: episodeCode(season.number, episode.number),
+      code: episodeCode(target.season, target.episode),
       title: episodeTitle(episode),
-      go: () => (openEpisode = episode.number),
+      go: () => openPanel(target),
     };
   }
 </script>
@@ -312,14 +353,15 @@
   {/if}
 </h2>
 
-<!-- Season cards: one open at most; clicking the open one closes it. -->
-<div class="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-2">
+<!-- Season cards: one open at most; clicking the open one closes it. They
+     wrap onto new rows rather than scroll, so every season stays in reach. -->
+<div class="grid grid-cols-2 gap-2.5 pb-2 sm:grid-cols-3 md:grid-cols-4">
   {#each seasons.filter((s) => s.episodes.length > 0) as season (season.number)}
     {@const open = selectedSeason === season.number}
     {@const watchedCount = seasonWatchedCount(season)}
     <button
       type="button"
-      class="bg-surface relative flex min-w-48 shrink-0 items-center gap-3 overflow-hidden rounded-xl border py-2 pr-4 pl-2 text-left transition-colors duration-150
+      class="bg-surface relative flex min-w-0 items-center gap-3 overflow-hidden rounded-xl border py-2 pr-3 pl-2 text-left transition-colors duration-150
         {open
         ? 'border-accent bg-accent/10'
         : 'border-border hover:border-dim/50'}"
@@ -339,7 +381,7 @@
         </span>
       {/if}
       <span class="min-w-0">
-        <span class="block max-w-44 truncate text-sm font-semibold">
+        <span class="block truncate text-sm font-semibold">
           {seasonLabel(season)}
         </span>
         <span class="timecode text-dim mt-0.5 block text-[0.7rem]">
@@ -375,7 +417,19 @@
   <div transition:slide|global={{ duration: reduced ? 0 : 200 }}>
     <section
       class="border-border bg-surface mt-3 grid grid-cols-[3.75rem_minmax(0,1fr)] gap-x-4 gap-y-2 rounded-xl border p-3 sm:grid-cols-[5.75rem_minmax(0,1fr)] sm:p-4">
-      {#if season.posterUrl}
+      {#if season.posterUrl && tmdbSourceId}
+        {@const seasonNumber = season.number}
+        <button
+          type="button"
+          class="group row-span-2 self-start overflow-hidden rounded-lg sm:row-span-3"
+          aria-label={m.media_season_images()}
+          onclick={() => (posterLightbox = seasonNumber)}>
+          <img
+            src={season.posterUrl}
+            alt=""
+            class="w-full object-cover transition-transform duration-200 ease-out group-hover:scale-105 motion-reduce:transition-none" />
+        </button>
+      {:else if season.posterUrl}
         <img
           src={season.posterUrl}
           alt=""
@@ -419,19 +473,11 @@
 
       {#if season.overview}
         <div class="col-span-2 min-w-0 sm:col-span-1 sm:col-start-2">
-          <p
-            class="text-sm leading-relaxed {overviewOpen
-              ? ''
-              : 'line-clamp-2'}">
-            {season.overview}
-          </p>
-          <button
-            type="button"
-            class="text-accent hover:text-accent/80 mt-1 text-xs font-semibold transition-colors"
-            aria-expanded={overviewOpen}
-            onclick={() => (overviewOpen = !overviewOpen)}>
-            {overviewOpen ? m.common_see_less() : m.common_see_more()}
-          </button>
+          {#key season.number}
+            <ClampedText
+              text={season.overview}
+              class="text-sm leading-relaxed" />
+          {/key}
         </div>
       {/if}
 
@@ -519,14 +565,17 @@
           {exactTime}
           tracked={!!entry}
           {now}
-          selected={openEpisode === episode.number}
+          selected={openEpisode?.season === season.number &&
+            openEpisode.episode === episode.number}
           highlighted={highlightedEpisode ===
             `s${season.number}e${episode.number}`}
           justWatched={!!episode.id && justWatchedId === episode.id}
           busy={!!episode.id && episodeBusy(episode.id)}
           onOpen={() =>
-            (openEpisode =
-              openEpisode === episode.number ? null : episode.number)}
+            openEpisode?.season === season.number &&
+            openEpisode.episode === episode.number
+              ? (openEpisode = null)
+              : openPanel({ season: season.number, episode: episode.number })}
           onMark={() =>
             episode.id &&
             requestMarkWatched(season.number, episode.number, episode.id)}
@@ -536,9 +585,8 @@
   </div>
 {/if}
 
-{#if current && panelIndex >= 0}
-  {@const season = current}
-  {@const episode = season.episodes[panelIndex]}
+{#if panel}
+  {@const { season, episode, before, after } = panel}
   <EpisodePanel
     {episode}
     seasonNumber={season.number}
@@ -548,8 +596,8 @@
     {now}
     {tmdbSourceId}
     busy={!!episode.id && episodeBusy(episode.id)}
-    previous={neighbour(season, panelIndex - 1)}
-    next={neighbour(season, panelIndex + 1)}
+    previous={neighbour(before)}
+    next={neighbour(after)}
     onClose={() => (openEpisode = null)}
     onMark={() => {
       if (!episode.id) return;
@@ -559,12 +607,15 @@
         episode.number,
         episode.id,
       );
-      const after = season.episodes[panelIndex + 1];
-      if (done && after) openEpisode = after.number;
+      if (done && after) openPanel(after);
     }}
     onRewatch={() => episode.id && markWatched(episode.id)}
     onUndo={() => episode.id && markUnwatch(episode.id)}
     onReview={() => reviewEpisode(season, episode)} />
+{/if}
+
+{#if posterLightbox !== null && posterImages.length > 0}
+  <Lightbox images={posterImages} onClose={() => (posterLightbox = null)} />
 {/if}
 
 {#if catchup}

@@ -3,6 +3,7 @@
   import { onMount, tick } from "svelte";
   import { scale } from "svelte/transition";
   import { prefersReducedMotion } from "#lib/motion.js";
+  import { TOOLTIP_Z_INDEX } from "./overlay-layers";
   import {
     computeTooltipPosition,
     type TooltipPosition,
@@ -208,9 +209,9 @@
         ? 'visible'
         : 'hidden'}; transform-origin: center {pos.placement === 'top'
         ? 'bottom'
-        : 'top'};"
+        : 'top'}; z-index: {TOOLTIP_Z_INDEX};"
       transition:scale|global={{ duration: reduced ? 0 : 120, start: 0.9 }}
-      class="border-border bg-surface text-fg pointer-events-none fixed z-50 max-w-[min(20rem,calc(100vw-1rem))] rounded-lg border px-2.5 py-1.5 text-xs font-medium break-words whitespace-pre-line shadow-lg">
+      class="border-border bg-surface text-fg pointer-events-none fixed max-w-[min(20rem,calc(100vw-1rem))] rounded-lg border px-2.5 py-1.5 text-xs font-medium break-words whitespace-pre-line shadow-lg">
       {text}
     </span>
   {/if}

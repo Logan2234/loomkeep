@@ -69,6 +69,7 @@
 <li
   id="episode-s{seasonNumber}e{episode.number}"
   class="border-border scroll-mt-24 border-t transition-colors duration-500 first:border-t-0
+    {justWatched ? 'episode-reward-flash' : ''}
     {highlighted
     ? 'bg-accent/15'
     : selected
@@ -201,8 +202,26 @@
         {#if watched}
           <span
             class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
-            <Icon name="check" class="h-4 w-4" />
-            {m.media_episode_watched()}
+            <span class="relative inline-flex">
+              {#if justWatched}
+                <!-- A one-off reward: a ring and a few sparks burst out of
+                     the tick, then nothing stays but the tick itself. -->
+                <span class="episode-reward-ring" aria-hidden="true"></span>
+                {#each [0, 60, 120, 180, 240, 300] as angle (angle)}
+                  <span
+                    class="episode-reward-spark"
+                    style="--angle: {angle}deg"
+                    aria-hidden="true"></span>
+                {/each}
+              {/if}
+              <span
+                class="inline-flex {justWatched ? 'episode-check-pop' : ''}">
+                <Icon name="check" class="h-4 w-4" />
+              </span>
+            </span>
+            <span class={justWatched ? "episode-reward-word" : ""}>
+              {m.media_episode_watched()}
+            </span>
           </span>
         {:else if upcoming}
           <span
@@ -225,9 +244,90 @@
 </li>
 
 <style>
-  /* Tight and short on purpose: marking an episode is the most repeated
-     action in the app, so this reads as a confirmation, not a celebration.
-     prefers-reduced-motion is handled globally in app.css. */
+  /* Marking an episode is the most repeated action in the app: a small,
+     quick reward (under half a second), never a celebration that would get
+     tiresome. prefers-reduced-motion is handled globally in app.css. */
+  .episode-reward-flash {
+    animation: episode-reward-flash 480ms ease-out;
+  }
+
+  @keyframes episode-reward-flash {
+    0% {
+      background-color: color-mix(
+        in srgb,
+        var(--color-success) 14%,
+        transparent
+      );
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  .episode-reward-ring {
+    position: absolute;
+    inset: -2px;
+    border: 2px solid var(--color-success);
+    border-radius: 9999px;
+    opacity: 0;
+    animation: episode-reward-ring 460ms ease-out;
+  }
+
+  @keyframes episode-reward-ring {
+    0% {
+      transform: scale(0.5);
+      opacity: 0.9;
+    }
+    100% {
+      transform: scale(2.2);
+      opacity: 0;
+    }
+  }
+
+  .episode-reward-spark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    margin: -2px 0 0 -2px;
+    border-radius: 9999px;
+    background: var(--color-accent);
+    opacity: 0;
+    animation: episode-reward-spark 460ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  .episode-reward-spark:nth-child(odd) {
+    background: var(--color-success);
+  }
+
+  @keyframes episode-reward-spark {
+    0% {
+      transform: rotate(var(--angle)) translateX(4px) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: rotate(var(--angle)) translateX(16px) scale(0.4);
+      opacity: 0;
+    }
+  }
+
+  .episode-reward-word {
+    display: inline-block;
+    animation: episode-reward-word 260ms ease-out;
+  }
+
+  @keyframes episode-reward-word {
+    0% {
+      transform: translateX(-6px);
+      opacity: 0;
+    }
+    100% {
+      transform: none;
+      opacity: 1;
+    }
+  }
+
   .episode-check-pop {
     animation: episode-check-pop 400ms cubic-bezier(0.2, 0.9, 0.3, 1);
   }

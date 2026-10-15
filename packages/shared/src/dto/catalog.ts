@@ -209,6 +209,12 @@ export interface EpisodeMediaDto {
   videos: { key: string; type: string }[];
 }
 
+/** A season's posters (TMDB), for its lightbox. */
+export interface SeasonImagesDto {
+  /** The season's posters, its main one first. */
+  images: string[];
+}
+
 /** The Loomkeep community's ratings of an episode or season. */
 export interface CommunityRatingDto {
   /**

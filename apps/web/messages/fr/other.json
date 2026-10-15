@@ -1539,5 +1539,7 @@
   "media_episode_image_source": "Image · {source}",
   "media_episode_gallery": "Images et vidéos de l'épisode",
   "media_episode_play_video": "Lire la vidéo",
-  "media_episode_slide": "Image {index} sur {count}"
+  "media_episode_slide": "Image {index} sur {count}",
+  "media_episode_rewatched": "Revu",
+  "media_season_images": "Images de la saison"
 }

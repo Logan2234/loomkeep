@@ -70,14 +70,30 @@ export function unwatchedGapCount(
   return count;
 }
 
-const TMDB_STILL = /(image\.tmdb\.org\/t\/p\/)w\d+\//;
+const TMDB_SIZED = /(image\.tmdb\.org\/t\/p\/)w\d+\//;
 
-/** The side panel's size of a TMDB still; other hosts' images as they are. */
-export function largeStill(url: string): string {
-  return url.replace(TMDB_STILL, "$1w780/");
+/** A larger size of a TMDB still or poster; other hosts' images as they are. */
+export function largeTmdbImage(url: string): string {
+  return url.replace(TMDB_SIZED, "$1w780/");
 }
 
 /** YouTube's own preview frame for a video. */
 export function videoThumbnail(key: string): string {
   return `https://i.ytimg.com/vi/${encodeURIComponent(key)}/hqdefault.jpg`;
+}
+
+/**
+ * The episodes "previous/next" walks through: the whole regular run, season
+ * after season — or the specials on their own, which sit outside it.
+ */
+export function playlist(
+  seasons: MediaDetailSeasonDto[],
+  seasonNumber: number,
+): { season: number; episode: number }[] {
+  return seasons
+    .filter((s) => (seasonNumber === 0 ? s.number === 0 : s.number !== 0))
+    .sort((a, b) => a.number - b.number)
+    .flatMap((s) =>
+      s.episodes.map((e) => ({ season: s.number, episode: e.number })),
+    );
 }

@@ -260,9 +260,41 @@ describe("EpisodesSection", () => {
     expect(dialog.getByRole("heading", { name: /Episode 1\.1/ })).toBeTruthy();
     expect(dialog.getByText("Le pilote.")).toBeTruthy();
     expect(dialog.getByText(m.media_episode_times({ count: 2 }))).toBeTruthy();
+    // The viewings as a timeline: the first, then the rewatch.
+    expect(dialog.getByText(m.media_episode_watched())).toBeTruthy();
+    expect(dialog.getByText(m.media_episode_rewatched())).toBeTruthy();
+  });
+
+  it("walks previous/next across seasons, with nothing past either end", async () => {
+    const { user } = renderSection([season(1, [1, 2, 3], 2), season(2, [], 2)]);
+    await openSeason(user, 1);
+    await user.click(screen.getByRole("button", { name: "Episode 1.1" }));
+
     expect(
-      dialog.getAllByText(new RegExp(`^${m.media_rewatched_on({ date: "" })}`)),
-    ).toHaveLength(1);
+      within(panel()).queryByRole("button", {
+        name: m.media_episode_previous(),
+      }),
+    ).toBeNull();
+
+    await user.click(
+      within(panel()).getByRole("button", { name: m.media_episode_next() }),
+    );
+    await user.click(
+      within(panel()).getByRole("button", { name: m.media_episode_next() }),
+    );
+
+    // Past season 1's last episode comes season 2's first, the list too.
+    expect(
+      within(panel()).getByRole("heading", { name: /Episode 2\.1/ }),
+    ).toBeTruthy();
+    expect(seasonCard(2).getAttribute("aria-expanded")).toBe("true");
+
+    await user.click(
+      within(panel()).getByRole("button", { name: m.media_episode_next() }),
+    );
+    expect(
+      within(panel()).queryByRole("button", { name: m.media_episode_next() }),
+    ).toBeNull();
   });
 
   it("rewatches or undoes an episode from its panel", async () => {

@@ -7,6 +7,7 @@ import {
   MediaExtrasDto,
   MediaType,
   SearchResponseDto,
+  SeasonImagesDto,
   WatchProviderCatalogDto,
 } from "@loomkeep/shared";
 import {
@@ -33,6 +34,7 @@ import { EpisodeMediaResponseDto } from "./dto/episode-media-response.dto";
 import { MediaExtrasResponseDto } from "./dto/media-extras-response.dto";
 import { MediaSummaryResponseDto } from "./dto/media-summary-response.dto";
 import { SearchQueryDto } from "./dto/search-query.dto";
+import { SeasonImagesResponseDto } from "./dto/season-images-response.dto";
 import { WatchProviderCatalogResponseDto } from "./dto/watch-provider-catalog-response.dto";
 import { MediaItemService } from "./media-item.service";
 import { TmdbProvider } from "./providers/tmdb.provider";
@@ -163,6 +165,17 @@ export class CatalogController {
       episode,
       safeLang(lang),
     );
+  }
+
+  /** A series season's posters (TMDB), live and briefly cached, for its lightbox. */
+  @Get("tmdb/:id/seasons/:season/images")
+  @ApiOkResponse({ type: SeasonImagesResponseDto })
+  async getSeasonImages(
+    @Param("id", ParseIntPipe) id: number,
+    @Param("season", ParseIntPipe) season: number,
+    @Query("lang") lang?: string,
+  ): Promise<SeasonImagesDto> {
+    return this.tmdb.getSeasonImages(String(id), season, safeLang(lang));
   }
 
   /** Live extras (where to watch, cast, similar) — nothing is persisted. */

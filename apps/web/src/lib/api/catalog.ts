@@ -37,6 +37,13 @@ export const getEpisodeMedia = (
     query: { lang: getLocale() },
   });
 
+/** A TMDB series season's posters, live. */
+export const getSeasonImages = (sourceId: string, season: number) =>
+  typedRequest("/catalog/tmdb/{id}/seasons/{season}/images", {
+    params: { id: sourceId, season: String(season) },
+    query: { lang: getLocale() },
+  });
+
 export const getWatchProviderCatalog = (region: string | undefined) =>
   typedRequest("/catalog/watch-providers", { query: { region } });
 

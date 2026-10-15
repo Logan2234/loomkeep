@@ -2,7 +2,8 @@ import type { MediaDetailSeasonDto } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
 import {
   defaultSeasonNumber,
-  largeStill,
+  largeTmdbImage,
+  playlist,
   runProgress,
   unwatchedGapCount,
 } from "./episodes";
@@ -73,13 +74,25 @@ describe("unwatchedGapCount", () => {
   });
 });
 
-describe("largeStill", () => {
+describe("largeTmdbImage", () => {
   it("asks TMDB for a larger size, and leaves other hosts alone", () => {
-    expect(largeStill("https://image.tmdb.org/t/p/w300/a.jpg")).toBe(
+    expect(largeTmdbImage("https://image.tmdb.org/t/p/w300/a.jpg")).toBe(
       "https://image.tmdb.org/t/p/w780/a.jpg",
     );
-    expect(largeStill("https://img1.ak.crunchyroll.com/i/a_full.jpg")).toBe(
+    expect(largeTmdbImage("https://img1.ak.crunchyroll.com/i/a_full.jpg")).toBe(
       "https://img1.ak.crunchyroll.com/i/a_full.jpg",
     );
+  });
+});
+
+describe("playlist", () => {
+  it("runs through the regular seasons in order, specials apart", () => {
+    const seasons = [season(2, [{}]), season(0, [{}]), season(1, [{}, {}])];
+    expect(playlist(seasons, 1)).toEqual([
+      { season: 1, episode: 1 },
+      { season: 1, episode: 2 },
+      { season: 2, episode: 1 },
+    ]);
+    expect(playlist(seasons, 0)).toEqual([{ season: 0, episode: 1 }]);
   });
 });

@@ -7,18 +7,15 @@
   import SidePanel from "#lib/components/SidePanel.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { layout } from "#lib/layout.svelte.js";
-  import {
-    DATE_MEDIUM_OPTIONS,
-    formatDate,
-    formatRuntimeTimecode,
-  } from "#lib/format.js";
+  import { formatRuntimeTimecode } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { MediaDetailEpisodeDto } from "@loomkeep/shared";
   import { fade } from "svelte/transition";
   import { airDateLabel, scoreLabel, upcomingLabel } from "./episode-format";
   import EpisodeMediaSlider from "./EpisodeMediaSlider.svelte";
-  import { isAired, largeStill } from "./episodes";
+  import { isAired, largeTmdbImage } from "./episodes";
+  import WatchTimeline from "./WatchTimeline.svelte";
 
   type Neighbour = { code: string; title: string; go: () => void } | null;
 
@@ -79,7 +76,7 @@
     retry: 0,
   }));
   const images = $derived.by(() => {
-    const main = episode.stillUrl ? [largeStill(episode.stillUrl)] : [];
+    const main = episode.stillUrl ? [largeTmdbImage(episode.stillUrl)] : [];
     return [...new Set([...main, ...(mediaQuery.data?.images ?? [])])];
   });
   const imageSource = $derived(
@@ -89,14 +86,12 @@
         })
       : null,
   );
-  // Oldest first, as watched.
-  const history = $derived([...episode.watches].reverse());
 </script>
 
 <SidePanel
   onclose={onClose}
   labelledby="episode-panel-title"
-  desktopClass="max-w-md">
+  desktopClass="max-w-lg">
   <header
     class="border-border flex shrink-0 items-center gap-1 border-b py-2 pr-2 pl-4">
     {#if layout.compact}
@@ -187,7 +182,7 @@
               {#if episode.voteAverage !== null}
                 <span class="timecode text-accent"
                   >{scoreLabel(episode.voteAverage)}</span>
-                <span class="text-dim text-xs">
+                <span class="text-dim ml-1.5 text-xs">
                   {m.media_episode_votes({ count: episode.voteCount ?? 0 })}
                 </span>
               {:else}—{/if}
@@ -199,7 +194,7 @@
               {#if episode.reviewAverage !== null}
                 <span class="timecode"
                   >{scoreLabel(episode.reviewAverage)}</span>
-                <span class="text-dim text-xs">
+                <span class="text-dim ml-1.5 text-xs">
                   {m.media_episode_review_count({
                     count: episode.reviewCount ?? 0,
                   })}
@@ -219,39 +214,40 @@
           </p>
         {/if}
 
-        {#if (tracked && episode.id) || episode.streamingUrl}
+        {#if tracked && episode.id && !watched && isAired(episode, now)}
+          <!-- The panel's main action: as wide as the panel, easy to hit. -->
+          <button
+            type="button"
+            class="btn btn-primary mt-5 w-full py-3 text-base"
+            disabled={busy}
+            onclick={onMark}>
+            <Icon name="check" class="h-5 w-5" />
+            {m.media_mark_watched_short()}
+          </button>
+        {/if}
+
+        {#if (tracked && episode.id && watched) || episode.streamingUrl}
           <div class="mt-5 flex flex-wrap gap-2">
-            {#if tracked && episode.id}
-              {#if watched}
-                <button
-                  type="button"
-                  class="btn btn-ghost btn-sm"
-                  disabled={busy}
-                  onclick={onRewatch}>
-                  <Icon name="refresh" class="h-4 w-4" />
-                  {m.media_rewatch()}
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-ghost btn-sm"
-                  disabled={busy}
-                  onclick={onUndo}>
-                  {m.media_undo_watch()}
-                </button>
-              {:else if isAired(episode, now)}
-                <button
-                  type="button"
-                  class="btn btn-primary btn-sm"
-                  disabled={busy}
-                  onclick={onMark}>
-                  <Icon name="check" class="h-4 w-4" />
-                  {m.media_mark_watched_short()}
-                </button>
-              {/if}
+            {#if tracked && episode.id && watched}
+              <button
+                type="button"
+                class="btn btn-ghost"
+                disabled={busy}
+                onclick={onRewatch}>
+                <Icon name="refresh" class="h-4 w-4" />
+                {m.media_rewatch()}
+              </button>
+              <button
+                type="button"
+                class="btn btn-ghost"
+                disabled={busy}
+                onclick={onUndo}>
+                {m.media_undo_watch()}
+              </button>
             {/if}
             {#if episode.streamingUrl && episode.streamingSite}
               <a
-                class="btn btn-ghost btn-sm"
+                class="btn btn-ghost"
                 href={episode.streamingUrl}
                 target="_blank"
                 rel="noopener noreferrer">
@@ -267,26 +263,17 @@
             <h3
               class="timecode text-dim flex items-center justify-between text-[0.7rem] uppercase">
               {m.media_episode_history()}
-              {#if history.length > 1}
-                <span>{m.media_episode_times({ count: history.length })}</span>
+              {#if episode.watches.length > 1}
+                <span
+                  >{m.media_episode_times({
+                    count: episode.watches.length,
+                  })}</span>
               {/if}
             </h3>
-            {#if history.length > 0}
-              <ol class="mt-3 flex flex-col gap-1.5">
-                {#each history as watch, i (watch.id)}
-                  <li class="flex items-center gap-2.5 text-sm">
-                    <span class="bg-success h-2 w-2 shrink-0 rounded-full"
-                    ></span>
-                    {#if watch.watchedAt}
-                      {(i === 0 ? m.media_watched_on : m.media_rewatched_on)({
-                        date: formatDate(watch.watchedAt, DATE_MEDIUM_OPTIONS),
-                      })}
-                    {:else}
-                      {m.media_episode_watched()}
-                    {/if}
-                  </li>
-                {/each}
-              </ol>
+            {#if episode.watches.length > 0}
+              <div class="mt-3">
+                <WatchTimeline watches={episode.watches} />
+              </div>
             {:else}
               <p class="text-dim mt-2 text-sm">
                 {m.media_episode_not_watched()}
@@ -299,21 +286,27 @@
   </div>
 
   <footer class="border-border bg-bg flex shrink-0 gap-2 border-t px-4 py-3">
+    <!-- Nothing before the first episode or after the last: the side stays
+         empty rather than offering a dead button. -->
     {#each [{ n: previous, prev: true }, { n: next, prev: false }] as nav (nav.prev)}
-      <button
-        type="button"
-        class="border-border bg-surface hover:bg-surface-2 hover:border-dim/40 min-w-0 flex-1 rounded-xl border px-3 py-2 transition-colors disabled:cursor-default disabled:opacity-40
-          {nav.prev ? 'text-left' : 'text-right'}"
-        disabled={!nav.n}
-        aria-label={nav.prev
-          ? m.media_episode_previous()
-          : m.media_episode_next()}
-        onclick={() => nav.n?.go()}>
-        <span class="timecode text-dim block text-[0.65rem]">
-          {nav.prev ? `‹ ${nav.n?.code ?? ""}` : `${nav.n?.code ?? ""} ›`}
-        </span>
-        <span class="block truncate text-sm">{nav.n?.title ?? "—"}</span>
-      </button>
+      {#if nav.n}
+        {@const target = nav.n}
+        <button
+          type="button"
+          class="border-border bg-surface hover:bg-surface-2 hover:border-dim/40 min-w-0 flex-1 rounded-xl border px-3 py-2 transition-colors
+            {nav.prev ? 'text-left' : 'text-right'}"
+          aria-label={nav.prev
+            ? m.media_episode_previous()
+            : m.media_episode_next()}
+          onclick={target.go}>
+          <span class="timecode text-dim block text-[0.65rem]">
+            {nav.prev ? `‹ ${target.code}` : `${target.code} ›`}
+          </span>
+          <span class="block truncate text-sm">{target.title}</span>
+        </button>
+      {:else}
+        <span class="flex-1" aria-hidden="true"></span>
+      {/if}
     {/each}
   </footer>
 </SidePanel>

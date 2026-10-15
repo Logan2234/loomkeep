@@ -2,7 +2,8 @@
   import LightboxFrame from "#lib/components/LightboxFrame.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { prefersReducedMotion } from "#lib/motion.js";
-  import { scale } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import { fly, scale } from "svelte/transition";
   import Icon from "./Icon.svelte";
 
   let {
@@ -24,13 +25,25 @@
   let touchStartX = $state<number | null>(null);
   const reduced = prefersReducedMotion();
 
+  // Which way the slides move: the next one comes in from the right.
+  let direction = $state(1);
+
   function next() {
+    direction = 1;
     index = (index + 1) % totalCount;
   }
 
   function prev() {
+    direction = -1;
     index = (index - 1 + totalCount) % totalCount;
   }
+
+  function goTo(i: number) {
+    direction = i >= index ? 1 : -1;
+    index = i;
+  }
+
+  const SLIDE_PX = 48;
 
   function onKeydown(e: KeyboardEvent) {
     if (hasMultiple && e.key === "ArrowRight") next();
@@ -77,36 +90,52 @@
   {/if}
 
   <div
-    class="relative z-10"
+    class="relative z-10 grid place-items-center"
     in:scale={{ start: 0.96, duration: reduced ? 0 : 180 }}
     out:scale={{ start: 0.96, duration: reduced ? 0 : 140 }}>
-    {#if isVideoSlide && video}
-      <!-- `relative`: an absolutely positioned element (like the backdrop
+    <!-- Both slides share one grid cell while they swap, so the outgoing one
+         slides away under the incoming one instead of pushing it aside. -->
+    {#key index}
+      <div
+        class="[grid-area:1/1]"
+        in:fly={{
+          x: reduced ? 0 : direction * SLIDE_PX,
+          duration: reduced ? 0 : 220,
+          easing: cubicOut,
+        }}
+        out:fly={{
+          x: reduced ? 0 : -direction * SLIDE_PX,
+          duration: reduced ? 0 : 160,
+        }}>
+        {#if isVideoSlide && video}
+          <!-- `relative`: an absolutely positioned element (like the backdrop
          close-button below) always paints above a static one regardless of
          DOM order, so without this the invisible backdrop button would sit
          on top of the video and swallow every click meant for the player. -->
-      <div class="relative aspect-video w-[92vw] max-w-3xl">
-        <iframe
-          class="h-full w-full"
-          src={`https://www.youtube-nocookie.com/embed/${video.videoId}?autoplay=1`}
-          title={video.alt}
-          referrerpolicy="strict-origin-when-cross-origin"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen>
-        </iframe>
+          <div class="relative aspect-video w-[92vw] max-w-3xl">
+            <iframe
+              class="h-full w-full"
+              src={`https://www.youtube-nocookie.com/embed/${video.videoId}?autoplay=1`}
+              title={video.alt}
+              referrerpolicy="strict-origin-when-cross-origin"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen>
+            </iframe>
+          </div>
+        {:else}
+          <button
+            type="button"
+            class="relative cursor-zoom-out"
+            aria-label={m.common_image_reduce()}
+            onclick={onClose}>
+            <img
+              src={currentImage.src}
+              alt={currentImage.alt}
+              class="pointer-events-none max-h-[88dvh] max-w-[92vw] object-contain" />
+          </button>
+        {/if}
       </div>
-    {:else}
-      <button
-        type="button"
-        class="relative cursor-zoom-out"
-        aria-label={m.common_image_reduce()}
-        onclick={onClose}>
-        <img
-          src={currentImage.src}
-          alt={currentImage.alt}
-          class="pointer-events-none max-h-[88dvh] max-w-[92vw] object-contain" />
-      </button>
-    {/if}
+    {/key}
   </div>
 
   {#if hasMultiple}
@@ -118,7 +147,7 @@
             ? m.media_trailer()
             : m.common_image_number({ index: i + 1 - (video ? 1 : 0) })}
           aria-current={i === index}
-          onclick={() => (index = i)}
+          onclick={() => goTo(i)}
           class="h-1.5 w-1.5 rounded-full transition-colors {i === index
             ? 'bg-white'
             : 'bg-white/40 hover:bg-white/70'}">

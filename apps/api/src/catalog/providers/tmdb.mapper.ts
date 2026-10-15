@@ -5,6 +5,7 @@ import type {
   MediaSummaryDto,
   RatingDto,
   SagaMemberDto,
+  SeasonImagesDto,
   WatchProviderDto,
 } from "@loomkeep/shared";
 import { CatalogSource, MediaSource, MediaType } from "@loomkeep/shared";
@@ -23,6 +24,7 @@ const IMAGE_SIZE = {
   backdrop: "w1280",
   still: "w300",
   stillLarge: "w780",
+  posterLarge: "w780",
   profile: "w185",
   logo: "w92",
 } as const;
@@ -130,6 +132,11 @@ export interface TmdbSeasonDetails {
     vote_count?: number | null;
     episode_type?: string | null;
   }[];
+}
+
+/** `/tv/{id}/season/{s}/images`. */
+export interface TmdbSeasonImages {
+  posters?: { file_path: string }[];
 }
 
 /** `/tv/{id}/season/{s}/episode/{e}` with `images,videos` appended. */
@@ -384,6 +391,15 @@ export function toTvSeason(
       streamingUrl: null,
       streamingSite: null,
     })),
+  };
+}
+
+/** A season's posters, in TMDB's order (best rated first). */
+export function toSeasonImages(data: TmdbSeasonImages): SeasonImagesDto {
+  return {
+    images: [...new Set((data.posters ?? []).map((p) => p.file_path))].map(
+      (path) => tmdbImage(path, IMAGE_SIZE.posterLarge),
+    ),
   };
 }
 

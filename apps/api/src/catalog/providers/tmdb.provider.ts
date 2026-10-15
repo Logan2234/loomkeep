@@ -3,6 +3,7 @@ import type {
   EpisodeMediaDto,
   MediaExtrasDto,
   MediaSagaDto,
+  SeasonImagesDto,
   WatchProviderDto,
 } from "@loomkeep/shared";
 import {
@@ -29,6 +30,7 @@ import {
   toMovieDetails,
   toMovieSagaMember,
   toMovieSummary,
+  toSeasonImages,
   toTvDetails,
   toTvSeason,
   toTvSummary,
@@ -41,6 +43,7 @@ import {
   type TmdbMovieResult,
   type TmdbPersonDetails,
   type TmdbSeasonDetails,
+  type TmdbSeasonImages,
   type TmdbTvDetails,
   type TmdbTvResult,
   type TmdbWatchProvider,
@@ -52,19 +55,19 @@ export const TMDB_API_URL = "https://api.themoviedb.org/3";
 // time someone opens their services settings.
 const WATCH_LIST_TTL_MS = 24 * 60 * 60 * 1000;
 
-const EPISODE_MEDIA_TTL_MS = 6 * 60 * 60 * 1000;
-const EPISODE_MEDIA_CACHE_SIZE = 500;
+const GALLERY_TTL_MS = 6 * 60 * 60 * 1000;
+const GALLERY_CACHE_SIZE = 500;
 
 /** Films and (western) series, from The Movie Database. */
 @Injectable()
 export class TmdbProvider implements CatalogProvider {
   readonly source = CatalogSource.TMDB;
 
-  // Episode galleries barely move either, and a panel tends to be reopened
-  // while browsing a season.
-  private readonly episodeMedia = new Map<
+  // Episode and season galleries barely move either, and a panel tends to
+  // be reopened while browsing a season.
+  private readonly galleries = new Map<
     string,
-    { fetchedAt: number; media: EpisodeMediaDto }
+    { fetchedAt: number; media: EpisodeMediaDto | SeasonImagesDto }
   >();
 
   private readonly watchProviderLists = new Map<
@@ -305,35 +308,67 @@ export class TmdbProvider implements CatalogProvider {
    * when its side panel opens). Images are requested in every language:
    * stills carry no text, and a language filter drops most of them.
    */
-  async getEpisodeMedia(
+  getEpisodeMedia(
     sourceId: string,
     seasonNumber: number,
     episodeNumber: number,
     lang?: string,
   ): Promise<EpisodeMediaDto> {
-    const cacheKey = `${sourceId}:${seasonNumber}:${episodeNumber}:${lang ?? ""}`;
-    const cached = this.episodeMedia.get(cacheKey);
+    return this.cachedGallery(
+      `episode:${sourceId}:${seasonNumber}:${episodeNumber}:${lang ?? ""}`,
+      async () =>
+        toEpisodeMedia(
+          await this.get<TmdbEpisodeMedia>(
+            `/tv/${sourceId}/season/${seasonNumber}/episode/${episodeNumber}`,
+            {
+              append_to_response: "images,videos",
+              include_image_language: "null",
+              include_video_language: `${lang ?? "en"},en,null`,
+              language: regionalLocale(lang),
+            },
+          ),
+        ),
+    );
+  }
 
-    if (cached && Date.now() - cached.fetchedAt < EPISODE_MEDIA_TTL_MS) {
-      return cached.media;
+  /**
+   * A season's posters, live, for its lightbox. Posters carry their title,
+   * so the viewer's language comes first, then English and textless ones.
+   */
+  getSeasonImages(
+    sourceId: string,
+    seasonNumber: number,
+    lang?: string,
+  ): Promise<SeasonImagesDto> {
+    return this.cachedGallery(
+      `season:${sourceId}:${seasonNumber}:${lang ?? ""}`,
+      async () =>
+        toSeasonImages(
+          await this.get<TmdbSeasonImages>(
+            `/tv/${sourceId}/season/${seasonNumber}/images`,
+            { include_image_language: `${lang ?? "en"},en,null` },
+          ),
+        ),
+    );
+  }
+
+  private async cachedGallery<T extends EpisodeMediaDto | SeasonImagesDto>(
+    key: string,
+    fetch: () => Promise<T>,
+  ): Promise<T> {
+    const cached = this.galleries.get(key);
+
+    if (cached && Date.now() - cached.fetchedAt < GALLERY_TTL_MS) {
+      return cached.media as T;
     }
 
-    const data = await this.get<TmdbEpisodeMedia>(
-      `/tv/${sourceId}/season/${seasonNumber}/episode/${episodeNumber}`,
-      {
-        append_to_response: "images,videos",
-        include_image_language: "null",
-        include_video_language: `${lang ?? "en"},en,null`,
-        language: regionalLocale(lang),
-      },
-    );
-    const media = toEpisodeMedia(data);
+    const media = await fetch();
     // Oldest entry out first (a Map iterates in insertion order).
-    this.episodeMedia.delete(cacheKey);
-    this.episodeMedia.set(cacheKey, { fetchedAt: Date.now(), media });
+    this.galleries.delete(key);
+    this.galleries.set(key, { fetchedAt: Date.now(), media });
 
-    if (this.episodeMedia.size > EPISODE_MEDIA_CACHE_SIZE) {
-      this.episodeMedia.delete(this.episodeMedia.keys().next().value!);
+    if (this.galleries.size > GALLERY_CACHE_SIZE) {
+      this.galleries.delete(this.galleries.keys().next().value!);
     }
 
     return media;
