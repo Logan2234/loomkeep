@@ -77,7 +77,7 @@
   <BootSplash />
 {:else if bootstrap.apiUnreachable && !auth.isLoggedIn}
   <div
-    class="flex min-h-[100svh] flex-col items-center justify-center gap-4 px-6 text-center">
+    class="flex min-h-svh flex-col items-center justify-center gap-4 px-6 text-center">
     <Icon name="warning" class="text-dim h-10 w-10" />
     <div>
       <h1 class="font-display text-xl font-extrabold tracking-tight">
