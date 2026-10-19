@@ -1,6 +1,6 @@
 import type { ConfigService } from "@nestjs/config";
-import type { Prisma } from "@prisma/client";
-import { vi } from "vitest";
+import { Prisma } from "@prisma/client";
+import { vi, type Mock } from "vitest";
 import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -247,7 +247,7 @@ function makeForWrite(
     achievements,
     stubNotifications(),
   );
-  return { svc, revisionCreate, upsert, xp, achievements, activity };
+  return { svc, prisma, revisionCreate, upsert, xp, achievements, activity };
 }
 
 describe("ReviewService.upsert — spoiler tag", () => {
@@ -584,6 +584,26 @@ describe("ReviewService.setRating — revision snapshotting", () => {
   it("creates a revision when the rating changed", async () => {
     const { svc, revisionCreate } = makeForWrite({ rating: 6, text: null });
     await svc.setRating("u1", "MEDIA" as never, "m1", 8);
+    expect(revisionCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to updating the review a concurrent rating created first", async () => {
+    const { svc, prisma, revisionCreate } = makeForWrite(null);
+    (prisma.review.findUnique as Mock)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue({ id: "r1", rating: 6, text: null });
+    (prisma.review.create as Mock).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+
+    await svc.setRating("u1", "MEDIA" as never, "m1", 8);
+
+    expect(prisma.review.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { rating: 8 } }),
+    );
     expect(revisionCreate).toHaveBeenCalledTimes(1);
   });
 });
