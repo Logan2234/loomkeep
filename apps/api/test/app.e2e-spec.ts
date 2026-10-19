@@ -519,11 +519,20 @@ describe("Loomkeep API (e2e)", () => {
     const oldCookies = sessionCookies;
     sessionCookies = authCookies(response);
 
-    // The consumed token must be rejected.
-    await request(http)
+    // The consumed token issues nothing. Replayed this soon, it reads as
+    // another tab of the same browser (superseded, session kept); a replay
+    // after REFRESH_REUSE_GRACE_MS revokes the session (auth.service.spec).
+    const replay = await request(http)
       .post("/api/auth/refresh")
       .set("Cookie", oldCookies)
-      .expect(401);
+      .expect(409);
+    expect(replay.body.code).toBe("auth.refresh_superseded");
+    expect(replay.headers["set-cookie"]).toBeUndefined();
+
+    await request(http)
+      .get("/api/auth/sessions")
+      .set("Cookie", sessionCookies)
+      .expect(200);
   });
 
   it("logs out: the refresh token becomes unusable", async () => {
