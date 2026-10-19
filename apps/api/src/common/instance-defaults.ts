@@ -2,7 +2,7 @@ export const DEFAULT_SUPPORT_ADDRESS = "contact@loomkeep.app";
 export const QUACKBACK_ORIGIN = "https://feedback.loomkeep.app";
 
 /** True for the hosted instance (loomkeep.app), never for a self-host. */
-export function isHostedOrigin(webOrigin: string): boolean {
+function isHostedOrigin(webOrigin: string): boolean {
   try {
     const host = new URL(webOrigin).hostname;
     return host === "loomkeep.app" || host.endsWith(".loomkeep.app");
