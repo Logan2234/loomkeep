@@ -30,6 +30,12 @@ class DataExportListItemResponseDto implements DataExportListItem {
    * @example "2026-09-30T21:00:00.000Z"
    */
   addedAt!: string;
+
+  /**
+   * Why it's on the list; null when nobody wrote one.
+   * @example "For Léa's birthday."
+   */
+  note!: string | null;
 }
 
 export class DataExportListResponseDto implements DataExportList {

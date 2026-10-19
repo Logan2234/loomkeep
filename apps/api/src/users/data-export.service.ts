@@ -643,6 +643,7 @@ export class DataExportService {
           targetId: i.targetId,
           position: i.position,
           addedAt: i.addedAt.toISOString(),
+          note: i.note,
         })),
       })),
       listMemberships: listMemberRows.map((m) => ({

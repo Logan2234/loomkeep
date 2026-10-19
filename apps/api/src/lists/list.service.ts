@@ -73,6 +73,7 @@ type ListItemRow = {
   targetId: string;
   position: number;
   addedAt: Date;
+  note: string | null;
 };
 
 @Injectable()
@@ -655,6 +656,32 @@ export class ListService {
     }
   }
 
+  /** Sets or clears an item's note — anyone who may edit the list's items. */
+  async setItemNote(
+    userId: string,
+    listId: string,
+    itemId: string,
+    note: string | null,
+  ): Promise<ListItemDto> {
+    const { role } = await this.canEdit(userId, listId);
+    // Moderation removes; it doesn't write in someone else's list.
+    if (role === "MODERATOR" && note?.trim())
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ListForbidden);
+
+    const { count } = await this.prisma.listItem.updateMany({
+      where: { id: itemId, listId },
+      data: { note: note?.trim() || null },
+    });
+    if (count === 0)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListItemNotFound);
+
+    const row = await this.prisma.listItem.findUniqueOrThrow({
+      where: { id: itemId },
+    });
+    this.events.emitToList(listId, "list-updated");
+    return this.toItemDto(row, await this.resolveTargets([row]));
+  }
+
   async removeItem(
     userId: string,
     listId: string,
@@ -1040,6 +1067,7 @@ export class ListService {
       targetId: row.targetId,
       position: row.position,
       addedAt: row.addedAt.toISOString(),
+      note: row.note,
       target: targets.get(`${row.targetType}:${row.targetId}`) ?? null,
     };
   }

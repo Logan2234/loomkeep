@@ -250,6 +250,7 @@ export interface DataExportListItem {
   targetId: string;
   position: number;
   addedAt: string;
+  note: string | null;
 }
 
 export interface DataExportList {

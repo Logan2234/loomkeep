@@ -2,7 +2,11 @@ import type { ListKind, ListVisibility, ReviewTargetType } from "../enums";
 import type { ReviewTargetSummaryDto } from "./review";
 import type { UserSummaryDto } from "./social";
 
-export const LIST_LIMITS = { title: 100, description: 500 } as const;
+export const LIST_LIMITS = {
+  title: 100,
+  description: 500,
+  itemNote: 280,
+} as const;
 
 /** Work-level target types a list item may reference — no SEASON/EPISODE. */
 export type ListItemTargetType = Extract<
@@ -16,6 +20,8 @@ export interface ListItemDto {
   targetId: string;
   position: number;
   addedAt: string;
+  /** Why it's on the list, written by whoever edits it. */
+  note: string | null;
   target: ReviewTargetSummaryDto | null;
   /**
    * Who added it. Only sent to the owner and editors, and only on a list that
@@ -90,6 +96,11 @@ export interface CreateListDto {
   description?: string | null;
   kind: ListKind;
   visibility?: ListVisibility;
+}
+
+/** `PATCH /lists/:id/items/:itemId` body. Null or blank clears the note. */
+export interface UpdateListItemDto {
+  note: string | null;
 }
 
 export interface UpdateListDto {

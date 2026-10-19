@@ -94,6 +94,7 @@ export interface ApiV1ListItemDto {
   id: string;
   position: number;
   addedAt: string;
+  note: string | null;
   target: ApiV1TargetDto;
 }
 

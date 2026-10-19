@@ -31,6 +31,7 @@ const items = ["first", "second"].map((id) => ({
   targetId: id,
   position: 0,
   addedAt: "2026-10-01T00:00:00Z",
+  note: null as string | null,
   target: { title: id, imageUrl: null, href: null },
 }));
 const list = {
@@ -142,5 +143,65 @@ describe("works of a domain the viewer turned off", () => {
         name: m.common_work_domain_off({ domain: m.common_Books() }),
       }),
     ).toBeTruthy();
+  });
+});
+
+describe("a note on a list item", () => {
+  it("shows the note under its title", async () => {
+    server.use(
+      http.get(apiUrl("/lists/me/list"), () =>
+        HttpResponse.json({
+          ...list,
+          items: [{ ...items[0], note: "Pour Léa" }, items[1]],
+        }),
+      ),
+    );
+    renderWithQuery(ListPage, {});
+
+    expect(await screen.findByText("Pour Léa")).toBeTruthy();
+  });
+
+  it("lets an editor write one, then shows it", async () => {
+    let sent: unknown;
+    server.use(
+      http.get(apiUrl("/lists/me/list"), () => HttpResponse.json(list)),
+      http.patch(apiUrl("/lists/list/items/first"), async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json({ ...items[0], note: "Le meilleur" });
+      }),
+    );
+    renderWithQuery(ListPage, {});
+    const user = userEvent.setup();
+
+    const [add] = await screen.findAllByRole("button", {
+      name: m.list_item_note_add(),
+    });
+    await user.click(add);
+    await user.type(
+      screen.getByLabelText(m.list_item_note_label()),
+      "  Le meilleur ",
+    );
+    await user.click(screen.getByRole("button", { name: m.common_save() }));
+
+    expect(await screen.findByText("Le meilleur")).toBeTruthy();
+    expect(sent).toEqual({ note: "Le meilleur" });
+  });
+
+  it("offers no note button to a viewer", async () => {
+    server.use(
+      http.get(apiUrl("/lists/me/list"), () =>
+        HttpResponse.json({
+          ...list,
+          viewerRole: "VIEWER",
+          author: list.owner,
+        }),
+      ),
+    );
+    renderWithQuery(ListPage, {});
+
+    await screen.findAllByText("first");
+    expect(
+      screen.queryByRole("button", { name: m.list_item_note_add() }),
+    ).toBeNull();
   });
 });

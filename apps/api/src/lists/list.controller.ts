@@ -16,6 +16,7 @@ import {
   Get,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -42,6 +43,7 @@ import { ListMemberResponseDto } from "./dto/list-member-response.dto";
 import { ListResponseDto } from "./dto/list-response.dto";
 import { MyListResponseDto } from "./dto/my-list-response.dto";
 import { ReorderListItemsBody } from "./dto/reorder-list-items.dto";
+import { UpdateListItemBody } from "./dto/update-list-item.dto";
 import { UpdateListBody } from "./dto/update-list.dto";
 import { ListService } from "./list.service";
 
@@ -135,6 +137,17 @@ export class ListController {
     @Body() body: AddListItemBody,
   ): Promise<ListItemDto> {
     return this.lists.addItem(user.sub, id, body);
+  }
+
+  @Patch(":id/items/:itemId")
+  @ApiOkResponse({ type: ListItemResponseDto })
+  setItemNote(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("itemId") itemId: string,
+    @Body() body: UpdateListItemBody,
+  ): Promise<ListItemDto> {
+    return this.lists.setItemNote(user.sub, id, itemId, body.note ?? null);
   }
 
   @Delete(":id/items/:itemId")

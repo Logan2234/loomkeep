@@ -43,6 +43,9 @@
     RealtimeCommand,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import ListItemNoteModal from "./components/ListItemNoteModal.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import { dndzone } from "svelte-dnd-action";
 
   const id = $derived(page.params.id ?? "");
@@ -143,6 +146,21 @@
   const confirmRemoveItem = $derived(
     dragItems.find((i) => i.id === confirmRemoveId) ?? null,
   );
+
+  // Writing why an item is here is adding to the list — not moderation's job.
+  let notingItemId = $state<string | null>(null);
+  const notingItem = $derived(
+    dragItems.find((i) => i.id === notingItemId) ?? null,
+  );
+
+  function handleNoteSaved(saved: ListItemDto) {
+    if (list)
+      patchList({
+        items: list.items.map((item) =>
+          item.id === saved.id ? { ...item, note: saved.note } : item,
+        ),
+      });
+  }
 
   function patchList(patch: Partial<NonNullable<typeof list>>) {
     queryClient.setQueryData(detailKey, (old: typeof list) =>
@@ -308,7 +326,24 @@
         <DomainOffMark {domain} class="-my-1.5 shrink-0" />
       {/if}
     </p>
+    {#if item.note}
+      <p class="text-dim mt-0.5 line-clamp-2 text-xs">{item.note}</p>
+    {/if}
   </svelte:element>
+  {#if canAdd}
+    <button
+      class="bg-bg/80 text-dim hover:bg-surface-2 hover:text-fg absolute top-2 right-11 grid h-8 w-8 place-items-center rounded-md backdrop-blur transition-all {focused
+        ? 'opacity-100'
+        : 'opacity-0 group-hover:opacity-100 group-hover:shadow-md focus-visible:opacity-100'}"
+      aria-label={item.note ? m.list_item_note_edit() : m.list_item_note_add()}
+      title={item.note ? m.list_item_note_edit() : m.list_item_note_add()}
+      onclick={() => {
+        focusedItemId = null;
+        notingItemId = item.id;
+      }}>
+      <Icon name="edit" class="h-4 w-4" />
+    </button>
+  {/if}
   {#if canEditList}
     <button
       class="bg-bg/80 text-dim hover:bg-danger absolute top-2 right-2 grid h-8 w-8 place-items-center rounded-md backdrop-blur transition-all hover:text-white {focused
@@ -463,6 +498,13 @@
 
     <hr class="border-border mt-5" />
 
+    {#if canAdd && dragItems.length > 0 && isFeatureNew("list-item-notes")}
+      <p class="text-dim mt-6 flex items-center gap-2 text-xs">
+        <NewBadge />
+        {m.list_item_note_hint()}
+      </p>
+    {/if}
+
     {#if dragItems.length === 0}
       <EmptyState class="mt-6">
         <p class="font-display text-lg font-bold">
@@ -508,14 +550,32 @@
                   title={item.target?.title ?? "?"}
                   alt="" />
               </div>
-              <p class="min-w-0 truncate font-semibold">
-                {item.target?.title ?? m.common_work()}
-              </p>
+              <div class="min-w-0">
+                <p class="truncate font-semibold">
+                  {item.target?.title ?? m.common_work()}
+                </p>
+                {#if item.note}
+                  <p class="text-dim line-clamp-2 text-xs">{item.note}</p>
+                {/if}
+              </div>
               {#if off}
                 <DomainOffMark {domain} class="shrink-0" />
               {/if}
             </svelte:element>
             {@render addedByMark(item, 22)}
+            {#if canAdd}
+              <button
+                class="text-dim hover:text-fg hover:bg-surface-2 grid h-8 w-8 shrink-0 place-items-center rounded-md transition-colors"
+                aria-label={item.note
+                  ? m.list_item_note_edit()
+                  : m.list_item_note_add()}
+                title={item.note
+                  ? m.list_item_note_edit()
+                  : m.list_item_note_add()}
+                onclick={() => (notingItemId = item.id)}>
+                <Icon name="edit" class="h-4 w-4" />
+              </button>
+            {/if}
             {#if canEditList}
               <button
                 class="text-dim hover:text-danger hover:bg-danger/10 mr-1 grid h-8 w-8 shrink-0 place-items-center rounded-md transition-colors"
@@ -590,6 +650,14 @@
       {/snippet}
     </FocusOverlay>
   {/if}
+{/if}
+
+{#if notingItem && list}
+  <ListItemNoteModal
+    listId={list.id}
+    item={notingItem}
+    onSaved={handleNoteSaved}
+    onclose={() => (notingItemId = null)} />
 {/if}
 
 {#if confirmRemoveItem}

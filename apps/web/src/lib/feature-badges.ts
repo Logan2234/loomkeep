@@ -35,6 +35,7 @@ const SHIPPED = {
   "quick-add": "2026-09-29",
   integrations: "2026-10-01",
   "alert-settings": "2026-10-02",
+  "list-item-notes": "2026-10-19",
 };
 
 export type FeatureBadgeKey = keyof typeof SHIPPED;

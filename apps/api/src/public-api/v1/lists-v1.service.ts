@@ -57,6 +57,7 @@ export class ListsV1Service {
       id: item.id,
       position: item.position,
       addedAt: item.addedAt,
+      note: item.note,
       target: toTarget(
         item.targetType,
         item.targetId,
