@@ -70,6 +70,9 @@ fix does.
   `upsertFromSource()`. Refreshes are throttled by `lastSyncedAt` (24h TTL)
   and never delete seasons/episodes, so `EpisodeWatch` rows always keep a
   valid target.
+  Behaviour the four domains must share (first-track race, XP revoked on
+  entry deletion, orphan purge) gets a case in
+  `apps/api/src/common/domain-parity.spec.ts`, which runs it on all four.
 - **One provider per domain** (`apps/api/src/<domain>/providers/`): TMDB
   (movies/series) + AniList (anime) share the catalog, IGDB (games), Open
   Library (books), MusicBrainz (music). TMDB movie/TV ids are separate

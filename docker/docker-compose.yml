@@ -65,8 +65,10 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: "${SMTP_FROM:-Loomkeep <noreply@loomkeep.app>}"
-      MAIL_SUPPORT_ADDRESS: ${MAIL_SUPPORT_ADDRESS:-contact@loomkeep.app}
+      # Empty = noreply@<WEB_ORIGIN host>, and no Reply-To/support link to
+      # Loomkeep's own mailbox (see MailService).
+      SMTP_FROM: ${SMTP_FROM:-}
+      MAIL_SUPPORT_ADDRESS: ${MAIL_SUPPORT_ADDRESS:-}
       # Public HTTPS API URL for newsletter one-click unsubscribe headers.
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000/api}
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}

@@ -70,7 +70,8 @@ export interface PublicConfigDto {
   /**
    * Where members reach this instance's moderation and support — the same
    * address moderation emails reply to (`MAIL_SUPPORT_ADDRESS`, falling back
-   * to contact@loomkeep.app).
+   * to contact@loomkeep.app on the hosted instance only). Empty on a
+   * self-host that sets none.
    */
   supportEmail: string;
 }

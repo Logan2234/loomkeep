@@ -21,6 +21,7 @@ import { SocialModule } from "../social/social.module";
 import { UsersModule } from "../users/users.module";
 import { AdminAccountsStatsService } from "./admin-accounts-stats.service";
 import { AdminCacheController } from "./admin-cache.controller";
+import { AdminCacheService } from "./admin-cache.service";
 import { AdminCatalogueStatsService } from "./admin-catalogue-stats.service";
 import { AdminEmailsController } from "./admin-emails.controller";
 import { AdminImportsController } from "./admin-imports.controller";
@@ -84,6 +85,7 @@ import { QuotaAlertService } from "./quota-alert.service";
   providers: [
     QuotaAlertService,
     AdminService,
+    AdminCacheService,
     AdminGuard,
     PublicStatsGuard,
     AdminOverviewService,

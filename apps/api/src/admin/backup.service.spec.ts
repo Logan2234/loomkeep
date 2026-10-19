@@ -17,17 +17,33 @@ vi.mock("node:child_process", () => ({
 class FakeChildProcess extends EventEmitter {
   stdout = new PassThrough();
   stderr = new PassThrough();
-  stdin = { write: vi.fn(), end: vi.fn() };
+  stdin = new PassThrough();
+  kill = vi.fn();
 }
 
 /** Registers the next spawn() call to succeed immediately with exit code 0. */
 function mockNextSpawnSuccess(): FakeChildProcess {
+  return mockNextSpawnExit(0);
+}
+
+/** Registers the next spawn() call to exit with `code` once its stdout is drained. */
+function mockNextSpawnExit(code: number): FakeChildProcess {
   const child = new FakeChildProcess();
   spawnMock.mockImplementationOnce(() => {
-    queueMicrotask(() => child.emit("close", 0));
+    queueMicrotask(() => child.emit("close", code));
     return child;
   });
   return child;
+}
+
+/** Fakes `pg_dump | age`: age's stdout is what lands on disk. */
+function mockDumpPipeline(encrypted: string, dumpExit = 0) {
+  const dump = mockNextSpawnExit(dumpExit);
+  const age = mockNextSpawnSuccess();
+  dump.stdout.end("dump");
+  age.stdin.resume();
+  age.stdout.end(encrypted);
+  return { dump, age };
 }
 
 function makeService() {
@@ -123,13 +139,49 @@ describe("BackupService file consistency", () => {
 
   it("removes the encrypted file when saving its database row fails", async () => {
     const { service, prisma } = makeBackupService();
-    const first = mockNextSpawnSuccess();
-    const second = mockNextSpawnSuccess();
-    first.stdout.write("dump");
-    second.stdout.write("encrypted");
+    mockDumpPipeline("encrypted");
     (prisma.backupFile.create as Mock).mockRejectedValue(new Error("db down"));
 
     await expect(service.runScheduled()).rejects.toThrow("db down");
+    expect(await readdir(backupDir)).toEqual([]);
+  });
+
+  it("streams pg_dump through age to disk and records the file's size", async () => {
+    const { service, prisma } = makeBackupService();
+    const { dump, age } = mockDumpPipeline(
+      "-----BEGIN AGE ENCRYPTED FILE-----",
+    );
+    (prisma.backupFile.create as Mock).mockImplementation(
+      ({ data }: { data: { filename: string; sizeBytes: number } }) => ({
+        id: "b1",
+        ...data,
+        createdAt: new Date(),
+      }),
+    );
+    const piped: string[] = [];
+    age.stdin.on("data", (chunk: Buffer) => piped.push(chunk.toString()));
+
+    const file = await service.runScheduled();
+
+    expect(spawnMock.mock.calls.map((call) => call[0])).toEqual([
+      "pg_dump",
+      "age",
+    ]);
+    expect(piped.join("")).toBe("dump");
+    expect(dump.kill).not.toHaveBeenCalled();
+    expect(file.sizeBytes).toBe(34);
+    expect(await readdir(backupDir)).toEqual([file.filename]);
+    expect(await readFile(join(backupDir, file.filename), "utf8")).toBe(
+      "-----BEGIN AGE ENCRYPTED FILE-----",
+    );
+  });
+
+  it("removes the partial file when pg_dump fails mid-stream", async () => {
+    const { service, prisma } = makeBackupService();
+    mockDumpPipeline("truncated", 1);
+
+    await expect(service.runScheduled()).rejects.toThrow();
+    expect(prisma.backupFile.create).not.toHaveBeenCalled();
     expect(await readdir(backupDir)).toEqual([]);
   });
 

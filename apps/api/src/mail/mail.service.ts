@@ -8,6 +8,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import nodemailer, { Transporter } from "nodemailer";
 import { resolveCopyLocale } from "../common/copy-locale.util";
 import {
+  configuredSupportAddress,
   DEFAULT_SUPPORT_ADDRESS,
   QUACKBACK_ORIGIN,
 } from "../common/instance-defaults";
@@ -18,6 +19,11 @@ import {
   SECURITY_ALERT_EVENTS,
   type SecurityAlertEvent,
 } from "./mail.i18n";
+
+/** `support@example.com` from `Name <support@example.com>` (or a bare address). */
+function bareAddress(from: string): string {
+  return /<([^>]+)>/.exec(from)?.[1]?.trim() ?? from.trim();
+}
 
 /** A provider reaching one of its daily-quota alert thresholds. */
 export interface QuotaAlert {
@@ -219,6 +225,8 @@ export class MailService {
   private readonly transporter: Transporter | null;
   private readonly from: string;
   private readonly supportAddress: string;
+  /** Default Reply-To: the configured support mailbox, if there is one. */
+  private readonly replyTo: string | undefined;
   private readonly publicApiUrl: string;
   /** Public web app origin, for links inside emails (reset, verify…). */
   private readonly webOrigin: string;
@@ -633,9 +641,16 @@ export class MailService {
     const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } =
       process.env;
     this.webOrigin = primaryWebOrigin(process.env.WEB_ORIGIN);
-    this.from = SMTP_FROM ?? "Loomkeep <noreply@loomkeep.app>";
-    this.supportAddress =
-      process.env.MAIL_SUPPORT_ADDRESS?.trim() || DEFAULT_SUPPORT_ADDRESS;
+    this.from =
+      SMTP_FROM?.trim() ||
+      `Loomkeep <noreply@${new URL(this.webOrigin).hostname}>`;
+    this.replyTo = configuredSupportAddress(
+      process.env.MAIL_SUPPORT_ADDRESS,
+      this.webOrigin,
+    );
+    // Without a support mailbox, contact links point at the instance's own
+    // sender and replies go to it (no Reply-To): never to Loomkeep's.
+    this.supportAddress = this.replyTo ?? bareAddress(this.from);
     this.publicApiUrl = (
       process.env.PUBLIC_API_URL || `${this.webOrigin}/api`
     ).replace(/\/$/, "");
@@ -649,6 +664,12 @@ export class MailService {
         secure: port === 465,
         auth: { user: SMTP_USER, pass: SMTP_PASS },
       });
+
+      if (!this.replyTo) {
+        this.logger.warn(
+          `MAIL_SUPPORT_ADDRESS not set — contact links in emails use the sender (${this.supportAddress})`,
+        );
+      }
     } else {
       // Self-host without SMTP configured: mail is a no-op, the rest of the
       // app still works (mirrors PushService's VAPID-less fallback).
@@ -1972,7 +1993,9 @@ ${url}`,
         subject,
         text,
         html,
-        replyTo: replyTo ?? this.supportAddress,
+        ...((replyTo ?? this.replyTo)
+          ? { replyTo: replyTo ?? this.replyTo }
+          : {}),
         ...(headers ? { headers } : {}),
       });
       return true;
