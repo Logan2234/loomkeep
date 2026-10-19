@@ -668,7 +668,7 @@ describe("AuthService.login", () => {
     });
   });
 
-  it("drops any prior session for the same device before recording the new one", async () => {
+  it("keeps the sessions of other machines sending the same User-Agent", async () => {
     const { service, prisma } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
@@ -679,9 +679,7 @@ describe("AuthService.login", () => {
       "some-user-agent",
     );
 
-    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
-      where: { userId: user.id, userAgent: "some-user-agent" },
-    });
+    expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
   });
 
   it("alerts by email and logs a security event when the device has never been seen", async () => {

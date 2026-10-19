@@ -61,6 +61,7 @@ describe("AuthController.register", () => {
     const body = await controller.register(
       {} as never,
       reply,
+      request(),
       "agent",
       "1.2.3.4",
       "fr",
@@ -80,6 +81,7 @@ describe("AuthController.register", () => {
     await makeController({ register }).register(
       { email: "a@b.c" } as never,
       reply,
+      request(),
       "Firefox",
       "9.9.9.9",
       "en",
@@ -106,6 +108,7 @@ describe("AuthController.login", () => {
     const body = await controller.login(
       {} as never,
       reply,
+      request(),
       undefined,
       undefined,
     );
@@ -130,12 +133,52 @@ describe("AuthController.login", () => {
     const body = await controller.login(
       {} as never,
       reply,
+      request(),
       undefined,
       undefined,
     );
 
     expect(body).toBe(challenge);
     expect(reply.header).not.toHaveBeenCalled();
+  });
+});
+
+describe("AuthController sign-in", () => {
+  it("ends the session this browser held before, and only that one", async () => {
+    const { reply, headers } = fakeReply();
+    const logout = vi.fn().mockResolvedValue(undefined);
+    const controller = makeController({
+      logout,
+      login: vi
+        .fn()
+        .mockResolvedValue({ mfaRequired: false, user: USER, tokens: TOKENS }),
+    });
+
+    await controller.login(
+      {} as never,
+      reply,
+      requestWithRefresh("previous-refresh"),
+      "agent",
+      undefined,
+    );
+
+    expect(logout).toHaveBeenCalledWith("previous-refresh");
+    expect(setCookies(headers)).toHaveLength(2);
+  });
+
+  it("ends nothing on a browser that held no session", async () => {
+    const { reply } = fakeReply();
+    const logout = vi.fn();
+    const controller = makeController({
+      logout,
+      login: vi
+        .fn()
+        .mockResolvedValue({ mfaRequired: false, user: USER, tokens: TOKENS }),
+    });
+
+    await controller.login({} as never, reply, request(), "agent", undefined);
+
+    expect(logout).not.toHaveBeenCalled();
   });
 });
 
@@ -149,6 +192,7 @@ describe("AuthController.mfaVerify", () => {
     const body = await makeController({ verifyMfaLogin }).mfaVerify(
       { challengeId: "c1", code: "123456" } as never,
       reply,
+      request(),
       "agent",
       "1.2.3.4",
     );

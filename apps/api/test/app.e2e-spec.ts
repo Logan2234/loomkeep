@@ -589,6 +589,27 @@ describe("Loomkeep API (e2e)", () => {
       .expect(200);
     expect(list.body).toHaveLength(2);
 
+    // Another machine sending DeviceA's exact User-Agent is still another
+    // browser: signing in there leaves DeviceA's session alone.
+    const login3 = await request(http)
+      .post("/api/auth/login")
+      .send({ identifier: u.email, password: u.password })
+      .set("user-agent", "DeviceA")
+      .expect(200);
+    // Signing in again on that browser replaces its own session, and only it.
+    await request(http)
+      .post("/api/auth/login")
+      .send({ identifier: u.email, password: u.password })
+      .set("user-agent", "DeviceA")
+      .set("Cookie", authCookies(login3))
+      .expect(200);
+    list = await request(http)
+      .get("/api/auth/sessions")
+      .set("Cookie", cookiesB)
+      .expect(200);
+    expect(list.body).toHaveLength(3);
+    expect(list.body.map((s: { id: string }) => s.id)).toContain(original.id);
+
     // Revoke every other device: only the current cookie session survives.
     await request(http)
       .delete("/api/auth/sessions")

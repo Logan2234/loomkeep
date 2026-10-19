@@ -1118,9 +1118,6 @@ export class AuthService {
   ): Promise<AuthTokensDto> {
     const sessionId = randomUUID();
     const signed = await this.signTokens(user, sessionId);
-    await this.prisma.refreshToken.deleteMany({
-      where: { userId: user.id, userAgent: userAgent ?? null },
-    });
     await this.prisma.refreshToken.create({
       data: {
         id: sessionId,

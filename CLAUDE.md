@@ -100,7 +100,8 @@ fix does.
 ### Auth & errors
 
 - Access JWT (15 min) + rotating refresh tokens, one `RefreshToken`
-  row/device, SHA-256 hashed. `JwtAuthGuard` is global, opt out with
+  row per browser (a sign-in ends the session its refresh cookie still
+  names, never matched by User-Agent), SHA-256 hashed. `JwtAuthGuard` is global, opt out with
   `@Public()`; `@CurrentUser()` reads `sub` from the JWT payload. MFA layers
   on top with three second factors — TOTP and an emailed code
   (`auth/mfa.service.ts`), WebAuthn security keys/passkeys
