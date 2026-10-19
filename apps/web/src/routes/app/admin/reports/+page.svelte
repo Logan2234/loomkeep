@@ -419,6 +419,20 @@
                 {#if r.motif}· {REPORT_MOTIF_LABELS[r.motif]}{/if}
               </span>
             {/if}
+            {#if r.target?.editedAfterReport}
+              <span class="pill border-warning/40 bg-warning/15 text-warning">
+                {m.admin_reports_edited_after_report()}
+              </span>
+            {/if}
+            {#if r.targetOwner && r.targetOwner.reportCount > 1}
+              <a
+                href="/app/admin/users?q={r.targetOwner.username}"
+                class="chip text-xs transition-colors hover:underline">
+                {m.admin_reports_owner_report_count({
+                  count: r.targetOwner.reportCount,
+                })}
+              </a>
+            {/if}
             <span class="text-dim ml-auto text-xs">
               {formatDateTime(r.createdAt)}
             </span>
@@ -464,6 +478,12 @@
             {/if}
           {:else}
             <p class="text-dim mt-1.5 text-sm italic">
+              {#if r.targetOwner}
+                <a
+                  href="/app/admin/users?q={r.targetOwner.username}"
+                  class="font-semibold not-italic hover:underline"
+                  >@{r.targetOwner.username}</a> ·
+              {/if}
               {m.admin_reports_target_missing()}
             </p>
           {/if}

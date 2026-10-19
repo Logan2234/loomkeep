@@ -58,6 +58,7 @@ import {
   JWT_ALGORITHM,
   JWT_ISSUER,
   JWT_REFRESH_AUDIENCE,
+  REFRESH_REUSE_GRACE_MS,
   REFRESH_TOKEN_TTL_DAYS,
 } from "./jwt.constants";
 import { MfaService } from "./mfa.service";
@@ -634,23 +635,16 @@ export class AuthService {
     return this.completeLogin(user, userAgent, ip);
   }
 
-  /** Options for a passwordless login — no password check at all, gated on `passwordlessEnabled`. */
-  async passwordlessLoginOptions(
+  /**
+   * Options for a passwordless login — no password check at all, gated on
+   * `passwordlessEnabled`. Always answers with options, decoys for an
+   * identifier that isn't eligible: mirrors login()'s DUMMY_PASSWORD_HASH
+   * enumeration guard.
+   */
+  passwordlessLoginOptions(
     identifier: string,
   ): Promise<WebauthnLoginOptionsResponseDto> {
-    const options = await this.webauthn.passwordlessOptions(identifier);
-
-    if (!options) {
-      // Same response whether the account doesn't exist or simply isn't
-      // passwordless-eligible — mirrors login()'s DUMMY_PASSWORD_HASH
-      // enumeration guard.
-      throw new AppException(
-        HttpStatus.UNAUTHORIZED,
-        ErrorCode.AuthPasswordlessNotEligible,
-      );
-    }
-
-    return options;
+    return this.webauthn.passwordlessOptions(identifier);
   }
 
   /** Verifies a passwordless login's WebAuthn assertion and completes it directly — the key itself is the whole factor, there's no separate MFA step. */
@@ -729,9 +723,23 @@ export class AuthService {
     if (!stored) {
       const consumed = await this.prisma.consumedRefreshToken.findUnique({
         where: { tokenHash },
-        select: { sessionId: true },
+        select: { sessionId: true, createdAt: true },
       });
 
+      // Rotated a moment ago: another tab of the same browser, refreshing
+      // at the same instant — its new cookies are already this tab's too.
+      if (
+        consumed &&
+        Date.now() - consumed.createdAt.getTime() < REFRESH_REUSE_GRACE_MS
+      ) {
+        throw new AppException(
+          HttpStatus.CONFLICT,
+          ErrorCode.AuthRefreshSuperseded,
+        );
+      }
+
+      // Replayed later than that: taken as a stolen token, the whole
+      // session goes.
       if (consumed) {
         await this.prisma.refreshToken.deleteMany({
           where: { id: consumed.sessionId },
@@ -769,10 +777,9 @@ export class AuthService {
         },
       });
 
-      if (update.count !== 1) {
-        await tx.refreshToken.deleteMany({ where: { id: stored.id } });
-        return false;
-      }
+      // A concurrent refresh rotated it between the read above and this
+      // write — the same race the grace window covers, milliseconds apart.
+      if (update.count !== 1) return false;
 
       await tx.consumedRefreshToken.create({
         data: {
@@ -790,8 +797,8 @@ export class AuthService {
 
     if (!rotated) {
       throw new AppException(
-        HttpStatus.UNAUTHORIZED,
-        ErrorCode.AuthInvalidRefreshToken,
+        HttpStatus.CONFLICT,
+        ErrorCode.AuthRefreshSuperseded,
       );
     }
 
@@ -1125,9 +1132,6 @@ export class AuthService {
   ): Promise<AuthTokensDto> {
     const sessionId = randomUUID();
     const signed = await this.signTokens(user, sessionId);
-    await this.prisma.refreshToken.deleteMany({
-      where: { userId: user.id, userAgent: userAgent ?? null },
-    });
     await this.prisma.refreshToken.create({
       data: {
         id: sessionId,

@@ -7,7 +7,10 @@ import type {
   ReportTargetType,
 } from "@loomkeep/shared";
 import { UserSummaryResponseDto } from "../../common/dto/user-summary-response.dto";
-import { ReportTargetSummaryResponseDto } from "./report-target-summary-response.dto";
+import {
+  ReportTargetOwnerResponseDto,
+  ReportTargetSummaryResponseDto,
+} from "./report-target-summary-response.dto";
 
 export class ReportResponseDto implements ReportDto {
   id!: string;
@@ -21,5 +24,6 @@ export class ReportResponseDto implements ReportDto {
   createdAt!: string;
   resolvedAt!: string | null;
   reporter!: UserSummaryResponseDto | null;
+  targetOwner!: ReportTargetOwnerResponseDto | null;
   target!: ReportTargetSummaryResponseDto | null;
 }

@@ -20,6 +20,9 @@ export const ErrorCode = {
   AuthMfaTooManyAttempts: "auth.mfa_too_many_attempts",
   AuthMfaInvalidCode: "auth.mfa_invalid_code",
   AuthInvalidRefreshToken: "auth.invalid_refresh_token",
+  // Another tab rotated this refresh token a moment ago: its cookies are
+  // already the new ones, nothing to sign in again for.
+  AuthRefreshSuperseded: "auth.refresh_superseded",
   AuthInvalidResetToken: "auth.invalid_reset_token",
   AuthMfaTotpNotInProgress: "auth.mfa_totp_not_in_progress",
   AuthCurrentPasswordIncorrect: "auth.current_password_incorrect",
@@ -37,7 +40,6 @@ export const ErrorCode = {
   AuthWebauthnVerificationFailed: "auth.webauthn_verification_failed",
   AuthWebauthnCredentialNotFound: "auth.webauthn_credential_not_found",
   AuthPasswordlessRequiresCredential: "auth.passwordless_requires_credential",
-  AuthPasswordlessNotEligible: "auth.passwordless_not_eligible",
   AuthInvalidInvitation: "auth.invalid_invitation",
   AuthInvitationExpired: "auth.invitation_expired",
   AuthInvitationEmailMismatch: "auth.invitation_email_mismatch",

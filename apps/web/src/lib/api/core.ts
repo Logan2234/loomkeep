@@ -223,7 +223,20 @@ export function tryRefresh(): Promise<boolean> {
   return refreshInFlight;
 }
 
+// The mutex above lives in one tab, but every tab (and the installed PWA)
+// shares the same cookies, so they all expire — and refresh — at once. A Web
+// Lock queues them across tabs: the next one in line refreshes with the
+// cookies the previous one just received. The API's superseded answer covers
+// a browser without Web Locks, and a refresh racing another tab's anyway.
 async function doRefresh(): Promise<boolean> {
+  if (typeof navigator !== "undefined" && navigator.locks) {
+    return navigator.locks.request("loomkeep-refresh", refreshOnce);
+  }
+
+  return refreshOnce();
+}
+
+async function refreshOnce(): Promise<boolean> {
   try {
     await request<void>(
       "/auth/refresh",
@@ -231,7 +244,12 @@ async function doRefresh(): Promise<boolean> {
       true,
     );
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    // Another tab rotated the token a moment ago: its new cookies are this
+    // tab's too, so the session is fine.
+    return (
+      error instanceof ApiError &&
+      error.code === ErrorCode.AuthRefreshSuperseded
+    );
   }
 }

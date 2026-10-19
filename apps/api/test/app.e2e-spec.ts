@@ -519,11 +519,20 @@ describe("Loomkeep API (e2e)", () => {
     const oldCookies = sessionCookies;
     sessionCookies = authCookies(response);
 
-    // The consumed token must be rejected.
-    await request(http)
+    // The consumed token issues nothing. Replayed this soon, it reads as
+    // another tab of the same browser (superseded, session kept); a replay
+    // after REFRESH_REUSE_GRACE_MS revokes the session (auth.service.spec).
+    const replay = await request(http)
       .post("/api/auth/refresh")
       .set("Cookie", oldCookies)
-      .expect(401);
+      .expect(409);
+    expect(replay.body.code).toBe("auth.refresh_superseded");
+    expect(replay.headers["set-cookie"]).toBeUndefined();
+
+    await request(http)
+      .get("/api/auth/sessions")
+      .set("Cookie", sessionCookies)
+      .expect(200);
   });
 
   it("logs out: the refresh token becomes unusable", async () => {
@@ -589,6 +598,27 @@ describe("Loomkeep API (e2e)", () => {
       .expect(200);
     expect(list.body).toHaveLength(2);
 
+    // Another machine sending DeviceA's exact User-Agent is still another
+    // browser: signing in there leaves DeviceA's session alone.
+    const login3 = await request(http)
+      .post("/api/auth/login")
+      .send({ identifier: u.email, password: u.password })
+      .set("user-agent", "DeviceA")
+      .expect(200);
+    // Signing in again on that browser replaces its own session, and only it.
+    await request(http)
+      .post("/api/auth/login")
+      .send({ identifier: u.email, password: u.password })
+      .set("user-agent", "DeviceA")
+      .set("Cookie", authCookies(login3))
+      .expect(200);
+    list = await request(http)
+      .get("/api/auth/sessions")
+      .set("Cookie", cookiesB)
+      .expect(200);
+    expect(list.body).toHaveLength(3);
+    expect(list.body.map((s: { id: string }) => s.id)).toContain(original.id);
+
     // Revoke every other device: only the current cookie session survives.
     await request(http)
       .delete("/api/auth/sessions")
@@ -613,6 +643,39 @@ describe("Loomkeep API (e2e)", () => {
       .get("/api/auth/sessions")
       .set("Cookie", cookiesB)
       .expect(401);
+  });
+
+  // Two tabs share the cookies, so they refresh with the same token at the
+  // same instant. The loser must not be taken for a thief: the session lives.
+  it("survives two tabs refreshing with the same token at once", async () => {
+    const u = {
+      email: "e2e-two-tabs@loomkeep.test",
+      password: "Two-Tabs-1!",
+      displayName: "Two tabs",
+      acceptedTerms: true,
+      certifiedAge: true,
+    };
+    const reg = await request(http)
+      .post("/api/auth/register")
+      .send(u)
+      .expect(201);
+    const cookies = authCookies(reg);
+
+    const [first, second] = await Promise.all([
+      request(http).post("/api/auth/refresh").set("Cookie", cookies),
+      request(http).post("/api/auth/refresh").set("Cookie", cookies),
+    ]);
+    expect([first.status, second.status].sort()).toEqual([204, 409]);
+    const [winner, loser] =
+      first.status === 204 ? [first, second] : [second, first];
+    expect(loser.body.code).toBe("auth.refresh_superseded");
+    // Clearing them would wipe the winner's fresh cookies in every tab.
+    expect(loser.headers["set-cookie"]).toBeUndefined();
+
+    await request(http)
+      .get("/api/auth/sessions")
+      .set("Cookie", authCookies(winner))
+      .expect(200);
   });
 
   it("deletes the account and wipes access to it", async () => {

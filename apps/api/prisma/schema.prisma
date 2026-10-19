@@ -711,6 +711,7 @@ model User {
   messageReactions           MessageReaction[]
   reportsFiled               Report[]               @relation("ReportsFiled")
   reportsResolved            Report[]               @relation("ReportsResolved")
+  reportsReceived            Report[]               @relation("ReportsReceived")
   lists                      List[]
   savedViews                 SavedView[]
   listMemberships            ListMember[]
@@ -1114,14 +1115,21 @@ model Report {
   createdAt    DateTime         @default(now())
   resolvedAt   DateTime?
   resolvedById String?
+  // Who the reported content belongs to (author, list owner, the profile's
+  // account), kept once the content itself is gone: an author deleting
+  // what got reported still shows in their moderation history. Null when
+  // unknown (pre-existing content already gone) or the account was deleted.
+  targetOwnerId String?
 
   reporter            User?                @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: SetNull)
   resolvedBy          User?                @relation("ReportsResolved", fields: [resolvedById], references: [id], onDelete: SetNull)
+  targetOwner         User?                @relation("ReportsReceived", fields: [targetOwnerId], references: [id], onDelete: SetNull)
   moderationDecisions ModerationDecision[]
 
   @@index([status, createdAt])
   @@index([category])
   @@index([reporterId, status, createdAt])
+  @@index([targetOwnerId])
 }
 
 // DSA art. 17 "statement of reasons" record — one row per restrictive measure
@@ -1804,13 +1812,15 @@ model WebauthnCredential {
 // MfaLoginChallenge's totpAllowed/emailAllowed shape for a third method.
 model WebauthnChallenge {
   id                  String   @id @default(cuid())
-  userId              String
+  // Null for a passwordless decoy: an identifier that isn't eligible still
+  // gets a real challenge, bound to no account (WebauthnService.passwordlessOptions).
+  userId              String?
   challenge           String
   mfaLoginChallengeId String?  @unique
   expiresAt           DateTime
   createdAt           DateTime @default(now())
 
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
   mfaLoginChallenge MfaLoginChallenge? @relation(fields: [mfaLoginChallengeId], references: [id], onDelete: Cascade)
 
   @@index([userId])

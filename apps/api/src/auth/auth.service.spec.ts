@@ -668,7 +668,7 @@ describe("AuthService.login", () => {
     });
   });
 
-  it("drops any prior session for the same device before recording the new one", async () => {
+  it("keeps the sessions of other machines sending the same User-Agent", async () => {
     const { service, prisma } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
@@ -679,9 +679,7 @@ describe("AuthService.login", () => {
       "some-user-agent",
     );
 
-    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
-      where: { userId: user.id, userAgent: "some-user-agent" },
-    });
+    expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
   });
 
   it("alerts by email and logs a security event when the device has never been seen", async () => {
@@ -897,6 +895,7 @@ describe("AuthService.refresh", () => {
     (prisma.refreshToken.findUnique as Mock).mockResolvedValue(null);
     (prisma.consumedRefreshToken.findUnique as Mock).mockResolvedValue({
       sessionId: "rt-1",
+      createdAt: new Date(Date.now() - 60_000),
     });
 
     await expect(service.refresh("replayed-token")).rejects.toMatchObject({
@@ -907,7 +906,23 @@ describe("AuthService.refresh", () => {
     });
   });
 
-  it("revokes the token family when a concurrent rotation loses the compare-and-swap", async () => {
+  // Two tabs share the cookies, hence the expiry: both refresh with the
+  // same token within milliseconds. The loser isn't a thief.
+  it("keeps the session when another tab rotated the token a moment ago", async () => {
+    const { service, prisma } = makeService();
+    (prisma.refreshToken.findUnique as Mock).mockResolvedValue(null);
+    (prisma.consumedRefreshToken.findUnique as Mock).mockResolvedValue({
+      sessionId: "rt-1",
+      createdAt: new Date(Date.now() - 2_000),
+    });
+
+    await expect(service.refresh("just-rotated")).rejects.toMatchObject({
+      code: ErrorCode.AuthRefreshSuperseded,
+    });
+    expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("keeps the session when a concurrent rotation wins the compare-and-swap", async () => {
     const { service, prisma } = makeService();
     (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
       id: "rt-1",
@@ -918,11 +933,9 @@ describe("AuthService.refresh", () => {
     (prisma.refreshToken.updateMany as Mock).mockResolvedValue({ count: 0 });
 
     await expect(service.refresh("old-token")).rejects.toMatchObject({
-      code: ErrorCode.AuthInvalidRefreshToken,
+      code: ErrorCode.AuthRefreshSuperseded,
     });
-    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
-      where: { id: "rt-1" },
-    });
+    expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
   });
 
   it("throws AppException(auth.invalid_refresh_token) when the stored session already expired", async () => {

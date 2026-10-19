@@ -1,4 +1,5 @@
 import {
+  type AuthTokensDto,
   ErrorCode,
   type InvitationPreviewDto,
   type LoginResponseDto,
@@ -76,6 +77,7 @@ export class AuthController {
   async register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
     @Headers("accept-language") acceptLanguage?: string,
@@ -86,7 +88,7 @@ export class AuthController {
       ip,
       acceptLanguage,
     );
-    setAuthCookies(reply, result.tokens);
+    await this.signIn(request, reply, result.tokens);
     return { user: result.user };
   }
 
@@ -107,13 +109,14 @@ export class AuthController {
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
   ): Promise<LoginResponseDto> {
     const result = await this.authService.login(dto, userAgent, ip);
     if (result.mfaRequired) return result;
 
-    setAuthCookies(reply, result.tokens);
+    await this.signIn(request, reply, result.tokens);
     return { mfaRequired: false, user: result.user };
   }
 
@@ -127,6 +130,7 @@ export class AuthController {
   async mfaVerify(
     @Body() dto: MfaVerifyDto,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
   ): Promise<{ user: UserDto }> {
@@ -136,7 +140,7 @@ export class AuthController {
       userAgent,
       ip,
     );
-    setAuthCookies(reply, result.tokens);
+    await this.signIn(request, reply, result.tokens);
     return { user: result.user };
   }
 
@@ -168,6 +172,7 @@ export class AuthController {
   async mfaWebauthnVerify(
     @Body() dto: WebauthnMfaVerifyDto,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
   ): Promise<{ user: UserDto }> {
@@ -177,7 +182,7 @@ export class AuthController {
       userAgent,
       ip,
     );
-    setAuthCookies(reply, result.tokens);
+    await this.signIn(request, reply, result.tokens);
     return { user: result.user };
   }
 
@@ -203,6 +208,7 @@ export class AuthController {
   async webauthnLoginVerify(
     @Body() dto: WebauthnLoginVerifyDto,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
   ): Promise<{ user: UserDto }> {
@@ -212,7 +218,7 @@ export class AuthController {
       userAgent,
       ip,
     );
-    setAuthCookies(reply, result.tokens);
+    await this.signIn(request, reply, result.tokens);
     return { user: result.user };
   }
 
@@ -234,7 +240,13 @@ export class AuthController {
     try {
       setAuthCookies(reply, await this.authService.refresh(refreshToken));
     } catch (error) {
-      if (!(error instanceof AppException)) throw error;
+      // Superseded: the cookies another tab just received are this
+      // browser's too — clearing them would sign every tab out.
+      if (
+        !(error instanceof AppException) ||
+        error.code === ErrorCode.AuthRefreshSuperseded
+      )
+        throw error;
       clearAuthCookies(reply);
       throw error;
     }
@@ -289,5 +301,22 @@ export class AuthController {
     @Body() dto: PreviewInvitationDto,
   ): Promise<InvitationPreviewDto> {
     return this.invitations.preview(dto.token);
+  }
+
+  /**
+   * Sets a new session's cookies, ending first the session this browser held
+   * before — the one its refresh cookie still names, which they replace. One
+   * session per browser, without guessing the browser from its User-Agent:
+   * two machines on the same Chrome build send identical ones, and signing
+   * in on one used to sign the other out.
+   */
+  private async signIn(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    tokens: AuthTokensDto,
+  ): Promise<void> {
+    const replaced = readRefreshCookie(request);
+    if (replaced) await this.authService.logout(replaced);
+    setAuthCookies(reply, tokens);
   }
 }

@@ -24,6 +24,7 @@ function make(
       findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn().mockResolvedValue(null),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      groupBy: vi.fn().mockResolvedValue([]),
       ...overrides.report,
     },
     comment: {
@@ -166,6 +167,7 @@ describe("ReportService.create", () => {
         category: "SPAM",
         motif: "SPAM_PROMOTIONAL",
         reason: null,
+        targetOwnerId: "author",
       },
     });
     expect(events.emitReportsCount).toHaveBeenCalled();
@@ -195,6 +197,7 @@ describe("ReportService.create", () => {
         category: "OTHER",
         motif: null,
         reason: "something specific",
+        targetOwnerId: "author",
       },
     });
   });
@@ -825,6 +828,7 @@ describe("ReportService.listAgainstUser", () => {
       expect.objectContaining({
         where: {
           OR: [
+            { targetOwnerId: "user1" },
             { targetType: "USER", targetId: "user1" },
             { targetType: "COMMENT", targetId: { in: ["c1"] } },
             { targetType: "REVIEW", targetId: { in: ["rev1"] } },
@@ -946,5 +950,92 @@ describe("ReportService.sendDailyDigest", () => {
       { email: "b@x.com", locale: "en" },
       2,
     );
+  });
+});
+
+describe("ReportService — content changed or gone since the report", () => {
+  const reportedAt = new Date("2026-10-10T10:00:00Z");
+  const reportRow = (id: string, targetId: string, owner: string | null) => ({
+    id,
+    targetType: "REVIEW",
+    targetId,
+    category: null,
+    motif: null,
+    profilePart: null,
+    reason: null,
+    status: "PENDING",
+    createdAt: reportedAt,
+    resolvedAt: null,
+    targetOwnerId: owner,
+    targetOwner: owner ? { username: "troll" } : null,
+    reporter: null,
+  });
+  const review = (id: string, updatedAt: Date) => ({
+    id,
+    rating: 2,
+    text: "now harmless",
+    updatedAt,
+    targetType: "MEDIA",
+    targetId: "m1",
+    user: { username: "troll" },
+  });
+
+  it("flags a review edited after it was reported, not one left alone", async () => {
+    const { svc } = make({
+      report: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            reportRow("r1", "edited", "troll-id"),
+            reportRow("r2", "untouched", "troll-id"),
+          ]),
+      },
+      review: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            review("edited", new Date("2026-10-10T11:00:00Z")),
+            review("untouched", new Date("2026-10-09T09:00:00Z")),
+          ]),
+      },
+    });
+
+    const { items } = await svc.list(undefined, parsePageQuery("1", "20", 20));
+
+    expect(items.map((r) => r.target?.editedAfterReport)).toEqual([
+      true,
+      false,
+    ]);
+  });
+
+  // An author deleting what got reported keeps that report on their record:
+  // it counts against them like any other.
+  it("counts every report on the owner's content, deleted content included", async () => {
+    const groupBy = vi
+      .fn()
+      .mockResolvedValue([{ targetOwnerId: "troll-id", _count: { _all: 4 } }]);
+    const { svc } = make({
+      report: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            reportRow("r1", "gone", "troll-id"),
+            reportRow("r2", "gone-too", null),
+          ]),
+        groupBy,
+      },
+    });
+
+    const { items } = await svc.list(undefined, parsePageQuery("1", "20", 20));
+
+    expect(groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { targetOwnerId: { in: ["troll-id"] } },
+      }),
+    );
+    expect(items.map((r) => [r.target, r.targetOwner])).toEqual([
+      [null, { username: "troll", reportCount: 4 }],
+      [null, null],
+    ]);
   });
 });
