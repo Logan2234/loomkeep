@@ -8,18 +8,19 @@ import {
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
   mkdir,
+  open,
   readFile,
   readdir,
   rename,
   rm,
   stat,
-  writeFile,
 } from "node:fs/promises";
 import { join } from "node:path";
+import { pipeline } from "node:stream/promises";
 import { AppException } from "../common/app.exception";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
@@ -27,6 +28,7 @@ import { PrismaService } from "../prisma/prisma.service";
 
 /** How many dumps are kept on disk — older ones are purged after each run. */
 const KEEP = 7;
+const DUMP_ARGS = ["--no-owner", "--no-privileges", "--clean", "--if-exists"];
 const BACKUP_FILENAME =
   /^loomkeep-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}(?:-[a-f0-9]{8})?\.sql\.age(?:\.deleting-[a-f0-9-]{36})?$/;
 
@@ -36,6 +38,8 @@ const BACKUP_FILENAME =
  * constraint) without hand-maintaining an exporter that tracks every future
  * migration. Plain-SQL rather than pg_dump's binary format, so a dump travels
  * as a string through the same JSON pattern as the rest of the app.
+ * The nightly dump itself never goes through the API's memory: pg_dump is
+ * piped through age straight to disk ({@link dumpEncryptedTo}).
  *
  * Dumps go to BACKUP_DIR — a Docker volume separate from the Postgres data
  * volume it backs up, so a corrupt DB doesn't take its own backups with it.
@@ -62,16 +66,6 @@ export class BackupService {
     return process.env.BACKUP_DIR ?? join(process.cwd(), "backups");
   }
 
-  /** Ad-hoc dump, not persisted — used by {@link runScheduled} and restore-from-upload flows. */
-  async dump(): Promise<string> {
-    return this.run("pg_dump", [
-      "--no-owner",
-      "--no-privileges",
-      "--clean",
-      "--if-exists",
-    ]);
-  }
-
   /**
    * Replaces the entire database with `sql` (a dump produced by {@link dump}),
    * then re-applies any migration shipped since that dump was taken — the
@@ -95,8 +89,14 @@ export class BackupService {
     return this.jobRuns.record(
       JOB_KEYS.BACKUP,
       async () => {
-        const encrypted = await this.encrypt(await this.dump());
-        return this.withFileLock(() => this.writeBackup(encrypted));
+        const filename = `loomkeep-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}-${randomUUID().slice(0, 8)}.sql.age`;
+        // Outside the file lock (a dump takes a while) and under a name
+        // BACKUP_FILENAME doesn't match, so the inventory never lists a
+        // half-written file as an orphan.
+        const partial = `${filename}.partial`;
+        await mkdir(this.dir, { recursive: true });
+        await this.dumpEncryptedTo(join(this.dir, partial));
+        return this.withFileLock(() => this.writeBackup(partial, filename));
       },
       (file) => `${file.filename} (${formatBytes(file.sizeBytes)})`,
     );
@@ -236,19 +236,23 @@ export class BackupService {
     });
   }
 
-  private async writeBackup(encrypted: string): Promise<AdminBackupFileDto> {
-    const filename = `loomkeep-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}-${randomUUID().slice(0, 8)}.sql.age`;
-    await mkdir(this.dir, { recursive: true });
-    await writeFile(join(this.dir, filename), encrypted, {
-      encoding: "utf-8",
-      flag: "wx",
-    });
+  private async writeBackup(
+    partial: string,
+    filename: string,
+  ): Promise<AdminBackupFileDto> {
+    try {
+      await rename(join(this.dir, partial), join(this.dir, filename));
+    } catch (error) {
+      await rm(join(this.dir, partial), { force: true });
+      throw error;
+    }
 
     let row;
 
     try {
+      const { size } = await stat(join(this.dir, filename));
       row = await this.prisma.backupFile.create({
-        data: { filename, sizeBytes: Buffer.byteLength(encrypted, "utf-8") },
+        data: { filename, sizeBytes: size },
       });
     } catch (error) {
       try {
@@ -269,15 +273,16 @@ export class BackupService {
   }
 
   /**
-   * Encrypts `sql` for BACKUP_ENCRYPTION_PUBLIC_KEY. ASCII-armored (`-a`)
-   * rather than age's default binary output so the result stays a plain
-   * string, same transport as the SQL it replaces — no base64 wrapping
-   * needed to carry it through the JSON request/response pattern the rest
-   * of the app uses. Fails the whole backup rather than ever falling back
-   * to writing plaintext: an unconfigured key must not silently produce an
-   * unencrypted dump.
+   * Streams pg_dump through age, encrypting for BACKUP_ENCRYPTION_PUBLIC_KEY,
+   * straight into `path`: the dump (the whole user database) never sits in
+   * the API's memory, in clear or encrypted. ASCII-armored (`-a`) rather than
+   * age's default binary output so the file stays a plain string, carried
+   * through the JSON download like the rest of the app. Fails the whole
+   * backup rather than ever falling back to writing plaintext: an
+   * unconfigured key must not silently produce an unencrypted dump. Either
+   * process failing removes the partial file.
    */
-  private async encrypt(sql: string): Promise<string> {
+  private async dumpEncryptedTo(path: string): Promise<void> {
     const publicKey = this.configService.get<string>(
       "BACKUP_ENCRYPTION_PUBLIC_KEY",
     );
@@ -291,7 +296,26 @@ export class BackupService {
       );
     }
 
-    return this.run("age", ["-r", publicKey, "-a"], sql);
+    // Opened before either process starts, so the cleanup below can't race
+    // a still-pending open into leaving the partial file behind.
+    const out = (await open(path, "wx")).createWriteStream();
+    const dump = this.spawnTool("pg_dump", DUMP_ARGS);
+    const age = this.spawnTool("age", ["-r", publicKey, "-a"]);
+
+    try {
+      await Promise.all([
+        pipeline(dump.child.stdout, age.child.stdin),
+        pipeline(age.child.stdout, out),
+        dump.exited,
+        age.exited,
+      ]);
+    } catch (error) {
+      dump.child.kill();
+      age.child.kill();
+      out.destroy();
+      await rm(path, { force: true });
+      throw error;
+    }
   }
 
   /** Deletes every persisted dump beyond the {@link KEEP} most recent, on disk and in DB. */
@@ -369,22 +393,18 @@ export class BackupService {
     };
   }
 
-  private run(
+  /** Spawns a CLI tool; `exited` settles once it exits, rejecting on a failure or a non-zero code. */
+  private spawnTool(
     command: string,
     args: string[],
-    stdin?: string,
-  ): Promise<string> {
+  ): { child: ChildProcessWithoutNullStreams; exited: Promise<void> } {
     const env =
       command === "pg_dump" || command === "psql" ? this.pgEnv() : process.env;
+    const child = spawn(command, args, { env });
+    let stderr = "";
+    child.stderr.on("data", (chunk: Buffer) => (stderr += chunk));
 
-    return new Promise((resolve, reject) => {
-      const child = spawn(command, args, { env });
-      let stdout = "";
-      let stderr = "";
-
-      child.stdout.on("data", (chunk: Buffer) => (stdout += chunk));
-      child.stderr.on("data", (chunk: Buffer) => (stderr += chunk));
-
+    const exited = new Promise<void>((resolve, reject) => {
       child.on("error", (err: NodeJS.ErrnoException) => {
         if (err.code === "ENOENT") {
           reject(
@@ -409,7 +429,7 @@ export class BackupService {
 
       child.on("close", (code) => {
         if (code === 0) {
-          resolve(stdout);
+          resolve();
         } else {
           this.logger.error(`${command} exited with code ${code}: ${stderr}`);
           reject(
@@ -422,12 +442,26 @@ export class BackupService {
           );
         }
       });
-
-      if (stdin !== undefined) {
-        child.stdin.write(stdin);
-        child.stdin.end();
-      }
     });
+
+    return { child, exited };
+  }
+
+  private async run(
+    command: string,
+    args: string[],
+    stdin?: string,
+  ): Promise<void> {
+    const { child, exited } = this.spawnTool(command, args);
+    // Drained, never kept: a full stdout pipe would stall psql mid-restore.
+    child.stdout.resume();
+
+    if (stdin !== undefined) {
+      child.stdin.write(stdin);
+      child.stdin.end();
+    }
+
+    await exited;
   }
 }
 
