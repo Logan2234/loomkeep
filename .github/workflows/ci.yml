@@ -114,7 +114,7 @@ jobs:
         run: pnpm --filter @loomkeep/web test:build
       - name: Upload ESLint Web results
         if: always()
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           sarif_file: apps/web/eslint-results.sarif
           category: eslint-web
@@ -185,13 +185,13 @@ jobs:
           fail_ci_if_error: false
       - name: Upload ESLint API results
         if: always()
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           sarif_file: apps/api/eslint-results.sarif
           category: eslint-api
       - name: Upload ESLint Packages results
         if: always()
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           sarif_file: packages/shared/eslint-results.sarif
           category: eslint-packages
@@ -343,7 +343,7 @@ jobs:
       # scanning tell this PR's new alerts from the ones main already has.
       - name: upload ${{ matrix.name }} scan
         if: needs.changes.outputs[matrix.name] == 'true'
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           sarif_file: trivy-${{ matrix.name }}.sarif
           category: trivy-${{ matrix.name }}
