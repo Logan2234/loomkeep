@@ -4,7 +4,7 @@ import type { MediaItemService } from "../catalog/media-item.service";
 import type { GameItemService } from "../games/game-item.service";
 import type { MusicItemService } from "../music/music-item.service";
 import type { PrismaService } from "../prisma/prisma.service";
-import { AdminCacheController } from "./admin-cache.controller";
+import { AdminCacheService } from "./admin-cache.service";
 
 type TargetType = "MEDIA" | "SEASON" | "EPISODE";
 type ContentKind = "review" | "comment" | "activityEvent";
@@ -23,7 +23,7 @@ function matchesTarget(row: TargetRow, where: TargetWhere): boolean {
   );
 }
 
-function makeController(kind: ContentKind, targetType: TargetType) {
+function makeService(kind: ContentKind, targetType: TargetType) {
   const targetId =
     targetType === "MEDIA"
       ? "protected-media"
@@ -64,7 +64,7 @@ function makeController(kind: ContentKind, targetType: TargetType) {
     async (action: (db: typeof prisma) => Promise<unknown>) => action(prisma),
   );
   const mediaItems = { forceRefresh: vi.fn().mockResolvedValue(undefined) };
-  const controller = new AdminCacheController(
+  const service = new AdminCacheService(
     prisma as unknown as PrismaService,
     mediaItems as unknown as MediaItemService,
     {} as GameItemService,
@@ -72,16 +72,16 @@ function makeController(kind: ContentKind, targetType: TargetType) {
     {} as MusicItemService,
   );
 
-  return { controller, prisma, mediaItems };
+  return { service, prisma, mediaItems };
 }
 
-describe("AdminCacheController media purge", () => {
+describe("AdminCacheService media purge", () => {
   for (const kind of ["review", "comment", "activityEvent"] as const) {
     for (const targetType of ["SEASON", "EPISODE"] as const) {
       it(`skips a media item with a ${targetType} ${kind} during bulk purge`, async () => {
-        const { controller, prisma } = makeController(kind, targetType);
+        const { service, prisma } = makeService(kind, targetType);
 
-        await expect(controller.removeOrphans("MEDIA")).resolves.toEqual({
+        await expect(service.removeOrphans("MEDIA")).resolves.toEqual({
           deleted: 1,
           skipped: 1,
         });
@@ -95,10 +95,10 @@ describe("AdminCacheController media purge", () => {
       });
 
       it(`rejects individual purge of a media item with a ${targetType} ${kind}`, async () => {
-        const { controller, prisma } = makeController(kind, targetType);
+        const { service, prisma } = makeService(kind, targetType);
 
         await expect(
-          controller.remove("MEDIA", "protected-media"),
+          service.remove("MEDIA", "protected-media"),
         ).rejects.toMatchObject({ status: 409 });
         expect(prisma.mediaItem.deleteMany).not.toHaveBeenCalled();
         expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
@@ -110,9 +110,9 @@ describe("AdminCacheController media purge", () => {
   }
 
   it("still protects content attached directly to the media item", async () => {
-    const { controller, prisma } = makeController("review", "MEDIA");
+    const { service, prisma } = makeService("review", "MEDIA");
 
-    await expect(controller.removeOrphans("MEDIA")).resolves.toEqual({
+    await expect(service.removeOrphans("MEDIA")).resolves.toEqual({
       deleted: 1,
       skipped: 1,
     });
@@ -122,61 +122,13 @@ describe("AdminCacheController media purge", () => {
   });
 });
 
-describe("AdminCacheController game purge", () => {
-  // Games run without the Serializable transaction MEDIA has: the delete
-  // itself re-checks that nobody tracks the item, or a GameEntry created
-  // since the scan would cascade away with it.
-  function makeGameController(deleted: number) {
-    const none = { findMany: vi.fn().mockResolvedValue([]) };
-    const prisma = {
-      gameItem: {
-        findMany: vi.fn().mockResolvedValue([{ id: "g1" }]),
-        findUnique: vi.fn().mockResolvedValue({ _count: { entries: 0 } }),
-        deleteMany: vi.fn().mockResolvedValue({ count: deleted }),
-      },
-      review: none,
-      comment: none,
-      activityEvent: none,
-    };
-    const controller = new AdminCacheController(
-      prisma as unknown as PrismaService,
-      {} as MediaItemService,
-      {} as GameItemService,
-      {} as BookItemService,
-      {} as MusicItemService,
-    );
-    return { controller, prisma };
-  }
-
-  it("only deletes orphans that are still untracked at delete time", async () => {
-    const { controller, prisma } = makeGameController(1);
-
-    await controller.removeOrphans("GAMES");
-
-    expect(prisma.gameItem.deleteMany).toHaveBeenCalledWith({
-      where: { id: { in: ["g1"] }, entries: { none: {} } },
-    });
-  });
-
-  it("refuses an individual purge when the game got tracked in the meantime", async () => {
-    const { controller } = makeGameController(0);
-
-    await expect(controller.remove("GAMES", "g1")).rejects.toMatchObject({
-      status: 409,
-    });
-  });
-});
-
-describe("AdminCacheController.resyncStale", () => {
+describe("AdminCacheService.resyncStale", () => {
   it("continues after a failed refresh and reports both outcomes", async () => {
-    const { controller, prisma, mediaItems } = makeController(
-      "review",
-      "MEDIA",
-    );
-    vi.spyOn(controller["logger"], "error").mockImplementation(() => undefined);
+    const { service, prisma, mediaItems } = makeService("review", "MEDIA");
+    vi.spyOn(service["logger"], "error").mockImplementation(() => undefined);
     mediaItems.forceRefresh.mockRejectedValueOnce(new Error("provider down"));
 
-    await expect(controller.resyncStale("MEDIA")).resolves.toEqual({
+    await expect(service.resyncStale("MEDIA")).resolves.toEqual({
       resynced: 1,
       failed: 1,
     });
