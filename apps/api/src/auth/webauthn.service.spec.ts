@@ -148,7 +148,9 @@ function makeService() {
           const row = challenges.get(where.id);
           if (!row) return Promise.resolve(null);
           return Promise.resolve(
-            include?.user ? { ...row, user: users.get(row.userId) } : row,
+            include?.user
+              ? { ...row, user: row.userId ? users.get(row.userId) : null }
+              : row,
           );
         },
       ),
@@ -165,6 +167,7 @@ function makeService() {
 
   const configService = {
     getOrThrow: vi.fn(() => "https://loomkeep.app"),
+    get: vi.fn(() => "refresh-secret"),
   } as unknown as ConfigService;
 
   const security = { record: vi.fn() } as unknown as SecurityEventService;
@@ -175,6 +178,7 @@ function makeService() {
   return {
     service: new WebauthnService(prisma, configService, security, mfa),
     prisma,
+    challenges,
     security,
     mfa,
     credentials,
@@ -355,5 +359,77 @@ describe("WebauthnService.setPasswordless", () => {
     await service.setPasswordless("user-1", true, CURRENT_PASSWORD);
 
     expect(users.get("user-1")?.passwordlessEnabled).toBe(true);
+  });
+});
+
+describe("WebauthnService.passwordlessOptions", () => {
+  function withLookup(user: Partial<User> | null) {
+    const ctx = makeService();
+    (ctx.prisma.user as unknown as { findFirst: unknown }).findFirst = vi
+      .fn()
+      .mockResolvedValue(user);
+    return ctx;
+  }
+
+  const allowed = async (
+    service: WebauthnService,
+    identifier: string,
+  ): Promise<{ id: string; transports?: string[] }[]> => {
+    const { generateAuthenticationOptions } =
+      await import("@simplewebauthn/server");
+    const generate = vi.mocked(generateAuthenticationOptions);
+    generate.mockClear();
+    await service.passwordlessOptions(identifier);
+    return generate.mock.calls[0][0].allowCredentials as never;
+  };
+
+  it("lists the account's own keys when it signs in without a password", async () => {
+    const { service, credentials, challenges } = withLookup({
+      id: "user-1",
+      passwordlessEnabled: true,
+    });
+    credentials.set("cred-1", makeCredential());
+
+    expect(await allowed(service, "alice")).toEqual([
+      { id: "credential-id-1", transports: [] },
+    ]);
+    expect([...challenges.values()][0].userId).toBe("user-1");
+  });
+
+  it.each([
+    ["an unknown identifier", null],
+    [
+      "an account without passwordless",
+      { id: "user-1", passwordlessEnabled: false },
+    ],
+  ])("answers %s with stable decoys bound to no account", async (_, user) => {
+    const { service, challenges } = withLookup(user);
+
+    const first = await allowed(service, "Bob@example.com");
+    const again = await allowed(service, " bob@example.com ");
+    const other = await allowed(service, "carol@example.com");
+
+    expect(first.length).toBeGreaterThan(0);
+
+    for (const decoy of first) {
+      expect(decoy.id).toMatch(/^[A-Za-z0-9_-]{22,86}$/);
+      expect(decoy.transports?.length).toBeGreaterThan(0);
+    }
+
+    expect(again).toEqual(first);
+    expect(other).not.toEqual(first);
+    expect([...challenges.values()].every((c) => c.userId === null)).toBe(true);
+  });
+
+  it("fails a decoy challenge's assertion like a wrong key would", async () => {
+    const { service, credentials } = withLookup(null);
+    credentials.set("cred-1", makeCredential());
+    const { webauthnChallengeId } = await service.passwordlessOptions("ghost");
+
+    await expect(
+      service.verifyLoginAssertion(webauthnChallengeId, {
+        id: "credential-id-1",
+      } as never),
+    ).rejects.toMatchObject({ code: "auth.webauthn_verification_failed" });
   });
 });

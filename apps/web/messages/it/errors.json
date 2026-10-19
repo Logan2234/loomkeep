@@ -23,7 +23,6 @@
   "apierr_auth_webauthn_verification_failed": "La verifica della chiave di sicurezza non è riuscita.",
   "apierr_auth_webauthn_credential_not_found": "Impossibile trovare questa chiave di sicurezza.",
   "apierr_auth_passwordless_requires_credential": "Aggiungi prima una chiave di sicurezza per attivare l'accesso senza password.",
-  "apierr_auth_passwordless_not_eligible": "Questo account non accetta l'accesso senza password.",
   "apierr_admin_cache_item_not_found": "Impossibile trovare questo elemento nella cache.",
   "apierr_admin_cache_resync_failed": "Risincronizzazione non riuscita, la fonte potrebbe essere irraggiungibile.",
   "apierr_library_episode_not_aired": "Questo episodio non è ancora andato in onda.",

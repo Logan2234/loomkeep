@@ -55,8 +55,6 @@ const MESSAGES = {
     m.apierr_auth_webauthn_credential_not_found(),
   [ErrorCode.AuthPasswordlessRequiresCredential]: () =>
     m.apierr_auth_passwordless_requires_credential(),
-  [ErrorCode.AuthPasswordlessNotEligible]: () =>
-    m.apierr_auth_passwordless_not_eligible(),
   [ErrorCode.AuthInvalidInvitation]: () => m.apierr_auth_invalid_invitation(),
   [ErrorCode.AuthInvitationExpired]: () => m.apierr_auth_invitation_expired(),
   [ErrorCode.AuthInvitationEmailMismatch]: () =>

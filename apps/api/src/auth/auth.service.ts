@@ -634,23 +634,16 @@ export class AuthService {
     return this.completeLogin(user, userAgent, ip);
   }
 
-  /** Options for a passwordless login — no password check at all, gated on `passwordlessEnabled`. */
-  async passwordlessLoginOptions(
+  /**
+   * Options for a passwordless login — no password check at all, gated on
+   * `passwordlessEnabled`. Always answers with options, decoys for an
+   * identifier that isn't eligible: mirrors login()'s DUMMY_PASSWORD_HASH
+   * enumeration guard.
+   */
+  passwordlessLoginOptions(
     identifier: string,
   ): Promise<WebauthnLoginOptionsResponseDto> {
-    const options = await this.webauthn.passwordlessOptions(identifier);
-
-    if (!options) {
-      // Same response whether the account doesn't exist or simply isn't
-      // passwordless-eligible — mirrors login()'s DUMMY_PASSWORD_HASH
-      // enumeration guard.
-      throw new AppException(
-        HttpStatus.UNAUTHORIZED,
-        ErrorCode.AuthPasswordlessNotEligible,
-      );
-    }
-
-    return options;
+    return this.webauthn.passwordlessOptions(identifier);
   }
 
   /** Verifies a passwordless login's WebAuthn assertion and completes it directly — the key itself is the whole factor, there's no separate MFA step. */

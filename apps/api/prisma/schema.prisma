@@ -1804,13 +1804,15 @@ model WebauthnCredential {
 // MfaLoginChallenge's totpAllowed/emailAllowed shape for a third method.
 model WebauthnChallenge {
   id                  String   @id @default(cuid())
-  userId              String
+  // Null for a passwordless decoy: an identifier that isn't eligible still
+  // gets a real challenge, bound to no account (WebauthnService.passwordlessOptions).
+  userId              String?
   challenge           String
   mfaLoginChallengeId String?  @unique
   expiresAt           DateTime
   createdAt           DateTime @default(now())
 
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
   mfaLoginChallenge MfaLoginChallenge? @relation(fields: [mfaLoginChallengeId], references: [id], onDelete: Cascade)
 
   @@index([userId])

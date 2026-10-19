@@ -37,7 +37,6 @@ export const ErrorCode = {
   AuthWebauthnVerificationFailed: "auth.webauthn_verification_failed",
   AuthWebauthnCredentialNotFound: "auth.webauthn_credential_not_found",
   AuthPasswordlessRequiresCredential: "auth.passwordless_requires_credential",
-  AuthPasswordlessNotEligible: "auth.passwordless_not_eligible",
   AuthInvalidInvitation: "auth.invalid_invitation",
   AuthInvitationExpired: "auth.invitation_expired",
   AuthInvitationEmailMismatch: "auth.invitation_email_mismatch",
