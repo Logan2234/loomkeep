@@ -636,6 +636,39 @@ describe("Loomkeep API (e2e)", () => {
       .expect(401);
   });
 
+  // Two tabs share the cookies, so they refresh with the same token at the
+  // same instant. The loser must not be taken for a thief: the session lives.
+  it("survives two tabs refreshing with the same token at once", async () => {
+    const u = {
+      email: "e2e-two-tabs@loomkeep.test",
+      password: "Two-Tabs-1!",
+      displayName: "Two tabs",
+      acceptedTerms: true,
+      certifiedAge: true,
+    };
+    const reg = await request(http)
+      .post("/api/auth/register")
+      .send(u)
+      .expect(201);
+    const cookies = authCookies(reg);
+
+    const [first, second] = await Promise.all([
+      request(http).post("/api/auth/refresh").set("Cookie", cookies),
+      request(http).post("/api/auth/refresh").set("Cookie", cookies),
+    ]);
+    expect([first.status, second.status].sort()).toEqual([204, 409]);
+    const [winner, loser] =
+      first.status === 204 ? [first, second] : [second, first];
+    expect(loser.body.code).toBe("auth.refresh_superseded");
+    // Clearing them would wipe the winner's fresh cookies in every tab.
+    expect(loser.headers["set-cookie"]).toBeUndefined();
+
+    await request(http)
+      .get("/api/auth/sessions")
+      .set("Cookie", authCookies(winner))
+      .expect(200);
+  });
+
   it("deletes the account and wipes access to it", async () => {
     // Throwaway account so the shared suite user stays intact.
     const victim = {

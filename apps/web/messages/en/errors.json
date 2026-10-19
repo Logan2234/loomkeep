@@ -13,6 +13,7 @@
   "apierr_auth_mfa_too_many_attempts": "Too many attempts, please log in again.",
   "apierr_auth_mfa_invalid_code": "Invalid code.",
   "apierr_auth_invalid_refresh_token": "Your session has expired, please log in again.",
+  "apierr_auth_refresh_superseded": "Your session was just renewed in another tab, please try again.",
   "apierr_auth_invalid_reset_token": "This reset link is invalid or has expired.",
   "apierr_auth_mfa_totp_not_in_progress": "No TOTP setup in progress.",
   "apierr_auth_current_password_incorrect": "The current password is incorrect.",

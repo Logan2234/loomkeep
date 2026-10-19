@@ -253,6 +253,22 @@ describe("AuthController.refresh", () => {
     expect(setCookies(headers).join("\n")).toContain("Max-Age=0");
   });
 
+  it("keeps the cookies another tab just received when the refresh was superseded", async () => {
+    const { reply } = fakeReply();
+    const error = new AppException(
+      HttpStatus.CONFLICT,
+      ErrorCode.AuthRefreshSuperseded,
+    );
+    const controller = makeController({
+      refresh: vi.fn().mockRejectedValue(error),
+    });
+
+    await expect(
+      controller.refresh(requestWithRefresh("just-rotated"), reply),
+    ).rejects.toBe(error);
+    expect(reply.header).not.toHaveBeenCalled();
+  });
+
   it("leaves the session alone when the failure is not an auth one", async () => {
     // A database outage is not a reason to sign someone out.
     const { reply } = fakeReply();

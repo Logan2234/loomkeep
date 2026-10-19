@@ -13,6 +13,7 @@
   "apierr_auth_mfa_too_many_attempts": "Trop de tentatives, reconnecte-toi.",
   "apierr_auth_mfa_invalid_code": "Code invalide.",
   "apierr_auth_invalid_refresh_token": "Ta session a expiré, reconnecte-toi.",
+  "apierr_auth_refresh_superseded": "Ta session vient d’être renouvelée dans un autre onglet, réessaie.",
   "apierr_auth_invalid_reset_token": "Ce lien de réinitialisation est invalide ou a expiré.",
   "apierr_auth_mfa_totp_not_in_progress": "Aucune configuration TOTP en cours.",
   "apierr_auth_current_password_incorrect": "Le mot de passe actuel est incorrect.",

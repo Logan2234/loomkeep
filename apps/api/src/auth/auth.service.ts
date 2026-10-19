@@ -58,6 +58,7 @@ import {
   JWT_ALGORITHM,
   JWT_ISSUER,
   JWT_REFRESH_AUDIENCE,
+  REFRESH_REUSE_GRACE_MS,
   REFRESH_TOKEN_TTL_DAYS,
 } from "./jwt.constants";
 import { MfaService } from "./mfa.service";
@@ -722,9 +723,23 @@ export class AuthService {
     if (!stored) {
       const consumed = await this.prisma.consumedRefreshToken.findUnique({
         where: { tokenHash },
-        select: { sessionId: true },
+        select: { sessionId: true, createdAt: true },
       });
 
+      // Rotated a moment ago: another tab of the same browser, refreshing
+      // at the same instant — its new cookies are already this tab's too.
+      if (
+        consumed &&
+        Date.now() - consumed.createdAt.getTime() < REFRESH_REUSE_GRACE_MS
+      ) {
+        throw new AppException(
+          HttpStatus.CONFLICT,
+          ErrorCode.AuthRefreshSuperseded,
+        );
+      }
+
+      // Replayed later than that: taken as a stolen token, the whole
+      // session goes.
       if (consumed) {
         await this.prisma.refreshToken.deleteMany({
           where: { id: consumed.sessionId },
@@ -762,10 +777,9 @@ export class AuthService {
         },
       });
 
-      if (update.count !== 1) {
-        await tx.refreshToken.deleteMany({ where: { id: stored.id } });
-        return false;
-      }
+      // A concurrent refresh rotated it between the read above and this
+      // write — the same race the grace window covers, milliseconds apart.
+      if (update.count !== 1) return false;
 
       await tx.consumedRefreshToken.create({
         data: {
@@ -783,8 +797,8 @@ export class AuthService {
 
     if (!rotated) {
       throw new AppException(
-        HttpStatus.UNAUTHORIZED,
-        ErrorCode.AuthInvalidRefreshToken,
+        HttpStatus.CONFLICT,
+        ErrorCode.AuthRefreshSuperseded,
       );
     }
 

@@ -240,7 +240,13 @@ export class AuthController {
     try {
       setAuthCookies(reply, await this.authService.refresh(refreshToken));
     } catch (error) {
-      if (!(error instanceof AppException)) throw error;
+      // Superseded: the cookies another tab just received are this
+      // browser's too — clearing them would sign every tab out.
+      if (
+        !(error instanceof AppException) ||
+        error.code === ErrorCode.AuthRefreshSuperseded
+      )
+        throw error;
       clearAuthCookies(reply);
       throw error;
     }
