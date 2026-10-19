@@ -80,12 +80,12 @@
     "@types/nodemailer": "^8.0.2",
     "@types/supertest": "^7.2.1",
     "@types/web-push": "^3.6.4",
-    "@vitest/coverage-v8": "^5.0.4",
+    "@vitest/coverage-v8": "^5.0.5",
     "pino-pretty": "^13.2.0",
     "prisma-erd-generator": "^3.2.1",
     "supertest": "^7.3.1",
     "ts-node": "^10.9.2",
     "unplugin-swc": "^2.0.0",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.5"
   }
 }
