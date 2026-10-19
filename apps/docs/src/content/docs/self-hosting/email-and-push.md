@@ -13,14 +13,14 @@ Email carries password resets, email address confirmations, security alerts
 created), new-episode digests and the administrators' alerts. The full list is
 in [Notifications](/guide/notifications/). Fill in the `SMTP_*` variables:
 
-| Variable               | Value                                                                                                                                   |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `SMTP_HOST`            | Your provider's SMTP server.                                                                                                            |
-| `SMTP_PORT`            | Usually `587`.                                                                                                                          |
-| `SMTP_USER`            | The SMTP login.                                                                                                                         |
-| `SMTP_PASS`            | The SMTP password.                                                                                                                      |
-| `SMTP_FROM`            | The sender, e.g. `Loomkeep <noreply@example.com>`.                                                                                      |
-| `MAIL_SUPPORT_ADDRESS` | Support mailbox used by contact links and `Reply-To`. Defaults to `contact@loomkeep.app`; set it to your own address when self-hosting. |
+| Variable               | Value                                                                                                                               |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `SMTP_HOST`            | Your provider's SMTP server.                                                                                                        |
+| `SMTP_PORT`            | Usually `587`.                                                                                                                      |
+| `SMTP_USER`            | The SMTP login.                                                                                                                     |
+| `SMTP_PASS`            | The SMTP password.                                                                                                                  |
+| `SMTP_FROM`            | The sender, e.g. `Loomkeep <noreply@example.com>`. Defaults to `noreply@` followed by your `WEB_ORIGIN` host.                       |
+| `MAIL_SUPPORT_ADDRESS` | Support mailbox used by contact links and `Reply-To`. Unset, contact links use the sender's address and emails carry no `Reply-To`. |
 
 Any SMTP provider works. [Brevo](https://www.brevo.com) has a free relay
 (300 emails a day), open to personal accounts: its **SMTP & API** page gives
@@ -32,7 +32,8 @@ be reset: the reset link, even one an administrator sends, goes by email.
 **Admin › Communications** previews every email and sends you a test one.
 
 Replies to emails go to `MAIL_SUPPORT_ADDRESS`, which must be a bare email
-address (for example `support@example.com`). Moderation notices include the
+address (for example `support@example.com`). Without it, they go to the sender,
+so set it as soon as someone reads that mailbox. Moderation notices include the
 decision reference in their contact link's subject.
 
 ### Newsletter unsubscribe button

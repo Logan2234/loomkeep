@@ -7,7 +7,8 @@ import { join } from "node:path";
 import { Public } from "../auth/decorators/public.decorator";
 import { isRegistrationEnabled } from "../auth/registration.config";
 import { isChatEnabled } from "../chat/chat.config";
-import { DEFAULT_SUPPORT_ADDRESS } from "../common/instance-defaults";
+import { configuredSupportAddress } from "../common/instance-defaults";
+import { primaryWebOrigin } from "../common/web-origin.util";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { instanceSetting } from "../instance-settings/instance-settings.store";
 import { isSocialEnabled } from "../social/social.config";
@@ -39,8 +40,10 @@ export class PublicConfigController {
       // locally-tagged image rather than one pulled from GHCR).
       gitSha: (process.env.GIT_SHA ?? "unknown").slice(0, 7),
       supportEmail:
-        this.config.get<string>("MAIL_SUPPORT_ADDRESS")?.trim() ||
-        DEFAULT_SUPPORT_ADDRESS,
+        configuredSupportAddress(
+          this.config.get<string>("MAIL_SUPPORT_ADDRESS"),
+          primaryWebOrigin(this.config.get<string>("WEB_ORIGIN")),
+        ) ?? "",
     };
   }
 }

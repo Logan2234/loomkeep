@@ -48,7 +48,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
-      supportEmail: "contact@loomkeep.app",
+      supportEmail: "",
     });
   });
 
@@ -65,7 +65,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
-      supportEmail: "contact@loomkeep.app",
+      supportEmail: "",
     });
   });
 
@@ -82,7 +82,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
-      supportEmail: "contact@loomkeep.app",
+      supportEmail: "",
     });
   });
 
@@ -99,7 +99,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
-      supportEmail: "contact@loomkeep.app",
+      supportEmail: "",
     });
   });
 
@@ -116,7 +116,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
-      supportEmail: "contact@loomkeep.app",
+      supportEmail: "",
     });
   });
 
@@ -133,7 +133,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
-      supportEmail: "contact@loomkeep.app",
+      supportEmail: "",
     });
   });
 
@@ -150,7 +150,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
-      supportEmail: "contact@loomkeep.app",
+      supportEmail: "",
     });
   });
 
@@ -167,7 +167,25 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: true,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "",
+    });
+  });
+
+  it("reports the support mailbox: configured, else Loomkeep's on the hosted instance only", async () => {
+    const configured = makeController({
+      MAIL_SUPPORT_ADDRESS: " support@instance.example ",
+      WEB_ORIGIN: "https://media.example",
+    });
+    await expect(configured.controller.get()).resolves.toMatchObject({
+      supportEmail: "support@instance.example",
+    });
+    const hosted = makeController({ WEB_ORIGIN: "https://loomkeep.app" });
+    await expect(hosted.controller.get()).resolves.toMatchObject({
       supportEmail: "contact@loomkeep.app",
+    });
+    const selfHost = makeController({ WEB_ORIGIN: "https://media.example" });
+    await expect(selfHost.controller.get()).resolves.toMatchObject({
+      supportEmail: "",
     });
   });
 
@@ -184,7 +202,7 @@ describe("PublicConfigController", () => {
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "a1b2c3d",
-      supportEmail: "contact@loomkeep.app",
+      supportEmail: "",
     });
   });
 });

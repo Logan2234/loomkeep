@@ -197,6 +197,54 @@ describe("MailService", () => {
     },
   );
 
+  it("never points a self-host's replies or contact links at Loomkeep's mailbox", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+    delete process.env.SMTP_FROM;
+    process.env.WEB_ORIGIN = "https://media.example";
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(nodemailer.createTransport).mockReturnValue({
+      sendMail,
+    } as never);
+    const service = new MailService(quota);
+
+    await service.sendTemplateTest(
+      "welcome",
+      { email: "recipient@example.com", locale: "en" },
+      {},
+    );
+
+    const [[mail]] = sendMail.mock.calls;
+    expect(mail.from).toBe("Loomkeep <noreply@media.example>");
+    expect(mail).not.toHaveProperty("replyTo");
+    expect(mail.html).toContain("mailto:noreply@media.example");
+    expect(mail.html).not.toContain("loomkeep.app");
+  });
+
+  it("keeps Loomkeep's mailbox as the hosted instance's default", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+    delete process.env.SMTP_FROM;
+    process.env.WEB_ORIGIN = "https://loomkeep.app";
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(nodemailer.createTransport).mockReturnValue({
+      sendMail,
+    } as never);
+    const service = new MailService(quota);
+
+    await service.sendTemplateTest(
+      "welcome",
+      { email: "recipient@example.com", locale: "en" },
+      {},
+    );
+
+    const [[mail]] = sendMail.mock.calls;
+    expect(mail.from).toBe("Loomkeep <noreply@loomkeep.app>");
+    expect(mail.replyTo).toBe("contact@loomkeep.app");
+  });
+
   it("sends through the configured transport when SMTP is set", async () => {
     process.env.SMTP_HOST = "smtp.example.com";
     process.env.SMTP_PORT = "587";
@@ -337,6 +385,7 @@ describe("MailService", () => {
     process.env.SMTP_HOST = "smtp.example.com";
     process.env.SMTP_USER = "user";
     process.env.SMTP_PASS = "pass";
+    process.env.MAIL_SUPPORT_ADDRESS = "support@instance.example";
 
     const sendMail = vi.fn().mockResolvedValue(undefined);
     (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
@@ -347,7 +396,9 @@ describe("MailService", () => {
     const oldAddressCall = sendMail.mock.calls.find(
       (call) => call[0].to === "old@example.com",
     );
-    expect(oldAddressCall![0].html).toContain("mailto:contact@loomkeep.app");
+    expect(oldAddressCall![0].html).toContain(
+      "mailto:support@instance.example",
+    );
   });
 
   it("links welcome to the app", async () => {
@@ -532,7 +583,9 @@ describe("MailService template gallery", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env = { ...ORIGINAL_ENV };
+    // Previews as the hosted instance, whose support mailbox is the default.
+    process.env = { ...ORIGINAL_ENV, WEB_ORIGIN: "https://loomkeep.app" };
+    delete process.env.MAIL_SUPPORT_ADDRESS;
   });
 
   afterAll(() => {
@@ -761,6 +814,7 @@ describe("MailService template gallery", () => {
   it("places communication controls once in the relevant footer", () => {
     process.env.WEB_ORIGIN = "https://loomkeep.example";
     delete process.env.UMAMI_LINKS_BASE_URL;
+    process.env.MAIL_SUPPORT_ADDRESS = "contact@loomkeep.app";
     const service = new MailService(quota);
     const newsletter = service.renderTemplatePreview("newsletter")!.html;
     const digest = service.renderTemplatePreview("episodeDigest")!.html;
