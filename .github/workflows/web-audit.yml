@@ -133,7 +133,7 @@ jobs:
       # violation exits pa11y-ci non-zero, but the SARIF is still written.
       - name: Upload Pa11y SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           sarif_file: pa11y-results.sarif
           category: pa11y
@@ -230,13 +230,13 @@ jobs:
           PY
       - name: Upload ZAP SARIF (web)
         if: always()
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           sarif_file: zap-results/zap-results.fixed.sarif.json
           category: zap
       - name: Upload ZAP SARIF (api)
         if: always()
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           sarif_file: zap-results/zap-api-results.fixed.sarif.json
           category: zap-api
