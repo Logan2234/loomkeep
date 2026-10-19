@@ -176,6 +176,52 @@ export async function createE2eApp(): Promise<E2eApp> {
   return { app, http: app.getHttpServer(), prisma, stubs };
 }
 
+/**
+ * Rows whose materialized progress (kept by database triggers, see
+ * LibraryEntry.watchedEpisodes) differs from what the watches and episodes
+ * say — 0 and 0 when the triggers covered every write the test made.
+ */
+export async function progressDrift(
+  prisma: PrismaService,
+): Promise<{ entries: number; media: number; watchedEntries: number }> {
+  const [row] = await prisma.$queryRaw<
+    { entries: bigint; media: bigint; watchedEntries: bigint }[]
+  >`
+    SELECT
+      (SELECT COUNT(*) FROM "LibraryEntry" le
+        WHERE le."watchedEpisodes" <> (
+            SELECT COUNT(DISTINCT w."episodeId")
+            FROM "EpisodeWatch" w
+            JOIN "Episode" e ON e."id" = w."episodeId"
+            JOIN "Season" s ON s."id" = e."seasonId"
+            WHERE w."userId" = le."userId"
+              AND s."mediaItemId" = le."mediaItemId"
+              AND s."number" > 0)
+          OR le."lastWatchedAt" IS DISTINCT FROM (
+            SELECT MAX(w."watchedAt")
+            FROM "EpisodeWatch" w
+            JOIN "Episode" e ON e."id" = w."episodeId"
+            JOIN "Season" s ON s."id" = e."seasonId"
+            WHERE w."userId" = le."userId"
+              AND s."mediaItemId" = le."mediaItemId")
+      ) AS entries,
+      (SELECT COUNT(*) FROM "MediaItem" m
+        WHERE m."episodeCount" <> (
+          SELECT COUNT(*)
+          FROM "Episode" e
+          JOIN "Season" s ON s."id" = e."seasonId"
+          WHERE s."mediaItemId" = m."id" AND s."number" > 0)
+      ) AS media,
+      (SELECT COUNT(*) FROM "LibraryEntry" WHERE "watchedEpisodes" > 0)
+        AS "watchedEntries"
+  `;
+  return {
+    entries: Number(row.entries),
+    media: Number(row.media),
+    watchedEntries: Number(row.watchedEntries),
+  };
+}
+
 /** The `Cookie` header value for the session a response just established. */
 export function authCookies(response: {
   headers: { "set-cookie"?: string | string[] };

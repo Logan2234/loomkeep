@@ -7,6 +7,7 @@ import {
   authCookies,
   createE2eApp,
   e2eUser,
+  progressDrift,
   type E2eApp,
 } from "./e2e-app";
 
@@ -439,6 +440,16 @@ describe("Loomkeep API (e2e)", () => {
     const firstEp = detail.body.seasons[0].episodes[0];
     expect(firstEp.watches).toHaveLength(1);
     expect(firstEp.watches[0].watchedAt).toBeDefined();
+  });
+
+  // Ranking and filtering the library read progress materialized on each
+  // row by database triggers: after every watch, rewatch, season and
+  // watch-through above (and their undo), it still matches the watches.
+  it("keeps the stored library progress equal to the watches", async () => {
+    const drift = await progressDrift(prisma);
+
+    expect(drift.watchedEntries).toBeGreaterThan(0);
+    expect(drift).toMatchObject({ entries: 0, media: 0 });
   });
 
   it("notifications: scan, history and counts respond", async () => {

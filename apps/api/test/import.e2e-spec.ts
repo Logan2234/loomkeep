@@ -3,7 +3,8 @@ import request from "supertest";
 import { App } from "supertest/types";
 import { vi } from "vitest";
 import { FeatureFlagsService } from "../src/feature-flags/feature-flags.service";
-import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
+import { PrismaService } from "../src/prisma/prisma.service";
+import { authCookies, createE2eApp, e2eUser, progressDrift } from "./e2e-app";
 
 /**
  * One import, analyze → review → commit, through the real job framework.
@@ -193,6 +194,11 @@ describe("Import (e2e)", () => {
     // 2 of the 3 episodes watched, and the third has not aired.
     expect(entry.progress.watchedEpisodes).toBe(2);
     expect(entry.rating).toBe(8);
+    // The bulk insert went through the progress triggers too.
+    await expect(progressDrift(app.get(PrismaService))).resolves.toMatchObject({
+      entries: 0,
+      media: 0,
+    });
   });
 
   it("records the run in the account's own import history", async () => {

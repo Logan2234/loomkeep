@@ -85,7 +85,11 @@ fix does.
   `EpisodeWatch` keeps one row per episode view. Games and books group dated
   sessions into `GamePlaythrough` / `BookReading` cycles; sessions deliberately
   logged as history-only keep a null cycle relation. `LibraryService.computeProgress`
-  excludes season 0 (TMDB specials).
+  excludes season 0 (TMDB specials). The media library ranks and filters on
+  `LibraryEntry.watchedEpisodes`/`lastWatchedAt` and `MediaItem.episodeCount`,
+  kept by Postgres triggers on `EpisodeWatch`/`Episode` (migration
+  `20261019160000_materialized_library_progress`) — never write them from the
+  app; `progressDrift` in the e2e suite checks they match.
 - **Import sources** (`apps/api/src/import/sources/`) share a base class per
   domain: `MediaImportSource` (TV Time CSV, Trakt account-export ZIP, Simkl
   OAuth, MyAnimeList XML) and `BookCsvSource` (Goodreads, StoryGraph, Babelio) own the
