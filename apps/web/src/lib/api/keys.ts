@@ -10,6 +10,10 @@ export const keys = {
       ["stats", "video-temporal", period] as const,
     overview: (domain: string) => ["stats", "overview", domain] as const,
     piles: (domain: string) => ["stats", "piles", domain] as const,
+    // A drill-down's list: the works behind one clicked rating or decade bar.
+    works: (domain: string, by: "rating" | "decade", value: number) =>
+      ["stats", "works", domain, by, value] as const,
+    videoSeries: (kind: string) => ["stats", "video-series", kind] as const,
   },
   gamification: {
     achievements: () => ["gamification", "achievements"] as const,

@@ -1071,3 +1071,56 @@ describe("LibraryService.bulkUpdate", () => {
     expect(result).toEqual({ updated: 0, skipped: 1 });
   });
 });
+
+describe("LibraryService.trackedStatuses", () => {
+  it("lists every tracked work by catalogue id with its effective status, in one progress query", async () => {
+    const queryRaw = vi.fn().mockResolvedValue([]);
+    const prisma = {
+      libraryEntry: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            status: "COMPLETED",
+            mediaItemId: "media-1",
+            mediaItem: {
+              type: "MOVIE",
+              status: "Released",
+              canonicalSource: "TMDB",
+              externalIds: [
+                { source: "IMDB", externalId: "tt1" },
+                { source: "TMDB", externalId: "603" },
+              ],
+            },
+          },
+          {
+            // No id for its canonical source: nothing a search result could match.
+            status: "PLANNED",
+            mediaItemId: "media-2",
+            mediaItem: {
+              type: "MOVIE",
+              status: "Released",
+              canonicalSource: "TMDB",
+              externalIds: [],
+            },
+          },
+        ]),
+      },
+      $queryRaw: queryRaw,
+    } as unknown as PrismaService;
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+
+    await expect(service.trackedStatuses("user-1")).resolves.toEqual([
+      { type: "MOVIE", sourceId: "603", status: "COMPLETED" },
+    ]);
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+  });
+});

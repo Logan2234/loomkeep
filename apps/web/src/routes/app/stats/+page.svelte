@@ -1,7 +1,6 @@
 <script lang="ts">
   import { type SelectOption } from "#lib/types/select-option.js";
 
-  import { resolveApiError } from "#lib/api/errors.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import {
@@ -45,11 +44,7 @@
   import { formatNumber, PERCENT_OPTIONS } from "#lib/format.js";
   import { isPileEmpty, pileTile } from "#lib/pile.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type {
-    StatsDomain,
-    StatsWindow,
-    StatsWorkDto,
-  } from "@loomkeep/shared";
+  import type { StatsDomain, StatsWindow } from "@loomkeep/shared";
   import { Domain, STATS_DOMAINS } from "@loomkeep/shared";
 
   // Tabs also carry the planned domains, which are never selectable.
@@ -197,35 +192,38 @@
   const breakdownOf = (domain: StatsDomain) =>
     overview?.breakdowns.find((b) => b.domain === domain);
 
-  // Works drill-down modal, opened from a clicked rating/decade bar.
-  let modalOpen = $state(false);
-  let modalTitle = $state("");
-  let modalWorks = $state<StatsWorkDto[]>([]);
-  let modalLoading = $state(false);
-  let modalError = $state<string | null>(null);
+  // Works drill-down modal, opened from a clicked rating/decade bar. Keyed
+  // on what was clicked, so a slow answer to an earlier click can never land
+  // under a later one's title.
+  let drill = $state<{ by: "rating" | "decade"; value: number } | null>(null);
+  const drillQuery = createApiQuery(() => {
+    const current = drill;
+    const domain = selected;
+    return {
+      key: keys.stats.works(
+        domain,
+        current?.by ?? "rating",
+        current?.value ?? 0,
+      ),
+      fetch: () =>
+        current?.by === "decade"
+          ? getStatsWorksByDecade(domain, current.value)
+          : getStatsWorksByRating(domain, current?.value ?? 0),
+      enabled: current !== null,
+    };
+  });
+  const modalTitle = $derived(
+    drill?.by === "decade"
+      ? m.stats_modal_released({ decade: drill.value })
+      : m.stats_modal_rated({ rating: drill?.value ?? 0 }),
+  );
 
   function openRatingModal(ratingLabel: string) {
-    const rating = Number(ratingLabel);
-    modalOpen = true;
-    modalLoading = true;
-    modalError = null;
-    modalTitle = m.stats_modal_rated({ rating });
-    getStatsWorksByRating(selected, rating)
-      .then((w) => (modalWorks = w))
-      .catch((e) => (modalError = resolveApiError(e)))
-      .finally(() => (modalLoading = false));
+    drill = { by: "rating", value: Number(ratingLabel) };
   }
 
   function openDecadeModal(decadeLabel: string) {
-    const decade = Number(decadeLabel);
-    modalOpen = true;
-    modalLoading = true;
-    modalError = null;
-    modalTitle = m.stats_modal_released({ decade });
-    getStatsWorksByDecade(selected, decade)
-      .then((w) => (modalWorks = w))
-      .catch((e) => (modalError = resolveApiError(e)))
-      .finally(() => (modalLoading = false));
+    drill = { by: "decade", value: Number(decadeLabel) };
   }
 </script>
 
@@ -393,11 +391,11 @@
   {/if}
 </div>
 
-{#if modalOpen}
+{#if drill}
   <StatsWorksModal
     title={modalTitle}
-    works={modalWorks}
-    loading={modalLoading}
-    error={modalError}
-    onclose={() => (modalOpen = false)} />
+    works={drillQuery.data ?? []}
+    loading={drillQuery.loading}
+    error={drillQuery.error}
+    onclose={() => (drill = null)} />
 {/if}

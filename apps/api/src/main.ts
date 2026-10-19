@@ -21,6 +21,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "path";
 import { AppModule } from "./app.module";
 import { enableApiVersioning } from "./common/api-versioning";
+import { DEFAULT_BODY_LIMIT, registerBodyLimits } from "./common/body-limit";
 import { corsOptionsFor } from "./common/cors";
 import { registerRequestContext } from "./common/request-context";
 import { ValidationException } from "./common/validation.exception";
@@ -59,10 +60,10 @@ const trustProxy =
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    // TV Time import posts several CSV files as a JSON body; the default 1 MB
-    // Fastify limit is too small for a full watch history.
+    // 1 MB everywhere; the few routes that need more (imports, avatar,
+    // backup restore) raise it for themselves — see registerBodyLimits below.
     new FastifyAdapter({
-      bodyLimit: 25 * 1024 * 1024,
+      bodyLimit: DEFAULT_BODY_LIMIT,
       // Production has exactly one controlled hop (Caddy). A hop count keeps
       // Fastify from trusting an arbitrary-length forwarded chain, while the
       // production Compose override removes direct API port publication.
@@ -115,6 +116,7 @@ async function bootstrap() {
   // and the API otherwise only serves JSON.
   await app.register(helmet, { contentSecurityPolicy: false });
   registerNewsletterFormParser(app.getHttpAdapter().getInstance());
+  registerBodyLimits(app.getHttpAdapter().getInstance());
 
   // Browsers post CSP violation reports under their own media types, neither
   // of which Fastify parses by default — without this the collector answers

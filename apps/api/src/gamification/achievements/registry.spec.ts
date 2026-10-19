@@ -807,18 +807,37 @@ describe("checkGuiltyPleasure", () => {
 });
 
 describe("checkHiddenGem", () => {
-  it("unlocks off a title tracked by nobody else", async () => {
-    const prisma = {
+  function prismaWith(found: { media?: boolean; game?: boolean }) {
+    return {
       libraryEntry: {
-        findMany: vi.fn().mockResolvedValue([{ mediaItemId: "m1" }]),
-        count: vi.fn().mockResolvedValue(1),
+        findFirst: vi.fn().mockResolvedValue(found.media ? { id: "e1" } : null),
       },
-      gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
-      bookEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      gameEntry: {
+        findFirst: vi.fn().mockResolvedValue(found.game ? { id: "g1" } : null),
+      },
+      bookEntry: { findFirst: vi.fn().mockResolvedValue(null) },
     } as unknown as PrismaService;
+  }
+
+  it("unlocks off a title tracked by nobody else, in one query per domain", async () => {
+    const prisma = prismaWith({ game: true });
 
     await expect(checkHiddenGem(prisma, "user-1")).resolves.toEqual({
       unlocked: true,
+    });
+    // The user's entries whose work has no entry from anyone else.
+    expect(prisma.libraryEntry.findFirst).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        mediaItem: { entries: { every: { userId: "user-1" } } },
+      },
+      select: { id: true },
+    });
+  });
+
+  it("stays locked while every tracked title is shared with someone", async () => {
+    await expect(checkHiddenGem(prismaWith({}), "user-1")).resolves.toEqual({
+      unlocked: false,
     });
   });
 });

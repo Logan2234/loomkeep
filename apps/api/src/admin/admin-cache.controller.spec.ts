@@ -86,7 +86,7 @@ describe("AdminCacheController media purge", () => {
           skipped: 1,
         });
         expect(prisma.mediaItem.deleteMany).toHaveBeenCalledWith({
-          where: { id: { in: ["empty-media"] } },
+          where: { id: { in: ["empty-media"] }, entries: { none: {} } },
         });
         expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
           isolationLevel: "Serializable",
@@ -100,7 +100,7 @@ describe("AdminCacheController media purge", () => {
         await expect(
           controller.remove("MEDIA", "protected-media"),
         ).rejects.toMatchObject({ status: 409 });
-        expect(prisma.mediaItem.delete).not.toHaveBeenCalled();
+        expect(prisma.mediaItem.deleteMany).not.toHaveBeenCalled();
         expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
           isolationLevel: "Serializable",
           timeout: 60_000,
@@ -117,7 +117,52 @@ describe("AdminCacheController media purge", () => {
       skipped: 1,
     });
     expect(prisma.mediaItem.deleteMany).toHaveBeenCalledWith({
-      where: { id: { in: ["empty-media"] } },
+      where: { id: { in: ["empty-media"] }, entries: { none: {} } },
+    });
+  });
+});
+
+describe("AdminCacheController game purge", () => {
+  // Games run without the Serializable transaction MEDIA has: the delete
+  // itself re-checks that nobody tracks the item, or a GameEntry created
+  // since the scan would cascade away with it.
+  function makeGameController(deleted: number) {
+    const none = { findMany: vi.fn().mockResolvedValue([]) };
+    const prisma = {
+      gameItem: {
+        findMany: vi.fn().mockResolvedValue([{ id: "g1" }]),
+        findUnique: vi.fn().mockResolvedValue({ _count: { entries: 0 } }),
+        deleteMany: vi.fn().mockResolvedValue({ count: deleted }),
+      },
+      review: none,
+      comment: none,
+      activityEvent: none,
+    };
+    const controller = new AdminCacheController(
+      prisma as unknown as PrismaService,
+      {} as MediaItemService,
+      {} as GameItemService,
+      {} as BookItemService,
+      {} as MusicItemService,
+    );
+    return { controller, prisma };
+  }
+
+  it("only deletes orphans that are still untracked at delete time", async () => {
+    const { controller, prisma } = makeGameController(1);
+
+    await controller.removeOrphans("GAMES");
+
+    expect(prisma.gameItem.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["g1"] }, entries: { none: {} } },
+    });
+  });
+
+  it("refuses an individual purge when the game got tracked in the meantime", async () => {
+    const { controller } = makeGameController(0);
+
+    await expect(controller.remove("GAMES", "g1")).rejects.toMatchObject({
+      status: 409,
     });
   });
 });

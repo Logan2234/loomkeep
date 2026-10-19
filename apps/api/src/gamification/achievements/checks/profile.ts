@@ -141,40 +141,33 @@ export async function checkGuiltyPleasure(
   return { unlocked: review !== null };
 }
 
-/** "hidden_gem": a tracked title (any domain) that no other user has tracked. */
+/**
+ * "hidden_gem": a tracked title (any domain) that no other user has tracked —
+ * an entry of the user's whose work has every one of its entries owned by the
+ * user, i.e. only this one. One query per domain (an anti-join on the
+ * `*ItemId` indexes) instead of one count per title tracked: this runs for
+ * every account in the nightly sweep.
+ */
 export async function checkHiddenGem(
   prisma: PrismaService,
   userId: string,
 ): Promise<AchievementCheckResult> {
-  const [mediaEntries, gameEntries, bookEntries] = await Promise.all([
-    prisma.libraryEntry.findMany({
-      where: { userId },
-      select: { mediaItemId: true },
+  const select = { id: true } as const;
+  const onlyTrackedBy = { entries: { every: { userId } } };
+  const found = await Promise.all([
+    prisma.libraryEntry.findFirst({
+      where: { userId, mediaItem: onlyTrackedBy },
+      select,
     }),
-    prisma.gameEntry.findMany({
-      where: { userId },
-      select: { gameItemId: true },
+    prisma.gameEntry.findFirst({
+      where: { userId, gameItem: onlyTrackedBy },
+      select,
     }),
-    prisma.bookEntry.findMany({
-      where: { userId },
-      select: { bookItemId: true },
+    prisma.bookEntry.findFirst({
+      where: { userId, bookItem: onlyTrackedBy },
+      select,
     }),
   ]);
 
-  for (const { mediaItemId } of mediaEntries) {
-    const count = await prisma.libraryEntry.count({ where: { mediaItemId } });
-    if (count === 1) return { unlocked: true };
-  }
-
-  for (const { gameItemId } of gameEntries) {
-    const count = await prisma.gameEntry.count({ where: { gameItemId } });
-    if (count === 1) return { unlocked: true };
-  }
-
-  for (const { bookItemId } of bookEntries) {
-    const count = await prisma.bookEntry.count({ where: { bookItemId } });
-    if (count === 1) return { unlocked: true };
-  }
-
-  return { unlocked: false };
+  return { unlocked: found.some((entry) => entry !== null) };
 }

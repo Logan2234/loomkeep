@@ -27,6 +27,7 @@ jobs:
       # (shared eslint config, shared tsconfig, root package.json, or this
       # workflow itself).
       lint: ${{ steps.filter.outputs.api == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.root == 'true' }}
+      docker: ${{ steps.filter.outputs.docker }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -50,6 +51,69 @@ jobs:
               - 'tsconfig.base.json'
               - 'package.json'
               - '.github/workflows/ci.yml'
+            docker:
+              - 'docker/**'
+              - '.github/workflows/ci.yml'
+
+  # docker/ is deployed as is by deploy.yml once CI on main is green, and no
+  # other job looks at it: a Caddyfile or compose typo would otherwise reach
+  # the VPS and take the whole site down, maintenance page included (Caddy
+  # serves it). Checks the base file alone, base + prod, and base + prod +
+  # each add-on — the combinations COMPOSE_FILE is built from — and the
+  # Caddyfile with every add-on site file it can import. The values below
+  # only satisfy the `:?` guards; nothing is started.
+  docker-config:
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      POSTGRES_PASSWORD: ci
+      JWT_ACCESS_SECRET: ci
+      JWT_REFRESH_SECRET: ci
+      MFA_ENCRYPTION_KEY: ci
+      BACKUP_ENCRYPTION_PUBLIC_KEY: age1ci
+      DOMAIN: loomkeep.example
+      CLOUDFLARE_TUNNEL_TOKEN: ci
+      GLITCHTIP_SECRET_KEY: ci
+      GRAFANA_ADMIN_PASSWORD: ci
+      PUBLIC_UNLEASH_FRONTEND_TOKEN: ci
+      UMAMI_APP_SECRET: ci
+      UNLEASH_ADMIN_PASSWORD: ci
+      UNLEASH_API_TOKEN: ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Compose files
+        working-directory: docker
+        run: |
+          docker compose -f docker-compose.yml config -q
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml config -q
+          for addon in docker-compose.*.yml; do
+            case "$addon" in docker-compose.prod.yml|docker-compose.ci.yml) continue ;; esac
+            echo "::group::$addon"
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml -f "$addon" config -q
+            echo "::endgroup::"
+          done
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml config -q
+      - name: Caddyfile
+        run: |
+          mounts=(-v "$PWD/docker/Caddyfile:/etc/caddy/Caddyfile:ro")
+          while IFS= read -r site; do
+            mounts+=(-v "$PWD/$site:/etc/caddy/sites-enabled/$(basename "$site"):ro")
+          done < <(find docker -name '*.caddy')
+          docker run --rm "${mounts[@]}" \
+            -e SITE_ADDRESS=loomkeep.example \
+            -e AUTHELIA_SITE_ADDRESS=auth.loomkeep.example \
+            -e GLITCHTIP_SITE_ADDRESS=errors.loomkeep.example \
+            -e GRAFANA_SITE_ADDRESS=grafana.loomkeep.example \
+            -e HOMEPAGE_SITE_ADDRESS=home.loomkeep.example \
+            -e PORTAINER_SITE_ADDRESS=portainer.loomkeep.example \
+            -e QUACKBACK_SITE_ADDRESS=feedback.loomkeep.example \
+            -e QUACKBACK_APP_PORT=3000 \
+            -e UMAMI_SITE_ADDRESS=stats.loomkeep.example \
+            -e UNLEASH_SITE_ADDRESS=flags.loomkeep.example \
+            caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
   # Web and API run in parallel; packages/shared is TS-only and rides with API.
   lint-test-web:

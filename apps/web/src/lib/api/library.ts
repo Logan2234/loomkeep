@@ -50,6 +50,9 @@ export const listLibrarySagas = (filters: LibrarySagaFilters = {}) =>
 export const getLibraryDomainCounts = () =>
   typedRequest("/library/domain-counts");
 
+/** Every tracked work and its effective status, in one request (search's "already added" flags). */
+export const listTrackedMedia = () => typedRequest("/library/tracked");
+
 export function listLibrary(filters: ListLibraryFilters = {}) {
   return typedRequest("/library", {
     query: {

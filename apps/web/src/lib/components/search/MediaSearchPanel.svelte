@@ -4,8 +4,7 @@
   import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
 
   import {
-    fetchAllPages,
-    listLibrary,
+    listTrackedMedia,
     searchCatalog,
     upsertLibraryEntry,
   } from "#lib/api/client.js";
@@ -111,15 +110,13 @@
 
   const trackedQuery = createApiQuery(() => ({
     key: keys.library.tracked(),
-    fetch: async () => {
-      const entries = await fetchAllPages((page) => listLibrary({ page }));
-      return new Map<string, EntryStatus>(
-        entries.map((e) => [
-          trackKey(e.mediaItem.type, e.mediaItem.sourceId),
+    fetch: async () =>
+      new Map<string, EntryStatus>(
+        (await listTrackedMedia()).map((e) => [
+          trackKey(e.type, e.sourceId),
           e.status,
         ]),
-      );
-    },
+      ),
   }));
   // A failed library load only costs the "already added" flag; ignore it
   // rather than surfacing an error for a secondary, non-essential lookup.

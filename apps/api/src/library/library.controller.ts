@@ -9,6 +9,7 @@ import type {
   MediaType,
   PagedResult,
   PileSummaryDto,
+  TrackedMediaDto,
 } from "@loomkeep/shared";
 import { Domain, LIBRARY_SAGA_SORTS, Locale } from "@loomkeep/shared";
 import {
@@ -45,6 +46,7 @@ import { EpisodeWatchResponseDto } from "./dto/episode-watch-response.dto";
 import { LibraryDomainCountsResponseDto } from "./dto/library-domain-counts-response.dto";
 import { LibraryEntryResponseDto } from "./dto/library-entry-response.dto";
 import { LibrarySagasResponseDto } from "./dto/media-saga-response.dto";
+import { TrackedMediaResponseDto } from "./dto/tracked-media-response.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
@@ -137,6 +139,20 @@ export class LibraryController {
     @Body() dto: UpsertEntryDto,
   ): Promise<LibraryEntryDto> {
     return this.libraryService.upsertEntry(user.sub, dto);
+  }
+
+  /**
+   * Every tracked work with its effective status, in one pass — what the
+   * search page flags results with. Its own route rather than draining the
+   * paginated list: each page of that one re-ranks the whole library.
+   */
+  @Get("tracked")
+  @ApiOkResponse({ type: TrackedMediaResponseDto, isArray: true })
+  async listTracked(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<TrackedMediaDto[]> {
+    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
+    return this.libraryService.trackedStatuses(user.sub);
   }
 
   /** Per domain, how many items the user tracks — hidden domains included. */
