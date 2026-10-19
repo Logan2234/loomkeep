@@ -28,6 +28,11 @@ export interface ReportTargetSummaryDto {
   label: string;
   /** The reported comment or message has since been deleted. */
   deleted: boolean;
+  /**
+   * Changed since it was reported: what the moderator reads may not be what
+   * was reported. Always false for a profile (no edit date of its own).
+   */
+  editedAfterReport: boolean;
   /** The reported review's author has since deleted their account. */
   authorDeleted: boolean;
   href: string | null;
@@ -39,6 +44,11 @@ export interface ReportTargetSummaryDto {
    * conversation, and its reporter, a member of it, hands them this much.
    */
   context?: ReportContextMessageDto[];
+}
+
+export interface ReportTargetOwnerDto {
+  username: string;
+  reportCount: number;
 }
 
 export interface ReportContextMessageDto {
@@ -67,6 +77,12 @@ export interface ReportDto {
   resolvedAt: string | null;
   /** Null once the reporter's account has been deleted — the moderation record stays. */
   reporter: UserSummaryDto | null;
+  /**
+   * Who the reported content belongs to, known even once it's deleted, with
+   * every report ever filed on their content (this one included, deleted
+   * content too). Null when unknown or the account was deleted.
+   */
+  targetOwner: ReportTargetOwnerDto | null;
   /** Null if the underlying target was since deleted. */
   target: ReportTargetSummaryDto | null;
 }

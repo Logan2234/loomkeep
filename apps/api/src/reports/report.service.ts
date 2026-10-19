@@ -53,11 +53,14 @@ type ReportRow = {
   status: string;
   createdAt: Date;
   resolvedAt: Date | null;
+  targetOwnerId: string | null;
+  targetOwner: { username: string } | null;
   reporter: Parameters<typeof toUserSummaryDto>[0] | null;
 };
 
 type ReviewTarget = {
   rating: number;
+  updatedAt: Date;
   text: string | null;
   targetType: string;
   targetId: string;
@@ -180,6 +183,8 @@ export class ReportService {
         motif: category === "OTHER" ? null : motif,
         ...(targetType === "USER" && { profilePart }),
         reason: reason?.trim() || null,
+        // The author, list owner or profile's account — listed first.
+        targetOwnerId: ownerIds[0] ?? null,
       },
     });
 
@@ -300,7 +305,10 @@ export class ReportService {
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       skip,
       take: take + 1,
-      include: { reporter: { select: REPORTER_SELECT } },
+      include: {
+        reporter: { select: REPORTER_SELECT },
+        targetOwner: { select: { username: true } },
+      },
     });
     const { items: pageRows, hasMore } = toPagedResult(rows, limit);
 
@@ -408,6 +416,8 @@ export class ReportService {
     const rows = await this.prisma.report.findMany({
       where: {
         OR: [
+          // Also reaches reports whose content its author since deleted.
+          { targetOwnerId: userId },
           { targetType: "USER", targetId: userId },
           {
             targetType: "COMMENT",
@@ -429,7 +439,10 @@ export class ReportService {
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: DEFAULT_PAGE_SIZE,
-      include: { reporter: { select: REPORTER_SELECT } },
+      include: {
+        reporter: { select: REPORTER_SELECT },
+        targetOwner: { select: { username: true } },
+      },
     });
 
     return this.toDtos(rows);
@@ -438,6 +451,22 @@ export class ReportService {
   private async toDtos(rows: ReportRow[]): Promise<ReportDto[]> {
     const reviews = await this.reviewTargets(
       rows.filter((r) => r.targetType === "REVIEW").map((r) => r.targetId),
+    );
+    const ownerIds = [
+      ...new Set(
+        rows.flatMap((r) => (r.targetOwnerId ? [r.targetOwnerId] : [])),
+      ),
+    ];
+    const reportsPerOwner = new Map(
+      ownerIds.length === 0
+        ? []
+        : (
+            await this.prisma.report.groupBy({
+              by: ["targetOwnerId"],
+              where: { targetOwnerId: { in: ownerIds } },
+              _count: { _all: true },
+            })
+          ).map((g) => [g.targetOwnerId, g._count._all]),
     );
 
     return Promise.all(
@@ -453,9 +482,17 @@ export class ReportService {
         createdAt: r.createdAt.toISOString(),
         resolvedAt: r.resolvedAt?.toISOString() ?? null,
         reporter: r.reporter ? toUserSummaryDto(r.reporter) : null,
+        targetOwner:
+          r.targetOwnerId && r.targetOwner
+            ? {
+                username: r.targetOwner.username,
+                reportCount: reportsPerOwner.get(r.targetOwnerId) ?? 1,
+              }
+            : null,
         target: await this.resolveTarget(
           r.targetType as ReportTargetType,
           r.targetId,
+          r.createdAt,
           reviews,
         ),
       })),
@@ -518,6 +555,7 @@ export class ReportService {
         id: true,
         rating: true,
         text: true,
+        updatedAt: true,
         targetType: true,
         targetId: true,
         user: { select: { username: true } },
@@ -552,14 +590,21 @@ export class ReportService {
   private async resolveTarget(
     targetType: ReportTargetType,
     targetId: string,
+    reportedAt: Date,
     reviews: Map<string, ReviewTarget>,
   ): Promise<ReportTargetSummaryDto | null> {
+    // The moderator may not be reading what was reported. Flagged rather
+    // than snapshotted at report time: a snapshot would keep what its
+    // author chose to remove.
+    const editedSince = (updatedAt: Date) => updatedAt > reportedAt;
+
     if (targetType === "COMMENT") {
       const comment = await this.prisma.comment.findUnique({
         where: { id: targetId },
         select: {
           text: true,
           deletedAt: true,
+          updatedAt: true,
           targetType: true,
           targetId: true,
           author: { select: { username: true } },
@@ -573,6 +618,8 @@ export class ReportService {
           ? ""
           : (comment.text ?? "").slice(0, EXCERPT_LENGTH),
         deleted: comment.deletedAt !== null,
+        editedAfterReport:
+          comment.deletedAt === null && editedSince(comment.updatedAt),
         authorDeleted: false,
         href: await resolveWorkHref(
           this.prisma,
@@ -589,6 +636,7 @@ export class ReportService {
         select: {
           text: true,
           deletedAt: true,
+          updatedAt: true,
           author: { select: { username: true } },
         },
       });
@@ -598,6 +646,8 @@ export class ReportService {
           ? ""
           : (message.text ?? "").slice(0, EXCERPT_LENGTH),
         deleted: message.deletedAt !== null,
+        editedAfterReport:
+          message.deletedAt === null && editedSince(message.updatedAt),
         authorDeleted: false,
         // A private conversation has no page a moderator could open.
         href: null,
@@ -615,6 +665,9 @@ export class ReportService {
       return {
         label: user.displayName,
         deleted: false,
+        // A profile has no edit date of its own (User.updatedAt moves with
+        // every sign-in).
+        editedAfterReport: false,
         authorDeleted: false,
         href: `/app/u/${user.username}`,
         targetOwnerUsername: user.username,
@@ -624,12 +677,17 @@ export class ReportService {
     if (targetType === "LIST") {
       const list = await this.prisma.list.findUnique({
         where: { id: targetId },
-        select: { title: true, user: { select: { username: true } } },
+        select: {
+          title: true,
+          updatedAt: true,
+          user: { select: { username: true } },
+        },
       });
       if (!list) return null;
       return {
         label: list.title,
         deleted: false,
+        editedAfterReport: editedSince(list.updatedAt),
         authorDeleted: false,
         href: `/app/lists/${targetId}`,
         targetOwnerUsername: list.user.username,
@@ -645,6 +703,7 @@ export class ReportService {
     return {
       label,
       deleted: false,
+      editedAfterReport: editedSince(review.updatedAt),
       authorDeleted: review.user === null,
       href: await resolveWorkHref(
         this.prisma,

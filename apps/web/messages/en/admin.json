@@ -317,6 +317,8 @@
   "admin_reports_all_authors": "All authors",
   "admin_reports_author_search": "Filter by report author…",
   "admin_reports_target_missing": "Target not found (deleted).",
+  "admin_reports_edited_after_report": "Changed since reported",
+  "admin_reports_owner_report_count": "{count} reports on this author's content",
   "admin_reports_target_comment_deleted": "(comment deleted)",
   "admin_reports_target_message_deleted": "(message deleted)",
   "admin_reports_target_author_deleted": "{label} (author deleted)",

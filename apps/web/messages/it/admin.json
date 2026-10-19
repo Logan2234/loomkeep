@@ -317,6 +317,8 @@
   "admin_reports_all_authors": "Tutti gli autori",
   "admin_reports_author_search": "Filtra per autore della segnalazione…",
   "admin_reports_target_missing": "Contenuto non trovato (eliminato).",
+  "admin_reports_edited_after_report": "Modificato dopo la segnalazione",
+  "admin_reports_owner_report_count": "{count} segnalazioni sui contenuti di questo autore",
   "admin_reports_target_comment_deleted": "(commento eliminato)",
   "admin_reports_target_message_deleted": "(messaggio eliminato)",
   "admin_reports_target_author_deleted": "{label} (autore eliminato)",

@@ -8,6 +8,7 @@ const target = (
 ): ReportTargetSummaryDto => ({
   label: "Spoiler: he dies",
   deleted: false,
+  editedAfterReport: false,
   authorDeleted: false,
   href: null,
   targetOwnerUsername: null,

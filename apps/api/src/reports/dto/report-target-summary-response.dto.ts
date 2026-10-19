@@ -1,7 +1,13 @@
 import type {
   ReportContextMessageDto,
+  ReportTargetOwnerDto,
   ReportTargetSummaryDto,
 } from "@loomkeep/shared";
+
+export class ReportTargetOwnerResponseDto implements ReportTargetOwnerDto {
+  username!: string;
+  reportCount!: number;
+}
 
 export class ReportContextMessageResponseDto implements ReportContextMessageDto {
   authorUsername!: string | null;
@@ -13,6 +19,7 @@ export class ReportContextMessageResponseDto implements ReportContextMessageDto 
 export class ReportTargetSummaryResponseDto implements ReportTargetSummaryDto {
   label!: string;
   deleted!: boolean;
+  editedAfterReport!: boolean;
   authorDeleted!: boolean;
   href!: string | null;
   targetOwnerUsername!: string | null;
