@@ -14,6 +14,7 @@ import {
   type PagedResult,
   type PileSummaryDto,
   type ProgressDto,
+  type TrackedMediaDto,
   ActivityType,
   Domain,
   EntryStatus,
@@ -1639,6 +1640,59 @@ export class LibraryService {
       userId,
       ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.SAGA_COMPLETED],
     );
+  }
+
+  /**
+   * Every work the user tracks, with its effective status — the same
+   * derivation as the library list, over the whole library in one progress
+   * query. See LibraryController.listTracked.
+   */
+  async trackedStatuses(userId: string): Promise<TrackedMediaDto[]> {
+    const entries = await this.prisma.libraryEntry.findMany({
+      where: { userId },
+      select: {
+        status: true,
+        mediaItemId: true,
+        mediaItem: {
+          select: {
+            type: true,
+            status: true,
+            canonicalSource: true,
+            externalIds: { select: { source: true, externalId: true } },
+          },
+        },
+      },
+    });
+    const counts = await this.progressCounts(
+      userId,
+      entries.map((e) => e.mediaItemId),
+    );
+
+    return entries.flatMap(({ mediaItem, mediaItemId, status }) => {
+      const sourceId = canonicalExternalId(mediaItem, mediaItem.externalIds);
+      if (!sourceId) return [];
+      const count = counts.get(mediaItemId);
+      const progress =
+        count && count.total > 0
+          ? {
+              watchedEpisodes: count.watched,
+              totalEpisodes: count.total,
+              nextEpisode: null,
+            }
+          : null;
+      return [
+        {
+          type: mediaItem.type as MediaType,
+          sourceId,
+          status: deriveStatus(
+            mediaItem.type,
+            progress,
+            normalizeAiringFinished(mediaItem.status),
+            status,
+          ),
+        },
+      ];
+    });
   }
 
   /**

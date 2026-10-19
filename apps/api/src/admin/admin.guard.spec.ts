@@ -16,16 +16,20 @@ function contextFor(userId?: string): ExecutionContext {
 
 function makeGuard(
   role: unknown,
-  mfa: { mfaTotpEnabled?: boolean; mfaEmailEnabled?: boolean } = {},
+  mfa: {
+    mfaTotpEnabled?: boolean;
+    mfaEmailEnabled?: boolean;
+    webauthnCredentials?: number;
+  } = {},
   nodeEnv: string = "production",
 ) {
   const prisma = {
     user: {
       findUnique: vi.fn().mockResolvedValue({
         role,
-        mfaTotpEnabled: false,
-        mfaEmailEnabled: false,
-        ...mfa,
+        mfaTotpEnabled: mfa.mfaTotpEnabled ?? false,
+        mfaEmailEnabled: mfa.mfaEmailEnabled ?? false,
+        _count: { webauthnCredentials: mfa.webauthnCredentials ?? 0 },
       }),
     },
   } as unknown as PrismaService;
@@ -43,6 +47,11 @@ describe("AdminGuard", () => {
 
   it("allows an admin account with email MFA active", async () => {
     const { guard } = makeGuard("ADMIN", { mfaEmailEnabled: true });
+    await expect(guard.canActivate(contextFor("user-1"))).resolves.toBe(true);
+  });
+
+  it("allows an admin account protected by a security key or passkey alone", async () => {
+    const { guard } = makeGuard("ADMIN", { webauthnCredentials: 1 });
     await expect(guard.canActivate(contextFor("user-1"))).resolves.toBe(true);
   });
 

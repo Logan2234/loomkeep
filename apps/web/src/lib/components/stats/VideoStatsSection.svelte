@@ -6,13 +6,11 @@
   // reuses the MEDIA status breakdown already loaded by the overview (avoids
   // re-deriving "en cours" from scratch) and StatsWorksModal for the
   // ghost/paused drill-down, same pattern as the ratings/decades modal.
-  import { resolveApiError } from "#lib/api/errors.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { getVideoSeries, getVideoStats } from "#lib/api/stats.js";
   import {
     type DomainStatusBreakdownDto,
-    type StatsWorkDto,
     type WatchStaleness,
     type MediaType,
   } from "@loomkeep/shared";
@@ -106,18 +104,19 @@
 
   // Ghost/paused drill-down modal — same StatsWorksModal as ratings/decades.
   let modalKind = $state<WatchStaleness | null>(null);
-  let modalWorks = $state<StatsWorkDto[]>([]);
-  let modalLoading = $state(false);
-  let modalError = $state<string | null>(null);
+  // Keyed on the kind, so switching between the two lists never shows one
+  // under the other's title.
+  const seriesQuery = createApiQuery(() => {
+    const kind = modalKind;
+    return {
+      key: keys.stats.videoSeries(kind ?? ""),
+      fetch: () => getVideoSeries(kind ?? "PAUSED"),
+      enabled: kind !== null,
+    };
+  });
 
   function openStaleness(kind: WatchStaleness) {
     modalKind = kind;
-    modalLoading = true;
-    modalError = null;
-    getVideoSeries(kind)
-      .then((w) => (modalWorks = w))
-      .catch((e) => (modalError = resolveApiError(e)))
-      .finally(() => (modalLoading = false));
   }
 </script>
 
@@ -261,8 +260,8 @@
     title={modalKind === "PAUSED"
       ? m.stats_video_paused_series()
       : m.stats_video_ghost_series()}
-    works={modalWorks}
-    loading={modalLoading}
-    error={modalError}
+    works={seriesQuery.data ?? []}
+    loading={seriesQuery.loading}
+    error={seriesQuery.error}
     onclose={() => (modalKind = null)} />
 {/if}

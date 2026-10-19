@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -114,6 +115,24 @@ describe("BookItemService.persistDetails", () => {
 
     expect(prisma.bookItem.create).toHaveBeenCalled();
     expect(prisma.bookItem.update).not.toHaveBeenCalled();
+  });
+
+  it("adopts the row a concurrent first track created instead of failing", async () => {
+    const { service, prisma } = makeService({ bookExternalId: null });
+    const winner = { id: "winner" };
+    (prisma.bookItem.create as Mock).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+    (prisma.bookExternalId.findUnique as Mock)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ bookItem: winner });
+
+    await expect(service.persistDetails("OPEN_LIBRARY", details)).resolves.toBe(
+      winner,
+    );
   });
 
   it("refreshes the existing book item when an external id reference exists", async () => {

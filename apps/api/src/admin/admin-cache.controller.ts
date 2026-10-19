@@ -430,7 +430,10 @@ export class AdminCacheController {
 
       const withContent = await this.idsWithContent(cacheDomain, orphanIds, db);
       const deletable = orphanIds.filter((id) => !withContent.has(id));
-      const where = { id: { in: deletable } };
+      // Re-checked by the delete itself: someone may have started tracking
+      // one of these since the scan above, and its entry would cascade away
+      // with the item. Only MEDIA runs in a Serializable transaction.
+      const where = { id: { in: deletable }, ...ORPHAN_WHERE };
 
       const { count } =
         cacheDomain === "MEDIA"
@@ -494,19 +497,26 @@ export class AdminCacheController {
         );
       }
 
-      switch (cacheDomain) {
-        case "MEDIA":
-          await db.mediaItem.delete({ where: { id } });
-          return;
-        case "GAMES":
-          await db.gameItem.delete({ where: { id } });
-          return;
-        case "BOOKS":
-          await db.bookItem.delete({ where: { id } });
-          return;
-        case "MUSIC":
-          await db.musicItem.delete({ where: { id } });
-          return;
+      // Conditional on still being unreferenced, for the same reason as
+      // removeOrphans: a track since referenceCount() would otherwise
+      // cascade away with the item.
+      const where = { id, ...ORPHAN_WHERE };
+      const { count } =
+        cacheDomain === "MEDIA"
+          ? await db.mediaItem.deleteMany({ where })
+          : cacheDomain === "GAMES"
+            ? await db.gameItem.deleteMany({ where })
+            : cacheDomain === "BOOKS"
+              ? await db.bookItem.deleteMany({ where })
+              : await db.musicItem.deleteMany({ where });
+
+      if (count === 0) {
+        throw new AppException(
+          HttpStatus.CONFLICT,
+          ErrorCode.AdminCacheItemReferenced,
+          undefined,
+          "Referenced by at least one account — cannot delete",
+        );
       }
     };
 

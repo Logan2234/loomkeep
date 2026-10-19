@@ -32,7 +32,10 @@ import {
 import { utcDateKey } from "../common/date.util";
 import { normalizeEmail } from "../common/email.util";
 import { HibpService } from "../common/hibp.service";
-import { isUniqueViolation } from "../common/prisma-error.util";
+import {
+  isRecordNotFound,
+  isUniqueViolation,
+} from "../common/prisma-error.util";
 import { EventsGateway } from "../events/events.gateway";
 import { MailService } from "../mail/mail.service";
 import { AdminAlertService } from "../notifications/admin-alert.service";
@@ -487,6 +490,12 @@ export class AuthService {
       );
     }
 
+    const attempts = await this.consumeMfaAttempt(challenge.id);
+
+    if (attempts === null) {
+      return this.lockMfaChallenge(challenge.id, challenge.userId, userAgent);
+    }
+
     const totpVerified =
       challenge.totpAllowed &&
       /^\d{6}$/.test(rawCode) &&
@@ -514,25 +523,10 @@ export class AuthService {
       (await this.mfa.verifyRecoveryCode(challenge.userId, rawCode));
 
     if (!totpVerified && !emailVerified && !recoveryVerified) {
-      if (challenge.attempts + 1 >= MAX_MFA_CHALLENGE_ATTEMPTS) {
-        await this.prisma.mfaLoginChallenge.delete({
-          where: { id: challenge.id },
-        });
-        await this.security.record({
-          type: "MFA_CHALLENGE_LOCKED",
-          userId: challenge.userId,
-          userAgent,
-        });
-        throw new AppException(
-          HttpStatus.UNAUTHORIZED,
-          ErrorCode.AuthMfaTooManyAttempts,
-        );
+      if (attempts >= MAX_MFA_CHALLENGE_ATTEMPTS) {
+        return this.lockMfaChallenge(challenge.id, challenge.userId, userAgent);
       }
 
-      await this.prisma.mfaLoginChallenge.update({
-        where: { id: challenge.id },
-        data: { attempts: { increment: 1 } },
-      });
       throw new AppException(
         HttpStatus.UNAUTHORIZED,
         ErrorCode.AuthMfaInvalidCode,
@@ -550,6 +544,50 @@ export class AuthService {
     }
 
     return this.completeLogin(challenge.user, userAgent, ip);
+  }
+
+  /**
+   * Takes one attempt on a pending challenge before its code is checked, and
+   * returns how many it has used — null once they're all spent. A single
+   * conditional write, so parallel guesses on the same challenge each take
+   * their own attempt: reading `attempts` and incrementing it afterwards let
+   * N concurrent requests all see the same count and all be evaluated.
+   */
+  private async consumeMfaAttempt(challengeId: string): Promise<number | null> {
+    try {
+      const { attempts } = await this.prisma.mfaLoginChallenge.update({
+        where: {
+          id: challengeId,
+          attempts: { lt: MAX_MFA_CHALLENGE_ATTEMPTS },
+        },
+        data: { attempts: { increment: 1 } },
+        select: { attempts: true },
+      });
+      return attempts;
+    } catch (err) {
+      if (isRecordNotFound(err)) return null;
+      throw err;
+    }
+  }
+
+  /** Ends a challenge whose attempts are spent: the login has to start over. */
+  private async lockMfaChallenge(
+    challengeId: string,
+    userId: string,
+    userAgent?: string,
+  ): Promise<never> {
+    await this.prisma.mfaLoginChallenge.deleteMany({
+      where: { id: challengeId },
+    });
+    await this.security.record({
+      type: "MFA_CHALLENGE_LOCKED",
+      userId,
+      userAgent,
+    });
+    throw new AppException(
+      HttpStatus.UNAUTHORIZED,
+      ErrorCode.AuthMfaTooManyAttempts,
+    );
   }
 
   /** Options for the WebAuthn 2nd factor of a pending (password-verified) login challenge. */

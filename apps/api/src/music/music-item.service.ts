@@ -6,6 +6,7 @@ import type {
 import { Injectable } from "@nestjs/common";
 import type { MusicItem } from "@prisma/client";
 import { isCatalogFresh } from "../common/catalog-sync.util";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { PrismaService } from "../prisma/prisma.service";
 import type {
   MusicCatalogProvider,
@@ -97,9 +98,25 @@ export class MusicItemService {
     const existingRef = await this.prisma.musicExternalId.findUnique({
       where: { source_externalId: { source, externalId: canonicalId } },
     });
-    return existingRef
-      ? this.refresh(existingRef.musicItemId, details)
-      : this.createFresh(source, details);
+    if (existingRef) return this.refresh(existingRef.musicItemId, details);
+
+    try {
+      return await this.createFresh(source, details);
+    } catch (err) {
+      // Two requests can reach here for the same uncached work (two users
+      // tracking it at once, a double click, an import resolving in
+      // parallel): the loser violates the external id's unique constraint.
+      // The winner's row is what it was about to create — adopt it, as
+      // MediaItemService does, rather than fail the request with a 500.
+      if (!isUniqueViolation(err)) throw err;
+
+      const winner = await this.prisma.musicExternalId.findUnique({
+        where: { source_externalId: { source, externalId: canonicalId } },
+        include: { musicItem: true },
+      });
+      if (winner) return winner.musicItem;
+      throw err;
+    }
   }
 
   /** Admin-triggered re-sync: refetches from the canonical source, bypassing the TTL. */

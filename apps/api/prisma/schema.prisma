@@ -1330,6 +1330,8 @@ model Notification {
   @@unique([userId, dedupeKey])
   @@index([userId, createdAt])
   @@index([readAt])
+  // The hourly scan's de-duplication looks keys up across every account.
+  @@index([dedupeKey])
 }
 
 // Social (P4): materialised activity feed. Append-only log of a user's actions
@@ -2060,6 +2062,9 @@ model Episode {
   translations EpisodeTranslation[]
 
   @@unique([seasonId, number])
+  // The hourly notification scan picks episodes by air date across every
+  // tracked show (NotificationService.runScanAll).
+  @@index([airDate])
 }
 
 // An episode's title/overview in a non-default locale. A null field means
@@ -2102,6 +2107,8 @@ model LibraryEntry {
   replays   MovieReplay[]
 
   @@unique([userId, mediaItemId])
+  // "Who tracks this work": notification scans, WorkFriends, hidden_gem.
+  @@index([mediaItemId])
 }
 
 // One row per completed replay, beyond the entry's own first completion —
@@ -2216,6 +2223,8 @@ model GameEntry {
   sessionTimers SessionTimer[]
 
   @@unique([userId, gameItemId])
+  // "Who tracks this work" (see LibraryEntry).
+  @@index([gameItemId])
 }
 
 model GameSession {
@@ -2333,6 +2342,8 @@ model BookEntry {
   sessionTimers SessionTimer[]
 
   @@unique([userId, bookItemId])
+  // "Who tracks this work" (see LibraryEntry).
+  @@index([bookItemId])
 }
 
 model BookSession {
@@ -2477,6 +2488,8 @@ model MusicEntry {
   musicItem MusicItem @relation(fields: [musicItemId], references: [id], onDelete: Cascade)
 
   @@unique([userId, musicItemId])
+  // "Who tracks this work" (see LibraryEntry).
+  @@index([musicItemId])
 }
 
 // Gamification: XP ledger, level curve and reward scale.

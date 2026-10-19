@@ -1,8 +1,8 @@
 import type { ImportAnalyzeRequest } from "@loomkeep/shared";
 import { IsNotEmpty, IsString, MaxLength } from "class-validator";
 
-// The request body's own ceiling (main.ts's Fastify bodyLimit, raised to 25MB
-// for a full TV Time export) already bounds the whole request, but this
+// The request body's own ceiling (25MB on this route for a full TV Time
+// export, see common/body-limit.ts) already bounds the whole request, but this
 // field alone can otherwise still allocate up to that much before the ZIP
 // reader's own limits (see import/zip.ts) even get a chance to apply —
 // leaves headroom for the surrounding JSON envelope.

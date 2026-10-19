@@ -29,6 +29,7 @@ import { SessionCacheService } from "../auth/session-cache.service";
 import { isSessionLive } from "../auth/session-live.util";
 import { isChatEnabled } from "../chat/chat.config";
 import { webOrigins } from "../common/web-origin.util";
+import { workTargetExists } from "../common/work-href.util";
 import {
   MetricsService,
   type WsRejectionReason,
@@ -37,6 +38,9 @@ import { PrismaService } from "../prisma/prisma.service";
 import { isSocialEnabled } from "../social/social.config";
 
 const ADMIN_REPORTS_ROOM = "admin:reports";
+// Comment threads one socket can follow at once: a page shows one, a few
+// tabs a few more. Far above any real use, low enough to bound the maps.
+const MAX_COMMENT_ROOMS_PER_SOCKET = 20;
 const userRoom = (userId: string) => `user:${userId}`;
 const sessionRoom = (sessionId: string) => `session:${sessionId}`;
 const listRoom = (listId: string) => `list:${listId}`;
@@ -225,7 +229,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  /** Comments are entirely social-gated (see CommentController) — refused silently, same "don't advertise the surface" rule as the REST side. */
+  /**
+   * Comments are entirely social-gated (see CommentController) — refused
+   * silently, same "don't advertise the surface" rule as the REST side. So is
+   * a target that doesn't exist, and a socket already in
+   * MAX_COMMENT_ROOMS_PER_SOCKET threads: every room joined here also lives
+   * in the presence maps below, so arbitrary keys would grow them without
+   * bound.
+   */
   @SubscribeMessage(RealtimeCommand.JOIN_COMMENTS)
   async handleJoinComments(
     @ConnectedSocket() client: Socket,
@@ -233,6 +244,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     { targetType, targetId }: { targetType: string; targetId: string },
   ): Promise<void> {
     if (!isSocialEnabled(this.config)) return;
+    if (typeof targetType !== "string" || typeof targetId !== "string") return;
+
+    const joined = this.commentRoomsBySocket.get(client.id)?.size ?? 0;
+    if (joined >= MAX_COMMENT_ROOMS_PER_SOCKET) return;
+    if (!(await workTargetExists(this.prisma, targetType, targetId))) return;
+
     await client.join(commentsRoom(targetType, targetId));
 
     const userId = client.data.userId as string | undefined;

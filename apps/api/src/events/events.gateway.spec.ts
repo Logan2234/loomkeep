@@ -255,7 +255,14 @@ describe("EventsGateway.disconnectSession", () => {
 
 describe("EventsGateway.handleJoinComments", () => {
   function make(socialEnabled: boolean) {
-    const prisma = {} as unknown as PrismaService;
+    // Every work exists except "missing".
+    const prisma = {
+      mediaItem: {
+        findUnique: vi.fn(({ where }: { where: { id: string } }) =>
+          Promise.resolve(where.id === "missing" ? null : { id: where.id }),
+        ),
+      },
+    } as unknown as PrismaService;
     const config = {
       getOrThrow: vi.fn(),
       get: vi.fn(() => (socialEnabled ? "true" : "false")),
@@ -353,6 +360,41 @@ describe("EventsGateway.handleJoinComments", () => {
       targetId: "m1",
       count: 0,
     });
+  });
+
+  it("silently refuses a thread whose work doesn't exist", async () => {
+    const gateway = make(true);
+    const client = fakeSocket();
+    client.data.userId = "user-1";
+
+    await gateway.handleJoinComments(client, {
+      targetType: "MEDIA",
+      targetId: "missing",
+    });
+    await gateway.handleJoinComments(client, {
+      targetType: "NOT_A_TYPE",
+      targetId: "m1",
+    });
+
+    expect(client.join).not.toHaveBeenCalled();
+  });
+
+  it("caps how many threads one socket can follow at once", async () => {
+    const gateway = make(true);
+    (gateway as unknown as { server: unknown }).server = {
+      to: vi.fn().mockReturnValue({ emit: vi.fn() }),
+    };
+    const client = fakeSocket();
+    client.data.userId = "user-1";
+
+    for (let i = 0; i < 25; i++) {
+      await gateway.handleJoinComments(client, {
+        targetType: "MEDIA",
+        targetId: `m${i}`,
+      });
+    }
+
+    expect(client.join).toHaveBeenCalledTimes(20);
   });
 
   it("silently refuses when social is disabled", async () => {

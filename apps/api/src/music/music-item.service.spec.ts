@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { MusicItemService } from "./music-item.service";
@@ -102,6 +103,24 @@ describe("MusicItemService.persistDetails", () => {
 
     expect(prisma.musicItem.create).toHaveBeenCalled();
     expect(prisma.musicItem.update).not.toHaveBeenCalled();
+  });
+
+  it("adopts the row a concurrent first track created instead of failing", async () => {
+    const { service, prisma } = makeService({ musicExternalId: null });
+    const winner = { id: "winner" };
+    (prisma.musicItem.create as Mock).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+    (prisma.musicExternalId.findUnique as Mock)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ musicItem: winner });
+
+    await expect(service.persistDetails("MUSICBRAINZ", details)).resolves.toBe(
+      winner,
+    );
   });
 
   it("refreshes the existing music item when an external id reference exists", async () => {

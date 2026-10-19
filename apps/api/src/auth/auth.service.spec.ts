@@ -95,8 +95,10 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     mfaLoginChallenge: {
       create: vi.fn(),
       findUnique: vi.fn(),
-      update: vi.fn(),
+      // The attempt verifyMfaLogin consumes before checking a code.
+      update: vi.fn().mockResolvedValue({ attempts: 1 }),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
     },
     userToken: {
       create: vi.fn(),
@@ -1560,10 +1562,12 @@ describe("AuthService.verifyMfaLogin", () => {
       service.verifyMfaLogin("challenge-1", "000000"),
     ).rejects.toMatchObject({ code: ErrorCode.AuthMfaInvalidCode });
     expect(prisma.mfaLoginChallenge.update).toHaveBeenCalledWith({
-      where: { id: "challenge-1" },
+      where: { id: "challenge-1", attempts: { lt: 5 } },
       data: { attempts: { increment: 1 } },
+      select: { attempts: true },
     });
     expect(prisma.mfaLoginChallenge.delete).not.toHaveBeenCalled();
+    expect(prisma.mfaLoginChallenge.deleteMany).not.toHaveBeenCalled();
   });
 
   it("deletes the challenge once the attempt cap is reached", async () => {
@@ -1580,16 +1584,49 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
+    (prisma.mfaLoginChallenge.update as Mock).mockResolvedValue({
+      attempts: 5,
+    });
     (mfa.acceptTotpCode as Mock).mockResolvedValue("invalid");
     (mfa.verifyRecoveryCode as Mock).mockResolvedValue(false);
 
     await expect(
       service.verifyMfaLogin("challenge-1", "000000"),
     ).rejects.toMatchObject({ code: ErrorCode.AuthMfaTooManyAttempts });
-    expect(prisma.mfaLoginChallenge.delete).toHaveBeenCalledWith({
+    expect(prisma.mfaLoginChallenge.deleteMany).toHaveBeenCalledWith({
       where: { id: "challenge-1" },
     });
-    expect(prisma.mfaLoginChallenge.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses to even check a code once parallel guesses have spent every attempt", async () => {
+    const { service, prisma, mfa } = makeService();
+    const user = makeUser({ mfaTotpEnabled: true, mfaTotpSecretEnc: "enc" });
+    // Read before the other requests incremented it: still looks fresh.
+    (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue({
+      id: "challenge-1",
+      userId: user.id,
+      totpAllowed: true,
+      emailAllowed: false,
+      emailCodeHash: null,
+      emailCodeExpiresAt: null,
+      attempts: 0,
+      expiresAt: new Date(Date.now() + 60_000),
+      user,
+    });
+    (prisma.mfaLoginChallenge.update as Mock).mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Record to update not found", {
+        code: "P2025",
+        clientVersion: "test",
+      }),
+    );
+
+    await expect(
+      service.verifyMfaLogin("challenge-1", "123456"),
+    ).rejects.toMatchObject({ code: ErrorCode.AuthMfaTooManyAttempts });
+    expect(mfa.acceptTotpCode).not.toHaveBeenCalled();
+    expect(prisma.mfaLoginChallenge.deleteMany).toHaveBeenCalledWith({
+      where: { id: "challenge-1" },
+    });
   });
 
   it("accepts a valid emailed code, compared in constant time", async () => {

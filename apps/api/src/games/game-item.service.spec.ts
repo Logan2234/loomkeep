@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -117,6 +118,22 @@ describe("GameItemService.persistDetails", () => {
 
     expect(prisma.gameItem.create).toHaveBeenCalled();
     expect(prisma.gameItem.update).not.toHaveBeenCalled();
+  });
+
+  it("adopts the row a concurrent first track created instead of failing", async () => {
+    const { service, prisma } = makeService({ gameExternalId: null });
+    const winner = { id: "winner" };
+    (prisma.gameItem.create as Mock).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+    (prisma.gameExternalId.findUnique as Mock)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ gameItem: winner });
+
+    await expect(service.persistDetails("IGDB", details)).resolves.toBe(winner);
   });
 
   it("refreshes the existing game item when an external id reference exists", async () => {
