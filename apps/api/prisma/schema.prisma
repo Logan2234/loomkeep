@@ -1840,6 +1840,9 @@ model MediaItem {
   // Average minutes per episode (series/anime) or the film's runtime; null until
   // captured from the source. Used by the stats aggregation for watch time.
   runtimeMin      Int?
+  // Regular episodes (season > 0) cached so far — maintained by a trigger on
+  // Episode, never written by the app (see LibraryEntry.watchedEpisodes).
+  episodeCount    Int           @default(0)
   // 18+ title (TMDB `adult` movies, AniList hentai). Restricted per-account.
   isAdult         Boolean       @default(false)
   // The saga it belongs to (TMDB collection or AniList main line, e.g.
@@ -2110,6 +2113,12 @@ model LibraryEntry {
   movieReleaseReminderAt DateTime?
   // A scheduled reminder has no browser language to resolve an automatic country from.
   movieReleaseRegion String?
+  // Maintained by the database, never written by the app: triggers on
+  // EpisodeWatch (and on insert here) keep them equal to what the watches
+  // say — regular episodes (season > 0) watched, last viewing of any
+  // episode. See migration 20261019160000_materialized_library_progress.
+  watchedEpisodes    Int                  @default(0)
+  lastWatchedAt      DateTime?
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 

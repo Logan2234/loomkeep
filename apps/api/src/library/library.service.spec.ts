@@ -1073,17 +1073,18 @@ describe("LibraryService.bulkUpdate", () => {
 });
 
 describe("LibraryService.trackedStatuses", () => {
-  it("lists every tracked work by catalogue id with its effective status, in one progress query", async () => {
+  it("lists every tracked work by catalogue id with its effective status, from its stored progress", async () => {
     const queryRaw = vi.fn().mockResolvedValue([]);
     const prisma = {
       libraryEntry: {
         findMany: vi.fn().mockResolvedValue([
           {
             status: "COMPLETED",
-            mediaItemId: "media-1",
+            watchedEpisodes: 0,
             mediaItem: {
               type: "MOVIE",
               status: "Released",
+              episodeCount: 0,
               canonicalSource: "TMDB",
               externalIds: [
                 { source: "IMDB", externalId: "tt1" },
@@ -1094,12 +1095,26 @@ describe("LibraryService.trackedStatuses", () => {
           {
             // No id for its canonical source: nothing a search result could match.
             status: "PLANNED",
-            mediaItemId: "media-2",
+            watchedEpisodes: 0,
             mediaItem: {
               type: "MOVIE",
               status: "Released",
+              episodeCount: 0,
               canonicalSource: "TMDB",
               externalIds: [],
+            },
+          },
+          {
+            // Every regular episode watched: the derived status, from the
+            // counts stored on the row.
+            status: "WATCHING",
+            watchedEpisodes: 10,
+            mediaItem: {
+              type: "SERIES",
+              status: "Ended",
+              episodeCount: 10,
+              canonicalSource: "TMDB",
+              externalIds: [{ source: "TMDB", externalId: "1399" }],
             },
           },
         ]),
@@ -1120,7 +1135,8 @@ describe("LibraryService.trackedStatuses", () => {
 
     await expect(service.trackedStatuses("user-1")).resolves.toEqual([
       { type: "MOVIE", sourceId: "603", status: "COMPLETED" },
+      { type: "SERIES", sourceId: "1399", status: "COMPLETED" },
     ]);
-    expect(queryRaw).toHaveBeenCalledTimes(1);
+    expect(queryRaw).not.toHaveBeenCalled();
   });
 });

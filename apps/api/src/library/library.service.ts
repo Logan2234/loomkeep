@@ -153,8 +153,30 @@ const MEDIA_ROW_SELECT = {
   startedAt: true,
   finishedAt: true,
   createdAt: true,
-  mediaItem: { select: { type: true, status: true, title: true } },
+  watchedEpisodes: true,
+  lastWatchedAt: true,
+  mediaItem: {
+    select: { type: true, status: true, title: true, episodeCount: true },
+  },
 } satisfies Prisma.LibraryEntrySelect;
+
+/**
+ * An entry's progress from its materialized counts (kept by the database,
+ * see LibraryEntry.watchedEpisodes) — null for a work with no regular
+ * episode, as computeProgress has it. No next episode: only the page gets one.
+ */
+function materializedProgress(entry: {
+  watchedEpisodes: number;
+  mediaItem: { episodeCount: number };
+}): ProgressDto | null {
+  return entry.mediaItem.episodeCount > 0
+    ? {
+        watchedEpisodes: entry.watchedEpisodes,
+        totalEpisodes: entry.mediaItem.episodeCount,
+        nextEpisode: null,
+      }
+    : null;
+}
 
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
 function compareMediaEntries(
@@ -325,9 +347,9 @@ export class LibraryService {
   /**
    * Media can't let Postgres pick the page: the status is derived from watch
    * progress, the default sort is the last viewing, and the search matches
-   * the translated title. Every entry is ranked on a light row instead, its
-   * progress counted in SQL — only the page gets the full progress (next
-   * episode included) and the full DTO.
+   * the translated title. Every entry is ranked on a light row instead, from
+   * the progress materialized on it — only the page gets the full progress
+   * (next episode included) and the full DTO.
    */
   async listEntries(
     userId: string,
@@ -577,8 +599,7 @@ export class LibraryService {
         select: MEDIA_ROW_SELECT,
       });
       const ids = entries.map((e) => e.mediaItemId);
-      const [counts, ratings, titles] = await Promise.all([
-        this.progressCounts(userId, ids),
+      const [ratings, titles] = await Promise.all([
         sort === "rating"
           ? this.reviews.getRatings(userId, ReviewTargetType.MEDIA, ids)
           : new Map<string, number>(),
@@ -588,17 +609,9 @@ export class LibraryService {
       ]);
 
       return entries.map((entry) => {
-        const count = counts.get(entry.mediaItemId);
-        const progress =
-          count && count.total > 0
-            ? {
-                watchedEpisodes: count.watched,
-                totalEpisodes: count.total,
-                nextEpisode: null,
-              }
-            : null;
+        const progress = materializedProgress(entry);
         // Same fallback as toEntryDto: a movie has no episode watches.
-        const lastWatchedAt = count?.lastWatchedAt ?? entry.finishedAt;
+        const lastWatchedAt = entry.lastWatchedAt ?? entry.finishedAt;
         return {
           id: entry.id,
           status: deriveStatus(
@@ -1660,51 +1673,40 @@ export class LibraryService {
 
   /**
    * Every work the user tracks, with its effective status — the same
-   * derivation as the library list, over the whole library in one progress
-   * query. See LibraryController.listTracked.
+   * derivation as the library list, from the materialized progress of each
+   * entry. See LibraryController.listTracked.
    */
   async trackedStatuses(userId: string): Promise<TrackedMediaDto[]> {
     const entries = await this.prisma.libraryEntry.findMany({
       where: { userId },
       select: {
         status: true,
-        mediaItemId: true,
+        watchedEpisodes: true,
         mediaItem: {
           select: {
             type: true,
             status: true,
+            episodeCount: true,
             canonicalSource: true,
             externalIds: { select: { source: true, externalId: true } },
           },
         },
       },
     });
-    const counts = await this.progressCounts(
-      userId,
-      entries.map((e) => e.mediaItemId),
-    );
 
-    return entries.flatMap(({ mediaItem, mediaItemId, status }) => {
+    return entries.flatMap((entry) => {
+      const { mediaItem } = entry;
       const sourceId = canonicalExternalId(mediaItem, mediaItem.externalIds);
       if (!sourceId) return [];
-      const count = counts.get(mediaItemId);
-      const progress =
-        count && count.total > 0
-          ? {
-              watchedEpisodes: count.watched,
-              totalEpisodes: count.total,
-              nextEpisode: null,
-            }
-          : null;
       return [
         {
           type: mediaItem.type as MediaType,
           sourceId,
           status: deriveStatus(
             mediaItem.type,
-            progress,
+            materializedProgress(entry),
             normalizeAiringFinished(mediaItem.status),
-            status,
+            entry.status,
           ),
         },
       ];
@@ -1730,11 +1732,12 @@ export class LibraryService {
       where: { userId, mediaItem: { externalIds: { some: externalId } } },
       select: {
         status: true,
-        mediaItemId: true,
+        watchedEpisodes: true,
         mediaItem: {
           select: {
             type: true,
             status: true,
+            episodeCount: true,
             externalIds: {
               where: { source: externalId.source, type },
               select: { externalId: true },
@@ -1743,30 +1746,17 @@ export class LibraryService {
         },
       },
     });
-    const counts = await this.progressCounts(
-      userId,
-      entries.map((e) => e.mediaItemId),
-    );
 
     const statuses = new Map<string, EntryStatus>();
 
     for (const entry of entries) {
       const sourceId = entry.mediaItem.externalIds[0]?.externalId;
       if (!sourceId) continue;
-      const count = counts.get(entry.mediaItemId);
-      const progress =
-        count && count.total > 0
-          ? {
-              watchedEpisodes: count.watched,
-              totalEpisodes: count.total,
-              nextEpisode: null,
-            }
-          : null;
       statuses.set(
         sourceId,
         deriveStatus(
           entry.mediaItem.type,
-          progress,
+          materializedProgress(entry),
           normalizeAiringFinished(entry.mediaItem.status),
           entry.status,
         ),
@@ -1774,50 +1764,6 @@ export class LibraryService {
     }
 
     return statuses;
-  }
-
-  /**
-   * Per media: its regular episodes, how many of them the user watched, and
-   * their last viewing of any episode (specials included) — the counts
-   * computeProgressBatch derives, without loading every episode and watch.
-   */
-  private async progressCounts(
-    userId: string,
-    mediaItemIds: string[],
-  ): Promise<
-    Map<string, { total: number; watched: number; lastWatchedAt: Date | null }>
-  > {
-    if (mediaItemIds.length === 0) return new Map();
-
-    const rows = await this.prisma.$queryRaw<
-      {
-        mediaItemId: string;
-        total: bigint;
-        watched: bigint;
-        lastWatchedAt: Date | null;
-      }[]
-    >`
-      SELECT s."mediaItemId",
-             COUNT(DISTINCT e.id) FILTER (WHERE s.number > 0) AS total,
-             COUNT(DISTINCT w."episodeId") FILTER (WHERE s.number > 0) AS watched,
-             MAX(w."watchedAt") AS "lastWatchedAt"
-      FROM "Season" s
-      JOIN "Episode" e ON e."seasonId" = s.id
-      LEFT JOIN "EpisodeWatch" w
-        ON w."episodeId" = e.id AND w."userId" = ${userId}
-      WHERE s."mediaItemId" = ANY(${mediaItemIds})
-      GROUP BY s."mediaItemId"
-    `;
-    return new Map(
-      rows.map((r) => [
-        r.mediaItemId,
-        {
-          total: Number(r.total),
-          watched: Number(r.watched),
-          lastWatchedAt: r.lastWatchedAt,
-        },
-      ]),
-    );
   }
 
   /**
