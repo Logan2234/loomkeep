@@ -2,6 +2,7 @@ import { ErrorCode } from "@loomkeep/shared";
 import type { ArgumentsHost } from "@nestjs/common";
 import { HttpStatus, NotFoundException } from "@nestjs/common";
 import type { HttpAdapterHost } from "@nestjs/core";
+import { Prisma } from "@prisma/client";
 import * as Sentry from "@sentry/node";
 import type { Logger } from "nestjs-pino";
 import { vi } from "vitest";
@@ -156,5 +157,44 @@ describe("AllExceptionsFilter", () => {
     expect(reply.mock.calls[0][1]).toEqual(
       expect.objectContaining({ requestId: "26" }),
     );
+  });
+
+  it.each([
+    ["P2002", HttpStatus.CONFLICT, ErrorCode.InternalConflict, "Conflict"],
+    ["P2025", HttpStatus.NOT_FOUND, ErrorCode.InternalRecordGone, "Not found"],
+  ])(
+    "answers a lost write race (%s) with a 4xx, not a 500 reported to GlitchTip",
+    (prismaCode, status, code, message) => {
+      const error = new Prisma.PrismaClientKnownRequestError(
+        "Unique constraint failed on the fields: (`listId`,`targetId`)",
+        { code: prismaCode, clientVersion: "test" },
+      );
+      const { host } = makeHost("req-race");
+
+      filter.catch(error, host);
+
+      expect(Sentry.captureException).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalled();
+      expect(reply.mock.calls[0][2]).toBe(status);
+      expect(reply.mock.calls[0][1]).toEqual({
+        statusCode: status,
+        code,
+        requestId: "req-race",
+        message,
+      });
+    },
+  );
+
+  it("still reports any other Prisma error as a scrubbed 500", () => {
+    const error = new Prisma.PrismaClientKnownRequestError("Timed out", {
+      code: "P2024",
+      clientVersion: "test",
+    });
+    const { host } = makeHost();
+
+    filter.catch(error, host);
+
+    expect(Sentry.captureException).toHaveBeenCalledWith(error);
+    expect(reply.mock.calls[0][2]).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
   });
 });

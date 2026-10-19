@@ -735,7 +735,12 @@ export class BookLibraryService {
     });
 
     await this.prisma.$transaction([
-      ...polymorphicTargetCleanup(this.prisma, userId, [entry.bookItemId]),
+      ...polymorphicTargetCleanup(
+        this.prisma,
+        userId,
+        [ReviewTargetType.BOOK],
+        [entry.bookItemId],
+      ),
       this.prisma.bookEntry.delete({ where: { id: entryId } }),
     ]);
 

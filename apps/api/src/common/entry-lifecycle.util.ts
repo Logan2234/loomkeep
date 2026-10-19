@@ -340,19 +340,25 @@ export async function deleteOwnedReplay(
  * so nothing cascades for them at the DB level.
  *
  * `targetIds` is every id the entry covers: the work itself for books, games
- * and music, plus its seasons and episodes for media.
+ * and music, plus its seasons and episodes for media. `targetTypes` names
+ * their types: the ids alone would be enough to scope the rows (cuids are
+ * globally unique), but both tables index `(targetType, targetId)`, which a
+ * filter without the type can't use.
  */
 export function polymorphicTargetCleanup(
   prisma: PrismaService,
   userId: string,
+  targetTypes: ReviewTargetType[],
   targetIds: string[],
 ): Prisma.PrismaPromise<unknown>[] {
+  const target = {
+    targetType: { in: targetTypes },
+    targetId: { in: targetIds },
+  };
   return [
-    prisma.review.deleteMany({
-      where: { userId, targetId: { in: targetIds } },
-    }),
+    prisma.review.deleteMany({ where: { userId, ...target } }),
     prisma.comment.updateMany({
-      where: { authorId: userId, targetId: { in: targetIds }, deletedAt: null },
+      where: { authorId: userId, ...target, deletedAt: null },
       data: { text: null, deletedAt: new Date() },
     }),
   ];

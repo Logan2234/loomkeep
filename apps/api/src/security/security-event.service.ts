@@ -172,6 +172,31 @@ export class SecurityEventService {
     });
 
     if (count > 0) this.logger.log(`Purged ${count} expired security events`);
+
+    await this.purgeExpiredCredentials(now);
+  }
+
+  /**
+   * The one-time secrets an authentication flow leaves behind when it is
+   * never finished: a login whose second factor was abandoned, a passkey
+   * prompt dismissed (`webauthn/login-options` is public, so anyone can
+   * create these), a reset or verification link never clicked, an email
+   * change never confirmed. Each flow deletes its own row on success, but
+   * nothing else ever did once it expired, so they piled up for good.
+   */
+  private async purgeExpiredCredentials(now: Date): Promise<void> {
+    const expired = { expiresAt: { lt: now } };
+    const counts = await this.prisma.$transaction([
+      this.prisma.mfaLoginChallenge.deleteMany({ where: expired }),
+      this.prisma.webauthnChallenge.deleteMany({ where: expired }),
+      this.prisma.userToken.deleteMany({ where: expired }),
+      this.prisma.emailChangeRequest.deleteMany({ where: expired }),
+    ]);
+    const total = counts.reduce((sum, { count }) => sum + count, 0);
+
+    if (total > 0) {
+      this.logger.log(`Purged ${total} expired authentication challenges`);
+    }
   }
 
   /**

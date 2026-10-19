@@ -22,7 +22,10 @@ export class HealthController {
 
   /**
    * The three indicators still decide whether the instance is healthy — the
-   * HTTP status is what Docker and Caddy read — but only the verdict goes out.
+   * HTTP status is what the `api` service's Compose healthcheck reads
+   * (docker/docker-compose.yml), and what the deploy workflow waits on — but
+   * only the verdict goes out. Caddy doesn't probe it: with one upstream,
+   * taking it out of rotation would only turn a slow API into a 503.
    * Terminus's own body carries live heap/RSS byte counts, and this route is
    * `@Public()`: that told anyone asking how much headroom the box has left.
    *

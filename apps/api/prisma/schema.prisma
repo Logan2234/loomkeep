@@ -878,6 +878,9 @@ model Comment {
 
   @@index([targetType, targetId, createdAt])
   @@index([parentId])
+  // Per-author lookups: the chatterbox_* achievement count on every posted
+  // comment, entry removal's tombstoning, account export and deletion.
+  @@index([authorId])
 }
 
 // One active reaction per (user, comment) — posting a new emote replaces it
@@ -1523,6 +1526,8 @@ model UserToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, type])
+  // Daily purge of expired tokens (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
 }
 
 // Sign-up link, letting someone register even while REGISTRATION_ENABLED is
@@ -1711,6 +1716,8 @@ model EmailChangeRequest {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  // Daily purge of unconfirmed requests (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
 }
 
 // One row per recovery code (bcrypt-hashed, BCRYPT_ROUNDS), single-use —
@@ -1752,6 +1759,8 @@ model MfaLoginChallenge {
   webauthnChallenge WebauthnChallenge?
 
   @@index([userId])
+  // Daily purge of abandoned challenges (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
 }
 
 // A registered passkey/security key. Unlike the TOTP secret, publicKey needs
@@ -1803,6 +1812,8 @@ model WebauthnChallenge {
   mfaLoginChallenge MfaLoginChallenge? @relation(fields: [mfaLoginChallengeId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  // Daily purge of abandoned challenges (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
 }
 
 // On-demand cache: a media exists here only once at least one user references it.

@@ -3,6 +3,7 @@ import { ErrorCode } from "@loomkeep/shared";
 import type { ArgumentsHost } from "@nestjs/common";
 import { Catch, HttpException, HttpStatus } from "@nestjs/common";
 import { HttpAdapterHost } from "@nestjs/core";
+import { Prisma } from "@prisma/client";
 import * as Sentry from "@sentry/node";
 import type { FastifyRequest } from "fastify";
 import { Logger } from "nestjs-pino";
@@ -27,6 +28,29 @@ const GENERIC_SERVER_ERROR_MESSAGE = "Internal server error";
 // returns the raw Node ServerResponse (reply.raw), not the Fastify Reply
 // wrapper, for a globally-registered filter — httpAdapter.reply() is the
 // platform-agnostic way BaseExceptionFilter itself uses under the hood.
+/**
+ * Prisma errors that mean another request got there first rather than a bug:
+ * a unique constraint already satisfied (P2002, e.g. two editors adding the
+ * same work to a list) or the targeted row already gone (P2025). Services
+ * that can do better (adopt the winner's row) still catch them themselves;
+ * this is the floor, so the rest answer 409/404 instead of a 500 that also
+ * lands in GlitchTip.
+ */
+const PRISMA_RACE_STATUS: Record<string, number> = {
+  P2002: HttpStatus.CONFLICT,
+  P2025: HttpStatus.NOT_FOUND,
+};
+const PRISMA_RACE_CODE: Record<string, ErrorCode> = {
+  P2002: ErrorCode.InternalConflict,
+  P2025: ErrorCode.InternalRecordGone,
+};
+
+function prismaErrorCode(exception: unknown): string | null {
+  return exception instanceof Prisma.PrismaClientKnownRequestError
+    ? exception.code
+    : null;
+}
+
 @Catch()
 export class AllExceptionsFilter {
   constructor(
@@ -57,9 +81,11 @@ export class AllExceptionsFilter {
   }
 
   private resolveStatus(exception: unknown): number {
-    return exception instanceof HttpException
-      ? exception.getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
+    if (exception instanceof HttpException) return exception.getStatus();
+    return (
+      PRISMA_RACE_STATUS[prismaErrorCode(exception) ?? ""] ??
+      HttpStatus.INTERNAL_SERVER_ERROR
+    );
   }
 
   private buildBody(
@@ -93,6 +119,20 @@ export class AllExceptionsFilter {
         requestId,
         message:
           status >= 500 ? GENERIC_SERVER_ERROR_MESSAGE : exception.message,
+      };
+    }
+
+    // A write that lost a race (see PRISMA_RACE_STATUS): an expected outcome
+    // of concurrency, not a bug, so a 4xx with its own code. The Prisma
+    // message names tables and columns and never goes out.
+    const raceCode = PRISMA_RACE_CODE[prismaErrorCode(exception) ?? ""];
+
+    if (raceCode && status < 500) {
+      return {
+        statusCode: status,
+        code: raceCode,
+        requestId,
+        message: status === HttpStatus.CONFLICT ? "Conflict" : "Not found",
       };
     }
 

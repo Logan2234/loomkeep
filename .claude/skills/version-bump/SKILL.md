@@ -27,12 +27,16 @@ this isn't feature work, no branch needed unless Logan says otherwise).
 
 ## 2. Bump package.json in lockstep
 
-Edit the `version` field in all four, to the same new value:
+Edit the `version` field in all five, to the same new value:
 
 - `package.json` (root)
 - `apps/api/package.json`
 - `apps/web/package.json`
+- `apps/docs/package.json`
 - `packages/shared/package.json`
+
+Then check none was missed — every line must show the new version:
+`grep -H '"version"' package.json apps/*/package.json packages/*/package.json`.
 
 Don't touch anything else in these files.
 
@@ -67,7 +71,7 @@ Don't touch anything else in these files.
 
 ## 5. Commit
 
-- `git add` the four `package.json` files + `CHANGELOG.md`, commit with `:bookmark: Bump version to X.Y.Z`
+- `git add` the five `package.json` files + `CHANGELOG.md`, commit with `:bookmark: Bump version to X.Y.Z`
   (no dedicated gitmoji for releases in CLAUDE.md's list — `:bookmark:` is the conventional-commits
   choice for version bumps; ask Logan if he'd rather use something else).
 - Push only if Logan confirms — committing to `main` directly is already a bit unusual, don't also

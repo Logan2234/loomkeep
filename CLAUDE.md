@@ -85,7 +85,7 @@ fix does.
   excludes season 0 (TMDB specials).
 - **Import sources** (`apps/api/src/import/sources/`) share a base class per
   domain: `MediaImportSource` (TV Time CSV, Trakt account-export ZIP, Simkl
-  OAuth, MyAnimeList XML) and `BookCsvSource` (Goodreads, StoryGraph) own the
+  OAuth, MyAnimeList XML) and `BookCsvSource` (Goodreads, StoryGraph, Babelio) own the
   common analyze/resolve/commit flow — a new source only supplies its
   parsing. Steam implements `ImportReq` directly (no shared base, single
   source). `GET /import/availability` greys out a source when its env key
@@ -98,8 +98,13 @@ fix does.
 
 - Access JWT (15 min) + rotating refresh tokens, one `RefreshToken`
   row/device, SHA-256 hashed. `JwtAuthGuard` is global, opt out with
-  `@Public()`; `@CurrentUser()` reads `sub` from the JWT payload. TOTP MFA
-  layers on top (`auth/mfa.service.ts`).
+  `@Public()`; `@CurrentUser()` reads `sub` from the JWT payload. MFA layers
+  on top with three second factors — TOTP and an emailed code
+  (`auth/mfa.service.ts`), WebAuthn security keys/passkeys
+  (`auth/webauthn.service.ts`) — plus passwordless passkey sign-in and a
+  recent-confirmation gate on sensitive actions (`@RequireRecentAuth`,
+  `auth/recent-auth.guard.ts`). Anything that asks "has MFA?" (e.g.
+  `AdminGuard`) must count all three.
 - Errors are typed codes (`packages/shared/src/error-codes.ts`,
   `ErrorCode.AuthInvalidCredentials`-style, `domain.reason`), thrown via
   `AppException` and caught by the global `AllExceptionsFilter`. The web
@@ -246,8 +251,8 @@ relationship primitive (friend = reciprocal accepted follow). Details:
 - Prefer no new runtime deps (global `fetch`, Node ≥22). pnpm blocks
   postinstall scripts by default — allow-list in `pnpm-workspace.yaml`'s
   `allowBuilds`. Ask before adding one.
-- Versioning: the four `package.json` versions (root + each app/package) are
-  kept in lockstep — minor for a new module/capability, patch for a smaller
+- Versioning: the five `package.json` versions (root, `apps/api`,
+  `apps/web`, `apps/docs`, `packages/shared`) are kept in lockstep — minor for a new module/capability, patch for a smaller
   fix/polish. No tagged releases otherwise. Bump via the `version-bump`
   skill (`CHANGELOG.md` + a Quackback changelog draft) — **publishing that
   draft sends the release newsletter**, so it always needs Logan's go-ahead.

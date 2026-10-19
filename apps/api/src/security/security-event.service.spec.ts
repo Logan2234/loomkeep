@@ -15,6 +15,11 @@ function makeService({ recentLocks = 0 } = {}) {
       updateMany: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    mfaLoginChallenge: { deleteMany: vi.fn().mockReturnValue({ count: 0 }) },
+    webauthnChallenge: { deleteMany: vi.fn().mockReturnValue({ count: 0 }) },
+    userToken: { deleteMany: vi.fn().mockReturnValue({ count: 0 }) },
+    emailChangeRequest: { deleteMany: vi.fn().mockReturnValue({ count: 0 }) },
+    $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
     user: {
       findUnique: vi
         .fn()
@@ -223,6 +228,19 @@ describe("SecurityEventService.purgeExpired", () => {
     expect(prisma.securityEvent.deleteMany).toHaveBeenCalledWith({
       where: { createdAt: { lt: new Date("2025-09-24T06:00:00Z") } },
     });
+  });
+
+  it("deletes the expired challenges and one-time tokens abandoned flows leave behind", async () => {
+    const { service, prisma } = makeService();
+    const now = new Date("2026-09-24T06:00:00Z");
+    const expired = { where: { expiresAt: { lt: now } } };
+
+    await service.purgeExpired(now);
+
+    expect(prisma.mfaLoginChallenge.deleteMany).toHaveBeenCalledWith(expired);
+    expect(prisma.webauthnChallenge.deleteMany).toHaveBeenCalledWith(expired);
+    expect(prisma.userToken.deleteMany).toHaveBeenCalledWith(expired);
+    expect(prisma.emailChangeRequest.deleteMany).toHaveBeenCalledWith(expired);
   });
 });
 

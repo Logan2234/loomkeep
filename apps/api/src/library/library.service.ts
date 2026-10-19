@@ -809,12 +809,27 @@ export class LibraryService {
       where: { userId, targetId: { in: targetIds } },
       select: { id: true },
     });
+    // Same again for a movie's rewatches: they cascade with the entry, and
+    // MOVIE_REPLAYED is anchored to each one, not to the entry.
+    const replays = await this.prisma.movieReplay.findMany({
+      where: { libraryEntryId: entryId },
+      select: { id: true },
+    });
 
     await this.prisma.$transaction([
       this.prisma.episodeWatch.deleteMany({
         where: { userId, episodeId: { in: episodeIds } },
       }),
-      ...polymorphicTargetCleanup(this.prisma, userId, targetIds),
+      ...polymorphicTargetCleanup(
+        this.prisma,
+        userId,
+        [
+          ReviewTargetType.MEDIA,
+          ReviewTargetType.SEASON,
+          ReviewTargetType.EPISODE,
+        ],
+        targetIds,
+      ),
       this.prisma.libraryEntry.delete({ where: { id: entryId } }),
     ]);
 
@@ -830,6 +845,7 @@ export class LibraryService {
     await revokeEntryXp(this.xp, [
       { sourceType: "Entry", ids: [entryId] },
       { sourceType: "Season", ids: seasons.map((s) => s.id) },
+      { sourceType: "MovieReplay", ids: replays.map((r) => r.id) },
       { sourceType: "Review", ids: reviews.map((r) => r.id) },
     ]);
   }

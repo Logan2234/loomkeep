@@ -21,8 +21,15 @@ export interface ModerationReasonRequestDto {
 
 /** Minimal display info for whatever a report targets, resolved server-side. */
 export interface ReportTargetSummaryDto {
-  /** A short excerpt/label — comment text, review text, or a username. */
+  /**
+   * A short excerpt/label — comment text, review text, or a username. Empty
+   * when `deleted`: the client words that case in the viewer's language.
+   */
   label: string;
+  /** The reported comment or message has since been deleted. */
+  deleted: boolean;
+  /** The reported review's author has since deleted their account. */
+  authorDeleted: boolean;
   href: string | null;
   /** Username of whoever owns the target (comment or review author, reported user, list owner). */
   targetOwnerUsername: string | null;

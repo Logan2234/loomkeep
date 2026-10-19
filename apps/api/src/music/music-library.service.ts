@@ -492,7 +492,12 @@ export class MusicLibraryService {
     });
 
     await this.prisma.$transaction([
-      ...polymorphicTargetCleanup(this.prisma, userId, [entry.musicItemId]),
+      ...polymorphicTargetCleanup(
+        this.prisma,
+        userId,
+        [ReviewTargetType.MUSIC],
+        [entry.musicItemId],
+      ),
       this.prisma.musicEntry.delete({ where: { id: entryId } }),
     ]);
 

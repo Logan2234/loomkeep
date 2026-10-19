@@ -35,10 +35,16 @@ overrides:
   # Share one compatible Fastify version across Nest and the API to avoid
   # incompatible FastifyInstance types in main.ts.
   fastify: ^5.12.3
-  # Transitive-only vulnerable versions (dev tooling: ajv/prisma/lhci chains),
+  # Transitive-only vulnerable versions (fastify's ajv/fast-json-stringify,
+  # unleash-client's make-fetch-happen, prisma/lhci and the docs build chains),
   # none reachable from user input — forced to the first patched release.
-  fast-uri@3.1.5: ^3.1.6
-  fast-uri@4.1.2: ^4.1.3
+  fast-uri@>=3.0.0 <3.1.8: ^3.1.8
+  fast-uri@>=4.0.0 <4.1.5: ^4.1.5
+  brace-expansion@>=4.0.0 <5.0.12: ^5.0.12
+  http-cache-semantics@<4.3.0: ^4.3.0
+  source-map-js@>=1.0.0 <1.2.2: ^1.2.2
+  postcss-selector-parser@<7.1.6: ^7.1.6
+  "@ai-sdk/provider-utils@>=4.0.0-beta.10 <4.0.33": ^4.0.33
   deepmerge-ts@<8.0.0: ^8.0.0
   tmp@<0.2.6: ^0.2.6
   uuid@<11.1.1: ^11.1.1

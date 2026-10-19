@@ -690,7 +690,12 @@ export class GameLibraryService {
     });
 
     await this.prisma.$transaction([
-      ...polymorphicTargetCleanup(this.prisma, userId, [entry.gameItemId]),
+      ...polymorphicTargetCleanup(
+        this.prisma,
+        userId,
+        [ReviewTargetType.GAME],
+        [entry.gameItemId],
+      ),
       this.prisma.gameEntry.delete({ where: { id: entryId } }),
     ]);
 

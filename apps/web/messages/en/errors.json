@@ -81,6 +81,8 @@
   "apierr_validation_invalid_param": "Invalid parameter.",
   "apierr_validation_failed": "The form contains errors.",
   "apierr_internal_error": "Something went wrong.",
+  "apierr_internal_conflict": "Someone changed this at the same time. Reload and try again.",
+  "apierr_internal_record_gone": "This no longer exists. Reload the page.",
   "apierr_network_offline": "Couldn't reach the server, check your connection.",
   "apierr_status_400": "This request couldn't be processed.",
   "apierr_status_401": "Your session has expired, please log in again.",

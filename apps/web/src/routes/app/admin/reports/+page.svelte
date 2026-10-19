@@ -5,6 +5,7 @@
   import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
 
   import { typedEntries } from "#lib/object.js";
+  import { reportTargetLabel } from "#lib/report-target-label.js";
 
   import { labeledOptions } from "#lib/options.js";
 
@@ -430,14 +431,14 @@
                   href="/app/admin/users?q={r.target.targetOwnerUsername}"
                   class="font-semibold hover:underline"
                   >@{r.target.targetOwnerUsername}</a>
-                {#if r.target.label}·
+                {#if reportTargetLabel(r.targetType, r.target)}·
                 {/if}
               {/if}
               {#if r.target.href}
                 <a href={r.target.href} class="hover:underline"
-                  >{r.target.label}</a>
+                  >{reportTargetLabel(r.targetType, r.target)}</a>
               {:else}
-                {r.target.label}
+                {reportTargetLabel(r.targetType, r.target)}
               {/if}
             </p>
             {#if r.target.context?.length}
