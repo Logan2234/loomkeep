@@ -1,4 +1,5 @@
 import type { ConfigService } from "@nestjs/config";
+import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
@@ -330,6 +331,21 @@ describe("ListService.addItem", () => {
     await expect(
       svc.addItem("u1", "l1", { targetType: "MEDIA", targetId: "m1" }),
     ).rejects.toThrow("Already in this list");
+  });
+
+  it("reports the same conflict when another editor adds the work first", async () => {
+    const { svc, create, activity } = make(false);
+    create.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+
+    await expect(
+      svc.addItem("u1", "l1", { targetType: "MEDIA", targetId: "m1" }),
+    ).rejects.toThrow("Already in this list");
+    expect(activity.emit).not.toHaveBeenCalled();
   });
 
   it("adds a new item, emits LIST_ITEM_ADDED and pushes a live update", async () => {

@@ -330,6 +330,7 @@ describe("LibraryService.deleteEntry", () => {
         findMany: vi.fn().mockResolvedValue([]),
         deleteMany: reviewDeleteMany,
       },
+      movieReplay: { findMany: vi.fn().mockResolvedValue([]) },
       comment: { updateMany: commentUpdateMany },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
@@ -349,16 +350,22 @@ describe("LibraryService.deleteEntry", () => {
     await service.deleteEntry("user-1", "entry-1");
 
     const allTargetIds = ["media-1", "s1", "s2", "e1", "e2", "e3"];
+    const allTargetTypes = ["MEDIA", "SEASON", "EPISODE"];
 
     expect(episodeWatchDeleteMany).toHaveBeenCalledWith({
       where: { userId: "user-1", episodeId: { in: ["e1", "e2", "e3"] } },
     });
     expect(reviewDeleteMany).toHaveBeenCalledWith({
-      where: { userId: "user-1", targetId: { in: allTargetIds } },
+      where: {
+        userId: "user-1",
+        targetType: { in: allTargetTypes },
+        targetId: { in: allTargetIds },
+      },
     });
     expect(commentUpdateMany).toHaveBeenCalledWith({
       where: {
         authorId: "user-1",
+        targetType: { in: allTargetTypes },
         targetId: { in: allTargetIds },
         deletedAt: null,
       },
@@ -369,7 +376,8 @@ describe("LibraryService.deleteEntry", () => {
     });
   });
 
-  it("still works for a movie entry with no seasons/episodes", async () => {
+  it("still works for a movie entry with no seasons/episodes, and revokes its rewatches' XP", async () => {
+    const xp = stubXp();
     const prisma = {
       libraryEntry: {
         findUnique: vi.fn().mockResolvedValue({
@@ -388,6 +396,10 @@ describe("LibraryService.deleteEntry", () => {
         findMany: vi.fn().mockResolvedValue([]),
         deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
+      // Cascades with the entry, so its MOVIE_REPLAYED XP is revoked by id.
+      movieReplay: {
+        findMany: vi.fn().mockResolvedValue([{ id: "r1" }, { id: "r2" }]),
+      },
       comment: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
@@ -398,7 +410,7 @@ describe("LibraryService.deleteEntry", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      stubXp(),
+      xp,
       stubAchievements(),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
@@ -407,6 +419,7 @@ describe("LibraryService.deleteEntry", () => {
     await expect(
       service.deleteEntry("user-1", "entry-2"),
     ).resolves.toBeUndefined();
+    expect(xp.revokeBySource).toHaveBeenCalledWith("MovieReplay", ["r1", "r2"]);
   });
 });
 

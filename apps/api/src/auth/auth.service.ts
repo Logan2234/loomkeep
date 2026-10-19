@@ -1059,9 +1059,18 @@ export class AuthService {
       return false;
     }
 
-    await this.prisma.userDevice.create({
-      data: { userId, deviceKey, userAgent: userAgent ?? null },
-    });
+    try {
+      await this.prisma.userDevice.create({
+        data: { userId, deviceKey, userAgent: userAgent ?? null },
+      });
+    } catch (err) {
+      // Two sign-ins from the same browser at once (a double submit, two
+      // tabs): the other one recorded the device first, and already owns the
+      // new-device alert. Failing here would fail the login itself.
+      if (!isUniqueViolation(err)) throw err;
+      return false;
+    }
+
     return true;
   }
 

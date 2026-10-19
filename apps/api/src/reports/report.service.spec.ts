@@ -562,7 +562,10 @@ describe("ReportService.list — target resolution", () => {
       },
     });
     const page = await svc.list(undefined, parsePageQuery("1", "20", 20));
-    expect(page.items[0].target?.label).toContain("auteur supprimé");
+    expect(page.items[0].target).toMatchObject({
+      label: "1/10",
+      authorDeleted: true,
+    });
     expect(page.items[0].target?.targetOwnerUsername).toBeNull();
   });
 
@@ -634,7 +637,8 @@ describe("ReportService.list — target resolution", () => {
       },
     });
     const page = await svc.list(undefined, parsePageQuery("1", "20", 20));
-    expect(page.items[0].target?.label).toContain("commentaire supprimé");
+    // Flagged, not worded: the admin's own locale words it on the web side.
+    expect(page.items[0].target).toMatchObject({ label: "", deleted: true });
   });
 });
 

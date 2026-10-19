@@ -69,5 +69,24 @@ jobs:
               echo "docker compose up -d failed (attempt $attempt/3), retrying in 5s..."
               sleep 5
             done
+            # `up -d` succeeds as soon as the containers start: an API stuck
+            # re-running a failed migration would otherwise sit behind a green
+            # deploy. Wait for the healthchecks in docker-compose.yml instead,
+            # and show the logs of whatever doesn't come up.
+            for service in api web; do
+              container=$(docker compose ps -q "$service")
+              for attempt in $(seq 1 60); do
+                status=$(docker inspect -f '{{.State.Health.Status}}' "$container")
+                if [ "$status" = healthy ]; then
+                  break
+                fi
+                if [ "$attempt" = 60 ]; then
+                  echo "$service is still $status after 5 minutes" >&2
+                  docker compose logs --tail=80 "$service" >&2
+                  exit 1
+                fi
+                sleep 5
+              done
+            done
             docker image prune -a -f --filter "until=168h"
             docker builder prune -f --filter "until=168h"

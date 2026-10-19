@@ -252,6 +252,11 @@ export const ErrorCode = {
   ValidationFailed: "validation.failed",
   InvalidParam: "validation.invalid_param",
   InternalError: "internal.error",
+  // Two requests raced and the other one wrote first (a unique constraint,
+  // Prisma P2002) — reloading shows the state it left.
+  InternalConflict: "internal.conflict",
+  // The row a write targeted was removed in the meantime (Prisma P2025).
+  InternalRecordGone: "internal.record_gone",
 
   // client-side only — never emitted by the API, thrown by apps/web's
   // request() when the fetch itself fails (see apps/web/src/lib/api/core.ts)

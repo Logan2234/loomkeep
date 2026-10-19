@@ -81,6 +81,8 @@
   "apierr_validation_invalid_param": "Parametro non valido.",
   "apierr_validation_failed": "Il modulo contiene errori.",
   "apierr_internal_error": "Qualcosa è andato storto.",
+  "apierr_internal_conflict": "Qualcun altro l'ha modificato nello stesso momento. Ricarica e riprova.",
+  "apierr_internal_record_gone": "Questo elemento non esiste più. Ricarica la pagina.",
   "apierr_network_offline": "Impossibile raggiungere il server, controlla la connessione.",
   "apierr_status_400": "Impossibile elaborare questa richiesta.",
   "apierr_status_401": "La tua sessione è scaduta, accedi di nuovo.",

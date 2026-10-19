@@ -81,6 +81,8 @@
   "apierr_validation_invalid_param": "Paramètre invalide.",
   "apierr_validation_failed": "Le formulaire contient des erreurs.",
   "apierr_internal_error": "Une erreur inattendue s'est produite.",
+  "apierr_internal_conflict": "Une autre modification est arrivée en même temps. Rechargez puis réessayez.",
+  "apierr_internal_record_gone": "Cet élément n'existe plus. Rechargez la page.",
   "apierr_network_offline": "Impossible de contacter le serveur, vérifie ta connexion.",
   "apierr_status_400": "La demande n'a pas pu être traitée.",
   "apierr_status_401": "Ta session a expiré, reconnecte-toi.",

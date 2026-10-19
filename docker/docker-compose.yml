@@ -110,6 +110,22 @@ services:
       - backup-data:/data/backups
     ports:
       - "3000:3000"
+    # GET /api/health (database ping + memory). The deploy workflow waits on
+    # this status, so a container stuck re-running a failed migration fails
+    # the deploy instead of hiding behind `up -d`. start_period covers
+    # `prisma migrate deploy`, which runs before the server listens.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
 
   web:
     image: ghcr.io/logan2234/loomkeep-web:${IMAGE_TAG:-latest}
@@ -128,6 +144,19 @@ services:
       PUBLIC_QUACKBACK_URL: ${PUBLIC_QUACKBACK_URL:-}
     ports:
       - "8080:3000"
+    # The prerendered landing page: answers once the SvelteKit server is up.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 volumes:
   db-data-pg18:

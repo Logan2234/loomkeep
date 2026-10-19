@@ -743,6 +743,31 @@ describe("AuthService.login", () => {
       expect.objectContaining({ type: "NEW_DEVICE_LOGIN" }),
     );
   });
+
+  it("still signs in when a concurrent login from the same browser recorded the device first", async () => {
+    const { service, prisma, mail } = makeService();
+    const passwordHash = await bcrypt.hash("correct-password", 4);
+    const user = makeUser({ passwordHash });
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
+    (prisma.userDevice.findUnique as Mock).mockResolvedValue(null);
+    (prisma.userDevice.create as Mock).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+
+    const result = asAuthResult(
+      await service.login(
+        { identifier: "alice@example.com", password: "correct-password" },
+        "Mozilla/5.0 (Windows NT 10.0) Chrome/140.0 Safari/537.36",
+      ),
+    );
+
+    expect(result.tokens.accessToken).toBeDefined();
+    // The request that recorded the device owns the new-device alert.
+    expect(mail.sendNewDeviceLogin).not.toHaveBeenCalled();
+  });
 });
 
 describe("AuthService admin bootstrap (ADMIN_EMAIL)", () => {

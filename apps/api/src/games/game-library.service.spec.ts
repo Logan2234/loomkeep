@@ -89,11 +89,16 @@ describe("GameLibraryService.deleteEntry", () => {
     await service.deleteEntry("user-1", "entry-1");
 
     expect(reviewDeleteMany).toHaveBeenCalledWith({
-      where: { userId: "user-1", targetId: { in: ["game-1"] } },
+      where: {
+        userId: "user-1",
+        targetType: { in: ["GAME"] },
+        targetId: { in: ["game-1"] },
+      },
     });
     expect(commentUpdateMany).toHaveBeenCalledWith({
       where: {
         authorId: "user-1",
+        targetType: { in: ["GAME"] },
         targetId: { in: ["game-1"] },
         deletedAt: null,
       },

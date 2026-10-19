@@ -566,13 +566,14 @@ export class ReportService {
         },
       });
       if (!comment) return null;
-      const excerpt = comment.deletedAt
-        ? "(commentaire supprimé)"
-        : (comment.text ?? "").slice(0, EXCERPT_LENGTH);
       return {
         // No "@username — " prefix: the client renders the owner's username as
         // its own clickable link (targetOwnerUsername), not embedded in text.
-        label: excerpt,
+        label: comment.deletedAt
+          ? ""
+          : (comment.text ?? "").slice(0, EXCERPT_LENGTH),
+        deleted: comment.deletedAt !== null,
+        authorDeleted: false,
         href: await resolveWorkHref(
           this.prisma,
           comment.targetType,
@@ -594,8 +595,10 @@ export class ReportService {
       if (!message) return null;
       return {
         label: message.deletedAt
-          ? "(message supprimé)"
+          ? ""
           : (message.text ?? "").slice(0, EXCERPT_LENGTH),
+        deleted: message.deletedAt !== null,
+        authorDeleted: false,
         // A private conversation has no page a moderator could open.
         href: null,
         targetOwnerUsername: message.author?.username ?? null,
@@ -611,6 +614,8 @@ export class ReportService {
       if (!user) return null;
       return {
         label: user.displayName,
+        deleted: false,
+        authorDeleted: false,
         href: `/app/u/${user.username}`,
         targetOwnerUsername: user.username,
       };
@@ -624,6 +629,8 @@ export class ReportService {
       if (!list) return null;
       return {
         label: list.title,
+        deleted: false,
+        authorDeleted: false,
         href: `/app/lists/${targetId}`,
         targetOwnerUsername: list.user.username,
       };
@@ -636,7 +643,9 @@ export class ReportService {
       ? `${review.rating}/10 — ${excerpt}`
       : `${review.rating}/10`;
     return {
-      label: review.user ? label : `${label} (auteur supprimé)`,
+      label,
+      deleted: false,
+      authorDeleted: review.user === null,
       href: await resolveWorkHref(
         this.prisma,
         review.targetType,

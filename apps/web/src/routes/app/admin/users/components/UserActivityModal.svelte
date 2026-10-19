@@ -19,6 +19,7 @@
     REPORT_STATUS_LABELS,
   } from "#lib/constants/report-labels.js";
   import { formatDate } from "#lib/format.js";
+  import { reportTargetLabel } from "#lib/report-target-label.js";
   import { m } from "#lib/paraglide/messages.js";
 
   let {
@@ -181,9 +182,11 @@
             {#if r.target}
               {#if r.target.href}
                 <a href={r.target.href} class="mt-1.5 block hover:underline"
-                  >{r.target.label}</a>
+                  >{reportTargetLabel(r.targetType, r.target)}</a>
               {:else}
-                <p class="mt-1.5">{r.target.label}</p>
+                <p class="mt-1.5">
+                  {reportTargetLabel(r.targetType, r.target)}
+                </p>
               {/if}
             {/if}
             {#if r.category}

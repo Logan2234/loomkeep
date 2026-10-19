@@ -12,6 +12,8 @@ export class ReportContextMessageResponseDto implements ReportContextMessageDto 
 
 export class ReportTargetSummaryResponseDto implements ReportTargetSummaryDto {
   label!: string;
+  deleted!: boolean;
+  authorDeleted!: boolean;
   href!: string | null;
   targetOwnerUsername!: string | null;
   context?: ReportContextMessageResponseDto[];

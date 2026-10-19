@@ -278,6 +278,7 @@
     { name: "Steam", what: m.landing_import_done_steam_what },
     { name: "Goodreads", what: m.landing_import_done_goodreads_what },
     { name: "StoryGraph", what: m.landing_import_done_storygraph_what },
+    { name: "Babelio", what: m.landing_import_done_babelio_what },
   ];
 
   const IMPORTS_TODO: { name: string; what: () => string }[] = [
@@ -286,7 +287,6 @@
     { name: "IMDb", what: m.landing_import_todo_imdb_what },
     { name: "Last.fm", what: m.landing_import_todo_lastfm_what },
     { name: "RateYourMusic", what: m.landing_import_todo_rym_what },
-    { name: "Babelio", what: m.landing_import_todo_babelio_what },
     { name: "BoardGameGeek", what: m.landing_import_todo_bgg_what },
   ];
 

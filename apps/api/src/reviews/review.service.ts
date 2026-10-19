@@ -26,6 +26,7 @@ import {
   CANONICAL_EXTERNAL_ID_SELECT,
   canonicalExternalId,
 } from "../common/external-id.util";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { resolveWorkLink } from "../common/work-href.util";
 import { assertGameReleased } from "../games/game-release.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
@@ -987,15 +988,26 @@ export class ReviewService {
         where: { id: userId },
         select: { defaultReviewVisibility: true },
       });
-      const row = await this.prisma.review.create({
-        data: {
-          userId,
-          targetType,
-          targetId,
-          rating,
-          visibility: user.defaultReviewVisibility,
-        },
-      });
+      let row;
+
+      try {
+        row = await this.prisma.review.create({
+          data: {
+            userId,
+            targetType,
+            targetId,
+            rating,
+            visibility: user.defaultReviewVisibility,
+          },
+        });
+      } catch (err) {
+        // A concurrent rating of the same work (two taps, two tabs) created
+        // the review between the lookup above and here: go again, which now
+        // takes the update path against that row.
+        if (!isUniqueViolation(err)) throw err;
+        return this.setRating(userId, targetType, targetId, rating);
+      }
+
       await this.prisma.reviewRevision.create({
         data: { reviewId: row.id, rating },
       });

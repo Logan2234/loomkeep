@@ -365,16 +365,26 @@ describe("polymorphicTargetCleanup", () => {
       comment: { updateMany: vi.fn(() => "comments") },
     } as unknown as PrismaService;
 
-    const ops = polymorphicTargetCleanup(prisma, "user-1", ["work-1", "ep-1"]);
+    const ops = polymorphicTargetCleanup(
+      prisma,
+      "user-1",
+      ["MEDIA", "EPISODE"],
+      ["work-1", "ep-1"],
+    );
 
     expect(ops).toEqual(["reviews", "comments"]);
     expect(prisma.review.deleteMany).toHaveBeenCalledWith({
-      where: { userId: "user-1", targetId: { in: ["work-1", "ep-1"] } },
+      where: {
+        userId: "user-1",
+        targetType: { in: ["MEDIA", "EPISODE"] },
+        targetId: { in: ["work-1", "ep-1"] },
+      },
     });
     // A comment is tombstoned, never deleted: replies hang off it.
     expect(prisma.comment.updateMany).toHaveBeenCalledWith({
       where: {
         authorId: "user-1",
+        targetType: { in: ["MEDIA", "EPISODE"] },
         targetId: { in: ["work-1", "ep-1"] },
         deletedAt: null,
       },

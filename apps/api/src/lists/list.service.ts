@@ -26,6 +26,7 @@ import {
   CANONICAL_EXTERNAL_ID_SELECT,
   canonicalExternalId,
 } from "../common/external-id.util";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
@@ -552,15 +553,28 @@ export class ListService {
       select: { position: true },
     });
 
-    const row = await this.prisma.listItem.create({
-      data: {
-        listId,
-        targetType: dto.targetType,
-        targetId: dto.targetId,
-        position: last ? last.position + 1 : 0,
-        addedById: userId,
-      },
-    });
+    let row;
+
+    try {
+      row = await this.prisma.listItem.create({
+        data: {
+          listId,
+          targetType: dto.targetType,
+          targetId: dto.targetId,
+          position: last ? last.position + 1 : 0,
+          addedById: userId,
+        },
+      });
+    } catch (err) {
+      // Another editor added the same work since the duplicate check above.
+      if (!isUniqueViolation(err)) throw err;
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.ListItemAlreadyExists,
+        undefined,
+        "Already in this list",
+      );
+    }
 
     await this.activity.emit({
       userId,
