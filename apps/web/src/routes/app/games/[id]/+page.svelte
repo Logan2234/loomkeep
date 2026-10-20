@@ -70,6 +70,7 @@
   import { slide } from "svelte/transition";
   import GameSagaSection from "./components/GameSagaSection.svelte";
   import GameTimeToBeat from "./components/GameTimeToBeat.svelte";
+  import GamePlatformField from "./components/GamePlatformField.svelte";
 
   // IGDB is the only game source today; the web route carries just the id.
   const SOURCE = "igdb";
@@ -483,6 +484,13 @@
                     ownershipStatus: status as typeof entry.ownershipStatus,
                     ownershipSource: source,
                   })} />
+
+              {#if detail.platforms.length > 0}
+                <GamePlatformField
+                  platform={entry.platform}
+                  platforms={detail.platforms}
+                  onChange={(platform) => patchMut.mutate({ platform })} />
+              {/if}
             {/if}
 
             <hr class="border-border" />

@@ -100,6 +100,7 @@ function renderBrowser(
   setFavorite: (entry: Entry, next: boolean) => Promise<unknown> = vi.fn(
     async () => undefined,
   ),
+  overrides: Record<string, unknown> = {},
 ) {
   return renderWithQuery(LibraryBrowser, {
     loadPile,
@@ -124,6 +125,7 @@ function renderBrowser(
     card,
     itemView,
     columns,
+    ...overrides,
   } as never);
 }
 
@@ -470,6 +472,37 @@ describe("LibraryBrowser", () => {
       sort: "title",
       order: "asc",
     });
+  });
+
+  it("filters games by the platforms picked, kept in the address", async () => {
+    visit("/app/games?platform=Nintendo+Switch");
+    const load = vi.fn(async () => pageOf([DUNE]));
+    renderBrowser(load, undefined, undefined, undefined, {
+      domain: "GAMES",
+      platformOptions: [
+        { label: "Nintendo Switch", value: "Nintendo Switch" },
+        { label: "PlayStation 5", value: "PlayStation 5" },
+      ],
+    });
+
+    await screen.findByText("Dune");
+    expect(lastLoad(load).extra).toEqual(["Nintendo Switch"]);
+
+    await userEvent.click(
+      screen.getByRole("combobox", {
+        name: new RegExp(m.game_platform_filter()),
+      }),
+    );
+    await userEvent.click(
+      screen.getByRole("option", { name: "PlayStation 5" }),
+    );
+
+    await waitFor(() =>
+      expect(lastLoad(load).extra).toEqual([
+        "Nintendo Switch",
+        "PlayStation 5",
+      ]),
+    );
   });
 
   it("refetches and keeps the address in sync when a filter changes", async () => {

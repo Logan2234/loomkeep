@@ -18,6 +18,8 @@ export function filtersToSearchParams(
     params.set("status", filters.statuses.join(","));
   if (filters.favorite) params.set("fav", "1");
   if (filters.types?.length) params.set("type", filters.types.join(","));
+  if (filters.platforms?.length)
+    params.set("platform", filters.platforms.join(","));
 
   if (filters.sort && filters.sort !== defaultSort) {
     params.set("sort", filters.sort);
@@ -49,6 +51,7 @@ export function sameFilters(
         ...f,
         statuses: [...(f.statuses ?? [])].sort(),
         types: [...(f.types ?? [])].sort(),
+        platforms: [...(f.platforms ?? [])].sort(),
       },
       defaultSort,
     ).toString();

@@ -96,6 +96,7 @@
   "landing_import_done_trakt_what": "History, watchlist and ratings",
   "landing_import_done_simkl_what": "Shows, movies and anime",
   "landing_import_done_myanimelist_what": "Anime, progress, notes and ownership",
+  "landing_import_done_anilist_what": "Anime, progress, ratings and notes",
   "landing_import_done_steam_what": "Library and playtime",
   "landing_import_done_goodreads_what": "Reads, dates and ratings (CSV)",
   "landing_import_done_storygraph_what": "Reads, dates and ratings (CSV)",

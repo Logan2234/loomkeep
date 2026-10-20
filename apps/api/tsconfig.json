@@ -10,7 +10,7 @@
     "outDir": "./dist",
     "incremental": true,
     "noFallthroughCasesInSwitch": true,
-    "rootDir": "./",
+    "rootDir": ".",
     "types": ["node", "vitest/globals"]
   },
   "watchOptions": {

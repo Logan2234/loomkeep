@@ -363,6 +363,73 @@ describe("ListService.addItem", () => {
   });
 });
 
+describe("ListService.setItemNote", () => {
+  function make(updated: number) {
+    const updateMany = vi.fn().mockResolvedValue({ count: updated });
+    const prisma = {
+      list: {
+        findUnique: vi.fn().mockResolvedValue(listRow({ userId: "u1" })),
+      },
+      listItem: {
+        updateMany,
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: "i1",
+          targetType: "MEDIA",
+          targetId: "m1",
+          position: 0,
+          addedAt: new Date(),
+          note: "Pour Léa",
+        }),
+      },
+      mediaItem: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const events = stubEvents();
+    const svc = new ListService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      fakeConfig(),
+      fakeNotifications(),
+      stubXp(),
+      stubAchievements(),
+      events,
+      stubFollow(),
+    );
+    return { svc, updateMany, events };
+  }
+
+  it("stores the trimmed note, scoped to the list, and pushes a live update", async () => {
+    const { svc, updateMany, events } = make(1);
+
+    const item = await svc.setItemNote("u1", "l1", "i1", "  Pour Léa  ");
+
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: "i1", listId: "l1" },
+      data: { note: "Pour Léa" },
+    });
+    expect(item.note).toBe("Pour Léa");
+    expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");
+  });
+
+  it("clears the note when given a blank one", async () => {
+    const { svc, updateMany } = make(1);
+
+    await svc.setItemNote("u1", "l1", "i1", "   ");
+
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { note: null } }),
+    );
+  });
+
+  it("404s on an item of another list", async () => {
+    const { svc } = make(0);
+
+    await expect(
+      svc.setItemNote("u1", "l1", "elsewhere", "x"),
+    ).rejects.toMatchObject({ status: 404 });
+  });
+});
+
 describe("ListService.addItem notifications", () => {
   function make(opts: { muted?: string[]; socialEnabled?: boolean } = {}) {
     const prisma = {

@@ -21,6 +21,8 @@ export interface SavedViewFiltersDto {
   favorite?: boolean;
   /** MEDIA only. */
   types?: MediaType[];
+  /** GAMES only: the platforms played on. */
+  platforms?: string[];
   sort?: string;
   order?: SortOrder;
 }

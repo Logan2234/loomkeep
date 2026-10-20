@@ -644,6 +644,7 @@ export class StatsService {
         select: {
           status: true,
           playtimeMinutes: true,
+          platform: true,
           sessions: {
             orderBy: { occurredAt: "desc" },
             take: 1,
@@ -682,7 +683,9 @@ export class StatsService {
             href: this.itemHref("games", e.gameItem),
             playtimeMinutes: e.playtimeMinutes,
             genres: e.gameItem.genres,
-            platforms: e.gameItem.platforms,
+            // Where it's played, once the player says; until then, every
+            // platform it's out on.
+            platforms: e.platform ? [e.platform] : e.gameItem.platforms,
           })),
         })
       : null;

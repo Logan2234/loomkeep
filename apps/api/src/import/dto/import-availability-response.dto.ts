@@ -5,6 +5,7 @@ export class ImportAvailabilityResponseDto implements ImportAvailabilityDto {
   trakt?: boolean;
   letterboxd?: boolean;
   myanimelist?: boolean;
+  anilist?: boolean;
   simkl?: boolean;
   kitsu?: boolean;
   steam?: boolean;

@@ -56,6 +56,18 @@ export const removeListItem = (listId: string, itemId: string): Promise<void> =>
     params: { id: listId, itemId },
   });
 
+/** Sets or clears (null or blank) why an item is on its list. */
+export const setListItemNote = (
+  listId: string,
+  itemId: string,
+  note: string | null,
+) =>
+  typedRequest("/lists/{id}/items/{itemId}", {
+    method: "PATCH",
+    params: { id: listId, itemId },
+    body: { note },
+  });
+
 export const reorderListItems = (
   listId: string,
   orderedItemIds: string[],

@@ -1,5 +1,6 @@
 import {
   ENTRY_NOTES_MAX_LENGTH,
+  GAME_PLATFORM_MAX_LENGTH,
   GameOwnershipStatus,
   GameStatus,
   OWNERSHIP_SOURCE_MAX_LENGTH,
@@ -59,6 +60,11 @@ export class UpdateGameEntryDto implements UpdateGameEntryContract {
   @IsString()
   @MaxLength(OWNERSHIP_SOURCE_MAX_LENGTH)
   ownershipSource?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(GAME_PLATFORM_MAX_LENGTH)
+  platform?: string | null;
 
   @IsOptional()
   @IsBoolean()

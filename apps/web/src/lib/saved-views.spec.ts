@@ -28,11 +28,12 @@ describe("filtersToSearchParams", () => {
         statuses: ["PLAYING", "BACKLOG"],
         favorite: true,
         types: ["MOVIE"],
+        platforms: ["Nintendo Switch"],
         sort: "title",
         order: "asc",
       }).toString(),
     ).toBe(
-      "q=zelda&status=PLAYING%2CBACKLOG&fav=1&type=MOVIE&sort=title&order=asc",
+      "q=zelda&status=PLAYING%2CBACKLOG&fav=1&type=MOVIE&platform=Nintendo+Switch&sort=title&order=asc",
     );
   });
 });

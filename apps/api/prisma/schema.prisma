@@ -1241,6 +1241,9 @@ model ListItem {
   // Who added it, shown on collaborative lists. Null once that account is
   // deleted; items that predate the column were attributed to the owner.
   addedById  String?
+  // Why it's here: the reason a ranked pick sits where it does, who a
+  // gift is for. Up to LIST_LIMITS.itemNote characters.
+  note       String?
 
   list    List  @relation(fields: [listId], references: [id], onDelete: Cascade)
   addedBy User? @relation(fields: [addedById], references: [id], onDelete: SetNull)
@@ -2240,6 +2243,8 @@ model GameEntry {
   ownershipStatus        GameOwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise.
   ownershipSource        String?
+  // The platform it's played on, one of GameItem.platforms (IGDB's names).
+  platform               String?
   // Set when the user asked to be told of the release; a release dated
   // before it never alerts.
   releaseReminderAt      DateTime?

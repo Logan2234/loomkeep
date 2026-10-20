@@ -20,6 +20,12 @@ export class ApiV1ListItemResponseDto implements ApiV1ListItemDto {
    */
   addedAt!: string;
 
+  /**
+   * Why it's on the list, as its editors wrote it; null when none.
+   * @example "The one that made me love the genre."
+   */
+  note!: string | null;
+
   /** The work, season or episode. */
   target!: ApiV1TargetResponseDto;
 }

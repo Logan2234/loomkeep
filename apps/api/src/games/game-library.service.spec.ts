@@ -338,3 +338,106 @@ describe("GameLibraryService.getPile", () => {
     ]);
   });
 });
+
+describe("GameLibraryService — the platform played on", () => {
+  function makeService() {
+    const update = vi.fn().mockResolvedValue(makeRow());
+    const findMany = vi.fn().mockResolvedValue([]);
+    const prisma = {
+      gameEntry: {
+        findUnique: vi.fn().mockResolvedValue(makeRow()),
+        findMany,
+        count: vi.fn().mockResolvedValue(0),
+        update,
+      },
+      gameItem: {
+        // Released: no release gate in the way.
+        findUnique: vi.fn().mockResolvedValue({ releaseDate: null }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          platforms: ["Nintendo Switch", "PC (Microsoft Windows)"],
+        }),
+      },
+      gamePlaythrough: { findFirst: vi.fn().mockResolvedValue(null) },
+    } as unknown as PrismaService;
+    const service = new GameLibraryService(
+      prisma,
+      {} as GameItemService,
+      {} as AgeGateService,
+      {
+        getRating: vi.fn().mockResolvedValue(null),
+        getRatings: vi.fn().mockResolvedValue(new Map()),
+      } as unknown as import("../reviews/review.service").ReviewService,
+      {
+        emit: vi.fn(),
+      } as unknown as import("../social/activity.service").ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+    return { service, update, findMany };
+  }
+
+  it("stores one of the game's own platforms", async () => {
+    const { service, update } = makeService();
+
+    await service.updateEntry("user-1", "entry-1", {
+      platform: "Nintendo Switch",
+    });
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ platform: "Nintendo Switch" }),
+      }),
+    );
+  });
+
+  it("refuses a platform the game isn't out on", async () => {
+    const { service, update } = makeService();
+
+    await expect(
+      service.updateEntry("user-1", "entry-1", { platform: "Xbox Series X|S" }),
+    ).rejects.toMatchObject({ code: "library.game_platform_invalid" });
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("clears it, and leaves it alone when the update doesn't name it", async () => {
+    const { service, update } = makeService();
+
+    await service.updateEntry("user-1", "entry-1", { platform: null });
+    await service.updateEntry("user-1", "entry-1", { favorite: true });
+
+    expect(update.mock.calls[0][0].data.platform).toBeNull();
+    expect(update.mock.calls[1][0].data.platform).toBeUndefined();
+  });
+
+  it("filters the library on the platforms asked for", async () => {
+    const { service, findMany } = makeService();
+
+    await service.listEntries("user-1", {
+      platforms: ["Nintendo Switch"],
+      sort: "added",
+    });
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          platform: { in: ["Nintendo Switch"] },
+        }),
+      }),
+    );
+  });
+
+  it("lists the platforms played on, alphabetically", async () => {
+    const { service, findMany } = makeService();
+    findMany.mockResolvedValueOnce([
+      { platform: "PlayStation 5" },
+      { platform: "Nintendo Switch" },
+    ]);
+
+    await expect(service.listPlatforms("user-1")).resolves.toEqual([
+      "Nintendo Switch",
+      "PlayStation 5",
+    ]);
+  });
+});

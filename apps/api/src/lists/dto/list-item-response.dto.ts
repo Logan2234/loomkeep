@@ -8,6 +8,7 @@ export class ListItemResponseDto implements ListItemDto {
   targetId!: string;
   position!: number;
   addedAt!: string;
+  note!: string | null;
   target!: ReviewTargetSummaryResponseDto | null;
   addedBy?: UserSummaryResponseDto | null;
 }

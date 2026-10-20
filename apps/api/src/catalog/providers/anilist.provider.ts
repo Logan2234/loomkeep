@@ -11,7 +11,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../../common/app.exception";
-import { fetchJson } from "../../common/http.util";
+import { fetchJson, HTTP_TIMEOUT_MS } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
 import {
@@ -115,6 +115,64 @@ const MAL_ID_QUERY = `
     }
   }
 `;
+
+// A user's whole anime list, by chunks: custom lists repeat entries already
+// in a status list, so they're left out.
+const USER_LIST_QUERY = `
+  query ($userName: String, $chunk: Int) {
+    MediaListCollection(
+      userName: $userName
+      type: ANIME
+      chunk: $chunk
+      perChunk: 500
+      forceSingleCompletedList: true
+    ) {
+      hasNextChunk
+      lists {
+        isCustomList
+        entries {
+          status
+          score(format: POINT_10_DECIMAL)
+          progress
+          notes
+          startedAt { year month day }
+          completedAt { year month day }
+          media {
+            id
+            title { romaji english }
+            seasonYear
+            coverImage { large }
+            isAdult
+            format
+          }
+        }
+      }
+    }
+  }
+`;
+
+// 500 entries a chunk: 40 chunks is 20 000 anime, past any real list.
+const MAX_USER_LIST_CHUNKS = 40;
+
+/** One entry of an AniList user's anime list, as {@link AnilistProvider.getUserAnimeList} returns it. */
+export interface AnilistListEntry {
+  /** CURRENT, PLANNING, COMPLETED, DROPPED, PAUSED or REPEATING. */
+  status: string;
+  /** 0–10 whatever scoring system the user picked; 0 means unscored. */
+  score: number | null;
+  /** Episodes watched. */
+  progress: number | null;
+  notes: string | null;
+  startedAt: AnilistFuzzyDate | null;
+  completedAt: AnilistFuzzyDate | null;
+  media: AnilistMedia & { format?: string | null };
+}
+
+export interface AnilistFuzzyDate {
+  year: number | null;
+  month: number | null;
+  day: number | null;
+}
 
 const EXTRAS_QUERY = `
   query ($id: Int) {
@@ -299,6 +357,101 @@ export class AnilistProvider implements CatalogProvider {
       { idMal },
     );
     return data.Media ? toSummary(data.Media) : null;
+  }
+
+  /**
+   * A user's anime list, every status list. Not through {@link query}: a
+   * missing user and a private list both answer 404, told apart only by
+   * the error's own message.
+   */
+  async getUserAnimeList(userName: string): Promise<AnilistListEntry[]> {
+    const entries: AnilistListEntry[] = [];
+
+    for (let chunk = 1; chunk <= MAX_USER_LIST_CHUNKS; chunk++) {
+      const page = await this.userListChunk(userName, chunk);
+
+      for (const list of page.lists ?? []) {
+        if (!list.isCustomList) entries.push(...list.entries);
+      }
+
+      if (!page.hasNextChunk) break;
+    }
+
+    return entries;
+  }
+
+  private async userListChunk(
+    userName: string,
+    chunk: number,
+  ): Promise<{
+    hasNextChunk: boolean;
+    lists: { isCustomList: boolean; entries: AnilistListEntry[] }[] | null;
+  }> {
+    await this.throttle.wait();
+    this.quota.record("anilist");
+
+    let response: Response;
+
+    try {
+      response = await fetch(ANILIST_GRAPHQL_URL, {
+        signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          query: USER_LIST_QUERY,
+          variables: { userName, chunk },
+        }),
+      });
+    } catch {
+      throw new AppException(
+        HttpStatus.BAD_GATEWAY,
+        ErrorCode.ImportSourceUnavailable,
+      );
+    }
+
+    const body = (await response.json().catch(() => null)) as {
+      data?: {
+        MediaListCollection: {
+          hasNextChunk: boolean;
+          lists: { isCustomList: boolean; entries: AnilistListEntry[] }[];
+        } | null;
+      };
+      errors?: { message: string }[];
+    } | null;
+    const messages = (body?.errors ?? []).map((e) => e.message.toLowerCase());
+
+    if (messages.some((message) => message.includes("private"))) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.ImportAnilistListPrivate,
+      );
+    }
+
+    if (
+      response.status === 404 ||
+      messages.some((message) => message.includes("not found"))
+    ) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.ImportAnilistUserNotFound,
+      );
+    }
+
+    const collection = body?.data?.MediaListCollection;
+
+    if (!response.ok || !collection) {
+      throw new AppException(
+        HttpStatus.BAD_GATEWAY,
+        ErrorCode.ImportSourceUnavailable,
+        undefined,
+        `AniList list request failed with status ${response.status}`,
+      );
+    }
+
+    return collection;
   }
 
   // AniList exposes no streaming providers; cast = characters, similar =
