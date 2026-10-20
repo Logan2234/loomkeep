@@ -1,43 +1,52 @@
 <script lang="ts">
+  import {
+    LIST_KIND_LABEL,
+    LIST_VISIBILITY_LABEL,
+  } from "#lib/constants/list-labels.js";
+
   import { page } from "$app/state";
-  import { longpress } from "$lib/actions/longpress";
+  import { longpress } from "#lib/actions/longpress.js";
   import {
     ApiError,
     getList,
     getMyList,
+    setListMuted,
     removeListItem,
     removeListMember,
     reorderListItems,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import FocusOverlay from "$lib/components/FocusOverlay.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import ListFormModal from "$lib/components/ListFormModal.svelte";
-  import ListMembersModal from "$lib/components/ListMembersModal.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { joinRealtimeRoom, onRealtimeEvent } from "$lib/realtime/socket";
-  import type { ListDto, ListItemDto } from "@loomkeep/shared";
+    reportList,
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import DomainOffMark from "#lib/components/DomainOffMark.svelte";
+  import Dropdown from "#lib/components/Dropdown.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import FocusOverlay from "#lib/components/FocusOverlay.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import ListAddWorkButton from "#lib/components/ListAddWorkButton.svelte";
+  import ListFormModal from "#lib/components/ListFormModal.svelte";
+  import ListMembersModal from "#lib/components/ListMembersModal.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import ReportModal from "#lib/components/ReportModal.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { isDomainEnabled, targetDomain } from "#lib/domain-availability.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { joinRealtimeRoom, onRealtimeEvent } from "#lib/realtime/socket.js";
+  import {
+    type ListDto,
+    type ListItemDto,
+    RealtimeCommand,
+  } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import ListItemNoteModal from "./components/ListItemNoteModal.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import { dndzone } from "svelte-dnd-action";
-
-  const KIND_LABEL: Record<string, string> = {
-    RANKED: m.lists_kind_ranked(),
-    COLLECTION: m.lists_kind_collection(),
-  };
-  const VISIBILITY_LABEL: Record<string, string> = {
-    PRIVATE: m.common_private(),
-    FRIENDS: m.common_friends(),
-    PUBLIC: m.common_public(),
-  };
 
   const id = $derived(page.params.id ?? "");
   const detailKey = $derived(keys.lists.detail(id));
@@ -50,7 +59,11 @@
   // the next time you try to save" into "the list just updates under you".
   $effect(() => {
     if (!id) return;
-    const leave = joinRealtimeRoom("join-list", "leave-list", id);
+    const leave = joinRealtimeRoom(
+      RealtimeCommand.JOIN_LIST,
+      RealtimeCommand.LEAVE_LIST,
+      id,
+    );
     const off = onRealtimeEvent("list-updated", () => {
       void queryClient.invalidateQueries({ queryKey: keys.lists.detail(id) });
     });
@@ -103,10 +116,27 @@
   );
 
   const role = $derived(list?.viewerRole ?? "VIEWER");
-  const canEditList = $derived(role === "OWNER" || role === "EDITOR");
+  const canEditList = $derived(role !== "VIEWER");
   const isOwner = $derived(role === "OWNER");
-  let removingId = $state<string | null>(null);
-  let reordering = $state(false);
+  const isModerator = $derived(role === "MODERATOR");
+  // Moderation removes what a list shouldn't hold; it never adds to it.
+  const canAdd = $derived(role === "OWNER" || role === "EDITOR");
+  const inList = $derived(
+    new Set(
+      (list?.items ?? []).flatMap((item) =>
+        item.target?.href ? [item.target.href] : [],
+      ),
+    ),
+  );
+
+  let reporting = $state(false);
+  const reportMut = createApiMutation(() => ({
+    mutate: (report: Parameters<typeof reportList>[1]) =>
+      reportList(list!.id, report),
+    successToast: m.list_reported(),
+    errorToast: true,
+    onSuccess: () => (reporting = false),
+  }));
 
   // Local, reorderable copy of the items — svelte-dnd-action mutates this
   // directly during a drag; resets to the query's own items whenever those
@@ -116,6 +146,21 @@
   const confirmRemoveItem = $derived(
     dragItems.find((i) => i.id === confirmRemoveId) ?? null,
   );
+
+  // Writing why an item is here is adding to the list — not moderation's job.
+  let notingItemId = $state<string | null>(null);
+  const notingItem = $derived(
+    dragItems.find((i) => i.id === notingItemId) ?? null,
+  );
+
+  function handleNoteSaved(saved: ListItemDto) {
+    if (list)
+      patchList({
+        items: list.items.map((item) =>
+          item.id === saved.id ? { ...item, note: saved.note } : item,
+        ),
+      });
+  }
 
   function patchList(patch: Partial<NonNullable<typeof list>>) {
     queryClient.setQueryData(detailKey, (old: typeof list) =>
@@ -136,59 +181,84 @@
     onSuccess: () => (window.location.href = "/app/lists"),
   }));
 
+  const muteMut = createApiMutation(() => ({
+    mutate: (muted: boolean) => setListMuted(list!.id, muted),
+    onSuccess: (_: void, muted: boolean) =>
+      patchList({ notificationsMuted: muted }),
+  }));
+
   function leaveList() {
     if (!list || leaveMut.loading || !auth.user) return;
     leaveMut.mutate();
   }
 
-  async function removeItem(itemId: string) {
-    if (!list || removingId) return;
-    removingId = itemId;
-    try {
-      await removeListItem(list.id, itemId);
-      const items = list.items.filter((i) => i.id !== itemId);
-      patchList({ items });
-    } finally {
-      removingId = null;
-    }
+  const removeMut = createApiMutation(() => ({
+    mutate: (itemId: string) => removeListItem(id, itemId),
+    onSuccess: (_: void, itemId: string) => {
+      if (list)
+        patchList({ items: list.items.filter((item) => item.id !== itemId) });
+    },
+    errorToast: true,
+  }));
+  const removingId = $derived(removeMut.loading ? removeMut.variables : null);
+
+  function removeItem(itemId: string) {
+    if (!list) return;
+    removeMut.mutate(itemId);
   }
 
-  async function confirmRemove() {
+  function confirmRemove() {
     if (!confirmRemoveId) return;
     const itemId = confirmRemoveId;
     confirmRemoveId = null;
     focusedItemId = null;
-    await removeItem(itemId);
+    removeItem(itemId);
   }
 
   function handleDndConsider(e: CustomEvent<{ items: ListItemDto[] }>) {
     dragItems = e.detail.items;
   }
 
-  async function handleDndFinalize(e: CustomEvent<{ items: ListItemDto[] }>) {
+  const reorderMut = createApiMutation(() => ({
+    mutate: ({
+      listId,
+      orderedItemIds,
+      expectedUpdatedAt,
+    }: {
+      listId: string;
+      orderedItemIds: string[];
+      expectedUpdatedAt: string;
+    }) => reorderListItems(listId, orderedItemIds, expectedUpdatedAt),
+    onSuccess: () => {
+      void queryClient.refetchQueries({ queryKey: detailKey });
+    },
+    onError: (err: unknown) => {
+      if (err instanceof ApiError && err.status === 409) conflictNotice = true;
+      void queryClient.refetchQueries({ queryKey: detailKey });
+    },
+    errorToast: true,
+  }));
+  const reordering = $derived(reorderMut.loading);
+
+  function handleDndFinalize(e: CustomEvent<{ items: ListItemDto[] }>) {
     dragItems = e.detail.items;
     if (!list || reordering) return;
     const listId = list.id;
     const expectedUpdatedAt = list.updatedAt;
-    reordering = true;
+    conflictNotice = false;
     patchList({ items: dragItems });
-    try {
-      await reorderListItems(
-        listId,
-        dragItems.map((i) => i.id),
-        expectedUpdatedAt,
-      );
-      await queryClient.refetchQueries({ queryKey: detailKey });
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        conflictNotice = true;
-        await queryClient.refetchQueries({ queryKey: detailKey });
-        return;
-      }
-      throw err;
-    } finally {
-      reordering = false;
-    }
+    reorderMut.mutate({
+      listId,
+      orderedItemIds: dragItems.map((item) => item.id),
+      expectedUpdatedAt,
+    });
+  }
+
+  // A work of a domain the viewer can't open stays listed — it's still part
+  // of the list — but with a warning instead of a link to its page.
+  function itemHref(item: ListItemDto): string | null {
+    if (!isDomainEnabled(targetDomain(item.targetType))) return null;
+    return item.target?.href ?? null;
   }
 
   // Poster tile for the COLLECTION grid. `focused` renders the enlarged copy
@@ -204,20 +274,76 @@
       : m.common_loomkeep()}</title>
 </svelte:head>
 
+<!-- Who added the item: only on a list shared with editors, and only its
+     collaborators ever receive `addedBy`. -->
+{#snippet addedByMark(item: ListItemDto, size: number, cls = "")}
+  {#if list?.collaborative && item.addedBy !== undefined}
+    {@const label = item.addedBy
+      ? m.list_added_by({ name: item.addedBy.displayName })
+      : m.list_added_by_former_member()}
+    <span
+      class="flex shrink-0 rounded-full {cls}"
+      title={label}
+      aria-label={label}
+      role="img">
+      {#if item.addedBy}
+        <Avatar
+          seed={item.addedBy.username}
+          url={item.addedBy.avatarUrl}
+          {size} />
+      {:else}
+        <span
+          class="bg-surface-2 text-dim grid place-items-center rounded-full"
+          style:width="{size}px"
+          style:height="{size}px">
+          <Icon name="user" class="h-3/5 w-3/5" />
+        </span>
+      {/if}
+    </span>
+  {/if}
+{/snippet}
+
 {#snippet gridItem(item: ListItemDto, focused: boolean = false)}
-  <svelte:element
-    this={!focused && item.target?.href ? "a" : "div"}
-    href={!focused ? (item.target?.href ?? undefined) : undefined}>
+  {@const domain = targetDomain(item.targetType)}
+  {@const off = !isDomainEnabled(domain)}
+  {@const href = focused ? null : itemHref(item)}
+  <svelte:element this={href ? "a" : "div"} href={href ?? undefined}>
     <div
-      class="card group-hover:border-accent overflow-hidden transition-colors">
+      class="card overflow-hidden transition-[border-color,opacity] {off
+        ? 'opacity-70'
+        : 'group-hover:border-accent'}">
       <Poster
         src={item.target?.imageUrl ?? null}
-        title={item.target?.title ?? "?"} />
+        title={item.target?.title ?? "?"}
+        alt="" />
     </div>
-    <p class="mt-1.5 truncate text-sm font-semibold">
-      {item.target?.title ?? m.common_work()}
+    {@render addedByMark(item, 24, "ring-bg absolute top-2 left-2 ring-2")}
+    <p class="mt-1.5 flex items-center gap-1 text-sm font-semibold">
+      <span class="min-w-0 truncate">
+        {item.target?.title ?? m.common_work()}
+      </span>
+      {#if off}
+        <DomainOffMark {domain} class="-my-1.5 shrink-0" />
+      {/if}
     </p>
+    {#if item.note}
+      <p class="text-dim mt-0.5 line-clamp-2 text-xs">{item.note}</p>
+    {/if}
   </svelte:element>
+  {#if canAdd}
+    <button
+      class="bg-bg/80 text-dim hover:bg-surface-2 hover:text-fg absolute top-2 right-11 grid h-8 w-8 place-items-center rounded-md backdrop-blur transition-all {focused
+        ? 'opacity-100'
+        : 'opacity-0 group-hover:opacity-100 group-hover:shadow-md focus-visible:opacity-100'}"
+      aria-label={item.note ? m.list_item_note_edit() : m.list_item_note_add()}
+      title={item.note ? m.list_item_note_edit() : m.list_item_note_add()}
+      onclick={() => {
+        focusedItemId = null;
+        notingItemId = item.id;
+      }}>
+      <Icon name="edit" class="h-4 w-4" />
+    </button>
+  {/if}
   {#if canEditList}
     <button
       class="bg-bg/80 text-dim hover:bg-danger absolute top-2 right-2 grid h-8 w-8 place-items-center rounded-md backdrop-blur transition-all hover:text-white {focused
@@ -253,16 +379,31 @@
   </div>
 {:else if list}
   <div class="mx-auto max-w-3xl px-4 py-6 md:py-8">
+    {#if isModerator}
+      <Banner variant="info" class="mb-5">
+        {m.list_moderating()}
+        <a href="/app/admin/reports" class="link-accent">
+          {m.list_moderating_back()}</a>
+      </Banner>
+    {/if}
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="min-w-0">
-        <h1 class="font-display text-3xl font-extrabold tracking-tight">
-          {list.title}
-        </h1>
+        <div class="flex items-start gap-2 text-3xl">
+          <a
+            href="/app/lists"
+            class="text-dim hover:text-fg -ml-1 flex h-lh shrink-0 items-center transition-all hover:-translate-x-0.5 hover:scale-105 active:scale-90"
+            aria-label={m.common_back()}>
+            <Icon name="chevron-left" class="h-6 w-6" />
+          </a>
+          <h1 class="font-display min-w-0 font-extrabold tracking-tight">
+            {list.title}
+          </h1>
+        </div>
         <p class="text-dim mt-1 flex flex-wrap items-center gap-x-2 text-sm">
-          <span class="timecode uppercase">{KIND_LABEL[list.kind]}</span>
+          <span class="timecode uppercase">{LIST_KIND_LABEL[list.kind]}</span>
           {#if appConfig.socialEnabled}
             <span aria-hidden="true">·</span>
-            <span>{VISIBILITY_LABEL[list.visibility]}</span>
+            <span>{LIST_VISIBILITY_LABEL[list.visibility]}</span>
           {/if}
           {#if role !== "OWNER"}
             <span aria-hidden="true">·</span>
@@ -284,11 +425,30 @@
         {/if}
       </div>
       <div class="flex shrink-0 gap-2">
+        {#if canAdd}
+          <ListAddWorkButton listId={list.id} title={list.title} {inList} />
+        {/if}
         {#if isOwner && appConfig.socialEnabled}
           <button
             class="btn btn-ghost"
             onclick={() => (managingMembers = true)}>
             {m.list_members_title()}
+          </button>
+        {/if}
+        {#if (role === "OWNER" || role === "EDITOR") && list.collaborative && appConfig.socialEnabled}
+          {@const label = list.notificationsMuted
+            ? m.list_unmute()
+            : m.list_mute()}
+          <button
+            class="btn btn-ghost px-3"
+            aria-label={label}
+            aria-pressed={list.notificationsMuted}
+            title={label}
+            disabled={muteMut.loading}
+            onclick={() => muteMut.mutate(!list.notificationsMuted)}>
+            <Icon
+              name={list.notificationsMuted ? "bell-off" : "bell"}
+              class="h-4 w-4" />
           </button>
         {/if}
         {#if canEditList}
@@ -304,10 +464,46 @@
             {m.list_leave()}
           </button>
         {/if}
+        {#if role === "VIEWER" && appConfig.socialEnabled}
+          <Dropdown placement="bottom-end" role="menu" class="min-w-44">
+            {#snippet trigger({ open, toggle, onkeydown })}
+              <button
+                type="button"
+                class="btn btn-ghost px-3"
+                aria-label={m.common_more_actions()}
+                title={m.common_more_actions()}
+                aria-haspopup="menu"
+                aria-expanded={open}
+                {onkeydown}
+                onclick={toggle}>
+                <Icon name="dots-horizontal" class="h-4 w-4" />
+              </button>
+            {/snippet}
+            {#snippet children({ close })}
+              <button
+                role="menuitem"
+                class="menu-item menu-item-danger"
+                onclick={() => {
+                  close();
+                  reporting = true;
+                }}>
+                <Icon name="flag" class="h-4 w-4" />
+                {m.common_report()}
+              </button>
+            {/snippet}
+          </Dropdown>
+        {/if}
       </div>
     </div>
 
     <hr class="border-border mt-5" />
+
+    {#if canAdd && dragItems.length > 0 && isFeatureNew("list-item-notes")}
+      <p class="text-dim mt-6 flex items-center gap-2 text-xs">
+        <NewBadge />
+        {m.list_item_note_hint()}
+      </p>
+    {/if}
 
     {#if dragItems.length === 0}
       <EmptyState class="mt-6">
@@ -331,6 +527,9 @@
         onconsider={handleDndConsider}
         onfinalize={handleDndFinalize}>
         {#each dragItems as item, i (item.id)}
+          {@const domain = targetDomain(item.targetType)}
+          {@const off = !isDomainEnabled(domain)}
+          {@const href = itemHref(item)}
           <li class="card flex items-center gap-3 p-3">
             {#if canEditList}
               <Icon name="grip" class="text-dim h-4 w-4 shrink-0 cursor-grab" />
@@ -339,18 +538,44 @@
               {String(i + 1).padStart(2, "0")}
             </span>
             <svelte:element
-              this={item.target?.href ? "a" : "div"}
-              href={item.target?.href ?? undefined}
+              this={href ? "a" : "div"}
+              href={href ?? undefined}
               class="flex min-w-0 flex-1 items-center gap-3">
-              <div class="h-16 w-11 shrink-0 overflow-hidden rounded">
+              <div
+                class="h-16 w-11 shrink-0 overflow-hidden rounded {off
+                  ? 'opacity-70'
+                  : ''}">
                 <Poster
                   src={item.target?.imageUrl ?? null}
-                  title={item.target?.title ?? "?"} />
+                  title={item.target?.title ?? "?"}
+                  alt="" />
               </div>
-              <p class="min-w-0 truncate font-semibold">
-                {item.target?.title ?? m.common_work()}
-              </p>
+              <div class="min-w-0">
+                <p class="truncate font-semibold">
+                  {item.target?.title ?? m.common_work()}
+                </p>
+                {#if item.note}
+                  <p class="text-dim line-clamp-2 text-xs">{item.note}</p>
+                {/if}
+              </div>
+              {#if off}
+                <DomainOffMark {domain} class="shrink-0" />
+              {/if}
             </svelte:element>
+            {@render addedByMark(item, 22)}
+            {#if canAdd}
+              <button
+                class="text-dim hover:text-fg hover:bg-surface-2 grid h-8 w-8 shrink-0 place-items-center rounded-md transition-colors"
+                aria-label={item.note
+                  ? m.list_item_note_edit()
+                  : m.list_item_note_add()}
+                title={item.note
+                  ? m.list_item_note_edit()
+                  : m.list_item_note_add()}
+                onclick={() => (notingItemId = item.id)}>
+                <Icon name="edit" class="h-4 w-4" />
+              </button>
+            {/if}
             {#if canEditList}
               <button
                 class="text-dim hover:text-danger hover:bg-danger/10 mr-1 grid h-8 w-8 shrink-0 place-items-center rounded-md transition-colors"
@@ -388,15 +613,29 @@
   <ListFormModal
     {list}
     defaultVisibility={auth.user?.defaultListVisibility ?? "PRIVATE"}
-    canManage={isOwner}
+    canManage={isOwner || isModerator}
+    canDelete={isOwner}
     onClose={() => (editing = false)}
     onSaved={handleSaved}
     onDeleted={handleDeleted} />
 {/if}
 
+{#if reporting && list}
+  <ReportModal
+    title={m.list_report_title()}
+    targetType="LIST"
+    subject={{
+      title: list.title,
+      detail: m.list_owned_by_editor({ name: list.author.displayName }),
+    }}
+    onClose={() => (reporting = false)}
+    onSubmit={(report) => reportMut.mutate(report)} />
+{/if}
+
 {#if managingMembers && list}
   <ListMembersModal
     listId={list.id}
+    owner={list.author}
     onClose={() => (managingMembers = false)} />
 {/if}
 
@@ -411,6 +650,14 @@
       {/snippet}
     </FocusOverlay>
   {/if}
+{/if}
+
+{#if notingItem && list}
+  <ListItemNoteModal
+    listId={list.id}
+    item={notingItem}
+    onSaved={handleNoteSaved}
+    onclose={() => (notingItemId = null)} />
 {/if}
 
 {#if confirmRemoveItem}

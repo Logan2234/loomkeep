@@ -1,5 +1,18 @@
-import type { GameOwnershipStatus, GameSource, GameStatus } from "../enums";
+import type {
+  GameOwnershipStatus,
+  GameSource,
+  ReleaseDatePrecision,
+  SessionCycleAction,
+  SessionSource,
+  TrackingCycleStatus,
+} from "../enums";
+import { GameStatus } from "../enums";
 import type { RatingDto } from "./catalog";
+import type { SessionWeekDayDto } from "./session";
+import { SESSION_FILTER_PAUSED } from "./session";
+
+/** IGDB platform names run to "Super Nintendo Entertainment System" and beyond. */
+export const GAME_PLATFORM_MAX_LENGTH = 100;
 
 /** A game as returned by a live catalogue search (not persisted). */
 export interface GameSummaryDto {
@@ -18,6 +31,22 @@ export interface GameSearchResponseDto {
 }
 
 /** Full game details, fetched live from the source. */
+/**
+ * IGDB's average time to beat, in minutes, from its players' submissions.
+ * Only ever present once enough players submitted a time; any single one of
+ * the three can still be null.
+ */
+export interface GameTimeToBeatDto {
+  /** To the credits, without spending notable time on the extras. */
+  hastilyMin: number | null;
+  /** A normal playthrough, main story plus some side content. */
+  normallyMin: number | null;
+  /** 100 % completion. */
+  completelyMin: number | null;
+  /** How many player submissions the averages come from. */
+  submissions: number;
+}
+
 export interface GameDetailsDto extends GameSummaryDto {
   overview: string | null;
   /** Wide artwork/screenshot for the detail header, when available. */
@@ -26,8 +55,15 @@ export interface GameDetailsDto extends GameSummaryDto {
   screenshots: string[];
   genres: string[];
   platforms: string[];
-  /** ISO first-release date; null when the source has none. */
+  /**
+   * ISO first-release date, the first day of its period when `releaseDatePrecision`
+   * isn't DAY; null when the source has none or the game is announced undated.
+   */
   releaseDate: string | null;
+  /** Null when the source dates no release at all. */
+  releaseDatePrecision: ReleaseDatePrecision | null;
+  /** Not out yet: tracking waits for the release. */
+  upcoming: boolean;
   /** Official website of the game, when the source exposes one. */
   website: string | null;
   /** IGDB's own "similar games" recommendations, capped to a handful. */
@@ -52,6 +88,8 @@ export interface GameDetailsDto extends GameSummaryDto {
   ageRatingImageUrls: string[];
   /** Multiplayer modes beyond the generic `gameModes` (co-op, split screen…). */
   multiplayerModes: string[];
+  /** Null when the source has too few player submissions. */
+  timeToBeat: GameTimeToBeatDto | null;
 }
 
 /** A persisted game referenced by at least one user (on-demand cache). */
@@ -62,12 +100,20 @@ export interface GameItemDto {
   canonicalSource: GameSource;
   /** External ID in `canonicalSource`, used to address the game detail page. */
   sourceId: string;
+  /** Not out yet; absent once released. */
+  upcoming?: boolean;
 }
 
-export interface GameReplayDto {
+export interface GamePlaythroughDto {
   id: string;
-  /** ISO date the replay was completed. */
-  finishedAt: string;
+  number: number;
+  status: TrackingCycleStatus;
+  startedAt: string | null;
+  finishedAt: string | null;
+  sessionCount: number;
+  trackedMinutes: number;
+  /** True when migrated history only supplied a completion date. */
+  legacyIncomplete: boolean;
 }
 
 export interface GameEntryDto {
@@ -80,16 +126,27 @@ export interface GameEntryDto {
   favorite: boolean;
   /** Total time played, in minutes (imported from Steam or set manually). */
   playtimeMinutes: number;
+  /** Sum of dated sessions recorded in Loomkeep. */
+  trackedPlaytimeMinutes: number;
+  /** Latest total reported by Steam, kept separate from Loomkeep sessions. */
+  steamPlaytimeMinutes: number | null;
+  steamSyncedAt: string | null;
+  /** Latest dated Loomkeep session, used for the derived paused signal. */
+  lastSessionAt: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   /** When the entry was added to the library (ISO). */
   createdAt: string;
-  /** Completed replays beyond the first, most recent first. */
-  replays: GameReplayDto[];
+  /** Playthrough history, current one first. */
+  playthroughs: GamePlaythroughDto[];
   /** How the user holds this game, if set (NONE = unset). */
   ownershipStatus: GameOwnershipStatus;
+  /** The platform it's played on, one of `game.platforms`; null when unset. */
+  platform: string | null;
   /** Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise. */
   ownershipSource: string | null;
+  /** The user asked to be told when the game comes out. */
+  releaseAlertsEnabled: boolean;
 }
 
 /** Body for creating/updating a library entry from a catalogue game. */
@@ -114,6 +171,52 @@ export interface UpdateGameEntryDto {
   finishedAt?: string | null;
   ownershipStatus?: GameOwnershipStatus;
   ownershipSource?: string | null;
+  /** One of the game's platforms; null clears it. */
+  platform?: string | null;
+  releaseAlertsEnabled?: boolean;
+}
+
+export interface GameSessionDto {
+  id: string;
+  playthroughId: string | null;
+  playthroughNumber: number | null;
+  durationMinutes: number;
+  notes: string | null;
+  occurredAt: string;
+  source: SessionSource;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGameSessionDto {
+  durationMinutes: number;
+  occurredAt: string;
+  notes?: string | null;
+  cycleAction?: SessionCycleAction;
+}
+
+export interface UpdateGameSessionDto {
+  durationMinutes?: number;
+  occurredAt?: string;
+  notes?: string | null;
+}
+
+export interface GameSessionSummaryDto {
+  items: GameSessionDto[];
+  hasMore: boolean;
+  totalSessions: number;
+  totalTrackedMinutes: number;
+  weekMinutes: number;
+  weekSessions: number;
+  weekDays: SessionWeekDayDto[];
+  monthMinutes: number;
+  activePlaythrough: GamePlaythroughDto | null;
+}
+
+export interface GameSessionMutationDto {
+  session: GameSessionDto;
+  summary: GameSessionSummaryDto;
+  xpAwarded: boolean;
 }
 
 /**
@@ -126,3 +229,16 @@ export interface GameDetailDto extends GameDetailsDto {
   commentTargetId: string | null;
   entry: GameEntryDto | null;
 }
+
+export const GAME_SORT_KEYS = [
+  "added",
+  "title",
+  "rating",
+  "playtime",
+  "finished",
+  "started",
+  "status",
+] as const;
+export type GameSortKey = (typeof GAME_SORT_KEYS)[number];
+
+export type GameFilterStatus = GameStatus | typeof SESSION_FILTER_PAUSED;

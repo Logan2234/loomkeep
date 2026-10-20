@@ -1,15 +1,8 @@
-import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { uniqueConstraintError } from "../test-utils/prisma-errors";
 import { NewsletterService } from "./newsletter.service";
-
-function uniqueConstraintError(): Prisma.PrismaClientKnownRequestError {
-  return new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
-    code: "P2002",
-    clientVersion: "test",
-  });
-}
 
 describe("NewsletterService.handleChangelogPublished", () => {
   function makeService(
@@ -135,7 +128,10 @@ describe("NewsletterService.handleChangelogPublished", () => {
 
       expect(fetch).toHaveBeenCalledWith(
         "https://feedback.loomkeep.app/api/v1/changelog/changelog_1",
-        { headers: { Authorization: "Bearer quackback-api-key" } },
+        {
+          headers: { Authorization: "Bearer quackback-api-key" },
+          signal: expect.any(AbortSignal),
+        },
       );
       expect(mail.sendNewsletter).toHaveBeenCalledWith(
         { email: "a@example.com", locale: "en" },
@@ -146,6 +142,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
       );
     } finally {
       vi.unstubAllGlobals();
+
       if (previousApiKey === undefined) {
         delete process.env.QUACKBACK_API_KEY;
       } else {

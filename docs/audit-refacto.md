@@ -1,0 +1,804 @@
+# Audit de refactoring — monorepo Loomkeep
+
+> Audit en lecture seule réalisé le 2026-10-04 sur `main` @ `bbb3c9a1` (v1.10.0).
+> Périmètre : `apps/api/src`, `apps/web/src`, `packages/shared/src`, configs racine.
+> Exclus : `apps/web/src/lib/paraglide` et `apps/web/src/lib/api/generated` (générés), contenu d'`apps/docs`.
+> Chaque piste cite des fichiers et lignes relus. `≈` = numéro à ±2 lignes.
+> Les pistes marquées 🐛 sont des **défauts déjà présents**, révélés par une duplication qui a divergé : selon le CLAUDE.md, chacune demande un test de régression rouge avant correction.
+
+---
+
+## 1. Résumé exécutif
+
+- **Base saine** : `common/entry-lifecycle.util.ts`, `common/http.util.ts` (`fetchJson`), `lib/format.ts`, `Modal`/`ConfirmationModal` et les helpers TanStack sont bien adoptés. Il n'y a aucun `any` en production API, aucun `@ts-ignore`, et la config ESLint/tsconfig est factorisée.
+- **La dette vient surtout de copies qui ont divergé.** Ces divergences ont déjà produit **plusieurs bugs réels** :
+  - liens `/games/…` sans préfixe `/app` dans les listes et les stats ;
+
+- **Plus gros gisement front ↔ back restant** : les **constructeurs de routes `/app/...`** (environ 55 sites des deux côtés), à partager dans `packages/shared`. Les limites de champs sont désormais communes aux formulaires et aux validateurs API.
+- **À l'inverse, `packages/shared` est surdimensionné côté API** : `dto/api-v1.ts` (21/21 exports API seule), `dto/data-export.ts` (37/38) et environ 270 exports sur 546 ne sont jamais importés par le web, qui type ces routes via OpenAPI. Une règle d'appartenance est à acter.
+- **Plus gros gains en lignes** :
+  - docks de session jeu/livre (environ 1 800 lignes dupliquées à environ 85 %) ;
+  - 3 panneaux de recherche quasi identiques ;
+  - 5 modals de mot de passe dans `MfaSection` ;
+  - le `switch` à 4 domaines répété 6 fois dans `admin-cache.controller.ts` ;
+  - les 11 boutons « charger plus ».
+- **Fichiers à découper en priorité** : `library.service.ts` (2163 l.), `mail.service.ts` (1929), `data-export.service.ts` (une méthode de 746 l.), `LibraryBrowser.svelte` (1062), `CommentThread.svelte` (1025).
+- **Inventaire total** : 59 pistes, dont 4 marquées 🐛 (1 classée P0, les autres P1/P2 selon la gravité) et des quick wins (S, faible risque).
+
+---
+
+## 2. Cartographie constatée
+
+```
+loomkeep/                       pnpm workspace (apps/*, packages/*), Node ≥22, TS ^6.0.3 (racine seule)
+├── apps/api        NestJS 12 + Fastify + Prisma 7 (PostgreSQL) — CJS — 669 fichiers .ts hors spec, ≈64,6 k lignes
+│   └── src/<domaine>/          36 domaines : admin, api-keys, auth, books, catalog, comments, common, config, ee,
+│                               entitlements, events, feature-flags, games, gamification, health, import,
+│                               instance-settings, jobs, library, links, lists, mail, metrics, music, newsletter,
+│                               notifications, prisma, public-api, reports, reviews, saved-views, security,
+│                               session-timer, social, stats, users
+│       ├── <x>.controller.ts / <x>.service.ts / <x>.module.ts / dto/ (1 DTO par fichier) / providers/
+│       ├── common/             69 fichiers *.util.ts (aucun *.utils.ts ni helpers/) — pagination, http, dates,
+│       │                       entry-lifecycle, work-href, prisma-error, parse-enum-param…
+│       └── ee/                 code sous LICENSE-EE (le core ne l'importe jamais — règle ESLint)
+├── apps/web        SvelteKit 2 + Svelte 5 + TanStack Query + Tailwind 4 + Paraglide — ESM — ≈69 k lignes
+│   └── src/
+│       ├── lib/                76 fichiers à plat + sous-dossiers actions/, api/ (wrappers par domaine, core.ts,
+│       │                       client.ts barrel, keys.ts, query/mutation helpers), components/ (≈120 composants à
+│       │                       plat + home/, profile/, search/, sidebars/, stats/, onboarding/), constants/, types/,
+│       │                       home/, gamification/, realtime/, ee/, test/
+│       └── routes/             site public prérendu (/, legal/) + /app (SPA, ssr=false) + (auth)/(verification)
+├── apps/docs       Astro Starlight + Scalar (lit openapi-v1.json ; importe shared par chemin relatif)
+└── packages/shared @loomkeep/shared — CJS, build tsc → dist/, barrel unique index.ts (50 `export *`) — ≈7,7 k lignes
+    └── src/                    enums.ts (858 l.), error-codes.ts, alerts.ts, xp-rules.ts, level.ts, password.ts,
+                                validation-constraints.ts, movie-release.ts, runtime.ts, realtime.ts, locale.ts…
+                                dto/ (36 fichiers : admin.ts 618 l., data-export.ts 497, import.ts, stats.ts…)
+```
+
+**Conventions observées** :
+
+- Côté API, une règle « un DTO par fichier ». Les classes `*ResponseDto` font `implements` de l'interface shared correspondante, et un spec le verrouille.
+- Les enums sont des objets `as const`, en miroir des enums Prisma. On caste aux frontières, par conception.
+- Le web type ses appels via `typedRequest` et les types OpenAPI générés. Il importe de shared surtout les enums et les constantes.
+- La config est factorisée : `eslint.config.base.mjs` et `tsconfig.base.json`.
+
+---
+
+## 3. Tableau récapitulatif
+
+**Légende** :
+
+- **Impact** : faible / moyen / fort.
+- **Effort** : S (< ½ j), M (½–2 j), L (> 2 j).
+- **Risque** : faible / moyen / élevé.
+- **Priorité** : P0 = bug révélé, à corriger d'abord avec un test rouge ; P1 = fort rendement ; P2 = utile ; P3 = opportuniste.
+
+**Préfixes d'ID** :
+
+| Préfixe            | Axe | Périmètre                           |
+| ------------------ | --- | ----------------------------------- |
+| `SH`               | 1   | partagé front + back                |
+| `HB` / `HF`        | 2   | helpers back / front                |
+| `CB` / `CF`        | 3   | constantes back / front             |
+| `TB` / `TF`        | 4   | types back / front                  |
+| `RB` / `RF` / `RT` | 5   | refactors back / front / transverse |
+
+| ID    | Axe | Titre                                                                                               | Impact | Effort | Risque | Priorité |
+| ----- | --- | --------------------------------------------------------------------------------------------------- | ------ | ------ | ------ | -------- |
+| SH-04 | 1   | Échelle de note 0–10 et histogramme divergent (10 vs 11 cases)                                      | moyen  | M      | moyen  | P2       |
+| SH-05 | 1   | 🐛 Constructeurs de routes `/app/...` (≈55 sites) → `shared/routes.ts`                              | fort   | M      | faible | P0       |
+| SH-08 | 1   | 🐛 Pourcentage de lecture livre ×4, variantes divergentes (borne)                                   | moyen  | S      | faible | P1       |
+| SH-27 | 1   | 🐛 Normalisation sans accents ×6 ; filtre serveur et import non normalisés                          | moyen  | S      | faible | P1       |
+| SH-29 | 1   | Jour local `YYYY-MM-DD` : regex de contrat et fabrication de la clé                                 | moyen  | S      | faible | P2       |
+| SH-33 | 1   | `dto/api-v1.ts` utilisé par l'API seule → `public-api/v1`                                           | moyen  | S      | faible | P2       |
+| SH-34 | 1   | `dto/data-export.ts` : 37/38 exports API seule                                                      | moyen  | M      | faible | P2       |
+| SH-35 | 1   | Petits fichiers shared API seule + règle d'appartenance à acter                                     | moyen  | M      | faible | P2       |
+| SH-38 | 1   | `XP_RULES` / `XP_RULE_LIST` (API seule, export spéculatif)                                          | faible | S      | faible | P3       |
+| SH-39 | 1   | `DEFAULT_INSTANCE_SETTINGS` / `INSTANCE_SETTING_ENV` API seule                                      | faible | S      | faible | P3       |
+| HB-20 | 2   | Résolution des cibles d'œuvres dupliquée (lists/reviews/export/stats)                               | fort   | M      | moyen  | P1       |
+| HF-05 | 2   | `DAY_MS` / différence de jours calendaires ×8                                                       | faible | S      | faible | P2       |
+| HF-07 | 2   | Helpers coincés dans `home/widgets/media.ts` mais réécrits ≈30 fois                                 | moyen  | S      | faible | P1       |
+| HF-08 | 2   | Pluriel à la main ≈60 sites, règle incohérente (`> 1` vs `=== 1`)                                   | fort   | L      | moyen  | P2       |
+| HF-11 | 2   | Durées et horloges formatées à la main, `formatSessionMinutes` non localisé                         | moyen  | S      | faible | P2       |
+| CB-01 | 3   | `MINUTE/HOUR/DAY_MS` redéfinis ≈35 fois (API + web + shared)                                        | moyen  | S      | faible | P2       |
+| CF-03 | 3   | 171 durées de transition, 16 valeurs distinctes                                                     | moyen  | L      | moyen  | P3       |
+| CF-14 | 3   | Placeholder `"—"` ×21                                                                               | faible | S      | faible | P3       |
+| TF-12 | 4   | `quick-add.ts` : 8 casts `raw as XDetail`                                                           | faible | M      | moyen  | P3       |
+| RB-09 | 5   | Services `*-item` clones (TTL, `canonicalExternalId` réimplémenté)                                  | moyen  | S      | faible | P2       |
+| RB-10 | 5   | Découper `library.service.ts` (2163 l.) en 5 services                                               | fort   | L      | moyen  | P1       |
+| RB-11 | 5   | `computeProgress` duplique `computeProgressBatch`                                                   | moyen  | S      | faible | P2       |
+| RB-14 | 5   | `admin-cache.controller` : `switch` ×6 et 28 appels Prisma → service à registre                     | fort   | M      | moyen  | P1       |
+| RB-15 | 5   | `takeDown` réimplémente `decide` → `ModerationActionService`                                        | moyen  | M      | moyen  | P2       |
+| RB-16 | 5   | `admin-users.controller` porte le métier → `AdminUsersService`                                      | moyen  | M      | faible | P2       |
+| RB-17 | 5   | Petits contrôleurs admin avec agrégats Prisma                                                       | faible | S      | faible | P3       |
+| RB-18 | 5   | Résolution « profil visible ou 404 » ×9                                                             | moyen  | S      | faible | P1       |
+| RB-19 | 5   | `domainGate.assertEnabled` ×34 → `@RequireDomain`                                                   | moyen  | M      | moyen  | P2       |
+| RB-20 | 5   | Découper `mail.service.ts` (1929 l.)                                                                | moyen  | M      | faible | P2       |
+| RB-23 | 5   | Découper `list.service.ts` (1121 l.)                                                                | moyen  | M      | faible | P3       |
+| RB-24 | 5   | Découper `comment.service.ts` (1123 l.)                                                             | moyen  | M      | faible | P3       |
+| RB-25 | 5   | Découper `auth.service.ts` (1174 l.)                                                                | moyen  | L      | moyen  | P3       |
+| RB-26 | 5   | Découper `users.service.ts` (891 l.)                                                                | moyen  | M      | faible | P3       |
+| RB-27 | 5   | `data-export.buildExport` : une méthode de 746 lignes                                               | moyen  | M      | faible | P2       |
+| RB-28 | 5   | Sortir `RatingService` / `ReviewVoteService` de `review.service.ts`                                 | moyen  | M      | moyen  | P3       |
+| RB-29 | 5   | `stats.service` : 4 `fetch*Rows` quasi identiques                                                   | moyen  | M      | faible | P3       |
+| RF-01 | 5   | Docks de session jeu/livre dupliqués (≈1 800 l.)                                                    | fort   | L      | moyen  | P1       |
+| RF-02 | 5   | Coque commune des pages détail                                                                      | fort   | M      | moyen  | P1       |
+| RF-10 | 5   | `ImportWizard.runSearch` / `CommentMentionInput` / pseudo : requêtes manuelles                      | faible | S      | faible | P3       |
+| RF-17 | 5   | Page de recherche : dropdown et onglets sans ARIA                                                   | moyen  | M      | faible | P2       |
+| RF-18 | 5   | 3 panneaux de recherche identiques à ≈90 %                                                          | fort   | M      | faible | P1       |
+| RF-24 | 5   | Logique de progression des épisodes dans les composants                                             | moyen  | S      | faible | P2       |
+| RF-25 | 5   | `ImportWizard` (830 l.) : logique à extraire                                                        | moyen  | M      | faible | P2       |
+| RF-26 | 5   | Synchronisation d'édition sur la page livre (effet → mutation)                                      | faible | S      | faible | P3       |
+| RF-28 | 5   | Découper `LibraryBrowser.svelte` (1062 l.)                                                          | moyen  | M      | moyen  | P2       |
+| RF-29 | 5   | Découper `CommentThread.svelte` (1025 l.)                                                           | moyen  | M      | moyen  | P3       |
+| RF-31 | 5   | Divers découpages faibles (landing, search, drawers admin, navigation.ts, api/admin.ts, indicateur) | faible | M      | faible | P3       |
+| RT-04 | 5   | Champs d'import hérités (`subtitle`, `sub`) + chaînes FR/EN en dur côté API                         | moyen  | S      | faible | P2       |
+| RT-05 | 5   | Shims de compatibilité à dater (`LegacyBackupFileDto`, `loomkeep.tokens`)                           | faible | S      | faible | P3       |
+| RT-07 | 5   | Barrel `lib/api/client.ts` (118 imports) : statut à trancher                                        | moyen  | M      | faible | P2       |
+| RT-08 | 5   | Libs navigateur dans les `dependencies` web (image Docker)                                          | moyen  | S      | moyen  | P2       |
+| RT-09 | 5   | `@simplewebauthn/browser` en devDependency de shared                                                | faible | S      | faible | P2       |
+| RT-10 | 5   | `apps/docs` hors du lockstep de version (1.9.0)                                                     | faible | S      | faible | P2       |
+| RT-14 | 5   | Sévérité `no-unused-vars` différente web ↔ base                                                     | faible | S      | faible | P3       |
+| RT-17 | 5   | `apps/web/src/lib/` : 76 fichiers à plat → sous-dossiers                                            | moyen  | M      | moyen  | P3       |
+| RT-18 | 5   | `lib/components/` : ≈120 composants à plat + modules `.ts`                                          | moyen  | M      | moyen  | P3       |
+| RT-22 | 5   | Exports inutiles (48 API, 19 web)                                                                   | faible | S      | faible | P3       |
+| RT-27 | 5   | `apps/docs` importe shared par chemin relatif profond ; Dockerfiles                                 | faible | S      | faible | P3       |
+| RT-28 | 5   | 🐛 `detectLocale` ignore l'italien                                                                  | faible | S      | faible | P1       |
+
+**Total : 59 pistes**, dont 4 marquées 🐛. Par priorité : 1 P0, 11 P1, 25 P2 et 22 P3.
+
+| Axe                | Nombre de pistes    |
+| ------------------ | ------------------- |
+| Axe 1 (partagé)    | 10                  |
+| Axe 2 (helpers)    | 5 (1 back, 4 front) |
+| Axe 3 (constantes) | 3 (1 back, 2 front) |
+| Axe 4 (types)      | 1 (front)           |
+| Axe 5 (refactors)  | 40                  |
+
+---
+
+## 4. Détail par axe
+
+### Axe 1 — Code partagé front + back → `packages/shared`
+
+**Contraintes générales du package** :
+
+- shared est compilé en **CommonJS**, avec un barrel unique.
+- Vite tree-shake mal le CJS : toute donnée runtime ajoutée part probablement dans le bundle web. Pour des constantes et petites fonctions pures, le coût est négligeable ; pour de gros objets réservés à l'API (`XP_RULES`, `ALERTS`), il ne l'est pas.
+- Aucune proposition ci-dessous n'importe de module Node ni Prisma.
+- Chaque changement exige `pnpm build:package`.
+
+#### SH-04 — Échelle de note et histogramme
+
+- **Constat** :
+  - La note est bornée par `@Min(0) @Max(10)` dans 9 DTO (`library/dto/update-entry.dto.ts:21-22`, …, `reviews/dto/upsert-review.dto.ts:21-22`). Côté web, l'échelle 0–10 est en dur dans `RatingSlider.svelte:18,84-85`, `rating-words.ts:21`, `review-draft.ts:27` et `review-community.ts:27`.
+  - **Divergence** : `apps/api/src/stats/rating-distribution.util.ts:11-18` range les notes dans **10 cases (1..10)** et ramène la note 0 dans la case 1. `apps/web/src/lib/review-community.ts:27-41` utilise **11 cases (0..10)**.
+  - La moyenne est arrondie à une décimale côté API, pas côté web.
+- **Proposition** : ajouter `RATING_MIN` et `RATING_MAX` dans `dto/review.ts`, et éventuellement des fonctions pures `ratingDistribution()` et `averageRating()`.
+- **Risque** : moyen. Il faut d'abord **trancher le sort de la note 0**, car la réponse change soit `RatingBucketDto`, soit le graphique web.
+
+#### SH-05 — 🐛 Constructeurs de chemins `/app/...` → `packages/shared/src/routes.ts`
+
+- **Constat, bug** : deux copies ont perdu le préfixe `/app`.
+  - `apps/api/src/lists/list.service.ts:1111-1120` (`detailHref`) renvoie `` `/${domain}/${sourceId}` `` pour games, books et music.
+  - `apps/api/src/stats/stats.service.ts:279-296` (`itemHref`/`mediaHref`) renvoie `` `/${prefix}/…` `` pour **tous** les domaines.
+  - Or le web n'a aucune route `/games` ni `/media` à la racine, ni de redirection dans `hooks.server.ts`. Ces liens donnent donc une 404 dans :
+    - `routes/app/lists/[id]/+page.svelte:258-259,453-454` ;
+    - `lib/components/home/widgets/ListContentWidget.svelte:47` ;
+    - `StatsWorksModal.svelte:45` ;
+    - `VideoStatsSection.svelte:168,183`.
+- **Copies correctes** (le chemin est construit à la main environ 25 fois côté API) :
+  - `common/work-href.util.ts:30,41,51,61`
+  - `reviews/review.service.ts:659-668`
+  - `stats/home-stats.service.ts:279-295`
+  - `social/activity.service.ts:407-449`
+  - `admin/admin-cache.controller.ts:246,277,302,327`
+  - `links/link-resolver.service.ts:28-40,109-112`
+  - `notifications/notification.service.ts:60,314`
+  - `public-api/v1/mappers.ts:46,67,87,107`
+  - `ee/calendar/calendar-feed.service.ts:111`
+- **Côté web**, environ 30 sites :
+  - `mediaHref` dans `lib/components/home/widgets/media.ts:6`, réécrit dans `SavedViewWidget.svelte:54`, `MediaSearchPanel.svelte:190`, `calendar/+page.svelte:163-164`, `media/+page.svelte:75-76`, `media/[type]/[id]/+page.svelte:784,795` et `CastSection.svelte:183` ;
+  - `` `/app/games|books|music/${…}` `` dans `FavoritesWidget.svelte:60,74,88`, `SavedViewWidget.svelte:63,72,81`, les widgets Books/Games/Music, les 3 `*SearchPanel`, et `routes/app/{books,games,music}/+page.svelte` ;
+  - le parsing inverse dans `lib/quick-add.ts:42-43`.
+- **Proposition** :
+  - créer `packages/shared/src/routes.ts`, avec `mediaPath(type, sourceId)`, `workPath(domain, sourceId)`, `profilePath(username)` et `listPath(id)` ;
+  - optionnellement, `parseWorkPath(href)` pour quick-add.
+- **Bénéfice** :
+  - le bug disparaît par construction ;
+  - la consigne du CLAUDE.md « grep `/app/` avant de renommer une route » se réduit à un seul fichier.
+- **Pourquoi c'est légitime dans shared** : l'API émet réellement ces chemins (push, mails, flux). Ce n'est pas un couplage artificiel.
+- **Risque** : nul, ce sont des chaînes pures.
+- **Ordre** : écrire d'abord le test rouge sur `ListService.resolveTargets` et `StatsService`.
+
+#### SH-08 — 🐛 Pourcentage de lecture d'un livre : 4 variantes
+
+- **Constat** :
+  - API `books/book-library.service.ts:168-170` : ratio sans borne et sans ×100.
+  - Web `routes/app/books/+page.svelte:45-51` : borné, et `READ` donne 100.
+  - `home/widgets/BooksReadingWidget.svelte:38-41` : **sans borne**, donc plus de 100 % si la page courante dépasse le total.
+  - `BookSessionDock.svelte:127-134` : borné, sur une autre base.
+- **Proposition** : `bookProgressPercent(currentPage, pageCount, status?)` dans `dto/book.ts`.
+- **Risque** : faible. Il faut choisir la sémantique et aligner le tri « progress » de l'API.
+
+#### SH-27 — 🐛 Normalisation de texte insensible aux accents
+
+- **Constat** :
+  - Le motif `normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim()` apparaît dans `api/catalog/search-ranking.ts:4-6`, web `AddToListModal.svelte:66`, `ProfileConnectionsModal.svelte:71`, `routes/app/reviews/+page.svelte:72`, `settings/search.ts:27` et `settings/streaming/+page.svelte:79`. `users/username.util.ts:7-9` en a une variante NFKD.
+  - **Écarts de comportement** :
+    - le filtre `q` de la bibliothèque côté serveur (`library.service.ts:648`) fait seulement `toLowerCase().includes`, donc « pokemon » ne trouve pas « Pokémon » ;
+    - le rapprochement à l'import (`import/sources/media/media-match-resolver.ts:114`) ne retire pas non plus les accents.
+- **Proposition** : `foldSearchText(value)` dans un nouveau `packages/shared/src/text.ts`.
+- **Risque** : l'import trouvera davantage de correspondances. Il faut un test.
+
+#### SH-29 — Jour local `YYYY-MM-DD`
+
+- **Constat** :
+  - Regex de contrat : API `stats/home-stats.controller.ts:11`, shared `movie-release.ts:25` (inline), web `lib/admin-user-filters.ts:19`.
+  - `OnThisDayWidget.svelte` envoie une clé locale à l'API via `lib/date.ts` → `localDateInput` (HF-04 résolue, voir §7). SH-29 doit préserver ce jour local lors du déplacement vers shared.
+- **Proposition** : `LOCAL_DAY_RE` et `localDayKey(date, timeZone?)` dans un nouveau `packages/shared/src/date.ts`. Implémentation par Intl, sans dépendance. Ce module accueillerait aussi `DAY_MS` (CB-01).
+
+#### SH-33 — `dto/api-v1.ts` réservé à l'API
+
+- **Constat** : 21 exports sur 21 ne sont importés que par `apps/api/src/public-api/v1/**`. Le web et la doc ne les importent jamais, la doc lisant `openapi-v1.json`.
+- **Proposition** : déplacer vers `apps/api/src/public-api/v1/dto/contracts.ts`.
+- **Bénéfice** : le contrat public est versionné avec son code.
+- **Risque** : faible, environ 12 imports à changer.
+
+#### SH-34 — `dto/data-export.ts` (497 l.)
+
+- **Constat** : 37 exports sur 38 ne servent qu'aux classes miroirs `users/dto/data-export/*-response.dto.ts`. Seul `MigrationExportDto` est importé par le web (`MigrationExportCard.svelte`).
+- **Proposition** : déplacer les 37 interfaces côté API.
+- **Détail** : `data-export.ts:37` est le seul `import` non-`type` d'une interface dans shared.
+
+#### SH-35 — Fichiers shared réservés à l'API + règle d'appartenance
+
+- **Constat** :
+  - Plusieurs fichiers ne sont importés que par l'API : `dto/config.ts`, `dto/entitlement.ts`, `dto/ee.ts`, `dto/link.ts`, `dto/newsletter.ts`, `dto/push.ts`, `runtime.ts:runtimeFor` et `dto/public-stats.ts:PublicStatsSummaryDto` (l.610).
+  - Pour ces routes, le web passe par `typedRequest` et les types OpenAPI.
+  - Au total, environ 270 exports sur 546 ne sont importés que par l'API, et ils existent surtout pour le `implements` des `*ResponseDto`.
+- **Proposition** : **décision à prendre**, puis à documenter dans le CLAUDE.md. Option recommandée : « une interface de réponse peut rester dans shared tant qu'une classe API l'implémente (contrat documenté) ; une donnée runtime ou une fonction n'y va que si les deux côtés l'utilisent ». Une fois la règle actée, migrer domaine par domaine.
+- **Honnêteté** : migrer toutes les interfaces de réponse réservées à l'API serait un gros chantier pour un gain modeste. Je recommande de limiter le geste à SH-33 et SH-34, les deux plus gros, plus évidents.
+
+#### SH-38 — `XP_RULES` / `XP_RULE_LIST`
+
+- **Constat** :
+  - `shared/xp-rules.ts` n'est consommé que par l'API, alors que sa doc annonce un usage web qui n'existe pas.
+  - `XP_RULE_LIST` (l.216) porte la mention « No current caller » et n'est utilisé que par son spec (l.68-69). C'est contraire à la règle « no speculation ».
+  - C'est un gros objet runtime, probablement embarqué dans le bundle web via le barrel CJS.
+- **Proposition** :
+  - supprimer `XP_RULE_LIST` ;
+  - pour `XP_RULES`, le garder seulement si une page « barème » est prévue, sinon le déplacer vers `apps/api/src/gamification`.
+- **Décision** : à Logan.
+
+#### SH-39 — `DEFAULT_INSTANCE_SETTINGS` / `INSTANCE_SETTING_ENV`
+
+- **Constat** : `shared/dto/instance-settings.ts`, API seule. Les noms de variables d'environnement sont un sujet serveur.
+- **Proposition** : les déplacer vers `apps/api/src/instance-settings` et mettre à jour le CLAUDE.md, qui les cite.
+
+---
+
+### Axe 2 — Helpers / utils
+
+#### Back (`apps/api/src`)
+
+Utilitaires qui existent déjà dans `common/` : `chunk`, `mapWithConcurrency`, `toDateOrNull`, `fetchJson`, `localDay`, `parsePageQuery`, `isUniqueViolation`, `secretsMatch`, `compareTitles`, `primaryWebOrigin`, `resolveWorkHref`, `canonicalExternalId`, `parseEnumParam`, `RequestThrottle`, `toCsv`, `safeLang` et `normalizeEmail`. Les pistes ci-dessous relèvent surtout des **contournements** de ces utilitaires.
+
+**HB-20 — Résolution des cibles d'œuvres dupliquée**
+
+- **Constat** :
+  - `lists/list.service.ts:976-1120` recopie `reviews/review.service.ts:519-670`. Le commentaire `list.service.ts:970-975` assume la copie, et c'est elle qui a introduit le bug de SH-05.
+  - Variantes : `users/data-export.service.ts:776-830` (titres seulement) ; le regroupement `idsByType` dans `ee/stats/advanced-stats.service.ts:457-463`.
+- **Proposition** : `groupIdsByTargetType(rows)` et `resolveWorkTargets(prisma, rows): Map<"TYPE:id", { title, imageUrl, href }>` dans `common/work-href.util.ts`, en s'appuyant sur SH-05.
+- **Risque** : moyen, car ce sont des requêtes Prisma batchées. Il faut garder une requête par domaine.
+
+#### Front (`apps/web/src`)
+
+**HF-05 — `DAY_MS` et jours calendaires**
+
+- **Constat** :
+  - `DAY_MS` est redéclaré dans `home/daily-pick.ts:7`, `calendar-days.ts:36`, `api-key-form.ts:8` et `ResumeWidget.svelte:43`.
+  - Le littéral `86_400_000` apparaît dans `ThisWeekWidget.svelte:45`, `EpisodesSection.svelte:166`, `feature-badges.ts:40` et `admin/reports/+page.svelte:147`.
+  - Le calcul `setHours(0,0,0,0)` + `Math.round(diff / DAY)` est identique dans `ThisWeekWidget.svelte:41-45` et `EpisodesSection.svelte:161-167`.
+- **Proposition** : `startOfDay` et `calendarDaysBetween` dans `lib/date.ts`.
+
+**HF-07 — Helpers coincés dans `home/widgets/media.ts`**
+
+- **Constat** : les constructeurs `mediaHref` restent dupliqués (voir SH-05), notamment dans `media/+page.svelte`. Les adaptateurs `epCode` et `entryPct` de `home/widgets/media.ts` délèguent déjà à shared (SH-06 et SH-07 résolues, voir §7).
+- **Proposition** : après SH-05, migrer les appelants vers les fonctions shared, puis supprimer `home/widgets/media.ts` et ses adaptateurs.
+
+**HF-08 — Pluriel à la main**
+
+- **Constat** : environ 60 sites, avec deux règles :
+  - `> 1` (convention FR) : `ProfileHeader.svelte:254-336`, `ProfileLibrarySection.svelte:72,76,121`, `routes/app/settings/+page.svelte:111,181,197`, etc.
+  - `=== 1` (convention EN) : `BookSessionDock.svelte:289,295,299,570`, `GameSessionDock.svelte:247,253,257,480`, `LibraryBrowser.svelte:426,577,1019`, `lib/pile.ts:40-52`, etc.
+
+  Résultat : « 0 abonné » coexiste avec « 0 éléments », et l'anglais affiche « 0 follower ».
+
+- **Proposition** : `selectPlural(count, { one, other })` dans `lib/format.ts`, basé sur un `Intl.PluralRules` mis en cache. La cible idéale serait les variantes plurielles de Paraglide, mais elle demande de migrer les catalogues.
+- **Risque** : le rendu change visiblement pour 0. À faire par lots.
+
+**HF-11 — Durées et horloges**
+
+- **Constat** :
+  - `music/[id]/+page.svelte:105-118` (`formatTrackDuration`, `formatTotalDuration`), `SessionTimerControl.svelte:83-90` (`formatClock`) et `VideoStatsSection.svelte:174-178`.
+  - `formatSessionMinutes` (`session-presentation.ts:16-20`) a `"min"` et `"h"` en dur, donc **n'est pas localisé**.
+- **Proposition** : `formatClock(seconds)` dans `format.ts` ; `formatSessionMinutes` réécrit avec `m.*`.
+
+---
+
+### Axe 3 — Constantes
+
+#### Back
+
+**CB-01 — Durées en millisecondes**
+
+- **Constat** :
+  - `DAY_MS` reste déclaré localement 8 fois : `common/date.util.ts`, `admin/admin-accounts-stats.service.ts`, `admin-stats.util.ts`, `api-key-lifecycle.service.ts`, `ee/licensing/license-key.ts`, `achievements/checks/shared.ts`, `stats/on-this-day.util.ts` et `video-temporal.util.ts`.
+  - Les calculs inlinés de jours restent notamment dans `auth.service.ts`, `video-stats.util.ts`, `ee/stats/aggregates.util.ts` et `mail.service.ts` ; les TTL catalogue utilisent déjà `common/catalog-sync.util.ts` (CB-02 résolue, voir §7).
+  - D’autres durées en dur : `HOUR_MS` (`admin-social-stats.util.ts`) et `× 60_000` dans auth, webauthn et users.
+  - Voir le repère HB-08 : les décalages de jours sont déjà mutualisés, mais leur unité reste locale à l’API.
+  - Le web (HF-05) et shared lui-même (`dto/library.ts:81,94`) répètent ces calculs.
+- **Proposition** : `MINUTE_MS`, `HOUR_MS` et `DAY_MS` dans `packages/shared/src/date.ts` (avec SH-29). Sinon, `common/date.util.ts` côté API et `lib/date.ts` côté web.
+- **Honnêteté** : la constante est triviale ; c'est gratuit si SH-29 est fait, et à ne pas mener seul.
+
+#### Front
+
+**CF-03 — Durées de transition**
+
+- **Constat** : 171 occurrences de `duration: reduced ? 0 : N`, avec 16 valeurs distinctes. Les plus fréquentes sont 180 (×27), 120 (×24), 220 (×23) et 200 (×21).
+- **Proposition** : une échelle `MOTION_MS` et un helper `motionMs(ms, reduced)` dans `lib/motion.ts`.
+- **Risque** : churn élevé. Introduire d'abord le helper sans changer les valeurs.
+
+**CF-14 — Placeholder `"—"`**
+
+- **Constat** : 21 occurrences, par exemple `LibraryTable.svelte:189,221,429` et `admin/+page.svelte:148-226`.
+- **Proposition** : `EMPTY_VALUE` dans `format.ts`. À faire seulement au passage.
+
+---
+
+### Axe 4 — Types et interfaces
+
+**Comptage côté API** : 0 `any`, 0 `@ts-ignore`, 3 `as unknown as`, environ 263 `as X` (en majorité des casts d'enum autorisés) et environ 55 assertions `!`.
+
+**Côté web** : 0 `as any` en production. Les 4 `as unknown as` sont documentés.
+
+#### Back
+
+#### Front
+
+**TF-12 — `quick-add.ts`**
+
+- **Constat** : 8 casts `raw as XDetail` (`lib/quick-add.ts:140-277`), parce que `detail: unknown`.
+- **Proposition** : `QuickAddDomain<TDetail>`.
+- **Risque** : moyen, à cause de la variance générique.
+
+---
+
+### Axe 5 — Autres refactors
+
+#### Back
+
+**RB-09 — Services `*-item`**
+
+- **Constat** : `game-item 138-257`, `book-item 181-296`, `music-item 64-180` et `media-item 268+` (`upsertFromSource`, `persistDetails`, `forceRefresh`). Chaque `forceRefresh` réimplémente `canonicalExternalId` (exemple : `game-item 190-192`).
+- **Proposition** : poursuivre la mutualisation des services sur `common/catalog-sync.util.ts` (CB-02 résolue, voir §7), puis utiliser `canonicalExternalId`. Une classe de base générique est déconseillée (voir Points écartés).
+- **Question** : music n'a pas de cron `refreshStale`. Est-ce voulu, à cause du débit de 1 requête par seconde de MusicBrainz ?
+
+**RB-10 — Découper `library/library.service.ts` (2163 l.)**
+
+- **Découpage proposé** :
+  - `LibraryService` (CRUD, liste, pile, bulk, `217-865`) ;
+  - `EpisodeWatchService` (`937-1400`, `1507-1572`) ;
+  - `MediaProgressService` (`syncFinishedAt 891-935`, `progressCounts…lastWatchedAt 1581-1818`) ;
+  - `MediaCalendarService` (`getCalendar 1402-1500`) ;
+  - `MediaDetailService` (`1928-2136`).
+- **Pour éviter les cycles** : `MediaProgressService` est une feuille, et `Library → EpisodeWatch` va dans un seul sens (via `watchAllAired 560-575`). Tout reste dans `LibraryModule`.
+
+**RB-11 — `computeProgress`**
+
+- **Constat** : `1758-1807` duplique la logique « épisode suivant » de `computeProgressBatch` (`1650-1756`).
+- **Proposition** : `computeProgress = batch([id]).get(id)`, ce qui fait passer de 3 à 2 requêtes dans `getEntry`/`upsert`/`update`.
+
+**RB-14 — `admin-cache.controller.ts` (772 l., 28 appels Prisma)**
+
+- **Constat** :
+  - Un `switch` sur 4 domaines est répété 6 fois : `list 95-206`, `detail 210-334`, `removeOrphans 387-445`, `remove 457-514`, `staleIds 641-654` et `referenceCount 656-694`, plus `idsWithContent 516-597`.
+  - La recherche (`112-115`) n'échappe pas `%`/`_`, alors que `titleContains` existe.
+- **Proposition** : `AdminCacheService`, avec un registre `CACHE_DOMAINS: Record<CacheDomain, { delegate, forceRefresh, coverField, targetType }>`, et un contrôleur réduit au routage.
+- **Risque** : casts sur les delegates Prisma ; garder la transaction Serializable réservée au média.
+
+**RB-15 — Modération**
+
+- **Constat** : `admin-reports.controller.ts` : `takeDown` (`175-275`) réimplémente `decide` (`446-552`) : contrôle PENDING, avis, `resolveInTransaction`, publication et mail.
+- **Proposition** : `ModerationActionService` avec `decide`, `removeContent` (`554-593`) et `takeDown`, qui passe par `decide` avec un hook `afterCommit`. `summary 107-152` part dans `ReportService`.
+
+**RB-16 — `admin-users.controller.ts`**
+
+- **Constat** : il porte du métier : `listUsers 110-241` (135 lignes de construction du `where`), `listUserOptions 245-275`, `getUserLibraryStats 401-428` (qui recoupe `LibraryService.getDomainCounts 321-340`), `reactivateUser 457-467` et `sendPasswordResetLink 478-490`.
+- **Proposition** : `AdminUsersService`.
+
+**RB-17 — Petits contrôleurs admin**
+
+- **Constat** : `admin-push 38-130`, `admin-imports 30-100` et `admin-system 87` font des agrégats en lecture seule.
+- **Proposition** : les migrer vers des services, plus tard.
+
+**RB-18 — Résolution « profil visible ou 404 »**
+
+- **Constat** : 9 copies :
+  - `social/profile.service.ts` : `getProfile 67-91`, `resolveTimelineTarget 281-301`, `reportTargetId 305-318` et `resolveConnectionsTarget 348-368` (les deux derniers resolve sont identiques) ;
+  - `social/follow.service.ts` : `49-66`, `276-281`, `337-342`, `353-358` et `409-414`.
+- **Proposition** : `VisibilityService.resolveVisibleUser(viewerId, username, select)`.
+
+**RB-19 — Garde de domaine**
+
+- **Constat** : 34 appels à `domainGate.assertEnabled` (music 10/10, books 6/17, games 5/14, library 4/18, stats 8).
+- **Proposition** : décorateur `@RequireDomain(Domain.X)` et `DomainGateGuard`.
+- **À trancher d'abord** : music garde aussi les mutations parce que c'est un domaine premium, mais les autres domaines ne bloquent pas les mutations en maintenance. L'incohérence est-elle voulue ?
+
+**RB-20 — `mail/mail.service.ts` (1929 l.)**
+
+- **Découpage proposé** :
+  - helpers HTML `66-171` → `mail-html.util.ts` ;
+  - galerie de templates `235-611` → `mail-templates.registry.ts` ;
+  - 24 `build*` (`1015-1754`) → `mail-templates.ts`, en fonctions pures qui reçoivent un `MailContext` ;
+  - layout `1755-1900` → `mail-layout.ts`.
+- `MailService` garde la configuration, le transport et les `send*`.
+
+**RB-23 — `lists/list.service.ts` (1121 l.)**
+
+- **Proposition** : `ListMemberService` (`633-796`) et la résolution des cibles (`954-1120`, voir HB-20). Garder `ListService` comme façade, car il est injecté dans 4 services de bibliothèque, dans `AccountDeletion` et dans `admin-reports`.
+
+**RB-24 — `comments/comment.service.ts` (1123 l.)**
+
+- **Proposition** :
+  - `CommentReactionService` (`616-716`) et `CommentNotificationService` (`941-1121`) ;
+  - remplacer `ensureParticipationAllowed` (`717-796`, `switch` sur 4 entrées) par `hasLibraryEntryFor(prisma, userId, targetType, targetId)`.
+
+**RB-25 — `auth/auth.service.ts` (1174 l.)**
+
+- **Proposition** :
+  - `SessionService` (`refresh 681-780`, `logout`, `list/revoke 801-866`, `signTokens 1003-1050`, `1051-1122`), qui doit être une feuille ;
+  - `MfaLoginService` (`400-646`) ;
+  - `AccountRecoveryService` (`278-349`, `869-965`).
+
+**RB-26 — `users/users.service.ts` (891 l.)**
+
+- **Proposition** :
+  - `deletionSummary 608-802` → `AccountDeletionService.summary()` (sa doc dit qu'il « mirrors » ce service) ;
+  - changement d'email `439-553` → `EmailChangeService` ;
+  - avatar `143-220` → `AvatarService`.
+
+**RB-27 — `users/data-export.service.ts`**
+
+- **Constat** : `buildExport` est une **méthode unique de 746 lignes** (`30-775`) : requêtes `42-209`, puis mapping `364-774`.
+- **Proposition** : des mappers purs par section dans `data-export.mappers.ts`.
+
+**RB-28 — `reviews/review.service.ts` (913 l.)**
+
+- **Proposition** : `ReviewVoteService` (`141-297`) et `RatingService` (`756-868`), pour que les 4 services de bibliothèque ne dépendent plus que de `RatingService`. Les cibles passent par HB-20.
+
+**RB-29 — `stats/stats.service.ts` (873 l.)**
+
+- **Proposition** : factoriser les 4 `fetch*Rows` quasi identiques (`245-393`) et extraire `VideoStatsService` (`394-644`).
+
+**Méthodes de plus de 100 lignes, pour référence** :
+
+- `buildExport` 746 ;
+- `home-stats.onThisDay` 247 (`stats/home-stats.service.ts:25`) ;
+- `deletionSummary` 195 ;
+- `profile.getProfile` 161 ;
+- `getVideoStats` 144 ;
+- `review.resolveTargets` 140 ;
+- `notification.runScanAll` 140 (`:118`) ;
+- `list.resolveTargets` 135 ;
+- `admin listUsers` 135 ;
+- `steam.buildPlan` 133 (`:79`) ;
+- `comment.create` 132 (`:353`) ;
+- `auth.register` 130 (`:112`) ;
+- `admin-cache detail` 127 ;
+- `library.updateEntry` 125 ;
+- `users.updateMe` 120 (`:301`) ;
+- `media-import.buildPlan` 116 ;
+- `open-library.getDetails` 116 (`:267`) ;
+- `book-library.upsertEntry` 110 ;
+- `computeProgressBatch` 108 ;
+- `advanced-stats.social` 108 (`ee/stats/advanced-stats.service.ts:325`) ;
+- `decide` / `takeDown` 108 ;
+- `computeActivityStats` 107 ;
+- `notification-digest.deliverChannel` 107 ;
+- `notification.scan` 105 ;
+- `getCalendar` 105 ;
+- `library.upsertEntry` 104 ;
+- `mediaDetailFromCache` 103 ;
+- `game-library.upsertEntry` 103 ;
+- `book-session.summary` 101 ;
+- `auth.refresh` 100.
+
+Les pistes RB-10 et RB-20 à RB-29 en couvrent la majorité.
+
+#### Front
+
+**RF-01 — Docks de session jeu/livre**
+
+- **Constat** : `lib/components/GameSessionDock.svelte` (821 l.) et `BookSessionDock.svelte` (1008 l.) sont dupliqués à environ 85 %. Sections jumelles, lignes jeu puis livre :
+
+  | Section                                  | Jeu     | Livre    |
+  | ---------------------------------------- | ------- | -------- |
+  | 5 mutations aux `invalidates` identiques | 132-243 | 168-285  |
+  | Groupement par cycle                     | 104-130 | 140-166  |
+  | `weeklySummary`                          | 245-254 | 287-296  |
+  | `cycleAction`                            | 276-282 | 326-332  |
+  | Handlers                                 | 298-325 | 352-379  |
+  | En-tête                                  | 347-376 | 418-445  |
+  | Graphique de la semaine                  | 391-416 | 476-501  |
+  | Pied de carte                            | 470-509 | 560-599  |
+  | Switch reprendre / continuer             | 532-568 | 628-664  |
+  | Date et notes                            | 570-605 | 709-744  |
+  | Modal d'historique complet               | 632-810 | 775-997  |
+  | Confirmation de suppression              | 812-821 | 999-1008 |
+
+- **Proposition** :
+  - `lib/session-dock.ts`, fonctions pures testables : `cycleAction`, `groupSessionsByCycle` et `weeklySummary` ;
+  - `lib/session-dock-mutations.svelte.ts` ;
+  - `SessionHistoryModal.svelte`, générique avec snippets ;
+  - `SessionCycleSwitch.svelte`, `SessionNotesField.svelte` et une coque `SessionDockShell.svelte`.
+- **Gain** : environ 1 800 lignes ramenées à environ 900.
+- **Risque** : moyen, car **aucun spec ne couvre les docks**. Écrire d'abord un test de caractérisation. Les clés i18n et le mode quantité/plage restent propres au livre.
+
+**RF-02 — Coque des pages détail**
+
+- **Constat** : sections identiques dans `games/[id]`, `books/[id]` et `music/[id]` :
+  - `<svelte:head>` : 181-186 / 204-209 / 139-144 ;
+  - erreur et retour : 188-194 / 211-217 / 146-152 ;
+  - hero : 197-233 / 220-233 / 155-168 ;
+  - couverture et titre ;
+  - bouton Ajouter : 355-364 / 338-347 / 235-244 ;
+  - **panneau latéral rendu deux fois** (`md:hidden` puis `hidden md:block`) : 433-437 et 558-562, etc. ;
+  - ConfirmationModal : 566-575 / 557-566 / 430-439 ;
+  - squelette.
+- **Proposition** : `lib/components/detail/DetailLayout.svelte` (snippets `hero`, `main` et `aside`, ce dernier rendu aux deux positions) et `DetailHero.svelte`.
+- **Exception** : la page média (hero en overlay, ActionBar) ne partage que l'erreur, la confirmation, le head et le squelette.
+
+**RF-10 — Requêtes manuelles**
+
+- **Constat** : `ImportWizard.runSearch` (`371-394`), `CommentMentionInput.svelte:158-182` (garde de course par `requestId` faite à la main) et `SecuritySection.svelte:53-73` (vérification du pseudo).
+- **Proposition** : `createApiQuery` sur les clés existantes `keys.*.search` et `keys.comments.participants`.
+
+**RF-17 — Page de recherche**
+
+- **Constat** :
+  - `routes/app/search/+page.svelte` : le filtre est un dropdown fait main (`135-184`, `251-307`) avec 3 boucles identiques, sans rôle ARIA ni navigation clavier.
+  - Les onglets de domaine (`209-225`) n'ont aucune sémantique d'onglet.
+- **Proposition** : `Dropdown` en `role="listbox"`, et `Tabs` étendu avec icône et badge.
+
+**RF-18 — Panneaux de recherche**
+
+- **Constat** : `search/{Book,Game,Music}SearchPanel.svelte` sont identiques à environ 90 %. Seuls changent les fonctions API, le préfixe de requête, la ligne de méta et l'attribution IGDB.
+- **Proposition** : un `CatalogSearchPanel.svelte` générique et `lib/search-query.ts`, pur et testé, pour les préfixes `author:`, `isbn:`, `studio:` et `franchise:` (Book `61-75`, Game `61-68`), aujourd'hui non testés. `MediaSearchPanel`, qui a une pagination infinie, reste à part.
+
+**RF-24 — Progression des épisodes**
+
+- **Constat** : `EpisodesSection.svelte:143-176` (`unwatchedGapCount`, `daysUntilAir`, `upcomingLabel`) et la page média (`orderedSeasons 285-293`, `upcoming 253-267`).
+- **Proposition** : `lib/episode-progress.ts`, avec `now` injecté pour les tests.
+
+**RF-25 — `ImportWizard.svelte` (830 l.)**
+
+- **Proposition** :
+  - base64 et signature ZIP (`231-264`) → `lib/import-file.ts`, qui a déjà un spec ;
+  - état des décisions (`180-230`, `307-345`) → `import-decisions.svelte.ts` ;
+  - mappers (`346-369`) → `import-presentation.ts` ;
+  - snippet `groupBody` (`710-830`) → `ImportReviewGroup.svelte`.
+
+**RF-26 — Synchronisation d'édition**
+
+- **Constat** : `books/[id] 178-201`, un effet qui déclenche une mutation.
+- **Proposition** : une fonction pure `editionSyncPatch(entry, detail, selected)`, testée.
+
+**RF-28 — `LibraryBrowser.svelte` (1062 l.)**
+
+- **Proposition** :
+  - état d'URL `152-253` → `library-url-state.ts` ;
+  - sélection et annulation `333-432` et `552-598` → `library-selection.svelte.ts` ;
+  - navigation clavier `602-677` → `nextFocusIndex` pur.
+
+  Le spec existant protège le refactor.
+
+**RF-29 — `CommentThread.svelte` (1025 l.)**
+
+- **Proposition** :
+  - `CommentCard.svelte` (`640-844`) et `CommentActionRow.svelte` (`548-639`) ;
+  - `mentionParts` (`346-379`) → `lib/comment-mentions.ts`.
+
+  Le TanStack brut reste dans le parent.
+
+**RF-31 — Découpages faibles**
+
+- landing (`routes/+page.svelte`) : algorithme `stack` `233-253` → `routes/components/landing-stack.ts` + test, et données `23-212` dans un module ;
+- `search/+page.svelte` : 238 lignes de `<style>` (`365-603`) ;
+- tiroirs admin : `admin/cache 408-586` → `CacheItemDrawer.svelte`, et `UserDrawer 275-662` ;
+- `lib/navigation.ts` : desktop `1-189`, mobile `191-459` ;
+- `lib/api/admin.ts` → `lib/api/admin/*.ts` ;
+- indicateur glissant `DesktopSidebar 91-106` / `SettingsNav 55-96`.
+
+Valeur faible pour l'ensemble.
+
+#### Transverse
+
+**RT-04 — Champs d'import hérités**
+
+- **Constat** :
+  - `shared/dto/import.ts` : `subtitle` (l.96), `ImportReportTile.sub` (l.159), et `context?` / `id?` encore optionnels « pour d'anciens déploiements ».
+  - Le web ne les lit plus, mais l'API produit encore des chaînes **FR/EN en dur** : `steam.source.ts:124,157`, `media-import.source.ts:177,285-298` et `book-csv.source.ts:134,209,213`.
+- **Proposition** : supprimer ces champs et rendre `context`/`id` obligatoires. API et web sont déployés ensemble.
+
+**RT-05 — Shims de compatibilité**
+
+- **Constat** : `lib/admin-backup-inventory.ts:6-17` (`LegacyBackupFileDto`, #246) et `lib/api/auth.ts:39-41` (`removeItem("loomkeep.tokens")`, #206).
+- **Proposition** : dater ces shims dans un commentaire, puis les retirer.
+
+**RT-07 — Barrel `lib/api/client.ts`**
+
+- **Constat** : il se décrit comme « Compatibility barrel », mais **115 à 118 fichiers** l'importent, contre 12 pour `core` et environ 33 en imports directs. Il est incomplet (il ne réexporte pas `links`, `stats`, `session-timer`, etc.), ce qui produit des imports mixtes dans un même fichier (`NotificationBell.svelte:21,29`, `ProfileView.svelte:13-14`, `media/+page.svelte:2,7`).
+- **Proposition** : trancher. La recommandation est un codemod vers les modules directs, la suppression de `client.ts` et la mise à jour de la phrase du CLAUDE.md.
+
+**RT-08 — Libs navigateur dans `dependencies`**
+
+- **Constat** : `qr-scanner`, `qrcode`, `svelte-dnd-action`, `socket.io-client`, `unleash-proxy-client`, `@simplewebauthn/browser`, `@tanstack/svelte-query` et les polices sont dans les `dependencies` de `apps/web/package.json`. Avec adapter-node, elles sont copiées dans l'image par `pnpm deploy --prod` (`apps/web/Dockerfile:127`), alors que le commentaire `:107-111` dit que seules shared et sentry sont nécessaires au runtime.
+- **Proposition** : les passer en `devDependencies`.
+- **Risque** : moyen. Il faut valider `docker build` puis `node build`, notamment pour svelte-query en SSR.
+
+**RT-09 — `@simplewebauthn/browser` dans shared**
+
+- **Constat** : c'est une devDependency de shared, alors que `dto/auth.ts:1-6` publie ses types. Les consommateurs ne la déclarent pas, donc avec `skipLibCheck` le type devient `any` en silence.
+- **Proposition** : la déclarer en `peerDependency`, ou recopier les 4 types JSON.
+
+**RT-10 — Version d'`apps/docs`**
+
+- **Constat** : `apps/docs/package.json:3` est en `1.9.0`, alors que les autres paquets sont en `1.10.0`. Ni le CLAUDE.md (« quatre package.json ») ni le skill `version-bump` ne listent docs.
+- **Proposition** : l'inclure dans le lockstep, ou l'exclure explicitement par écrit.
+
+**RT-14 — Sévérité ESLint**
+
+- **Constat** : `apps/web/eslint.config.mjs:52-55` passe `no-unused-vars` en `error`, alors que la base (`eslint.config.base.mjs:59`) le met en `warn`.
+- **Proposition** : unifier dans la base.
+
+**RT-17 — `lib/` à plat**
+
+- **Constat** : 76 fichiers à la racine de `lib/`.
+- **Proposition** : `lib/{admin,review,library,nav,preferences,app,share,utils}/`, en déplaçant les specs avec leur source.
+- **Risque** : gros diff d'imports, donc une PR mécanique dédiée. Mettre à jour les chemins cités dans le CLAUDE.md.
+
+**RT-18 — `components/` à plat**
+
+- **Constat** : environ 120 composants à plat, avec des modules `.ts` de logique au même niveau.
+- **Proposition** : `components/{library,review,list,comments,overlay,session}/`.
+
+**RT-22 — Exports inutiles**
+
+- **Constat** : 48 côté API (par exemple `mail.service.ts:19,29,53,83,173`, `responses.dto.ts:42…`) et 19 côté web.
+- **Proposition** : retirer `export`. Cosmétique.
+
+**RT-27 — Docs et Dockerfiles**
+
+- **Constat** :
+  - `apps/docs/src/components/AlertTable.astro:11` importe shared par chemin relatif profond.
+  - `apps/api/Dockerfile:6-7` affirme que tous les manifestes sont requis, alors que `apps/docs/package.json` n'est pas copié.
+- **Proposition** : un alias ou un commentaire pour l'import, et corriger le commentaire du Dockerfile.
+
+**RT-28 — 🐛 `detectLocale` ignore l'italien**
+
+- **Constat** : `auth/auth.service.ts:1129-1132` renvoie `"fr"` ou `"en"` seulement, alors que l'italien est une locale supportée.
+- **Proposition** : s'appuyer sur la liste `Locale` de shared. C'est un bug hors refactor, mais révélé par l'axe 1.
+
+---
+
+## 5. Quick wins
+
+Pistes à fort rendement et faible effort (S, risque faible), à traiter en premier. Les bugs passent avant le reste.
+
+| #   | ID                             | Pourquoi                                                        |
+| --- | ------------------------------ | --------------------------------------------------------------- |
+| 1   | SH-05 + HB-20 (première étape) | 🐛 liens morts dans les listes et les stats ; `workPath` unique |
+
+---
+
+## 6. Plan d'exécution
+
+Chaque lot correspond à une PR mergeable seule. Le numéro d'ordre indique les dépendances. Les lots marqués ∥ sont parallélisables.
+
+| Lot        | Contenu                                                                                                               | Dépend de                            | Remarques                                                      |
+| ---------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------- |
+| **L0a** 🐛 | SH-05 côté API seulement : `workPath` dans `common/work-href.util.ts`, branché dans `list.service` et `stats.service` | —                                    | Test rouge d'abord. Minimal, pour corriger vite.               |
+| **L0g** 🐛 | Textes : RT-28, SH-27 (filtre serveur et import)                                                                      | —                                    |                                                                |
+| **L1** ∥   | Nettoyage : RT-14, SH-38 (`XP_RULE_LIST`)                                                                      | —                                    | Aucun risque fonctionnel.                                      |
+| **L2**     | shared, constantes de contrat : SH-29/CB-01 (`shared/date.ts`)                                                        | —                                    | Un seul `build:package`.                                       |
+| **L3**     | shared, routes et présentation : SH-05 complet (`shared/routes.ts`, migration de L0a et du web), SH-08, HF-07         | L0a                                  | Supprime `home/widgets/media.ts`.                              |
+| **L8**     | API services transverses : HB-20 (`resolveWorkTargets`), RB-18, RB-09, RB-11                                          | L3                                   | Une PR par thème.                                              |
+| **L9**     | API admin : RB-14, RB-15, RB-16, RB-17, RB-19                                                                         | L8                                   | RB-19 après décision sur la maintenance.                       |
+| **L10**    | API découpages : RB-10, RB-20, RB-23, RB-24, RB-25, RB-26, RB-27, RB-28 et RB-29                                                                                 | L8 (RB-23, RB-24, RB-28 après HB-20) | Une PR par fichier, sans changement de comportement.           |
+| **L11** ∥  | Web helpers : HF-05, 08 (par lots), 11                                                                                | L2 pour HF-05                        | HF-08 en plusieurs PR.                                         |
+| **L12** ∥  | Web constantes : CF-03, 14                                                                                            | —                                    | CF-03 en dernier, progressif.                                  |
+| **L13** ∥  | Web types : TF-12                                                                                                     | —                                    |                                                                |
+| **L14**    | Web petits composants : RF-10, RF-17                                                                                  | L12                                  |                                                                |
+| **L15**    | Web gros composants : RF-01 (avec test de caractérisation), RF-02, RF-18                                              | L3, L14                              | Une PR par composant.                                          |
+| **L16**    | Web découpages : RF-24, RF-25, RF-26, RF-28, RF-29, RF-31                                                             | L15 pour RF-25                       |                                                                |
+| **L17**    | Déplacements « shared → app » : SH-33, SH-34, SH-35, SH-39 + RT-04, | décision SH-35                       |                                                                |
+| **L18**    | Dépendances et build : RT-08, RT-09, RT-10                                                                            | —                                    | RT-08 demande un `docker build`.                               |
+| **L19**    | Structure (mécanique, en dernier) : RT-07 (codemod `client.ts`), RT-17, RT-18, RT-22                                  | tout le reste                        | Conflits garantis avec les PR en cours ; à faire seul et vite. |
+
+**Décisions à prendre avant les lots concernés** :
+
+- **SH-04** : sort de la note 0 dans l'histogramme.
+- **SH-08** : sémantique du pourcentage de lecture.
+- **SH-35** : règle d'appartenance à shared.
+- **SH-38** : `XP_RULES` côté web ou non.
+- **RB-09** : absence de cron music, voulue ou non.
+- **RB-19** : maintenance bloquant les mutations ou non.
+- **RT-07** : codemod du barrel ou assumer le point d'entrée.
+- **RT-10** : docs dans le lockstep de version ou non.
+- **Écart d'XP** : games et books révoquent l'XP en quittant l'état terminal, media (`MOVIE_WATCHED`) et music (`ALBUM_LISTENED`) non. La réconciliation nocturne absorbe probablement l'écart, mais c'est une incohérence de règle.
+
+---
+
+## 7. Repères des tâches résolues
+
+- **SH-06 et SH-07** : shared fournit `episodeCode` (format `S02E05`, sans tronquer les numéros à trois chiffres) et `progressPercent` (arrondi à l’entier, zéro sans épisodes). HF-07 doit réutiliser ces fonctions en retirant les adaptateurs du module de widgets, sans modifier la progression.
+
+Ces numéros restent uniquement pour guider les pistes qui en dépendent ; ils ne font plus partie des tâches à traiter.
+
+- **CB-02** : `common/catalog-sync.util.ts` centralise le TTL de 24 heures et `isCatalogFresh`, utilisés par les quatre catalogues et l’administration. RB-09 doit préserver le délai distinct de sept jours de la synchronisation automatique des livres ; le choix d’un cron MusicBrainz reste à arbitrer.
+- **HB-08** : `common/date.util.ts` fournit `addDays` et `sinceDaysAgo` avec des décalages fixes de 24 heures, sans changement de fuseau ni mutation de la date. CB-01 pourra déplacer la constante d’unité vers shared en préservant cette sémantique.
+- **HF-04** : `localDateInput` vit dans `lib/date.ts`, avec un réexport dans `session-presentation.ts`. Il sert aux dates de sortie, à la borne de naissance, au calendrier, aux clés API et à OnThisDay. SH-29 pourra déplacer cette source unique vers shared ; HF-05 pourra compléter ce module avec les calculs de jours calendaires.
+
+---
+
+## 8. Points écartés
+
+| Sujet examiné                                                                                                                                             | Raison du rejet                                                                                                                                                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Exception Knip `rxjs` à la racine                                                                                                                         | Nécessaire pour la déclaration de peer `@nestjs/platform-fastify` dans `pnpm-workspace.yaml` ; la déplacer vers l’API ou la supprimer fait échouer Knip.                                       |
+| Classe de base commune aux 4 services de bibliothèque                                                                                                     | Le raisonnement en tête de `entry-lifecycle.util.ts` tient : MEDIA diverge sur presque chaque appel Prisma. Les helpers libres sont le bon niveau.                                             |
+| Fusion de `syncPlaythroughStatus` / `syncReadingStatus` ; classe de base `*-item`                                                                         | Les delegates Prisma génériques imposent des casts : le coût de typage dépasse le gain. Les tables de correspondance sont extraites ; les delegates restent distincts. Le TTL relève de RB-09. |
+| `admin.service.ts:82-356` (getter de 275 l.)                                                                                                              | Table déclarative de sondes (`specs`) : une donnée, pas une logique.                                                                                                                           |
+| `users.controller.ts`, `books.controller.ts`                                                                                                              | Fins ; hors RB-19, rien à sortir.                                                                                                                                                              |
+| `ParseUUIDPipe` / `ParseIntPipe` sur les ids                                                                                                              | Les ids sont des cuid ; le 404 du service suffit.                                                                                                                                              |
+| `health.controller`, `public-stats.controller` (Prisma direct)                                                                                            | Triviaux, acceptables.                                                                                                                                                                         |
+| Helper `uniq` (`[...new Set()]` ≈26 fois), `trim() \|\| null`                                                                                             | Idiomatique ; un helper n'apporterait que de l'indirection.                                                                                                                                    |
+| `splitAuthors` ×3, `parseYear`, `toIsoDate` ×3, `pickTrailer`, `toRatings`                                                                                | Entrées hétérogènes selon le provider : ce n'est pas la même logique.                                                                                                                          |
+| `toDateOrNull` de tvtime, `earliest(dates[])` de profile-stats                                                                                            | Sémantique différente (fuseau, arité).                                                                                                                                                         |
+| `CACHE_TTL_MS = 30_000` ×2, `MIN_REQUEST_INTERVAL_MS` par provider, `WATCH_LIST_TTL_MS`, cron `EVERY_6_HOURS` ×3                                          | Réglages indépendants, volontairement locaux.                                                                                                                                                  |
+| `createHash` dans `auth-cookies.ts:135`                                                                                                                   | Dérivation de clé, pas un hash de token.                                                                                                                                                       |
+| `getCalendar` et son repli `movieReleaseRegion`                                                                                                           | Repli voulu sur la région mémorisée du rappel, distinct de la région de visionnage actuelle.                                                                                                   |
+| Partager `deriveStatus`, libellés de statut, textes de notification                                                                                       | Le web ne recalcule pas le statut ; il y a deux systèmes i18n distincts (Paraglide et `notification-copy.ts`).                                                                                 |
+| `COPY_LOCALES` ↔ `Locale`                                                                                                                                 | Sous-ensemble voulu (langues de rédaction de l'API).                                                                                                                                           |
+| `format.ts` du web dans shared                                                                                                                            | Intl + Paraglide, propre au web ; l'API ne formate pas de durées.                                                                                                                              |
+| Tailles de page `20` du web dans une constante commune                                                                                                    | Les deux sites (`ToWatchWidget`, `UserSelector`) n'ont pas le même sens ; la pagination réelle utilise `DEFAULT_PAGE_SIZE` de shared, tandis que le quota du widget reste distinct.            |
+| Unions `type Tab` / `Step` / `Mode` homonymes                                                                                                             | Les valeurs diffèrent ; elles sont propres à chaque écran.                                                                                                                                     |
+| Enums utilisés à l'exécution par l'API seule (`XpReason`, `ActivityType`…)                                                                                | Vocabulaire des DTO, consommé comme types par le web : ils sont à leur place.                                                                                                                  |
+| Seuils numériques réservés à l'API dans shared (`GHOST_AFTER_DAYS`, `MAX_API_KEYS_PER_USER`…)                                                             | Coût nul ; certains sont utiles au web.                                                                                                                                                        |
+| `LEVEL_BASE/STEP/CAP_COST`, `VALIDATION_CONSTRAINT_NAMES`, `REPORT_CATEGORY_MOTIFS` exportés pour les tests                                               | Pattern « exporter pour tester », assumé (`@public`).                                                                                                                                          |
+| `VALERR_MESSAGE_KEYS`, les 47 `check*` de `registry.ts` exportés                                                                                          | Même raison.                                                                                                                                                                                   |
+| `legacyIncomplete`, `settings/nav.ts` `legacyHash`, `notification-presentation.ts:24`                                                                     | Donnée métier persistée, ou redirection de favoris : ce n'est pas du code mort.                                                                                                                |
+| `apps/api/test/__snapshots__`                                                                                                                             | La règle « no snapshot » ne vise que le web.                                                                                                                                                   |
+| `settings/nav.ts` (826 l.)                                                                                                                                | Données déclaratives, source unique volontaire.                                                                                                                                                |
+| Pages légales (865 et 515 l.), `admin/components/+page.svelte` (747 l.)                                                                                   | Prose, et vitrine du design system.                                                                                                                                                            |
+| `HomeLayoutEditor` (718 l.)                                                                                                                               | Les maths de grille sont déjà dans `lib/home/grid.ts` ; le reste est de la colle DOM.                                                                                                          |
+| Hero de la page média                                                                                                                                     | Design en overlay volontairement distinct (RF-02).                                                                                                                                             |
+| Sélecteurs de domaine (onboarding contre réglages), tuiles et chips `aria-pressed`                                                                        | Visuels différents ; la logique `domainToggle` et la classe `.chip` sont déjà partagées.                                                                                                       |
+| `AdminList` générique (reports, security, imports)                                                                                                        | Sur-ingénierie ; on réutilise les boutons de pagination et squelettes communs ; les pastilles utilisent aussi la classe `.pill` commune.                                                       |
+| `CommentThread` en TanStack brut                                                                                                                          | Exception documentée (les clés ont été centralisées dans `keys.comments`).                                                                                                                     |
+| try/catch légitimes du web (scan ISBN, `QuickAddPanel` parsing d'URL, `safeRedirect`, `navigator.share`, Mermaid, rollback optimiste de `LibraryBrowser`) | API d'appareil ou de navigateur, ou logique optimiste, et non des appels à l'API.                                                                                                              |
+| `Intl.DateTimeFormat`, `downloadBlob`, `staleTime`, z-index, durées de toast                                                                              | Déjà centralisés.                                                                                                                                                                              |
+| URLs d'images TMDB/IGDB côté web                                                                                                                          | Seulement dans `landing-mock-data.ts` ; le web reçoit des URLs complètes.                                                                                                                      |
+| `Math.round(x / 60)` des stats, `padStart` décoratifs                                                                                                     | Valeurs numériques de graphique ou effet visuel ponctuel.                                                                                                                                      |
+| `mailto:contact@loomkeep.app` des pages légales                                                                                                           | Contenu juridique figé.                                                                                                                                                                        |
+| `as unknown as` WebAuthn du web, `Component<any>` des utilitaires de test                                                                                 | Documentés, et pattern standard.                                                                                                                                                               |
+| `COMPACT_QUERY` de `layout.svelte.ts`                                                                                                                     | Différente à dessein (largeur ou hauteur).                                                                                                                                                     |
+| ESLint et tsconfig                                                                                                                                        | Déjà factorisés via les configs `base`.                                                                                                                                                        |
+| Versions de vitest, coverage, typescript et `@types/node`                                                                                                 | Homogènes.                                                                                                                                                                                     |
+| `prisma` en `dependencies`, `@fastify/static` en dev, `pino-http`, `rxjs`, `@nestjs/schematics`, `dotenv`                                                 | Justifiés (runtime de migration, Swagger réservé au dev, peers).                                                                                                                               |
+| APIs Node dans shared                                                                                                                                     | Aucune trouvée : sain.                                                                                                                                                                         |
+| Barrel `shared/index.ts` (50 `export *`)                                                                                                                  | Cohérent ; l'impact sur le tree-shaking est négligeable pour des constantes (attention seulement aux gros objets, SH-38).                                                                      |
+| `ownershipSource: "Steam"` import ↔ préréglage web                                                                                                        | Couplage implicite mais stable ; gain marginal.                                                                                                                                                |
+| Domaine des sources d'import (web) contre classes de base (API)                                                                                           | Structurel côté API ; une table partagée ferait doublon.                                                                                                                                       |

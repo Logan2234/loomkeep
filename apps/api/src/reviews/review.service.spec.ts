@@ -1,33 +1,19 @@
 import type { ConfigService } from "@nestjs/config";
-import { vi } from "vitest";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
-import type { AchievementService } from "../gamification/achievements/achievement.service";
-import type { XpService } from "../gamification/xp.service";
+import { Prisma } from "@prisma/client";
+import { vi, type Mock } from "vitest";
+import { notificationCopy } from "../notifications/notification-copy";
+import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ActivityService } from "../social/activity.service";
 import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
+import { stubAchievements, stubXp } from "../test-utils/stubs";
 import { ReviewService } from "./review.service";
-
-function stubXp(): XpService {
-  return {
-    award: vi.fn(),
-    awardMany: vi.fn(),
-    revokeBySource: vi.fn(),
-  } as unknown as XpService;
-}
-
-function stubAchievements(): AchievementService {
-  return { evaluate: vi.fn() } as unknown as AchievementService;
-}
 
 // Not exercised by most of these tests — kept plain so isGamificationEnabled
 // resolves to `false` (config unset, flag fallback false), matching the
 // deployment default.
 const CONFIG = { get: vi.fn() } as unknown as ConfigService;
-const FLAGS = {
-  isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-} as unknown as FeatureFlagsService;
 
 const VIEWER = "viewer";
 
@@ -69,6 +55,13 @@ function relation(over: Partial<ViewerRelation>): ViewerRelation {
   };
 }
 
+function stubNotifications(): NotificationService {
+  return {
+    create: vi.fn(),
+    copyFor: vi.fn(async () => notificationCopy("en")),
+  } as unknown as NotificationService;
+}
+
 function make(rows: unknown[], relations: Record<string, ViewerRelation>) {
   const prisma = {
     review: { findMany: vi.fn().mockResolvedValue(rows) },
@@ -91,8 +84,8 @@ function make(rows: unknown[], relations: Record<string, ViewerRelation>) {
     activity,
     stubXp(),
     CONFIG,
-    FLAGS,
     stubAchievements(),
+    stubNotifications(),
   );
 }
 
@@ -209,6 +202,7 @@ function makeForWrite(
   const upsert = vi.fn().mockResolvedValue(row);
   const revisionCreate = vi.fn().mockResolvedValue({});
   const prisma = {
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
     review: {
       findUnique: vi
         .fn()
@@ -230,6 +224,15 @@ function makeForWrite(
     },
     episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
     userScore: { findMany: vi.fn().mockResolvedValue([]) },
+    season: {
+      findUnique: vi.fn().mockResolvedValue({ number: 3, mediaItemId: "m1" }),
+    },
+    episode: {
+      findUnique: vi.fn().mockResolvedValue({
+        number: 5,
+        season: { number: 3, mediaItemId: "m1" },
+      }),
+    },
   } as unknown as PrismaService;
   const activity = { emit: vi.fn() } as unknown as ActivityService;
   const visibility = {} as unknown as VisibilityService;
@@ -241,10 +244,10 @@ function makeForWrite(
     activity,
     xp,
     CONFIG,
-    FLAGS,
     achievements,
+    stubNotifications(),
   );
-  return { svc, revisionCreate, upsert, xp, achievements, activity };
+  return { svc, prisma, revisionCreate, upsert, xp, achievements, activity };
 }
 
 describe("ReviewService.upsert — spoiler tag", () => {
@@ -288,6 +291,50 @@ describe("ReviewService.upsert — feed and XP", () => {
     await svc.upsert("u1", "MEDIA" as never, "m1", { rating: 8, text: null });
     expect(activity.emit).toHaveBeenCalledTimes(1);
     expect(xp.award).toHaveBeenCalled();
+  });
+
+  it("links the feed entry to its review", async () => {
+    const { svc, activity } = makeForWrite(null);
+    await svc.upsert("u1", "MEDIA" as never, "m1", { rating: 8, text: null });
+    expect(activity.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: "MEDIA",
+        targetId: "m1",
+        level: "WORK",
+        homeFeed: true,
+        sourceType: "Review",
+        sourceId: "r1",
+      }),
+    );
+  });
+
+  it("records a season review against its show", async () => {
+    // The feed only snapshots catalogue works: pointed at the season itself,
+    // the entry was silently never written.
+    const { svc, activity } = makeForWrite(null);
+    await svc.upsert("u1", "SEASON" as never, "s3", { rating: 7, text: null });
+    expect(activity.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: "MEDIA",
+        targetId: "m1",
+        level: "SEASON",
+        homeFeed: false,
+        data: { rating: 7, seasonNumber: 3 },
+      }),
+    );
+  });
+
+  it("records an episode review against its show", async () => {
+    const { svc, activity } = makeForWrite(null);
+    await svc.upsert("u1", "EPISODE" as never, "e5", { rating: 9, text: null });
+    expect(activity.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: "MEDIA",
+        targetId: "m1",
+        level: "EPISODE",
+        data: { rating: 9, seasonNumber: 3, episodeNumber: 5 },
+      }),
+    );
   });
 
   it("stays silent when only the audience or the spoiler tag changed", async () => {
@@ -359,6 +406,7 @@ function makeForVoting(opts: {
   reviewOwnerId: string;
   grouped?: { reviewId: string; value: string; _count: { _all: number } }[];
   existingVote?: { id: string; value: string } | null;
+  upvotes?: number;
 }) {
   const upsert = vi.fn().mockResolvedValue({ id: "vote-1" });
   const deleteMany = vi.fn().mockResolvedValue({ count: 1 });
@@ -373,20 +421,23 @@ function makeForVoting(opts: {
       findUnique,
       groupBy: vi.fn().mockResolvedValue(opts.grouped ?? []),
       findMany: vi.fn().mockResolvedValue([]),
+      count: vi.fn().mockResolvedValue(opts.upvotes ?? 1),
     },
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
   } as unknown as PrismaService;
   const xp = stubXp();
   const achievements = stubAchievements();
+  const notifications = stubNotifications();
   const svc = new ReviewService(
     prisma,
     {} as unknown as VisibilityService,
     {} as unknown as ActivityService,
     xp,
     CONFIG,
-    FLAGS,
     achievements,
+    notifications,
   );
-  return { svc, upsert, deleteMany, xp, achievements };
+  return { svc, upsert, deleteMany, xp, achievements, notifications };
 }
 
 describe("ReviewService.vote", () => {
@@ -410,6 +461,30 @@ describe("ReviewService.vote", () => {
     });
     await downSvc.vote("voter", "r1", "DOWN" as never);
     expect(downAchievements.evaluate).not.toHaveBeenCalled();
+  });
+
+  it("tells the author once the upvotes reach the threshold", async () => {
+    const { svc, notifications } = makeForVoting({
+      reviewOwnerId: "author",
+      upvotes: 10,
+    });
+    await svc.vote("voter", "r1", "UP" as never);
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "author",
+        type: "REVIEW_VOTES",
+        body: "10 upvotes",
+        dedupeKey: "review-votes:r1:10",
+        data: { count: 10, workTitle: null },
+      }),
+    );
+
+    const { svc: quiet, notifications: none } = makeForVoting({
+      reviewOwnerId: "author",
+      upvotes: 11,
+    });
+    await quiet.vote("voter", "r1", "UP" as never);
+    expect(none.create).not.toHaveBeenCalled();
   });
 
   it("upserts the vote and returns the resulting score", async () => {
@@ -511,6 +586,26 @@ describe("ReviewService.setRating — revision snapshotting", () => {
     await svc.setRating("u1", "MEDIA" as never, "m1", 8);
     expect(revisionCreate).toHaveBeenCalledTimes(1);
   });
+
+  it("falls back to updating the review a concurrent rating created first", async () => {
+    const { svc, prisma, revisionCreate } = makeForWrite(null);
+    (prisma.review.findUnique as Mock)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue({ id: "r1", rating: 6, text: null });
+    (prisma.review.create as Mock).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+
+    await svc.setRating("u1", "MEDIA" as never, "m1", 8);
+
+    expect(prisma.review.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { rating: 8 } }),
+    );
+    expect(revisionCreate).toHaveBeenCalledTimes(1);
+  });
 });
 
 const LONG_TEXT = Array.from({ length: 45 }, () => "word").join(" "); // >= 40
@@ -574,6 +669,39 @@ describe("ReviewService — structural review deletion revokes XP", () => {
 });
 
 describe("ReviewService.adminRemove", () => {
+  it("deletes the review and revokes XP on the caller's transaction", async () => {
+    const xp = stubXp();
+    const tx = {
+      review: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "rev1",
+          userId: "author1",
+          rating: 2,
+          text: "hors sujet",
+        }),
+        delete: vi.fn(),
+      },
+    } as unknown as Prisma.TransactionClient;
+    const prisma = {
+      review: { findUnique: vi.fn(), delete: vi.fn() },
+    } as unknown as PrismaService;
+    const svc = new ReviewService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      xp,
+      CONFIG,
+      stubAchievements(),
+      stubNotifications(),
+    );
+
+    await svc.adminRemove("rev1", tx);
+
+    expect(tx.review.delete).toHaveBeenCalledWith({ where: { id: "rev1" } });
+    expect(prisma.review.delete).not.toHaveBeenCalled();
+    expect(xp.revokeBySource).toHaveBeenCalledWith("Review", ["rev1"], tx);
+  });
+
   it("deletes the review, revokes its XP and returns what the notice needs", async () => {
     const deleteFn = vi.fn().mockResolvedValue({});
     const xp = stubXp();
@@ -594,8 +722,8 @@ describe("ReviewService.adminRemove", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       xp,
       CONFIG,
-      FLAGS,
       stubAchievements(),
+      stubNotifications(),
     );
 
     await expect(svc.adminRemove("rev1")).resolves.toEqual({
@@ -618,10 +746,285 @@ describe("ReviewService.adminRemove", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       xp,
       CONFIG,
-      FLAGS,
       stubAchievements(),
+      stubNotifications(),
     );
 
     await expect(svc.adminRemove("missing")).rejects.toThrow();
+  });
+});
+
+describe("ReviewService.listMine — target links", () => {
+  it("links every domain's work under /app", async () => {
+    const row = (targetType: string, targetId: string) => ({
+      id: `r-${targetId}`,
+      userId: VIEWER,
+      targetType,
+      targetId,
+      rating: 8,
+      text: null,
+      visibility: "PUBLIC",
+      spoilerTag: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const item = (id: string, sourceId: string, source: string) => ({
+      id,
+      title: id,
+      coverUrl: null,
+      canonicalSource: source,
+      externalIds: [{ source, externalId: sourceId }],
+    });
+    const prisma = {
+      review: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            row("MEDIA", "m1"),
+            row("GAME", "g1"),
+            row("BOOK", "b1"),
+            row("MUSIC", "a1"),
+          ]),
+      },
+      reviewVote: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      user: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: VIEWER,
+          username: VIEWER,
+          displayName: VIEWER,
+          avatarUrl: null,
+          hideProgression: false,
+        }),
+      },
+      userScore: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaItem: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            ...item("m1", "550", "TMDB"),
+            posterUrl: null,
+            type: "MOVIE",
+          },
+        ]),
+      },
+      gameItem: {
+        findMany: vi.fn().mockResolvedValue([item("g1", "1942", "IGDB")]),
+      },
+      bookItem: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([item("b1", "OL1W", "OPEN_LIBRARY")]),
+      },
+      musicItem: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([item("a1", "mbid-1", "MUSICBRAINZ")]),
+      },
+    } as unknown as PrismaService;
+    const svc = new ReviewService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      stubXp(),
+      CONFIG,
+      stubAchievements(),
+      stubNotifications(),
+    );
+
+    const hrefs = (await svc.listMine(VIEWER)).map((r) => r.target?.href);
+
+    expect(hrefs).toEqual([
+      "/app/media/movie/550",
+      "/app/games/1942",
+      "/app/books/OL1W",
+      "/app/music/mbid-1",
+    ]);
+  });
+
+  it("resolves a season or episode review to its series, with the numbers", async () => {
+    const row = (targetType: string, targetId: string) => ({
+      id: `r-${targetId}`,
+      userId: VIEWER,
+      targetType,
+      targetId,
+      rating: 8,
+      text: null,
+      visibility: "PUBLIC",
+      spoilerTag: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const prisma = {
+      review: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([row("SEASON", "s1"), row("EPISODE", "e1")]),
+      },
+      reviewVote: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      user: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: VIEWER,
+          username: VIEWER,
+          displayName: VIEWER,
+          avatarUrl: null,
+          hideProgression: false,
+        }),
+      },
+      userScore: { findMany: vi.fn().mockResolvedValue([]) },
+      season: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ id: "s1", number: 2, mediaItemId: "m1" }]),
+      },
+      episode: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "e1",
+            number: 5,
+            season: { number: 3, mediaItemId: "m1" },
+          },
+        ]),
+      },
+      mediaItem: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "m1",
+            title: "Severance",
+            posterUrl: "https://img/severance.jpg",
+            type: "TV",
+            canonicalSource: "TMDB",
+            externalIds: [{ source: "TMDB", externalId: "95396" }],
+          },
+        ]),
+      },
+    } as unknown as PrismaService;
+    const svc = new ReviewService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      stubXp(),
+      CONFIG,
+      stubAchievements(),
+      stubNotifications(),
+    );
+
+    const targets = (await svc.listMine(VIEWER)).map((r) => r.target);
+
+    expect(targets).toEqual([
+      {
+        title: "Severance",
+        imageUrl: "https://img/severance.jpg",
+        href: "/app/media/tv/95396",
+        seasonNumber: 2,
+      },
+      {
+        title: "Severance",
+        imageUrl: "https://img/severance.jpg",
+        href: "/app/media/tv/95396",
+        seasonNumber: 3,
+        episodeNumber: 5,
+      },
+    ]);
+  });
+});
+
+describe("ReviewService.communityRatings", () => {
+  function makeRatings(rows: unknown[], socialEnabled: boolean) {
+    const prisma = {
+      review: { findMany: vi.fn().mockResolvedValue(rows) },
+    } as unknown as PrismaService;
+    const config = {
+      get: vi.fn((key: string) =>
+        key === "SOCIAL_ENABLED" ? String(socialEnabled) : undefined,
+      ),
+    } as unknown as ConfigService;
+    const visibility = {
+      getRelation: vi.fn((_v: string, target: { id: string }) =>
+        Promise.resolve(
+          target.id === "friend"
+            ? relation({ isFriend: true, following: true, followsYou: true })
+            : relation({}),
+        ),
+      ),
+    } as unknown as VisibilityService;
+    const svc = new ReviewService(
+      prisma,
+      visibility,
+      { emit: vi.fn() } as unknown as ActivityService,
+      stubXp(),
+      config,
+      stubAchievements(),
+      stubNotifications(),
+    );
+    return { svc, prisma, visibility };
+  }
+
+  const row = (
+    targetId: string,
+    authorId: string,
+    rating: number,
+    visibility: string,
+  ) => ({
+    targetId,
+    rating,
+    visibility,
+    user: { id: authorId, profileAccess: "PUBLIC" },
+  });
+
+  it("counts and averages only the reviews the viewer may see, with their own rating apart", async () => {
+    const { svc, visibility } = makeRatings(
+      [
+        row("e1", VIEWER, 8, "FRIENDS"),
+        row("e1", "friend", 6, "FRIENDS"),
+        row("e1", "stranger", 2, "FRIENDS"),
+        row("e1", "stranger", 10, "PUBLIC"),
+      ],
+      true,
+    );
+
+    const ratings = await svc.communityRatings(VIEWER, "EPISODE" as never, [
+      "e1",
+      "e2",
+    ]);
+
+    expect(ratings.get("e1")).toEqual({
+      reviewCount: 3,
+      reviewAverage: 8,
+      myRating: 8,
+    });
+    expect(ratings.get("e2")).toEqual({
+      reviewCount: 0,
+      reviewAverage: null,
+      myRating: null,
+    });
+    // One lookup per author and audience, not per review.
+    expect(visibility.getRelation).toHaveBeenCalledTimes(3);
+  });
+
+  it("gives only the viewer's own rating when social features are off", async () => {
+    const { svc, prisma } = makeRatings(
+      [row("e1", VIEWER, 7, "PUBLIC")],
+      false,
+    );
+
+    const ratings = await svc.communityRatings(VIEWER, "EPISODE" as never, [
+      "e1",
+    ]);
+
+    expect(prisma.review.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: VIEWER }),
+      }),
+    );
+    expect(ratings.get("e1")).toEqual({
+      reviewCount: null,
+      reviewAverage: null,
+      myRating: 7,
+    });
   });
 });

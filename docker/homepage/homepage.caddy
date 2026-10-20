@@ -5,7 +5,7 @@
 # Cloudflare and without that add-on are exposed on this hostname with no
 # login at all — either keep it off a public hostname (bind it to a
 # VPN/LAN-only address instead) or reintroduce Authelia's forward_auth in
-# front of it (see docker/README.md § "Single sign-on" for the pattern —
+# front of it (see docker/README.md § "Access control per public subdomain" —
 # auth.<DOMAIN> + forward_auth against authelia:9091).
 #
 # Two blocks — see observability/grafana.caddy's own comment for why:

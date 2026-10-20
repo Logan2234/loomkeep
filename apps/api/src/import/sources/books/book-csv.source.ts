@@ -12,15 +12,17 @@ import type {
   ImportSource,
 } from "@loomkeep/shared";
 import { Domain, ReviewTargetType } from "@loomkeep/shared";
+import assert from "node:assert/strict";
 import { BookItemService } from "../../../books/book-item.service";
 import { mapWithConcurrency, refKey } from "../../../common/concurrency.util";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import { AgeGateService } from "../../../users/age-gate.service";
-import type {
-  CommitDecisions,
-  ImportReq,
-  ProgressReporter,
+import {
+  type CommitDecisions,
+  type ImportReq,
+  type ProgressReporter,
+  indexPlanMatches,
 } from "../../import-source";
 
 // Rows are resolved against the catalogue a few at a time — fast enough for a
@@ -145,13 +147,10 @@ export abstract class BookCsvSource<
       byStatus.set(row.status, bucket);
     }
 
-    const groups: ImportPlanGroup[] = STATUS_GROUPS.filter(
-      (g) => (byStatus.get(g.status)?.length ?? 0) > 0,
-    ).map((g) => ({
-      id: g.status,
-      label: g.label,
-      items: byStatus.get(g.status)!,
-    }));
+    const groups: ImportPlanGroup[] = STATUS_GROUPS.flatMap((g) => {
+      const items = byStatus.get(g.status);
+      return items?.length ? [{ id: g.status, label: g.label, items }] : [];
+    });
 
     return {
       groups,
@@ -171,7 +170,7 @@ export abstract class BookCsvSource<
     const allowAdult = await this.ageGate.allowsAdultContent(userId);
 
     if (decisions.overwrite) {
-      // BookReplay cascades on BookEntry delete (schema onDelete: Cascade).
+      // Reading cycles cascade on BookEntry delete.
       await this.prisma.bookEntry.deleteMany({ where: { userId } });
     }
 
@@ -200,17 +199,15 @@ export abstract class BookCsvSource<
       progress.tick();
     }
 
-    const tiles: ImportReportTile[] = STATUS_GROUPS.filter(
-      (g) => (tally.get(g.status) ?? 0) > 0,
-    ).map((g) => ({
-      id: g.status,
-      label: g.label,
-      value: tally.get(g.status)!,
-      sub: null,
-    }));
+    const tiles: ImportReportTile[] = STATUS_GROUPS.flatMap((g) => {
+      const value = tally.get(g.status);
+      return value !== undefined && value > 0
+        ? [{ id: g.status, label: g.label, value, sub: null }]
+        : [];
+    });
 
     if (tiles.length === 0) {
-      tiles.push({ id: "books", label: "Livres", value: 0, sub: null });
+      tiles.push({ id: "books", label: "Books", value: 0, sub: null });
     }
 
     return { overwrite: decisions.overwrite, tiles };
@@ -242,13 +239,14 @@ export abstract class BookCsvSource<
       status,
       notes: row.notes,
       currentPage,
+      editionKey: details.editionKey,
+      referencePageCount: details.pageCount,
+      readingBaselinePage: currentPage,
       startedAt: row.startedAt ? new Date(row.startedAt) : null,
       finishedAt: row.finishedAt ? new Date(row.finishedAt) : null,
       ownershipStatus: row.ownershipStatus,
     };
-    // Only a first-time import backfills replays from "Read Count" — an
-    // existing entry may already have its own, and re-running the same import
-    // shouldn't keep piling more on.
+    // Only a first-time import backfills reading cycles from "Read Count".
     const existing = await this.prisma.bookEntry.findUnique({
       where: { userId_bookItemId: { userId, bookItemId: bookItem.id } },
       select: { id: true },
@@ -269,11 +267,30 @@ export abstract class BookCsvSource<
       );
     }
 
-    if (!existing && row.readCount > 1) {
-      await this.prisma.bookReplay.createMany({
-        data: Array.from({ length: row.readCount - 1 }, () => ({
+    if (!existing && status !== "TO_READ") {
+      const count = status === "READ" ? Math.max(1, row.readCount) : 1;
+      await this.prisma.bookReading.createMany({
+        data: Array.from({ length: count }, (_, index) => ({
           bookEntryId: entry.id,
-          finishedAt: row.finishedAt ? new Date(row.finishedAt) : new Date(),
+          number: index + 1,
+          status:
+            status === "READ"
+              ? ("COMPLETED" as const)
+              : status === "DROPPED"
+                ? ("DROPPED" as const)
+                : ("ACTIVE" as const),
+          editionKey: details.editionKey,
+          referencePageCount: details.pageCount,
+          baselinePage: index === 0 ? currentPage : 0,
+          currentPage: status === "READ" ? currentPage : 0,
+          startedAt: row.startedAt ? new Date(row.startedAt) : null,
+          finishedAt:
+            status === "READ"
+              ? row.finishedAt
+                ? new Date(row.finishedAt)
+                : new Date()
+              : null,
+          legacyIncomplete: count > 1,
         })),
       });
     }
@@ -325,7 +342,11 @@ export abstract class BookCsvSource<
     const byKey = new Map(
       [...isbnResolved, ...queryResolved].map((r) => [r.key, r]),
     );
-    return withKeys.map(({ key }) => byKey.get(key)!);
+    return withKeys.map(({ key }) => {
+      const resolved = byKey.get(key);
+      assert(resolved, "Every input row must have a resolution result");
+      return resolved;
+    });
   }
 
   /**
@@ -383,18 +404,6 @@ function toMatch(summary: BookSummaryDto): ImportMatch {
     year: summary.year,
     coverUrl: summary.coverUrl,
   };
-}
-
-function indexPlanMatches(plan: ImportPlan): Map<string, ImportMatch> {
-  const byKey = new Map<string, ImportMatch>();
-
-  for (const group of plan.groups) {
-    for (const item of group.items) {
-      if (item.match) byKey.set(item.key, item.match);
-    }
-  }
-
-  return byKey;
 }
 
 function rowIndex(key: string): number | null {

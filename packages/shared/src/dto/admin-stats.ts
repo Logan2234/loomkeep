@@ -1,6 +1,7 @@
+import type { Locale } from "../locale";
 // Sections have separate endpoints, refresh cadences, and failure modes.
 
-import type { Locale, ProfileAccess, ReportCategory } from "../enums";
+import type { ProfileAccess, ReportCategory } from "../enums";
 import type { TrendPeriod, TrendPointDto } from "./admin";
 import type { RatingBucketDto, StatsDomain } from "./stats";
 
@@ -244,7 +245,7 @@ interface AdminOpsSignalsDto {
    * `Notification` model), so there's no read/unread split any more — a row's
    * existence already means "unread".
    */
-  notificationsPending: number;
+  notificationsTotal: number;
   /**
    * Push subscription rows. A total, not a live/dead split: nothing tracks
    * whether an endpoint still answers.

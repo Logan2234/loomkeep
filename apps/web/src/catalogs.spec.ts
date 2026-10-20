@@ -1,11 +1,42 @@
+import { Locale } from "@loomkeep/shared";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parse } from "svelte/compiler";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-const locales = ["fr", "en"] as const;
-const names = ["common", "other", "errors", "gamification", "admin"] as const;
+const settings: { baseLocale: string; locales: string[] } = JSON.parse(
+  readFileSync(
+    new URL("../project.inlang/settings.json", import.meta.url),
+    "utf8",
+  ),
+);
+// fr and en are written with every change; any other locale is translated
+// afterwards and may lag behind, falling back to English key by key —
+// checked here as soon as its folder exists, before it ships.
+const locales = readdirSync(new URL("../messages", import.meta.url), {
+  withFileTypes: true,
+})
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name);
+const names = [
+  "common",
+  "other",
+  "errors",
+  "gamification",
+  "admin",
+  "settings",
+  "site",
+] as const;
+// A key with one of these prefixes lives in that file and nowhere else.
+const prefixHomes: [string, (typeof names)[number]][] = [
+  ["common_", "common"],
+  ["settings_", "settings"],
+  ["landing_", "site"],
+  ["transparency_", "site"],
+  ["gamification_", "gamification"],
+  ["admin_", "admin"],
+];
 const catalogs = Object.fromEntries(
   locales.map((locale) => [
     locale,
@@ -37,8 +68,11 @@ describe("message catalogs", () => {
           .map((match) => match[1])
           .filter((key) => key !== "$schema");
         expect(rawKeys.length, name).toBe(new Set(rawKeys).size);
-        for (const key of rawKeys)
+        for (const key of rawKeys) {
           expect(key.startsWith("common_"), key).toBe(name === "common");
+          const home = prefixHomes.find(([prefix]) => key.startsWith(prefix));
+          if (home) expect(name, key).toBe(home[1]);
+        }
         for (const value of Object.values(messages))
           expect(typeof value).toBe("string");
         keys.push(...rawKeys);
@@ -47,6 +81,33 @@ describe("message catalogs", () => {
       expect(keys.length).toBe(new Set(keys).size);
     },
   );
+
+  it("ships the same locales in Paraglide and in the shared Locale list", () => {
+    expect([...settings.locales].sort()).toEqual([...Locale].sort());
+    for (const locale of settings.locales) expect(locales).toContain(locale);
+    expect(settings.baseLocale).toBe("en");
+  });
+
+  it("translates only English keys, with their parameters, in other locales", () => {
+    const parameters = (message: string) =>
+      [...new Set(message.match(/\{\w+\}/g) ?? [])].sort();
+
+    for (const locale of locales) {
+      for (const name of names) {
+        const en = catalogs.en[name].messages;
+
+        for (const [key, message] of Object.entries(
+          catalogs[locale][name].messages,
+        )) {
+          expect(en[key], `${locale}/${name}: ${key}`).toBeTypeOf("string");
+          if (message.trim())
+            expect(parameters(message), `${locale}: ${key}`).toEqual(
+              parameters(en[key]),
+            );
+        }
+      }
+    }
+  });
 
   it("keeps the same keys and parameters in both locales and files", () => {
     const parameters = (message: string) =>
@@ -63,7 +124,7 @@ describe("message catalogs", () => {
     }
   });
 
-  it("does not duplicate generic common messages in other", () => {
+  it("does not duplicate generic common messages in other catalogs", () => {
     const pairs = new Map(
       Object.entries(catalogs.fr.common.messages).map(([key, fr]) => [
         JSON.stringify([fr, catalogs.en.common.messages[key]]),
@@ -73,19 +134,21 @@ describe("message catalogs", () => {
     expect(pairs.size, "duplicate generic messages within common").toBe(
       Object.keys(catalogs.fr.common.messages).length,
     );
-    const duplicates = Object.entries(catalogs.fr.other.messages).flatMap(
-      ([key, fr]) => {
-        const commonKey = pairs.get(
-          JSON.stringify([fr, catalogs.en.other.messages[key]]),
-        );
-        return commonKey ? [`${key} duplicates ${commonKey}`] : [];
-      },
-    );
+    const duplicates = names
+      .filter((name) => name !== "common")
+      .flatMap((name) =>
+        Object.entries(catalogs.fr[name].messages).flatMap(([key, fr]) => {
+          const commonKey = pairs.get(
+            JSON.stringify([fr, catalogs.en[name].messages[key]]),
+          );
+          return commonKey ? [`${key} duplicates ${commonKey}`] : [];
+        }),
+      );
     expect(duplicates).toEqual([]);
   });
 
   it("keeps reusable interface labels in common", () => {
-    for (const locale of locales) {
+    for (const locale of ["fr", "en"]) {
       const common = catalogs[locale].common.messages;
 
       for (const key of [
@@ -133,79 +196,89 @@ describe("message catalogs", () => {
     );
   });
 
-  it("resolves message calls throughout the frontend after key renames", () => {
-    const directory = fileURLToPath(new URL("./", import.meta.url));
-    const keys = new Set(
-      names.flatMap((name) => Object.keys(catalogs.en[name].messages)),
-    );
-    const missing: string[] = [];
+  // Parses every frontend file: seconds of CPU on its own, past the default
+  // 5s timeout when the component tests run alongside it.
+  it(
+    "resolves message calls throughout the frontend after key renames",
+    {
+      timeout: 30_000,
+    },
+    () => {
+      const directory = fileURLToPath(new URL("./", import.meta.url));
+      const keys = new Set(
+        names.flatMap((name) => Object.keys(catalogs.en[name].messages)),
+      );
+      const missing: string[] = [];
 
-    for (const file of readdirSync(directory, {
-      recursive: true,
-      encoding: "utf8",
-    })) {
-      const path = file.replaceAll("\\", "/");
-      if (
-        !/\.(ts|svelte)$/.test(path) ||
-        path.includes("paraglide/") ||
-        path.endsWith(".spec.ts")
-      )
-        continue;
-      const source = readFileSync(new URL(path, import.meta.url), "utf8");
+      for (const file of readdirSync(directory, {
+        recursive: true,
+        encoding: "utf8",
+      })) {
+        const path = file.replaceAll("\\", "/");
+        if (
+          !/\.(ts|svelte)$/.test(path) ||
+          path.includes("paraglide/") ||
+          path.endsWith(".spec.ts")
+        )
+          continue;
+        const source = readFileSync(new URL(path, import.meta.url), "utf8");
 
-      const checkKey = (key: string) => {
-        if (!keys.has(key)) missing.push(`${path}: ${key}`);
-      };
-
-      if (path.endsWith(".svelte")) {
-        const visit = (value: unknown) => {
-          if (!value || typeof value !== "object") return;
-          if (Array.isArray(value)) return value.forEach(visit);
-          const node = value as Record<string, unknown>;
-          const callee = node.callee as
-            | {
-                type: string;
-                computed?: boolean;
-                object?: { type: string; name: string };
-                property?: { name: string };
-              }
-            | undefined;
-
-          if (
-            node.type === "CallExpression" &&
-            callee?.type === "MemberExpression" &&
-            !callee.computed &&
-            callee.object?.type === "Identifier" &&
-            callee.object.name === "m" &&
-            callee.property
-          ) {
-            checkKey(callee.property.name);
-          }
-
-          for (const [key, child] of Object.entries(node)) {
-            if (key !== "metadata" && key !== "loc") visit(child);
-          }
+        const checkKey = (key: string) => {
+          if (!keys.has(key)) missing.push(`${path}: ${key}`);
         };
 
-        visit(parse(source, { modern: true }));
-      } else {
-        const visit = (node: ts.Node) => {
-          if (
-            ts.isCallExpression(node) &&
-            ts.isPropertyAccessExpression(node.expression) &&
-            ts.isIdentifier(node.expression.expression) &&
-            node.expression.expression.text === "m"
-          ) {
-            checkKey(node.expression.name.text);
-          }
+        if (path.endsWith(".svelte")) {
+          const visit = (value: unknown) => {
+            if (!value || typeof value !== "object") return;
+            if (Array.isArray(value)) return value.forEach(visit);
+            const node = value as Record<string, unknown>;
+            const callee = node.callee as
+              | {
+                  type: string;
+                  computed?: boolean;
+                  object?: { type: string; name: string };
+                  property?: { name: string };
+                }
+              | undefined;
 
-          ts.forEachChild(node, visit);
-        };
+            if (
+              node.type === "CallExpression" &&
+              callee?.type === "MemberExpression" &&
+              !callee.computed &&
+              callee.object?.type === "Identifier" &&
+              callee.object.name === "m" &&
+              callee.property
+            ) {
+              checkKey(callee.property.name);
+            }
 
-        visit(ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true));
+            for (const [key, child] of Object.entries(node)) {
+              if (key !== "metadata" && key !== "loc") visit(child);
+            }
+          };
+
+          visit(parse(source, { modern: true }));
+        } else {
+          const visit = (node: ts.Node) => {
+            if (
+              ts.isCallExpression(node) &&
+              ts.isPropertyAccessExpression(node.expression) &&
+              ts.isIdentifier(node.expression.expression) &&
+              node.expression.expression.text === "m"
+            ) {
+              checkKey(node.expression.name.text);
+            }
+
+            ts.forEachChild(node, visit);
+          };
+
+          visit(
+            ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true),
+          );
+        }
       }
-    }
 
-    expect(missing).toEqual([]);
-  });
+      expect(missing).toEqual([]);
+    },
+  );
 });

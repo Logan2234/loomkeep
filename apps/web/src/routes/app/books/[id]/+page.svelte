@@ -1,65 +1,70 @@
 <script lang="ts">
+  import StatusCorrectionModal from "#lib/components/StatusCorrectionModal.svelte";
+  import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
+  import DetailsCard from "#lib/components/DetailsCard.svelte";
+  import WorkSocialSection from "#lib/components/WorkSocialSection.svelte";
   import { page } from "$app/state";
   import {
-    addBookReplay,
     deleteBookEntry,
-    deleteBookReplay,
     getBookDetail,
     getBookEditions,
+    getBookSaga,
     updateBookEntry,
     upsertBookEntry,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { goBack } from "$lib/backNav.svelte";
-  import { toCarouselItems } from "$lib/carousel";
-  import AddToListButton from "$lib/components/AddToListButton.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Lightbox from "$lib/components/Lightbox.svelte";
-  import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import NoteField from "$lib/components/NoteField.svelte";
-  import OwnershipField from "$lib/components/OwnershipField.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import ProviderMark from "$lib/components/ProviderMark.svelte";
-  import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
-  import ReviewsSection from "$lib/components/ReviewsSection.svelte";
-  import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
-  import TrackingPanel from "$lib/components/TrackingPanel.svelte";
-  import { appConfig } from "$lib/config.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import BookSagaSection from "./components/BookSagaSection.svelte";
+  import { goBack } from "#lib/back-nav.svelte.js";
+  import { toCarouselItems } from "#lib/carousel.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import BookSessionDock from "#lib/components/BookSessionDock.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Lightbox from "#lib/components/Lightbox.svelte";
+
+  import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
+  import NoteField from "#lib/components/NoteField.svelte";
+  import OwnershipField from "#lib/components/OwnershipField.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+
+  import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
+
+  import TrackingPanel from "#lib/components/TrackingPanel.svelte";
+  import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
+  import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
+  import { bookWork } from "#lib/chat/work-search.js";
+  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
+
   import {
     BOOK_OWNERSHIP_SOURCES,
     BOOK_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/constants/ownership-sources";
+  } from "#lib/constants/ownership-sources.js";
   import {
     BOOK_STATUS_SEG_ACTIVE as SEG_ACTIVE,
     BOOK_STATUS_DESC as STATUS_DESC,
     BOOK_STATUS_META as STATUS_META,
     BOOK_STATUS_ORDER as STATUS_ORDER,
-  } from "$lib/constants/status-labels";
-  import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { formatDate, joinMeta } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/constants/status-labels.js";
+  import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
+  import { joinMeta, compareText } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import {
+    BOOK_DIRECT_STATUS_TARGETS,
+    statusCorrectionLabel,
+    cycleAwareStatusCorrections,
+  } from "#lib/status-corrections.js";
 
   // Open Library is the only book source today; the web route carries just
   // the work id (e.g. "OL893414W").
   const SOURCE = "open_library";
 
-  const RATING_STYLES: Record<string, string> = {
-    "Open Library": "bg-[#e1dcc5] text-black",
-  };
-  const RATING_BRANDS = {
-    "Open Library": "openlibrary",
-  } as const;
-
   let confirmRemove = $state(false);
+  let statusEditorOpen = $state(false);
   let lightboxOpen = $state(false);
   // Manually picked edition (an OLID from `editionsQuery`); undefined = the
   // interface-language auto-pick. Local to this page view — not persisted.
@@ -74,6 +79,9 @@
     enabled: !!id,
   }));
   const detail = $derived(bookQuery.data);
+  // 18+ titles never become a card: the friend may not allow them.
+  const work = $derived(detail ? bookWork(detail) : null);
+  let sharing = $state(false);
   const error = $derived(bookQuery.error);
 
   // The interface-language auto-pick's own language, captured once and kept
@@ -107,10 +115,25 @@
     },
     ...editions
       .map((e) => ({ value: e.key, label: e.language ?? e.title }))
-      .sort((a, b) => a.label.localeCompare(b.label)),
+      .sort((a, b) => compareText(a.label, b.label)),
   ]);
 
   const entry = $derived(detail?.entry ?? null);
+
+  // Read here rather than in the saga block: the same-author carousel leaves
+  // out the series' volumes, which the block already lists.
+  const sagaKey = $derived(
+    keys.books.saga(detail?.seriesKey ?? "", entry !== null),
+  );
+  const sagaQuery = createApiQuery(() => ({
+    key: sagaKey,
+    fetch: () => getBookSaga(detail!.seriesKey!).then((r) => r.saga),
+    enabled: !!detail?.seriesKey,
+    keepPreviousData: true,
+  }));
+  const sagaIds = $derived(
+    new Set(sagaQuery.data?.members.map((x) => x.sourceId)),
+  );
   const reviewMeta = $derived(
     detail ? joinMeta(detail.authors.join(", "), detail.year) : "",
   );
@@ -124,41 +147,73 @@
         !!detail.isbn),
   );
 
-  // Reading progress as a percentage of the known page count (0 when unknown).
-  const progressPct = $derived(
-    entry && detail?.pageCount
-      ? Math.min(100, Math.round((entry.currentPage / detail.pageCount) * 100))
-      : 0,
+  const { addMut, patchMut, removeMut } = createEntryTrackingMutations({
+    detailKey: () => detailKey,
+    detail: () => detail,
+    entryId: () => entry?.id,
+    upsert: (d) =>
+      upsertBookEntry({
+        source: d.source,
+        sourceId: d.sourceId,
+        status: "TO_READ",
+        editionKey: d.editionKey,
+        referencePageCount: d.pageCount,
+      }),
+    update: (id, changes: Parameters<typeof updateBookEntry>[1]) =>
+      updateBookEntry(id, changes),
+    remove: (id) => deleteBookEntry(id),
+    onRemoveSuccess: () => (confirmRemove = false),
+  });
+
+  const saving = $derived(addMut.loading || patchMut.loading);
+  const statusCorrections = $derived(
+    entry
+      ? cycleAwareStatusCorrections(
+          STATUS_ORDER,
+          entry.status,
+          BOOK_DIRECT_STATUS_TARGETS[entry.status],
+          "TO_READ",
+          entry.readings,
+        )
+      : [],
   );
 
-  const { addMut, patchMut, removeMut, addReplayMut, removeReplayMut } =
-    createEntryTrackingMutations({
-      detailKey: () => detailKey,
-      detail: () => detail,
-      entryId: () => entry?.id,
-      upsert: (d) =>
-        upsertBookEntry({
-          source: d.source,
-          sourceId: d.sourceId,
-          status: "TO_READ",
-        }),
-      update: (id, changes: Parameters<typeof updateBookEntry>[1]) =>
-        updateBookEntry(id, changes),
-      remove: (id) => deleteBookEntry(id),
-      addReplay: (id) => addBookReplay(id),
-      removeReplay: (replayId) => deleteBookReplay(replayId),
-      onRemoveSuccess: () => (confirmRemove = false),
-    });
-
-  // Every action but "remove" shared one `saving` flag before this migration
-  // (see docs/plans/centralized-api-layer.md) — kept combined here rather
-  // than split per-button, since that's what the template already disables on.
-  const saving = $derived(
-    addMut.loading ||
-      patchMut.loading ||
-      addReplayMut.loading ||
-      removeReplayMut.loading,
+  const correctionLabel = $derived(
+    statusCorrectionLabel(statusCorrections, m.book_status_reset_to_read()),
   );
+
+  function openStatusCorrection() {
+    if (statusCorrections.length === 1) {
+      patchMut.mutate({ status: statusCorrections[0]! });
+      return;
+    }
+    statusEditorOpen = true;
+  }
+
+  let restoredEdition = $state(false);
+  let editionSyncTarget = $state<string | null>(null);
+  $effect(() => {
+    if (!restoredEdition && entry) {
+      restoredEdition = true;
+      if (entry.editionKey) selectedEdition = entry.editionKey;
+    }
+  });
+  $effect(() => {
+    const editionKey = detail?.editionKey ?? null;
+    const pageCount = detail?.pageCount ?? null;
+    if (!restoredEdition || !entry || !editionKey || !pageCount) return;
+    if (selectedEdition && editionKey !== selectedEdition) return;
+    if (
+      entry.editionKey === editionKey &&
+      entry.referencePageCount === pageCount
+    ) {
+      editionSyncTarget = null;
+      return;
+    }
+    if (editionSyncTarget === editionKey || patchMut.loading) return;
+    editionSyncTarget = editionKey;
+    patchMut.mutate({ editionKey, referencePageCount: pageCount });
+  });
 </script>
 
 <svelte:head>
@@ -206,7 +261,7 @@
               : ''}"
             aria-label={m.common_enlarge_image()}
             onclick={() => detail?.coverUrl && (lightboxOpen = true)}>
-            <Poster src={detail.coverUrl} title={detail.title} />
+            <Poster src={detail.coverUrl} title={detail.title} alt="" />
           </button>
 
           <div class="min-w-0 flex-1">
@@ -222,13 +277,7 @@
                 </span>
               {/if}
               {#if entry}
-                <span
-                  title={STATUS_DESC[entry.status]}
-                  class="rounded-full px-2.5 py-0.5 text-xs font-bold {STATUS_META[
-                    entry.status
-                  ].cls}">
-                  {STATUS_META[entry.status].label}
-                </span>
+                <TrackingStatusBadge domain="BOOKS" status={entry.status} />
               {/if}
             </div>
             <h1
@@ -260,32 +309,19 @@
                     workMeta={reviewMeta}
                     workImageUrl={detail.coverUrl} />
                 {/if}
-                {#each detail.ratings as r (r.source)}
-                  <svelte:element
-                    this={r.url ? "a" : "span"}
-                    href={r.url}
-                    target={r.url ? "_blank" : undefined}
-                    rel={r.url ? "noopener noreferrer" : undefined}
-                    class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold {RATING_STYLES[
-                      r.source
-                    ] ?? 'bg-surface-2 text-fg'} {r.url
-                      ? 'transition-opacity hover:opacity-80'
-                      : ''}">
-                    {#if RATING_BRANDS[r.source as keyof typeof RATING_BRANDS]}
-                      <ProviderMark
-                        brand={RATING_BRANDS[
-                          r.source as keyof typeof RATING_BRANDS
-                        ]}
-                        class="h-3.5 w-3.5 shrink-0" />
-                    {/if}
-                    <span>{r.source}</span>
-                    <span class="tabular-nums opacity-90">{r.score}</span>
-                  </svelte:element>
-                {/each}
+                <ExternalRatingChips ratings={detail.ratings} providerMarks />
               </div>
             {/if}
           </div>
         </div>
+
+        {#if appConfig.socialEnabled && detail.commentTargetId}
+          <WorkFriendsStrip
+            domain="BOOKS"
+            targetType="BOOK"
+            targetId={detail.commentTargetId}
+            revision={`${entry?.status}:${entry?.currentPage}`} />
+        {/if}
 
         {#if detail.firstSentence}
           <p
@@ -300,40 +336,8 @@
           </p>
         {/if}
 
-        {#if detail.website || detail.readOnlineUrl || detail.externalLinks.length > 0}
-          <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-            {#if detail.website}
-              <a
-                href={detail.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="link-accent inline-flex items-center gap-1 text-sm">
-                {m.book_open_library_link()}
-              </a>
-            {/if}
-            {#if detail.readOnlineUrl}
-              <a
-                href={detail.readOnlineUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="link-accent inline-flex items-center gap-1 text-sm">
-                {m.book_read_online()}
-              </a>
-            {/if}
-            {#each detail.externalLinks as link (link.label)}
-              <a
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="link-accent inline-flex items-center gap-1 text-sm">
-                {link.label} ↗
-              </a>
-            {/each}
-          </div>
-        {/if}
-
         {#if !entry}
-          <div class="mt-6">
+          <div class="mt-6 flex items-center gap-2.5">
             <button
               class="btn btn-primary"
               disabled={saving}
@@ -341,63 +345,54 @@
               <Icon name="plus" class="h-4 w-4" />
               {m.library_add()}
             </button>
+            <WorkMoreMenu onshare={() => (sharing = true)} />
           </div>
         {:else}
           <TrackingPanel
+            onShare={() => (sharing = true)}
             favorite={entry.favorite}
             {saving}
             onToggleFavorite={() =>
               patchMut.mutate({ favorite: !entry.favorite })}
-            onRemove={() => (confirmRemove = true)}>
-            <SegmentedStatusControl
-              statuses={STATUS_ORDER}
-              current={entry.status}
-              disabled={saving}
-              meta={STATUS_META}
-              desc={STATUS_DESC}
-              activeClass={SEG_ACTIVE}
-              onSelect={(status) => patchMut.mutate({ status })} />
-
-            <AddToListButton targetType="BOOK" targetId={entry.book.id} />
-
-            <!-- Reading progress: page position, with a bar when the total is known. -->
-            <div class="flex flex-col gap-2">
-              <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase"
-                >{m.book_reading_progress()}</span>
-              <div class="text-dim flex items-center gap-2 text-sm">
-                <span>{m.book_page()}</span>
-                <input
-                  type="number"
-                  name="currentPage"
-                  min="0"
-                  max={detail.pageCount ?? undefined}
-                  aria-label={m.book_reading_progress()}
-                  class="input w-24"
-                  value={entry.currentPage || ""}
-                  onchange={(e) => {
-                    const raw = e.currentTarget.value;
-                    patchMut.mutate({
-                      currentPage: raw === "" ? 0 : Number(raw),
-                    });
-                  }} />
-                {#if detail.pageCount}
-                  <span class="timecode">/ {detail.pageCount}</span>
-                  <span class="font-display text-fg ml-auto font-bold">
-                    {progressPct} %
-                  </span>
-                {/if}
-              </div>
-              {#if detail.pageCount}
-                <ProgressBar value={progressPct} height="h-2" />
-              {/if}
-            </div>
-
-            <hr class="border-border" />
-
-            <NoteField
-              value={entry.notes}
-              placeholder={m.book_note_placeholder()}
-              onChange={(v) => patchMut.mutate({ notes: v })} />
+            onRemove={() => (confirmRemove = true)}
+            actions={[
+              ...(entry.status === "READING"
+                ? [
+                    {
+                      label: m.book_status_mark_read(),
+                      icon: "check" as const,
+                      onSelect: () => patchMut.mutate({ status: "READ" }),
+                    },
+                    {
+                      label: m.book_status_drop(),
+                      icon: "archive" as const,
+                      onSelect: () => patchMut.mutate({ status: "DROPPED" }),
+                    },
+                  ]
+                : []),
+              ...(entry.status === "DROPPED"
+                ? [
+                    {
+                      label: m.book_status_resume(),
+                      icon: "refresh" as const,
+                      onSelect: () => patchMut.mutate({ status: "READING" }),
+                    },
+                  ]
+                : []),
+              ...(correctionLabel
+                ? [
+                    {
+                      label: correctionLabel,
+                      icon: "edit" as const,
+                      separator: true,
+                      onSelect: openStatusCorrection,
+                    },
+                  ]
+                : []),
+            ]}
+            targetType="BOOK"
+            targetId={entry.book.id}>
+            <BookSessionDock {entry} {detailKey} />
 
             <hr class="border-border" />
 
@@ -412,53 +407,29 @@
                   ownershipSource: source,
                 })} />
 
-            {#if entry.status === "READ" || entry.replays.length > 0}
-              <hr class="border-border" />
+            <hr class="border-border" />
 
-              <div class="flex flex-col gap-2">
-                <div class="flex items-center justify-between gap-2">
-                  <span
-                    class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-                    {m.book_rereads()}{#if entry.replays.length > 0}
-                      &nbsp;· {entry.replays.length}{/if}
-                  </span>
-                  {#if entry.status === "READ"}
-                    <button
-                      type="button"
-                      class="link-accent text-xs disabled:opacity-50"
-                      disabled={saving}
-                      onclick={() => addReplayMut.mutate()}>
-                      {m.book_add_reread()}
-                    </button>
-                  {/if}
-                </div>
-                {#if entry.replays.length > 0}
-                  <ul class="flex flex-col gap-1">
-                    {#each entry.replays as replay (replay.id)}
-                      <li class="text-dim flex items-center gap-2 text-xs">
-                        <span class="flex-1">
-                          {formatDate(replay.finishedAt)}
-                        </span>
-                        <button
-                          type="button"
-                          class="hover:text-danger"
-                          aria-label={m.book_delete_reread()}
-                          disabled={saving}
-                          onclick={() => removeReplayMut.mutate(replay.id)}>
-                          {m.common_delete()}
-                        </button>
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
-              </div>
-            {/if}
+            <NoteField
+              value={entry.notes}
+              placeholder={m.book_note_placeholder()}
+              onChange={(v) => patchMut.mutate({ notes: v })} />
           </TrackingPanel>
+        {/if}
+
+        {#if sagaQuery.data}
+          <BookSagaSection
+            saga={sagaQuery.data}
+            {sagaKey}
+            sourceId={detail.sourceId}
+            entryStatus={entry?.status ?? null} />
         {/if}
 
         <RelatedCarousel
           title={m.book_same_author()}
-          items={toCarouselItems(detail.sameAuthorBooks, "/app/books")} />
+          items={toCarouselItems(
+            detail.sameAuthorBooks.filter((b) => !sagaIds.has(b.sourceId)),
+            "/app/books",
+          )} />
 
         <!-- Details panel, mobile position: after "Mon suivi". -->
         {#if hasMeta}
@@ -467,95 +438,105 @@
           </div>
         {/if}
 
-        {#if entry}
-          <ReviewsSection
-            targetType="BOOK"
-            targetId={entry.book.id}
-            workTitle={detail.title}
-            workMeta={reviewMeta}
-            workImageUrl={detail.coverUrl}>
-            {#snippet actions()}
-              {#if appConfig.socialEnabled && detail.commentTargetId}
-                <CommentsPanel
-                  targetType="BOOK"
-                  targetId={detail.commentTargetId}
-                  title={detail.title}
-                  canParticipate={!!entry} />
-              {/if}
-            {/snippet}
-          </ReviewsSection>
-        {/if}
-        {#if appConfig.socialEnabled && detail.commentTargetId && !entry}
-          <CommentsPanel
-            targetType="BOOK"
-            targetId={detail.commentTargetId}
-            title={detail.title}
-            canParticipate={!!entry} />
-        {/if}
+        <WorkSocialSection
+          targetType="BOOK"
+          reviewTargetId={entry?.book.id ?? null}
+          commentTargetId={detail.commentTargetId}
+          title={detail.title}
+          meta={reviewMeta}
+          imageUrl={detail.coverUrl}
+          canParticipate={!!entry} />
       </div>
 
       <!-- Details panel, desktop position: sidebar next to the main column. -->
       {#snippet detailsPanel()}
-        <div class="card p-4">
-          <h2 class="font-display text-sm font-bold tracking-tight">
-            {m.common_details()}
-          </h2>
-          <dl class="mt-3 flex flex-col gap-3">
-            {#if detail?.publisher}
-              <div>
-                <dt class="timecode text-xs">{m.media_publisher()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.publisher}</dd>
+        <DetailsCard>
+          {#if detail?.publisher}
+            <div>
+              <dt class="timecode text-xs">{m.media_publisher()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.publisher}</dd>
+            </div>
+          {/if}
+          {#if detail?.pageCount}
+            <div>
+              <dt class="timecode text-xs">{m.book_pages()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.pageCount}</dd>
+            </div>
+          {/if}
+          {#if detail?.series}
+            <div>
+              <dt class="timecode text-xs">{m.book_collection()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.series}</dd>
+            </div>
+          {/if}
+          {#if editions.length > 0}
+            <div>
+              <dt class="timecode flex items-center gap-1.5 text-xs">
+                {m.common_language()}
+              </dt>
+              <dd class="mt-1.5">
+                <Combobox
+                  label={m.common_language()}
+                  options={editionOptions}
+                  values={[selectedEdition ?? ""]}
+                  searchable={editionOptions.length > 6}
+                  disabled={bookQuery.loading}
+                  onChange={([value]) =>
+                    (selectedEdition = value || undefined)} />
+              </dd>
+            </div>
+          {:else if detail?.language}
+            <div>
+              <dt class="timecode text-xs">{m.common_language()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.language}</dd>
+            </div>
+          {/if}
+          {#if detail?.isbn}
+            <div>
+              <dt class="timecode text-xs">{m.book_isbn()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.isbn}</dd>
+            </div>
+          {/if}
+          {#if detail?.editionCount}
+            <div>
+              <dt class="timecode text-xs">{m.book_editions()}</dt>
+              <dd class="mt-0.5 text-sm">{detail.editionCount}</dd>
+            </div>
+          {/if}
+
+          {#snippet footer()}{#if detail.website || detail.readOnlineUrl || detail.externalLinks.length > 0}
+              <div
+                class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                {#if detail.website}
+                  <a
+                    href={detail.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="link-accent inline-flex items-center decoration-1">
+                    {m.book_open_library_link()}
+                  </a>
+                {/if}
+                {#if detail.readOnlineUrl}
+                  <a
+                    href={detail.readOnlineUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="link-accent inline-flex items-center decoration-1">
+                    {m.book_read_online()}
+                  </a>
+                {/if}
+                {#each detail.externalLinks as link (link.label)}
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="link-accent inline-flex items-center gap-1 decoration-1">
+                    {link.label} ↗
+                  </a>
+                {/each}
               </div>
-            {/if}
-            {#if detail?.pageCount}
-              <div>
-                <dt class="timecode text-xs">{m.book_pages()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.pageCount}</dd>
-              </div>
-            {/if}
-            {#if detail?.series}
-              <div>
-                <dt class="timecode text-xs">{m.book_collection()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.series}</dd>
-              </div>
-            {/if}
-            {#if editions.length > 0}
-              <div>
-                <dt class="timecode flex items-center gap-1.5 text-xs">
-                  {m.common_language()}
-                  {#if isFeatureNew("book-edition-selector")}<NewBadge />{/if}
-                </dt>
-                <dd class="mt-1.5">
-                  <Combobox
-                    label={m.common_language()}
-                    options={editionOptions}
-                    values={[selectedEdition ?? ""]}
-                    searchable={editionOptions.length > 6}
-                    disabled={bookQuery.loading}
-                    onChange={([value]) =>
-                      (selectedEdition = value || undefined)} />
-                </dd>
-              </div>
-            {:else if detail?.language}
-              <div>
-                <dt class="timecode text-xs">{m.common_language()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.language}</dd>
-              </div>
-            {/if}
-            {#if detail?.isbn}
-              <div>
-                <dt class="timecode text-xs">{m.book_isbn()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.isbn}</dd>
-              </div>
-            {/if}
-            {#if detail?.editionCount}
-              <div>
-                <dt class="timecode text-xs">{m.book_editions()}</dt>
-                <dd class="mt-0.5 text-sm">{detail.editionCount}</dd>
-              </div>
-            {/if}
-          </dl>
-        </div>
+            {/if}{/snippet}
+        </DetailsCard>
       {/snippet}
       {#if hasMeta}
         <div class="hidden md:block">
@@ -564,6 +545,13 @@
       {/if}
     </div>
   </div>
+
+  {#if sharing && work}
+    <ShareWorkModal
+      {work}
+      sendable={!detail?.isAdult}
+      onclose={() => (sharing = false)} />
+  {/if}
 
   {#if confirmRemove}
     <ConfirmationModal
@@ -574,6 +562,21 @@
       busy={removeMut.loading}
       onConfirm={() => removeMut.mutate()}
       onCancel={() => (confirmRemove = false)} />
+  {/if}
+
+  {#if statusEditorOpen && entry}
+    <StatusCorrectionModal
+      onclose={() => (statusEditorOpen = false)}
+      statuses={statusCorrections}
+      current={entry.status}
+      disabled={saving}
+      meta={STATUS_META}
+      desc={STATUS_DESC}
+      activeClass={SEG_ACTIVE}
+      onSelect={(status) => {
+        statusEditorOpen = false;
+        patchMut.mutate({ status });
+      }} />
   {/if}
 
   {#if lightboxOpen && detail.coverUrl}

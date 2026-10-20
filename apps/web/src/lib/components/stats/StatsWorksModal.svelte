@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
-  import Modal from "$lib/components/Modal.svelte";
-  import Poster from "$lib/components/Poster.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import Modal from "#lib/components/Modal.svelte";
+  import Poster from "#lib/components/Poster.svelte";
   import type { StatsWorkDto } from "@loomkeep/shared";
   import { STATS_DOMAIN_LABEL } from "./stats-domain";
 
@@ -44,7 +44,11 @@
           <a
             href={w.href}
             class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2">
-            <Poster src={w.imageUrl} title={w.title} class="w-11! rounded" />
+            <Poster
+              src={w.imageUrl}
+              title={w.title}
+              alt=""
+              class="w-11! rounded" />
             <span class="min-w-0 flex-1">
               <span class="block truncate text-sm font-semibold"
                 >{w.title}</span>

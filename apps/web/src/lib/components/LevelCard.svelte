@@ -1,18 +1,19 @@
 <script lang="ts">
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { m } from "$lib/paraglide/messages.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import { levelProgress, xpForLevel } from "@loomkeep/shared";
 
   let {
     xp,
     leaderboardHref,
     achievementsHref,
+    onOpenHistory,
   }: {
     xp: number;
     leaderboardHref?: string;
     achievementsHref?: string;
+    /** Makes the XP figure open the viewer's own XP history. */
+    onOpenHistory?: () => void;
   } = $props();
 
   const progress = $derived(levelProgress(xp));
@@ -21,6 +22,14 @@
   );
   const pctInLevel = $derived(
     xpForCurrentLevel > 0 ? progress.xpInLevel / xpForCurrentLevel : 0,
+  );
+
+  const progressText = $derived(
+    m.gamification_level_progress({
+      xpInLevel: progress.xpInLevel,
+      xpForLevel: xpForCurrentLevel,
+      xpToNext: progress.xpToNext,
+    }),
   );
 
   const CELL_COUNT = 10;
@@ -63,21 +72,12 @@
 </script>
 
 <div class="relative">
-  {#if leaderboardHref && isFeatureNew("leaderboard")}
-    <span class="absolute -top-2.5 -right-2"><NewBadge /></span>
-  {/if}
   <div
     class="mb-3.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
     <p class="font-display text-[26px] font-extrabold">
       {m.common_level()} <span class="text-accent">{progress.level}</span>
     </p>
-    <p class="text-dim font-mono text-[12.5px]">
-      {m.profile_level_progress({
-        xpInLevel: progress.xpInLevel,
-        xpForLevel: xpForCurrentLevel,
-        xpToNext: progress.xpToNext,
-      })}
-    </p>
+    <p class="text-dim font-mono text-[12.5px]">{progressText}</p>
   </div>
   <div class="flex gap-1">
     {#each cells as cell, i (i)}
@@ -95,20 +95,25 @@
       </div>
     {/each}
   </div>
-  {#if leaderboardHref || achievementsHref}
+  {#if leaderboardHref || achievementsHref || onOpenHistory}
     <div
-      class="border-border mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t pt-3.5 text-sm">
+      class="border-border mt-4 flex items-center justify-between gap-3 border-t pt-3.5 text-sm">
       {#if achievementsHref}
         <a href={achievementsHref} class="btn-text relative">
           <Icon name="trophy" class="h-4 w-4" />
-          {m.gamification_my_achievements()}
+          {m.gamification_page_title()}
         </a>
+      {/if}
+      {#if onOpenHistory}
+        <button type="button" class="btn-text" onclick={onOpenHistory}>
+          <Icon name="stats" class="h-4 w-4" />
+          {m.gamification_xp_history_short()}
+        </button>
       {/if}
       {#if leaderboardHref}
         <a href={leaderboardHref} class="btn-text">
           <Icon name="crown" class="h-4 w-4" />
-          {m.gamification_view_leaderboard()}
-          <Icon name="chevron-right" class="h-3.5 w-3.5" />
+          {m.gamification_leaderboard_title()}
         </a>
       {/if}
     </div>

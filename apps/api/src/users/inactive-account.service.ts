@@ -5,6 +5,7 @@ import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AccountDeletionService } from "./account-deletion.service";
+import { notSuspended } from "./suspension.util";
 
 /** Relance à 24 mois d'inactivité, suppression à 36 mois. */
 const WARNING_AFTER_MONTHS = 24;
@@ -39,15 +40,17 @@ export class InactiveAccountService {
     private readonly jobRuns: JobRunService,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_5AM)
+  @Cron(CronExpression.EVERY_DAY_AT_5AM, {
+    name: JOB_KEYS.INACTIVE_ACCOUNTS_SCAN,
+  })
   async scan(): Promise<{ warned: number; deleted: number }> {
     return this.jobRuns.record(
       JOB_KEYS.INACTIVE_ACCOUNTS_SCAN,
       () => this.runScan(),
       ({ warned, deleted }) =>
         warned === 0 && deleted === 0
-          ? "Rien à traiter"
-          : `${warned} relance(s) envoyée(s), ${deleted} compte(s) supprimé(s)`,
+          ? "Nothing to process"
+          : `${warned} reminder(s) sent, ${deleted} account(s) deleted`,
     );
   }
 
@@ -62,24 +65,35 @@ export class InactiveAccountService {
       where: {
         lastActiveAt: { lte: monthsAgo(WARNING_AFTER_MONTHS) },
         inactivityWarningSentAt: null,
+        // A suspended account can't sign in to prove it's still used; the
+        // warning (and so the deletion, which requires it) waits for the end.
+        ...notSuspended(),
       },
       select: { id: true, email: true, locale: true, lastActiveAt: true },
     });
 
+    let warned = 0;
+
     for (const user of candidates) {
       // lastActiveAt can't be null here — it's filtered by `lte` above.
       const deletionDate = addMonths(user.lastActiveAt!, DELETE_AFTER_MONTHS);
-      await this.mail.sendInactivityWarning(
+      const sent = await this.mail.sendInactivityWarning(
         { email: user.email, locale: user.locale },
         deletionDate,
       );
+      // Deletion requires a recorded warning: one that never reached the
+      // person (no SMTP, or a failed send) must not count, so the account
+      // stays until a warning actually goes out.
+      if (!sent) continue;
+
       await this.prisma.user.update({
         where: { id: user.id },
         data: { inactivityWarningSentAt: new Date() },
       });
+      warned++;
     }
 
-    return candidates.length;
+    return warned;
   }
 
   private async deleteInactiveAccounts(): Promise<number> {
@@ -94,6 +108,7 @@ export class InactiveAccountService {
     for (const user of candidates) {
       await this.accountDeletion.deleteAccount(
         user.id,
+        "inactive",
         `Suppression automatique pour inactivité (>${DELETE_AFTER_MONTHS} mois)`,
       );
       this.logger.log(`Compte ${user.id} supprimé pour inactivité`);

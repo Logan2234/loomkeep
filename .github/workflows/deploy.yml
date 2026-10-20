@@ -41,7 +41,7 @@ jobs:
             # glitchtip, ...) is NOT hardcoded here — it comes from COMPOSE_FILE
             # in the VPS's own .env (Compose reads that automatically). Adding a
             # new optional add-on later means editing .env on the VPS, not this
-            # workflow. See .env.example / README "Self-hosting" for the format.
+            # workflow. See COMPOSE_FILE in .env.example for the format.
             #
             # IMAGE_TAG pins docker-compose.yml's api/web `image:` to the
             # exact images the CI docker-push job built and pushed to GHCR
@@ -49,7 +49,7 @@ jobs:
             # floating `latest` tag — same "exact commit CI validated"
             # guarantee as the git reset above. Also feeds the Homepage
             # "Version" widget, which reads GIT_SHA baked into the api image.
-            export IMAGE_TAG=$(git rev-parse --short HEAD)
+            export IMAGE_TAG="${DEPLOY_SHA:0:12}"
             docker compose pull
             # --remove-orphans cleans up containers for services dropped from
             # COMPOSE_FILE (e.g. an add-on removed from the VPS .env). It does
@@ -68,6 +68,25 @@ jobs:
               fi
               echo "docker compose up -d failed (attempt $attempt/3), retrying in 5s..."
               sleep 5
+            done
+            # `up -d` succeeds as soon as the containers start: an API stuck
+            # re-running a failed migration would otherwise sit behind a green
+            # deploy. Wait for the healthchecks in docker-compose.yml instead,
+            # and show the logs of whatever doesn't come up.
+            for service in api web; do
+              container=$(docker compose ps -q "$service")
+              for attempt in $(seq 1 60); do
+                status=$(docker inspect -f '{{.State.Health.Status}}' "$container")
+                if [ "$status" = healthy ]; then
+                  break
+                fi
+                if [ "$attempt" = 60 ]; then
+                  echo "$service is still $status after 5 minutes" >&2
+                  docker compose logs --tail=80 "$service" >&2
+                  exit 1
+                fi
+                sleep 5
+              done
             done
             docker image prune -a -f --filter "until=168h"
             docker builder prune -f --filter "until=168h"

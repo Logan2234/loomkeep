@@ -1,21 +1,29 @@
 <script lang="ts">
-  import { getAdminServices } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  import KpiStripSkeleton from "#lib/components/stats/KpiStripSkeleton.svelte";
+  import RankBarsSkeleton from "#lib/components/stats/RankBarsSkeleton.svelte";
+  import { getAdminServices } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { scrollToAdminAnchor } from "#lib/admin-anchor.js";
+  import AdminQueryError from "../AdminQueryError.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
   import {
     groupAdminServices,
     adminServiceLabel,
     adminServiceDetail,
-  } from "$lib/constants/admin-presentation";
-  import { formatNumber, formatTime } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/constants/admin-presentation.js";
+  import {
+    formatNumber,
+    formatTime,
+    formatPercent,
+    percentParts,
+  } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ServiceStatusDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
 
@@ -73,8 +81,7 @@
       label: m.admin_services_kpi_calls_today(),
     },
     {
-      value: String(busiestQuota),
-      unit: "%",
+      ...percentParts(busiestQuota),
       label: m.admin_services_kpi_busiest_quota(),
       alert: busiestQuota >= 80,
     },
@@ -92,7 +99,7 @@
         value: quotaUsage(s),
         display: `${formatNumber(quotaUsage(s))} / ${formatNumber(s.limit?.max ?? 0)}`,
         badge: {
-          text: `${s.percentUsed ?? 0} %`,
+          text: formatPercent(s.percentUsed ?? 0),
           tone: ((s.percentUsed ?? 0) >= 80 ? "warn" : "neutral") as
             "warn" | "neutral",
         },
@@ -155,7 +162,7 @@
     percentUsed >= 80 ? "bg-danger" : "bg-accent";
 </script>
 
-<div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="monitor"
     title={m.admin_services_title()}
@@ -167,37 +174,24 @@
           queryClient.refetchQueries({ queryKey: keys.admin.services() })}
         disabled={loading}
         class="btn btn-ghost shrink-0">
-        {loading ? "…" : m.common_refresh()}
+        {loading ? m.common_loading() : m.common_refresh()}
       </button>
     {/snippet}
   </PageHeader>
 
   {#if error}
-    <Banner variant="error">{error}</Banner>
+    <AdminQueryError message={error} queryKey={keys.admin.services()} />
   {:else if loading && !services}
     <div class="animate-pulse">
-      <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-        {#each { length: 3 } as _, i (i)}
-          <div class="card h-20 space-y-3 p-4">
-            <div class="skeleton h-6 w-1/2 rounded"></div>
-            <div class="skeleton h-3 w-3/4 rounded"></div>
-          </div>
-        {/each}
-      </div>
+      <KpiStripSkeleton count={3} valueClass="skeleton h-6 w-1/2 rounded" />
       <div class="mb-6 grid gap-3.5 lg:grid-cols-2">
         {#each { length: 2 } as _, i (i)}
-          <div class="card space-y-4 p-4">
-            <div class="skeleton h-3 w-2/5 rounded"></div>
-            {#each { length: 4 } as _, j (j)}
-              <div class="space-y-2">
-                <div class="flex justify-between gap-4">
-                  <div class="skeleton h-4 w-1/3 rounded"></div>
-                  <div class="skeleton h-4 w-1/5 rounded"></div>
-                </div>
-                <div class="skeleton h-2 w-full rounded"></div>
-              </div>
-            {/each}
-          </div>
+          <RankBarsSkeleton
+            count={4}
+            cardClass="card space-y-4 p-4"
+            titleClass="skeleton h-3 w-2/5 rounded"
+            labelClass="skeleton h-4 w-1/3 rounded"
+            valueClass="skeleton h-4 w-1/5 rounded" />
         {/each}
       </div>
       <div class="space-y-8">
@@ -249,7 +243,10 @@
             {#each group.items as s, i (s.key)}
               {@const h = health(s)}
               <div
-                class="bg-surface px-4 py-3 {i > 0
+                id={`service-${s.key}`}
+                use:scrollToAdminAnchor
+                class="target:ring-accent bg-surface scroll-mt-6 px-4 py-3 target:ring-2 {i >
+                0
                   ? 'border-border border-t'
                   : ''}">
                 <div class="flex items-center gap-3">
@@ -294,6 +291,10 @@
                     {#if s.limit && s.percentUsed !== undefined}
                       <ProgressBar
                         value={s.percentUsed}
+                        label={m.common_selection_summary({
+                          label: adminServiceLabel(s.key, s.label),
+                          selection: formatPercent(s.percentUsed),
+                        })}
                         height="h-px"
                         track="bg-border/60"
                         fillClass={gaugeCls(s.percentUsed)}
@@ -304,7 +305,7 @@
                         {s.limit.window === "day"
                           ? m.admin_period_today()
                           : m.admin_period_this_month()}
-                        ({s.percentUsed}%)
+                        ({formatPercent(s.percentUsed)})
                       </p>
                     {:else}
                       <p class="timecode text-xs">

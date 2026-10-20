@@ -1,11 +1,12 @@
-import type {
-  AdminAccountsSectionDto,
-  AdminCatalogueSectionDto,
-  AdminNewAccountsTrendDto,
-  AdminSocialActivityTrendDto,
-  AdminSocialSectionDto,
-  AdminSystemSectionDto,
-  TrendPeriod,
+import {
+  type AdminAccountsSectionDto,
+  type AdminCatalogueSectionDto,
+  type AdminNewAccountsTrendDto,
+  type AdminSocialActivityTrendDto,
+  type AdminSocialSectionDto,
+  type AdminSystemSectionDto,
+  type TrendPeriod,
+  TREND_PERIODS,
 } from "@loomkeep/shared";
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiExtraModels, ApiOkResponse, getSchemaPath } from "@nestjs/swagger";
@@ -24,10 +25,8 @@ import {
 } from "./dto/admin-social-section-response.dto";
 import { AdminSystemSectionResponseDto } from "./dto/admin-system-section-response.dto";
 
-const PERIODS: TrendPeriod[] = ["day", "week", "month", "year"];
-
 function resolvePeriod(period?: string): TrendPeriod {
-  return PERIODS.includes(period as TrendPeriod)
+  return TREND_PERIODS.includes(period as TrendPeriod)
     ? (period as TrendPeriod)
     : "week";
 }

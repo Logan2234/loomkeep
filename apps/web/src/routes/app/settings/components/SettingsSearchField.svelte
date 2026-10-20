@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Icon from "$lib/components/Icon.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import { settingsSearch } from "../search-state.svelte";
 
   let { id }: { id: string } = $props();

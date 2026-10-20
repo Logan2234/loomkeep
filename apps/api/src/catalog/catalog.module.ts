@@ -6,13 +6,20 @@ import { MediaItemService } from "./media-item.service";
 import { OmdbService } from "./omdb.service";
 import { AnilistProvider } from "./providers/anilist.provider";
 import { TmdbProvider } from "./providers/tmdb.provider";
+import { SagaSyncService } from "./saga-sync.service";
 
 @Module({
   imports: [UsersModule, JobsModule],
   controllers: [CatalogController],
-  providers: [MediaItemService, TmdbProvider, AnilistProvider, OmdbService],
+  providers: [
+    MediaItemService,
+    TmdbProvider,
+    AnilistProvider,
+    OmdbService,
+    SagaSyncService,
+  ],
   // Providers are exported for import reconciliation; each source keeps its
   // catalogue boundary explicit (TVDB → TMDB for TV Time, MAL → AniList).
-  exports: [MediaItemService, TmdbProvider, AnilistProvider],
+  exports: [MediaItemService, TmdbProvider, AnilistProvider, SagaSyncService],
 })
 export class CatalogModule {}

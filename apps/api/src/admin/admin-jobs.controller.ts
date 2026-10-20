@@ -8,8 +8,11 @@ import {
   Post,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
+import { ApiKeyLifecycleService } from "../api-keys/api-key-lifecycle.service";
+import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
+import { GameItemService } from "../games/game-item.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { XpService } from "../gamification/xp.service";
 import { JOB_KEYS, type JobKey } from "../jobs/job-keys";
@@ -36,11 +39,14 @@ export class AdminJobsController {
     private readonly notifications: NotificationService,
     private readonly notificationDigests: NotificationDigestService,
     private readonly mediaItems: MediaItemService,
+    private readonly gameItems: GameItemService,
+    private readonly bookItems: BookItemService,
     private readonly reports: ReportService,
     private readonly backup: BackupService,
     private readonly inactiveAccount: InactiveAccountService,
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
+    private readonly apiKeyLifecycle: ApiKeyLifecycleService,
   ) {}
 
   /** Every known scheduled job, with its recent run history. */
@@ -66,12 +72,16 @@ export class AdminJobsController {
       [JOB_KEYS.NOTIFICATIONS_DIGEST]: () =>
         this.notificationDigests.runDigests(),
       [JOB_KEYS.MEDIA_REFRESH_STALE]: () => this.mediaItems.refreshStale(),
+      [JOB_KEYS.GAMES_REFRESH_STALE]: () => this.gameItems.refreshStale(),
+      [JOB_KEYS.BOOKS_REFRESH_STALE]: () => this.bookItems.refreshStale(),
       [JOB_KEYS.REPORTS_DIGEST]: () => this.reports.sendDailyDigest(),
       [JOB_KEYS.BACKUP]: () => this.backup.runScheduled(),
       [JOB_KEYS.INACTIVE_ACCOUNTS_SCAN]: () => this.inactiveAccount.scan(),
       [JOB_KEYS.GAMIFICATION_RECONCILE]: () => this.xp.runReconcileJob(),
       [JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP]: () =>
         this.achievements.runAchievementsSweepJob(),
+      [JOB_KEYS.API_KEYS_MAINTENANCE]: () =>
+        this.apiKeyLifecycle.runMaintenance(),
     };
   }
 

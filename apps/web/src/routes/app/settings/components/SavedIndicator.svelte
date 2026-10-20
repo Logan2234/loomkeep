@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Icon from "$lib/components/Icon.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { fade } from "svelte/transition";
 
   let { state }: { state: "idle" | "saving" | "saved" } = $props();

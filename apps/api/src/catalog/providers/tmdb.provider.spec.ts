@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { vi } from "vitest";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { mockFetchByUrl } from "../../test-utils/mock-fetch";
 import { OmdbService } from "../omdb.service";
 import { TmdbProvider } from "./tmdb.provider";
 
@@ -16,26 +17,6 @@ function fixture(name: string): unknown {
 // Node defines global fetch lazily, which confuses vi.spyOn on restore;
 // plain assignment + manual restore is more reliable.
 const originalFetch = global.fetch;
-
-function mockFetchByUrl(routes: Record<string, unknown>): void {
-  global.fetch = vi.fn((input: RequestInfo | URL) => {
-    const url = String(input);
-    const match = Object.entries(routes).find(([pathPart]) =>
-      url.includes(pathPart),
-    );
-
-    if (!match) {
-      throw new Error(`Unexpected fetch call in test: ${url}`);
-    }
-
-    return Promise.resolve(
-      new Response(JSON.stringify(match[1]), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-  }) as typeof fetch;
-}
 
 describe("TmdbProvider", () => {
   let provider: TmdbProvider;
@@ -53,6 +34,36 @@ describe("TmdbProvider", () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
+  });
+
+  it("counts every attempt against the quota, retries included", async () => {
+    // Counted once per call before, a 503 retried by fetchJson went missing
+    // from /admin/services and from the quota alerts built on it.
+    const quota = { record: vi.fn() };
+    const counted = new TmdbProvider(
+      {
+        getOrThrow: vi.fn().mockReturnValue("test-token"),
+      } as unknown as ConfigService,
+      { getRatings: vi.fn() } as unknown as OmdbService,
+      quota as unknown as QuotaTrackerService,
+    );
+    let calls = 0;
+    global.fetch = vi.fn(() =>
+      Promise.resolve(
+        ++calls === 1
+          ? new Response("", { status: 503 })
+          : new Response(JSON.stringify({ results: [] }), { status: 200 }),
+      ),
+    ) as unknown as typeof fetch;
+
+    vi.useFakeTimers();
+    const search = counted.search("Inception", MediaType.MOVIE);
+    await vi.runAllTimersAsync();
+    await search;
+    vi.useRealTimers();
+
+    expect(quota.record).toHaveBeenCalledTimes(2);
+    expect(quota.record).toHaveBeenCalledWith("tmdb");
   });
 
   it("maps movie search results to canonical summaries", async () => {
@@ -110,6 +121,35 @@ describe("TmdbProvider", () => {
       source: MediaSource.IMDB,
       externalId: "tt1375666",
     });
+  });
+
+  it("captures dated releases by country and release type", async () => {
+    mockFetchByUrl({
+      "/movie/27205": {
+        ...(fixture("tmdb-movie-details.json") as Record<string, unknown>),
+        release_dates: {
+          results: [
+            {
+              iso_3166_1: "US",
+              release_dates: [
+                { release_date: "2026-12-15T00:00:00.000Z", type: 1 },
+              ],
+            },
+            {
+              iso_3166_1: "FR",
+              release_dates: [
+                { release_date: "2026-12-16T00:00:00.000Z", type: 3 },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    const details = await provider.getDetails("27205", MediaType.MOVIE);
+    expect(details.movieReleaseDates).toEqual([
+      { country: "US", date: "2026-12-15", type: 1 },
+      { country: "FR", date: "2026-12-16", type: 3 },
+    ]);
   });
 
   it("resolves a TVDB series id to a TMDB summary via /find", async () => {
@@ -170,10 +210,152 @@ describe("TmdbProvider", () => {
 
     expect(details.seasons.map((s) => s.number)).toEqual([0, 1]);
     const seasonOne = details.seasons.find((s) => s.number === 1);
+    expect(seasonOne).toMatchObject({
+      title: "Season 1",
+      overview:
+        "High school chemistry teacher Walter White's life is suddenly transformed.",
+      posterUrl: "https://image.tmdb.org/t/p/w500/season1.jpg",
+      airDate: "2008-01-20",
+      voteAverage: 8.3,
+    });
     expect(seasonOne?.episodes).toEqual([
-      { number: 1, title: "Pilot", airDate: "2008-01-20" },
-      { number: 2, title: "Cat's in the Bag...", airDate: "2008-01-27" },
+      {
+        number: 1,
+        title: "Pilot",
+        airDate: "2008-01-20",
+        runtimeMin: 58,
+        overview:
+          "A high school chemistry teacher learns he has terminal cancer.",
+        stillUrl: null,
+        voteAverage: 8.1,
+        voteCount: 210,
+        episodeType: "standard",
+        streamingUrl: null,
+        streamingSite: null,
+      },
+      {
+        number: 2,
+        title: "Cat's in the Bag...",
+        airDate: "2008-01-27",
+        runtimeMin: 48,
+        overview: "Walt and Jesse attempt to dispose of the bodies.",
+        stillUrl: null,
+        voteAverage: 8.2,
+        voteCount: 180,
+        episodeType: "finale",
+        streamingUrl: null,
+        streamingSite: null,
+      },
     ]);
+  });
+
+  it("queries the episode listings in the requested language", async () => {
+    const fetchMock = mockFetchByUrl({
+      "/tv/1396/season/0": fixture("tmdb-season-0.json"),
+      "/tv/1396/season/1": fixture("tmdb-season-1.json"),
+      "/tv/1396": fixture("tmdb-tv-details.json"),
+    });
+
+    await provider.getDetails("1396", MediaType.SERIES, "fr");
+
+    const seasonCall = fetchMock.mock.calls
+      .map(([input]) => new URL(String(input)))
+      .find((url) => url.pathname.endsWith("/season/1"));
+    expect(seasonCall?.searchParams.get("language")).toBe("fr-FR");
+  });
+
+  it("drops the score of an episode nobody has voted on", async () => {
+    mockFetchByUrl({
+      "/tv/1396/season/0": { episodes: [] },
+      "/tv/1396/season/1": {
+        vote_average: 0,
+        episodes: [{ episode_number: 1, vote_average: 0, vote_count: 0 }],
+      },
+      "/tv/1396": fixture("tmdb-tv-details.json"),
+    });
+
+    const details = await provider.getDetails("1396", MediaType.SERIES);
+
+    const season = details.seasons.find((s) => s.number === 1);
+    expect(season?.voteAverage).toBeNull();
+    expect(season?.episodes[0]).toMatchObject({
+      voteAverage: null,
+      voteCount: null,
+    });
+  });
+
+  it("maps a season's posters, deduplicated, in the viewer's language first", async () => {
+    const fetchMock = mockFetchByUrl({
+      "/tv/1396/season/2/images": {
+        posters: [{ file_path: "/fr.jpg" }, { file_path: "/fr.jpg" }],
+      },
+    });
+
+    const images = await provider.getSeasonImages("1396", 2, "fr");
+
+    expect(images).toEqual({
+      images: ["https://image.tmdb.org/t/p/w780/fr.jpg"],
+    });
+    const url = new URL(String(fetchMock.mock.calls[0][0]));
+    expect(url.searchParams.get("include_image_language")).toBe("fr,en,null");
+  });
+
+  it("maps an episode's stills and YouTube videos, the main still first", async () => {
+    mockFetchByUrl({
+      "/tv/1396/season/1/episode/1": {
+        still_path: "/main.jpg",
+        images: {
+          stills: [{ file_path: "/main.jpg" }, { file_path: "/other.jpg" }],
+        },
+        videos: {
+          results: [
+            { site: "YouTube", type: "Trailer", key: "abc" },
+            { site: "Vimeo", type: "Clip", key: "def" },
+          ],
+        },
+      },
+    });
+
+    const media = await provider.getEpisodeMedia("1396", 1, 1, "fr");
+
+    expect(media).toEqual({
+      images: [
+        "https://image.tmdb.org/t/p/w780/main.jpg",
+        "https://image.tmdb.org/t/p/w780/other.jpg",
+      ],
+      videos: [{ key: "abc", type: "Trailer" }],
+    });
+  });
+
+  it("falls back to the median episode runtime, specials excluded, when episode_run_time is empty", async () => {
+    // Most recent series ship an empty episode_run_time; without this their
+    // watch time fell back to the generic 42-minute default.
+    const special = { episode_number: 1, name: "Recap", runtime: 3 };
+    mockFetchByUrl({
+      "/tv/1396/season/0": {
+        episodes: [special, { ...special, episode_number: 2 }],
+      },
+      "/tv/1396/season/1": {
+        episodes: [
+          { episode_number: 1, runtime: 58, still_path: "/pilot.jpg" },
+          { episode_number: 2, runtime: 0 },
+          { episode_number: 3, runtime: 48 },
+          { episode_number: 4, runtime: 50 },
+        ],
+      },
+      "/tv/1396": {
+        ...(fixture("tmdb-tv-details.json") as object),
+        episode_run_time: [],
+      },
+    });
+
+    const details = await provider.getDetails("1396", MediaType.SERIES);
+
+    expect(details.runtimeMin).toBe(50);
+    const pilot = details.seasons.find((s) => s.number === 1)?.episodes[0];
+    expect(pilot?.stillUrl).toBe("https://image.tmdb.org/t/p/w300/pilot.jpg");
+    // TMDB's 0 means "unknown", not a zero-minute episode.
+    expect(details.seasons[1].episodes[1].runtimeMin).toBeNull();
   });
 
   it("maps a person with a most-popular, deduped, poster-only knownFor list", async () => {
@@ -239,7 +421,146 @@ describe("TmdbProvider", () => {
     ]);
   });
 
+  describe("getSaga", () => {
+    it("lists a film's collection in release order, an unreleased part marked upcoming", async () => {
+      mockFetchByUrl({
+        "/movie/438631": { id: 438631, belongs_to_collection: { id: 726871 } },
+        "/collection/726871": {
+          id: 726871,
+          name: "Dune - Saga",
+          parts: [
+            {
+              id: 1170608,
+              title: "Dune : Troisième partie",
+              release_date: "2999-12-18",
+            },
+            {
+              id: 693134,
+              title: "Dune : Deuxième partie",
+              release_date: "2024-02-27",
+            },
+            { id: 438631, title: "Dune", release_date: "2021-09-15" },
+          ],
+        },
+      });
+
+      const saga = await provider.getSaga("438631", "fr");
+
+      expect(saga?.key).toBe("TMDB:726871");
+      expect(saga?.title).toBe("Dune - Saga");
+      expect(saga?.members.map((m) => [m.sourceId, m.upcoming])).toEqual([
+        ["438631", false],
+        ["693134", false],
+        ["1170608", true],
+      ]);
+    });
+
+    it("never puts a non-numeric id into a TMDB path", async () => {
+      mockFetchByUrl({});
+
+      expect(await provider.getSaga("../account")).toBeNull();
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it("finds no saga for a film outside any collection", async () => {
+      mockFetchByUrl({ "/movie/1": { id: 1, belongs_to_collection: null } });
+
+      expect(await provider.getSaga("1")).toBeNull();
+    });
+  });
+
   describe("getExtras", () => {
+    it("lists the asked region's offers by kind, with provider ids and one entry per service", async () => {
+      const netflix = {
+        provider_id: 8,
+        provider_name: "Netflix",
+        logo_path: "/n.png",
+      };
+      mockFetchByUrl({
+        "/tv/1396": {
+          id: 1396,
+          "watch/providers": {
+            results: {
+              FR: {
+                link: "https://www.themoviedb.org/tv/1396/watch?locale=FR",
+                flatrate: [
+                  netflix,
+                  {
+                    provider_id: 1796,
+                    provider_name: "Netflix Standard with Ads",
+                  },
+                ],
+                ads: [{ provider_id: 300, provider_name: "Pluto TV" }],
+                buy: [{ provider_id: 2, provider_name: "Apple TV Store" }],
+              },
+              BE: {
+                flatrate: [{ provider_id: 337, provider_name: "Disney Plus" }],
+              },
+            },
+          },
+        },
+      });
+
+      const fr = await provider.getExtras(
+        "1396",
+        MediaType.SERIES,
+        undefined,
+        "FR",
+      );
+      const be = await provider.getExtras(
+        "1396",
+        MediaType.SERIES,
+        undefined,
+        "BE",
+      );
+
+      expect(fr.watchProviders).toEqual({
+        region: "FR",
+        flatrate: [
+          {
+            id: 8,
+            name: "Netflix",
+            logoUrl: "https://image.tmdb.org/t/p/w92/n.png",
+          },
+        ],
+        free: [],
+        ads: [{ id: 300, name: "Pluto TV", logoUrl: null }],
+        rent: [],
+        buy: [{ id: 2, name: "Apple TV Store", logoUrl: null }],
+        link: "https://www.themoviedb.org/tv/1396/watch?locale=FR",
+      });
+      expect(be.watchProviders.flatrate.map((p) => p.id)).toEqual([337]);
+    });
+
+    it("keeps an ad-tier plan whose full service isn't offered", async () => {
+      mockFetchByUrl({
+        "/movie/27205": {
+          id: 27205,
+          "watch/providers": {
+            results: {
+              FR: {
+                flatrate: [
+                  {
+                    provider_id: 2100,
+                    provider_name: "Amazon Prime Video with Ads",
+                  },
+                ],
+              },
+            },
+          },
+        },
+      });
+
+      const extras = await provider.getExtras(
+        "27205",
+        MediaType.MOVIE,
+        undefined,
+        "FR",
+      );
+
+      expect(extras.watchProviders.flatrate.map((p) => p.id)).toEqual([2100]);
+    });
+
     it("sends the requested language, defaulting to English", async () => {
       let requestedUrl = "";
       global.fetch = vi.fn((input: RequestInfo | URL) => {
@@ -249,10 +570,10 @@ describe("TmdbProvider", () => {
         );
       }) as typeof fetch;
 
-      await provider.getExtras("27205", MediaType.MOVIE);
+      await provider.getExtras("27205", MediaType.MOVIE, undefined, "FR");
       expect(decodeURIComponent(requestedUrl)).toContain("language=en-US");
 
-      await provider.getExtras("27205", MediaType.MOVIE, "fr");
+      await provider.getExtras("27205", MediaType.MOVIE, "fr", "FR");
       expect(decodeURIComponent(requestedUrl)).toContain("language=fr-FR");
     });
 
@@ -266,7 +587,12 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras(
+        "27205",
+        MediaType.MOVIE,
+        undefined,
+        "FR",
+      );
 
       expect(extras.tagline).toBe("Your mind is the scene of the crime.");
       expect(extras.ratings).toEqual([
@@ -283,7 +609,12 @@ describe("TmdbProvider", () => {
         "/movie/27205": { id: 27205, vote_average: 8.4 },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras(
+        "27205",
+        MediaType.MOVIE,
+        undefined,
+        "FR",
+      );
 
       expect(extras.ratings).toEqual([]);
     });
@@ -302,7 +633,12 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras(
+        "27205",
+        MediaType.MOVIE,
+        undefined,
+        "FR",
+      );
 
       expect(extras.directors).toEqual(["Christopher Nolan"]);
     });
@@ -318,7 +654,12 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("1396", MediaType.SERIES);
+      const extras = await provider.getExtras(
+        "1396",
+        MediaType.SERIES,
+        undefined,
+        "FR",
+      );
 
       expect(extras.directors).toEqual(["Vince Gilligan"]);
     });
@@ -348,7 +689,12 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras(
+        "27205",
+        MediaType.MOVIE,
+        undefined,
+        "FR",
+      );
 
       expect(extras.trailerVideoId).toBe("trailer2");
     });
@@ -363,7 +709,12 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras(
+        "27205",
+        MediaType.MOVIE,
+        undefined,
+        "FR",
+      );
 
       expect(extras.trailerVideoId).toBe("trailer1");
     });
@@ -371,7 +722,12 @@ describe("TmdbProvider", () => {
     it("returns no trailer when TMDB lists none", async () => {
       mockFetchByUrl({ "/movie/27205": { id: 27205 } });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras(
+        "27205",
+        MediaType.MOVIE,
+        undefined,
+        "FR",
+      );
 
       expect(extras.trailerVideoId).toBeNull();
     });
@@ -392,7 +748,12 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras(
+        "27205",
+        MediaType.MOVIE,
+        undefined,
+        "FR",
+      );
 
       expect(extras.contentRating).toBe("12");
     });
@@ -412,7 +773,12 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras(
+        "27205",
+        MediaType.MOVIE,
+        undefined,
+        "FR",
+      );
 
       expect(extras.contentRating).toBe("PG-13");
     });
@@ -430,7 +796,12 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("1396", MediaType.SERIES);
+      const extras = await provider.getExtras(
+        "1396",
+        MediaType.SERIES,
+        undefined,
+        "FR",
+      );
 
       expect(extras.contentRating).toBe("16");
     });
@@ -438,9 +809,60 @@ describe("TmdbProvider", () => {
     it("returns no certification when TMDB reports none", async () => {
       mockFetchByUrl({ "/movie/27205": { id: 27205 } });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras(
+        "27205",
+        MediaType.MOVIE,
+        undefined,
+        "FR",
+      );
 
       expect(extras.contentRating).toBeNull();
+    });
+  });
+
+  describe("listWatchProviders", () => {
+    it("merges the film and series lists, most used in the region first, and caches them", async () => {
+      mockFetchByUrl({
+        "/watch/providers/movie": {
+          results: [
+            {
+              provider_id: 2,
+              provider_name: "Apple TV Store",
+              display_priorities: { FR: 6 },
+            },
+            {
+              provider_id: 8,
+              provider_name: "Netflix",
+              display_priorities: { FR: 0 },
+            },
+            {
+              provider_id: 1796,
+              provider_name: "Netflix Standard with Ads",
+              display_priorities: { FR: 1 },
+            },
+          ],
+        },
+        "/watch/providers/tv": {
+          results: [
+            {
+              provider_id: 8,
+              provider_name: "Netflix",
+              display_priorities: { FR: 0 },
+            },
+            {
+              provider_id: 381,
+              provider_name: "Canal+",
+              display_priorities: { FR: 8 },
+            },
+          ],
+        },
+      });
+
+      const providers = await provider.listWatchProviders("FR");
+      await provider.listWatchProviders("FR");
+
+      expect(providers.map((p) => p.id)).toEqual([8, 2, 381]);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
     });
   });
 });

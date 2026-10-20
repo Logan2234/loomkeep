@@ -1,4 +1,4 @@
-import favicon from "$lib/assets/favicon.ico?inline";
+import favicon from "#lib/assets/favicon.ico?inline";
 import type { RequestHandler } from "./$types";
 
 // sirv (adapter-node's static file server) resolves content types via

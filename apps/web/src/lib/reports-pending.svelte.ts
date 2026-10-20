@@ -31,5 +31,16 @@ export function useReportsPendingCount() {
     get count() {
       return query.data ?? 0;
     },
+    get available() {
+      return query.data !== null;
+    },
+    get error() {
+      return query.error;
+    },
+    retry() {
+      void queryClient.refetchQueries({
+        queryKey: keys.admin.reportsPendingCount(),
+      });
+    },
   };
 }

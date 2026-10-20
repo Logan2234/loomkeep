@@ -1,20 +1,24 @@
 // Display text and glyph for one achievement, resolved from its registry
 // key. The entry-level pieces (name/description/icon) live in
-// $lib/achievement-labels.ts, shared with anywhere else an AchievementDto
+// #lib/achievement-labels.ts, shared with anywhere else an AchievementDto
 // renders on its own — this file keeps only what depends on this route's
 // own concepts (AchievementGroup, family sections).
-import { entryIcon } from "$lib/achievement-labels";
-import { formatDate, formatNumber } from "$lib/format";
-import { m } from "$lib/paraglide/messages.js";
-import type { IconName } from "$lib/types/icon-name";
-import type { AchievementFamily, AchievementTier } from "@loomkeep/shared";
+import { entryIcon } from "#lib/achievement-labels.js";
+import { formatDate, formatNumber, formatPercent } from "#lib/format.js";
+import { m } from "#lib/paraglide/messages.js";
+import type { IconName } from "#lib/types/icon-name.js";
+import type {
+  AchievementFamily,
+  AchievementRarityDto,
+  AchievementTier,
+} from "@loomkeep/shared";
 import type { AchievementGroup } from "./achievements";
 
 export {
   achievementDescription,
   achievementName,
   entryIcon,
-} from "$lib/achievement-labels";
+} from "#lib/achievement-labels.js";
 
 export function tierLabel(tier: AchievementTier | null): string {
   if (tier === "bronze") return m.gamification_tier_bronze();
@@ -36,9 +40,9 @@ export function familyLabel(family: AchievementFamily): string {
     case "seasonal":
       return m.gamification_family_seasonal();
     case "social":
-      return m.gamification_family_social();
+      return m.common_social();
     case "account":
-      return m.gamification_family_account();
+      return m.common_account();
     case "misc":
       return m.gamification_family_misc();
   }
@@ -138,4 +142,26 @@ export function contextNote(group: AchievementGroup): NoteSegment[] {
   }
 
   return segments;
+}
+
+/**
+ * "Débloqué par 4 % des membres" (the ladder's tooltip and screen-reader
+ * text) — a share of real members, deliberately
+ * distinct from the XP award (15/50/150), which is Loomkeep's own rating of
+ * how hard an achievement is. Null when the instance is too small to say.
+ */
+export function rarityLabel(
+  rarity: AchievementRarityDto | null,
+): string | null {
+  if (!rarity) return null;
+  const percent = formatPercent(rarity.percent);
+  return rarity.upperBound
+    ? m.gamification_rarity_under({ percent })
+    : m.gamification_rarity({ percent });
+}
+
+/** The ladder's compact figure, "45 %" or "< 8 %"; the sentence is its label. */
+export function rarityPercent(rarity: AchievementRarityDto): string {
+  const percent = formatPercent(rarity.percent);
+  return rarity.upperBound ? `< ${percent}` : percent;
 }

@@ -2,10 +2,9 @@ import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import adapter from "@sveltejs/adapter-node";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
-import { SvelteKitPWA } from "@vite-pwa/sveltekit";
 import { defineConfig } from "vite";
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   server: { host: true, allowedHosts: ["dev.loomkeep.app"] },
   clearScreen: false,
   plugins: [
@@ -16,7 +15,10 @@ export default defineConfig({
       project: "./project.inlang",
       outdir: "./src/lib/paraglide",
       strategy: ["cookie", "preferredLanguage", "baseLocale"],
-    }),
+      // One module per locale in dev: one per message meant thousands of
+      // unbundled requests on every reload. The build keeps per-message modules, which tree-shake.
+      outputStructure:
+        command === "serve" ? "locale-modules" : "message-modules",    }),
     sveltekit({
       compilerOptions: {
         // Force runes mode for the project, except for libraries. Can be removed in svelte 6.
@@ -28,29 +30,17 @@ export default defineConfig({
       },
       // adapter-node: the web app ships as a plain Node server, self-hostable in Docker.
       adapter: adapter(),
+      files: { serviceWorker: "src/service-worker/service-worker" },
     }),
-    SvelteKitPWA({
-      registerType: "autoUpdate",
-      // Custom service worker (src/sw.ts) so we can handle Web Push `push`
-      // events; injectManifest keeps precaching the app shell for offline use.
-      strategies: "injectManifest",
-      srcDir: "src",
-      filename: "service-worker.ts",
-      injectManifest: {
-        globPatterns: ["**/*.{js,css,html,svg,woff2}"],
-      },
-      devOptions: {
-        enabled: true,
-        type: "module",
-      },
-      // Served by the locale-aware /manifest.webmanifest endpoint.
-      manifest: false,
-    }),
+
   ],
   // @loomkeep/shared is a linked workspace package, so Vite treats it as
   // source and skips its usual CJS→ESM pre-bundling — but it's compiled to
   // CommonJS (consumed as dist/, see root CLAUDE.md), so named imports break
-  // in dev without forcing that conversion explicitly.
+  // in dev without forcing that conversion explicitly. The pre-bundle isn't
+  // rebuilt when dist/ changes, only when the lockfile or this config does:
+  // the dev script passes --force so each `pnpm dev`, which rebuilds the
+  // package first, serves the current one.
   optimizeDeps: {
     include: ["@loomkeep/shared"],
   },
@@ -67,4 +57,4 @@ export default defineConfig({
   ssr: {
     external: ["@loomkeep/shared"],
   },
-});
+}));

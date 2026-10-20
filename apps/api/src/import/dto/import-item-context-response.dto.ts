@@ -1,4 +1,4 @@
-import type { ImportItemContext } from "@loomkeep/shared";
+import { EntryStatus, type ImportItemContext } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
 
 // ImportItemContext is a 4-branch discriminated union — each branch gets its
@@ -30,6 +30,14 @@ class SeriesImportContextResponseDto implements SeriesContext {
   kind!: "series";
 
   episodesWatched!: number;
+
+  @ApiProperty({
+    enum: Object.values(EntryStatus),
+    nullable: true,
+    required: false,
+  })
+  status?: EntryStatus | null;
+
   rating!: number | null;
   favorite!: boolean;
 }

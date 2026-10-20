@@ -1,12 +1,10 @@
 import type { AdminSystemSectionDto } from "@loomkeep/shared";
 import { SecurityEventType } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
+import { sinceDaysAgo, startOfUtcDay } from "../common/date.util";
 import { PrismaService } from "../prisma/prisma.service";
-import { startOfUtcDay } from "./admin-stats.util";
 import { providerCallRows } from "./admin-system-stats.util";
 import { AdminService } from "./admin.service";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * "Système" section of /admin/stats: what the instance costs to run. Every
@@ -49,28 +47,24 @@ export class AdminSystemStatsService {
   }
 
   private async ops(now: Date): Promise<AdminSystemSectionDto["ops"]> {
-    const [
-      notificationsPending,
-      pushSubscriptions,
-      failedLogins24h,
-      lastBackup,
-    ] = await Promise.all([
-      this.prisma.notification.count(),
-      this.prisma.pushSubscription.count(),
-      this.prisma.securityEvent.count({
-        where: {
-          type: SecurityEventType.LOGIN_FAILED,
-          createdAt: { gte: new Date(now.getTime() - DAY_MS) },
-        },
-      }),
-      this.prisma.backupFile.findFirst({
-        orderBy: { createdAt: "desc" },
-        select: { createdAt: true, sizeBytes: true },
-      }),
-    ]);
+    const [notificationsTotal, pushSubscriptions, failedLogins24h, lastBackup] =
+      await Promise.all([
+        this.prisma.notification.count(),
+        this.prisma.pushSubscription.count(),
+        this.prisma.securityEvent.count({
+          where: {
+            type: SecurityEventType.LOGIN_FAILED,
+            createdAt: { gte: sinceDaysAgo(now, 1) },
+          },
+        }),
+        this.prisma.backupFile.findFirst({
+          orderBy: { createdAt: "desc" },
+          select: { createdAt: true, sizeBytes: true },
+        }),
+      ]);
 
     return {
-      notificationsPending,
+      notificationsTotal,
       pushSubscriptions,
       failedLogins24h,
       lastBackup: lastBackup

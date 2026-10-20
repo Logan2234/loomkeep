@@ -1,9 +1,14 @@
 import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus } from "@nestjs/common";
 import { AppException } from "./app.exception";
+import { sleep } from "./async.util";
 
 // A hung provider must not hold a request open indefinitely.
-const TIMEOUT_MS = 10_000;
+export const HTTP_TIMEOUT_MS = 10_000;
+
+export function identifyingUserAgent(contact: string | undefined): string {
+  return `Loomkeep/1.0 (${contact ?? "self-hosted, no contact provided"})`;
+}
 
 // Transient failures (429/5xx) get a couple of retries with backoff — a
 // provider hiccup shouldn't surface as a user-facing error.
@@ -31,6 +36,8 @@ const MAX_ATTEMPTS = 3;
  * retries) — the hook a caller uses to count real requests against a
  * provider quota (see QuotaTrackerService), as opposed to counting once per
  * `fetchJson()` call, which would undercount a call retried on 429/5xx.
+ * `beforeAttempt` waits for a provider's throttle before counting a request;
+ * `isRetryable` overrides the default HTTP retry policy for that provider.
  */
 export async function fetchJson<T>(
   url: string | URL,
@@ -40,14 +47,17 @@ export async function fetchJson<T>(
     notFoundMessage?: string;
     maxRetryDelayMs?: number;
     onAttempt?: () => void;
+    beforeAttempt?: () => Promise<void>;
+    isRetryable?: (status: number) => boolean;
   },
 ): Promise<T> {
   let lastStatus = 0;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    if (opts.beforeAttempt) await opts.beforeAttempt();
     opts.onAttempt?.();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timeout = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
 
     let response: Response;
 
@@ -81,7 +91,9 @@ export async function fetchJson<T>(
     if (response.ok) return (await response.json()) as T;
 
     lastStatus = response.status;
-    const transient = response.status === 429 || response.status >= 500;
+    const transient = opts.isRetryable
+      ? opts.isRetryable(response.status)
+      : response.status === 429 || response.status >= 500;
 
     if (transient && attempt < MAX_ATTEMPTS) {
       const delay = retryDelayMs(response.headers.get("Retry-After"), attempt);
@@ -117,8 +129,4 @@ function retryDelayMs(
   }
 
   return 500 * 2 ** (attempt - 1); // 500ms, then 1000ms.
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

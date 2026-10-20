@@ -1,10 +1,24 @@
 import { ErrorCode } from "@loomkeep/shared";
 import { vi } from "vitest";
-import { fetchJson } from "./http.util";
+import { fetchJson, identifyingUserAgent } from "./http.util";
 
 // Node defines global fetch lazily, which confuses vi.spyOn on restore;
 // swap the reference directly instead.
 const originalFetch = global.fetch;
+
+describe("identifyingUserAgent", () => {
+  it("retains the configured provider contact", () => {
+    expect(identifyingUserAgent("admin@example.com")).toBe(
+      "Loomkeep/1.0 (admin@example.com)",
+    );
+  });
+  it("retains the self-hosted fallback", () => {
+    expect(identifyingUserAgent(undefined)).toBe(
+      "Loomkeep/1.0 (self-hosted, no contact provided)",
+    );
+    expect(identifyingUserAgent("")).toBe("Loomkeep/1.0 ()");
+  });
+});
 
 function jsonResponse(status: number, body: unknown = {}) {
   return {

@@ -1,14 +1,16 @@
 <script lang="ts">
-  import { getBlockedUsers, unblockUser } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { keys } from "$lib/api/keys";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
+  import { getBlockedUsers, unblockUser } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PagedResult, UserSummaryDto } from "@loomkeep/shared";
   import SettingsSection from "../components/SettingsSection.svelte";
 
@@ -73,14 +75,7 @@
 
     {#if blockedQuery.hasNextPage}
       <div class="mt-5 flex justify-center">
-        <button
-          class="btn btn-ghost"
-          disabled={blockedQuery.isFetchingNextPage}
-          onclick={() => blockedQuery.fetchNextPage()}>
-          {blockedQuery.isFetchingNextPage
-            ? m.common_loading()
-            : m.common_see_more()}
-        </button>
+        <LoadMoreButton query={blockedQuery} class="btn btn-ghost" />
       </div>
     {/if}
   {/if}

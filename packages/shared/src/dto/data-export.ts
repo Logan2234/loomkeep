@@ -28,9 +28,12 @@ import type {
   ReviewVisibility,
   ReviewVoteValue,
   SecurityEventType,
+  SessionSource,
+  TrackingCycleStatus,
   VisibilityAudience,
   VisibilityFacet,
 } from "../enums";
+import type { SavedViewDto } from "./saved-view";
 import { UserDto } from "./user";
 
 export interface DataExportEntry {
@@ -50,6 +53,8 @@ export interface DataExportEntry {
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string;
+  /** When each rewatch of a film ended. */
+  replays: string[];
 }
 
 export interface DataExportWatch {
@@ -72,6 +77,9 @@ export interface DataExportGameEntry {
   notes: string | null;
   favorite: boolean;
   playtimeMinutes: number;
+  trackedPlaytimeMinutes: number;
+  steamPlaytimeMinutes: number | null;
+  steamSyncedAt: string | null;
   ownershipStatus: GameOwnershipStatus;
   ownershipSource: string | null;
   startedAt: string | null;
@@ -79,6 +87,22 @@ export interface DataExportGameEntry {
   createdAt: string;
   /** Completed replays beyond the first, oldest first. */
   replays: string[];
+  /** Every playthrough, the first and the unfinished ones included. */
+  playthroughs: {
+    number: number;
+    status: TrackingCycleStatus;
+    startedAt: string | null;
+    finishedAt: string | null;
+    trackedMinutes: number;
+  }[];
+  sessions: {
+    playthroughNumber: number | null;
+    durationMinutes: number;
+    notes: string | null;
+    occurredAt: string;
+    source: SessionSource;
+    createdAt: string;
+  }[];
 }
 
 export interface DataExportBookEntry {
@@ -94,6 +118,9 @@ export interface DataExportBookEntry {
   notes: string | null;
   favorite: boolean;
   currentPage: number;
+  editionKey: string | null;
+  referencePageCount: number | null;
+  trackedReadingMinutes: number;
   ownershipStatus: BookOwnershipStatus;
   ownershipSource: string | null;
   startedAt: string | null;
@@ -101,6 +128,29 @@ export interface DataExportBookEntry {
   createdAt: string;
   /** Completed rereads beyond the first, oldest first. */
   replays: string[];
+  /** Every reading, the first and the unfinished ones included. */
+  readings: {
+    number: number;
+    status: TrackingCycleStatus;
+    editionKey: string | null;
+    referencePageCount: number | null;
+    currentPage: number;
+    pagesRead: number;
+    trackedMinutes: number;
+    startedAt: string | null;
+    finishedAt: string | null;
+  }[];
+  sessions: {
+    readingNumber: number | null;
+    durationMinutes: number;
+    pagesRead: number;
+    startPage: number | null;
+    endPage: number | null;
+    notes: string | null;
+    occurredAt: string;
+    source: SessionSource;
+    createdAt: string;
+  }[];
 }
 
 export interface DataExportMusicEntry {
@@ -130,6 +180,7 @@ export interface DataExportNotification {
   /** Kind-specific extras (episode airDate, social actor identity…). */
   data: Record<string, unknown>;
   createdAt: string;
+  readAt: string | null;
 }
 
 export interface DataExportReview {
@@ -170,11 +221,36 @@ export interface DataExportCommentReaction {
   createdAt: string;
 }
 
+/** A work card a message carried. */
+export interface DataExportMessageWork {
+  title: string;
+  href: string;
+}
+
+export interface DataExportMessage {
+  mine: boolean;
+  text: string | null;
+  spoiler: boolean;
+  edited: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+  forwarded: boolean;
+  works: DataExportMessageWork[];
+}
+
+/** A private conversation, with what both members wrote in it. */
+export interface DataExportConversation {
+  peerUsername: string | null;
+  muted: boolean;
+  messages: DataExportMessage[];
+}
+
 export interface DataExportListItem {
   targetType: ReviewTargetType;
   targetId: string;
   position: number;
   addedAt: string;
+  note: string | null;
 }
 
 export interface DataExportList {
@@ -230,6 +306,98 @@ export interface DataExportSecurityEvent {
   type: SecurityEventType;
   identifier: string;
   detail: string | null;
+  userAgent: string | null;
+  ip: string | null;
+  createdAt: string;
+}
+
+/** What `account` doesn't carry: consents, account history, the photo itself. */
+export interface DataExportAccountRecord {
+  termsAcceptedAt: string | null;
+  ageCertifiedAt: string | null;
+  newsletterOptInAt: string | null;
+  lastActiveAt: string | null;
+  suspendedUntil: string | null;
+  equippedBadgeKeys: string[];
+  avatar: { mimeType: string; base64: string } | null;
+  /** An email change asked for and not confirmed yet. */
+  pendingEmailChange: { newEmail: string; expiresAt: string } | null;
+  /** The invitation the account signed up with. */
+  invitation: { label: string | null; invitedBy: string | null } | null;
+}
+
+/** A work this account added to a list it doesn't own. */
+export interface DataExportListItemAdded {
+  listTitle: string;
+  listOwnerUsername: string;
+  targetType: ReviewTargetType;
+  targetId: string;
+  addedAt: string;
+}
+
+/** The session timer running when the export was made. */
+export interface DataExportSessionTimer {
+  domain: Domain;
+  /** The game or book it times. */
+  title: string | null;
+  startedAt: string;
+  pausedAt: string | null;
+  accumulatedSeconds: number;
+}
+
+/** A signed-in session — never its token. */
+export interface DataExportSession {
+  userAgent: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+}
+
+/** A shared list whose notifications are muted. */
+export interface DataExportListMute {
+  listTitle: string;
+  mutedAt: string;
+}
+
+export interface DataExportActivity {
+  type: string;
+  domain: string;
+  title: string;
+  href: string | null;
+  createdAt: string;
+}
+
+export interface DataExportProgression {
+  xp: number;
+  xpEntries: {
+    reason: string;
+    amount: number;
+    createdAt: string;
+    revokedAt: string | null;
+  }[];
+  achievements: { key: string; unlockedAt: string }[];
+}
+
+/** A personal API key — never its secret. */
+export interface DataExportApiKey {
+  name: string;
+  suffix: string;
+  scopes: string[];
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+}
+
+/** A passkey — never its key material. */
+export interface DataExportPasskey {
+  name: string;
+  deviceType: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+/** A browser that receives push notifications — never its endpoint or keys. */
+export interface DataExportPushSubscription {
   userAgent: string | null;
   createdAt: string;
 }
@@ -288,6 +456,7 @@ export interface UserDataExportDto {
   /** ISO datetime the export was produced. */
   exportedAt: string;
   account: UserDto;
+  accountRecord: DataExportAccountRecord;
   library: DataExportEntry[];
   episodeWatches: DataExportWatch[];
   games: DataExportGameEntry[];
@@ -306,6 +475,7 @@ export interface UserDataExportDto {
   reviewVotes: DataExportReviewVote[];
   comments: DataExportComment[];
   commentReactions: DataExportCommentReaction[];
+  conversations: DataExportConversation[];
   lists: DataExportList[];
   listMemberships: DataExportListMembership[];
   follows: { following: DataExportFollow[]; followers: DataExportFollow[] };
@@ -322,6 +492,17 @@ export interface UserDataExportDto {
   subscriptions: DataExportSubscription[];
   readingGoals: DataExportReadingGoal[];
   importRuns: DataExportImportRun[];
+  /** With their ids: a home widget of `account.homeLayout` refers to one by it. */
+  savedViews: SavedViewDto[];
+  activity: DataExportActivity[];
+  progression: DataExportProgression;
+  apiKeys: DataExportApiKey[];
+  passkeys: DataExportPasskey[];
+  pushSubscriptions: DataExportPushSubscription[];
+  listItemsAdded: DataExportListItemAdded[];
+  sessionTimer: DataExportSessionTimer | null;
+  sessions: DataExportSession[];
+  listMutes: DataExportListMute[];
 }
 
 /**
@@ -330,4 +511,19 @@ export interface UserDataExportDto {
  */
 export interface CsvExportDto {
   csv: string;
+}
+
+/** One CSV of a migration export, importable on its own. */
+export interface MigrationExportFileDto {
+  /** Base name, without date nor extension: "letterboxd-diary-2". */
+  name: string;
+  csv: string;
+}
+
+/**
+ * A library in another service's import format (Letterboxd, Goodreads). Several
+ * files when the service imports them separately, or caps their size.
+ */
+export interface MigrationExportDto {
+  files: MigrationExportFileDto[];
 }

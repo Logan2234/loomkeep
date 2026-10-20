@@ -3,22 +3,7 @@ import type {
   VideoTypeSplitDto,
   WatchStaleness,
 } from "@loomkeep/shared";
-import { DORMANT_AFTER_DAYS } from "@loomkeep/shared";
-
-/**
- * Fallback runtime (minutes) for a title with no captured `runtimeMin` yet —
- * rough per-type averages so watch time stays plausible until the real value
- * lands. Mirrors the pre-P4-social stats aggregation.
- */
-const DEFAULT_RUNTIME_MIN: Record<MediaType, number> = {
-  MOVIE: 110,
-  SERIES: 42,
-  ANIME: 24,
-};
-
-export function runtimeFor(type: MediaType, runtimeMin: number | null): number {
-  return runtimeMin && runtimeMin > 0 ? runtimeMin : DEFAULT_RUNTIME_MIN[type];
-}
+import { DORMANT_AFTER_DAYS, GHOST_AFTER_DAYS } from "@loomkeep/shared";
 
 export interface TypeSplitInput {
   type: MediaType;
@@ -39,21 +24,6 @@ export function computeTypeSplit(rows: TypeSplitInput[]): VideoTypeSplitDto[] {
   return [...byType.entries()]
     .map(([type, v]) => ({ type, ...v }))
     .sort((a, b) => b.minutes - a.minutes);
-}
-
-/** Most watch events falling within any rolling 24h window. */
-export function computeLongestBinge(watchedAt: Date[]): number {
-  const times = watchedAt.map((d) => d.getTime()).sort((a, b) => a - b);
-  const WINDOW_MS = 24 * 60 * 60 * 1000;
-  let best = 0;
-  let start = 0;
-
-  for (let end = 0; end < times.length; end++) {
-    while (times[end] - times[start] >= WINDOW_MS) start++;
-    best = Math.max(best, end - start + 1);
-  }
-
-  return best;
 }
 
 export interface SeasonProgressInput {
@@ -82,9 +52,6 @@ export function lastWatchedPerMediaItem(
 
   return result;
 }
-
-/** A WATCHING series/anime untouched this many days is a "ghost". */
-export const GHOST_AFTER_DAYS = 180;
 
 // Mutually exclusive with the shared `isDormant` window: 30-180 days is
 // "paused", 180+ is "ghost" — `lastTouched` must already be known (a series

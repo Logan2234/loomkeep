@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { type IconName } from "#lib/types/icon-name.js";
+
   // The "Menu" launcher: a full-width sheet that rises from the bottom bar and
   // lays out every destination as tiles — the mobile counterpart of the desktop
   // rail. In the app it groups libraries + tracking/account; inside /admin it
@@ -6,25 +8,24 @@
   // reachable on a phone. Admin lives here — it has no bottom-bar slot by
   // default. Notifications aren't a destination at all: see the fixed bell
   // (NotificationBell.svelte) in the root layout instead.
-  import { goto } from "$app/navigation";
-  import { page } from "$app/state";
-  import { logout } from "$lib/api/auth";
-  import { auth } from "$lib/auth.svelte";
-  import Drawer from "$lib/components/Drawer.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
-  import { isDomainEnabled } from "$lib/domains";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { resolveMenuGroups } from "$lib/navigation";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { ComponentProps } from "svelte";
 
-  type IconName = ComponentProps<typeof Icon>["name"];
+  import { page } from "$app/state";
+  import { signOutAndRedirect } from "#lib/api/auth.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Drawer from "#lib/components/Drawer.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
+  import { isDomainEnabled } from "#lib/domain-availability.js";
+  import { isFeatureNew, type FeatureBadgeKey } from "#lib/feature-badges.js";
+  import { resolveMenuGroups } from "#lib/navigation.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
 
   let open = $state(false);
 
   const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
+  const reportsPending = useReportsPendingCount();
 
   const groups = $derived(
     resolveMenuGroups({
@@ -41,8 +42,7 @@
 
   async function signOut() {
     close();
-    await logout();
-    await goto("/login");
+    await signOutAndRedirect();
   }
 
   $effect(() => {
@@ -58,7 +58,7 @@
   icon: IconName;
   match: (p: string) => boolean;
   comingSoon?: boolean;
-  newBadgeKey?: string;
+  newBadgeKey?: FeatureBadgeKey;
 })}
   {@const active = dest.match(page.url.pathname)}
   {#if dest.comingSoon}
@@ -85,6 +85,12 @@
       {/if}
       <Icon name={dest.icon} class="text-accent h-6 w-6" />
       <span class="text-xs font-semibold">{dest.label}</span>
+      {#if dest.href === "/app/admin/reports" && appConfig.socialEnabled && reportsPending.available && reportsPending.count > 0}
+        <span
+          class="bg-accent text-accent-fg absolute top-2 right-2 rounded-full px-1.5 py-0.5 text-xs font-bold">
+          {reportsPending.count > 9 ? "9+" : reportsPending.count}
+        </span>
+      {/if}
     </a>
   {/if}
 {/snippet}
@@ -101,13 +107,32 @@
 
     <div
       data-drawer-scroll
-      class="flex-1 touch-pan-y overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      class="min-h-0 flex-1 touch-pan-y overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
       {#if inAdmin}
         <div class="mt-2 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
-          {#each VISIBLE_ADMIN_NAV as item (item.href)}
-            {@render tile(item)}
-          {/each}
+          {@render tile({
+            href: "/app/admin",
+            label: m.common_overview(),
+            icon: "home",
+            match: (path) => path === "/app/admin",
+          })}
         </div>
+        {#each VISIBLE_ADMIN_NAV_GROUPS as group (group.label)}
+          <section class="mt-4 first:mt-2">
+            <div class="mb-2.5 flex items-center gap-3">
+              <span
+                class="timecode text-[0.65rem] font-bold tracking-[0.14em] uppercase">
+                {group.label}
+              </span>
+              <span class="bg-border h-px flex-1"></span>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+              {#each group.items as item (item.href)}
+                {@render tile(item)}
+              {/each}
+            </div>
+          </section>
+        {/each}
 
         <a
           href="/app"

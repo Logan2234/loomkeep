@@ -1,13 +1,13 @@
 <script lang="ts">
   // "Social": what the P4 surface actually produced, instance-wide. Only
   // mounted when the API reports the section enabled (SOCIAL_ENABLED).
-  import { getAdminSocialActivityTrend } from "$lib/api/client";
-  import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import StatFigure from "$lib/components/stats/StatFigure.svelte";
-  import { REPORT_CATEGORY_LABELS } from "$lib/constants/report-labels";
-  import { formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getAdminSocialActivityTrend } from "#lib/api/client.js";
+  import HistogramBars from "#lib/components/stats/HistogramBars.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import StatFigure from "#lib/components/stats/StatFigure.svelte";
+  import { REPORT_CATEGORY_LABELS } from "#lib/constants/report-labels.js";
+  import { formatNumber, formatPercent } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { AdminSocialStatsDto } from "@loomkeep/shared";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
 
@@ -40,7 +40,7 @@
       label: m.admin_social_total_blocks(),
     },
     {
-      value: `${stats.totals.deletedCommentPercent} %`,
+      value: formatPercent(stats.totals.deletedCommentPercent),
       label: m.admin_social_total_deleted_comments(),
     },
   ]);
@@ -104,34 +104,34 @@
       </h3>
       <a
         href="/app/admin/reports"
-        class="link-accent ml-auto text-[11px] font-bold">
+        class="link-accent ml-auto text-xs font-bold">
         {m.admin_social_reports_queue_link()}
       </a>
     </div>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_social_moderation()}
     </p>
     <div class="grid grid-cols-2 gap-3">
       <StatFigure
         value={formatNumber(stats.reports.pending)}
-        label={m.report_status_pending()}
+        label={m.common_pending()}
         alert={stats.reports.pending > 0} />
       <StatFigure
         value={formatNumber(stats.reports.resolved)}
         label={m.admin_social_reports_resolved()} />
       <StatFigure
         value={stats.reports.medianResolutionHours === null
-          ? "—"
+          ? m.admin_metric_no_sample()
           : `${formatNumber(stats.reports.medianResolutionHours)} h`}
         label={m.admin_social_reports_median_delay()} />
       <StatFigure
         value={stats.reports.foundedPercent === null
-          ? "—"
-          : `${stats.reports.foundedPercent} %`}
+          ? m.admin_metric_no_sample()
+          : formatPercent(stats.reports.foundedPercent)}
         label={m.admin_social_reports_founded_rate()} />
     </div>
     {#if categoryItems.length > 0}
-      <p class="text-dim mt-3.5 mb-2 text-[11px] font-bold uppercase">
+      <p class="text-dim mt-3.5 mb-2 text-xs font-bold uppercase">
         {m.admin_social_by_category()}
       </p>
       <RankBars items={categoryItems} />
@@ -142,7 +142,7 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_social_ratings_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_social_ratings_desc({
         avgPart:
           stats.ratings.average === null
@@ -164,15 +164,15 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_social_top_contributors_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_social_top_contributors_desc()}
     </p>
     <RankBars items={contributorItems} />
     <div class="mt-3">
       <StatFigure
         value={contributorShare === null
-          ? "—"
-          : `${contributorShare} % / ${100 - contributorShare} %`}
+          ? m.admin_metric_no_sample()
+          : `${formatPercent(contributorShare)} / ${formatPercent(100 - contributorShare)}`}
         label={m.admin_social_contributors_readers({
           contributors: formatNumber(stats.contributors),
           total: formatNumber(totalAccounts),

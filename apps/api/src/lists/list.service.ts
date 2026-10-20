@@ -8,24 +8,35 @@ import {
   type ListMemberDto,
   type ListViewerRole,
   type ListVisibility,
+  MESSAGE_LIST_WORKS,
+  type MessageListDto,
   type MyListDto,
   NotificationType,
+  RealtimeEvent,
   type ReviewTargetSummaryDto,
   type UserSummaryDto,
   XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import type { Prisma } from "@prisma/client";
+import assert from "node:assert/strict";
 import { AppException } from "../common/app.exception";
-import { canonicalExternalId } from "../common/external-id.util";
+import {
+  CANONICAL_EXTERNAL_ID_SELECT,
+  canonicalExternalId,
+} from "../common/external-id.util";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { EventsGateway } from "../events/events.gateway";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
-import { ACHIEVEMENT_KEYS_ON_LIST_CREATED } from "../gamification/achievements/registry";
+
+import { ACHIEVEMENT_KEYS_ON_LIST_CREATED } from "../gamification/achievements/triggers";
 import { XpService } from "../gamification/xp.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
+import { FollowService } from "../social/follow.service";
 import { isSocialEnabled } from "../social/social.config";
 import { VisibilityService } from "../social/visibility.service";
 import { resolveOwnVisibility } from "../social/visibility.util";
@@ -62,6 +73,7 @@ type ListItemRow = {
   targetId: string;
   position: number;
   addedAt: Date;
+  note: string | null;
 };
 
 @Injectable()
@@ -71,11 +83,11 @@ export class ListService {
     private readonly visibility: VisibilityService,
     private readonly activity: ActivityService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
     private readonly notifications: NotificationService,
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
+    private readonly follow: FollowService,
   ) {}
 
   private toDto(row: ListRow, author: UserSummaryDto): ListDto {
@@ -135,7 +147,7 @@ export class ListService {
     await this.achievements.evaluate(userId, ACHIEVEMENT_KEYS_ON_LIST_CREATED);
 
     // create_list is one of the onboarding checklist's steps (OnboardingService).
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return this.toDto(row, await this.author(userId));
   }
@@ -153,7 +165,7 @@ export class ListService {
   ): Promise<ListDto> {
     const { row: existing, role } = await this.canEdit(userId, id);
 
-    if (dto.visibility && role !== "OWNER") {
+    if (dto.visibility && role === "EDITOR") {
       throw new AppException(
         HttpStatus.FORBIDDEN,
         ErrorCode.ListOwnerOnlyVisibility,
@@ -164,7 +176,7 @@ export class ListService {
 
     if (visibility && visibility !== "PRIVATE") {
       const user = await this.prisma.user.findUniqueOrThrow({
-        where: { id: userId },
+        where: { id: existing.userId },
         select: { profileAccess: true },
       });
       // A Figurant can't share a list — clamp even if they already own one
@@ -186,6 +198,7 @@ export class ListService {
     });
 
     if (
+      role === "OWNER" &&
       dto.visibility &&
       dto.visibility !== "PRIVATE" &&
       existing.visibility === "PRIVATE"
@@ -219,6 +232,42 @@ export class ListService {
   }
 
   /**
+   * Moderation removal, whoever owns the list. Returns what the decision
+   * keeps as evidence once the list itself is gone.
+   */
+  async adminRemove(
+    id: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<{
+    ownerId: string;
+    title: string;
+    description: string | null;
+    itemCount: number;
+  }> {
+    const list = await tx.list.findUnique({
+      where: { id },
+      select: {
+        userId: true,
+        title: true,
+        description: true,
+        _count: { select: { items: true } },
+      },
+    });
+    if (!list)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
+
+    await tx.list.delete({ where: { id } });
+    await this.xp.revokeBySource("List", [id], tx);
+
+    return {
+      ownerId: list.userId,
+      title: list.title,
+      description: list.description,
+      itemCount: list._count.items,
+    };
+  }
+
+  /**
    * Every list the user can edit — owned or granted via ListMember — newest-
    * updated first, with a preview. Feeds "Ajouter à une liste": an editor
    * needs to see the lists they can add items to, not just their own.
@@ -238,12 +287,16 @@ export class ListService {
     const authorById = new Map(authorIds.map((id, i) => [id, authors[i]]));
     const previews = await this.buildPreviews(rows);
 
-    return rows.map((r) => ({
-      ...this.toDto(r, authorById.get(r.userId)!),
-      itemCount: r._count.items,
-      previewImageUrls: previews.get(r.id) ?? [],
-      role: r.userId === userId ? ("OWNER" as const) : ("EDITOR" as const),
-    }));
+    return rows.map((r) => {
+      const author = authorById.get(r.userId);
+      assert(author, "Every list owner must have a resolved author");
+      return {
+        ...this.toDto(r, author),
+        itemCount: r._count.items,
+        previewImageUrls: previews.get(r.id) ?? [],
+        role: r.userId === userId ? ("OWNER" as const) : ("EDITOR" as const),
+      };
+    });
   }
 
   /**
@@ -253,7 +306,7 @@ export class ListService {
    */
   async getEditable(userId: string, id: string): Promise<ListDetailDto> {
     const { role } = await this.canEdit(userId, id);
-    return this.detail(id, role);
+    return this.detail(id, userId, role);
   }
 
   /**
@@ -282,7 +335,11 @@ export class ListService {
       if (!ok) return null;
     }
 
-    return this.detail(id, row.userId === viewerId ? "OWNER" : "VIEWER");
+    return this.detail(
+      id,
+      viewerId,
+      row.userId === viewerId ? "OWNER" : "VIEWER",
+    );
   }
 
   /**
@@ -349,13 +406,18 @@ export class ListService {
           ),
         ),
       );
-      visibleEditor = editorRows.filter((r) =>
-        resolveOwnVisibility(
+      visibleEditor = editorRows.filter((r) => {
+        const relation = ownerRelations.get(r.userId);
+        assert(
+          relation,
+          "Every editor list owner must have a resolved relation",
+        );
+        return resolveOwnVisibility(
           r.visibility as ListVisibility,
           r.user.profileAccess,
-          ownerRelations.get(r.userId)!,
-        ),
-      );
+          relation,
+        );
+      });
     }
 
     const rows = [...visibleOwn, ...visibleEditor].sort(
@@ -369,12 +431,77 @@ export class ListService {
     ]);
     const authorById = new Map(authorIds.map((id, i) => [id, authors[i]]));
 
-    return rows.map((r) => ({
-      ...this.toDto(r, authorById.get(r.userId)!),
-      itemCount: r._count.items,
-      previewImageUrls: previews.get(r.id) ?? [],
-      role: r.userId === user.id ? ("OWNER" as const) : ("EDITOR" as const),
-    }));
+    return rows.map((r) => {
+      const author = authorById.get(r.userId);
+      assert(author, "Every list owner must have a resolved author");
+      return {
+        ...this.toDto(r, author),
+        itemCount: r._count.items,
+        previewImageUrls: previews.get(r.id) ?? [],
+        role: r.userId === user.id ? ("OWNER" as const) : ("EDITOR" as const),
+      };
+    });
+  }
+
+  /**
+   * Lists as a message's card shows them to the viewer, by id: the ones still
+   * there that they may see — own, edited, or open to them by their owner's
+   * audience.
+   */
+  async messageCards(
+    viewerId: string,
+    ids: string[],
+  ): Promise<Map<string, MessageListDto>> {
+    if (ids.length === 0) return new Map();
+    const rows = await this.prisma.list.findMany({
+      where: { id: { in: ids } },
+      include: {
+        user: { select: AUTHOR_SELECT },
+        members: { where: { userId: viewerId }, select: { userId: true } },
+        items: { orderBy: { position: "asc" }, take: MESSAGE_LIST_WORKS },
+        _count: { select: { items: true } },
+      },
+    });
+
+    const visible: typeof rows = [];
+
+    for (const row of rows) {
+      if (
+        row.userId === viewerId ||
+        row.members.length > 0 ||
+        resolveOwnVisibility(
+          row.visibility as ListVisibility,
+          row.user.profileAccess,
+          await this.visibility.getRelation(viewerId, row.user),
+        )
+      ) {
+        visible.push(row);
+      }
+    }
+
+    const targets = await this.resolveTargets(visible.flatMap((r) => r.items));
+    return new Map(
+      visible.map((r) => [
+        r.id,
+        {
+          id: r.id,
+          title: r.title,
+          kind: r.kind as MessageListDto["kind"],
+          visibility: r.visibility as ListVisibility,
+          itemCount: r._count.items,
+          works: r.items.map((i) => {
+            const target = targets.get(`${i.targetType}:${i.targetId}`);
+            return {
+              title: target?.title ?? "",
+              imageUrl: target?.imageUrl ?? null,
+            };
+          }),
+          ownerName: r.user.displayName,
+          mine: r.userId === viewerId,
+          updatedAt: r.updatedAt.toISOString(),
+        },
+      ]),
+    );
   }
 
   /** Which of the user's editable lists already contain this target, keyed by list id. */
@@ -399,7 +526,10 @@ export class ListService {
     listId: string,
     dto: AddListItemBody,
   ): Promise<ListItemDto> {
-    await this.canEdit(userId, listId);
+    const { row: list, role } = await this.canEdit(userId, listId);
+    // Moderation removes what a list shouldn't hold; it never adds to it.
+    if (role === "MODERATOR")
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ListForbidden);
 
     const dup = await this.prisma.listItem.findUnique({
       where: {
@@ -424,14 +554,28 @@ export class ListService {
       select: { position: true },
     });
 
-    const row = await this.prisma.listItem.create({
-      data: {
-        listId,
-        targetType: dto.targetType,
-        targetId: dto.targetId,
-        position: last ? last.position + 1 : 0,
-      },
-    });
+    let row;
+
+    try {
+      row = await this.prisma.listItem.create({
+        data: {
+          listId,
+          targetType: dto.targetType,
+          targetId: dto.targetId,
+          position: last ? last.position + 1 : 0,
+          addedById: userId,
+        },
+      });
+    } catch (err) {
+      // Another editor added the same work since the duplicate check above.
+      if (!isUniqueViolation(err)) throw err;
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.ListItemAlreadyExists,
+        undefined,
+        "Already in this list",
+      );
+    }
 
     await this.activity.emit({
       userId,
@@ -444,7 +588,126 @@ export class ListService {
 
     this.events.emitToList(listId, "list-updated");
     const targets = await this.resolveTargets([row]);
-    return this.toItemDto(row, targets);
+    const item = this.toItemDto(row, targets);
+    await this.notifyItemAdded(list, userId, item);
+    return item;
+  }
+
+  /**
+   * Fills a list an import has just created for `userId`, in the source's
+   * order, in one write. None of {@link addItem}'s per-item activity or
+   * notifications: the list is brand new, and hundreds of "added" events
+   * would only flood the activity log.
+   */
+  async addImportedItems(
+    userId: string,
+    listId: string,
+    items: {
+      targetType: ListItemTargetType;
+      targetId: string;
+      note: string | null;
+    }[],
+  ): Promise<void> {
+    await this.prisma.listItem.createMany({
+      data: items.map((item, position) => ({
+        listId,
+        targetType: item.targetType,
+        targetId: item.targetId,
+        note: item.note,
+        position,
+        addedById: userId,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  /**
+   * Tells the list's other collaborators — the owner and every editor, minus
+   * whoever added it and whoever muted the list. Whether it's pushed too is
+   * each one's LIST_ITEM_ADDED setting (see NotificationService).
+   */
+  private async notifyItemAdded(
+    list: ListRow,
+    actorId: string,
+    item: ListItemDto,
+  ): Promise<void> {
+    if (!isSocialEnabled(this.config)) return;
+
+    const members = await this.prisma.listMember.findMany({
+      where: { listId: list.id },
+      select: { userId: true },
+    });
+    const others = [list.userId, ...members.map((m) => m.userId)].filter(
+      (id) => id !== actorId,
+    );
+    if (others.length === 0) return;
+
+    const mutes = await this.prisma.listNotificationMute.findMany({
+      where: { listId: list.id, userId: { in: others } },
+      select: { userId: true },
+    });
+    const muted = new Set(mutes.map((m) => m.userId));
+    const recipients = await this.prisma.user.findMany({
+      where: { id: { in: others.filter((id) => !muted.has(id)) } },
+      select: { id: true, locale: true },
+    });
+    if (recipients.length === 0) return;
+
+    const actor = await this.author(actorId);
+    const itemTitle = item.target?.title ?? null;
+    const url = `/app/lists/${list.id}`;
+    const actorData = {
+      actorUsername: actor.username,
+      actorDisplayName: actor.displayName,
+      listTitle: list.title,
+    };
+
+    // One unread entry per editor and list: a busy editor adding twenty
+    // titles shows up once, as "added 20 titles", not twenty times.
+    for (const recipient of recipients) {
+      const copy = notificationCopy(recipient.locale);
+      await this.notifications.createOrGroup(
+        {
+          userId: recipient.id,
+          type: NotificationType.LIST_ITEM_ADDED,
+          title: actor.displayName,
+          body: copy.listItemAdded(itemTitle, list.title),
+          url,
+          dedupeKey: `list-items:${list.id}:${actorId}`,
+          data: { ...actorData, itemTitle },
+        },
+        (count) => ({
+          body: copy.listItemsAdded(count, list.title),
+          data: actorData,
+        }),
+      );
+    }
+  }
+
+  /** Sets or clears an item's note — anyone who may edit the list's items. */
+  async setItemNote(
+    userId: string,
+    listId: string,
+    itemId: string,
+    note: string | null,
+  ): Promise<ListItemDto> {
+    const { role } = await this.canEdit(userId, listId);
+    // Moderation removes; it doesn't write in someone else's list.
+    if (role === "MODERATOR" && note?.trim())
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ListForbidden);
+
+    const { count } = await this.prisma.listItem.updateMany({
+      where: { id: itemId, listId },
+      data: { note: note?.trim() || null },
+    });
+    if (count === 0)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListItemNotFound);
+
+    const row = await this.prisma.listItem.findUniqueOrThrow({
+      where: { id: itemId },
+    });
+    this.events.emitToList(listId, "list-updated");
+    return this.toItemDto(row, await this.resolveTargets([row]));
   }
 
   async removeItem(
@@ -532,8 +795,34 @@ export class ListService {
   }
 
   /**
-   * Grants `username` edit access to the list — owner only, social-gated.
-   * Notifies the invited user in-app.
+   * The owner's friends who don't edit this list yet — the only people they
+   * can add. Owner only.
+   */
+  async memberCandidates(
+    userId: string,
+    id: string,
+  ): Promise<UserSummaryDto[]> {
+    await this.ownList(userId, id);
+    const [friendIds, members] = await Promise.all([
+      this.follow.listFriendIds(userId),
+      this.prisma.listMember.findMany({
+        where: { listId: id },
+        select: { userId: true },
+      }),
+    ]);
+    const editors = new Set(members.map((m) => m.userId));
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: friendIds.filter((f) => !editors.has(f)) } },
+      select: AUTHOR_SELECT,
+      orderBy: { displayName: "asc" },
+    });
+    return users.map(toUserSummaryDto);
+  }
+
+  /**
+   * Grants `username` edit access to the list — owner only, social-gated,
+   * and only for one of the owner's friends. Notifies the invited user
+   * in-app.
    */
   async addMember(
     userId: string,
@@ -547,15 +836,21 @@ export class ListService {
       select: AUTHOR_SELECT,
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.ListMemberUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     if (target.id === userId) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.ListCannotAddSelf,
+      );
+    }
+
+    const friendIds = await this.follow.listFriendIds(userId);
+
+    if (!friendIds.includes(target.id)) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.ListMemberNotFriend,
       );
     }
 
@@ -573,16 +868,18 @@ export class ListService {
     });
 
     const owner = await this.author(userId);
+    const copy = await this.notifications.copyFor(target.id);
     await this.notifications.create({
       userId: target.id,
       type: NotificationType.LIST_MEMBER_ADDED,
       title: owner.displayName,
-      body: `vous a ajouté comme éditeur sur « ${list.title} »`,
+      body: copy.listEditorAdded(list.title),
       url: `/app/lists/${id}`,
       dedupeKey: `list-member:${id}:${target.id}`,
       data: {
         actorUsername: owner.username,
         actorDisplayName: owner.displayName,
+        listTitle: list.title,
       },
     });
 
@@ -612,8 +909,32 @@ export class ListService {
         HttpStatus.NOT_FOUND,
         ErrorCode.ListMembershipNotFound,
       );
+    // A mute belongs to the membership: someone re-added later starts fresh.
+    await this.prisma.listNotificationMute.deleteMany({
+      where: { listId: id, userId: memberUserId },
+    });
     this.events.emitToList(id, "list-updated");
     await this.events.evictFromList(id, memberUserId);
+  }
+
+  /** Turns this list's notifications off, or back on, for the caller. */
+  async setNotificationsMuted(
+    userId: string,
+    id: string,
+    muted: boolean,
+  ): Promise<void> {
+    await this.canEdit(userId, id);
+
+    if (muted) {
+      await this.prisma.listNotificationMute.createMany({
+        data: [{ listId: id, userId }],
+        skipDuplicates: true,
+      });
+    } else {
+      await this.prisma.listNotificationMute.deleteMany({
+        where: { listId: id, userId },
+      });
+    }
   }
 
   /**
@@ -666,48 +987,101 @@ export class ListService {
   }
 
   /**
-   * Owner or editor. Membership only grants access while Social is on —
-   * ListMember rows can only be created through the social-gated add-member
-   * endpoint, so this is a defensive check, not an active feature gate.
+   * Owner, editor, or an admin moderating a reported list. Membership only
+   * grants access while Social is on — ListMember rows can only be created
+   * through the social-gated add-member endpoint, so this is a defensive
+   * check, not an active feature gate.
    */
   private async canEdit(
     userId: string,
     id: string,
   ): Promise<{
     row: ListRow;
-    role: Extract<ListViewerRole, "OWNER" | "EDITOR">;
+    role: Extract<ListViewerRole, "OWNER" | "EDITOR" | "MODERATOR">;
   }> {
     const row = await this.prisma.list.findUnique({ where: { id } });
     if (!row)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
     if (row.userId === userId) return { row, role: "OWNER" };
 
-    if (isSocialEnabled(this.config, this.flags)) {
+    if (isSocialEnabled(this.config)) {
       const member = await this.prisma.listMember.findUnique({
         where: { listId_userId: { listId: id, userId } },
       });
       if (member) return { row, role: "EDITOR" };
     }
 
+    if (await this.isModeratorOf(userId, id)) return { row, role: "MODERATOR" };
+
     throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ListForbidden);
+  }
+
+  /**
+   * Only while a report is pending: an admin gets no standing access to
+   * private lists, just enough to fix the one being moderated.
+   */
+  private async isModeratorOf(
+    userId: string,
+    listId: string,
+  ): Promise<boolean> {
+    const [user, report] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      }),
+      this.prisma.report.findFirst({
+        where: { targetType: "LIST", targetId: listId, status: "PENDING" },
+        select: { id: true },
+      }),
+    ]);
+    return user?.role === "ADMIN" && report !== null;
   }
 
   private async detail(
     id: string,
+    viewerId: string,
     viewerRole: ListViewerRole,
   ): Promise<ListDetailDto> {
     const row = await this.prisma.list.findUniqueOrThrow({
       where: { id },
-      include: { items: { orderBy: { position: "asc" } } },
+      include: {
+        items: {
+          orderBy: { position: "asc" },
+          include: { addedBy: { select: AUTHOR_SELECT } },
+        },
+        members: { select: { userId: true } },
+      },
     });
-    const [author, targets] = await Promise.all([
+    // Who edits a list stays between its collaborators: a viewer learns
+    // neither that it has editors nor who added what.
+    const isCollaborator = viewerRole !== "VIEWER";
+    const collaborative = isCollaborator && row.members.length > 0;
+    const current = new Set([row.userId, ...row.members.map((m) => m.userId)]);
+    const [author, targets, mute] = await Promise.all([
       this.author(row.userId),
       this.resolveTargets(row.items),
+      isCollaborator
+        ? this.prisma.listNotificationMute.findUnique({
+            where: { listId_userId: { listId: id, userId: viewerId } },
+          })
+        : null,
     ]);
     return {
       ...this.toDto(row, author),
-      items: row.items.map((i) => this.toItemDto(i, targets)),
+      items: row.items.map((i) => ({
+        ...this.toItemDto(i, targets),
+        // `null` means a former collaborator: left the list or deleted
+        // their account.
+        ...(collaborative && {
+          addedBy:
+            i.addedBy && current.has(i.addedBy.id)
+              ? toUserSummaryDto(i.addedBy)
+              : null,
+        }),
+      })),
       viewerRole,
+      collaborative,
+      notificationsMuted: mute !== null,
     };
   }
 
@@ -721,6 +1095,7 @@ export class ListService {
       targetId: row.targetId,
       position: row.position,
       addedAt: row.addedAt.toISOString(),
+      note: row.note,
       target: targets.get(`${row.targetType}:${row.targetId}`) ?? null,
     };
   }
@@ -763,10 +1138,6 @@ export class ListService {
     }
 
     const map = new Map<string, ReviewTargetSummaryDto>();
-    const canonicalExternalIdInclude = {
-      canonicalSource: true,
-      externalIds: { select: { source: true, externalId: true } },
-    } as const;
 
     const add = (
       type: string,
@@ -796,7 +1167,7 @@ export class ListService {
           title: true,
           posterUrl: true,
           type: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -823,7 +1194,7 @@ export class ListService {
           id: true,
           title: true,
           coverUrl: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -846,7 +1217,7 @@ export class ListService {
           id: true,
           title: true,
           coverUrl: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -869,7 +1240,7 @@ export class ListService {
           id: true,
           title: true,
           coverUrl: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(

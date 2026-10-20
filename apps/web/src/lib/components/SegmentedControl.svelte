@@ -1,19 +1,26 @@
 <script lang="ts" generics="T extends string">
-  import { m } from "$lib/paraglide/messages.js";
-  import type { IconName } from "$lib/types/icon-name";
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { formatNumber } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import Icon from "./Icon.svelte";
   import PremiumLockBadge from "./PremiumLockBadge.svelte";
   import Tooltip from "./Tooltip.svelte";
 
-  interface SegmentOption<V extends string> {
-    value: V;
-    label: string;
+  interface SegmentOption<V extends string> extends SelectOption<V> {
     icon?: IconName;
+
     disabled?: boolean;
+
     /** Native title shown on hover — ignored when `locked` (uses Tooltip instead). */
     disabledReason?: string;
+
     /** Premium-gated option: shows the lock badge + Tooltip instead of a native title. */
     locked?: boolean;
+
+    /** A count pill after the label, hidden at zero. */
+    count?: number;
   }
 
   let {
@@ -50,6 +57,12 @@
       <Icon name={opt.icon} class="h-3.5 w-3.5" />
     {/if}
     {opt.label}
+    {#if opt.count}
+      <span
+        class="bg-accent/15 text-accent rounded-full px-1.5 font-mono text-[0.7rem]">
+        {formatNumber(opt.count)}
+      </span>
+    {/if}
   </button>
 {/snippet}
 

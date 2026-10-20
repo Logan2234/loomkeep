@@ -1,11 +1,15 @@
+import { normalizeAdminBackupInventory } from "#lib/admin-backup-inventory.js";
 import type {
   AdminBackupRestoreRequestDto,
   AdminCacheSort,
+  AdminImportStatus,
+  AdminUserFilter,
+  AdminUserOptionDto,
+  CreateAdminInvitationRequestDto,
   Domain,
-  JobStatus,
   Locale,
   MailTemplatePreviewDto,
-  ModerationLegalBasis,
+  PagedResult,
   Plan,
   Role,
   SecurityEventType,
@@ -13,15 +17,17 @@ import type {
   SendAdminTestPushRequestDto,
   SendTestEmailRequestDto,
   TrendPeriod,
+  UpdateInstanceSettingsDto,
+} from "@loomkeep/shared";
+import {
+  type ModerationReasonRequestDto,
+  type ReportResolution,
 } from "@loomkeep/shared";
 import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
+import { limitParam, pageParam } from "./query-params";
 
-export interface ModerationReasonBody {
-  reasonText: string;
-  legalBasis: ModerationLegalBasis;
-  tosClause: string;
-}
+export type ModerationReasonBody = ModerationReasonRequestDto;
 
 export const getAdminServices = () => typedRequest("/admin/services");
 
@@ -86,6 +92,12 @@ export const getAdminSystemStats = () => typedRequest("/admin/stats/system");
 
 export const getAdminJobs = () => typedRequest("/admin/jobs");
 
+export const getAdminInstanceSettings = () =>
+  typedRequest("/admin/instance-settings");
+
+export const updateAdminInstanceSettings = (body: UpdateInstanceSettingsDto) =>
+  typedRequest("/admin/instance-settings", { method: "PATCH", body });
+
 /** Safe to retry: admin jobs are idempotent. */
 export const runAdminJob = (key: string): Promise<void> =>
   typedRequest("/admin/jobs/{key}/run", { method: "POST", params: { key } });
@@ -93,9 +105,17 @@ export const runAdminJob = (key: string): Promise<void> =>
 export function getAdminUsers(
   filters: {
     search?: string;
-    filter?: "all" | "admin" | "unverified" | "never";
+    filter?: AdminUserFilter;
     page?: number;
     limit?: number;
+    createdFrom?: string;
+    createdTo?: string;
+    activeFrom?: string;
+    activeTo?: string;
+    mfa?: string;
+    newsletter?: string;
+    push?: string;
+    session?: string;
   } = {},
 ) {
   return typedRequest("/admin/users", {
@@ -103,13 +123,76 @@ export function getAdminUsers(
       search: filters.search,
       filter:
         filters.filter && filters.filter !== "all" ? filters.filter : undefined,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
-      limit: filters.limit ? String(filters.limit) : undefined,
+      page: pageParam(filters.page),
+      limit: limitParam(filters.limit),
+      createdFrom: filters.createdFrom,
+      createdTo: filters.createdTo,
+      activeFrom: filters.activeFrom,
+      activeTo: filters.activeTo,
+      mfa: filters.mfa || undefined,
+      newsletter: filters.newsletter || undefined,
+      push: filters.push || undefined,
+      session: filters.session || undefined,
     },
   });
 }
 
-export const getAdminUserOptions = () => typedRequest("/admin/users/options");
+export function getAdminInvitations(
+  filters: { page?: number; query?: string; status?: string } = {},
+) {
+  return typedRequest("/admin/invitations", {
+    query: {
+      q: filters.query || undefined,
+      status: filters.status || undefined,
+      page: pageParam(filters.page),
+    },
+  });
+}
+
+export const createAdminInvitation = (body: CreateAdminInvitationRequestDto) =>
+  typedRequest("/admin/invitations", { method: "POST", body });
+
+export const renewAdminInvitation = (id: string) =>
+  typedRequest("/admin/invitations/{id}/renew", {
+    method: "POST",
+    params: { id },
+  });
+
+export const revokeAdminInvitation = (id: string) =>
+  typedRequest("/admin/invitations/{id}/revoke", {
+    method: "POST",
+    params: { id },
+  });
+
+export function getAdminUserOptions(
+  filters: { search?: string; page?: number; limit?: number } = {},
+) {
+  return typedRequest("/admin/users/options", {
+    query: {
+      search: filters.search || undefined,
+      page: pageParam(filters.page),
+      limit: limitParam(filters.limit),
+    },
+  });
+}
+
+export function normalizeAdminUserOptionsPage(
+  result: PagedResult<AdminUserOptionDto> | AdminUserOptionDto[],
+  search = "",
+): PagedResult<AdminUserOptionDto> {
+  if (!Array.isArray(result)) return result;
+
+  const query = search.trim().toLocaleLowerCase();
+  const items = query
+    ? result.filter((user) =>
+        [user.id, user.email, user.displayName].some((value) =>
+          value.toLocaleLowerCase().includes(query),
+        ),
+      )
+    : result;
+
+  return { items, hasMore: false };
+}
 
 export const getAdminUserLibraryStats = (userId: string) =>
   typedRequest("/admin/users/{userId}/library-stats", { params: { userId } });
@@ -144,6 +227,14 @@ export const updateAdminUserPlan = (userId: string, plan: Plan) =>
     method: "PATCH",
     params: { userId },
     body: { plan },
+  });
+
+/** Adds (positive) or removes (negative) XP by hand; returns the new total. */
+export const adjustAdminUserXp = (userId: string, amount: number) =>
+  typedRequest("/admin/users/{userId}/xp-adjustments", {
+    method: "POST",
+    params: { userId },
+    body: { amount },
   });
 
 export const getAdminUserExport = (userId: string) =>
@@ -183,6 +274,13 @@ export const sendAdminUserPasswordReset = (userId: string): Promise<void> =>
     params: { userId },
   });
 
+/** Lifts a moderation suspension before its end date. */
+export const reactivateAdminUser = (userId: string): Promise<void> =>
+  typedRequest("/admin/users/{userId}/reactivate", {
+    method: "POST",
+    params: { userId },
+  });
+
 /** Permanently deletes an account and all its data. Irreversible. */
 export const deleteAdminUser = (
   userId: string,
@@ -196,7 +294,8 @@ export const deleteAdminUser = (
 
 export const getAdminNewsletterSends = () => typedRequest("/admin/newsletter");
 
-export const getAdminBackupFiles = () => typedRequest("/admin/backup/files");
+export const getAdminBackupFiles = async () =>
+  normalizeAdminBackupInventory(await typedRequest("/admin/backup/files"));
 
 export const getAdminBackupFile = (id: string) =>
   typedRequest("/admin/backup/files/{id}", { params: { id } });
@@ -205,6 +304,12 @@ export const deleteAdminBackupFile = (id: string): Promise<void> =>
   typedRequest("/admin/backup/files/{id}", {
     method: "DELETE",
     params: { id },
+  });
+
+export const deleteAdminOrphanBackupFile = (filename: string): Promise<void> =>
+  typedRequest("/admin/backup/orphans/{filename}", {
+    method: "DELETE",
+    params: { filename },
   });
 
 /** Irreversible. */
@@ -227,8 +332,8 @@ export function getAdminCache(filters: {
       search: filters.search,
       sort: filters.sort,
       orphans: filters.orphans ? "true" : undefined,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
-      limit: filters.limit ? String(filters.limit) : undefined,
+      page: pageParam(filters.page),
+      limit: limitParam(filters.limit),
     },
   });
 }
@@ -272,7 +377,9 @@ export const deleteAdminCacheOrphans = (domain: Domain) =>
 export function getAdminImportRuns(
   filters: {
     source?: string;
-    status?: JobStatus;
+    status?: AdminImportStatus;
+    from?: string;
+    to?: string;
     userId?: string;
     page?: number;
     limit?: number;
@@ -282,12 +389,17 @@ export function getAdminImportRuns(
     query: {
       source: filters.source,
       status: filters.status,
+      from: filters.from,
+      to: filters.to,
       userId: filters.userId,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
-      limit: filters.limit ? String(filters.limit) : undefined,
+      page: pageParam(filters.page),
+      limit: limitParam(filters.limit),
     },
   });
 }
+
+export const getAdminImportDetail = (id: string) =>
+  typedRequest("/admin/imports/{id}", { params: { id } });
 
 export const getAdminImportSummary = () =>
   typedRequest("/admin/imports/summary");
@@ -307,8 +419,8 @@ export function getAdminSecurityEvents(
     query: {
       type: filters.type,
       identifier: filters.identifier,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
-      limit: filters.limit ? String(filters.limit) : undefined,
+      page: pageParam(filters.page),
+      limit: limitParam(filters.limit),
     },
   });
 }
@@ -324,8 +436,8 @@ export function getAdminReports(
   return typedRequest("/admin/reports", {
     query: {
       status: filters.status,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
-      limit: filters.limit ? String(filters.limit) : undefined,
+      page: pageParam(filters.page),
+      limit: limitParam(filters.limit),
       reporterId: filters.reporterId,
     },
   });
@@ -339,7 +451,7 @@ export const getAdminReportsPendingCount = () =>
 
 export const resolveAdminReport = (
   id: string,
-  status: "RESOLVED" | "DISMISSED",
+  status: ReportResolution,
 ): Promise<void> =>
   typedRequest("/admin/reports/{id}/resolve", {
     method: "POST",
@@ -356,4 +468,42 @@ export const takeDownAdminReport = (
     method: "POST",
     params: { id },
     body: reason,
+  });
+
+/** Deletes a reported list for everyone and notifies its owner (DSA art. 17). */
+export const removeAdminReportedList = (
+  id: string,
+  reason: ModerationReasonBody,
+): Promise<void> =>
+  typedRequest("/admin/reports/{id}/list-removal", {
+    method: "POST",
+    params: { id },
+    body: reason,
+  });
+
+/** Records the decision for a reported list the admin already edited from its page. */
+export const recordAdminListEdit = (
+  id: string,
+  reason: ModerationReasonBody,
+): Promise<void> =>
+  typedRequest("/admin/reports/{id}/list-edited", {
+    method: "POST",
+    params: { id },
+    body: reason,
+  });
+
+/** Photo, bio, display name and suspension measures on a reported profile, in one decision. */
+export const takeAdminProfileMeasures = (
+  id: string,
+  body: ModerationReasonBody & {
+    removeAvatar?: boolean;
+    clearBio?: boolean;
+    displayName?: string;
+    suspendUntil?: string;
+  },
+): Promise<void> =>
+  typedRequest("/admin/reports/{id}/profile-measures", {
+    method: "POST",
+    params: { id },
+    body,
   });

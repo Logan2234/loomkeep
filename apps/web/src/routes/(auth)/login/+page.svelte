@@ -2,22 +2,34 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import {
+    ApiError,
     login,
     loginWithPasskey,
     resendMfaEmailCode,
     verifyMfaLogin,
     verifyWebauthnMfaLogin,
-  } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import FieldError from "$lib/components/FieldError.svelte";
-  import AuthShell from "$lib/components/AuthShell.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PasswordInput from "$lib/components/PasswordInput.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { Cooldown } from "$lib/cooldown.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { MfaMethod } from "@loomkeep/shared";
+  } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import FieldError from "#lib/components/FieldError.svelte";
+  import AuthShell from "#lib/components/AuthShell.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import PasswordInput from "#lib/components/PasswordInput.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { Cooldown } from "#lib/cooldown.svelte.js";
+  import { formatDateTime } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { normalizeCodeInput } from "#lib/one-time-code.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import {
+    ErrorCode,
+    type MfaMethod,
+    OTP_CODE_LENGTH,
+    RECOVERY_CODE_LENGTH,
+  } from "@loomkeep/shared";
+  import { fly } from "svelte/transition";
+
+  const reduced = prefersReducedMotion();
 
   let identifier = $state("");
   let password = $state("");
@@ -30,16 +42,37 @@
   let codeInput = $state("");
   const resendCooldown = new Cooldown();
 
-  // Only follow redirectTo when it's an internal path — anything else could
-  // be an open-redirect vector (e.g. redirectTo=https://evil.example).
+  // The API only reveals a suspension once the credentials are proven, and
+  // sends its end date along — shown here instead of the generic error.
+  let suspendedUntil = $state<string | null>(null);
+  function noteSuspension(err: unknown) {
+    suspendedUntil =
+      err instanceof ApiError && err.code === ErrorCode.AuthAccountSuspended
+        ? String(err.params?.until ?? "")
+        : null;
+  }
+
+  // Only follow redirectTo when it stays on this site — anything else could
+  // be an open-redirect vector (e.g. redirectTo=https://evil.example). The
+  // browser's own URL parser decides rather than a prefix check: it reads
+  // "/\evil.example" or a tab-split "/\t/evil.example" as another host.
   function safeRedirect(target: string | null): string {
-    if (target?.startsWith("/") && !target.startsWith("//")) return target;
+    if (!target) return "/app";
+    try {
+      const url = new URL(target, page.url.origin);
+      if (url.origin === page.url.origin) {
+        return url.pathname + url.search + url.hash;
+      }
+    } catch {
+      // Not a URL at all: fall through to the default.
+    }
     return "/app";
   }
 
   const loginMut = createApiMutation(() => ({
     mutate: () => login({ identifier, password }),
     coveredFields: ["identifier"],
+    onError: noteSuspension,
     onSuccess: (result) => {
       if (result.mfaRequired) {
         challengeId = result.challengeId;
@@ -113,6 +146,7 @@
 
   const passwordlessMut = createApiMutation(() => ({
     mutate: () => loginWithPasskey(identifier.trim()),
+    onError: noteSuspension,
     onSuccess: () =>
       goto(safeRedirect(page.url.searchParams.get("redirectTo"))),
   }));
@@ -184,7 +218,29 @@
         <a href="/forgot-password" class="link-accent text-sm"
           >{m.auth_forgot_password()}</a>
       </p>
-      {#if loginMut.error}<Banner variant="error">{loginMut.error}</Banner>{/if}
+      {#if suspendedUntil !== null && (loginMut.error || passwordlessMut.error)}
+        <div
+          role="alert"
+          class="border-danger rounded-lg border border-l-4 p-3"
+          in:fly={{ y: reduced ? 0 : -6, duration: reduced ? 0 : 200 }}>
+          <p class="font-semibold">{m.auth_suspended_title()}</p>
+          <p class="text-dim mt-1 text-sm">
+            {m.auth_suspended_body({
+              date: suspendedUntil ? formatDateTime(suspendedUntil) : "",
+            })}
+          </p>
+          {#if appConfig.supportEmail}
+            <p class="text-dim mt-2 text-sm">
+              {m.auth_suspended_contact()}
+              <a
+                href="mailto:{appConfig.supportEmail}"
+                class="link-accent text-sm">{appConfig.supportEmail}</a>
+            </p>
+          {/if}
+        </div>
+      {:else if loginMut.error}
+        <Banner variant="error">{loginMut.error}</Banner>
+      {/if}
       <button type="submit" class="btn btn-primary" disabled={loginMut.loading}>
         {loginMut.loading ? m.auth_login_action_loading() : m.common_login()}
       </button>
@@ -198,7 +254,7 @@
           ? m.auth_mfa_webauthn_waiting()
           : m.auth_passwordless_login()}
       </button>
-      {#if passwordlessMut.error}
+      {#if passwordlessMut.error && suspendedUntil === null}
         <Banner variant="error">{passwordlessMut.error}</Banner>
       {/if}
       {#if appConfig.registrationEnabled}
@@ -206,6 +262,10 @@
           {m.auth_no_account()}
           <a href="/register" class="link-accent text-sm"
             >{m.common_register()}</a>
+        </p>
+      {:else}
+        <p class="text-dim text-center text-sm">
+          {m.auth_registration_invite_only()}
         </p>
       {/if}
     </form>
@@ -260,7 +320,7 @@
             <Icon name="key" class="text-accent h-6 w-6 shrink-0" />
             <span>
               <span class="block font-semibold">
-                {m.auth_mfa_webauthn_label()}
+                {m.common_security_key()}
               </span>
               <span class="text-dim block text-sm">
                 {webauthnMfaMut.loading
@@ -309,12 +369,18 @@
           autocomplete={selectedMethod === "recovery"
             ? undefined
             : "one-time-code"}
-          maxlength={selectedMethod === "recovery" ? 11 : 6}
           required
           enterkeyhint="done"
           class="input font-mono text-lg tracking-[0.3em]"
           placeholder={selectedMethod === "recovery" ? "XXXXX-XXXXX" : "000000"}
-          bind:value={codeInput} />
+          value={codeInput}
+          oninput={(e) =>
+            (codeInput = normalizeCodeInput(
+              e.currentTarget,
+              selectedMethod === "recovery"
+                ? RECOVERY_CODE_LENGTH + 1
+                : OTP_CODE_LENGTH,
+            ))} />
       </label>
 
       {#if selectedMethod === "email"}

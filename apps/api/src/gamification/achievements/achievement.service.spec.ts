@@ -1,13 +1,14 @@
 import { ErrorCode } from "@loomkeep/shared";
-import type { ConfigService } from "@nestjs/config";
-import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { EventsGateway } from "../../events/events.gateway";
-import type { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
 import type { JobRunService } from "../../jobs/job-run.service";
 import type { PrismaService } from "../../prisma/prisma.service";
+import { uniqueConstraintError } from "../../test-utils/prisma-errors";
+import { makeConfig } from "../../test-utils/stubs";
 import type { XpService } from "../xp.service";
 import { AchievementService } from "./achievement.service";
+import { RARITY_ACTIVE_WINDOW_DAYS } from "./rarity.util";
+import { ACHIEVEMENTS } from "./registry";
 
 // A social-gated fixture exercises behavior independent of the real registry.
 const { socialGatedCheck } = vi.hoisted(() => ({
@@ -32,27 +33,6 @@ vi.mock("./registry", async (importOriginal) => {
   };
 });
 
-function uniqueConstraintError(): Prisma.PrismaClientKnownRequestError {
-  return new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
-    code: "P2002",
-    clientVersion: "test",
-  });
-}
-
-function makeConfig(values: Record<string, string> = {}): ConfigService {
-  return {
-    get: vi.fn((key: string) => values[key]),
-  } as unknown as ConfigService;
-}
-
-// No Unleash client configured in tests — isEnabled always returns whatever
-// fallback the caller passed, same convention as xp.service.spec.ts.
-function makeFlags(): FeatureFlagsService {
-  return {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
-}
-
 function makeService(configValues: Record<string, string> = {}) {
   const prisma = {
     userAchievement: {
@@ -60,6 +40,7 @@ function makeService(configValues: Record<string, string> = {}) {
       create: vi.fn().mockResolvedValue({ id: "achievement-1" }),
       findMany: vi.fn().mockResolvedValue([]),
       update: vi.fn().mockResolvedValue({}),
+      groupBy: vi.fn().mockResolvedValue([]),
     },
     episodeWatch: { findFirst: vi.fn().mockResolvedValue(null) },
     libraryEntry: { count: vi.fn().mockResolvedValue(0) },
@@ -68,25 +49,23 @@ function makeService(configValues: Record<string, string> = {}) {
       findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn().mockResolvedValue({ timezone: "Europe/Paris" }),
       update: vi.fn().mockResolvedValue({}),
+      count: vi.fn().mockResolvedValue(0),
     },
+    achievementRarity: {
+      deleteMany: vi.fn((args?: unknown) => ({ op: "deleteMany", args })),
+      createMany: vi.fn((args: unknown) => ({ op: "createMany", args })),
+    },
+    $transaction: vi.fn().mockResolvedValue([]),
   } as unknown as PrismaService;
   const config = makeConfig({ GAMIFICATION_ENABLED: "true", ...configValues });
-  const flags = makeFlags();
   const xp = { award: vi.fn() } as unknown as XpService;
   const jobRuns = {
     record: vi.fn((_key: string, fn: () => Promise<unknown>) => fn()),
   } as unknown as JobRunService;
   const events = { emitToUser: vi.fn() } as unknown as EventsGateway;
 
-  const service = new AchievementService(
-    prisma,
-    config,
-    flags,
-    xp,
-    jobRuns,
-    events,
-  );
-  return { service, prisma, config, flags, xp, jobRuns, events };
+  const service = new AchievementService(prisma, config, xp, jobRuns, events);
+  return { service, prisma, config, xp, jobRuns, events };
 }
 
 describe("AchievementService.evaluate", () => {
@@ -103,7 +82,7 @@ describe("AchievementService.evaluate", () => {
       "user-1",
       "ACHIEVEMENT_UNLOCKED",
       "achievement-1",
-      50,
+      ACHIEVEMENTS.first_episode.xpAward,
     );
     expect(events.emitToUser).toHaveBeenCalledWith(
       "user-1",
@@ -197,7 +176,7 @@ describe("AchievementService.markVersionLinkClicked", () => {
       "user-1",
       "ACHIEVEMENT_UNLOCKED",
       "achievement-1",
-      50,
+      ACHIEVEMENTS.curious_cat.xpAward,
     );
   });
 
@@ -408,5 +387,47 @@ describe("AchievementService.equip/unequip", () => {
       "cinephile_bronze",
     ]);
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("AchievementService rarity snapshot", () => {
+  it("counts holders among eligible members only, every registry key included", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.count as ReturnType<typeof vi.fn>).mockResolvedValue(120);
+    (
+      prisma.userAchievement.groupBy as ReturnType<typeof vi.fn>
+    ).mockResolvedValue([{ key: "first_episode", _count: { _all: 30 } }]);
+
+    await service.runAchievementsSweepJob();
+
+    const [[{ where }]] = (prisma.user.count as ReturnType<typeof vi.fn>).mock
+      .calls;
+    expect(where).toMatchObject({
+      onboardedAt: { not: null },
+      profileAccess: { not: "GHOST" },
+      hideProgression: false,
+    });
+    // The window itself is RARITY_ACTIVE_WINDOW_DAYS; a minute of slack
+    // covers the time between the query and this line.
+    const windowStart =
+      Date.now() - RARITY_ACTIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    expect(
+      Math.abs(where.lastActiveAt.gte.getTime() - windowStart),
+    ).toBeLessThan(60_000);
+    const [[rows]] = (
+      prisma.achievementRarity.createMany as ReturnType<typeof vi.fn>
+    ).mock.calls;
+    expect(rows.data).toContainEqual({
+      key: "first_episode",
+      holders: 30,
+      eligibleUsers: 120,
+    });
+    // Zero-holder keys get a row too, so all read against one denominator.
+    expect(rows.data).toContainEqual({
+      key: "marathon",
+      holders: 0,
+      eligibleUsers: 120,
+    });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 });

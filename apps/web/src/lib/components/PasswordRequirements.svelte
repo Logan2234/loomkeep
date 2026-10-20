@@ -5,7 +5,7 @@
     PASSWORD_SPECIAL_RE,
     PASSWORD_UPPERCASE_RE,
   } from "@loomkeep/shared";
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let { value }: { value: string } = $props();
 

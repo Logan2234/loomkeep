@@ -1,6 +1,9 @@
-import { Domain } from "@loomkeep/shared";
+import { appConfig } from "#lib/config.svelte.js";
+import { DOMAINS } from "#lib/constants/domains.js";
+import { type FeatureBadgeKey } from "#lib/feature-badges.js";
+import { Domain, REQUIRED_SHORTCUT } from "@loomkeep/shared";
 import { auth } from "./auth.svelte";
-import { orderedDomains } from "./domains";
+import { orderedDomains } from "./domain-availability";
 import { m } from "./paraglide/messages.js";
 import type { IconName } from "./types/icon-name";
 
@@ -10,6 +13,8 @@ interface NavItem {
   icon: IconName;
   match(path: string): boolean;
   domain?: Domain;
+  /** Shown while at least one of these domains is enabled (vs. `domain`: that one). */
+  anyDomain?: Domain[];
   /**
    * Domaine planifié sans écran : rendu non cliquable avec un badge « Bientôt ».
    * `href`/`match` restent présents (clé de liste) mais ne sont pas suivis.
@@ -20,7 +25,7 @@ interface NavItem {
   /** Masqué tant que GAMIFICATION_ENABLED n'est pas activé sur le déploiement. */
   gamification?: boolean;
   /** Key into feature-badges.ts — shows a "Nouveau" dot while its window is open. */
-  newBadgeKey?: string;
+  newBadgeKey?: FeatureBadgeKey;
 }
 
 export interface NavSection {
@@ -49,45 +54,45 @@ const NAVIGATION: NavSection[] = [
     label: m.nav_section_library(),
     items: [
       {
-        href: "/app/media",
-        label: m.common_Media(),
-        icon: "tv",
+        href: DOMAINS.MEDIA.href,
+        label: DOMAINS.MEDIA.label,
+        icon: DOMAINS.MEDIA.icon,
         domain: Domain.MEDIA,
-        match: (p) => p.startsWith("/app/media"),
+        match: (p) => p.startsWith(DOMAINS.MEDIA.href),
       },
       {
-        href: "/app/games",
-        label: m.common_Games(),
-        icon: "gamepad",
+        href: DOMAINS.GAMES.href,
+        label: DOMAINS.GAMES.label,
+        icon: DOMAINS.GAMES.icon,
         domain: Domain.GAMES,
-        match: (p) => p.startsWith("/app/games"),
+        match: (p) => p.startsWith(DOMAINS.GAMES.href),
       },
       {
-        href: "/app/books",
-        label: m.common_Books(),
-        icon: "book",
+        href: DOMAINS.BOOKS.href,
+        label: DOMAINS.BOOKS.label,
+        icon: DOMAINS.BOOKS.icon,
         domain: Domain.BOOKS,
-        match: (p) => p.startsWith("/app/books"),
+        match: (p) => p.startsWith(DOMAINS.BOOKS.href),
       },
       {
-        href: "/app/music",
-        label: m.common_Music(),
-        icon: "music",
+        href: DOMAINS.MUSIC.href,
+        label: DOMAINS.MUSIC.label,
+        icon: DOMAINS.MUSIC.icon,
         domain: Domain.MUSIC,
-        match: (p) => p.startsWith("/app/music"),
+        match: (p) => p.startsWith(DOMAINS.MUSIC.href),
       },
       {
-        href: "/app/podcasts",
-        label: m.common_Podcasts(),
-        icon: "podcast",
+        href: DOMAINS.PODCASTS.href,
+        label: DOMAINS.PODCASTS.label,
+        icon: DOMAINS.PODCASTS.icon,
         domain: Domain.PODCASTS,
         comingSoon: true,
         match: () => false,
       },
       {
-        href: "/app/boardgames",
-        label: m.common_Boardgames(),
-        icon: "boardgame",
+        href: DOMAINS.BOARDGAMES.href,
+        label: DOMAINS.BOARDGAMES.label,
+        icon: DOMAINS.BOARDGAMES.icon,
         domain: Domain.BOARDGAMES,
         comingSoon: true,
         match: () => false,
@@ -101,7 +106,7 @@ const NAVIGATION: NavSection[] = [
         href: "/app/calendar",
         label: m.common_calendar(),
         icon: "calendar",
-        domain: Domain.MEDIA,
+        anyDomain: [Domain.MEDIA, Domain.GAMES],
         match: (p) => p.startsWith("/app/calendar"),
       },
       {
@@ -112,12 +117,11 @@ const NAVIGATION: NavSection[] = [
       },
       {
         href: "/app/leaderboard",
-        label: m.nav_leaderboard(),
+        label: m.gamification_leaderboard_title(),
         icon: "crown",
         social: true,
         gamification: true,
         match: (p) => p.startsWith("/app/leaderboard"),
-        newBadgeKey: "leaderboard",
       },
       {
         href: "/app/feed",
@@ -138,6 +142,7 @@ interface NavGateOptions {
 
 const isNavItemVisible = (item: NavItem, opts: NavGateOptions): boolean =>
   (!item.domain || opts.isDomainEnabled(item.domain)) &&
+  (!item.anyDomain || item.anyDomain.some(opts.isDomainEnabled)) &&
   (!item.social || opts.socialEnabled) &&
   (!item.gamification || opts.gamificationEnabled);
 
@@ -223,6 +228,8 @@ export interface MobileDestination {
   match(path: string): boolean;
   /** Hidden when the domain is disabled in the user's composition. */
   domain?: Domain;
+  /** Hidden only when every one of these domains is disabled. */
+  anyDomain?: Domain[];
   /** Planned domain with no screen yet: shown dimmed with a "Bientôt" badge. */
   comingSoon?: boolean;
   /** Only surfaced to admins (the /admin entry). */
@@ -232,7 +239,7 @@ export interface MobileDestination {
   /** Hidden until GAMIFICATION_ENABLED is enabled on the deployment. */
   gamification?: boolean;
   /** Key into feature-badges.ts — shows a "Nouveau" dot while its window is open. */
-  newBadgeKey?: string;
+  newBadgeKey?: FeatureBadgeKey;
 }
 
 const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
@@ -260,50 +267,50 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   },
   media: {
     id: "media",
-    href: "/app/media",
-    label: m.common_Media(),
-    icon: "tv",
+    href: DOMAINS.MEDIA.href,
+    label: DOMAINS.MEDIA.label,
+    icon: DOMAINS.MEDIA.icon,
     domain: Domain.MEDIA,
-    match: (p) => p.startsWith("/app/media"),
+    match: (p) => p.startsWith(DOMAINS.MEDIA.href),
   },
   games: {
     id: "games",
-    href: "/app/games",
-    label: m.common_Games(),
-    icon: "gamepad",
+    href: DOMAINS.GAMES.href,
+    label: DOMAINS.GAMES.label,
+    icon: DOMAINS.GAMES.icon,
     domain: Domain.GAMES,
-    match: (p) => p.startsWith("/app/games"),
+    match: (p) => p.startsWith(DOMAINS.GAMES.href),
   },
   books: {
     id: "books",
-    href: "/app/books",
-    label: m.common_Books(),
-    icon: "book",
+    href: DOMAINS.BOOKS.href,
+    label: DOMAINS.BOOKS.label,
+    icon: DOMAINS.BOOKS.icon,
     domain: Domain.BOOKS,
-    match: (p) => p.startsWith("/app/books"),
+    match: (p) => p.startsWith(DOMAINS.BOOKS.href),
   },
   music: {
     id: "music",
-    href: "/app/music",
-    label: m.common_Music(),
-    icon: "music",
+    href: DOMAINS.MUSIC.href,
+    label: DOMAINS.MUSIC.label,
+    icon: DOMAINS.MUSIC.icon,
     domain: Domain.MUSIC,
-    match: (p) => p.startsWith("/app/music"),
+    match: (p) => p.startsWith(DOMAINS.MUSIC.href),
   },
   podcasts: {
     id: "podcasts",
-    href: "/app/podcasts",
-    label: m.common_Podcasts(),
-    icon: "podcast",
+    href: DOMAINS.PODCASTS.href,
+    label: DOMAINS.PODCASTS.label,
+    icon: DOMAINS.PODCASTS.icon,
     domain: Domain.PODCASTS,
     comingSoon: true,
     match: () => false,
   },
   boardgames: {
     id: "boardgames",
-    href: "/app/boardgames",
-    label: m.common_Boardgames(),
-    icon: "boardgame",
+    href: DOMAINS.BOARDGAMES.href,
+    label: DOMAINS.BOARDGAMES.label,
+    icon: DOMAINS.BOARDGAMES.icon,
     domain: Domain.BOARDGAMES,
     comingSoon: true,
     match: () => false,
@@ -313,7 +320,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
     href: "/app/calendar",
     label: m.common_calendar(),
     icon: "calendar",
-    domain: Domain.MEDIA,
+    anyDomain: [Domain.MEDIA, Domain.GAMES],
     match: (p) => p.startsWith("/app/calendar"),
   },
   stats: {
@@ -326,12 +333,11 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   leaderboard: {
     id: "leaderboard",
     href: "/app/leaderboard",
-    label: m.nav_leaderboard(),
+    label: m.gamification_leaderboard_title(),
     icon: "crown",
     social: true,
     gamification: true,
     match: (p) => p.startsWith("/app/leaderboard"),
-    newBadgeKey: "leaderboard",
   },
   feed: {
     id: "feed",
@@ -386,7 +392,7 @@ const MENU_GROUPS: { label: string; ids: MobileNavId[] }[] = [
 export const DEFAULT_BOTTOM_SHORTCUTS: MobileNavId[] = [
   "home",
   "search",
-  "menu",
+  REQUIRED_SHORTCUT,
   "calendar",
   "settings",
 ];
@@ -420,6 +426,7 @@ interface MobileGateOptions {
 
 const isVisible = (d: MobileDestination, opts: MobileGateOptions): boolean =>
   (!d.domain || opts.isDomainEnabled(d.domain)) &&
+  (!d.anyDomain || d.anyDomain.some(opts.isDomainEnabled)) &&
   (!d.adminOnly || opts.isAdmin) &&
   (!d.social || !!opts.socialEnabled) &&
   (!d.gamification || !!opts.gamificationEnabled);
@@ -440,10 +447,22 @@ export const resolveBottomShortcuts = (
 //  visible (enabled domains / admin). Used by the settings config UI.
 export const resolveShortcutChoices = (
   opts: MobileGateOptions,
-): MobileDestination[] =>
-  BOTTOM_SHORTCUT_CHOICES.map((id) => MOBILE_DESTINATIONS[id]).filter((d) =>
-    isVisible(d, opts),
+): MobileDestination[] => {
+  const choices = BOTTOM_SHORTCUT_CHOICES.map(
+    (id) => MOBILE_DESTINATIONS[id],
+  ).filter((d) => isVisible(d, opts));
+  const rank = new Map(
+    orderedDomains(auth.user?.domainOrder).map((domain, index) => [
+      domain,
+      index,
+    ]),
   );
+  const domains = choices
+    .filter((d) => d.domain)
+    .sort((a, b) => rank.get(a.domain!)! - rank.get(b.domain!)!);
+  let index = 0;
+  return choices.map((d) => (d.domain ? domains[index++] : d));
+};
 
 // Launcher sheet groups with their visible destinations (coming-soon kept —
 //  they render dimmed with a "Bientôt" badge when their domain is enabled).
@@ -456,4 +475,8 @@ export function resolveMenuGroups(
       .map((id) => MOBILE_DESTINATIONS[id])
       .filter((d) => isVisible(d, opts)),
   })).filter((g) => g.items.length > 0);
+}
+
+export function profileHref(): string {
+  return appConfig.socialEnabled ? "/app/profile" : "/app/settings";
 }

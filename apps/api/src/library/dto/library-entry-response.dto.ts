@@ -22,5 +22,7 @@ export class LibraryEntryResponseDto implements LibraryEntryDto {
   progress!: ProgressResponseDto | null;
   ownershipStatus!: MediaOwnershipStatus;
   ownershipSource!: string | null;
+  episodeAlertsMuted!: boolean;
+  movieReleaseAlertsEnabled?: boolean;
   replays!: MovieReplayResponseDto[];
 }

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { HTTP_TIMEOUT_MS } from "../common/http.util";
 
 const VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
@@ -29,7 +30,11 @@ export class TurnstileService {
     if (remoteIp) body.set("remoteip", remoteIp);
 
     try {
-      const res = await fetch(VERIFY_URL, { method: "POST", body });
+      const res = await fetch(VERIFY_URL, {
+        method: "POST",
+        body,
+        signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+      });
       const data = (await res.json()) as SiteverifyResponse;
 
       if (!data.success) {

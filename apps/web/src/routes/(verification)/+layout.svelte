@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { bootstrap } from "$lib/bootstrap.svelte";
-  import BootSplash from "$lib/components/BootSplash.svelte";
+  import { type LayoutProps } from "./$types";
 
-  let { children } = $props();
+  import { bootstrap } from "#lib/bootstrap.svelte.js";
+  import BootSplash from "#lib/components/BootSplash.svelte";
+
+  let { children }: LayoutProps = $props();
 </script>
 
 <!-- Email-verification steps: reachable signed in *or* out, so they get no

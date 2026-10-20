@@ -1,6 +1,6 @@
-import { getMyReview } from "$lib/api/client";
-import { keys } from "$lib/api/keys";
-import { createApiQuery } from "$lib/api/query.svelte";
+import { getMyReview } from "#lib/api/client.js";
+import { keys } from "#lib/api/keys.js";
+import { createApiQuery } from "#lib/api/query.svelte.js";
 import type { ReviewDto, ReviewTargetType } from "@loomkeep/shared";
 import { useQueryClient } from "@tanstack/svelte-query";
 

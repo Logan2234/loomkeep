@@ -11,17 +11,24 @@ coverage:
         informational: true
 
 comment:
-  layout: "flags, diff, files"
+  layout: "header, flags, diff, files, footer"
   behavior: default
   require_changes: true
   require_base: true
   require_head: true
+  hide_project_coverage: false
 
 github_checks:
-  annotations: true
+  annotations: false
 
 codecov:
   require_ci_to_pass: false
+
+# Test code is never covered code: a spec left in a coverage report shows as
+# "missing lines" on the PR that adds it.
+ignore:
+  - "**/*.spec.ts"
+  - "apps/api/test/**"
 
 # lint-test-api/lint-test-web/e2e (ci.yml) only run when their paths-filter
 # matched — a web-only PR never runs lint-test-api, for example. Without

@@ -10,11 +10,11 @@
 <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
   {#each tiles as tile (tile.label)}
     <div
-      class="card px-4 py-3.5"
+      class="card min-w-0 px-4 py-3.5"
       class:border-danger={tile.alert}
       class:border-opacity-45={tile.alert}>
       <div
-        class="font-display text-2xl leading-none font-extrabold tracking-tight tabular-nums"
+        class="font-display text-2xl leading-none font-extrabold tracking-tight break-words tabular-nums"
         class:text-danger={tile.alert}>
         {tile.value}{#if tile.unit}<small class="text-dim text-xs font-bold">
             {tile.unit}

@@ -1,71 +1,94 @@
 <script lang="ts">
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
+
+  import { enumParam } from "#lib/url-params.js";
+
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import BookSearchPanel from "$lib/components/search/BookSearchPanel.svelte";
-  import GameSearchPanel from "$lib/components/search/GameSearchPanel.svelte";
-  import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
-  import MusicSearchPanel from "$lib/components/search/MusicSearchPanel.svelte";
-  import ScanIsbnModal from "$lib/components/ScanIsbnModal.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { debounce } from "$lib/debounce";
-  import { isDomainEnabled } from "$lib/domains";
-  import { layout } from "$lib/layout.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import { keys } from "#lib/api/keys.js";
+  import { resolveLink } from "#lib/api/links.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import BookSearchPanel from "#lib/components/search/BookSearchPanel.svelte";
+  import GameSearchPanel from "#lib/components/search/GameSearchPanel.svelte";
+  import MediaSearchPanel from "#lib/components/search/MediaSearchPanel.svelte";
+  import MusicSearchPanel from "#lib/components/search/MusicSearchPanel.svelte";
+  import UnifiedSearchPanel from "#lib/components/search/UnifiedSearchPanel.svelte";
+  import QuickAddPanel from "#lib/components/QuickAddPanel.svelte";
+  import ScanIsbnModal from "#lib/components/ScanIsbnModal.svelte";
+  import { DOMAINS, DOMAIN_IDS } from "#lib/constants/domains.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { layout } from "#lib/layout.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { quickAddTarget } from "#lib/quick-add.js";
+  import { isPastedLink } from "#lib/share-link.js";
   import { Domain, type MediaType } from "@loomkeep/shared";
 
-  const DOMAIN_HINT: Record<Domain, string> = {
-    [Domain.MEDIA]: m.search_domain_media(),
-    [Domain.GAMES]: m.search_domain_games(),
-    [Domain.BOOKS]: m.search_domain_books(),
-    [Domain.MUSIC]: m.search_domain_music(),
-    [Domain.PODCASTS]: m.search_domain_podcasts(),
-    [Domain.BOARDGAMES]: m.search_domain_boardgames(),
-  };
-
-  // Reuses the same one-hue-per-domain tokens as the stats charts
-  // (`--stat-media/games/books/music` in app.css) rather than inventing a
-  // second palette — "Bientôt" domains fall back to the neutral `--dim`.
-  const DOMAIN_ACCENT_VAR: Record<Domain, string> = {
-    [Domain.MEDIA]: "var(--stat-media)",
-    [Domain.GAMES]: "var(--stat-games)",
-    [Domain.BOOKS]: "var(--stat-books)",
-    [Domain.MUSIC]: "var(--stat-music)",
-    [Domain.PODCASTS]: "var(--dim)",
-    [Domain.BOARDGAMES]: "var(--dim)",
-  };
+  // The "Tout" tab: every domain at once, by shelves (UnifiedSearchPanel).
+  const ALL = "ALL";
+  type Tab = Domain | typeof ALL;
 
   // Only the domains the user keeps enabled are searchable (mirrors the nav;
-  // the API enforces the same gate on the search endpoints).
+  // the API enforces the same gate on the search endpoints), in the order
+  // they gave them in their settings.
   const enabledTabs = $derived(
-    Object.entries(DOMAINS).filter(([d, _]) => isDomainEnabled(d as Domain)),
+    orderedDomains(auth.user?.domainOrder)
+      .filter(isDomainEnabled)
+      .map((d) => [d, DOMAINS[d]] as const),
   );
+  const hasAllTab = $derived(enabledTabs.length > 1);
 
   // `type` preselects the domain tab (e.g. linked from a library page's
   // "Chercher un jeu" / empty-search-preview "Voir plus"), same idea as
-  // `query` prefilling the search box.
-  const typeParam = page.url.searchParams.get("type");
+  // `query` prefilling the search box. Without one, every domain at once.
   const initialDomain =
-    typeParam && Object.keys(DOMAINS).some((t) => t === typeParam)
-      ? (typeParam as Domain)
-      : Domain.MEDIA;
+    enumParam(page.url.searchParams, "type", DOMAIN_IDS, null) ?? ALL;
 
   let query = $state(page.url.searchParams.get("query") ?? "");
-  let domain = $state<Domain>(initialDomain);
+  let domain = $state<Tab>(initialDomain);
 
   const placeholder = $derived(
-    m.search_placeholder({ domain: DOMAIN_HINT[domain] }),
+    domain === ALL
+      ? m.search_placeholder_all()
+      : m.search_placeholder({ domain: DOMAINS[domain].searchHint }),
+  );
+
+  const pastedLink = $derived(isPastedLink(query) ? query.trim() : null);
+
+  // A pasted link to a work gets the same quick-add panel as a share (UX-09):
+  // iOS and desktop browsers have no share sheet to reach it through.
+  const linkQuery = createApiQuery(() => ({
+    key: keys.links.resolve(pastedLink ?? ""),
+    fetch: () => resolveLink(pastedLink!),
+    enabled: pastedLink !== null,
+  }));
+  const pastedHref = $derived(
+    pastedLink ? (linkQuery.data?.match?.href ?? null) : null,
+  );
+  const pastedWork = $derived(
+    pastedHref !== null && quickAddTarget(pastedHref) !== null,
   );
 
   // Planned domains show a "coming soon" placeholder instead of a search panel.
-  const comingSoon = $derived(DOMAINS[domain]?.comingSoon ?? false);
+  const comingSoon = $derived(
+    domain !== ALL && (DOMAINS[domain].comingSoon ?? false),
+  );
 
   // If the active domain gets disabled (or was never enabled), fall back to the
-  // first enabled one so the panel below always matches a visible tab.
+  // first enabled one so the panel below always matches a visible tab — and
+  // with a single domain, "Tout" would only repeat it.
   $effect(() => {
-    if (!isDomainEnabled(domain) && enabledTabs.length > 0) {
-      domain = enabledTabs[0][0] as Domain;
+    const stale = domain === ALL ? !hasAllTab : !isDomainEnabled(domain);
+    if (stale && enabledTabs.length > 0) {
+      domain = enabledTabs[0][0];
     }
   });
 
@@ -76,14 +99,13 @@
   const debouncedSyncUrl = debounce(() => {
     const params = new URLSearchParams();
     if (query.trim()) params.set("query", query.trim());
-    if (domain !== Domain.MEDIA) params.set("type", domain);
+    if (domain !== ALL) params.set("type", domain);
     const qs = params.toString();
     void goto(qs ? `?${qs}` : page.url.pathname, {
-      replaceState: true,
-      noScroll: true,
-      keepFocus: true,
+      replace: true,
+      reset: false,
     });
-  }, 300);
+  }, SEARCH_DEBOUNCE_MS);
   $effect(() => {
     void query;
     void domain;
@@ -98,9 +120,9 @@
       (event.currentTarget as HTMLInputElement).blur();
       return;
     }
-    if (event.key === "Tab" && enabledTabs.length > 1) {
+    if (event.key === "Tab" && hasAllTab) {
       event.preventDefault();
-      const ids = enabledTabs.map(([d]) => d as Domain);
+      const ids: Tab[] = [ALL, ...enabledTabs.map(([d]) => d)];
       const i = ids.indexOf(domain);
       domain = ids[(i + (event.shiftKey ? -1 : 1) + ids.length) % ids.length];
     }
@@ -108,21 +130,18 @@
 
   // The sous-filtre lives inside the bar itself (right edge), not below it —
   // Musique has no search-by criteria of its own yet.
-  const MEDIA_TYPE_OPTIONS: { label: string; value: MediaType | undefined }[] =
-    [
-      { label: m.common_all(), value: undefined },
-      { label: m.media_movies(), value: "MOVIE" },
-      { label: m.media_series_plural(), value: "SERIES" },
-      { label: m.media_anime(), value: "ANIME" },
-    ];
+  const TYPE_OPTIONS = [
+    { label: m.common_all(), value: undefined },
+    ...MEDIA_TYPE_OPTIONS,
+  ];
   type BookMode = "title" | "author" | "isbn";
-  const BOOK_MODE_OPTIONS: { label: string; value: BookMode }[] = [
+  const BOOK_MODE_OPTIONS: SelectOption<BookMode>[] = [
     { label: m.common_title(), value: "title" },
     { label: m.book_author(), value: "author" },
     { label: m.book_isbn(), value: "isbn" },
   ];
   type GameMode = "title" | "studio" | "franchise";
-  const GAME_MODE_OPTIONS: { label: string; value: GameMode }[] = [
+  const GAME_MODE_OPTIONS: SelectOption<GameMode>[] = [
     { label: m.common_title(), value: "title" },
     { label: m.media_studio(), value: "studio" },
     { label: m.game_franchise(), value: "franchise" },
@@ -142,7 +161,7 @@
   );
   const filterLabel = $derived(
     domain === Domain.MEDIA
-      ? (MEDIA_TYPE_OPTIONS.find((o) => o.value === mediaType)?.label ??
+      ? (TYPE_OPTIONS.find((o) => o.value === mediaType)?.label ??
           m.common_all())
       : domain === Domain.BOOKS
         ? (BOOK_MODE_OPTIONS.find((o) => o.value === bookMode)?.label ??
@@ -204,15 +223,24 @@
 
   <div
     class="guichet mb-5"
-    style={`--domain-accent: ${DOMAIN_ACCENT_VAR[domain]}`}>
-    {#if enabledTabs.length > 1}
+    style={`--domain-accent: ${domain === ALL ? "var(--accent)" : DOMAINS[domain].accent}`}>
+    {#if hasAllTab}
       <div class="guichet-tabs no-scrollbar">
+        <button
+          type="button"
+          class="guichet-tab"
+          class:guichet-tab-active={domain === ALL}
+          onclick={() => (domain = ALL)}>
+          <Icon name="search" class="h-3.5 w-3.5" />
+          {m.search_tab_all()}
+          {#if isFeatureNew("unified-search")}<NewBadge />{/if}
+        </button>
         {#each enabledTabs as tab (tab[0])}
           <button
             type="button"
             class="guichet-tab"
             class:guichet-tab-active={domain === tab[0]}
-            onclick={() => (domain = tab[0] as Domain)}>
+            onclick={() => (domain = tab[0])}>
             <Icon name={tab[1].icon} class="h-3.5 w-3.5" />
             {tab[1].label}
             {#if tab[1].comingSoon}
@@ -223,7 +251,7 @@
       </div>
     {/if}
 
-    <div class="guichet-bar" class:guichet-bar-solo={enabledTabs.length <= 1}>
+    <div class="guichet-bar" class:guichet-bar-solo={!hasAllTab}>
       <Icon name="search" class="text-dim h-5 w-5 shrink-0" />
       <div class="guichet-input-wrap">
         <input
@@ -236,7 +264,7 @@
           onkeydown={handleSearchKeydown}
           class="guichet-input" />
 
-        {#if enabledTabs.length > 1}
+        {#if hasAllTab}
           <!-- Overlaid, not a flex sibling — as a real layout child it would
                steal width (and thus click area) from the input even while
                invisible, leaving a dead zone that doesn't focus it. -->
@@ -261,7 +289,7 @@
           {#if filterOpen}
             <div bind:this={filterMenuEl} class="guichet-filter-menu shadow-xl">
               {#if domain === Domain.MEDIA}
-                {#each MEDIA_TYPE_OPTIONS as opt (opt.label)}
+                {#each TYPE_OPTIONS as opt (opt.label)}
                   <button
                     type="button"
                     class="guichet-filter-option"
@@ -317,9 +345,26 @@
     </div>
   </div>
 
-  {#if comingSoon}
-    <div
-      class="border-border text-dim flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-14 text-center">
+  {#if pastedLink && pastedWork}
+    {#key pastedHref}
+      <div class="max-w-xl">
+        <QuickAddPanel href={pastedHref!} link={pastedLink} />
+      </div>
+    {/key}
+  {:else if pastedLink && linkQuery.loading}
+    <div class="card h-40 max-w-xl animate-pulse" aria-busy="true"></div>
+  {:else if pastedLink}
+    <section class="card p-5">
+      <h2 class="font-display text-lg font-bold">{m.search_link_title()}</h2>
+      <p class="text-dim mt-1 text-sm">{m.search_link_body()}</p>
+      <a
+        class="btn btn-primary mt-4"
+        href={`/app/share?url=${encodeURIComponent(pastedLink)}`}>
+        {m.search_link_open()}
+      </a>
+    </section>
+  {:else if comingSoon}
+    <EmptyState padding="py-14" class="flex flex-col items-center gap-2">
       <Icon
         name={domain === Domain.PODCASTS ? "podcast" : "boardgame"}
         class="text-dim/60 h-8 w-8" />
@@ -327,7 +372,12 @@
       <p class="max-w-xs text-sm">
         {m.search_coming_soon_desc()}
       </p>
-    </div>
+    </EmptyState>
+  {:else if domain === ALL}
+    <UnifiedSearchPanel
+      {query}
+      order={enabledTabs.map(([d]) => d)}
+      onseeall={(d) => (domain = d)} />
   {:else if domain === Domain.MEDIA}
     <MediaSearchPanel {query} type={mediaType} />
   {:else if domain === Domain.GAMES}

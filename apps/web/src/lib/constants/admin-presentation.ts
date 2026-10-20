@@ -1,4 +1,5 @@
-import { m } from "$lib/paraglide/messages.js";
+import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+import { m } from "#lib/paraglide/messages.js";
 import type { ServiceArea, ServiceStatusDto } from "@loomkeep/shared";
 
 // These French strings are wire identifiers in ServiceArea, not display labels.
@@ -29,33 +30,120 @@ export function adminServiceLabel(key: string, label: string): string {
     : label;
 }
 
+const PROBE_FAILURES = {
+  missingKey: () => m.admin_service_missing_key(),
+  invalid: () => m.admin_service_invalid_key(),
+  timeout: () => m.admin_service_timeout(),
+  network: () => m.admin_service_network_error(),
+  refused: () => m.admin_service_refused(),
+} satisfies Record<NonNullable<ServiceStatusDto["failure"]>, () => string>;
+
 export function adminServiceDetail(service: ServiceStatusDto): string | null {
   if (service.comingSoon) return null;
+  if (service.key === "license") return licenseServiceDetail(service);
+
+  // A service backed by several independent keys (Healthchecks.io, one ping
+  // URL per job) reads as a count rather than the generic configured/failure
+  // pair below, whether or not any are set yet.
+  if (service.partial) {
+    return m.admin_services_jobs_monitored({
+      configured: service.partial.configured,
+      total: service.partial.total,
+    });
+  }
+
   if (!service.configured) return m.admin_service_missing_key();
 
   if (service.reachable === false) {
-    return service.detail ?? m.admin_service_unreachable();
+    // `detail` is a provider's own (redacted) message — more useful to an
+    // operator than a label, and untranslatable either way. The code covers
+    // the generic cases the API used to phrase in French itself.
+    if (service.detail) return service.detail;
+    const failure = service.failure && PROBE_FAILURES[service.failure];
+    return failure ? failure() : m.admin_service_unreachable();
   }
 
   return null;
+}
+
+/**
+ * `license` reads from its own structured field rather than the generic
+ * reachable/failure pair: there's nothing to probe, only a key to verify
+ * offline (see AdminService.evaluateLicense).
+ */
+function licenseServiceDetail(service: ServiceStatusDto): string | null {
+  if (service.failure === "invalid") return m.admin_service_invalid_key();
+  if (!service.license) return m.admin_service_missing_key();
+
+  const date = formatDate(service.license.expiresAt, DATE_MEDIUM_OPTIONS);
+
+  if (!service.license.current) {
+    return m.admin_service_license_expired({ date });
+  }
+
+  return service.license.instanceWide
+    ? m.admin_service_license_detail_instance({
+        licensee: service.license.licensee,
+        date,
+      })
+    : m.admin_service_license_detail_account({
+        licensee: service.license.licensee,
+        date,
+      });
 }
 
 const JOB_LABELS = {
   "notifications.scan": () => m.admin_job_notifications_scan(),
   "notifications.digest": () => m.admin_job_notifications_digest(),
   "media.refreshStale": () => m.admin_job_media_refresh(),
+  "games.refreshStale": () => m.admin_job_games_refresh(),
+  "books.refreshStale": () => m.admin_job_books_refresh(),
   "reports.digest": () => m.admin_job_reports_digest(),
   "backup.run": () => m.admin_job_backup(),
   "users.inactiveAccountsScan": () => m.admin_job_inactive_accounts(),
   "gamification.reconcile": () => m.admin_job_gamification_reconcile(),
   "gamification.achievementsSweep": () =>
     m.admin_job_gamification_achievements_sweep(),
+  "apiKeys.maintenance": () => m.admin_job_api_keys_maintenance(),
 };
 
 export function adminJobLabel(key: string): string {
   return Object.hasOwn(JOB_LABELS, key)
     ? JOB_LABELS[key as keyof typeof JOB_LABELS]()
     : key;
+}
+
+const JOB_DESCRIPTIONS = {
+  "notifications.scan": () => m.admin_job_notifications_scan_description(),
+  "notifications.digest": () => m.admin_job_notifications_digest_description(),
+  "media.refreshStale": () => m.admin_job_media_refresh_description(),
+  "games.refreshStale": () => m.admin_job_games_refresh_description(),
+  "books.refreshStale": () => m.admin_job_books_refresh_description(),
+  "reports.digest": () => m.admin_job_reports_digest_description(),
+  "backup.run": () => m.admin_job_backup_description(),
+  "users.inactiveAccountsScan": () =>
+    m.admin_job_inactive_accounts_description(),
+  "gamification.reconcile": () =>
+    m.admin_job_gamification_reconcile_description(),
+  "gamification.achievementsSweep": () =>
+    m.admin_job_gamification_achievements_sweep_description(),
+  "apiKeys.maintenance": () => m.admin_job_api_keys_maintenance_description(),
+};
+
+export function adminJobDescription(key: string): string | null {
+  return Object.hasOwn(JOB_DESCRIPTIONS, key)
+    ? JOB_DESCRIPTIONS[key as keyof typeof JOB_DESCRIPTIONS]()
+    : null;
+}
+
+export function adminJobButtonState(
+  runningKey: string | null,
+  jobKey: string,
+): { disabled: boolean; running: boolean } {
+  return {
+    disabled: runningKey === jobKey,
+    running: runningKey === jobKey,
+  };
 }
 
 export function adminJobSchedule(key: string): string | null {
@@ -65,6 +153,8 @@ export function adminJobSchedule(key: string): string | null {
     case "notifications.digest":
       return m.admin_job_digest_schedule();
     case "media.refreshStale":
+    case "games.refreshStale":
+    case "books.refreshStale":
       return m.admin_job_every_hours({ hours: 6 });
     case "reports.digest":
       return m.admin_job_daily_at({ time: "07:00" });
@@ -76,6 +166,8 @@ export function adminJobSchedule(key: string): string | null {
       return m.admin_job_daily_at({ time: "04:00" });
     case "gamification.achievementsSweep":
       return m.admin_job_daily_at({ time: "05:00" });
+    case "apiKeys.maintenance":
+      return m.admin_job_daily_at({ time: "06:00" });
     default:
       return null;
   }
@@ -84,6 +176,10 @@ export function adminJobSchedule(key: string): string | null {
 // Gallery controls only: generated email bodies and sample values belong to the backend.
 const TEMPLATE_LABELS = {
   welcome: () => m.common_welcome(),
+  invitation: () => m.admin_template_invitation(),
+  securityAlert: () => m.admin_template_security_alert(),
+  accountDeleted: () => m.admin_template_account_deleted(),
+  adminNewUser: () => m.admin_template_admin_new_user(),
   verifyEmail: () => m.admin_template_verify_email(),
   passwordResetLink: () => m.admin_template_reset_link(),
   passwordChanged: () => m.admin_template_password_changed(),
@@ -93,8 +189,14 @@ const TEMPLATE_LABELS = {
   mfaEmailCode: () => m.admin_template_mfa_code(),
   newsletter: () => m.common_newsletter(),
   episodeDigest: () => m.admin_template_episode_digest(),
+  sagaSequel: () => m.admin_template_saga_sequel(),
   reportsDigest: () => m.admin_job_reports_digest(),
+  jobAlert: () => m.admin_template_job_alert(),
+  quotaAlert: () => m.admin_template_quota_alert(),
   newDeviceLogin: () => m.admin_security_new_device(),
+  apiKeyCreated: () => m.admin_security_api_key_created(),
+  apiKeyExpiring: () => m.admin_template_api_key_expiring(),
+  apiKeyLeaked: () => m.admin_template_api_key_leaked(),
   inactivityWarning: () => m.admin_template_inactivity(),
   moderationDecision: () => m.admin_template_moderation(),
 };
@@ -105,6 +207,8 @@ const FIELD_LABELS = {
   oldEmail: () => m.common_old_email(),
   code: () => m.common_code(),
   title: () => m.common_title(),
+  saga: () => m.media_saga_title(),
+  path: () => m.admin_template_path(),
   content: () => m.admin_template_content(),
   itemCount: () => m.admin_template_episode_count(),
   period: () => m.admin_template_period(),
@@ -113,10 +217,85 @@ const FIELD_LABELS = {
   ip: () => m.common_ip_address(),
   deletionDate: () => m.admin_template_deletion_date(),
   measure: () => m.admin_template_measure(),
+  suspendedUntil: () => m.admin_template_suspended_until(),
   legalBasis: () => m.admin_template_basis(),
   reasonText: () => m.admin_moderation_facts(),
   tosClause: () => m.admin_moderation_terms_clause(),
+  provider: () => m.admin_template_provider(),
+  count: () => m.admin_template_calls_today(),
+  limit: () => m.admin_template_daily_quota(),
+  jobKey: () => m.admin_template_job(),
+  status: () => m.common_status(),
+  error: () => m.common_error(),
+  name: () => m.common_name(),
+  expiresAt: () => m.settings_api_keys_expiration(),
+  inviter: () => m.admin_template_inviter(),
+  event: () => m.admin_template_event(),
+  reason: () => m.admin_template_reason(),
+  foundAt: () => m.admin_template_found_at(),
+  occurredAt: () => m.admin_template_occurred_at(),
+  decisionId: () => m.admin_template_decision_id(),
+  decidedAt: () => m.admin_template_decided_at(),
 };
+
+const TEMPLATE_GROUPS = [
+  {
+    label: () => m.common_account(),
+    keys: [
+      "welcome",
+      "invitation",
+      "verifyEmail",
+      "emailChangeCode",
+      "inactivityWarning",
+      "accountDeleted",
+    ],
+  },
+  {
+    label: () => m.common_security(),
+    keys: [
+      "passwordResetLink",
+      "passwordChanged",
+      "emailChangedOld",
+      "emailChangedNew",
+      "mfaEmailCode",
+      "newDeviceLogin",
+      "securityAlert",
+      "apiKeyCreated",
+      "apiKeyExpiring",
+      "apiKeyLeaked",
+    ],
+  },
+  {
+    label: () => m.admin_template_group_updates(),
+    keys: ["newsletter", "episodeDigest", "sagaSequel"],
+  },
+  {
+    label: () => m.admin_template_group_moderation(),
+    keys: ["moderationDecision"],
+  },
+  {
+    label: () => m.admin_template_group_admin(),
+    keys: ["adminNewUser", "quotaAlert", "jobAlert", "reportsDigest"],
+  },
+];
+
+export function groupAdminEmailTemplates<T extends { key: string }>(
+  templates: T[],
+) {
+  const groups = TEMPLATE_GROUPS.map((group) => ({
+    label: group.label(),
+    items: group.keys.flatMap((key) =>
+      templates.filter((template) => template.key === key),
+    ),
+  }));
+  const knownKeys = TEMPLATE_GROUPS.flatMap((group) => group.keys);
+  const others = templates.filter(
+    (template) => !knownKeys.includes(template.key),
+  );
+  if (others.length)
+    groups.push({ label: m.admin_template_group_other(), items: others });
+  return groups.filter((group) => group.items.length > 0);
+}
 
 export function adminTemplateLabel(key: string): string {
   return Object.hasOwn(TEMPLATE_LABELS, key)

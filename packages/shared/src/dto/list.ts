@@ -2,6 +2,12 @@ import type { ListKind, ListVisibility, ReviewTargetType } from "../enums";
 import type { ReviewTargetSummaryDto } from "./review";
 import type { UserSummaryDto } from "./social";
 
+export const LIST_LIMITS = {
+  title: 100,
+  description: 500,
+  itemNote: 280,
+} as const;
+
 /** Work-level target types a list item may reference — no SEASON/EPISODE. */
 export type ListItemTargetType = Extract<
   ReviewTargetType,
@@ -14,7 +20,15 @@ export interface ListItemDto {
   targetId: string;
   position: number;
   addedAt: string;
+  /** Why it's on the list, written by whoever edits it. */
+  note: string | null;
   target: ReviewTargetSummaryDto | null;
+  /**
+   * Who added it. Only sent to the owner and editors, and only on a list that
+   * has editors — the editors of a list stay private to its collaborators.
+   * `null` when that person has left the list or deleted their account.
+   */
+  addedBy?: UserSummaryDto | null;
 }
 
 /** A list's own metadata, without its items (see `ListDetailDto` for those). */
@@ -33,12 +47,20 @@ export interface ListDto {
  * The current user's relationship to a list: full control (OWNER), granted
  * edit access via ListMember (EDITOR), or read-only (VIEWER).
  */
-export type ListViewerRole = "OWNER" | "EDITOR" | "VIEWER";
+/**
+ * MODERATOR: an admin on a list with a pending report against it — can edit
+ * it like its owner (visibility included) before recording the decision.
+ */
+export type ListViewerRole = "OWNER" | "EDITOR" | "MODERATOR" | "VIEWER";
 
 /** A list plus its items, ordered by `position` — the single-list view. */
 export interface ListDetailDto extends ListDto {
   items: ListItemDto[];
   viewerRole: ListViewerRole;
+  /** Has at least one editor. Always false for a VIEWER, who can't know. */
+  collaborative: boolean;
+  /** The viewer turned this list's notifications off. False for a VIEWER. */
+  notificationsMuted: boolean;
 }
 
 /** A user granted edit access to someone else's list. */
@@ -76,6 +98,11 @@ export interface CreateListDto {
   visibility?: ListVisibility;
 }
 
+/** `PATCH /lists/:id/items/:itemId` body. Null or blank clears the note. */
+export interface UpdateListItemDto {
+  note: string | null;
+}
+
 export interface UpdateListDto {
   title?: string;
   description?: string | null;
@@ -86,3 +113,12 @@ export interface UpdateListDto {
 
 /** Which of the user's own lists already contain a target, keyed by list id (value = item id). */
 export type ListMembershipDto = Record<string, string>;
+
+/**
+ * `POST /lists/:id/works`: a work by its page's path, cached when it isn't
+ * yet — added to the list without the viewer tracking it.
+ */
+export interface AddListWorkRequestDto {
+  /** A work page's path, e.g. `/app/games/11737`. */
+  work: string;
+}

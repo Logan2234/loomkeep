@@ -1,19 +1,32 @@
 <script lang="ts">
+  import { type Snippet } from "svelte";
+
   // 2:3 poster. Falls back to a deterministic gradient (stable per title) with
   // the title set in the display face, so a missing artwork still reads well.
   let {
     src = null,
     title,
+    alt,
     class: cls = "",
     adult = false,
+    caption = true,
+    fallback,
+    containerClass = "",
   }: {
     src?: string | null;
     title: string;
+    /** Accessible image alternative. Pass an empty string when nearby text names it. */
+    alt?: string;
     class?: string;
     /** 18+ title — shows a small corner badge. */
     adult?: boolean;
+    /** Sets the title on the fallback gradient; off for thumbnails too small to read it. */
+    caption?: boolean;
+    fallback?: Snippet;
+    containerClass?: string;
   } = $props();
 
+  const resolvedAlt = $derived(alt ?? title);
   const hue = $derived(
     [...title].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7),
   );
@@ -27,29 +40,36 @@
   });
 </script>
 
-<div class="relative">
+<div class="relative {containerClass}">
   {#if src && !failed}
     <img
       {src}
-      alt={title}
+      alt={resolvedAlt}
       loading="lazy"
       onerror={() => (failed = true)}
       class="bg-surface-2 aspect-2/3 w-full object-cover {cls}" />
+  {:else if fallback}
+    {@render fallback()}
   {:else}
     <div
+      role={resolvedAlt === "" ? undefined : "img"}
+      aria-label={resolvedAlt || undefined}
+      aria-hidden={resolvedAlt === "" ? "true" : undefined}
       class="flex aspect-2/3 w-full items-end p-2 {cls}"
       style="background: linear-gradient(150deg, hsl({hue} 32% 24%), hsl({(hue +
         40) %
         360} 34% 13%));">
-      <span
-        class="font-display line-clamp-3 text-xs leading-tight font-bold wrap-anywhere text-white/90 [text-shadow:0_1px_3px_rgba(0,0,0,.6)]">
-        {title}
-      </span>
+      {#if caption}
+        <span
+          class="font-display line-clamp-3 text-xs leading-tight font-bold wrap-anywhere text-white/90 [text-shadow:0_1px_3px_rgba(0,0,0,.6)]">
+          {title}
+        </span>
+      {/if}
     </div>
   {/if}
   {#if adult}
     <span
-      class="bg-danger absolute top-2 right-2 rounded-full px-1.5 py-0.5 text-[0.6rem] font-black text-white shadow">
+      class="bg-danger text-btn-fg absolute top-2 right-2 rounded-full px-1.5 py-0.5 text-[0.6rem] font-black shadow">
       18+
     </span>
   {/if}

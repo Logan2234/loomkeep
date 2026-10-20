@@ -65,3 +65,10 @@ export function skipOnboardingStep(key: string) {
     params: { key },
   }) as Promise<OnboardingChecklistDto>;
 }
+
+/** Your own XP history, a page of active days at a time, most recent first. */
+export function getXpHistory(page = 1) {
+  return typedRequest("/gamification/me/history", {
+    query: { page: String(page) },
+  });
+}

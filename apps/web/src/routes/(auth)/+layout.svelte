@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { type LayoutProps } from "./$types";
+
   import { goto } from "$app/navigation";
-  import { auth } from "$lib/auth.svelte";
-  import { bootstrap } from "$lib/bootstrap.svelte";
-  import BootSplash from "$lib/components/BootSplash.svelte";
+  import { auth } from "#lib/auth.svelte.js";
+  import { bootstrap } from "#lib/bootstrap.svelte.js";
+  import BootSplash from "#lib/components/BootSplash.svelte";
   import { untrack } from "svelte";
 
-  let { children } = $props();
+  let { children }: LayoutProps = $props();
 
   // Bounce visitors who are *already* signed in when they land on an auth
   // form — the mirror of the /app guard. The post-registration "check your

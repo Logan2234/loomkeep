@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { updateMe } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { USER_LIMITS } from "@loomkeep/shared";
+
+  import { updateMe } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { UserDto } from "@loomkeep/shared";
   import Modal from "./Modal.svelte";
 
@@ -47,7 +49,7 @@
         name="displayName"
         class="input"
         minlength="1"
-        maxlength="50"
+        maxlength={USER_LIMITS.displayName}
         bind:value={displayName} />
     </label>
 
@@ -58,7 +60,7 @@
           name="bio"
           class="input min-h-20 resize-y"
           rows="3"
-          maxlength="500"
+          maxlength={USER_LIMITS.bio}
           placeholder={m.profile_bio_placeholder()}
           bind:value={bio}></textarea>
       </label>
@@ -67,12 +69,14 @@
     {#if saveMut.error}
       <p class="text-danger text-sm">{saveMut.error}</p>
     {/if}
+  </div>
 
+  {#snippet actions()}
     <button
       class="btn btn-primary w-full"
       disabled={saveMut.loading || !displayName.trim()}
       onclick={save}>
       {m.common_save()}
     </button>
-  </div>
+  {/snippet}
 </Modal>

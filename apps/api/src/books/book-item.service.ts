@@ -4,8 +4,14 @@ import type {
   BookSource,
   BookSummaryDto,
 } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import type { BookItem } from "@prisma/client";
+import { isCatalogFresh } from "../common/catalog-sync.util";
+import { mapWithConcurrency } from "../common/concurrency.util";
+import { isUniqueViolation } from "../common/prisma-error.util";
+import { JOB_KEYS } from "../jobs/job-keys";
+import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
 import type {
   BookCatalogProvider,
@@ -14,14 +20,67 @@ import type {
 import { OpenLibraryProvider } from "./providers/open-library.provider";
 
 // A cached book referenced by users is refreshed at most once a day.
-const SYNC_TTL_MS = 24 * 60 * 60 * 1000;
+
+// The background refresh is far lazier than the on-demand TTL: a book's
+// metadata barely moves, and each refresh costs Open Library (a volunteer-run
+// API) four calls. It exists so stored books pick up new data at all — the
+// ISBN the Goodreads export needs, for books stored before it was kept.
+const BACKGROUND_SYNC_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_REFRESHED_PER_RUN = 100;
+const REFRESH_CONCURRENCY = 2;
 
 @Injectable()
 export class BookItemService {
+  private readonly logger = new Logger(BookItemService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly openLibraryProvider: OpenLibraryProvider,
+    private readonly jobRuns: JobRunService,
   ) {}
+
+  /**
+   * Every 6h, like the media and games refreshes: re-sync tracked books whose
+   * cache is older than a week. Dropped books included — the Goodreads export
+   * still lists them, on a "did-not-finish" shelf.
+   */
+  @Cron(CronExpression.EVERY_6_HOURS, { name: JOB_KEYS.BOOKS_REFRESH_STALE })
+  async refreshStale(): Promise<number> {
+    return this.jobRuns.record(
+      JOB_KEYS.BOOKS_REFRESH_STALE,
+      () => this.runRefreshStale(),
+      (refreshed) =>
+        refreshed > 0
+          ? `${refreshed} book item(s) refreshed`
+          : "Nothing to refresh",
+    );
+  }
+
+  private async runRefreshStale(): Promise<number> {
+    const staleBefore = new Date(Date.now() - BACKGROUND_SYNC_TTL_MS);
+    const items = await this.prisma.bookItem.findMany({
+      where: { lastSyncedAt: { lt: staleBefore }, entries: { some: {} } },
+      orderBy: { lastSyncedAt: "asc" },
+      take: MAX_REFRESHED_PER_RUN,
+      select: { id: true },
+    });
+
+    const outcomes = await mapWithConcurrency(
+      items,
+      REFRESH_CONCURRENCY,
+      async (item): Promise<boolean> => {
+        try {
+          await this.forceRefresh(item.id);
+          return true;
+        } catch (err) {
+          this.logger.error(`Refresh failed for book ${item.id}`, err);
+          return false;
+        }
+      },
+    );
+
+    return outcomes.filter(Boolean).length;
+  }
 
   /** Open Library is the only source today. */
   providerFor(): BookCatalogProvider {
@@ -87,6 +146,7 @@ export class BookItemService {
       publisher: details.publisher,
       genres: details.genres,
       pageCount: details.pageCount,
+      editionKey: details.editionKey,
       releaseDate: details.releaseDate,
       website: details.website,
       sameAuthorBooks: details.sameAuthorBooks,
@@ -94,6 +154,7 @@ export class BookItemService {
       editionCount: details.editionCount,
       isbn: details.isbn,
       series: details.series,
+      seriesKey: details.seriesKey,
       language: details.language,
       firstSentence: details.firstSentence,
       readOnlineUrl: details.readOnlineUrl,
@@ -128,10 +189,7 @@ export class BookItemService {
       include: { bookItem: true },
     });
 
-    if (
-      existingRef &&
-      Date.now() - existingRef.bookItem.lastSyncedAt.getTime() < SYNC_TTL_MS
-    ) {
+    if (existingRef && isCatalogFresh(existingRef.bookItem.lastSyncedAt)) {
       return existingRef.bookItem;
     }
 
@@ -158,9 +216,25 @@ export class BookItemService {
     const existingRef = await this.prisma.bookExternalId.findUnique({
       where: { source_externalId: { source, externalId: canonicalId } },
     });
-    return existingRef
-      ? this.refresh(existingRef.bookItemId, details)
-      : this.createFresh(source, details);
+    if (existingRef) return this.refresh(existingRef.bookItemId, details);
+
+    try {
+      return await this.createFresh(source, details);
+    } catch (err) {
+      // Two requests can reach here for the same uncached work (two users
+      // tracking it at once, a double click, an import resolving in
+      // parallel): the loser violates the external id's unique constraint.
+      // The winner's row is what it was about to create — adopt it, as
+      // MediaItemService does, rather than fail the request with a 500.
+      if (!isUniqueViolation(err)) throw err;
+
+      const winner = await this.prisma.bookExternalId.findUnique({
+        where: { source_externalId: { source, externalId: canonicalId } },
+        include: { bookItem: true },
+      });
+      if (winner) return winner.bookItem;
+      throw err;
+    }
   }
 
   /** Admin-triggered re-sync: refetches from the canonical source, bypassing the TTL. */
@@ -230,6 +304,8 @@ export class BookItemService {
       releaseDate: details.releaseDate ? new Date(details.releaseDate) : null,
       genres: details.genres,
       pageCount: details.pageCount,
+      isbn: details.isbn,
+      seriesKey: details.seriesKey,
       isAdult: details.summary.isAdult,
       lastSyncedAt: new Date(),
     };

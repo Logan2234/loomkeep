@@ -1,14 +1,11 @@
 <script lang="ts">
-  import Carousel from "$lib/components/Carousel.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import ListCoverGrid from "$lib/components/ListCoverGrid.svelte";
-  import ProfileSectionHeading from "$lib/components/profile/ProfileSectionHeading.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { MyListDto } from "@loomkeep/shared";
+  import { type ListTile } from "#lib/components/profile/list-tile.js";
 
-  type ListTile =
-    | { kind: "create"; key: "create" }
-    | { kind: "list"; key: string; list: MyListDto };
+  import Carousel from "#lib/components/Carousel.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import ListCoverGrid from "#lib/components/ListCoverGrid.svelte";
+  import ProfileSectionHeading from "#lib/components/profile/ProfileSectionHeading.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     listTiles,
@@ -27,11 +24,11 @@
   <ProfileSectionHeading label={m.common_lists()}>
     {#snippet action()}
       {#if selfManage && hasOwnLists}
-        <a
-          href="/app/lists"
-          class="text-dim hover:text-accent flex items-center gap-1 text-xs font-semibold whitespace-nowrap md:hidden">
+        <a href="/app/lists" class="btn-text group shrink-0">
           {m.common_manage()}
-          <Icon name="chevron-right" class="h-3.5 w-3.5" />
+          <Icon
+            name="arrow-right"
+            class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
         </a>
       {/if}
     {/snippet}
@@ -47,7 +44,10 @@
       </a>
     {/if}
     <div class="min-w-0 flex-1">
-      <Carousel items={listTiles} keyOf={(item) => item.key}>
+      <Carousel
+        items={listTiles}
+        keyOf={(item) => item.key}
+        label={m.common_lists()}>
         {#snippet card(item)}
           {#if item.kind === "create"}
             <button

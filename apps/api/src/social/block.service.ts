@@ -10,6 +10,28 @@ import { PrismaService } from "../prisma/prisma.service";
 export class BlockService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async blockedEitherWayIds(
+    viewerId: string,
+    authorIds: string[],
+  ): Promise<Set<string>> {
+    const ids = [...new Set(authorIds)].filter((id) => id !== viewerId);
+    if (ids.length === 0) return new Set();
+    const blocks = await this.prisma.block.findMany({
+      where: {
+        OR: [
+          { blockerId: viewerId, blockedId: { in: ids } },
+          { blockedId: viewerId, blockerId: { in: ids } },
+        ],
+      },
+      select: { blockerId: true, blockedId: true },
+    });
+    return new Set(
+      blocks.map((block) =>
+        block.blockerId === viewerId ? block.blockedId : block.blockerId,
+      ),
+    );
+  }
+
   /** Whether `blockerId` has specifically blocked `blockedId`. */
   async isBlocked(blockerId: string, blockedId: string): Promise<boolean> {
     const block = await this.prisma.block.findUnique({

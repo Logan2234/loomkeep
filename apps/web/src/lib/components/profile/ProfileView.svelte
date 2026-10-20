@@ -1,48 +1,46 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { signOutAndRedirect } from "#lib/api/auth.js";
+
+  import { type ListTile } from "#lib/components/profile/list-tile.js";
+
   import {
     blockUser,
     followUser,
     getMyProfile,
     getProfile,
-    getUserFollowers,
-    getUserFollowing,
     getUserLists,
-    logout,
+    reportUser,
     unblockUser,
     unfollowUser,
-  } from "$lib/api/client";
-  import { ApiError } from "$lib/api/core";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import EditAvatarModal from "$lib/components/EditAvatarModal.svelte";
-  import EditProfileModal from "$lib/components/EditProfileModal.svelte";
-  import ListFormModal from "$lib/components/ListFormModal.svelte";
-  import ProfileActivity from "$lib/components/ProfileActivity.svelte";
-  import ProfileConnectionsModal from "$lib/components/profile/ProfileConnectionsModal.svelte";
-  import ProfileHeader from "$lib/components/profile/ProfileHeader.svelte";
-  import ProfileLibrarySection from "$lib/components/profile/ProfileLibrarySection.svelte";
-  import ProfileListsSection from "$lib/components/profile/ProfileListsSection.svelte";
-  import ProfileStatsCard from "$lib/components/profile/ProfileStatsCard.svelte";
-  import ProfileReviews from "$lib/components/ProfileReviews.svelte";
-  import ScanProfileModal from "$lib/components/ScanProfileModal.svelte";
-  import ShareProfileModal from "$lib/components/ShareProfileModal.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { formatDate, MONTH_YEAR_OPTIONS } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
-  import type {
-    MyListDto,
-    RelationshipDto,
-    SocialProfileDto,
-  } from "@loomkeep/shared";
+  } from "#lib/api/client.js";
+  import { ApiError } from "#lib/api/core.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import AvatarLightbox from "#lib/components/AvatarLightbox.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import EditAvatarModal from "#lib/components/EditAvatarModal.svelte";
+  import EditProfileModal from "#lib/components/EditProfileModal.svelte";
+  import ListFormModal from "#lib/components/ListFormModal.svelte";
+  import ProfileActivity from "#lib/components/ProfileActivity.svelte";
+  import ProfileConnectionsModal from "#lib/components/profile/ProfileConnectionsModal.svelte";
+  import ProfileHeader from "#lib/components/profile/ProfileHeader.svelte";
+  import ProfileLibrarySection from "#lib/components/profile/ProfileLibrarySection.svelte";
+  import ProfileListsSection from "#lib/components/profile/ProfileListsSection.svelte";
+  import ProfileReviews from "#lib/components/ProfileReviews.svelte";
+  import ReportModal from "#lib/components/ReportModal.svelte";
+  import ScanProfileModal from "#lib/components/ScanProfileModal.svelte";
+  import ShareProfileModal from "#lib/components/ShareProfileModal.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { formatDate, MONTH_YEAR_OPTIONS } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { RelationshipDto, SocialProfileDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import LevelCard from "../LevelCard.svelte";
+  import XpHistoryModal from "../XpHistoryModal.svelte";
   import BadgeShowcase from "../BadgeShowcase.svelte";
 
   // Shared body for both /u/[username] (any profile, including your own —
@@ -101,9 +99,6 @@
   // "Tout voir" tile isn't part of this scrollable set at all: on desktop
   // it's rendered as a fixed element to the left of the carousel, on mobile
   // it's replaced by a "Gérer" link next to the section heading.
-  type ListTile =
-    | { kind: "create"; key: "create" }
-    | { kind: "list"; key: string; list: MyListDto };
   const listTiles = $derived<ListTile[]>(
     selfManage
       ? [
@@ -176,6 +171,7 @@
   }));
 
   let confirmBlock = $state(false);
+  let confirmUnfriend = $state(false);
   let avatarZoomed = $state(false);
 
   const unblockMut = createApiMutation(() => ({
@@ -194,6 +190,15 @@
   const busy = $derived(
     followMut.loading || unblockMut.loading || blockMut.loading,
   );
+
+  let reporting = $state(false);
+  const reportMut = createApiMutation(() => ({
+    mutate: (report: Parameters<typeof reportUser>[1]) =>
+      reportUser(profile!.username, report),
+    successToast: m.profile_reported(),
+    errorToast: true,
+    onSuccess: () => (reporting = false),
+  }));
 
   function toggleFollow() {
     if (!profile) return;
@@ -216,15 +221,13 @@
     blockMut.mutate();
   }
 
-  async function signOut() {
-    await logout();
-    await goto("/login");
-  }
+  const signOut = signOutAndRedirect;
 
   let shareModalOpen = $state(false);
   let scanModalOpen = $state(false);
   let avatarModalOpen = $state(false);
   let editProfileModalOpen = $state(false);
+  let xpHistoryOpen = $state(false);
 
   function applyAvatar(url: string | null) {
     queryClient.setQueryData(
@@ -244,17 +247,6 @@
 
   // Followers/following modal, opened from the counts below.
   let connectionsKind = $state<"followers" | "following" | null>(null);
-
-  const connectionsQuery = createApiQuery(() => ({
-    key: keys.profile.connections(username, connectionsKind ?? "followers"),
-    fetch: () =>
-      connectionsKind === "followers"
-        ? getUserFollowers(username)
-        : getUserFollowing(username),
-    enabled: connectionsKind !== null,
-  }));
-  const connections = $derived(connectionsQuery.data ?? []);
-  const connectionsLoading = $derived(connectionsQuery.loading);
 
   function openConnections(kind: "followers" | "following") {
     connectionsKind = kind;
@@ -356,7 +348,9 @@
         {ghostCantFollow}
         {memberSince}
         onToggleFollow={toggleFollow}
+        onUnfriend={() => (confirmUnfriend = true)}
         onToggleBlock={toggleBlock}
+        onReport={() => (reporting = true)}
         onSignOut={signOut}
         onOpenAvatarZoom={() => (avatarZoomed = true)}
         onOpenAvatarModal={() => (avatarModalOpen = true)}
@@ -371,7 +365,10 @@
             leaderboardHref={selfManage && appConfig.socialEnabled
               ? "/app/leaderboard"
               : undefined}
-            achievementsHref={selfManage ? "/app/achievements" : undefined} />
+            achievementsHref={selfManage ? "/app/achievements" : undefined}
+            onOpenHistory={selfManage
+              ? () => (xpHistoryOpen = true)
+              : undefined} />
           <div class="mt-6">
             <BadgeShowcase badges={profile.equippedBadges} />
           </div>
@@ -379,25 +376,12 @@
       {/if}
     </div>
 
-    <!-- Wide column: what the viewer produces. Narrow column: what they're
-         measured on. Every section is its own grid item (not nested inside
-         a wide-column wrapper) so mobile can order them independently of
-         where they land on desktop: "En chiffres" reads right after the
-         library there, not stranded at the very bottom under activity —
-         `order-*` drives the single mobile column, `lg:col-start-*` +
-         `lg:row-span-*` place them into the two desktop columns instead. -->
-    <div
-      class="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_358px] lg:gap-7">
-      <div class="order-1 min-w-0 lg:order-0 lg:col-start-1">
-        <ProfileLibrarySection domains={profile.domains} {selfManage} />
-      </div>
-
-      <div class="order-2 min-w-0 lg:order-0 lg:col-start-2 lg:row-span-4">
-        <ProfileStatsCard {profile} />
-      </div>
+    <!-- What the viewer produces, one section under the other. -->
+    <div class="mt-8 flex flex-col gap-8">
+      <ProfileLibrarySection domains={profile.domains} {selfManage} />
 
       {#if appConfig.socialEnabled && listTiles.length > 0}
-        <div class="order-3 min-w-0 lg:order-0 lg:col-start-1">
+        <div class="min-w-0">
           <ProfileListsSection
             {listTiles}
             {selfManage}
@@ -407,23 +391,21 @@
       {/if}
 
       {#if selfManage}
-        <div class="order-4 min-w-0 lg:order-0 lg:col-start-1">
-          <ProfileReviews />
-        </div>
+        <ProfileReviews />
       {/if}
 
-      <div class="order-5 min-w-0 lg:order-0 lg:col-start-1">
-        <ProfileActivity username={profile.username} />
-      </div>
+      <ProfileActivity username={profile.username} {selfManage} />
     </div>
   {/if}
 </div>
 
 {#if connectionsKind}
   <ProfileConnectionsModal
+    {username}
     kind={connectionsKind}
-    {connections}
-    loading={connectionsLoading}
+    followerCount={profile?.followerCount ?? 0}
+    followingCount={profile?.followingCount ?? 0}
+    manage={!!selfManage}
     onClose={() => (connectionsKind = null)} />
 {/if}
 
@@ -436,6 +418,34 @@
     {busy}
     onConfirm={confirmBlockUser}
     onCancel={() => (confirmBlock = false)} />
+{/if}
+
+{#if confirmUnfriend && profile}
+  <ConfirmationModal
+    title={m.profile_unfriend_confirm_title({ name: profile.displayName })}
+    message={appConfig.chatEnabled
+      ? m.profile_unfriend_confirm_message_chat({ name: profile.displayName })
+      : m.profile_unfriend_confirm_message({ name: profile.displayName })}
+    confirmLabel={m.profile_unfriend()}
+    danger
+    {busy}
+    onConfirm={() => {
+      confirmUnfriend = false;
+      followMut.mutate();
+    }}
+    onCancel={() => (confirmUnfriend = false)} />
+{/if}
+
+{#if reporting && profile}
+  <ReportModal
+    title={m.profile_report_title()}
+    targetType="USER"
+    subject={profile
+      ? { title: profile.displayName, detail: `@${profile.username}` }
+      : undefined}
+    onClose={() => (reporting = false)}
+    onSubmit={(report) =>
+      reportMut.mutate({ ...report, profilePart: report.profilePart! })} />
 {/if}
 
 {#if shareModalOpen && profile}
@@ -455,6 +465,10 @@
     avatarUrl={profile.avatarUrl}
     onSaved={applyAvatar}
     onclose={() => (avatarModalOpen = false)} />
+{/if}
+
+{#if xpHistoryOpen && profile && profile.xp !== null}
+  <XpHistoryModal xp={profile.xp} onclose={() => (xpHistoryOpen = false)} />
 {/if}
 
 {#if editProfileModalOpen && profile}

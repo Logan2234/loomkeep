@@ -1,6 +1,5 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PublicConfigController } from "./public-config.controller";
 
 vi.mock("node:fs/promises", () => ({
@@ -12,14 +11,9 @@ function makeController(env: Record<string, string | undefined>) {
     get: vi.fn((key: string) => env[key]),
   } as unknown as ConfigService;
 
-  const flags = {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
-
   return {
-    controller: new PublicConfigController(config, flags),
+    controller: new PublicConfigController(config),
     config,
-    flags,
   };
 }
 
@@ -30,17 +24,31 @@ describe("PublicConfigController", () => {
     process.env.GIT_SHA = ORIGINAL_GIT_SHA;
   });
 
+  it('reports publicApiEnabled=false only when PUBLIC_API_ENABLED is "false"', async () => {
+    const off = makeController({ PUBLIC_API_ENABLED: "false" });
+    await expect(off.controller.get()).resolves.toMatchObject({
+      publicApiEnabled: false,
+    });
+    const unset = makeController({});
+    await expect(unset.controller.get()).resolves.toMatchObject({
+      publicApiEnabled: true,
+    });
+  });
+
   it('reports socialEnabled=true only when SOCIAL_ENABLED is exactly "true"', async () => {
     delete process.env.GIT_SHA;
     const { controller } = makeController({ SOCIAL_ENABLED: "true" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: true,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "",
     });
   });
 
@@ -49,12 +57,15 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ GAMIFICATION_ENABLED: "true" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: true,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "",
     });
   });
 
@@ -63,12 +74,15 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({});
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "",
     });
   });
 
@@ -77,12 +91,15 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ SOCIAL_ENABLED: "1" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "",
     });
   });
 
@@ -91,12 +108,15 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ REGISTRATION_ENABLED: "false" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: false,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "",
     });
   });
 
@@ -105,12 +125,15 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({});
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "",
     });
   });
 
@@ -119,12 +142,15 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ NODE_ENV: "development" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: true,
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "",
     });
   });
 
@@ -133,12 +159,33 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ NODE_ENV: "production" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: true,
       version: "9.9.9",
       gitSha: "unknown",
+      supportEmail: "",
+    });
+  });
+
+  it("reports the support mailbox: configured, else Loomkeep's on the hosted instance only", async () => {
+    const configured = makeController({
+      MAIL_SUPPORT_ADDRESS: " support@instance.example ",
+      WEB_ORIGIN: "https://media.example",
+    });
+    await expect(configured.controller.get()).resolves.toMatchObject({
+      supportEmail: "support@instance.example",
+    });
+    const hosted = makeController({ WEB_ORIGIN: "https://loomkeep.app" });
+    await expect(hosted.controller.get()).resolves.toMatchObject({
+      supportEmail: "contact@loomkeep.app",
+    });
+    const selfHost = makeController({ WEB_ORIGIN: "https://media.example" });
+    await expect(selfHost.controller.get()).resolves.toMatchObject({
+      supportEmail: "",
     });
   });
 
@@ -147,12 +194,15 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({});
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      chatEnabled: false,
       gamificationEnabled: false,
       registrationEnabled: true,
+      publicApiEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "a1b2c3d",
+      supportEmail: "",
     });
   });
 });

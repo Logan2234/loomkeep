@@ -1,8 +1,8 @@
-import type Icon from "$lib/components/Icon.svelte";
-import { m } from "$lib/paraglide/messages";
+import type Icon from "#lib/components/Icon.svelte";
+import { m } from "#lib/paraglide/messages.js";
 import type { ComponentProps } from "svelte";
 
-type AdminNavItem = {
+export type AdminNavItem = {
   href: string;
   label: string;
   description: string;
@@ -39,6 +39,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     description: m.admin_nav_stats_description(),
     icon: "stats",
     match: (p) => p.startsWith("/app/admin/stats"),
+  },
+  {
+    href: "/app/admin/settings",
+    label: m.admin_settings_title(),
+    description: m.admin_nav_settings_description(),
+    icon: "gear",
+    match: (p) => p.startsWith("/app/admin/settings"),
   },
   {
     href: "/app/admin/jobs",
@@ -107,6 +114,51 @@ export const ADMIN_NAV: AdminNavItem[] = [
   },
 ];
 
-export const VISIBLE_ADMIN_NAV = ADMIN_NAV.filter(
-  (item) => !item.devOnly || import.meta.env.DEV,
-);
+function itemsFor(hrefs: string[]): AdminNavItem[] {
+  return hrefs.map((href) => {
+    const item = ADMIN_NAV.find((candidate) => candidate.href === href);
+    if (!item) throw new Error(`Unknown admin navigation destination: ${href}`);
+    return item;
+  });
+}
+
+export const ADMIN_NAV_GROUPS = [
+  {
+    label: m.admin_group_pilotage(),
+    items: itemsFor([
+      "/app/admin/services",
+      "/app/admin/jobs",
+      "/app/admin/stats",
+      "/app/admin/settings",
+    ]),
+  },
+  {
+    label: m.admin_group_people(),
+    items: itemsFor([
+      "/app/admin/users",
+      "/app/admin/communications",
+      "/app/admin/newsletter",
+    ]),
+  },
+  {
+    label: m.admin_group_moderation(),
+    items: itemsFor(["/app/admin/reports", "/app/admin/security"]),
+  },
+  {
+    label: m.admin_group_maintenance(),
+    items: itemsFor([
+      "/app/admin/backup",
+      "/app/admin/imports",
+      "/app/admin/cache",
+    ]),
+  },
+  {
+    label: m.admin_group_development(),
+    items: itemsFor(["/app/admin/schema", "/app/admin/components"]),
+  },
+];
+
+export const VISIBLE_ADMIN_NAV_GROUPS = ADMIN_NAV_GROUPS.map((group) => ({
+  ...group,
+  items: group.items.filter((item) => !item.devOnly || import.meta.env.DEV),
+})).filter((group) => group.items.length > 0);

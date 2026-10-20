@@ -7,7 +7,12 @@
   "compilerOptions": {
     "deleteOutDir": false,
     "assets": ["../package.json"],
-    "plugins": ["@nestjs/swagger"],
+    "plugins": [
+      {
+        "name": "@nestjs/swagger",
+        "options": { "introspectComments": true }
+      }
+    ],
     "manualRestart": false,
     "builder": "tsc",
     "tsConfigPath": "tsconfig.build.json"

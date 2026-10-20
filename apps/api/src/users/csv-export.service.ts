@@ -2,10 +2,11 @@ import { Domain, ErrorCode, ReviewTargetType } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
 import { toCsv } from "../common/csv.util";
+import { utcDateKey } from "../common/date.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 
-const isoDate = (d: Date | null): string => d?.toISOString().slice(0, 10) ?? "";
+const isoDate = (d: Date | null): string => (d ? utcDateKey(d) : "");
 
 /**
  * Flat, per-domain CSV export for migrating to another tool (Storygraph,
@@ -90,7 +91,10 @@ export class CsvExportService {
   private async buildGamesCsv(userId: string): Promise<string> {
     const entries = await this.prisma.gameEntry.findMany({
       where: { userId },
-      include: { gameItem: true, replays: true },
+      include: {
+        gameItem: true,
+        playthroughs: { where: { status: "COMPLETED" } },
+      },
       orderBy: { createdAt: "asc" },
     });
     const ratings = await this.reviews.getRatings(
@@ -130,7 +134,7 @@ export class CsvExportService {
         isoDate(e.gameItem.releaseDate),
         e.gameItem.genres.join("; "),
         e.gameItem.platforms.join("; "),
-        e.replays.length,
+        Math.max(0, e.playthroughs.length - 1),
       ]),
     ]);
   }
@@ -138,7 +142,10 @@ export class CsvExportService {
   private async buildBooksCsv(userId: string): Promise<string> {
     const entries = await this.prisma.bookEntry.findMany({
       where: { userId },
-      include: { bookItem: true, replays: true },
+      include: {
+        bookItem: true,
+        readings: { where: { status: "COMPLETED" } },
+      },
       orderBy: { createdAt: "asc" },
     });
     const ratings = await this.reviews.getRatings(
@@ -180,7 +187,7 @@ export class CsvExportService {
         isoDate(e.bookItem.releaseDate),
         e.bookItem.pageCount,
         e.bookItem.genres.join("; "),
-        e.replays.length,
+        Math.max(0, e.readings.length - 1),
       ]),
     ]);
   }

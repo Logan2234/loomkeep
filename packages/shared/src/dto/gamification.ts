@@ -1,3 +1,5 @@
+import type { XpReason } from "../enums";
+
 /**
  * An unlocked achievement not yet shown to the user by the unlock bubble
  * UI (`UserAchievement.displayedAt IS NULL`). `xpAwarded` is looked up from
@@ -60,6 +62,22 @@ export interface AchievementDto {
    * `GET /achievements` only ever returns the viewer's own.
    */
   equipped: boolean;
+  /**
+   * Share of active members holding it, from the last nightly count — shown
+   * for a masked secret too. Null on an instance too small for a share to
+   * mean anything.
+   */
+  rarity: AchievementRarityDto | null;
+}
+
+/**
+ * `percent` is exact, unless `upperBound`: then only "under `percent` %" is
+ * said, because so few members hold it that the exact share would point at
+ * who they are.
+ */
+export interface AchievementRarityDto {
+  percent: number;
+  upperBound: boolean;
 }
 
 /**
@@ -78,13 +96,57 @@ export interface MyProgressionDto {
   xp: number | null;
 }
 
-export type LeaderboardScope = "global" | "friends";
+/**
+ * What earned (or took back) one XP line, snapshotted at grant time — the
+ * source row is often gone by the time a revoked line is read. `title` is
+ * null for a reason with no work behind it (profile, admin adjustment…).
+ */
+export interface XpHistoryItemDto {
+  reason: XpReason;
+  /** A loss taking back an earlier gain, rather than the gain itself. */
+  revoked: boolean;
+  /** Signed: a revocation shows the gain it takes back, negated. */
+  amount: number;
+  /** When this happened: the gain, or for a revocation, the revocation. */
+  at: string;
+  /** For a gain later taken back, when; for a revocation, null. */
+  revokedAt: string | null;
+  /** For a revocation, when the gain it takes back was earned. */
+  earnedAt: string | null;
+  title: string | null;
+  /** Null when there is nothing left to open (a deleted list). */
+  href: string | null;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  /** ACHIEVEMENT_UNLOCKED's achievement — a tiered one's family — for the web to name it. */
+  achievementKey: string | null;
+  /** DOMAIN_STARTED / IMPORT_COMPLETED's domain. */
+  domain: string | null;
+  /** READING_GOAL_REACHED's goal: how many books, which year. */
+  goalTarget: number | null;
+  goalYear: number | null;
+}
+
+/** One local day (the viewer's timezone) of the XP ledger. */
+export interface XpHistoryDayDto {
+  /** "YYYY-MM-DD". */
+  day: string;
+  /** Signed sum of `items`. */
+  net: number;
+  /** Most recent first. */
+  items: XpHistoryItemDto[];
+}
+
+export const LEADERBOARD_SCOPES = ["global", "friends"] as const;
+export type LeaderboardScope = (typeof LEADERBOARD_SCOPES)[number];
 
 /**
  * Calendar window a leaderboard sums live from the XP ledger, using the
- * server's clock rather than a snapshot table.
+ * server's clock rather than a snapshot table — or `all`, every XP ever
+ * earned, read from the materialised total instead.
  */
-export type LeaderboardPeriod = "month" | "year";
+export const LEADERBOARD_PERIODS = ["month", "year", "all"] as const;
+export type LeaderboardPeriod = (typeof LEADERBOARD_PERIODS)[number];
 
 /**
  * Deliberately lean, not a `UserSummaryDto`: it carries

@@ -1,82 +1,109 @@
-import type {
-  BookDetailDto,
-  BookEntryDto,
-  BookItemDto,
-  BookReplayDto,
-  BookSource,
-  PagedResult,
-  ReadingGoalDto,
-} from "@loomkeep/shared";
 import {
-  ActivityType,
+  BOOK_SORT_KEYS,
+  type BookDetailDto,
+  type BookEntryDto,
+  bookFinishedXp,
+  type BookItemDto,
+  type BookSortKey,
+  type BookSource,
   BookStatus,
+  type BulkEntriesResultDto,
+  type BulkEntriesTargetDto,
   Domain,
-  ErrorCode,
+  MIN_REWARDED_READING_GOAL,
+  type PagedResult,
+  type PileSummaryDto,
+  type ReadingGoalDto,
+  readingGoalXp,
+  RealtimeEvent,
+  replayXp,
   ReviewTargetType,
+  sagaCompletionXp,
+  SESSION_FILTER_PAUSED,
+  TrackingCycleStatus,
   XpReason,
 } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import type {
-  BookEntry,
   BookExternalId,
   BookItem,
-  BookReplay,
   BookStatus as DbBookStatus,
   Prisma,
 } from "@prisma/client";
-import { AppException } from "../common/app.exception";
-import { toDateOrNull } from "../common/date.util";
+import {
+  addToList,
+  applyBulkUpdate,
+  applyToEntries,
+  assertBulkTarget,
+  assertBulkUpdate,
+} from "../common/bulk-entries.util";
+import { sinceDaysAgo, toDateOrNull, utcYearRange } from "../common/date.util";
+import type {
+  EntryStatusChange,
+  ListEntriesFilters,
+} from "../common/entry-lifecycle.util";
+import {
+  assertEntryOwnership,
+  awardNewEntryXp,
+  emitEntryActivity,
+  listEntryPage,
+  pausedStatusClause,
+  polymorphicTargetCleanup,
+  RECENTLY_UPDATED_FIRST,
+  revokeEntryXp,
+  searchTerm,
+  syncCycleCompletionXp,
+  titleContains,
+} from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
-import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
+
+import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
+import { SessionXpService } from "../gamification/session-xp.service";
 import { XpService } from "../gamification/xp.service";
+import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
-import { classifyStatusTransition } from "../social/activity-transition.util";
 import { ActivityService } from "../social/activity.service";
+import {
+  BOOK_PILE_STATUSES,
+  bookPileItem,
+  summarizePile,
+} from "../stats/pile.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { BookItemService } from "./book-item.service";
-import { AddBookReplayDto } from "./dto/add-book-replay.dto";
+import { BookSagaService } from "./book-saga.service";
+import { toReadingDto } from "./book.mappers";
+import type { BulkUpdateBookEntriesBody } from "./dto/bulk-update-book-entries.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";
 import { UpsertReadingGoalDto } from "./dto/upsert-reading-goal.dto";
 
 // Entries always need the book + its external IDs (canonical sourceId), plus
-// its replay history, most recent first.
+// its reading history, most recent first.
+// How long a reading goal must stand unchanged before meeting it pays XP.
+const GOAL_SETTLED_DAYS = 30;
+
 const ENTRY_INCLUDE = {
   bookItem: { include: { externalIds: true } },
-  replays: { orderBy: { finishedAt: "desc" } },
+  readings: {
+    orderBy: { number: "desc" },
+    include: { _count: { select: { sessions: true } } },
+  },
+  sessions: {
+    orderBy: { occurredAt: "desc" },
+    take: 1,
+    select: { occurredAt: true },
+  },
 } satisfies Prisma.BookEntryInclude;
 
 type EntryWithBook = Prisma.BookEntryGetPayload<{
   include: typeof ENTRY_INCLUDE;
 }>;
 
-type BookSortKey =
-  | "added"
-  | "title"
-  | "author"
-  | "rating"
-  | "pages"
-  | "progress"
-  | "finished"
-  | "started"
-  | "status";
-const BOOK_SORT_KEYS: BookSortKey[] = [
-  "added",
-  "title",
-  "author",
-  "rating",
-  "pages",
-  "progress",
-  "finished",
-  "started",
-  "status",
-];
 const BOOK_STATUS_SORT_ORDER = [
   "TO_READ",
   "READING",
@@ -84,27 +111,61 @@ const BOOK_STATUS_SORT_ORDER = [
   "DROPPED",
 ] as const;
 
-export interface ListEntriesFilters {
-  q?: string;
-  favorite?: boolean;
-  statuses?: string[];
-  sort?: string;
-  order?: "asc" | "desc";
-  page?: number;
-  limit?: number;
-  /** The signed-in user's locale, when known — drives alphabetical collation. */
-  lang?: string;
-}
+/** What ranking a book entry reads — a light slice of its DTO. */
+type BookRow = Pick<
+  BookEntryDto,
+  | "id"
+  | "status"
+  | "rating"
+  | "currentPage"
+  | "startedAt"
+  | "finishedAt"
+  | "createdAt"
+> & { book: Pick<BookItemDto, "title" | "authors" | "pageCount"> };
 
-function readPct(e: BookEntryDto): number {
+const BOOK_ROW_SELECT = {
+  id: true,
+  bookItemId: true,
+  status: true,
+  currentPage: true,
+  startedAt: true,
+  finishedAt: true,
+  createdAt: true,
+  bookItem: { select: { title: true, authors: true, pageCount: true } },
+} satisfies Prisma.BookEntrySelect;
+
+// The sorts on a stored column, which Postgres pages itself. Unset dates go
+// last in the natural (newest first) order, where `timeMs` ranks them. Not
+// "pages": an unknown page count ranks as 0, level with a real 0, which
+// NULLS LAST would split.
+const BOOK_SQL_SORTS: Partial<
+  Record<
+    BookSortKey,
+    (asc: boolean) => Prisma.BookEntryOrderByWithRelationInput[]
+  >
+> = {
+  added: (asc) => [{ createdAt: asc ? "asc" : "desc" }],
+  finished: (asc) => [
+    {
+      finishedAt: { sort: asc ? "asc" : "desc", nulls: asc ? "first" : "last" },
+    },
+  ],
+  started: (asc) => [
+    {
+      startedAt: { sort: asc ? "asc" : "desc", nulls: asc ? "first" : "last" },
+    },
+  ],
+};
+
+function readPct(e: BookRow): number {
   return e.book.pageCount ? e.currentPage / e.book.pageCount : 0;
 }
 
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
 function compareBookEntries(
   sort: BookSortKey,
-  a: BookEntryDto,
-  b: BookEntryDto,
+  a: BookRow,
+  b: BookRow,
   locale: string | undefined,
 ): number {
   switch (sort) {
@@ -147,46 +208,116 @@ export class BookLibraryService {
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
+    private readonly lists: ListService,
+    private readonly sessionXp?: SessionXpService,
+    private readonly sagas?: BookSagaService,
   ) {}
 
-  /** Emits the status milestone + FAVORITED events for a book entry write. */
-  private async emitEntryActivity(
+  /**
+   * A finish paid by the book's length — the edition read, else the work's
+   * catalogued count — a reread half that.
+   */
+  private async finishXp(
+    bookItemId: string,
+    reading: { referencePageCount: number | null },
+    reason: XpReason,
+  ): Promise<number> {
+    const item = await this.prisma.bookItem.findUnique({
+      where: { id: bookItemId },
+      select: { pageCount: true },
+    });
+    const first = bookFinishedXp(
+      reading.referencePageCount ?? item?.pageCount ?? null,
+    );
+    return reason === XpReason.BOOK_REPLAYED ? replayXp(first) : first;
+  }
+
+  /**
+   * What finishing a book can complete beyond the book itself: its series
+   * (SAGA_COMPLETED, once per series) and the reading goal of the year it was
+   * finished (READING_GOAL_REACHED, once per goal).
+   */
+  private async awardFinishMilestones(
     userId: string,
     bookItemId: string,
-    change: {
-      prevStatus: string | null;
-      nextStatus: string;
-      prevFavorite: boolean;
-      nextFavorite: boolean;
-    },
+    finishedAt: Date | null,
   ): Promise<void> {
-    const transition = classifyStatusTransition(
-      "BOOKS",
-      change.prevStatus,
-      change.nextStatus,
+    await this.awardReadingGoal(
+      userId,
+      (finishedAt ?? new Date()).getUTCFullYear(),
     );
 
-    if (transition) {
-      await this.activity.emit({
-        userId,
-        type: transition.type,
-        domain: "BOOKS",
-        targetType: ReviewTargetType.BOOK,
-        targetId: bookItemId,
-        homeFeed: transition.homeFeed,
-      });
+    const item = await this.prisma.bookItem.findUnique({
+      where: { id: bookItemId },
+      select: { seriesKey: true },
+    });
+    if (!item?.seriesKey || !this.sagas) return;
+    const saga = await this.sagas.completed(userId, item.seriesKey);
+    if (!saga) return;
+
+    await this.xp.award(
+      userId,
+      XpReason.SAGA_COMPLETED,
+      item.seriesKey,
+      sagaCompletionXp(saga.works),
+      { title: saga.title, href: "/app/books?vue=sagas", data: {} },
+    );
+    await this.achievements.evaluate(
+      userId,
+      ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.SAGA_COMPLETED],
+    );
+  }
+
+  /**
+   * READING_GOAL_REACHED, sized by the goal — so lowering it to what's
+   * already read pays little. A goal must also have stood a month unchanged
+   * when it is met: set the day it's reached, it would be a formality.
+   */
+  private async awardReadingGoal(userId: string, year: number): Promise<void> {
+    const goal = await this.prisma.readingGoal.findUnique({
+      where: { userId_year: { userId, year } },
+    });
+
+    if (
+      !goal ||
+      goal.target < MIN_REWARDED_READING_GOAL ||
+      goal.updatedAt > sinceDaysAgo(new Date(), GOAL_SETTLED_DAYS)
+    ) {
+      return;
     }
 
-    if (change.nextFavorite && !change.prevFavorite) {
-      await this.activity.emit({
+    const completed = await this.countBooksFinishedInYear(userId, year);
+    if (completed < goal.target) return;
+
+    await this.xp.award(
+      userId,
+      XpReason.READING_GOAL_REACHED,
+      goal.id,
+      readingGoalXp(goal.target),
+      {
+        title: null,
+        href: "/app/books",
+        data: { goalTarget: goal.target, goalYear: year },
+      },
+    );
+  }
+
+  /** Emits the status milestone + FAVORITED events for a book entry write. */
+  private emitEntryActivity(
+    userId: string,
+    bookItemId: string,
+    change: EntryStatusChange,
+  ): Promise<void> {
+    return emitEntryActivity(
+      this.activity,
+      {
         userId,
-        type: ActivityType.FAVORITED,
-        domain: "BOOKS",
+        domain: Domain.BOOKS,
         targetType: ReviewTargetType.BOOK,
         targetId: bookItemId,
-        homeFeed: false,
-      });
-    }
+      },
+      change,
+    );
   }
 
   /** First touch of a book persists it (on-demand cache), then upserts the entry. */
@@ -208,8 +339,16 @@ export class BookLibraryService {
       status: dto.status,
       notes: dto.notes,
       favorite: dto.favorite,
+      editionKey: dto.editionKey,
+      referencePageCount: dto.referencePageCount,
+      ...(dto.status === BookStatus.READ && dto.referencePageCount
+        ? {
+            currentPage: dto.referencePageCount,
+            readingBaselinePage: dto.referencePageCount,
+          }
+        : {}),
     };
-    const entry = await this.prisma.bookEntry.upsert({
+    let entry = await this.prisma.bookEntry.upsert({
       where: { userId_bookItemId: { userId, bookItemId: bookItem.id } },
       update: changes,
       create: { userId, bookItemId: bookItem.id, ...changes },
@@ -217,6 +356,19 @@ export class BookLibraryService {
     });
 
     entry.finishedAt = await this.syncFinishedAt(userId, bookItem.id);
+    const statusReading =
+      dto.status &&
+      before?.status !== dto.status &&
+      (before !== null || dto.status !== BookStatus.TO_READ)
+        ? await this.syncReadingStatus(entry.id, dto.status)
+        : null;
+
+    if (statusReading) {
+      entry = await this.prisma.bookEntry.findUniqueOrThrow({
+        where: { id: entry.id },
+        include: ENTRY_INCLUDE,
+      });
+    }
 
     await this.emitEntryActivity(userId, bookItem.id, {
       prevStatus: before?.status ?? null,
@@ -226,24 +378,33 @@ export class BookLibraryService {
     });
 
     if (before === null) {
-      await this.xp.award(userId, XpReason.WORK_ADDED, entry.id);
-      const domainEntryCount = await this.prisma.bookEntry.count({
-        where: { userId },
+      await awardNewEntryXp(this.xp, {
+        userId,
+        entryId: entry.id,
+        domain: Domain.BOOKS,
+        countEntries: () => this.prisma.bookEntry.count({ where: { userId } }),
       });
-
-      if (domainEntryCount === 1) {
-        await this.xp.award(userId, XpReason.DOMAIN_STARTED, Domain.BOOKS);
-      }
     }
 
     if (
-      before?.status !== BookStatus.READ &&
-      entry.status === BookStatus.READ
-    ) {
-      await this.xp.award(userId, XpReason.BOOK_FINISHED, entry.id);
-      await this.achievements.evaluate(
+      statusReading &&
+      (await syncCycleCompletionXp(this.xp, this.achievements, {
         userId,
-        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.BOOK_FINISHED],
+        previousStatus: before?.status,
+        nextStatus: entry.status,
+        completedStatus: BookStatus.READ,
+        cycle: statusReading,
+        sourceType: "BookReading",
+        firstReason: XpReason.BOOK_FINISHED,
+        replayReason: XpReason.BOOK_REPLAYED,
+        amount: (reason) =>
+          this.finishXp(entry.bookItemId, statusReading, reason),
+      }))
+    ) {
+      await this.awardFinishMilestones(
+        userId,
+        entry.bookItemId,
+        statusReading.finishedAt,
       );
     }
 
@@ -260,7 +421,7 @@ export class BookLibraryService {
     // (see OnboardingService) — pushed unconditionally rather than checking
     // whether onboarding is even still in progress first, since that check
     // would cost as much as the emit is worth avoiding.
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return toEntryDto(
       entry,
@@ -272,60 +433,185 @@ export class BookLibraryService {
     userId: string,
     filters: ListEntriesFilters,
   ): Promise<PagedResult<BookEntryDto>> {
+    const where = this.entryWhere(userId, filters);
+    const ratingsOf = (bookItemIds: string[]) =>
+      this.reviews.getRatings(userId, ReviewTargetType.BOOK, bookItemIds);
+
+    return listEntryPage(filters, {
+      sortKeys: BOOK_SORT_KEYS,
+      defaultSort: "added",
+      compare: compareBookEntries,
+      sqlSorts: BOOK_SQL_SORTS,
+      sqlPage: async (orderBy, skip, take) => {
+        const [page, total] = await Promise.all([
+          this.prisma.bookEntry.findMany({
+            where,
+            orderBy: [...orderBy, ...RECENTLY_UPDATED_FIRST],
+            skip,
+            take,
+            select: { id: true },
+          }),
+          this.prisma.bookEntry.count({ where }),
+        ]);
+        return { ids: page.map((e) => e.id), total };
+      },
+      rows: async (sort) => {
+        const rows = await this.prisma.bookEntry.findMany({
+          where,
+          orderBy: RECENTLY_UPDATED_FIRST,
+          select: BOOK_ROW_SELECT,
+        });
+        const ratings =
+          sort === "rating"
+            ? await ratingsOf(rows.map((r) => r.bookItemId))
+            : new Map<string, number>();
+        return rows.map((r) => ({
+          id: r.id,
+          status: r.status,
+          rating: ratings.get(r.bookItemId) ?? null,
+          currentPage: r.currentPage,
+          startedAt: r.startedAt?.toISOString() ?? null,
+          finishedAt: r.finishedAt?.toISOString() ?? null,
+          createdAt: r.createdAt.toISOString(),
+          book: {
+            title: r.bookItem.title,
+            authors: r.bookItem.authors,
+            pageCount: r.bookItem.pageCount,
+          },
+        }));
+      },
+      load: async (ids) => {
+        const entries = await this.prisma.bookEntry.findMany({
+          where: { id: { in: ids } },
+          include: ENTRY_INCLUDE,
+        });
+        const ratings = await ratingsOf(entries.map((e) => e.bookItemId));
+        return entries.map((e) =>
+          toEntryDto(e, ratings.get(e.bookItemId) ?? null),
+        );
+      },
+    });
+  }
+
+  /**
+   * Pages left to read among the entries the list would show under the same
+   * filters (UX-02). A book with no known page count is left out of the
+   * total, and `counted` says so.
+   */
+  async getPile(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Promise<PileSummaryDto> {
     const entries = await this.prisma.bookEntry.findMany({
       where: {
-        userId,
-        status:
-          filters.statuses && filters.statuses.length > 0
-            ? { in: filters.statuses as DbBookStatus[] }
-            : undefined,
+        AND: [
+          this.entryWhere(userId, filters),
+          { status: { in: [...BOOK_PILE_STATUSES] } },
+        ],
       },
-      include: ENTRY_INCLUDE,
-      orderBy: { updatedAt: "desc" },
+      select: {
+        currentPage: true,
+        bookItem: { select: { pageCount: true } },
+      },
     });
-
-    const ratings = await this.reviews.getRatings(
-      userId,
-      ReviewTargetType.BOOK,
-      entries.map((e) => e.bookItemId),
+    return summarizePile(
+      "PAGES",
+      entries.map((e) => bookPileItem(e.bookItem.pageCount, e.currentPage)),
     );
-    let dtos = entries.map((e) =>
-      toEntryDto(e, ratings.get(e.bookItemId) ?? null),
-    );
+  }
 
-    const q = filters.q?.trim().toLowerCase();
-    dtos = dtos.filter((dto) => {
-      if (filters.favorite && !dto.favorite) return false;
-      if (q && !dto.book.title.toLowerCase().includes(q)) return false;
+  /**
+   * Applies one change to every targeted entry, each through updateEntry
+   * (or the list's addItem), so the side effects match a single update's.
+   */
+  async bulkUpdate(
+    userId: string,
+    dto: BulkUpdateBookEntriesBody,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkUpdate(dto);
+    const entries = await this.prisma.bookEntry.findMany({
+      where: this.bulkWhere(userId, dto),
+      orderBy: RECENTLY_UPDATED_FIRST,
+      select: {
+        id: true,
+        bookItemId: true,
+        status: true,
+        favorite: true,
+        ownershipStatus: true,
+        ownershipSource: true,
+      },
+    });
+    return applyBulkUpdate(
+      entries.map((e) => ({ ...e, itemId: e.bookItemId })),
+      dto,
+      {
+        update: (id, patch) =>
+          this.updateEntry(userId, id, patch as UpdateBookEntryDto),
+        addToList: (itemId, listId) =>
+          addToList(this.lists, userId, listId, "BOOK", itemId),
+      },
+    );
+  }
+
+  /** Removes every targeted entry, each through deleteEntry. */
+  async bulkDelete(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkTarget(target);
+    const entries = await this.prisma.bookEntry.findMany({
+      where: this.bulkWhere(userId, target),
+      select: { id: true },
+    });
+    return applyToEntries(entries, async (e) => {
+      await this.deleteEntry(userId, e.id);
       return true;
     });
+  }
 
-    const sort = BOOK_SORT_KEYS.includes(filters.sort as BookSortKey)
-      ? (filters.sort as BookSortKey)
-      : "added";
-    const asc = filters.order === "asc";
-    dtos.sort((a, b) => {
-      const c = compareBookEntries(sort, a, b, filters.lang);
-      return asc ? -c : c;
-    });
+  private bulkWhere(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Prisma.BookEntryWhereInput {
+    return target.filters
+      ? this.entryWhere(userId, target.filters)
+      : { userId, id: { in: target.ids ?? [] } };
+  }
 
-    const page = filters.page && filters.page > 0 ? filters.page : 1;
-    const limit =
-      filters.limit && filters.limit > 0 ? filters.limit : DEFAULT_PAGE_SIZE;
-    const start = (page - 1) * limit;
+  private entryWhere(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Prisma.BookEntryWhereInput {
+    const q = searchTerm(filters);
+    const statuses = filters.statuses ?? [];
+    const persistedStatuses = statuses.filter(
+      (status) => status !== SESSION_FILTER_PAUSED,
+    ) as DbBookStatus[];
+    const statusFilters: Prisma.BookEntryWhereInput[] = [];
+
+    if (persistedStatuses.length > 0) {
+      statusFilters.push({ status: { in: persistedStatuses } });
+    }
+
+    if (statuses.includes(SESSION_FILTER_PAUSED)) {
+      statusFilters.push(pausedStatusClause(BookStatus.READING, new Date()));
+    }
+
     return {
-      items: dtos.slice(start, start + limit),
-      total: dtos.length,
-      hasMore: dtos.length > page * limit,
+      userId,
+      AND: statusFilters.length > 0 ? [{ OR: statusFilters }] : undefined,
+      favorite: filters.favorite ? true : undefined,
+      bookItem: q ? { title: titleContains(q) } : undefined,
     };
   }
 
   async getEntry(userId: string, entryId: string): Promise<BookEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
-    const entry = await this.prisma.bookEntry.findUniqueOrThrow({
-      where: { id: entryId },
-      include: ENTRY_INCLUDE,
-    });
+    const entry = await assertEntryOwnership(userId, () =>
+      this.prisma.bookEntry.findUnique({
+        where: { id: entryId },
+        include: ENTRY_INCLUDE,
+      }),
+    );
     return toEntryDto(
       entry,
       await this.reviews.getRating(
@@ -341,12 +627,16 @@ export class BookLibraryService {
     entryId: string,
     dto: UpdateBookEntryDto,
   ): Promise<BookEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
+    const before = await this.assertEntryOwnership(userId, entryId);
 
-    const before = await this.prisma.bookEntry.findUnique({
-      where: { id: entryId },
-      select: { status: true, favorite: true },
-    });
+    const completedReading =
+      dto.status && before?.status !== dto.status
+        ? await this.syncReadingStatus(entryId, dto.status)
+        : null;
+    const correctedPage =
+      dto.status === BookStatus.READ
+        ? completedReading?.currentPage
+        : undefined;
 
     const entry = await this.prisma.bookEntry.update({
       where: { id: entryId },
@@ -354,24 +644,23 @@ export class BookLibraryService {
         status: dto.status,
         notes: dto.notes,
         favorite: dto.favorite,
-        currentPage: dto.currentPage,
+        currentPage: dto.currentPage ?? correctedPage,
+        readingBaselinePage: dto.currentPage ?? correctedPage,
+        editionKey: dto.editionKey,
+        referencePageCount: dto.referencePageCount,
         startedAt:
           dto.startedAt === undefined ? undefined : toDateOrNull(dto.startedAt),
         finishedAt:
           dto.finishedAt === undefined
-            ? undefined
+            ? dto.status === BookStatus.READ && before?.finishedAt === null
+              ? new Date()
+              : undefined
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,
       },
       include: ENTRY_INCLUDE,
     });
-
-    // Only auto-derive when the caller didn't explicitly set finishedAt
-    // themselves (e.g. a future manual-date editor).
-    if (dto.finishedAt === undefined) {
-      entry.finishedAt = await this.syncFinishedAt(userId, entry.bookItemId);
-    }
 
     await this.emitEntryActivity(userId, entry.bookItemId, {
       prevStatus: before?.status ?? null,
@@ -381,13 +670,24 @@ export class BookLibraryService {
     });
 
     if (
-      before?.status !== BookStatus.READ &&
-      entry.status === BookStatus.READ
-    ) {
-      await this.xp.award(userId, XpReason.BOOK_FINISHED, entry.id);
-      await this.achievements.evaluate(
+      completedReading &&
+      (await syncCycleCompletionXp(this.xp, this.achievements, {
         userId,
-        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.BOOK_FINISHED],
+        previousStatus: before?.status,
+        nextStatus: entry.status,
+        completedStatus: BookStatus.READ,
+        cycle: completedReading,
+        sourceType: "BookReading",
+        firstReason: XpReason.BOOK_FINISHED,
+        replayReason: XpReason.BOOK_REPLAYED,
+        amount: (reason) =>
+          this.finishXp(entry.bookItemId, completedReading, reason),
+      }))
+    ) {
+      await this.awardFinishMilestones(
+        userId,
+        entry.bookItemId,
+        completedReading.finishedAt,
       );
     }
 
@@ -400,7 +700,7 @@ export class BookLibraryService {
       );
     }
 
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return toEntryDto(
       entry,
@@ -412,21 +712,18 @@ export class BookLibraryService {
     );
   }
 
-  /**
-   * `BookReplay` cascades at the DB level (`onDelete: Cascade` on the entry
-   * FK), but `Review`/`Comment` are polymorphic (targetType/targetId, no FK)
-   * so they never did — same bug class as MEDIA's `deleteEntry` had before
-   * commit `0db5dc6` fixed it there.
-   */
+  /** Reviews and comments are polymorphic and need explicit cleanup. */
   async deleteEntry(userId: string, entryId: string): Promise<void> {
     const entry = await this.assertEntryOwnership(userId, entryId);
 
-    // Loaded before the transaction — BookReplay cascades at the DB level,
-    // so its ids would otherwise be gone by the time revokeBySource needs
-    // them when revocation runs after the transaction.
-    const replays = await this.prisma.bookReplay.findMany({
+    // Loaded before the transaction because readings cascade with the entry.
+    const readings = await this.prisma.bookReading.findMany({
       where: { bookEntryId: entryId },
       select: { id: true },
+    });
+    const sessions = await this.prisma.bookSession.findMany({
+      where: { bookEntryId: entryId },
+      select: { id: true, createdAt: true },
     });
     // Same reason: the transaction below deletes this Review outright (not
     // via ReviewService, which handles its own XP revocation) —
@@ -438,93 +735,31 @@ export class BookLibraryService {
     });
 
     await this.prisma.$transaction([
-      this.prisma.review.deleteMany({
-        where: { userId, targetId: entry.bookItemId },
-      }),
-      this.prisma.comment.updateMany({
-        where: {
-          authorId: userId,
-          targetId: entry.bookItemId,
-          deletedAt: null,
-        },
-        data: { text: null, deletedAt: new Date() },
-      }),
+      ...polymorphicTargetCleanup(
+        this.prisma,
+        userId,
+        [ReviewTargetType.BOOK],
+        [entry.bookItemId],
+      ),
       this.prisma.bookEntry.delete({ where: { id: entryId } }),
     ]);
 
-    await this.xp.revokeBySource("BookEntry", [entryId]); // BOOK_FINISHED
-    await this.xp.revokeBySource("Entry", [entryId]); // WORK_ADDED
-    await this.xp.revokeBySource(
-      "BookReplay",
-      replays.map((r) => r.id),
-    );
-    await this.xp.revokeBySource(
-      "Review",
-      reviews.map((r) => r.id),
-    ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
-  }
-
-  async addReplay(
-    userId: string,
-    entryId: string,
-    dto: AddBookReplayDto,
-  ): Promise<BookEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
-
-    const replay = await this.prisma.bookReplay.create({
-      data: {
-        bookEntryId: entryId,
-        finishedAt: dto.finishedAt ? new Date(dto.finishedAt) : undefined,
-      },
-    });
-    await this.xp.award(userId, XpReason.BOOK_REPLAYED, replay.id);
-
-    const entry = await this.prisma.bookEntry.findUniqueOrThrow({
-      where: { id: entryId },
-      include: ENTRY_INCLUDE,
-    });
-
-    await this.activity.emit({
-      userId,
-      type: ActivityType.REWATCHED,
-      domain: "BOOKS",
-      targetType: ReviewTargetType.BOOK,
-      targetId: entry.bookItemId,
-      homeFeed: true,
-    });
-
-    return toEntryDto(
-      entry,
-      await this.reviews.getRating(
-        userId,
-        ReviewTargetType.BOOK,
-        entry.bookItemId,
+    await revokeEntryXp(this.xp, [
+      { sourceType: "Entry", ids: [entryId] },
+      { sourceType: "BookReading", ids: readings.map((reading) => reading.id) },
+      { sourceType: "Review", ids: reviews.map((r) => r.id) },
+    ]);
+    await Promise.all(
+      sessions.map((session) =>
+        this.activity.deleteLinked("BookSession", session.id),
       ),
     );
-  }
 
-  async deleteReplay(userId: string, replayId: string): Promise<void> {
-    const replay = await this.prisma.bookReplay.findUnique({
-      where: { id: replayId },
-      include: { bookEntry: true },
-    });
-
-    if (!replay) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibraryReplayNotFound,
-      );
+    if (this.sessionXp) {
+      for (const session of sessions) {
+        await this.sessionXp.refreshAfterDelete(userId, session.createdAt);
+      }
     }
-
-    if (replay.bookEntry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibraryReplayForbidden,
-      );
-    }
-
-    await this.prisma.bookReplay.delete({ where: { id: replayId } });
-    await this.xp.revokeBySource("BookReplay", [replayId]);
   }
 
   /**
@@ -582,29 +817,96 @@ export class BookLibraryService {
     };
   }
 
-  private async assertEntryOwnership(
-    userId: string,
-    entryId: string,
-  ): Promise<BookEntry> {
-    const entry = await this.prisma.bookEntry.findUnique({
-      where: { id: entryId },
+  private assertEntryOwnership(userId: string, entryId: string) {
+    return assertEntryOwnership(userId, () =>
+      this.prisma.bookEntry.findUnique({ where: { id: entryId } }),
+    );
+  }
+
+  private async syncReadingStatus(entryId: string, status: DbBookStatus) {
+    const [entry, active] = await Promise.all([
+      this.prisma.bookEntry.findUniqueOrThrow({
+        where: { id: entryId },
+        select: {
+          editionKey: true,
+          referencePageCount: true,
+          readingBaselinePage: true,
+          currentPage: true,
+        },
+      }),
+      this.prisma.bookReading.findFirst({
+        where: { bookEntryId: entryId, status: TrackingCycleStatus.ACTIVE },
+        include: { _count: { select: { sessions: true } } },
+      }),
+    ]);
+    const latest =
+      active ??
+      (await this.prisma.bookReading.findFirst({
+        where: { bookEntryId: entryId },
+        orderBy: { number: "desc" },
+        include: { _count: { select: { sessions: true } } },
+      }));
+
+    if (status === BookStatus.TO_READ) {
+      if (active && active._count.sessions === 0) {
+        await this.prisma.bookReading.delete({ where: { id: active.id } });
+      }
+
+      return null;
+    }
+
+    if (status === BookStatus.READING) {
+      if (active) return active;
+
+      if (latest) {
+        return this.prisma.bookReading.update({
+          where: { id: latest.id },
+          data: { status: TrackingCycleStatus.ACTIVE, finishedAt: null },
+        });
+      }
+
+      return this.prisma.bookReading.create({
+        data: {
+          bookEntryId: entryId,
+          number: 1,
+          status: TrackingCycleStatus.ACTIVE,
+          editionKey: entry.editionKey,
+          referencePageCount: entry.referencePageCount,
+          baselinePage: entry.readingBaselinePage,
+          currentPage: entry.currentPage,
+          startedAt: new Date(),
+        },
+      });
+    }
+
+    const target =
+      active ??
+      latest ??
+      (await this.prisma.bookReading.create({
+        data: {
+          bookEntryId: entryId,
+          number: 1,
+          status: TrackingCycleStatus.ACTIVE,
+          editionKey: entry.editionKey,
+          referencePageCount: entry.referencePageCount,
+          baselinePage: entry.readingBaselinePage,
+          currentPage: entry.currentPage,
+          startedAt: new Date(),
+        },
+      }));
+    return this.prisma.bookReading.update({
+      where: { id: target.id },
+      data: {
+        status:
+          status === BookStatus.READ
+            ? TrackingCycleStatus.COMPLETED
+            : TrackingCycleStatus.DROPPED,
+        ...(status === BookStatus.READ && target.referencePageCount !== null
+          ? { currentPage: target.referencePageCount }
+          : {}),
+        finishedAt: new Date(),
+      },
     });
-
-    if (!entry) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibraryEntryNotFound,
-      );
-    }
-
-    if (entry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibraryEntryForbidden,
-      );
-    }
-
-    return entry;
   }
 
   /**
@@ -623,10 +925,9 @@ export class BookLibraryService {
     });
     if (!entry) return null;
 
-    const finished = entry.status === "READ";
-    if (finished === !!entry.finishedAt) return entry.finishedAt;
+    if (entry.status !== "READ" || entry.finishedAt) return entry.finishedAt;
 
-    const finishedAt = finished ? new Date() : null;
+    const finishedAt = new Date();
     await this.prisma.bookEntry.update({
       where: { userId_bookItemId: { userId, bookItemId } },
       data: { finishedAt },
@@ -637,8 +938,8 @@ export class BookLibraryService {
   /**
    * The user's reading goal for `year` plus their progress: books finished
    * that year (finishedAt-based, regardless of current status — a book
-   * reread and put back to READING should stay counted) plus rereads
-   * (BookReplay) completed that year. `target` is 0 with no goal set.
+   * reread and put back to READING should stay counted). Every completed
+   * BookReading counts once. `target` is 0 with no goal set.
    */
   async getReadingGoal(userId: string, year: number): Promise<ReadingGoalDto> {
     const [goal, completed] = await Promise.all([
@@ -669,21 +970,15 @@ export class BookLibraryService {
     userId: string,
     year: number,
   ): Promise<number> {
-    const range = {
-      gte: new Date(Date.UTC(year, 0, 1)),
-      lt: new Date(Date.UTC(year + 1, 0, 1)),
-    };
+    const range = utcYearRange(year);
 
-    const [entries, replays] = await Promise.all([
-      this.prisma.bookEntry.count({
-        where: { userId, finishedAt: range },
-      }),
-      this.prisma.bookReplay.count({
-        where: { finishedAt: range, bookEntry: { userId } },
-      }),
-    ]);
-
-    return entries + replays;
+    return this.prisma.bookReading.count({
+      where: {
+        finishedAt: range,
+        status: TrackingCycleStatus.COMPLETED,
+        bookEntry: { userId },
+      },
+    });
   }
 }
 
@@ -710,15 +1005,15 @@ function toEntryDto(entry: EntryWithBook, rating: number | null): BookEntryDto {
     notes: entry.notes,
     favorite: entry.favorite,
     currentPage: entry.currentPage,
+    editionKey: entry.editionKey,
+    referencePageCount: entry.referencePageCount,
+    trackedReadingMinutes: entry.trackedReadingMinutes,
+    lastSessionAt: entry.sessions[0]?.occurredAt.toISOString() ?? null,
     startedAt: entry.startedAt?.toISOString() ?? null,
     finishedAt: entry.finishedAt?.toISOString() ?? null,
     createdAt: entry.createdAt.toISOString(),
-    replays: entry.replays.map(toReplayDto),
+    readings: entry.readings.map(toReadingDto),
     ownershipStatus: entry.ownershipStatus,
     ownershipSource: entry.ownershipSource,
   };
-}
-
-function toReplayDto(replay: BookReplay): BookReplayDto {
-  return { id: replay.id, finishedAt: replay.finishedAt.toISOString() };
 }

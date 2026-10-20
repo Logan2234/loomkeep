@@ -1,35 +1,94 @@
 <script lang="ts">
-  import { getAdminUserOptions } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { debounce } from "#lib/debounce.js";
+
+  import { DEFAULT_PAGE_SIZE } from "@loomkeep/shared";
+
+  import {
+    getAdminUserOptions,
+    normalizeAdminUserOptionsPage,
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import Combobox from "./Combobox.svelte";
 
   let {
     value = null,
-    label = m.user_selector_all_accounts(),
-    searchPlaceholder = m.user_selector_search_placeholder(),
+    label = m.admin_user_selector_all_accounts(),
+    searchPlaceholder = m.admin_user_search_placeholder(),
+    valueMode = "id",
     onChange,
   }: {
     /** Selected user id, or null for "no account filter". */
     value?: string | null;
     label?: string;
     searchPlaceholder?: string;
-    onChange: (userId: string | null) => void;
+    valueMode?: "id" | "email";
+    onChange: (value: string | null) => void;
   } = $props();
 
-  const usersQuery = createApiQuery(() => ({
-    key: keys.admin.userOptions(),
-    fetch: getAdminUserOptions,
+  let pendingSearch = $state("");
+  let search = $state("");
+  let selectedLabel = $state<string | undefined>();
+  let syncedValue = $state<string | null>(null);
+
+  const searchDebounce = debounce((next: string) => {
+    search = next;
+  }, 250);
+  $effect(() => {
+    const candidate = pendingSearch.trim();
+    searchDebounce.call(candidate.length >= 2 ? candidate : "");
+    return () => searchDebounce.cancel();
+  });
+
+  const usersQuery = createApiInfiniteQuery(() => ({
+    key: keys.admin.userOptions(search),
+    fetch: async (page: number) =>
+      normalizeAdminUserOptionsPage(
+        await getAdminUserOptions({
+          search: search || undefined,
+          page,
+          limit: DEFAULT_PAGE_SIZE,
+        }),
+        search,
+      ),
+    getPageItems: (result) => result.items,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, pages) =>
+      lastPage.hasMore ? pages.length + 1 : undefined,
+    keepPreviousData: true,
   }));
 
   const options = $derived([
     { label, value: "" },
-    ...(usersQuery.data ?? []).map((u) => ({
+    ...usersQuery.data.map((u) => ({
       label: `${u.displayName} <${u.email}>`,
-      value: u.id,
+      value: valueMode === "email" ? u.email : u.id,
     })),
   ]);
+
+  $effect(() => {
+    if (value !== syncedValue) {
+      syncedValue = value;
+      pendingSearch = value ?? "";
+      selectedLabel = valueMode === "email" && value ? value : undefined;
+    }
+
+    if (!value) {
+      selectedLabel = undefined;
+      return;
+    }
+    const selected = options.find((option) => option.value === value);
+    if (selected) selectedLabel = selected.label;
+    else if (valueMode === "email") selectedLabel = value;
+  });
+
+  function select(values: string[]) {
+    const next = values[0] || null;
+    const selected = options.find((option) => option.value === next);
+    selectedLabel = selected?.label;
+    onChange(next);
+  }
 </script>
 
 <Combobox
@@ -38,4 +97,9 @@
   values={value ? [value] : []}
   searchable
   {searchPlaceholder}
-  onChange={(v) => onChange(v[0] || null)} />
+  {selectedLabel}
+  loading={usersQuery.loading || usersQuery.isFetchingNextPage}
+  hasMore={usersQuery.hasNextPage}
+  onSearch={(query) => (pendingSearch = query)}
+  onLoadMore={usersQuery.fetchNextPage}
+  onChange={select} />

@@ -1,4 +1,5 @@
 import {
+  ENTRY_NOTES_MAX_LENGTH,
   GameSource,
   GameStatus,
   UpsertGameEntryDto as UpsertGameEntryContract,
@@ -33,7 +34,7 @@ export class UpsertGameEntryDto implements UpsertGameEntryContract {
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
+  @MaxLength(ENTRY_NOTES_MAX_LENGTH)
   notes?: string | null;
 
   @IsOptional()

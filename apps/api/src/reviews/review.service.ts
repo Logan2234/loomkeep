@@ -1,8 +1,12 @@
 import {
   ActivityType,
-  type Domain,
+  type CommunityRatingDto,
   ErrorCode,
+  type MessageReviewDto,
   type MyReviewDto,
+  NotificationType,
+  REVIEW_TARGET_DOMAIN,
+  REVIEW_VOTE_NOTIFY_THRESHOLD,
   type ReviewDto,
   type ReviewRevisionDto,
   type ReviewTargetSummaryDto,
@@ -15,34 +19,36 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import type { Prisma } from "@prisma/client";
+import { assertMediaReleased } from "../catalog/movie-release.util";
 import { AppException } from "../common/app.exception";
-import { canonicalExternalId } from "../common/external-id.util";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import {
+  CANONICAL_EXTERNAL_ID_SELECT,
+  canonicalExternalId,
+} from "../common/external-id.util";
+import { isUniqueViolation } from "../common/prisma-error.util";
+import { resolveWorkLink } from "../common/work-href.util";
+import { assertGameReleased } from "../games/game-release.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
+
 import {
   ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,
   ACHIEVEMENT_KEYS_ON_REVIEW_WRITTEN,
-} from "../gamification/achievements/registry";
+} from "../gamification/achievements/triggers";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { fetchXpByUser, withXp } from "../gamification/xp-lookup.util";
 import { wordCount } from "../gamification/xp-verifiers";
 import { XpService } from "../gamification/xp.service";
+import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
+import { isSocialEnabled } from "../social/social.config";
 import { VisibilityService } from "../social/visibility.service";
 import { resolveReviewVisibility } from "../social/visibility.util";
 import { toUserSummaryDto } from "../users/avatar.util";
 
 /** Feed domain for a review target ("GAME" work lives in the GAMES domain…). */
-const DOMAIN_BY_TARGET: Record<string, Domain> = {
-  MEDIA: "MEDIA",
-  SEASON: "MEDIA",
-  EPISODE: "MEDIA",
-  GAME: "GAMES",
-  BOOK: "BOOKS",
-  MUSIC: "MUSIC",
-};
 
 type ReviewRow = {
   id: string;
@@ -76,8 +82,8 @@ export class ReviewService {
     private readonly activity: ActivityService,
     private readonly xp: XpService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
     private readonly achievements: AchievementService,
+    private readonly notifications: NotificationService,
   ) {}
 
   /**
@@ -197,7 +203,7 @@ export class ReviewService {
   ): Promise<{ score: number; myVote: ReviewVoteValue }> {
     const review = await this.prisma.review.findUnique({
       where: { id: reviewId },
-      select: { userId: true },
+      select: { userId: true, targetType: true, targetId: true },
     });
     if (!review)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
@@ -233,12 +239,41 @@ export class ReviewService {
         review.userId,
         ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,
       );
+      await this.maybeNotifyVoteThreshold(reviewId, review.userId, review);
     } else {
       await this.xp.revokeBySource("ReviewVote", [voteRow.id]);
     }
 
     const info = await this.voteInfo(reviewId, viewerId);
     return { score: info.score, myVote: value };
+  }
+
+  /** Tells the author once, when the upvotes reach the threshold, as comment reactions do. */
+  private async maybeNotifyVoteThreshold(
+    reviewId: string,
+    authorId: string,
+    target: { targetType: string; targetId: string },
+  ): Promise<void> {
+    const count = await this.prisma.reviewVote.count({
+      where: { reviewId, value: ReviewVoteValue.UP },
+    });
+    if (count !== REVIEW_VOTE_NOTIFY_THRESHOLD) return;
+
+    const copy = (await this.notifications.copyFor(authorId)).reviewVotes;
+    const work = await resolveWorkLink(
+      this.prisma,
+      target.targetType,
+      target.targetId,
+    );
+    await this.notifications.create({
+      userId: authorId,
+      type: NotificationType.REVIEW_VOTES,
+      title: copy.title,
+      body: copy.body(count),
+      url: work?.href ?? null,
+      dedupeKey: `review-votes:${reviewId}:${count}`,
+      data: { count, workTitle: work?.title ?? null },
+    });
   }
 
   async unvote(viewerId: string, reviewId: string): Promise<{ score: number }> {
@@ -288,6 +323,10 @@ export class ReviewService {
     targetId: string,
     dto: UpsertReviewDto,
   ): Promise<ReviewDto> {
+    if (targetType === ReviewTargetType.MEDIA)
+      await assertMediaReleased(this.prisma, targetId);
+    if (targetType === ReviewTargetType.GAME)
+      await assertGameReleased(this.prisma, targetId);
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: { defaultReviewVisibility: true },
@@ -329,7 +368,7 @@ export class ReviewService {
       await this.prisma.reviewRevision.create({
         data: { reviewId: row.id, rating: dto.rating, text },
       });
-      await this.emitReviewed(userId, targetType, targetId, dto.rating);
+      await this.emitReviewed(userId, row.id, targetType, targetId, dto.rating);
       await this.awardReviewRatingXp(userId, row.id, text);
     }
 
@@ -409,16 +448,23 @@ export class ReviewService {
    */
   async adminRemove(
     id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<{ authorId: string | null; rating: number; text: string | null }> {
-    const review = await this.prisma.review.findUnique({
+    const db = tx ?? this.prisma;
+    const review = await db.review.findUnique({
       where: { id },
       select: { id: true, userId: true, rating: true, text: true },
     });
     if (!review)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
 
-    await this.prisma.review.delete({ where: { id } });
-    await this.xp.revokeBySource("Review", [id]);
+    await db.review.delete({ where: { id } });
+
+    if (tx) {
+      await this.xp.revokeBySource("Review", [id], tx);
+    } else {
+      await this.xp.revokeBySource("Review", [id]);
+    }
 
     return {
       authorId: review.userId,
@@ -468,9 +514,34 @@ export class ReviewService {
   }
 
   /**
+   * Reviews as a message's card shows them, by id: the ones still there. A
+   * review sent in a conversation was shared on purpose by its author, so its
+   * own audience doesn't apply.
+   */
+  async messageCards(ids: string[]): Promise<Map<string, MessageReviewDto>> {
+    if (ids.length === 0) return new Map();
+    const rows = await this.prisma.review.findMany({
+      where: { id: { in: ids } },
+    });
+    const targets = await this.resolveTargets(rows);
+    return new Map(
+      rows.map((r) => [
+        r.id,
+        {
+          id: r.id,
+          rating: r.rating,
+          text: r.text,
+          spoiler: r.spoilerTag,
+          target: targets.get(`${r.targetType}:${r.targetId}`) ?? null,
+        },
+      ]),
+    );
+  }
+
+  /**
    * Resolves display info (title + image) for the work each review targets,
-   * batched per type. SEASON/EPISODE aren't creatable from the UI yet, so they
-   * fall back to a null target (rendered generically).
+   * batched per type. A SEASON or EPISODE resolves to its series' title,
+   * poster and page, plus its own season/episode numbers.
    */
   private async resolveTargets(
     rows: { targetType: string; targetId: string }[],
@@ -484,10 +555,6 @@ export class ReviewService {
     }
 
     const map = new Map<string, ReviewTargetSummaryDto>();
-    const canonicalExternalIdInclude = {
-      canonicalSource: true,
-      externalIds: { select: { source: true, externalId: true } },
-    } as const;
 
     const add = (
       type: string,
@@ -507,9 +574,34 @@ export class ReviewService {
       }
     };
 
-    const mediaIds = idsByType.get(ReviewTargetType.MEDIA);
+    const seasonIds = idsByType.get(ReviewTargetType.SEASON);
+    const episodeIds = idsByType.get(ReviewTargetType.EPISODE);
+    const [seasons, episodes] = await Promise.all([
+      seasonIds?.length
+        ? this.prisma.season.findMany({
+            where: { id: { in: seasonIds } },
+            select: { id: true, number: true, mediaItemId: true },
+          })
+        : [],
+      episodeIds?.length
+        ? this.prisma.episode.findMany({
+            where: { id: { in: episodeIds } },
+            select: {
+              id: true,
+              number: true,
+              season: { select: { number: true, mediaItemId: true } },
+            },
+          })
+        : [],
+    ]);
 
-    if (mediaIds?.length) {
+    const mediaIds = [
+      ...(idsByType.get(ReviewTargetType.MEDIA) ?? []),
+      ...seasons.map((s) => s.mediaItemId),
+      ...episodes.map((e) => e.season.mediaItemId),
+    ];
+
+    if (mediaIds.length) {
       const items = await this.prisma.mediaItem.findMany({
         where: { id: { in: mediaIds } },
         select: {
@@ -517,7 +609,7 @@ export class ReviewService {
           title: true,
           posterUrl: true,
           type: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -533,6 +625,31 @@ export class ReviewService {
           ),
         })),
       );
+
+      for (const s of seasons) {
+        const series = map.get(`${ReviewTargetType.MEDIA}:${s.mediaItemId}`);
+
+        if (series) {
+          map.set(`${ReviewTargetType.SEASON}:${s.id}`, {
+            ...series,
+            seasonNumber: s.number,
+          });
+        }
+      }
+
+      for (const e of episodes) {
+        const series = map.get(
+          `${ReviewTargetType.MEDIA}:${e.season.mediaItemId}`,
+        );
+
+        if (series) {
+          map.set(`${ReviewTargetType.EPISODE}:${e.id}`, {
+            ...series,
+            seasonNumber: e.season.number,
+            episodeNumber: e.number,
+          });
+        }
+      }
     }
 
     const gameIds = idsByType.get(ReviewTargetType.GAME);
@@ -544,7 +661,7 @@ export class ReviewService {
           id: true,
           title: true,
           coverUrl: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -567,7 +684,7 @@ export class ReviewService {
           id: true,
           title: true,
           coverUrl: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -590,7 +707,7 @@ export class ReviewService {
           id: true,
           title: true,
           coverUrl: true,
-          ...canonicalExternalIdInclude,
+          ...CANONICAL_EXTERNAL_ID_SELECT,
         },
       });
       add(
@@ -620,7 +737,7 @@ export class ReviewService {
     if (!sourceId) return null;
     return domain === "media"
       ? `/app/media/${mediaType}/${sourceId}`
-      : `/${domain}/${sourceId}`;
+      : `/app/${domain}/${sourceId}`;
   }
 
   /**
@@ -645,7 +762,7 @@ export class ReviewService {
       .map((r) => r.user?.id)
       .filter((id): id is string => !!id);
     const uniqueAuthorIds = [...new Set(authorIds)];
-    const gamificationEnabled = isGamificationEnabled(this.config, this.flags);
+    const gamificationEnabled = isGamificationEnabled(this.config);
     const [voteMap, xpMap] = await Promise.all([
       this.voteInfoBatch(
         rows.map((r) => r.id),
@@ -658,8 +775,10 @@ export class ReviewService {
     // comment on withXp).
     const hideProgressionByUser = new Map(
       rows
-        .filter((r) => r.user)
-        .map((r) => [r.user!.id, r.user!.hideProgression]),
+        .filter(
+          (r): r is typeof r & { user: NonNullable<typeof r.user> } => !!r.user,
+        )
+        .map((r) => [r.user.id, r.user.hideProgression]),
     );
     const votesFor = (id: string) =>
       voteMap.get(id) ?? { score: 0, myVote: null };
@@ -707,6 +826,86 @@ export class ReviewService {
     return visible;
   }
 
+  /**
+   * Per target: how many reviews the viewer can see, their average, and the
+   * viewer's own rating — for lists of episodes/seasons, in one query. Same
+   * visibility rules as `listForTarget`. With social features off, reviews
+   * are private to their author, so only the viewer's own rating is given.
+   */
+  async communityRatings(
+    viewerId: string,
+    targetType: ReviewTargetType,
+    targetIds: string[],
+  ): Promise<Map<string, CommunityRatingDto>> {
+    const result = new Map<string, CommunityRatingDto>();
+    if (targetIds.length === 0) return result;
+
+    const social = isSocialEnabled(this.config);
+    const rows = await this.prisma.review.findMany({
+      where: {
+        targetType,
+        targetId: { in: targetIds },
+        ...(social ? {} : { userId: viewerId }),
+      },
+      select: {
+        targetId: true,
+        rating: true,
+        visibility: true,
+        user: { select: { id: true, profileAccess: true } },
+      },
+    });
+
+    // One relationship lookup per author, not per review.
+    const canSee = new Map<string, Promise<boolean>>();
+
+    const visible = (row: (typeof rows)[number]): Promise<boolean> => {
+      const author = row.user;
+      if (!author || author.id === viewerId) return Promise.resolve(true);
+      const key = `${author.id}:${row.visibility}`;
+      let check = canSee.get(key);
+
+      if (!check) {
+        check = this.visibility
+          .getRelation(viewerId, author)
+          .then((relation) =>
+            resolveReviewVisibility(
+              row.visibility,
+              author.profileAccess,
+              relation,
+            ),
+          );
+        canSee.set(key, check);
+      }
+
+      return check;
+    };
+
+    const ratings = new Map<string, number[]>();
+    const mine = new Map<string, number>();
+
+    for (const row of rows) {
+      if (row.user?.id === viewerId) mine.set(row.targetId, row.rating);
+      if (!(await visible(row))) continue;
+      const list = ratings.get(row.targetId);
+      if (list) list.push(row.rating);
+      else ratings.set(row.targetId, [row.rating]);
+    }
+
+    for (const targetId of targetIds) {
+      const list = ratings.get(targetId) ?? [];
+      result.set(targetId, {
+        reviewCount: social ? list.length : null,
+        reviewAverage:
+          social && list.length > 0
+            ? list.reduce((sum, r) => sum + r, 0) / list.length
+            : null,
+        myRating: mine.get(targetId) ?? null,
+      });
+    }
+
+    return result;
+  }
+
   // Library entry DTO ratings are projected from reviews.
 
   async getRatings(
@@ -745,6 +944,11 @@ export class ReviewService {
     targetId: string,
     rating: number | null,
   ): Promise<void> {
+    if (rating !== null && targetType === ReviewTargetType.MEDIA)
+      await assertMediaReleased(this.prisma, targetId);
+    if (rating !== null && targetType === ReviewTargetType.GAME)
+      await assertGameReleased(this.prisma, targetId);
+
     if (rating === null) {
       // Looked up before the delete so revokeBySource still has the id to
       // work with afterwards — this is the "structural deletion" case (see
@@ -784,15 +988,26 @@ export class ReviewService {
         where: { id: userId },
         select: { defaultReviewVisibility: true },
       });
-      const row = await this.prisma.review.create({
-        data: {
-          userId,
-          targetType,
-          targetId,
-          rating,
-          visibility: user.defaultReviewVisibility,
-        },
-      });
+      let row;
+
+      try {
+        row = await this.prisma.review.create({
+          data: {
+            userId,
+            targetType,
+            targetId,
+            rating,
+            visibility: user.defaultReviewVisibility,
+          },
+        });
+      } catch (err) {
+        // A concurrent rating of the same work (two taps, two tabs) created
+        // the review between the lookup above and here: go again, which now
+        // takes the update path against that row.
+        if (!isUniqueViolation(err)) throw err;
+        return this.setRating(userId, targetType, targetId, rating);
+      }
+
       await this.prisma.reviewRevision.create({
         data: { reviewId: row.id, rating },
       });
@@ -807,7 +1022,7 @@ export class ReviewService {
       );
     }
 
-    await this.emitReviewed(userId, targetType, targetId, rating);
+    await this.emitReviewed(userId, reviewId, targetType, targetId, rating);
     // Not revoked here on a text shortening — see awardReviewRatingXp's doc
     // comment; the nightly reconciliation is the safety net for that case.
     await this.awardReviewRatingXp(userId, reviewId, text);
@@ -817,34 +1032,84 @@ export class ReviewService {
    * Records a REVIEWED activity event for a review write (from either the full
    * editor or the quick-rating path). A work-level review is a home-feed
    * milestone; season/episode reviews stay on the profile timeline (per the
-   * feed matrix). No-op for unknown target types.
+   * feed matrix). A season or episode review is recorded against its show,
+   * like SEASON_FINISHED, with the season/episode numbers in `data` — the
+   * feed only snapshots catalogue works. Linked to the review (`sourceId`)
+   * so the feed can hold it to the review's own audience. No-op for unknown
+   * target types.
    */
   private async emitReviewed(
     userId: string,
+    reviewId: string,
     targetType: ReviewTargetType,
     targetId: string,
     rating: number,
   ): Promise<void> {
-    const domain = DOMAIN_BY_TARGET[targetType];
+    const domain = REVIEW_TARGET_DOMAIN[targetType];
     if (!domain) return;
 
-    const level =
-      targetType === "SEASON"
-        ? "SEASON"
-        : targetType === "EPISODE"
-          ? "EPISODE"
-          : "WORK";
+    const work = await this.reviewedWork(targetType, targetId);
+    if (!work) return;
 
     await this.activity.emit({
       userId,
       type: ActivityType.REVIEWED,
       domain,
-      targetType,
-      targetId,
-      level,
-      homeFeed: level === "WORK",
-      data: { rating },
+      targetType: work.targetType,
+      targetId: work.targetId,
+      level: work.level,
+      homeFeed: work.level === "WORK",
+      data: { rating, ...work.data },
+      sourceType: "Review",
+      sourceId: reviewId,
     });
+  }
+
+  /** The catalogue work a review's activity event points at. */
+  private async reviewedWork(
+    targetType: ReviewTargetType,
+    targetId: string,
+  ): Promise<{
+    targetType: string;
+    targetId: string;
+    level: "WORK" | "SEASON" | "EPISODE";
+    data: Record<string, number>;
+  } | null> {
+    if (targetType === ReviewTargetType.SEASON) {
+      const season = await this.prisma.season.findUnique({
+        where: { id: targetId },
+        select: { number: true, mediaItemId: true },
+      });
+      if (!season) return null;
+      return {
+        targetType: ReviewTargetType.MEDIA,
+        targetId: season.mediaItemId,
+        level: "SEASON",
+        data: { seasonNumber: season.number },
+      };
+    }
+
+    if (targetType === ReviewTargetType.EPISODE) {
+      const episode = await this.prisma.episode.findUnique({
+        where: { id: targetId },
+        select: {
+          number: true,
+          season: { select: { number: true, mediaItemId: true } },
+        },
+      });
+      if (!episode) return null;
+      return {
+        targetType: ReviewTargetType.MEDIA,
+        targetId: episode.season.mediaItemId,
+        level: "EPISODE",
+        data: {
+          seasonNumber: episode.season.number,
+          episodeNumber: episode.number,
+        },
+      };
+    }
+
+    return { targetType, targetId, level: "WORK", data: {} };
   }
 
   private async author(userId: string): Promise<UserSummaryDto> {
@@ -859,7 +1124,7 @@ export class ReviewService {
       toUserSummaryDto(user),
       userId,
       xpMap,
-      isGamificationEnabled(this.config, this.flags),
+      isGamificationEnabled(this.config),
       new Map([[userId, user.hideProgression]]),
     );
   }

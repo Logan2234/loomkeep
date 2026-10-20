@@ -1,4 +1,11 @@
-import type { GameSource, GameSummaryDto, RatingDto } from "@loomkeep/shared";
+import type {
+  GameSagaMemberDto,
+  GameSource,
+  GameSummaryDto,
+  GameTimeToBeatDto,
+  RatingDto,
+  ReleaseDatePrecision,
+} from "@loomkeep/shared";
 import type { ProviderExternalId } from "../../common/provider-external-id";
 
 /** Everything a provider knows about one game, in canonical form. */
@@ -10,7 +17,9 @@ export interface ProviderGameDetails {
   screenshots: string[];
   genres: string[];
   platforms: string[];
+  /** The first day of the release's period; null when undated. */
   releaseDate: string | null;
+  releaseDatePrecision: ReleaseDatePrecision | null;
   website: string | null;
   similarGames: GameSummaryDto[];
   developers: string[];
@@ -32,6 +41,16 @@ export interface ProviderGameDetails {
   ageRatingImageUrls: string[];
   /** Multiplayer modes beyond the generic `gameModes` (co-op, split screen…). */
   multiplayerModes: string[];
+  /** Average times to beat; null below the submission threshold. */
+  timeToBeat: GameTimeToBeatDto | null;
+}
+
+/** A series kept to its main games, in release order. */
+export interface ProviderGameSaga {
+  /** "IGDB:<collection id>". */
+  key: string;
+  title: string;
+  members: Omit<GameSagaMemberDto, "status">[];
 }
 
 export interface GameCatalogProvider {

@@ -1,0 +1,77 @@
+---
+title: Google Sheets sync
+description: Copy your whole library into a spreadsheet every day, to sort, filter and chart it your way.
+sidebar:
+  order: 7
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+A spreadsheet is the quickest way to slice your library your own way: pivot
+tables, charts, formulas. This Apps Script copies it into a Google Sheet and
+refreshes it every day.
+
+**Key:** `library:read`.
+
+<Steps>
+
+1. Create the key in **Settings › Integrations**.
+
+2. In a Google Sheet, open **Extensions › Apps Script**. In the editor's
+   **Project Settings**, add a script property named `LOOMKEEP_API_KEY` with
+   your key, so it stays out of the code.
+
+3. Replace the code with:
+
+   ```js
+   const API = "https://loomkeep.app/api/v1";
+
+   function syncLoomkeep() {
+     const key = PropertiesService.getScriptProperties().getProperty("LOOMKEEP_API_KEY");
+     const rows = [["Title", "Creators", "Domain", "Status", "Rating", "Favourite", "Added", "Finished"]];
+
+     for (let page = 1; ; page++) {
+       const res = UrlFetchApp.fetch(`${API}/library?limit=100&page=${page}`, {
+         headers: { Authorization: `Bearer ${key}` },
+       });
+       const body = JSON.parse(res.getContentText());
+
+       for (const entry of body.items) {
+         rows.push([
+           entry.work.title,
+           entry.work.creators.join(", "),
+           entry.domain,
+           entry.status,
+           entry.rating ?? "",
+           entry.favorite,
+           entry.addedAt.slice(0, 10),
+           entry.finishedAt ? entry.finishedAt.slice(0, 10) : "",
+         ]);
+       }
+       if (!body.hasMore) break;
+     }
+
+     const book = SpreadsheetApp.getActive();
+     const sheet = book.getSheetByName("Loomkeep") ?? book.insertSheet("Loomkeep");
+     sheet.clearContents();
+     sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+   }
+   ```
+
+4. Run `syncLoomkeep` once, and allow the script to reach the API and your
+   spreadsheet when Google asks. A **Loomkeep** sheet appears.
+
+5. To refresh it every day, open **Triggers**, add a trigger for
+   `syncLoomkeep`, time-driven, once a day.
+
+</Steps>
+
+Each run reads 100 titles per request: a library of a few thousand titles
+stays well within the [rate limit](/api/rate-limits/).
+
+## Variations
+
+- **One domain:** add `&domain=BOOKS` to the URL.
+- **Your history** rather than your library: read `/history` with `from`
+  and `to`, one row per viewing, session or finish. See the
+  [weekly digest](/api/recipes/weekly-digest/) for its fields.

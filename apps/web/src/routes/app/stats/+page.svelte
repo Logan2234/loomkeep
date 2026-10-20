@@ -1,64 +1,91 @@
 <script lang="ts">
-  import { resolveApiError } from "$lib/api/errors";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
   import {
     getStatsOverview,
+    getStatsPiles,
     getStatsWorksByDecade,
     getStatsWorksByRating,
-  } from "$lib/api/stats";
-  import { auth } from "$lib/auth.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import PremiumTeaser from "$lib/components/PremiumTeaser.svelte";
-  import BookStatsSection from "$lib/components/stats/BookStatsSection.svelte";
-  import DomainFilter from "$lib/components/stats/DomainFilter.svelte";
-  import GameStatsSection from "$lib/components/stats/GameStatsSection.svelte";
-  import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
-  import InsufficientDataNotice from "$lib/components/stats/InsufficientDataNotice.svelte";
-  import MusicStatsSection from "$lib/components/stats/MusicStatsSection.svelte";
-  import PeriodFilter from "$lib/components/stats/PeriodFilter.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
-  import SocialStatsSection from "$lib/components/stats/SocialStatsSection.svelte";
-  import StackedBar from "$lib/components/stats/StackedBar.svelte";
-  import StatTile from "$lib/components/stats/StatTile.svelte";
-  import StatsWorksModal from "$lib/components/stats/StatsWorksModal.svelte";
-  import VideoStatsSection from "$lib/components/stats/VideoStatsSection.svelte";
-  import VideoTemporalSection from "$lib/components/stats/VideoTemporalSection.svelte";
-  import { POSSESSION_STATUS_LABEL } from "$lib/components/stats/possession-labels";
+  } from "#lib/api/stats.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import PremiumTeaser from "#lib/components/PremiumTeaser.svelte";
+  import BookStatsSection from "#lib/components/stats/BookStatsSection.svelte";
+  import GameStatsSection from "#lib/components/stats/GameStatsSection.svelte";
+  import HistogramBars from "#lib/components/stats/HistogramBars.svelte";
+  import InsufficientDataNotice from "#lib/components/stats/InsufficientDataNotice.svelte";
+  import MusicStatsSection from "#lib/components/stats/MusicStatsSection.svelte";
+  import PeriodFilter from "#lib/components/stats/PeriodFilter.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
+  import SocialStatsSection from "#lib/components/stats/SocialStatsSection.svelte";
+  import StackedBar from "#lib/components/stats/StackedBar.svelte";
+  import StatTile from "#lib/components/stats/StatTile.svelte";
+  import StatsWorksModal from "#lib/components/stats/StatsWorksModal.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
+  import VideoStatsSection from "#lib/components/stats/VideoStatsSection.svelte";
+  import VideoTemporalSection from "#lib/components/stats/VideoTemporalSection.svelte";
+  import { POSSESSION_STATUS_LABEL } from "#lib/components/stats/possession-labels.js";
   import {
     STATS_DOMAIN_COLOR_VAR,
     STATS_DOMAIN_LABEL,
     STATUS_BUCKET_COLOR,
     STATUS_BUCKET_LABEL,
     STATUS_BUCKET_ORDER,
-  } from "$lib/components/stats/stats-domain";
-  import { appConfig } from "$lib/config.svelte";
-  import { formatNumber, PERCENT_OPTIONS } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import type {
-    StatsDomain,
-    StatsWindow,
-    StatsWorkDto,
-  } from "@loomkeep/shared";
-  import { STATS_DOMAINS } from "@loomkeep/shared";
+    type StatsDomainChoice,
+  } from "#lib/components/stats/stats-domain.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { useEeLock } from "#lib/ee/license.svelte.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { formatNumber, PERCENT_OPTIONS } from "#lib/format.js";
+  import { isPileEmpty, pileTile } from "#lib/pile.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { StatsDomain, StatsWindow } from "@loomkeep/shared";
+  import { Domain, STATS_DOMAINS } from "@loomkeep/shared";
 
-  type Choice = "ALL" | StatsDomain;
+  // Tabs also carry the planned domains, which are never selectable.
+  type TabValue =
+    StatsDomainChoice | typeof Domain.PODCASTS | typeof Domain.BOARDGAMES;
 
   const enabledDomains = $derived<StatsDomain[]>(
     STATS_DOMAINS.filter((d) => auth.user?.enabledDomains?.includes(d) ?? true),
   );
 
-  // Gates the "deep analysis" stats (rankings, distributions, temporal
-  // breakdowns) — the "counting" stats stay free everywhere. stats.service.ts
-  // redacts the advanced fields server-side for a non-premium account (see
-  // feature plan); this flag only drives which sections show a fake/blurred
-  // preview instead of the (already-empty) real data.
-  const statsLocked = $derived(auth.isPremiumLocked);
+  // The two domains with no stats yet show up greyed out, and only for
+  // accounts that turned them on — same gate as the live ones.
+  const domainTabs = $derived<
+    (SelectOption<TabValue> & { disabled?: boolean })[]
+  >([
+    { value: "ALL", label: m.common_all() },
+    ...enabledDomains.map((d) => ({ value: d, label: STATS_DOMAIN_LABEL[d] })),
+    ...(
+      [
+        [Domain.PODCASTS, m.common_Podcasts()],
+        [Domain.BOARDGAMES, m.common_Boardgames()],
+      ] as const
+    )
+      .filter(([d]) => auth.user?.enabledDomains?.includes(d) ?? false)
+      .map(([d, label]) => ({
+        value: d,
+        label,
+        disabled: true,
+      })),
+  ]);
 
-  let selected = $state<Choice>("ALL");
+  // Gates the "deep analysis" stats (rankings, distributions, temporal
+  // breakdowns) — the "counting" stats stay free everywhere. The advanced
+  // fields are computed by the API's ee/stats (LICENSE-EE) and arrive empty
+  // for a non-premium account or an unlicensed instance; this flag only
+  // drives which sections show a fake/blurred preview instead of the
+  // (already-empty) real data.
+  const eeLock = useEeLock();
+  const statsLocked = $derived(eeLock.locked);
+
+  let selected = $state<StatsDomainChoice>("ALL");
   // Narrows the "Activité dans le temps" weekday/hour curves only — see
   // PeriodFilter.
   let period = $state<StatsWindow>("ALL");
@@ -69,6 +96,18 @@
   }));
   const overview = $derived(overviewQuery.data);
   const error = $derived(overviewQuery.error);
+
+  // A present state, not a history: it follows the domain filter, never the
+  // period one.
+  const pilesQuery = createApiQuery(() => ({
+    key: keys.stats.piles(selected),
+    fetch: () => getStatsPiles(selected),
+  }));
+  const pileTiles = $derived(
+    (pilesQuery.data ?? [])
+      .filter(({ pile }) => !isPileEmpty(pile))
+      .map(({ domain, pile }) => ({ domain, ...pileTile(domain, pile) })),
+  );
 
   // "Tous" shows the domain split; a single domain shows its status funnel.
   const compositionSegments = $derived.by(() => {
@@ -153,55 +192,55 @@
   const breakdownOf = (domain: StatsDomain) =>
     overview?.breakdowns.find((b) => b.domain === domain);
 
-  // Works drill-down modal, opened from a clicked rating/decade bar.
-  let modalOpen = $state(false);
-  let modalTitle = $state("");
-  let modalWorks = $state<StatsWorkDto[]>([]);
-  let modalLoading = $state(false);
-  let modalError = $state<string | null>(null);
+  // Works drill-down modal, opened from a clicked rating/decade bar. Keyed
+  // on what was clicked, so a slow answer to an earlier click can never land
+  // under a later one's title.
+  let drill = $state<{ by: "rating" | "decade"; value: number } | null>(null);
+  const drillQuery = createApiQuery(() => {
+    const current = drill;
+    const domain = selected;
+    return {
+      key: keys.stats.works(
+        domain,
+        current?.by ?? "rating",
+        current?.value ?? 0,
+      ),
+      fetch: () =>
+        current?.by === "decade"
+          ? getStatsWorksByDecade(domain, current.value)
+          : getStatsWorksByRating(domain, current?.value ?? 0),
+      enabled: current !== null,
+    };
+  });
+  const modalTitle = $derived(
+    drill?.by === "decade"
+      ? m.stats_modal_released({ decade: drill.value })
+      : m.stats_modal_rated({ rating: drill?.value ?? 0 }),
+  );
 
   function openRatingModal(ratingLabel: string) {
-    const rating = Number(ratingLabel);
-    modalOpen = true;
-    modalLoading = true;
-    modalError = null;
-    modalTitle = m.stats_modal_rated({ rating });
-    getStatsWorksByRating(selected, rating)
-      .then((w) => (modalWorks = w))
-      .catch((e) => (modalError = resolveApiError(e)))
-      .finally(() => (modalLoading = false));
+    drill = { by: "rating", value: Number(ratingLabel) };
   }
 
   function openDecadeModal(decadeLabel: string) {
-    const decade = Number(decadeLabel);
-    modalOpen = true;
-    modalLoading = true;
-    modalError = null;
-    modalTitle = m.stats_modal_released({ decade });
-    getStatsWorksByDecade(selected, decade)
-      .then((w) => (modalWorks = w))
-      .catch((e) => (modalError = resolveApiError(e)))
-      .finally(() => (modalLoading = false));
+    drill = { by: "decade", value: Number(decadeLabel) };
   }
 </script>
-
-<!-- Filter console: sticky, the spine that drives everything below. -->
-<div
-  class="border-border bg-surface/95 sticky top-0 z-20 border-b backdrop-blur">
-  <div
-    class="mx-auto flex max-w-4xl flex-wrap items-center gap-3 px-5 py-3 md:px-8">
-    <DomainFilter
-      {enabledDomains}
-      {selected}
-      onSelect={(c) => (selected = c)} />
-  </div>
-</div>
 
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="stats"
     title={m.common_stats()}
     subtitle={m.stats_subtitle()} />
+
+  <Tabs
+    class="mb-6"
+    label={m.common_stats()}
+    tabs={domainTabs}
+    current={selected}
+    onSelect={(c) => {
+      if (c !== Domain.PODCASTS && c !== Domain.BOARDGAMES) selected = c;
+    }} />
 
   {#if error}
     <Banner variant="error">{error}</Banner>
@@ -224,6 +263,22 @@
         unit="/10"
         label={m.stats_avg_rating()} />
     </div>
+
+    {#if pileTiles.length > 0}
+      <SectionLabel
+        label={m.pile_title()}
+        isNew={isFeatureNew("pile")}
+        class="mt-8" />
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {#each pileTiles as tile (tile.domain)}
+          <StatTile
+            value={tile.value}
+            unit={tile.unit}
+            label={tile.label}
+            hint={tile.hint} />
+        {/each}
+      </div>
+    {/if}
 
     <div class="mt-5 grid gap-5 md:grid-cols-2">
       <section class="card p-5">
@@ -336,11 +391,11 @@
   {/if}
 </div>
 
-{#if modalOpen}
+{#if drill}
   <StatsWorksModal
     title={modalTitle}
-    works={modalWorks}
-    loading={modalLoading}
-    error={modalError}
-    onclose={() => (modalOpen = false)} />
+    works={drillQuery.data ?? []}
+    loading={drillQuery.loading}
+    error={drillQuery.error}
+    onclose={() => (drill = null)} />
 {/if}

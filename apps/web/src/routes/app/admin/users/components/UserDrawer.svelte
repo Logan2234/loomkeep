@@ -1,5 +1,10 @@
 <script lang="ts">
+  import { typedEntries } from "#lib/object.js";
+
+  import { type ActivityKind } from "./activity-kind";
+
   import {
+    adjustAdminUserXp,
     deleteAdminUser,
     getAdminUserComments,
     getAdminUserExport,
@@ -10,33 +15,39 @@
     getAdminUserReportsAgainst,
     getAdminUserReviews,
     getAdminUserSessions,
+    reactivateAdminUser,
     resendAdminUserVerification,
     revokeAdminUserSession,
     revokeAllAdminUserSessions,
     sendAdminUserPasswordReset,
     updateAdminUserPlan,
     updateAdminUserRole,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import SidePanel from "$lib/components/SidePanel.svelte";
-  import { downloadBlob } from "$lib/download";
-  import { formatDate } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
-  import type { AdminUserDto, ModerationLegalBasis } from "@loomkeep/shared";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import AvatarLightbox from "#lib/components/AvatarLightbox.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX } from "#lib/components/overlay-layers.js";
+  import SidePanel from "#lib/components/SidePanel.svelte";
+  import { downloadBlob, datedFilename } from "#lib/download.js";
+  import { formatDate, formatDateTime, formatNumber } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
+  import {
+    levelForXp,
+    type AdminUserDto,
+    type ModerationLegalBasis,
+  } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import DeleteUserModal from "./DeleteUserModal.svelte";
   import UserActivityModal from "./UserActivityModal.svelte";
-
-  type ActivityKind =
-    "reviews" | "comments" | "followers" | "following" | "lists" | "reports";
 
   let {
     user,
@@ -52,23 +63,71 @@
   let showDeleteModal = $state(false);
   let activeModal = $state<ActivityKind | null>(null);
   let avatarLightbox = $state(false);
+  const queryClient = useQueryClient();
 
-  const ACTIVITY_SECTIONS: { kind: ActivityKind; label: string }[] = [
-    { kind: "reviews", label: m.admin_users_reviews() },
-    { kind: "comments", label: m.common_comments() },
-    { kind: "following", label: m.profile_connections_following_title() },
-    { kind: "followers", label: m.profile_connections_followers_title() },
-    { kind: "lists", label: m.common_lists() },
-    { kind: "reports", label: m.admin_users_reports_received() },
-  ];
-
-  function activityCount(kind: ActivityKind): number {
-    if (kind === "reviews") return reviews.length;
-    if (kind === "comments") return comments.length;
-    if (kind === "following") return following.length;
-    if (kind === "followers") return followers.length;
-    if (kind === "lists") return lists.length;
-    return reportsAgainst.length;
+  const ACTIVITY = {
+    reviews: {
+      label: m.admin_users_reviews(),
+      query: () => reviewsQuery,
+      count: () => reviews.length,
+      key: keys.admin.userReviews,
+    },
+    comments: {
+      label: m.common_comments(),
+      query: () => commentsQuery,
+      count: () => comments.length,
+      key: keys.admin.userComments,
+    },
+    following: {
+      label: m.profile_connections_following_title(),
+      query: () => followingQuery,
+      count: () => following.length,
+      key: keys.admin.userFollowing,
+    },
+    followers: {
+      label: m.profile_connections_followers_title(),
+      query: () => followersQuery,
+      count: () => followers.length,
+      key: keys.admin.userFollowers,
+    },
+    lists: {
+      label: m.common_lists(),
+      query: () => listsQuery,
+      count: () => lists.length,
+      key: keys.admin.userLists,
+    },
+    reports: {
+      label: m.admin_users_reports_received(),
+      query: () => reportsAgainstQuery,
+      count: () => reportsAgainst.length,
+      key: keys.admin.userReportsAgainst,
+    },
+  } satisfies Record<
+    ActivityKind,
+    {
+      label: string;
+      query: () => { data: unknown; error: string | null; loading: boolean };
+      count: () => number;
+      key: (id: string) => readonly unknown[];
+    }
+  >;
+  const ACTIVITY_SECTIONS = typedEntries(ACTIVITY).map(
+    ([kind, definition]) => ({ kind, label: definition.label }),
+  );
+  function activityCount(kind: ActivityKind) {
+    return ACTIVITY[kind].count();
+  }
+  function activityError(kind: ActivityKind) {
+    return ACTIVITY[kind].query().error;
+  }
+  function activityLoading(kind: ActivityKind) {
+    return ACTIVITY[kind].query().loading;
+  }
+  function activityHasData(kind: ActivityKind) {
+    return ACTIVITY[kind].query().data !== null;
+  }
+  function retryActivity(kind: ActivityKind) {
+    void queryClient.refetchQueries({ queryKey: ACTIVITY[kind].key(user.id) });
   }
 
   const sessionsQuery = createApiQuery(() => ({
@@ -86,26 +145,32 @@
   const reviewsQuery = createApiQuery(() => ({
     key: keys.admin.userReviews(user.id),
     fetch: () => getAdminUserReviews(user.id),
+    enabled: activeModal === "reviews",
   }));
   const commentsQuery = createApiQuery(() => ({
     key: keys.admin.userComments(user.id),
     fetch: () => getAdminUserComments(user.id),
+    enabled: activeModal === "comments",
   }));
   const followersQuery = createApiQuery(() => ({
     key: keys.admin.userFollowers(user.id),
     fetch: () => getAdminUserFollowers(user.id),
+    enabled: activeModal === "followers",
   }));
   const followingQuery = createApiQuery(() => ({
     key: keys.admin.userFollowing(user.id),
     fetch: () => getAdminUserFollowing(user.id),
+    enabled: activeModal === "following",
   }));
   const listsQuery = createApiQuery(() => ({
     key: keys.admin.userLists(user.id),
     fetch: () => getAdminUserLists(user.id),
+    enabled: activeModal === "lists",
   }));
   const reportsAgainstQuery = createApiQuery(() => ({
     key: keys.admin.userReportsAgainst(user.id),
     fetch: () => getAdminUserReportsAgainst(user.id),
+    enabled: activeModal === "reports",
   }));
 
   const reviews = $derived(reviewsQuery.data ?? []);
@@ -114,15 +179,6 @@
   const following = $derived(followingQuery.data ?? []);
   const lists = $derived(listsQuery.data ?? []);
   const reportsAgainst = $derived(reportsAgainstQuery.data ?? []);
-  const activityLoading = $derived(
-    reviewsQuery.loading ||
-      commentsQuery.loading ||
-      followersQuery.loading ||
-      followingQuery.loading ||
-      listsQuery.loading ||
-      reportsAgainstQuery.loading,
-  );
-
   const revokeMut = createApiMutation(() => ({
     mutate: (sessionId: string) => revokeAdminUserSession(user.id, sessionId),
     invalidates: [keys.admin.userSessions(user.id)],
@@ -146,13 +202,29 @@
     invalidates: [usersKey],
   }));
 
+  let xpAmount = $state<number | null>(null);
+
+  const xpMut = createApiMutation(() => ({
+    mutate: (amount: number) => adjustAdminUserXp(user.id, amount),
+    invalidates: [usersKey],
+    onSuccess: (result) => {
+      xpAmount = null;
+      toast.success(m.admin_users_xp_done({ xp: formatNumber(result.xp) }));
+    },
+  }));
+
+  function adjustXp() {
+    if (!xpAmount || !Number.isInteger(xpAmount)) return;
+    xpMut.mutate(xpAmount);
+  }
+
   const exportMut = createApiMutation(() => ({
     mutate: () => getAdminUserExport(user.id),
     onSuccess: (data) => {
       downloadBlob(
         JSON.stringify(data, null, 2),
         "application/json",
-        `loomkeep-export-${user.username}-${new Date().toISOString().slice(0, 10)}.json`,
+        datedFilename(`loomkeep-export-${user.username}`, "json"),
       );
     },
   }));
@@ -160,6 +232,12 @@
   const verifyMut = createApiMutation(() => ({
     mutate: () => resendAdminUserVerification(user.id),
     successToast: m.admin_users_verification_resent(),
+    errorToast: true,
+  }));
+
+  const reactivateMut = createApiMutation(() => ({
+    mutate: () => reactivateAdminUser(user.id),
+    invalidates: [usersKey],
     errorToast: true,
   }));
 
@@ -206,8 +284,7 @@
 <SidePanel
   onclose={onClose}
   labelledby="drawer-title"
-  zIndex={2147483646}
-  backdropClass="bg-black/60">
+  zIndex={ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX}>
   <div class="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
     <div class="mb-4 flex items-start justify-between gap-2">
       <div class="flex min-w-0 items-center gap-3">
@@ -248,6 +325,42 @@
         seed={user.username}
         url={user.avatarUrl}
         onClose={() => (avatarLightbox = false)} />
+    {/if}
+
+    {#if user.invitation}
+      <p
+        class="border-border text-dim mb-4 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs">
+        <Icon name="mail" class="h-3.5 w-3.5 shrink-0" />
+        <span class="min-w-0">
+          {user.invitation.createdByName
+            ? m.admin_invitations_invited_by({
+                name: user.invitation.createdByName,
+              })
+            : m.admin_invitations_invited()}
+          {#if user.invitation.label}
+            <span aria-hidden="true">·</span>
+            <span class="text-fg">{user.invitation.label}</span>
+          {/if}
+        </span>
+      </p>
+    {/if}
+
+    {#if user.suspendedUntil}
+      <div
+        class="border-danger/40 bg-danger/10 text-danger mb-4 flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs">
+        <span>
+          {m.admin_users_suspended_until({
+            date: formatDateTime(user.suspendedUntil),
+          })}
+        </span>
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm"
+          disabled={reactivateMut.loading}
+          onclick={() => reactivateMut.mutate()}>
+          {m.admin_users_reactivate()}
+        </button>
+      </div>
     {/if}
 
     {#if user.inactivityWarningSentAt}
@@ -320,12 +433,71 @@
       {/if}
     </section>
 
+    {#if appConfig.gamificationEnabled}
+      <section class="mb-5">
+        <h3
+          class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+          {m.admin_users_xp()}
+          <span class="bg-border h-px flex-1"></span>
+        </h3>
+        <div class="border-border rounded-lg border p-3 text-sm">
+          <p class="text-fg timecode font-semibold">
+            {m.admin_users_xp_total({
+              xp: formatNumber(user.xp),
+              level: formatNumber(levelForXp(user.xp)),
+            })}
+          </p>
+          <form
+            class="mt-2 flex gap-2"
+            onsubmit={(e) => {
+              e.preventDefault();
+              adjustXp();
+            }}>
+            <input
+              type="number"
+              step="1"
+              inputmode="numeric"
+              class="input min-w-0 flex-1"
+              aria-label={m.admin_users_xp_amount()}
+              placeholder={m.admin_users_xp_amount()}
+              bind:value={xpAmount} />
+            <button
+              type="submit"
+              class="btn btn-ghost shrink-0"
+              disabled={xpMut.loading ||
+                !xpAmount ||
+                !Number.isInteger(xpAmount)}>
+              {m.admin_users_xp_apply()}
+            </button>
+          </form>
+        </div>
+        <p class="text-dim mt-1.5 text-xs">{m.admin_users_xp_hint()}</p>
+        {#if xpMut.error}
+          <p class="text-danger mt-1.5 text-xs">{xpMut.error}</p>
+        {/if}
+      </section>
+    {/if}
+
     <section class="mb-5">
       <h3
         class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
         {m.admin_users_access()}
         <span class="bg-border h-px flex-1"></span>
       </h3>
+      {#if sessionsQuery.error}
+        <Banner variant="error" class="mb-2">
+          <div class="flex items-center justify-between gap-2">
+            <span>{sessionsQuery.error}</span>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm"
+              onclick={() =>
+                void queryClient.refetchQueries({
+                  queryKey: keys.admin.userSessions(user.id),
+                })}>{m.common_retry()}</button>
+          </div>
+        </Banner>
+      {/if}
       {#if sessionsQuery.loading}
         <div class="space-y-2">
           {#each { length: 2 } as _, i (i)}
@@ -363,7 +535,7 @@
             {m.admin_users_revoke_all()}
           </button>
         {/if}
-      {:else}
+      {:else if !sessionsQuery.error}
         <p class="text-dim text-sm">{m.admin_users_no_sessions()}</p>
       {/if}
     </section>
@@ -374,26 +546,28 @@
         {m.admin_social_activity_title()}
         <span class="bg-border h-px flex-1"></span>
       </h3>
-      {#if activityLoading}
-        <div class="skeleton h-24 rounded-lg"></div>
-      {:else}
-        <ul
-          class="border-border divide-border divide-y overflow-hidden rounded-lg border">
-          {#each ACTIVITY_SECTIONS as s (s.kind)}
-            <li>
-              <button
-                type="button"
-                disabled={activityCount(s.kind) === 0}
-                onclick={() => (activeModal = s.kind)}
-                class="hover:bg-surface-2 flex w-full items-center justify-between px-3 py-2 text-left text-sm disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent">
-                <span class="text-fg">{s.label}</span>
-                <span class="text-dim text-xs font-semibold"
-                  >{activityCount(s.kind)}</span>
-              </button>
-            </li>
-          {/each}
-        </ul>
-      {/if}
+      <ul
+        class="border-border divide-border divide-y overflow-hidden rounded-lg border">
+        {#each ACTIVITY_SECTIONS as s (s.kind)}
+          <li>
+            <button
+              type="button"
+              disabled={activityHasData(s.kind) && activityCount(s.kind) === 0}
+              onclick={() => (activeModal = s.kind)}
+              class="hover:bg-surface-2 flex w-full items-center justify-between px-3 py-2 text-left text-sm disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent">
+              <span class="text-fg">{s.label}</span>
+              <span class="text-dim text-xs font-semibold"
+                >{activityHasData(s.kind)
+                  ? activityCount(s.kind)
+                  : activityError(s.kind)
+                    ? m.common_unavailable()
+                    : activityLoading(s.kind)
+                      ? m.common_loading()
+                      : m.common_disabled()}</span>
+            </button>
+          </li>
+        {/each}
+      </ul>
     </section>
 
     <section class="mb-5">
@@ -402,6 +576,20 @@
         {m.common_library()}
         <span class="bg-border h-px flex-1"></span>
       </h3>
+      {#if libraryStatsQuery.error}
+        <Banner variant="error" class="mb-2">
+          <div class="flex items-center justify-between gap-2">
+            <span>{libraryStatsQuery.error}</span>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm"
+              onclick={() =>
+                void queryClient.refetchQueries({
+                  queryKey: keys.admin.userLibraryStats(user.id),
+                })}>{m.common_retry()}</button>
+          </div>
+        </Banner>
+      {/if}
       {#if libraryStatsQuery.loading}
         <div class="skeleton h-28 rounded-lg"></div>
       {:else if libraryStats}
@@ -418,7 +606,7 @@
             ? m.common_item_count_one({ count: libraryStats.total })
             : m.common_item_count_many({ count: libraryStats.total })}
         </p>
-      {:else}
+      {:else if !libraryStatsQuery.error}
         <p class="text-dim text-sm">{m.admin_users_stats_unavailable()}</p>
       {/if}
     </section>
@@ -491,12 +679,15 @@
 {#if activeModal}
   <UserActivityModal
     kind={activeModal}
+    loading={activityLoading(activeModal)}
+    error={activityError(activeModal)}
     {reviews}
     {comments}
     {followers}
     {following}
     {lists}
     {reportsAgainst}
+    onRetry={() => activeModal && retryActivity(activeModal)}
     onClose={() => (activeModal = null)} />
 {/if}
 

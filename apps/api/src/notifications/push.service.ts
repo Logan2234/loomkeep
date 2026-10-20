@@ -2,6 +2,7 @@ import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import webpush from "web-push";
 import { AppException } from "../common/app.exception";
+import { primaryWebOrigin } from "../common/web-origin.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { isAllowedPushEndpoint } from "./push-endpoint.validator";
 
@@ -10,6 +11,10 @@ export interface PushPayload {
   body: string;
   /** Path to open in the app when the notification is clicked (e.g. "/app/media/…"). */
   url: string;
+  /** Pushes sharing a tag replace each other on the device (one per conversation). */
+  tag?: string;
+  /** The bell entry it announces, so opening the push can mark it read. */
+  notificationId?: string;
 }
 
 export interface PushDevice {
@@ -28,17 +33,21 @@ export interface PushSendOutcome {
 @Injectable()
 export class PushService {
   private readonly logger = new Logger(PushService.name);
-  private readonly enabled: boolean;
+  private readonly enabled: boolean = false;
+  private readonly vapidPublicKey: string = "";
+  private badgeSource: ((userId: string) => Promise<number>) | null = null;
 
   constructor(private readonly prisma: PrismaService) {
-    const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = process.env;
-    this.enabled = Boolean(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY);
+    const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } = process.env;
+    const subject = vapidSubject();
 
-    if (this.enabled) {
-      webpush.setVapidDetails(
-        VAPID_SUBJECT ?? "mailto:loganwi322.dev@gmail.com",
-        VAPID_PUBLIC_KEY!,
-        VAPID_PRIVATE_KEY!,
+    if (subject && VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+      this.enabled = true;
+      this.vapidPublicKey = VAPID_PUBLIC_KEY;
+      webpush.setVapidDetails(subject, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+    } else if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+      this.logger.warn(
+        "VAPID_SUBJECT not set and WEB_ORIGIN isn't HTTPS — push notifications are disabled",
       );
     } else {
       // Self-host without HTTPS/VAPID configured: push is a no-op, in-app stays available.
@@ -46,8 +55,17 @@ export class PushService {
     }
   }
 
+  /**
+   * What the installed app's icon badge should show, sent with every push so
+   * the service worker can set it while the app is closed. Handed in by
+   * AppBadgeService: the count includes chat, which pushes through here too.
+   */
+  setBadgeSource(source: (userId: string) => Promise<number>): void {
+    this.badgeSource = source;
+  }
+
   publicKey(): string {
-    return this.enabled ? process.env.VAPID_PUBLIC_KEY! : "";
+    return this.vapidPublicKey;
   }
 
   async subscribe(
@@ -95,6 +113,10 @@ export class PushService {
     });
   }
 
+  countSubscriptions(userId: string): Promise<number> {
+    return this.prisma.pushSubscription.count({ where: { userId } });
+  }
+
   /** Sends to every device the user has subscribed on; prunes dead subscriptions. */
   async sendToUser(userId: string, payload: PushPayload): Promise<void> {
     await this.sendToUserDetailed(userId, payload);
@@ -109,6 +131,8 @@ export class PushService {
       where: { userId },
     });
     if (!this.enabled || subscriptions.length === 0) return [];
+    const badge = await this.badgeSource?.(userId);
+    const body = JSON.stringify({ ...payload, badge });
 
     return Promise.all(
       subscriptions.map(async (sub): Promise<PushSendOutcome> => {
@@ -130,7 +154,7 @@ export class PushService {
               endpoint: sub.endpoint,
               keys: { p256dh: sub.p256dh, auth: sub.auth },
             },
-            JSON.stringify(payload),
+            body,
           );
           return { userAgent: sub.userAgent, ok: true };
         } catch (err) {
@@ -154,4 +178,14 @@ export class PushService {
       }),
     );
   }
+}
+
+/**
+ * Who push services contact about this instance: VAPID_SUBJECT, else the
+ * instance's own site, which the spec accepts as long as it's HTTPS.
+ */
+function vapidSubject(): string | null {
+  if (process.env.VAPID_SUBJECT) return process.env.VAPID_SUBJECT;
+  const origin = primaryWebOrigin(process.env.WEB_ORIGIN);
+  return origin?.startsWith("https://") ? origin : null;
 }

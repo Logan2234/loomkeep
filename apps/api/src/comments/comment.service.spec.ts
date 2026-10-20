@@ -1,28 +1,19 @@
+import { DEFAULT_INSTANCE_SETTINGS } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
+import type { Prisma } from "@prisma/client";
 import { type Mock, vi } from "vitest";
 import { AppException } from "../common/app.exception";
+import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
-import type { AchievementService } from "../gamification/achievements/achievement.service";
-import type { XpService } from "../gamification/xp.service";
+import { setStoredInstanceSettings } from "../instance-settings/instance-settings.store";
+import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { BlockService } from "../social/block.service";
 import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
+import { stubAchievements, stubXp } from "../test-utils/stubs";
 import { CommentService, REPLY_PREVIEW_LIMIT } from "./comment.service";
-
-function stubXp(): XpService {
-  return {
-    award: vi.fn(),
-    awardMany: vi.fn(),
-    revokeBySource: vi.fn(),
-  } as unknown as XpService;
-}
-
-function stubAchievements(): AchievementService {
-  return { evaluate: vi.fn() } as unknown as AchievementService;
-}
 
 const TARGET_ROW = {
   id: "target-1",
@@ -43,9 +34,6 @@ const AUTHOR = {
 // resolves to `false` (config unset, flag fallback false), matching the
 // deployment default.
 const CONFIG = { get: vi.fn() } as unknown as ConfigService;
-const FLAGS = {
-  isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-} as unknown as FeatureFlagsService;
 
 function relation(over: Partial<ViewerRelation> = {}): ViewerRelation {
   return {
@@ -138,6 +126,18 @@ function make(
       ...overrides.bookEntry,
     },
     block: {
+      findMany: vi
+        .fn()
+        .mockImplementation(() =>
+          Promise.resolve(
+            Object.entries(overrides.relations ?? {}).flatMap(([id, rel]) => [
+              ...(rel.blocking ? [{ blockerId: "viewer", blockedId: id }] : []),
+              ...(rel.blockedByTarget
+                ? [{ blockerId: id, blockedId: "viewer" }]
+                : []),
+            ]),
+          ),
+        ),
       findFirst: vi.fn().mockResolvedValue(null),
       ...overrides.block,
     },
@@ -157,6 +157,8 @@ function make(
     bookItem: { findUnique: vi.fn().mockResolvedValue(TARGET_ROW) },
     musicItem: { findUnique: vi.fn().mockResolvedValue(TARGET_ROW) },
     userScore: { findMany: vi.fn().mockResolvedValue([]) },
+    commentMention: { findMany: vi.fn().mockResolvedValue([]) },
+    commentThreadRead: { upsert: vi.fn() },
   } as unknown as PrismaService;
 
   const visibility = {
@@ -165,7 +167,10 @@ function make(
     ),
   } as unknown as VisibilityService;
 
-  const notifications = { create: vi.fn() } as unknown as NotificationService;
+  const notifications = {
+    create: vi.fn(),
+    copyFor: () => notificationCopy("fr"),
+  } as unknown as NotificationService;
   const xp = stubXp();
   const achievements = stubAchievements();
   const blocks = new BlockService(prisma);
@@ -181,7 +186,6 @@ function make(
       notifications,
       xp,
       CONFIG,
-      FLAGS,
       achievements,
       blocks,
       events,
@@ -279,6 +283,56 @@ describe("CommentService.list — Figurant pseudonym", () => {
 });
 
 describe("CommentService.list — blocking", () => {
+  it("filters repeated authors and both block directions in one query", async () => {
+    const { svc, prisma } = make({
+      comment: {
+        findMany: vi.fn().mockResolvedValue([
+          commentRow({
+            id: "c1",
+            authorId: "a",
+            author: { ...AUTHOR, id: "a" },
+          }),
+          commentRow({
+            id: "c2",
+            authorId: "b",
+            author: { ...AUTHOR, id: "b" },
+          }),
+          commentRow({
+            id: "c3",
+            authorId: "a",
+            author: { ...AUTHOR, id: "a" },
+          }),
+          commentRow({
+            id: "self",
+            authorId: "viewer",
+            author: { ...AUTHOR, id: "viewer" },
+          }),
+          commentRow({ id: "former", authorId: null, author: null }),
+        ]),
+      },
+      relations: {
+        a: relation({ blocking: true }),
+        b: relation({ blockedByTarget: true }),
+      },
+    });
+    const result = await svc.list(
+      "viewer",
+      "MEDIA",
+      "m1",
+      parsePageQuery("1", "20", 20),
+    );
+    expect(result.items.map((row) => row.id)).toEqual(["self", "former"]);
+    expect(prisma.block.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.block.findMany).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { blockerId: "viewer", blockedId: { in: ["a", "b"] } },
+          { blockedId: "viewer", blockerId: { in: ["a", "b"] } },
+        ],
+      },
+      select: { blockerId: true, blockedId: true },
+    });
+  });
   it("drops comments from a blocked author", async () => {
     const { svc } = make({
       comment: {
@@ -376,7 +430,11 @@ describe("CommentService.listReplies", () => {
       ]);
     const { svc } = make({ comment: { findMany } });
 
-    const page = await svc.listReplies("viewer", "c1", 1, 1);
+    const page = await svc.listReplies(
+      "viewer",
+      "c1",
+      parsePageQuery("1", "1", 20),
+    );
 
     expect(page.items.map((r) => r.id)).toEqual(["r0"]);
     expect(page.hasMore).toBe(true);
@@ -744,6 +802,63 @@ describe("CommentService.participants", () => {
   });
 });
 
+describe("CommentService.search", () => {
+  it("finds a discussion's comments without the ones a block hides", async () => {
+    const { svc, prisma } = make({
+      comment: {
+        findMany: vi.fn().mockResolvedValue([
+          commentRow({ id: "c1", text: "La fin est folle" }),
+          commentRow({
+            id: "c2",
+            text: "Folle, vraiment",
+            authorId: "blocked",
+            author: { ...AUTHOR, id: "blocked" },
+          }),
+        ]),
+      },
+      relations: { blocked: relation({ blocking: true }) },
+    });
+
+    const hits = await svc.search("viewer", "MEDIA" as never, "m1", " folle ");
+
+    expect(hits.map((hit) => hit.id)).toEqual(["c1"]);
+    expect(prisma.comment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          text: { contains: "folle", mode: "insensitive" },
+          deletedAt: null,
+        }),
+      }),
+    );
+  });
+
+  it("doesn't search under the minimum length", async () => {
+    const { svc, prisma } = make();
+    expect(await svc.search("viewer", "MEDIA" as never, "m1", "f")).toEqual([]);
+    expect(prisma.comment.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("CommentService.update", () => {
+  it("only marks a comment edited when its text or spoiler changed", async () => {
+    const existing = commentRow({ authorId: "viewer", text: "Pareil" });
+    const { svc, prisma } = make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue(existing),
+        update: vi.fn().mockResolvedValue(existing),
+      },
+    });
+    const editedFlag = () =>
+      (prisma.comment.update as Mock).mock.calls.at(-1)?.[0].data.edited;
+
+    await svc.update("viewer", "c1", { text: "Pareil" });
+    expect(editedFlag()).toBe(false);
+
+    await svc.update("viewer", "c1", { text: "Pas pareil" });
+    expect(editedFlag()).toBe(true);
+  });
+});
+
 describe("CommentService.remove", () => {
   it("rejects deleting someone else's comment", async () => {
     const { svc } = make({
@@ -779,6 +894,29 @@ describe("CommentService.remove", () => {
 });
 
 describe("CommentService.adminRemove", () => {
+  it("uses the caller's transaction and emits only after publication", async () => {
+    const { svc, prisma, xp, events } = make();
+    const tx = {
+      comment: {
+        findUnique: vi.fn().mockResolvedValue(commentRow()),
+        update: vi.fn(),
+      },
+    } as unknown as Prisma.TransactionClient;
+
+    await svc.adminRemove("c1", tx);
+
+    expect(tx.comment.update).toHaveBeenCalled();
+    expect(prisma.comment.update).not.toHaveBeenCalled();
+    expect(xp.revokeBySource).toHaveBeenCalledWith("Comment", ["c1"], tx);
+    expect(events.emitToCommentsThread).not.toHaveBeenCalled();
+    svc.publishAdminRemoval("MEDIA", "m1");
+    expect(events.emitToCommentsThread).toHaveBeenCalledWith(
+      "MEDIA",
+      "m1",
+      "comment-changed",
+    );
+  });
+
   it("soft-deletes without checking ownership (moderation takedown)", async () => {
     const { svc, prisma } = make({
       comment: {
@@ -809,6 +947,8 @@ describe("CommentService.adminRemove", () => {
     await expect(svc.adminRemove("c1")).resolves.toEqual({
       authorId: "someone-else",
       text: "insulte gratuite",
+      targetType: "MEDIA",
+      targetId: "m1",
     });
   });
 
@@ -862,7 +1002,7 @@ describe("CommentService.react", () => {
   });
 
   it("notifies the author once the reaction count reaches the threshold", async () => {
-    const { svc, notifications } = make({
+    const { svc, prisma, notifications } = make({
       comment: {
         findUnique: vi
           .fn()
@@ -877,9 +1017,21 @@ describe("CommentService.react", () => {
       },
       reaction: { count: vi.fn().mockResolvedValue(10) },
     });
+    (prisma.mediaItem.findUnique as Mock).mockResolvedValue({
+      ...TARGET_ROW,
+      title: "Severance",
+      externalIds: [{ source: "TMDB", externalId: "95396" }],
+    });
     await svc.react("someone", "c1", "LIKE" as never);
+    // The count and the work travel as data: the bell words them in the
+    // reader's own language.
     expect(notifications.create).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "author", type: "COMMENT_REACTIONS" }),
+      expect.objectContaining({
+        userId: "author",
+        type: "COMMENT_REACTIONS",
+        url: "/app/media/series/95396?comment=c1&commentTarget=MEDIA:m1",
+        data: { count: 10, workTitle: "Severance" },
+      }),
     );
   });
 
@@ -1015,6 +1167,16 @@ describe("CommentService — XP wiring", () => {
   });
 });
 
+describe("CommentService.listByAuthor", () => {
+  it("limits the admin drawer to the default page size", async () => {
+    const { svc, prisma } = make();
+    await svc.listByAuthor("author");
+    expect(prisma.comment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: DEFAULT_PAGE_SIZE }),
+    );
+  });
+});
+
 describe("CommentService — realtime push", () => {
   it("notifies the target's thread when a comment is created", async () => {
     const { svc, events } = make({
@@ -1064,5 +1226,97 @@ describe("CommentService — realtime push", () => {
       "comment-changed",
     );
     expect(events.emitToCommentsThread).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("CommentService — with Messages on", () => {
+  beforeEach(() => {
+    setStoredInstanceSettings({
+      ...DEFAULT_INSTANCE_SETTINGS,
+      socialEnabled: true,
+      chatEnabled: true,
+    });
+  });
+
+  afterEach(() => {
+    setStoredInstanceSettings({ ...DEFAULT_INSTANCE_SETTINGS });
+  });
+
+  function replying() {
+    return make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "root1",
+          authorId: "parentAuthor",
+          parentId: null,
+        }),
+        create: vi
+          .fn()
+          .mockResolvedValue(
+            commentRow({ id: "reply1", parentId: "root1", authorId: "viewer" }),
+          ),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { authorId: "viewer" },
+            { authorId: "parentAuthor" },
+          ]),
+      },
+    });
+  }
+
+  const reply = {
+    targetType: "MEDIA" as never,
+    targetId: "m1",
+    parentId: "root1",
+    text: "thanks",
+  };
+
+  it("still rings the bell for a reply, which the Œuvres tab counts too", async () => {
+    const { svc, prisma, notifications } = replying();
+    (prisma.mediaItem.findUnique as Mock).mockResolvedValue({
+      ...TARGET_ROW,
+      title: "Severance",
+      externalIds: [{ source: "TMDB", externalId: "95396" }],
+    });
+    await svc.create("viewer", reply);
+
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "parentAuthor",
+        type: "COMMENT_REPLY",
+        data: expect.objectContaining({ workTitle: "Severance" }),
+      }),
+    );
+  });
+
+  it("marks the discussion read for its author", async () => {
+    const { svc, prisma } = replying();
+    await svc.create("viewer", reply);
+
+    expect(prisma.commentThreadRead.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId_targetType_targetId: {
+            userId: "viewer",
+            targetType: "MEDIA",
+            targetId: "m1",
+          },
+        },
+      }),
+    );
+  });
+
+  it("tells everyone else following the discussion that it moved", async () => {
+    const { svc, prisma, events } = replying();
+    (prisma.commentMention.findMany as Mock).mockResolvedValue([
+      { userId: "mentioned" },
+    ]);
+    await svc.create("viewer", reply);
+
+    const recipients = (events.emitToUser as Mock).mock.calls
+      .filter(([, event]) => event === "chat-work-activity")
+      .map(([userId]) => userId);
+    expect(recipients.sort()).toEqual(["mentioned", "parentAuthor"]);
   });
 });

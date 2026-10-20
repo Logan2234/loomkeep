@@ -1,6 +1,7 @@
 import type {
   Domain,
   ImportCommitOverride,
+  ImportMatch,
   ImportPlan,
   ImportReport,
   ImportSource,
@@ -83,4 +84,16 @@ export interface ImportReq<TParsed = unknown> {
     decisions: CommitDecisions,
     progress: ProgressReporter,
   ): Promise<ImportReport>;
+}
+
+export function indexPlanMatches(plan: ImportPlan): Map<string, ImportMatch> {
+  const byKey = new Map<string, ImportMatch>();
+
+  for (const group of plan.groups) {
+    for (const item of group.items) {
+      if (item.match) byKey.set(item.key, item.match);
+    }
+  }
+
+  return byKey;
 }

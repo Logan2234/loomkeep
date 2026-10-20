@@ -3,35 +3,13 @@ import { HttpStatus } from "@nestjs/common";
 import { vi } from "vitest";
 import type { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
-import type { EntitlementService } from "../entitlements/entitlement.service";
-import type { EventsGateway } from "../events/events.gateway";
-import type { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
-import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
 import type { ActivityService } from "../social/activity.service";
+import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
 import type { AgeGateService } from "../users/age-gate.service";
 import { LibraryService } from "./library.service";
-
-function stubXp(): XpService {
-  return {
-    award: vi.fn(),
-    awardMany: vi.fn(),
-    revokeBySource: vi.fn(),
-  } as unknown as XpService;
-}
-
-function stubAchievements(): AchievementService {
-  return {
-    evaluate: vi.fn(),
-  } as unknown as AchievementService;
-}
-
-function stubEvents(): EventsGateway {
-  return { emitToUser: vi.fn() } as unknown as EventsGateway;
-}
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   const id = (overrides.id as string) ?? "entry-1";
@@ -62,227 +40,6 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-interface ServiceOpts {
-  episodesByMediaItem?: Record<
-    string,
-    {
-      id: string;
-      number: number;
-      airDate: Date | null;
-      season: { number: number };
-    }[]
-  >;
-  watchedByMediaItem?: Record<string, string[]>;
-  lastWatchedByMediaItem?: Record<string, Date | null>;
-  translatedTitles?: Map<string, string>;
-}
-
-function makeService(
-  rows: ReturnType<typeof makeRow>[],
-  opts: ServiceOpts = {},
-) {
-  const prisma = {
-    libraryEntry: { findMany: vi.fn().mockResolvedValue(rows) },
-    // listEntries fetches episodes/watches batched across all media items
-    // (`mediaItemId: { in: [...] }`) rather than one query per entry.
-    episode: {
-      findMany: vi.fn(
-        ({ where }: { where: { season: { mediaItemId: { in: string[] } } } }) =>
-          Promise.resolve(
-            where.season.mediaItemId.in.flatMap((mediaItemId) =>
-              (opts.episodesByMediaItem?.[mediaItemId] ?? []).map((e) => ({
-                ...e,
-                season: { ...e.season, mediaItemId },
-              })),
-            ),
-          ),
-      ),
-    },
-    episodeWatch: {
-      findMany: vi.fn(
-        ({
-          where,
-        }: {
-          where: { episode: { season: { mediaItemId: { in: string[] } } } };
-        }) =>
-          Promise.resolve(
-            where.episode.season.mediaItemId.in.flatMap((mediaItemId) => {
-              const watchedAt =
-                opts.lastWatchedByMediaItem?.[mediaItemId] ?? new Date(0);
-              return (opts.watchedByMediaItem?.[mediaItemId] ?? []).map(
-                (episodeId) => ({
-                  episodeId,
-                  watchedAt,
-                  episode: { season: { mediaItemId, number: 1 } },
-                }),
-              );
-            }),
-          ),
-      ),
-    },
-  } as unknown as PrismaService;
-  // Ratings now come from Review; project the rows' ratings back through it.
-  const reviews = {
-    getRatings: vi.fn(() =>
-      Promise.resolve(
-        new Map(
-          rows
-            .filter((r) => r.rating !== null)
-            .map((r) => [r.mediaItemId, r.rating]),
-        ),
-      ),
-    ),
-    getRating: vi.fn((_u: string, _t: string, id: string) =>
-      Promise.resolve(rows.find((r) => r.mediaItemId === id)?.rating ?? null),
-    ),
-    setRating: vi.fn(),
-  } as unknown as ReviewService;
-  const mediaItemService = {
-    translatedTitles: vi
-      .fn()
-      .mockResolvedValue(opts.translatedTitles ?? new Map()),
-  } as unknown as MediaItemService;
-  const service = new LibraryService(
-    prisma,
-    mediaItemService,
-    {} as AgeGateService,
-    reviews,
-    { emit: vi.fn() } as unknown as ActivityService,
-    {} as EntitlementService,
-    stubXp(),
-    stubAchievements(),
-    stubEvents(),
-  );
-  return { service, prisma, mediaItemService };
-}
-
-describe("LibraryService.listEntries", () => {
-  it("paginates and reports total/hasMore (movies, no episode progress)", async () => {
-    const rows = Array.from({ length: DEFAULT_PAGE_SIZE + 5 }, (_, i) =>
-      makeRow({ id: `e${i}`, title: `Movie ${i}` }),
-    );
-    const { service } = makeService(rows);
-
-    const page1 = await service.listEntries("user-1", {});
-    expect(page1.items).toHaveLength(DEFAULT_PAGE_SIZE);
-    expect(page1.total).toBe(DEFAULT_PAGE_SIZE + 5);
-    expect(page1.hasMore).toBe(true);
-
-    const page2 = await service.listEntries("user-1", { page: 2 });
-    expect(page2.items).toHaveLength(5);
-    expect(page2.hasMore).toBe(false);
-  });
-
-  it("filters by favorite", async () => {
-    const rows = [
-      makeRow({ id: "a", favorite: true }),
-      makeRow({ id: "b", favorite: false }),
-    ];
-    const { service } = makeService(rows);
-
-    const result = await service.listEntries("user-1", { favorite: true });
-    expect(result.items.map((i) => i.id)).toEqual(["a"]);
-  });
-
-  it("filters by free-text title search, case-insensitive", async () => {
-    const rows = [
-      makeRow({ id: "a", title: "Arrival" }),
-      makeRow({ id: "b", title: "Dune" }),
-    ];
-    const { service } = makeService(rows);
-
-    const result = await service.listEntries("user-1", { q: "arr" });
-    expect(result.items.map((i) => i.id)).toEqual(["a"]);
-  });
-
-  it("includes the entry update timestamp", async () => {
-    const updatedAt = new Date("2026-02-03T04:05:06.000Z");
-    const { service } = makeService([makeRow({ updatedAt })]);
-
-    const result = await service.listEntries("user-1", {});
-
-    expect(result.items[0].updatedAt).toBe(updatedAt.toISOString());
-  });
-
-  it("filters the synthetic DORMANT status (WATCHING with no recent activity)", async () => {
-    const dormantRow = makeRow({
-      id: "dormant",
-      type: "SERIES",
-      status: "WATCHING",
-    });
-    const activeRow = makeRow({
-      id: "active",
-      type: "SERIES",
-      status: "WATCHING",
-    });
-    const episodes = [
-      { id: "ep1", number: 1, airDate: null, season: { number: 1 } },
-      { id: "ep2", number: 2, airDate: null, season: { number: 1 } },
-    ];
-    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
-    const oneDayAgo = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
-    const { service } = makeService([dormantRow, activeRow], {
-      episodesByMediaItem: {
-        "media-dormant": episodes,
-        "media-active": episodes,
-      },
-      watchedByMediaItem: {
-        "media-dormant": ["ep1"],
-        "media-active": ["ep1"],
-      },
-      lastWatchedByMediaItem: {
-        "media-dormant": sixtyDaysAgo,
-        "media-active": oneDayAgo,
-      },
-    });
-
-    const dormantOnly = await service.listEntries("user-1", {
-      statuses: ["DORMANT"],
-    });
-    expect(dormantOnly.items.map((i) => i.id)).toEqual(["dormant"]);
-
-    const bothWatching = await service.listEntries("user-1", {
-      statuses: ["WATCHING"],
-    });
-    expect(bothWatching.items.map((i) => i.id).sort()).toEqual([
-      "active",
-      "dormant",
-    ]);
-  });
-
-  it("uses the translated title when one is cached, falling back to the base title otherwise", async () => {
-    const rows = [
-      makeRow({ id: "a", title: "Arrival" }),
-      makeRow({ id: "b", title: "Dune" }),
-    ];
-    const { service, mediaItemService } = makeService(rows, {
-      translatedTitles: new Map([["media-a", "Premier Contact"]]),
-    });
-
-    const result = await service.listEntries("user-1", { lang: "fr" });
-
-    expect(mediaItemService.translatedTitles).toHaveBeenCalledWith(
-      ["media-a", "media-b"],
-      "fr",
-    );
-    expect(result.items.find((i) => i.id === "a")?.mediaItem.title).toBe(
-      "Premier Contact",
-    );
-    expect(result.items.find((i) => i.id === "b")?.mediaItem.title).toBe(
-      "Dune",
-    );
-  });
-
-  it("doesn't look up translations when no locale is given", async () => {
-    const { service, mediaItemService } = makeService([makeRow({ id: "a" })]);
-
-    await service.listEntries("user-1", {});
-
-    expect(mediaItemService.translatedTitles).not.toHaveBeenCalled();
-  });
-});
-
-// Comment masking depends on finishedAt, while the UI only sends status.
 describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
   it("sets finishedAt when a movie's status is patched to COMPLETED", async () => {
     const entryRow = makeRow({ id: "e1", type: "MOVIE", status: "PLANNED" });
@@ -290,9 +47,12 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
     const findUnique = vi
       .fn()
       // assertEntryOwnership
-      .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
-      // updateEntry's own "before" lookup
-      .mockResolvedValueOnce({ status: "PLANNED", favorite: false })
+      .mockResolvedValueOnce({
+        id: "e1",
+        userId: "user-1",
+        status: "PLANNED",
+        favorite: false,
+      })
       // syncFinishedAt's lookup, post-write
       .mockResolvedValueOnce({ status: "COMPLETED", finishedAt: null });
     const update = vi
@@ -303,6 +63,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       .mockResolvedValueOnce({});
 
     const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
       libraryEntry: { findUnique, update },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       episodeWatch: {
@@ -320,10 +81,10 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as AgeGateService,
       reviews,
       activity,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -331,6 +92,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
     });
 
     expect(result.finishedAt).not.toBeNull();
+    expect(findUnique).toHaveBeenCalledTimes(2);
     expect(update).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ data: { finishedAt: expect.any(Date) } }),
@@ -341,10 +103,12 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
     const entryRow = makeRow({ id: "e1", type: "MOVIE", status: "PLANNED" });
     const explicit = "2026-01-15T00:00:00.000Z";
 
-    const findUnique = vi
-      .fn()
-      .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
-      .mockResolvedValueOnce({ status: "PLANNED", favorite: false });
+    const findUnique = vi.fn().mockResolvedValueOnce({
+      id: "e1",
+      userId: "user-1",
+      status: "PLANNED",
+      favorite: false,
+    });
     const update = vi.fn().mockResolvedValueOnce({
       ...entryRow,
       status: "COMPLETED",
@@ -352,6 +116,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
     });
 
     const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
       libraryEntry: { findUnique, update },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       episodeWatch: {
@@ -369,10 +134,10 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as AgeGateService,
       reviews,
       activity,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -428,10 +193,10 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as AgeGateService,
       {} as ReviewService,
       activity,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.watchEpisode("user-1", "ep2", {});
@@ -492,10 +257,10 @@ describe("LibraryService.unwatchSeason", () => {
       {} as AgeGateService,
       {} as ReviewService,
       activity,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.unwatchSeason("user-1", "season-1");
@@ -520,10 +285,10 @@ describe("LibraryService.unwatchSeason", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await expect(service.unwatchSeason("user-1", "missing")).rejects.toThrow(
@@ -565,6 +330,7 @@ describe("LibraryService.deleteEntry", () => {
         findMany: vi.fn().mockResolvedValue([]),
         deleteMany: reviewDeleteMany,
       },
+      movieReplay: { findMany: vi.fn().mockResolvedValue([]) },
       comment: { updateMany: commentUpdateMany },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
@@ -575,25 +341,31 @@ describe("LibraryService.deleteEntry", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.deleteEntry("user-1", "entry-1");
 
     const allTargetIds = ["media-1", "s1", "s2", "e1", "e2", "e3"];
+    const allTargetTypes = ["MEDIA", "SEASON", "EPISODE"];
 
     expect(episodeWatchDeleteMany).toHaveBeenCalledWith({
       where: { userId: "user-1", episodeId: { in: ["e1", "e2", "e3"] } },
     });
     expect(reviewDeleteMany).toHaveBeenCalledWith({
-      where: { userId: "user-1", targetId: { in: allTargetIds } },
+      where: {
+        userId: "user-1",
+        targetType: { in: allTargetTypes },
+        targetId: { in: allTargetIds },
+      },
     });
     expect(commentUpdateMany).toHaveBeenCalledWith({
       where: {
         authorId: "user-1",
+        targetType: { in: allTargetTypes },
         targetId: { in: allTargetIds },
         deletedAt: null,
       },
@@ -604,7 +376,8 @@ describe("LibraryService.deleteEntry", () => {
     });
   });
 
-  it("still works for a movie entry with no seasons/episodes", async () => {
+  it("still works for a movie entry with no seasons/episodes, and revokes its rewatches' XP", async () => {
+    const xp = stubXp();
     const prisma = {
       libraryEntry: {
         findUnique: vi.fn().mockResolvedValue({
@@ -623,6 +396,10 @@ describe("LibraryService.deleteEntry", () => {
         findMany: vi.fn().mockResolvedValue([]),
         deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
+      // Cascades with the entry, so its MOVIE_REPLAYED XP is revoked by id.
+      movieReplay: {
+        findMany: vi.fn().mockResolvedValue([{ id: "r1" }, { id: "r2" }]),
+      },
       comment: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
@@ -633,53 +410,16 @@ describe("LibraryService.deleteEntry", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
-      stubXp(),
+      xp,
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await expect(
       service.deleteEntry("user-1", "entry-2"),
     ).resolves.toBeUndefined();
-  });
-});
-
-describe("LibraryService.getCalendarIcs", () => {
-  function makeService(user: { id: string } | null, hasPremium: boolean) {
-    const prisma = {
-      user: { findUnique: vi.fn().mockResolvedValue(user) },
-      episode: { findMany: vi.fn().mockResolvedValue([]) },
-    } as unknown as PrismaService;
-    const entitlements = {
-      isEffectivelyPremium: vi.fn().mockResolvedValue(hasPremium),
-    } as unknown as EntitlementService;
-    return new LibraryService(
-      prisma,
-      {} as MediaItemService,
-      {} as AgeGateService,
-      {} as ReviewService,
-      { emit: vi.fn() } as unknown as ActivityService,
-      entitlements,
-      stubXp(),
-      stubAchievements(),
-      stubEvents(),
-    );
-  }
-
-  it("returns the feed for a premium user with a valid token", async () => {
-    const service = makeService({ id: "user-1" }, true);
-    await expect(service.getCalendarIcs("tok")).resolves.not.toBeNull();
-  });
-
-  it("returns null for a non-premium user, even with a valid token", async () => {
-    const service = makeService({ id: "user-1" }, false);
-    await expect(service.getCalendarIcs("tok")).resolves.toBeNull();
-  });
-
-  it("returns null when the token matches no account", async () => {
-    const service = makeService(null, true);
-    await expect(service.getCalendarIcs("tok")).resolves.toBeNull();
+    expect(xp.revokeBySource).toHaveBeenCalledWith("MovieReplay", ["r1", "r2"]);
   });
 });
 
@@ -716,6 +456,7 @@ describe("LibraryService — XP wiring", () => {
       .mockResolvedValue(entryRow({ status: "COMPLETED", type: "MOVIE" }));
     const count = vi.fn().mockResolvedValue(1);
     const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
       libraryEntry: { findUnique, upsert, count },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       episodeWatch: {
@@ -738,10 +479,10 @@ describe("LibraryService — XP wiring", () => {
         getRating: vi.fn().mockResolvedValue(null),
       } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
       events,
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.upsertEntry("user-1", {
@@ -774,6 +515,7 @@ describe("LibraryService — XP wiring", () => {
       .fn()
       .mockResolvedValue(entryRow({ status: "COMPLETED", type: "MOVIE" }));
     const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
       libraryEntry: { findUnique, update },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       episodeWatch: {
@@ -792,10 +534,10 @@ describe("LibraryService — XP wiring", () => {
         getRating: vi.fn().mockResolvedValue(null),
       } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.updateEntry("user-1", "entry-1", {
@@ -817,6 +559,7 @@ describe("LibraryService — XP wiring", () => {
       .mockResolvedValueOnce({ status: "PLANNED", finishedAt: null });
     const upsert = vi.fn().mockResolvedValue(entryRow({ status: "PLANNED" }));
     const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
       libraryEntry: { findUnique, upsert, count: vi.fn() },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       episodeWatch: {
@@ -838,10 +581,10 @@ describe("LibraryService — XP wiring", () => {
         getRating: vi.fn().mockResolvedValue(null),
       } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.upsertEntry("user-1", {
@@ -866,18 +609,13 @@ describe("LibraryService — XP wiring", () => {
   it("awards MOVIE_REPLAYED on addReplay and revokes it on deleteReplay", async () => {
     const prisma = {
       libraryEntry: {
-        // assertEntryOwnership (called once from addReplay, once from the
-        // getEntry() it returns) and getEntry's own findUniqueOrThrow.
         findUnique: vi.fn().mockResolvedValue({
-          id: "entry-1",
+          ...entryRow({ status: "COMPLETED" }),
           userId: "user-1",
-          mediaItemId: "media-1",
         }),
-        findUniqueOrThrow: vi
-          .fn()
-          .mockResolvedValue(entryRow({ status: "COMPLETED" })),
       },
       mediaItem: {
+        findUnique: vi.fn().mockResolvedValue(null),
         findUniqueOrThrow: vi.fn().mockResolvedValue({ type: "MOVIE" }),
       },
       movieReplay: {
@@ -904,10 +642,10 @@ describe("LibraryService — XP wiring", () => {
         getRating: vi.fn().mockResolvedValue(null),
       } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.addReplay("user-1", "entry-1", {} as never);
@@ -915,6 +653,11 @@ describe("LibraryService — XP wiring", () => {
       "user-1",
       "MOVIE_REPLAYED",
       "replay-1",
+    );
+
+    expect(prisma.libraryEntry.findUnique).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ include: expect.any(Object) }),
     );
 
     await service.deleteReplay("user-1", "replay-1");
@@ -935,6 +678,7 @@ describe("LibraryService — XP wiring", () => {
           { id: "ep1", number: 1, airDate: null, season: { number: 1 } },
           { id: "ep2", number: 2, airDate: null, season: { number: 1 } },
         ]),
+        count: vi.fn().mockResolvedValue(2),
       },
       episodeWatch: {
         create: vi.fn().mockResolvedValue({
@@ -977,18 +721,20 @@ describe("LibraryService — XP wiring", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.watchEpisode("user-1", "ep2", {} as never);
 
+    // Paid by its episodes: a two-episode season gets the floor.
     expect(xp.award).toHaveBeenCalledWith(
       "user-1",
       "SEASON_COMPLETED",
       "season-1",
+      10,
     );
     expect(achievements.evaluate).toHaveBeenCalledWith(
       "user-1",
@@ -1046,10 +792,10 @@ describe("LibraryService — watch endpoints require a tracked entry", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
     return { service, prisma, xp };
   }
@@ -1122,10 +868,10 @@ describe("LibraryService.getDomainCounts", () => {
       {} as AgeGateService,
       {} as ReviewService,
       {} as ActivityService,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     const counts = await service.getDomainCounts("u1");
@@ -1144,5 +890,253 @@ describe("LibraryService.getDomainCounts", () => {
       // which is the whole reason this doesn't go through /stats.
       expect(table.count).toHaveBeenCalledWith({ where: { userId: "u1" } });
     }
+  });
+});
+
+describe("LibraryService.getPile", () => {
+  function makePileService() {
+    const rows = [
+      makeRow({ id: "arrival", type: "MOVIE", status: "PLANNED" }),
+      makeRow({
+        id: "severance",
+        type: "SERIES",
+        status: "WATCHING",
+        title: "Severance",
+      }),
+      makeRow({
+        id: "dune",
+        type: "MOVIE",
+        status: "COMPLETED",
+        title: "Dune",
+      }),
+    ];
+    const runtimes: Record<string, number | null> = {
+      "media-arrival": null,
+      "media-severance": 45,
+      "media-dune": 155,
+    };
+    const findMany = vi.fn(
+      (args: { where: { id?: { in: string[] } }; select: object }) => {
+        if (!args.where.id) return Promise.resolve(rows);
+        return Promise.resolve(
+          rows
+            .filter((r) => args.where.id!.in.includes(r.id))
+            .map((r) => ({
+              mediaItemId: r.mediaItemId,
+              mediaItem: {
+                type: r.mediaItem.type,
+                runtimeMin: runtimes[r.mediaItemId],
+              },
+            })),
+        );
+      },
+    );
+    const episodeFindMany = vi.fn().mockResolvedValue([
+      { runtimeMin: 50, season: { mediaItemId: "media-severance" } },
+      { runtimeMin: null, season: { mediaItemId: "media-severance" } },
+    ]);
+    const prisma = {
+      libraryEntry: { findMany },
+      episode: { findMany: episodeFindMany },
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          mediaItemId: "media-severance",
+          total: 3n,
+          watched: 1n,
+          lastWatchedAt: null,
+        },
+      ]),
+    } as unknown as PrismaService;
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      {} as ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+    return { service, episodeFindMany };
+  }
+
+  it("adds planned titles in full and the unwatched episodes of what's in progress", async () => {
+    const { service, episodeFindMany } = makePileService();
+
+    const pile = await service.getPile("user-1", {});
+
+    // Arrival: no known length, so the 110-minute film default (estimated).
+    // Severance: 50 + the title's 45-minute average. Dune is finished.
+    expect(pile).toEqual({
+      unit: "MINUTES",
+      amount: 205,
+      entries: 2,
+      counted: 2,
+      estimated: true,
+    });
+    const [[query]] = episodeFindMany.mock.calls;
+    expect(query.where.season).toEqual({
+      number: { not: 0 },
+      mediaItemId: { in: ["media-severance"] },
+    });
+    expect(query.where.watches).toEqual({ none: { userId: "user-1" } });
+  });
+
+  it("only counts what the list shows under the same filters", async () => {
+    const { service } = makePileService();
+
+    const pile = await service.getPile("user-1", { q: "arri" });
+
+    expect(pile).toMatchObject({ amount: 110, entries: 1 });
+  });
+});
+
+describe("LibraryService.bulkUpdate", () => {
+  function serviceWith(entries: object[], seasons: object[]) {
+    const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
+      libraryEntry: {
+        findMany: vi
+          .fn()
+          // bulkTargetIds: the picks the user owns
+          .mockResolvedValueOnce(
+            entries.map((e) => ({ id: (e as { id: string }).id })),
+          )
+          // the targeted entries themselves
+          .mockResolvedValueOnce(entries),
+      },
+      season: { findMany: vi.fn().mockResolvedValue(seasons) },
+    } as unknown as PrismaService;
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      {} as ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+    const updateEntry = vi
+      .spyOn(service, "updateEntry")
+      .mockResolvedValue({} as never);
+    const watchSeason = vi
+      .spyOn(service, "watchSeason")
+      .mockResolvedValue(undefined);
+    return { service, updateEntry, watchSeason };
+  }
+
+  const entry = (id: string, type: string, status: string) => ({
+    id,
+    mediaItemId: `${id}-item`,
+    status,
+    favorite: false,
+    ownershipStatus: "NONE",
+    mediaItem: { type },
+  });
+
+  it("completes a movie through its status, and a series by watching every aired season", async () => {
+    const { service, updateEntry, watchSeason } = serviceWith(
+      [entry("movie", "MOVIE", "PLANNED"), entry("show", "SERIES", "WATCHING")],
+      [{ id: "s1" }, { id: "s2" }],
+    );
+
+    const result = await service.bulkUpdate("user-1", {
+      ids: ["movie", "show"],
+      status: "COMPLETED",
+    });
+
+    expect(updateEntry).toHaveBeenCalledWith("user-1", "movie", {
+      status: "COMPLETED",
+    });
+    expect(watchSeason).toHaveBeenNthCalledWith(1, "user-1", "s1");
+    expect(watchSeason).toHaveBeenNthCalledWith(2, "user-1", "s2");
+    expect(result).toEqual({ updated: 2, skipped: 0 });
+  });
+
+  it("leaves a series already caught up alone", async () => {
+    const { service, watchSeason } = serviceWith(
+      [entry("show", "ANIME", "UP_TO_DATE")],
+      [{ id: "s1" }],
+    );
+
+    const result = await service.bulkUpdate("user-1", {
+      ids: ["show"],
+      status: "COMPLETED",
+    });
+
+    expect(watchSeason).not.toHaveBeenCalled();
+    expect(result).toEqual({ updated: 0, skipped: 1 });
+  });
+});
+
+describe("LibraryService.trackedStatuses", () => {
+  it("lists every tracked work by catalogue id with its effective status, from its stored progress", async () => {
+    const queryRaw = vi.fn().mockResolvedValue([]);
+    const prisma = {
+      libraryEntry: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            status: "COMPLETED",
+            watchedEpisodes: 0,
+            mediaItem: {
+              type: "MOVIE",
+              status: "Released",
+              episodeCount: 0,
+              canonicalSource: "TMDB",
+              externalIds: [
+                { source: "IMDB", externalId: "tt1" },
+                { source: "TMDB", externalId: "603" },
+              ],
+            },
+          },
+          {
+            // No id for its canonical source: nothing a search result could match.
+            status: "PLANNED",
+            watchedEpisodes: 0,
+            mediaItem: {
+              type: "MOVIE",
+              status: "Released",
+              episodeCount: 0,
+              canonicalSource: "TMDB",
+              externalIds: [],
+            },
+          },
+          {
+            // Every regular episode watched: the derived status, from the
+            // counts stored on the row.
+            status: "WATCHING",
+            watchedEpisodes: 10,
+            mediaItem: {
+              type: "SERIES",
+              status: "Ended",
+              episodeCount: 10,
+              canonicalSource: "TMDB",
+              externalIds: [{ source: "TMDB", externalId: "1399" }],
+            },
+          },
+        ]),
+      },
+      $queryRaw: queryRaw,
+    } as unknown as PrismaService;
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+
+    await expect(service.trackedStatuses("user-1")).resolves.toEqual([
+      { type: "MOVIE", sourceId: "603", status: "COMPLETED" },
+      { type: "SERIES", sourceId: "1399", status: "COMPLETED" },
+    ]);
+    expect(queryRaw).not.toHaveBeenCalled();
   });
 });

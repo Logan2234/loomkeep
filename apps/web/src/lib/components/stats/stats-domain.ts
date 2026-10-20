@@ -1,32 +1,28 @@
-// Canonical per-domain display metadata for the stats feature (labels, CSS
-// color variable). Distinct from ProfileView's own DOMAIN_LABEL map
-// (different context, not worth coupling) but the single source for anything
-// under lib/components/stats/.
-
-import { m } from "$lib/paraglide/messages.js";
+import { DOMAINS } from "#lib/constants/domains.js";
+import { m } from "#lib/paraglide/messages.js";
 import type { StatsDomain, StatsStatusBucket } from "@loomkeep/shared";
 
 export const STATS_DOMAIN_LABEL: Record<StatsDomain, string> = {
   get MEDIA() {
-    return m.common_Media();
+    return DOMAINS.MEDIA.label;
   },
   get GAMES() {
-    return m.common_Games();
+    return DOMAINS.GAMES.label;
   },
   get BOOKS() {
-    return m.common_Books();
+    return DOMAINS.BOOKS.label;
   },
   get MUSIC() {
-    return m.common_Music();
+    return DOMAINS.MUSIC.label;
   },
 };
 
 // CSS var name (see app.css) carrying this domain's validated stat hue.
 export const STATS_DOMAIN_COLOR_VAR: Record<StatsDomain, string> = {
-  MEDIA: "var(--stat-media)",
-  GAMES: "var(--stat-games)",
-  BOOKS: "var(--stat-books)",
-  MUSIC: "var(--stat-music)",
+  MEDIA: DOMAINS.MEDIA.accent,
+  GAMES: DOMAINS.GAMES.accent,
+  BOOKS: DOMAINS.BOOKS.accent,
+  MUSIC: DOMAINS.MUSIC.accent,
 };
 
 // The shared status funnel (dim to-do → amber in-progress → green done → red
@@ -57,3 +53,5 @@ export const STATUS_BUCKET_COLOR: Record<StatsStatusBucket, string> = {
   DONE: "var(--success)",
   DROPPED: "var(--danger)",
 };
+
+export type StatsDomainChoice = "ALL" | StatsDomain;

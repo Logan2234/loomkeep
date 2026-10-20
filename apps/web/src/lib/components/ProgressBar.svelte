@@ -4,18 +4,13 @@
   // CSS, so it animates on its own whenever `value` changes — no extra work
   // needed at the call site when items are added/removed and a computed
   // percentage moves as a result.
-  let {
-    value,
-    height = "h-1.5",
-    track = "bg-surface-2",
-    fillClass = "bg-accent",
-    fillStyle = "",
-    rounded = true,
-    title,
-    class: cls = "",
-  }: {
-    /** 0-100. */
-    value: number;
+  type AccessibleName =
+    | { label: string; labelledby?: never }
+    | { label?: never; labelledby: string };
+
+  type Props = AccessibleName & {
+    /** 0-100, or null for an indeterminate operation. */
+    value: number | null;
     /** Tailwind height class for the track/fill. */
     height?: string;
     /** Tailwind class for the track background. */
@@ -27,19 +22,38 @@
      * (e.g. a per-item stat color) that isn't a Tailwind class. */
     fillStyle?: string;
     rounded?: boolean;
+    /** Optional subject-specific marker at the trailing edge of the fill. */
+    endCap?: "bookmark";
     /** Tooltip on the fill, e.g. "6 / 62 episodes". */
     title?: string;
     class?: string;
-  } = $props();
+  };
 
-  const clamped = $derived(Math.max(0, Math.min(100, value)));
+  let {
+    value,
+    label,
+    labelledby,
+    height = "h-1.5",
+    track = "bg-surface-2",
+    fillClass = "bg-accent",
+    fillStyle = "",
+    rounded = true,
+    endCap,
+    title,
+    class: cls = "",
+  }: Props = $props();
+
+  const clamped = $derived(
+    value === null ? 0 : Math.max(0, Math.min(100, value)),
+  );
 
   // Starts empty and animates to the real value a frame after mount (rather
   // than appearing already filled) — the fill's own `transition:` then
   // animates every later change (an item added/removed shifting the %) too.
   let displayValue = $state(0);
   $effect(() => {
-    const target = clamped; // read synchronously so the effect re-runs on change
+    const target = clamped;
+    if (value === null) return;
     // Double rAF: a single one can race the element's very first paint (no
     // loading state means the bar can mount already showing real data), so
     // the "0%" starting point never actually gets painted before it jumps to
@@ -67,6 +81,11 @@
   let previous: number | null = null;
   $effect(() => {
     const target = clamped;
+    if (value === null) {
+      previous = null;
+      completing = false;
+      return;
+    }
     const justCompleted = previous !== null && previous < 100 && target >= 100;
     previous = target;
     if (!justCompleted) return;
@@ -78,14 +97,25 @@
 </script>
 
 <div
-  class="{track} {height} overflow-hidden {rounded
-    ? 'rounded-full'
-    : ''} {cls}">
+  role="progressbar"
+  aria-label={label}
+  aria-labelledby={labelledby}
+  aria-valuemin={value === null ? undefined : 0}
+  aria-valuemax={value === null ? undefined : 100}
+  aria-valuenow={value === null ? undefined : clamped}
+  class="{track} {height} {endCap
+    ? 'overflow-visible'
+    : 'overflow-hidden'} {rounded ? 'rounded-full' : ''} {cls}">
   <div
-    class="progress-fill {fillClass} h-full {rounded
-      ? 'rounded-full'
-      : ''} {completing ? 'progress-complete' : ''}"
-    style="width: {displayValue}%; {fillStyle}"
+    data-end-cap={endCap}
+    class="progress-fill {endCap === 'bookmark' && displayValue > 0
+      ? 'progress-bookmark'
+      : ''} {value === null
+      ? 'progress-indeterminate'
+      : ''} {fillClass} h-full {rounded ? 'rounded-full' : ''} {completing
+      ? 'progress-complete'
+      : ''}"
+    style="width: {value === null ? 35 : displayValue}%; {fillStyle}"
     {title}>
   </div>
 </div>
@@ -95,6 +125,35 @@
      transition/animation duration near-zero). */
   .progress-fill {
     transition: width 300ms ease-out;
+  }
+
+  .progress-indeterminate {
+    animation: progress-indeterminate 1.2s ease-in-out infinite;
+  }
+
+  .progress-bookmark {
+    position: relative;
+  }
+
+  .progress-bookmark::after {
+    position: absolute;
+    top: 50%;
+    right: -5px;
+    width: 10px;
+    height: 18px;
+    background: var(--accent);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+    content: "";
+    transform: translateY(-50%);
+  }
+
+  @keyframes progress-indeterminate {
+    from {
+      transform: translateX(-110%);
+    }
+    to {
+      transform: translateX(300%);
+    }
   }
 
   /* Delayed by the width transition above, so the accent lands as the fill

@@ -1,4 +1,9 @@
 <script lang="ts">
+  import RecoveryCodesModal from "./RecoveryCodesModal.svelte";
+  import MfaTotpSetupModal from "./MfaTotpSetupModal.svelte";
+
+  import { WEBAUTHN_NAME_MAX_LENGTH } from "@loomkeep/shared";
+
   import {
     confirmTotp,
     disableTotp,
@@ -10,21 +15,22 @@
     setEmailMfa,
     setPasswordless,
     setupTotp,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import PasswordInput from "$lib/components/PasswordInput.svelte";
-  import Switch from "$lib/components/Switch.svelte";
-  import { downloadBlob } from "$lib/download";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+
+  import Switch from "#lib/components/Switch.svelte";
+
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
   import type { MfaStatusDto, WebauthnCredentialDto } from "@loomkeep/shared";
   import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -41,13 +47,11 @@
   type MfaModal =
     | "totp-setup"
     | "totp-disable"
-    | "email-confirm"
     | "recovery-regenerate-confirm"
     | "recovery-reveal"
     | "webauthn-add"
     | "webauthn-remove"
     | "webauthn-rename"
-    | "passwordless-confirm"
     | null;
 
   let openModal = $state<MfaModal>(null);
@@ -121,19 +125,9 @@
     totpConfirmMut.mutate(totpCodeInput.trim());
   }
 
-  let disablePasswordInput = $state("");
-  let sensitivePasswordInput = $state("");
-  let pendingEmailEnabled = $state(false);
-
-  function openTotpDisable() {
-    disablePasswordInput = "";
-    totpDisableMut.reset();
-    openModal = "totp-disable";
-  }
-
   const totpDisableMut = createApiMutation(() => ({
-    mutate: () => disableTotp({ currentPassword: disablePasswordInput }),
-    coveredFields: ["currentPassword"],
+    mutate: disableTotp,
+    errorToast: true,
     onSuccess: () => {
       patchStatus({ totpEnabled: false });
       openModal = null;
@@ -141,46 +135,19 @@
     },
   }));
 
-  function confirmTotpDisable() {
-    totpDisableMut.mutate();
-  }
-
   const emailMfaMut = createApiMutation(() => ({
-    mutate: (input: { enabled: boolean; currentPassword: string }) =>
-      setEmailMfa(input),
-    coveredFields: ["currentPassword"],
+    mutate: (enabled: boolean) => setEmailMfa({ enabled }),
     errorToast: true,
-    onSuccess: ({ recoveryCodes }, input) => {
-      patchStatus({ emailEnabled: input.enabled });
-      sensitivePasswordInput = "";
-      if (recoveryCodes) {
-        openRecoveryReveal(recoveryCodes);
-      } else {
-        openModal = null;
-      }
+    onSuccess: ({ recoveryCodes }, enabled) => {
+      patchStatus({ emailEnabled: enabled });
+      if (recoveryCodes) openRecoveryReveal(recoveryCodes);
     },
   }));
 
-  function onToggleEmail(next: boolean) {
-    pendingEmailEnabled = next;
-    sensitivePasswordInput = "";
-    emailMfaMut.reset();
-    openModal = "email-confirm";
-  }
-
-  function confirmEmailMfa() {
-    emailMfaMut.mutate({
-      enabled: pendingEmailEnabled,
-      currentPassword: sensitivePasswordInput,
-    });
-  }
-
   let revealedCodes = $state<string[]>([]);
-  let recoveryCopied = $state(false);
 
   function openRecoveryReveal(codes: string[]) {
     revealedCodes = codes;
-    recoveryCopied = false;
     openModal = "recovery-reveal";
   }
 
@@ -189,50 +156,9 @@
     errorToast: true,
     onSuccess: ({ codes }) => {
       patchStatus({ recoveryCodesRemaining: codes.length });
-      sensitivePasswordInput = "";
       openRecoveryReveal(codes);
     },
   }));
-
-  function openRecoveryRegenerate() {
-    sensitivePasswordInput = "";
-    regenerateMut.reset();
-    openModal = "recovery-regenerate-confirm";
-  }
-
-  function confirmRegenerate() {
-    regenerateMut.mutate({ currentPassword: sensitivePasswordInput });
-  }
-
-  async function copyAllCodes() {
-    await navigator.clipboard.writeText(revealedCodes.join("\n"));
-    recoveryCopied = true;
-    setTimeout(() => (recoveryCopied = false), 2000);
-  }
-
-  const groupCode = (code: string): string =>
-    `${code.slice(0, 5)}-${code.slice(5)}`;
-
-  /**
-   * Plain text rather than PDF: it needs no dependency, prints fine, and is
-   * readable from a password manager's secure note — which is where these
-   * belong. Shown once and never again, so a copy-to-clipboard alone loses
-   * them to the next thing the user copies.
-   */
-  function downloadCodes() {
-    const header = [
-      m.settings_mfa_recovery_file_header({ account: auth.user?.email ?? "" }),
-      m.settings_mfa_recovery_file_generated({
-        date: formatDate(new Date().toISOString()),
-      }),
-      "",
-    ];
-    downloadBlob(
-      [...header, ...revealedCodes.map(groupCode), ""].join("\r\n"),
-      "text/plain;charset=utf-8",
-      `loomkeep-recovery-codes-${new Date().toISOString().slice(0, 10)}.txt`,
-    );
-  }
 
   let webauthnNameInput = $state("");
   let pendingRemoveCredential = $state<WebauthnCredentialDto | null>(null);
@@ -266,11 +192,8 @@
   }
 
   const webauthnRemoveMut = createApiMutation(() => ({
-    mutate: () =>
-      removeWebauthnCredential(pendingRemoveCredential!.id, {
-        currentPassword: sensitivePasswordInput,
-      }),
-    coveredFields: ["currentPassword"],
+    mutate: () => removeWebauthnCredential(pendingRemoveCredential!.id),
+    errorToast: true,
     onSuccess: (result) => {
       patchStatus({
         webauthnCredentials: (status?.webauthnCredentials ?? []).filter(
@@ -278,7 +201,6 @@
         ),
         ...(result.passwordlessDisabled ? { passwordlessEnabled: false } : {}),
       });
-      sensitivePasswordInput = "";
       openModal = null;
       toast.success(
         result.passwordlessDisabled
@@ -290,13 +212,7 @@
 
   function openWebauthnRemove(credential: WebauthnCredentialDto) {
     pendingRemoveCredential = credential;
-    sensitivePasswordInput = "";
-    webauthnRemoveMut.reset();
     openModal = "webauthn-remove";
-  }
-
-  function confirmWebauthnRemove() {
-    webauthnRemoveMut.mutate();
   }
 
   let pendingRenameCredential = $state<WebauthnCredentialDto | null>(null);
@@ -328,40 +244,20 @@
     webauthnRenameMut.mutate(name);
   }
 
-  let pendingPasswordlessEnabled = $state(false);
-
   const passwordlessMut = createApiMutation(() => ({
-    mutate: () =>
-      setPasswordless({
-        enabled: pendingPasswordlessEnabled,
-        currentPassword: sensitivePasswordInput,
-      }),
-    coveredFields: ["currentPassword"],
-    onSuccess: () => {
-      patchStatus({ passwordlessEnabled: pendingPasswordlessEnabled });
-      sensitivePasswordInput = "";
-      openModal = null;
+    mutate: (enabled: boolean) => setPasswordless({ enabled }),
+    errorToast: true,
+    onSuccess: (_result, enabled) => {
+      patchStatus({ passwordlessEnabled: enabled });
       toast.success(
-        pendingPasswordlessEnabled
+        enabled
           ? m.settings_mfa_passwordless_enabled_toast()
           : m.settings_mfa_passwordless_disabled_toast(),
       );
     },
   }));
 
-  function onTogglePasswordless(next: boolean) {
-    pendingPasswordlessEnabled = next;
-    sensitivePasswordInput = "";
-    passwordlessMut.reset();
-    openModal = "passwordless-confirm";
-  }
-
-  function confirmPasswordless() {
-    passwordlessMut.mutate();
-  }
-
   function closeModal() {
-    sensitivePasswordInput = "";
     openModal = null;
   }
 
@@ -396,7 +292,7 @@
               label={m.auth_mfa_totp_label()}
               checked={status?.totpEnabled || false}
               onChange={(next) =>
-                next ? openTotpSetup() : openTotpDisable()} />
+                next ? openTotpSetup() : (openModal = "totp-disable")} />
           {/snippet}
         </SettingRow>
 
@@ -409,7 +305,8 @@
             <Switch
               label={m.auth_mfa_email_label()}
               checked={status?.emailEnabled || false}
-              onChange={onToggleEmail} />
+              disabled={emailMfaMut.loading}
+              onChange={(next) => emailMfaMut.mutate(next)} />
           {/snippet}
         </SettingRow>
       </div>
@@ -423,7 +320,7 @@
         <div class="divide-border divide-y">
           <SettingRow
             anchor="mfa-webauthn"
-            label={m.settings_mfa_webauthn_label()}
+            label={m.common_security_key()}
             description={webauthnSecureContext
               ? m.settings_mfa_webauthn_desc()
               : m.settings_mfa_webauthn_unsupported()}
@@ -486,15 +383,6 @@
                   </div>
                 {/each}
               </div>
-            {:else}
-              <EmptyState class="px-4 py-5 text-left">
-                <p class="font-semibold">
-                  {m.settings_empty_security_keys_title()}
-                </p>
-                <p class="mt-1 text-sm">
-                  {m.settings_empty_security_keys_body()}
-                </p>
-              </EmptyState>
             {/if}
           </SettingRow>
 
@@ -509,8 +397,10 @@
               <Switch
                 label={m.settings_mfa_passwordless_label()}
                 checked={status?.passwordlessEnabled || false}
-                disabled={!status || status.webauthnCredentials.length === 0}
-                onChange={onTogglePasswordless} />
+                disabled={!status ||
+                  status.webauthnCredentials.length === 0 ||
+                  passwordlessMut.loading}
+                onChange={(next) => passwordlessMut.mutate(next)} />
             {/snippet}
           </SettingRow>
         </div>
@@ -534,7 +424,7 @@
           {#snippet control()}
             <button
               class="link-accent shrink-0 text-sm"
-              onclick={openRecoveryRegenerate}>
+              onclick={() => (openModal = "recovery-regenerate-confirm")}>
               {m.common_regenerate()}
             </button>
           {/snippet}
@@ -545,167 +435,26 @@
 {/if}
 
 {#if openModal === "totp-setup"}
-  <Modal title={m.settings_mfa_totp_setup_title()} onclose={closeModal}>
-    {#if totpStep === "scan"}
-      <div class="flex flex-col items-center gap-4">
-        {#if totpQrSvg}
-          <div class="qr-frame rounded-xl bg-white p-3">
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html totpQrSvg}
-          </div>
-        {:else}
-          <div class="bg-surface-2 h-48 w-48 animate-pulse rounded-xl"></div>
-        {/if}
-        <p class="text-dim max-w-xs text-center text-sm">
-          {m.settings_mfa_totp_scan_hint()}
-        </p>
-        {#if totpSecret}
-          <p class="w-full text-center">
-            <span class="text-dim text-xs"
-              >{m.settings_mfa_totp_manual_entry_label()}</span>
-            <span class="block font-mono text-sm tracking-widest select-all">
-              {totpSecret}
-            </span>
-          </p>
-        {/if}
-        <button
-          type="button"
-          class="btn btn-primary w-full"
-          disabled={!totpQrSvg}
-          onclick={() => (totpStep = "confirm")}>
-          {m.common_next()}
-        </button>
-      </div>
-    {:else}
-      <form
-        class="flex flex-col gap-3"
-        onsubmit={(e) => {
-          e.preventDefault();
-          confirmTotpSetup();
-        }}>
-        <p class="text-sm">{m.settings_mfa_totp_confirm_hint()}</p>
-        <label class="block">
-          <span class="mb-1.5 block text-sm font-semibold">
-            {m.common_code()}
-          </span>
-          <input
-            type="text"
-            name="code"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            minlength="6"
-            maxlength="6"
-            required
-            enterkeyhint="done"
-            class="input font-mono text-lg tracking-[0.3em]"
-            placeholder="000000"
-            bind:value={totpCodeInput} />
-        </label>
-        {#if totpConfirmMut.error}
-          <p class="text-danger text-sm">
-            {m.settings_mfa_totp_invalid_code()}
-          </p>
-        {/if}
-        <div class="mt-2 flex justify-end gap-2">
-          <button
-            type="button"
-            class="btn btn-ghost"
-            onclick={() => (totpStep = "scan")}>
-            {m.common_back()}
-          </button>
-          <button
-            type="submit"
-            class="btn btn-primary"
-            disabled={totpConfirmMut.loading ||
-              totpCodeInput.trim().length !== 6}>
-            {totpConfirmMut.loading
-              ? m.common_save_loading()
-              : m.common_enable()}
-          </button>
-        </div>
-      </form>
-    {/if}
-  </Modal>
+  <MfaTotpSetupModal
+    bind:step={totpStep}
+    bind:code={totpCodeInput}
+    qrSvg={totpQrSvg}
+    secret={totpSecret}
+    busy={totpConfirmMut.loading}
+    invalid={!!totpConfirmMut.error}
+    onconfirm={confirmTotpSetup}
+    onclose={closeModal} />
 {/if}
 
 {#if openModal === "totp-disable"}
-  <Modal title={m.settings_mfa_totp_disable_title()} onclose={closeModal}>
-    <form
-      class="flex flex-col gap-3"
-      onsubmit={(e) => {
-        e.preventDefault();
-        confirmTotpDisable();
-      }}>
-      <p class="text-sm">{m.settings_mfa_totp_disable_hint()}</p>
-      <label class="block">
-        <span class="mb-1.5 block text-sm font-semibold">
-          {m.common_current_password()}
-        </span>
-        <PasswordInput
-          name="currentPassword"
-          autocomplete="current-password"
-          enterkeyhint="done"
-          minlength={1}
-          required
-          bind:value={disablePasswordInput} />
-      </label>
-      {#if totpDisableMut.error}
-        <p class="text-danger text-sm">{totpDisableMut.error}</p>
-      {/if}
-      <div class="mt-2 flex justify-end gap-2">
-        <button type="button" class="btn btn-ghost" onclick={closeModal}>
-          {m.common_cancel()}
-        </button>
-        <button
-          type="submit"
-          class="btn btn-danger"
-          disabled={totpDisableMut.loading || !disablePasswordInput}>
-          {totpDisableMut.loading
-            ? m.common_save_loading()
-            : m.common_disable()}
-        </button>
-      </div>
-    </form>
-  </Modal>
-{/if}
-
-{#if openModal === "email-confirm"}
-  <Modal title={m.auth_mfa_email_label()} onclose={closeModal}>
-    <form
-      class="flex flex-col gap-3"
-      onsubmit={(e) => {
-        e.preventDefault();
-        confirmEmailMfa();
-      }}>
-      <p class="text-sm">{m.settings_mfa_email_desc()}</p>
-      <label class="block">
-        <span class="mb-1.5 block text-sm font-semibold">
-          {m.common_current_password()}
-        </span>
-        <PasswordInput
-          name="currentPassword"
-          autocomplete="current-password"
-          enterkeyhint="done"
-          minlength={1}
-          required
-          bind:value={sensitivePasswordInput} />
-      </label>
-      {#if emailMfaMut.error}
-        <p class="text-danger text-sm">{emailMfaMut.error}</p>
-      {/if}
-      <div class="mt-2 flex justify-end gap-2">
-        <button type="button" class="btn btn-ghost" onclick={closeModal}>
-          {m.common_cancel()}
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          disabled={emailMfaMut.loading || !sensitivePasswordInput}>
-          {emailMfaMut.loading ? m.common_save_loading() : m.common_confirm()}
-        </button>
-      </div>
-    </form>
-  </Modal>
+  <ConfirmationModal
+    title={m.settings_mfa_totp_disable_title()}
+    message={m.settings_mfa_totp_disable_hint()}
+    confirmLabel={m.common_disable()}
+    danger
+    busy={totpDisableMut.loading}
+    onConfirm={() => totpDisableMut.mutate()}
+    onCancel={closeModal} />
 {/if}
 
 {#if openModal === "webauthn-add"}
@@ -725,7 +474,7 @@
           type="text"
           name="name"
           required
-          maxlength="60"
+          maxlength={WEBAUTHN_NAME_MAX_LENGTH}
           enterkeyhint="done"
           class="input"
           bind:value={webauthnNameInput} />
@@ -764,7 +513,7 @@
           type="text"
           name="name"
           required
-          maxlength="60"
+          maxlength={WEBAUTHN_NAME_MAX_LENGTH}
           enterkeyhint="done"
           class="input"
           bind:value={webauthnNameInput} />
@@ -790,164 +539,30 @@
 {/if}
 
 {#if openModal === "webauthn-remove"}
-  <Modal title={m.settings_mfa_webauthn_remove_title()} onclose={closeModal}>
-    <form
-      class="flex flex-col gap-3"
-      onsubmit={(e) => {
-        e.preventDefault();
-        confirmWebauthnRemove();
-      }}>
-      <p class="text-sm">{m.settings_mfa_webauthn_remove_hint()}</p>
-      <label class="block">
-        <span class="mb-1.5 block text-sm font-semibold">
-          {m.common_current_password()}
-        </span>
-        <PasswordInput
-          name="currentPassword"
-          autocomplete="current-password"
-          enterkeyhint="done"
-          minlength={1}
-          required
-          bind:value={sensitivePasswordInput} />
-      </label>
-      {#if webauthnRemoveMut.error}
-        <p class="text-danger text-sm">{webauthnRemoveMut.error}</p>
-      {/if}
-      <div class="mt-2 flex justify-end gap-2">
-        <button type="button" class="btn btn-ghost" onclick={closeModal}>
-          {m.common_cancel()}
-        </button>
-        <button
-          type="submit"
-          class="btn btn-danger"
-          disabled={webauthnRemoveMut.loading || !sensitivePasswordInput}>
-          {webauthnRemoveMut.loading
-            ? m.common_save_loading()
-            : m.common_delete()}
-        </button>
-      </div>
-    </form>
-  </Modal>
-{/if}
-
-{#if openModal === "passwordless-confirm"}
-  <Modal title={m.settings_mfa_passwordless_label()} onclose={closeModal}>
-    <form
-      class="flex flex-col gap-3"
-      onsubmit={(e) => {
-        e.preventDefault();
-        confirmPasswordless();
-      }}>
-      <p class="text-sm">{m.settings_mfa_passwordless_confirm_hint()}</p>
-      <label class="block">
-        <span class="mb-1.5 block text-sm font-semibold">
-          {m.common_current_password()}
-        </span>
-        <PasswordInput
-          name="currentPassword"
-          autocomplete="current-password"
-          enterkeyhint="done"
-          minlength={1}
-          required
-          bind:value={sensitivePasswordInput} />
-      </label>
-      {#if passwordlessMut.error}
-        <p class="text-danger text-sm">{passwordlessMut.error}</p>
-      {/if}
-      <div class="mt-2 flex justify-end gap-2">
-        <button type="button" class="btn btn-ghost" onclick={closeModal}>
-          {m.common_cancel()}
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          disabled={passwordlessMut.loading || !sensitivePasswordInput}>
-          {passwordlessMut.loading
-            ? m.common_save_loading()
-            : m.common_confirm()}
-        </button>
-      </div>
-    </form>
-  </Modal>
+  <ConfirmationModal
+    title={m.settings_mfa_webauthn_remove_title()}
+    message={m.settings_mfa_webauthn_remove_hint()}
+    confirmLabel={m.common_delete()}
+    danger
+    busy={webauthnRemoveMut.loading}
+    onConfirm={() => webauthnRemoveMut.mutate()}
+    onCancel={closeModal} />
 {/if}
 
 {#if openModal === "recovery-regenerate-confirm"}
-  <Modal
+  <ConfirmationModal
     title={m.settings_mfa_recovery_regenerate_confirm_title()}
-    onclose={closeModal}>
-    <form
-      class="flex flex-col gap-3"
-      onsubmit={(e) => {
-        e.preventDefault();
-        confirmRegenerate();
-      }}>
-      <p class="text-sm">
-        {m.settings_mfa_recovery_regenerate_confirm_message()}
-      </p>
-      <label class="block">
-        <span class="mb-1.5 block text-sm font-semibold">
-          {m.common_current_password()}
-        </span>
-        <PasswordInput
-          name="currentPassword"
-          autocomplete="current-password"
-          enterkeyhint="done"
-          minlength={1}
-          required
-          bind:value={sensitivePasswordInput} />
-      </label>
-      {#if regenerateMut.error}
-        <p class="text-danger text-sm">{regenerateMut.error}</p>
-      {/if}
-      <div class="mt-2 flex justify-end gap-2">
-        <button type="button" class="btn btn-ghost" onclick={closeModal}>
-          {m.common_cancel()}
-        </button>
-        <button
-          type="submit"
-          class="btn btn-danger"
-          disabled={regenerateMut.loading || !sensitivePasswordInput}>
-          {regenerateMut.loading
-            ? m.common_save_loading()
-            : m.common_regenerate()}
-        </button>
-      </div>
-    </form>
-  </Modal>
+    message={m.settings_mfa_recovery_regenerate_confirm_message()}
+    confirmLabel={m.common_regenerate()}
+    danger
+    busy={regenerateMut.loading}
+    onConfirm={() => regenerateMut.mutate()}
+    onCancel={closeModal} />
 {/if}
 
 {#if openModal === "recovery-reveal"}
-  <Modal title={m.settings_mfa_recovery_reveal_title()} onclose={closeModal}>
-    <p class="text-dim mb-4 text-sm">{m.settings_mfa_recovery_reveal_hint()}</p>
-    <div
-      class="border-border bg-surface-2 grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-dashed p-4">
-      {#each revealedCodes as code (code)}
-        <p class="text-center font-mono text-sm tracking-wider tabular-nums">
-          {groupCode(code)}
-        </p>
-      {/each}
-    </div>
-    <div class="mt-4 flex flex-col gap-2">
-      <button class="btn btn-ghost w-full" onclick={copyAllCodes}>
-        <Icon name={recoveryCopied ? "check" : "link"} class="h-4 w-4" />
-        {recoveryCopied
-          ? m.common_copied()
-          : m.settings_mfa_recovery_copy_all()}
-      </button>
-      <button class="btn btn-ghost w-full" onclick={downloadCodes}>
-        <Icon name="download" class="h-4 w-4" />
-        {m.settings_mfa_recovery_download()}
-      </button>
-      <button class="btn btn-primary w-full" onclick={closeModal}>
-        {m.settings_mfa_recovery_acknowledge()}
-      </button>
-    </div>
-  </Modal>
+  <RecoveryCodesModal
+    codes={revealedCodes}
+    accountEmail={auth.user?.email ?? ""}
+    onclose={closeModal} />
 {/if}
-
-<style>
-  .qr-frame :global(svg) {
-    width: 200px;
-    height: 200px;
-  }
-</style>

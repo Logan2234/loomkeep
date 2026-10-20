@@ -8,7 +8,7 @@
   import QrScanner from "qr-scanner";
   import WorkerPath from "qr-scanner/qr-scanner-worker.min.js?url";
   import { onDestroy, onMount, tick } from "svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
 

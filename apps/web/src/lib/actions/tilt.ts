@@ -1,4 +1,4 @@
-import { prefersReducedMotion } from "$lib/motion";
+import { prefersReducedMotion } from "#lib/motion.js";
 
 type TiltParams = {
   /** Rotation in degrees at the node's edge. */
@@ -23,7 +23,7 @@ function transformFor(rx: number, ry: number, scale: number): string {
  * choice this action doesn't make for it).
  *
  * No-ops entirely under prefers-reduced-motion — same rule as every other
- * motion in the app (see `$lib/motion`), not a reduced version of the tilt.
+ * motion in the app (see `#lib/motion`), not a reduced version of the tilt.
  */
 export function tilt(node: HTMLElement, params: TiltParams = {}) {
   let { maxDeg = 12, scale = 1.06 } = params;

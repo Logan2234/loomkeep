@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { getAdminSchema } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import MermaidDiagram from "$lib/components/MermaidDiagram.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { getAdminSchema } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import AdminQueryError from "../AdminQueryError.svelte";
+  import MermaidDiagram from "#lib/components/MermaidDiagram.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   const schemaQuery = createApiQuery(() => ({
     key: keys.admin.schema(),
@@ -18,7 +18,7 @@
   const error = $derived(schemaQuery.error);
 </script>
 
-<div class="px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="library"
     title={m.admin_schema_title()}
@@ -27,7 +27,7 @@
     class="mb-6" />
 
   {#if error}
-    <Banner variant="error">{error}</Banner>
+    <AdminQueryError message={error} queryKey={keys.admin.schema()} />
   {:else if loading && !data}
     <div class="card h-64 animate-pulse"></div>
   {:else if data?.erd}

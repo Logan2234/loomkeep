@@ -1,37 +1,61 @@
-import type {
-  MusicDetailDto,
-  MusicEntryDto,
-  MusicItemDto,
-  MusicSource,
-  PagedResult,
-} from "@loomkeep/shared";
 import {
-  ActivityType,
+  type BulkEntriesResultDto,
+  type BulkEntriesTargetDto,
   Domain,
-  ErrorCode,
+  MUSIC_SORT_KEYS,
+  type MusicDetailDto,
+  type MusicEntryDto,
+  type MusicItemDto,
+  type MusicSortKey,
+  type MusicSource,
   MusicStatus,
+  type PagedResult,
+  type PileSummaryDto,
+  RealtimeEvent,
   ReviewTargetType,
   XpReason,
 } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { revokeEntryXp } from "../common/entry-lifecycle.util";
+
+import { Injectable } from "@nestjs/common";
 import type {
   MusicStatus as DbMusicStatus,
-  MusicEntry,
   MusicExternalId,
   MusicItem,
   Prisma,
 } from "@prisma/client";
-import { AppException } from "../common/app.exception";
+import {
+  addToList,
+  applyBulkUpdate,
+  applyToEntries,
+  assertBulkTarget,
+  assertBulkUpdate,
+} from "../common/bulk-entries.util";
 import { toDateOrNull } from "../common/date.util";
+import type {
+  EntryStatusChange,
+  ListEntriesFilters,
+} from "../common/entry-lifecycle.util";
+import {
+  assertEntryOwnership,
+  awardNewEntryXp,
+  emitEntryActivity,
+  listEntryPage,
+  polymorphicTargetCleanup,
+  RECENTLY_UPDATED_FIRST,
+  searchTerm,
+  titleContains,
+} from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { XpService } from "../gamification/xp.service";
+import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
-import { classifyStatusTransition } from "../social/activity-transition.util";
 import { ActivityService } from "../social/activity.service";
+import { MUSIC_PILE_STATUSES, summarizePile } from "../stats/pile.util";
+import type { BulkUpdateMusicEntriesBody } from "./dto/bulk-update-music-entries.dto";
 import { UpdateMusicEntryDto } from "./dto/update-music-entry.dto";
 import { UpsertMusicEntryDto } from "./dto/upsert-music-entry.dto";
 import { MusicItemService } from "./music-item.service";
@@ -45,35 +69,44 @@ type EntryWithAlbum = Prisma.MusicEntryGetPayload<{
   include: typeof ENTRY_INCLUDE;
 }>;
 
-type MusicSortKey =
-  "added" | "title" | "artist" | "rating" | "finished" | "status";
-const MUSIC_SORT_KEYS: MusicSortKey[] = [
-  "added",
-  "title",
-  "artist",
-  "rating",
-  "finished",
-  "status",
-];
 const MUSIC_STATUS_SORT_ORDER = ["TO_LISTEN", "LISTENED"] as const;
 
-export interface ListEntriesFilters {
-  q?: string;
-  favorite?: boolean;
-  statuses?: string[];
-  sort?: string;
-  order?: "asc" | "desc";
-  page?: number;
-  limit?: number;
-  /** The signed-in user's locale, when known — drives alphabetical collation. */
-  lang?: string;
-}
+/** What ranking an album entry reads — a light slice of its DTO. */
+type MusicRow = Pick<
+  MusicEntryDto,
+  "id" | "status" | "rating" | "finishedAt" | "createdAt"
+> & { album: Pick<MusicItemDto, "title" | "artists"> };
+
+const MUSIC_ROW_SELECT = {
+  id: true,
+  musicItemId: true,
+  status: true,
+  finishedAt: true,
+  createdAt: true,
+  musicItem: { select: { title: true, artists: true } },
+} satisfies Prisma.MusicEntrySelect;
+
+// The sorts on a stored column, which Postgres pages itself. Unset dates go
+// last in the natural (newest first) order, where `timeMs` ranks them.
+const MUSIC_SQL_SORTS: Partial<
+  Record<
+    MusicSortKey,
+    (asc: boolean) => Prisma.MusicEntryOrderByWithRelationInput[]
+  >
+> = {
+  added: (asc) => [{ createdAt: asc ? "asc" : "desc" }],
+  finished: (asc) => [
+    {
+      finishedAt: { sort: asc ? "asc" : "desc", nulls: asc ? "first" : "last" },
+    },
+  ],
+};
 
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
 function compareMusicEntries(
   sort: MusicSortKey,
-  a: MusicEntryDto,
-  b: MusicEntryDto,
+  a: MusicRow,
+  b: MusicRow,
   locale: string | undefined,
 ): number {
   switch (sort) {
@@ -108,46 +141,25 @@ export class MusicLibraryService {
     private readonly activity: ActivityService,
     private readonly xp: XpService,
     private readonly events: EventsGateway,
+    private readonly lists: ListService,
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a music entry write. */
-  private async emitEntryActivity(
+  private emitEntryActivity(
     userId: string,
     musicItemId: string,
-    change: {
-      prevStatus: string | null;
-      nextStatus: string;
-      prevFavorite: boolean;
-      nextFavorite: boolean;
-    },
+    change: EntryStatusChange,
   ): Promise<void> {
-    const transition = classifyStatusTransition(
-      "MUSIC",
-      change.prevStatus,
-      change.nextStatus,
+    return emitEntryActivity(
+      this.activity,
+      {
+        userId,
+        domain: Domain.MUSIC,
+        targetType: ReviewTargetType.MUSIC,
+        targetId: musicItemId,
+      },
+      change,
     );
-
-    if (transition) {
-      await this.activity.emit({
-        userId,
-        type: transition.type,
-        domain: "MUSIC",
-        targetType: ReviewTargetType.MUSIC,
-        targetId: musicItemId,
-        homeFeed: transition.homeFeed,
-      });
-    }
-
-    if (change.nextFavorite && !change.prevFavorite) {
-      await this.activity.emit({
-        userId,
-        type: ActivityType.FAVORITED,
-        domain: "MUSIC",
-        targetType: ReviewTargetType.MUSIC,
-        targetId: musicItemId,
-        homeFeed: false,
-      });
-    }
   }
 
   /** First touch of an album persists it (on-demand cache), then upserts the entry. */
@@ -185,14 +197,12 @@ export class MusicLibraryService {
     });
 
     if (before === null) {
-      await this.xp.award(userId, XpReason.WORK_ADDED, entry.id);
-      const domainEntryCount = await this.prisma.musicEntry.count({
-        where: { userId },
+      await awardNewEntryXp(this.xp, {
+        userId,
+        entryId: entry.id,
+        domain: Domain.MUSIC,
+        countEntries: () => this.prisma.musicEntry.count({ where: { userId } }),
       });
-
-      if (domainEntryCount === 1) {
-        await this.xp.award(userId, XpReason.DOMAIN_STARTED, Domain.MUSIC);
-      }
     }
 
     if (
@@ -215,7 +225,7 @@ export class MusicLibraryService {
     // (see OnboardingService) — pushed unconditionally rather than checking
     // whether onboarding is even still in progress first, since that check
     // would cost as much as the emit is worth avoiding.
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return toEntryDto(
       entry,
@@ -231,60 +241,168 @@ export class MusicLibraryService {
     userId: string,
     filters: ListEntriesFilters,
   ): Promise<PagedResult<MusicEntryDto>> {
+    const where = this.entryWhere(userId, filters);
+    const ratingsOf = (musicItemIds: string[]) =>
+      this.reviews.getRatings(userId, ReviewTargetType.MUSIC, musicItemIds);
+
+    return listEntryPage(filters, {
+      sortKeys: MUSIC_SORT_KEYS,
+      defaultSort: "added",
+      compare: compareMusicEntries,
+      sqlSorts: MUSIC_SQL_SORTS,
+      sqlPage: async (orderBy, skip, take) => {
+        const [page, total] = await Promise.all([
+          this.prisma.musicEntry.findMany({
+            where,
+            orderBy: [...orderBy, ...RECENTLY_UPDATED_FIRST],
+            skip,
+            take,
+            select: { id: true },
+          }),
+          this.prisma.musicEntry.count({ where }),
+        ]);
+        return { ids: page.map((e) => e.id), total };
+      },
+      rows: async (sort) => {
+        const rows = await this.prisma.musicEntry.findMany({
+          where,
+          orderBy: RECENTLY_UPDATED_FIRST,
+          select: MUSIC_ROW_SELECT,
+        });
+        const ratings =
+          sort === "rating"
+            ? await ratingsOf(rows.map((r) => r.musicItemId))
+            : new Map<string, number>();
+        return rows.map((r) => ({
+          id: r.id,
+          status: r.status,
+          rating: ratings.get(r.musicItemId) ?? null,
+          finishedAt: r.finishedAt?.toISOString() ?? null,
+          createdAt: r.createdAt.toISOString(),
+          album: { title: r.musicItem.title, artists: r.musicItem.artists },
+        }));
+      },
+      load: async (ids) => {
+        const entries = await this.prisma.musicEntry.findMany({
+          where: { id: { in: ids } },
+          include: ENTRY_INCLUDE,
+        });
+        const ratings = await ratingsOf(entries.map((e) => e.musicItemId));
+        return entries.map((e) =>
+          toEntryDto(e, ratings.get(e.musicItemId) ?? null),
+        );
+      },
+    });
+  }
+
+  /**
+   * What's left to listen to among the entries the list would show under the
+   * same filters (UX-02). An album with no known length is left out of the
+   * total, and `counted` says so.
+   */
+  async getPile(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Promise<PileSummaryDto> {
     const entries = await this.prisma.musicEntry.findMany({
       where: {
-        userId,
-        status:
-          filters.statuses && filters.statuses.length > 0
-            ? { in: filters.statuses as DbMusicStatus[] }
-            : undefined,
+        AND: [
+          this.entryWhere(userId, filters),
+          { status: { in: [...MUSIC_PILE_STATUSES] } },
+        ],
       },
-      include: ENTRY_INCLUDE,
-      orderBy: { updatedAt: "desc" },
+      select: { musicItem: { select: { durationMin: true } } },
     });
-
-    const ratings = await this.reviews.getRatings(
-      userId,
-      ReviewTargetType.MUSIC,
-      entries.map((e) => e.musicItemId),
+    return summarizePile(
+      "MINUTES",
+      entries.map((e) => ({
+        amount: e.musicItem.durationMin,
+        estimated: false,
+      })),
     );
-    let dtos = entries.map((e) =>
-      toEntryDto(e, ratings.get(e.musicItemId) ?? null),
-    );
+  }
 
-    const q = filters.q?.trim().toLowerCase();
-    dtos = dtos.filter((dto) => {
-      if (filters.favorite && !dto.favorite) return false;
-      if (q && !dto.album.title.toLowerCase().includes(q)) return false;
+  /**
+   * Applies one change to every targeted entry, each through updateEntry
+   * (or the list's addItem), so the side effects match a single update's.
+   */
+  async bulkUpdate(
+    userId: string,
+    dto: BulkUpdateMusicEntriesBody,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkUpdate(dto);
+    const entries = await this.prisma.musicEntry.findMany({
+      where: this.bulkWhere(userId, dto),
+      orderBy: RECENTLY_UPDATED_FIRST,
+      select: {
+        id: true,
+        musicItemId: true,
+        status: true,
+        favorite: true,
+        ownershipStatus: true,
+        ownershipSource: true,
+      },
+    });
+    return applyBulkUpdate(
+      entries.map((e) => ({ ...e, itemId: e.musicItemId })),
+      dto,
+      {
+        update: (id, patch) =>
+          this.updateEntry(userId, id, patch as UpdateMusicEntryDto),
+        addToList: (itemId, listId) =>
+          addToList(this.lists, userId, listId, "MUSIC", itemId),
+      },
+    );
+  }
+
+  /** Removes every targeted entry, each through deleteEntry. */
+  async bulkDelete(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkTarget(target);
+    const entries = await this.prisma.musicEntry.findMany({
+      where: this.bulkWhere(userId, target),
+      select: { id: true },
+    });
+    return applyToEntries(entries, async (e) => {
+      await this.deleteEntry(userId, e.id);
       return true;
     });
+  }
 
-    const sort = MUSIC_SORT_KEYS.includes(filters.sort as MusicSortKey)
-      ? (filters.sort as MusicSortKey)
-      : "added";
-    const asc = filters.order === "asc";
-    dtos.sort((a, b) => {
-      const c = compareMusicEntries(sort, a, b, filters.lang);
-      return asc ? -c : c;
-    });
+  private bulkWhere(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Prisma.MusicEntryWhereInput {
+    return target.filters
+      ? this.entryWhere(userId, target.filters)
+      : { userId, id: { in: target.ids ?? [] } };
+  }
 
-    const page = filters.page && filters.page > 0 ? filters.page : 1;
-    const limit =
-      filters.limit && filters.limit > 0 ? filters.limit : DEFAULT_PAGE_SIZE;
-    const start = (page - 1) * limit;
+  private entryWhere(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Prisma.MusicEntryWhereInput {
+    const q = searchTerm(filters);
     return {
-      items: dtos.slice(start, start + limit),
-      total: dtos.length,
-      hasMore: dtos.length > page * limit,
+      userId,
+      status:
+        filters.statuses && filters.statuses.length > 0
+          ? { in: filters.statuses as DbMusicStatus[] }
+          : undefined,
+      favorite: filters.favorite ? true : undefined,
+      musicItem: q ? { title: titleContains(q) } : undefined,
     };
   }
 
   async getEntry(userId: string, entryId: string): Promise<MusicEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
-    const entry = await this.prisma.musicEntry.findUniqueOrThrow({
-      where: { id: entryId },
-      include: ENTRY_INCLUDE,
-    });
+    const entry = await assertEntryOwnership(userId, () =>
+      this.prisma.musicEntry.findUnique({
+        where: { id: entryId },
+        include: ENTRY_INCLUDE,
+      }),
+    );
     return toEntryDto(
       entry,
       await this.reviews.getRating(
@@ -300,12 +418,7 @@ export class MusicLibraryService {
     entryId: string,
     dto: UpdateMusicEntryDto,
   ): Promise<MusicEntryDto> {
-    await this.assertEntryOwnership(userId, entryId);
-
-    const before = await this.prisma.musicEntry.findUnique({
-      where: { id: entryId },
-      select: { status: true, favorite: true },
-    });
+    const before = await this.assertEntryOwnership(userId, entryId);
 
     const entry = await this.prisma.musicEntry.update({
       where: { id: entryId },
@@ -348,7 +461,7 @@ export class MusicLibraryService {
       );
     }
 
-    this.events.emitToUser(userId, "onboarding-updated");
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
 
     return toEntryDto(
       entry,
@@ -379,26 +492,20 @@ export class MusicLibraryService {
     });
 
     await this.prisma.$transaction([
-      this.prisma.review.deleteMany({
-        where: { userId, targetId: entry.musicItemId },
-      }),
-      this.prisma.comment.updateMany({
-        where: {
-          authorId: userId,
-          targetId: entry.musicItemId,
-          deletedAt: null,
-        },
-        data: { text: null, deletedAt: new Date() },
-      }),
+      ...polymorphicTargetCleanup(
+        this.prisma,
+        userId,
+        [ReviewTargetType.MUSIC],
+        [entry.musicItemId],
+      ),
       this.prisma.musicEntry.delete({ where: { id: entryId } }),
     ]);
 
-    await this.xp.revokeBySource("MusicEntry", [entryId]); // ALBUM_LISTENED
-    await this.xp.revokeBySource("Entry", [entryId]); // WORK_ADDED
-    await this.xp.revokeBySource(
-      "Review",
-      reviews.map((r) => r.id),
-    ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
+    await revokeEntryXp(this.xp, [
+      { sourceType: "MusicEntry", ids: [entryId] },
+      { sourceType: "Entry", ids: [entryId] },
+      { sourceType: "Review", ids: reviews.map((r) => r.id) },
+    ]);
   }
 
   /**
@@ -445,29 +552,10 @@ export class MusicLibraryService {
     };
   }
 
-  private async assertEntryOwnership(
-    userId: string,
-    entryId: string,
-  ): Promise<MusicEntry> {
-    const entry = await this.prisma.musicEntry.findUnique({
-      where: { id: entryId },
-    });
-
-    if (!entry) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibraryEntryNotFound,
-      );
-    }
-
-    if (entry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibraryEntryForbidden,
-      );
-    }
-
-    return entry;
+  private assertEntryOwnership(userId: string, entryId: string) {
+    return assertEntryOwnership(userId, () =>
+      this.prisma.musicEntry.findUnique({ where: { id: entryId } }),
+    );
   }
 }
 

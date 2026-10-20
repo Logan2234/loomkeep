@@ -14,11 +14,11 @@
 {#if items.length > 0}
   <section class="mt-10">
     <h2 class="font-display mb-3 text-xl font-bold">{title}</h2>
-    <Carousel {items} keyOf={(item) => item.key}>
+    <Carousel {items} keyOf={(item) => item.key} label={title}>
       {#snippet card(item)}
         <a href={item.href} class="block w-28 sm:w-32">
           <div class="card hover:border-accent transition-colors">
-            <Poster src={item.cover} title={item.title} />
+            <Poster src={item.cover} title={item.title} alt="" />
           </div>
           <p class="mt-1.5 truncate text-xs font-semibold">{item.title}</p>
         </a>

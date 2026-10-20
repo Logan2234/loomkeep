@@ -16,18 +16,20 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../../common/app.exception";
+import { HTTP_TIMEOUT_MS } from "../../../common/http.util";
 import { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { GameItemService } from "../../../games/game-item.service";
 import { IgdbProvider } from "../../../games/providers/igdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { AgeGateService } from "../../../users/age-gate.service";
-import type {
-  CommitDecisions,
-  ImportReq,
-  ProgressReporter,
+import {
+  type CommitDecisions,
+  type ImportReq,
+  type ProgressReporter,
+  indexPlanMatches,
 } from "../../import-source";
 
-const STEAM_API = "https://api.steampowered.com";
+export const STEAM_API = "https://api.steampowered.com";
 
 /** Review sections, in display order, with their French headings. */
 const STATUS_GROUPS: { status: GameStatus; label: string }[] = [
@@ -187,13 +189,10 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
       );
     }
 
-    const groups: ImportPlanGroup[] = STATUS_GROUPS.filter(
-      (g) => (byStatus.get(g.status)?.length ?? 0) > 0,
-    ).map((g) => ({
-      id: g.status,
-      label: g.label,
-      items: byStatus.get(g.status)!,
-    }));
+    const groups: ImportPlanGroup[] = STATUS_GROUPS.flatMap((g) => {
+      const items = byStatus.get(g.status);
+      return items?.length ? [{ id: g.status, label: g.label, items }] : [];
+    });
 
     const matched = matchedByIgdb.size;
     const unresolved = unmatchedByApp.size;
@@ -217,11 +216,6 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
     progress: ProgressReporter,
   ): Promise<ImportReport> {
     const matchByKey = indexPlanMatches(plan);
-
-    if (decisions.overwrite) {
-      // GameReplay cascades on GameEntry delete (schema onDelete: Cascade).
-      await this.prisma.gameEntry.deleteMany({ where: { userId } });
-    }
 
     // Resolve the target ids first, then bulk-fetch their IGDB details.
     const targets: { key: string; sourceId: string }[] = [];
@@ -254,41 +248,48 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
       );
       const status = (decisions.statuses.get(key) ?? "BACKLOG") as GameStatus;
       const playtimeMinutes = parsed.playtimeByKey.get(key) ?? 0;
-      // Every Steam-imported game is, by definition, owned digitally on Steam.
-      const data = {
+      const syncedAt = new Date();
+      // Every newly imported game is, by definition, owned digitally on
+      // Steam. A reimport only refreshes Steam's own counter, however: the
+      // user's Loomkeep status, notes, dates, ownership and sessions survive.
+      const createData = {
         status,
         playtimeMinutes,
+        steamPlaytimeMinutes: playtimeMinutes,
+        steamSyncedAt: syncedAt,
         ownershipStatus: GameOwnershipStatus.DIGITAL,
         ownershipSource: "Steam",
       };
       await this.prisma.gameEntry.upsert({
         where: { userId_gameItemId: { userId, gameItemId: gameItem.id } },
-        update: data,
-        create: { userId, gameItemId: gameItem.id, ...data },
+        update: {
+          playtimeMinutes,
+          steamPlaytimeMinutes: playtimeMinutes,
+          steamSyncedAt: syncedAt,
+        },
+        create: { userId, gameItemId: gameItem.id, ...createData },
       });
       tally.set(status, (tally.get(status) ?? 0) + 1);
       totalMinutes += playtimeMinutes;
       progress.tick();
     }
 
-    const tiles: ImportReportTile[] = STATUS_GROUPS.filter(
-      (g) => (tally.get(g.status) ?? 0) > 0,
-    ).map((g) => ({
-      id: g.status,
-      label: g.label,
-      value: tally.get(g.status)!,
-      sub: null,
-    }));
+    const tiles: ImportReportTile[] = STATUS_GROUPS.flatMap((g) => {
+      const value = tally.get(g.status);
+      return value !== undefined && value > 0
+        ? [{ id: g.status, label: g.label, value, sub: null }]
+        : [];
+    });
     if (tiles.length === 0)
-      tiles.push({ id: "games", label: "Jeux", value: 0, sub: null });
+      tiles.push({ id: "games", label: "Games", value: 0, sub: null });
     tiles.push({
       id: "playtime",
-      label: "Temps de jeu",
+      label: "Playtime",
       value: Math.round(totalMinutes / 60),
-      sub: "heures importées",
+      sub: "hours imported",
     });
 
-    return { overwrite: decisions.overwrite, tiles };
+    return { overwrite: false, tiles };
   }
 
   /** IGDB ids (of the given set) the user already has a library entry for. */
@@ -385,7 +386,9 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
     }
 
     this.quota.record("steam");
-    const response = await fetch(target);
+    const response = await fetch(target, {
+      signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+    });
 
     if (!response.ok) {
       throw new AppException(
@@ -421,14 +424,3 @@ function toMatch(
 }
 
 /** Flatten a plan's auto-resolved matches into a key → match lookup. */
-function indexPlanMatches(plan: ImportPlan): Map<string, ImportMatch> {
-  const byKey = new Map<string, ImportMatch>();
-
-  for (const group of plan.groups) {
-    for (const item of group.items) {
-      if (item.match) byKey.set(item.key, item.match);
-    }
-  }
-
-  return byKey;
-}

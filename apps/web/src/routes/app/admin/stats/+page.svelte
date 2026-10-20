@@ -1,4 +1,7 @@
 <script lang="ts">
+  import KpiStripSkeleton from "#lib/components/stats/KpiStripSkeleton.svelte";
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   // /admin/stats — "Salle des machines": the instance's operations console.
   // Four dense sections (Comptes · Catalogue · Social · Système) under a KPI
   // strip, each section loading (and failing) on its own endpoint. Metrics
@@ -9,24 +12,24 @@
     getAdminCatalogueStats,
     getAdminSocialStats,
     getAdminSystemStats,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
-  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
+  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
   import {
     DATETIME_LONG_OPTIONS,
     formatDateTime,
     formatNumber,
-  } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { useQueryClient } from "@tanstack/svelte-query";
   import AccountsSection from "./components/AccountsSection.svelte";
   import CatalogueSection from "./components/CatalogueSection.svelte";
   import SocialSection from "./components/SocialSection.svelte";
+  import StatsSectionError from "./components/StatsSectionError.svelte";
   import SystemSection from "./components/SystemSection.svelte";
 
   const queryClient = useQueryClient();
@@ -70,13 +73,6 @@
       socialQuery.loading ||
       systemQuery.loading,
   );
-  const error = $derived(
-    accountsQuery.error ??
-      catalogueQuery.error ??
-      socialQuery.error ??
-      systemQuery.error,
-  );
-
   function refresh() {
     for (const key of STATS_KEYS)
       void queryClient.refetchQueries({ queryKey: key });
@@ -91,12 +87,11 @@
    * exists when social is on: with it off there is no moderation queue at all.
    */
   const kpis = $derived.by(() => {
-    const tiles: {
-      value: string;
+    const tiles: (SelectOption & {
       unit?: string;
-      label: string;
+
       alert?: boolean;
-    }[] = [];
+    })[] = [];
 
     if (accounts) {
       tiles.push(
@@ -135,7 +130,7 @@
   });
 </script>
 
-<div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="stats"
     title={m.admin_stats_title()}
@@ -146,25 +141,18 @@
         onclick={refresh}
         disabled={loading}
         class="btn btn-ghost shrink-0">
-        {loading ? "…" : m.common_refresh()}
+        {loading ? m.common_loading() : m.common_refresh()}
       </button>
     {/snippet}
   </PageHeader>
 
-  {#if error}
-    <Banner variant="error" class="mb-6">{error}</Banner>
-  {/if}
-
-  {#if loading && !accounts}
+  {#if loading && !accounts && !catalogue && !social && !system}
     <div class="animate-pulse">
-      <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-        {#each { length: 5 } as _, i (i)}
-          <div class="card h-24 space-y-3 p-4">
-            <div class="skeleton h-7 w-2/5 rounded"></div>
-            <div class="skeleton h-3 w-4/5 rounded"></div>
-          </div>
-        {/each}
-      </div>
+      <KpiStripSkeleton
+        count={5}
+        cardClass="card h-24 space-y-3 p-4"
+        valueClass="skeleton h-7 w-2/5 rounded"
+        labelClass="skeleton h-3 w-4/5 rounded" />
       <section class="border-border border-t py-6">
         <div class="skeleton mb-4 h-3 w-36 rounded"></div>
         <div class="grid gap-3.5 lg:grid-cols-2">
@@ -203,38 +191,74 @@
       <KpiStrip tiles={kpis} />
     {/if}
 
-    {#if accounts}
+    {#if accounts || accountsQuery.error}
       <section class="border-border border-t py-6">
         <SectionLabel label={m.admin_stats_section_accounts()} />
-        <!-- Remount on refresh so the cards' own local pickers reset with it. -->
-        {#key accounts.generatedAt}
-          <AccountsSection stats={accounts} />
-        {/key}
+        {#if accountsQuery.error}
+          <StatsSectionError
+            message={accountsQuery.error}
+            onRetry={() =>
+              void queryClient.refetchQueries({
+                queryKey: keys.admin.accountsStats(),
+              })} />
+        {:else if accounts}
+          <!-- Remount on refresh so the cards' own local pickers reset with it. -->
+          {#key accounts.generatedAt}
+            <AccountsSection stats={accounts} />
+          {/key}
+        {/if}
       </section>
     {/if}
 
-    {#if catalogue}
+    {#if catalogue || catalogueQuery.error}
       <section class="border-border border-t py-6">
         <SectionLabel label={m.admin_stats_section_catalogue()} />
-        <CatalogueSection stats={catalogue} />
+        {#if catalogueQuery.error}
+          <StatsSectionError
+            message={catalogueQuery.error}
+            onRetry={() =>
+              void queryClient.refetchQueries({
+                queryKey: keys.admin.catalogueStats(),
+              })} />
+        {:else if catalogue}
+          <CatalogueSection stats={catalogue} />
+        {/if}
       </section>
     {/if}
 
     <!-- Dropped entirely when SOCIAL_ENABLED is off: a self-host install has
          no social surface to report on. -->
-    {#if socialStats}
+    {#if socialStats || socialQuery.error}
       <section class="border-border border-t py-6">
         <SectionLabel label={m.common_social()} badge="SOCIAL_ENABLED" />
-        {#key socialStats.generatedAt}
-          <SocialSection stats={socialStats} />
-        {/key}
+        {#if socialQuery.error}
+          <StatsSectionError
+            message={socialQuery.error}
+            onRetry={() =>
+              void queryClient.refetchQueries({
+                queryKey: keys.admin.socialStats(),
+              })} />
+        {:else if socialStats}
+          {#key socialStats.generatedAt}
+            <SocialSection stats={socialStats} />
+          {/key}
+        {/if}
       </section>
     {/if}
 
-    {#if system}
+    {#if system || systemQuery.error}
       <section class="border-border border-t py-6">
         <SectionLabel label={m.common_system()} />
-        <SystemSection stats={system} />
+        {#if systemQuery.error}
+          <StatsSectionError
+            message={systemQuery.error}
+            onRetry={() =>
+              void queryClient.refetchQueries({
+                queryKey: keys.admin.systemStats(),
+              })} />
+        {:else if system}
+          <SystemSection stats={system} />
+        {/if}
       </section>
     {/if}
 

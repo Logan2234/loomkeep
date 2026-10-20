@@ -1,0 +1,48 @@
+---
+title: Analytics
+description: Umami, cookie-less statistics for the public landing page.
+sidebar:
+  order: 3
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+[Umami](https://umami.is) counts visits to the public landing page: page
+views, referrers and clicks on its main buttons. It is cookie-less and keeps
+no visitor ID, and never tracks anything inside the app (`/app`).
+
+<Steps>
+
+1. Set `UMAMI_APP_SECRET` in `.env` (`openssl rand -hex 32`).
+
+2. Add `docker/docker-compose.umami.yml` to `COMPOSE_FILE` in `.env`, then:
+
+   ```sh
+   docker compose pull
+   docker compose up -d
+   ```
+
+3. Open `stats.<DOMAIN>` and sign in with Umami's default account
+   (`admin` / `umami`): **change its password straight away**.
+
+4. In **Settings › Websites**, add your site, then set
+   `PUBLIC_UMAMI_WEBSITE_ID` (the id shown there) and
+   `PUBLIC_UMAMI_SCRIPT_URL` (`https://stats.<DOMAIN>/loomkeep.js`). Restart.
+
+</Steps>
+
+The tracking script and endpoint are renamed (`/loomkeep.js` and
+`/api/loom`), so generic ad-blocker lists don't drop a cookie-less counter
+by name. Umami has its own login only: putting `stats.<DOMAIN>` behind
+single sign-on would block those two paths for your visitors too.
+
+Umami keeps its data in a database of its own inside Loomkeep's PostgreSQL.
+That database is created only on a new install: on an instance that already
+ran, create it once with the command at the top of
+`docker/docker-compose.umami.yml`.
+
+<Aside title="Behind Cloudflare">
+  Umami would place every visitor at a Cloudflare data centre. In
+  Cloudflare's dashboard, **Rules › Settings › Managed Transforms**, turn on
+  **Add visitor location headers**: Caddy passes them on as they are.
+</Aside>

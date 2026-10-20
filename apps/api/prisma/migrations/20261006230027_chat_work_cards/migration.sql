@@ -1,0 +1,14 @@
+/*
+  Warnings:
+
+  - Added the required column `href` to the `MessageEmbed` table without a default value. This is not possible if the table is not empty.
+  - Added the required column `kind` to the `MessageEmbed` table without a default value. This is not possible if the table is not empty.
+  - Added the required column `title` to the `MessageEmbed` table without a default value. This is not possible if the table is not empty.
+
+*/
+-- AlterTable
+ALTER TABLE "MessageEmbed" ADD COLUMN     "href" TEXT NOT NULL,
+ADD COLUMN     "imageUrl" TEXT,
+ADD COLUMN     "kind" TEXT NOT NULL,
+ADD COLUMN     "title" TEXT NOT NULL,
+ADD COLUMN     "year" INTEGER;

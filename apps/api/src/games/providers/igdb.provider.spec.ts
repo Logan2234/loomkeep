@@ -1,32 +1,17 @@
 import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { mockFetchByUrl as routedFetch } from "../../test-utils/mock-fetch";
 import { IgdbProvider } from "./igdb.provider";
 
 // Node defines global fetch lazily, which confuses vi.spyOn on restore;
 // plain assignment + manual restore is more reliable.
 const originalFetch = global.fetch;
 
+// Every details call also asks /game_time_to_beats; a test that doesn't
+// care about it gets "no submissions" rather than an unexpected-call error.
 function mockFetchByUrl(routes: Record<string, unknown>): Mock {
-  const fn = vi.fn((input: RequestInfo | URL) => {
-    const url = String(input);
-    const match = Object.entries(routes).find(([pathPart]) =>
-      url.includes(pathPart),
-    );
-
-    if (!match) {
-      throw new Error(`Unexpected fetch call in test: ${url}`);
-    }
-
-    return Promise.resolve(
-      new Response(JSON.stringify(match[1]), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-  });
-  global.fetch = fn as unknown as typeof fetch;
-  return fn;
+  return routedFetch({ "/game_time_to_beats": [], ...routes });
 }
 
 const TOKEN_RESPONSE = { access_token: "app-token", expires_in: 3600 };
@@ -202,6 +187,7 @@ describe("IgdbProvider", () => {
       genres: ["Shooter", "Adventure"],
       platforms: ["PC (Microsoft Windows)", "PS4"],
       releaseDate: "2013-09-17T00:00:00.000Z",
+      releaseDatePrecision: null,
       website: "https://www.rockstargames.com/V/",
       similarGames: [],
       developers: [],
@@ -216,7 +202,139 @@ describe("IgdbProvider", () => {
       trailerVideoId: null,
       ageRatingImageUrls: [],
       multiplayerModes: [],
+      timeToBeat: null,
     });
+  });
+
+  // IGDB stamps a vague date at its period's end: "2028" is December 31st.
+  const stamp = (iso: string) => Date.parse(iso) / 1000;
+
+  it("dates a release to the first day of its period, with its precision", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 1,
+          name: "Kingdom Hearts IV",
+          first_release_date: stamp("2027-12-31"),
+          release_dates: [{ date: stamp("2027-12-31"), date_format: 6 }],
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("1");
+
+    expect(details).toMatchObject({
+      releaseDate: "2027-10-01T00:00:00.000Z",
+      releaseDatePrecision: "QUARTER",
+    });
+  });
+
+  it("keeps the earliest real date over a vaguer one that ends later", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 2,
+          name: "Gears of War: E-Day",
+          release_dates: [
+            { date: stamp("2026-12-31"), date_format: 2 },
+            { date: stamp("2026-10-06"), date_format: 0 },
+            { date: stamp("2026-11-01"), date_format: 1 },
+          ],
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("2");
+
+    expect(details).toMatchObject({
+      releaseDate: "2026-10-06T00:00:00.000Z",
+      releaseDatePrecision: "DAY",
+    });
+  });
+
+  it("marks a game announced without any date as TBD", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 3,
+          name: "Mass Effect: Corsair",
+          release_dates: [{ date_format: 7 }],
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("3");
+
+    expect(details).toMatchObject({
+      releaseDate: null,
+      releaseDatePrecision: "TBD",
+    });
+  });
+
+  it("maps IGDB's times to beat from seconds to minutes", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/game_time_to_beats": [
+        {
+          game_id: 1020,
+          hastily: 93_600,
+          normally: 147_600,
+          completely: 0,
+          count: 152,
+        },
+      ],
+      "/games": [{ id: 1020, name: "Hollow Knight", slug: "hollow-knight" }],
+    });
+
+    const details = await provider.getDetails("1020");
+
+    expect(details.timeToBeat).toEqual({
+      hastilyMin: 1560,
+      normallyMin: 2460,
+      // IGDB's 0 means no data, not a zero-minute game.
+      completelyMin: null,
+      submissions: 152,
+    });
+  });
+
+  it("shows no time to beat under three player submissions", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/game_time_to_beats": [{ game_id: 1020, normally: 36_000, count: 2 }],
+      "/games": [{ id: 1020, name: "Obscure Game" }],
+    });
+
+    const details = await provider.getDetails("1020");
+
+    expect(details.timeToBeat).toBeNull();
+  });
+
+  it("fetches a batch's times to beat in one query and matches them by game", async () => {
+    const fn = mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/game_time_to_beats": [{ game_id: 2, normally: 3_600, count: 10 }],
+      "/games": [
+        { id: 1, name: "One" },
+        { id: 2, name: "Two" },
+      ],
+    });
+
+    const details = await provider.getDetailsByIds(["1", "2"]);
+
+    expect(details.map((d) => d.timeToBeat?.normallyMin ?? null)).toEqual([
+      null,
+      60,
+    ]);
+    const ttbCalls = fn.mock.calls.filter(([url]) =>
+      String(url).includes("/game_time_to_beats"),
+    );
+    expect(ttbCalls).toHaveLength(1);
+    expect(String((ttbCalls[0][1] as RequestInit).body)).toContain(
+      "where game_id = (1,2)",
+    );
   });
 
   it("maps rating and aggregated_rating to IGDB/Critiques percentages", async () => {
@@ -541,6 +659,28 @@ describe("IgdbProvider", () => {
     );
     expect(tokenCalls).toHaveLength(1);
   });
+  it("finds a game's id from its IGDB page slug", async () => {
+    const fn = mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [{ id: 14593 }],
+    });
+
+    await expect(provider.gameIdForSlug("hollow-knight")).resolves.toBe(
+      "14593",
+    );
+    const [, init] = fn.mock.calls.find(([u]) => String(u).includes("/games"))!;
+    expect(String((init as RequestInit).body)).toContain(
+      'where slug = "hollow-knight"',
+    );
+  });
+
+  it("never quotes a slug outside IGDB's alphabet into a query", async () => {
+    const fn = mockFetchByUrl({ "id.twitch.tv": TOKEN_RESPONSE, "/games": [] });
+
+    await expect(provider.gameIdForSlug('x"; fields *;')).resolves.toBeNull();
+    expect(fn).not.toHaveBeenCalled();
+  });
+
   it("rejects a non-numeric id without calling IGDB", async () => {
     const fn = mockFetchByUrl({ "id.twitch.tv": TOKEN_RESPONSE, "/games": [] });
 
@@ -562,5 +702,97 @@ describe("IgdbProvider", () => {
     )!;
     expect(String(url)).not.toContain("client_secret");
     expect(String((init as RequestInit).body)).toContain("client_secret=");
+  });
+
+  describe("getSaga", () => {
+    const stamp = (iso: string) => Date.parse(iso) / 1000;
+    const game = (id: number, name: string, date?: string, type = 0) => ({
+      game: {
+        id,
+        name,
+        game_type: type,
+        first_release_date: date ? stamp(date) : undefined,
+        release_dates: date
+          ? [{ date: stamp(date), date_format: 0 }]
+          : [{ date_format: 7 }],
+      },
+    });
+
+    function mockIgdb(collections: Record<number, unknown[]>) {
+      const fn = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const body = String(init?.body ?? "");
+        let payload: unknown = TOKEN_RESPONSE;
+
+        if (url.includes("/collection_memberships")) {
+          const of = /where collection = (\d+)/.exec(body);
+          payload = of
+            ? collections[Number(of[1])]
+            : Object.keys(collections).map((id) => ({
+                collection: { id: Number(id) },
+              }));
+        }
+
+        return Promise.resolve(
+          new Response(JSON.stringify(payload), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      });
+      global.fetch = fn as unknown as typeof fetch;
+      return fn;
+    }
+
+    it("keeps the largest series' main games, in release order, the announced ones last", async () => {
+      mockIgdb({
+        18: [
+          {
+            ...game(2, "Assassin's Creed II", "2009-11-17"),
+            collection: { id: 18, name: "Assassin's Creed" },
+          },
+          game(1, "Assassin's Creed", "2007-11-13"),
+          game(3, "Assassin's Creed Hexe"),
+          // A remaster isn't a game of the series of its own.
+          game(4, "Assassin's Creed II Remastered", "2016-11-15", 9),
+        ],
+        12998: [
+          {
+            ...game(2, "Assassin's Creed II", "2009-11-17"),
+            collection: { id: 12998, name: "Assassin's Creed II" },
+          },
+          game(5, "Assassin's Creed Brotherhood", "2010-11-16"),
+        ],
+      });
+
+      const saga = await provider.getSaga("2");
+
+      expect(saga?.key).toBe("IGDB:18");
+      expect(saga?.title).toBe("Assassin's Creed");
+      expect(
+        saga?.members.map((m) => [
+          m.sourceId,
+          m.upcoming,
+          m.releaseDatePrecision,
+        ]),
+      ).toEqual([
+        ["1", false, "DAY"],
+        ["2", false, "DAY"],
+        ["3", true, "TBD"],
+      ]);
+    });
+
+    it("has no saga for a game that's no main game of a series", async () => {
+      mockIgdb({});
+
+      await expect(provider.getSaga("2")).resolves.toBeNull();
+    });
+
+    it("never queries IGDB with something other than a game id", async () => {
+      const fetch = mockIgdb({});
+
+      await expect(provider.getSaga("1; fields *")).resolves.toBeNull();
+      expect(fetch).not.toHaveBeenCalled();
+    });
   });
 });

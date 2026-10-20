@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { NotificationModule } from "../notifications/notification.module";
+import { ReportsModule } from "../reports/reports.module";
+import { DomainGateModule } from "../users/domain-gate.module";
 import { ActivityService } from "./activity.service";
 import { BlockService } from "./block.service";
 import { FollowService } from "./follow.service";
@@ -12,6 +14,7 @@ import { PrivacyService } from "./privacy.service";
 import { ProfileService } from "./profile.service";
 import { SocialController } from "./social.controller";
 import { VisibilityService } from "./visibility.service";
+import { WorkFriendsService } from "./work-friends.service";
 
 // Social routes are gated behind SOCIAL_ENABLED through SocialFeatureGuard.
 // The leaderboard lives here rather than in GamificationModule: it's inherently
@@ -19,7 +22,13 @@ import { VisibilityService } from "./visibility.service";
 // in Gamification would need Gamification to import Social, which already
 // imports Gamification (AchievementService), a real circular dependency.
 @Module({
-  imports: [NotificationModule, GamificationModule, EventsModule],
+  imports: [
+    NotificationModule,
+    GamificationModule,
+    EventsModule,
+    DomainGateModule,
+    ReportsModule,
+  ],
   controllers: [SocialController, PrivacyController, LeaderboardController],
   providers: [
     BlockService,
@@ -29,6 +38,7 @@ import { VisibilityService } from "./visibility.service";
     PrivacyService,
     ActivityService,
     LeaderboardService,
+    WorkFriendsService,
   ],
   exports: [
     BlockService,
@@ -36,6 +46,7 @@ import { VisibilityService } from "./visibility.service";
     ActivityService,
     FollowService,
     ProfileService,
+    WorkFriendsService,
   ],
 })
 export class SocialModule {}

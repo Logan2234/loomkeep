@@ -1,0 +1,109 @@
+---
+title: Notifications
+description: What Loomkeep tells you about, and whether it does so in the app, by push or by email.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+import AlertTable from "../../../components/AlertTable.astro";
+
+Loomkeep reaches you three ways:
+
+- **The bell**, in the app: on a computer, at the top right; on a phone,
+  the **Alerts** tab. Its badge counts what arrived since you last opened
+  it, plus the follow requests waiting for an answer.
+- **Push**, on your phone or computer, even with the app closed. It is
+  turned on per device, in **Settings › Communications**.
+- **Email**, for what must reach you wherever you are, starting with
+  anything about your account's security.
+
+What goes where is chosen in **Settings › Communications**. The tables below
+list every alert, generated from the same list the app sends from.
+
+<Aside title="Push on a phone">
+  On iPhone and iPad, push only works once Loomkeep is [installed on the home
+  screen](/guide/install/). On every device, push has to be turned on in each
+  browser or installed app you use.
+</Aside>
+
+## The notifications page
+
+**See the full history** at the bottom of the bell, or the **Alerts** tab on
+a phone, opens every notification still kept, by day, with only the unread
+ones a tap away. An entry is read once you open it; you can also mark it read
+or unread, or delete it: from its **⋯** menu on a computer, or by swiping it
+right (read) or left (delete) on a phone. A deleted entry can be brought back
+for a few seconds with **Undo**.
+
+Read notifications are deleted after 90 days; unread ones stay. Opening a
+push marks its notification read too. Once Loomkeep is installed, its icon
+shows the same count as the bell and Messages together, where the device
+supports it.
+
+## Activity
+
+What someone else did that concerns you. Everything lands in the bell, and
+you choose what also comes as a push. On a new account those pushes start off;
+accounts created before October 2026 had them all turned on.
+
+<AlertTable group="activity" />
+
+Reactions and upvotes come once, when one of your comments reaches 10
+reactions or one of your reviews 10 upvotes, not on each of them. A
+[message](/guide/messages/) from a friend is never in the bell, since the
+Messages button counts what you haven't read, and is pushed only while you have
+Loomkeep open nowhere.
+
+Replies to your comments and mentions also count in Messages' **Works** tab when
+the instance has Messages on; they stay in the bell all the same.
+
+## Episode, movie and game releases
+
+Release reminders aren't in the bell: the calendar and **Up next** already show
+them. Instead, a summary of what came out goes by email, by push, or both,
+weekly (Monday morning) or daily (in the evening, a premium feature to come).
+
+For an upcoming movie, add it to your library, then choose **Notify me on release**
+in its sticky action bar. It joins the same summaries as new episodes. The reminder
+uses the first cinema release in your country, or digital when no cinema release
+is announced. Without a local date, the reminder waits for one to be confirmed.
+
+An upcoming game works the same way, from **My tracking** on its page. Its
+reminder goes off on the release day, or on the 1st of the month when only the
+month is announced. A game dated to a quarter, a year or not dated yet can
+still have its reminder on: it goes off once the release is dated to a day or
+a month.
+
+With neither summary turned on, there is nothing to deliver a reminder through:
+the release reminders and a show's **Mute release alerts** stay greyed out until
+the email or push summary is on in **Settings › Communications**.
+
+<AlertTable group="releases" />
+
+## Your account
+
+<AlertTable group="account" />
+
+## Security
+
+Security alerts always go by email, which someone using your session can't
+dismiss the way a bell entry is cleared. If you receive one for something you
+didn't do, change your password and check **Settings › Security**.
+
+<AlertTable group="security" />
+
+## Announcements
+
+<AlertTable group="announcements" />
+
+## Administrators
+
+Only an instance's administrators receive these. Email starts on and push
+off; both can be switched in **Settings › Communications**.
+
+<AlertTable group="admin" />
+
+## On a self-hosted instance
+
+Email and push depend on how the instance is set up: without an SMTP server,
+no email goes out, and without push keys, no push. The bell always works. See
+[Email and push](/self-hosting/email-and-push/).

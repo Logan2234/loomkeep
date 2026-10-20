@@ -200,7 +200,7 @@ enum CommentTargetType {
 }
 
 // Fixed reaction set for comments (backlog: a full emoji picker). Display
-// glyphs live in shared code (COMMENT_EMOTE_DISPLAY) — this enum stores the
+// glyphs live in web code (COMMENT_EMOTE_DISPLAY) — this enum stores the
 // identifier, not the glyph.
 enum CommentEmote {
   LIKE
@@ -226,6 +226,7 @@ enum ReportTargetType {
   REVIEW
   USER
   LIST
+  MESSAGE
 }
 
 // Top-level reason bucket for a report, chosen before a precise ReportMotif
@@ -245,6 +246,7 @@ enum ReportCategory {
   MISINFORMATION
   STOLEN_CONTENT
   MISLEADING_REVIEW
+  NONCOMPLIANT_ACCOUNT
   OTHER
 }
 
@@ -257,6 +259,9 @@ enum ReportMotif {
   SPAM_SUSPICIOUS_LINK
   SPAM_REPEATED
   ILLEGAL_PIRACY_LINK
+  ILLEGAL_TERRORISM
+  ILLEGAL_DEFAMATION
+  ILLEGAL_OTHER
   HARASSMENT_INSULTS
   HARASSMENT_THREATS
   HARASSMENT_STALKING
@@ -270,11 +275,25 @@ enum ReportMotif {
   MINOR_ENDANGERMENT_SOLICITATION
   SPOILER_UNTAGGED
   IMPERSONATION_REAL_PERSON
-  IMPERSONATION_FAKE_ACCOUNT
   MISINFORMATION_FALSE_FACT
   STOLEN_CONTENT_PLAGIARIZED
+  STOLEN_CONTENT_IMAGE
   MISLEADING_REVIEW_MANIPULATION
   MISLEADING_REVIEW_OFF_TOPIC
+  ACCOUNT_BOT
+  ACCOUNT_UNDERAGE
+  ACCOUNT_BAN_EVASION
+  ACCOUNT_MANIPULATION
+}
+
+// The part of a profile a USER report is about (see ReportProfilePart in
+// packages/shared): narrows the picker's categories and points the moderator
+// at the matching measure.
+enum ReportProfilePart {
+  NAME
+  PHOTO
+  BIO
+  BEHAVIOUR
 }
 
 // A list's kind: RANKED shows explicit rank order (drag-to-reorder, "top 10"),
@@ -299,13 +318,20 @@ enum ReportStatus {
   DISMISSED
 }
 
-// The two restrictive measures actually implemented (see ModerationDecision) —
+// The restrictive measures actually implemented (see ModerationDecision) —
 // keep in lockstep with the CGU §9 sanctions list: the CGU must describe
 // exactly what the code can do, not more (DSA art. 14).
 enum ModerationMeasure {
   COMMENT_REMOVED
   REVIEW_REMOVED
+  LIST_REMOVED
+  LIST_EDITED
+  AVATAR_REMOVED
+  BIO_CLEARED
+  DISPLAY_NAME_CHANGED
+  ACCOUNT_SUSPENDED
   ACCOUNT_DELETED
+  MESSAGE_REMOVED
 }
 
 // DSA art. 17(3)(d): whether the measure is grounded in the content's alleged
@@ -378,6 +404,15 @@ enum GameOwnershipStatus {
   BORROWED
 }
 
+// How precisely a game's release date is known (IGDB's `date_format`).
+enum ReleaseDatePrecision {
+  DAY
+  MONTH
+  QUARTER
+  YEAR
+  TBD
+}
+
 // Source a book's catalogue data comes from. Open Library only — keyless and
 // unmetered, unlike the Google Books API it replaced.
 enum BookSource {
@@ -402,6 +437,24 @@ enum BookOwnershipStatus {
   DIGITAL
   AUDIO
   BORROWED
+}
+
+enum SessionSource {
+  MANUAL
+  TIMER
+  IMPORT
+}
+
+enum TrackingCycleStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+enum SessionCycleAction {
+  CONTINUE
+  RESTART
+  HISTORY_ONLY
 }
 
 // Source a music item's catalogue data comes from. MusicBrainz only.
@@ -446,6 +499,17 @@ model User {
   // Same gating role as GHOST/anonymized for the streak badge, but a
   // standing user preference rather than a mode switch.
   hideProgression               Boolean            @default(false)
+  // Messages: whether friends see this account online (and typing), and when
+  // it read their messages. Reciprocal by design: switched off, the account
+  // no longer sees either from anyone else.
+  chatShowPresence              Boolean            @default(true)
+  chatShowReadReceipts          Boolean            @default(true)
+  // Messages' /where: friends see which of `watchProviderIds` this account
+  // has. Off by default — a subscription list is the account's own business.
+  chatShareWatchProviders       Boolean            @default(false)
+  // Shows the feedback (Quackback) launcher. An instance without
+  // PUBLIC_QUACKBACK_URL has no launcher at all, whatever this says.
+  feedbackWidget                Boolean            @default(true)
   // Up to 3 unlocked, non-secret achievement keys shown on the profile.
   // Equipping a key freezes that tier rather than following the highest tier;
   // an achievement's tiers are separate keys (cinephile_bronze vs
@@ -471,6 +535,12 @@ model User {
   // Opt-in to the release newsletter (sent automatically when a changelog
   // entry is published on Quackback — see NewsletterService) — separate
   // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
+  // Per-alert channel choices that differ from the default, keyed like
+  // ALERTS in packages/shared/src/alerts.ts: { COMMENT_REPLY: { push: true } }.
+  alertPrefs                    Json               @default("{}")
+  // Last time the bell or the notifications page was opened: what arrived
+  // after it counts toward the badge, the rest is seen but maybe unread.
+  notificationsSeenAt           DateTime?
   notifyNewsletter              Boolean            @default(false)
   // Proof-of-consent timestamp (GDPR art. 7(1)): set the moment
   // notifyNewsletter flips false → true, left untouched afterwards — including
@@ -518,11 +588,23 @@ model User {
   // brand-new one, or before this preference ever existed) just keeps its
   // canonical position at the end — see web domains.ts's orderedDomains().
   domainOrder                   Domain[]           @default([])
+  // Country whose streaming offers the detail pages show (ISO 3166-1, "FR").
+  // Null means automatic: taken from the browser's Accept-Language on each
+  // request — see resolveWatchRegion().
+  watchRegion                   String?
+  // TMDB watch provider ids of the services the user has, put first (and in
+  // colour) wherever a title's offers are listed. Not tied to a region: the
+  // ids are global, a region only decides which of them offer a title.
+  watchProviderIds              Int[]              @default([])
   // Ordered ids of the mobile bottom-bar shortcuts (see web navigation.ts,
   // `MobileNavId`). Free-form strings, not a Prisma enum: the set is a web-UI
   // concern (includes the "menu" launcher and non-domain routes), gated at
   // render time. Default mirrors DEFAULT_BOTTOM_SHORTCUTS.
   mobileNavShortcuts            String[]           @default(["home", "search", "menu", "calendar", "account"])
+  // The home page's widget grid (shared HomeLayoutDto). Null means the
+  // default grid, which the web builds from the enabled domains — stored
+  // only once the user edits the page, so the default keeps evolving.
+  homeLayout                    Json?
   // UI language (Paraglide locale code, "fr" or "en"). Set from the
   // Accept-Language header at registration (see AuthService.register), and
   // editable from Réglages > Apparence — this is also the sync-across-devices
@@ -532,6 +614,10 @@ model User {
   // looked up directly by calendar apps, which can't send an Authorization
   // header). Null until first requested from Réglages > Export.
   calendarToken                 String?            @unique
+  // Same pattern as calendarToken, for the public Atom activity feed
+  // (ee/social/activity-feed): a feed reader can't send an Authorization
+  // header either. Null until first requested from Réglages > Vie privée.
+  activityFeedToken             String?            @unique
   createdAt                     DateTime           @default(now())
   updatedAt                     DateTime           @updatedAt
   // Set once the mandatory first-run onboarding wizard is completed (see
@@ -562,6 +648,15 @@ model User {
   // next bumped, so a returning user gets the full inactivity window again
   // instead of being deleted on the strength of a stale warning.
   inactivityWarningSentAt       DateTime?
+  // Moderation suspension: the account is suspended while this is in the
+  // future (login refused, profile unreachable, no email or push), and
+  // active again on its own once it passes. Null means never suspended or
+  // lifted early by an admin.
+  suspendedUntil                DateTime?
+  // Invitation this account signed up through — null for an open
+  // registration. "Invité par" is read through invitation.createdBy rather
+  // than a second FK. SetNull: purging an invitation never touches accounts.
+  invitationId                  String?
 
   // MFA
   // Two independently-toggleable methods; admin accounts with neither active
@@ -570,6 +665,9 @@ model User {
   // from a fresh QR scan rather than silently reviving a stale secret.
   mfaTotpEnabled      Boolean @default(false)
   mfaTotpSecretEnc    String?
+  // The last 30-second TOTP step a code was accepted for: a code is refused
+  // once its step, or a later one, has served (sign-in or confirmation).
+  mfaTotpLastStep     Int?
   mfaEmailEnabled     Boolean @default(false)
   // True only lets login skip the password step outright — enforced in
   // WebauthnService, not by this column alone: it must never be true while
@@ -580,6 +678,7 @@ model User {
   entries                    LibraryEntry[]
   episodeWatches             EpisodeWatch[]
   refreshTokens              RefreshToken[]
+  apiKeys                    ApiKey[]
   devices                    UserDevice[]
   mfaRecoveryCodes           MfaRecoveryCode[]
   mfaLoginChallenges         MfaLoginChallenge[]
@@ -596,29 +695,42 @@ model User {
   securityEvents             SecurityEvent[]
   importRuns                 ImportRun[]
   visibilitySettings         VisibilitySetting[]
-  following                  Follow[]             @relation("UserFollowing")
-  followers                  Follow[]             @relation("UserFollowers")
-  blocking                   Block[]              @relation("UserBlocking")
-  blockedBy                  Block[]              @relation("UserBlockedBy")
+  following                  Follow[]               @relation("UserFollowing")
+  followers                  Follow[]               @relation("UserFollowers")
+  blocking                   Block[]                @relation("UserBlocking")
+  blockedBy                  Block[]                @relation("UserBlockedBy")
   reviews                    Review[]
   reviewVotes                ReviewVote[]
   activityEvents             ActivityEvent[]
   comments                   Comment[]
   commentReactions           CommentReaction[]
   commentMentions            CommentMention[]
-  reportsFiled               Report[]             @relation("ReportsFiled")
-  reportsResolved            Report[]             @relation("ReportsResolved")
+  conversationMemberships    ConversationMember[]
+  commentThreadReads         CommentThreadRead[]
+  messages                   Message[]
+  messageReactions           MessageReaction[]
+  reportsFiled               Report[]               @relation("ReportsFiled")
+  reportsResolved            Report[]               @relation("ReportsResolved")
+  reportsReceived            Report[]               @relation("ReportsReceived")
   lists                      List[]
+  savedViews                 SavedView[]
   listMemberships            ListMember[]
-  moderationDecisionsAgainst ModerationDecision[] @relation("ModerationDecisionSubject")
-  moderationDecisionsMade    ModerationDecision[] @relation("ModerationDecisionAdmin")
+  listItemsAdded             ListItem[]
+  listNotificationMutes      ListNotificationMute[]
+  moderationDecisionsAgainst ModerationDecision[]   @relation("ModerationDecisionSubject")
+  moderationDecisionsMade    ModerationDecision[]   @relation("ModerationDecisionAdmin")
   entitlement                UserEntitlement?
   subscriptions              Subscription[]
+  pollVotes                  MessagePollVote[]
   xpEntries                  XpEntry[]
   score                      UserScore?
   achievements               UserAchievement[]
+  sessionTimer               SessionTimer?
+  invitation                 Invitation?            @relation("InvitedVia", fields: [invitationId], references: [id], onDelete: SetNull)
+  invitationsCreated         Invitation[]           @relation("InvitationsCreated")
 
   @@index([lastActiveAt])
+  @@index([invitationId])
 }
 
 // Social (P4): per-user, per-domain, per-facet audience. One row overrides the
@@ -767,6 +879,9 @@ model Comment {
 
   @@index([targetType, targetId, createdAt])
   @@index([parentId])
+  // Per-author lookups: the chatterbox_* achievement count on every posted
+  // comment, entry removal's tombstoning, account export and deletion.
+  @@index([authorId])
 }
 
 // One active reaction per (user, comment) — posting a new emote replaces it
@@ -787,6 +902,22 @@ model CommentReaction {
 // An explicit recipient selected from the discussion's mention picker. A raw
 // `@handle` in comment text intentionally creates no row and remains plain
 // text: only a deliberate picker choice may link or notify a person.
+// Up to when a member read a work's discussion: the unread count of the
+// "Œuvres" tab in Messages. Writing in a discussion reads it too.
+model CommentThreadRead {
+  userId     String
+  targetType CommentTargetType
+  targetId   String
+  // Null for a discussion muted before it was ever read.
+  lastReadAt DateTime?
+  // Muted: its new comments don't count in Messages' launcher nor its tab.
+  mutedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, targetType, targetId])
+}
+
 model CommentMention {
   commentId String
   userId    String
@@ -798,6 +929,168 @@ model CommentMention {
 
   @@id([commentId, start])
   @@index([userId])
+}
+
+// A private conversation between friends. Members live in their own table
+// rather than two columns, so group conversations need no reshaping later.
+model Conversation {
+  id            String   @id @default(cuid())
+  // Both member ids, sorted and joined by ":" — one conversation per pair of
+  // friends, found again rather than duplicated. Null for a future group.
+  pairKey       String?  @unique
+  createdAt     DateTime @default(now())
+  // The list of conversations is sorted by it.
+  lastMessageAt DateTime @default(now())
+
+  members  ConversationMember[]
+  messages Message[]
+}
+
+model ConversationMember {
+  conversationId String
+  userId         String
+  // Everything sent up to this instant is read: drives the unread count and
+  // the "Vu" the other member sees.
+  lastReadAt     DateTime  @default(now())
+  mutedAt        DateTime?
+  joinedAt       DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+// Never hard-deleted: a deletion is a tombstone, so a later quote-reply can
+// still point at what it answers.
+model Message {
+  id             String    @id @default(cuid())
+  conversationId String
+  // Null once the author's account is gone; its text is erased first (GDPR).
+  authorId       String?
+  // Restricted markdown (bold, italic, strike, code, ||spoiler||, quotes,
+  // lists, code blocks, #work mentions), rendered by the web. Null once
+  // deleted, and for a message that only carries a work.
+  text           String?
+  // Sent with /spoiler: the whole message stays masked until revealed.
+  spoiler        Boolean   @default(false)
+  edited         Boolean   @default(false)
+  deletedAt      DateTime?
+  // Set only by a moderation takedown, which the tombstone then says.
+  deletedByAdmin Boolean   @default(false)
+  // Pinned in its conversation, by either member; shown to both.
+  pinnedAt       DateTime?
+  // Copied from another conversation by "Transférer": says so, never by whom.
+  forwarded      Boolean   @default(false)
+  // Attached with /review (one of the author's reviews) or /list. Plain ids,
+  // not relations: the card is read live, and once the review or list is gone
+  // the message must still say what it carried.
+  reviewId       String?
+  listId         String?
+  // /saga: a saga (`Saga`, `GameSaga` or an Open Library series key), read
+  // live with each member's progress — see ChatCommandsService.saga.
+  sagaDomain     Domain?
+  sagaKey        String?
+  // /pick: the first card was drawn from the author's pile (with `pickShared`,
+  // only from the works every member has in theirs), out of `pickCount`.
+  pickDomain     Domain?
+  pickShared     Boolean?
+  pickCount      Int?
+  // /where: where the first card's work can be watched, read live for each
+  // viewer with the platforms the members share.
+  whereWork      Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  conversation Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       User?             @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  reactions    MessageReaction[]
+  embeds       MessageEmbed[]
+  poll         MessagePoll?
+
+  @@index([conversationId, createdAt])
+  @@index([conversationId, pinnedAt])
+  @@index([authorId])
+}
+
+model MessageReaction {
+  id        String       @id @default(cuid())
+  messageId String
+  userId    String
+  emote     CommentEmote
+  createdAt DateTime     @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+// A work, season or episode attached to a message (a recommendation card).
+// A work card in a message. The card is a snapshot of the work as it was sent:
+// the message reads the same later, and showing it costs no catalogue lookup.
+model MessageEmbed {
+  id         String           @id @default(cuid())
+  messageId  String
+  targetType ReviewTargetType
+  targetId   String
+  // MediaType for MEDIA, otherwise the target type itself.
+  kind       String
+  title      String
+  imageUrl   String?
+  href       String
+  year       Int?
+  // 0: the work attached by hand (/reco, "Recommander"); 1 and up: links found
+  // in the text, recomputed when the text is edited.
+  position   Int              @default(0)
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+// /poll: a question and its options, the question standing in for the
+// message's text. Votes stay open: a member changes theirs by voting again.
+model MessagePoll {
+  id        String              @id @default(cuid())
+  messageId String              @unique
+  question  String
+  createdAt DateTime            @default(now())
+
+  message Message             @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  options MessagePollOption[]
+  votes   MessagePollVote[]
+}
+
+// An option is text, or a work (snapshot of its card, like MessageEmbed).
+model MessagePollOption {
+  id       String  @id @default(cuid())
+  pollId   String
+  position Int
+  text     String
+  href     String?
+  imageUrl String?
+
+  poll  MessagePoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes MessagePollVote[]
+
+  @@index([pollId])
+}
+
+model MessagePollVote {
+  id        String   @id @default(cuid())
+  pollId    String
+  optionId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  poll   MessagePoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option MessagePollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId])
+  @@index([optionId])
 }
 
 // Social (P4): a user-submitted report against a polymorphic target — a
@@ -815,18 +1108,28 @@ model Report {
   // neither. New submissions always set category (motif too, except OTHER).
   category     ReportCategory?
   motif        ReportMotif?
+  // USER reports only, always set for them.
+  profilePart  ReportProfilePart?
   reason       String?
   status       ReportStatus     @default(PENDING)
   createdAt    DateTime         @default(now())
   resolvedAt   DateTime?
   resolvedById String?
+  // Who the reported content belongs to (author, list owner, the profile's
+  // account), kept once the content itself is gone: an author deleting
+  // what got reported still shows in their moderation history. Null when
+  // unknown (pre-existing content already gone) or the account was deleted.
+  targetOwnerId String?
 
   reporter            User?                @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: SetNull)
   resolvedBy          User?                @relation("ReportsResolved", fields: [resolvedById], references: [id], onDelete: SetNull)
+  targetOwner         User?                @relation("ReportsReceived", fields: [targetOwnerId], references: [id], onDelete: SetNull)
   moderationDecisions ModerationDecision[]
 
   @@index([status, createdAt])
   @@index([category])
+  @@index([reporterId, status, createdAt])
+  @@index([targetOwnerId])
 }
 
 // DSA art. 17 "statement of reasons" record — one row per restrictive measure
@@ -896,16 +1199,18 @@ model List {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items   ListItem[]
-  members ListMember[]
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items             ListItem[]
+  members           ListMember[]
+  notificationMutes ListNotificationMute[]
 
   @@index([userId])
 }
 
 // Social (P4): grants a user edit access to another user's list (add/remove/
-// reorder items, edit title/description) — added directly by the owner via
-// username, no invite/accept step. Mirrors Follow/Block's directed
+// reorder items, edit title/description) — added directly by the owner from
+// their friends, no invite/accept step. A block in either direction between
+// owner and editor removes the membership (see FollowService.block). Mirrors Follow/Block's directed
 // join-table shape, but for write access rather than visibility.
 model ListMember {
   id        String   @id @default(cuid())
@@ -933,11 +1238,51 @@ model ListItem {
   targetId   String
   position   Int
   addedAt    DateTime         @default(now())
+  // Who added it, shown on collaborative lists. Null once that account is
+  // deleted; items that predate the column were attributed to the owner.
+  addedById  String?
+  // Why it's here: the reason a ranked pick sits where it does, who a
+  // gift is for. Up to LIST_LIMITS.itemNote characters.
+  note       String?
 
-  list List @relation(fields: [listId], references: [id], onDelete: Cascade)
+  list    List  @relation(fields: [listId], references: [id], onDelete: Cascade)
+  addedBy User? @relation(fields: [addedById], references: [id], onDelete: SetNull)
 
   @@unique([listId, targetType, targetId])
   @@index([listId, position])
+  @@index([addedById])
+}
+
+// A collaborator (owner or editor) who turned off notifications for one list.
+// Its own table rather than a ListMember column because the owner has no
+// ListMember row.
+model ListNotificationMute {
+  listId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  list List @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([listId, userId])
+  @@index([userId])
+}
+
+// A library page's filters and order under a name (UX-05), applied from a chip
+// above that library's filters. `filters` is `SavedViewFiltersDto`, checked
+// by the API: it only ever holds what that domain's list understands.
+model SavedView {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  domain    Domain
+  filters   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // One row per browser/device push subscription (Web Push). endpoint is the
@@ -990,11 +1335,17 @@ model Notification {
   // *what* to send, only *when* (see NotificationDigestService).
   emailDigestedAt DateTime?
   pushDigestedAt  DateTime?
+  // Null while unread. A read row stays in the history for 90 days, and
+  // keeps its dedupeKey taken meanwhile (see NotificationService.purge).
+  readAt          DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dedupeKey])
   @@index([userId, createdAt])
+  @@index([readAt])
+  // The hourly scan's de-duplication looks keys up across every account.
+  @@index([dedupeKey])
 }
 
 // Social (P4): materialised activity feed. Append-only log of a user's actions
@@ -1029,6 +1380,10 @@ model ActivityEvent {
   // Kind-specific extras: { rating } for REVIEWED, { seasonNumber, episodeNumber }
   // for PROGRESS, etc.
   data       Json     @default("{}")
+  // Optional link to the domain record projected into the feed. Session
+  // edits/deletions use it to update or remove their projection explicitly.
+  sourceType String?
+  sourceId   String?
   createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1036,6 +1391,7 @@ model ActivityEvent {
   // Home feed: recent events of followed users, filtered on homeFeed.
   @@index([userId, createdAt])
   @@index([homeFeed, createdAt])
+  @@index([sourceType, sourceId])
 }
 
 // One row per execution of a scheduled/admin-triggered job (notification scan,
@@ -1073,11 +1429,57 @@ model RefreshToken {
   // Bumped on every rotation — the session's "last active" timestamp.
   lastUsedAt DateTime @default(now())
   createdAt  DateTime @default(now())
+  // When the person last proved it's them on this session (sign-in, or the
+  // confirmation sensitive actions ask for — see RecentAuthGuard).
+  reauthenticatedAt DateTime?
+  // Failed confirmations in a row; the session is signed out at the limit.
+  reauthFailures    Int      @default(0)
 
   user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   consumedTokens ConsumedRefreshToken[]
 
   @@index([userId])
+}
+
+// Instance-wide settings, edited from Admin › Settings. A single row (id 1).
+// An env var named in INSTANCE_SETTING_ENV (@loomkeep/shared), when set,
+// overrides its column and locks it in the admin page.
+model InstanceSettings {
+  id                  Int      @id @default(1)
+  socialEnabled       Boolean  @default(false)
+  // Private messages between friends; only effective with socialEnabled.
+  chatEnabled         Boolean  @default(false)
+  gamificationEnabled Boolean  @default(false)
+  registrationEnabled Boolean  @default(true)
+  publicApiEnabled    Boolean  @default(true)
+  apiRateLimitFree    Int      @default(60)
+  apiRateLimitPremium Int      @default(300)
+  updatedAt           DateTime @updatedAt
+}
+
+// A personal API key for the public API (/api/v1). Only the SHA-256 of the
+// secret is stored, like RefreshToken; the secret itself is shown once.
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  tokenHash  String    @unique
+  // Last characters of the secret, to tell keys apart in the settings list.
+  suffix     String
+  // `<resource>:read` strings (see API_KEY_SCOPES in @loomkeep/shared).
+  scopes     String[]
+  // Null for a key that never expires.
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  lastUsedIp String?
+  // Set once the "expires in 7 days" email went out, so it's sent only once.
+  expiryNotifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // Hashes of already-rotated refresh tokens. A replay identifies the durable
@@ -1137,6 +1539,45 @@ model UserToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, type])
+  // Daily purge of expired tokens (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
+}
+
+// Sign-up link, letting someone register even while REGISTRATION_ENABLED is
+// off. Not a UserToken: the invitee has no User row yet, and one creator
+// holds any number of live invitations at once. createdBy is any account,
+// not just an admin — today only admins mint them (AdminInvitationsController),
+// member referral can come later without a schema change. Status is derived
+// (revokedAt / expiresAt / useCount vs maxUses), never stored. Same token
+// scheme as UserToken: the raw token is only ever shown once or mailed, its
+// SHA-256 is what's stored — renewing mints a new one (tokenIssuedAt).
+model Invitation {
+  id            String    @id @default(cuid())
+  tokenHash     String    @unique
+  // SetNull: deleting the admin doesn't silently kill pending invitations.
+  createdById   String?
+  // Normalized (normalizeEmail). When set, only this address may redeem it,
+  // and redeeming marks the account's email verified — the link was mailed
+  // there, or handed over by someone who knows it.
+  email         String?
+  // Free-form admin note ("Famille", "Club ciné").
+  label         String?
+  maxUses       Int       @default(1)
+  useCount      Int       @default(0)
+  // When the current token was minted — creation, then each renewal. The
+  // renewal keeps the original validity (expiresAt − tokenIssuedAt).
+  tokenIssuedAt DateTime  @default(now())
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  // Last time the link was mailed to `email` (null: shared by hand only).
+  emailedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  createdBy  User?  @relation("InvitationsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  redeemedBy User[] @relation("InvitedVia")
+
+  @@index([createdAt])
+  @@index([email])
 }
 
 enum SecurityEventType {
@@ -1159,6 +1600,10 @@ enum SecurityEventType {
   MFA_RECOVERY_CODES_REGENERATED
   MFA_RECOVERY_CODE_USED
   MFA_CHALLENGE_LOCKED
+  REAUTH_LOCKED
+  API_KEY_CREATED
+  API_KEY_REVOKED
+  API_KEY_LEAKED
 }
 
 // One sensitive account action, for the admin "Sécurité" page. userId is
@@ -1168,7 +1613,11 @@ enum SecurityEventType {
 // actually typed at a login attempt, independent of any account — see
 // SecurityEventService#record); every other type derives its display email
 // from userId → User.email at read time, so it anonymises itself the moment
-// the account is deleted instead of surviving indefinitely.
+// the account is deleted instead of surviving indefinitely. `ip` is erased on
+// deletion too, except on LOGIN_FAILED (kept for abuse prevention, as the
+// privacy policy states). Rows older than a year are purged
+// (SecurityEventService#purgeExpired). The account owner reads their own
+// trail in the settings.
 model SecurityEvent {
   id         String            @id @default(cuid())
   type       SecurityEventType
@@ -1176,12 +1625,14 @@ model SecurityEvent {
   identifier String?
   detail     String?
   userAgent  String?
+  ip         String?
   createdAt  DateTime          @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([type, createdAt])
-  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }
 
 // One committed import (tvtime/storygraph/goodreads/steam), for the admin
@@ -1202,6 +1653,8 @@ model ImportRun {
   // Items actually written (the user's kept selection), regardless of outcome.
   itemCount  Int
   overwrite  Boolean  @default(false)
+  // Selection and structured outcome for imports recorded after this column was added.
+  details    Json?
   // Human summary joined from the report's tiles; null on failure.
   summary    String?
   // Present only when status is "FAILURE".
@@ -1213,6 +1666,7 @@ model ImportRun {
 
   @@index([sourceId, startedAt])
   @@index([userId])
+  @@index([startedAt])
 }
 
 // One row per persisted backup dump on disk (BACKUP_DIR), for the admin
@@ -1275,6 +1729,8 @@ model EmailChangeRequest {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  // Daily purge of unconfirmed requests (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
 }
 
 // One row per recovery code (bcrypt-hashed, BCRYPT_ROUNDS), single-use —
@@ -1316,6 +1772,8 @@ model MfaLoginChallenge {
   webauthnChallenge WebauthnChallenge?
 
   @@index([userId])
+  // Daily purge of abandoned challenges (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
 }
 
 // A registered passkey/security key. Unlike the TOTP secret, publicKey needs
@@ -1357,16 +1815,20 @@ model WebauthnCredential {
 // MfaLoginChallenge's totpAllowed/emailAllowed shape for a third method.
 model WebauthnChallenge {
   id                  String   @id @default(cuid())
-  userId              String
+  // Null for a passwordless decoy: an identifier that isn't eligible still
+  // gets a real challenge, bound to no account (WebauthnService.passwordlessOptions).
+  userId              String?
   challenge           String
   mfaLoginChallengeId String?  @unique
   expiresAt           DateTime
   createdAt           DateTime @default(now())
 
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
   mfaLoginChallenge MfaLoginChallenge? @relation(fields: [mfaLoginChallengeId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  // Daily purge of abandoned challenges (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
 }
 
 // On-demand cache: a media exists here only once at least one user references it.
@@ -1380,14 +1842,25 @@ model MediaItem {
   backdropUrl     String?
   overview        String?
   releaseDate     DateTime?
+  // Null identifies cached movies whose regional release dates have not been fetched yet.
+  movieReleaseDates Json?
   // Airing status as reported by the source (free-form: "Returning Series", "FINISHED"…).
   status          String?
+  // AniList release format ("TV", "MOVIE", "OVA"…); null for TMDB titles, whose
+  // type already tells a film apart. Lets the Letterboxd export include anime films.
+  format          String?
   genres          String[]
   // Average minutes per episode (series/anime) or the film's runtime; null until
   // captured from the source. Used by the stats aggregation for watch time.
   runtimeMin      Int?
+  // Regular episodes (season > 0) cached so far — maintained by a trigger on
+  // Episode, never written by the app (see LibraryEntry.watchedEpisodes).
+  episodeCount    Int           @default(0)
   // 18+ title (TMDB `adult` movies, AniList hentai). Restricted per-account.
   isAdult         Boolean       @default(false)
+  // The saga it belongs to (TMDB collection or AniList main line, e.g.
+  // "TMDB:10194"), set when its saga is first read (see SagaService).
+  sagaKey         String?
   metadata        Json          @default("{}")
   lastSyncedAt    DateTime      @default(now())
   createdAt       DateTime      @default(now())
@@ -1399,6 +1872,114 @@ model MediaItem {
   translations MediaItemTranslation[]
 
   @@index([lastSyncedAt])
+  @@index([sagaKey])
+}
+
+// A saga a tracked work belongs to: a TMDB collection or an AniList main
+// line (see SagaSyncService), kept so the library can tell which sagas are
+// in progress and spot a sequel joining one. Saved only once one of its works
+// is tracked; titles are in the source's base language, like MediaItem's.
+model Saga {
+  // "TMDB:<collection id>" or "ANILIST:<id of its first work>".
+  key       String       @id
+  title     String
+  syncedAt  DateTime     @default(now())
+  createdAt DateTime     @default(now())
+  members   SagaMember[]
+  translations SagaTranslation[]
+}
+
+// A film saga's titles in another language, kept so the library's sagas view
+// doesn't wait on one TMDB request per saga after each restart.
+model SagaTranslation {
+  sagaKey      String
+  locale       String
+  title        String
+  // Each work's title, by TMDB id.
+  memberTitles Json
+  updatedAt    DateTime @updatedAt
+
+  saga Saga @relation(fields: [sagaKey], references: [key], onDelete: Cascade)
+
+  @@id([sagaKey, locale])
+}
+
+model SagaMember {
+  id          String         @id @default(cuid())
+  sagaKey     String
+  source      ExternalSource
+  sourceId    String
+  type        MediaType
+  // Viewing order within the saga.
+  position    Int
+  title       String
+  posterUrl   String?
+  releaseDate String?
+  format      String?
+  episodes    Int?
+  isAdult     Boolean        @default(false)
+  upcoming    Boolean        @default(false)
+  // Set when the work joined a saga already known — never on a saga's first
+  // read, when every work is "new". What the sequel alert looks for.
+  announcedAt DateTime?
+  notifiedAt  DateTime?
+  createdAt   DateTime       @default(now())
+
+  saga Saga @relation(fields: [sagaKey], references: [key], onDelete: Cascade)
+
+  @@unique([sagaKey, sourceId])
+  @@index([announcedAt, notifiedAt])
+}
+
+// A book series as Open Library last described it, per language: kept so the
+// sagas view doesn't wait on one Open Library search per series after each
+// restart (see BookSagaService).
+model BookSeries {
+  key       String
+  locale    String
+  // The series (ProviderBookSeries), or null when Open Library has none
+  // under this key.
+  series    Json?
+  fetchedAt DateTime
+
+  @@id([key, locale])
+}
+
+// A game series (IGDB collection) one of whose main games a user tracks:
+// saved so the refresh job can tell a newly announced game from the rest,
+// like Saga for films and anime.
+model GameSaga {
+  // "IGDB:<collection id>".
+  key       String           @id
+  title     String
+  syncedAt  DateTime         @default(now())
+  createdAt DateTime         @default(now())
+  members   GameSagaMember[]
+}
+
+model GameSagaMember {
+  id                   String                @id @default(cuid())
+  sagaKey              String
+  // The IGDB game id.
+  sourceId             String
+  // Release order within the series.
+  position             Int
+  title                String
+  coverUrl             String?
+  releaseDate          String?
+  releaseDatePrecision ReleaseDatePrecision?
+  isAdult              Boolean               @default(false)
+  upcoming             Boolean               @default(false)
+  // Set when the game joined a series already known — never on a series'
+  // first read. What the sequel alert looks for.
+  announcedAt          DateTime?
+  notifiedAt           DateTime?
+  createdAt            DateTime              @default(now())
+
+  saga GameSaga @relation(fields: [sagaKey], references: [key], onDelete: Cascade)
+
+  @@unique([sagaKey, sourceId])
+  @@index([announcedAt, notifiedAt])
 }
 
 // Locale-specific title/overview/genres, for a locale other than whatever
@@ -1445,54 +2026,126 @@ model MediaExternalId {
 }
 
 model Season {
-  id          String  @id @default(cuid())
+  id          String    @id @default(cuid())
   mediaItemId String
   number      Int
   title       String?
+  // TMDB only: AniList entries are one season each, whose synopsis and cover
+  // are the MediaItem's own.
+  overview    String?
+  posterUrl   String?
+  airDate     DateTime?
+  // The source's own average score (TMDB, /10).
+  voteAverage Float?
 
-  mediaItem MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
-  episodes  Episode[]
+  mediaItem    MediaItem           @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+  episodes     Episode[]
+  translations SeasonTranslation[]
 
   @@unique([mediaItemId, number])
 }
 
-model Episode {
-  id       String    @id @default(cuid())
+// A season's title/overview in a non-default locale, cached alongside
+// MediaItemTranslation and refreshed on the same cycle (see
+// MediaItemService.translationFor).
+model SeasonTranslation {
+  id       String  @id @default(cuid())
   seasonId String
-  number   Int
+  locale   String
   title    String?
-  airDate  DateTime?
+  overview String?
 
-  season  Season         @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  watches EpisodeWatch[]
+  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([seasonId, locale])
+}
+
+model Episode {
+  id         String    @id @default(cuid())
+  seasonId   String
+  number     Int
+  title      String?
+  airDate    DateTime?
+  // The episode's own length, when the source gives one (TMDB per episode;
+  // AniList only has a per-title duration, copied onto every episode). Stats
+  // fall back to MediaItem.runtimeMin, then a per-type default, when null.
+  runtimeMin Int?
+  // Default language (English) here; other locales in EpisodeTranslation.
+  overview   String?
+  // TMDB still, or AniList's Crunchyroll thumbnail.
+  stillUrl   String?
+  // The source's own score (TMDB, /10) and its vote count; null when nobody
+  // has voted yet.
+  voteAverage   Float?
+  voteCount     Int?
+  // TMDB's "standard" / "mid_season" / "finale". Not displayed for now.
+  episodeType   String?
+  // Where to stream it (AniList's Crunchyroll links).
+  streamingUrl  String?
+  streamingSite String?
+
+  season       Season               @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  watches      EpisodeWatch[]
+  translations EpisodeTranslation[]
 
   @@unique([seasonId, number])
+  // The hourly notification scan picks episodes by air date across every
+  // tracked show (NotificationService.runScanAll).
+  @@index([airDate])
+}
+
+// An episode's title/overview in a non-default locale. A null field means
+// the source has no translation for it, and the base row's English stands.
+model EpisodeTranslation {
+  id        String  @id @default(cuid())
+  episodeId String
+  locale    String
+  title     String?
+  overview  String?
+
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@unique([episodeId, locale])
 }
 
 model LibraryEntry {
-  id              String               @id @default(cuid())
-  userId          String
-  mediaItemId     String
-  status          EntryStatus          @default(PLANNED)
-  notes           String?
-  favorite        Boolean              @default(false)
-  startedAt       DateTime?
-  finishedAt      DateTime?
-  ownershipStatus MediaOwnershipStatus @default(NONE)
+  id                 String               @id @default(cuid())
+  userId             String
+  mediaItemId        String
+  status             EntryStatus          @default(PLANNED)
+  notes              String?
+  favorite           Boolean              @default(false)
+  startedAt          DateTime?
+  finishedAt         DateTime?
+  ownershipStatus    MediaOwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/STREAMING (e.g. "Netflix"); null otherwise.
-  ownershipSource String?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  ownershipSource    String?
+  // Series/anime only: skip this show in the new-episode push/email digest.
+  // It stays in the release calendar — only the alerts are silenced.
+  episodeAlertsMuted Boolean              @default(false)
+  movieReleaseReminderAt DateTime?
+  // A scheduled reminder has no browser language to resolve an automatic country from.
+  movieReleaseRegion String?
+  // Maintained by the database, never written by the app: triggers on
+  // EpisodeWatch (and on insert here) keep them equal to what the watches
+  // say — regular episodes (season > 0) watched, last viewing of any
+  // episode. See migration 20261019160000_materialized_library_progress.
+  watchedEpisodes    Int                  @default(0)
+  lastWatchedAt      DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   mediaItem MediaItem     @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
   replays   MovieReplay[]
 
   @@unique([userId, mediaItemId])
+  // "Who tracks this work": notification scans, WorkFriends, hidden_gem.
+  @@index([mediaItemId])
 }
 
 // One row per completed replay, beyond the entry's own first completion —
-// same shape as GameReplay/BookReplay. Movies only: series/anime rewatches
+// Movies only: series/anime rewatches
 // are tracked per-episode via EpisodeWatch instead.
 model MovieReplay {
   id             String   @id @default(cuid())
@@ -1521,24 +2174,41 @@ model EpisodeWatch {
 // at least one user references it. Games have no seasons/episodes, so there is
 // no progress model — the library entry's status is user-set.
 model GameItem {
-  id              String     @id @default(cuid())
-  canonicalSource GameSource
-  title           String
-  coverUrl        String?
-  backdropUrl     String?
-  overview        String?
-  releaseDate     DateTime?
-  genres          String[]
-  platforms       String[]
+  id                      String     @id @default(cuid())
+  canonicalSource         GameSource
+  title                   String
+  coverUrl                String?
+  backdropUrl             String?
+  overview                String?
+  // The first day of the announced period unless the precision is DAY:
+  // IGDB's own timestamp for "2028" is December 31st, not a real date.
+  releaseDate             DateTime?
+  releaseDatePrecision    ReleaseDatePrecision?
+  genres                  String[]
+  platforms               String[]
+  // IGDB's average time to beat, in minutes: to the credits without the
+  // extras, a normal playthrough, and to 100 %. All four stay null when IGDB
+  // has too few player submissions for the averages to mean anything (see
+  // MIN_TIME_TO_BEAT_SUBMISSIONS); a single one can be null on its own.
+  // Typed columns rather than `metadata`, so the library can sum them in SQL.
+  timeToBeatHastilyMin    Int?
+  timeToBeatNormallyMin   Int?
+  timeToBeatCompletelyMin Int?
+  timeToBeatSubmissions   Int?
   // 18+ title (IGDB "Erotic" theme). Restricted per-account, like MediaItem.
-  isAdult         Boolean    @default(false)
-  metadata        Json       @default("{}")
-  lastSyncedAt    DateTime   @default(now())
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  isAdult                 Boolean    @default(false)
+  // The saga it belongs to (its IGDB series, e.g. "IGDB:18"), set when its
+  // saga is first read (see GameSagaService).
+  sagaKey                 String?
+  metadata                Json       @default("{}")
+  lastSyncedAt            DateTime   @default(now())
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
 
   externalIds GameExternalId[]
   entries     GameEntry[]
+
+  @@index([sagaKey])
 }
 
 model GameExternalId {
@@ -1554,40 +2224,80 @@ model GameExternalId {
 }
 
 model GameEntry {
-  id              String              @id @default(cuid())
-  userId          String
-  gameItemId      String
-  status          GameStatus          @default(BACKLOG)
-  notes           String?
-  favorite        Boolean             @default(false)
+  id                     String              @id @default(cuid())
+  userId                 String
+  gameItemId             String
+  status                 GameStatus          @default(BACKLOG)
+  notes                  String?
+  favorite               Boolean             @default(false)
   // Total time played, in minutes. Imported from Steam (playtime_forever);
   // manually editable. No session history yet — this is the running total.
-  playtimeMinutes Int                 @default(0)
-  startedAt       DateTime?
-  finishedAt      DateTime?
-  ownershipStatus GameOwnershipStatus @default(NONE)
+  playtimeMinutes        Int                 @default(0)
+  // Dated Loomkeep sessions and Steam's external counter intentionally stay
+  // separate because the same play time can be present in both.
+  trackedPlaytimeMinutes Int                 @default(0)
+  steamPlaytimeMinutes   Int?
+  steamSyncedAt          DateTime?
+  startedAt              DateTime?
+  finishedAt             DateTime?
+  ownershipStatus        GameOwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise.
-  ownershipSource String?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  ownershipSource        String?
+  // The platform it's played on, one of GameItem.platforms (IGDB's names).
+  platform               String?
+  // Set when the user asked to be told of the release; a release dated
+  // before it never alerts.
+  releaseReminderAt      DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
 
-  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gameItem GameItem     @relation(fields: [gameItemId], references: [id], onDelete: Cascade)
-  replays  GameReplay[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameItem      GameItem       @relation(fields: [gameItemId], references: [id], onDelete: Cascade)
+  playthroughs  GamePlaythrough[]
+  sessions      GameSession[]
+  sessionTimers SessionTimer[]
 
   @@unique([userId, gameItemId])
+  // "Who tracks this work" (see LibraryEntry).
+  @@index([gameItemId])
 }
 
-// One row per completed replay, beyond the entry's own first completion —
-// mirrors EpisodeWatch's minimalism (a single "when" per viewing/completion).
-model GameReplay {
-  id          String   @id @default(cuid())
-  gameEntryId String
-  finishedAt  DateTime @default(now())
+model GameSession {
+  id              String        @id @default(cuid())
+  gameEntryId     String
+  playthroughId   String?
+  durationMinutes Int
+  notes           String?
+  occurredAt      DateTime
+  source          SessionSource @default(MANUAL)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  gameEntry GameEntry @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  gameEntry   GameEntry        @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  playthrough GamePlaythrough? @relation(fields: [playthroughId], references: [id], onDelete: SetNull)
 
-  @@index([gameEntryId])
+  @@index([gameEntryId, occurredAt])
+  @@index([playthroughId, occurredAt])
+  @@index([createdAt])
+}
+
+model GamePlaythrough {
+  id               String              @id @default(cuid())
+  gameEntryId      String
+  number           Int
+  status           TrackingCycleStatus
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  trackedMinutes   Int                 @default(0)
+  legacyIncomplete Boolean             @default(false)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  gameEntry GameEntry    @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  sessions  GameSession[]
+
+  @@unique([gameEntryId, number])
+  @@index([gameEntryId, status])
 }
 
 // On-demand cache for books, mirroring GameItem: a book exists here only once
@@ -1604,10 +2314,16 @@ model BookItem {
   genres          String[]
   // Number of pages, when the source knows it.
   pageCount       Int?
+  // ISBN of the edition the source picked, when it has one. Goodreads matches
+  // an imported row on it first, before falling back to title and author.
+  isbn            String?
   // 18+ title, restricted per-account like MediaItem/GameItem. Open Library
   // exposes no maturity rating, so this stays false for now — kept so the
   // per-account restriction still has a hook the day a source provides one.
   isAdult         Boolean    @default(false)
+  // Open Library series the work belongs to as a numbered volume ("OL326110L"):
+  // the saga the library's sagas view groups it under.
+  seriesKey       String?
   metadata        Json       @default("{}")
   lastSyncedAt    DateTime   @default(now())
   createdAt       DateTime   @default(now())
@@ -1615,6 +2331,8 @@ model BookItem {
 
   externalIds BookExternalId[]
   entries     BookEntry[]
+
+  @@index([seriesKey])
 }
 
 model BookExternalId {
@@ -1630,38 +2348,105 @@ model BookExternalId {
 }
 
 model BookEntry {
-  id              String              @id @default(cuid())
-  userId          String
-  bookItemId      String
-  status          BookStatus          @default(TO_READ)
-  notes           String?
-  favorite        Boolean             @default(false)
-  // Current reading position, in pages. No session history — running position.
-  currentPage     Int                 @default(0)
-  startedAt       DateTime?
-  finishedAt      DateTime?
-  ownershipStatus BookOwnershipStatus @default(NONE)
+  id                    String              @id @default(cuid())
+  userId                String
+  bookItemId            String
+  status                BookStatus          @default(TO_READ)
+  notes                 String?
+  favorite              Boolean             @default(false)
+  // Current reading position, derived from the baseline and dated sessions.
+  currentPage           Int                 @default(0)
+  // Stable progress reference for the selected edition. `readingBaselinePage`
+  // preserves the position that existed before dated sessions were introduced.
+  editionKey            String?
+  referencePageCount    Int?
+  readingBaselinePage   Int                 @default(0)
+  trackedReadingMinutes Int                 @default(0)
+  startedAt             DateTime?
+  finishedAt            DateTime?
+  ownershipStatus       BookOwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/AUDIO (e.g. "Kindle"); null otherwise.
-  ownershipSource String?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  ownershipSource       String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
 
-  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookItem BookItem     @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
-  replays  BookReplay[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookItem      BookItem       @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
+  readings      BookReading[]
+  sessions      BookSession[]
+  sessionTimers SessionTimer[]
 
   @@unique([userId, bookItemId])
+  // "Who tracks this work" (see LibraryEntry).
+  @@index([bookItemId])
 }
 
-// One row per completed reread, beyond the entry's own first completion —
-// mirrors EpisodeWatch's minimalism (a single "when" per viewing/completion).
-model BookReplay {
-  id          String   @id @default(cuid())
-  bookEntryId String
-  finishedAt  DateTime @default(now())
+model BookSession {
+  id              String        @id @default(cuid())
+  bookEntryId     String
+  readingId       String?
+  durationMinutes Int
+  pagesRead       Int
+  startPage       Int?
+  endPage         Int?
+  notes           String?
+  occurredAt      DateTime
+  source          SessionSource @default(MANUAL)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  bookEntry BookEntry @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+  bookEntry BookEntry   @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+  reading   BookReading? @relation(fields: [readingId], references: [id], onDelete: SetNull)
 
+  @@index([bookEntryId, occurredAt])
+  @@index([readingId, occurredAt])
+  @@index([createdAt])
+}
+
+model BookReading {
+  id                 String              @id @default(cuid())
+  bookEntryId        String
+  number             Int
+  status             TrackingCycleStatus
+  editionKey         String?
+  referencePageCount Int?
+  baselinePage       Int                 @default(0)
+  currentPage        Int                 @default(0)
+  trackedMinutes     Int                 @default(0)
+  pagesRead          Int                 @default(0)
+  startedAt          DateTime?
+  finishedAt         DateTime?
+  legacyIncomplete   Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  bookEntry BookEntry    @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+  sessions  BookSession[]
+
+  @@unique([bookEntryId, number])
+  @@index([bookEntryId, status])
+}
+
+// One durable stopwatch per account. The elapsed segment is accumulated on
+// pause so the timer survives navigation, browser closure and API restarts.
+model SessionTimer {
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  domain             Domain
+  gameEntryId        String?
+  bookEntryId        String?
+  startedAt          DateTime
+  pausedAt           DateTime?
+  accumulatedSeconds Int       @default(0)
+  cycleAction        SessionCycleAction?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameEntry GameEntry? @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  bookEntry BookEntry? @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+
+  @@index([gameEntryId])
   @@index([bookEntryId])
 }
 
@@ -1738,6 +2523,8 @@ model MusicEntry {
   musicItem MusicItem @relation(fields: [musicItemId], references: [id], onDelete: Cascade)
 
   @@unique([userId, musicItemId])
+  // "Who tracks this work" (see LibraryEntry).
+  @@index([musicItemId])
 }
 
 // Gamification: XP ledger, level curve and reward scale.
@@ -1745,12 +2532,16 @@ model MusicEntry {
 // source per reason) live in packages/shared/src/level.ts and xp-rules.ts —
 // pure data/functions shared with the web, kept out of Prisma entirely.
 
-// One credited (or reversed-by-deletion) unit of XP. Append-only by design:
-// a reversal deletes the row outright rather than writing a
-// negative entry or a revokedAt — re-crediting the same source always starts
-// from a fresh row, so cycling a source (mark watched, unwatch, rewatch)
-// never manufactures XP. Admin adjustments are the exception: distinct rows,
-// never deleted.
+// One credited unit of XP. A reversal stamps `revokedAt` rather than deleting
+// the row, so the history can show what was taken back; every sum reads live
+// rows only. Re-crediting the same source starts from a fresh row, so cycling
+// a source (mark watched, unwatch, rewatch) never manufactures XP. Admin
+// adjustments are the exception: distinct signed rows, never revoked.
+//
+// Idempotence is a partial unique index on (userId, reason, sourceType,
+// sourceId) WHERE "revokedAt" IS NULL, written in the migration's SQL:
+// Prisma's @@unique cannot express the WHERE, and a full one would block
+// re-crediting a source once revoked.
 model XpEntry {
   id         String   @id @default(cuid())
   userId     String
@@ -1760,7 +2551,7 @@ model XpEntry {
   reason     String
   // Table the gain is anchored to ("EpisodeWatch", "LibraryEntry", "DOMAIN"…
   // — see XpRule.sourceType in xp-rules.ts) and that row's id. Together with
-  // reason they make crediting idempotent (the unique constraint below) and
+  // reason they make crediting idempotent (the partial unique index above) and
   // let the nightly reconciliation job re-verify each entry still has a live
   // source. Non-nullable: Postgres treats NULLs as distinct in a unique
   // index, so a nullable sourceId would let the same (userId, reason) pair
@@ -1773,12 +2564,22 @@ model XpEntry {
   // readable (and reconciliation-stable) after a future barème change —
   // re-tuning an amount must never retroactively rewrite history.
   amount     Int
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+  // Display snapshot of what earned it, taken at grant time like
+  // ActivityEvent's: the source row is usually gone by the time a revoked
+  // line is read back (an unwatch deletes its EpisodeWatch). Null title for a
+  // reason with no work behind it (profile, admin adjustment…).
+  title      String?
+  href       String?
+  // Reason-specific extras: { seasonNumber, episodeNumber }, { achievementKey },
+  // { domain }.
+  data       Json      @default("{}")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, reason, sourceType, sourceId])
   @@index([userId, createdAt])
+  @@index([userId, revokedAt])
   @@index([reason, id])
 }
 
@@ -1822,4 +2623,11 @@ model UserAchievement {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, key])
+}
+
+model AchievementRarity {
+  key           String   @id
+  holders       Int
+  eligibleUsers Int
+  computedAt    DateTime @default(now())
 }

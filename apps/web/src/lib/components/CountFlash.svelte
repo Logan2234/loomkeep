@@ -1,6 +1,6 @@
 <script lang="ts">
   // Only post-mount changes flash; the initial value is already settled.
-  import { prefersReducedMotion } from "$lib/motion";
+  import { prefersReducedMotion } from "#lib/motion.js";
 
   let {
     value,

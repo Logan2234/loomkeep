@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import ProviderMark from "$lib/components/ProviderMark.svelte";
+  import ProviderMark from "#lib/components/ProviderMark.svelte";
   import {
     ANILIST_API,
     IGDB_API,
@@ -8,11 +8,11 @@
     OMDB_API,
     OPENLIBRARY_API,
     TMDB_API,
-  } from "$lib/constants/external-links";
-  import { m } from "$lib/paraglide/messages";
-  import type { ProviderBrandKey } from "$lib/provider-brands";
+  } from "#lib/constants/external-links.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { ProviderBrandKey } from "#lib/provider-brands.js";
   import SettingsSection from "../components/SettingsSection.svelte";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
 
   // TMDB's notice text is quoted verbatim by their API Terms of Use and kept
   // identical across locales for that reason — see messages/*.json.
@@ -76,7 +76,10 @@
           rel="noopener noreferrer"
           class="card hover:border-accent hover:bg-surface-2 flex h-full w-full items-start gap-2.5 p-4 text-left text-sm transition-[border-color,background-color]">
           {#if p.brand}
-            <ProviderMark brand={p.brand} class="mt-0.5 h-4 w-4 shrink-0" />
+            <ProviderMark
+              brand={p.brand}
+              decorative
+              class="mt-0.5 h-4 w-4 shrink-0" />
           {/if}
           <span class="min-w-0">
             <span class="font-semibold">{p.name}</span>

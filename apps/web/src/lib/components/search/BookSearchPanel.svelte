@@ -4,17 +4,17 @@
     listBooks,
     searchBooks,
     upsertBookEntry,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import PosterGrid from "$lib/components/PosterGrid.svelte";
-  import { debounce } from "$lib/debounce";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import PosterGrid from "#lib/components/PosterGrid.svelte";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { BookSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -36,8 +36,6 @@
     mode?: "title" | "author" | "isbn";
   } = $props();
 
-  const DEBOUNCE_MS = 300;
-
   // `query`/`mode` (raw) drive the input; `queryFilter` (debounced) is the
   // formatted string that actually drives the fetch — same split as
   // LibraryBrowser/MediaSearchPanel. Open Library's Solr parses `author:"…"`
@@ -49,7 +47,7 @@
   let queryFilter = $state("");
   const debouncedQueryFilter = debounce((q: string) => {
     queryFilter = q;
-  }, DEBOUNCE_MS);
+  }, SEARCH_DEBOUNCE_MS);
 
   $effect(() => {
     const q = query.trim();
@@ -143,7 +141,11 @@
           href={`/app/books/${book.sourceId}`}
           class="absolute inset-0 z-1"
           aria-label={book.title}></a>
-        <Poster src={book.coverUrl} title={book.title} adult={book.isAdult} />
+        <Poster
+          src={book.coverUrl}
+          title={book.title}
+          alt=""
+          adult={book.isAdult} />
         <div class="flex flex-1 flex-col gap-2 p-3">
           <span class="font-display text-sm leading-tight font-semibold">
             {book.title}

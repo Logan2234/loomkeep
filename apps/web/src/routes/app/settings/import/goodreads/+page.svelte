@@ -1,6 +1,6 @@
 <script lang="ts">
-  import ImportWizard from "$lib/components/ImportWizard.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import ImportWizard from "#lib/components/ImportWizard.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 </script>
 
 <ImportWizard source="goodreads">
@@ -11,6 +11,5 @@
       rel="noopener noreferrer"
       class="link-accent">{m.settings_import_goodreads_intro()}</a>
     {m.settings_import_goodreads_hint()}
-    <code class="text-fg">.csv</code>
   {/snippet}
 </ImportWizard>

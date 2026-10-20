@@ -3,7 +3,7 @@
   // enters from below when it goes up, from above when it goes down. Unlike
   // CountFlash, this is for values the reader is actively changing (a vote,
   // a rating being dragged), where the direction of the change is the point.
-  import { prefersReducedMotion } from "$lib/motion";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
 
@@ -21,9 +21,12 @@
 
   let direction = $state(1);
   let previous: number | null = null;
+  let safeValue = $derived(
+    value !== null && Number.isFinite(value) ? value : null,
+  );
 
   $effect.pre(() => {
-    const current = value;
+    const current = safeValue;
     direction = (current ?? -1) >= (previous ?? -1) ? 1 : -1;
     previous = current;
   });
@@ -35,12 +38,12 @@
 </script>
 
 <span class="inline-grid overflow-clip {cls}">
-  {#key value}
+  {#key safeValue}
     <span
       class="[grid-area:1/1]"
       in:fly={{ ...motion(), y: `${direction * 70}%` }}
       out:fly={{ ...motion(), y: `${direction * -70}%` }}>
-      {value ?? "–"}
+      {safeValue ?? "–"}
     </span>
   {/key}
 </span>

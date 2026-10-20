@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { portal } from "$lib/actions/portal";
-  import { layout } from "$lib/layout.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { Snippet } from "svelte";
-  import { onMount, tick } from "svelte";
-  import { fly } from "svelte/transition";
+  import { dialogFocus } from "#lib/actions/dialog-focus.js";
+  import { portal } from "#lib/actions/portal.js";
+  import { scrollLock } from "#lib/actions/scroll-lock.js";
+  import { layout } from "#lib/layout.svelte.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { onMount, type Snippet } from "svelte";
+  import { fade, fly } from "svelte/transition";
 
   let {
     onclose,
@@ -14,7 +15,7 @@
     zIndex = 50,
     panelClass = "",
     desktopClass = "max-w-xl",
-    backdropClass = "bg-transparent",
+    backdropClass = "",
   }: {
     onclose: () => void;
     children: Snippet;
@@ -23,14 +24,17 @@
     panelClass?: string;
     /** Applied only outside the compact shell so phone panels stay full screen. */
     desktopClass?: string;
+    /** Extra classes for the dimmed backdrop. */
     backdropClass?: string;
   } = $props();
 
   const reduced = prefersReducedMotion();
-  let panel = $state<HTMLDivElement | null>(null);
 
   onMount(() => {
-    void tick().then(() => panel?.focus());
+    layout.openSidePanels += 1;
+    return () => {
+      layout.openSidePanels -= 1;
+    };
   });
 
   function handleKeydown(event: KeyboardEvent) {
@@ -43,14 +47,16 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div use:portal class="contents">
+<div use:portal use:scrollLock class="contents">
   <button
-    class="fixed inset-0 cursor-default {backdropClass}"
+    data-dialog-backdrop
+    class="fixed inset-0 cursor-default bg-black/60 {backdropClass}"
+    transition:fade={{ duration: reduced ? 0 : 200 }}
     style="z-index: {zIndex}"
     aria-label={m.common_close()}
     onclick={onclose}></button>
   <div
-    bind:this={panel}
+    use:dialogFocus
     role="dialog"
     aria-modal="true"
     aria-labelledby={labelledby}
@@ -60,7 +66,7 @@
       duration: reduced ? 0 : 220,
     }}
     class="bg-bg border-border fixed z-10 flex flex-col overflow-hidden shadow-2xl {layout.compact
-      ? 'inset-0 h-[100dvh] w-full'
+      ? 'inset-0 h-dvh w-full'
       : `inset-y-0 right-0 h-full w-full border-l ${desktopClass}`} {panelClass}"
     style="z-index: {zIndex + 1}">
     {@render children()}

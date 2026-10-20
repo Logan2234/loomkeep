@@ -5,4 +5,5 @@ export class AdminBackupFileResponseDto implements AdminBackupFileDto {
   filename!: string;
   sizeBytes!: number;
   createdAt!: string;
+  status!: "AVAILABLE" | "MISSING";
 }

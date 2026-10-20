@@ -1,5 +1,7 @@
 import {
+  type AuthTokensDto,
   ErrorCode,
+  type InvitationPreviewDto,
   type LoginResponseDto,
   type UserDto,
   WebauthnLoginOptionsResponseDto,
@@ -25,21 +27,25 @@ import {
 import { Throttle } from "@nestjs/throttler";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { AppException } from "../common/app.exception";
+import { SENSITIVE_ACTION_THROTTLE } from "../common/throttle.constants";
 import {
   clearAuthCookies,
   readRefreshCookie,
   setAuthCookies,
 } from "./auth-cookies";
+import { AUTH_THROTTLE_LIMIT, AUTH_THROTTLE_TTL_MS } from "./auth-throttle";
 import { AuthService } from "./auth.service";
 import { Public } from "./decorators/public.decorator";
 import { AuthResultResponseDto } from "./dto/auth-result-response.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
+import { InvitationPreviewResponseDto } from "./dto/invitation-preview-response.dto";
 import {
   LoginMfaChallengeResponseDto,
   LoginSuccessResponseDto,
 } from "./dto/login-response.dto";
 import { LoginDto } from "./dto/login.dto";
 import { MfaVerifyDto } from "./dto/mfa-verify.dto";
+import { PreviewInvitationDto } from "./dto/preview-invitation.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { ResendMfaEmailCodeDto } from "./dto/resend-mfa-email-code.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
@@ -50,22 +56,28 @@ import { WebauthnLoginVerifyDto } from "./dto/webauthn-login-verify.dto";
 import { WebauthnMfaOptionsResultDto } from "./dto/webauthn-mfa-options-response.dto";
 import { WebauthnMfaOptionsDto } from "./dto/webauthn-mfa-options.dto";
 import { WebauthnMfaVerifyDto } from "./dto/webauthn-mfa-verify.dto";
+import { InvitationService } from "./invitation.service";
 
 @Public()
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly invitations: InvitationService,
+  ) {}
 
-  // Brute-force / abuse guards on top of the global 60 req/min default.
-  // 10, not something tighter, partly so the e2e suite's own sequential
-  // /auth/register calls (app.e2e-spec.ts) stay well under the budget —
-  // bump this further alongside adding another one there.
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  // Brute-force / abuse guards on top of the global 60 req/min default. The
+  // budget lives in auth-throttle.ts: the e2e suite raises it by env rather
+  // than the production value being calibrated around the tests.
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @ApiCreatedResponse({ type: AuthResultResponseDto })
   @Post("register")
   async register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
     @Headers("accept-language") acceptLanguage?: string,
@@ -76,11 +88,13 @@ export class AuthController {
       ip,
       acceptLanguage,
     );
-    setAuthCookies(reply, result.tokens);
+    await this.signIn(request, reply, result.tokens);
     return { user: result.user };
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiExtraModels(LoginMfaChallengeResponseDto, LoginSuccessResponseDto)
   @ApiOkResponse({
@@ -95,24 +109,28 @@ export class AuthController {
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
   ): Promise<LoginResponseDto> {
     const result = await this.authService.login(dto, userAgent, ip);
     if (result.mfaRequired) return result;
 
-    setAuthCookies(reply, result.tokens);
+    await this.signIn(request, reply, result.tokens);
     return { mfaRequired: false, user: result.user };
   }
 
   // Same budget as login — this is its natural continuation for MFA-enabled accounts.
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: AuthResultResponseDto })
   @Post("mfa/verify")
   async mfaVerify(
     @Body() dto: MfaVerifyDto,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
   ): Promise<{ user: UserDto }> {
@@ -122,18 +140,20 @@ export class AuthController {
       userAgent,
       ip,
     );
-    setAuthCookies(reply, result.tokens);
+    await this.signIn(request, reply, result.tokens);
     return { user: result.user };
   }
 
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(SENSITIVE_ACTION_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("mfa/resend-email-code")
   async mfaResendEmailCode(@Body() dto: ResendMfaEmailCodeDto): Promise<void> {
     await this.authService.resendMfaEmailCode(dto.challengeId);
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: WebauthnMfaOptionsResultDto })
   @Post("mfa/webauthn/options")
@@ -143,13 +163,16 @@ export class AuthController {
     return this.authService.startWebauthnMfaChallenge(dto.challengeId);
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: AuthResultResponseDto })
   @Post("mfa/webauthn/verify")
   async mfaWebauthnVerify(
     @Body() dto: WebauthnMfaVerifyDto,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
   ): Promise<{ user: UserDto }> {
@@ -159,12 +182,14 @@ export class AuthController {
       userAgent,
       ip,
     );
-    setAuthCookies(reply, result.tokens);
+    await this.signIn(request, reply, result.tokens);
     return { user: result.user };
   }
 
   // Same budget as login — this is its alternate entry point, no password involved.
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: WebauthnLoginOptionsResultDto })
   @Post("webauthn/login-options")
@@ -174,13 +199,16 @@ export class AuthController {
     return this.authService.passwordlessLoginOptions(dto.identifier);
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: AuthResultResponseDto })
   @Post("webauthn/login-verify")
   async webauthnLoginVerify(
     @Body() dto: WebauthnLoginVerifyDto,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
   ): Promise<{ user: UserDto }> {
@@ -190,7 +218,7 @@ export class AuthController {
       userAgent,
       ip,
     );
-    setAuthCookies(reply, result.tokens);
+    await this.signIn(request, reply, result.tokens);
     return { user: result.user };
   }
 
@@ -212,7 +240,13 @@ export class AuthController {
     try {
       setAuthCookies(reply, await this.authService.refresh(refreshToken));
     } catch (error) {
-      if (!(error instanceof AppException)) throw error;
+      // Superseded: the cookies another tab just received are this
+      // browser's too — clearing them would sign every tab out.
+      if (
+        !(error instanceof AppException) ||
+        error.code === ErrorCode.AuthRefreshSuperseded
+      )
+        throw error;
       clearAuthCookies(reply);
       throw error;
     }
@@ -229,14 +263,14 @@ export class AuthController {
     clearAuthCookies(reply);
   }
 
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(SENSITIVE_ACTION_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("forgot-password")
   async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<void> {
     await this.authService.requestPasswordReset(dto.email);
   }
 
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(SENSITIVE_ACTION_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("reset-password")
   async resetPassword(
@@ -246,10 +280,43 @@ export class AuthController {
     await this.authService.resetPassword(dto.token, dto.newPassword, userAgent);
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("verify-email")
   async verifyEmail(@Body() dto: VerifyEmailDto): Promise<void> {
     await this.authService.verifyEmail(dto.token);
+  }
+
+  // POST with the token in the body, not GET /invitations/:token: a URL
+  // lands in access logs, a body doesn't.
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: InvitationPreviewResponseDto })
+  @Post("invitations/preview")
+  async previewInvitation(
+    @Body() dto: PreviewInvitationDto,
+  ): Promise<InvitationPreviewDto> {
+    return this.invitations.preview(dto.token);
+  }
+
+  /**
+   * Sets a new session's cookies, ending first the session this browser held
+   * before — the one its refresh cookie still names, which they replace. One
+   * session per browser, without guessing the browser from its User-Agent:
+   * two machines on the same Chrome build send identical ones, and signing
+   * in on one used to sign the other out.
+   */
+  private async signIn(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    tokens: AuthTokensDto,
+  ): Promise<void> {
+    const replaced = readRefreshCookie(request);
+    if (replaced) await this.authService.logout(replaced);
+    setAuthCookies(reply, tokens);
   }
 }

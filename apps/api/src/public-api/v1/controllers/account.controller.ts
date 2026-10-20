@@ -1,0 +1,270 @@
+import type {
+  ApiV1AchievementDto,
+  ApiV1ListDetailDto,
+  ApiV1ListDto,
+  ApiV1NotificationsDto,
+  ApiV1ProfileDto,
+  ApiV1ReviewDto,
+  ApiV1StatsSummaryDto,
+  ReviewTargetType,
+  StatsDomain,
+  UserDataExportDto,
+} from "@loomkeep/shared";
+import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { ApiOperation, ApiParam } from "@nestjs/swagger";
+import { PublicApi } from "../../../api-keys/public-api.decorator";
+import type { JwtPayload } from "../../../auth/decorators/current-user.decorator";
+import { CurrentUser } from "../../../auth/decorators/current-user.decorator";
+import { parsePageQuery } from "../../../common/pagination.util";
+import { GamificationFeatureGuard } from "../../../gamification/gamification-feature.guard";
+import { NotificationService } from "../../../notifications/notification.service";
+import { ReviewService } from "../../../reviews/review.service";
+import { DataExportService } from "../../../users/data-export.service";
+import { UserDataExportResponseDto } from "../../../users/dto/data-export/user-data-export-response.dto";
+import {
+  ApiV1BadRequest,
+  ApiV1NotFound,
+  ApiV1OkResponse,
+} from "../api-responses";
+import { LangQueryDto, ReviewsQueryDto } from "../dto/queries.dto";
+import {
+  ApiV1AchievementResponseDto,
+  ApiV1ListDetailResponseDto,
+  ApiV1ListResponseDto,
+  ApiV1NotificationsResponseDto,
+  ApiV1ProfileResponseDto,
+  ApiV1ReviewResponseDto,
+  ApiV1StatsSummaryResponseDto,
+} from "../dto/responses.dto";
+import { ExportRateLimitGuard } from "../export-rate-limit.guard";
+import { webOriginOf } from "../library-v1.service";
+import { ListsV1Service } from "../lists-v1.service";
+import { ProfileV1Service } from "../profile-v1.service";
+import { StatsV1Service } from "../stats-v1.service";
+import { toTarget, webUrl } from "../v1.mapper";
+import { WorkTitlesService } from "../work-titles.service";
+
+const NOTIFICATIONS_LIMIT = 50;
+
+const REVIEW_TARGETS: Record<StatsDomain, ReviewTargetType[]> = {
+  MEDIA: ["MEDIA", "SEASON", "EPISODE"],
+  GAMES: ["GAME"],
+  BOOKS: ["BOOK"],
+  MUSIC: ["MUSIC"],
+};
+
+@PublicApi("Lists", "lists")
+@Controller({ path: "lists", version: "1" })
+export class ListsV1Controller {
+  constructor(private readonly lists: ListsV1Service) {}
+
+  @Get()
+  @ApiOperation({
+    operationId: "listLists",
+    summary: "List lists",
+    description: "The caller's lists, plus the ones shared with them.",
+  })
+  @ApiV1OkResponse({ type: ApiV1ListResponseDto, isArray: true })
+  list(@CurrentUser() user: JwtPayload): Promise<ApiV1ListDto[]> {
+    return this.lists.list(user.sub);
+  }
+
+  @Get(":id")
+  @ApiOperation({
+    operationId: "getList",
+    summary: "Get a list and its items",
+    description:
+      "A list the caller owns or edits, with every item in order. Items can be works, seasons or episodes.",
+  })
+  @ApiParam({
+    name: "id",
+    description: "A list id, from `GET /v1/lists`.",
+    example: "cm1q2w3e4r5t6y7u8i9o0p1a",
+  })
+  @ApiV1NotFound(
+    "lists.not_found",
+    "No such list, or one the caller can't edit.",
+  )
+  @ApiV1BadRequest()
+  @ApiV1OkResponse({ type: ApiV1ListDetailResponseDto })
+  get(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Query() query: LangQueryDto,
+  ): Promise<ApiV1ListDetailDto> {
+    return this.lists.get(user.sub, id, query.lang);
+  }
+}
+
+@PublicApi("Stats", "stats")
+@Controller({ path: "stats", version: "1" })
+export class StatsV1Controller {
+  constructor(private readonly stats: StatsV1Service) {}
+
+  @Get("summary")
+  @ApiOperation({
+    operationId: "getStatsSummary",
+    summary: "Stats summary",
+    description:
+      "Counts per domain and normalised status, time spent, and this year's reading goal.",
+  })
+  @ApiV1OkResponse({ type: ApiV1StatsSummaryResponseDto })
+  summary(@CurrentUser() user: JwtPayload): Promise<ApiV1StatsSummaryDto> {
+    return this.stats.summary(user.sub);
+  }
+}
+
+@PublicApi("Reviews", "reviews")
+@Controller({ path: "reviews", version: "1" })
+export class ReviewsV1Controller {
+  private readonly webOrigin: string;
+
+  constructor(
+    config: ConfigService,
+    private readonly reviews: ReviewService,
+    private readonly titles: WorkTitlesService,
+  ) {
+    this.webOrigin = webOriginOf(config);
+  }
+
+  @Get()
+  @ApiOperation({
+    operationId: "listReviews",
+    summary: "List the caller's reviews and ratings",
+    description:
+      "Every review and rating the caller wrote, on works, seasons and episodes. Narrow it to one domain with `domain`.",
+  })
+  @ApiV1BadRequest()
+  @ApiV1OkResponse({ type: ApiV1ReviewResponseDto, isArray: true })
+  async list(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: ReviewsQueryDto,
+  ): Promise<ApiV1ReviewDto[]> {
+    const reviews = await this.reviews.listMine(user.sub);
+    const targets = query.domain ? REVIEW_TARGETS[query.domain] : null;
+    const items = reviews
+      .filter((review) => !targets || targets.includes(review.targetType))
+      .map((review) => ({
+        id: review.id,
+        rating: review.rating,
+        text: review.text,
+        visibility: review.visibility,
+        spoiler: review.spoilerTag,
+        createdAt: review.createdAt,
+        updatedAt: review.updatedAt,
+        target: toTarget(
+          review.targetType,
+          review.targetId,
+          review.target,
+          this.webOrigin,
+        ),
+      }));
+    await this.titles.translateTargets(
+      await this.titles.languageFor(user.sub, query.lang),
+      items.map((review) => review.target),
+    );
+    return items;
+  }
+}
+
+@PublicApi("Profile", "profile")
+@Controller({ path: "profile", version: "1" })
+export class ProfileV1Controller {
+  constructor(private readonly profile: ProfileV1Service) {}
+
+  @Get()
+  @ApiOperation({
+    operationId: "getProfile",
+    summary: "The caller's profile and progression",
+    description:
+      "`progression` is null when gamification is off on this instance.",
+  })
+  @ApiV1OkResponse({ type: ApiV1ProfileResponseDto })
+  get(@CurrentUser() user: JwtPayload): Promise<ApiV1ProfileDto> {
+    return this.profile.get(user.sub);
+  }
+
+  @Get("achievements")
+  @UseGuards(GamificationFeatureGuard)
+  @ApiOperation({
+    operationId: "listAchievements",
+    summary: "The caller's achievements",
+    description:
+      "Every achievement, unlocked or not, with the progress made towards the locked ones. Secret ones stay hidden until unlocked.",
+  })
+  @ApiV1NotFound(
+    "gamification.feature_disabled",
+    "Gamification is turned off on this instance.",
+  )
+  @ApiV1OkResponse({ type: ApiV1AchievementResponseDto, isArray: true })
+  achievements(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<ApiV1AchievementDto[]> {
+    return this.profile.achievements(user.sub);
+  }
+}
+
+@PublicApi("Notifications", "notifications")
+@Controller({ path: "notifications", version: "1" })
+export class NotificationsV1Controller {
+  private readonly webOrigin: string;
+
+  constructor(
+    config: ConfigService,
+    private readonly notifications: NotificationService,
+  ) {
+    this.webOrigin = webOriginOf(config);
+  }
+
+  @Get()
+  @ApiOperation({
+    operationId: "getNotifications",
+    summary: "The caller's notification bell",
+    description:
+      "The 50 most recent notifications, read or not, newest first, with how many are still unread. Read ones are kept 90 days.",
+  })
+  @ApiV1OkResponse({ type: ApiV1NotificationsResponseDto })
+  async list(@CurrentUser() user: JwtPayload): Promise<ApiV1NotificationsDto> {
+    const [page, counts] = await Promise.all([
+      this.notifications.history(
+        user.sub,
+        parsePageQuery(undefined, undefined, NOTIFICATIONS_LIMIT),
+        false,
+      ),
+      this.notifications.counts(user.sub),
+    ]);
+    return {
+      unread: counts.unread,
+      items: page.items.map((n) => ({
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        body: n.body,
+        url: n.url ? webUrl(this.webOrigin, n.url) : null,
+        date: n.timestamp,
+        createdAt: n.createdAt,
+        readAt: n.readAt,
+      })),
+    };
+  }
+}
+
+@PublicApi("Export", "export")
+@Controller({ path: "export", version: "1" })
+export class ExportV1Controller {
+  constructor(private readonly dataExport: DataExportService) {}
+
+  @UseGuards(ExportRateLimitGuard)
+  @Get()
+  @ApiOperation({
+    operationId: "exportData",
+    summary: "Full data export",
+    description:
+      "Everything the account holds, in the same format as Settings › Export: a backup, or a way to move elsewhere. Once an hour per account: a second call within the hour gets a `429` (`api.rate_limited`) and a `Retry-After`.",
+  })
+  @ApiV1OkResponse({ type: UserDataExportResponseDto })
+  export(@CurrentUser() user: JwtPayload): Promise<UserDataExportDto> {
+    return this.dataExport.buildExport(user.sub);
+  }
+}

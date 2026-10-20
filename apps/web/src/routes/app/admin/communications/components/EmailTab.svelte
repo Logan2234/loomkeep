@@ -1,40 +1,77 @@
 <script lang="ts">
-  import type { Locale } from "@loomkeep/shared";
+  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+
+  import { untrack } from "svelte";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { adminFilterHref } from "#lib/url-params.js";
+  import { foldAdminSearch } from "#lib/admin-search.js";
+  import FieldError from "#lib/components/FieldError.svelte";
+  import AdminQueryError from "../../AdminQueryError.svelte";
+  import { Locale } from "@loomkeep/shared";
   import {
     getAdminEmailPreview,
     getAdminEmailTemplates,
     sendAdminTestEmail,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { resolveApiError } from "#lib/api/errors.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
   import {
     adminTemplateLabel,
     adminTemplateFieldLabel,
-  } from "$lib/constants/admin-presentation";
-  import { debounce } from "$lib/debounce";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
-
-  const emailLocales: Locale[] = ["fr", "en"];
+    groupAdminEmailTemplates,
+  } from "#lib/constants/admin-presentation.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
+  import { languageName } from "#lib/locales.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
+  import { createLatestEmailPreviewRequest } from "./email-preview";
 
   const templatesQuery = createApiQuery(() => ({
     key: keys.admin.emailTemplates(),
     fetch: getAdminEmailTemplates,
   }));
   const templates = $derived(templatesQuery.data?.templates ?? null);
+  const templateGroups = $derived(groupAdminEmailTemplates(templates ?? []));
   const smtpConfigured = $derived(templatesQuery.data?.smtpConfigured ?? false);
   const emailLoading = $derived(templatesQuery.loading);
   const emailLoadError = $derived(templatesQuery.error);
 
   let selectedKey = $state<string | null>(null);
-  // Auto-select the first template once the list lands.
+  let templateSearch = $state("");
+  let previewWidth = $state<"phone" | "desktop">("desktop");
+  const filteredGroups = $derived(
+    templateGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          foldAdminSearch(
+            `${adminTemplateLabel(item.key)} ${item.key}`,
+          ).includes(foldAdminSearch(templateSearch).trim()),
+        ),
+      }))
+      .filter((group) => group.items.length > 0),
+  );
   $effect(() => {
-    if (selectedKey === null && templates && templates.length > 0) {
-      selectTemplate(templates[0].key);
-    }
+    if (!templates?.length) return;
+    const requested = page.url.searchParams.get("template");
+    const key =
+      templates.find((template) => template.key === requested)?.key ??
+      templates[0].key;
+    const requestedLocale = page.url.searchParams.get("locale");
+    const locale =
+      Locale.find((locale) => locale === requestedLocale) ?? getLocale();
+    untrack(() => {
+      if (locale !== emailLocale) {
+        emailLocale = locale;
+        if (selectedKey === key) void loadPreview();
+      }
+      if (selectedKey !== key) selectTemplate(key, false);
+    });
   });
   const selectedTemplate = $derived(
     templates?.find((t) => t.key === selectedKey) ?? null,
@@ -47,14 +84,17 @@
   let previewHtml = $state<string | null>(null);
   let previewText = $state<string | null>(null);
   let previewLoading = $state(false);
+  let previewError = $state<string | null>(null);
   let previewTab = $state<"html" | "text">("html");
 
-  let copied = $state(false);
+  const copyFeedback = new CopyFeedback();
+  const copied = $derived(copyFeedback.value === true);
+  $effect(() => () => copyFeedback.reset());
 
   let testTo = $state("");
   let emailLocale = $state<Locale>(getLocale());
 
-  function selectTemplate(key: string) {
+  function selectTemplate(key: string, updateUrl = true) {
     selectedKey = key;
     sendTestEmailMut.reset();
     const template = templates?.find((t) => t.key === key);
@@ -62,41 +102,50 @@
       (template?.fields ?? []).map((f) => [f.key, f.default]),
     );
     void loadPreview();
+    if (updateUrl)
+      void goto(
+        adminFilterHref(page.url, { template: key, locale: emailLocale }),
+        { replace: true, reset: false },
+      );
   }
 
-  const debouncedLoadPreview = debounce(() => void loadPreview(), 300);
+  const debouncedLoadPreview = debounce(
+    () => void loadPreview(),
+    SEARCH_DEBOUNCE_MS,
+  );
 
   function onFieldInput(key: string, value: string) {
     fieldValues = { ...fieldValues, [key]: value };
     debouncedLoadPreview.call();
   }
 
-  async function loadPreview() {
-    if (!selectedKey) return;
-    previewLoading = true;
-    try {
-      const preview = await getAdminEmailPreview(
-        selectedKey,
-        emailLocale,
-        fieldValues,
-      );
+  const requestPreview = createLatestEmailPreviewRequest(getAdminEmailPreview, {
+    onStart: () => {
+      previewLoading = true;
+      previewError = null;
+    },
+    onSuccess: (preview) => {
       previewSubject = preview.subject;
       previewHtml = preview.html;
       previewText = preview.text;
-    } catch {
-      previewSubject = null;
-      previewHtml = null;
-      previewText = null;
-    } finally {
+    },
+    onError: (error) => {
+      previewError = resolveApiError(error);
+    },
+    onSettled: () => {
       previewLoading = false;
-    }
+    },
+  });
+
+  async function loadPreview() {
+    if (!selectedKey) return;
+    await requestPreview(selectedKey, emailLocale, fieldValues);
   }
 
-  async function copyHtml() {
-    if (!previewHtml) return;
-    await navigator.clipboard.writeText(previewHtml);
-    copied = true;
-    setTimeout(() => (copied = false), 1500);
+  async function copyPreview() {
+    const content = previewTab === "html" ? previewHtml : previewText;
+    if (!content) return;
+    await copyFeedback.copy(content, true, 1500);
   }
 
   const sendTestEmailMut = createApiMutation(() => ({
@@ -128,9 +177,13 @@
 </script>
 
 {#if emailLoadError}
-  <Banner variant="error">{emailLoadError}</Banner>
+  <AdminQueryError
+    message={emailLoadError}
+    queryKey={keys.admin.emailTemplates()} />
 {:else if emailLoading}
   <div class="card h-96 animate-pulse"></div>
+{:else if templates && templates.length === 0}
+  <p class="card text-dim p-8 text-center">{m.admin_no_data()}</p>
 {:else if templates}
   {#if !smtpConfigured}
     <Banner variant="warning" class="mb-6">
@@ -145,84 +198,148 @@
         <Combobox
           label={m.admin_communications_template()}
           searchable
-          options={templates.map((t) => ({
-            label: adminTemplateLabel(t.key),
-            value: t.key,
-          }))}
+          options={templateGroups.flatMap((group) =>
+            group.items.map((t) => ({
+              label: adminTemplateLabel(t.key),
+              value: t.key,
+              group: group.label,
+            })),
+          )}
           values={selectedKey ? [selectedKey] : []}
           onChange={(v) => v[0] && selectTemplate(v[0])} />
       </div>
 
+      <input
+        type="search"
+        class="input mb-3 hidden md:block"
+        aria-label={m.admin_communications_template()}
+        placeholder={m.common_search()}
+        bind:value={templateSearch} />
       <!-- Desktop: the full vertical list. -->
-      <nav class="hidden gap-1 md:flex md:flex-col">
-        {#each templates as t (t.key)}
-          <button
-            onclick={() => selectTemplate(t.key)}
-            class="rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors {selectedKey ===
-            t.key
-              ? 'bg-accent/15 text-accent'
-              : 'text-dim hover:bg-surface-2 hover:text-fg'}">
-            {adminTemplateLabel(t.key)}
-          </button>
-        {/each}
+      <nav
+        aria-label={m.admin_communications_template()}
+        class="hidden space-y-5 md:block">
+        {#each filteredGroups as group (group.label)}
+          <section>
+            <h3 class="text-dim mb-2 px-3 text-xs font-semibold">
+              {group.label}
+            </h3>
+            <div class="flex flex-col gap-1">
+              {#each group.items as t (t.key)}
+                <button
+                  onclick={() => selectTemplate(t.key)}
+                  aria-current={selectedKey === t.key ? "true" : undefined}
+                  class="rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors {selectedKey ===
+                  t.key
+                    ? 'bg-accent/15 text-accent'
+                    : 'text-dim hover:bg-surface-2 hover:text-fg'}">
+                  {adminTemplateLabel(t.key)}
+                </button>
+              {/each}
+            </div>
+          </section>
+        {:else}<p class="text-dim p-3 text-sm">{m.admin_no_matches()}</p>{/each}
       </nav>
     </div>
 
     <div class="min-w-0 space-y-4">
-      <div class="flex items-center gap-3">
-        <span class="text-dim text-xs font-semibold"
-          >{m.common_language()}</span>
-        <div class="flex gap-1">
-          {#each emailLocales as locale (locale)}
-            <button
-              type="button"
-              class="chip"
-              class:chip-on={emailLocale === locale}
-              onclick={() => {
-                emailLocale = locale;
-                void loadPreview();
-              }}>
-              {locale === "fr"
-                ? m.common_language_fr()
-                : m.common_language_en()}
-            </button>
-          {/each}
-        </div>
+      <div class="card space-y-4 p-4">
+        <Combobox
+          label={m.common_language()}
+          options={Locale.map((locale) => ({
+            label: languageName(locale),
+            value: locale,
+          }))}
+          values={[emailLocale]}
+          onChange={(values) => {
+            const locale = Locale.find((locale) => locale === values[0]);
+            if (!locale) return;
+            emailLocale = locale;
+            sendTestEmailMut.reset();
+            void loadPreview();
+            void goto(
+              adminFilterHref(page.url, { template: selectedKey, locale }),
+              { replace: true, reset: false },
+            );
+          }} />
+
+        {#if selectedTemplate && selectedTemplate.fields.length > 0}
+          <div class="border-border grid gap-3 border-t pt-4 sm:grid-cols-2">
+            {#each selectedTemplate.fields as f (f.key)}
+              <div class={f.multiline ? "sm:col-span-2" : ""}>
+                <label
+                  for="field-{f.key}"
+                  class="text-dim mb-1 block text-xs font-semibold">
+                  {adminTemplateFieldLabel(f.key)}
+                </label>
+                {#if f.multiline}
+                  <textarea
+                    id="field-{f.key}"
+                    name={f.key}
+                    value={fieldValues[f.key] ?? f.default}
+                    oninput={(e) => onFieldInput(f.key, e.currentTarget.value)}
+                    rows="4"
+                    class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm"
+                  ></textarea>
+                {:else}
+                  <input
+                    id="field-{f.key}"
+                    type="text"
+                    name={f.key}
+                    value={fieldValues[f.key] ?? f.default}
+                    oninput={(e) => onFieldInput(f.key, e.currentTarget.value)}
+                    class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
+                {/if}
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
 
-      {#if selectedTemplate && selectedTemplate.fields.length > 0}
-        <div class="card grid gap-3 p-4 sm:grid-cols-2">
-          {#each selectedTemplate.fields as f (f.key)}
-            <div class={f.multiline ? "sm:col-span-2" : ""}>
-              <label
-                for="field-{f.key}"
-                class="text-dim mb-1 block text-xs font-semibold">
-                {adminTemplateFieldLabel(f.key)}
-              </label>
-              {#if f.multiline}
-                <textarea
-                  id="field-{f.key}"
-                  name={f.key}
-                  value={fieldValues[f.key] ?? f.default}
-                  oninput={(e) => onFieldInput(f.key, e.currentTarget.value)}
-                  rows="4"
-                  class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm"
-                ></textarea>
-              {:else}
-                <input
-                  id="field-{f.key}"
-                  type="text"
-                  name={f.key}
-                  value={fieldValues[f.key] ?? f.default}
-                  oninput={(e) => onFieldInput(f.key, e.currentTarget.value)}
-                  class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
-              {/if}
-            </div>
-          {/each}
+      <div class="card flex flex-col gap-3 p-4 sm:flex-row sm:items-start">
+        <div class="min-w-0 flex-1 space-y-3">
+          <input
+            type="email"
+            name="testTo"
+            autocomplete="email"
+            enterkeyhint="send"
+            bind:value={testTo}
+            placeholder={m.admin_communications_recipient_placeholder()}
+            aria-label={m.admin_communications_recipient_placeholder()}
+            disabled={!smtpConfigured}
+            aria-invalid={sendTestEmailMut.fieldErrors.to ? "true" : undefined}
+            aria-describedby={sendTestEmailMut.fieldErrors.to
+              ? "test-recipient-error"
+              : undefined}
+            oninput={() => sendTestEmailMut.reset()}
+            class="border-border bg-surface w-full min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm disabled:opacity-50" />
+          <FieldError
+            id="test-recipient-error"
+            message={sendTestEmailMut.fieldErrors.to} />
         </div>
+        <button
+          onclick={sendTestEmail}
+          disabled={!smtpConfigured || !testTo || sendTestEmailMut.loading}
+          class="btn btn-primary shrink-0">
+          {sendTestEmailMut.loading
+            ? m.common_sending()
+            : m.admin_communications_send_test()}
+        </button>
+      </div>
+
+      {#if sendResult}
+        <p
+          class="rounded-lg border px-4 py-3 text-sm {sendResult.ok
+            ? 'border-success/40 bg-success/10 text-success'
+            : 'border-danger/40 bg-danger/10 text-danger'}">
+          {sendResult.message}
+        </p>
       {/if}
 
-      <div class="flex items-center justify-between gap-2">
+      {#if previewSubject}<p class="text-sm font-semibold break-words">
+          {m.admin_communications_subject({ subject: previewSubject })}
+        </p>{/if}
+      <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex gap-1">
           <button
             onclick={() => (previewTab = "html")}
@@ -242,64 +359,75 @@
           </button>
         </div>
         <button
-          onclick={copyHtml}
-          disabled={!previewHtml}
+          onclick={copyPreview}
+          disabled={previewLoading ||
+            !(previewTab === "html" ? previewHtml : previewText)}
           class="text-dim hover:bg-surface-2 hover:text-fg rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50">
           {copied
             ? `${m.common_copied()} !`
-            : m.admin_communications_copy_html()}
+            : previewTab === "html"
+              ? m.admin_communications_copy_html()
+              : m.admin_copy_text()}
         </button>
       </div>
 
-      <div class="border-border bg-surface-2 overflow-hidden rounded-xl border">
-        {#if previewLoading}
-          <div class="h-96 animate-pulse"></div>
-        {:else if previewTab === "html" && previewHtml}
+      {#if previewTab === "html"}<div
+          class="flex gap-2"
+          aria-label={m.admin_communications_email_preview()}>
+          <button
+            class="btn btn-ghost btn-sm"
+            aria-pressed={previewWidth === "phone"}
+            onclick={() => (previewWidth = "phone")}
+            >{m.admin_preview_phone()}</button
+          ><button
+            class="btn btn-ghost btn-sm"
+            aria-pressed={previewWidth === "desktop"}
+            onclick={() => (previewWidth = "desktop")}
+            >{m.admin_preview_desktop()}</button>
+        </div>{/if}
+      {#if previewError}
+        <Banner variant="error">
+          <div class="flex items-center justify-between gap-2">
+            <span>{previewError}</span>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm"
+              onclick={() => void loadPreview()}>{m.common_retry()}</button>
+          </div>
+        </Banner>
+      {/if}
+
+      <div
+        class="border-border bg-surface-2 relative overflow-hidden rounded-xl border">
+        {#if previewTab === "html" && previewHtml}
           <iframe
             title={m.admin_communications_email_preview()}
             sandbox=""
             srcdoc={previewHtml}
-            class="h-130 w-full border-0 bg-white"></iframe>
+            style:width={previewWidth === "phone" ? "375px" : "100%"}
+            style:max-width="100%"
+            class="mx-auto block h-130 border-0 bg-white"></iframe>
         {:else if previewTab === "text" && previewText}
           <pre
-            class="bg-surface text-fg h-130 overflow-auto p-4 text-xs whitespace-pre-wrap">{previewSubject
-              ? m.admin_communications_subject({ subject: previewSubject })
-              : ""}{previewText}</pre>
+            class="bg-surface text-fg h-130 overflow-auto p-4 text-xs whitespace-pre-wrap">{previewText}</pre>
+        {:else if previewLoading}
+          <div class="h-96 animate-pulse"></div>
         {:else}
           <div class="text-dim grid h-96 place-items-center text-sm">
             {m.admin_communications_preview_unavailable()}
           </div>
         {/if}
+        {#if previewLoading && (previewHtml || previewText)}
+          <div
+            class="border-border bg-surface/95 text-dim absolute top-3 right-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm"
+            aria-live="polite">
+            <span
+              class="border-accent h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent"
+              aria-hidden="true"></span>
+            {m.common_loading()}
+          </div>
+        {/if}
       </div>
-
-      <div class="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-        <input
-          type="email"
-          name="testTo"
-          autocomplete="email"
-          enterkeyhint="send"
-          bind:value={testTo}
-          placeholder={m.admin_communications_recipient_placeholder()}
-          disabled={!smtpConfigured}
-          class="border-border bg-surface min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm disabled:opacity-50" />
-        <button
-          onclick={sendTestEmail}
-          disabled={!smtpConfigured || !testTo || sendTestEmailMut.loading}
-          class="btn btn-primary shrink-0">
-          {sendTestEmailMut.loading
-            ? m.common_sending()
-            : m.admin_communications_send_test()}
-        </button>
-      </div>
-
-      {#if sendResult}
-        <p
-          class="rounded-lg border px-4 py-3 text-sm {sendResult.ok
-            ? 'border-success/40 bg-success/10 text-success'
-            : 'border-danger/40 bg-danger/10 text-danger'}">
-          {sendResult.message}
-        </p>
-      {/if}
     </div>
   </div>
 {/if}

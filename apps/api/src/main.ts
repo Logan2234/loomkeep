@@ -1,3 +1,4 @@
+import { webOrigins } from "./common/web-origin.util";
 // Must run before any other import: logger.config.ts reads process.env.NODE_ENV
 // at module-load time (not through ConfigModule), so .env has to be loaded
 // before app.module.ts (and everything it imports) even starts resolving.
@@ -19,8 +20,17 @@ import { Logger } from "nestjs-pino";
 import { readFile } from "node:fs/promises";
 import { join } from "path";
 import { AppModule } from "./app.module";
+import { enableApiVersioning } from "./common/api-versioning";
+import { DEFAULT_BODY_LIMIT, registerBodyLimits } from "./common/body-limit";
+import { corsOptionsFor } from "./common/cors";
+import { registerRequestContext } from "./common/request-context";
 import { ValidationException } from "./common/validation.exception";
 import { MetricsService } from "./metrics/metrics.service";
+import { registerNewsletterFormParser } from "./newsletter/newsletter-form-parser";
+import {
+  buildPublicApiDocument,
+  PUBLIC_API_DOCUMENT_PATH,
+} from "./public-api/openapi";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -50,10 +60,10 @@ const trustProxy =
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    // TV Time import posts several CSV files as a JSON body; the default 1 MB
-    // Fastify limit is too small for a full watch history.
+    // 1 MB everywhere; the few routes that need more (imports, avatar,
+    // backup restore) raise it for themselves — see registerBodyLimits below.
     new FastifyAdapter({
-      bodyLimit: 25 * 1024 * 1024,
+      bodyLimit: DEFAULT_BODY_LIMIT,
       // Production has exactly one controlled hop (Caddy). A hop count keeps
       // Fastify from trusting an arbitrary-length forwarded chain, while the
       // production Compose override removes direct API port publication.
@@ -80,21 +90,16 @@ async function bootstrap() {
       // the exact bytes Quackback sent (populates request.rawBody).
       rawBody: true,
       snapshot: false,
-      cors: {
-        // Comma-separated so multiple origins can be allowed at once.
-        origin: webOrigin.split(",").map((o) => o.trim()),
-        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allowedHeaders: ["Content-Type"],
-        optionsSuccessStatus: 204,
-        maxAge: 3600,
-        credentials: true,
-        // Retry-After is unreadable from JS on a cross-origin response
-        // unless exposed: without it a 429 can only say "try again soon".
-        exposedHeaders: ["Content-Disposition", "Retry-After"],
-        preflightContinue: false,
-      },
     },
   );
+
+  // Comma-separated so multiple origins can be allowed at once; the public
+  // API gets its own, open policy (see corsOptionsFor).
+  const allowedWebOrigins = webOrigins(webOrigin);
+  app.enableCors({
+    delegator: (request, callback) =>
+      callback(null, corsOptionsFor(request.url, allowedWebOrigins)),
+  });
 
   // EventsGateway (WebSocket real-time push) rides socket.io regardless of
   // the HTTP adapter being Fastify — IoAdapter attaches to the underlying
@@ -110,6 +115,8 @@ async function bootstrap() {
   // CSP stays off: Swagger UI (dev-only, below) needs inline scripts/styles,
   // and the API otherwise only serves JSON.
   await app.register(helmet, { contentSecurityPolicy: false });
+  registerNewsletterFormParser(app.getHttpAdapter().getInstance());
+  registerBodyLimits(app.getHttpAdapter().getInstance());
 
   // Browsers post CSP violation reports under their own media types, neither
   // of which Fastify parses by default — without this the collector answers
@@ -152,7 +159,10 @@ async function bootstrap() {
       done();
     });
 
+  registerRequestContext(app);
+
   app.setGlobalPrefix("api");
+  enableApiVersioning(app);
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -161,7 +171,17 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger UI on /docs, dev-only. @nestjs/swagger is a production dependency
+  // The public API's contract is public itself, on every instance: scripts
+  // and doc tools read it from the instance they target.
+  const publicApiDocument = buildPublicApiDocument(app, "1");
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .get(PUBLIC_API_DOCUMENT_PATH, (_request, reply) =>
+      reply.send(publicApiDocument),
+    );
+
+  // Swagger UI on /swagger, dev-only. @nestjs/swagger is a production dependency
   // regardless (the nest-cli swagger plugin injects it into every compiled
   // file using @Api* decorators), but the UI itself is still gated to dev.
   if (isDev) {

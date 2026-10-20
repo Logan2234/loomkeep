@@ -1,18 +1,23 @@
 <script lang="ts">
+  import { keys } from "#lib/api/keys.js";
+
   import { page } from "$app/state";
-  import { getCommentCount } from "$lib/api/client";
-  import { auth } from "$lib/auth.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { joinRealtimeRoom, onRealtimeEvent } from "$lib/realtime/socket";
+  import { getCommentCount } from "#lib/api/client.js";
+  import { chat } from "#lib/chat/chat.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { joinRealtimeRoom, onRealtimeEvent } from "#lib/realtime/socket.js";
+  import { revealSpoilersOnOpen } from "#lib/spoiler-default.js";
   import {
-    SpoilerSensitivity,
     type CommentPresenceEvent,
     type CommentTargetType,
+    RealtimeCommand,
   } from "@loomkeep/shared";
   import { createQuery } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
   import CommentThread from "./CommentThread.svelte";
   import Icon from "./Icon.svelte";
+  import { ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX } from "./overlay-layers";
   import SidePanel from "./SidePanel.svelte";
 
   const PANEL_OPEN_EVENT = "loomkeep:comments-panel-open";
@@ -43,7 +48,7 @@
       : m.comments_people_here({ count: peopleHere }),
   );
   const count = createQuery(() => ({
-    queryKey: ["comment-count", targetType, targetId],
+    queryKey: keys.comments.count(targetType, targetId),
     queryFn: () => getCommentCount(targetType, targetId),
   }));
 
@@ -65,10 +70,14 @@
   $effect(() => {
     if (!open) return;
     peopleHere = 1;
-    const leave = joinRealtimeRoom("join-comments", "leave-comments", {
-      targetType,
-      targetId,
-    });
+    const leave = joinRealtimeRoom(
+      RealtimeCommand.JOIN_COMMENTS,
+      RealtimeCommand.LEAVE_COMMENTS,
+      {
+        targetType,
+        targetId,
+      },
+    );
     const off = onRealtimeEvent<CommentPresenceEvent>(
       "comment-presence",
       (event) => {
@@ -88,23 +97,23 @@
   }
 
   function openPanel() {
+    // With Messages on, a work's discussion lives in its "Œuvres" tab.
+    if (appConfig.chatEnabled) {
+      chat.showWork({
+        targetType,
+        targetId,
+        focusCommentId,
+        revealSpoilers: revealSpoilersByDefault,
+      });
+      return;
+    }
+
     window.dispatchEvent(
       new CustomEvent(PANEL_OPEN_EVENT, {
         detail: `${targetType}:${targetId}`,
       }),
     );
-    // An explicit preference overrides the per-item "already finished this"
-    // default; AUTO leaves that default as-is.
-    switch (auth.user?.spoilerSensitivity) {
-      case SpoilerSensitivity.ALWAYS_REVEALED:
-        showSpoilers = true;
-        break;
-      case SpoilerSensitivity.ALWAYS_HIDDEN:
-        showSpoilers = false;
-        break;
-      default:
-        showSpoilers = revealSpoilersByDefault;
-    }
+    showSpoilers = revealSpoilersOnOpen(revealSpoilersByDefault);
     open = true;
   }
 </script>
@@ -145,8 +154,8 @@
 {#if open}
   <SidePanel
     onclose={closePanel}
-    zIndex={2147483646}
-    backdropClass="bg-transparent touch-pan-y"
+    zIndex={ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX}
+    backdropClass="touch-pan-y"
     labelledby="comments-panel-title">
     <header
       class="border-border flex shrink-0 items-start gap-3 border-b px-5 py-4">

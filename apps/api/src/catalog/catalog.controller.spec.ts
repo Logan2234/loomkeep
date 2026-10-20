@@ -22,7 +22,12 @@ describe("CatalogController.search", () => {
       assertEnabled: vi.fn().mockResolvedValue(undefined),
     } as unknown as DomainGateService;
 
-    return new CatalogController(mediaItemService, ageGate, domainGate);
+    return new CatalogController(
+      mediaItemService,
+      ageGate,
+      domainGate,
+      {} as never,
+    );
   }
 
   it("degrades to the other source's results when one provider rejects", async () => {

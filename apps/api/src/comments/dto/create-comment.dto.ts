@@ -1,3 +1,4 @@
+import type { CreateCommentDto } from "@loomkeep/shared";
 import {
   COMMENT_TEXT_MAX_LENGTH,
   CommentTargetType,
@@ -19,7 +20,7 @@ import {
 } from "class-validator";
 import { CommentMentionBody } from "./comment-mention.dto";
 
-export class CreateCommentBody {
+export class CreateCommentBody implements CreateCommentDto {
   @IsIn(Object.values(CommentTargetType))
   targetType!: CommentTargetTypeT;
 

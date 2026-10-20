@@ -1,8 +1,8 @@
 import type {
   AccountDeletionSummaryDto,
-  CalendarTokenDto,
   CsvExportDto,
   EntitlementDto,
+  MigrationExportDto,
   SocialProfileDto,
   UserDataExportDto,
   UserDto,
@@ -20,6 +20,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Res,
 } from "@nestjs/common";
@@ -29,27 +30,40 @@ import type { FastifyReply } from "fastify";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
+import { RequireRecentAuth } from "../auth/recent-auth.guard";
+import {
+  EXPORT_THROTTLE,
+  SENSITIVE_ACTION_THROTTLE,
+} from "../common/throttle.constants";
 import { SocialProfileResponseDto } from "../social/dto/social-profile-response.dto";
 import { AccountDeletionSummaryResponseDto } from "./dto/account-deletion-summary-response.dto";
-import { CalendarTokenResponseDto } from "./dto/calendar-token-response.dto";
 import { ChangeEmailDto } from "./dto/change-email.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
 import { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";
 import { CsvExportResponseDto } from "./dto/csv-export-response.dto";
 import { UserDataExportResponseDto } from "./dto/data-export/user-data-export-response.dto";
-import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { EntitlementResponseDto } from "./dto/entitlement-response.dto";
+import { HomeLayoutBody } from "./dto/home-layout.dto";
+import { MigrationExportResponseDto } from "./dto/migration-export-response.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UpdateUsernameDto } from "./dto/update-username.dto";
 import { UploadAvatarDto } from "./dto/upload-avatar.dto";
 import { UserResponseDto } from "./dto/user-response.dto";
 import { UsernameAvailabilityResponseDto } from "./dto/username-availability-response.dto";
 import { WidgetTokenResponseDto } from "./dto/widget-token-response.dto";
+import { MigrationExportService } from "./migration-export.service";
 import { UsersService } from "./users.service";
+
+// Deleting the account can't be undone: the web always asks for a
+// confirmation first, and the server takes none older than this.
+const DELETE_ACCOUNT_REAUTH_MS = 2 * 60 * 1000;
 
 @Controller("users")
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(
+    private readonly users: UsersService,
+    private readonly migrationExport: MigrationExportService,
+  ) {}
 
   @Get("me")
   @ApiOkResponse({ type: UserResponseDto })
@@ -149,7 +163,7 @@ export class UsersController {
    * Looser than the GDPR dump above: this reads one domain at a time, so it's
    * a fraction of the cost — but still far from free.
    */
-  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
+  @Throttle(EXPORT_THROTTLE)
   @Get("me/export.csv")
   @ApiOkResponse({ type: CsvExportResponseDto })
   exportCsv(
@@ -160,27 +174,38 @@ export class UsersController {
   }
 
   /**
-   * Returns the token for the user's public .ics calendar subscription URL,
-   * generating one on first call. Stable across calls — use the regenerate
-   * endpoint below to revoke a previously shared link. Premium
-   * (docs/adr/0001-open-core-agpl.md) — see LibraryService#getCalendarIcs
-   * for the matching check on the feed itself.
+   * Films in Letterboxd's import format. `reviews=true` adds the review
+   * texts — opt-in, since they become public once imported there.
    */
-  @Get("me/calendar-token")
-  @ApiOkResponse({ type: CalendarTokenResponseDto })
-  getCalendarToken(
+  @Throttle(EXPORT_THROTTLE)
+  @Get("me/export/letterboxd")
+  @ApiOkResponse({ type: MigrationExportResponseDto })
+  async exportLetterboxd(
     @CurrentUser() payload: JwtPayload,
-  ): Promise<CalendarTokenDto> {
-    return this.users.getCalendarToken(payload.sub);
+    @Query("reviews") reviews?: string,
+  ): Promise<MigrationExportDto> {
+    return {
+      files: await this.migrationExport.buildLetterboxd(
+        payload.sub,
+        reviews === "true",
+      ),
+    };
   }
 
-  /** Issues a new token, invalidating any previously shared .ics link. Premium. */
-  @Post("me/calendar-token/regenerate")
-  @ApiCreatedResponse({ type: CalendarTokenResponseDto })
-  regenerateCalendarToken(
+  /** Books in Goodreads' export format, which StoryGraph imports too. */
+  @Throttle(EXPORT_THROTTLE)
+  @Get("me/export/goodreads")
+  @ApiOkResponse({ type: MigrationExportResponseDto })
+  async exportGoodreads(
     @CurrentUser() payload: JwtPayload,
-  ): Promise<CalendarTokenDto> {
-    return this.users.regenerateCalendarToken(payload.sub);
+    @Query("reviews") reviews?: string,
+  ): Promise<MigrationExportDto> {
+    return {
+      files: await this.migrationExport.buildGoodreads(
+        payload.sub,
+        reviews === "true",
+      ),
+    };
   }
 
   /**
@@ -223,15 +248,29 @@ export class UsersController {
     return this.users.updateMe(payload.sub, dto);
   }
 
+  @Put("me/home-layout")
+  @ApiOkResponse({ type: UserResponseDto })
+  setHomeLayout(
+    @CurrentUser() payload: JwtPayload,
+    @Body() body: HomeLayoutBody,
+  ): Promise<UserDto> {
+    return this.users.setHomeLayout(payload.sub, body);
+  }
+
+  @Delete("me/home-layout")
+  @ApiOkResponse({ type: UserResponseDto })
+  resetHomeLayout(@CurrentUser() payload: JwtPayload): Promise<UserDto> {
+    return this.users.resetHomeLayout(payload.sub);
+  }
+
   /**
    * Requires the current password, since email doubles as the login
    * identifier. Doesn't change the email yet — sends a confirmation code to
    * the new address; see confirmEmailChange().
    */
-  // Every call bcrypt.compare()s the current password (requireVerifiedUser)
-  // — the global 60/min default let a stolen access token burn 60 bcrypt
-  // hashes/min against it.
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  // Every call mails a code to the new address.
+  @Throttle(SENSITIVE_ACTION_THROTTLE)
+  @RequireRecentAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Patch("me/email")
   changeEmail(
@@ -254,7 +293,7 @@ export class UsersController {
   }
 
   // Same reasoning as changeEmail() above — bcrypt.compare() on every call.
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(SENSITIVE_ACTION_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Patch("me/password")
   changePassword(
@@ -281,8 +320,8 @@ export class UsersController {
   }
 
   /**
-   * Permanently deletes the account. The current password is re-confirmed since
-   * this is irreversible. All owned rows (library entries, watches, refresh
+   * Permanently deletes the account. Being irreversible, it wants a
+   * confirmation of the last two minutes, not the usual ten. All owned rows (library entries, watches, refresh
    * tokens, notifications) go with it via `onDelete: Cascade`; Review/Comment/
    * Report are detached (SetNull) instead of deleted — see deletionSummary()
    * above — and the shared MediaItem cache is untouched. A list with editors
@@ -290,14 +329,14 @@ export class UsersController {
    * editor first (see ListService.reassignOwnedListsOnAccountDeletion), so
    * shared work doesn't vanish because one collaborator left.
    */
+  @RequireRecentAuth(DELETE_ACCOUNT_REAUTH_MS)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete("me")
   deleteAccount(
     @CurrentUser() payload: JwtPayload,
-    @Body() dto: DeleteAccountDto,
     @Headers("user-agent") userAgent?: string,
   ): Promise<void> {
-    return this.users.deleteAccount(payload.sub, dto, userAgent);
+    return this.users.deleteAccount(payload.sub, userAgent);
   }
 
   /** Live check backing the debounced availability hint in the username form. */

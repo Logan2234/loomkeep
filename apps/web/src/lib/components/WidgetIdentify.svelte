@@ -1,5 +1,6 @@
 <script lang="ts">
-  // Loads and shows the Quackback feedback widget — mounted only on
+  // Loads and shows the Quackback feedback widget, on an instance that set
+  // PUBLIC_QUACKBACK_URL and for an account that didn't hide it — mounted only on
   // authenticated, non-public routes (see app/+layout.svelte), so its own
   // mount/unmount lifecycle is what keeps the widget off the landing page and
   // login/register/legal pages: loaded on mount, hidden on unmount
@@ -15,14 +16,14 @@
   // per-team toggle for that notification doesn't cover SSO-identified
   // portal users, only team/admin accounts). Re-enable once that's fixed
   // upstream or worked around.
-  import { browser } from "$app/environment";
-  import { auth } from "$lib/auth.svelte";
+  import { browser } from "$app/env";
+  import {
+    cornerLaunchersHidden,
+    feedbackBoardUrl,
+    feedbackLauncherWanted,
+  } from "#lib/corner-launchers.svelte.js";
 
-  // Desktop-only: the launcher button (bottom-right, fixed) has no clean
-  // position on mobile that doesn't collide with the fixed bottom tab bar
-  // (BottomNavigation.svelte). Same md: breakpoint as Modal.svelte/
-  // DesktopSidebar's own desktop/mobile split.
-  const DESKTOP_QUERY = "(min-width: 768px)";
+  const wanted = $derived(feedbackLauncherWanted());
 
   // Defines window.Quackback (a queue-based stub the real SDK replaces once
   // it loads) and injects the script tag, exactly once per page load.
@@ -33,26 +34,32 @@
     };
     const script = document.createElement("script");
     script.async = true;
-    script.src = "https://feedback.loomkeep.app/api/widget/sdk.js";
+    script.src = `${feedbackBoardUrl}/api/widget/sdk.js`;
     document.head.appendChild(script);
   }
 
   $effect(() => {
-    if (!browser || !auth.isLoggedIn) return;
+    if (!browser || !wanted) return;
 
     loadSdk();
     window.Quackback!("init");
 
-    const mq = window.matchMedia(DESKTOP_QUERY);
-    const syncLauncher = () => {
-      window.Quackback?.(mq.matches ? "showLauncher" : "hideLauncher");
-    };
-    syncLauncher();
-    mq.addEventListener("change", syncLauncher);
-
     return () => {
-      mq.removeEventListener("change", syncLauncher);
       window.Quackback?.("hideLauncher");
     };
+  });
+
+  // The launcher button (bottom-right, fixed) has no clean position on the
+  // compact shell that doesn't collide with the tab bar, so it follows the
+  // shell rather than a width query of its own: a phone in landscape is over
+  // 800px wide, so `(min-width: 768px)` put the launcher straight on top of
+  // the tab bar. The feedback board stays reachable from Settings > Help.
+  // Toasts stack in the same corner, so the launcher steps aside while any
+  // is showing.
+  $effect(() => {
+    if (!browser || !wanted) return;
+    window.Quackback?.(
+      cornerLaunchersHidden() ? "hideLauncher" : "showLauncher",
+    );
   });
 </script>

@@ -1,27 +1,21 @@
 <script lang="ts">
+  import { Cooldown } from "#lib/cooldown.svelte.js";
+
   import { goto } from "$app/navigation";
-  import { resendVerificationEmail } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { resendVerificationEmail } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   let pageReady = $state(false);
-  let cooldown = $state(0);
-  let cooldownTimer: ReturnType<typeof setInterval> | undefined;
+  const cooldown = new Cooldown();
+  $effect(() => () => cooldown.stop());
 
   const resendMut = createApiMutation(() => ({
     mutate: resendVerificationEmail,
     onSuccess: () => {
-      cooldown = 60;
-      clearInterval(cooldownTimer);
-      cooldownTimer = setInterval(() => {
-        cooldown -= 1;
-        if (cooldown <= 0) {
-          clearInterval(cooldownTimer);
-          cooldownTimer = undefined;
-        }
-      }, 1000);
+      cooldown.start(60);
     },
   }));
 
@@ -32,14 +26,14 @@
       ? "loading"
       : resendMut.error
         ? "error"
-        : cooldown > 0
+        : cooldown.remaining > 0
           ? "sent"
           : "idle",
   );
   const error = $derived(resendMut.error);
 
   function resend() {
-    if (resendMut.loading || cooldown > 0) return;
+    if (resendMut.loading || cooldown.remaining > 0) return;
     resendMut.mutate();
   }
 
@@ -59,7 +53,7 @@
 </svelte:head>
 
 {#if pageReady}
-  <div class="flex min-h-screen items-center justify-center px-4 py-12">
+  <div class="flex min-h-svh items-center justify-center px-4 py-12">
     <div class="w-full max-w-sm">
       <div class="mb-8 text-center">
         <p class="font-display text-3xl font-extrabold tracking-tight">
@@ -106,11 +100,11 @@
             type="button"
             class="btn btn-ghost"
             onclick={resend}
-            disabled={status === "loading" || cooldown > 0}>
+            disabled={status === "loading" || cooldown.remaining > 0}>
             {#if status === "loading"}
               {m.common_sending()}
-            {:else if cooldown > 0}
-              {m.common_resend_cooldown({ seconds: cooldown })}
+            {:else if cooldown.remaining > 0}
+              {m.common_resend_cooldown({ seconds: cooldown.remaining })}
             {:else}
               {m.auth_register_check_email_resend()}
             {/if}

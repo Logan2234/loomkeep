@@ -12,6 +12,31 @@ afterEach(() => {
 });
 
 describe("mobile shortcut choices", () => {
+  it("orders domain pills without moving the other destinations", () => {
+    auth.user = {
+      domainOrder: [Domain.MUSIC, Domain.GAMES, Domain.MEDIA, Domain.BOOKS],
+    } as never;
+    expect(
+      resolveShortcutChoices({
+        isDomainEnabled: () => true,
+        isAdmin: false,
+        socialEnabled: false,
+        gamificationEnabled: false,
+      }).map((choice) => choice.id),
+    ).toEqual([
+      "home",
+      "search",
+      "music",
+      "games",
+      "media",
+      "books",
+      "calendar",
+      "stats",
+      "profile",
+      "settings",
+    ]);
+  });
+
   it("includes social destinations when their features are available", () => {
     const choices = resolveShortcutChoices({
       isDomainEnabled: () => true,
@@ -94,5 +119,20 @@ describe("domain display order", () => {
       .map((item) => item.href);
 
     expect(trackingHrefs).toEqual(["/app/calendar", "/app/stats"]);
+  });
+});
+
+describe("calendar visibility", () => {
+  const calendarShown = (enabled: Domain[]) =>
+    visibleNavItems({
+      isDomainEnabled: (d) => enabled.includes(d),
+      socialEnabled: false,
+      gamificationEnabled: false,
+    }).some((item) => item.href === "/app/calendar");
+
+  it("stays while either video or games is on, and goes when both are off", () => {
+    expect(calendarShown([Domain.GAMES])).toBe(true);
+    expect(calendarShown([Domain.MEDIA])).toBe(true);
+    expect(calendarShown([Domain.BOOKS, Domain.MUSIC])).toBe(false);
   });
 });

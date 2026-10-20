@@ -1,15 +1,34 @@
 <script lang="ts">
-  import { getUserActivity } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { activityPhrase, activityRating } from "$lib/activity-phrase";
-  import { keys } from "$lib/api/keys";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import ProfileSectionHeading from "$lib/components/profile/ProfileSectionHeading.svelte";
-  import RelativeTime from "$lib/components/RelativeTime.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import Poster from "#lib/components/Poster.svelte";
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
+  import { activityTargetHue } from "#lib/constants/review-targets.js";
+
+  import { activityPhrase, activityRating } from "#lib/activity-phrase.js";
+  import { getUserActivity } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
+  import ProfileSectionHeading from "#lib/components/profile/ProfileSectionHeading.svelte";
+  import RelativeTime from "#lib/components/RelativeTime.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { useEeLock } from "#lib/ee/license.svelte.js";
+  import ActivityFeedSubscribeModal from "#lib/ee/social/ActivityFeedSubscribeModal.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { ActivityEventDto, PagedResult } from "@loomkeep/shared";
 
-  let { username }: { username: string } = $props();
+  let {
+    username,
+    selfManage = false,
+  }: { username: string; selfManage?: boolean } = $props();
+
+  const eeLock = useEeLock();
+  const feedLocked = $derived(eeLock.locked);
+  let showSubscribeModal = $state(false);
 
   const activity = createApiInfiniteQuery<
     PagedResult<ActivityEventDto>,
@@ -23,22 +42,39 @@
     getNextPageParam: (last, allPages) =>
       last.hasMore ? allPages.length + 1 : undefined,
   }));
-
-  const DOMAIN_HUE: Record<string, string> = {
-    MEDIA: "var(--stat-media)",
-    GAME: "var(--stat-games)",
-    BOOK: "var(--stat-books)",
-    MUSIC: "var(--stat-music)",
-  };
 </script>
 
 {#if !activity.loading && activity.data.length > 0}
   <section>
-    <ProfileSectionHeading label={m.profile_recent_activity()} />
+    <ProfileSectionHeading label={m.profile_recent_activity()}>
+      {#snippet action()}
+        {#if selfManage}
+          {#snippet feedButton()}
+            <button
+              type="button"
+              class="btn-text"
+              disabled={feedLocked}
+              onclick={() => (showSubscribeModal = true)}>
+              <Icon name="rss" class="h-3.5 w-3.5" />
+              {m.activity_feed_subscribe_button()}
+              {#if isFeatureNew("activity-feed")}<NewBadge />{/if}
+            </button>
+          {/snippet}
+          {#if feedLocked}
+            <Tooltip text={m.premium_locked()} class="inline-flex shrink-0">
+              {@render feedButton()}
+              <PremiumLockBadge />
+            </Tooltip>
+          {:else}
+            {@render feedButton()}
+          {/if}
+        {/if}
+      {/snippet}
+    </ProfileSectionHeading>
     <ul class="border-border ml-3.5 flex flex-col border-l pl-7">
       {#each activity.data as event (event.id)}
         {@const rating = activityRating(event)}
-        {@const hue = DOMAIN_HUE[event.targetType] ?? "var(--dim)"}
+        {@const hue = activityTargetHue(event.targetType)}
         <li class="relative flex items-center gap-3 py-2.5">
           <a
             href="/app/u/{event.actor.username}"
@@ -53,12 +89,14 @@
             <p class="text-sm leading-snug wrap-anywhere">
               <a
                 href="/app/u/{event.actor.username}"
-                class="font-semibold hover:underline">
+                class="btn-text text-fg hover:text-accent text-sm">
                 {event.actor.displayName}
               </a>
               <span class="text-dim">{activityPhrase(event)}</span>
               {#if event.href}
-                <a href={event.href} class="hover:text-accent font-medium">
+                <a
+                  href={event.href}
+                  class="btn-text text-fg hover:text-accent text-sm">
                   {event.title}
                 </a>
               {:else}
@@ -76,37 +114,39 @@
             </p>
           </div>
 
-          {#if event.imageUrl}
-            <svelte:element
-              this={event.href ? "a" : "div"}
-              href={event.href ?? undefined}
-              class="shrink-0">
-              <img
-                src={event.imageUrl}
-                alt=""
-                class="h-14 w-10 rounded-md object-cover" />
-            </svelte:element>
-          {:else}
+          {#snippet eventCoverFallback()}
             <div
               class="h-14 w-10 shrink-0 rounded-md"
               style="background: linear-gradient(155deg, color-mix(in srgb, {hue} 55%, var(--surface-2)), color-mix(in srgb, {hue} 10%, var(--surface-2)))"
               aria-hidden="true">
             </div>
-          {/if}
+          {/snippet}
+          {#if event.imageUrl}
+            <svelte:element
+              this={event.href ? "a" : "div"}
+              href={event.href ?? undefined}
+              class="shrink-0">
+              <Poster
+                src={event.imageUrl}
+                title={event.title}
+                alt=""
+                caption={false}
+                containerClass="h-14 w-10"
+                class="h-14 w-10 rounded-md object-cover"
+                fallback={eventCoverFallback} />
+            </svelte:element>
+          {:else}{@render eventCoverFallback()}{/if}
         </li>
       {/each}
     </ul>
     {#if activity.hasNextPage}
       <div class="mt-3 flex justify-center">
-        <button
-          class="btn btn-ghost btn-sm"
-          disabled={activity.isFetchingNextPage}
-          onclick={() => activity.fetchNextPage()}>
-          {activity.isFetchingNextPage
-            ? m.common_loading()
-            : m.common_see_more()}
-        </button>
+        <LoadMoreButton query={activity} class="btn btn-ghost btn-sm" />
       </div>
     {/if}
   </section>
+{/if}
+
+{#if showSubscribeModal}
+  <ActivityFeedSubscribeModal onclose={() => (showSubscribeModal = false)} />
 {/if}

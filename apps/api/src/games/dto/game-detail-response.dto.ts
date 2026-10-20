@@ -1,9 +1,10 @@
-import type { GameDetailDto } from "@loomkeep/shared";
+import type { GameDetailDto, ReleaseDatePrecision } from "@loomkeep/shared";
 import { GameSource } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
 import { RatingResponseDto } from "../../catalog/dto/rating-response.dto";
 import { GameEntryResponseDto } from "./game-entry-response.dto";
 import { GameSummaryResponseDto } from "./game-summary-response.dto";
+import { GameTimeToBeatResponseDto } from "./game-time-to-beat-response.dto";
 
 export class GameDetailResponseDto implements GameDetailDto {
   // See game-summary-response.dto.ts: single-member enum, needs an explicit hint.
@@ -21,6 +22,8 @@ export class GameDetailResponseDto implements GameDetailDto {
   genres!: string[];
   platforms!: string[];
   releaseDate!: string | null;
+  releaseDatePrecision!: ReleaseDatePrecision | null;
+  upcoming!: boolean;
   website!: string | null;
   similarGames!: GameSummaryResponseDto[];
   developers!: string[];
@@ -34,6 +37,7 @@ export class GameDetailResponseDto implements GameDetailDto {
   trailerVideoId!: string | null;
   ageRatingImageUrls!: string[];
   multiplayerModes!: string[];
+  timeToBeat!: GameTimeToBeatResponseDto | null;
   commentTargetId!: string | null;
   entry!: GameEntryResponseDto | null;
 }

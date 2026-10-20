@@ -7,7 +7,7 @@
   // barcode library. Only ever mounted on mobile with `BarcodeDetector`
   // support (the trigger button feature-detects and hides itself otherwise).
   import { onDestroy, onMount } from "svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
 

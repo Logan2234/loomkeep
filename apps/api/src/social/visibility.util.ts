@@ -70,14 +70,6 @@ export function resolveProfileVisibility(
   return relation.following ? "full" : "locked";
 }
 
-/** Whether the viewer may see the target's profile *content* (facets aside). */
-export function canAccessProfile(
-  access: ProfileAccess,
-  relation: ViewerRelation,
-): boolean {
-  return resolveProfileVisibility(access, relation) === "full";
-}
-
 /**
  * Whether the viewer may see content carrying its own explicit visibility
  * (PRIVATE/FRIENDS/PUBLIC) rather than a per-domain VisibilitySetting facet —

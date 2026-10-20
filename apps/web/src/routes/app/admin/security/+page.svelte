@@ -1,26 +1,44 @@
 <script lang="ts">
+  import KpiStripSkeleton from "#lib/components/stats/KpiStripSkeleton.svelte";
+  import RankBarsSkeleton from "#lib/components/stats/RankBarsSkeleton.svelte";
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
+  import { typedEntries } from "#lib/object.js";
+
+  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+
+  import AdminFilterBar from "../AdminFilterBar.svelte";
+  import AdminQueryError from "../AdminQueryError.svelte";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { adminFilterHref, enumParam } from "#lib/url-params.js";
   import {
     getAdminSecurityEvents,
     getAdminSecuritySummary,
-  } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
-  import { formatDateTime, formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
+  import { formatDateTime, formatNumber } from "#lib/format.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     PagedResult,
     SecurityEventDto,
     SecurityEventType,
   } from "@loomkeep/shared";
+  import { flip } from "svelte/animate";
+  import { fade } from "svelte/transition";
+  import { onDestroy } from "svelte";
 
+  const reduced = prefersReducedMotion();
   const TYPE_LABELS: Record<SecurityEventType, string> = {
     USER_REGISTERED: m.admin_security_registration(),
     USER_DELETED: m.admin_security_account_deletion(),
@@ -42,6 +60,10 @@
       m.admin_security_mfa_recovery_codes_regenerated(),
     MFA_RECOVERY_CODE_USED: m.admin_security_mfa_recovery_code_used(),
     MFA_CHALLENGE_LOCKED: m.admin_security_mfa_challenge_locked(),
+    REAUTH_LOCKED: m.admin_security_reauth_locked(),
+    API_KEY_CREATED: m.admin_security_api_key_created(),
+    API_KEY_REVOKED: m.admin_security_api_key_revoked(),
+    API_KEY_LEAKED: m.admin_security_api_key_leaked(),
   };
 
   const TYPE_COLORS: Record<SecurityEventType, string> = {
@@ -64,6 +86,10 @@
     MFA_RECOVERY_CODES_REGENERATED: "border-accent/40 bg-accent/10 text-accent",
     MFA_RECOVERY_CODE_USED: "border-warning/40 bg-warning/10 text-warning",
     MFA_CHALLENGE_LOCKED: "border-danger/40 bg-danger/10 text-danger",
+    REAUTH_LOCKED: "border-danger/40 bg-danger/10 text-danger",
+    API_KEY_CREATED: "border-accent/40 bg-accent/10 text-accent",
+    API_KEY_REVOKED: "border-warning/40 bg-warning/10 text-warning",
+    API_KEY_LEAKED: "border-danger/40 bg-danger/10 text-danger",
   };
 
   const TYPE_OPTIONS = [
@@ -74,9 +100,34 @@
     })),
   ];
 
-  let activeType = $state<SecurityEventType | null>(null);
-  let identifierInput = $state("");
-  let identifierFilter = $state("");
+  const activeType = $derived(
+    enumParam(
+      page.url.searchParams,
+      "type",
+      typedEntries(TYPE_LABELS).map(([key]) => key),
+      null,
+    ),
+  );
+  let identifierInput = $state(page.url.searchParams.get("identifier") ?? "");
+  const identifierFilter = $derived(
+    page.url.searchParams.get("identifier") ?? "",
+  );
+  const copyFeedback = new CopyFeedback<string>();
+  const copiedEventId = $derived(copyFeedback.value);
+  $effect(() => () => copyFeedback.reset());
+
+  async function copyEvent(event: SecurityEventDto) {
+    const content = [
+      TYPE_LABELS[event.type],
+      event.identifier,
+      event.detail,
+      event.userAgent,
+      formatDateTime(event.createdAt),
+    ]
+      .filter(Boolean)
+      .join("\n");
+    await copyFeedback.copy(content, event.id, 1500);
+  }
 
   const eventsQuery = createApiInfiniteQuery<
     PagedResult<SecurityEventDto>,
@@ -98,15 +149,57 @@
     getNextPageParam: (last, allPages) =>
       last.hasMore ? allPages.length + 1 : undefined,
   }));
+  function resetFilters() {
+    identifierDebounce.cancel();
+    void goto(adminFilterHref(page.url, { type: null, identifier: null }), {
+      reset: false,
+    });
+  }
+  const activeFilters = $derived([
+    ...(activeType
+      ? [{ label: TYPE_LABELS[activeType], remove: () => changeType(null) }]
+      : []),
+    ...(identifierFilter
+      ? [
+          {
+            label: identifierFilter,
+            remove: () => {
+              identifierDebounce.cancel();
+              void goto(adminFilterHref(page.url, { identifier: null }), {
+                reset: false,
+              });
+            },
+          },
+        ]
+      : []),
+  ]);
   const events = $derived(eventsQuery.data);
   const error = $derived(eventsQuery.error);
 
-  let searchTimeout: ReturnType<typeof setTimeout>;
+  const identifierDebounce = debounce(() => {
+    void goto(
+      adminFilterHref(page.url, { identifier: identifierInput.trim() || null }),
+      { replace: true, reset: false },
+    );
+  }, SEARCH_DEBOUNCE_MS);
+  $effect(() => {
+    identifierDebounce.cancel();
+    identifierInput = page.url.searchParams.get("identifier") ?? "";
+  });
+  onDestroy(() => identifierDebounce.cancel());
   function onIdentifierInput() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      identifierFilter = identifierInput.trim();
-    }, 300);
+    identifierDebounce.call();
+  }
+
+  function changeType(type: SecurityEventType | null) {
+    identifierDebounce.cancel();
+    void goto(
+      adminFilterHref(page.url, {
+        type,
+        identifier: identifierInput.trim() || null,
+      }),
+      { reset: false },
+    );
   }
 
   // Failed logins only, over fixed windows — see the API for why the other
@@ -149,70 +242,67 @@
   );
 </script>
 
-<div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="shield"
     title={m.common_security()}
     subtitle={m.admin_security_subtitle()}
     back="/app/admin" />
 
+  {#if summaryQuery.error}<AdminQueryError
+      message={summaryQuery.error}
+      queryKey={keys.admin.securitySummary()} />{/if}
   {#if summary}
     <KpiStrip tiles={kpis} />
     {#if targetBars.length > 0}
       <div class="card mb-5 p-4">
         <SectionLabel
           label={m.admin_security_targeted_identifiers()}
-          badge="7 jours"
+          badge={m.admin_security_seven_days()}
           class="mb-3" />
         <RankBars items={targetBars} />
       </div>
     {/if}
   {:else if summaryQuery.loading}
     <div class="animate-pulse">
-      <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-        {#each { length: 4 } as _, i (i)}
-          <div class="card h-20 space-y-3 p-4">
-            <div class="skeleton h-6 w-2/5 rounded"></div>
-            <div class="skeleton h-3 w-3/4 rounded"></div>
-          </div>
-        {/each}
-      </div>
-      <div class="card mb-5 space-y-4 p-4">
-        <div class="skeleton h-3 w-1/2 rounded"></div>
-        <div class="space-y-2">
-          <div class="flex justify-between gap-4">
-            <div class="skeleton h-4 w-1/3 rounded"></div>
-            <div class="skeleton h-4 w-6 rounded"></div>
-          </div>
-          <div class="skeleton h-2 w-full rounded"></div>
-        </div>
-      </div>
+      <KpiStripSkeleton count={4} />
+      <RankBarsSkeleton
+        count={1}
+        titleClass="skeleton h-3 w-1/2 rounded"
+        labelClass="skeleton h-4 w-1/3 rounded" />
     </div>
   {/if}
 
-  <div class="mb-4 flex flex-wrap items-center gap-2">
+  <AdminFilterBar
+    count={events.length}
+    loading={eventsQuery.loading}
+    error={!!error}
+    active={activeFilters}
+    onReset={resetFilters}>
     <Combobox
       label={m.admin_security_all_types()}
       options={TYPE_OPTIONS}
       values={activeType ? [activeType] : []}
-      onChange={(v) => (activeType = (v[0] as SecurityEventType) || null)} />
-  </div>
-
-  <input
-    type="text"
-    name="identifier"
-    aria-label={m.admin_security_search()}
-    enterkeyhint="search"
-    bind:value={identifierInput}
-    oninput={onIdentifierInput}
-    placeholder={m.admin_security_search()}
-    class="border-border bg-surface mb-5 w-full rounded-lg border px-3 py-2 text-sm" />
+      onChange={(v) => changeType((v[0] as SecurityEventType) || null)} />
+    <input
+      type="search"
+      name="identifier"
+      aria-label={m.admin_security_search()}
+      enterkeyhint="search"
+      bind:value={identifierInput}
+      oninput={onIdentifierInput}
+      placeholder={m.admin_security_search()}
+      class="input min-w-0 flex-1" />
+  </AdminFilterBar>
 
   {#if error}
-    <Banner variant="error" class="mb-4">{error}</Banner>
-  {/if}
-
-  {#if eventsQuery.loading}
+    <AdminQueryError
+      message={error}
+      queryKey={keys.admin.securityEvents({
+        type: activeType,
+        identifier: identifierFilter,
+      })} />
+  {:else if eventsQuery.loading}
     <div class="space-y-2">
       {#each { length: 6 } as _, i (i)}
         <div class="card animate-pulse p-3.5">
@@ -226,16 +316,22 @@
       {/each}
     </div>
   {:else if events.length === 0}
-    <EmptyState>{m.admin_no_matching_events()}</EmptyState>
+    <EmptyState
+      ><p>{activeFilters.length ? m.admin_no_matches() : m.admin_no_data()}</p>
+      {#if activeFilters.length}<button
+          class="btn btn-ghost mt-3"
+          onclick={resetFilters}>{m.admin_filters_reset()}</button
+        >{/if}</EmptyState>
   {:else}
     <ul class="space-y-2">
       {#each events as e (e.id)}
-        <li class="card p-3.5">
+        <li
+          animate:flip={{ duration: reduced ? 0 : 160 }}
+          in:fade|global={{ duration: reduced ? 0 : 140 }}
+          out:fade|global={{ duration: reduced ? 0 : 100 }}
+          class="card p-3.5">
           <div class="flex flex-wrap items-center gap-2">
-            <span
-              class="rounded-full border px-2 py-0.5 text-xs font-bold {TYPE_COLORS[
-                e.type
-              ]}">
+            <span class="pill {TYPE_COLORS[e.type]}">
               {TYPE_LABELS[e.type]}
             </span>
             {#if e.identifier}
@@ -246,11 +342,28 @@
             </span>
           </div>
           {#if e.detail || e.userAgent}
-            <p class="text-dim mt-1.5 truncate text-xs">
-              {#if e.detail}{e.detail}{/if}
-              {#if e.detail && e.userAgent}·{/if}
-              {#if e.userAgent}{e.userAgent}{/if}
-            </p>
+            <details class="mt-2 text-xs">
+              <summary
+                class="text-dim hover:text-fg cursor-pointer font-semibold transition-colors">
+                {m.common_details()}
+              </summary>
+              <div class="border-border mt-2 space-y-2 border-l pl-3">
+                {#if e.detail}
+                  <p class="text-fg break-words">{e.detail}</p>
+                {/if}
+                {#if e.userAgent}
+                  <code
+                    class="bg-surface-2 text-dim block overflow-x-auto rounded px-2 py-1.5 break-words whitespace-pre-wrap"
+                    >{e.userAgent}</code>
+                {/if}
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm"
+                  onclick={() => void copyEvent(e)}>
+                  {copiedEventId === e.id ? m.common_copied() : m.common_copy()}
+                </button>
+              </div>
+            </details>
           {/if}
           {#if !e.userId}
             <p class="text-dim mt-1 text-xs italic">
@@ -262,14 +375,7 @@
     </ul>
 
     {#if eventsQuery.hasNextPage}
-      <button
-        class="btn btn-ghost mt-4 w-full"
-        disabled={eventsQuery.isFetchingNextPage}
-        onclick={() => eventsQuery.fetchNextPage()}>
-        {eventsQuery.isFetchingNextPage
-          ? m.common_loading()
-          : m.common_load_more()}
-      </button>
+      <LoadMoreButton query={eventsQuery} class="btn btn-ghost mt-4 w-full" />
     {/if}
   {/if}
 </div>

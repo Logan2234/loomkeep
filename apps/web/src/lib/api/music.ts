@@ -1,8 +1,16 @@
-import { getLocale } from "$lib/paraglide/runtime.js";
-import type {
-  UpdateMusicEntryDto,
-  UpsertMusicEntryDto,
+import { getLocale } from "#lib/paraglide/runtime.js";
+import {
+  type BulkEntriesTargetDto,
+  type BulkUpdateEntriesDto,
+  type MusicOwnershipStatus,
+  type MusicSortKey,
+  type MusicStatus,
+  type SortOrder,
+  type UpdateMusicEntryDto,
+  type UpsertMusicEntryDto,
 } from "@loomkeep/shared";
+import { pageParam } from "./query-params";
+
 import { typedRequest } from "./generated/typed-request";
 
 export const searchMusic = (query: string) =>
@@ -11,9 +19,9 @@ export const searchMusic = (query: string) =>
 export interface ListMusicFilters {
   query?: string;
   favorite?: boolean;
-  statuses?: string[];
-  sort?: string;
-  order?: "asc" | "desc";
+  statuses?: MusicStatus[];
+  sort?: MusicSortKey;
+  order?: SortOrder;
   page?: number;
 }
 
@@ -26,7 +34,19 @@ export function listMusic(filters: ListMusicFilters = {}) {
       status: filters.statuses,
       sort: filters.sort,
       order: filters.order,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      page: pageParam(filters.page),
+    },
+  });
+}
+
+/** What's left in the pile among the entries `listMusic` returns for the same filters. */
+export function getMusicPile(filters: ListMusicFilters = {}) {
+  return typedRequest("/music/pile", {
+    query: {
+      lang: getLocale(),
+      q: filters.query,
+      favorite: filters.favorite ? "true" : undefined,
+      status: filters.statuses,
     },
   });
 }
@@ -51,3 +71,10 @@ export const deleteMusicEntry = (entryId: string): Promise<void> =>
     method: "DELETE",
     params: { id: entryId },
   });
+
+export const bulkUpdateMusicEntries = (
+  body: BulkUpdateEntriesDto<MusicStatus, MusicOwnershipStatus>,
+) => typedRequest("/music/entries/bulk", { method: "POST", body });
+
+export const bulkDeleteMusicEntries = (body: BulkEntriesTargetDto) =>
+  typedRequest("/music/entries/bulk-delete", { method: "POST", body });

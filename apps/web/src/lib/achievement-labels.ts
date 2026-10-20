@@ -1,6 +1,6 @@
 // Shared by the achievements page, profile badge showcase, and unlock bubble.
-import { m } from "$lib/paraglide/messages.js";
-import type { IconName } from "$lib/types/icon-name";
+import { m } from "#lib/paraglide/messages.js";
+import type { IconName } from "#lib/types/icon-name.js";
 import type { AchievementDto, AchievementFamily } from "@loomkeep/shared";
 
 /**
@@ -35,17 +35,24 @@ const GROUP_ICON: Record<string, IconName> = {
   series_finisher: "check",
   book_finisher: "book",
   game_finisher: "gamepad",
+  pages_reader: "book-open",
+  hours_played: "timer",
   marathon: "activity",
   night_owl: "moon",
   early_bird: "sun",
   streak: "flame",
   full_circle: "circle-arrow",
   welcome_back: "circle-arrow",
+  cult_film: "play",
+  bedside_book: "book",
+  comfort_game: "gamepad",
   decades: "hourglass",
   genres: "compass",
   omnivore: "sparkles",
   hidden_gem: "compass",
   big_screen: "monitor",
+  saga_finisher: "library",
+  worth_the_wait: "hourglass",
   well_rounded: "star",
   full_inventory: "archive",
   guilty_pleasure: "mask",

@@ -1,4 +1,4 @@
-import { m } from "$lib/paraglide/messages.js";
+import { m } from "#lib/paraglide/messages.js";
 import type { ActivityEventDto } from "@loomkeep/shared";
 
 /**
@@ -22,8 +22,32 @@ export function activityPhrase(e: ActivityEventDto): string {
     case "FAVORITED":
       return m.activity_favorited();
     case "REVIEWED":
-      return m.activity_reviewed();
+      if (
+        typeof e.data.seasonNumber === "number" &&
+        typeof e.data.episodeNumber === "number"
+      ) {
+        return m.activity_reviewed_episode({
+          season: e.data.seasonNumber,
+          episode: e.data.episodeNumber,
+        });
+      }
+
+      return typeof e.data.seasonNumber === "number"
+        ? m.activity_reviewed_season({ season: e.data.seasonNumber })
+        : m.activity_reviewed();
     case "PROGRESS":
+      if (e.domain === "GAMES" && typeof e.data.durationMinutes === "number") {
+        return e.count > 1
+          ? m.activity_game_sessions({ count: e.count })
+          : m.activity_game_session({ minutes: e.data.durationMinutes });
+      }
+
+      if (e.domain === "BOOKS" && typeof e.data.pagesRead === "number") {
+        return e.count > 1
+          ? m.activity_book_sessions({ count: e.count })
+          : m.activity_book_session({ pages: e.data.pagesRead });
+      }
+
       return e.count > 1
         ? m.activity_progress_count({ count: e.count })
         : m.activity_progress();
@@ -35,6 +59,10 @@ export function activityPhrase(e: ActivityEventDto): string {
         : m.activity_list_item_added();
     case "LIST_SHARED":
       return m.activity_list_shared();
+    case "SEASON_FINISHED":
+      return typeof e.data.seasonNumber === "number"
+        ? m.activity_season_finished({ season: e.data.seasonNumber })
+        : m.activity_finished();
     default:
       return m.activity_updated();
   }

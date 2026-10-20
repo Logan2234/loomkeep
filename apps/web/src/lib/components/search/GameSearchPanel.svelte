@@ -4,17 +4,19 @@
     listGames,
     searchGames,
     upsertGameEntry,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import PosterGrid from "$lib/components/PosterGrid.svelte";
-  import { debounce } from "$lib/debounce";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import PosterGrid from "#lib/components/PosterGrid.svelte";
+  import ProviderMark from "#lib/components/ProviderMark.svelte";
+  import { IGDB_API } from "#lib/constants/external-links.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { GameSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -36,8 +38,6 @@
     mode?: "title" | "studio" | "franchise";
   } = $props();
 
-  const DEBOUNCE_MS = 300;
-
   // `query`/`mode` (raw) drive the input; `queryFilter` (debounced) is the
   // formatted string that actually drives the fetch — same split as
   // LibraryBrowser/MediaSearchPanel. `studio:"…"`/`franchise:"…"` are parsed
@@ -47,7 +47,7 @@
   let queryFilter = $state("");
   const debouncedQueryFilter = debounce((q: string) => {
     queryFilter = q;
-  }, DEBOUNCE_MS);
+  }, SEARCH_DEBOUNCE_MS);
 
   $effect(() => {
     const q = query.trim();
@@ -134,7 +134,11 @@
           href={`/app/games/${game.sourceId}`}
           class="absolute inset-0 z-1"
           aria-label={game.title}></a>
-        <Poster src={game.coverUrl} title={game.title} adult={game.isAdult} />
+        <Poster
+          src={game.coverUrl}
+          title={game.title}
+          alt=""
+          adult={game.isAdult} />
         <div class="flex flex-1 flex-col gap-2 p-3">
           <span class="font-display text-sm leading-tight font-semibold">
             {game.title}
@@ -164,6 +168,22 @@
       </div>
     {/each}
   </PosterGrid>
+
+  {#if !limit}
+    <!-- Attribution required by the IGDB API/Data Commercial Usage
+         Addendum: linked mention after IGDB results on the search page. -->
+    <a
+      href={IGDB_API}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="text-dim hover:text-accent text-micro mt-4 flex w-fit items-center gap-1.5 transition-colors">
+      <ProviderMark
+        brand="igdb"
+        decorative
+        class="h-3 w-3 shrink-0 opacity-70" />
+      {m.datasource_igdb_notice()}
+    </a>
+  {/if}
 {:else if !limit}
   {#if searched}
     <p class="timecode text-sm">{m.search_games_empty()}</p>

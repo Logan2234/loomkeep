@@ -3,20 +3,48 @@ import { defineConfig } from "vitest/config";
 
 // The sveltekit() plugin (not the full vite.config.ts stack — no PWA/
 // Tailwind/paraglide-compile) is needed as soon as a test imports anything
-// that touches SvelteKit's own virtual modules: $lib/* aliases, $env/*,
-// $app/*. apps/lib/api/errors.spec.ts needs both ($lib/paraglide/messages
-// and $env/dynamic/public via core.ts's ApiError).
+// that touches SvelteKit's own virtual modules: #lib/* aliases, $app/env/*,
+// $app/*. apps/lib/api/errors.spec.ts needs both (#lib/paraglide/messages
+// and $app/env/public via core.ts's ApiError).
 export default defineConfig({
-  plugins: [sveltekit()],
+  plugins: [
+    sveltekit({
+      files: { serviceWorker: "src/service-worker/service-worker" },
+    }),
+  ],
   test: {
-    include: ["src/**/*.spec.ts"],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          environment: "node",
+          include: ["src/**/*.spec.ts"],
+          exclude: ["src/**/*.svelte.spec.ts"],
+        },
+      },
+      {
+        extends: true,
+        // Without the "browser" condition, `svelte` resolves to its server
+        // build, where mount() — and so render() — is unavailable.
+        resolve: { conditions: ["browser"] },
+        test: {
+          name: "component",
+          // The real SDK imports virtual $app modules, which Node cannot resolve.
+          server: { deps: { inline: ["@sentry/sveltekit"] } },
+          environment: "happy-dom",
+          include: ["src/**/*.svelte.spec.ts"],
+          setupFiles: ["./src/lib/test/setup.ts"],
+        },
+      },
+    ],
     coverage: {
       provider: "v8",
       reportsDirectory: "./coverage",
       include: ["src/**/*.{ts,svelte}"],
-      // Vitest's v8 provider defaults to text/html/clover/json — no lcov,
-      // which is what Codecov's upload actually reads.
+      // Codecov reads lcov, which Vitest's v8 defaults omit.
       reporter: ["lcov", "text", "html"],
+      exclude: ["src/**/*.spec.ts", "src/lib/test/**"],
     },
   },
 });

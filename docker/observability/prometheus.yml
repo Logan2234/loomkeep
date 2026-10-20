@@ -22,7 +22,7 @@ scrape_configs:
 
   - job_name: caddy
     static_configs:
-      - targets: ["caddy:2019"]
+      - targets: ["caddy:2020"]
 
   # The API's own technical metrics (Node runtime + HTTP latency) — reached
   # over the internal Docker network, never through Caddy. Bearer token read
@@ -36,8 +36,8 @@ scrape_configs:
       type: Bearer
       credentials_file: /etc/prometheus/secrets/metrics_token
 
-  # Healthchecks.io's per-project metrics endpoint — see root README "Job
-  # monitoring". Bearer token read at scrape time from a gitignored file so
+  # Healthchecks.io's per-project metrics endpoint — see
+  # https://docs.loomkeep.app/self-hosting/optional-services/monitoring/. Bearer token read at scrape time from a gitignored file so
   # the API key stays out of this committed file.
   - job_name: healthchecks
     scrape_interval: 60s

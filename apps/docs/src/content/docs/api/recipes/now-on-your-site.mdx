@@ -1,0 +1,88 @@
+---
+title: “Now” on your website
+description: Show what you're watching, playing and reading on your personal site, without exposing your key.
+sidebar:
+  order: 6
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+A "now" section on a personal site, kept up to date from Loomkeep. Your key
+must never reach visitors' browsers: here a scheduled GitHub Action calls
+the API and commits a small JSON file, which your site reads like any other
+data file.
+
+**Key:** `library:read`.
+
+<Steps>
+
+1. Create the key in **Settings › Integrations**, and save it in your site's
+   repository as an Actions secret named `LOOMKEEP_API_KEY` (**Settings ›
+   Secrets and variables › Actions**).
+
+2. Add `.github/workflows/loomkeep-now.yml`:
+
+   ```yaml
+   name: Loomkeep now
+   on:
+     schedule:
+       - cron: "0 */6 * * *" # every 6 hours
+     workflow_dispatch:
+   permissions:
+     contents: write
+   jobs:
+     update:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v4
+         - name: Fetch what I'm into
+           env:
+             LOOMKEEP_API_KEY: ${{ secrets.LOOMKEEP_API_KEY }}
+           run: |
+             mkdir -p data
+             curl --fail -sS -H "Authorization: Bearer $LOOMKEEP_API_KEY" \
+               "https://loomkeep.app/api/v1/library?phase=IN_PROGRESS&limit=6" \
+               | jq '[.items[] | {title: .work.title, creators: .work.creators, domain, cover: .work.coverUrl, progress}]' \
+               > data/now.json
+         - name: Commit if it changed
+           run: |
+             git config user.name "github-actions[bot]"
+             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+             git add data/now.json
+             if ! git diff --cached --quiet; then
+               git commit -m "Update now"
+               git push
+             fi
+   ```
+
+3. Run it once from the **Actions** tab, then read `data/now.json` from your
+   site: as a data file in Hugo, Eleventy, Jekyll or Astro, or from a page
+   script.
+
+</Steps>
+
+The `jq` filter keeps only what you'd show: never your notes or ratings by
+accident. The file is public once your site is.
+
+## A plain HTML version
+
+Without a site generator, a few lines render the file in the browser:
+
+```html
+<ul id="now"></ul>
+<script type="module">
+  const items = await fetch("/data/now.json").then((res) => res.json());
+  document.querySelector("#now").replaceChildren(
+    ...items.map(({ title, creators }) => {
+      const li = document.createElement("li");
+      li.textContent = creators.length ? `${title}, ${creators[0]}` : title;
+      return li;
+    }),
+  );
+</script>
+```
+
+<Aside title="Not on GitHub?">
+  Any scheduler works the same way: a cron job on your server, or your site's
+  build step, as long as the key stays on the server side.
+</Aside>

@@ -1,6 +1,11 @@
+export const CANONICAL_EXTERNAL_ID_SELECT = {
+  canonicalSource: true,
+  externalIds: { select: { source: true, externalId: true } },
+} as const;
+
 /**
  * A catalogue item's external ID in its own canonical source (always present
- * in practice; falls back to "" if the canonical ref is somehow missing).
+ * in practice; uses the caller's fallback, empty by default, if missing).
  *
  * Works across every domain (media/game/book) because their external-id rows
  * share the same `{ source, externalId }` shape and their items a
@@ -9,10 +14,11 @@
 export function canonicalExternalId(
   item: { canonicalSource: string },
   externalIds: readonly { source: string; externalId: string }[],
+  fallback = "",
 ): string {
   return (
     externalIds.find((ext) => ext.source === item.canonicalSource)
-      ?.externalId ?? ""
+      ?.externalId ?? fallback
   );
 }
 

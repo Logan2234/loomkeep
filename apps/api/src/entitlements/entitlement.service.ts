@@ -1,3 +1,4 @@
+import { FeatureFlag, type LicenseStatusDto } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import type { Plan, UserEntitlement } from "@prisma/client";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
@@ -15,10 +16,36 @@ import { PrismaService } from "../prisma/prisma.service";
  */
 @Injectable()
 export class EntitlementService {
+  private instancePremium: () => boolean = () => false;
+  private licenseStatus: () => LicenseStatusDto | null = () => null;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly flags: FeatureFlagsService,
   ) {}
+
+  /**
+   * Lets the self-host license (ee/licensing, LICENSE-EE) make every account
+   * of the instance premium, without the AGPL core importing ee/: ee/ hands
+   * its check in here at startup. Without ee/, no account is premium this way.
+   */
+  setInstancePremiumSource(source: () => boolean): void {
+    this.instancePremium = source;
+  }
+
+  /**
+   * Same inversion as `setInstancePremiumSource`, for the parsed license
+   * itself (licensee/expiry/scope) rather than the boolean it grants — the
+   * admin services page reads it through {@link getLicenseStatus} without
+   * the core importing ee/. Null without ee/, or without a valid key.
+   */
+  setLicenseStatusSource(source: () => LicenseStatusDto | null): void {
+    this.licenseStatus = source;
+  }
+
+  getLicenseStatus(): LicenseStatusDto | null {
+    return this.licenseStatus();
+  }
 
   async getEntitlement(userId: string): Promise<UserEntitlement> {
     return this.prisma.userEntitlement.upsert({
@@ -29,6 +56,7 @@ export class EntitlementService {
   }
 
   async hasPremium(userId: string): Promise<boolean> {
+    if (this.instancePremium()) return true;
     const entitlement = await this.getEntitlement(userId);
     return entitlement.plan === "PREMIUM";
   }
@@ -42,7 +70,7 @@ export class EntitlementService {
    * and the `GET /users/me/entitlement` endpoint the web reads.
    */
   async isEffectivelyPremium(userId: string): Promise<boolean> {
-    if (!this.flags.isEnabled("premium-features", false)) return true;
+    if (!this.flags.isEnabled(FeatureFlag.PREMIUM_FEATURES, false)) return true;
     return this.hasPremium(userId);
   }
 

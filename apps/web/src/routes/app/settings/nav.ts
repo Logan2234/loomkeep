@@ -1,13 +1,15 @@
+import { type FeatureBadgeKey } from "#lib/feature-badges.js";
 // The settings information architecture, in one place: five groups, one
 // route per section. The old single page kept a parallel `SECTIONS` array
 // next to the markup that rendered it; here the same array drives the rail,
 // the mobile index, the search and the legacy-anchor redirects, so a new
 // section is added once.
-import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-import type { isFeatureNew } from "$lib/feature-badges";
-import { m } from "$lib/paraglide/messages.js";
-import type { IconName } from "$lib/types/icon-name";
-type FeatureBadgeKey = Parameters<typeof isFeatureNew>[0];
+import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
+
+import { m } from "#lib/paraglide/messages.js";
+import type { IconName } from "#lib/types/icon-name.js";
+import { Domain } from "@loomkeep/shared";
+
 /**
  * Below this many unused recovery codes, running out stops being a detail of
  * the 2FA screen and becomes an account-level warning — the settings layout
@@ -41,9 +43,16 @@ export interface SettingsSectionDef {
   entries: SettingsEntryDef[];
   /** Hidden when the deployment runs with social off. */
   social?: boolean;
+  /** Hidden while the member keeps this domain off. */
+  domain?: Domain;
   newBadgeKey?: FeatureBadgeKey;
   /** Styled as destructive in the rail and on the index. */
   danger?: boolean;
+  /**
+   * Set on a sub-page: it has its own route and search entry, but is reached
+   * from its parent section instead of the rail, the index and Alt+N.
+   */
+  parent?: string;
   /** The `#anchor` this section answered on before it had its own route. */
   legacyHash?: string;
 }
@@ -88,7 +97,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         icon: "lock",
         description: m.settings_mfa_totp_desc(),
         keywords: ["2fa", "mfa", "totp", "otp", "authenticator"],
-        newBadgeKey: "mfa",
         legacyHash: "mfa",
         entries: [
           {
@@ -110,7 +118,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "mfa-webauthn",
-            label: m.settings_mfa_webauthn_label(),
+            label: m.common_security_key(),
             keywords: [
               "webauthn",
               "passkey",
@@ -139,16 +147,22 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         ],
       },
       {
-        slug: "devices",
-        label: m.settings_sessions_title(),
-        icon: "monitor",
-        description: m.settings_sessions_description(),
-        keywords: ["sessions", "devices", "deconnecter", "logout"],
+        slug: "integrations",
+        label: m.settings_integrations_title(),
+        icon: "key",
+        description: m.settings_integrations_description(),
+        keywords: ["api", "token", "jeton", "integration", "script"],
+        newBadgeKey: "integrations",
         entries: [
           {
-            id: "sessions-revoke-all",
-            label: m.settings_sessions_disconnect_all(),
-            keywords: ["revoke", "deconnexion"],
+            id: "api-keys",
+            label: m.settings_api_keys_title(),
+            keywords: ["api key", "cle", "token", "bearer"],
+          },
+          {
+            id: "subscription-links",
+            label: m.settings_subscription_links_title(),
+            keywords: ["ics", "calendrier", "calendar", "atom", "rss", "flux"],
           },
         ],
       },
@@ -175,6 +189,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         description: m.settings_privacy_description(),
         keywords: ["privacy", "public", "prive", "fantome", "ghost"],
         social: true,
+        newBadgeKey: "default-list-visibility",
         legacyHash: "confidentialite",
         entries: [
           {
@@ -197,9 +212,24 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
               "avis",
               "notes",
               "reviews",
+              "visibilite",
               "portee",
               "default visibility",
               "new reviews",
+              "friends",
+              "public",
+            ],
+          },
+          {
+            id: "list-visibility",
+            label: m.settings_privacy_default_lists(),
+            keywords: [
+              "listes",
+              "lists",
+              "visibilite",
+              "default visibility",
+              "new lists",
+              "private",
               "friends",
               "public",
             ],
@@ -214,6 +244,29 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
               "xp",
               "level",
               "rank",
+            ],
+          },
+          {
+            id: "chat-presence",
+            label: m.settings_chat_presence(),
+            keywords: ["messages", "chat", "en ligne", "online", "presence"],
+          },
+          {
+            id: "chat-read-receipts",
+            label: m.settings_chat_read_receipts(),
+            keywords: ["messages", "chat", "vu", "lu", "read", "seen"],
+          },
+          {
+            id: "chat-share-providers",
+            label: m.settings_chat_share_providers(),
+            keywords: [
+              "messages",
+              "chat",
+              "where",
+              "streaming",
+              "plateformes",
+              "abonnements",
+              "netflix",
             ],
           },
         ],
@@ -299,7 +352,25 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         description: m.settings_appearance_description(),
         keywords: ["apparence", "appearance", "ui"],
         legacyHash: "apparence",
+        newBadgeKey: "home-layout",
         entries: [
+          {
+            id: "home-layout",
+            label: m.settings_home_layout_title(),
+            keywords: [
+              "accueil",
+              "home",
+              "dashboard",
+              "tableau de bord",
+              "widgets",
+              "grille",
+              "grid",
+              "disposition",
+              "layout",
+              "liens rapides",
+              "quick links",
+            ],
+          },
           {
             id: "theme",
             label: m.common_theme(),
@@ -421,12 +492,41 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         ],
       },
       {
+        slug: "streaming",
+        label: m.settings_streaming_title(),
+        icon: "tv",
+        description: m.settings_streaming_description(),
+        keywords: [
+          "streaming",
+          "services",
+          "plateformes",
+          "abonnements",
+          "netflix",
+          "ou regarder",
+          "where to watch",
+        ],
+        newBadgeKey: "watch-providers",
+        domain: Domain.MEDIA,
+        entries: [
+          {
+            id: "streaming-region",
+            label: m.settings_streaming_region_label(),
+            keywords: ["pays", "country", "region"],
+          },
+          {
+            id: "streaming-services",
+            label: m.settings_streaming_title(),
+            keywords: ["netflix", "canal", "disney", "prime", "crunchyroll"],
+          },
+        ],
+      },
+      {
         slug: "communications",
         label: m.settings_section_communications(),
         icon: "bell",
-        description: m.settings_communications_email_desc(),
-        keywords: ["notifications", "emails", "alertes"],
-        newBadgeKey: "notification-digest",
+        description: m.settings_communications_description(),
+        keywords: ["notifications", "emails", "alertes", "cloche", "push"],
+        newBadgeKey: "alert-settings",
         legacyHash: "communications",
         entries: [
           {
@@ -437,12 +537,52 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           {
             id: "email-digest",
             label: m.common_email(),
-            keywords: ["resume", "digest", "episodes", "hebdo"],
+            keywords: [
+              "resume",
+              "digest",
+              "episodes",
+              "films",
+              "jeux",
+              "sorties",
+              "rappel",
+              "hebdo",
+              "quotidien",
+            ],
           },
           {
             id: "push",
             label: m.common_push_notifications(),
-            keywords: ["push", "alerte", "notification"],
+            keywords: ["push", "alerte", "notification", "appareil"],
+          },
+          {
+            id: "push-digest",
+            label: m.settings_communications_releases_title(),
+            keywords: [
+              "push",
+              "episodes",
+              "films",
+              "jeux",
+              "games",
+              "movies",
+              "sorties",
+              "releases",
+              "rappel",
+              "reminder",
+              "saga",
+              "suite",
+              "resume",
+              "digest",
+            ],
+          },
+          {
+            id: "activity-alerts",
+            label: m.common_activity(),
+            keywords: ["reponses", "mentions", "abonnes", "listes", "import"],
+          },
+          {
+            id: "admin-alerts",
+            label: m.settings_communications_admin_title(),
+            keywords: ["signalements", "taches", "quota", "inscription"],
           },
           {
             id: "newsletter",
@@ -471,10 +611,10 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           "storygraph",
           "babelio",
           "myanimelist",
+          "anilist",
           "simkl",
           "letterboxd",
           "kitsu",
-          "backloggd",
           "librarything",
           "bookwyrm",
           "opml",
@@ -513,6 +653,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         description: m.settings_export_body(),
         keywords: ["export", "json", "csv", "telecharger", "download", "rgpd"],
         legacyHash: "export",
+        newBadgeKey: "migration-export",
         entries: [
           {
             id: "export-json",
@@ -531,6 +672,11 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
               "spreadsheet",
             ],
           },
+          {
+            id: "export-services",
+            label: m.settings_export_services_title(),
+            keywords: ["letterboxd", "goodreads", "storygraph", "migrate"],
+          },
         ],
       },
     ],
@@ -544,7 +690,16 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         label: `${m.common_help()} & ${m.common_feedback()}`,
         icon: "question",
         description: m.settings_help_body(),
-        keywords: ["aide", "help", "bug", "idee", "roadmap", "changelog"],
+        keywords: [
+          "aide",
+          "help",
+          "bug",
+          "idee",
+          "roadmap",
+          "changelog",
+          "documentation",
+          "faq",
+        ],
         legacyHash: "aide",
         entries: [
           {
@@ -568,9 +723,29 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
             keywords: ["changelog"],
           },
           {
+            id: "help-docs",
+            label: m.settings_help_docs(),
+            keywords: ["documentation", "docs", "guide", "api", "self-host"],
+          },
+          {
+            id: "help-faq",
+            label: m.settings_help_faq(),
+            keywords: ["faq", "questions"],
+          },
+          {
+            id: "help-status",
+            label: m.settings_help_status(),
+            keywords: ["status", "statut", "uptime", "panne", "outage"],
+          },
+          {
             id: "help-chat",
             label: m.settings_help_chat_title(),
             keywords: ["chat", "developer", "message", "contact"],
+          },
+          {
+            id: "feedback-widget",
+            label: m.settings_feedback_widget(),
+            keywords: ["avis", "feedback", "quackback", "bouton", "launcher"],
           },
           {
             id: "help-shortcuts",
@@ -672,16 +847,62 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
     ],
   },
 ];
+/** Sections with their own rail entry, in rail order (also what Alt+N counts). */
 export const SETTINGS_SECTIONS: SettingsSectionDef[] = SETTINGS_GROUPS.flatMap(
   (group) => group.sections,
 );
+
+/** Pages nested under a section, reached from it rather than from the rail. */
+const SETTINGS_SUBPAGES: SettingsSectionDef[] = [
+  {
+    slug: "security/devices",
+    label: m.settings_sessions_title(),
+    icon: "monitor",
+    description: m.settings_sessions_description(),
+    parent: "security",
+    keywords: ["sessions", "devices", "deconnecter", "logout"],
+    entries: [
+      {
+        id: "sessions-revoke-all",
+        label: m.settings_sessions_disconnect_all(),
+        keywords: ["revoke", "deconnexion"],
+      },
+    ],
+  },
+  {
+    slug: "security/activity",
+    label: m.settings_activity_title(),
+    icon: "activity",
+    description: m.settings_activity_description(),
+    parent: "security",
+    keywords: [
+      "activite",
+      "activity",
+      "historique",
+      "history",
+      "journal",
+      "log",
+      "connexions",
+      "ip",
+      "securite",
+    ],
+    newBadgeKey: "account-activity",
+    entries: [],
+  },
+];
+
+/** Everything the search can land on: the sections and their sub-pages. */
+export const SETTINGS_SEARCHABLE: SettingsSectionDef[] = [
+  ...SETTINGS_SECTIONS,
+  ...SETTINGS_SUBPAGES,
+];
 
 export function sectionHref(slug: string): string {
   return `/app/settings/${slug}`;
 }
 
 export function findSection(slug: string): SettingsSectionDef | undefined {
-  return SETTINGS_SECTIONS.find((section) => section.slug === slug);
+  return SETTINGS_SEARCHABLE.find((section) => section.slug === slug);
 }
 
 /**

@@ -14,13 +14,25 @@ export const ErrorCode = {
   AuthInvalidVerificationToken: "auth.invalid_verification_token",
   AuthAlreadyVerified: "auth.already_verified",
   AuthInvalidCredentials: "auth.invalid_credentials",
+  /** A moderation suspension is in force; `params.until` is its ISO end. */
+  AuthAccountSuspended: "auth.account_suspended",
   AuthInvalidMfaChallenge: "auth.invalid_mfa_challenge",
   AuthMfaTooManyAttempts: "auth.mfa_too_many_attempts",
   AuthMfaInvalidCode: "auth.mfa_invalid_code",
   AuthInvalidRefreshToken: "auth.invalid_refresh_token",
+  // Another tab rotated this refresh token a moment ago: its cookies are
+  // already the new ones, nothing to sign in again for.
+  AuthRefreshSuperseded: "auth.refresh_superseded",
   AuthInvalidResetToken: "auth.invalid_reset_token",
   AuthMfaTotpNotInProgress: "auth.mfa_totp_not_in_progress",
   AuthCurrentPasswordIncorrect: "auth.current_password_incorrect",
+  // A sensitive action asked for a confirmation this session doesn't have, or
+  // has had for too long (see RecentAuthGuard).
+  AuthReauthRequired: "auth.reauth_required",
+  // Too many failed confirmations: the session was signed out.
+  AuthReauthTooManyAttempts: "auth.reauth_too_many_attempts",
+  // The authenticator app's code was already used, at sign-in or a confirmation.
+  AuthTotpCodeReused: "auth.totp_code_reused",
   AuthMissingAccessToken: "auth.missing_access_token",
   AuthInvalidAccessToken: "auth.invalid_access_token",
   AuthMissingExceptParam: "auth.missing_except_param",
@@ -28,7 +40,19 @@ export const ErrorCode = {
   AuthWebauthnVerificationFailed: "auth.webauthn_verification_failed",
   AuthWebauthnCredentialNotFound: "auth.webauthn_credential_not_found",
   AuthPasswordlessRequiresCredential: "auth.passwordless_requires_credential",
-  AuthPasswordlessNotEligible: "auth.passwordless_not_eligible",
+  AuthInvalidInvitation: "auth.invalid_invitation",
+  AuthInvitationExpired: "auth.invitation_expired",
+  AuthInvitationEmailMismatch: "auth.invitation_email_mismatch",
+  AuthInvalidApiKey: "auth.invalid_api_key",
+  AuthApiKeyForbidden: "auth.api_key_forbidden",
+
+  // api keys
+  ApiKeyNotFound: "api_key.not_found",
+  ApiKeyLimitReached: "api_key.limit_reached",
+  ApiKeyExpiryInPast: "api_key.expiry_in_past",
+  ApiRateLimited: "api.rate_limited",
+  ApiDisabled: "api.disabled",
+  SecretScanningUnauthorized: "api.secret_scanning_unauthorized",
 
   // admin
   AdminCacheItemNotFound: "admin.cache_item_not_found",
@@ -40,13 +64,18 @@ export const ErrorCode = {
   AdminUnknownJob: "admin.unknown_job",
   AdminAccountNotFound: "admin.account_not_found",
   AdminReportNotFound: "admin.report_not_found",
+  AdminSettingLockedByEnv: "admin.setting_locked_by_env",
   AdminCannotSelfDemote: "admin.cannot_self_demote",
   AdminCannotSelfDelete: "admin.cannot_self_delete",
-  AdminUserNotFound: "admin.user_not_found",
   AdminForbidden: "admin.forbidden",
   AdminBackupNotFound: "admin.backup_not_found",
+  AdminBackupNotOrphan: "admin.backup_not_orphan",
   AdminMisconfigured: "admin.misconfigured",
   AdminUnauthorized: "admin.unauthorized",
+  AdminInvitationNotFound: "admin.invitation_not_found",
+  AdminInvitationEmailRegistered: "admin.invitation_email_registered",
+  AdminInvitationAlreadyPending: "admin.invitation_already_pending",
+  AdminInvitationNotRenewable: "admin.invitation_not_renewable",
 
   // comments
   CommentUnknownTargetType: "comment.unknown_target_type",
@@ -56,6 +85,34 @@ export const ErrorCode = {
   CommentParticipationRequiresLibrary: "comment.participation_requires_library",
   CommentInteractionBlocked: "comment.interaction_blocked",
 
+  // chat
+  ChatFeatureDisabled: "chat.feature_disabled",
+  /** Messages only go between two accounts that follow each other. */
+  ChatNotFriends: "chat.not_friends",
+  ChatConversationNotFound: "chat.conversation_not_found",
+  ChatMessageNotFound: "chat.message_not_found",
+  ChatForbidden: "chat.forbidden",
+  /** The conversation stays readable, but nobody can write in it anymore. */
+  ChatReadOnly: "chat.read_only",
+  /** The attached work isn't a page Loomkeep knows, or is an 18+ title. */
+  ChatWorkNotFound: "chat.work_not_found",
+  /** `/review` attaches one of the author's own reviews, and only those. */
+  ChatReviewNotFound: "chat.review_not_found",
+  /** The list attached with `/list` isn't one both members may see. */
+  ChatListNotShareable: "chat.list_not_shareable",
+  /** The /poll option voted for isn't one of the message's. */
+  ChatPollOptionNotFound: "chat.poll_option_not_found",
+  /** The saga shared with /saga isn't one Loomkeep knows. */
+  ChatSagaNotFound: "chat.saga_not_found",
+  /** The work sent with /pick isn't in the pile it was drawn from. */
+  ChatPickNotInPile: "chat.pick_not_in_pile",
+  /** /where is about films and series: the work given isn't one. */
+  ChatWhereNotVideo: "chat.where_not_video",
+  /** A conversation keeps a limited number of pinned messages. */
+  ChatPinLimit: "chat.pin_limit",
+  /** A message goes forward to other conversations, not back to its own. */
+  ChatForwardToOrigin: "chat.forward_to_origin",
+
   // lists
   ListInvalidMembershipTarget: "lists.invalid_membership_target",
   ListNotFound: "lists.not_found",
@@ -63,11 +120,12 @@ export const ErrorCode = {
   ListForbidden: "lists.forbidden",
   ListItemNotFound: "lists.item_not_found",
   ListItemAlreadyExists: "lists.item_already_exists",
+  ListWorkNotFound: "lists.work_not_found",
   ListReorderMismatch: "lists.reorder_mismatch",
   ListStale: "lists.stale",
-  ListMemberUserNotFound: "lists.member_user_not_found",
   ListCannotAddSelf: "lists.cannot_add_self",
   ListMemberAlreadyEditor: "lists.member_already_editor",
+  ListMemberNotFriend: "lists.member_not_friend",
   ListMembershipNotFound: "lists.membership_not_found",
 
   // newsletter
@@ -92,19 +150,22 @@ export const ErrorCode = {
   ReviewCannotVoteSelf: "reviews.cannot_vote_self",
 
   // social
-  SocialUserNotFound: "social.user_not_found",
   SocialCannotFollowSelf: "social.cannot_follow_self",
   SocialGhostPublicOnly: "social.ghost_public_only",
   SocialUnblockFirst: "social.unblock_first",
   SocialFollowRequestNotFound: "social.follow_request_not_found",
   SocialCannotBlockSelf: "social.cannot_block_self",
   SocialFeatureDisabled: "social.feature_disabled",
+  SocialActivityFeedUnavailable: "social.activity_feed_unavailable",
 
   // stats
   StatsRatingOrDecadeOnly: "stats.rating_or_decade_only",
   StatsInvalidRating: "stats.invalid_rating",
   StatsInvalidDecade: "stats.invalid_decade",
   StatsRatingOrDecadeRequired: "stats.rating_or_decade_required",
+
+  // ee — the commercially licensed features (LICENSE-EE)
+  EeUnlicensed: "ee.unlicensed",
 
   // library — entry/replay codes are shared across media/games/books/music,
   // the four domains that each have their own *LibraryService with the same
@@ -118,8 +179,24 @@ export const ErrorCode = {
   LibraryEntryNotFound: "library.entry_not_found",
   LibraryEntryForbidden: "library.entry_forbidden",
   LibraryReplayNotMovie: "library.replay_not_movie",
+  LibraryMovieNotReleased: "library.movie_not_released",
+  LibraryAnimeNotAired: "library.anime_not_aired",
+  LibraryGameNotReleased: "library.game_not_released",
+  // A platform the game isn't listed on (GameItem.platforms).
+  LibraryGamePlatformInvalid: "library.game_platform_invalid",
   LibraryReplayNotFound: "library.replay_not_found",
   LibraryReplayForbidden: "library.replay_forbidden",
+  LibrarySessionNotFound: "library.session_not_found",
+  LibrarySessionForbidden: "library.session_forbidden",
+  LibrarySessionDateFuture: "library.session_date_future",
+  LibrarySessionInvalidPages: "library.session_invalid_pages",
+  LibrarySessionTimerAlreadyRunning: "library.session_timer_already_running",
+  LibrarySessionTimerNotFound: "library.session_timer_not_found",
+  LibraryBookEditionRequired: "library.book_edition_required",
+  LibrarySavedViewNotFound: "library.saved_view_not_found",
+  LibrarySavedViewFreeQuotaExceeded: "library.saved_view_free_quota_exceeded",
+  LibrarySavedViewLimitReached: "library.saved_view_limit_reached",
+  LibraryBulkInvalid: "library.bulk_invalid",
 
   // catalog — item/person/provider codes are shared across every catalogue
   // source (TMDB, AniList, IGDB, Open Library, MusicBrainz)
@@ -137,6 +214,7 @@ export const ErrorCode = {
   UserAdultContentDisabled: "user.adult_content_disabled",
   UserCsvExportUnavailable: "user.csv_export_unavailable",
   UserAccountNotFound: "user.account_not_found",
+  UserNotFound: "user.not_found",
   UserDomainDisabled: "user.domain_disabled",
   UserAvatarNotFound: "user.avatar_not_found",
   UserPremiumRequired: "user.premium_required",
@@ -162,6 +240,8 @@ export const ErrorCode = {
   ImportSourceUnavailable: "import.source_unavailable",
   ImportSteamProfileNotFound: "import.steam_profile_not_found",
   ImportSteamLibraryPrivate: "import.steam_library_private",
+  ImportAnilistUserNotFound: "import.anilist_user_not_found",
+  ImportAnilistListPrivate: "import.anilist_list_private",
   ImportArchiveEmpty: "import.archive_empty",
   ImportArchiveUnreadable: "import.archive_unreadable",
   ImportArchiveMissingFiles: "import.archive_missing_files",
@@ -170,6 +250,7 @@ export const ErrorCode = {
   // gamification
   GamificationAchievementNotFound: "gamification.achievement_not_found",
   GamificationFeatureDisabled: "gamification.feature_disabled",
+  GamificationXpBelowZero: "gamification.xp_below_zero",
   GamificationBadgeSecret: "gamification.badge_secret",
   GamificationBadgeLimitReached: "gamification.badge_limit_reached",
 
@@ -177,10 +258,18 @@ export const ErrorCode = {
   ValidationFailed: "validation.failed",
   InvalidParam: "validation.invalid_param",
   InternalError: "internal.error",
+  // Two requests raced and the other one wrote first (a unique constraint,
+  // Prisma P2002) — reloading shows the state it left.
+  InternalConflict: "internal.conflict",
+  // The row a write targeted was removed in the meantime (Prisma P2025).
+  InternalRecordGone: "internal.record_gone",
 
   // client-side only — never emitted by the API, thrown by apps/web's
   // request() when the fetch itself fails (see apps/web/src/lib/api/core.ts)
   NetworkOffline: "network.offline",
+  // client-side only: the person closed the identity confirmation a sensitive
+  // action asked for (see apps/web/src/lib/auth/reauth.svelte.ts)
+  AuthReauthCancelled: "auth.reauth_cancelled",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

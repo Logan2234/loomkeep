@@ -1,7 +1,7 @@
 import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
 import { vi } from "vitest";
+import { makeZip } from "../../../../test/make-zip";
 import { ImportJobService } from "../../import-job.service";
-import { makeZip } from "../../make-zip";
 import { MediaMatchResolver } from "../media/media-match-resolver";
 import { TraktImportSource } from "./trakt.source";
 
@@ -37,10 +37,14 @@ function makeService() {
     episodeWatch: {
       count: vi.fn().mockResolvedValue(0),
       createMany: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     mediaExternalId: { findUnique: vi.fn() },
+    // Nothing tracked yet, and every title already out.
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
     libraryEntry: {
+      findUnique: vi.fn().mockResolvedValue(null),
       upsert: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
@@ -75,7 +79,11 @@ function makeService() {
     { isEffectivelyPremium: vi.fn().mockResolvedValue(true) } as never,
     { award: vi.fn(), awardMany: vi.fn(), revokeBySource: vi.fn() } as never, // XpService stub
     { evaluate: vi.fn() } as never, // AchievementService stub
-    { emitToUser: vi.fn() } as never, // EventsGateway stub
+    {
+      emitToUser: vi.fn(),
+      isOnline: vi.fn().mockResolvedValue(true),
+    } as never, // EventsGateway stub
+    { create: vi.fn() } as never, // NotificationService stub
   );
   return { prisma, mediaItemService, tmdb, service };
 }

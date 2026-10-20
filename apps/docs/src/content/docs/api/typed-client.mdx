@@ -1,0 +1,100 @@
+---
+title: Typed clients
+description: Generate a client with types for every endpoint from Loomkeep's OpenAPI document.
+---
+
+import { Aside, Steps, TabItem, Tabs } from "@astrojs/starlight/components";
+
+The API is described by an [OpenAPI 3](https://www.openapis.org) document,
+the same one the [reference](/api/reference/) is built from. Generators turn
+it into a client with every endpoint, parameter and response typed, so your
+editor completes them and catches mistakes before you run anything.
+
+The document is served by every instance, matching the version it runs:
+
+```
+https://loomkeep.app/api/v1/openapi.json
+```
+
+On a self-hosted instance, use your own address. Regenerate the client after
+an upgrade to pick up new fields: within `v1`, they are only ever
+[added](/api/versioning/).
+
+<Tabs syncKey="language">
+  <TabItem label="TypeScript">
+    [openapi-typescript](https://openapi-ts.dev) generates the types, and
+    [openapi-fetch](https://openapi-ts.dev/openapi-fetch/) is a small `fetch`
+    wrapper that uses them.
+
+    <Steps>
+
+    1. Generate the types, and install the client:
+
+       ```sh
+       npx openapi-typescript https://loomkeep.app/api/v1/openapi.json -o loomkeep.d.ts
+       npm install openapi-fetch
+       ```
+
+    2. Call the API. Paths, parameters and responses are checked against the
+       document:
+
+       ```ts
+       import createClient from "openapi-fetch";
+       import type { paths } from "./loomkeep";
+
+       const loomkeep = createClient<paths>({
+         baseUrl: "https://loomkeep.app",
+         headers: { Authorization: `Bearer ${process.env.LOOMKEEP_API_KEY}` },
+       });
+
+       const { data, error } = await loomkeep.GET("/api/v1/library", {
+         params: { query: { phase: ["IN_PROGRESS"], limit: 10 } },
+       });
+
+       if (error) throw new Error(error.code ?? error.message);
+       for (const entry of data.items) console.log(entry.work.title);
+       ```
+
+    </Steps>
+
+  </TabItem>
+  <TabItem label="Python">
+    [openapi-python-client](https://github.com/openapi-generators/openapi-python-client)
+    generates a package with typed models and one function per endpoint.
+
+    <Steps>
+
+    1. Generate the package:
+
+       ```sh
+       pipx run openapi-python-client generate \
+         --url https://loomkeep.app/api/v1/openapi.json
+       ```
+
+    2. Install the folder it creates (`pip install ./<folder>`), then import
+       it: the generated `README.md` shows the client to create with your
+       key, and one module per endpoint.
+
+    </Steps>
+
+  </TabItem>
+  <TabItem label="Other languages">
+    [OpenAPI Generator](https://openapi-generator.tech) covers about fifty
+    languages: Go, Java, Kotlin, C#, Rust, Swift, PHP, Ruby…
+
+    ```sh
+    npx @openapitools/openapi-generator-cli generate \
+      -i https://loomkeep.app/api/v1/openapi.json \
+      -g go -o loomkeep-client
+    ```
+
+    Replace `go` with your language's generator, from
+    [its list](https://openapi-generator.tech/docs/generators).
+
+  </TabItem>
+</Tabs>
+
+<Aside title="Without generating anything">
+  For a one-off script, the [reference](/api/reference/) shows every request
+  ready to copy, in about twenty languages and HTTP clients.
+</Aside>

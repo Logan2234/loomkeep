@@ -1,19 +1,44 @@
 <script lang="ts">
-  import Icon from "$lib/components/Icon.svelte";
+  import { updateMe } from "#lib/api/auth.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import {
     CHANGELOG_URL,
+    DOCS_URL,
     FEEDBACK_BUG_REPORTS_URL,
     FEEDBACK_URL,
     GITHUB_REPO_URL,
     ROADMAP_URL,
-  } from "$lib/constants/external-links";
-  import { m } from "$lib/paraglide/messages.js";
-  import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
-  import { Locale } from "@loomkeep/shared";
+  } from "#lib/constants/external-links.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { languageOptions } from "#lib/locales.js";
+  import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
+  import type { Locale } from "@loomkeep/shared";
+
+  // Signed in, initAuth re-applies the account's locale on every load, so the
+  // choice is saved there too — or the page would switch back mid-visit.
+  const saveLocaleMut = createApiMutation(() => ({
+    mutate: (next: Locale) => updateMe({ locale: next }),
+    onSuccess: (_data, next) => setLocale(next),
+  }));
+
+  function chooseLocale(next: Locale) {
+    if (auth.isLoggedIn) saveLocaleMut.mutate(next);
+    else setLocale(next);
+  }
 
   const COLUMNS: {
     title: string;
-    links: { label: string; href: string; external?: boolean; event: string }[];
+    links: {
+      label: string;
+      href: string;
+      external?: boolean;
+      event: string;
+      socialOnly?: boolean;
+    }[];
   }[] = [
     {
       title: m.landing_footer_col_product(),
@@ -35,6 +60,18 @@
           href: CHANGELOG_URL,
           external: true,
           event: "footer-changelog",
+        },
+        {
+          label: m.landing_footer_link_docs(),
+          href: DOCS_URL,
+          external: true,
+          event: "footer-docs",
+        },
+        {
+          label: m.landing_footer_link_api(),
+          href: `${DOCS_URL}/api/`,
+          external: true,
+          event: "footer-api",
         },
       ],
     },
@@ -61,7 +98,7 @@
         },
         {
           label: m.landing_footer_link_selfhost(),
-          href: GITHUB_REPO_URL,
+          href: `${DOCS_URL}/self-hosting/`,
           external: true,
           event: "footer-selfhost",
         },
@@ -84,6 +121,12 @@
           label: m.common_terms(),
           href: "/legal/terms-of-service",
           event: "footer-terms",
+        },
+        {
+          label: m.common_transparency(),
+          href: "/legal/transparency",
+          event: "footer-transparency",
+          socialOnly: true,
         },
       ],
     },
@@ -118,7 +161,7 @@
             {column.title}
           </p>
           <ul class="mt-4 flex flex-col gap-2.5">
-            {#each column.links as link (link.label)}
+            {#each column.links.filter((l) => !l.socialOnly || appConfig.socialEnabled) as link (link.label)}
               <li>
                 <a
                   href={link.href}
@@ -138,22 +181,11 @@
     <div
       class="border-border text-dim mt-6 flex flex-wrap items-center justify-between gap-4 border-t py-3 text-xs">
       <p>{m.landing_footer_signature()}</p>
-      <div
-        class="border-border flex items-center gap-1 rounded-lg border p-0.5"
-        role="group"
-        aria-label={m.common_language()}>
-        {#each Locale as locale (locale)}
-          <button
-            type="button"
-            onclick={() => setLocale(locale)}
-            aria-pressed={getLocale() === locale}
-            class="rounded-md px-2 py-1 font-mono uppercase transition-colors"
-            class:bg-surface-2={getLocale() === locale}
-            class:text-fg={getLocale() === locale}>
-            {locale}
-          </button>
-        {/each}
-      </div>
+      <Combobox
+        label={m.common_language()}
+        options={languageOptions()}
+        values={[getLocale()]}
+        onChange={([next]) => chooseLocale(next as Locale)} />
     </div>
   </div>
 </footer>

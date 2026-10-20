@@ -7,6 +7,7 @@ import type {
   WeekdayCountDto,
   YearMinutesDto,
 } from "@loomkeep/shared";
+import { utcDateKey } from "../common/date.util";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -22,10 +23,6 @@ export function windowStart(period: StatsWindow, now: Date): Date | null {
     case "ALL":
       return null;
   }
-}
-
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }
 
 /** "YYYY-MM" (UTC) — the key both monthly bucketings below group on. */
@@ -53,11 +50,11 @@ export function computeHeatmap(
   const start = new Date(now.getTime() - (days - 1) * DAY_MS);
   // Compare calendar dates, not exact timestamps — a watch later in the same
   // day as `now` must still count, regardless of `now`'s own time-of-day.
-  const startDate = isoDate(start);
-  const endDate = isoDate(now);
+  const startDate = utcDateKey(start);
+  const endDate = utcDateKey(now);
 
   for (const d of watchedAt) {
-    const key = isoDate(d);
+    const key = utcDateKey(d);
     if (key < startDate || key > endDate) continue;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
@@ -65,7 +62,7 @@ export function computeHeatmap(
   const result: HeatmapDayDto[] = [];
 
   for (let i = 0; i < days; i++) {
-    const date = isoDate(new Date(start.getTime() + i * DAY_MS));
+    const date = utcDateKey(new Date(start.getTime() + i * DAY_MS));
     result.push({ date, count: counts.get(date) ?? 0 });
   }
 
@@ -161,13 +158,14 @@ export function computeStreak(
   watchedAt: Date[],
   now: Date = new Date(),
 ): number {
-  const days = new Set(watchedAt.map(isoDate));
+  const days = new Set(watchedAt.map(utcDateKey));
   let cursor = new Date(now);
-  if (!days.has(isoDate(cursor))) cursor = new Date(cursor.getTime() - DAY_MS);
+  if (!days.has(utcDateKey(cursor)))
+    cursor = new Date(cursor.getTime() - DAY_MS);
 
   let streak = 0;
 
-  while (days.has(isoDate(cursor))) {
+  while (days.has(utcDateKey(cursor))) {
     streak++;
     cursor = new Date(cursor.getTime() - DAY_MS);
   }
@@ -186,6 +184,6 @@ export function isStreakSecuredToday(
   watchedAt: Date[],
   now: Date = new Date(),
 ): boolean {
-  const today = isoDate(now);
-  return watchedAt.some((d) => isoDate(d) === today);
+  const today = utcDateKey(now);
+  return watchedAt.some((d) => utcDateKey(d) === today);
 }

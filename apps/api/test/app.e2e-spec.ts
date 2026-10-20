@@ -1,137 +1,29 @@
-import {
-  CatalogSource,
-  ErrorCode,
-  MediaSource,
-  MediaType,
-} from "@loomkeep/shared";
-import { INestApplication, ValidationPipe } from "@nestjs/common";
-import {
-  FastifyAdapter,
-  NestFastifyApplication,
-} from "@nestjs/platform-fastify";
-import { Test, TestingModule } from "@nestjs/testing";
+import { ErrorCode } from "@loomkeep/shared";
+import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { vi } from "vitest";
-import { AppModule } from "./../src/app.module";
-import { AnilistProvider } from "./../src/catalog/providers/anilist.provider";
-import type { ProviderMediaDetails } from "./../src/catalog/providers/provider.types";
-import { TmdbProvider } from "./../src/catalog/providers/tmdb.provider";
-import { PrismaService } from "./../src/prisma/prisma.service";
-
-const ANIME_SUMMARY = {
-  source: CatalogSource.ANILIST,
-  sourceId: "4242",
-  type: MediaType.ANIME,
-  title: "Test Anime",
-  year: 2024,
-  posterUrl: "https://example.com/poster.jpg",
-  isAdult: false,
-};
-
-const FUTURE_AIR_DATE = new Date(
-  Date.now() + 30 * 24 * 60 * 60 * 1000,
-).toISOString();
-
-const ANIME_DETAILS: ProviderMediaDetails = {
-  summary: ANIME_SUMMARY,
-  overview: "An anime used by the e2e suite.",
-  backdropUrl: null,
-  genres: ["Fantasy"],
-  status: "FINISHED",
-  releaseDate: "2024-01-05",
-  runtimeMin: null,
-  externalIds: [{ source: MediaSource.ANILIST, externalId: "4242" }],
-  seasons: [
-    {
-      number: 1,
-      title: null,
-      episodes: [
-        { number: 1, title: "Episode 1", airDate: null },
-        { number: 2, title: "Episode 2", airDate: null },
-        { number: 3, title: "Episode 3", airDate: FUTURE_AIR_DATE },
-      ],
-    },
-  ],
-};
-
-const EMPTY_EXTRAS = {
-  watchProviders: { flatrate: [], rent: [], buy: [], link: null },
-  cast: [],
-  similar: [],
-  ratings: [],
-};
-const anilistStub = {
-  source: CatalogSource.ANILIST,
-  search: vi.fn().mockResolvedValue([ANIME_SUMMARY]),
-  getDetails: vi.fn().mockImplementation((sourceId: string) =>
-    Promise.resolve({
-      ...ANIME_DETAILS,
-      summary: { ...ANIME_SUMMARY, sourceId },
-      externalIds: [{ source: MediaSource.ANILIST, externalId: sourceId }],
-    }),
-  ),
-  getExtras: vi.fn().mockResolvedValue(EMPTY_EXTRAS),
-};
-const tmdbStub = {
-  source: CatalogSource.TMDB,
-  search: vi.fn().mockResolvedValue([]),
-  getDetails: vi.fn(),
-  getExtras: vi.fn().mockResolvedValue(EMPTY_EXTRAS),
-};
-
-function authCookies(response: {
-  headers: { "set-cookie"?: string | string[] };
-}): string {
-  const cookies = response.headers["set-cookie"];
-  if (!Array.isArray(cookies))
-    throw new Error("Expected authentication cookies");
-  return cookies.map((cookie) => cookie.split(";", 1)[0]).join("; ");
-}
+import {
+  ANIME_SUMMARY,
+  authCookies,
+  createE2eApp,
+  e2eUser,
+  progressDrift,
+  type E2eApp,
+} from "./e2e-app";
 
 describe("Loomkeep API (e2e)", () => {
   let app: INestApplication<App>;
   let http: App;
 
-  const user = {
-    email: "e2e@loomkeep.test",
-    password: "E2e-password-1!",
-    displayName: "E2E",
-    acceptedTerms: true,
-    certifiedAge: true,
-  };
+  const user = e2eUser("e2e");
+  let prisma: E2eApp["prisma"];
   let sessionCookies: string;
   let entryId: string;
   let firstEpisodeId: string;
   let firstSeasonId: string;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(TmdbProvider)
-      .useValue(tmdbStub)
-      .overrideProvider(AnilistProvider)
-      .useValue(anilistStub)
-      .compile();
-
-    app = moduleFixture.createNestApplication<NestFastifyApplication>(
-      new FastifyAdapter(),
-    );
-    app.setGlobalPrefix("api");
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
-    await app.init();
-    // Fastify only starts routing after this — supertest requests made
-    // before it resolves would 404, unlike Express's synchronous listen().
-    await app.getHttpAdapter().getInstance().ready();
-    http = app.getHttpServer();
-
-    // Start from a clean e2e schema (cascades cover the child tables).
-    const prisma = app.get(PrismaService);
-    await prisma.user.deleteMany();
-    await prisma.mediaItem.deleteMany();
+    ({ app, http, prisma } = await createE2eApp());
   });
 
   afterAll(async () => {
@@ -213,6 +105,22 @@ describe("Loomkeep API (e2e)", () => {
       enabledDomains: [],
       acceptedTermsVersion: expect.any(String),
     });
+  });
+
+  it("shows the account its own security history, with where it came from", async () => {
+    const response = await request(http)
+      .get("/api/auth/security-events")
+      .set("Cookie", sessionCookies)
+      .expect(200);
+
+    // Registration posts a JSON body: the IP must survive body parsing.
+    expect(response.body.items).toEqual([
+      expect.objectContaining({
+        type: "USER_REGISTERED",
+        ip: expect.any(String),
+      }),
+    ]);
+    expect(response.body.items[0]).not.toHaveProperty("identifier");
   });
 
   it("records re-acceptance of the CGU", async () => {
@@ -405,9 +313,13 @@ describe("Loomkeep API (e2e)", () => {
     // Only episode 3 has a future air date.
     expect(response.body).toHaveLength(1);
     expect(response.body[0]).toMatchObject({
+      entryId,
+      episodeAlertsMuted: false,
       seasonNumber: 1,
       episodeNumber: 3,
       episodeTitle: "Episode 3",
+      // Episodes 1 and 2 were watched through the season above.
+      episodesBehind: 0,
     });
     expect(response.body[0].mediaItem.title).toBe("Test Anime");
   });
@@ -530,23 +442,51 @@ describe("Loomkeep API (e2e)", () => {
     expect(firstEp.watches[0].watchedAt).toBeDefined();
   });
 
-  it("notifications: scan and feed respond", async () => {
-    const scan = await request(http)
+  // Ranking and filtering the library read progress materialized on each
+  // row by database triggers: after every watch, rewatch, season and
+  // watch-through above (and their undo), it still matches the watches.
+  it("keeps the stored library progress equal to the watches", async () => {
+    const drift = await progressDrift(prisma);
+
+    expect(drift.watchedEntries).toBeGreaterThan(0);
+    expect(drift).toMatchObject({ entries: 0, media: 0 });
+  });
+
+  it("notifications: scan, history and counts respond", async () => {
+    await request(http)
       .post("/api/notifications/scan")
       .set("Cookie", sessionCookies)
-      .expect(201);
-    expect(Array.isArray(scan.body.notifications)).toBe(true);
-    expect(typeof scan.body.unread).toBe("number");
-
-    await request(http)
-      .get("/api/notifications")
-      .set("Cookie", sessionCookies)
-      .expect(200);
+      .expect(204);
 
     await request(http)
       .post("/api/notifications/read")
       .set("Cookie", sessionCookies)
       .expect(204);
+
+    const history = await request(http)
+      .get("/api/notifications/history?unread=true")
+      .set("Cookie", sessionCookies)
+      .expect(200);
+    expect(history.body).toEqual({ items: [], hasMore: false });
+
+    await request(http)
+      .post("/api/notifications/seen")
+      .set("Cookie", sessionCookies)
+      .expect(204);
+    const counts = await request(http)
+      .get("/api/notifications/counts")
+      .set("Cookie", sessionCookies)
+      .expect(200);
+    expect(counts.body).toEqual({ unread: 0, unseen: 0 });
+
+    await request(http)
+      .patch("/api/notifications/missing/unread")
+      .set("Cookie", sessionCookies)
+      .expect(404);
+    await request(http)
+      .delete("/api/notifications/missing")
+      .set("Cookie", sessionCookies)
+      .expect(404);
   });
 
   it("media extras: returns where-to-watch, cast and similar", async () => {
@@ -590,11 +530,20 @@ describe("Loomkeep API (e2e)", () => {
     const oldCookies = sessionCookies;
     sessionCookies = authCookies(response);
 
-    // The consumed token must be rejected.
-    await request(http)
+    // The consumed token issues nothing. Replayed this soon, it reads as
+    // another tab of the same browser (superseded, session kept); a replay
+    // after REFRESH_REUSE_GRACE_MS revokes the session (auth.service.spec).
+    const replay = await request(http)
       .post("/api/auth/refresh")
       .set("Cookie", oldCookies)
-      .expect(401);
+      .expect(409);
+    expect(replay.body.code).toBe("auth.refresh_superseded");
+    expect(replay.headers["set-cookie"]).toBeUndefined();
+
+    await request(http)
+      .get("/api/auth/sessions")
+      .set("Cookie", sessionCookies)
+      .expect(200);
   });
 
   it("logs out: the refresh token becomes unusable", async () => {
@@ -660,6 +609,27 @@ describe("Loomkeep API (e2e)", () => {
       .expect(200);
     expect(list.body).toHaveLength(2);
 
+    // Another machine sending DeviceA's exact User-Agent is still another
+    // browser: signing in there leaves DeviceA's session alone.
+    const login3 = await request(http)
+      .post("/api/auth/login")
+      .send({ identifier: u.email, password: u.password })
+      .set("user-agent", "DeviceA")
+      .expect(200);
+    // Signing in again on that browser replaces its own session, and only it.
+    await request(http)
+      .post("/api/auth/login")
+      .send({ identifier: u.email, password: u.password })
+      .set("user-agent", "DeviceA")
+      .set("Cookie", authCookies(login3))
+      .expect(200);
+    list = await request(http)
+      .get("/api/auth/sessions")
+      .set("Cookie", cookiesB)
+      .expect(200);
+    expect(list.body).toHaveLength(3);
+    expect(list.body.map((s: { id: string }) => s.id)).toContain(original.id);
+
     // Revoke every other device: only the current cookie session survives.
     await request(http)
       .delete("/api/auth/sessions")
@@ -686,6 +656,39 @@ describe("Loomkeep API (e2e)", () => {
       .expect(401);
   });
 
+  // Two tabs share the cookies, so they refresh with the same token at the
+  // same instant. The loser must not be taken for a thief: the session lives.
+  it("survives two tabs refreshing with the same token at once", async () => {
+    const u = {
+      email: "e2e-two-tabs@loomkeep.test",
+      password: "Two-Tabs-1!",
+      displayName: "Two tabs",
+      acceptedTerms: true,
+      certifiedAge: true,
+    };
+    const reg = await request(http)
+      .post("/api/auth/register")
+      .send(u)
+      .expect(201);
+    const cookies = authCookies(reg);
+
+    const [first, second] = await Promise.all([
+      request(http).post("/api/auth/refresh").set("Cookie", cookies),
+      request(http).post("/api/auth/refresh").set("Cookie", cookies),
+    ]);
+    expect([first.status, second.status].sort()).toEqual([204, 409]);
+    const [winner, loser] =
+      first.status === 204 ? [first, second] : [second, first];
+    expect(loser.body.code).toBe("auth.refresh_superseded");
+    // Clearing them would wipe the winner's fresh cookies in every tab.
+    expect(loser.headers["set-cookie"]).toBeUndefined();
+
+    await request(http)
+      .get("/api/auth/sessions")
+      .set("Cookie", authCookies(winner))
+      .expect(200);
+  });
+
   it("deletes the account and wipes access to it", async () => {
     // Throwaway account so the shared suite user stays intact.
     const victim = {
@@ -701,24 +704,41 @@ describe("Loomkeep API (e2e)", () => {
       .expect(201);
     const victimCookies = authCookies(registered);
 
-    // Wrong password is rejected — deletion is guarded like a credential change.
+    // Signing in counted as a confirmation; a few minutes on, it no longer
+    // does for something this final.
+    await prisma.refreshToken.updateMany({
+      where: { user: { email: victim.email } },
+      data: { reauthenticatedAt: new Date(Date.now() - 3 * 60_000) },
+    });
     await request(http)
       .delete("/api/users/me")
       .set("Cookie", victimCookies)
-      .send({ currentPassword: "wrong" })
-      .expect(401);
+      .expect(403)
+      .expect(({ body }) =>
+        expect(body.code).toBe(ErrorCode.AuthReauthRequired),
+      );
+    await request(http)
+      .post("/api/auth/reauth")
+      .set("Cookie", victimCookies)
+      .send({ method: "password", password: "wrong" })
+      .expect(400);
+    await request(http)
+      .post("/api/auth/reauth")
+      .set("Cookie", victimCookies)
+      .send({ method: "password", password: victim.password })
+      .expect(200);
 
     await request(http)
       .delete("/api/users/me")
       .set("Cookie", victimCookies)
-      .send({ currentPassword: victim.password })
       .expect(204);
 
-    // The row is gone: the (still-valid) JWT now resolves to no user…
+    // Every session went with the account: the access token, though not
+    // expired yet, no longer gets in…
     await request(http)
       .get("/api/users/me")
       .set("Cookie", victimCookies)
-      .expect(404);
+      .expect(401);
     // …and the credentials no longer authenticate.
     await request(http)
       .post("/api/auth/login")

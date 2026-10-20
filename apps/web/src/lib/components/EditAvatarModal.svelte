@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { deleteAvatar, uploadAvatar } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { AVATAR_MAX_DIMENSION, AVATAR_MIME_TYPES } from "@loomkeep/shared";
+
+  import { deleteAvatar, uploadAvatar } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import type { UploadAvatarRequestDto } from "@loomkeep/shared";
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
@@ -11,7 +13,6 @@
   // on an already-cropped one — the drag-to-reposition canvas only turns on
   // once a fresh (non-square) source photo is picked. Output resolution
   // matches the server's stored size.
-  const OUTPUT_SIZE = 512;
   const PREVIEW_SIZE = 260;
 
   let {
@@ -117,8 +118,8 @@
 
   function cropToPayload(): UploadAvatarRequestDto {
     const out = document.createElement("canvas");
-    out.width = OUTPUT_SIZE;
-    out.height = OUTPUT_SIZE;
+    out.width = AVATAR_MAX_DIMENSION;
+    out.height = AVATAR_MAX_DIMENSION;
     const ctx = out.getContext("2d");
     if (!ctx) throw new Error("Canvas non supporté");
     ctx.drawImage(
@@ -129,8 +130,8 @@
       cropSide,
       0,
       0,
-      OUTPUT_SIZE,
-      OUTPUT_SIZE,
+      AVATAR_MAX_DIMENSION,
+      AVATAR_MAX_DIMENSION,
     );
     const dataUrl = out.toDataURL("image/webp", 0.85);
     const [header, data] = dataUrl.split(",");
@@ -208,10 +209,12 @@
       bind:this={fileInput}
       type="file"
       name="avatar"
-      accept="image/png,image/jpeg,image/webp"
+      accept={AVATAR_MIME_TYPES.join(",")}
       class="hidden"
       onchange={onFileSelected} />
+  </div>
 
+  {#snippet actions()}
     <div class="flex w-full flex-col gap-2">
       {#if stage === "editing"}
         <button
@@ -246,5 +249,5 @@
         {/if}
       {/if}
     </div>
-  </div>
+  {/snippet}
 </Modal>

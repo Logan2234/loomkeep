@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import Banner from "$lib/components/Banner.svelte";
-  import ImportWizard from "$lib/components/ImportWizard.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import ImportWizard from "#lib/components/ImportWizard.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   const code = page.url.searchParams.get("code");
   const oauthError = page.url.searchParams.get("error");

@@ -1,10 +1,15 @@
-import type { CastDetailDto, MediaExtrasDto } from "@loomkeep/shared";
+import type {
+  CastDetailDto,
+  MediaExtrasDto,
+  SagaMemberDto,
+} from "@loomkeep/shared";
 import {
   CatalogSource,
   MediaSource,
   MediaSummaryDto,
   MediaType,
 } from "@loomkeep/shared";
+import { stripTags } from "../../common/text.util";
 import type { ProviderEpisode, ProviderMediaDetails } from "./provider.types";
 
 export interface AnilistMedia {
@@ -18,6 +23,7 @@ export interface AnilistMedia {
   bannerImage?: string | null;
   genres?: string[];
   status?: string | null;
+  format?: string | null;
   episodes?: number | null;
   /** Average minutes per episode. */
   duration?: number | null;
@@ -27,7 +33,17 @@ export interface AnilistMedia {
     day?: number | null;
   };
   nextAiringEpisode?: { episode: number } | null;
-  streamingEpisodes?: { title?: string | null }[];
+  streamingEpisodes?: {
+    title?: string | null;
+    thumbnail?: string | null;
+    url?: string | null;
+    site?: string | null;
+  }[];
+  /** Broadcast times, `airingAt` in Unix seconds. Can start mid-run. */
+  airingSchedule?: {
+    pageInfo?: { hasNextPage?: boolean | null } | null;
+    nodes?: { episode: number; airingAt: number }[] | null;
+  } | null;
   isAdult?: boolean;
 }
 
@@ -62,12 +78,26 @@ export interface AnilistExtras {
     }[];
   };
   relations?: {
-    edges?: { node: AnilistMedia | null }[];
+    edges?: AnilistRelationEdge[];
   };
   recommendations?: {
     nodes?: { mediaRecommendation?: AnilistMedia | null }[];
   };
 }
+
+interface AnilistRelationEdge {
+  /** SEQUEL, PREQUEL, SIDE_STORY, SPIN_OFF, ALTERNATIVE… */
+  relationType?: string | null;
+  node: AnilistMedia | null;
+}
+
+/** A franchise node, with the works it links to. */
+export interface AnilistFranchiseMedia extends AnilistMedia {
+  relations?: { edges?: AnilistRelationEdge[] };
+}
+
+/** Relations that continue the story itself: the saga's main line. */
+export const MAIN_LINE_RELATIONS = new Set(["SEQUEL", "PREQUEL"]);
 
 export interface AnilistStaff {
   name: { full?: string | null };
@@ -91,28 +121,74 @@ export function toSummary(media: AnilistMedia): MediaSummaryDto {
   };
 }
 
-export function toMediaDetails(media: AnilistMedia): ProviderMediaDetails {
+export function toSagaMember(media: AnilistMedia): SagaMemberDto {
   return {
-    summary: toSummary(media),
-    overview: media.description ? stripHtml(media.description) : null,
+    ...toSummary(media),
+    releaseDate: toIsoDate(media.startDate),
+    format: media.format ?? null,
+    episodes: media.episodes ?? null,
+    upcoming: media.status === "NOT_YET_RELEASED",
+    status: null,
+  };
+}
+
+export function toMediaDetails(
+  media: AnilistFranchiseMedia,
+): ProviderMediaDetails {
+  const summary = toSummary(media);
+  return {
+    summary,
+    overview: media.description
+      ? stripTags(media.description, {
+          brToNewline: true,
+          stripEmptyTags: false,
+        })
+      : null,
     backdropUrl: media.bannerImage ?? null,
     genres: media.genres ?? [],
     status: media.status ?? null,
+    format: media.format ?? null,
     releaseDate: toIsoDate(media.startDate),
     runtimeMin: media.duration ?? null,
     externalIds: [
       { source: MediaSource.ANILIST, externalId: String(media.id) },
     ],
-    seasons: [{ number: 1, title: null, episodes: buildEpisodes(media) }],
+    // Each AniList entry is one cour/season of its own (sequels are separate
+    // entries, linked through the saga), so its single generated season
+    // carries the entry's own name rather than a misleading "Season 1".
+    seasons: [
+      {
+        number: 1,
+        title: summary.title,
+        // The entry's own synopsis and cover already show on the page; a
+        // season-level copy would only repeat them.
+        overview: null,
+        posterUrl: null,
+        airDate: toIsoDate(media.startDate),
+        voteAverage: null,
+        episodes: buildEpisodes(media),
+      },
+    ],
   };
 }
 
 export function toExtras(
   media: AnilistExtras | null,
   sourceId: string,
+  watchRegion: string,
 ): MediaExtrasDto {
   return {
-    watchProviders: { flatrate: [], rent: [], buy: [], link: null },
+    // AniList's streaming links name no country, so they can't say where a
+    // title is available: they stay in `externalLinks` only.
+    watchProviders: {
+      region: watchRegion,
+      flatrate: [],
+      free: [],
+      ads: [],
+      rent: [],
+      buy: [],
+      link: null,
+    },
     cast: (media?.characters?.edges ?? []).map((e) => {
       // Mirrors TMDB's actor→character pairing: the Japanese voice actor is
       // the named/pictured person, the character is the role underneath.
@@ -158,13 +234,17 @@ export function toExtras(
     format: media?.format ?? null,
     season: media?.season ?? null,
     // Only anime-type relations: AniList also links manga/light-novel
-    // sources, which have no page of their own in Loomkeep.
+    // sources, which have no page of their own in Loomkeep. Prequels and
+    // sequels belong to the saga block instead: these are the side works.
     relations: (media?.relations?.edges ?? [])
+      .filter((e) => !MAIN_LINE_RELATIONS.has(e.relationType ?? ""))
       .map((e) => e.node)
       .filter((n): n is AnilistMedia => n?.type === "ANIME")
       .map((n) => toSummary(n)),
     externalLinks: (media?.externalLinks ?? [])
       .filter((l): l is { site: string; url: string } => !!l.url)
+      // AniList sometimes lists the same page twice.
+      .filter((l, i, links) => links.findIndex((o) => o.url === l.url) === i)
       .map((l) => ({ name: l.site, url: l.url })),
     tags: (media?.tags ?? [])
       .filter((t) => !t.isMediaSpoiler)
@@ -197,36 +277,127 @@ export function toCastDetail(staff: AnilistStaff): CastDetailDto {
 }
 
 /**
- * AniList has no full per-episode listing: it exposes an episode count and,
- * for some titles, streaming episode names. Episodes are generated 1..N as a
- * single season, with names when available.
+ * AniList has no full per-episode listing: it exposes an episode count, an
+ * airing schedule (broadcast times, often only part of the run) and, for
+ * some titles, streaming episodes (name, thumbnail, link). Episodes are
+ * generated 1..N as a single season, with whatever of those exists.
  */
-function buildEpisodes(media: AnilistMedia): ProviderEpisode[] {
+function buildEpisodes(media: AnilistFranchiseMedia): ProviderEpisode[] {
   const aired = media.nextAiringEpisode
     ? media.nextAiringEpisode.episode - 1
     : null;
   const count = media.episodes ?? aired ?? media.streamingEpisodes?.length ?? 0;
+  const streaming = sharesStreamingEpisodes(media)
+    ? new Map<number, StreamingEpisode>()
+    : streamingEpisodesByNumber(media.streamingEpisodes ?? [], count);
+  const airingAt = new Map(
+    (media.airingSchedule?.nodes ?? []).map((node) => [
+      node.episode,
+      node.airingAt,
+    ]),
+  );
 
-  return Array.from({ length: count }, (_, index) => ({
-    number: index + 1,
-    title: media.streamingEpisodes?.[index]?.title ?? null,
-    airDate: null,
-  }));
+  return Array.from({ length: count }, (_, index) => {
+    const number = index + 1;
+    const stream = streaming.get(number);
+    const airing = airingAt.get(number);
+    return {
+      number,
+      title: stream?.name ?? null,
+      airDate: airing ? new Date(airing * 1000).toISOString() : null,
+      runtimeMin: media.duration ?? null,
+      overview: null,
+      stillUrl: stream?.thumbnail ?? null,
+      voteAverage: null,
+      voteCount: null,
+      episodeType: null,
+      streamingUrl: stream?.url ?? null,
+      streamingSite: stream?.url ? (stream.site ?? null) : null,
+    };
+  });
 }
 
-// Loops the tag-stripping pass until stable — a single pass can leave a tag
-// exposed on a crafted nested/malformed input (e.g. "<<b>script>"), which is
-// exactly what CodeQL's "incomplete multi-character sanitization" check flags.
-function stripHtml(text: string): string {
-  let result = text.replace(/<br\s*\/?>/gi, "\n");
-  let previous: string;
+interface StreamingEpisode {
+  name: string | null;
+  thumbnail: string | null;
+  url: string | null;
+  site: string | null;
+}
 
-  do {
-    previous = result;
-    result = previous.replace(/<[^>]+>/g, "");
-  } while (result !== previous);
+/**
+ * AniList fills streaming episodes from Crunchyroll, which lists a whole
+ * franchise as one series — so for some shows every season's entry carries
+ * the same episodes, all of them from one season (every Dr. STONE entry lists
+ * New World's). Those can't be told apart from the right ones on their own,
+ * so an entry sharing any streaming episode with a related anime gets no
+ * names at all rather than another season's.
+ */
+function sharesStreamingEpisodes(media: AnilistFranchiseMedia): boolean {
+  const urls = new Set(
+    (media.streamingEpisodes ?? []).flatMap(({ url }) => (url ? [url] : [])),
+  );
+  if (urls.size === 0) return false;
 
-  return result.trim();
+  return (media.relations?.edges ?? []).some(
+    ({ node }) =>
+      node?.type === "ANIME" &&
+      node.id !== media.id &&
+      (node.streamingEpisodes ?? []).some(({ url }) => !!url && urls.has(url)),
+  );
+}
+
+// "Episode 16 - Medusa Mechanism" — the shape AniList's streaming episodes
+// (Crunchyroll's listing) use. The name part is optional.
+const STREAMING_TITLE = /^\s*Episode\s+(\d+)\s*(?:[-–—:]\s*(.*))?$/i;
+
+/**
+ * Keys streaming episodes (name, thumbnail, link) by the number written in
+ * their title, never by their position: AniList returns them in no
+ * guaranteed order (often newest first). One with no readable number is
+ * dropped — nothing beats the wrong episode's. A later cour listed under its
+ * own AniList entry often keeps the show's absolute numbering (episodes
+ * 13–24 for a 12-episode entry), so when the numbers overshoot the count
+ * they're shifted to start at 1.
+ */
+function streamingEpisodesByNumber(
+  streamingEpisodes: NonNullable<AnilistMedia["streamingEpisodes"]>,
+  count: number,
+): Map<number, StreamingEpisode> {
+  const parsed: ({ number: number } & StreamingEpisode)[] = [];
+
+  for (const { title, thumbnail, url, site } of streamingEpisodes) {
+    const match = title ? STREAMING_TITLE.exec(title) : null;
+    if (!match) continue;
+    parsed.push({
+      number: Number(match[1]),
+      name: match[2]?.trim() || null,
+      thumbnail: webUrl(thumbnail),
+      url: webUrl(url),
+      site: site || null,
+    });
+  }
+
+  if (parsed.length === 0) return new Map();
+
+  const numbers = parsed.map((episode) => episode.number);
+  const offset = Math.max(...numbers) > count ? Math.min(...numbers) - 1 : 0;
+
+  const byNumber = new Map<number, StreamingEpisode>();
+
+  for (const { number, ...episode } of parsed) {
+    const kept = byNumber.get(number - offset);
+
+    if (!kept || (!kept.name && episode.name)) {
+      byNumber.set(number - offset, episode);
+    }
+  }
+
+  return byNumber;
+}
+
+/** An http(s) link, the only kind the page will render as a link or image. */
+function webUrl(url: string | null | undefined): string | null {
+  return url && /^https?:\/\//i.test(url) ? url : null;
 }
 
 /** Staff credited with the exact role "Director" (case-insensitive). */

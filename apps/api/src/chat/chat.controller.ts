@@ -1,0 +1,472 @@
+import {
+  type ChatUnreadDto,
+  type ConversationDto,
+  type ConversationWorkDto,
+  ErrorCode,
+  Locale,
+  type MessageDto,
+  type MessageSagaDto,
+  type MessageWhereDto,
+  type PagedResult,
+  type PickResultDto,
+  type RecommendWorkResultDto,
+  type UserSummaryDto,
+  type WorkThreadDto,
+} from "@loomkeep/shared";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
+import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
+import {
+  CurrentUser,
+  type JwtPayload,
+} from "../auth/decorators/current-user.decorator";
+import { parseTarget } from "../comments/comment.controller";
+import { AppException } from "../common/app.exception";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
+import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
+import { parsePageQuery } from "../common/pagination.util";
+import {
+  CHAT_MESSAGE_THROTTLE,
+  REPORT_THROTTLE,
+} from "../common/throttle.constants";
+import { CreateReportBody } from "../reports/dto/create-report.dto";
+import { ReportService } from "../reports/report.service";
+import { ChatCommandsService } from "./chat-commands.service";
+import { ChatFeatureGuard } from "./chat-feature.guard";
+import { ChatWorkService } from "./chat-work.service";
+import {
+  CONVERSATION_PAGE_SIZE,
+  ChatService,
+  MESSAGE_PAGE_SIZE,
+} from "./chat.service";
+import {
+  EditMessageBody,
+  ForwardMessageBody,
+  MarkWorkUnreadBody,
+  MuteConversationBody,
+  OpenConversationBody,
+  PickBody,
+  ReactMessageBody,
+  RecommendWorkBody,
+  SendMessageBody,
+  VotePollBody,
+} from "./dto/chat-request.dto";
+import {
+  ChatUnreadResponseDto,
+  ConversationResponseDto,
+  ConversationWorkResponseDto,
+  MessageResponseDto,
+  MessageSagaResponseDto,
+  MessageWhereResponseDto,
+  PickResultResponseDto,
+  RecommendWorkResultResponseDto,
+  WorkThreadResponseDto,
+} from "./dto/chat-response.dto";
+import { WorkThreadService } from "./work-thread.service";
+
+@UseGuards(ChatFeatureGuard)
+@Controller("chat")
+export class ChatController {
+  constructor(
+    private readonly chat: ChatService,
+    private readonly works: ChatWorkService,
+    private readonly commands: ChatCommandsService,
+    private readonly threads: WorkThreadService,
+    private readonly reports: ReportService,
+  ) {}
+
+  @Get("conversations")
+  @ApiOkResponse({ type: PagedResponseDto(ConversationResponseDto) })
+  list(
+    @CurrentUser() user: JwtPayload,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<ConversationDto>> {
+    return this.chat.list(
+      user.sub,
+      parsePageQuery(page, limit, CONVERSATION_PAGE_SIZE),
+    );
+  }
+
+  /** Finds, or starts, the conversation with a friend. */
+  @Post("conversations")
+  @ApiCreatedResponse({ type: ConversationResponseDto })
+  open(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: OpenConversationBody,
+  ): Promise<ConversationDto> {
+    return this.chat.open(user.sub, body.username);
+  }
+
+  @Get("conversations/:id")
+  @ApiOkResponse({ type: ConversationResponseDto })
+  get(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<ConversationDto> {
+    return this.chat.get(user.sub, id);
+  }
+
+  /** Newest first. */
+  @Get("conversations/:id/messages")
+  @ApiOkResponse({ type: PagedResponseDto(MessageResponseDto) })
+  messages(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<MessageDto>> {
+    return this.chat.messages(
+      user.sub,
+      id,
+      parsePageQuery(page, limit, MESSAGE_PAGE_SIZE),
+    );
+  }
+
+  @Throttle(CHAT_MESSAGE_THROTTLE)
+  @Post("conversations/:id/messages")
+  @ApiCreatedResponse({ type: MessageResponseDto })
+  async send(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: SendMessageBody,
+  ): Promise<MessageDto> {
+    const picked = body.pick
+      ? await this.commands.pickedWork(
+          user.sub,
+          id,
+          body.pick.domain,
+          body.pick.shared,
+          body.pick.work,
+        )
+      : null;
+    const work = picked
+      ? picked.card
+      : body.where
+        ? await this.commands.whereWork(body.where)
+        : body.work
+          ? await this.works.required(body.work)
+          : null;
+    if (body.saga)
+      await this.commands.ensureSaga(body.saga.domain, body.saga.key);
+    const poll = body.poll
+      ? {
+          question: body.poll.question.trim(),
+          options: await Promise.all(
+            body.poll.options.map(async (option) => ({
+              text: option.text?.trim() ?? "",
+              work: option.work ? await this.works.required(option.work) : null,
+            })),
+          ),
+        }
+      : undefined;
+    const text = body.text?.trim() ? body.text : null;
+    const message = await this.chat.send(user.sub, id, text, body.spoiler, {
+      work,
+      reviewId: body.review,
+      listId: body.list,
+      poll,
+      saga: body.saga,
+      pick:
+        body.pick && picked
+          ? {
+              domain: body.pick.domain,
+              shared: body.pick.shared,
+              count: picked.count,
+            }
+          : undefined,
+      where: !!body.where,
+    });
+
+    if (text) this.works.refreshLinkedWorks(message.id, text, body.skipLinks);
+
+    return message;
+  }
+
+  /** /pick's draw, before it's sent: a work of the pile, and both counts. */
+  @Post("conversations/:id/pick")
+  @ApiCreatedResponse({ type: PickResultResponseDto })
+  pick(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: PickBody,
+  ): Promise<PickResultDto> {
+    return this.commands.draw(user.sub, id, body.domain, body.shared);
+  }
+
+  /** A /poll vote; the option already chosen takes the vote back. */
+  @Put("messages/:id/vote")
+  @ApiOkResponse({ type: MessageResponseDto })
+  vote(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: VotePollBody,
+  ): Promise<MessageDto> {
+    return this.chat.vote(user.sub, id, body.option);
+  }
+
+  /** A /saga card: the saga, with each member's progress the viewer may see. */
+  @Get("messages/:id/saga")
+  @ApiOkResponse({ type: MessageSagaResponseDto })
+  saga(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Query("lang") lang?: string,
+  ): Promise<MessageSagaDto> {
+    return this.commands.saga(
+      user.sub,
+      id,
+      Locale.includes(lang as Locale) ? lang : undefined,
+    );
+  }
+
+  /** A /where card: the work's offers in the viewer's region, with the members who have each. */
+  @Get("messages/:id/where")
+  @ApiOkResponse({ type: MessageWhereResponseDto })
+  where(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Headers("accept-language") acceptLanguage?: string,
+  ): Promise<MessageWhereDto> {
+    return this.commands.where(user.sub, id, acceptLanguage);
+  }
+
+  /** "Recommander": the work goes to each friend, in their own conversation. */
+  @Throttle(CHAT_MESSAGE_THROTTLE)
+  @Post("recommendations")
+  @ApiCreatedResponse({ type: RecommendWorkResultResponseDto })
+  async recommend(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: RecommendWorkBody,
+  ): Promise<RecommendWorkResultDto> {
+    const work = await this.works.required(body.work);
+    const text = body.text?.trim() ? body.text : null;
+    return {
+      sent: await this.chat.recommend(user.sub, body.usernames, text, work),
+    };
+  }
+
+  @Post("conversations/:id/read")
+  read(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.chat.markRead(user.sub, id);
+  }
+
+  @Put("conversations/:id/mute")
+  mute(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: MuteConversationBody,
+  ): Promise<void> {
+    return this.chat.mute(user.sub, id, body.muted);
+  }
+
+  /** Friends to start a conversation with. */
+  @Get("friends")
+  @ApiOkResponse({ type: UserSummaryResponseDto, isArray: true })
+  friends(
+    @CurrentUser() user: JwtPayload,
+    @Query("q") query?: string,
+  ): Promise<UserSummaryDto[]> {
+    return this.chat.friends(user.sub, query);
+  }
+
+  @Get("unread")
+  @ApiOkResponse({ type: ChatUnreadResponseDto })
+  async unread(@CurrentUser() user: JwtPayload): Promise<ChatUnreadDto> {
+    const [count, works] = await Promise.all([
+      this.chat.unreadTotal(user.sub),
+      this.threads.unreadTotal(user.sub),
+    ]);
+    return { count, works };
+  }
+
+  /** The works' discussions of the "Œuvres" tab. */
+  @Get("works")
+  @ApiOkResponse({ type: WorkThreadResponseDto, isArray: true })
+  workThreads(@CurrentUser() user: JwtPayload): Promise<WorkThreadDto[]> {
+    return this.threads.list(user.sub);
+  }
+
+  /** One work's discussion, followed or not: opening it from its page. */
+  @Get("works/:type/:id")
+  @ApiOkResponse({ type: WorkThreadResponseDto })
+  async workThread(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+  ): Promise<WorkThreadDto> {
+    const thread = await this.threads.get(user.sub, parseTarget(type), id);
+
+    if (!thread) {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
+    }
+
+    return thread;
+  }
+
+  @Post("works/:type/:id/unread")
+  markWorkThreadUnread(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+    @Body() body: MarkWorkUnreadBody,
+  ): Promise<void> {
+    return this.threads.markUnreadFrom(
+      user.sub,
+      parseTarget(type),
+      id,
+      body.commentId,
+    );
+  }
+
+  @Put("works/:type/:id/mute")
+  muteWorkThread(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+    @Body() body: MuteConversationBody,
+  ): Promise<void> {
+    return this.threads.setMuted(user.sub, parseTarget(type), id, body.muted);
+  }
+
+  @Post("works/:type/:id/read")
+  readWorkThread(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.threads.markRead(user.sub, parseTarget(type), id);
+  }
+
+  @Put("messages/:id")
+  @ApiOkResponse({ type: MessageResponseDto })
+  async edit(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: EditMessageBody,
+  ): Promise<MessageDto> {
+    const message = await this.chat.edit(user.sub, id, body.text, body.spoiler);
+    this.works.refreshLinkedWorks(message.id, body.text, body.skipLinks);
+    return message;
+  }
+
+  @Put("messages/:id/pin")
+  pin(@CurrentUser() user: JwtPayload, @Param("id") id: string): Promise<void> {
+    return this.chat.pin(user.sub, id, true);
+  }
+
+  @Delete("messages/:id/pin")
+  unpin(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.chat.pin(user.sub, id, false);
+  }
+
+  @Get("conversations/:id/works")
+  @ApiOkResponse({ type: ConversationWorkResponseDto, isArray: true })
+  sharedWorks(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<ConversationWorkDto[]> {
+    return this.chat.works(user.sub, id);
+  }
+
+  @Get("conversations/:id/search")
+  @ApiOkResponse({ type: MessageResponseDto, isArray: true })
+  search(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Query("q") query = "",
+  ): Promise<MessageDto[]> {
+    return this.chat.search(user.sub, id, query);
+  }
+
+  @Get("conversations/:id/pins")
+  @ApiOkResponse({ type: MessageResponseDto, isArray: true })
+  pins(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<MessageDto[]> {
+    return this.chat.pins(user.sub, id);
+  }
+
+  /** Unread again from this message on. */
+  @Post("messages/:id/unread")
+  markUnread(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.chat.markUnreadFrom(user.sub, id);
+  }
+
+  /** "Transférer": a copy to each friend picked, in their own conversation. */
+  @Throttle(CHAT_MESSAGE_THROTTLE)
+  @Post("messages/:id/forward")
+  @ApiCreatedResponse({ type: RecommendWorkResultResponseDto })
+  async forward(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: ForwardMessageBody,
+  ): Promise<RecommendWorkResultDto> {
+    return { sent: await this.chat.forward(user.sub, id, body.usernames) };
+  }
+
+  @Delete("messages/:id")
+  remove(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.chat.remove(user.sub, id);
+  }
+
+  @Put("messages/:id/reaction")
+  react(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: ReactMessageBody,
+  ): Promise<void> {
+    return this.chat.react(user.sub, id, body.emote);
+  }
+
+  @Delete("messages/:id/reaction")
+  unreact(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.chat.unreact(user.sub, id);
+  }
+
+  @Post("messages/:id/report")
+  @Throttle(REPORT_THROTTLE)
+  async report(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: CreateReportBody,
+  ): Promise<void> {
+    await this.chat.ensureReportable(user.sub, id);
+    await this.reports.create(
+      user.sub,
+      "MESSAGE",
+      id,
+      body.category,
+      body.motif,
+      body.reason,
+    );
+  }
+}

@@ -1,6 +1,8 @@
 import {
+  ENTRY_NOTES_MAX_LENGTH,
   MusicOwnershipStatus,
   MusicStatus,
+  OWNERSHIP_SOURCE_MAX_LENGTH,
   UpdateMusicEntryDto as UpdateMusicEntryContract,
 } from "@loomkeep/shared";
 import {
@@ -28,7 +30,7 @@ export class UpdateMusicEntryDto implements UpdateMusicEntryContract {
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
+  @MaxLength(ENTRY_NOTES_MAX_LENGTH)
   notes?: string | null;
 
   @IsOptional()
@@ -49,6 +51,6 @@ export class UpdateMusicEntryDto implements UpdateMusicEntryContract {
 
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(OWNERSHIP_SOURCE_MAX_LENGTH)
   ownershipSource?: string | null;
 }

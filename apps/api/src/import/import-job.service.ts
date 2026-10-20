@@ -1,26 +1,41 @@
-import type {
-  ImportAnalyzeRequest,
-  ImportAvailabilityDto,
-  ImportCommitRequest,
-  ImportHistoryRunDto,
-  ImportJobDto,
-  ImportLastRunDto,
-  ImportPlan,
-  ImportQuotaDto,
-  ImportReport,
-  ImportSource,
-  PagedResult,
+import {
+  Domain,
+  ErrorCode,
+  IMPORT_SOURCE_NAMES,
+  NotificationType,
+  RealtimeEvent,
+  XpReason,
+  type AdminImportDetails,
+  type AdminImportRunDto,
+  type ImportAnalyzeRequest,
+  type ImportAvailabilityDto,
+  type ImportCommitRequest,
+  type ImportHistoryRunDto,
+  type ImportJobDto,
+  type ImportJobStatus,
+  type ImportLastRunDto,
+  type ImportPlan,
+  type ImportProgressEvent,
+  type ImportQuotaDto,
+  type ImportReport,
+  type ImportSource,
+  type PagedResult,
 } from "@loomkeep/shared";
-import { Domain, ErrorCode, XpReason } from "@loomkeep/shared";
+import { toJsonInput } from "../common/json.util";
+
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
+import { toPagedResult, type ParsedPage } from "../common/pagination.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
-import { ACHIEVEMENT_KEYS_ON_IMPORT_COMPLETED } from "../gamification/achievements/registry";
+
+import { ACHIEVEMENT_KEYS_ON_IMPORT_COMPLETED } from "../gamification/achievements/triggers";
 import { XpService } from "../gamification/xp.service";
+import { notificationCopy } from "../notifications/notification-copy";
+import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   IMPORT_SOURCES,
@@ -39,7 +54,7 @@ interface JobRecord {
   userId: string;
   sourceId: ImportSource;
   kind: "analyze" | "commit";
-  status: "running" | "completed" | "failed";
+  status: ImportJobStatus;
   progress: { done: number; total: number };
   plan: ImportPlan | null;
   report: ImportReport | null;
@@ -49,6 +64,9 @@ interface JobRecord {
   finishedAt: number | null;
   /** The source's parse model, kept between an analysis and its later commit. */
   parsed: unknown;
+  overwrite?: boolean;
+  recorded?: boolean;
+  details?: AdminImportDetails;
 }
 
 /**
@@ -72,6 +90,7 @@ export class ImportJobService {
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
+    private readonly notifications: NotificationService,
   ) {
     this.sources = new Map(sources.map((s) => [s.id, s]));
   }
@@ -157,14 +176,14 @@ export class ImportJobService {
 
   async getHistory(
     userId: string,
-    page: number,
-    limit: number,
+    page: ParsedPage,
   ): Promise<PagedResult<ImportHistoryRunDto>> {
+    const { skip, take, limit } = page;
     const rows = await this.prisma.importRun.findMany({
       where: { userId },
       orderBy: { finishedAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
       select: {
         id: true,
         sourceId: true,
@@ -177,11 +196,11 @@ export class ImportJobService {
         finishedAt: true,
       },
     });
-    const hasMore = rows.length > limit;
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
 
     return {
       hasMore,
-      items: rows.slice(0, limit).map((run) => ({
+      items: pageRows.map((run) => ({
         id: run.id,
         sourceId: run.sourceId as ImportSource,
         domain: run.domain as Domain | null,
@@ -300,6 +319,20 @@ export class ImportJobService {
     const { parsed, plan } = analyzed;
     const job = this.newJob(userId, sourceId, "commit", null);
     job.progress.total = decisions.include.size;
+    job.overwrite = decisions.overwrite;
+    job.details = {
+      items: plan.groups.flatMap((group) =>
+        group.items.map((item) => ({
+          title: item.title,
+          state: decisions.include.has(item.key)
+            ? ("selected" as const)
+            : !item.match && !decisions.overrides.has(item.key)
+              ? ("unresolved" as const)
+              : ("ignored" as const),
+        })),
+      ),
+      report: null,
+    };
     this.jobs.set(job.id, job);
 
     const progress = this.progressFor(job);
@@ -316,13 +349,47 @@ export class ImportJobService {
       // analysis, so its payload has to survive.
       if (job.status === "completed") this.releasePayload(analyzed);
 
-      return this.recordRun(userId, job, decisions.overwrite).catch((err) => {
-        // Audit logging must never take the request path down with it.
-        this.logger.error(`Failed to record import run ${job.id}`, err);
-      });
+      return this.recordRun(userId, job, decisions.overwrite)
+        .catch((err) => {
+          // Audit logging must never take the request path down with it.
+          this.logger.error(`Failed to record import run ${job.id}`, err);
+        })
+        .finally(() => {
+          job.recorded = true;
+        });
     });
 
     return toDto(job);
+  }
+
+  listRunningImports(): AdminImportRunDto[] {
+    return [...this.jobs.values()]
+      .filter((job) =>
+        job.kind === "analyze" ? job.status === "running" : !job.recorded,
+      )
+      .sort((a, b) => b.startedAt - a.startedAt)
+      .map((job) => ({
+        id: job.id,
+        userId: job.userId,
+        identifier: null,
+        sourceId: job.sourceId,
+        status: "RUNNING",
+        phase: job.kind,
+        itemCount: 0,
+        overwrite: job.overwrite ?? false,
+        summary: null,
+        error: null,
+        startedAt: new Date(job.startedAt).toISOString(),
+        finishedAt: null,
+        progress: { ...job.progress },
+      }));
+  }
+
+  runningImportDetails(id: string): AdminImportDetails | null {
+    const job = this.jobs.get(id);
+    return job?.kind === "commit" && !job.recorded
+      ? (job.details ?? null)
+      : null;
   }
 
   getJob(userId: string, jobId: string): ImportJobDto {
@@ -411,6 +478,7 @@ export class ImportJobService {
 
     await this.prisma.importRun.create({
       data: {
+        id: job.id,
         userId,
         sourceId: job.sourceId,
         domain,
@@ -421,10 +489,18 @@ export class ImportJobService {
           ? job.report.tiles.map((t) => `${t.value} ${t.label}`).join(" · ")
           : null,
         error: job.error,
+        details: job.details
+          ? toJsonInput({
+              ...job.details,
+              report: job.report,
+            })
+          : undefined,
         startedAt: new Date(job.startedAt),
         finishedAt: new Date(job.finishedAt ?? Date.now()),
       },
     });
+
+    job.recorded = true;
 
     // One-off milestone per domain, deduped by the XpEntry unique
     // constraint (see XP_RULES.IMPORT_COMPLETED) — a re-import or overwrite
@@ -444,7 +520,7 @@ export class ImportJobService {
       // this also covers ratings the import itself set via ReviewService,
       // since a full checklist recompute follows any onboarding-updated
       // event rather than one keyed to a specific step.
-      this.events.emitToUser(userId, "onboarding-updated");
+      this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
     }
   }
 
@@ -471,12 +547,12 @@ export class ImportJobService {
   }
 
   private emitProgress(job: JobRecord): void {
-    this.events.emitToUser(job.userId, "import-progress", {
+    this.events.emitToUser(job.userId, RealtimeEvent.IMPORT_PROGRESS, {
       jobId: job.id,
       done: job.progress.done,
       total: job.progress.total,
       status: job.status,
-    });
+    } satisfies ImportProgressEvent);
   }
 
   private async run(job: JobRecord, work: () => Promise<void>): Promise<void> {
@@ -502,6 +578,39 @@ export class ImportJobService {
       // Unthrottled: the final status change is rare (once per job) and the
       // client needs it precisely, unlike the tick stream above.
       this.emitProgress(job);
+    }
+
+    if (job.kind === "commit") await this.notifyIfAway(job);
+  }
+
+  /**
+   * A long import keeps running after its owner closes the app: they get a
+   * bell entry (and a push, if they want one) to come back to. Someone still
+   * in the app sees the wizard finish and needs neither.
+   */
+  private async notifyIfAway(job: JobRecord): Promise<void> {
+    try {
+      if (await this.events.isOnline(job.userId)) return;
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: job.userId },
+        select: { locale: true },
+      });
+      const copy = notificationCopy(user?.locale).importFinished;
+      const source = IMPORT_SOURCE_NAMES[job.sourceId];
+      const failed = job.status === "failed";
+
+      await this.notifications.create({
+        userId: job.userId,
+        type: NotificationType.IMPORT_FINISHED,
+        title: failed ? copy.failedTitle(source) : copy.title(source),
+        body: failed ? copy.failedBody : copy.body,
+        url: "/app/settings/import",
+        dedupeKey: `import:${job.id}`,
+        data: { source: job.sourceId, failed },
+      });
+    } catch (err) {
+      this.logger.error(`Import notification failed for job ${job.id}`, err);
     }
   }
 

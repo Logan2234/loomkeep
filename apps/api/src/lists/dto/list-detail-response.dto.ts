@@ -8,4 +8,6 @@ export class ListDetailResponseDto
 {
   items!: ListItemResponseDto[];
   viewerRole!: ListViewerRole;
+  collaborative!: boolean;
+  notificationsMuted!: boolean;
 }

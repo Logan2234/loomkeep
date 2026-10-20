@@ -1,4 +1,5 @@
 import {
+  VisibilityFacet,
   type ActivityActorDto,
   type ActivityDomain,
   type ActivityEventDto,
@@ -8,13 +9,24 @@ import {
   type ListVisibility,
   type PagedResult,
   type ProfileAccess,
-  VisibilityFacet,
+  type ReviewTargetType,
+  type ReviewVisibility,
 } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { canonicalExternalId } from "../common/external-id.util";
+import {
+  CANONICAL_EXTERNAL_ID_SELECT,
+  canonicalExternalId,
+} from "../common/external-id.util";
+import { jsonObject, toJsonInput } from "../common/json.util";
+import {
+  parsePageQuery,
+  toPagedResult,
+  type ParsedPage,
+} from "../common/pagination.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { avatarUrl } from "../users/avatar.util";
+import { DomainGateService } from "../users/domain-gate.service";
 import { VisibilityService } from "./visibility.service";
 import {
   resolveFacet,
@@ -38,6 +50,8 @@ export interface EmitActivityInput {
   /** Whether it surfaces on followers' home feed (matrix milestone). */
   homeFeed?: boolean;
   data?: Record<string, unknown>;
+  sourceType?: string;
+  sourceId?: string;
 }
 
 type EventRow = {
@@ -52,11 +66,18 @@ type EventRow = {
   imageUrl: string | null;
   href: string | null;
   data: Prisma.JsonValue;
+  sourceType?: string | null;
+  sourceId?: string | null;
   createdAt: Date;
 };
 
 export const FEED_PAGE_SIZE = 30;
-const PREVIEW_SIZE = 6;
+
+/**
+ * Feed domains no user turns on or off, so the viewer's enabled domains can't
+ * filter them out.
+ */
+const UNGATED_FEED_DOMAINS: ActivityDomain[] = ["LISTS"];
 
 @Injectable()
 export class ActivityService {
@@ -65,6 +86,7 @@ export class ActivityService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly visibility: VisibilityService,
+    private readonly domainGate: DomainGateService,
   ) {}
 
   /**
@@ -89,7 +111,9 @@ export class ActivityService {
           title: snap.title,
           imageUrl: snap.imageUrl,
           href: snap.href,
-          data: (input.data ?? {}) as Prisma.InputJsonValue,
+          data: toJsonInput(input.data ?? {}),
+          sourceType: input.sourceType,
+          sourceId: input.sourceId,
         },
       });
     } catch (err) {
@@ -100,52 +124,102 @@ export class ActivityService {
     }
   }
 
+  async updateLinked(
+    sourceType: string,
+    sourceId: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      await this.prisma.activityEvent.updateMany({
+        where: { sourceType, sourceId },
+        data: { data: toJsonInput(data) },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to update activity projection ${sourceType}/${sourceId}`,
+        err,
+      );
+    }
+  }
+
+  async deleteLinked(sourceType: string, sourceId: string): Promise<void> {
+    try {
+      await this.prisma.activityEvent.deleteMany({
+        where: { sourceType, sourceId },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to delete activity projection ${sourceType}/${sourceId}`,
+        err,
+      );
+    }
+  }
+
   /**
    * The home feed: recent `homeFeed` milestones from the users the viewer
    * follows, gated by each actor's Activité audience, aggregated and paginated.
+   *
+   * Only ever covers the domains the viewer keeps enabled — a domain they
+   * turned off, or one under maintenance or premium-locked for them, stays out
+   * of the feed as it stays out of the rest of the app. `domain` narrows it to
+   * one of those.
    */
   async homeFeed(
     viewerId: string,
-    page = 1,
-    limit = FEED_PAGE_SIZE,
+    page: ParsedPage = parsePageQuery(undefined, undefined, FEED_PAGE_SIZE),
+    domain?: Domain,
   ): Promise<PagedResult<ActivityEventDto>> {
+    const { skip, take, limit } = page;
+    const enabled = await this.domainGate.getEnabledDomains(viewerId);
+
+    if (domain && !enabled.includes(domain)) {
+      return { items: [], hasMore: false };
+    }
+
     const followeeIds = await this.followeeIds(viewerId);
     if (followeeIds.length === 0) return { items: [], hasMore: false };
 
+    const domains: ActivityDomain[] = domain
+      ? [domain]
+      : [...enabled, ...UNGATED_FEED_DOMAINS];
     const rows = await this.prisma.activityEvent.findMany({
       where: {
         userId: { in: followeeIds },
         homeFeed: true,
+        domain: { in: domains },
       },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
     });
 
     return this.buildFeed(viewerId, rows, limit);
-  }
-
-  async homePreview(viewerId: string): Promise<ActivityEventDto[]> {
-    const feed = await this.homeFeed(viewerId, 1, PREVIEW_SIZE);
-    return feed.items;
   }
 
   /**
    * A user's profile timeline: everything they did that the viewer may see,
    * filtered per-domain by the actor's Activité audience. The caller has already
    * checked the profile is reachable at all.
+   *
+   * Like the home feed, only covers the domains the viewer keeps enabled —
+   * your own profile included: a domain you turned off leaves your timeline
+   * with the rest of the app.
    */
   async profileTimeline(
     viewerId: string,
     target: { id: string; profileAccess: string },
-    page = 1,
-    limit = FEED_PAGE_SIZE,
+    page: ParsedPage = parsePageQuery(undefined, undefined, FEED_PAGE_SIZE),
   ): Promise<PagedResult<ActivityEventDto>> {
+    const { skip, take, limit } = page;
+    const enabled = await this.domainGate.getEnabledDomains(viewerId);
     const rows = await this.prisma.activityEvent.findMany({
-      where: { userId: target.id },
+      where: {
+        userId: target.id,
+        domain: { in: [...enabled, ...UNGATED_FEED_DOMAINS] },
+      },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
     });
 
     return this.buildFeed(viewerId, rows, limit);
@@ -162,15 +236,20 @@ export class ActivityService {
   /**
    * Shared feed builder: visibility-gates the raw rows against each actor's
    * Activité audience, aggregates binges, hydrates the actor, and paginates.
+   *
+   * `rows` is one page of raw events plus one extra, fetched with
+   * `skip`/`take`. Pages are cut from raw events, so `hasMore` is read from
+   * them before any are hidden: reading it after the visibility filter ended
+   * the feed as soon as one hidden event landed on a page. A page can
+   * therefore come back shorter than `limit` — aggregation shortens it too.
    */
   private async buildFeed(
     viewerId: string,
     rows: EventRow[],
     limit: number,
   ): Promise<PagedResult<ActivityEventDto>> {
-    const visible = await this.filterVisible(viewerId, rows);
-    const hasMore = visible.length > limit;
-    const page = visible.slice(0, limit);
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
+    const page = await this.filterVisible(viewerId, pageRows);
 
     const actors = await this.actors(page.map((e) => e.userId));
     const aggregated = aggregate(page);
@@ -184,7 +263,7 @@ export class ActivityService {
       title: e.title,
       imageUrl: e.imageUrl,
       href: e.href,
-      data: (e.data ?? {}) as Record<string, unknown>,
+      data: jsonObject(e.data),
       createdAt: e.createdAt.toISOString(),
       actor: actors.get(e.userId) ?? {
         username: "",
@@ -199,16 +278,40 @@ export class ActivityService {
 
   /**
    * Keeps only events the viewer may see. Two gates depending on the event's
-   * target: a `"LIST"` event's visibility is its own explicit field (own-scope
-   * pattern, like Review — never facet-derived, see `resolveOwnVisibility`);
-   * everything else is gated by the actor's per-domain Activité facet as
-   * before. Relation/settings are resolved once per actor and reused across
-   * their events (a feed page spans few actors).
+   * target: a `"LIST"` event follows the list itself (own-scope pattern, like
+   * Review — never facet-derived, see `resolveOwnVisibility`); everything
+   * else is gated by the actor's per-domain Activité facet. A REVIEWED event
+   * also carries the review's rating, so it must pass the review's own
+   * audience too: a FRIENDS review's rating never reaches a stranger through
+   * a public Activité facet, and a deleted review's events go with it.
+   * Relation/settings are resolved once per user and reused across events (a
+   * feed page spans few actors).
+   *
+   * A list event's actor can be an editor rather than the list's owner, so
+   * the list's audience is read against *its owner's* profile and the
+   * viewer's relation to that owner — the same rule `ListService.listForUser`
+   * applies — never the editor's: a FRIENDS list must not reach the editor's
+   * friends, nor a PUBLIC one escape its owner's private profile or a block.
+   * The viewer's own membership opens the list as it does on the list page,
+   * and a block with the editor still hides their events.
    */
   private async filterVisible(
     viewerId: string,
     rows: EventRow[],
   ): Promise<EventRow[]> {
+    const relationCache = new Map<string, Promise<ViewerRelation>>();
+
+    const relationTo = (user: { id: string; profileAccess: ProfileAccess }) => {
+      let cached = relationCache.get(user.id);
+
+      if (!cached) {
+        cached = this.visibility.getRelation(viewerId, user);
+        relationCache.set(user.id, cached);
+      }
+
+      return cached;
+    };
+
     const actorCache = new Map<
       string,
       { access: ProfileAccess; relation: ViewerRelation } | null
@@ -232,10 +335,10 @@ export class ActivityService {
         return null;
       }
 
-      const relation = await this.visibility.getRelation(viewerId, actor);
+      const access = actor.profileAccess as ProfileAccess;
       const entry = {
-        access: actor.profileAccess as ProfileAccess,
-        relation,
+        access,
+        relation: await relationTo({ id: actor.id, profileAccess: access }),
       };
       actorCache.set(actorId, entry);
       return entry;
@@ -246,16 +349,26 @@ export class ActivityService {
         rows.filter((r) => r.targetType === "LIST").map((r) => r.targetId),
       ),
     ];
-    const listVisibility = listIds.length
-      ? new Map(
-          (
+    const lists = new Map(
+      listIds.length
+        ? (
             await this.prisma.list.findMany({
               where: { id: { in: listIds } },
-              select: { id: true, visibility: true },
+              select: {
+                id: true,
+                visibility: true,
+                user: { select: { id: true, profileAccess: true } },
+                members: {
+                  where: { userId: viewerId },
+                  select: { userId: true },
+                },
+              },
             })
-          ).map((l) => [l.id, l.visibility as ListVisibility]),
-        )
-      : new Map<string, ListVisibility>();
+          ).map((l) => [l.id, l])
+        : [],
+    );
+
+    const reviewVisibility = await this.reviewVisibilityByEvent(rows);
 
     const kept: EventRow[] = [];
 
@@ -264,11 +377,22 @@ export class ActivityService {
       if (!actor) continue;
 
       if (row.targetType === "LIST") {
-        const listVis = listVisibility.get(row.targetId);
+        const list = lists.get(row.targetId);
+        if (!list) continue;
+        if (actor.relation.blocking || actor.relation.blockedByTarget) continue;
+
+        const owner = {
+          id: list.user.id,
+          profileAccess: list.user.profileAccess as ProfileAccess,
+        };
 
         if (
-          listVis &&
-          resolveOwnVisibility(listVis, actor.access, actor.relation)
+          list.members.length > 0 ||
+          resolveOwnVisibility(
+            list.visibility as ListVisibility,
+            owner.profileAccess,
+            await relationTo(owner),
+          )
         ) {
           kept.push(row);
         }
@@ -292,10 +416,89 @@ export class ActivityService {
         ),
         actor.relation,
       );
-      if (ok) kept.push(row);
+      if (!ok) continue;
+
+      if (row.type === "REVIEWED") {
+        const audience = reviewVisibility.get(row.id);
+
+        if (
+          !audience ||
+          !resolveOwnVisibility(audience, actor.access, actor.relation)
+        ) {
+          continue;
+        }
+      }
+
+      kept.push(row);
     }
 
     return kept;
+  }
+
+  /**
+   * The current audience of the review behind each REVIEWED event, keyed by
+   * event id — absent when the review is gone. Events link their review
+   * through `sourceId`; older ones predate that link and are matched on the
+   * review's own unique key (author + work), which only work-level reviews
+   * ever recorded.
+   */
+  private async reviewVisibilityByEvent(
+    rows: EventRow[],
+  ): Promise<Map<string, ReviewVisibility>> {
+    const reviewed = rows.filter((r) => r.type === "REVIEWED");
+    const result = new Map<string, ReviewVisibility>();
+    if (reviewed.length === 0) return result;
+
+    const linked = reviewed.filter((r) => r.sourceType === "Review");
+    const legacy = reviewed.filter((r) => r.sourceType !== "Review");
+
+    const [byId, byWork] = await Promise.all([
+      linked.length
+        ? this.prisma.review.findMany({
+            where: { id: { in: linked.map((r) => r.sourceId ?? "") } },
+            select: { id: true, visibility: true },
+          })
+        : [],
+      legacy.length
+        ? this.prisma.review.findMany({
+            where: {
+              OR: legacy.map((r) => ({
+                userId: r.userId,
+                targetType: r.targetType as ReviewTargetType,
+                targetId: r.targetId,
+              })),
+            },
+            select: {
+              userId: true,
+              targetType: true,
+              targetId: true,
+              visibility: true,
+            },
+          })
+        : [],
+    ]);
+
+    const visibilityById = new Map(byId.map((r) => [r.id, r.visibility]));
+    const workKey = (r: {
+      userId: string | null;
+      targetType: string;
+      targetId: string;
+    }) => `${r.userId}:${r.targetType}:${r.targetId}`;
+    const visibilityByWork = new Map(
+      byWork.map((r) => [workKey(r), r.visibility]),
+    );
+
+    for (const row of linked) {
+      const visibility = visibilityById.get(row.sourceId ?? "");
+      if (visibility) result.set(row.id, visibility as ReviewVisibility);
+    }
+
+    for (const row of legacy) {
+      const visibility = visibilityByWork.get(workKey(row));
+      if (visibility) result.set(row.id, visibility as ReviewVisibility);
+    }
+
+    return result;
   }
 
   private async actors(ids: string[]): Promise<Map<string, ActivityActorDto>> {
@@ -330,16 +533,16 @@ export class ActivityService {
     imageUrl: string | null;
     href: string | null;
   } | null> {
-    const withIds = {
-      canonicalSource: true,
-      externalIds: { select: { source: true, externalId: true } },
-    } as const;
-
     switch (targetType) {
       case "MEDIA": {
         const i = await this.prisma.mediaItem.findUnique({
           where: { id: targetId },
-          select: { title: true, posterUrl: true, type: true, ...withIds },
+          select: {
+            title: true,
+            posterUrl: true,
+            type: true,
+            ...CANONICAL_EXTERNAL_ID_SELECT,
+          },
         });
         if (!i) return null;
         const src = canonicalExternalId(i, i.externalIds);
@@ -353,7 +556,11 @@ export class ActivityService {
       case "GAME": {
         const i = await this.prisma.gameItem.findUnique({
           where: { id: targetId },
-          select: { title: true, coverUrl: true, ...withIds },
+          select: {
+            title: true,
+            coverUrl: true,
+            ...CANONICAL_EXTERNAL_ID_SELECT,
+          },
         });
         if (!i) return null;
         const src = canonicalExternalId(i, i.externalIds);
@@ -367,7 +574,11 @@ export class ActivityService {
       case "BOOK": {
         const i = await this.prisma.bookItem.findUnique({
           where: { id: targetId },
-          select: { title: true, coverUrl: true, ...withIds },
+          select: {
+            title: true,
+            coverUrl: true,
+            ...CANONICAL_EXTERNAL_ID_SELECT,
+          },
         });
         if (!i) return null;
         const src = canonicalExternalId(i, i.externalIds);
@@ -381,7 +592,11 @@ export class ActivityService {
       case "MUSIC": {
         const i = await this.prisma.musicItem.findUnique({
           where: { id: targetId },
-          select: { title: true, coverUrl: true, ...withIds },
+          select: {
+            title: true,
+            coverUrl: true,
+            ...CANONICAL_EXTERNAL_ID_SELECT,
+          },
         });
         if (!i) return null;
         const src = canonicalExternalId(i, i.externalIds);

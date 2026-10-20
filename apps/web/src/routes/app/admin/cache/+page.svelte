@@ -1,4 +1,15 @@
 <script lang="ts">
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
+  import { typedEntries } from "#lib/object.js";
+
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import AdminFilterBar from "../AdminFilterBar.svelte";
+  import AdminQueryError from "../AdminQueryError.svelte";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { adminFilterHref } from "#lib/url-params.js";
   import {
     deleteAdminCacheItem,
     deleteAdminCacheOrphans,
@@ -6,41 +17,57 @@
     getAdminCacheItem,
     resyncAdminCacheItem,
     resyncAdminCacheStale,
-  } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { formatDateTime } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { IconName } from "$lib/types/icon-name";
+  } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import SidePanel from "#lib/components/SidePanel.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
+  import { formatDateTime } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import type {
     AdminCacheItemDto,
     AdminCacheListResponseDto,
     AdminCacheSort,
     Domain,
   } from "@loomkeep/shared";
+  import { flip } from "svelte/animate";
+  import { fade } from "svelte/transition";
+  import { onDestroy } from "svelte";
+  import { parseCacheFilters } from "./cache-filters";
 
-  const SORT_OPTIONS: { label: string; value: AdminCacheSort }[] = [
+  const reduced = prefersReducedMotion();
+  const SORT_OPTIONS: SelectOption<AdminCacheSort>[] = [
     { label: m.admin_cache_sort_stale(), value: "stale" },
     { label: m.admin_cache_sort_recent(), value: "recent" },
     { label: m.common_title(), value: "title" },
   ];
 
   const domainIcon = (d: Domain): IconName => DOMAINS[d]?.icon ?? "tv";
+  const domainTabs = typedEntries(DOMAINS).map(([value, domain]) => ({
+    value: value,
+    label: domain.comingSoon
+      ? `${domain.label} · ${m.common_coming_soon()}`
+      : domain.label,
+    disabled: domain.comingSoon,
+  }));
 
-  let activeDomain = $state<Domain>("MEDIA");
-  let sort = $state<AdminCacheSort>("stale");
-  let orphansOnly = $state(false);
-  let searchInput = $state("");
-  let search = $state("");
+  const filters = $derived(parseCacheFilters(page.url.searchParams));
+  const activeDomain = $derived(filters.domain);
+  const sort = $derived(filters.sort);
+  const orphansOnly = $derived(filters.orphansOnly);
+  const search = $derived(filters.search);
+  let searchInput = $state(page.url.searchParams.get("q") ?? "");
 
   let showDeleteOrphansConfirm = $state(false);
 
@@ -83,24 +110,59 @@
   const staleTotal = $derived(latestPage?.staleTotal ?? 0);
   const orphanTotal = $derived(latestPage?.orphanTotal ?? 0);
 
+  function resetFilters() {
+    changeFilters({ q: null, sort: null, orphans: null });
+  }
+  const activeFilters = $derived([
+    ...(sort !== "stale"
+      ? [
+          {
+            label:
+              SORT_OPTIONS.find((item) => item.value === sort)?.label ?? sort,
+            remove: () => selectSort("stale"),
+          },
+        ]
+      : []),
+    ...(search
+      ? [{ label: search, remove: () => changeFilters({ q: null }) }]
+      : []),
+    ...(orphansOnly
+      ? [{ label: m.admin_cache_orphans_only(), remove: toggleOrphans }]
+      : []),
+  ]);
   function selectDomain(domain: Domain) {
-    activeDomain = domain;
+    changeFilters({ domain: domain === "MEDIA" ? null : domain });
   }
 
   function selectSort(next: AdminCacheSort) {
-    sort = next;
+    changeFilters({ sort: next === "stale" ? null : next });
   }
 
   function toggleOrphans() {
-    orphansOnly = !orphansOnly;
+    changeFilters({ orphans: orphansOnly ? null : "1" });
   }
 
-  let searchTimeout: ReturnType<typeof setTimeout>;
+  function changeFilters(updates: Record<string, string | null>) {
+    searchDebounce.cancel();
+    void goto(
+      adminFilterHref(page.url, { q: searchInput.trim() || null, ...updates }),
+      { reset: false },
+    );
+  }
+
+  const searchDebounce = debounce(() => {
+    void goto(adminFilterHref(page.url, { q: searchInput.trim() || null }), {
+      replace: true,
+      reset: false,
+    });
+  }, SEARCH_DEBOUNCE_MS);
+  $effect(() => {
+    searchDebounce.cancel();
+    searchInput = page.url.searchParams.get("q") ?? "";
+  });
+  onDestroy(() => searchDebounce.cancel());
   function onSearchInput() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      search = searchInput.trim();
-    }, 300);
+    searchDebounce.call();
   }
 
   const detailQuery = createApiQuery(() => ({
@@ -176,73 +238,54 @@
   }));
 </script>
 
-<svelte:window
-  onkeydown={(e) => {
-    if (e.key === "Escape" && selected && !showDeleteConfirm) closeDrawer();
-  }} />
-
-<div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="database"
     title={m.admin_cache_title()}
     subtitle={m.admin_cache_subtitle()}
     back="/app/admin" />
 
-  <div class="mb-3 flex flex-wrap items-center gap-2">
-    {#each Object.entries(DOMAINS) as [id, d] (id)}
-      {#if d.comingSoon}
-        <!-- Planned domain: nothing in cache yet, tab is non-clickable. -->
-        <button
-          class="chip disabled:pointer-events-none disabled:opacity-40"
-          disabled
-          title={m.common_coming_soon()}>
-          <Icon name={d.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
-          {d.label}
-          <span
-            class="bg-surface-2 text-dim ml-1.5 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">
-            {m.common_coming_soon()}
-          </span>
-        </button>
-      {:else}
-        <button
-          class="chip"
-          class:chip-on={activeDomain === id}
-          onclick={() => selectDomain(id as Domain)}>
-          <Icon name={d.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
-          {d.label}
-        </button>
-      {/if}
-    {/each}
-  </div>
+  <Tabs
+    class="mb-5"
+    label={m.admin_cache_title()}
+    tabs={domainTabs}
+    current={activeDomain}
+    onSelect={selectDomain} />
 
-  <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-    <input
-      type="text"
-      name="query"
-      aria-label={m.admin_cache_search()}
-      enterkeyhint="search"
-      bind:value={searchInput}
-      oninput={onSearchInput}
-      placeholder={m.admin_cache_search()}
-      class="input sm:flex-1" />
-    <div class="flex items-center gap-2">
-      <span
-        class="text-dim hidden text-[0.65rem] font-bold tracking-wider uppercase sm:inline">
-        {m.admin_cache_sort()}
-      </span>
-      <Combobox
-        label={m.admin_cache_sort()}
-        options={SORT_OPTIONS}
-        values={[sort]}
-        onChange={(v) => selectSort((v[0] as AdminCacheSort) ?? "stale")} />
+  <AdminFilterBar
+    count={items.length}
+    loading={cacheQuery.loading}
+    error={!!error}
+    active={activeFilters}
+    onReset={resetFilters}>
+    <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+      <input
+        type="text"
+        name="query"
+        aria-label={m.admin_cache_search()}
+        enterkeyhint="search"
+        bind:value={searchInput}
+        oninput={onSearchInput}
+        placeholder={m.admin_cache_search()}
+        class="input sm:flex-1" />
+      <div class="flex items-center gap-2">
+        <span
+          class="text-dim hidden text-xs font-bold tracking-wider uppercase sm:inline">
+          {m.admin_cache_sort()}
+        </span>
+        <Combobox
+          label={m.admin_cache_sort()}
+          options={SORT_OPTIONS}
+          values={[sort]}
+          onChange={(v) => selectSort((v[0] as AdminCacheSort) ?? "stale")} />
+      </div>
     </div>
-  </div>
 
+    <button class="chip" class:chip-on={orphansOnly} onclick={toggleOrphans}
+      >{m.admin_cache_orphans_only()}</button>
+  </AdminFilterBar>
   <!-- Bulk actions, scoped to the active domain. -->
   <div class="mb-5 flex flex-wrap items-center gap-2">
-    <button class="chip" class:chip-on={orphansOnly} onclick={toggleOrphans}>
-      {m.admin_cache_orphans_only()}
-    </button>
     <div class="ml-auto flex flex-wrap gap-2">
       <button
         onclick={() => bulkResyncMut.mutate()}
@@ -264,10 +307,8 @@
   </div>
 
   {#if error}
-    <Banner variant="error" class="mb-4">{error}</Banner>
-  {/if}
-
-  {#if cacheQuery.loading}
+    <AdminQueryError message={error} queryKey={cacheKey} />
+  {:else if cacheQuery.loading}
     <div class="space-y-2">
       {#each { length: 6 } as _, i (i)}
         <div class="card h-16 animate-pulse"></div>
@@ -275,7 +316,13 @@
     </div>
   {:else if items.length === 0}
     <EmptyState>
-      {orphansOnly ? m.admin_cache_empty_orphans() : m.admin_cache_empty()}
+      <p>
+        {search || orphansOnly ? m.admin_no_matches() : m.admin_cache_empty()}
+      </p>
+      {#if activeFilters.length}<button
+          class="btn btn-ghost mt-3"
+          onclick={resetFilters}>{m.admin_filters_reset()}</button
+        >{/if}
     </EmptyState>
   {:else}
     <p class="text-dim mb-2 text-xs">
@@ -289,6 +336,9 @@
     <ul class="space-y-2">
       {#each items as item (item.id)}
         <li
+          animate:flip={{ duration: reduced ? 0 : 160 }}
+          in:fade|global={{ duration: reduced ? 0 : 140 }}
+          out:fade|global={{ duration: reduced ? 0 : 100 }}
           class="card hover:bg-surface-2 flex items-center gap-3 p-3 transition-colors {selected?.id ===
           item.id
             ? 'ring-accent ring-1'
@@ -311,27 +361,25 @@
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="text-fg truncate font-semibold">{item.title}</span>
-                <span
-                  class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                <span class="pill border-border text-dim">
                   {item.canonicalSource}
                 </span>
                 {#if item.stale}
                   <span
-                    class="border-accent/40 bg-accent/10 text-accent flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                    class="pill border-accent/40 bg-accent/10 text-accent flex items-center gap-1">
                     <span class="bg-accent h-1.5 w-1.5 rounded-full"></span>
                     {m.admin_cache_stale()}
                   </span>
                 {/if}
                 {#if item.referenceCount === 0}
-                  <span
-                    class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                  <span class="pill border-border text-dim">
                     {m.admin_cache_orphan()}
                   </span>
                 {/if}
                 {#if item.cachedLocales.length > 1}
                   <span
                     title={item.cachedLocales.join(", ")}
-                    class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                    class="pill border-border text-dim">
                     {item.cachedLocales.length}
                     {m.admin_cache_languages_suffix()}
                   </span>
@@ -367,29 +415,20 @@
     </ul>
 
     {#if cacheQuery.hasNextPage}
-      <button
-        class="btn btn-ghost mt-4 w-full"
-        disabled={cacheQuery.isFetchingNextPage}
-        onclick={() => cacheQuery.fetchNextPage()}>
-        {cacheQuery.isFetchingNextPage
-          ? m.common_loading()
-          : m.common_load_more()}
-      </button>
+      <LoadMoreButton query={cacheQuery} class="btn btn-ghost mt-4 w-full" />
     {/if}
   {/if}
 </div>
 
 {#if selected}
-  <div class="fixed inset-0 z-50 flex justify-end">
-    <button
-      class="absolute inset-0 cursor-default bg-black/60"
-      aria-label={m.common_close()}
-      onclick={closeDrawer}></button>
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="cache-drawer-title"
-      class="card relative z-10 flex h-full w-full max-w-sm flex-col overflow-y-auto rounded-none border-y-0 border-r-0 p-5">
+  <SidePanel
+    onclose={closeDrawer}
+    labelledby="cache-drawer-title"
+    desktopClass="max-w-sm">
+    <div class="flex h-full flex-col overflow-y-auto p-5">
+      <h2 id="cache-drawer-title" class="sr-only">
+        {detail?.title ?? m.common_detail()}
+      </h2>
       {#if detailQuery.loading}
         <div class="space-y-4">
           <div class="skeleton h-40 rounded-lg"></div>
@@ -406,7 +445,9 @@
             <Icon name="x" class="h-5 w-5" />
           </button>
         </div>
-        <Banner variant="error">{detailQuery.error}</Banner>
+        <AdminQueryError
+          message={detailQuery.error}
+          queryKey={keys.admin.cacheItem(selected.domain, selected.id)} />
       {:else if detail}
         <div class="mb-5 flex items-start justify-between gap-2">
           <div class="flex min-w-0 items-start gap-3">
@@ -422,27 +463,22 @@
               </div>
             {/if}
             <div class="min-w-0">
-              <h2
-                id="cache-drawer-title"
-                class="font-display text-lg leading-tight font-bold">
+              <h2 class="font-display text-lg leading-tight font-bold">
                 {detail.title}
               </h2>
               <p class="text-dim mt-1 text-xs">{detail.canonicalSource}</p>
               <div class="mt-1.5 flex flex-wrap gap-1.5">
                 {#if detail.stale}
-                  <span
-                    class="border-accent/40 bg-accent/10 text-accent rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                  <span class="pill border-accent/40 bg-accent/10 text-accent">
                     {m.admin_cache_stale()}
                   </span>
                 {/if}
-                <span
-                  class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                <span class="pill border-border text-dim">
                   {detail.referenceCount}
                   {m.admin_accounts_suffix()}
                 </span>
                 {#if detail.cachedLocales.length > 1}
-                  <span
-                    class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                  <span class="pill border-border text-dim">
                     {m.admin_cache_languages()}
                     {detail.cachedLocales.join(", ")}
                   </span>
@@ -460,7 +496,7 @@
 
         <section class="mb-5">
           <h3
-            class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+            class="text-dim mb-2 flex items-center gap-2 text-xs font-bold tracking-wider uppercase">
             {m.admin_cache_information()}
             <span class="bg-border h-px flex-1"></span>
           </h3>
@@ -490,7 +526,7 @@
         {#if detail.seasons.length > 0}
           <section class="mb-5">
             <h3
-              class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+              class="text-dim mb-2 flex items-center gap-2 text-xs font-bold tracking-wider uppercase">
               {m.admin_cache_seasons()}{detail.seasons.length})
               <span class="bg-border h-px flex-1"></span>
             </h3>
@@ -513,7 +549,7 @@
 
         <section class="mb-5">
           <h3
-            class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+            class="text-dim mb-2 flex items-center gap-2 text-xs font-bold tracking-wider uppercase">
             {m.admin_cache_external_ids()}
             <span class="bg-border h-px flex-1"></span>
           </h3>
@@ -560,7 +596,7 @@
         </section>
       {/if}
     </div>
-  </div>
+  </SidePanel>
 {/if}
 
 {#if showDeleteConfirm && detail}

@@ -1,22 +1,33 @@
 <script lang="ts">
-  import AddToListButton from "$lib/components/AddToListButton.svelte";
-  import Dropdown from "$lib/components/Dropdown.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { formatDate } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages";
+  import { episodeCode } from "@loomkeep/shared";
+
+  import AddToListButton from "#lib/components/AddToListButton.svelte";
+  import Dropdown from "#lib/components/Dropdown.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import ShareWorkMenuItem from "#lib/components/ShareWorkMenuItem.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { formatDate } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { releaseDigestOff } from "#lib/release-alerts.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { LibraryEntryDto, NextEpisodeDto } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
   import { scale } from "svelte/transition";
 
   // Sticky action bar for the media detail page ("Cinéma minimal"). Kept to a
   // handful of frequent, glanceable controls — Continuer/favori/liste, plus a
-  // "…" for the two rare, consequential actions (abandonner, retirer).
+  // "…" for the rare, set-and-forget actions (alertes, abandonner, retirer).
   // Everything else (note privée, possession) lives in the "Mon suivi" panel
   // further down the page, not here.
   let {
     entry,
     isMovie,
+    upcoming = false,
+    airingFinished = false,
+    onToggleMovieAlerts = () => {},
     saving,
     nextEpisode,
     continuing,
@@ -28,11 +39,17 @@
     onToggleWatched,
     onDrop,
     onResume,
+    onToggleEpisodeAlerts,
     onRemove,
+    onShare,
     socialActions,
   }: {
     entry: LibraryEntryDto | null;
     isMovie: boolean;
+    upcoming?: boolean;
+    /** A finished show airs no more episodes to be alerted of. */
+    airingFinished?: boolean;
+    onToggleMovieAlerts?: () => void;
     saving: boolean;
     nextEpisode: NextEpisodeDto | null;
     continuing: boolean;
@@ -45,14 +62,30 @@
     onToggleWatched: () => void;
     onDrop: () => void;
     onResume: () => void;
+    onToggleEpisodeAlerts: () => void;
     onRemove: () => void;
     socialActions?: Snippet;
+    onShare: () => void;
   } = $props();
 
   const reduced = prefersReducedMotion();
   const isDropped = $derived(entry?.status === "DROPPED");
   const isWatched = $derived(entry?.status === "COMPLETED");
+  // With no release summary on, a reminder or a mute would change nothing.
+  const digestOff = $derived(releaseDigestOff());
 </script>
+
+{#snippet digestOffTooltip(control: Snippet, block = false)}
+  {#if digestOff}
+    <Tooltip
+      text={m.release_alerts_channels_off()}
+      class={block ? "block w-full" : "inline-flex shrink-0"}>
+      {@render control()}
+    </Tooltip>
+  {:else}
+    {@render control()}
+  {/if}
+{/snippet}
 
 <div class="bg-bg border-border sticky top-0 z-20 border-b">
   <div
@@ -73,6 +106,7 @@
           <Icon name="plus" class="h-4 w-4" />
           {m.library_add()}
         </button>
+        <WorkMoreMenu onshare={onShare} />
       </div>
     {:else}
       <div class="flex min-w-0 items-center gap-2.5">
@@ -81,20 +115,46 @@
             type="button"
             class="bg-accent text-accent-fg grid h-11 w-11 shrink-0 place-items-center rounded-full transition-transform active:scale-95 disabled:opacity-50"
             disabled={continuing}
-            title={`${m.common_continue()} S${String(nextEpisode.seasonNumber).padStart(2, "0")}E${String(
-              nextEpisode.episodeNumber,
-            ).padStart(2, "0")}`}
+            title={`${m.common_continue()} ${episodeCode(nextEpisode.seasonNumber, nextEpisode.episodeNumber)}`}
             onclick={onContinue}>
             <Icon name="chevron-right" class="h-5 w-5" />
           </button>
           <div class="text-sm whitespace-nowrap">
             {m.common_continue()} ·
             <b class="timecode">
-              S{String(nextEpisode.seasonNumber).padStart(2, "0")}E{String(
-                nextEpisode.episodeNumber,
-              ).padStart(2, "0")}
+              {episodeCode(nextEpisode.seasonNumber, nextEpisode.episodeNumber)}
             </b>
           </div>
+        {:else if isMovie && upcoming}
+          {#snippet movieBell()}
+            <button
+              type="button"
+              class="grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50 {entry!
+                .movieReleaseAlertsEnabled
+                ? 'bg-accent text-accent-fg'
+                : 'border-border text-dim border'}"
+              disabled={saving || digestOff}
+              aria-pressed={!!entry!.movieReleaseAlertsEnabled}
+              aria-label={entry!.movieReleaseAlertsEnabled
+                ? m.media_movie_reminder_cancel()
+                : m.media_movie_reminder_enable()}
+              title={digestOff
+                ? undefined
+                : entry!.movieReleaseAlertsEnabled
+                  ? m.media_movie_reminder_cancel()
+                  : m.media_movie_reminder_enable()}
+              onclick={onToggleMovieAlerts}>
+              <Icon
+                name={entry!.movieReleaseAlertsEnabled ? "bell" : "bell-off"}
+                class="h-5 w-5" />
+            </button>
+          {/snippet}
+          {@render digestOffTooltip(movieBell)}
+          <span class="text-sm {digestOff ? 'text-dim' : ''}"
+            >{entry.movieReleaseAlertsEnabled
+              ? m.media_movie_reminder_active()
+              : m.media_movie_reminder_enable()}</span>
+          {#if isFeatureNew("movie-releases")}<NewBadge />{/if}
         {:else if isMovie}
           <button
             type="button"
@@ -152,11 +212,12 @@
         </button>
 
         <Dropdown placement="bottom-end" class="min-w-64">
-          {#snippet trigger({ open, toggle })}
+          {#snippet trigger({ open, toggle, onkeydown })}
             <button
               type="button"
               aria-haspopup="menu"
               aria-expanded={open}
+              {onkeydown}
               aria-label={m.common_more_actions()}
               title={m.common_more_actions()}
               onclick={toggle}
@@ -189,6 +250,54 @@
                 <Icon name="archive" class="h-4 w-4" />
                 {m.media_drop_tracking()}
               </button>
+            {/if}
+            <ShareWorkMenuItem
+              separated
+              onclick={() => {
+                close();
+                onShare();
+              }} />
+            {#if isMovie && entry.movieReleaseAlertsEnabled && !upcoming}
+              {#snippet cancelReminder()}
+                <button
+                  role="menuitem"
+                  type="button"
+                  class="menu-item"
+                  disabled={digestOff}
+                  onclick={() => {
+                    close();
+                    onToggleMovieAlerts();
+                  }}>
+                  <Icon
+                    name="bell-off"
+                    class="h-4 w-4" />{m.media_movie_reminder_cancel()}
+                </button>
+              {/snippet}
+              {@render digestOffTooltip(cancelReminder, true)}
+            {/if}
+            {#if !isMovie && !airingFinished}
+              {#snippet episodeAlerts()}
+                <button
+                  role="menuitem"
+                  type="button"
+                  class="menu-item"
+                  disabled={digestOff}
+                  onclick={() => {
+                    close();
+                    onToggleEpisodeAlerts();
+                  }}>
+                  <Icon
+                    name={entry.episodeAlertsMuted ? "bell" : "bell-off"}
+                    class="h-4 w-4" />
+                  {entry.episodeAlertsMuted
+                    ? m.media_unmute_episode_alerts()
+                    : m.media_mute_episode_alerts()}
+                  {#if isFeatureNew("episode-alerts-mute")}
+                    <span class="ml-auto"><NewBadge /></span>
+                  {/if}
+                </button>
+              {/snippet}
+              {@render digestOffTooltip(episodeAlerts, true)}
             {/if}
             <button
               role="menuitem"

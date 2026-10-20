@@ -1,4 +1,5 @@
 import type {
+  AlertPrefs,
   DigestCadence,
   Domain,
   ListVisibility,
@@ -11,8 +12,11 @@ import {
   DigestCadence as DigestCadenceValues,
   Domain as DomainValues,
   ListVisibility as ListVisibilityValues,
+  Locale as LocaleValues,
+  MOBILE_NAV_SHORTCUT_LIMITS,
   ReviewVisibility as ReviewVisibilityValues,
   SpoilerSensitivity as SpoilerSensitivityValues,
+  USER_LIMITS,
 } from "@loomkeep/shared";
 import {
   ArrayMaxSize,
@@ -22,21 +26,21 @@ import {
   IsBoolean,
   IsDateString,
   IsIn,
+  IsInt,
+  IsObject,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
+  Min,
   MinLength,
 } from "class-validator";
-
-// Mirrors `locales` in apps/web/project.inlang/settings.json — the set of
-// locales Paraglide actually has translations for.
-const ALLOWED_LOCALES = ["fr", "en"];
 
 export class UpdateUserDto implements UpdateUserRequestDto {
   @IsOptional()
   @IsString()
   @MinLength(1)
-  @MaxLength(50)
+  @MaxLength(USER_LIMITS.displayName)
   displayName?: string;
 
   @IsOptional()
@@ -59,6 +63,11 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   @IsBoolean()
   notifyNewsletter?: boolean;
 
+  // Checked against ALERTS by UsersService (mergeAlertPrefs), not here.
+  @IsOptional()
+  @IsObject()
+  alertPrefs?: AlertPrefs;
+
   // Not validated against the IANA database (no bundled tz-data source of
   // truth) — an invalid value just means the digest cron's Intl.DateTimeFormat
   // call fails softly for that user (see NotificationDigestService), same
@@ -79,15 +88,15 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   // ignored at render time — but the required "menu" launcher is enforced in the
   // controller. See web navigation.ts.
   @IsOptional()
-  @ArrayMinSize(3)
-  @ArrayMaxSize(7)
+  @ArrayMinSize(MOBILE_NAV_SHORTCUT_LIMITS.min)
+  @ArrayMaxSize(MOBILE_NAV_SHORTCUT_LIMITS.max)
   @ArrayUnique()
   @IsString({ each: true })
   mobileNavShortcuts?: string[];
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(USER_LIMITS.bio)
   bio?: string | null;
 
   @IsOptional()
@@ -99,12 +108,28 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   defaultListVisibility?: ListVisibility;
 
   @IsOptional()
-  @IsIn(ALLOWED_LOCALES)
+  @IsIn([...LocaleValues])
   locale?: Locale;
 
   @IsOptional()
   @IsBoolean()
   hideProgression?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  chatShowPresence?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  chatShowReadReceipts?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  chatShareWatchProviders?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  feedbackWidget?: boolean;
 
   @IsOptional()
   @IsIn(Object.values(SpoilerSensitivityValues))
@@ -117,4 +142,17 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   @ArrayUnique()
   @IsIn(Object.values(DomainValues), { each: true })
   domainOrder?: Domain[];
+
+  // An ISO 3166-1 code; null (let through by IsOptional) is "automatic".
+  @IsOptional()
+  @Matches(/^[A-Z]{2}$/)
+  watchRegion?: string | null;
+
+  // Not checked against TMDB's list: an unknown id just never matches an offer.
+  @IsOptional()
+  @ArrayMaxSize(200)
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  watchProviderIds?: number[];
 }

@@ -36,6 +36,10 @@ const SECURITY_EVENT_TYPES: SecurityEventType[] = [
   "MFA_RECOVERY_CODES_REGENERATED",
   "MFA_RECOVERY_CODE_USED",
   "MFA_CHALLENGE_LOCKED",
+  "REAUTH_LOCKED",
+  "API_KEY_CREATED",
+  "API_KEY_REVOKED",
+  "API_KEY_LEAKED",
 ];
 
 /** Sensitive account actions log (registration, deletion, credential changes, failed logins). */
@@ -66,8 +70,7 @@ export class AdminSecurityController {
         ? (type as SecurityEventType)
         : undefined,
       identifier: identifier?.trim() || undefined,
-      page: parsed.page,
-      limit: parsed.limit,
+      page: parsed,
     });
   }
 }

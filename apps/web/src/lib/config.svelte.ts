@@ -9,12 +9,15 @@
  */
 class AppConfig {
   socialEnabled = $state(false);
+  chatEnabled = $state(false);
   gamificationEnabled = $state(false);
   registrationEnabled = $state(false);
+  publicApiEnabled = $state(false);
   erdEnabled = $state(false);
   adminMfaEnforced = $state(true);
   version = $state("");
   gitSha = $state("");
+  supportEmail = $state("");
 }
 
 export const appConfig = new AppConfig();

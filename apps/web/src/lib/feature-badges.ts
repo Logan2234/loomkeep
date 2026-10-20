@@ -1,24 +1,51 @@
 const NEW_BADGE_DAYS = 21;
 
 const SHIPPED = {
-  "notification-digest": "2026-08-25",
-  "nav-styles": "2026-08-26",
-  mfa: "2026-08-26",
-  achievements: "2026-09-03",
-  leaderboard: "2026-09-05",
-  myanimelist: "2026-09-09",
-  "book-edition-selector": "2026-09-10",
-  babelio: "2026-09-15",
-  "reviews-redesign": "2026-09-17",
-  "settings-rework": "2026-09-17",
-  letterboxd: "2026-09-21",
-  imdb: "2026-09-21",
+  "episode-details": "2026-10-14",
+  "movie-releases": "2026-10-03",
+  "game-releases": "2026-10-04",
+  "book-sagas": "2026-10-04",
+  "game-sagas": "2026-10-04",
+  "xp-history": "2026-10-05",
+  messages: "2026-10-07",
+  "share-work": "2026-10-09",
+  "default-list-visibility": "2026-10-10",
+  "unified-search": "2026-10-11",
+  "work-friends": "2026-10-11",
+  "chat-review-list": "2026-10-11",
+  "chat-commands": "2026-10-11",
+  "notification-history": "2026-10-14",
+  sagas: "2026-10-03",
+  "library-sagas": "2026-10-04",
+  "admin-user-filters": "2026-09-23",
+  "account-activity": "2026-09-24",
+  "release-feed": "2026-09-25",
+  "home-layout": "2026-09-25",
+  "saved-views": "2026-09-26",
+  "game-time-to-beat": "2026-09-27",
+  pile: "2026-09-27",
+  "activity-feed": "2026-09-27",
+  "episode-alerts-mute": "2026-09-27",
+  "calendar-redesign": "2026-09-27",
+  "migration-export": "2026-09-27",
+  sessions: "2026-09-27",
+  "watch-providers": "2026-09-27",
+  "admin-invitations": "2026-09-27",
+  "library-views": "2026-09-28",
+  "quick-add": "2026-09-29",
+  integrations: "2026-10-01",
+  "alert-settings": "2026-10-02",
+  "list-item-notes": "2026-10-19",
+  "game-platform": "2026-10-20",
+  "anilist-import": "2026-10-20",
+  letterboxd: "2026-10-20",
+  imdb: "2026-10-20",
 };
 
-type FeatureBadgeKey = keyof typeof SHIPPED;
+export type FeatureBadgeKey = keyof typeof SHIPPED;
 
-export function isFeatureNew(key: string): boolean {
-  const shippedAt = SHIPPED[key as FeatureBadgeKey];
+export function isFeatureNew(key: FeatureBadgeKey): boolean {
+  const shippedAt = SHIPPED[key];
   if (!shippedAt) return false;
   const ageDays = (Date.now() - new Date(shippedAt).getTime()) / 86_400_000;
   return ageDays >= 0 && ageDays < NEW_BADGE_DAYS;

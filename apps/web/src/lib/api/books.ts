@@ -1,8 +1,20 @@
-import type {
-  UpdateBookEntryDto,
-  UpsertBookEntryDto,
-  UpsertReadingGoalDto,
+import {
+  type BookFilterStatus,
+  type BookOwnershipStatus,
+  type BookSortKey,
+  type BookStatus,
+  type BulkEntriesTargetDto,
+  type BulkUpdateEntriesDto,
+  type CreateBookSessionDto,
+  type LibrarySagaSort,
+  type SortOrder,
+  type UpdateBookEntryDto,
+  type UpdateBookSessionDto,
+  type UpsertBookEntryDto,
+  type UpsertReadingGoalDto,
 } from "@loomkeep/shared";
+import { pageParam } from "./query-params";
+
 import { getLocale } from "../paraglide/runtime.js";
 import { typedRequest } from "./generated/typed-request";
 
@@ -12,9 +24,9 @@ export const searchBooks = (query: string) =>
 export interface ListBooksFilters {
   query?: string;
   favorite?: boolean;
-  statuses?: string[];
-  sort?: string;
-  order?: "asc" | "desc";
+  statuses?: BookFilterStatus[];
+  sort?: BookSortKey;
+  order?: SortOrder;
   page?: number;
 }
 
@@ -27,7 +39,19 @@ export function listBooks(filters: ListBooksFilters = {}) {
       status: filters.statuses,
       sort: filters.sort,
       order: filters.order,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      page: pageParam(filters.page),
+    },
+  });
+}
+
+/** What's left in the pile among the entries `listBooks` returns for the same filters. */
+export function getBooksPile(filters: ListBooksFilters = {}) {
+  return typedRequest("/books/pile", {
+    query: {
+      lang: getLocale(),
+      q: filters.query,
+      favorite: filters.favorite ? "true" : undefined,
+      status: filters.statuses,
     },
   });
 }
@@ -66,17 +90,36 @@ export const deleteBookEntry = (entryId: string): Promise<void> =>
     params: { id: entryId },
   });
 
-export const addBookReplay = (entryId: string) =>
-  typedRequest("/books/entries/{id}/replays", {
-    method: "POST",
+export const getBookSessions = (entryId: string, page = 1) =>
+  typedRequest("/books/entries/{id}/sessions", {
     params: { id: entryId },
-    body: {},
+    query: { page: String(page) },
   });
 
-export const deleteBookReplay = (replayId: string): Promise<void> =>
-  typedRequest("/books/replays/{id}", {
+export const createBookSession = (
+  entryId: string,
+  body: CreateBookSessionDto,
+) =>
+  typedRequest("/books/entries/{id}/sessions", {
+    method: "POST",
+    params: { id: entryId },
+    body,
+  });
+
+export const updateBookSession = (
+  sessionId: string,
+  body: UpdateBookSessionDto,
+) =>
+  typedRequest("/books/sessions/{id}", {
+    method: "PATCH",
+    params: { id: sessionId },
+    body,
+  });
+
+export const deleteBookSession = (sessionId: string): Promise<void> =>
+  typedRequest("/books/sessions/{id}", {
     method: "DELETE",
-    params: { id: replayId },
+    params: { id: sessionId },
   });
 
 export const getReadingGoal = (year: number) =>
@@ -84,3 +127,34 @@ export const getReadingGoal = (year: number) =>
 
 export const upsertReadingGoal = (body: UpsertReadingGoalDto) =>
   typedRequest("/books/reading-goal", { method: "PUT", body });
+
+export const bulkUpdateBookEntries = (
+  body: BulkUpdateEntriesDto<BookStatus, BookOwnershipStatus>,
+) => typedRequest("/books/entries/bulk", { method: "POST", body });
+
+export const bulkDeleteBookEntries = (body: BulkEntriesTargetDto) =>
+  typedRequest("/books/entries/bulk-delete", { method: "POST", body });
+
+/** A series' numbered volumes, each with the reader's status. */
+export const getBookSaga = (seriesKey: string) =>
+  typedRequest("/books/series/{seriesKey}", {
+    params: { seriesKey },
+    query: { lang: getLocale() },
+  });
+
+export interface BookSagaFilters {
+  query?: string;
+  sort?: LibrarySagaSort;
+  order?: SortOrder;
+}
+
+/** The reader's series: started, then finished. */
+export const listBookSagas = (filters: BookSagaFilters = {}) =>
+  typedRequest("/books/sagas", {
+    query: {
+      q: filters.query || undefined,
+      sort: filters.sort,
+      order: filters.order,
+      lang: getLocale(),
+    },
+  });

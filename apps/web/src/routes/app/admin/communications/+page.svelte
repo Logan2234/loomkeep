@@ -1,43 +1,55 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import { adminFilterHref } from "#lib/url-params.js";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import TabPanels from "#lib/components/TabPanels.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import EmailTab from "./components/EmailTab.svelte";
   import PushTab from "./components/PushTab.svelte";
 
   type Tab = "email" | "push";
-  let tab = $state<Tab>(
+  const tabs: SelectOption<Tab>[] = [
+    { value: "email", label: m.common_email() },
+    { value: "push", label: m.admin_communications_push() },
+  ];
+  const tab = $derived<Tab>(
     page.url.searchParams.get("tab") === "push" ? "push" : "email",
   );
+
+  function changeTab(next: Tab) {
+    void goto(
+      adminFilterHref(page.url, { tab: next === "email" ? null : next }),
+      {
+        reset: false,
+      },
+    );
+  }
 </script>
 
-<div class="mx-auto max-w-5xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="mail"
     title={m.settings_section_communications()}
     subtitle={m.admin_communications_subtitle()}
     back="/app/admin" />
 
-  <div class="mb-6 flex gap-2">
-    <button
-      type="button"
-      class="chip"
-      class:chip-on={tab === "email"}
-      onclick={() => (tab = "email")}>
-      {m.common_email()}
-    </button>
-    <button
-      type="button"
-      class="chip"
-      class:chip-on={tab === "push"}
-      onclick={() => (tab = "push")}>
-      {m.admin_communications_push()}
-    </button>
-  </div>
+  <Tabs
+    class="mb-6"
+    label={m.settings_section_communications()}
+    idPrefix="communications"
+    {tabs}
+    current={tab}
+    onSelect={changeTab} />
 
-  {#if tab === "email"}
-    <EmailTab />
-  {:else}
-    <PushTab />
-  {/if}
+  <TabPanels current={tab} idPrefix="communications">
+    {#if tab === "email"}
+      <EmailTab />
+    {:else}
+      <PushTab />
+    {/if}
+  </TabPanels>
 </div>

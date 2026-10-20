@@ -1,6 +1,5 @@
 import {
   providerCallRows,
-  shareOrNull,
   type ProviderQuotaSpec,
 } from "./admin-system-stats.util";
 
@@ -69,17 +68,5 @@ describe("providerCallRows", () => {
 
   it("returns nothing when no call was recorded at all", () => {
     expect(providerCallRows(new Map(), specs)).toEqual([]);
-  });
-});
-
-describe("shareOrNull", () => {
-  it("distinguishes 'nothing to divide' from 'zero'", () => {
-    expect(shareOrNull(0, 0)).toBeNull();
-    expect(shareOrNull(0, 10)).toBe(0);
-  });
-
-  it("rounds to a whole percentage", () => {
-    expect(shareOrNull(61, 100)).toBe(61);
-    expect(shareOrNull(1, 3)).toBe(33);
   });
 });

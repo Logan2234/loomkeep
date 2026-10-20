@@ -21,6 +21,7 @@ export class BookDetailResponseDto implements BookDetailDto {
   publisher!: string | null;
   genres!: string[];
   pageCount!: number | null;
+  editionKey!: string | null;
   releaseDate!: string | null;
   website!: string | null;
   sameAuthorBooks!: BookSummaryResponseDto[];
@@ -28,6 +29,7 @@ export class BookDetailResponseDto implements BookDetailDto {
   editionCount!: number | null;
   isbn!: string | null;
   series!: string | null;
+  seriesKey!: string | null;
   language!: string | null;
   firstSentence!: string | null;
   readOnlineUrl!: string | null;

@@ -13,7 +13,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 23/08/2026</em></p>
+    <p><em>Dernière mise à jour : 14/10/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -130,11 +130,18 @@
       <li>blocages ;</li>
       <li>avis ;</li>
       <li>commentaires ;</li>
+      <li>
+        messages privés échangés avec des amis, leurs réactions et l'heure de
+        leur dernière lecture ;
+      </li>
       <li>réactions ;</li>
       <li>listes ;</li>
       <li>événements d'activité ;</li>
       <li>paramètres de visibilité ;</li>
-      <li>signalements.</li>
+      <li>
+        signalements (y compris, pour un profil, la partie signalée : nom,
+        photo, bio ou comportement) et décisions de modération.
+      </li>
     </ul>
     <p>
       La visibilité de certaines de ces informations dépend des fonctionnalités
@@ -205,7 +212,7 @@
             ><td>Exécution du contrat</td></tr>
           <tr
             ><td>Fonctionnalités sociales</td><td
-              >profil, avis, commentaires, relations</td
+              >profil, avis, commentaires, messages privés, relations</td
             ><td>Exécution du contrat</td></tr>
           <tr
             ><td>Sécurité du service</td><td
@@ -266,6 +273,17 @@
       <li>certaines activités ;</li>
       <li>relations sociales.</li>
     </ul>
+    <p>
+      Les messages privés ne sont visibles que des deux membres de la
+      conversation. Selon les réglages de chacun, l'autre membre peut voir quand
+      l'utilisateur a l'application ouverte, quand il écrit et jusqu'où il a lu
+      ; ces indications sont réciproques et se désactivent depuis les paramètres
+      de confidentialité. Les messages sont conservés sans chiffrement de bout
+      en bout : l'hébergeur de l'instance peut techniquement y accéder. La
+      modération n'en prend connaissance que lorsqu'un des deux membres signale
+      un message, auquel cas elle voit ce message et les quelques messages qui
+      l'entourent.
+    </p>
     <p>
       Les données strictement nécessaires à la sécurité et à la gestion du
       compte, telles que le mot de passe ou les informations techniques
@@ -362,13 +380,14 @@
     </p>
     <h3>Mesure d'audience</h3>
     <p>
-      La page d'accueil publique de Loomkeep utilise <strong>Umami</strong>, un
-      outil de mesure d'audience auto-hébergé, sans cookie ni identifiant
-      persistant : le visiteur n'est pas suivi individuellement d'une visite à
-      l'autre, seules des statistiques agrégées et anonymes sont produites
-      (nombre de visites, pages consultées, clics sur certains boutons,
-      provenance approximative). Umami est hébergé sur la même infrastructure
-      que Loomkeep ; aucune donnée n'est transmise à un tiers.
+      La page d'accueil publique de Loomkeep et sa documentation
+      (docs.loomkeep.app) utilisent <strong>Umami</strong>, un outil de mesure
+      d'audience auto-hébergé, sans cookie ni identifiant persistant : le
+      visiteur n'est pas suivi individuellement d'une visite à l'autre, seules
+      des statistiques agrégées et anonymes sont produites (nombre de visites,
+      pages consultées, clics sur certains boutons, provenance approximative).
+      Umami est hébergé sur la même infrastructure que Loomkeep ; aucune donnée
+      n'est transmise à un tiers.
     </p>
     <p>
       Les liens présents dans les e-mails envoyés par Loomkeep passent par un
@@ -525,16 +544,32 @@
               concernées</td
             ></tr>
           <tr
+            ><td>Notifications dans l'application</td><td
+              >Jusqu'à leur suppression par l'utilisateur, et au plus 90 jours
+              après leur lecture</td
+            ></tr>
+          <tr
             ><td>Contenus sociaux</td><td
               >Selon leur statut et les paramètres de visibilité, jusqu'à leur
               suppression ou celle du compte</td
+            ></tr>
+          <tr
+            ><td>Signalements et décisions de modération</td><td
+              >Le temps de traiter le signalement, puis de répondre à une
+              éventuelle contestation et aux obligations légales. Une décision
+              garde une copie du texte retiré ou modifié (commentaire, critique,
+              bio, nom affiché, titre et description d'une liste), jamais
+              l'image d'une photo de profil retirée. Elle subsiste après la
+              suppression du compte concerné</td
             ></tr>
           <tr
             ><td>Journal de sécurité et d'imports</td><td
               >Lié au compte tant qu'il existe ; le lien avec l'identité est
               retiré dès la suppression du compte, plutôt que conservé. Les
               tentatives de connexion échouées restent journalisées
-              indépendamment, à des fins de prévention des abus</td
+              indépendamment, à des fins de prévention des abus. Les événements
+              de sécurité, avec l'adresse IP d'où ils proviennent, sont
+              supprimés au bout d'un an</td
             ></tr>
           <tr
             ><td>Logs applicatifs</td><td
@@ -598,14 +633,32 @@
     <p>
       Certains contenus sociaux peuvent être supprimés ou anonymisés lorsqu'une
       suppression complète est incompatible avec le fonctionnement technique du
-      service ou avec les obligations applicables.
+      service ou avec les obligations applicables. Concrètement : les critiques,
+      les commentaires et les œuvres ajoutées aux listes d'autres membres
+      restent visibles sans plus être rattachés au compte ; une liste modifiée à
+      plusieurs est transférée à son plus ancien éditeur ; le texte des messages
+      privés envoyés par le compte est effacé, l'autre membre conservant ses
+      propres messages en lecture seule ; les notifications reçues par d'autres
+      membres à propos du compte sont effacées ; les décisions de modération le
+      concernant sont conservées sans son identité, au titre de l'obligation de
+      transparence. Le détail des événements de sécurité conservés (ancienne
+      adresse e-mail, nom d'un appareil) et des imports est effacé, de même que
+      l'adresse e-mail des invitations reçues. Toutes les sessions sont fermées
+      immédiatement.
     </p>
     <p>
       Le journal de sécurité et d'imports (créations de compte, changements
       d'identifiants, imports commis) perd son lien avec l'identité du compte
-      dès sa suppression, plutôt que d'être conservé nominativement. Les
-      tentatives de connexion échouées restent journalisées indépendamment du
-      compte visé, à des fins de prévention des abus.
+      dès sa suppression, plutôt que d'être conservé nominativement : les
+      adresses IP enregistrées sont alors effacées. Les tentatives de connexion
+      échouées restent journalisées indépendamment du compte visé, avec leur
+      adresse IP, à des fins de prévention des abus. Les événements de sécurité
+      sont supprimés au bout d'un an.
+    </p>
+    <p>
+      L'utilisateur peut consulter à tout moment le journal de sécurité de son
+      compte (actions sensibles, appareil et adresse IP d'origine) depuis ses
+      paramètres, rubrique « Activité du compte ».
     </p>
     <h2>13. Sécurité</h2>
     <p>

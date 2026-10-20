@@ -1,47 +1,30 @@
 import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
 import { ConfigService } from "@nestjs/config";
-import { vi, type Mock } from "vitest";
+import { vi } from "vitest";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import type { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { PrismaService } from "../../../prisma/prisma.service";
+import { mockFetchByUrl } from "../../../test-utils/mock-fetch";
 import { ImportJobService } from "../../import-job.service";
 import { MediaMatchResolver } from "../media/media-match-resolver";
 import { SimklImportSource } from "./simkl.source";
 
 const originalFetch = global.fetch;
 
-function mockFetchByUrl(routes: Record<string, unknown>): Mock {
-  const fn = vi.fn((input: RequestInfo | URL) => {
-    const url = String(input);
-    const match = Object.entries(routes).find(([part]) => url.includes(part));
-    if (!match) throw new Error(`Unexpected fetch call in test: ${url}`);
-    const [, body] = match;
-
-    if (typeof body === "number") {
-      return Promise.resolve(new Response(null, { status: body }));
-    }
-
-    return Promise.resolve(
-      new Response(JSON.stringify(body), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-  });
-  global.fetch = fn as unknown as typeof fetch;
-  return fn;
-}
-
-function makeService() {
+function makeService(env: Record<string, string> = {}) {
   const prisma = {
     season: { findMany: vi.fn().mockResolvedValue([]) },
     episodeWatch: {
       count: vi.fn().mockResolvedValue(0),
       createMany: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     mediaExternalId: { findUnique: vi.fn() },
+    // Nothing tracked yet, and every title already out.
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
     libraryEntry: {
+      findUnique: vi.fn().mockResolvedValue(null),
       upsert: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
@@ -64,7 +47,7 @@ function makeService() {
   };
   const config = {
     getOrThrow: vi.fn().mockReturnValue("simkl-client-id"),
-    get: vi.fn().mockReturnValue(undefined),
+    get: vi.fn((key: string) => env[key]),
   };
   const quota = { record: vi.fn() };
   const matchResolver = new MediaMatchResolver(tmdb as never);
@@ -83,7 +66,11 @@ function makeService() {
     { isEffectivelyPremium: vi.fn().mockResolvedValue(true) } as never,
     { award: vi.fn(), awardMany: vi.fn(), revokeBySource: vi.fn() } as never, // XpService stub
     { evaluate: vi.fn() } as never, // AchievementService stub
-    { emitToUser: vi.fn() } as never, // EventsGateway stub
+    {
+      emitToUser: vi.fn(),
+      isOnline: vi.fn().mockResolvedValue(true),
+    } as never, // EventsGateway stub
+    { create: vi.fn() } as never, // NotificationService stub
   );
   return { prisma, mediaItemService, tmdb, service };
 }
@@ -192,7 +179,7 @@ describe("SimklImportSource (via ImportJobService)", () => {
 
   it("fails the job with a clear error when the code exchange fails", async () => {
     const { service } = makeService();
-    mockFetchByUrl({ "oauth/token": 400 });
+    mockFetchByUrl({ "oauth/token": new Response(null, { status: 400 }) });
 
     const started = await service.startAnalyze("u1", "simkl", {
       input: "stale-code",
@@ -201,6 +188,25 @@ describe("SimklImportSource (via ImportJobService)", () => {
 
     expect(job.status).toBe("failed");
     expect(job.error).toMatch(/token exchange failed/i);
+  });
+
+  it("sends the first web origin as the redirect URI when WEB_ORIGIN lists several", async () => {
+    const { service } = makeService({
+      WEB_ORIGIN: "http://localhost:5173,https://dev.loomkeep.app",
+    });
+    const fetchMock = mockFetchByUrl({
+      "oauth/token": new Response(null, { status: 400 }),
+    });
+
+    const started = await service.startAnalyze("u1", "simkl", {
+      input: "code",
+    });
+    await runToEnd(service, "u1", started.id);
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body)).redirect_uri).toBe(
+      "http://localhost:5173/app/settings/import/simkl/callback",
+    );
   });
 
   it("commit writes episode watches and library entries", async () => {

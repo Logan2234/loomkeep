@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { auth } from "$lib/auth.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   const status = $derived(page.status);
   const isNotFound = $derived(status === 404);
@@ -17,7 +17,7 @@
 </svelte:head>
 
 <div
-  class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6">
+  class="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6">
   <!-- Letterbox hairlines: the "Séance" signature device, framing the void
        where a page should have been. -->
   <div class="border-border absolute inset-x-0 top-0 border-t"></div>
@@ -60,8 +60,7 @@
         {isNotFound ? m.error_404_cta_home() : m.common_back_home()}
       </a>
       {#if isNotFound && auth.isLoggedIn}
-        <a href="/app/search" class="btn btn-ghost"
-          >{m.error_404_cta_search()}</a>
+        <a href="/app/search" class="btn btn-ghost">{m.search_title_cta()}</a>
       {/if}
     </div>
   </div>

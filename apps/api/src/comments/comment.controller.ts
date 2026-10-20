@@ -11,7 +11,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpStatus,
   Param,
   Post,
   Put,
@@ -24,10 +23,11 @@ import {
   CurrentUser,
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
-import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
+import { parseEnumParam } from "../common/parse-enum-param.util";
+import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
@@ -38,15 +38,13 @@ import { CreateCommentBody } from "./dto/create-comment.dto";
 import { ReactCommentBody } from "./dto/react-comment.dto";
 import { UpdateCommentBody } from "./dto/update-comment.dto";
 
-function parseTarget(type: string): CommentTargetTypeT {
-  if (!(Object.values(CommentTargetType) as string[]).includes(type)) {
-    throw new AppException(
-      HttpStatus.BAD_REQUEST,
-      ErrorCode.CommentUnknownTargetType,
-    );
-  }
-
-  return type as CommentTargetTypeT;
+export function parseTarget(type: string): CommentTargetTypeT {
+  return parseEnumParam(type, Object.values(CommentTargetType), "target type", {
+    caseSensitive: true,
+    errorCode: ErrorCode.CommentUnknownTargetType,
+    includeDetails: false,
+    message: ErrorCode.CommentUnknownTargetType,
+  });
 }
 
 // Comments only make sense between people, so — unlike reviews — there is no
@@ -83,6 +81,17 @@ export class CommentController {
     return this.comments.participants(user.sub, parseTarget(type), id, query);
   }
 
+  @Get(":type/:id/search")
+  @ApiOkResponse({ type: CommentResponseDto, isArray: true })
+  search(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+    @Query("q") query = "",
+  ): Promise<CommentDto[]> {
+    return this.comments.search(user.sub, parseTarget(type), id, query);
+  }
+
   @Get(":type/:id")
   @ApiOkResponse({ type: PagedResponseDto(CommentResponseDto) })
   list(
@@ -93,13 +102,7 @@ export class CommentController {
     @Query("limit") limit?: string,
   ): Promise<PagedResult<CommentDto>> {
     const parsed = parsePageQuery(page, limit, COMMENT_PAGE_SIZE);
-    return this.comments.list(
-      user.sub,
-      parseTarget(type),
-      id,
-      parsed.page,
-      parsed.limit,
-    );
+    return this.comments.list(user.sub, parseTarget(type), id, parsed);
   }
 
   /**
@@ -121,13 +124,13 @@ export class CommentController {
     @Query("limit") limit?: string,
   ): Promise<PagedResult<CommentDto>> {
     const parsed = parsePageQuery(page, limit, COMMENT_PAGE_SIZE);
-    return this.comments.listReplies(user.sub, id, parsed.page, parsed.limit);
+    return this.comments.listReplies(user.sub, id, parsed);
   }
 
   // Anti-flood: comments (unlike reviews) have no per-target cap, so without a
   // per-user throttle a single person could post unbounded top-level comments
   // and replies back-to-back.
-  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  @Throttle(REPORT_THROTTLE)
   @Post()
   @ApiCreatedResponse({ type: CommentResponseDto })
   create(
@@ -173,7 +176,7 @@ export class CommentController {
   }
 
   @Post(":id/report")
-  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  @Throttle(REPORT_THROTTLE)
   report(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,

@@ -66,9 +66,9 @@ describe("typedRequest", () => {
   it("omits the query string entirely when no query is passed", async () => {
     const { typedRequest } = await import("./typed-request");
 
-    await typedRequest("/notifications");
+    await typedRequest("/notifications/counts");
 
-    expect(request).toHaveBeenCalledWith("/notifications", undefined);
+    expect(request).toHaveBeenCalledWith("/notifications/counts", undefined);
   });
 
   it("forwards method/body/withAuth unchanged to request()", async () => {

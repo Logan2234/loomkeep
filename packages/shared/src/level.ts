@@ -64,6 +64,11 @@ export function xpForLevel(level: number): number {
  * `xp` (up to the XP spent within the current level) after any such change.
  */
 export function levelForXp(xp: number): number {
+  // A negative total is possible — an admin adjustment followed by a gain
+  // being revoked — and the formula has no answer below -468 XP. Every level
+  // starts at 1, so a negative total is simply level 1.
+  if (xp < 0) return levelForXp(0);
+
   if (xp <= XP_AT_CAP_LEVEL) {
     return Math.floor((Math.sqrt(11_236 + 24 * xp) - 94) / 12);
   }

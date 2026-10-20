@@ -6,7 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Loomkeep — self-hosted media tracker (series, movies, anime, games, books,
 music, and more to come), open-core under AGPL-3.0. pnpm monorepo: `apps/api`
-(NestJS + Prisma + PostgreSQL), `apps/web` (SvelteKit PWA), `packages/shared`
+(NestJS + Prisma + PostgreSQL), `apps/web` (SvelteKit PWA), `apps/docs`
+(docs.loomkeep.app: Astro Starlight guides + a Scalar reference rendered from
+the public API's `openapi-v1.json`, deployed to GitHub Pages by `docs.yml` —
+every field of a public DTO needs a JSDoc description and `@example`, read by
+the Swagger plugin's `introspectComments`; `generate:openapi` fails on a gap),
+`packages/shared`
 (DTOs/enums — consumed from its built `dist/`, so run `pnpm build:package` after any change
 there). Catalogs are queried live (TMDB/AniList/IGDB/Open Library/
 MusicBrainz) and nothing is persisted until a user tracks an item — see
@@ -22,17 +27,24 @@ see "Feature flags & entitlements".
 pnpm dev                                       # api on :3000 + web on :5173 (parallel)
 pnpm test                                      # runs all tests
 pnpm build:package                             # REQUIRED after any change in packages/shared
+pnpm dev:docs                                  # docs site on :4321 (needs apps/api built + generate:openapi first)
 
 # API
 pnpm --filter @loomkeep/api exec vitest src/catalog/providers/tmdb.provider.spec.ts   # single test file
 pnpm --filter @loomkeep/api test:e2e           # full API flow; needs the dev Postgres running
 pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing schema.prisma
 
+# Web
+pnpm --filter @loomkeep/web exec vitest --project component   # component tests only (see "Web tests")
+
 # Tools
 pnpm lint / pnpm lint:fix                      # global eslint + prettier
 pnpm check                                     # global typecheck (tsc on api/shared, svelte-check on web)
 pnpm knip                                      # dead code / unused dependency detection
 ```
+
+Knip's root `rxjs` exception covers the peer declaration in
+`pnpm-workspace.yaml` for `@nestjs/platform-fastify`, not an API import.
 
 e2e tests reuse the dev Postgres but run in an isolated `e2e` schema
 (`apps/api/test/global-setup.js`), so they never touch dev data.
@@ -58,6 +70,9 @@ fix does.
   `upsertFromSource()`. Refreshes are throttled by `lastSyncedAt` (24h TTL)
   and never delete seasons/episodes, so `EpisodeWatch` rows always keep a
   valid target.
+  Behaviour the four domains must share (first-track race, XP revoked on
+  entry deletion, orphan purge) gets a case in
+  `apps/api/src/common/domain-parity.spec.ts`, which runs it on all four.
 - **One provider per domain** (`apps/api/src/<domain>/providers/`): TMDB
   (movies/series) + AniList (anime) share the catalog, IGDB (games), Open
   Library (books), MusicBrainz (music). TMDB movie/TV ids are separate
@@ -66,12 +81,18 @@ fix does.
 - `MediaExternalId` is multi-source (TMDB/ANILIST/TVDB/IMDB) — TVDB is
   captured from TMDB responses specifically because the TV Time import
   reconciles through TVDB ids.
-- **Watch model**: one row per viewing (`EpisodeWatch`, mirrored by
-  `MovieReplay`/`GameReplay`/`BookReplay`) — a rewatch is a new row, never an
-  update. `LibraryService.computeProgress` excludes season 0 (TMDB specials).
+- **Tracking history**: films keep one row per viewing (`MovieReplay`) and
+  `EpisodeWatch` keeps one row per episode view. Games and books group dated
+  sessions into `GamePlaythrough` / `BookReading` cycles; sessions deliberately
+  logged as history-only keep a null cycle relation. `LibraryService.computeProgress`
+  excludes season 0 (TMDB specials). The media library ranks and filters on
+  `LibraryEntry.watchedEpisodes`/`lastWatchedAt` and `MediaItem.episodeCount`,
+  kept by Postgres triggers on `EpisodeWatch`/`Episode` (migration
+  `20261019160000_materialized_library_progress`) — never write them from the
+  app; `progressDrift` in the e2e suite checks they match.
 - **Import sources** (`apps/api/src/import/sources/`) share a base class per
   domain: `MediaImportSource` (TV Time CSV, Trakt account-export ZIP, Simkl
-  OAuth, MyAnimeList XML) and `BookCsvSource` (Goodreads, StoryGraph) own the
+  OAuth, MyAnimeList XML) and `BookCsvSource` (Goodreads, StoryGraph, Babelio) own the
   common analyze/resolve/commit flow — a new source only supplies its
   parsing. Steam implements `ImportReq` directly (no shared base, single
   source). `GET /import/availability` greys out a source when its env key
@@ -83,14 +104,20 @@ fix does.
 ### Auth & errors
 
 - Access JWT (15 min) + rotating refresh tokens, one `RefreshToken`
-  row/device, SHA-256 hashed. `JwtAuthGuard` is global, opt out with
-  `@Public()`; `@CurrentUser()` reads `sub` from the JWT payload. TOTP MFA
-  layers on top (`auth/mfa.service.ts`).
+  row per browser (a sign-in ends the session its refresh cookie still
+  names, never matched by User-Agent), SHA-256 hashed. `JwtAuthGuard` is global, opt out with
+  `@Public()`; `@CurrentUser()` reads `sub` from the JWT payload. MFA layers
+  on top with three second factors — TOTP and an emailed code
+  (`auth/mfa.service.ts`), WebAuthn security keys/passkeys
+  (`auth/webauthn.service.ts`) — plus passwordless passkey sign-in and a
+  recent-confirmation gate on sensitive actions (`@RequireRecentAuth`,
+  `auth/recent-auth.guard.ts`). Anything that asks "has MFA?" (e.g.
+  `AdminGuard`) must count all three.
 - Errors are typed codes (`packages/shared/src/error-codes.ts`,
   `ErrorCode.AuthInvalidCredentials`-style, `domain.reason`), thrown via
   `AppException` and caught by the global `AllExceptionsFilter`. The web
-  derives the i18n key mechanically from the code
-  (`errorCodeToMessageKey()`, `apps/web/src/lib/api/errors.ts`) — never
+  maps each code explicitly to an i18n message in
+  `apps/web/src/lib/api/errors.ts` — never
   display API-supplied text directly; adding a failure mode means adding a
   code here, not a bespoke string.
 
@@ -100,14 +127,29 @@ fix does.
   (`isEnabled(flag, default)`) so an unconfigured flag never locks out a
   feature. Web's default gating path is `liveFlags.isEnabled("MY_FLAG")`
   (`apps/web/src/lib/feature-flags-live.svelte.ts`) — reactive, no reload.
-  Exception: an on-by-default flag (`SOCIAL_ENABLED`, `REGISTRATION_ENABLED`)
-  can't use that path — the Frontend API only reports _enabled_ flags — so
-  those stay relayed through `GET /api/config` instead.
+  Flags are for rollouts and kill switches. Permanent instance configuration
+  (social, gamification, registration, public API and its quotas) lives in
+  the `InstanceSettings` table instead, edited from Admin › Settings and read
+  through `instanceSetting()` / `isSocialEnabled()` & co.; an env var of the
+  same name (`INSTANCE_SETTING_ENV`) wins and locks the setting in the admin
+  page. The web reads them from `GET /api/config`.
 - Premium is a seam, not sold yet: enforcement points call
   `EntitlementService.isEffectivelyPremium()`, not the raw `hasPremium()` —
   it's `true` for everyone until the `premium-features` Unleash flag is on
   (no CGV/billing exists yet; positioning in
   [docs/adr/0001-open-core-agpl.md](docs/adr/0001-open-core-agpl.md)).
+- A premium feature that is a whole feature (not a quota or tier of a free
+  one) lives in an `ee/` directory (`apps/api/src/ee`, `apps/web/src/lib/ee`)
+  under [LICENSE-EE](LICENSE-EE), not the AGPL. On the API the core never
+  imports `ee/` (ESLint enforces it; only `app.module.ts` registers
+  `EeModule`), and every `ee/` controller carries `EeLicenseGuard` (404 on an
+  unlicensed instance). Web screens use `useEeLock()` rather than
+  `auth.isPremiumLocked`. The instance license (`LOOMKEEP_LICENSE_KEY`, an
+  offline-signed annual key) is only required once `premium-features` is on;
+  the maintainer signs keys with `pnpm --filter @loomkeep/api ee:license`. A
+  self-host key (`--instance`) makes every account of the instance premium,
+  through `EntitlementService.setInstancePremiumSource` — the hosted
+  instance's key doesn't, premium stays per account there.
 
 ### Web routing & data fetching
 
@@ -120,8 +162,11 @@ fix does.
   `(verification)` layouts only, never the root). Tokens live in
   encrypted (AES-256-GCM), `HttpOnly`/`SameSite=Strict` cookies
   (`Secure` in production) set by `apps/api/src/auth/auth-cookies.ts` —
-  never in localStorage, and `JwtAuthGuard` reads only that cookie,
-  rejecting an `Authorization: Bearer` header outright. Auto-refresh-and-
+  never in localStorage, and `JwtAuthGuard` reads only that cookie for a
+  session. The one exception is a personal API key (`Authorization: Bearer
+lk_…`), accepted only on routes marked `@AllowApiKey()` — the versioned
+  public API (`apps/api/src/public-api`, `/api/v1`); every other route
+  refuses keys by default, and internal routes stay unversioned. Auto-refresh-and-
   retry on 401 lives in `src/lib/api/core.ts` (`src/lib/api/client.ts` is
   now just a re-export barrel). The API itself emits `/app`-prefixed paths
   (push/email links) — grep `/app/` in `apps/api/src` before renaming a
@@ -140,8 +185,7 @@ fix does.
   `invalidates` (factory keys to refetch on success). `CommentThread.svelte`
   is the one deliberate exception — it needs raw TanStack directly
   (`refetchInterval` polling, its own `createInfiniteQuery`) — don't
-  migrate it. Full design and the settled tradeoffs:
-  [docs/plans/centralized-api-layer.md](docs/plans/centralized-api-layer.md).
+  migrate it.
 - Query keys come from a factory (`apps/web/src/lib/api/keys.ts`),
   namespaced per domain. TanStack dedupes by key at the single
   `QueryClient` (mounted in `routes/+layout.svelte`) — two components
@@ -159,15 +203,39 @@ fix does.
   `parsePageQuery`), `PagedResult<T>` response
   (`packages/shared/src/dto/pagination.ts`: `{ items, hasMore, total? }`).
 
+### Web tests
+
+- Two Vitest projects (`apps/web/vitest.config.ts`): `unit` runs plain
+  `*.spec.ts` in Node; `component` runs `*.svelte.spec.ts` in happy-dom with
+  `@testing-library/svelte` + `user-event`. Logic that can live in a plain
+  `.ts` module (like `wizard-state.ts`) is tested there first — cheaper than
+  rendering.
+- Test behaviour, not internals: query by role/label, and take expected text
+  from `m.*()` rather than hardcoding the French copy.
+- The API is stubbed at the network level with msw (`src/lib/test/msw.ts`,
+  `server.use(http.get(apiUrl(...)))`), so `core.ts` and the TanStack helpers
+  run for real — don't `vi.mock` `#lib/api/*` per component. An unhandled
+  request fails the test. A component using the API helpers renders through
+  `renderWithQuery()` (`src/lib/test/render.ts`), which provides a fresh
+  retry-less `QueryClient`. `$app/state` + `$app/navigation` are mocked with
+  `src/lib/test/navigation.svelte.ts` (reactive `page.url`, a `goto` that
+  updates it like SvelteKit does); the realtime socket per spec file. Props a
+  test changes after mounting live in a `$state` object — the reason specs
+  are `.svelte.spec.ts`.
+- No coverage threshold (Codecov stays informational) and no snapshot tests.
+  Browser E2E (Playwright against the API on the `e2e` schema) is
+  deliberately deferred until the component layer is settled.
+
 ### Ops
 
 - `docker/` holds every compose file, the Caddyfile, and add-on configs;
   `context: ..` resolves against the compose file's location, not repo root.
   `deploy.yml` redeploys on every successful CI run on `main` — which
   override files get combined comes from `COMPOSE_FILE` in the VPS's own
-  `.env`, not the workflow. See [docker/README.md](docker/README.md) for
-  the add-on stack (observability, Authelia SSO, Portainer, GlitchTip,
-  Umami, Unleash, Homepage).
+  `.env`, not the workflow. The add-on stack (observability, Authelia SSO,
+  Portainer, GlitchTip, Umami, Unleash, Homepage) is documented for
+  self-hosters in `apps/docs` (Self-hosting › Optional services);
+  [docker/README.md](docker/README.md) keeps how loomkeep.app itself runs.
 - `nestjs-pino` structured JSON logging; `Authorization`/`Cookie`/
   `Set-Cookie` redacted, request bodies never logged. `AllExceptionsFilter`
   also reports to GlitchTip when `GLITCHTIP_API_DSN`/`PUBLIC_GLITCHTIP_WEB_DSN`
@@ -175,22 +243,24 @@ fix does.
 
 ### Social
 
-Gated behind `SOCIAL_ENABLED` (off by default self-host, on for the hosted
-VPS) — `SocialFeatureGuard` 404s (never 403) when disabled, so a self-host
+Gated behind the `socialEnabled` instance setting (off by default
+self-host, pinned on for the hosted VPS by `SOCIAL_ENABLED`) — `SocialFeatureGuard` 404s (never 403) when disabled, so a self-host
 install doesn't advertise the surface exists. `Follow` is the one
 relationship primitive (friend = reciprocal accepted follow). Details:
 [apps/api/src/social/README.md](apps/api/src/social/README.md).
 
 ## Conventions
 
-- Code, comments, commits: English. UI is French-first but i18n-ready via
-  Paraglide — use `m()`, never hardcode a string. Sources live in
-  `apps/web/messages/{locale}/{common,errors,gamification,other}.json`.
+- Code, comments, commits: English. UI is English-first (French and Italian
+  too), i18n-ready via Paraglide — use `m()`, never hardcode a string. Sources live in
+  `apps/web/messages/{locale}/{common,other,errors,gamification,admin,settings,site}.json`
+  (a `settings_`, `landing_`/`transparency_`, `gamification_` or `admin_` key
+  goes in its matching file; `src/catalogs.spec.ts` enforces it).
 - Prefer no new runtime deps (global `fetch`, Node ≥22). pnpm blocks
   postinstall scripts by default — allow-list in `pnpm-workspace.yaml`'s
   `allowBuilds`. Ask before adding one.
-- Versioning: the four `package.json` versions (root + each app/package) are
-  kept in lockstep — minor for a new module/capability, patch for a smaller
+- Versioning: the five `package.json` versions (root, `apps/api`,
+  `apps/web`, `apps/docs`, `packages/shared`) are kept in lockstep — minor for a new module/capability, patch for a smaller
   fix/polish. No tagged releases otherwise. Bump via the `version-bump`
   skill (`CHANGELOG.md` + a Quackback changelog draft) — **publishing that
   draft sends the release newsletter**, so it always needs Logan's go-ahead.
@@ -207,6 +277,16 @@ relationship primitive (friend = reciprocal accepted follow). Details:
   every `apps/web` UI change.
 - Visual identity ("Séance" — fonts, palette, nav pattern):
   `apps/web/DESIGN.md`.
+- Every `apps/web` UI change ships its transitions (hover and focus states,
+  whatever appears, unfolds or closes) — how they should feel and how to
+  write them: `apps/web/DESIGN.md` › Motion.
+- Every alert Loomkeep sends — bell (`Notification` row), web push, email —
+  is declared once in `ALERTS` (`packages/shared/src/alerts.ts`): its
+  channels, which ones each account can switch (stored in
+  `User.alertPrefs`), and their defaults. `NotificationService` pushes from
+  it, Settings › Communications and the docs' Notifications page are drawn
+  from it, and tests fail on a `NotificationType` or mail template missing
+  from it. A new alert starts there.
 - Shipping something a user will notice → add a `"Nouveau"` badge entry
   (`apps/web/src/lib/feature-badges.ts`'s `SHIPPED` map, `{ key:
 shippedISODate }`) at its point of discovery — it fades on its own after

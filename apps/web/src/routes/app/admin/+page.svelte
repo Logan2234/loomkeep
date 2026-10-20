@@ -1,26 +1,31 @@
 <script lang="ts">
-  import { env } from "$env/dynamic/public";
-  import { createApiQuery } from "$lib/api/query.svelte";
+  import * as env from "$app/env/public";
+  import { adminAttentionData } from "#lib/admin-attention.js";
   import {
     getAdminBackupFiles,
     getAdminJobs,
     getAdminOverview,
     getAdminServices,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { auth } from "$lib/auth.svelte";
-  import BetaBadge from "$lib/components/BetaBadge.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
-  import { GITHUB_REPO_URL } from "$lib/constants/external-links";
-  import { formatNumber, formatRelative } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { useReportsPendingCount } from "$lib/reports-pending.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import BetaBadge from "#lib/components/BetaBadge.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
+  import { adminJobLabel } from "#lib/constants/admin-presentation.js";
+  import { DOCS_URL, GITHUB_REPO_URL } from "#lib/constants/external-links.js";
+  import { formatNumber, formatRelative } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
   import type { ServiceStatusDto } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import StatsSectionError from "./stats/components/StatsSectionError.svelte";
+  import AttentionLink from "./AttentionLink.svelte";
 
-  // Best-effort queries leave failed cards blank instead of breaking the page.
+  const queryClient = useQueryClient();
 
   const overviewQuery = createApiQuery(() => ({
     key: keys.admin.overview(),
@@ -43,7 +48,12 @@
   const overview = $derived(overviewQuery.data);
   const services = $derived(servicesQuery.data?.services ?? null);
   const jobs = $derived(jobsQuery.data);
-  const backups = $derived(backupsQuery.data);
+  const backups = $derived(backupsQuery.data?.files);
+  const attention = $derived(
+    adminAttentionData(services, jobs, backupsQuery.data),
+  );
+  const loadingText = (loading: boolean) =>
+    loading ? m.common_loading() : m.common_unavailable();
 
   const usersTotal = $derived(overview?.accounts ?? null);
   const usersDeltaWeek = $derived(overview?.newAccountsThisWeek ?? null);
@@ -88,10 +98,10 @@
         ? formatRelative(jobsLastRunAt)
         : undefined,
       "/app/admin/backup":
-        backups && backups.length > 0
+        backups && attention.latest
           ? m.admin_backup_count_latest({
-              count: backups.length,
-              date: formatRelative(backups[0].createdAt),
+              count: attention.available.length,
+              date: formatRelative(attention.latest.createdAt),
             })
           : backups
             ? m.admin_no_backups()
@@ -100,72 +110,55 @@
         cacheTotal !== null
           ? m.common_item_count_many({ count: formatNumber(cacheTotal) })
           : undefined,
-      "/app/admin/reports":
-        reportsPending.count > 0
-          ? m.admin_reports_pending_count({ count: reportsPending.count })
-          : m.admin_up_to_date(),
+      "/app/admin/reports": !appConfig.socialEnabled
+        ? m.common_disabled()
+        : !reportsPending.available
+          ? undefined
+          : reportsPending.count > 0
+            ? m.admin_reports_pending_count({ count: reportsPending.count })
+            : m.admin_up_to_date(),
     };
   });
 
-  const CATEGORIES: { label: string; hrefs: string[] }[] = [
-    {
-      label: m.admin_group_content(),
-      hrefs: [
-        "/app/admin/cache",
-        "/app/admin/schema",
-        "/app/admin/components",
-        "/app/admin/backup",
-        "/app/admin/imports",
-      ],
-    },
-    {
-      label: m.admin_group_users(),
-      hrefs: [
-        "/app/admin/users",
-        "/app/admin/communications",
-        "/app/admin/newsletter",
-      ],
-    },
-    {
-      label: m.admin_group_system(),
-      hrefs: ["/app/admin/services", "/app/admin/jobs", "/app/admin/stats"],
-    },
-    {
-      label: m.admin_group_security(),
-      hrefs: ["/app/admin/security", "/app/admin/reports"],
-    },
-  ];
-
-  const grouped = $derived(
-    CATEGORIES.map((cat) => ({
-      label: cat.label,
-      items: cat.hrefs
-        .map((href) => VISIBLE_ADMIN_NAV.find((i) => i.href === href))
-        .filter((i) => i !== undefined),
-    })),
-  );
+  const grouped = VISIBLE_ADMIN_NAV_GROUPS;
 </script>
 
-<div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="shield"
     title={m.admin_dashboard_title()}
+    back="/app"
     subtitle={m.admin_dashboard_subtitle({
       name: auth.user?.displayName ?? "",
-    })} />
+    })}>
+    {#snippet actions()}
+      <a
+        href={`${DOCS_URL}/self-hosting/administration/`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn btn-ghost shrink-0">
+        <Icon name="book-open" class="h-4 w-4" />
+        {m.admin_docs_link()}
+      </a>
+    {/snippet}
+  </PageHeader>
 
-  <!-- The 4 numbers worth a glance before diving in — each links straight to its page. -->
+  <!-- Each indicator links to its operational page. -->
   <div
-    class="border-border bg-border mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border sm:grid-cols-4">
+    class="border-border bg-border mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border sm:grid-cols-3 lg:grid-cols-5">
     <a
       href="/app/admin/users"
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
-        <span class="bg-success h-1.5 w-1.5 rounded-full"></span>
+        <span
+          class="h-1.5 w-1.5 rounded-full {overview ? 'bg-success' : 'bg-dim'}"
+        ></span>
         {m.common_users()}
       </span>
       <span class="font-display text-2xl font-extrabold">
-        {usersTotal !== null ? formatNumber(usersTotal) : "—"}
+        {usersTotal !== null
+          ? formatNumber(usersTotal)
+          : loadingText(overviewQuery.loading)}
       </span>
       <span class="text-dim text-xs">
         {usersDeltaWeek !== null
@@ -179,15 +172,17 @@
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
         <span
-          class="h-1.5 w-1.5 rounded-full {servicesDegraded > 0
-            ? 'bg-danger'
-            : 'bg-success'}"></span>
+          class="h-1.5 w-1.5 rounded-full {!services
+            ? 'bg-dim'
+            : servicesDegraded > 0
+              ? 'bg-danger'
+              : 'bg-success'}"></span>
         {m.admin_services_title()}
       </span>
       <span class="font-display text-2xl font-extrabold">
         {services
           ? `${servicesLive.length - servicesDegraded}/${servicesLive.length}`
-          : "—"}
+          : loadingText(servicesQuery.loading)}
       </span>
       <span
         class="text-xs {servicesDegraded > 0
@@ -197,7 +192,7 @@
           ? servicesDegraded > 0
             ? m.admin_degraded_count({ count: servicesDegraded })
             : m.admin_services_all_healthy()
-          : " "}
+          : m.common_unavailable()}
       </span>
     </a>
 
@@ -206,15 +201,17 @@
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
         <span
-          class="h-1.5 w-1.5 rounded-full {jobsFailedRecent
-            ? 'bg-danger'
-            : 'bg-success'}"></span>
-        {m.admin_jobs_title()}
+          class="h-1.5 w-1.5 rounded-full {jobsFailedRecent === null
+            ? 'bg-dim'
+            : jobsFailedRecent
+              ? 'bg-danger'
+              : 'bg-success'}"></span>
+        {m.admin_jobs_last_failure()}
       </span>
       <span class="font-display text-2xl font-extrabold">
         {jobsFailedRecent !== null
-          ? m.admin_failed_count({ count: jobsFailedRecent })
-          : "—"}
+          ? formatNumber(jobsFailedRecent)
+          : loadingText(jobsQuery.loading)}
       </span>
       <span
         class="text-xs {jobsFailedRecent
@@ -222,7 +219,7 @@
           : 'text-dim'}">
         {jobsLastRunAt
           ? m.admin_last_run({ date: formatRelative(jobsLastRunAt) })
-          : " "}
+          : m.common_unavailable()}
       </span>
     </a>
 
@@ -231,26 +228,158 @@
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
         <span
-          class="h-1.5 w-1.5 rounded-full {reportsPending.count > 0
-            ? 'bg-danger'
-            : 'bg-success'}"></span>
+          class="h-1.5 w-1.5 rounded-full {!appConfig.socialEnabled ||
+          !reportsPending.available
+            ? 'bg-dim'
+            : reportsPending.count > 0
+              ? 'bg-danger'
+              : 'bg-success'}"></span>
         {m.admin_social_reports_title()}
       </span>
       <span class="font-display text-2xl font-extrabold">
-        {formatNumber(reportsPending.count)}
+        {!appConfig.socialEnabled
+          ? m.common_disabled()
+          : reportsPending.available
+            ? formatNumber(reportsPending.count)
+            : reportsPending.error
+              ? m.common_unavailable()
+              : m.common_loading()}
       </span>
       <span
         class="text-xs {reportsPending.count > 0
           ? 'text-danger font-semibold'
           : 'text-dim'}">
-        {reportsPending.count > 0
-          ? m.admin_moderation_pending()
-          : m.admin_up_to_date()}
+        {!appConfig.socialEnabled
+          ? m.admin_social_disabled()
+          : !reportsPending.available
+            ? reportsPending.error
+              ? m.common_unavailable()
+              : m.common_loading()
+            : reportsPending.count > 0
+              ? m.admin_moderation_pending()
+              : m.admin_up_to_date()}
       </span>
+    </a>
+
+    <a
+      href="/app/admin/backup"
+      class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
+      <span class="text-dim text-xs font-semibold"
+        >{m.admin_backup_title()}</span>
+      <span class="font-display text-xl font-extrabold"
+        >{backupsQuery.data
+          ? attention.latest
+            ? formatRelative(attention.latest.createdAt)
+            : m.admin_no_backups()
+          : loadingText(backupsQuery.loading)}</span>
+      <span class="text-dim text-xs"
+        >{backupsQuery.data
+          ? m.admin_backup_available({ count: attention.available.length })
+          : loadingText(backupsQuery.loading)}</span>
+      {#if attention.anomalies}<span class="text-warning text-xs"
+          >{m.admin_backup_anomalies({ count: attention.anomalies })}</span
+        >{/if}
     </a>
   </div>
 
-  <div class="space-y-8">
+  {#if overviewQuery.error || servicesQuery.error || jobsQuery.error || backupsQuery.error || reportsPending.error}
+    <div class="mb-8 space-y-2" aria-label={m.common_error()}>
+      {#if overviewQuery.error}
+        <StatsSectionError
+          message={`${m.common_users()}: ${overviewQuery.error}`}
+          onRetry={() =>
+            void queryClient.refetchQueries({
+              queryKey: keys.admin.overview(),
+            })} />
+      {/if}
+      {#if servicesQuery.error}
+        <StatsSectionError
+          message={`${m.admin_services_title()}: ${servicesQuery.error}`}
+          onRetry={() =>
+            void queryClient.refetchQueries({
+              queryKey: keys.admin.services(),
+            })} />
+      {/if}
+      {#if jobsQuery.error}
+        <StatsSectionError
+          message={`${m.admin_jobs_title()}: ${jobsQuery.error}`}
+          onRetry={() =>
+            void queryClient.refetchQueries({ queryKey: keys.admin.jobs() })} />
+      {/if}
+      {#if backupsQuery.error}
+        <StatsSectionError
+          message={`${m.admin_backup_title()}: ${backupsQuery.error}`}
+          onRetry={() =>
+            void queryClient.refetchQueries({
+              queryKey: keys.admin.backups(),
+            })} />
+      {/if}
+      {#if reportsPending.error}
+        <StatsSectionError
+          message={`${m.admin_social_reports_title()}: ${reportsPending.error}`}
+          onRetry={reportsPending.retry} />
+      {/if}
+    </div>
+  {/if}
+
+  <section class="card mb-8 p-5" aria-labelledby="admin-attention-title">
+    <h2 id="admin-attention-title" class="font-display mb-3 text-lg font-bold">
+      {m.admin_attention()}
+    </h2>
+    <ul class="space-y-1">
+      {#each attention.degraded as service (service.key)}<li>
+          <AttentionLink
+            href={`/app/admin/services#service-${service.key}`}
+            icon="gauge"
+            title={service.label}
+            detail={m.admin_services_title()}
+            tone="danger" />
+        </li>{/each}
+      {#each attention.failed as job (job.key)}<li>
+          <AttentionLink
+            href={`/app/admin/jobs#job-${job.key}`}
+            icon="calendar"
+            title={adminJobLabel(job.key)}
+            detail={m.common_failure()}
+            tone="danger" />
+        </li>{/each}
+      {#if appConfig.socialEnabled && reportsPending.available && reportsPending.count > 0}<li>
+          <AttentionLink
+            href="/app/admin/reports?status=PENDING"
+            icon="flag"
+            title={m.admin_reports_pending_count({
+              count: reportsPending.count,
+            })}
+            detail={m.admin_social_reports_title()}
+            tone="warning" />
+        </li>{/if}
+      {#if backupsQuery.data && (attention.anomalies || !attention.latest)}<li>
+          <AttentionLink
+            href="/app/admin/backup"
+            icon="database"
+            title={attention.anomalies
+              ? m.admin_backup_anomalies({ count: attention.anomalies })
+              : m.admin_no_backups()}
+            detail={m.admin_backup_title()}
+            tone="warning" />
+        </li>{/if}
+    </ul>
+    {#if overviewQuery.loading || servicesQuery.loading || jobsQuery.loading || backupsQuery.loading || (appConfig.socialEnabled && !reportsPending.available && !reportsPending.error)}<p
+        class="text-dim mt-3 text-sm"
+        role="status">
+        {m.common_loading()}
+      </p>
+    {:else if !attention.degraded.length && !attention.failed.length && !(appConfig.socialEnabled && reportsPending.count > 0) && !(backupsQuery.data && (attention.anomalies || !attention.latest))}<p
+        class="text-dim text-sm">
+        {m.admin_attention_empty()}
+      </p>{/if}
+    {#if servicesQuery.error || jobsQuery.error || backupsQuery.error || (appConfig.socialEnabled && reportsPending.error)}<p
+        class="text-warning mt-3 text-sm">
+        {m.admin_attention_partial()}
+      </p>{/if}
+  </section>
+
+  <div class="grid items-start gap-8 lg:grid-cols-2">
     {#each grouped as cat (cat.label)}
       <section>
         <h2
@@ -273,7 +402,7 @@
               <div class="min-w-0 flex-1">
                 <span class="text-fg flex items-center gap-2 font-semibold">
                   {item.label}
-                  {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
+                  {#if appConfig.socialEnabled && item.href === "/app/admin/reports" && reportsPending.count > 0}
                     <span
                       class="bg-accent text-accent-fg rounded-full px-1.5 py-0.5 text-[0.65rem] font-bold">
                       {reportsPending.count}

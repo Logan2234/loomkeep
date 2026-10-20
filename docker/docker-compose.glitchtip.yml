@@ -1,5 +1,6 @@
-# GlitchTip (self-hosted, Sentry-API-compatible error tracker). See
-# docker/README.md § "Error tracking" and § "Shared Postgres for add-ons".
+# GlitchTip (self-hosted, Sentry-API-compatible error tracker). Setup:
+# https://docs.loomkeep.app/self-hosting/optional-services/error-tracking/
+# See also docker/README.md § "Shared Postgres for add-ons".
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.glitchtip.yml up -d --build
 #

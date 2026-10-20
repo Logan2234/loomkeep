@@ -1,13 +1,27 @@
+import type { AlertPrefs } from "../alerts";
 import {
   DigestCadence,
   Domain,
   ListVisibility,
-  Locale,
   ProfileAccess,
   ReviewVisibility,
   Role,
   SpoilerSensitivity,
 } from "../enums";
+import type { Locale } from "../locale";
+import type { HomeLayoutDto } from "./home-layout";
+
+export const USER_LIMITS = { displayName: 50, username: 50, bio: 500 } as const;
+export const WEBAUTHN_NAME_MAX_LENGTH = 60;
+export const AVATAR_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+] as const;
+export type AvatarMimeType = (typeof AVATAR_MIME_TYPES)[number];
+export const AVATAR_MAX_DIMENSION = 512;
+export const MOBILE_NAV_SHORTCUT_LIMITS = { min: 3, max: 7 } as const;
+export const REQUIRED_SHORTCUT = "menu";
 
 export interface UserDto {
   id: string;
@@ -26,6 +40,8 @@ export interface UserDto {
   notifyPush: DigestCadence;
   /** Opt-in to the release newsletter (separate from notifyEmail's episode digest). */
   notifyNewsletter: boolean;
+  /** Per-alert channel choices that differ from the defaults. See `ALERTS`. */
+  alertPrefs: AlertPrefs;
   /** IANA timezone (e.g. "Europe/Paris"), used to time the digest at a local hour. */
   timezone: string;
   /** Whether the account's email has been confirmed via the verification link (informational only). */
@@ -86,6 +102,17 @@ export interface UserDto {
    * `SocialProfileDto.xp`.
    */
   hideProgression: boolean;
+  /**
+   * Whether friends see this account online (and typing) in Messages.
+   * Reciprocal: switched off, it no longer sees theirs either.
+   */
+  chatShowPresence: boolean;
+  /** Whether friends see when this account read their messages. Reciprocal too. */
+  chatShowReadReceipts: boolean;
+  /** Whether friends see this account's platforms (`watchProviderIds`) on a `/where` card. */
+  chatShareWatchProviders: boolean;
+  /** Shows the feedback launcher, on an instance that has one. */
+  feedbackWidget: boolean;
   /** Overrides reviews/comments' per-context spoiler-reveal default. */
   spoilerSensitivity: SpoilerSensitivity;
   /**
@@ -95,6 +122,16 @@ export interface UserDto {
    * position at the end. See web `domains.ts`'s `orderedDomains()`.
    */
   domainOrder: Domain[];
+  /** Country of the streaming offers shown; null for automatic. */
+  watchRegion: string | null;
+  /** TMDB ids of the watch providers the user has, see `WatchProviderDto.id`. */
+  watchProviderIds: number[];
+  /**
+   * The home page's widget grid, or null for the default one — which is
+   * built from the enabled domains on the web rather than stored, so it
+   * keeps following them until the user edits the page.
+   */
+  homeLayout: HomeLayoutDto | null;
 }
 
 export interface UpdateUserRequestDto {
@@ -105,6 +142,8 @@ export interface UpdateUserRequestDto {
   notifyEmail?: DigestCadence;
   notifyPush?: DigestCadence;
   notifyNewsletter?: boolean;
+  /** Merged into the stored choices: `{ COMMENT_REPLY: { push: true } }`. */
+  alertPrefs?: AlertPrefs;
   /** IANA timezone (e.g. "Europe/Paris"). */
   timezone?: string;
   /** Content domains to keep visible; must list at least one. See `Domain`. */
@@ -121,10 +160,22 @@ export interface UpdateUserRequestDto {
   locale?: Locale;
   /** See `UserDto.hideProgression`. */
   hideProgression?: boolean;
+  /** See `UserDto.chatShowPresence`. */
+  chatShowPresence?: boolean;
+  /** See `UserDto.chatShowReadReceipts`. */
+  chatShowReadReceipts?: boolean;
+  /** See `UserDto.chatShareWatchProviders`. */
+  chatShareWatchProviders?: boolean;
+  /** See `UserDto.feedbackWidget`. */
+  feedbackWidget?: boolean;
   /** See `UserDto.spoilerSensitivity`. */
   spoilerSensitivity?: SpoilerSensitivity;
   /** See `UserDto.domainOrder`. */
   domainOrder?: Domain[];
+  /** See `UserDto.watchRegion`; null goes back to automatic. */
+  watchRegion?: string | null;
+  /** See `UserDto.watchProviderIds`. */
+  watchProviderIds?: number[];
 }
 
 export interface UpdateUsernameRequestDto {
@@ -137,7 +188,7 @@ export interface UsernameAvailabilityDto {
 }
 
 export interface UploadAvatarRequestDto {
-  mimeType: "image/png" | "image/jpeg" | "image/webp";
+  mimeType: AvatarMimeType;
   /** Base64, no `data:...;base64,` prefix. */
   data: string;
 }

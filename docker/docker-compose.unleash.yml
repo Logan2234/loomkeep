@@ -1,7 +1,6 @@
 # Unleash (self-hosted, open-source feature flag service). Backs the
-# deployment-wide flags read by the api at runtime (SOCIAL_ENABLED,
-# REGISTRATION_ENABLED, MAINTENANCE_<DOMAIN>) so an admin can flip them
-# without a redeploy. See docker/README.md § "Access control per public
+# deployment-wide flags read by the api at runtime (MAINTENANCE_<DOMAIN>,
+# premium-features) so an admin can flip them without a redeploy. See docker/README.md § "Access control per public
 # subdomain" and § "Shared Postgres for add-ons".
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.unleash.yml up -d

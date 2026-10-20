@@ -2,7 +2,7 @@
   // Chart-less trend hint for a table cell: a bare polyline, no axis, no
   // labels, no tooltip. Distinct from LineChart/TrendChart on purpose — inside
   // a row there is no space for anything but the shape.
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { TrendPointDto } from "@loomkeep/shared";
 
   let {

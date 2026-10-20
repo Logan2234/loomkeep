@@ -2,13 +2,12 @@
   // "Comptes & engagement": who is on the instance and how alive they are.
   // Everything activity-related comes from refresh-token usage (see the API
   // service) — ActivityEvent only exists since P4 and would bury old accounts.
-  import { getAdminNewAccountsTrend } from "$lib/api/client";
-  import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import StatFigure from "$lib/components/stats/StatFigure.svelte";
-  import { formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
-  import { getLocale } from "$lib/paraglide/runtime.js";
+  import { getAdminNewAccountsTrend } from "#lib/api/client.js";
+  import HistogramBars from "#lib/components/stats/HistogramBars.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import StatFigure from "#lib/components/stats/StatFigure.svelte";
+  import { formatNumber, formatPercent, formatLanguage } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     DORMANT_AFTER_DAYS,
     ProfileAccess,
@@ -85,12 +84,9 @@
     stats.age.distribution.map((b) => ({ label: b.label, value: b.count })),
   );
 
-  const localeDisplay = new Intl.DisplayNames([getLocale()], {
-    type: "language",
-  });
   const localeItems = $derived(
     stats.byLocale.map((l) => ({
-      label: localeDisplay.of(l.locale) ?? l.locale,
+      label: formatLanguage(l.locale),
       value: l.count,
     })),
   );
@@ -116,7 +112,7 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_accounts_retention_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_accounts_retention_desc()}
     </p>
     <CohortTable cohorts={stats.cohorts} />
@@ -128,7 +124,7 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_accounts_domains_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_accounts_domains_desc()}
     </p>
     <RankBars items={domainItems} initialCount={6} />
@@ -138,7 +134,7 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_accounts_privacy_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_accounts_privacy_desc()}
     </p>
     <RankBars items={accessItems} />
@@ -148,7 +144,7 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_accounts_health_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_accounts_health_desc()}
     </p>
     <div class="grid grid-cols-2 gap-3">
@@ -164,16 +160,16 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_accounts_age_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_accounts_age_desc()}
     </p>
     <HistogramBars bars={ageBars} />
     <div class="border-border mt-3.5 grid grid-cols-2 gap-3 border-t pt-3.5">
       <StatFigure
-        value="{stats.age.birthDateSetPercent} %"
+        value={formatPercent(stats.age.birthDateSetPercent)}
         label={m.admin_accounts_age_birthdate_percent()} />
       <StatFigure
-        value="{stats.age.adultContentPercent} %"
+        value={formatPercent(stats.age.adultContentPercent)}
         label={m.admin_accounts_age_adult_percent()} />
     </div>
   </div>
@@ -182,7 +178,7 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_accounts_locale_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_accounts_locale_desc()}
     </p>
     <RankBars items={localeItems} />

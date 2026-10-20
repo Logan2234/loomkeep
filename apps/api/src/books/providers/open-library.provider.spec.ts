@@ -1,6 +1,7 @@
 import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { mockFetchByUrl } from "../../test-utils/mock-fetch";
 import { OpenLibraryProvider } from "./open-library.provider";
 
 // Node defines global fetch lazily, which confuses vi.spyOn on restore;
@@ -21,25 +22,6 @@ function mockFetch(payload: unknown, ok = true): Mock {
 }
 
 /** Route responses by a substring of the request URL (query string included). */
-function mockFetchByUrl(routes: [string, unknown][]): Mock {
-  const fn = vi.fn((input: RequestInfo | URL) => {
-    const url = String(input);
-    const match = routes.find(([part]) => url.includes(part));
-
-    if (!match) {
-      throw new Error(`Unexpected fetch call in test: ${url}`);
-    }
-
-    return Promise.resolve(
-      new Response(JSON.stringify(match[1]), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-  });
-  global.fetch = fn as unknown as typeof fetch;
-  return fn;
-}
 
 /** Returns a different status/payload on each successive call, in order. */
 function mockFetchSequence(
@@ -225,6 +207,7 @@ describe("OpenLibraryProvider", () => {
       publisher: "George Allen & Unwin",
       genres: ["Fiction", "Fantasy"],
       pageCount: 310,
+      editionKey: null,
       releaseDate: "1937-09-21T00:00:00.000Z",
       website: "https://openlibrary.org/works/OL27482W",
       sameAuthorBooks: [],
@@ -233,6 +216,7 @@ describe("OpenLibraryProvider", () => {
       editionCount: null,
       isbn: null,
       series: null,
+      seriesKey: null,
       language: null,
       firstSentence: null,
       readOnlineUrl: null,
@@ -1046,21 +1030,24 @@ describe("OpenLibraryProvider", () => {
 
   it("chunks ISBN batches at 20 and reports a failed chunk without retrying it individually", async () => {
     const isbns = Array.from({ length: 25 }, (_, i) => `978000000000${i}`);
-    const fn = vi
-      .fn()
-      .mockImplementationOnce(() => Promise.reject(new Error("network down")))
-      .mockImplementationOnce(() =>
-        Promise.resolve(
-          new Response(JSON.stringify({ numFound: 0 }), { status: 200 }),
-        ),
-      );
+    const fn = vi.fn((input: RequestInfo | URL) => {
+      const query = new URL(String(input)).searchParams.get("q") ?? "";
+      return query.includes(isbns[0])
+        ? Promise.reject(new Error("network down"))
+        : Promise.resolve(
+            new Response(JSON.stringify({ numFound: 0 }), { status: 200 }),
+          );
+    });
     global.fetch = fn as unknown as typeof fetch;
 
     const { matches, failedIsbns } =
       await providerWith("k").searchByIsbns(isbns);
 
-    // 2 chunks (20 + 5) → 2 calls, not 25.
-    expect(fn).toHaveBeenCalledTimes(2);
+    // The failed chunk gets three HTTP attempts, never one call per ISBN.
+    expect(fn).toHaveBeenCalledTimes(4);
+    expect(fn.mock.calls.slice(0, 3).map(([url]) => String(url))).toEqual(
+      Array(3).fill(String(fn.mock.calls[0][0])),
+    );
     expect(matches.size).toBe(0);
     expect(failedIsbns).toEqual(isbns.slice(0, 20));
   });
@@ -1274,5 +1261,64 @@ describe("OpenLibraryProvider", () => {
         coverUrl: null,
       },
     ]);
+  });
+
+  describe("getSeries", () => {
+    const volume = (
+      id: string,
+      title: string,
+      position: string,
+      editions = 10,
+    ) => ({
+      key: `/works/${id}`,
+      title,
+      first_publish_year: 1997,
+      edition_count: editions,
+      series_key: ["OL1L", "OL326110L"],
+      series_name: ["Wizarding World", "Harry Potter"],
+      series_position: ["9", position],
+    });
+
+    it("keeps the numbered volumes in order, titled in the reader's language", async () => {
+      const fetch = mockFetch({
+        numFound: 5,
+        docs: [
+          volume("OL2W", "Harry Potter et la Chambre des secrets", "2"),
+          volume("OL1W", "Harry Potter à l'école des sorciers", "1"),
+          volume("OL7W", "Harry Potter (series) 1-7", "1-7"),
+          volume("OL25W", "A novella", "2.5"),
+          // A duplicate work for volume 1, catalogued less.
+          volume("OL1BW", "Harry Potter 1 (reprint)", "1", 2),
+        ],
+      });
+
+      const series = await providerWith().getSeries("OL326110L", "fr");
+
+      expect(calledUrl(fetch)).toContain("q=series_key:OL326110L");
+      expect(calledUrl(fetch)).toContain("lang=fr");
+      expect(series).toMatchObject({
+        key: "OL326110L",
+        title: "Harry Potter",
+        members: [
+          { sourceId: "OL1W", position: 1 },
+          { sourceId: "OL2W", position: 2 },
+        ],
+      });
+    });
+
+    it("has no saga under two volumes", async () => {
+      mockFetch({ numFound: 1, docs: [volume("OL1W", "Alone", "1")] });
+
+      await expect(providerWith().getSeries("OL326110L")).resolves.toBeNull();
+    });
+
+    it("never queries Open Library with something other than a series id", async () => {
+      const fetch = mockFetch({ numFound: 0, docs: [] });
+
+      await expect(
+        providerWith().getSeries("OL1L OR key:/works/X"),
+      ).resolves.toBeNull();
+      expect(fetch).not.toHaveBeenCalled();
+    });
   });
 });

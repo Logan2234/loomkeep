@@ -1,6 +1,8 @@
 import type { ChangePasswordRequestDto } from "@loomkeep/shared";
 import {
   PASSWORD_DIGIT_RE,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
   PASSWORD_SPECIAL_RE,
   PASSWORD_UPPERCASE_RE,
 } from "@loomkeep/shared";
@@ -13,8 +15,8 @@ export class ChangePasswordDto implements ChangePasswordRequestDto {
 
   // bcrypt truncates beyond 72 bytes, hence the upper bound.
   @IsString()
-  @MinLength(8)
-  @MaxLength(72)
+  @MinLength(PASSWORD_MIN_LENGTH)
+  @MaxLength(PASSWORD_MAX_LENGTH)
   @Matches(PASSWORD_UPPERCASE_RE, {
     message: "newPassword must contain at least one uppercase letter",
   })

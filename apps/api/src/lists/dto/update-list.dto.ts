@@ -1,4 +1,6 @@
+import type { UpdateListDto } from "@loomkeep/shared";
 import {
+  LIST_LIMITS,
   ListKind,
   type ListKind as ListKindT,
   type ListVisibility,
@@ -12,16 +14,16 @@ import {
   MinLength,
 } from "class-validator";
 
-export class UpdateListBody {
+export class UpdateListBody implements UpdateListDto {
   @IsOptional()
   @IsString()
   @MinLength(1)
-  @MaxLength(100)
+  @MaxLength(LIST_LIMITS.title)
   title?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(LIST_LIMITS.description)
   description?: string | null;
 
   @IsOptional()

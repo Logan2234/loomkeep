@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { scale } from "svelte/transition";
 
   const reduced = prefersReducedMotion();

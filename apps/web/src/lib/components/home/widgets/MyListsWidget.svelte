@@ -1,0 +1,65 @@
+<script lang="ts">
+  import { listComparator } from "#lib/list-sort.js";
+
+  import { getEditableLists } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import ListCoverGrid from "#lib/components/ListCoverGrid.svelte";
+  import { HOME_WIDGETS } from "#lib/home/widgets.js";
+  import type { BoxSize } from "#lib/home/sizing.js";
+  import { m } from "#lib/paraglide/messages.js";
+
+  import type { HomeWidgetDto } from "@loomkeep/shared";
+  import PosterRail from "../PosterRail.svelte";
+  import WidgetShell from "../WidgetShell.svelte";
+
+  let { widget, size }: { widget: HomeWidgetDto; size: BoxSize } = $props();
+
+  const def = HOME_WIDGETS.myLists;
+
+  const listsQuery = createApiQuery(() => ({
+    key: keys.lists.editable(),
+    fetch: getEditableLists,
+  }));
+  const lists = $derived(
+    (listsQuery.data ?? [])
+      .filter((list) => !widget.config?.ownOnly || list.role === "OWNER")
+      .sort(listComparator(widget.config?.sort ?? "recent")),
+  );
+
+  const count = (n: number) =>
+    `${n} ${n > 1 ? m.lists_works_plural() : m.lists_works_singular()}`;
+</script>
+
+<WidgetShell icon={def.icon} title={def.title()} href="/app/lists">
+  {#if !listsQuery.loading && lists.length === 0}
+    <div class="flex h-full flex-col items-center justify-center gap-2">
+      <p class="text-dim text-center text-sm">{m.lists_none_yet()}</p>
+      <a href="/app/lists" class="btn btn-ghost btn-sm">
+        {m.lists_create_button()}
+      </a>
+    </div>
+  {:else}
+    <PosterRail
+      label={def.title()}
+      items={lists}
+      keyOf={(list) => list.id}
+      info={(list) => ({
+        href: `/app/lists/${list.id}`,
+        title: list.title,
+        imageUrl: list.previewImageUrls[0] ?? null,
+        subtitle: count(list.itemCount),
+      })}
+      {size}
+      metaHeight={16}
+      loading={listsQuery.loading}
+      empty={m.lists_none_yet()}>
+      {#snippet image(list)}
+        <ListCoverGrid images={list.previewImageUrls} title={list.title} />
+      {/snippet}
+      {#snippet meta(list)}
+        <p class="timecode truncate text-[0.65rem]">{count(list.itemCount)}</p>
+      {/snippet}
+    </PosterRail>
+  {/if}
+</WidgetShell>

@@ -17,6 +17,7 @@ export class GameStatsResponseDto implements GameStatsDto {
   totalPlaytimeMinutes!: number;
   avgPlaytimePerCompletedMinutes!: number | null;
   neverLaunchedCount!: number;
+  pausedInProgressCount!: number;
   replaysCount!: number;
   topGamesByPlaytime!: GameTopEntryResponseDto[];
   topPlatforms!: LabelCountResponseDto[];

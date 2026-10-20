@@ -1,4 +1,9 @@
-import { EntryStatus, MediaOwnershipStatus } from "@loomkeep/shared";
+import {
+  ENTRY_NOTES_MAX_LENGTH,
+  EntryStatus,
+  MediaOwnershipStatus,
+  OWNERSHIP_SOURCE_MAX_LENGTH,
+} from "@loomkeep/shared";
 import {
   IsBoolean,
   IsDateString,
@@ -24,12 +29,20 @@ export class UpdateEntryDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
+  @MaxLength(ENTRY_NOTES_MAX_LENGTH)
   notes?: string | null;
 
   @IsOptional()
   @IsBoolean()
   favorite?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  episodeAlertsMuted?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  movieReleaseAlertsEnabled?: boolean;
 
   @IsOptional()
   @IsDateString()
@@ -45,6 +58,6 @@ export class UpdateEntryDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(OWNERSHIP_SOURCE_MAX_LENGTH)
   ownershipSource?: string | null;
 }

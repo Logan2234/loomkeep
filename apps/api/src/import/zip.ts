@@ -5,7 +5,7 @@ import { inflateRawSync } from "node:zlib";
  *
  * The browser cannot unzip a ZIP container natively, so the web uploads the
  * raw archive (base64) and we extract the handful of CSVs we need here. In the
- * spirit of the hand-rolled CSV parser (see `csv.ts`), we avoid a runtime
+ * spirit of the hand-rolled CSV parser (see `common/csv.util.ts`), we avoid a runtime
  * dependency: Node's `zlib` handles the DEFLATE payload and we walk the ZIP
  * structures ourselves.
  *

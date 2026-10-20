@@ -1,15 +1,18 @@
 <script lang="ts">
+  import { DOMAINS } from "#lib/constants/domains.js";
+
   import SettingsSection from "../components/SettingsSection.svelte";
+  import MigrationExportCard from "./MigrationExportCard.svelte";
 
   import { page } from "$app/state";
-  import { exportMyData, exportMyDataCsv } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { downloadBlob } from "$lib/download";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
+  import { exportMyData, exportMyDataCsv } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { downloadBlob, datedFilename } from "#lib/download.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
   import { Domain } from "@loomkeep/shared";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
 
   const exportMut = createApiMutation(() => ({
     mutate: exportMyData,
@@ -17,7 +20,7 @@
       downloadBlob(
         JSON.stringify(data, null, 2),
         "application/json",
-        `loomkeep-export-${new Date().toISOString().slice(0, 10)}.json`,
+        datedFilename(`loomkeep-export`, "json"),
       );
       toast.success(m.settings_export_success());
     },
@@ -34,18 +37,18 @@
       label: m.settings_export_media_label(),
       slug: "media",
     },
-    { domain: Domain.BOOKS, label: m.common_Books(), slug: "books" },
-    { domain: Domain.GAMES, label: m.common_Games(), slug: "games" },
-    { domain: Domain.MUSIC, label: m.common_Music(), slug: "music" },
+    { domain: Domain.BOOKS, label: DOMAINS.BOOKS.label, slug: "books" },
+    { domain: Domain.GAMES, label: DOMAINS.GAMES.label, slug: "games" },
+    { domain: Domain.MUSIC, label: DOMAINS.MUSIC.label, slug: "music" },
     {
       domain: Domain.PODCASTS,
-      label: m.common_Podcasts(),
+      label: DOMAINS.PODCASTS.label,
       slug: "podcasts",
       comingSoon: true,
     },
     {
       domain: Domain.BOARDGAMES,
-      label: m.common_Boardgames(),
+      label: DOMAINS.BOARDGAMES.label,
       slug: "boardgames",
       comingSoon: true,
     },
@@ -58,7 +61,7 @@
       downloadBlob(
         csv,
         "text/csv",
-        `loomkeep-${args.slug}-${new Date().toISOString().slice(0, 10)}.csv`,
+        datedFilename(`loomkeep-${args.slug}`, "csv"),
       );
       toast.success(m.settings_export_success());
     },
@@ -125,5 +128,7 @@
         <p class="text-danger mt-2 text-sm">{csvExportMut.error}</p>
       {/if}
     </section>
+
+    <MigrationExportCard />
   </div>
 </SettingsSection>

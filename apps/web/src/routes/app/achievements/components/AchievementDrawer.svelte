@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Drawer from "$lib/components/Drawer.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import Drawer from "#lib/components/Drawer.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { AchievementGroup } from "../achievements";
   import {
     achievementDescription,
@@ -8,7 +8,7 @@
     groupIcon,
   } from "../labels";
   import AchievementLadder from "./AchievementLadder.svelte";
-  import AchievementMedallion from "$lib/components/AchievementMedallion.svelte";
+  import AchievementMedallion from "#lib/components/AchievementMedallion.svelte";
 
   let {
     group,
@@ -24,7 +24,9 @@
 </script>
 
 <Drawer {onclose} labelledby="achievement-drawer-title">
-  <div class="flex flex-col gap-3 px-5 pt-2 pb-6">
+  <div
+    data-drawer-scroll
+    class="flex min-h-0 flex-1 touch-pan-y flex-col gap-3 overflow-y-auto px-5 pt-2 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
     <div class="flex items-center gap-3">
       <AchievementMedallion icon={groupIcon(group)} tier={group.reachedTier} />
       <div class="min-w-0">
@@ -46,7 +48,7 @@
     </div>
 
     <button type="button" class="btn btn-ghost w-full" onclick={onclose}>
-      {m.gamification_drawer_close()}
+      {m.common_close()}
     </button>
   </div>
 </Drawer>

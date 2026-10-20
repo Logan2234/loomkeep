@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { env } from "$env/dynamic/public";
-  import { appConfig } from "$lib/config.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import * as env from "$app/env/public";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import { GITHUB_REPO_URL } from "../constants/external-links";
   import BetaBadge from "./BetaBadge.svelte";
 
@@ -36,6 +36,16 @@
       target="_blank"
       rel="noopener noreferrer"
       class="btn-text font-normal">{m.common_terms()}</a>
+
+    {#if appConfig.socialEnabled}
+      <span class="mx-1.5">·</span>
+
+      <a
+        href="/legal/transparency"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-text font-normal">{m.common_transparency()}</a>
+    {/if}
   </nav>
 
   <p class="flex gap-2">

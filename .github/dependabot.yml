@@ -2,15 +2,32 @@ version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/"
+    cooldown:
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "daily"
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
     commit-message:
       prefix: "⚡"
     groups:
+      prisma:
+        patterns:
+          - "prisma"
+          - "@prisma/*"
+        update-types: ["minor", "patch"]
+      nestjs:
+        patterns:
+          - "@nestjs/*"
+        update-types: ["minor", "patch"]
+      svelte:
+        patterns:
+          - "svelte"
+          - "@sveltejs/*"
+        update-types: ["minor", "patch"]
       dev-dependencies:
         dependency-type: "development"
         update-types: ["minor", "patch"]

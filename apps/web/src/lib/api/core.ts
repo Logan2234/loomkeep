@@ -1,9 +1,10 @@
-import { env } from "$env/dynamic/public";
+import * as env from "$app/env/public";
 import type { ApiErrorBody, PagedResult } from "@loomkeep/shared";
 import { ErrorCode } from "@loomkeep/shared";
 import * as Sentry from "@sentry/sveltekit";
 import { auth } from "../auth.svelte";
 import { getLocale } from "../paraglide/runtime.js";
+import { reauth, reauthReason } from "../reauth.svelte";
 
 export const API_URL = env.PUBLIC_API_URL ?? "http://localhost:3000/api";
 
@@ -38,6 +39,7 @@ export async function request<T>(
   path: string,
   options: RequestOptions = {},
   retried = false,
+  reauthenticated = false,
 ): Promise<T> {
   const headers: Record<string, string> = {
     "Accept-Language": getLocale(),
@@ -70,8 +72,15 @@ export async function request<T>(
     throw error;
   }
 
-  // Expired access token: try one refresh, then replay the request.
-  if (response.status === 401 && options.withAuth !== false && !retried) {
+  // Expired access token: try one refresh, then replay the request. Not on a
+  // 401 that says something else (a wrong current password, a bad code):
+  // that one would only go again, and count twice against its rate limit.
+  if (
+    response.status === 401 &&
+    options.withAuth !== false &&
+    !retried &&
+    (await isAccessTokenProblem(response))
+  ) {
     const refreshed = await tryRefresh();
 
     if (refreshed) {
@@ -98,6 +107,23 @@ export async function request<T>(
       body?.requestId,
       Number.isFinite(retryAfterSeconds) ? retryAfterSeconds : undefined,
     );
+
+    // A sensitive action this session hasn't confirmed lately: once the
+    // person confirms it's them, the same request goes again.
+    if (error.code === ErrorCode.AuthReauthRequired && !reauthenticated) {
+      const reason = reauthReason(options.method ?? "GET", path);
+
+      if (await reauth.confirm(reason)) {
+        return request<T>(path, options, retried, true);
+      }
+
+      throw new ApiError(
+        403,
+        "Identity confirmation cancelled",
+        ErrorCode.AuthReauthCancelled,
+      );
+    }
+
     reportToGlitchTip(error);
     throw error;
   }
@@ -109,6 +135,20 @@ export async function request<T>(
   // status code.
   const text = await response.text();
   return (text ? JSON.parse(text) : undefined) as T;
+}
+
+const ACCESS_TOKEN_CODES: ReadonlySet<string> = new Set([
+  ErrorCode.AuthMissingAccessToken,
+  ErrorCode.AuthInvalidAccessToken,
+]);
+
+/** A 401 about the session itself; one without a code is taken as such. */
+async function isAccessTokenProblem(response: Response): Promise<boolean> {
+  const body = (await response
+    .clone()
+    .json()
+    .catch(() => null)) as Partial<ApiErrorBody> | null;
+  return !body?.code || ACCESS_TOKEN_CODES.has(body.code);
 }
 
 // 5xx and network failures only: everything else (401/403/404/409/429) is an
@@ -183,7 +223,20 @@ export function tryRefresh(): Promise<boolean> {
   return refreshInFlight;
 }
 
+// The mutex above lives in one tab, but every tab (and the installed PWA)
+// shares the same cookies, so they all expire — and refresh — at once. A Web
+// Lock queues them across tabs: the next one in line refreshes with the
+// cookies the previous one just received. The API's superseded answer covers
+// a browser without Web Locks, and a refresh racing another tab's anyway.
 async function doRefresh(): Promise<boolean> {
+  if (typeof navigator !== "undefined" && navigator.locks) {
+    return navigator.locks.request("loomkeep-refresh", refreshOnce);
+  }
+
+  return refreshOnce();
+}
+
+async function refreshOnce(): Promise<boolean> {
   try {
     await request<void>(
       "/auth/refresh",
@@ -191,7 +244,12 @@ async function doRefresh(): Promise<boolean> {
       true,
     );
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    // Another tab rotated the token a moment ago: its new cookies are this
+    // tab's too, so the session is fine.
+    return (
+      error instanceof ApiError &&
+      error.code === ErrorCode.AuthRefreshSuperseded
+    );
   }
 }

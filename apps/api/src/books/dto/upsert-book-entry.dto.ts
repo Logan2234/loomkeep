@@ -1,11 +1,13 @@
 import {
   BookSource,
   BookStatus,
+  ENTRY_NOTES_MAX_LENGTH,
   UpsertBookEntryDto as UpsertBookEntryContract,
 } from "@loomkeep/shared";
 import {
   IsBoolean,
   IsIn,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -33,10 +35,20 @@ export class UpsertBookEntryDto implements UpsertBookEntryContract {
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
+  @MaxLength(ENTRY_NOTES_MAX_LENGTH)
   notes?: string | null;
 
   @IsOptional()
   @IsBoolean()
   favorite?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  editionKey?: string | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  referencePageCount?: number | null;
 }

@@ -1,15 +1,14 @@
 <script lang="ts">
-  import Icon from "$lib/components/Icon.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { SETTINGS_SECTIONS, sectionHref } from "../nav";
+  import SettingsLinkRow from "./SettingsLinkRow.svelte";
+
+  import { m } from "#lib/paraglide/messages.js";
+  import { SETTINGS_SEARCHABLE, sectionHref } from "../nav";
   import { groupSearchHits, hitHref, searchSettings } from "../search";
   import { settingsSearch } from "../search-state.svelte";
+  import { isSectionVisible } from "../section-visibility";
 
   const visibleSections = $derived(
-    SETTINGS_SECTIONS.filter(
-      (section) => !section.social || appConfig.socialEnabled,
-    ),
+    SETTINGS_SEARCHABLE.filter(isSectionVisible),
   );
   const results = $derived(
     searchSettings(settingsSearch.query, visibleSections),
@@ -39,15 +38,15 @@
   <div class="space-y-3">
     {#each resultGroups as group (group.section.slug)}
       <section class="card overflow-hidden">
-        <a
+        <SettingsLinkRow
+          icon={group.section.icon}
+          iconClass="h-5 w-5 shrink-0 {group.section.danger
+            ? 'text-danger'
+            : 'text-accent'}"
+          chevronClass="text-dim h-5 w-5 shrink-0"
           href={sectionHref(group.section.slug)}
           onclick={() => settingsSearch.clear()}
           class="hover:bg-surface-2 flex items-center gap-3.5 px-4 py-3.5 transition-colors">
-          <Icon
-            name={group.section.icon}
-            class="h-5 w-5 shrink-0 {group.section.danger
-              ? 'text-danger'
-              : 'text-accent'}" />
           <span class="min-w-0 flex-1">
             <span class="block truncate font-semibold"
               >{group.section.label}</span>
@@ -55,8 +54,7 @@
               {group.section.description}
             </span>
           </span>
-          <Icon name="chevron-right" class="text-dim h-5 w-5 shrink-0" />
-        </a>
+        </SettingsLinkRow>
         {#if group.entries.length > 0}
           <ul class="divide-border border-border divide-y border-t">
             {#each group.entries as hit (hit.entryId)}

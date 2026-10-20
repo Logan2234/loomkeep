@@ -52,6 +52,7 @@ import {
   ReviewVoteValue,
   Role,
   SecurityEventType,
+  TrackingCycleStatus,
   UserTokenType,
   VisibilityAudience,
   VisibilityFacet,
@@ -620,13 +621,26 @@ async function main() {
       ownershipSource: "Steam",
     },
   });
-  await prisma.gameReplay.create({
-    data: {
-      gameEntryId: eldenRingEntryLogan.id,
-      finishedAt: new Date("2023-01-20"),
-    },
+  await prisma.gamePlaythrough.createMany({
+    data: [
+      {
+        gameEntryId: eldenRingEntryLogan.id,
+        number: 1,
+        status: TrackingCycleStatus.COMPLETED,
+        startedAt: new Date("2022-03-01"),
+        finishedAt: new Date("2022-06-15"),
+        legacyIncomplete: true,
+      },
+      {
+        gameEntryId: eldenRingEntryLogan.id,
+        number: 2,
+        status: TrackingCycleStatus.COMPLETED,
+        finishedAt: new Date("2023-01-20"),
+        legacyIncomplete: true,
+      },
+    ],
   });
-  await prisma.gameEntry.create({
+  const hadesEntryAlice = await prisma.gameEntry.create({
     data: {
       userId: alice.id,
       gameItemId: hades.id,
@@ -635,6 +649,15 @@ async function main() {
       startedAt: new Date("2026-04-01"),
       ownershipStatus: GameOwnershipStatus.DIGITAL,
       ownershipSource: "Steam",
+    },
+  });
+  await prisma.gamePlaythrough.create({
+    data: {
+      gameEntryId: hadesEntryAlice.id,
+      number: 1,
+      status: TrackingCycleStatus.ACTIVE,
+      startedAt: new Date("2026-04-01"),
+      legacyIncomplete: true,
     },
   });
   await prisma.gameEntry.create({
@@ -659,13 +682,27 @@ async function main() {
       ownershipStatus: BookOwnershipStatus.PHYSICAL,
     },
   });
-  await prisma.bookReplay.create({
-    data: {
-      bookEntryId: duneEntryAlice.id,
-      finishedAt: new Date("2026-03-01"),
-    },
+  await prisma.bookReading.createMany({
+    data: [
+      {
+        bookEntryId: duneEntryAlice.id,
+        number: 1,
+        status: TrackingCycleStatus.COMPLETED,
+        currentPage: 688,
+        startedAt: new Date("2025-08-01"),
+        finishedAt: new Date("2025-08-20"),
+        legacyIncomplete: true,
+      },
+      {
+        bookEntryId: duneEntryAlice.id,
+        number: 2,
+        status: TrackingCycleStatus.COMPLETED,
+        finishedAt: new Date("2026-03-01"),
+        legacyIncomplete: true,
+      },
+    ],
   });
-  await prisma.bookEntry.create({
+  const hailMaryEntryLogan = await prisma.bookEntry.create({
     data: {
       userId: logan.id,
       bookItemId: projectHailMary.id,
@@ -674,6 +711,17 @@ async function main() {
       startedAt: new Date("2026-06-01"),
       ownershipStatus: BookOwnershipStatus.DIGITAL,
       ownershipSource: "Kindle",
+    },
+  });
+  await prisma.bookReading.create({
+    data: {
+      bookEntryId: hailMaryEntryLogan.id,
+      number: 1,
+      status: TrackingCycleStatus.ACTIVE,
+      baselinePage: 210,
+      currentPage: 210,
+      startedAt: new Date("2026-06-01"),
+      legacyIncomplete: true,
     },
   });
   await prisma.readingGoal.createMany({

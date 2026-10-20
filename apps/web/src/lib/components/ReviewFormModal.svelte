@@ -3,19 +3,19 @@
     deleteReview,
     getReviewRevisions,
     upsertReview,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     clearReviewDraft,
     readReviewDraft,
     writeReviewDraft,
-  } from "$lib/review-draft";
+  } from "#lib/review-draft.js";
   import {
     REVIEW_TEXT_MAX_LENGTH,
     type ReviewDto,
@@ -207,7 +207,7 @@
     {#if imageUrl !== undefined}
       <div
         class="w-10 shrink-0 overflow-hidden rounded-md ring-1 ring-white/10">
-        <Poster src={imageUrl} {title} />
+        <Poster src={imageUrl} {title} alt="" />
       </div>
     {/if}
   {/snippet}
@@ -285,8 +285,10 @@
     {#if error}
       <p class="text-danger text-sm">{error}</p>
     {/if}
+  </div>
 
-    <div class="border-border flex items-center gap-2 border-t pt-3.5">
+  {#snippet actions()}
+    <div class="flex items-center gap-2">
       {#if review}
         {#if confirmingDelete}
           <button
@@ -323,5 +325,5 @@
         {m.common_save()}
       </button>
     </div>
-  </div>
+  {/snippet}
 </Modal>

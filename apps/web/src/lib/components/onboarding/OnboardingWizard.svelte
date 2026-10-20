@@ -1,18 +1,30 @@
 <script lang="ts">
-  import { browser } from "$app/environment";
+  import {
+    STORAGE_KEYS,
+    LEGACY_STORAGE_KEYS,
+  } from "#lib/constants/storage-keys.js";
+
+  import {
+    readSessionStorage,
+    writeSessionStorage,
+    removeSessionStorage,
+  } from "#lib/local-storage.js";
+
+  import { browser } from "$app/env";
   import { goto } from "$app/navigation";
-  import { completeOnboarding, updateMe } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-  import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
-  import { toggleDomainSelection } from "$lib/domains";
-  import { m } from "$lib/paraglide/messages.js";
-  import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
-  import { disablePush, enablePush, isPushSupported } from "$lib/push";
-  import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
+  import { completeOnboarding, updateMe } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
+  import { languageOptions } from "#lib/locales.js";
+  import { THEME_DEFINITIONS } from "#lib/constants/theme-definitions.js";
+  import { createDomainToggle } from "#lib/domain-toggle.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
+  import { disablePush, enablePush, isPushSupported } from "#lib/push.js";
+  import type { AvailableImportSourceDescriptor } from "#lib/types/import-descriptor.js";
   import { DigestCadence, Domain, type Locale } from "@loomkeep/shared";
   import Combobox from "../Combobox.svelte";
   import Icon from "../Icon.svelte";
@@ -37,18 +49,20 @@
   // Survives the full-page reload that a language change triggers (setLocale
   // navigates/reloads by design — see AppearanceSection) so switching FR/EN
   // mid-wizard doesn't bounce the user back to step 1.
-  const STEP_STORAGE_KEY = "loomkeep.onboarding-step";
+  const STEP_STORAGE_KEY = STORAGE_KEYS.onboardingStep;
 
   function readStoredStep(): number {
     if (!browser) return 0;
-    const n = Number(sessionStorage.getItem(STEP_STORAGE_KEY));
+    const n = Number(
+      readSessionStorage(STEP_STORAGE_KEY, LEGACY_STORAGE_KEYS.onboardingStep),
+    );
     return Number.isInteger(n) && n >= 0 && n < STEPS.length ? n : 0;
   }
 
   let activeIndex = $state(readStoredStep());
 
   $effect(() => {
-    if (browser) sessionStorage.setItem(STEP_STORAGE_KEY, String(activeIndex));
+    if (browser) writeSessionStorage(STEP_STORAGE_KEY, String(activeIndex));
   });
 
   const stepId = $derived(STEPS[activeIndex].id);
@@ -63,16 +77,7 @@
   // No error UI for these three: a locale/domain/timezone hiccup just leaves
   // the still-current value showing, same call as AppearanceSection/
   // PrivacySection make for the same kind of low-stakes setting.
-  const toggleDomainMut = createApiMutation(() => ({
-    mutate: (enabledDomains: Domain[]) => updateMe({ enabledDomains }),
-  }));
-
-  function toggleDomain(id: Domain) {
-    if (!auth.user) return;
-    const next = toggleDomainSelection(auth.user.enabledDomains, id);
-    if (next === auth.user.enabledDomains) return;
-    toggleDomainMut.mutate(next);
-  }
+  const domainToggle = createDomainToggle();
 
   const saveLocaleMut = createApiMutation(() => ({
     mutate: (next: Locale) => updateMe({ locale: next }),
@@ -192,11 +197,11 @@
 
   const importSources = $derived(
     (() => {
-      const map = new Map<Domain, ImportSourceDescriptor[]>();
+      const map = new Map<Domain, AvailableImportSourceDescriptor[]>();
 
       for (const importSourceDescriptor of Object.values(IMPORTS_DEFINITION)) {
         if (
-          importSourceDescriptor.href &&
+          !importSourceDescriptor.comingSoon &&
           auth.user?.enabledDomains.includes(importSourceDescriptor.domain)
         ) {
           if (!map.has(importSourceDescriptor.domain)) {
@@ -225,7 +230,7 @@
 
   async function finish() {
     await completeOnboarding();
-    if (browser) sessionStorage.removeItem(STEP_STORAGE_KEY);
+    if (browser) removeSessionStorage(STEP_STORAGE_KEY);
   }
 </script>
 
@@ -266,10 +271,11 @@
         {@const on = auth.user?.enabledDomains.includes(id) ?? false}
         <button
           type="button"
+          aria-pressed={on}
           class="border-border relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors {on
             ? 'border-accent bg-accent/10 text-fg'
             : 'text-dim hover:bg-surface-2'}"
-          onclick={() => toggleDomain(id)}>
+          onclick={() => domainToggle.toggle(id)}>
           <Icon
             name={DOMAINS[id].icon}
             class="h-5 w-5 {on ? 'text-accent' : ''}" />
@@ -294,22 +300,11 @@
 
     <div class="mb-5">
       <p class="mb-2 text-sm font-semibold">{m.common_language()}</p>
-      <div class="flex gap-2">
-        <button
-          type="button"
-          class="chip"
-          class:chip-on={(auth.user?.locale ?? getLocale()) === "fr"}
-          onclick={() => saveLocale("fr")}>
-          {m.common_language_fr()}
-        </button>
-        <button
-          type="button"
-          class="chip"
-          class:chip-on={(auth.user?.locale ?? getLocale()) === "en"}
-          onclick={() => saveLocale("en")}>
-          {m.common_language_en()}
-        </button>
-      </div>
+      <Combobox
+        label={m.common_language()}
+        options={languageOptions()}
+        values={[auth.user?.locale ?? getLocale()]}
+        onChange={([next]) => saveLocale(next as Locale)} />
     </div>
 
     <div class="divide-border divide-y">

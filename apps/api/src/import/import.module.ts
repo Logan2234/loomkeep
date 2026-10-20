@@ -5,11 +5,14 @@ import { EntitlementModule } from "../entitlements/entitlement.module";
 import { EventsModule } from "../events/events.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
+import { ListsModule } from "../lists/list.module";
+import { NotificationModule } from "../notifications/notification.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
 import { ImportJobService } from "./import-job.service";
 import { IMPORT_SOURCES, type ImportReq } from "./import-source";
 import { ImportController } from "./import.controller";
+import { AnilistImportSource } from "./sources/anilist/anilist.source";
 import { BabelioImportSource } from "./sources/books/babelio.source";
 import { GoodreadsImportSource } from "./sources/books/goodreads.source";
 import { StoryGraphImportSource } from "./sources/books/storygraph.source";
@@ -40,8 +43,11 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     EntitlementModule,
     GamificationModule,
     EventsModule,
+    NotificationModule,
+    ListsModule,
   ],
   controllers: [ImportController],
+  exports: [ImportJobService],
   providers: [
     ImportJobService,
     MediaMatchResolver,
@@ -50,6 +56,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     TraktImportSource,
     SimklImportSource,
     MyAnimeListImportSource,
+    AnilistImportSource,
     LetterboxdImportSource,
     ImdbImportSource,
     StoryGraphImportSource,
@@ -64,6 +71,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
         TraktImportSource,
         SimklImportSource,
         MyAnimeListImportSource,
+        AnilistImportSource,
         LetterboxdImportSource,
         ImdbImportSource,
         StoryGraphImportSource,

@@ -1,5 +1,13 @@
 import { HttpStatus } from "@nestjs/common";
-import { IsEmail, IsIn, Matches, MinLength, validate } from "class-validator";
+import {
+  ArrayNotEmpty,
+  IsEmail,
+  IsIn,
+  IsString,
+  Matches,
+  MinLength,
+  validate,
+} from "class-validator";
 import "reflect-metadata";
 import { ValidationException } from "./validation.exception";
 
@@ -15,6 +23,14 @@ class TestDto {
 
   @Matches(/^[a-z]+$/)
   slug!: string;
+}
+
+class NoArgConstraintDto {
+  @IsString()
+  timezone!: unknown;
+
+  @ArrayNotEmpty()
+  enabledDomains!: unknown[];
 }
 
 describe("ValidationException", () => {
@@ -64,5 +80,24 @@ describe("ValidationException", () => {
       constraint: "matches",
       params: undefined,
     });
+  });
+
+  it("handles decorators declared without constraint arguments", async () => {
+    const dto = Object.assign(new NoArgConstraintDto(), {
+      timezone: 123,
+      enabledDomains: [],
+    });
+    const errors = await validate(dto);
+
+    const exception = new ValidationException(errors);
+
+    expect(exception.details).toEqual([
+      { field: "timezone", constraint: "isString", params: undefined },
+      {
+        field: "enabledDomains",
+        constraint: "arrayNotEmpty",
+        params: undefined,
+      },
+    ]);
   });
 });

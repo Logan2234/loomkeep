@@ -5,8 +5,8 @@ import type {
   ImportPlanItem,
 } from "@loomkeep/shared";
 import { vi } from "vitest";
+import { makeZip } from "../../../../test/make-zip";
 import { ImportJobService } from "../../import-job.service";
-import { makeZip } from "../../make-zip";
 import { MediaMatchResolver } from "../media/media-match-resolver";
 import { TvTimeImportSource } from "./tvtime.source";
 
@@ -55,16 +55,31 @@ function analyzeDto(
 }
 
 function makeService() {
+  const createWatches = vi.fn();
   const prisma = {
     season: { findMany: vi.fn() },
     episode: { count: vi.fn() },
     episodeWatch: {
       count: vi.fn().mockResolvedValue(0),
-      createMany: vi.fn(),
+      createMany: createWatches,
+      // The watches the commit wrote, read back as the series' progress.
+      findMany: vi.fn(async () =>
+        [
+          ...new Set(
+            createWatches.mock.calls.flatMap(
+              ([args]: [{ data: { episodeId: string }[] }]) =>
+                args.data.map((watch) => watch.episodeId),
+            ),
+          ),
+        ].map((episodeId) => ({ episodeId })),
+      ),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     mediaExternalId: { findUnique: vi.fn() },
+    // Nothing tracked yet, and every title already out.
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
     libraryEntry: {
+      findUnique: vi.fn().mockResolvedValue(null),
       upsert: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
@@ -95,7 +110,11 @@ function makeService() {
     { isEffectivelyPremium: vi.fn().mockResolvedValue(true) } as never,
     { award: vi.fn(), awardMany: vi.fn(), revokeBySource: vi.fn() } as never, // XpService stub
     { evaluate: vi.fn() } as never, // AchievementService stub
-    { emitToUser: vi.fn() } as never, // EventsGateway stub
+    {
+      emitToUser: vi.fn(),
+      isOnline: vi.fn().mockResolvedValue(true),
+    } as never, // EventsGateway stub
+    { create: vi.fn() } as never, // NotificationService stub
   );
   return { prisma, mediaItemService, tmdb, service };
 }
@@ -282,8 +301,8 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     expect(prisma.episodeWatch.createMany).toHaveBeenCalledTimes(2);
     const tile = (label: string) =>
       job.report!.tiles.find((t) => t.label === label);
-    expect(tile("Séries")!.value).toBe(1);
-    expect(tile("Épisodes")!.value).toBe(2);
+    expect(tile("Series")!.value).toBe(1);
+    expect(tile("Episodes")!.value).toBe(2);
     expect(job.report!.tiles).toMatchObject([
       { id: "series", watchlistCount: 0 },
       { id: "episodes" },
@@ -360,9 +379,9 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       "m2",
       "MOVIE",
     );
-    const films = job.report!.tiles.find((t) => t.label === "Films");
+    const films = job.report!.tiles.find((t) => t.label === "Movies");
     expect(films!.value).toBe(0);
-    expect(films!.sub).toBe("1 en watchlist");
+    expect(films!.sub).toBe("1 on the watchlist");
   });
 
   it("commit with overwrite wipes history and library first", async () => {

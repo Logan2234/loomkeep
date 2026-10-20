@@ -8,7 +8,6 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
-import { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import { isSocialEnabled } from "../../social/social.config";
 import { AchievementService } from "../achievements/achievement.service";
@@ -29,12 +28,11 @@ export class OnboardingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
     private readonly achievements: AchievementService,
   ) {}
 
   async getChecklist(userId: string): Promise<OnboardingChecklistDto> {
-    if (!isGamificationEnabled(this.config, this.flags)) {
+    if (!isGamificationEnabled(this.config)) {
       return { steps: [], allDone: true };
     }
 
@@ -53,7 +51,7 @@ export class OnboardingService {
       return { steps: [], allDone: true };
     }
 
-    const socialEnabled = isSocialEnabled(this.config, this.flags);
+    const socialEnabled = isSocialEnabled(this.config);
     const applicableKeys = ONBOARDING_STEP_KEYS.filter(
       (key) => socialEnabled || !ONBOARDING_SOCIAL_STEPS.includes(key),
     );

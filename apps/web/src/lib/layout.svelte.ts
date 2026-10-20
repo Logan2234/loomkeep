@@ -1,4 +1,4 @@
-import { browser } from "$app/environment";
+import { browser } from "$app/env";
 
 /**
  * Which of the two navigation shells is mounted (Svelte 5 runes).
@@ -23,6 +23,12 @@ const COMPACT_QUERY = "(max-width: 767px), (max-height: 599px)";
 class LayoutState {
   /** True while the compact (mobile) shell should be mounted. */
   compact = $state(true);
+
+  /**
+   * Side panels currently open. The feedback launcher hides while one is,
+   * since it sits at the browser's maximum z-index and no panel can cover it.
+   */
+  openSidePanels = $state(0);
 
   init(): void {
     if (!browser) return;

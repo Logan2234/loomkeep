@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { IconName } from "$lib/types/icon-name";
+  import type { IconName } from "#lib/types/icon-name.js";
 
   let { name, class: cls = "h-5 w-5" }: { name: IconName; class?: string } =
     $props();
@@ -35,6 +35,21 @@
   {:else if name === "user"}
     <circle cx="12" cy="8" r="4" />
     <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
+  {:else if name === "user-minus"}
+    <circle cx="10" cy="8" r="4" />
+    <path d="M2 20c0-4 4-6 8-6s8 2 8 6" />
+    <path d="M17 11h5" />
+  {:else if name === "forward"}
+    <path d="m15 5 6 6-6 6" />
+    <path d="M21 11H11a7 7 0 0 0-7 7v1" />
+  {:else if name === "mark-unread"}
+    <path d="M20 12v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h9" />
+    <path d="m4 7 8 6 4-3" />
+    <circle cx="19" cy="6" r="2.5" fill="currentColor" stroke="none" />
+  {:else if name === "smile"}
+    <circle cx="12" cy="12" r="9" />
+    <path d="M8.5 14.5a4.5 4.5 0 0 0 7 0" />
+    <path d="M9 9.5h.01M15 9.5h.01" stroke-width="2.6" />
   {:else if name === "users"}
     <circle cx="9" cy="8" r="3.2" />
     <path d="M3 19c0-3.3 2.7-5 6-5s6 1.7 6 5" />
@@ -61,6 +76,12 @@
     <path
       d="M6 3h10a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
     <path d="M4 18h13" />
+  {:else if name === "book-open"}
+    <path d="M3 5.5c3.2-.9 6-.3 9 1.7v13c-3-2-5.8-2.6-9-1.7Z" />
+    <path d="M21 5.5c-3.2-.9-6-.3-9 1.7v13c3-2 5.8-2.6 9-1.7Z" />
+  {:else if name === "info"}
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v6M12 7h.01" />
   {:else if name === "chevron-left"}
     <path d="M15 6l-6 6 6 6" />
   {:else if name === "chevron-right"}
@@ -74,11 +95,20 @@
   {:else if name === "bell"}
     <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6" />
     <path d="M10.5 20a1.8 1.8 0 0 0 3 0" />
+  {:else if name === "bell-off"}
+    <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6" />
+    <path d="M10.5 20a1.8 1.8 0 0 0 3 0" />
+    <path d="M3 3l18 18" />
+  {:else if name === "smartphone"}
+    <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
+    <path d="M11 18h2" />
   {:else if name === "monitor"}
     <rect x="3" y="4" width="18" height="12" rx="2" />
     <path d="M8 20h8M12 16v4" />
   {:else if name === "plus"}
     <path d="M12 5v14M5 12h14" />
+  {:else if name === "minus"}
+    <path d="M5 12h14" />
   {:else if name === "trash"}
     <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />
   {:else if name === "x"}
@@ -232,10 +262,42 @@
   {:else if name === "compass"}
     <circle cx="12" cy="12" r="9" />
     <path d="m15 9-2 6-6 2 2-6Z" fill="currentColor" stroke="none" />
+  {:else if name === "layout"}
+    <rect x="3" y="3" width="11" height="8" rx="1.5" />
+    <rect x="17" y="3" width="4" height="8" rx="1.5" />
+    <rect x="3" y="14" width="5" height="7" rx="1.5" />
+    <rect x="11" y="14" width="10" height="7" rx="1.5" />
+  {:else if name === "resize"}
+    <path d="M20 10v10H10" />
+    <path d="M20 20 12 12" />
+  {:else if name === "maximize"}
+    <path d="M15 3h6v6M9 21H3v-6" />
+    <path d="m21 3-7 7M3 21l7-7" />
+  {:else if name === "minimize"}
+    <path d="M4 14h6v6M20 10h-6V4" />
+    <path d="m14 10 7-7M3 21l7-7" />
+  {:else if name === "external"}
+    <path d="M14 4h6v6" />
+    <path d="M20 4 11 13" />
+    <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+  {:else if name === "divider-horizontal"}
+    <path d="M3 12h18" />
+    <path d="M8 7h8M8 17h8" opacity="0.45" />
+  {:else if name === "divider-vertical"}
+    <path d="M12 3v18" />
+    <path d="M7 8v8M17 8v8" opacity="0.45" />
   {:else if name === "hourglass"}
     <path d="M6 3h12M6 21h12" />
     <path
       d="M7 3c0 4.5 4 6 5 8-1 2-5 3.5-5 8h10c0-4.5-4-6-5-8 1-2 5-3.5 5-8Z" />
+  {:else if name === "ghost"}
+    <path
+      d="M5 20v-9a7 7 0 0 1 14 0v9l-2.3-1.6-2.4 1.6-2.3-1.6-2.3 1.6-2.4-1.6Z" />
+    <circle cx="9.5" cy="11" r="1.1" fill="currentColor" stroke="none" />
+    <circle cx="14.5" cy="11" r="1.1" fill="currentColor" stroke="none" />
+  {:else if name === "timer"}
+    <circle cx="12" cy="13" r="8" />
+    <path d="M12 9v4l2.5 1.5M9 2h6M12 2v3M18.5 6.5l1.5-1.5" />
   {:else if name === "mask"}
     <path d="M4 8c2-1.5 5-2 8-2s6 .5 8 2c0 6-3 11-8 11S4 14 4 8Z" />
     <circle cx="9" cy="10" r="1.3" fill="currentColor" stroke="none" />
@@ -262,6 +324,9 @@
   {:else if name === "key"}
     <circle cx="8" cy="8" r="4.2" />
     <path d="M11 11l9 9M16 16l2.5-2.5M18.5 18.5 21 16" />
+  {:else if name === "copy"}
+    <rect x="9" y="9" width="11" height="11" rx="2" />
+    <path d="M5 15V6a2 2 0 0 1 2-2h8" />
   {:else if name === "keyboard"}
     <rect x="2" y="6" width="20" height="13" rx="2" />
     <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01" />
@@ -273,5 +338,52 @@
       rx="0.9"
       fill="currentColor"
       stroke="none" />
+  {:else if name === "rss"}
+    <circle cx="5.5" cy="18.5" r="1.8" fill="currentColor" stroke="none" />
+    <path d="M4 11.5a8.5 8.5 0 0 1 8.5 8.5" />
+    <path d="M4 5a15 15 0 0 1 15 15" />
+  {:else if name === "table"}
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M3 9.5h18M3 14.5h18M9 9.5V20" />
+  {:else if name === "wall"}
+    <rect x="3" y="3" width="4" height="7" rx="1" />
+    <rect x="10" y="3" width="4" height="7" rx="1" />
+    <rect x="17" y="3" width="4" height="7" rx="1" />
+    <rect x="3" y="14" width="4" height="7" rx="1" />
+    <rect x="10" y="14" width="4" height="7" rx="1" />
+    <rect x="17" y="14" width="4" height="7" rx="1" />
+  {:else if name === "rows"}
+    <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+  {:else if name === "at"}
+    <circle cx="12" cy="12" r="4" />
+    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
+  {:else if name === "heart"}
+    <path
+      d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z" />
+  {:else if name === "thumbs-up"}
+    <path
+      d="M7 10v12M15 5.9 14 10h5.8a2 2 0 0 1 1.9 2.6l-2.3 8a2 2 0 0 1-1.9 1.4H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.8a2 2 0 0 0 1.8-1.1L12 2a3.1 3.1 0 0 1 3 3.9Z" />
+  {:else if name === "user-plus"}
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M19 8v6M22 11h-6" />
+  {:else if name === "user-check"}
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="m16 11 2 2 4-4" />
+  {:else if name === "list-plus"}
+    <path d="M11 12H3M16 6H3M16 18H3M18 9v6M21 12h-6" />
+  {:else if name === "clapperboard"}
+    <path
+      d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" />
+    <path
+      d="m6.2 5.3 3.1 3.9M12.4 3.4l3.1 4M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+  {:else if name === "ticket"}
+    <path
+      d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+    <path d="M13 5v2M13 17v2M13 11v2" />
+  {:else if name === "check-check"}
+    <path d="M18 6 7 17l-5-5" />
+    <path d="m22 10-7.5 7.5L13 16" />
   {/if}
 </svg>

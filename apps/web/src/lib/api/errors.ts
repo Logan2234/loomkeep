@@ -1,6 +1,6 @@
-import { formatRetryDelay } from "$lib/format";
-import { m } from "$lib/paraglide/messages.js";
-import { ErrorCode } from "@loomkeep/shared";
+import { formatRetryDelay } from "#lib/format.js";
+import { m } from "#lib/paraglide/messages.js";
+import { ErrorCode, SAVED_VIEW_LIMITS } from "@loomkeep/shared";
 import { ApiError } from "./core";
 
 /**
@@ -24,6 +24,7 @@ const MESSAGES = {
     m.apierr_auth_invalid_verification_token(),
   [ErrorCode.AuthAlreadyVerified]: () => m.apierr_auth_already_verified(),
   [ErrorCode.AuthInvalidCredentials]: () => m.apierr_auth_invalid_credentials(),
+  [ErrorCode.AuthAccountSuspended]: () => m.apierr_auth_account_suspended(),
   [ErrorCode.AuthInvalidMfaChallenge]: () =>
     m.apierr_auth_invalid_mfa_challenge(),
   [ErrorCode.AuthMfaTooManyAttempts]: () =>
@@ -31,11 +32,16 @@ const MESSAGES = {
   [ErrorCode.AuthMfaInvalidCode]: () => m.apierr_auth_mfa_invalid_code(),
   [ErrorCode.AuthInvalidRefreshToken]: () =>
     m.apierr_auth_invalid_refresh_token(),
+  [ErrorCode.AuthRefreshSuperseded]: () => m.apierr_auth_refresh_superseded(),
   [ErrorCode.AuthInvalidResetToken]: () => m.apierr_auth_invalid_reset_token(),
   [ErrorCode.AuthMfaTotpNotInProgress]: () =>
     m.apierr_auth_mfa_totp_not_in_progress(),
   [ErrorCode.AuthCurrentPasswordIncorrect]: () =>
     m.apierr_auth_current_password_incorrect(),
+  [ErrorCode.AuthReauthRequired]: () => m.apierr_auth_reauth_required(),
+  [ErrorCode.AuthReauthTooManyAttempts]: () =>
+    m.apierr_auth_reauth_too_many_attempts(),
+  [ErrorCode.AuthTotpCodeReused]: () => m.apierr_auth_totp_code_reused(),
   [ErrorCode.AuthMissingAccessToken]: () =>
     m.apierr_auth_missing_access_token(),
   [ErrorCode.AuthInvalidAccessToken]: () =>
@@ -50,14 +56,33 @@ const MESSAGES = {
     m.apierr_auth_webauthn_credential_not_found(),
   [ErrorCode.AuthPasswordlessRequiresCredential]: () =>
     m.apierr_auth_passwordless_requires_credential(),
-  [ErrorCode.AuthPasswordlessNotEligible]: () =>
-    m.apierr_auth_passwordless_not_eligible(),
+  [ErrorCode.AuthInvalidInvitation]: () => m.apierr_auth_invalid_invitation(),
+  [ErrorCode.AuthInvitationExpired]: () => m.apierr_auth_invitation_expired(),
+  [ErrorCode.AuthInvitationEmailMismatch]: () =>
+    m.apierr_auth_invitation_email_mismatch(),
+  [ErrorCode.AuthInvalidApiKey]: () => m.apierr_auth_invalid_api_key(),
+  [ErrorCode.AuthApiKeyForbidden]: () => m.apierr_auth_api_key_forbidden(),
+  [ErrorCode.ApiKeyNotFound]: () => m.apierr_api_key_not_found(),
+  [ErrorCode.ApiKeyLimitReached]: () => m.apierr_api_key_limit_reached(),
+  [ErrorCode.ApiKeyExpiryInPast]: () => m.apierr_api_key_expiry_in_past(),
+  [ErrorCode.ApiRateLimited]: () => m.apierr_api_rate_limited(),
+  [ErrorCode.ApiDisabled]: () => m.apierr_api_disabled(),
+  [ErrorCode.SecretScanningUnauthorized]: () =>
+    m.apierr_api_secret_scanning_unauthorized(),
   [ErrorCode.AdminCacheItemNotFound]: () =>
     m.apierr_admin_cache_item_not_found(),
   [ErrorCode.AdminCacheResyncFailed]: () =>
     m.apierr_admin_cache_resync_failed(),
+  [ErrorCode.EeUnlicensed]: () => m.apierr_ee_unlicensed(),
   [ErrorCode.LibraryEpisodeNotAired]: () =>
     m.apierr_library_episode_not_aired(),
+  [ErrorCode.LibraryMovieNotReleased]: () =>
+    m.apierr_library_movie_not_released(),
+  [ErrorCode.LibraryAnimeNotAired]: () => m.apierr_library_anime_not_aired(),
+  [ErrorCode.LibraryGamePlatformInvalid]: () =>
+    m.apierr_library_game_platform_invalid(),
+  [ErrorCode.LibraryGameNotReleased]: () =>
+    m.apierr_library_game_not_released(),
   [ErrorCode.LibraryCalendarUnavailable]: () =>
     m.apierr_library_calendar_unavailable(),
   [ErrorCode.LibraryEpisodeNotFound]: () =>
@@ -67,9 +92,28 @@ const MESSAGES = {
   [ErrorCode.LibraryNoWatchToUndo]: () => m.apierr_library_no_watch_to_undo(),
   [ErrorCode.LibraryEntryNotFound]: () => m.apierr_library_entry_not_found(),
   [ErrorCode.LibraryEntryForbidden]: () => m.apierr_library_entry_forbidden(),
+  [ErrorCode.LibrarySessionNotFound]: () =>
+    m.apierr_library_session_not_found(),
+  [ErrorCode.LibrarySessionForbidden]: () =>
+    m.apierr_library_session_forbidden(),
+  [ErrorCode.LibrarySessionDateFuture]: () =>
+    m.apierr_library_session_date_future(),
+  [ErrorCode.LibrarySessionInvalidPages]: () =>
+    m.apierr_library_session_invalid_pages(),
+  [ErrorCode.LibraryBookEditionRequired]: () =>
+    m.apierr_library_book_edition_required(),
   [ErrorCode.LibraryReplayNotMovie]: () => m.apierr_library_replay_not_movie(),
   [ErrorCode.LibraryReplayNotFound]: () => m.apierr_library_replay_not_found(),
   [ErrorCode.LibraryReplayForbidden]: () => m.apierr_library_replay_forbidden(),
+  [ErrorCode.LibrarySavedViewNotFound]: () =>
+    m.apierr_library_saved_view_not_found(),
+  [ErrorCode.LibraryBulkInvalid]: () => m.apierr_library_bulk_invalid(),
+  [ErrorCode.LibrarySavedViewFreeQuotaExceeded]: () =>
+    m.apierr_library_saved_view_free_quota_exceeded({
+      free: SAVED_VIEW_LIMITS.free,
+    }),
+  [ErrorCode.LibrarySavedViewLimitReached]: () =>
+    m.apierr_library_saved_view_limit_reached({ max: SAVED_VIEW_LIMITS.max }),
   [ErrorCode.CatalogUnknownMediaType]: () =>
     m.apierr_catalog_unknown_media_type(),
   [ErrorCode.CatalogNoPersonDetails]: () =>
@@ -92,14 +136,24 @@ const MESSAGES = {
     m.apierr_admin_smtp_not_configured(),
   [ErrorCode.AdminUnknownJob]: () => m.apierr_admin_unknown_job(),
   [ErrorCode.AdminAccountNotFound]: () => m.apierr_admin_account_not_found(),
+  [ErrorCode.AdminSettingLockedByEnv]: () =>
+    m.apierr_admin_setting_locked_by_env(),
   [ErrorCode.AdminReportNotFound]: () => m.apierr_admin_report_not_found(),
   [ErrorCode.AdminCannotSelfDemote]: () => m.apierr_admin_cannot_self_demote(),
   [ErrorCode.AdminCannotSelfDelete]: () => m.apierr_admin_cannot_self_delete(),
-  [ErrorCode.AdminUserNotFound]: () => m.apierr_admin_user_not_found(),
   [ErrorCode.AdminForbidden]: () => m.apierr_admin_forbidden(),
   [ErrorCode.AdminBackupNotFound]: () => m.apierr_admin_backup_not_found(),
+  [ErrorCode.AdminBackupNotOrphan]: () => m.apierr_admin_backup_not_orphan(),
   [ErrorCode.AdminMisconfigured]: () => m.apierr_admin_misconfigured(),
   [ErrorCode.AdminUnauthorized]: () => m.apierr_admin_unauthorized(),
+  [ErrorCode.AdminInvitationNotFound]: () =>
+    m.apierr_admin_invitation_not_found(),
+  [ErrorCode.AdminInvitationEmailRegistered]: () =>
+    m.apierr_admin_invitation_email_registered(),
+  [ErrorCode.AdminInvitationAlreadyPending]: () =>
+    m.apierr_admin_invitation_already_pending(),
+  [ErrorCode.AdminInvitationNotRenewable]: () =>
+    m.apierr_admin_invitation_not_renewable(),
   [ErrorCode.CommentUnknownTargetType]: () =>
     m.apierr_comment_unknown_target_type(),
   [ErrorCode.CommentParentNotFound]: () => m.apierr_comment_parent_not_found(),
@@ -109,6 +163,23 @@ const MESSAGES = {
     m.apierr_comment_participation_requires_library(),
   [ErrorCode.CommentInteractionBlocked]: () =>
     m.apierr_comment_interaction_blocked(),
+  [ErrorCode.ChatFeatureDisabled]: () => m.apierr_chat_feature_disabled(),
+  [ErrorCode.ChatNotFriends]: () => m.apierr_chat_not_friends(),
+  [ErrorCode.ChatConversationNotFound]: () =>
+    m.apierr_chat_conversation_not_found(),
+  [ErrorCode.ChatMessageNotFound]: () => m.apierr_chat_message_not_found(),
+  [ErrorCode.ChatForbidden]: () => m.apierr_chat_forbidden(),
+  [ErrorCode.ChatReadOnly]: () => m.apierr_chat_read_only(),
+  [ErrorCode.ChatWorkNotFound]: () => m.apierr_chat_work_not_found(),
+  [ErrorCode.ChatReviewNotFound]: () => m.apierr_chat_review_not_found(),
+  [ErrorCode.ChatListNotShareable]: () => m.apierr_chat_list_not_shareable(),
+  [ErrorCode.ChatPollOptionNotFound]: () =>
+    m.apierr_chat_poll_option_not_found(),
+  [ErrorCode.ChatSagaNotFound]: () => m.apierr_chat_saga_not_found(),
+  [ErrorCode.ChatPickNotInPile]: () => m.apierr_chat_pick_not_in_pile(),
+  [ErrorCode.ChatWhereNotVideo]: () => m.apierr_chat_where_not_video(),
+  [ErrorCode.ChatPinLimit]: () => m.apierr_chat_pin_limit(),
+  [ErrorCode.ChatForwardToOrigin]: () => m.apierr_chat_forward_to_origin(),
   [ErrorCode.ListInvalidMembershipTarget]: () =>
     m.apierr_lists_invalid_membership_target(),
   [ErrorCode.ListNotFound]: () => m.apierr_lists_not_found(),
@@ -117,13 +188,13 @@ const MESSAGES = {
   [ErrorCode.ListForbidden]: () => m.apierr_lists_forbidden(),
   [ErrorCode.ListItemNotFound]: () => m.apierr_lists_item_not_found(),
   [ErrorCode.ListItemAlreadyExists]: () => m.apierr_lists_item_already_exists(),
+  [ErrorCode.ListWorkNotFound]: () => m.apierr_lists_work_not_found(),
   [ErrorCode.ListReorderMismatch]: () => m.apierr_lists_reorder_mismatch(),
   [ErrorCode.ListStale]: () => m.apierr_lists_stale(),
-  [ErrorCode.ListMemberUserNotFound]: () =>
-    m.apierr_lists_member_user_not_found(),
   [ErrorCode.ListCannotAddSelf]: () => m.apierr_lists_cannot_add_self(),
   [ErrorCode.ListMemberAlreadyEditor]: () =>
     m.apierr_lists_member_already_editor(),
+  [ErrorCode.ListMemberNotFriend]: () => m.apierr_lists_member_not_friend(),
   [ErrorCode.ListMembershipNotFound]: () =>
     m.apierr_lists_membership_not_found(),
   [ErrorCode.NewsletterWebhookInvalidPayload]: () =>
@@ -145,7 +216,6 @@ const MESSAGES = {
     m.apierr_reviews_unknown_target_type(),
   [ErrorCode.ReviewNotFound]: () => m.apierr_reviews_not_found(),
   [ErrorCode.ReviewCannotVoteSelf]: () => m.apierr_reviews_cannot_vote_self(),
-  [ErrorCode.SocialUserNotFound]: () => m.apierr_social_user_not_found(),
   [ErrorCode.SocialCannotFollowSelf]: () =>
     m.apierr_social_cannot_follow_self(),
   [ErrorCode.SocialGhostPublicOnly]: () => m.apierr_social_ghost_public_only(),
@@ -154,6 +224,8 @@ const MESSAGES = {
     m.apierr_social_follow_request_not_found(),
   [ErrorCode.SocialCannotBlockSelf]: () => m.apierr_social_cannot_block_self(),
   [ErrorCode.SocialFeatureDisabled]: () => m.apierr_social_feature_disabled(),
+  [ErrorCode.SocialActivityFeedUnavailable]: () =>
+    m.apierr_social_activity_feed_unavailable(),
   [ErrorCode.StatsRatingOrDecadeOnly]: () =>
     m.apierr_stats_rating_or_decade_only(),
   [ErrorCode.StatsInvalidRating]: () => m.apierr_stats_invalid_rating(),
@@ -165,6 +237,7 @@ const MESSAGES = {
   [ErrorCode.UserCsvExportUnavailable]: () =>
     m.apierr_user_csv_export_unavailable(),
   [ErrorCode.UserAccountNotFound]: () => m.apierr_user_account_not_found(),
+  [ErrorCode.UserNotFound]: () => m.apierr_user_not_found(),
   [ErrorCode.UserDomainDisabled]: () => m.apierr_user_domain_disabled(),
   [ErrorCode.UserAvatarNotFound]: () => m.apierr_user_avatar_not_found(),
   [ErrorCode.UserPremiumRequired]: () => m.apierr_user_premium_required(),
@@ -186,6 +259,10 @@ const MESSAGES = {
   [ErrorCode.UserAvatarInvalidType]: () => m.apierr_user_avatar_invalid_type(),
   [ErrorCode.ImportSimklConnectionFailed]: () =>
     m.apierr_import_simkl_connection_failed(),
+  [ErrorCode.ImportAnilistUserNotFound]: () =>
+    m.apierr_import_anilist_user_not_found(),
+  [ErrorCode.ImportAnilistListPrivate]: () =>
+    m.apierr_import_anilist_list_private(),
   [ErrorCode.ImportMalformedExport]: () => m.apierr_import_malformed_export(),
   [ErrorCode.ImportJobNotFound]: () => m.apierr_import_job_not_found(),
   [ErrorCode.ImportJobForbidden]: () => m.apierr_import_job_forbidden(),
@@ -209,12 +286,21 @@ const MESSAGES = {
   [ErrorCode.ImportArchiveMissingFiles]: () =>
     m.apierr_import_archive_missing_files(),
   [ErrorCode.ImportArchiveMalformed]: () => m.apierr_import_archive_malformed(),
+  [ErrorCode.LibrarySessionTimerAlreadyRunning]: () =>
+    m.apierr_library_session_timer_already_running(),
+  [ErrorCode.LibrarySessionTimerNotFound]: () =>
+    m.apierr_library_session_timer_not_found(),
   [ErrorCode.InvalidParam]: () => m.apierr_validation_invalid_param(),
   [ErrorCode.ValidationFailed]: () => m.apierr_validation_failed(),
   [ErrorCode.InternalError]: () => m.apierr_internal_error(),
+  [ErrorCode.InternalConflict]: () => m.apierr_internal_conflict(),
+  [ErrorCode.InternalRecordGone]: () => m.apierr_internal_record_gone(),
   [ErrorCode.NetworkOffline]: () => m.apierr_network_offline(),
+  [ErrorCode.AuthReauthCancelled]: () => m.apierr_auth_reauth_cancelled(),
   [ErrorCode.GamificationAchievementNotFound]: () =>
     m.apierr_gamification_achievement_not_found(),
+  [ErrorCode.GamificationXpBelowZero]: () =>
+    m.apierr_gamification_xp_below_zero(),
   [ErrorCode.GamificationFeatureDisabled]: () =>
     m.apierr_gamification_feature_disabled(),
   [ErrorCode.GamificationBadgeSecret]: () =>

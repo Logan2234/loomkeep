@@ -1,5 +1,11 @@
-import type { RatingDto } from "@loomkeep/shared";
-import { ErrorCode, GameSource, GameSummaryDto } from "@loomkeep/shared";
+import type { GameTimeToBeatDto, RatingDto } from "@loomkeep/shared";
+import {
+  ErrorCode,
+  GameSource,
+  GameSummaryDto,
+  isGameUpcoming,
+  ReleaseDatePrecision,
+} from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
@@ -10,11 +16,20 @@ import { RequestThrottle } from "../../common/request-throttle";
 import type {
   GameCatalogProvider,
   ProviderGameDetails,
+  ProviderGameSaga,
 } from "./game-provider.types";
 
-const OAUTH_URL = "https://id.twitch.tv/oauth2/token";
+export const IGDB_OAUTH_URL = "https://id.twitch.tv/oauth2/token";
 const API_URL = "https://api.igdb.com/v4";
 const IMG = "https://images.igdb.com/igdb/image/upload";
+const IMAGE_SIZE = { cover: "cover_big", backdrop: "1080p" } as const;
+
+function igdbImage(
+  id: string,
+  size: (typeof IMAGE_SIZE)[keyof typeof IMAGE_SIZE],
+): string {
+  return `${IMG}/t_${size}/${id}.jpg`;
+}
 
 // IGDB theme id for "Erotic" — our adult-content marker, mirroring TMDB `adult`
 // / AniList hentai. See https://api-docs.igdb.com (themes reference).
@@ -32,6 +47,25 @@ const MIN_REQUEST_INTERVAL_MS = 260;
 
 interface IgdbImage {
   image_id: string;
+}
+
+// A game's place in a series (IGDB "collection"): type 1 is a main game
+// ("Member"), 2 a spin-off.
+interface IgdbCollectionMembership {
+  collection: { id: number; name?: string };
+  game?: IgdbGame;
+}
+const MAIN_GAME_MEMBERSHIP = 1;
+// A base game, not a DLC, remaster, port or bundle.
+const MAIN_GAME_TYPE = 0;
+const SAGA_GAME_FIELDS =
+  "game.name, game.cover.image_id, game.first_release_date, game.game_type, game.themes, game.release_dates.date, game.release_dates.date_format";
+
+// One release per platform and region. `date_format` says how much of `date`
+// is real: 0 the day, 1 the month, 2 the year, 3–6 a quarter (Q1–Q4), 7 none.
+interface IgdbReleaseDate {
+  date?: number; // Unix seconds.
+  date_format?: number;
 }
 
 interface IgdbNamed {
@@ -83,6 +117,8 @@ interface IgdbGame {
   summary?: string;
   storyline?: string;
   first_release_date?: number; // Unix seconds.
+  release_dates?: IgdbReleaseDate[];
+  game_type?: number;
   cover?: IgdbImage;
   artworks?: IgdbImage[];
   screenshots?: IgdbImage[];
@@ -105,6 +141,21 @@ interface IgdbGame {
   rating_count?: number;
   aggregated_rating_count?: number;
 }
+
+// One row per game on `/game_time_to_beats`, times in seconds. A separate
+// endpoint: `/games` has no field pointing to it, so it can't be expanded
+// into the main query.
+interface IgdbTimeToBeat {
+  game_id: number;
+  hastily?: number;
+  normally?: number;
+  completely?: number;
+  count?: number;
+}
+
+// Below this many player submissions, an "average" is one person's run and
+// reads as an authoritative figure it isn't — shown as nothing instead.
+const MIN_TIME_TO_BEAT_SUBMISSIONS = 3;
 
 // IGDB computes this list itself (genre/theme/franchise co-occurrence); it can
 // run long, so the detail page only shows the top handful.
@@ -218,7 +269,7 @@ export class IgdbProvider implements GameCatalogProvider {
   }
 
   private static readonly DETAIL_FIELDS =
-    "name, slug, summary, storyline, first_release_date, cover.image_id, artworks.image_id, screenshots.image_id, genres.name, platforms.name, themes, websites.url, websites.category, websites.type, " +
+    "name, slug, summary, storyline, first_release_date, release_dates.date, release_dates.date_format, cover.image_id, artworks.image_id, screenshots.image_id, genres.name, platforms.name, themes, websites.url, websites.category, websites.type, " +
     "similar_games.name, similar_games.cover.image_id, similar_games.first_release_date, similar_games.themes, " +
     "involved_companies.company.name, involved_companies.developer, involved_companies.publisher, " +
     "game_modes.name, player_perspectives.name, " +
@@ -257,13 +308,15 @@ export class IgdbProvider implements GameCatalogProvider {
       );
     }
 
-    return this.toDetails(game);
+    const timesToBeat = await this.timesToBeat([id]);
+    return this.toDetails(game, timesToBeat.get(id) ?? null);
   }
 
   /**
-   * Batch details for many IGDB ids in one query each 500 (IGDB's result cap),
-   * used by the Steam import so a large library is persisted in a couple of
-   * calls instead of one per game.
+   * Batch details for many IGDB ids in two queries each 500 (IGDB's result
+   * cap: the games, then their times to beat), used by the Steam import and
+   * the stale-cache refresh so hundreds of games cost a couple of calls
+   * instead of two per game.
    */
   async getDetailsByIds(ids: string[]): Promise<ProviderGameDetails[]> {
     const details: ProviderGameDetails[] = [];
@@ -276,10 +329,25 @@ export class IgdbProvider implements GameCatalogProvider {
         "/games",
         `fields ${IgdbProvider.DETAIL_FIELDS}; where id = (${idList}); limit 500;`,
       );
-      details.push(...games.map((g) => this.toDetails(g)));
+      const timesToBeat = await this.timesToBeat(batch.map(Number));
+      details.push(
+        ...games.map((g) => this.toDetails(g, timesToBeat.get(g.id) ?? null)),
+      );
     }
 
     return details;
+  }
+
+  /** The IGDB id behind a game page's slug (igdb.com/games/{slug}), if any. */
+  async gameIdForSlug(slug: string): Promise<string | null> {
+    // Quoted into an Apicalypse string literal: only IGDB's own slug alphabet
+    // gets through, so a stray quote can't break out of it.
+    if (!/^[a-z0-9-]+$/.test(slug)) return null;
+    const [game] = await this.query<{ id: number }[]>(
+      "/games",
+      `fields id; where slug = "${slug}"; limit 1;`,
+    );
+    return game ? String(game.id) : null;
   }
 
   /**
@@ -309,21 +377,40 @@ export class IgdbProvider implements GameCatalogProvider {
     return byAppId;
   }
 
-  private toDetails(game: IgdbGame): ProviderGameDetails {
+  /** Times to beat by IGDB game id; a game under the threshold is absent. */
+  private async timesToBeat(
+    ids: number[],
+  ): Promise<Map<number, GameTimeToBeatDto>> {
+    const rows = await this.query<IgdbTimeToBeat[]>(
+      "/game_time_to_beats",
+      `fields game_id, hastily, normally, completely, count; where game_id = (${ids.join(",")}); limit 500;`,
+    );
+    const byGame = new Map<number, GameTimeToBeatDto>();
+
+    for (const row of rows) {
+      const timeToBeat = toTimeToBeat(row);
+      if (timeToBeat) byGame.set(row.game_id, timeToBeat);
+    }
+
+    return byGame;
+  }
+
+  private toDetails(
+    game: IgdbGame,
+    timeToBeat: GameTimeToBeatDto | null,
+  ): ProviderGameDetails {
     return {
       summary: this.toSummary(game),
       overview: game.summary ?? null,
       backdropUrl: game.artworks?.[0]
-        ? `${IMG}/t_1080p/${game.artworks[0].image_id}.jpg`
+        ? igdbImage(game.artworks[0].image_id, IMAGE_SIZE.backdrop)
         : null,
       screenshots: (game.screenshots ?? [])
         .slice(0, MAX_SCREENSHOTS)
-        .map((s) => `${IMG}/t_1080p/${s.image_id}.jpg`),
+        .map((s) => igdbImage(s.image_id, IMAGE_SIZE.backdrop)),
       genres: game.genres?.map((g) => g.name) ?? [],
       platforms: game.platforms?.map((p) => p.name) ?? [],
-      releaseDate: game.first_release_date
-        ? new Date(game.first_release_date * 1000).toISOString()
-        : null,
+      ...firstRelease(game),
       website:
         game.websites?.find((w) => w.category === 1 || w.type === 1)?.url ??
         null,
@@ -342,6 +429,7 @@ export class IgdbProvider implements GameCatalogProvider {
       trailerVideoId: pickTrailer(game.videos),
       ageRatingImageUrls: uniqueAgeRatingImages(game.age_ratings),
       multiplayerModes: multiplayerModeLabels(game.multiplayer_modes),
+      timeToBeat,
     };
   }
 
@@ -375,16 +463,63 @@ export class IgdbProvider implements GameCatalogProvider {
         ? new Date(game.first_release_date * 1000).getUTCFullYear()
         : null,
       coverUrl: game.cover
-        ? `${IMG}/t_cover_big/${game.cover.image_id}.jpg`
+        ? igdbImage(game.cover.image_id, IMAGE_SIZE.cover)
         : null,
       isAdult: game.themes?.includes(EROTIC_THEME_ID) ?? false,
     };
   }
 
+  /**
+   * The series a game is a main game of, kept to its main games in release
+   * order — spin-offs, DLCs and remasters left out. When it belongs to a
+   * series and to a part of one (Assassin's Creed and its Ezio trilogy), the
+   * largest wins: IGDB doesn't reliably link a subseries to its parent. Null
+   * when no series has two main games.
+   */
+  async getSaga(sourceId: string): Promise<ProviderGameSaga | null> {
+    if (!isIgdbId(sourceId)) return null;
+    const memberships = await this.query<IgdbCollectionMembership[]>(
+      "/collection_memberships",
+      `fields collection.id; where game = ${sourceId} & type = ${MAIN_GAME_MEMBERSHIP}; limit 20;`,
+    );
+    const collections = [...new Set(memberships.map((m) => m.collection.id))];
+    let best: { id: number; title: string; games: IgdbGame[] } | null = null;
+
+    for (const id of collections) {
+      const rows = await this.query<IgdbCollectionMembership[]>(
+        "/collection_memberships",
+        `fields collection.name, ${SAGA_GAME_FIELDS}; where collection = ${id} & type = ${MAIN_GAME_MEMBERSHIP}; limit 500;`,
+      );
+      const games = rows.flatMap((row) =>
+        row.game && row.game.game_type === MAIN_GAME_TYPE ? [row.game] : [],
+      );
+
+      if (!best || games.length > best.games.length) {
+        best = { id, title: rows[0]?.collection.name ?? "", games };
+      }
+    }
+
+    if (!best || best.games.length < 2) return null;
+    const members = best.games
+      .map((game) => ({ ...this.toSummary(game), ...firstRelease(game) }))
+      // Undated announcements go last, in no particular order among them.
+      .sort((a, b) =>
+        (a.releaseDate ?? "9999").localeCompare(b.releaseDate ?? "9999"),
+      )
+      .map((game) => ({
+        ...game,
+        releaseDate: game.releaseDate?.slice(0, 10) ?? null,
+        upcoming: isGameUpcoming(
+          game.releaseDate?.slice(0, 10) ?? null,
+          game.releaseDatePrecision,
+        ),
+      }));
+    return { key: `IGDB:${best.id}`, title: best.title, members };
+  }
+
   /** POST an Apicalypse query to an IGDB endpoint with a valid access token. */
   private async query<T>(path: string, body: string): Promise<T> {
     await this.throttle.wait();
-    this.quota.record("igdb");
     return fetchJson<T>(
       `${API_URL}${path}`,
       {
@@ -397,7 +532,7 @@ export class IgdbProvider implements GameCatalogProvider {
         },
         body,
       },
-      { sourceLabel: "IGDB" },
+      { sourceLabel: "IGDB", onAttempt: () => this.quota.record("igdb") },
     );
   }
 
@@ -419,7 +554,7 @@ export class IgdbProvider implements GameCatalogProvider {
     });
 
     const token = await fetchJson<TwitchToken>(
-      OAUTH_URL,
+      IGDB_OAUTH_URL,
       {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -433,6 +568,28 @@ export class IgdbProvider implements GameCatalogProvider {
     };
     return this.token.value;
   }
+}
+
+/** Seconds to whole minutes, with IGDB's 0 read as "no data". */
+function secondsToMinutes(seconds: number | undefined): number | null {
+  return seconds && seconds > 0 ? Math.round(seconds / 60) : null;
+}
+
+function toTimeToBeat(row: IgdbTimeToBeat): GameTimeToBeatDto | null {
+  const submissions = row.count ?? 0;
+  if (submissions < MIN_TIME_TO_BEAT_SUBMISSIONS) return null;
+
+  const timeToBeat = {
+    hastilyMin: secondsToMinutes(row.hastily),
+    normallyMin: secondsToMinutes(row.normally),
+    completelyMin: secondsToMinutes(row.completely),
+    submissions,
+  };
+  const hasAny =
+    timeToBeat.hastilyMin !== null ||
+    timeToBeat.normallyMin !== null ||
+    timeToBeat.completelyMin !== null;
+  return hasAny ? timeToBeat : null;
 }
 
 /** IGDB's own user rating + critic aggregate (both 0–100), when present. */
@@ -461,6 +618,105 @@ function toRatings(game: IgdbGame): RatingDto[] {
 
 function voteSuffix(count: number | undefined): string {
   return count ? ` (${count})` : "";
+}
+
+/** Release periods, in IGDB's `date_format` order: the day, the month, the year. */
+const PERIOD_FORMATS: Record<number, ReleaseDatePrecision> = {
+  0: ReleaseDatePrecision.DAY,
+  1: ReleaseDatePrecision.MONTH,
+  2: ReleaseDatePrecision.YEAR,
+  3: ReleaseDatePrecision.QUARTER,
+  4: ReleaseDatePrecision.QUARTER,
+  5: ReleaseDatePrecision.QUARTER,
+  6: ReleaseDatePrecision.QUARTER,
+};
+const TBD_FORMAT = 7;
+const PRECISION_RANK: ReleaseDatePrecision[] = [
+  ReleaseDatePrecision.DAY,
+  ReleaseDatePrecision.MONTH,
+  ReleaseDatePrecision.QUARTER,
+  ReleaseDatePrecision.YEAR,
+];
+
+/** The first and last day of the period one IGDB release date stands for. */
+function releasePeriod(
+  date: number,
+  format: number,
+): { start: Date; end: Date } {
+  const stamp = new Date(date * 1000);
+  const year = stamp.getUTCFullYear();
+  const day = (month: number, d: number) => new Date(Date.UTC(year, month, d));
+
+  switch (PERIOD_FORMATS[format]) {
+    case ReleaseDatePrecision.MONTH:
+      return {
+        start: day(stamp.getUTCMonth(), 1),
+        end: day(stamp.getUTCMonth() + 1, 0),
+      };
+
+    case ReleaseDatePrecision.QUARTER: {
+      const first = (format - 3) * 3;
+      return { start: day(first, 1), end: day(first + 3, 0) };
+    }
+
+    case ReleaseDatePrecision.YEAR:
+      return { start: day(0, 1), end: day(11, 31) };
+
+    default: {
+      const only = day(stamp.getUTCMonth(), stamp.getUTCDate());
+      return { start: only, end: only };
+    }
+  }
+}
+
+/**
+ * The game's first release across platforms and regions, dated to the first
+ * day of its period — IGDB stamps "2028" December 31st and "Q4 2027" the
+ * quarter's last day. Releases are compared by the end of their period, so a
+ * vague "2026" never wins over a real day inside it.
+ */
+function firstRelease(game: IgdbGame): {
+  releaseDate: string | null;
+  releaseDatePrecision: ReleaseDatePrecision | null;
+} {
+  const dated = (game.release_dates ?? []).flatMap((r) =>
+    r.date !== undefined &&
+    r.date_format !== undefined &&
+    PERIOD_FORMATS[r.date_format]
+      ? [
+          {
+            ...releasePeriod(r.date, r.date_format),
+            precision: PERIOD_FORMATS[r.date_format],
+          },
+        ]
+      : [],
+  );
+  const [first] = dated.sort(
+    (a, b) =>
+      a.end.getTime() - b.end.getTime() ||
+      PRECISION_RANK.indexOf(a.precision) - PRECISION_RANK.indexOf(b.precision),
+  );
+
+  if (first) {
+    return {
+      releaseDate: first.start.toISOString(),
+      releaseDatePrecision: first.precision,
+    };
+  }
+
+  if (game.release_dates?.some((r) => r.date_format === TBD_FORMAT)) {
+    return {
+      releaseDate: null,
+      releaseDatePrecision: ReleaseDatePrecision.TBD,
+    };
+  }
+
+  return {
+    releaseDate: game.first_release_date
+      ? new Date(game.first_release_date * 1000).toISOString()
+      : null,
+    releaseDatePrecision: null,
+  };
 }
 
 /** Prefer a video whose name mentions "trailer"; else the first IGDB lists. */

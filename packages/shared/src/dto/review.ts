@@ -4,6 +4,7 @@ import type {
   ReviewVoteValue,
 } from "../enums";
 import type { UserSummaryDto } from "./social";
+import type { StatsDomain } from "./stats";
 
 /** A review: a mandatory /10 rating + optional text on a target. */
 export interface ReviewDto {
@@ -33,10 +34,15 @@ export interface ReviewTargetSummaryDto {
   imageUrl: string | null;
   /**
    * Client route to the work's detail page (e.g. `/games/1234`), or null when
-   * the target has no browsable page yet (SEASON/EPISODE). Built server-side
-   * from the canonical source id so the client needn't know the URL scheme.
+   * the target has no browsable page. Built server-side from the canonical
+   * source id so the client needn't know the URL scheme. A season or episode
+   * resolves to its series' page.
    */
   href: string | null;
+  /** Set for a SEASON or EPISODE target; `title`/`imageUrl` are the series'. */
+  seasonNumber?: number | null;
+  /** Set for an EPISODE target only. */
+  episodeNumber?: number | null;
 }
 
 /** A review plus its resolved target, for the "Mes reviews" screen. */
@@ -73,3 +79,18 @@ export interface ReviewVoteResultDto {
 export interface ReviewUnvoteResultDto {
   score: number;
 }
+
+export const REVIEW_TARGET_DOMAIN: Record<ReviewTargetType, StatsDomain> = {
+  MEDIA: "MEDIA",
+  SEASON: "MEDIA",
+  EPISODE: "MEDIA",
+  GAME: "GAMES",
+  BOOK: "BOOKS",
+  MUSIC: "MUSIC",
+};
+
+/** Max length of a review's optional text (frontend + backend DTO). */
+export const REVIEW_TEXT_MAX_LENGTH = 2000;
+
+/** How many upvotes on one review trigger the aggregated notification. */
+export const REVIEW_VOTE_NOTIFY_THRESHOLD = 10;

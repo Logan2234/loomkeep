@@ -6,7 +6,7 @@
     DATETIME_LONG_OPTIONS,
     formatDateTime,
     formatRelative,
-  } from "$lib/format";
+  } from "#lib/format.js";
 
   let { iso, class: className = "" }: { iso: string; class?: string } =
     $props();
@@ -21,22 +21,20 @@
     showAbsolute = !showAbsolute;
   }
 
-  const text = $derived(
-    showAbsolute
-      ? formatDateTime(iso, DATETIME_LONG_OPTIONS)
-      : formatRelative(iso),
-  );
+  const absolute = $derived(formatDateTime(iso, DATETIME_LONG_OPTIONS));
+  const text = $derived(showAbsolute ? absolute : formatRelative(iso));
 </script>
 
 {#if coarse}
   <button
     type="button"
     class={className}
-    title={formatDateTime(iso, DATETIME_LONG_OPTIONS)}
+    title={absolute}
+    aria-pressed={showAbsolute}
     onclick={toggle}>
-    {text}
+    <time datetime={iso} aria-label={absolute}>{text}</time>
   </button>
 {:else}
-  <span class={className} title={formatDateTime(iso, DATETIME_LONG_OPTIONS)}
-    >{text}</span>
+  <time datetime={iso} class={className} title={absolute} aria-label={absolute}
+    >{text}</time>
 {/if}

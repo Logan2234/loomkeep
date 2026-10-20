@@ -1,60 +1,70 @@
 <script lang="ts">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   import { page } from "$app/state";
   import {
     accessibility,
     type ContrastPreference,
     type DensityPreference,
     type MotionPreference,
-  } from "$lib/accessibility.svelte";
-  import { updateMe } from "$lib/api/auth";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
-  import ThemePreview from "$lib/components/ThemePreview.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
-  import { isDomainEnabled } from "$lib/domains";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import type { MobileDestination } from "$lib/navigation";
+  } from "#lib/accessibility.svelte.js";
+  import { updateMe } from "#lib/api/auth.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
+  import ThemePreview from "#lib/components/ThemePreview.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { THEME_DEFINITIONS } from "#lib/constants/theme-definitions.js";
+  import { isDomainEnabled } from "#lib/domain-availability.js";
+  import { useEeLock } from "#lib/ee/license.svelte.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { languageOptions } from "#lib/locales.js";
+  import type { MobileDestination } from "#lib/navigation.js";
   import {
     DEFAULT_BOTTOM_SHORTCUTS,
     resolveBottomShortcuts,
     resolveShortcutChoices,
-  } from "$lib/navigation";
+  } from "#lib/navigation.js";
   import {
     NAV_STYLE_META,
     navStyle,
     type NavStyle,
-  } from "$lib/navStyle.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { flashAnchor } from "../flash-anchor";
-  import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
-  import { type Locale } from "@loomkeep/shared";
-  import { dndzone } from "svelte-dnd-action";
+  } from "#lib/nav-style.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { flashAnchor } from "#lib/flash-anchor.js";
+  import SettingRow from "./SettingRow.svelte";
+  import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
+  import {
+    type Locale,
+    MOBILE_NAV_SHORTCUT_LIMITS,
+    REQUIRED_SHORTCUT,
+  } from "@loomkeep/shared";
+  import { dragHandle, dragHandleZone } from "svelte-dnd-action";
+  import { flip } from "svelte/animate";
+  import { cubicOut } from "svelte/easing";
 
-  const navStyleLocked = $derived(auth.isPremiumLocked);
+  const eeLock = useEeLock();
+  const navStyleLocked = $derived(eeLock.locked);
+  const reduced = prefersReducedMotion();
+  const flipDurationMs = $derived(reduced ? 0 : 220);
 
-  const MIN = 3;
-  const MAX = 7;
+  const LOCALE_OPTIONS = languageOptions();
 
-  const LOCALE_OPTIONS: { label: string; value: Locale }[] = [
-    { label: m.common_language_fr(), value: "fr" },
-    { label: m.common_language_en(), value: "en" },
-  ];
-
-  const MOTION_OPTIONS: { label: string; value: MotionPreference }[] = [
+  const MOTION_OPTIONS: SelectOption<MotionPreference>[] = [
     { label: m.common_system(), value: "system" },
     { label: m.settings_accessibility_reduced_motion(), value: "reduce" },
   ];
-  const CONTRAST_OPTIONS: { label: string; value: ContrastPreference }[] = [
+  const CONTRAST_OPTIONS: SelectOption<ContrastPreference>[] = [
     { label: m.common_default(), value: "default" },
     { label: m.settings_accessibility_high_contrast(), value: "high" },
   ];
-  const DENSITY_OPTIONS: { label: string; value: DensityPreference }[] = [
+  const DENSITY_OPTIONS: SelectOption<DensityPreference>[] = [
     { label: m.settings_accessibility_density_compact(), value: "compact" },
     { label: m.common_default(), value: "default" },
     {
@@ -92,8 +102,8 @@
     resolveShortcutChoices(gate).filter((d) => !selectedIds.includes(d.id)),
   );
 
-  const canRemove = $derived(selected.length > MIN);
-  const canAdd = $derived(selected.length < MAX);
+  const canRemove = $derived(selected.length > MOBILE_NAV_SHORTCUT_LIMITS.min);
+  const canAdd = $derived(selected.length < MOBILE_NAV_SHORTCUT_LIMITS.max);
 
   const saveShortcutsMut = createApiMutation(() => ({
     mutate: (next: string[]) => updateMe({ mobileNavShortcuts: next }),
@@ -125,8 +135,13 @@
     void save(dragItems.map((d) => d.id));
   }
 
+  function highlightDraggedShortcut(element: HTMLElement | undefined) {
+    const row = element?.querySelector<HTMLElement>(".mobile-shortcut");
+    if (row) row.dataset.dragging = "true";
+  }
+
   function remove(id: string) {
-    if (!canRemove || id === "menu") return;
+    if (!canRemove || id === REQUIRED_SHORTCUT) return;
     void save(selectedIds.filter((x) => x !== id));
   }
 
@@ -153,25 +168,21 @@
       </div>
     </div>
 
-    <div
-      id="language"
-      use:flashAnchor={{ anchor: "language", hash: page.url.hash }}
-      class="p-5 md:p-6">
-      <p class="flex items-center gap-2 font-semibold">
-        {m.common_language()}
-      </p>
-      <p class="text-dim mt-1 mb-3 text-sm">
-        {m.settings_language_description()}
-      </p>
-      <div
-        class:pointer-events-none={saveLocaleMut.loading}
-        class:opacity-50={saveLocaleMut.loading}>
-        <SegmentedControl
-          label={m.common_language()}
-          options={LOCALE_OPTIONS}
-          value={auth.user?.locale ?? getLocale()}
-          onChange={saveLocale} />
-      </div>
+    <div class="p-5 md:p-6">
+      <SettingRow
+        label={m.common_language()}
+        description={m.settings_language_description()}
+        anchor="language"
+        mutation={saveLocaleMut}>
+        {#snippet control()}
+          <Combobox
+            label={m.common_language()}
+            options={LOCALE_OPTIONS}
+            values={[auth.user?.locale ?? getLocale()]}
+            disabled={saveLocaleMut.loading}
+            onChange={([next]) => saveLocale(next as Locale)} />
+        {/snippet}
+      </SettingRow>
     </div>
 
     <div
@@ -242,14 +253,34 @@
   </section>
 
   <section
+    id="home-layout"
+    use:flashAnchor={{ anchor: "home-layout", hash: page.url.hash }}
+    class="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center md:p-6">
+    <div class="min-w-0 flex-1">
+      <p class="mb-2 flex items-center gap-2 font-semibold">
+        {m.settings_home_layout_title()}
+        {#if isFeatureNew("home-layout")}
+          <NewBadge />
+        {/if}
+      </p>
+      <p class="text-dim text-sm">{m.settings_home_layout_description()}</p>
+    </div>
+    <a
+      href="/app/settings/appearance/home"
+      class="btn btn-primary group shrink-0 gap-1.5 self-start sm:self-center">
+      <Icon
+        name="layout"
+        class="h-4 w-4 transition-transform group-hover:scale-110" />
+      {m.settings_home_layout_open()}
+    </a>
+  </section>
+
+  <section
     id="nav-style"
     use:flashAnchor={{ anchor: "nav-style", hash: page.url.hash }}
     class="card p-5 md:p-6">
-    <p class="mb-2 flex items-center gap-2 font-semibold">
+    <p class="mb-2 font-semibold">
       {m.settings_nav_style_label()}
-      {#if isFeatureNew("nav-styles")}
-        <NewBadge />
-      {/if}
     </p>
     <p class="text-dim mb-3 text-sm">
       {m.settings_nav_style_description()}
@@ -288,44 +319,66 @@
     class="card p-5 md:p-6">
     <p class="mb-2 font-semibold">{m.settings_mobile_nav_bar_label()}</p>
     <p class="text-dim text-sm">
-      {m.settings_mobile_nav_bar_description({ min: MIN, max: MAX })}
+      {m.settings_mobile_nav_bar_description({
+        min: MOBILE_NAV_SHORTCUT_LIMITS.min,
+        max: MOBILE_NAV_SHORTCUT_LIMITS.max,
+      })}
     </p>
 
     <ul
       class="divide-border divide-y"
-      use:dndzone={{
+      use:dragHandleZone={{
         items: dragItems,
         dragDisabled: saveShortcutsMut.loading,
-        flipDurationMs: 150,
+        flipDurationMs,
+        dropTargetStyle: {},
+        transformDraggedElement: highlightDraggedShortcut,
+        type: "mobile-shortcuts",
       }}
       onconsider={handleDndConsider}
       onfinalize={handleDndFinalize}>
       {#each dragItems as item (item.id)}
-        {@const locked = item.id === "menu"}
-        <li class="flex items-center gap-3 py-2.5">
-          <Icon name="grip" class="text-dim h-4 w-4 shrink-0 cursor-grab" />
-          <Icon name={item.icon} class="text-accent h-5 w-5 shrink-0" />
-          <span class="min-w-0 flex-1 truncate font-semibold">
-            {item.label}
-            {#if locked}
-              <span class="text-dim ml-1 text-xs font-normal"
-                >· {m.settings_nav_always_visible()}</span>
-            {/if}
-          </span>
+        {@const locked = item.id === REQUIRED_SHORTCUT}
+        <li
+          aria-label={item.label}
+          class="py-1"
+          animate:flip={{ duration: flipDurationMs, easing: cubicOut }}>
+          <div
+            class="mobile-shortcut flex items-center gap-3 rounded-lg px-2 py-1.5"
+            style:--drag-scale={reduced ? 1 : 1.02}
+            style:--drag-duration={reduced ? "0ms" : "150ms"}
+            data-dragging="false">
+            <span
+              use:dragHandle
+              aria-label={m.common_reorder()}
+              class="btn-icon text-dim shrink-0 cursor-grab touch-none active:cursor-grabbing">
+              <Icon name="grip" class="h-4 w-4" />
+            </span>
+            <Icon name={item.icon} class="text-accent h-5 w-5 shrink-0" />
+            <span class="min-w-0 flex-1 truncate font-semibold">
+              {item.label}
+              {#if locked}
+                <span class="text-dim ml-1 text-xs font-normal"
+                  >· {m.settings_nav_always_visible()}</span>
+              {/if}
+            </span>
 
-          <button
-            type="button"
-            class="hover:bg-danger/10 hover:text-danger text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-30"
-            aria-label={m.common_remove()}
-            disabled={saveShortcutsMut.loading || locked || !canRemove}
-            title={locked
-              ? m.settings_nav_menu_cannot_remove()
-              : !canRemove
-                ? m.settings_nav_min_shortcuts({ min: MIN })
-                : undefined}
-            onclick={() => remove(item.id)}>
-            <Icon name="x" class="h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              class="hover:bg-danger/10 hover:text-danger text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-30"
+              aria-label={m.common_remove()}
+              disabled={saveShortcutsMut.loading || locked || !canRemove}
+              title={locked
+                ? m.settings_nav_menu_cannot_remove()
+                : !canRemove
+                  ? m.settings_nav_min_shortcuts({
+                      min: MOBILE_NAV_SHORTCUT_LIMITS.min,
+                    })
+                  : undefined}
+              onclick={() => remove(item.id)}>
+              <Icon name="x" class="h-4 w-4" />
+            </button>
+          </div>
         </li>
       {/each}
     </ul>
@@ -342,7 +395,9 @@
               class="chip inline-flex items-center gap-1.5 disabled:pointer-events-none disabled:opacity-40"
               disabled={saveShortcutsMut.loading || !canAdd}
               title={!canAdd
-                ? m.settings_nav_max_shortcuts({ max: MAX })
+                ? m.settings_nav_max_shortcuts({
+                    max: MOBILE_NAV_SHORTCUT_LIMITS.max,
+                  })
                 : undefined}
               onclick={() => add(c.id)}>
               <Icon name={c.icon} class="h-3.5 w-3.5" />
@@ -363,3 +418,20 @@
     {/if}
   </section>
 </div>
+
+<style>
+  .mobile-shortcut:global([data-dragging="true"]) {
+    background: var(--surface);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--fg) 18%, transparent);
+    animation: drag-lift var(--drag-duration) ease-out both;
+  }
+
+  @keyframes drag-lift {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(var(--drag-scale));
+    }
+  }
+</style>

@@ -1,10 +1,12 @@
 import { ErrorCode } from "@loomkeep/shared";
 
 import type { ConfigService } from "@nestjs/config";
+import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { vi, type Mock } from "vitest";
-import { hashToken } from "../auth/auth.service";
+import type { ApiKeysService } from "../api-keys/api-keys.service";
 import { AppException } from "../common/app.exception";
+import { sha256Hex } from "../common/crypto.util";
 import type { HibpService } from "../common/hibp.service";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { EventsGateway } from "../events/events.gateway";
@@ -30,6 +32,7 @@ describe("UsersService — email change", () => {
     prisma = {
       user: {
         findUnique: vi.fn(),
+        findUniqueOrThrow: vi.fn(),
         update: vi.fn(),
       },
       emailChangeRequest: {
@@ -44,7 +47,9 @@ describe("UsersService — email change", () => {
       sendEmailChangeCode: vi.fn(),
       sendEmailChanged: vi.fn(),
     } as unknown as MailService;
-    const security = { record: vi.fn() };
+    const security = {
+      record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+    };
     const dataExport = { buildExport: vi.fn() };
     const csvExport = { buildCsv: vi.fn() };
     service = new UsersService(
@@ -64,52 +69,36 @@ describe("UsersService — email change", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
   describe("changeEmail", () => {
-    it("rejects an incorrect current password without creating a request", async () => {
-      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
-        id: userId,
-        passwordHash,
-      });
-
-      await expect(
-        service.changeEmail(userId, {
-          newEmail: "new@example.com",
-          currentPassword: "wrong",
-        }),
-      ).rejects.toBeInstanceOf(AppException);
-
-      expect(prisma.emailChangeRequest.create).not.toHaveBeenCalled();
-    });
-
     it("rejects submitting the current email unchanged", async () => {
-      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
+      (prisma.user.findUniqueOrThrow as Mock).mockResolvedValueOnce({
         id: userId,
         email: "current@example.com",
         passwordHash,
       });
 
       await expect(
-        service.changeEmail(userId, {
-          newEmail: "current@example.com",
-          currentPassword: "correct-password",
-        }),
+        service.changeEmail(userId, { newEmail: "current@example.com" }),
       ).rejects.toBeInstanceOf(AppException);
 
       expect(prisma.emailChangeRequest.create).not.toHaveBeenCalled();
     });
 
     it("creates a pending request and emails the code, without touching User.email", async () => {
-      (prisma.user.findUnique as Mock)
-        .mockResolvedValueOnce({ id: userId, passwordHash, locale: "en" }) // current user
-        .mockResolvedValueOnce(null); // no email collision
-
-      await service.changeEmail(userId, {
-        newEmail: "new@example.com",
-        currentPassword: "correct-password",
+      (prisma.user.findUniqueOrThrow as Mock).mockResolvedValueOnce({
+        id: userId,
+        passwordHash,
+        locale: "en",
       });
+      (prisma.user.findUnique as Mock).mockResolvedValueOnce(null); // no email collision
+
+      await service.changeEmail(userId, { newEmail: "new@example.com" });
 
       expect(prisma.user.update).not.toHaveBeenCalled();
       expect(prisma.emailChangeRequest.deleteMany).toHaveBeenCalledWith({
@@ -136,7 +125,7 @@ describe("UsersService — email change", () => {
         id: "req-1",
         userId,
         newEmail: "new@example.com",
-        codeHash: hashToken("123456"),
+        codeHash: sha256Hex("123456"),
         attempts: 0,
         expiresAt: new Date(Date.now() + 60_000),
         ...overrides,
@@ -181,6 +170,7 @@ describe("UsersService — email change", () => {
         "old@example.com",
         "new@example.com",
         "fr",
+        new Date("2026-10-03T10:15:00Z"),
       );
     });
 
@@ -277,7 +267,9 @@ describe("UsersService — updateMe mobile nav shortcuts", () => {
     service = new UsersService(
       prisma,
       {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -291,6 +283,9 @@ describe("UsersService — updateMe mobile nav shortcuts", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
@@ -319,6 +314,67 @@ describe("UsersService — updateMe mobile nav shortcuts", () => {
     ).rejects.toBeInstanceOf(AppException);
 
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("UsersService — home layout", () => {
+  const userId = "user-1";
+  let prisma: PrismaService;
+  let service: UsersService;
+
+  beforeEach(() => {
+    prisma = {
+      user: {
+        update: vi.fn().mockImplementation(({ data }) => ({
+          id: userId,
+          createdAt: new Date(),
+          homeLayout: data.homeLayout,
+        })),
+      },
+    } as unknown as PrismaService;
+    service = new UsersService(
+      prisma,
+      {} as unknown as MailService,
+      {} as unknown as SecurityEventService,
+      {} as unknown as DataExportService,
+      {} as unknown as CsvExportService,
+      {} as unknown as ConfigService,
+      {} as unknown as HibpService,
+      {} as unknown as EntitlementService,
+      {} as unknown as ProfileService,
+      {} as unknown as AccountDeletionService,
+      {} as unknown as XpService,
+      {} as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
+    );
+  });
+
+  it("slides a widget overflowing the grid back inside and drops a repeated id", async () => {
+    const dto = await service.setHomeLayout(userId, {
+      widgets: [
+        { id: "a", type: "toWatch", x: 8, y: 0, w: 6, h: 5 },
+        { id: "a", type: "thisWeek", x: 0, y: 5, w: 3, h: 4 },
+        { id: "b", type: "myLists", x: 0, y: 5, w: 4, h: 4 },
+      ],
+    });
+
+    expect(dto.homeLayout).toEqual({
+      widgets: [
+        { id: "a", type: "toWatch", x: 6, y: 0, w: 6, h: 5 },
+        { id: "b", type: "myLists", x: 0, y: 5, w: 4, h: 4 },
+      ],
+    });
+  });
+
+  it("clears the stored grid back to the default one", async () => {
+    await service.resetHomeLayout(userId);
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: userId },
+      data: { homeLayout: Prisma.DbNull },
+    });
   });
 });
 
@@ -355,7 +411,9 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
     service = new UsersService(
       prisma,
       {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -369,6 +427,9 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   }
 
@@ -454,7 +515,9 @@ describe("UsersService — uploadAvatar", () => {
     service = new UsersService(
       prisma,
       {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -468,6 +531,9 @@ describe("UsersService — uploadAvatar", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       events,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
@@ -595,7 +661,9 @@ describe("UsersService — changePassword", () => {
     service = new UsersService(
       prisma,
       mail,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -607,6 +675,9 @@ describe("UsersService — changePassword", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
@@ -661,10 +732,14 @@ describe("UsersService — changePassword", () => {
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { userId },
     });
-    expect(mail.sendPasswordChanged).toHaveBeenCalledWith({
-      email: "alice@example.com",
-      locale: "fr",
-    });
+    expect(mail.sendPasswordChanged).toHaveBeenCalledWith(
+      {
+        email: "alice@example.com",
+        locale: "fr",
+      },
+      0,
+      new Date("2026-10-03T10:15:00Z"),
+    );
   });
 });
 
@@ -691,7 +766,9 @@ describe("UsersService — deleteAccount", () => {
     service = new UsersService(
       prisma,
       {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -703,24 +780,18 @@ describe("UsersService — deleteAccount", () => {
       accountDeletion,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
-  it("rejects an incorrect current password without deleting anything", async () => {
-    await expect(
-      service.deleteAccount(userId, { currentPassword: "wrong" }),
-    ).rejects.toBeInstanceOf(AppException);
-
-    expect(accountDeletion.deleteAccount).not.toHaveBeenCalled();
-  });
-
   it("delegates to AccountDeletionService", async () => {
-    await service.deleteAccount(userId, {
-      currentPassword: "correct-password",
-    });
+    await service.deleteAccount(userId);
 
     expect(accountDeletion.deleteAccount).toHaveBeenCalledWith(
       userId,
+      "self",
       expect.any(String),
       undefined,
     );
@@ -734,24 +805,63 @@ describe("UsersService — deletionSummary", () => {
 
   beforeEach(() => {
     prisma = {
+      refreshToken: { count: vi.fn().mockResolvedValue(0) },
       libraryEntry: { count: vi.fn().mockResolvedValue(0) },
       episodeWatch: { count: vi.fn().mockResolvedValue(0) },
+      movieReplay: { count: vi.fn().mockResolvedValue(0) },
       gameEntry: { count: vi.fn().mockResolvedValue(0) },
+      gamePlaythrough: { count: vi.fn().mockResolvedValue(0) },
+      gameSession: { count: vi.fn().mockResolvedValue(0) },
       bookEntry: { count: vi.fn().mockResolvedValue(0) },
+      bookReading: { count: vi.fn().mockResolvedValue(0) },
+      bookSession: { count: vi.fn().mockResolvedValue(0) },
+      readingGoal: { count: vi.fn().mockResolvedValue(0) },
+      sessionTimer: { count: vi.fn().mockResolvedValue(0) },
       musicEntry: { count: vi.fn().mockResolvedValue(0) },
-      list: { count: vi.fn().mockResolvedValue(0) },
-      notification: { count: vi.fn().mockResolvedValue(0) },
+      listMember: { count: vi.fn().mockResolvedValue(0) },
+      listNotificationMute: { count: vi.fn().mockResolvedValue(0) },
       follow: { count: vi.fn().mockResolvedValue(0) },
       block: { count: vi.fn().mockResolvedValue(0) },
+      reviewVote: { count: vi.fn().mockResolvedValue(0) },
+      commentReaction: { count: vi.fn().mockResolvedValue(0) },
+      notification: { count: vi.fn().mockResolvedValue(0) },
       activityEvent: { count: vi.fn().mockResolvedValue(0) },
+      userAchievement: { count: vi.fn().mockResolvedValue(0) },
+      savedView: { count: vi.fn().mockResolvedValue(0) },
+      visibilitySetting: { count: vi.fn().mockResolvedValue(0) },
+      userDevice: { count: vi.fn().mockResolvedValue(0) },
+      apiKey: { count: vi.fn().mockResolvedValue(0) },
+      webauthnCredential: { count: vi.fn().mockResolvedValue(0) },
+      mfaRecoveryCode: { count: vi.fn().mockResolvedValue(0) },
+      pushSubscription: { count: vi.fn().mockResolvedValue(0) },
+      emailChangeRequest: { count: vi.fn().mockResolvedValue(0) },
+      userToken: { count: vi.fn().mockResolvedValue(0) },
+      userEntitlement: { count: vi.fn().mockResolvedValue(0) },
+      subscription: { count: vi.fn().mockResolvedValue(0) },
       review: { count: vi.fn().mockResolvedValue(0) },
+      reviewRevision: { count: vi.fn().mockResolvedValue(0) },
       comment: { count: vi.fn().mockResolvedValue(0) },
+      listItem: { count: vi.fn().mockResolvedValue(0) },
       report: { count: vi.fn().mockResolvedValue(0) },
+      importRun: { count: vi.fn().mockResolvedValue(0) },
+      securityEvent: { count: vi.fn().mockResolvedValue(0) },
+      moderationDecision: { count: vi.fn().mockResolvedValue(0) },
+      user: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ mfaTotpEnabled: false, mfaEmailEnabled: false }),
+      },
+      list: {
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
     } as unknown as PrismaService;
     service = new UsersService(
       prisma,
       {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -765,43 +875,95 @@ describe("UsersService — deletionSummary", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   });
 
-  it("returns every category, even at zero, split between deleted and anonymized", async () => {
+  it("returns every category, even at zero, split by what happens to it", async () => {
     const summary = await service.deletionSummary(userId);
 
     expect(summary.deleted.map((r) => r.category)).toEqual([
       "LIBRARY",
-      "WATCH_HISTORY",
+      "EPISODE_WATCHES",
+      "MOVIE_REWATCHES",
       "GAMES",
+      "GAME_PLAYTHROUGHS",
+      "GAME_SESSIONS",
       "BOOKS",
+      "BOOK_READINGS",
+      "BOOK_SESSIONS",
+      "READING_GOALS",
+      "SESSION_TIMER",
       "MUSIC",
       "LISTS",
-      "NOTIFICATIONS",
+      "LIST_MEMBERSHIPS",
+      "LIST_MUTES",
       "FOLLOWS",
       "BLOCKS",
+      "REACTIONS",
+      "NOTIFICATIONS",
       "ACTIVITY",
+      "PROGRESSION",
+      "SAVED_VIEWS",
+      "VISIBILITY_SETTINGS",
+      "DEVICES",
+      "API_KEYS",
+      "PASSKEYS",
+      "TWO_FACTOR",
+      "PUSH_SUBSCRIPTIONS",
+      "PENDING_REQUESTS",
+      "PREMIUM",
     ]);
     expect(summary.anonymized.map((r) => r.category)).toEqual([
       "REVIEWS",
+      "REVIEW_REVISIONS",
       "COMMENTS",
+      "LIST_ITEMS_ADDED",
       "REPORTS",
+      "IMPORTS",
     ]);
-    expect(summary.deleted.every((r) => r.count === 0)).toBe(true);
-    expect(summary.anonymized.every((r) => r.count === 0)).toBe(true);
+    expect(summary.kept.map((r) => r.category)).toEqual([
+      "SECURITY_EVENTS",
+      "MODERATION_DECISIONS",
+      "REMOVED_CONTENT_COPIES",
+    ]);
+    expect(summary.transferredLists).toEqual([]);
+    expect(
+      [...summary.deleted, ...summary.anonymized, ...summary.kept].every(
+        (r) => r.count === 0,
+      ),
+    ).toBe(true);
   });
 
-  it("sums both follow directions into a single FOLLOWS count", async () => {
-    (prisma.follow.count as Mock)
-      .mockResolvedValueOnce(3) // followers
-      .mockResolvedValueOnce(5); // following
+  it("counts each second factor and each recovery code", async () => {
+    (prisma.user.findUnique as Mock).mockResolvedValueOnce({
+      mfaTotpEnabled: true,
+      mfaEmailEnabled: false,
+    });
+    (prisma.mfaRecoveryCode.count as Mock).mockResolvedValueOnce(8);
 
     const summary = await service.deletionSummary(userId);
 
-    expect(summary.deleted.find((r) => r.category === "FOLLOWS")?.count).toBe(
-      8,
-    );
+    expect(
+      summary.deleted.find((r) => r.category === "TWO_FACTOR")?.count,
+    ).toBe(9);
+  });
+
+  it("names the editor each shared list passes to", async () => {
+    (prisma.list.findMany as Mock).mockResolvedValueOnce([
+      {
+        title: "À voir ensemble",
+        members: [{ user: { displayName: "Camille" } }],
+      },
+    ]);
+
+    const summary = await service.deletionSummary(userId);
+
+    expect(summary.transferredLists).toEqual([
+      { title: "À voir ensemble", newOwner: "Camille" },
+    ]);
   });
 });
 
@@ -815,7 +977,9 @@ describe("UsersService.getMyEntitlement", () => {
     return new UsersService(
       {} as unknown as PrismaService,
       {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
+      {
+        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
+      } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
@@ -825,6 +989,9 @@ describe("UsersService.getMyEntitlement", () => {
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
+      {
+        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+      } as unknown as ApiKeysService,
     );
   }
 

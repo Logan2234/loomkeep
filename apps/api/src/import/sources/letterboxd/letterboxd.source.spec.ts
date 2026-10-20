@@ -1,6 +1,7 @@
 import { CatalogSource, MediaType } from "@loomkeep/shared";
-import { vi, type Mock } from "vitest";
+import { vi } from "vitest";
 import type { MediaItemService } from "../../../catalog/media-item.service";
+import type { ListService } from "../../../lists/list.service";
 import type { PrismaService } from "../../../prisma/prisma.service";
 import type { ReviewService } from "../../../reviews/review.service";
 import type { CommitDecisions } from "../../import-source";
@@ -11,9 +12,8 @@ import { isWanted, LetterboxdImportSource } from "./letterboxd.source";
 const LIST: ImportList = {
   name: "Mon top noir",
   description: "Les meilleurs films noirs",
-  ranked: true,
   items: [
-    { title: "Chinatown", year: 1974, externalIds: {} },
+    { title: "Chinatown", year: 1974, externalIds: {}, note: "Le scénario" },
     { title: "Heat", year: 1995, externalIds: {} },
   ],
 };
@@ -50,10 +50,7 @@ function matches(): Map<
 
 function makeSource(existingList: { id: string } | null = null) {
   const prisma = {
-    list: {
-      findFirst: vi.fn().mockResolvedValue(existingList),
-      create: vi.fn().mockResolvedValue({ id: "list-1" }),
-    },
+    list: { findFirst: vi.fn().mockResolvedValue(existingList) },
   } as unknown as PrismaService;
 
   const mediaItemService = {
@@ -62,11 +59,17 @@ function makeSource(existingList: { id: string } | null = null) {
     ),
   } as unknown as MediaItemService;
 
+  const lists = {
+    create: vi.fn().mockResolvedValue({ id: "list-1" }),
+    addImportedItems: vi.fn().mockResolvedValue(undefined),
+  };
+
   const source = new LetterboxdImportSource(
     prisma,
     mediaItemService,
     {} as unknown as MediaMatchResolver,
     {} as unknown as ReviewService,
+    lists as unknown as ListService,
   );
 
   const writeLists = (lists: ImportList[], included: string[]) =>
@@ -83,39 +86,35 @@ function makeSource(existingList: { id: string } | null = null) {
     ).writeLists("u1", lists, decisions(included), matches(), tally);
 
   const tally = { listsCreated: 0 };
-  return { prisma, mediaItemService, writeLists, tally };
+  const itemsAdded = () => lists.addImportedItems.mock.calls[0]?.[2];
+  return { lists, mediaItemService, writeLists, tally, itemsAdded };
 }
 
 describe("LetterboxdImportSource — list writing", () => {
   const BOTH = ["movie:chinatown:1974", "movie:heat:1995"];
 
-  it("creates the list with its films in export order", async () => {
-    const { prisma, writeLists, tally } = makeSource();
+  it("creates the list like the user would, its films in export order", async () => {
+    // Through ListService: the user's default visibility, the Figurant
+    // clamp, the activity and XP of a list they make themselves.
+    const { lists, writeLists, tally, itemsAdded } = makeSource();
 
     await writeLists([LIST], BOTH);
 
     expect(tally.listsCreated).toBe(1);
-    const [[call]] = (prisma.list.create as Mock).mock.calls;
-    expect(call.data).toMatchObject({
-      userId: "u1",
+    expect(lists.create).toHaveBeenCalledWith("u1", {
       title: "Mon top noir",
       description: "Les meilleurs films noirs",
-      kind: "RANKED",
+      kind: "COLLECTION",
     });
-    expect(call.data.items.create).toEqual([
-      { targetType: "MEDIA", targetId: "media-829", position: 0 },
-      { targetType: "MEDIA", targetId: "media-949", position: 1 },
-    ]);
-  });
-
-  it("marks an unranked list as a collection", async () => {
-    const { prisma, writeLists } = makeSource();
-
-    await writeLists([{ ...LIST, ranked: false }], BOTH);
-
-    expect((prisma.list.create as Mock).mock.calls[0][0].data.kind).toBe(
-      "COLLECTION",
+    expect(lists.addImportedItems).toHaveBeenCalledWith(
+      "u1",
+      "list-1",
+      expect.any(Array),
     );
+    expect(itemsAdded()).toEqual([
+      { targetType: "MEDIA", targetId: "media-829", note: "Le scénario" },
+      { targetType: "MEDIA", targetId: "media-949", note: null },
+    ]);
   });
 
   it("caches each film without adding it to the library", async () => {
@@ -129,45 +128,56 @@ describe("LetterboxdImportSource — list writing", () => {
   });
 
   it("leaves out a film the user excluded from the plan", async () => {
-    const { prisma, writeLists } = makeSource();
+    const { writeLists, itemsAdded } = makeSource();
 
     await writeLists([LIST], ["movie:heat:1995"]);
 
-    expect(
-      (prisma.list.create as Mock).mock.calls[0][0].data.items.create,
-    ).toEqual([{ targetType: "MEDIA", targetId: "media-949", position: 0 }]);
+    expect(itemsAdded()).toEqual([
+      { targetType: "MEDIA", targetId: "media-949", note: null },
+    ]);
   });
 
   it("skips a list whose title the user already has", async () => {
     // A re-run must not append the same films twice, and a list they have
     // since curated is theirs, not the importer's to edit.
-    const { prisma, writeLists, tally } = makeSource({ id: "existing" });
+    const { lists, writeLists, tally } = makeSource({ id: "existing" });
 
     await writeLists([LIST], BOTH);
 
-    expect(prisma.list.create).not.toHaveBeenCalled();
+    expect(lists.create).not.toHaveBeenCalled();
     expect(tally.listsCreated).toBe(0);
   });
 
   it("creates nothing for a list whose films were all excluded", async () => {
-    const { prisma, writeLists } = makeSource();
+    const { lists, writeLists } = makeSource();
 
     await writeLists([LIST], []);
 
-    expect(prisma.list.create).not.toHaveBeenCalled();
+    expect(lists.create).not.toHaveBeenCalled();
   });
 
   it("does not repeat a film listed twice", async () => {
-    const { prisma, writeLists } = makeSource();
+    const { writeLists, itemsAdded } = makeSource();
 
     await writeLists(
       [{ ...LIST, items: [...LIST.items, LIST.items[0]] }],
       BOTH,
     );
 
-    expect(
-      (prisma.list.create as Mock).mock.calls[0][0].data.items.create,
-    ).toHaveLength(2);
+    expect(itemsAdded()).toHaveLength(2);
+  });
+
+  it("fits a long name and description into a list's limits", async () => {
+    const { lists, writeLists } = makeSource();
+
+    await writeLists(
+      [{ ...LIST, name: "N".repeat(150), description: "D".repeat(600) }],
+      BOTH,
+    );
+
+    const [, dto] = lists.create.mock.calls[0];
+    expect(dto.title).toHaveLength(100);
+    expect(dto.description).toHaveLength(500);
   });
 });
 

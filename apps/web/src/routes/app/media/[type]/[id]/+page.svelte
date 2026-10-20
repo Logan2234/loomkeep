@@ -1,4 +1,10 @@
 <script lang="ts">
+  import { buildGallery, galleryIndex } from "#lib/gallery.js";
+
+  import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
+  import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
+
+  import { localDateInput } from "#lib/date.js";
   import { page } from "$app/state";
   import {
     addLibraryReplay,
@@ -10,49 +16,58 @@
     updateLibraryEntry,
     upsertLibraryEntry,
     watchEpisode,
-  } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { goBack } from "$lib/backNav.svelte";
-  import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Lightbox from "$lib/components/Lightbox.svelte";
-  import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
-  import NoteField from "$lib/components/NoteField.svelte";
-  import OwnershipField from "$lib/components/OwnershipField.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import ProviderMark from "$lib/components/ProviderMark.svelte";
-  import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
-  import ReviewsSection from "$lib/components/ReviewsSection.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { OMDB_API } from "$lib/constants/external-links";
+  } from "#lib/api/client.js";
+  import { resolveApiError } from "#lib/api/errors.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { goBack } from "#lib/back-nav.svelte.js";
+  import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
+  import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
+  import { mediaWork } from "#lib/chat/work-search.js";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
+  import Lightbox from "#lib/components/Lightbox.svelte";
+  import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
+  import NoteField from "#lib/components/NoteField.svelte";
+  import OwnershipField from "#lib/components/OwnershipField.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import ProviderMark from "#lib/components/ProviderMark.svelte";
+  import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
+  import ReviewsSection from "#lib/components/ReviewsSection.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { OMDB_API } from "#lib/constants/external-links.js";
   import {
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/constants/ownership-sources";
-  import { formatDate, joinMeta } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { EntryStatus, MediaType } from "@loomkeep/shared";
-  import { isDormant } from "@loomkeep/shared";
+  } from "#lib/constants/ownership-sources.js";
+  import { formatDate, formatRuntimeTimecode, joinMeta } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { timeLeftToWatch } from "#lib/pile.js";
+  import {
+    type MediaType,
+    isAnimeUnaired,
+    isDormant,
+    isGhost,
+    progressPercent,
+    isMovieUpcoming,
+  } from "@loomkeep/shared";
+
   import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
   import ActionBar from "./components/ActionBar.svelte";
   import CastSection from "./components/CastSection.svelte";
+  import SagaSection from "./components/SagaSection.svelte";
   import EpisodesSection from "./components/EpisodesSection.svelte";
-
-  const TYPE_LABELS: Record<MediaType, string> = {
-    MOVIE: m.media_movie(),
-    SERIES: m.media_series(),
-    ANIME: m.media_anime_label(),
-  };
+  import WhereToWatch from "./components/WhereToWatch.svelte";
 
   const DIRECTOR_LABELS: Record<MediaType, string> = {
     MOVIE: m.media_directed_by(),
@@ -77,46 +92,8 @@
     FALL: m.media_season_fall(),
   };
 
-  // Effective-status badge: label + chip styling. Statuses are derived server
-  // side; here we only present them.
-  const STATUS_META: Record<EntryStatus, { label: string; cls: string }> = {
-    PLANNED: { label: m.media_status_planned(), cls: "bg-white/15 text-white" },
-    WATCHING: {
-      label: m.library_status_in_progress(),
-      cls: "bg-accent text-accent-fg",
-    },
-    UP_TO_DATE: {
-      label: m.media_status_caught_up(),
-      cls: "border border-success text-success",
-    },
-    COMPLETED: {
-      label: m.library_status_completed(),
-      cls: "bg-success/80 text-white",
-    },
-    DROPPED: {
-      label: m.library_status_dropped(),
-      cls: "border border-danger text-danger",
-    },
-  };
-
-  // Surfaced as a tooltip on the status badge, so each state's meaning is clear.
-  const STATUS_DESC: Record<EntryStatus, string> = {
-    PLANNED: m.media_status_planned_hint(),
-    WATCHING: m.media_status_watching_hint(),
-    UP_TO_DATE: m.media_status_caught_up_hint(),
-    COMPLETED: m.media_status_completed_hint(),
-    DROPPED: m.library_status_dropped_description(),
-  };
-
   // Brand-ish colors per rating source (no official logos — those are
   // trademarked). Literal classes so Tailwind picks them up.
-  const RATING_STYLES: Record<string, string> = {
-    TMDB: "bg-[#01d277] text-black",
-    IMDb: "bg-[#f5c518] text-black",
-    RT: "bg-[#fa320a] text-white",
-    Metacritic: "bg-[#66cc33] text-black",
-    AniList: "bg-[#02a9ff] text-white",
-  };
 
   const queryClient = useQueryClient();
 
@@ -130,26 +107,22 @@
 
   // Poster + backdrop + extras' backdrop gallery (TMDB only), deduped, for the
   // lightbox carousel.
-  const galleryImages = $derived.by(() => {
-    if (!detail) return [];
-    const urls: string[] = [];
-    if (detail.posterUrl) urls.push(detail.posterUrl);
-    if (detail.backdropUrl && !urls.includes(detail.backdropUrl)) {
-      urls.push(detail.backdropUrl);
-    }
-    for (const img of extras?.images ?? []) {
-      if (!urls.includes(img)) urls.push(img);
-    }
-    return urls.map((src) => ({ src, alt: detail!.title }));
-  });
+  const galleryImages = $derived.by(() =>
+    detail
+      ? buildGallery(detail.title, [
+          { src: detail.posterUrl || null },
+          { src: detail.backdropUrl || null },
+          ...(extras?.images ?? []).map((src) => ({ src })),
+        ])
+      : [],
+  );
 
   let lightboxOpen = $state(false);
   let lightboxIndex = $state(0);
 
   function openLightbox(url: string | null) {
     if (!url) return;
-    const i = galleryImages.findIndex((img) => img.src === url);
-    lightboxIndex = (i >= 0 ? i : 0) + trailerOffset;
+    lightboxIndex = galleryIndex(galleryImages, url, trailerOffset);
     lightboxOpen = true;
   }
 
@@ -194,6 +167,7 @@
     if (mediaQuery.data) adultBlocked = false;
   });
   const detail = $derived(mediaQuery.data);
+  let sharing = $state(false);
   const error = $derived(
     adultBlocked
       ? m.media_adult_restricted()
@@ -235,9 +209,18 @@
   // the route), independent of watch-state reloads. Best-effort: errors are
   // swallowed so a provider hiccup never breaks the page.
   const extrasQuery = createApiQuery(() => ({
-    key: keys.media.extras(type === "ANIME" ? "anilist" : "tmdb", id),
+    key: keys.media.extras(
+      type === "ANIME" ? "anilist" : "tmdb",
+      id,
+      auth.user?.watchRegion ?? null,
+    ),
     fetch: () =>
-      getMediaExtras(type === "ANIME" ? "anilist" : "tmdb", id, type),
+      getMediaExtras(
+        type === "ANIME" ? "anilist" : "tmdb",
+        id,
+        type,
+        auth.user?.watchRegion ?? undefined,
+      ),
     enabled: !!type && !!id,
   }));
   const extras = $derived(extrasQuery.data);
@@ -249,6 +232,8 @@
   const hasProviders = $derived(
     !!extras &&
       (extras.watchProviders.flatrate.length > 0 ||
+        extras.watchProviders.free.length > 0 ||
+        extras.watchProviders.ads.length > 0 ||
         extras.watchProviders.rent.length > 0 ||
         extras.watchProviders.buy.length > 0),
   );
@@ -263,17 +248,30 @@
 
   const entry = $derived(detail?.entry ?? null);
   const reviewMeta = $derived(
-    detail ? joinMeta(TYPE_LABELS[detail.type], detail.year) : "",
+    detail ? joinMeta(MEDIA_TYPE_LABEL[detail.type], detail.year) : "",
   );
   const isMovie = $derived(detail?.type === "MOVIE");
-  const dormant = $derived(entry ? isDormant(entry) : false);
-  const pct = $derived(
-    entry?.progress && entry.progress.totalEpisodes > 0
-      ? Math.round(
-          (entry.progress.watchedEpisodes / entry.progress.totalEpisodes) * 100,
-        )
-      : 0,
+  let today = $state(localDateInput());
+  $effect(() => {
+    const timer = setInterval(() => (today = localDateInput()), 60_000);
+    return () => clearInterval(timer);
+  });
+  // Not out yet: an unreleased film or an announced anime. Either can be
+  // followed, but shows "À venir" and offers no review or "Mon suivi" panel.
+  const upcoming = $derived(
+    (isMovie &&
+      !!detail?.movieRelease &&
+      isMovieUpcoming(detail.movieRelease, today)) ||
+      (detail?.type === "ANIME" && isAnimeUnaired(detail.airingStatus)),
   );
+  const timeLeft = $derived(
+    detail && entry?.progress && !isMovie
+      ? timeLeftToWatch(detail.type, detail.runtimeMin, detail.seasons)
+      : null,
+  );
+  const dormant = $derived(entry ? isDormant(entry) : false);
+  const ghost = $derived(entry ? isGhost(entry) : false);
+  const pct = $derived(progressPercent(entry?.progress));
 
   // Specials (season 0) are excluded from progress; show them last so the
   // regular run leads.
@@ -288,7 +286,7 @@
   );
 
   // Powers the action bar's "Continuer" shortcut only — the episode
-  // accordion (EpisodesSection) has its own copy for its per-row actions.
+  // list (EpisodesSection) has its own copy for its per-row actions.
   const continueWatchingMut = createApiMutation(() => ({
     mutate: (episodeId: string) => watchEpisode(episodeId),
     onSuccess: () => reload(),
@@ -321,6 +319,29 @@
   function resumeEntry() {
     patchMut.mutate({ status: "WATCHING" });
   }
+
+  // Its own mutation rather than patchMut, for the confirmation toast — the
+  // "…" menu has closed by then, so nothing else shows the change took.
+  const episodeAlertsMut = createApiMutation(() => ({
+    mutate: (muted: boolean) =>
+      updateLibraryEntry(entry!.id, { episodeAlertsMuted: muted }),
+    invalidates: [detailKey],
+    successToast: (_, muted) =>
+      muted
+        ? m.media_episode_alerts_muted_toast({ title: detail?.title ?? "" })
+        : m.media_episode_alerts_unmuted_toast({ title: detail?.title ?? "" }),
+    errorToast: true,
+  }));
+  const movieAlertsMut = createApiMutation(() => ({
+    mutate: (enabled: boolean) =>
+      updateLibraryEntry(entry!.id, { movieReleaseAlertsEnabled: enabled }),
+    invalidates: [detailKey, keys.calendar.upcoming()],
+    successToast: (_, enabled) =>
+      enabled
+        ? m.media_movie_reminder_enabled_toast()
+        : m.media_movie_reminder_disabled_toast(),
+    errorToast: true,
+  }));
 </script>
 
 <svelte:head>
@@ -375,7 +396,7 @@
         class="absolute right-4 bottom-4 z-10 w-16 shrink-0 cursor-zoom-in overflow-hidden rounded-lg border border-white/20 shadow-lg sm:w-20 md:right-6 md:bottom-6 md:w-24"
         aria-label={m.media_enlarge_poster()}
         onclick={() => openLightbox(detail?.posterUrl ?? null)}>
-        <Poster src={detail.posterUrl} title={detail.title} />
+        <Poster src={detail.posterUrl} title={detail.title} alt="" />
       </button>
     {/if}
 
@@ -385,21 +406,24 @@
         <div class="flex flex-wrap items-center gap-2">
           <span
             class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur">
-            {TYPE_LABELS[detail.type]}
+            {MEDIA_TYPE_LABEL[detail.type]}
           </span>
-          {#if entry}
+          {#if upcoming}
             <span
-              title={STATUS_DESC[entry.status]}
-              class="rounded-full px-2.5 py-0.5 text-xs font-bold {STATUS_META[
-                entry.status
-              ].cls}">
-              {STATUS_META[entry.status].label}
-            </span>
+              class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold text-white backdrop-blur"
+              ><Icon
+                name="calendar"
+                class="h-3.5 w-3.5" />{m.media_upcoming()}</span>
+          {:else if entry}
+            <TrackingStatusBadge domain="MEDIA" status={entry.status} onImage />
             {#if dormant}
               <span
-                title={m.media_dormant_hint()}
-                class="rounded-full border border-white/30 px-2.5 py-0.5 text-xs font-bold text-white">
-                {m.media_paused_badge()}
+                title={ghost ? m.media_ghost_hint() : m.media_dormant_hint()}
+                class="inline-flex items-center gap-1.5 rounded-full border border-white/30 px-2.5 py-1 text-xs font-bold text-white">
+                <Icon
+                  name={ghost ? "ghost" : "hourglass"}
+                  class="h-3.5 w-3.5" />
+                {ghost ? m.media_status_ghost() : m.media_status_paused()}
               </span>
             {/if}
           {/if}
@@ -436,16 +460,31 @@
           {#if extras?.format && extras.format !== "TV"}
             · {FORMAT_LABELS[extras.format] ?? extras.format}
           {/if}
-          {#if !isMovie && detail.seasons.length > 0}
+          {#if !isMovie && detail.seasons.some((s) => s.episodes.length > 0)}
             · {detail.airingFinished
               ? m.media_airing_finished()
               : m.media_airing()}
           {/if}
         </p>
 
-        {#if entry || (extras && extras.ratings.length > 0)}
+        {#if isMovie && detail.movieRelease}
+          <p class="timecode mt-2 text-sm text-white/80">
+            {#if detail.movieRelease.localDate}
+              {detail.movieRelease.localDate > today
+                ? m.media_release_expected()
+                : m.media_release_released()}
+              {formatDate(`${detail.movieRelease.localDate}T12:00:00`)} ·
+              {detail.movieRelease.localType === "cinema"
+                ? m.media_release_cinema()
+                : m.media_release_digital()} · {detail.movieRelease.region}
+            {:else}{m.media_release_local_unknown()} · {detail.movieRelease
+                .region}{/if}
+          </p>
+        {/if}
+
+        {#if (entry && !upcoming) || (extras && extras.ratings.length > 0)}
           <div class="mt-2.5 flex flex-wrap gap-1.5">
-            {#if entry}
+            {#if entry && !upcoming}
               <MyRatingBadge
                 targetType="MEDIA"
                 targetId={entry.mediaItem.id}
@@ -454,28 +493,14 @@
                 workImageUrl={detail.posterUrl}
                 overlay />
             {/if}
-            {#each extras?.ratings ?? [] as r (r.source)}
-              <svelte:element
-                this={r.url ? "a" : "span"}
-                href={r.url}
-                target={r.url ? "_blank" : undefined}
-                rel={r.url ? "noopener noreferrer" : undefined}
-                class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold {RATING_STYLES[
-                  r.source
-                ] ?? 'bg-white/15 text-white'} {r.url
-                  ? 'transition-opacity hover:opacity-80'
-                  : ''}">
-                <span>{r.source}</span>
-                <span class="tabular-nums opacity-90">{r.score}</span>
-              </svelte:element>
-            {/each}
+            <ExternalRatingChips ratings={extras?.ratings ?? []} overlay />
           </div>
           {#if hasOmdbRatings}
             <a
               href={OMDB_API}
               target="_blank"
               rel="noopener noreferrer"
-              class="btn-text mt-1 inline-block text-[0.6rem]">
+              class="btn-text text-micro mt-1 inline-block">
               {m.media_omdb_notice()}
             </a>
           {/if}
@@ -487,9 +512,13 @@
   <div bind:this={heroEnd}></div>
 
   <ActionBar
+    {upcoming}
+    airingFinished={detail.airingFinished}
+    onToggleMovieAlerts={() =>
+      movieAlertsMut.mutate(!entry?.movieReleaseAlertsEnabled)}
     {entry}
     {isMovie}
-    {saving}
+    saving={saving || movieAlertsMut.loading}
     {compact}
     title={detail.title}
     nextEpisode={entry?.progress?.nextEpisode ?? null}
@@ -500,28 +529,49 @@
     onToggleWatched={toggleWatched}
     onDrop={dropEntry}
     onResume={resumeEntry}
-    onRemove={() => (confirmRemove = true)}>
+    onToggleEpisodeAlerts={() =>
+      episodeAlertsMut.mutate(!entry?.episodeAlertsMuted)}
+    onRemove={() => (confirmRemove = true)}
+    onShare={() => (sharing = true)}>
     {#snippet socialActions()}
-      {#if appConfig.socialEnabled && detail.commentTargetId}
-        <CommentsPanel
-          targetType="MEDIA"
-          targetId={detail.commentTargetId}
-          title={detail.title}
-          canParticipate={!!entry}
-          revealSpoilersByDefault={entry?.status === "COMPLETED"}
-          compact />
-      {/if}
+      <div class="flex items-center gap-2.5">
+        {#if appConfig.socialEnabled && detail.commentTargetId}
+          <CommentsPanel
+            targetType="MEDIA"
+            targetId={detail.commentTargetId}
+            title={detail.title}
+            canParticipate={!!entry}
+            revealSpoilersByDefault={entry?.status === "COMPLETED"}
+            compact />
+        {/if}
+      </div>
     {/snippet}
   </ActionBar>
 
   <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
-    {#if entry?.progress}
+    {#if appConfig.socialEnabled && detail.commentTargetId}
+      <WorkFriendsStrip
+        domain="MEDIA"
+        targetType="MEDIA"
+        targetId={detail.commentTargetId}
+        revision={`${entry?.status}:${entry?.progress?.watchedEpisodes}`} />
+    {/if}
+
+    {#if entry?.progress && !upcoming}
       <div class="mt-6 max-w-sm">
-        <ProgressBar value={pct} />
+        <ProgressBar value={pct} label={m.common_progress()} />
         <p class="timecode mt-1.5 text-sm">
           {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes}
           {m.media_watched_episodes_suffix()}
           {pct} %
+          {#if timeLeft}
+            ·
+            <span class="text-fg">
+              {m.media_time_left({
+                time: `${timeLeft.estimated ? "~" : ""}${formatRuntimeTimecode(timeLeft.minutes)}`,
+              })}
+            </span>
+          {/if}
         </p>
       </div>
     {/if}
@@ -565,7 +615,7 @@
       </div>
     {/if}
 
-    {#if entry}
+    {#if entry && !upcoming}
       <!-- Set-once settings, not day-to-day actions — tucked away closed by
            default rather than living in the action bar above. -->
       <div
@@ -658,47 +708,7 @@
     {/if}
 
     {#if hasProviders && extras}
-      <!-- Où regarder: deliberately discreet (small, muted logos). -->
-      <section class="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <span class="timecode text-xs">{m.media_where_to_watch()}</span>
-        {#each [{ label: m.media_streaming(), list: extras.watchProviders.flatrate }, { label: m.media_rent(), list: extras.watchProviders.rent }, { label: m.media_buy(), list: extras.watchProviders.buy }] as group (group.label)}
-          {#if group.list.length > 0}
-            <div class="flex items-center gap-1.5">
-              <span class="text-dim text-[0.65rem]">{group.label}</span>
-              {#each group.list as p (p.name)}
-                <span
-                  title={p.name}
-                  class="bg-surface-2 grid h-6 w-6 place-items-center overflow-hidden rounded opacity-80">
-                  {#if p.logoUrl}
-                    <img
-                      src={p.logoUrl}
-                      alt={p.name}
-                      loading="lazy"
-                      class="h-full w-full object-cover" />
-                  {:else}
-                    <span class="text-dim text-[0.55rem] font-bold"
-                      >{p.name.slice(0, 2)}</span>
-                  {/if}
-                </span>
-              {/each}
-            </div>
-          {/if}
-        {/each}
-        {#if extras.watchProviders.link}
-          <div class="w-full">
-            <a
-              href={extras.watchProviders.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="link-accent timecode text-[0.6rem] decoration-1">
-              {m.media_tmdb_france()}
-            </a>
-          </div>
-        {:else}
-          <span class="timecode text-dim w-full text-[0.6rem]"
-            >{m.media_france()}</span>
-        {/if}
-      </section>
+      <WhereToWatch offers={extras.watchProviders} />
     {/if}
 
     {#if extras && extras.externalLinks.length > 0}
@@ -719,9 +729,10 @@
     <!-- Provider attribution: required for TMDB (logo + non-endorsement
          notice, less prominent than Loomkeep's own branding), courtesy for
          AniList. -->
-    <p class="text-dim mt-4 flex items-center gap-1.5 text-[0.6rem]">
+    <p class="text-dim text-micro mt-4 flex items-center gap-1.5">
       <ProviderMark
         brand={type === "ANIME" ? "anilist" : "tmdb"}
+        decorative
         class="h-3 w-3 shrink-0 opacity-70" />
       {type === "ANIME" ? m.media_anilist_notice() : m.datasource_tmdb_notice()}
     </p>
@@ -731,11 +742,13 @@
       <EpisodesSection
         seasons={orderedSeasons}
         {entry}
+        mediaType={detail.type}
+        sourceId={id}
         {reload}
         onError={(m) => (episodesError = m)} />
     {/if}
 
-    {#if entry}
+    {#if entry && !upcoming}
       <ReviewsSection
         targetType="MEDIA"
         targetId={entry.mediaItem.id}
@@ -744,11 +757,9 @@
         workImageUrl={detail.posterUrl} />
     {/if}
 
-    {#if extras}
-      <CastSection
-        cast={extras.cast}
-        source={type === "ANIME" ? "anilist" : "tmdb"} />
-    {/if}
+    {#key id}
+      <SagaSection {type} sourceId={id} entryStatus={entry?.status ?? null} />
+    {/key}
 
     {#if extras && extras.relations.length > 0}
       <RelatedCarousel
@@ -771,7 +782,20 @@
           title: s.title,
         }))} />
     {/if}
+
+    {#if extras}
+      <CastSection
+        cast={extras.cast}
+        source={type === "ANIME" ? "anilist" : "tmdb"} />
+    {/if}
   </div>
+
+  {#if sharing}
+    <ShareWorkModal
+      work={mediaWork(detail)}
+      sendable={!detail.isAdult}
+      onclose={() => (sharing = false)} />
+  {/if}
 
   {#if confirmRemove}
     <ConfirmationModal
@@ -794,5 +818,5 @@
       onClose={() => (lightboxOpen = false)} />
   {/if}
 {:else if !error}
-  <DetailHeroSkeleton wide={false} />
+  <DetailHeroSkeleton wide={false} media />
 {/if}

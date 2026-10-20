@@ -4,13 +4,16 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
 import { chunk } from "../../common/array.util";
+import { fetchJson, identifyingUserAgent } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { stripTags } from "../../common/text.util";
 import type {
   BookCatalogProvider,
   ProviderBookDetails,
+  ProviderBookSeries,
 } from "./book-provider.types";
 
-const API_URL = "https://openlibrary.org";
+export const OPEN_LIBRARY_API_URL = "https://openlibrary.org";
 const COVERS_URL = "https://covers.openlibrary.org/b/id";
 
 // Open Library has no "similar books" endpoint; other works by the primary
@@ -63,13 +66,20 @@ const ISBN_SEARCH_FIELDS = `${SEARCH_FIELDS},isbn`;
 // (https://openlibrary.org/dev/docs/api/search). The language match is not a
 // hard filter upstream, hence getDetails() reading `editions.docs[0].language`
 // back rather than assuming it equals `lang`.
-const DETAILS_FIELDS = `${SEARCH_FIELDS},editions,editions.key,editions.title,editions.language,editions.isbn,editions.ebook_access`;
+const DETAILS_FIELDS = `${SEARCH_FIELDS},series_key,series_position,editions,editions.key,editions.title,editions.language,editions.isbn,editions.ebook_access`;
 
 // Same trick for search results: the nested edition's own title (in the
 // requested language) reads far better than the work's single canonical
 // title, which is often the original-language one (e.g. a French reader
 // searching would otherwise see "Harry Potter and the Philosopher's Stone").
 const SEARCH_FIELDS_WITH_EDITIONS = `${SEARCH_FIELDS},editions,editions.title`;
+
+// A series' volumes, each titled in the requested language like a search.
+const SERIES_FIELDS = `${SEARCH_FIELDS_WITH_EDITIONS},series_key,series_name,series_position`;
+
+// Far beyond any real series (Discworld has 41 volumes), short of an omnibus
+// flood.
+const SERIES_LIMIT = 100;
 
 // Fallback when no caller-supplied language is available (e.g. bulk import).
 // `search()`/`getDetails()` accept a `lang` argument for the signed-in user's
@@ -101,6 +111,11 @@ interface OpenLibraryDoc {
   ratings_count?: number;
   isbn?: string[]; // Every ISBN across every edition of the work.
   edition_count?: number;
+  // Open Library's series entities ("OL326110L"), each with the work's place
+  // in it, index for index: "1", "2.5" for a novella, "1-3" for an omnibus.
+  series_key?: string[];
+  series_name?: string[];
+  series_position?: string[];
   // Present only when `editions`/`editions.*` was requested (getDetails()'s
   // DETAILS_FIELDS) — the one edition Solr's `lang=` picked, per the note on
   // DETAILS_FIELDS above.
@@ -131,6 +146,7 @@ interface OpenLibrarySearchResponse {
 /** The body of `/books/{OLID}.json` — one concrete edition, in full. */
 interface OpenLibraryEditionDetail {
   key: string; // "/books/OL62190138M".
+  works?: { key: string }[]; // [{ key: "/works/OL893414W" }].
   title?: string;
   covers?: number[];
   languages?: { key: string }[]; // [{ key: "/languages/eng" }].
@@ -314,8 +330,8 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     // page — "work" isn't a real book on Open Library, may not be in the
     // requested language, and reads oddly as a rating's destination.
     const bookUrl = pickedOlid
-      ? `${API_URL}/books/${pickedOlid}`
-      : `${API_URL}/works/${id}`;
+      ? `${OPEN_LIBRARY_API_URL}/books/${pickedOlid}`
+      : `${OPEN_LIBRARY_API_URL}/works/${id}`;
 
     return {
       summary,
@@ -333,6 +349,7 @@ export class OpenLibraryProvider implements BookCatalogProvider {
         parsePagination(editionDetail?.pagination) ??
         doc?.number_of_pages_median ??
         null,
+      editionKey: pickedOlid ?? null,
       releaseDate: toIsoDate(work.first_publish_date),
       website: bookUrl,
       sameAuthorBooks: await this.sameAuthorBooks(id, doc?.author_key?.[0]),
@@ -348,6 +365,7 @@ export class OpenLibraryProvider implements BookCatalogProvider {
         nestedEdition?.isbn?.[0] ??
         null,
       series: editionDetail?.series?.[0] ?? null,
+      seriesKey: doc ? mainSeries(doc) : null,
       language: languageLabel(
         editionLanguageCode(editionDetail) ?? nestedEdition?.language?.[0],
         lang,
@@ -427,6 +445,12 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     );
   }
 
+  /** The work an edition belongs to — book pages are keyed by work, not edition. */
+  async workIdForEdition(olid: string): Promise<string | null> {
+    const edition = await this.fetchEditionDetail(olid);
+    return idFromKey(edition?.works?.[0]?.key);
+  }
+
   /** The full record for one edition — series, first sentence, cross-reference ids. */
   private async fetchEditionDetail(
     olid: string | null,
@@ -448,20 +472,10 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     let id = sourceId;
 
     for (let hop = 0; hop <= MAX_REDIRECT_HOPS; hop++) {
-      let work: OpenLibraryWork;
-
-      try {
-        work = await this.get<OpenLibraryWork>(
-          `/works/${encodeURIComponent(id)}.json`,
-        );
-      } catch {
-        throw new AppException(
-          HttpStatus.NOT_FOUND,
-          ErrorCode.CatalogItemNotFound,
-          undefined,
-          "Book not found on Open Library",
-        );
-      }
+      const work = await this.get<OpenLibraryWork>(
+        `/works/${encodeURIComponent(id)}.json`,
+        "Book not found on Open Library",
+      );
 
       const target =
         work.type?.key === "/type/redirect" ? idFromKey(work.location) : null;
@@ -497,6 +511,55 @@ export class OpenLibraryProvider implements BookCatalogProvider {
       .map((doc) => this.toSummary(doc))
       .filter((b) => b.sourceId !== excludeId)
       .slice(0, MAX_SAME_AUTHOR_BOOKS);
+  }
+
+  /**
+   * A series' numbered volumes, in order, titled in `lang` when an edition
+   * in it exists. Novellas ("2.5") and omnibuses ("1-3") are left out, and
+   * of two works sharing a number the one with more editions stays. Null
+   * when fewer than two volumes remain.
+   */
+  async getSeries(
+    seriesKey: string,
+    lang: string = DEFAULT_LANG,
+  ): Promise<ProviderBookSeries | null> {
+    // Interpolated into a Solr query: an Open Library series id, nothing else.
+    if (!SERIES_KEY.test(seriesKey)) return null;
+    const docs = await this.searchDocs(
+      `series_key:${seriesKey}`,
+      SERIES_LIMIT,
+      {
+        fields: SERIES_FIELDS,
+        lang,
+      },
+    );
+    let title: string | null = null;
+    const byPosition = new Map<
+      number,
+      { doc: OpenLibraryDoc; editions: number }
+    >();
+
+    for (const doc of docs) {
+      const index = doc.series_key?.indexOf(seriesKey) ?? -1;
+      const position = doc.series_position?.[index];
+      if (index < 0 || !position || !WHOLE_NUMBER.test(position)) continue;
+      title ??= doc.series_name?.[index] ?? null;
+      const editions = doc.edition_count ?? 0;
+      const held = byPosition.get(Number(position));
+
+      if (!held || editions > held.editions) {
+        byPosition.set(Number(position), { doc, editions });
+      }
+    }
+
+    if (byPosition.size < 2) return null;
+    return {
+      key: seriesKey,
+      title: title ?? seriesKey,
+      members: [...byPosition.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([position, { doc }]) => ({ ...this.toSummary(doc), position })),
+    };
   }
 
   private async searchDocs(
@@ -552,66 +615,40 @@ export class OpenLibraryProvider implements BookCatalogProvider {
    * (429 rate limit, 5xx) with backoff — a bulk import can fire hundreds of
    * calls in a burst; honours `Retry-After` when Open Library sends one.
    */
-  private async get<T>(path: string): Promise<T> {
-    const contact =
-      this.configService.get<string>("API_CONTACT") ??
-      "self-hosted, no contact provided";
-    const url = `${API_URL}${path}`;
+  private async get<T>(path: string, notFoundMessage?: string): Promise<T> {
+    const contact = this.configService.get<string>("API_CONTACT");
+    const url = `${OPEN_LIBRARY_API_URL}${path}`;
 
-    let lastStatus = 0;
-
-    for (let attempt = 1; attempt <= GET_MAX_ATTEMPTS; attempt++) {
-      this.quota.record("openLibrary");
-      const response = await fetch(url, {
+    return fetchJson<T>(
+      url,
+      {
         headers: {
           Accept: "application/json",
-          "User-Agent": `Loomkeep/1.0 (${contact})`,
+          "User-Agent": identifyingUserAgent(contact),
         },
-      });
-
-      if (response.ok) return (await response.json()) as T;
-
-      lastStatus = response.status;
-      const transient = response.status === 429 || response.status >= 500;
-
-      if (transient && attempt < GET_MAX_ATTEMPTS) {
-        await sleep(retryDelayMs(response.headers.get("Retry-After"), attempt));
-        continue;
-      }
-
-      break;
-    }
-
-    throw new AppException(
-      HttpStatus.BAD_GATEWAY,
-      ErrorCode.CatalogProviderUnavailable,
-      undefined,
-      `Open Library request failed with status ${lastStatus}`,
+      },
+      {
+        sourceLabel: "Open Library",
+        notFoundMessage,
+        onAttempt: () => this.quota.record("openLibrary"),
+      },
     );
   }
 }
 
-const GET_MAX_ATTEMPTS = 3;
-
 // Merged works can chain (A → B → C). Bounded so a cycle can't spin forever.
 const MAX_REDIRECT_HOPS = 3;
 
-/** `Retry-After` (seconds) when one is sent; else exponential backoff. */
-function retryDelayMs(
-  retryAfterHeader: string | null,
-  attempt: number,
-): number {
-  const retryAfterSec = Number(retryAfterHeader);
+/** An Open Library series id. */
+const SERIES_KEY = /^OL\d+L$/;
+const WHOLE_NUMBER = /^\d+$/;
 
-  if (Number.isFinite(retryAfterSec) && retryAfterSec > 0) {
-    return retryAfterSec * 1000;
-  }
-
-  return 500 * 2 ** (attempt - 1); // 500ms, then 1000ms.
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+/** The first series the work is a whole-numbered volume of, if any. */
+function mainSeries(doc: OpenLibraryDoc): string | null {
+  const index = (doc.series_position ?? []).findIndex((p) =>
+    WHOLE_NUMBER.test(p),
+  );
+  return index < 0 ? null : (doc.series_key?.[index] ?? null);
 }
 
 /**
@@ -818,7 +855,7 @@ function description(raw: OpenLibraryWork["description"]): string | null {
   const text = typeof raw === "string" ? raw : raw?.value;
   if (!text) return null;
 
-  let cleaned = stripHtml(text);
+  let cleaned = stripTags(text);
   // Editors often append cross-reference notes ("This work has also been
   // published in multiple volumes. See: ...") after a "---" divider — keep
   // only the synopsis that precedes it.
@@ -844,23 +881,4 @@ function toIsoDate(publishDate: string | undefined): string | null {
   if (!publishDate || !/^\d{4}-\d{2}-\d{2}$/.test(publishDate)) return null;
   const date = new Date(publishDate);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
-}
-
-/**
- * Descriptions are user-edited and occasionally carry light HTML; we render
- * them as plain text. Loops the tag-stripping pass until stable — a single
- * pass can leave a tag exposed on a crafted nested/malformed input (e.g.
- * "<<b>script>"), which is exactly what CodeQL's "incomplete multi-character
- * sanitization" check flags.
- */
-function stripHtml(html: string): string {
-  let result = html;
-  let previous: string;
-
-  do {
-    previous = result;
-    result = previous.replace(/<[^>]*>/g, "");
-  } while (result !== previous);
-
-  return result.trim();
 }

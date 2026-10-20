@@ -2,6 +2,8 @@ import type {
   AddListMemberDto,
   CreateListDto,
   ListItemTargetType,
+  ReportCategory,
+  ReportMotif,
   UpdateListDto,
 } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
@@ -40,10 +42,30 @@ export const addListItem = (
     body: { targetType, targetId },
   });
 
+/** A work found by search, by its page's path: added without tracking it. */
+export const addWorkToList = (listId: string, work: string) =>
+  typedRequest("/lists/{id}/works", {
+    method: "POST",
+    params: { id: listId },
+    body: { work },
+  });
+
 export const removeListItem = (listId: string, itemId: string): Promise<void> =>
   typedRequest("/lists/{id}/items/{itemId}", {
     method: "DELETE",
     params: { id: listId, itemId },
+  });
+
+/** Sets or clears (null or blank) why an item is on its list. */
+export const setListItemNote = (
+  listId: string,
+  itemId: string,
+  note: string | null,
+) =>
+  typedRequest("/lists/{id}/items/{itemId}", {
+    method: "PATCH",
+    params: { id: listId, itemId },
+    body: { note },
   });
 
 export const reorderListItems = (
@@ -59,6 +81,10 @@ export const reorderListItems = (
 
 export const getListMembers = (listId: string) =>
   typedRequest("/lists/{id}/members", { params: { id: listId } });
+
+/** The owner's friends who could still be added as editors. */
+export const getListMemberCandidates = (listId: string) =>
+  typedRequest("/lists/{id}/members/candidates", { params: { id: listId } });
 
 export const addListMember = (listId: string, body: AddListMemberDto) =>
   typedRequest("/lists/{id}/members", {
@@ -76,12 +102,34 @@ export const removeListMember = (
     params: { id: listId, memberUserId },
   });
 
+/** Turns the list's notifications off, or back on, for the caller. */
+export const setListMuted = (listId: string, muted: boolean): Promise<void> =>
+  muted
+    ? typedRequest("/lists/{id}/mute", {
+        method: "PUT",
+        params: { id: listId },
+      })
+    : typedRequest("/lists/{id}/mute", {
+        method: "DELETE",
+        params: { id: listId },
+      });
+
 /**
  * A list as seen by the viewer — own list or a shared one, resolved server-
  * side either way. Social-gated when it isn't the viewer's own list.
  */
 export const getList = (id: string) =>
   typedRequest("/lists/{id}", { params: { id } });
+
+export const reportList = (
+  id: string,
+  report: { category: ReportCategory; motif?: ReportMotif; reason?: string },
+): Promise<void> =>
+  typedRequest("/lists/{id}/report", {
+    method: "POST",
+    params: { id },
+    body: report,
+  });
 
 /** A user's lists visible to the viewer (social-gated). */
 export const getUserLists = (username: string) =>

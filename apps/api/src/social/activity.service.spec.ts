@@ -1,6 +1,8 @@
 import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared";
 import { vi, type Mock } from "vitest";
+import { parsePageQuery } from "../common/pagination.util";
 import type { PrismaService } from "../prisma/prisma.service";
+import type { DomainGateService } from "../users/domain-gate.service";
 import { ActivityService } from "./activity.service";
 import type { VisibilityService } from "./visibility.service";
 import type { ViewerRelation } from "./visibility.util";
@@ -47,6 +49,7 @@ function make(
     audience?: VisibilityAudience;
     relation?: ViewerRelation;
     actorAccess?: ProfileAccess;
+    enabledDomains?: string[];
   } = {},
 ) {
   const prisma = {
@@ -70,6 +73,7 @@ function make(
       ]),
     },
     list: { findMany: vi.fn().mockResolvedValue([]) },
+    review: { findMany: vi.fn().mockResolvedValue([]) },
     mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
   } as unknown as PrismaService;
 
@@ -81,11 +85,21 @@ function make(
       .mockReturnValue(options.audience ?? VisibilityAudience.PUBLIC),
   } as unknown as VisibilityService;
 
+  const domainGate = {
+    getEnabledDomains: vi
+      .fn()
+      .mockResolvedValue(options.enabledDomains ?? ["MEDIA", "BOOKS"]),
+  } as unknown as DomainGateService;
+
   return {
-    service: new ActivityService(prisma, visibility),
+    service: new ActivityService(prisma, visibility, domainGate),
     prisma,
     visibility,
   };
+}
+
+function feedDomains(prisma: PrismaService): unknown {
+  return (prisma.activityEvent.findMany as Mock).mock.calls[0][0].where.domain;
 }
 
 describe("ActivityService.emit", () => {
@@ -142,7 +156,77 @@ describe("ActivityService.homeFeed", () => {
 
     expect(
       (prisma.activityEvent.findMany as Mock).mock.calls[0][0].where,
-    ).toEqual({ userId: { in: [ACTOR] }, homeFeed: true });
+    ).toMatchObject({ userId: { in: [ACTOR] }, homeFeed: true });
+  });
+
+  it("leaves out the domains the viewer has turned off", async () => {
+    // A reader who switched Games off doesn't want a friend's playthroughs
+    // back in through the feed.
+    const { service, prisma } = make({
+      follows: [{ followeeId: ACTOR }],
+      enabledDomains: ["MEDIA", "BOOKS"],
+    });
+
+    await service.homeFeed(VIEWER);
+
+    expect(feedDomains(prisma)).toEqual({ in: ["MEDIA", "BOOKS", "LISTS"] });
+  });
+
+  it("narrows to the one domain asked for", async () => {
+    const { service, prisma } = make({
+      follows: [{ followeeId: ACTOR }],
+      enabledDomains: ["MEDIA", "BOOKS"],
+    });
+
+    await service.homeFeed(VIEWER, parsePageQuery("1", "30", 30), "BOOKS");
+
+    expect(feedDomains(prisma)).toEqual({ in: ["BOOKS"] });
+  });
+
+  it("returns nothing for a domain the viewer has turned off", async () => {
+    // A stale ?domain= link must not reopen a domain the viewer closed.
+    const { service, prisma } = make({
+      follows: [{ followeeId: ACTOR }],
+      enabledDomains: ["MEDIA"],
+    });
+
+    const feed = await service.homeFeed(
+      VIEWER,
+      parsePageQuery("1", "30", 30),
+      "GAMES",
+    );
+
+    expect(feed).toEqual({ items: [], hasMore: false });
+    expect(prisma.activityEvent.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("ActivityService feed pagination", () => {
+  it("keeps paging when a page holds an event the viewer can't see", async () => {
+    // The page is cut from raw events, so whether more follow must be read
+    // there too. Reading it after the visibility filter ended the feed as
+    // soon as one hidden event landed on a page.
+    const { service } = make({
+      follows: [{ followeeId: ACTOR }],
+      events: [
+        eventRow({ id: "e1", targetId: "m1" }),
+        // A list event whose list is gone: never visible.
+        eventRow({
+          id: "e2",
+          type: "LIST_SHARED",
+          domain: "LISTS",
+          targetType: "LIST",
+          targetId: "gone",
+        }),
+        eventRow({ id: "e3", targetId: "m3" }),
+      ],
+    });
+
+    const feed = await service.homeFeed(VIEWER, parsePageQuery("1", "2", 30));
+
+    expect(feed.hasMore).toBe(true);
+    // Only the page's own raw window is shown: e3 belongs to the next page.
+    expect(feed.items.map((i) => i.id)).toEqual(["e1"]);
   });
 });
 
@@ -193,6 +277,16 @@ describe("ActivityService feed building", () => {
     expect(feed.items).toEqual([]);
   });
 
+  it("leaves out the domains the viewer has turned off", async () => {
+    // Same rule as the home feed: a profile's timeline doesn't bring back a
+    // domain the viewer closed — their own profile included.
+    const { service, prisma } = make({ enabledDomains: ["MEDIA", "BOOKS"] });
+
+    await service.profileTimeline(VIEWER, target);
+
+    expect(feedDomains(prisma)).toEqual({ in: ["MEDIA", "BOOKS", "LISTS"] });
+  });
+
   it("hydrates the actor onto each entry", async () => {
     const { service } = make({ events: [eventRow()] });
 
@@ -213,9 +307,244 @@ describe("ActivityService feed building", () => {
       ],
     });
 
-    const feed = await service.profileTimeline(VIEWER, target, 1, 1);
+    const feed = await service.profileTimeline(
+      VIEWER,
+      target,
+      parsePageQuery("1", "1", 30),
+    );
 
     expect(feed.hasMore).toBe(true);
     expect(feed.items).toHaveLength(1);
+  });
+});
+
+describe("ActivityService list events", () => {
+  const OWNER = "owner-1";
+  const EDITOR = ACTOR;
+  const target = { id: EDITOR, profileAccess: ProfileAccess.PUBLIC };
+  const stranger = relation({
+    following: false,
+    followsYou: false,
+    isFriend: false,
+  });
+
+  function listEvent(actorId = EDITOR) {
+    return eventRow({
+      userId: actorId,
+      type: "LIST_ITEM_ADDED",
+      domain: "LISTS",
+      targetType: "LIST",
+      targetId: "l1",
+      homeFeed: false,
+    });
+  }
+
+  // The viewer's relation differs per user here — to the editor who acted
+  // and to the owner whose list it is — which the shared `make` can't say.
+  function withList(
+    list: {
+      visibility: "PRIVATE" | "FRIENDS" | "PUBLIC";
+      ownerAccess?: ProfileAccess;
+      viewerIsMember?: boolean;
+    },
+    relations: Record<string, ViewerRelation>,
+    actorId = EDITOR,
+  ) {
+    const built = make({ events: [listEvent(actorId)] });
+    (built.prisma.list.findMany as Mock).mockResolvedValue([
+      {
+        id: "l1",
+        visibility: list.visibility,
+        user: {
+          id: OWNER,
+          profileAccess: list.ownerAccess ?? ProfileAccess.PUBLIC,
+        },
+        members: list.viewerIsMember ? [{ userId: VIEWER }] : [],
+      },
+    ]);
+    (built.prisma.user.findUnique as Mock).mockResolvedValue({
+      id: actorId,
+      profileAccess: ProfileAccess.PUBLIC,
+    });
+    (built.visibility.getRelation as Mock).mockImplementation(
+      (_viewer: string, user: { id: string }) => {
+        const found = relations[user.id];
+        if (!found) throw new Error(`No relation stubbed for ${user.id}`);
+        return Promise.resolve(found);
+      },
+    );
+    return built;
+  }
+
+  it("keeps an owner's private list out of a friend's view", async () => {
+    const { service } = withList(
+      { visibility: "PRIVATE" },
+      { [OWNER]: relation() },
+      OWNER,
+    );
+
+    const feed = await service.profileTimeline(VIEWER, {
+      id: OWNER,
+      profileAccess: ProfileAccess.PUBLIC,
+    });
+
+    expect(feed.items).toEqual([]);
+  });
+
+  it("shows the owner their own private list's activity", async () => {
+    const { service } = withList(
+      { visibility: "PRIVATE" },
+      { [OWNER]: relation({ isSelf: true }) },
+      OWNER,
+    );
+
+    const feed = await service.profileTimeline(VIEWER, {
+      id: OWNER,
+      profileAccess: ProfileAccess.PUBLIC,
+    });
+
+    expect(feed.items).toHaveLength(1);
+  });
+
+  it("reads an editor's event against the owner, not the editor", async () => {
+    // A friend of the editor who isn't the owner's friend must not learn
+    // the FRIENDS list exists through the editor's profile.
+    const { service } = withList(
+      { visibility: "FRIENDS" },
+      { [EDITOR]: relation(), [OWNER]: stranger },
+    );
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toEqual([]);
+  });
+
+  it("caps a public list at its owner's private profile", async () => {
+    const { service } = withList(
+      { visibility: "PUBLIC", ownerAccess: ProfileAccess.PRIVATE },
+      { [EDITOR]: relation(), [OWNER]: stranger },
+    );
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toEqual([]);
+  });
+
+  it("hides an editor's event from someone the owner blocked", async () => {
+    const { service } = withList(
+      { visibility: "PUBLIC" },
+      {
+        [EDITOR]: relation(),
+        [OWNER]: relation({ ...stranger, blockedByTarget: true }),
+      },
+    );
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toEqual([]);
+  });
+
+  it("shows an editor's event on a list the viewer can reach", async () => {
+    const { service } = withList(
+      { visibility: "FRIENDS" },
+      { [EDITOR]: relation(), [OWNER]: relation() },
+    );
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toHaveLength(1);
+  });
+
+  it("opens a private list's activity to the viewer editing it", async () => {
+    const { service } = withList(
+      { visibility: "PRIVATE", viewerIsMember: true },
+      { [EDITOR]: relation(), [OWNER]: relation() },
+    );
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toHaveLength(1);
+  });
+});
+
+describe("ActivityService review events", () => {
+  const target = { id: ACTOR, profileAccess: ProfileAccess.PUBLIC };
+  const stranger = relation({
+    following: false,
+    followsYou: false,
+    isFriend: false,
+  });
+
+  function reviewEvent(over: Record<string, unknown> = {}) {
+    return eventRow({
+      type: "REVIEWED",
+      data: { rating: 8 },
+      sourceType: "Review",
+      sourceId: "r1",
+      ...over,
+    });
+  }
+
+  it("keeps a friends-only review's rating from a stranger", async () => {
+    // The Activité facet is public, but the review itself isn't.
+    const { service, prisma } = make({
+      events: [reviewEvent()],
+      relation: stranger,
+    });
+    (prisma.review.findMany as Mock).mockResolvedValue([
+      { id: "r1", visibility: "FRIENDS" },
+    ]);
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toEqual([]);
+  });
+
+  it("shows a public review's rating to a stranger", async () => {
+    const { service, prisma } = make({
+      events: [reviewEvent()],
+      relation: stranger,
+    });
+    (prisma.review.findMany as Mock).mockResolvedValue([
+      { id: "r1", visibility: "PUBLIC" },
+    ]);
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toHaveLength(1);
+  });
+
+  it("drops the events of a deleted review", async () => {
+    const { service } = make({ events: [reviewEvent()] });
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toEqual([]);
+  });
+
+  it("matches an event older than the review link on the work", async () => {
+    const { service, prisma } = make({
+      events: [reviewEvent({ sourceType: null, sourceId: null })],
+      relation: stranger,
+    });
+    (prisma.review.findMany as Mock).mockResolvedValue([
+      {
+        userId: ACTOR,
+        targetType: "MEDIA",
+        targetId: "m1",
+        visibility: "FRIENDS",
+      },
+    ]);
+
+    const feed = await service.profileTimeline(VIEWER, target);
+
+    expect(feed.items).toEqual([]);
+    expect(prisma.review.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: [{ userId: ACTOR, targetType: "MEDIA", targetId: "m1" }],
+        },
+      }),
+    );
   });
 });

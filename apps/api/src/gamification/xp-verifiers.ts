@@ -1,10 +1,4 @@
-import {
-  BookStatus,
-  GameStatus,
-  MusicStatus,
-  ReviewVoteValue,
-  XpReason,
-} from "@loomkeep/shared";
+import { MusicStatus, ReviewVoteValue, XpReason } from "@loomkeep/shared";
 import { isAiringFinished } from "../catalog/airing-status.util";
 import type { PrismaService } from "../prisma/prisma.service";
 
@@ -211,32 +205,33 @@ export const XP_VERIFIERS: Partial<Record<XpReason, XpVerifier>> = {
 
   GAME_FINISHED: byExistingRow(
     (prisma, ids) =>
-      prisma.gameEntry.findMany({
+      prisma.gamePlaythrough.findMany({
         where: { id: { in: ids } },
-        select: { id: true, status: true },
+        select: { id: true, status: true, number: true },
       }),
-    (entry) => entry.status === GameStatus.COMPLETED,
+    (playthrough) =>
+      playthrough.status === "COMPLETED" && playthrough.number === 1,
   ),
 
   GAME_REPLAYED: byExistingRow((prisma, ids) =>
-    prisma.gameReplay.findMany({
-      where: { id: { in: ids } },
+    prisma.gamePlaythrough.findMany({
+      where: { id: { in: ids }, status: "COMPLETED", number: { gt: 1 } },
       select: { id: true },
     }),
   ),
 
   BOOK_FINISHED: byExistingRow(
     (prisma, ids) =>
-      prisma.bookEntry.findMany({
+      prisma.bookReading.findMany({
         where: { id: { in: ids } },
-        select: { id: true, status: true },
+        select: { id: true, status: true, number: true },
       }),
-    (entry) => entry.status === BookStatus.READ,
+    (reading) => reading.status === "COMPLETED" && reading.number === 1,
   ),
 
   BOOK_REPLAYED: byExistingRow((prisma, ids) =>
-    prisma.bookReplay.findMany({
-      where: { id: { in: ids } },
+    prisma.bookReading.findMany({
+      where: { id: { in: ids }, status: "COMPLETED", number: { gt: 1 } },
       select: { id: true },
     }),
   ),
@@ -343,6 +338,12 @@ export const XP_VERIFIERS: Partial<Record<XpReason, XpVerifier>> = {
   // An unlocked achievement is never taken back, so there is nothing to
   // re-derive here — the entry stays valid for as long as it exists.
   ACHIEVEMENT_UNLOCKED: ALWAYS_VALID,
+
+  // Paid once, like a milestone: a sequel announced later, or a work of the
+  // saga un-finished, doesn't take back a saga already completed. And once
+  // per goal: lowering it or un-reading a book doesn't either.
+  SAGA_COMPLETED: ALWAYS_VALID,
+  READING_GOAL_REACHED: ALWAYS_VALID,
 
   // ADMIN_ADJUSTMENT and PROFILE_COMPLETED deliberately omitted — see the
   // doc comment above.

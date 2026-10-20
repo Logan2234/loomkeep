@@ -1,0 +1,69 @@
+---
+title: iPhone widget
+description: A home-screen widget listing what you're watching, playing and reading, with Scriptable.
+sidebar:
+  order: 5
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+[Scriptable](https://scriptable.app), a free iPhone and iPad app, runs
+JavaScript as home-screen widgets. This one lists the last titles you
+started, with how far along you are.
+
+**Key:** `library:read`.
+
+<Steps>
+
+1. Create the key in **Settings › Integrations**. In Scriptable, create a
+   script, run this line once to store the key in the iPhone's keychain, then
+   delete it:
+
+   ```js
+   Keychain.set("loomkeep_api_key", "lk_…");
+   ```
+
+2. Replace the script with the widget:
+
+   ```js
+   const API = "https://loomkeep.app/api/v1";
+   const key = Keychain.get("loomkeep_api_key");
+
+   const req = new Request(`${API}/library?phase=IN_PROGRESS&limit=4`);
+   req.headers = { Authorization: `Bearer ${key}` };
+   const { items } = await req.loadJSON();
+
+   const widget = new ListWidget();
+   widget.url = "https://loomkeep.app/app";
+   widget.addText("In progress").font = Font.boldSystemFont(14);
+   widget.addSpacer(6);
+
+   for (const entry of items) {
+     const { current, total } = entry.progress ?? {};
+     const progress = current === undefined ? "" : ` · ${current}/${total ?? "?"}`;
+     const line = widget.addText(entry.work.title + progress);
+     line.font = Font.systemFont(12);
+     line.lineLimit = 1;
+   }
+
+   if (config.runsInWidget) Script.setWidget(widget);
+   else await widget.presentMedium();
+   Script.complete();
+   ```
+
+3. Run it once in Scriptable to preview it, then add a **Scriptable** widget
+   to your home screen and pick this script in its settings.
+
+</Steps>
+
+iOS decides when widgets refresh, usually every 15 minutes or so. Tapping
+the widget opens Loomkeep.
+
+## Variations
+
+- **Only one domain:** add `&domain=MEDIA` (or `GAMES`, `BOOKS`, `MUSIC`).
+- **Tonight's episodes:** read `/calendar?days=1` instead, with
+  `calendar:read`, and show `work.title` with `seasonNumber` and
+  `episodeNumber`.
+- **Covers:** each entry's `work.coverUrl` loads with
+  `new Request(url).loadImage()`, for `widget.addImage()`.

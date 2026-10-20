@@ -44,7 +44,14 @@ export class AdminGuard implements CanActivate {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true, mfaTotpEnabled: true, mfaEmailEnabled: true },
+      select: {
+        role: true,
+        mfaTotpEnabled: true,
+        mfaEmailEnabled: true,
+        // A security key or passkey is a second factor too (it's offered at
+        // sign-in as one) — an admin protected by that alone is protected.
+        _count: { select: { webauthnCredentials: true } },
+      },
     });
 
     if (user?.role !== "ADMIN") {
@@ -53,7 +60,12 @@ export class AdminGuard implements CanActivate {
 
     const mfaEnforced = this.config.get<string>("NODE_ENV") === "production";
 
-    if (mfaEnforced && !user.mfaTotpEnabled && !user.mfaEmailEnabled) {
+    if (
+      mfaEnforced &&
+      !user.mfaTotpEnabled &&
+      !user.mfaEmailEnabled &&
+      user._count.webauthnCredentials === 0
+    ) {
       throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.AuthMfaRequired);
     }
 

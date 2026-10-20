@@ -1,22 +1,25 @@
 <script lang="ts">
+  import { inView } from "#lib/actions/inView.js";
+
+  import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
+
   import {
-    fetchAllPages,
-    listLibrary,
+    listTrackedMedia,
     searchCatalog,
     upsertLibraryEntry,
-  } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import PosterGrid from "$lib/components/PosterGrid.svelte";
-  import { debounce } from "$lib/debounce";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import PosterGrid from "#lib/components/PosterGrid.svelte";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     EntryStatus,
     MediaSummaryDto,
@@ -45,14 +48,6 @@
     type?: MediaType;
   } = $props();
 
-  const TYPE_LABELS: Record<MediaType, string> = {
-    MOVIE: m.media_movie(),
-    SERIES: m.media_series(),
-    ANIME: m.media_anime_label(),
-  };
-
-  const DEBOUNCE_MS = 300;
-
   // `query` (prop) is the raw input; `queryFilter` is the debounced value
   // that actually drives the fetch — type changes bypass the debounce.
   let queryFilter = $state("");
@@ -63,7 +58,7 @@
 
   const debouncedQueryFilter = debounce(() => {
     queryFilter = query.trim();
-  }, DEBOUNCE_MS);
+  }, SEARCH_DEBOUNCE_MS);
 
   $effect(() => {
     const q = query; // track
@@ -104,7 +99,6 @@
   });
   const shown = $derived(limit ? results.slice(0, limit) : results);
   const searched = $derived(!!queryFilter);
-  let sentinel = $state<HTMLElement | null>(null);
 
   $effect(() => {
     onResults?.(results.length);
@@ -116,15 +110,13 @@
 
   const trackedQuery = createApiQuery(() => ({
     key: keys.library.tracked(),
-    fetch: async () => {
-      const entries = await fetchAllPages((page) => listLibrary({ page }));
-      return new Map<string, EntryStatus>(
-        entries.map((e) => [
-          trackKey(e.mediaItem.type, e.mediaItem.sourceId),
+    fetch: async () =>
+      new Map<string, EntryStatus>(
+        (await listTrackedMedia()).map((e) => [
+          trackKey(e.type, e.sourceId),
           e.status,
         ]),
-      );
-    },
+      ),
   }));
   // A failed library load only costs the "already added" flag; ignore it
   // rather than surfacing an error for a secondary, non-essential lookup.
@@ -149,18 +141,6 @@
   });
 
   // Infinite scroll: load the next page when the sentinel nears the viewport.
-  $effect(() => {
-    const el = sentinel;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) searchQuery.fetchNextPage();
-      },
-      { rootMargin: "400px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  });
 </script>
 
 {#if searchQuery.error}
@@ -193,12 +173,13 @@
         <Poster
           src={media.posterUrl}
           title={media.title}
+          alt=""
           adult={media.isAdult} />
         <div class="flex flex-1 flex-col gap-1.5 p-3">
           <span class="font-display text-sm leading-tight font-semibold"
             >{media.title}</span>
           <span class="timecode text-xs">
-            {TYPE_LABELS[media.type]}{#if media.year}
+            {MEDIA_TYPE_LABEL[media.type]}{#if media.year}
               &nbsp;· {media.year}{/if}
           </span>
         </div>
@@ -225,7 +206,13 @@
 
   {#if searchQuery.hasNextPage && !limit}
     <!-- Sentinel: entering the viewport triggers the next page. -->
-    <div bind:this={sentinel} class="h-10"></div>
+    <div
+      use:inView={{
+        onEnter: () => searchQuery.fetchNextPage(),
+        rootMargin: "400px",
+      }}
+      class="h-10">
+    </div>
   {/if}
   {#if searchQuery.isFetchingNextPage && !limit}
     <PosterGrid>

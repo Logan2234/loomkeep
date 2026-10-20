@@ -1,0 +1,92 @@
+---
+title: Monitoring
+description: Grafana, Loki and Prometheus for logs and metrics, and Healthchecks.io for scheduled jobs.
+sidebar:
+  order: 1
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+Without anything added, `docker compose logs api` shows the API's
+structured logs, and each service's logs are capped at 50 MB. This override
+adds history and dashboards:
+
+- **Grafana**, at `grafana.<DOMAIN>`, behind its own login;
+- **Loki and Promtail**: every container's logs, searchable;
+- **Prometheus** with node and PostgreSQL exporters: CPU, memory, disk and
+  database metrics, plus the API's own (`/api/metrics`).
+
+## Enabling it
+
+<Steps>
+
+1. Set `GRAFANA_ADMIN_PASSWORD` in `.env`.
+
+2. To collect the API's metrics, set `METRICS_API_KEY` to a long random
+   string, and write the same value, with no trailing newline, to
+   `docker/observability/metrics_token` (copy it from
+   `metrics_token.example`). Left empty, only that scrape target fails.
+
+3. Add `docker/docker-compose.observability.yml` to `COMPOSE_FILE` in `.env`,
+   then:
+
+   ```sh
+   docker compose pull
+   docker compose up -d
+   ```
+
+</Steps>
+
+Grafana is also reachable at `127.0.0.1:3001` on the server, through an SSH
+tunnel (`ssh -L 3001:localhost:3001 you@server`), with or without a domain.
+Prometheus has no port of its own: Grafana queries it.
+
+### Per-query database metrics
+
+PostgreSQL's per-query statistics need the `pg_stat_statements` extension.
+It is created on a new install; on an instance that already ran, create it
+once, after the override has restarted the database:
+
+```sh
+docker compose exec db psql -U loomkeep -d loomkeep \
+  -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
+```
+
+Use your own `POSTGRES_USER` and `POSTGRES_DB` if they differ.
+
+## Scheduled jobs
+
+Loomkeep runs a dozen [scheduled jobs](/self-hosting/scheduled-jobs/):
+new-episode checks, catalogue refreshes, the nightly backup… A job that
+silently stops leaves everything else looking healthy.
+[Healthchecks.io](https://healthchecks.io) catches that, with no container
+to run:
+
+<Steps>
+
+1. Create a free account, then one check per job, with the job's schedule as
+   its **period** and about an hour of **grace**.
+
+2. Put each check's ping URL in the job's `HEALTHCHECKS_*_URL` variable: the
+   [list of jobs](/self-hosting/scheduled-jobs/) gives each one's name.
+   Restart.
+
+</Steps>
+
+Each job pings once it finishes, and reports its failures; Healthchecks.io
+alerts you when a ping doesn't arrive in time. **Admin › Jobs & tasks**
+shows each job's last runs.
+
+With this override, Prometheus can also read Healthchecks.io's own metrics,
+for job health in Grafana: write a read-only API key (**Project Settings ›
+API Access**) to `docker/observability/healthchecks_token`, and your
+project's id in the `healthchecks` job of
+`docker/observability/prometheus.yml`.
+
+<Aside title="Uptime monitors behind a login">
+  If Grafana sits behind Cloudflare Access or another login gate, an uptime
+  monitor only ever sees the login page and reports Grafana up when it is
+  down. Point the monitor at `grafana.<DOMAIN>/api/health`, and let that one
+  path through for the monitor's addresses: see
+  [Behind Cloudflare](/self-hosting/cloudflare/#cloudflare-access).
+</Aside>

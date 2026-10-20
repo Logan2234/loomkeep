@@ -1,5 +1,6 @@
-import type { UserDto } from "@loomkeep/shared";
+import { FeatureFlag, type UserDto } from "@loomkeep/shared";
 import { liveFlags } from "./feature-flags-live.svelte";
+import { queryClient } from "./query-client";
 
 /** Global auth state. Session tokens stay in HttpOnly cookies. */
 class AuthState {
@@ -25,12 +26,20 @@ class AuthState {
    * same rule instead of recomputing it locally.
    */
   isPremiumLocked = $derived(
-    liveFlags.isEnabled("premium-features") && !this.isPremium,
+    liveFlags.isEnabled(FeatureFlag.PREMIUM_FEATURES) && !this.isPremium,
   );
 
+  /**
+   * Forgets the signed-in account — on sign-out, and when the session turns
+   * out to be dead. The query cache goes with it: its keys don't carry the
+   * account, so whoever signs in next in this tab would otherwise be served
+   * the previous account's library, stats and messages from cache (fresh for
+   * `staleTime`, so not even refetched) until each query went stale.
+   */
   clear(): void {
     this.user = null;
     this.isPremium = false;
+    queryClient.clear();
   }
 }
 

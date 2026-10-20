@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
+import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { AuthModule } from "../auth/auth.module";
+import { ChatModule } from "../chat/chat.module";
 import { EntitlementModule } from "../entitlements/entitlement.module";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
@@ -13,41 +15,46 @@ import { AccountDeletionService } from "./account-deletion.service";
 import { AgeGateService } from "./age-gate.service";
 import { CsvExportService } from "./csv-export.service";
 import { DataExportService } from "./data-export.service";
-import { DomainGateService } from "./domain-gate.service";
+import { DomainGateModule } from "./domain-gate.module";
 import { InactiveAccountService } from "./inactive-account.service";
 import { MfaController } from "./mfa.controller";
+import { MigrationExportService } from "./migration-export.service";
 import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
 
 @Module({
   imports: [
+    ApiKeysModule,
     AuthModule,
     MailModule,
     SecurityModule,
     ReviewsModule,
     ListsModule,
     EntitlementModule,
+    DomainGateModule,
     JobsModule,
     SocialModule,
     GamificationModule,
     EventsModule,
+    ChatModule,
   ],
   controllers: [UsersController, MfaController],
   providers: [
     AgeGateService,
-    DomainGateService,
     DataExportService,
     CsvExportService,
+    MigrationExportService,
     AccountDeletionService,
     InactiveAccountService,
     UsersService,
   ],
   exports: [
     AgeGateService,
-    DomainGateService,
+    DomainGateModule,
     DataExportService,
     CsvExportService,
     AccountDeletionService,
+    InactiveAccountService,
     EntitlementModule,
   ],
 })

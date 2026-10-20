@@ -1,12 +1,21 @@
-import type { PagedResult } from "@loomkeep/shared";
+import type {
+  BookSagaResponseDto as BookSagaResponse,
+  BulkEntriesResultDto,
+  LibraryBookSagasDto,
+  PagedResult,
+  PileSummaryDto,
+} from "@loomkeep/shared";
 import {
   BookDetailDto,
   BookEditionDto,
   BookEntryDto,
   BookSearchResponseDto,
+  BookSessionMutationDto,
+  BookSessionSummaryDto,
   BookSource,
   Domain,
   ErrorCode,
+  LIBRARY_SAGA_SORTS,
   ReadingGoalDto,
 } from "@loomkeep/shared";
 import {
@@ -26,22 +35,40 @@ import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import {
+  BulkEntriesResultResponseDto,
+  BulkEntriesTargetBody,
+} from "../common/dto/bulk-entries.dto";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
+import { parseListEntriesQuery } from "../common/entry-lifecycle.util";
 import { safeLang } from "../common/locale.util";
+import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
-import { toQueryArray } from "../common/query-array.util";
+import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { DomainGateService } from "../users/domain-gate.service";
 import { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
-import { AddBookReplayDto } from "./dto/add-book-replay.dto";
+import { BookSagaService } from "./book-saga.service";
+import { BookSessionService } from "./book-session.service";
 import { BookDetailResponseDto } from "./dto/book-detail-response.dto";
 import { BookEditionResponseDto } from "./dto/book-edition-response.dto";
 import { BookEntryResponseDto } from "./dto/book-entry-response.dto";
+import {
+  BookSagaResponseDto,
+  LibraryBookSagasResponseDto,
+} from "./dto/book-saga-response.dto";
 import { BookSearchResultResponseDto } from "./dto/book-search-response.dto";
+import {
+  BookSessionMutationResponseDto,
+  BookSessionSummaryResponseDto,
+} from "./dto/book-session-response.dto";
+import { BulkUpdateBookEntriesBody } from "./dto/bulk-update-book-entries.dto";
+import { CreateBookSessionDto } from "./dto/create-book-session.dto";
 import { ReadingGoalResponseDto } from "./dto/reading-goal-response.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
+import { UpdateBookSessionDto } from "./dto/update-book-session.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";
 import { UpsertReadingGoalDto } from "./dto/upsert-reading-goal.dto";
 
@@ -50,6 +77,8 @@ export class BooksController {
   constructor(
     private readonly bookItemService: BookItemService,
     private readonly bookLibraryService: BookLibraryService,
+    private readonly bookSagaService: BookSagaService,
+    private readonly bookSessionService: BookSessionService,
     private readonly domainGate: DomainGateService,
     private readonly ageGate: AgeGateService,
   ) {}
@@ -84,6 +113,49 @@ export class BooksController {
     return { results: filterAdultContent(results, allowAdult) };
   }
 
+  @Get("entries/:id/sessions")
+  @ApiOkResponse({ type: BookSessionSummaryResponseDto })
+  listSessions(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") entryId: string,
+    @Query("page") page?: string,
+  ): Promise<BookSessionSummaryDto> {
+    return this.bookSessionService.list(
+      user.sub,
+      entryId,
+      parsePageQuery(page, undefined, DEFAULT_PAGE_SIZE).page,
+    );
+  }
+
+  @Post("entries/:id/sessions")
+  @ApiCreatedResponse({ type: BookSessionMutationResponseDto })
+  createSession(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") entryId: string,
+    @Body() dto: CreateBookSessionDto,
+  ): Promise<BookSessionMutationDto> {
+    return this.bookSessionService.create(user.sub, entryId, dto);
+  }
+
+  @Patch("sessions/:id")
+  @ApiOkResponse({ type: BookSessionMutationResponseDto })
+  updateSession(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") sessionId: string,
+    @Body() dto: UpdateBookSessionDto,
+  ): Promise<BookSessionMutationDto> {
+    return this.bookSessionService.update(user.sub, sessionId, dto);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete("sessions/:id")
+  async deleteSession(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") sessionId: string,
+  ): Promise<void> {
+    await this.bookSessionService.delete(user.sub, sessionId);
+  }
+
   @Get()
   @ApiOkResponse({ type: PagedResponseDto(BookEntryResponseDto) })
   async listEntries(
@@ -99,14 +171,69 @@ export class BooksController {
   ): Promise<PagedResult<BookEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookLibraryService.listEntries(user.sub, {
+      ...parseListEntriesQuery({
+        q,
+        favorite,
+        status,
+        sort,
+        order,
+        page,
+        limit,
+        lang,
+      }),
+    });
+  }
+
+  /** What's left in the pile among the entries the list shows under the same filters. */
+  /** The reader's book series: started, then finished. */
+  @Get("sagas")
+  @ApiOkResponse({ type: LibraryBookSagasResponseDto })
+  async listSagas(
+    @CurrentUser() user: JwtPayload,
+    @Query("q") q?: string,
+    @Query("sort") sort?: string,
+    @Query("order") order?: string,
+    @Query("lang") lang?: string,
+  ): Promise<LibraryBookSagasDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
+    return this.bookSagaService.listSagas(user.sub, {
       q,
-      favorite: favorite === "true",
-      statuses: toQueryArray(status),
-      sort,
+      sort: LIBRARY_SAGA_SORTS.find((s) => s === sort),
       order: order === "asc" ? "asc" : "desc",
-      page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
       lang: safeLang(lang),
+    });
+  }
+
+  /** A series' numbered volumes, each with the reader's status. */
+  @Get("series/:seriesKey")
+  @ApiOkResponse({ type: BookSagaResponseDto })
+  async getSeries(
+    @CurrentUser() user: JwtPayload,
+    @Param("seriesKey") seriesKey: string,
+    @Query("lang") lang?: string,
+  ): Promise<BookSagaResponse> {
+    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
+    return {
+      saga: await this.bookSagaService.getSaga(
+        user.sub,
+        seriesKey,
+        safeLang(lang),
+      ),
+    };
+  }
+
+  @Get("pile")
+  @ApiOkResponse({ type: PileSummaryResponseDto })
+  async getPile(
+    @CurrentUser() user: JwtPayload,
+    @Query("q") q?: string,
+    @Query("favorite") favorite?: string,
+    @Query("status") status?: string | string[],
+    @Query("lang") lang?: string,
+  ): Promise<PileSummaryDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
+    return this.bookLibraryService.getPile(user.sub, {
+      ...parseListEntriesQuery({ q, favorite, status, lang }),
     });
   }
 
@@ -138,6 +265,29 @@ export class BooksController {
     return this.bookLibraryService.updateEntry(user.sub, entryId, dto);
   }
 
+  /** One change applied to many entries (UX-04), with a single update's side effects on each. */
+  @HttpCode(HttpStatus.OK)
+  @Post("entries/bulk")
+  @ApiOkResponse({ type: BulkEntriesResultResponseDto })
+  async bulkUpdate(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkUpdateBookEntriesBody,
+  ): Promise<BulkEntriesResultDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
+    return this.bookLibraryService.bulkUpdate(user.sub, dto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post("entries/bulk-delete")
+  @ApiOkResponse({ type: BulkEntriesResultResponseDto })
+  async bulkDelete(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkEntriesTargetBody,
+  ): Promise<BulkEntriesResultDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
+    return this.bookLibraryService.bulkDelete(user.sub, dto);
+  }
+
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete("entries/:id")
   async deleteEntry(
@@ -145,26 +295,6 @@ export class BooksController {
     @Param("id") entryId: string,
   ): Promise<void> {
     await this.bookLibraryService.deleteEntry(user.sub, entryId);
-  }
-
-  /** Log a completed reread (a completion beyond the entry's first one). */
-  @Post("entries/:id/replays")
-  @ApiCreatedResponse({ type: BookEntryResponseDto })
-  addReplay(
-    @CurrentUser() user: JwtPayload,
-    @Param("id") entryId: string,
-    @Body() dto: AddBookReplayDto,
-  ): Promise<BookEntryDto> {
-    return this.bookLibraryService.addReplay(user.sub, entryId, dto);
-  }
-
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete("replays/:id")
-  async deleteReplay(
-    @CurrentUser() user: JwtPayload,
-    @Param("id") replayId: string,
-  ): Promise<void> {
-    await this.bookLibraryService.deleteReplay(user.sub, replayId);
   }
 
   /** The current user's reading goal for `year` (defaults to this year) + progress. */

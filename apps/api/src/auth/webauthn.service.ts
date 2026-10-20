@@ -21,8 +21,10 @@ import {
   verifyAuthenticationResponse,
   verifyRegistrationResponse,
 } from "@simplewebauthn/server";
-import * as bcrypt from "bcryptjs";
+import { createHmac } from "node:crypto";
 import { AppException } from "../common/app.exception";
+import { webOrigins } from "../common/web-origin.util";
+import { notificationCopy } from "../notifications/notification-copy";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { MfaService } from "./mfa.service";
@@ -30,6 +32,40 @@ import { MfaService } from "./mfa.service";
 const RP_NAME = "Loomkeep";
 /** Ceremony window — matches the other short-lived challenge tables (MfaLoginChallenge, EmailChangeRequest). */
 const CHALLENGE_TTL_MINUTES = 5;
+/** Credential id lengths (bytes) real authenticators issue — platform passkeys, security keys. */
+const DECOY_ID_BYTES = [16, 20, 32, 64];
+const DECOY_TRANSPORTS: AuthenticatorTransportHint[][] = [
+  ["internal", "hybrid"],
+  ["hybrid", "internal"],
+  ["usb", "nfc"],
+  ["internal"],
+];
+
+/**
+ * One or two credential descriptors derived from `identifier` alone: the
+ * same identifier always gets the same decoys, so asking twice can't tell a
+ * decoy from a real account's keys.
+ */
+function decoyCredentials(
+  identifier: string,
+  secret: string,
+): { credentialId: string; transports: string[] }[] {
+  const seed = createHmac("sha256", secret)
+    .update(`webauthn-decoy:${identifier.trim().toLowerCase()}`)
+    .digest();
+  return Array.from({ length: 1 + (seed[0] % 2) }, (_, i) => {
+    const bytes = Buffer.concat([
+      createHmac("sha256", seed).update(`${i}:a`).digest(),
+      createHmac("sha256", seed).update(`${i}:b`).digest(),
+    ]);
+    return {
+      credentialId: bytes
+        .subarray(0, DECOY_ID_BYTES[seed[1 + i] % DECOY_ID_BYTES.length])
+        .toString("base64url"),
+      transports: DECOY_TRANSPORTS[seed[3 + i] % DECOY_TRANSPORTS.length],
+    };
+  });
+}
 
 export interface VerifiedWebauthnLogin {
   user: User;
@@ -48,10 +84,7 @@ export class WebauthnService {
 
   /** WEB_ORIGIN is the browser-facing origin (comma-separated) — see main.ts's CORS setup. Its hostname doubles as the WebAuthn RP ID, so self-hosters need no extra config. */
   private origins(): string[] {
-    return this.configService
-      .getOrThrow<string>("WEB_ORIGIN")
-      .split(",")
-      .map((o) => o.trim());
+    return webOrigins(this.configService.getOrThrow<string>("WEB_ORIGIN"));
   }
 
   private rpID(): string {
@@ -177,6 +210,14 @@ export class WebauthnService {
 
     const { credential, credentialDeviceType, credentialBackedUp } =
       verification.registrationInfo;
+    // Named in the owner's own language: the default lands in the database and
+    // is shown back to them in settings. Read straight from the copy table
+    // rather than injecting NotificationService for one label.
+    const owner = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { locale: true },
+    });
+    const copy = notificationCopy(owner?.locale);
 
     const row = await this.prisma.webauthnCredential.create({
       data: {
@@ -187,7 +228,7 @@ export class WebauthnService {
         deviceType: credentialDeviceType,
         backedUp: credentialBackedUp,
         transports: credential.transports ?? [],
-        name: dto.name.trim() || "Clé de sécurité",
+        name: dto.name.trim() || copy.securityKey,
       },
     });
 
@@ -207,11 +248,8 @@ export class WebauthnService {
   async removeCredential(
     userId: string,
     credentialId: string,
-    currentPassword: string,
     currentSessionId?: string,
   ): Promise<RemoveWebauthnCredentialResponseDto> {
-    await this.assertCurrentPassword(userId, currentPassword);
-
     const row = await this.prisma.webauthnCredential.findUnique({
       where: { id: credentialId },
     });
@@ -267,7 +305,7 @@ export class WebauthnService {
 
   /**
    * Relabelling is not a security-changing action (unlike add/remove), so it
-   * skips the current-password confirmation those require.
+   * skips the identity confirmation those require.
    */
   async renameCredential(
     userId: string,
@@ -303,11 +341,8 @@ export class WebauthnService {
   async setPasswordless(
     userId: string,
     enabled: boolean,
-    currentPassword: string,
     currentSessionId?: string,
   ): Promise<void> {
-    await this.assertCurrentPassword(userId, currentPassword);
-
     if (enabled && !(await this.hasCredentials(userId))) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
@@ -344,36 +379,52 @@ export class WebauthnService {
     return { webauthnChallengeId, options };
   }
 
-  /** Returns null when the account isn't eligible — callers must respond identically to "unknown identifier" to avoid enumeration. */
+  /**
+   * Options for a passwordless login. An identifier that isn't eligible
+   * (unknown, passwordless off, or no key left) gets decoy options of the
+   * same shape — a real stored challenge, bound to no account, listing
+   * stable credential ids derived from the identifier — so the response
+   * never tells which accounts sign in without a password, nor lists their
+   * keys. A decoy challenge then fails verification like a wrong key would.
+   */
   async passwordlessOptions(
     identifier: string,
-  ): Promise<WebauthnLoginOptionsResponseDto | null> {
+  ): Promise<WebauthnLoginOptionsResponseDto> {
     const user = await this.prisma.user.findFirst({
       where: { OR: [{ email: identifier }, { username: identifier }] },
       select: { id: true, passwordlessEnabled: true },
     });
 
-    if (!user?.passwordlessEnabled) return null;
-    if (!(await this.hasCredentials(user.id))) return null;
+    if (user?.passwordlessEnabled && (await this.hasCredentials(user.id))) {
+      return this.createLoginChallenge(user.id, null);
+    }
 
-    const { webauthnChallengeId, options } = await this.createLoginChallenge(
-      user.id,
+    return this.createLoginChallenge(
       null,
+      null,
+      decoyCredentials(
+        identifier,
+        this.configService.get<string>("JWT_REFRESH_SECRET") ?? "",
+      ),
     );
-    return { webauthnChallengeId, options };
   }
 
   private async createLoginChallenge(
-    userId: string,
+    userId: string | null,
     mfaLoginChallengeId: string | null,
+    decoys?: { credentialId: string; transports: string[] }[],
   ): Promise<{
     webauthnChallengeId: string;
     options: Awaited<ReturnType<typeof generateAuthenticationOptions>>;
   }> {
-    const credentials = await this.prisma.webauthnCredential.findMany({
-      where: { userId },
-      select: { credentialId: true, transports: true },
-    });
+    const credentials =
+      decoys ??
+      (userId
+        ? await this.prisma.webauthnCredential.findMany({
+            where: { userId },
+            select: { credentialId: true, transports: true },
+          })
+        : []);
 
     const options = await generateAuthenticationOptions({
       rpID: this.rpID(),
@@ -423,7 +474,10 @@ export class WebauthnService {
       where: { credentialId: response.id },
     });
 
-    if (!credential || credential.userId !== challenge.userId) {
+    // A decoy challenge (no user) lands here too, like a wrong key.
+    const { user } = challenge;
+
+    if (!credential || !user || credential.userId !== user.id) {
       throw new AppException(
         HttpStatus.UNAUTHORIZED,
         ErrorCode.AuthWebauthnVerificationFailed,
@@ -462,26 +516,37 @@ export class WebauthnService {
     });
 
     return {
-      user: challenge.user,
+      user,
       mfaLoginChallengeId: challenge.mfaLoginChallengeId,
     };
   }
 
-  private async assertCurrentPassword(
+  /** An assertion challenge for a signed-in user confirming it's them. */
+  async reauthOptions(
     userId: string,
-    currentPassword: string,
+  ): Promise<WebauthnLoginOptionsResponseDto> {
+    return this.createLoginChallenge(userId, null);
+  }
+
+  /** Checks a confirmation's assertion came from one of this user's keys. */
+  async verifyReauth(
+    userId: string,
+    webauthnChallengeId: string,
+    response: AuthenticationResponseJSON,
   ): Promise<void> {
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { passwordHash: true },
+    const challenge = await this.prisma.webauthnChallenge.findUnique({
+      where: { id: webauthnChallengeId },
+      select: { userId: true },
     });
 
-    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    if (challenge?.userId !== userId) {
       throw new AppException(
         HttpStatus.UNAUTHORIZED,
-        ErrorCode.AuthCurrentPasswordIncorrect,
+        ErrorCode.AuthWebauthnVerificationFailed,
       );
     }
+
+    await this.verifyLoginAssertion(webauthnChallengeId, response);
   }
 }
 

@@ -1,16 +1,18 @@
 <script lang="ts">
-  import { auth } from "$lib/auth.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import { ratingWord } from "$lib/rating-words";
+  import { page } from "$app/state";
+  import { auth } from "#lib/auth.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { flashAnchor, isFlashTarget } from "#lib/flash-anchor.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { ratingWord } from "#lib/rating-words.js";
   import {
     levelProgress,
     SpoilerSensitivity,
     type ReviewDto,
     type ReviewVoteValue,
   } from "@loomkeep/shared";
-  import { tick } from "svelte";
+  import { tick, untrack } from "svelte";
   import Avatar from "./Avatar.svelte";
   import Dropdown from "./Dropdown.svelte";
   import Icon from "./Icon.svelte";
@@ -45,7 +47,11 @@
   const RESIZE_EASING = "cubic-bezier(0.2, 0.7, 0.2, 1)";
   const reduced = prefersReducedMotion();
 
+  const anchor = $derived(`review-${review.id}`);
   let expanded = $state(false);
+  // Opened from a message's "Lire la critique entière": unfolded, once its
+  // text turns out to need it.
+  let unfoldOnArrival = untrack(() => isFlashTarget(anchor, page.url.hash));
   let overflowing = $state(false);
   let resizing = $state(false);
   // The viewer wrote it, so there's nothing to hide from them. AUTO and
@@ -67,6 +73,8 @@
     void review.text;
     if (!textEl || expanded) return;
     overflowing = textEl.scrollHeight > textEl.clientHeight + 1;
+    if (overflowing && unfoldOnArrival) expanded = true;
+    unfoldOnArrival = false;
   });
 
   // line-clamp can't be transitioned, so the height is animated explicitly
@@ -118,6 +126,8 @@
 </script>
 
 <article
+  id={anchor}
+  use:flashAnchor={{ anchor, hash: page.url.hash }}
   class="card flex flex-col gap-2 px-3.5 py-3"
   class:border-accent-mix={mine}>
   <div class="flex items-center gap-2">
@@ -130,7 +140,7 @@
     {#if mine}
       <span
         class="text-accent ml-1 font-mono text-[0.6rem] tracking-[0.14em] uppercase">
-        {m.reviews_you()}
+        {m.common_you()}
       </span>
     {/if}
     {#if review.spoilerTag && mine}
@@ -225,7 +235,7 @@
           {#if appConfig.gamificationEnabled && level !== null}
             <span
               class="border-border text-dim shrink-0 rounded border px-[5px] font-mono text-[0.62rem] font-bold"
-              title={m.profile_level_full({ level })}>
+              title={m.gamification_level({ level })}>
               {level}
             </span>
           {/if}
@@ -291,13 +301,14 @@
       {/if}
       {#if onReport}
         <Dropdown placement="bottom-end" class="min-w-40">
-          {#snippet trigger({ open, toggle })}
+          {#snippet trigger({ open, toggle, onkeydown })}
             <button
               type="button"
               class="btn-icon"
               aria-label={m.common_more_actions()}
               aria-haspopup="menu"
               aria-expanded={open}
+              {onkeydown}
               onclick={toggle}>
               <Icon name="dots-horizontal" class="h-4 w-4" />
             </button>

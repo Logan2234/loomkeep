@@ -1,5 +1,6 @@
 import {
   type AchievementDto,
+  type ConnectionDto,
   Domain,
   ErrorCode,
   type ListVisibility,
@@ -8,27 +9,21 @@ import {
   type ProfileDomainStatDto,
   type ReviewVisibility,
   type SocialProfileDto,
-  type UserSummaryDto,
   VisibilityFacet,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { ACHIEVEMENTS } from "../gamification/achievements/registry";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { PrismaService } from "../prisma/prisma.service";
-import { runtimeFor } from "../stats/video-stats.util";
 import {
-  computeHeatmap,
   computeStreak,
-  computeYearlyMinutes,
   isStreakSecuredToday,
-  mostActiveYear,
 } from "../stats/video-temporal.util";
 import { avatarUrl } from "../users/avatar.util";
+import { isSuspended } from "../users/suspension.util";
 import { FollowService } from "./follow.service";
-import { earliest, latest } from "./profile-stats.util";
 import { SOCIAL_DOMAINS } from "./social.constants";
 import { VisibilityService } from "./visibility.service";
 import {
@@ -42,12 +37,6 @@ const EMPTY_ACTIVITY_STATS: ProfileActivityStatsDto = {
   visible: false,
   streakDays: 0,
   streakSecuredToday: false,
-  firstActivityAt: null,
-  lastActivityAt: null,
-  totalMinutes: 0,
-  mostActiveYear: null,
-  topGenres: [],
-  heatmap: [],
 };
 
 @Injectable()
@@ -57,7 +46,6 @@ export class ProfileService {
     private readonly visibility: VisibilityService,
     private readonly follow: FollowService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
   ) {}
 
   /** Builds a user's profile as seen by `viewerId`, or 404 if not reachable. */
@@ -77,23 +65,18 @@ export class ProfileService {
         avatarUpdatedAt: true,
         hideProgression: true,
         equippedBadgeKeys: true,
+        suspendedUntil: true,
       },
     });
-    if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+    if (!target || isSuspended(target))
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     const relation = await this.visibility.getRelation(viewerId, target);
     const visibility = resolveProfileVisibility(target.profileAccess, relation);
 
     if (visibility === "hidden") {
       // GHOST or a block in either direction: the profile must not exist.
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     }
 
     if (visibility === "locked") {
@@ -149,24 +132,13 @@ export class ProfileService {
       domains.push({ domain, visible, count, favorites });
     }
 
-    const activityVisible = resolveFacet(
-      target.profileAccess,
-      this.visibility.audienceFor(
-        settings,
-        Domain.MEDIA,
-        VisibilityFacet.ACTIVITY,
-      ),
-      relation,
-    );
-
-    // Same gate as activityStats — the owner always sees their real
-    // progress; anyone else needs both the ACTIVITY facet visible and the
-    // target's own `hideProgression` preference off. `UserScore` is only
-    // read when gamification is actually on, so a self-hoster running with
-    // it off never pays that query.
-    const gamificationEnabled = isGamificationEnabled(this.config, this.flags);
-    const xpVisible =
-      relation.isSelf || (activityVisible && !target.hideProgression);
+    // The owner always sees their real progress; anyone else who reaches the
+    // profile sees it unless the target turned `hideProgression` on — the
+    // same single rule as the leaderboard and the level badge on reviews and
+    // comments. `UserScore` is only read when gamification is actually on, so
+    // a self-hoster running with it off never pays that query.
+    const gamificationEnabled = isGamificationEnabled(this.config);
+    const xpVisible = relation.isSelf || !target.hideProgression;
 
     const [
       activityStats,
@@ -176,7 +148,7 @@ export class ProfileService {
       commentsCount,
       listsCount,
     ] = await Promise.all([
-      this.computeActivityStats(target.id, activityVisible),
+      this.computeActivityStats(target.id),
       gamificationEnabled && xpVisible
         ? this.fetchRealXp(target.id)
         : Promise.resolve(null),
@@ -271,6 +243,8 @@ export class ProfileService {
           unlockedAt: unlockedAt.toISOString(),
           progress: null,
           equipped: true,
+          // Shown on the achievements screen only, not in a showcase.
+          rarity: null,
         },
       ];
     });
@@ -288,23 +262,36 @@ export class ProfileService {
   ): Promise<{ id: string; profileAccess: string } | null> {
     const target = await this.prisma.user.findUnique({
       where: { username },
-      select: { id: true, profileAccess: true },
+      select: { id: true, profileAccess: true, suspendedUntil: true },
     });
-    if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+    if (!target || isSuspended(target))
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     const relation = await this.visibility.getRelation(viewerId, target);
     const visibility = resolveProfileVisibility(target.profileAccess, relation);
     if (visibility === "hidden")
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     if (visibility === "locked") return null;
     return target;
+  }
+
+  /**
+   * The id of a profile the viewer may report: anything they can reach, a
+   * locked private preview included (its name and photo are on show). 404s
+   * when the profile must stay hidden.
+   */
+  async reportTargetId(viewerId: string, username: string): Promise<string> {
+    const target = await this.prisma.user.findUnique({
+      where: { username },
+      select: { id: true, profileAccess: true, suspendedUntil: true },
+    });
+    if (!target || isSuspended(target))
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+
+    const relation = await this.visibility.getRelation(viewerId, target);
+    if (resolveProfileVisibility(target.profileAccess, relation) === "hidden")
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+    return target.id;
   }
 
   /**
@@ -315,18 +302,22 @@ export class ProfileService {
   async listFollowers(
     viewerId: string,
     username: string,
-  ): Promise<UserSummaryDto[]> {
+  ): Promise<ConnectionDto[]> {
     const targetId = await this.resolveConnectionsTarget(viewerId, username);
-    return targetId ? this.follow.listFollowers(targetId) : [];
+    if (!targetId) return [];
+    const followers = await this.follow.listFollowers(targetId);
+    return this.follow.withViewerRelation(viewerId, followers);
   }
 
   /** A user's followed accounts — same gating as {@link listFollowers}. */
   async listFollowing(
     viewerId: string,
     username: string,
-  ): Promise<UserSummaryDto[]> {
+  ): Promise<ConnectionDto[]> {
     const targetId = await this.resolveConnectionsTarget(viewerId, username);
-    return targetId ? this.follow.listFollowing(targetId) : [];
+    if (!targetId) return [];
+    const following = await this.follow.listFollowing(targetId);
+    return this.follow.withViewerRelation(viewerId, following);
   }
 
   // Resolves `username` to an id the viewer may see the connections of, or
@@ -338,21 +329,15 @@ export class ProfileService {
   ): Promise<string | null> {
     const target = await this.prisma.user.findUnique({
       where: { username },
-      select: { id: true, profileAccess: true },
+      select: { id: true, profileAccess: true, suspendedUntil: true },
     });
-    if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+    if (!target || isSuspended(target))
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     const relation = await this.visibility.getRelation(viewerId, target);
     const visibility = resolveProfileVisibility(target.profileAccess, relation);
     if (visibility === "hidden")
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     if (visibility === "locked") return null;
     return target.id;
   }
@@ -401,93 +386,44 @@ export class ProfileService {
   }
 
   /**
-   * Video-derived activity summary (streak, heatmap teaser, genres…) —
-   * deliberately video-only, since EpisodeWatch is the only true per-event
-   * log in the app. Gated as one block by the caller via `visible`.
+   * The activity streak shown on a profile: consecutive days with a dated
+   * watch (TMDB specials aside), game session or reading session. Shown to
+   * anyone who reaches the profile whatever its Activité facets — a run of
+   * days says nothing about what was watched, played or read.
    */
   private async computeActivityStats(
     userId: string,
-    visible: boolean,
   ): Promise<ProfileActivityStatsDto> {
-    if (!visible) return EMPTY_ACTIVITY_STATS;
-
-    const [entries, watches] = await Promise.all([
-      this.prisma.libraryEntry.findMany({
-        where: { userId },
-        select: {
-          createdAt: true,
-          updatedAt: true,
-          mediaItem: { select: { genres: true } },
-        },
-      }),
+    const [watches, gameSessions, bookSessions] = await Promise.all([
       this.prisma.episodeWatch.findMany({
-        where: { userId },
-        select: {
-          watchedAt: true,
-          episode: {
-            select: {
-              season: {
-                select: {
-                  number: true,
-                  mediaItem: { select: { type: true, runtimeMin: true } },
-                },
-              },
-            },
-          },
+        where: {
+          userId,
+          watchedAt: { not: null },
+          episode: { season: { number: { not: 0 } } },
         },
+        select: { watchedAt: true },
+      }),
+      this.prisma.gameSession.findMany({
+        where: { gameEntry: { userId } },
+        select: { occurredAt: true },
+      }),
+      this.prisma.bookSession.findMany({
+        where: { bookEntry: { userId } },
+        select: { occurredAt: true },
       }),
     ]);
 
-    const regular = watches.filter((w) => w.episode.season.number !== 0);
-    const datedRegular = regular.filter(
-      (w): w is (typeof regular)[number] & { watchedAt: Date } =>
-        w.watchedAt !== null,
-    );
     const now = new Date();
-    const watchDates = datedRegular.map((w) => w.watchedAt);
-
-    const watchMinutes = regular.map((w) => ({
-      watchedAt: w.watchedAt,
-      minutes: runtimeFor(
-        w.episode.season.mediaItem.type,
-        w.episode.season.mediaItem.runtimeMin,
-      ),
-    }));
-    const datedMinutes = datedRegular.map((w) => ({
-      watchedAt: w.watchedAt,
-      minutes: runtimeFor(
-        w.episode.season.mediaItem.type,
-        w.episode.season.mediaItem.runtimeMin,
-      ),
-    }));
-    const totalMinutes = watchMinutes.reduce((sum, d) => sum + d.minutes, 0);
-
-    const genreCounts = new Map<string, number>();
-
-    for (const e of entries) {
-      for (const g of e.mediaItem.genres) {
-        genreCounts.set(g, (genreCounts.get(g) ?? 0) + 1);
-      }
-    }
-
-    const topGenres = [...genreCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([genre, count]) => ({ label: genre, count }));
-
-    const firstTimestamps = [...entries.map((e) => e.createdAt), ...watchDates];
-    const lastTimestamps = [...entries.map((e) => e.updatedAt), ...watchDates];
+    const activityDates = [
+      ...watches.flatMap((w) => (w.watchedAt ? [w.watchedAt] : [])),
+      ...gameSessions.map((session) => session.occurredAt),
+      ...bookSessions.map((session) => session.occurredAt),
+    ];
 
     return {
       visible: true,
-      streakDays: computeStreak(watchDates, now),
-      streakSecuredToday: isStreakSecuredToday(watchDates, now),
-      firstActivityAt: earliest(firstTimestamps)?.toISOString() ?? null,
-      lastActivityAt: latest(lastTimestamps)?.toISOString() ?? null,
-      totalMinutes,
-      mostActiveYear: mostActiveYear(computeYearlyMinutes(datedMinutes)),
-      topGenres,
-      heatmap: computeHeatmap(watchDates, 90, now),
+      streakDays: computeStreak(activityDates, now),
+      streakSecuredToday: isStreakSecuredToday(activityDates, now),
     };
   }
 }

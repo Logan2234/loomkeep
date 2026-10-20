@@ -14,6 +14,13 @@ export function createManifest(locale: Locale) {
     background_color: "#0c0d10",
     display: "standalone",
     start_url: "/app",
+    // Android's share sheet (installed PWA only; iOS has no Web Share
+    // Target). GET so the params survive the login redirect in the query.
+    share_target: {
+      action: "/app/share",
+      method: "GET",
+      params: { title: "title", text: "text", url: "url" },
+    },
     screenshots: [
       {
         src: "/pwa-screenshot-home-desktop.png",

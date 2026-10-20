@@ -4,8 +4,8 @@
     achievementDescription,
     achievementName,
     entryIcon,
-  } from "$lib/achievement-labels";
-  import { tilt } from "$lib/actions/tilt";
+  } from "#lib/achievement-labels.js";
+  import { tilt } from "#lib/actions/tilt.js";
   import type { AchievementDto } from "@loomkeep/shared";
   import AchievementMedallion from "./AchievementMedallion.svelte";
   import Tooltip from "./Tooltip.svelte";

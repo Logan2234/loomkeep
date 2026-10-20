@@ -108,12 +108,148 @@ describe("AnilistProvider", () => {
     expect(details.seasons).toHaveLength(1);
     const [season] = details.seasons;
     expect(season.number).toBe(1);
+    // Named after the entry itself: sequels are separate AniList entries.
+    expect(season.title).toBe("Frieren: Beyond Journey's End");
     expect(season.episodes).toHaveLength(28);
+    // The fixture carries no `duration`, so no per-episode runtime either.
     expect(season.episodes[0]).toEqual({
       number: 1,
-      title: "Episode 1 - The Journey's End",
+      // The "Episode N - " prefix is dropped: the number is shown alongside.
+      title: "The Journey's End",
+      airDate: null,
+      runtimeMin: null,
+      overview: null,
+      stillUrl: null,
+      voteAverage: null,
+      voteCount: null,
+      episodeType: null,
+      streamingUrl: null,
+      streamingSite: null,
+    });
+  });
+
+  it("takes each episode's thumbnail, link and broadcast time by its number", async () => {
+    mockFetch({
+      data: {
+        Media: {
+          id: 999,
+          title: { romaji: "Show", english: null },
+          coverImage: {},
+          status: "RELEASING",
+          episodes: 3,
+          startDate: { year: 2026, month: 1, day: 5 },
+          streamingEpisodes: [
+            {
+              title: "Episode 2 - Second",
+              thumbnail: "https://img.example/2.jpg",
+              url: "https://cr.example/2",
+              site: "Crunchyroll",
+            },
+            {
+              title: "Episode 1 - First",
+              thumbnail: "https://img.example/1.jpg",
+              url: "https://cr.example/1",
+              site: "Crunchyroll",
+            },
+          ],
+          // Starts mid-run, like many shows' schedules on AniList.
+          airingSchedule: {
+            pageInfo: { hasNextPage: false },
+            nodes: [
+              { episode: 2, airingAt: 1_767_600_000 },
+              { episode: 3, airingAt: 1_768_204_800 },
+            ],
+          },
+        },
+      },
+    });
+
+    const details = await provider.getDetails("999");
+    const [first, second, third] = details.seasons[0].episodes;
+
+    expect(first).toMatchObject({
+      title: "First",
+      stillUrl: "https://img.example/1.jpg",
+      streamingUrl: "https://cr.example/1",
+      streamingSite: "Crunchyroll",
       airDate: null,
     });
+    expect(second).toMatchObject({
+      title: "Second",
+      stillUrl: "https://img.example/2.jpg",
+      airDate: new Date(1_767_600_000 * 1000).toISOString(),
+    });
+    expect(third).toMatchObject({
+      title: null,
+      stillUrl: null,
+      streamingUrl: null,
+      airDate: new Date(1_768_204_800 * 1000).toISOString(),
+    });
+  });
+
+  it("drops a streaming link that isn't a web address", async () => {
+    mockFetch({
+      data: {
+        Media: {
+          id: 999,
+          title: { romaji: "Show", english: null },
+          coverImage: {},
+          episodes: 1,
+          streamingEpisodes: [
+            {
+              title: "Episode 1 - First",
+              thumbnail: "data:image/svg+xml,<svg/>",
+              url: "javascript:alert(1)",
+              site: "Crunchyroll",
+            },
+          ],
+        },
+      },
+    });
+
+    const details = await provider.getDetails("999");
+
+    expect(details.seasons[0].episodes[0]).toMatchObject({
+      title: "First",
+      stillUrl: null,
+      streamingUrl: null,
+      streamingSite: null,
+    });
+  });
+
+  it("follows a long show's airing schedule over its next pages", async () => {
+    const page = (episode: number, hasNextPage: boolean) => ({
+      pageInfo: { hasNextPage },
+      nodes: [{ episode, airingAt: 1_767_600_000 + episode }],
+    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          data: {
+            Media: {
+              id: 999,
+              title: { romaji: "Long Show", english: null },
+              coverImage: {},
+              episodes: 2,
+              streamingEpisodes: [],
+              airingSchedule: page(1, true),
+            },
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({ data: { Media: { airingSchedule: page(2, false) } } }),
+      );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const details = await provider.getDetails("999");
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(details.seasons[0].episodes.map((e) => e.airDate)).toEqual([
+      new Date((1_767_600_000 + 1) * 1000).toISOString(),
+      new Date((1_767_600_000 + 2) * 1000).toISOString(),
+    ]);
   });
 
   it("fails fast on a 429 instead of waiting out AniList's minute-long ban", async () => {
@@ -142,10 +278,12 @@ describe("AnilistProvider", () => {
           bannerImage: null,
           genres: [],
           status: "RELEASING",
+          format: "TV",
           episodes: null,
           startDate: { year: 2026, month: 1, day: 5 },
           nextAiringEpisode: { episode: 8 },
           streamingEpisodes: [],
+          duration: 24,
         },
       },
     });
@@ -154,7 +292,127 @@ describe("AnilistProvider", () => {
 
     // 7 aired episodes (next airing is #8), romaji title fallback.
     expect(details.summary.title).toBe("Ongoing Show");
+    expect(details.format).toBe("TV");
     expect(details.seasons[0].episodes).toHaveLength(7);
+    // AniList only has a per-title duration, copied onto every episode.
+    expect(details.seasons[0].episodes.every((e) => e.runtimeMin === 24)).toBe(
+      true,
+    );
+  });
+
+  it("names episodes by the number in their streaming title, not their position", async () => {
+    mockFetch({
+      data: {
+        Media: {
+          id: 998,
+          title: { romaji: "Reversed Show", english: null },
+          description: null,
+          coverImage: {},
+          bannerImage: null,
+          genres: [],
+          status: "FINISHED",
+          format: "TV",
+          episodes: 4,
+          startDate: { year: 2026, month: 1, day: 5 },
+          nextAiringEpisode: null,
+          // Newest first, as AniList often returns them, one with no number.
+          streamingEpisodes: [
+            { title: "Episode 4 - Reunion" },
+            { title: "Episode 3 - Dirty Roads" },
+            { title: "Special Preview" },
+            { title: "Episode 1 - Light of Science" },
+          ],
+          duration: 24,
+        },
+      },
+    });
+
+    const details = await provider.getDetails("998");
+
+    expect(details.seasons[0].episodes.map((e) => e.title)).toEqual([
+      "Light of Science",
+      null,
+      "Dirty Roads",
+      "Reunion",
+    ]);
+  });
+
+  it("names no episode when a related anime carries the same streaming episodes", async () => {
+    // AniList copies one season's Crunchyroll episodes onto every entry of
+    // some franchises (every Dr. STONE season lists New World's).
+    const shared = [
+      { title: "Episode 2 - SCIENCE JOURNEY", url: "https://cr.example/2" },
+      { title: "Episode 1 - RYUSUI VS. SENKU", url: "https://cr.example/1" },
+    ];
+    mockFetch({
+      data: {
+        Media: {
+          id: 996,
+          title: { romaji: "Dr. STONE", english: null },
+          description: null,
+          coverImage: {},
+          bannerImage: null,
+          genres: [],
+          status: "FINISHED",
+          format: "TV",
+          episodes: 2,
+          startDate: { year: 2019, month: 7, day: 5 },
+          nextAiringEpisode: null,
+          streamingEpisodes: shared,
+          duration: 24,
+          relations: {
+            edges: [
+              {
+                node: {
+                  id: 995,
+                  type: "ANIME",
+                  streamingEpisodes: [{ url: "https://cr.example/1" }],
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const details = await provider.getDetails("996");
+
+    expect(details.seasons[0].episodes.map((e) => e.title)).toEqual([
+      null,
+      null,
+    ]);
+  });
+
+  it("shifts a later cour's absolute episode numbers back to 1", async () => {
+    mockFetch({
+      data: {
+        Media: {
+          id: 997,
+          title: { romaji: "Second Cour", english: null },
+          description: null,
+          coverImage: {},
+          bannerImage: null,
+          genres: [],
+          status: "FINISHED",
+          format: "TV",
+          episodes: 2,
+          startDate: { year: 2026, month: 4, day: 5 },
+          nextAiringEpisode: null,
+          streamingEpisodes: [
+            { title: "Episode 14 - Second" },
+            { title: "Episode 13 - First" },
+          ],
+          duration: 24,
+        },
+      },
+    });
+
+    const details = await provider.getDetails("997");
+
+    expect(details.seasons[0].episodes.map((e) => e.title)).toEqual([
+      "First",
+      "Second",
+    ]);
   });
 
   describe("getExtras", () => {
@@ -212,16 +470,29 @@ describe("AnilistProvider", () => {
             relations: {
               edges: [
                 {
+                  relationType: "SIDE_STORY",
                   node: {
                     id: 999,
                     type: "ANIME",
-                    title: { romaji: "Sequel", english: null },
+                    title: { romaji: "Side story", english: null },
                     seasonYear: 2024,
                     coverImage: {},
                     isAdult: false,
                   },
                 },
                 {
+                  relationType: "SEQUEL",
+                  node: {
+                    id: 998,
+                    type: "ANIME",
+                    title: { romaji: "Sequel", english: null },
+                    seasonYear: 2026,
+                    coverImage: {},
+                    isAdult: false,
+                  },
+                },
+                {
+                  relationType: "ADAPTATION",
                   node: {
                     id: 1,
                     type: "MANGA",
@@ -236,7 +507,12 @@ describe("AnilistProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("154587");
+      const extras = await provider.getExtras(
+        "154587",
+        MediaType.ANIME,
+        undefined,
+        "FR",
+      );
 
       expect(extras.ratings).toEqual([
         {
@@ -263,7 +539,8 @@ describe("AnilistProvider", () => {
           characterPhotoUrl: "https://example.com/character.jpg",
         },
       ]);
-      // The manga source is filtered out; only the anime sequel remains.
+      // The manga source is filtered out, and the sequel goes to the saga
+      // block: only the side story remains.
       expect(extras.relations).toHaveLength(1);
       expect(extras.relations[0].sourceId).toBe("999");
     });
@@ -281,7 +558,12 @@ describe("AnilistProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("1");
+      const extras = await provider.getExtras(
+        "1",
+        MediaType.ANIME,
+        undefined,
+        "FR",
+      );
 
       expect(extras.trailerVideoId).toBeNull();
       expect(extras.cast[0].id).toBeNull();
@@ -291,6 +573,153 @@ describe("AnilistProvider", () => {
       expect(extras.directors).toEqual([]);
       expect(extras.studios).toEqual([]);
       expect(extras.relations).toEqual([]);
+    });
+
+    // AniList lists Made in Abyss's Bilibili TV page twice (ID 97986).
+    it("lists a link AniList repeats only once", async () => {
+      const bilibili = {
+        site: "Bilibili TV",
+        url: "https://www.bilibili.tv/media/37179",
+      };
+      mockFetch({
+        data: {
+          Media: {
+            recommendations: { nodes: [] },
+            externalLinks: [bilibili, bilibili],
+          },
+        },
+      });
+
+      const extras = await provider.getExtras(
+        "97986",
+        MediaType.ANIME,
+        undefined,
+        "FR",
+      );
+
+      expect(extras.externalLinks).toEqual([
+        { name: "Bilibili TV", url: bilibili.url },
+      ]);
+    });
+  });
+
+  describe("getSaga", () => {
+    const work = (
+      id: number,
+      year: number | null,
+      extra: Record<string, unknown> = {},
+    ) => ({
+      id,
+      type: "ANIME",
+      title: { romaji: `Work ${id}`, english: null },
+      format: "TV",
+      episodes: 12,
+      status: year ? "FINISHED" : "NOT_YET_RELEASED",
+      startDate: { year, month: 4, day: 1 },
+      coverImage: {},
+      isAdult: false,
+      ...extra,
+    });
+    const edge = (relationType: string, node: object) => ({
+      relationType,
+      node,
+    });
+
+    function mockFetchSequence(bodies: unknown[]): ReturnType<typeof vi.fn> {
+      const fn = vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify(bodies.shift()), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        ),
+      );
+      global.fetch = fn as unknown as typeof fetch;
+      return fn;
+    }
+
+    it("walks prequels and sequels out from the viewed work, oldest first, leaving side stories out", async () => {
+      // Viewing season 2: season 1 before it, season 3 after, then an
+      // announced season 4 and a side story that stays out of the saga.
+      const fetchMock = mockFetchSequence([
+        {
+          data: {
+            Page: {
+              media: [
+                work(2, 2017, {
+                  relations: {
+                    edges: [
+                      edge("PREQUEL", work(1, 2013)),
+                      edge("SEQUEL", work(3, 2018)),
+                      edge("SIDE_STORY", work(50, 2014)),
+                    ],
+                  },
+                }),
+              ],
+            },
+          },
+        },
+        {
+          data: {
+            Page: {
+              media: [
+                work(1, 2013, {
+                  relations: { edges: [edge("SEQUEL", work(2, 2017))] },
+                }),
+                work(3, 2018, {
+                  relations: {
+                    edges: [
+                      edge("PREQUEL", work(2, 2017)),
+                      edge("SEQUEL", work(4, null)),
+                    ],
+                  },
+                }),
+              ],
+            },
+          },
+        },
+        {
+          data: {
+            Page: {
+              media: [
+                work(4, null, {
+                  relations: { edges: [edge("PREQUEL", work(3, 2018))] },
+                }),
+              ],
+            },
+          },
+        },
+      ]);
+
+      const saga = await provider.getSaga("2");
+
+      expect(saga?.key).toBe("ANILIST:1");
+      expect(saga?.title).toBe("Work 1");
+      expect(saga?.members.map((m) => [m.sourceId, m.upcoming])).toEqual([
+        ["1", false],
+        ["2", false],
+        ["3", false],
+        ["4", true],
+      ]);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    });
+
+    it("finds no saga for a work without prequel or sequel", async () => {
+      mockFetchSequence([
+        {
+          data: {
+            Page: {
+              media: [
+                work(7, 2020, {
+                  relations: { edges: [edge("SPIN_OFF", work(8, 2021))] },
+                }),
+              ],
+            },
+          },
+        },
+      ]);
+
+      expect(await provider.getSaga("7")).toBeNull();
     });
   });
 
@@ -346,6 +775,66 @@ describe("AnilistProvider", () => {
       mockFetch({ data: { Staff: null } });
 
       await expect(provider.getPerson("999999")).rejects.toThrow();
+    });
+  });
+
+  describe("getUserAnimeList", () => {
+    const respond = (status: number, body: unknown) =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { "Content-Type": "application/json" },
+      });
+    const list = (ids: number[], isCustomList = false) => ({
+      isCustomList,
+      entries: ids.map((id) => ({ status: "CURRENT", media: { id } })),
+    });
+
+    it("reads every chunk and leaves custom lists out", async () => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          respond(200, {
+            data: {
+              MediaListCollection: {
+                hasNextChunk: true,
+                lists: [list([1, 2]), list([1], true)],
+              },
+            },
+          }),
+        )
+        .mockResolvedValueOnce(
+          respond(200, {
+            data: {
+              MediaListCollection: { hasNextChunk: false, lists: [list([3])] },
+            },
+          }),
+        );
+      global.fetch = fetch as typeof global.fetch;
+
+      const entries = await provider.getUserAnimeList("Josh");
+
+      expect(entries.map((e) => e.media.id)).toEqual([1, 2, 3]);
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("tells a private list from a missing user", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(
+          respond(404, { errors: [{ message: "Private User", status: 404 }] }),
+        ) as typeof global.fetch;
+      await expect(provider.getUserAnimeList("Josh")).rejects.toMatchObject({
+        code: "import.anilist_list_private",
+      });
+
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(
+          respond(404, { errors: [{ message: "Not Found.", status: 404 }] }),
+        ) as typeof global.fetch;
+      await expect(provider.getUserAnimeList("Nobody")).rejects.toMatchObject({
+        code: "import.anilist_user_not_found",
+      });
     });
   });
 });

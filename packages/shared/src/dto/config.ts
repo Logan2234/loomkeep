@@ -13,6 +13,12 @@ export interface PublicConfigDto {
   socialEnabled: boolean;
 
   /**
+   * Whether friends can message each other: Admin › Settings or the API's
+   * `CHAT_ENABLED` env var. Always false while `socialEnabled` is.
+   */
+  chatEnabled: boolean;
+
+  /**
    * Whether the gamification system (XP, levels, achievements — G1+) is
    * enabled on this deployment. Driven by the API's `GAMIFICATION_ENABLED`
    * env var, on by default on the hosted build. When false, `XpService.award`
@@ -27,6 +33,9 @@ export interface PublicConfigDto {
    * /auth/register`.
    */
   registrationEnabled: boolean;
+
+  /** Whether the public API (`/api/v1`) answers; off, keys can't be created either. */
+  publicApiEnabled: boolean;
 
   /**
    * Whether the admin "Schéma" page (DB ERD) has content to
@@ -57,4 +66,12 @@ export interface PublicConfigDto {
    * exact deployed source, per AGPL §13.
    */
   gitSha: string;
+
+  /**
+   * Where members reach this instance's moderation and support — the same
+   * address moderation emails reply to (`MAIL_SUPPORT_ADDRESS`, falling back
+   * to contact@loomkeep.app on the hosted instance only). Empty on a
+   * self-host that sets none.
+   */
+  supportEmail: string;
 }

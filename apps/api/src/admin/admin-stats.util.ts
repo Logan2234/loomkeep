@@ -1,4 +1,5 @@
 import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
+import { startOfUtcDay } from "../common/date.util";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -9,13 +10,6 @@ export const TREND_BUCKETS: Record<TrendPeriod, number> = {
   month: 12,
   year: 5,
 };
-
-/** Start of `d`'s UTC day — the boundary every daily bucket/counter uses. */
-export function startOfUtcDay(d: Date): Date {
-  return new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
-  );
-}
 
 /**
  * Ascending UTC bucket-start dates for the period, the last one being the

@@ -1,0 +1,43 @@
+---
+title: Letterboxd
+description: Your films, diary, ratings, reviews and lists from Letterboxd.
+sidebar:
+  order: 2.5
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+**What comes in:** the films you watched and your watchlist, every dated
+viewing from your diary (the first one as the watch, the others as rewatches),
+your ratings and review texts, the films pinned on your profile as favourites,
+and your own lists. Likes, comments and other members' lists aren't imported.
+
+<Steps>
+
+1. On Letterboxd, open **Settings › Data** and choose **Export your data**.
+   Letterboxd sends you a ZIP archive.
+2. In Loomkeep, open **Settings › Import › Letterboxd** and drop the ZIP as it
+   is, without unzipping it.
+3. Review and import: see [how an import works](/guide/imports/#how-an-import-works).
+
+</Steps>
+
+Letterboxd's export carries no catalogue ids, so films are matched by title
+and year. Check the uncertain ones in the review step, where any film can be
+searched and matched by hand.
+
+A few things to know:
+
+- **Ratings:** half stars become Loomkeep's 0–10 scale (★★★½ is 7). The rating
+  your profile shows today wins over the one a diary entry kept.
+- **Dates:** only diary entries date a viewing. A film marked as watched without
+  a diary entry comes in as watched, undated.
+- **Reviews:** the longest review of a film comes in as its review text, with
+  your default review audience. A review you already wrote in Loomkeep stays as
+  it is. Letterboxd lets you review without rating; Loomkeep doesn't, so a
+  review without stars is left out.
+- **Lists:** each of your lists becomes a Loomkeep list with the same name,
+  description and order, and the notes you wrote on its films. Its films don't
+  join your library. A list you already have under that name is left alone.
+- **Deleted content:** the archive keeps what you deleted on Letterboxd, in
+  its own folders. None of it comes back.

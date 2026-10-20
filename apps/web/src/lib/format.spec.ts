@@ -1,16 +1,40 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { auth } from "./auth.svelte";
 import {
+  compareText,
   formatBytes,
   formatDurationMs,
+  formatHours,
+  formatLanguage,
+  formatPercent,
   formatRelative,
+  formatRuntimeTimecode,
   joinMeta,
+  percentParts,
+  presentParts,
 } from "./format";
 import { getLocale, overwriteGetLocale } from "./paraglide/runtime.js";
 
 vi.mock("./auth.svelte", () => ({ auth: { user: { locale: "en" } } }));
 const originalGetLocale = getLocale;
 const originalUser = auth.user;
+
+describe("localized presentation helpers", () => {
+  it("formats percentages and keeps separate KPI units", () => {
+    expect(formatPercent(12.3, {}, "en-US")).toBe("12.3%");
+    expect(formatPercent(12.3, {}, "fr-FR").replace(/\s/g, " ")).toBe("12,3 %");
+    expect(percentParts(12.3, "de-DE")).toEqual({ value: "12,3", unit: "%" });
+  });
+
+  it("caches language names separately for each display locale", () => {
+    expect(formatLanguage("fr", "en-US")).toBe("French");
+    expect(formatLanguage("fr", "fr-FR")).toBe("français");
+  });
+
+  it("keeps zero-valued metadata while omitting missing parts", () => {
+    expect(presentParts("", null, 0, "2026", undefined)).toEqual(["0", "2026"]);
+  });
+});
 afterEach(() => {
   auth.user = originalUser;
   overwriteGetLocale(originalGetLocale);
@@ -22,6 +46,26 @@ describe("joinMeta", () => {
     expect(joinMeta("Film", 2024)).toBe("Film · 2024");
     expect(joinMeta("", null, 2024, undefined)).toBe("2024");
     expect(joinMeta(null)).toBe("");
+  });
+});
+
+describe("formatRuntimeTimecode", () => {
+  it("reads as mm:00 under an hour and h:mm:00 from an hour up", () => {
+    expect(formatRuntimeTimecode(48)).toBe("48:00");
+    expect(formatRuntimeTimecode(7)).toBe("07:00");
+    expect(formatRuntimeTimecode(60)).toBe("1:00:00");
+    expect(formatRuntimeTimecode(166)).toBe("2:46:00");
+  });
+});
+
+describe("formatHours", () => {
+  it("rounds to minutes, half-hours under 10 h, then whole hours", () => {
+    auth.user!.locale = "fr";
+    overwriteGetLocale(() => "fr");
+    expect(formatHours(45)).toBe("45 min");
+    expect(formatHours(150)).toBe("2,5 h");
+    expect(formatHours(2460)).toBe("41 h");
+    expect(formatHours(74_400)).toBe("1 240 h");
   });
 });
 
@@ -62,5 +106,20 @@ describe("localized formatting", () => {
     auth.user = null;
     overwriteGetLocale(() => "en");
     expect(formatBytes(1536)).toBe("1.5 KB");
+  });
+});
+
+describe("localized text comparison", () => {
+  it("sorts accented labels using the active UI language", () => {
+    overwriteGetLocale(() => "fr");
+    expect(["zèbre", "éclair", "abricot"].sort(compareText)).toEqual([
+      "abricot",
+      "éclair",
+      "zèbre",
+    ]);
+    overwriteGetLocale(() => "it");
+    expect(Math.sign(compareText("éclair", "zèbre"))).toBe(
+      Math.sign(new Intl.Collator("it").compare("éclair", "zèbre")),
+    );
   });
 });

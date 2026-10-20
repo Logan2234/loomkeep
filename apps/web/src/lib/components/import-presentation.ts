@@ -1,9 +1,10 @@
-import { ApiError } from "$lib/api/core";
-import { resolveApiError } from "$lib/api/errors";
-import { formatNumber } from "$lib/format";
-import { m } from "$lib/paraglide/messages.js";
-import { getLocale } from "$lib/paraglide/runtime.js";
+import { ApiError } from "#lib/api/core.js";
+import { resolveApiError } from "#lib/api/errors.js";
+import { formatNumber } from "#lib/format.js";
+import { m } from "#lib/paraglide/messages.js";
+import { getLocale } from "#lib/paraglide/runtime.js";
 import type {
+  EntryStatus,
   ImportJobDto,
   ImportPlanItem,
   ImportReportTile,
@@ -39,6 +40,16 @@ const LABELS = {
   | "listFilms",
   () => string
 >;
+
+// A series with no episode to count shows the status its source states (a
+// rated IMDb series is being watched), the watchlist otherwise.
+const SERIES_STATUS = {
+  PLANNED: () => m.library_status_planned(),
+  WATCHING: () => m.library_status_in_progress(),
+  UP_TO_DATE: () => m.media_status_caught_up(),
+  COMPLETED: () => m.library_status_completed(),
+  DROPPED: () => m.library_status_dropped(),
+} satisfies Record<EntryStatus, () => string>;
 
 function label(id: string | undefined): string | null {
   return id && Object.hasOwn(LABELS, id)
@@ -104,7 +115,7 @@ export function importItemSubtitle(item: ImportPlanItem): string | null {
       const count = number(context.episodesWatched);
       parts.push(
         context.episodesWatched === 0
-          ? m.library_status_planned()
+          ? SERIES_STATUS[context.status ?? "PLANNED"]()
           : context.episodesWatched === 1
             ? m.import_episode_watched({ count })
             : m.import_episodes_watched({ count }),

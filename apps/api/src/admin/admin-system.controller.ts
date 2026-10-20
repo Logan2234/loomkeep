@@ -1,10 +1,9 @@
-import {
-  ErrorCode,
-  type AdminBackupFileContentDto,
-  type AdminBackupFileDto,
-  type AdminOverviewDto,
-  type SchemaGraphResponseDto,
-  type ServiceStatusResponseDto,
+import type {
+  AdminBackupFileContentDto,
+  AdminBackupInventoryDto,
+  AdminOverviewDto,
+  SchemaGraphResponseDto,
+  ServiceStatusResponseDto,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -17,19 +16,13 @@ import {
   Post,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
-import * as bcrypt from "bcryptjs";
-import {
-  CurrentUser,
-  type JwtPayload,
-} from "../auth/decorators/current-user.decorator";
-import { AppException } from "../common/app.exception";
-import { PrismaService } from "../prisma/prisma.service";
+import { RequireRecentAuth } from "../auth/recent-auth.guard";
 import { AdminOnly } from "./admin-only.decorator";
 import { AdminOverviewService } from "./admin-overview.service";
 import { AdminService } from "./admin.service";
 import { BackupService } from "./backup.service";
 import { AdminBackupFileContentResponseDto } from "./dto/admin-backup-file-content-response.dto";
-import { AdminBackupFileResponseDto } from "./dto/admin-backup-file-response.dto";
+import { AdminBackupInventoryResponseDto } from "./dto/admin-backup-inventory-response.dto";
 import { AdminOverviewResponseDto } from "./dto/admin-overview-response.dto";
 import { RestoreBackupDto } from "./dto/restore-backup.dto";
 import { SchemaGraphResultResponseDto } from "./dto/schema-graph-response.dto";
@@ -43,13 +36,12 @@ export class AdminSystemController {
     private readonly admin: AdminService,
     private readonly overview: AdminOverviewService,
     private readonly backup: BackupService,
-    private readonly prisma: PrismaService,
   ) {}
 
   /** Persisted backup dumps on disk (BACKUP_DIR), most recent first — up to 7, pruned by the daily job. */
   @Get("backup/files")
-  @ApiOkResponse({ type: AdminBackupFileResponseDto, isArray: true })
-  listBackupFiles(): Promise<AdminBackupFileDto[]> {
+  @ApiOkResponse({ type: AdminBackupInventoryResponseDto })
+  listBackupFiles(): Promise<AdminBackupInventoryDto> {
     return this.backup.listFiles();
   }
 
@@ -66,28 +58,22 @@ export class AdminSystemController {
     await this.backup.deleteFile(id);
   }
 
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete("backup/orphans/:filename")
+  async deleteOrphanBackupFile(
+    @Param("filename") filename: string,
+  ): Promise<void> {
+    await this.backup.deleteOrphanFile(filename);
+  }
+
   /**
    * Replaces the entire instance database with a previously downloaded dump.
    * Irreversible — the frontend requires a typed confirmation before calling this.
    */
+  @RequireRecentAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("backup/restore")
-  async restoreBackup(
-    @CurrentUser() payload: JwtPayload,
-    @Body() dto: RestoreBackupDto,
-  ): Promise<void> {
-    const admin = await this.prisma.user.findUniqueOrThrow({
-      where: { id: payload.sub },
-      select: { passwordHash: true },
-    });
-
-    if (!(await bcrypt.compare(dto.currentPassword, admin.passwordHash))) {
-      throw new AppException(
-        HttpStatus.UNAUTHORIZED,
-        ErrorCode.AuthCurrentPasswordIncorrect,
-      );
-    }
-
+  async restoreBackup(@Body() dto: RestoreBackupDto): Promise<void> {
     await this.backup.restore(dto.sql);
   }
 

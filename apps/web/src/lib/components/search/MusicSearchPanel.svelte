@@ -4,17 +4,17 @@
     listMusic,
     searchMusic,
     upsertMusicEntry,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import PosterGrid from "$lib/components/PosterGrid.svelte";
-  import { debounce } from "$lib/debounce";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import PosterGrid from "#lib/components/PosterGrid.svelte";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { MusicSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -32,8 +32,6 @@
     onResults?: (count: number) => void;
   } = $props();
 
-  const DEBOUNCE_MS = 300;
-
   // `query` (raw) drives the input; `queryFilter` (debounced) drives the
   // fetch — same split as LibraryBrowser/MediaSearchPanel. A key-based query
   // already discards a stale in-flight response on its own once the key
@@ -41,7 +39,7 @@
   let queryFilter = $state("");
   const debouncedQueryFilter = debounce(() => {
     queryFilter = query.trim();
-  }, DEBOUNCE_MS);
+  }, SEARCH_DEBOUNCE_MS);
 
   $effect(() => {
     if (!query.trim()) {
@@ -120,7 +118,7 @@
           href={`/app/music/${album.sourceId}`}
           class="absolute inset-0 z-1"
           aria-label={album.title}></a>
-        <Poster src={album.coverUrl} title={album.title} />
+        <Poster src={album.coverUrl} title={album.title} alt="" />
         <div class="flex flex-1 flex-col gap-2 p-3">
           <span class="font-display text-sm leading-tight font-semibold">
             {album.title}

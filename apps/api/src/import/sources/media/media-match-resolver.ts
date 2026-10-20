@@ -89,7 +89,7 @@ export class MediaMatchResolver implements MediaImportMatchResolver {
   }
 }
 
-function toMatch(summary: MediaSummaryDto): ImportMatch {
+export function toMatch(summary: MediaSummaryDto): ImportMatch {
   return {
     source: summary.source,
     sourceId: summary.sourceId,

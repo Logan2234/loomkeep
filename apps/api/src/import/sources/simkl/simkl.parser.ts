@@ -1,0 +1,68 @@
+import { parseDateOrNull } from "../../import-date.util";
+import type { ImportMovie, ImportShow } from "../../media-import-model";
+import type {
+  SimklAllItemsResponse,
+  SimklIds,
+  SimklMovieEntry,
+  SimklShowEntry,
+} from "./simkl-api.types";
+
+/**
+ * Turn a Simkl `/sync/all-items` response into the canonical media import
+ * model. Shows and anime share the same entry shape (both keyed under
+ * `show`), so both buckets feed the same show list — anime is resolved
+ * against TMDB just like a regular show for now (matches TV Time's current
+ * behaviour; a dedicated AniList path is future work).
+ */
+export function buildImportShows(data: SimklAllItemsResponse): ImportShow[] {
+  return [...(data.shows ?? []), ...(data.anime ?? [])].map(toImportShow);
+}
+
+export function buildImportMovies(data: SimklAllItemsResponse): ImportMovie[] {
+  return (data.movies ?? []).map(toImportMovie);
+}
+
+function toImportShow(entry: SimklShowEntry): ImportShow {
+  const episodes = (entry.seasons ?? []).flatMap((season) =>
+    season.episodes.map((ep) => ({
+      season: season.number,
+      episode: ep.number,
+      sourceEpisodeId: `${season.number}x${ep.number}`,
+      watchedAt: parseDateOrNull(ep.watched_at),
+      // Simkl's free tier has no per-episode rewatch count (that needs the
+      // Pro/VIP-only `allow_rewatch` flag) — every watched episode counts once.
+      totalWatches: 1,
+    })),
+  );
+
+  return {
+    title: entry.show.title,
+    externalIds: toExternalIds(entry.show.ids),
+    episodes,
+  };
+}
+
+function toImportMovie(entry: SimklMovieEntry): ImportMovie {
+  const watched = entry.status !== "plantowatch";
+  return {
+    title: entry.movie.title,
+    year: entry.movie.year,
+    // Movies only ever carry plantowatch/completed/dropped — anything but
+    // "still on the watchlist" counts as watched.
+    watched,
+    watchedAt: watched ? parseDateOrNull(entry.last_watched_at) : null,
+    // Simkl's free tier has no per-movie rewatch signal (that needs the
+    // Pro/VIP-only `allow_rewatch` flag) — every watched movie counts once.
+    rewatchedAt: [],
+    externalIds: toExternalIds(entry.movie.ids),
+  };
+}
+
+function toExternalIds(ids: SimklIds) {
+  return {
+    tmdb: ids.tmdb,
+    tvdb: ids.tvdb,
+    imdb: ids.imdb,
+    anilist: ids.anilist,
+  };
+}

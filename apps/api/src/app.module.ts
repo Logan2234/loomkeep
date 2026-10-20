@@ -5,24 +5,31 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { LoggerModule } from "nestjs-pino";
 import { AdminModule } from "./admin/admin.module";
+import { ApiKeyAuthModule } from "./api-keys/api-key-auth.module";
+import { ApiKeysModule } from "./api-keys/api-keys.module";
 import { AuthModule } from "./auth/auth.module";
 import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
 import { SessionCacheModule } from "./auth/session-cache.module";
 import { BooksModule } from "./books/books.module";
 import { CatalogModule } from "./catalog/catalog.module";
+import { ChatApiModule } from "./chat/chat-api.module";
 import { CommentsModule } from "./comments/comments.module";
 import { AllExceptionsFilter } from "./common/all-exceptions.filter";
 import { CommonModule } from "./common/common.module";
 import { loggerOptions } from "./common/logger.config";
 import { RuntimeConfigModule } from "./config/config.module";
 import { validateEnv } from "./config/env.validation";
+import { EeModule } from "./ee/ee.module";
 import { EventsModule } from "./events/events.module";
 import { FeatureFlagsModule } from "./feature-flags/feature-flags.module";
 import { GamesModule } from "./games/games.module";
 import { GamificationModule } from "./gamification/gamification.module";
 import { HealthModule } from "./health/health.module";
 import { ImportModule } from "./import/import.module";
+import { InstanceSettingsModule } from "./instance-settings/instance-settings.module";
 import { LibraryModule } from "./library/library.module";
+import { LinksModule } from "./links/links.module";
+import { ListWorksModule } from "./lists/list-works.module";
 import { ListsModule } from "./lists/list.module";
 import { MailModule } from "./mail/mail.module";
 import { MetricsModule } from "./metrics/metrics.module";
@@ -30,7 +37,11 @@ import { MusicModule } from "./music/music.module";
 import { NewsletterModule } from "./newsletter/newsletter.module";
 import { NotificationModule } from "./notifications/notification.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { PublicApiModule } from "./public-api/public-api.module";
 import { ReviewsModule } from "./reviews/reviews.module";
+import { SavedViewsModule } from "./saved-views/saved-view.module";
+import { SearchModule } from "./search/search.module";
+import { SessionTimerModule } from "./session-timer/session-timer.module";
 import { SocialModule } from "./social/social.module";
 import { StatsModule } from "./stats/stats.module";
 import { UsersModule } from "./users/users.module";
@@ -55,7 +66,9 @@ import { UsersModule } from "./users/users.module";
     PrismaModule,
     CommonModule,
     FeatureFlagsModule,
+    InstanceSettingsModule,
     SessionCacheModule,
+    ApiKeyAuthModule,
     RuntimeConfigModule,
     MailModule,
     AuthModule,
@@ -68,16 +81,25 @@ import { UsersModule } from "./users/users.module";
     BooksModule,
     MusicModule,
     LibraryModule,
+    LinksModule,
     ImportModule,
     NotificationModule,
     HealthModule,
     SocialModule,
     ReviewsModule,
     CommentsModule,
+    ChatApiModule,
     ListsModule,
+    ListWorksModule,
+    SavedViewsModule,
+    SearchModule,
+    SessionTimerModule,
     StatsModule,
     NewsletterModule,
     MetricsModule,
+    ApiKeysModule,
+    PublicApiModule,
+    EeModule,
   ],
   controllers: [],
   providers: [

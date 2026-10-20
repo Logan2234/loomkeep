@@ -3,28 +3,16 @@ import { HttpStatus } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
+import { parsePageQuery } from "../common/pagination.util";
 import type { EntitlementService } from "../entitlements/entitlement.service";
-import type { EventsGateway } from "../events/events.gateway";
-import type { AchievementService } from "../gamification/achievements/achievement.service";
-import type { XpService } from "../gamification/xp.service";
+import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
 import { ImportJobService } from "./import-job.service";
 import type { ImportReq } from "./import-source";
 
-function stubXp(): XpService {
-  return {
-    award: vi.fn(),
-    awardMany: vi.fn(),
-    revokeBySource: vi.fn(),
-  } as unknown as XpService;
-}
-
-function stubAchievements(): AchievementService {
-  return { evaluate: vi.fn() } as unknown as AchievementService;
-}
-
-function stubEvents(): EventsGateway {
-  return { emitToUser: vi.fn() } as unknown as EventsGateway;
+function stubNotifications(): NotificationService {
+  return { create: vi.fn() } as unknown as NotificationService;
 }
 
 function fakeSource(id: ImportSource, requiredEnvKeys?: string[]): ImportReq {
@@ -44,6 +32,45 @@ function fakeSource(id: ImportSource, requiredEnvKeys?: string[]): ImportReq {
 }
 
 describe("ImportJobService translatable failures", () => {
+  it("exposes an analysis only while it is running", async () => {
+    let finish!: () => void;
+    const source = fakeSource("steam");
+    source.buildPlan = () =>
+      new Promise((resolve) => {
+        finish = () =>
+          resolve({
+            groups: [],
+            counts: { total: 0, matched: 0, unresolved: 0, apiErrors: 0 },
+            searchDomain: Domain.MEDIA,
+          });
+      });
+    const service = new ImportJobService(
+      [source],
+      {} as PrismaService,
+      {} as ConfigService,
+      {
+        isEffectivelyPremium: vi.fn().mockResolvedValue(true),
+      } as unknown as EntitlementService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      stubNotifications(),
+    );
+
+    const analysis = await service.startAnalyze("u1", "steam", { input: "" });
+    expect(service.listRunningImports()).toEqual([
+      expect.objectContaining({
+        id: analysis.id,
+        status: "RUNNING",
+        phase: "analyze",
+      }),
+    ]);
+    finish();
+    await vi.waitFor(() =>
+      expect(service.listRunningImports()).toHaveLength(0),
+    );
+  });
+
   it.each([
     [
       new AppException(
@@ -77,6 +104,7 @@ describe("ImportJobService translatable failures", () => {
         stubXp(),
         stubAchievements(),
         stubEvents(),
+        stubNotifications(),
       );
       const started = await service.startAnalyze("u1", "steam", { input: "" });
       await vi.waitFor(() => {
@@ -106,6 +134,7 @@ describe("ImportJobService.getAvailability", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      stubNotifications(),
     );
 
     const availability = service.getAvailability();
@@ -140,6 +169,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      stubNotifications(),
     );
     return { service, prisma };
   }
@@ -195,6 +225,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      stubNotifications(),
     );
 
     await service.startAnalyze("u1", "tvtime", { input: "" });
@@ -222,6 +253,7 @@ describe("ImportJobService.getQuota", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      stubNotifications(),
     );
 
     await expect(service.getQuota("u1")).resolves.toEqual({
@@ -232,15 +264,20 @@ describe("ImportJobService.getQuota", () => {
 });
 
 describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
-  function makeCommitService(commitImpl: ImportReq["commit"]) {
+  function makeCommitService(
+    commitImpl: ImportReq["commit"],
+    { online = true } = {},
+  ) {
     const source = fakeSource("tvtime");
     source.commit = commitImpl;
     const importRunCreate = vi.fn().mockResolvedValue({});
     const prisma = {
       importRun: { create: importRunCreate },
+      user: { findUnique: vi.fn().mockResolvedValue({ locale: "fr" }) },
     } as unknown as PrismaService;
     const xp = stubXp();
-    const events = stubEvents();
+    const events = stubEvents(online);
+    const notifications = stubNotifications();
     const service = new ImportJobService(
       [source],
       prisma,
@@ -251,8 +288,9 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
       xp,
       stubAchievements(),
       events,
+      notifications,
     );
-    return { service, xp, events, importRunCreate };
+    return { service, xp, events, importRunCreate, notifications };
   }
 
   // commit() only accepts a jobId that already has an analyzed plan attached
@@ -275,6 +313,66 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
       parsed: {},
     });
   }
+
+  it("exposes a running commit, persists its selection and report, then removes the active entry", async () => {
+    let finish!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const report = {
+      overwrite: false,
+      tiles: [{ id: "movies" as const, label: "Movies", value: 1, sub: null }],
+    };
+    const { service, importRunCreate } = makeCommitService(async () => {
+      await pending;
+      return report;
+    });
+    seedAnalyzedJob(service, "analysis");
+    const jobMap = (
+      service as unknown as {
+        jobs: Map<string, { plan: { groups: unknown[] } }>;
+      }
+    ).jobs;
+    jobMap.get("analysis")!.plan.groups = [
+      {
+        items: [
+          { key: "a", title: "Selected", match: {} },
+          { key: "b", title: "Skipped", match: {} },
+          { key: "c", title: "Unmatched", match: null },
+        ],
+      },
+    ];
+    const job = service.commit("u1", "tvtime", "analysis", { include: ["a"] });
+    expect(service.listRunningImports()).toEqual([
+      expect.objectContaining({
+        id: job.id,
+        status: "RUNNING",
+        finishedAt: null,
+      }),
+    ]);
+    expect(service.runningImportDetails(job.id)?.items).toEqual([
+      { title: "Selected", state: "selected" },
+      { title: "Skipped", state: "ignored" },
+      { title: "Unmatched", state: "unresolved" },
+    ]);
+    finish();
+    await vi.waitFor(() =>
+      expect(service.listRunningImports()).toHaveLength(0),
+    );
+    expect(importRunCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: job.id,
+        details: {
+          items: [
+            { title: "Selected", state: "selected" },
+            { title: "Skipped", state: "ignored" },
+            { title: "Unmatched", state: "unresolved" },
+          ],
+          report,
+        },
+      }),
+    });
+  });
 
   it("awards IMPORT_COMPLETED once a commit succeeds, even with zero items imported", async () => {
     const { service, xp } = makeCommitService(async () => ({
@@ -334,6 +432,40 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
         expect.objectContaining({ jobId: job.id, status: "completed" }),
       );
     });
+  });
+
+  it("leaves a bell entry for an owner who closed the app meanwhile", async () => {
+    const { service, notifications } = makeCommitService(
+      async () => ({ overwrite: false, tiles: [] }),
+      { online: false },
+    );
+    seedAnalyzedJob(service, "analyzed-1");
+
+    service.commit("u1", "tvtime", "analyzed-1", { include: [] } as never);
+
+    await vi.waitFor(() => {
+      expect(notifications.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: "u1",
+          type: "IMPORT_FINISHED",
+          title: "Import TV Time terminé",
+          data: { source: "tvtime", failed: false },
+        }),
+      );
+    });
+  });
+
+  it("says nothing to an owner still in the app, who watched it finish", async () => {
+    const { service, events, notifications } = makeCommitService(async () => ({
+      overwrite: false,
+      tiles: [],
+    }));
+    seedAnalyzedJob(service, "analyzed-1");
+
+    service.commit("u1", "tvtime", "analyzed-1", { include: [] } as never);
+
+    await vi.waitFor(() => expect(events.isOnline).toHaveBeenCalled());
+    expect(notifications.create).not.toHaveBeenCalled();
   });
 
   it("pushes onboarding-updated once a commit succeeds — the import step, and often others alongside it", async () => {
@@ -404,6 +536,7 @@ describe("ImportJobService — retained payloads", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      stubNotifications(),
     );
   }
 
@@ -521,6 +654,7 @@ describe("ImportJobService.getLastRun", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      stubNotifications(),
     );
   }
 
@@ -582,9 +716,12 @@ describe("ImportJobService.getHistory", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      stubNotifications(),
     );
 
-    await expect(service.getHistory("u1", 1, 20)).resolves.toEqual({
+    await expect(
+      service.getHistory("u1", parsePageQuery("1", "20", 20)),
+    ).resolves.toEqual({
       items: [
         {
           id: "run-1",

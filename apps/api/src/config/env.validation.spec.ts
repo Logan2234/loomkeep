@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { validateEnv } from "./env.validation";
 
 function baseEnv(

@@ -12,6 +12,7 @@ import { AuthService } from "./auth.service";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import { SessionResponseDto } from "./dto/session-response.dto";
+import { RequireRecentAuth } from "./recent-auth.guard";
 
 /**
  * Manage the user's signed-in devices. Lives outside the (@Public) AuthController
@@ -27,7 +28,9 @@ export class SessionsController {
     return this.authService.listSessions(payload.sub, payload.sid);
   }
 
+  // A stolen session mustn't be able to sign its owner out everywhere else.
   /** Revokes every other device, keeping the current signed-in session. */
+  @RequireRecentAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete()
   async revokeOthers(@CurrentUser() payload: JwtPayload): Promise<void> {
@@ -35,6 +38,7 @@ export class SessionsController {
     await this.authService.revokeOtherSessions(payload.sub, payload.sid);
   }
 
+  @RequireRecentAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(":id")
   async revokeSession(

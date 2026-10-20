@@ -42,3 +42,8 @@ export interface ActivityEventDto {
    */
   count: number;
 }
+
+/** The opaque token used in the public Atom activity feed URL (ee/social, premium). */
+export interface ActivityFeedTokenDto {
+  token: string;
+}

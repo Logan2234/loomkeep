@@ -1,38 +1,29 @@
 <script lang="ts">
+  import { PUSH_LIMITS } from "@loomkeep/shared";
+
   import { page } from "$app/state";
   import {
     getAdminPushDevices,
     getAdminPushSummary,
-    getAdminUserOptions,
     sendAdminBroadcastPush,
     sendAdminTestPush,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
-  import RankBars from "$lib/components/stats/RankBars.svelte";
-  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
-  import { formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import AdminQueryError from "../../AdminQueryError.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
+  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
+  import UserSelector from "#lib/components/UserSelector.svelte";
+  import { formatNumber } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let email = $state(page.url.searchParams.get("email") ?? "");
   let pushTitle = $state("");
   let pushBody = $state("");
-
-  const usersQuery = createApiQuery(() => ({
-    key: keys.admin.userOptions(),
-    fetch: getAdminUserOptions,
-  }));
-  const userOptions = $derived(
-    (usersQuery.data ?? []).map((u) => ({
-      label: `${u.displayName} <${u.email}>`,
-      value: u.email,
-    })),
-  );
 
   const devicesQuery = createApiQuery(() => ({
     key: keys.admin.pushDevices(email),
@@ -129,6 +120,12 @@
   const broadcastError = $derived(broadcastMut.error);
 </script>
 
+{#if pushSummaryQuery.error}<AdminQueryError
+    message={pushSummaryQuery.error}
+    queryKey={keys.admin.pushSummary()} />{:else if pushSummaryQuery.loading}<div
+    class="card mb-6 h-20 animate-pulse"
+    aria-label={m.common_loading()}>
+  </div>{/if}
 {#if pushSummary}
   <div class="max-w-xl">
     <KpiStrip tiles={pushKpis} />
@@ -153,13 +150,12 @@
     <div>
       <span class="text-dim mb-1 block text-xs font-semibold"
         >{m.common_account()}</span>
-      <Combobox
+      <UserSelector
+        value={email || null}
+        valueMode="email"
         label={m.admin_communications_choose_account()}
-        options={userOptions}
-        values={email ? [email] : []}
-        searchable
-        searchPlaceholder="Rechercher par nom ou email…"
-        onChange={(v) => (email = v[0] ?? "")} />
+        searchPlaceholder={m.admin_user_search_placeholder()}
+        onChange={(value) => (email = value ?? "")} />
     </div>
 
     <div>
@@ -175,8 +171,8 @@
         name="pushTitle"
         bind:value={pushTitle}
         placeholder="Loomkeep (admin)"
-        maxlength="100"
-        class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
+        maxlength={PUSH_LIMITS.title}
+        class="input text-sm" />
     </div>
 
     <div>
@@ -190,13 +186,18 @@
         name="pushBody"
         bind:value={pushBody}
         placeholder={m.admin_communications_test_placeholder()}
-        maxlength="500"
+        maxlength={PUSH_LIMITS.body}
         rows="2"
-        class="border-border bg-surface w-full resize-none rounded-lg border px-3 py-2 text-sm"
-      ></textarea>
+        class="input resize-none text-sm"></textarea>
     </div>
 
-    {#if !devicesLoading && devices && devices.length === 0}
+    {#if email && devicesQuery.error}<AdminQueryError
+        message={devicesQuery.error}
+        queryKey={keys.admin.pushDevices(email)} />
+    {:else if email && devicesLoading}<p role="status" class="text-dim text-sm">
+        {m.common_loading()}
+      </p>
+    {:else if !devicesLoading && devices && devices.length === 0}
       <Banner variant="warning">
         {m.admin_communications_no_devices_account()}
       </Banner>
@@ -286,8 +287,8 @@
         name="broadcastTitle"
         bind:value={broadcastTitle}
         placeholder="Loomkeep (admin)"
-        maxlength="100"
-        class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
+        maxlength={PUSH_LIMITS.title}
+        class="input text-sm" />
     </div>
 
     <div>
@@ -301,10 +302,9 @@
         name="broadcastBody"
         bind:value={broadcastBody}
         placeholder={m.admin_communications_broadcast_placeholder()}
-        maxlength="500"
+        maxlength={PUSH_LIMITS.body}
         rows="2"
-        class="border-border bg-surface w-full resize-none rounded-lg border px-3 py-2 text-sm"
-      ></textarea>
+        class="input resize-none text-sm"></textarea>
     </div>
 
     <button

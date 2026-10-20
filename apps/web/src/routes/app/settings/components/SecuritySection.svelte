@@ -1,29 +1,36 @@
 <script lang="ts">
+  import SettingsLinkRow from "./SettingsLinkRow.svelte";
   import { page } from "$app/state";
   import {
     changeEmail,
     changePassword,
     checkUsernameAvailable,
     confirmEmailChange,
-    getMfaStatus,
     getSessions,
     resendVerificationEmail,
     updateUsername,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import { Cooldown } from "$lib/cooldown.svelte";
-  import { debounce } from "$lib/debounce";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import PasswordInput from "$lib/components/PasswordInput.svelte";
-  import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
-  import { isPasswordValid } from "@loomkeep/shared";
-  import { flashAnchor } from "../flash-anchor";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { Cooldown } from "#lib/cooldown.svelte.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import PasswordInput from "#lib/components/PasswordInput.svelte";
+  import PasswordRequirements from "#lib/components/PasswordRequirements.svelte";
+  import { normalizeCodeInput } from "#lib/one-time-code.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
+  import {
+    isPasswordValid,
+    PASSWORD_MIN_LENGTH,
+    PASSWORD_MAX_LENGTH,
+    USER_LIMITS,
+    OTP_CODE_LENGTH,
+  } from "@loomkeep/shared";
+  import { flashAnchor } from "#lib/flash-anchor.js";
   import { sectionHref } from "../nav";
 
   type SecurityModal = "username" | "email" | "password" | null;
@@ -58,7 +65,7 @@
     } catch {
       if (usernameInput.trim() === value) usernameCheck = "error";
     }
-  }, 400);
+  }, SEARCH_DEBOUNCE_MS);
 
   function onUsernameInput() {
     const value = usernameInput.trim();
@@ -86,14 +93,12 @@
   }
 
   let emailInput = $state("");
-  let emailPasswordInput = $state("");
   let emailAlreadyCurrentError = $state("");
   let emailStep: "form" | "code" = $state("form");
   let emailCodeInput = $state("");
 
   function openEmailModal() {
     emailInput = "";
-    emailPasswordInput = "";
     emailAlreadyCurrentError = "";
     saveEmailMut.reset();
     emailStep = "form";
@@ -103,12 +108,8 @@
   }
 
   const saveEmailMut = createApiMutation(() => ({
-    mutate: () =>
-      changeEmail({
-        newEmail: emailInput.trim(),
-        currentPassword: emailPasswordInput,
-      }),
-    coveredFields: ["newEmail", "currentPassword"],
+    mutate: () => changeEmail({ newEmail: emailInput.trim() }),
+    coveredFields: ["newEmail"],
     onSuccess: () => (emailStep = "code"),
   }));
 
@@ -197,27 +198,13 @@
 
   const passwordError = $derived(localPasswordError || savePasswordMut.error);
 
-  // The two screens this one hands off to, with their current state read off
-  // the same cache entries they use themselves — so "Aller plus loin" says
-  // what it leads to instead of just that it leads somewhere.
-  const mfaQuery = createApiQuery(() => ({
-    key: keys.mfa.status(),
-    fetch: getMfaStatus,
-  }));
+  // The device count is read off the cache entry the devices page uses, so
+  // "Aller plus loin" says what it leads to instead of just that it leads
+  // somewhere.
   const sessionsQuery = createApiQuery(() => ({
     key: keys.sessions.all(),
     fetch: getSessions,
   }));
-
-  const mfaPreview = $derived.by(() => {
-    const status = mfaQuery.data;
-    if (!status) return null;
-    if (status.totpEnabled) return m.settings_preview_mfa_totp();
-    if (status.emailEnabled || status.webauthnCredentials.length > 0) {
-      return m.settings_health_mfa_on();
-    }
-    return m.settings_preview_mfa_off();
-  });
 
   const sessionsPreview = $derived.by(() => {
     const count = sessionsQuery.data?.length;
@@ -325,24 +312,12 @@
   </p>
   <ul class="card divide-border divide-y">
     <li>
-      <a
-        href={sectionHref("two-factor-authentication")}
+      <SettingsLinkRow
+        icon="monitor"
+        iconClass="text-accent h-5 w-5 shrink-0"
+        chevronClass="text-dim h-5 w-5 shrink-0"
+        href={sectionHref("security/devices")}
         class="hover:bg-surface-2 flex items-center gap-3 px-4 py-3.5 transition-colors">
-        <Icon name="lock" class="text-accent h-5 w-5 shrink-0" />
-        <span class="min-w-0 flex-1">
-          <span class="block font-semibold">{m.settings_section_mfa()}</span>
-          {#if mfaPreview}
-            <span class="text-dim block truncate text-sm">{mfaPreview}</span>
-          {/if}
-        </span>
-        <Icon name="chevron-right" class="text-dim h-5 w-5 shrink-0" />
-      </a>
-    </li>
-    <li>
-      <a
-        href={sectionHref("devices")}
-        class="hover:bg-surface-2 flex items-center gap-3 px-4 py-3.5 transition-colors">
-        <Icon name="monitor" class="text-accent h-5 w-5 shrink-0" />
         <span class="min-w-0 flex-1">
           <span class="block font-semibold">
             {m.settings_sessions_title()}
@@ -351,8 +326,24 @@
             {sessionsPreview ?? m.settings_open_sessions_description()}
           </span>
         </span>
-        <Icon name="chevron-right" class="text-dim h-5 w-5 shrink-0" />
-      </a>
+      </SettingsLinkRow>
+    </li>
+    <li>
+      <SettingsLinkRow
+        icon="activity"
+        iconClass="text-accent h-5 w-5 shrink-0"
+        chevronClass="text-dim h-5 w-5 shrink-0"
+        href={sectionHref("security/activity")}
+        class="hover:bg-surface-2 flex items-center gap-3 px-4 py-3.5 transition-colors">
+        <span class="min-w-0 flex-1">
+          <span class="block font-semibold">
+            {m.settings_activity_title()}
+          </span>
+          <span class="text-dim block truncate text-sm">
+            {m.settings_activity_description()}
+          </span>
+        </span>
+      </SettingsLinkRow>
     </li>
   </ul>
 
@@ -373,7 +364,7 @@
             name="username"
             class="input"
             minlength="1"
-            maxlength="50"
+            maxlength={USER_LIMITS.username}
             autocomplete="username"
             required
             bind:value={usernameInput}
@@ -441,18 +432,6 @@
               {m.settings_email_verification_desc()}
             </p>
           </label>
-          <label class="block">
-            <span class="mb-1.5 block text-sm font-semibold">
-              {m.common_current_password()}
-            </span>
-            <PasswordInput
-              name="currentPassword"
-              autocomplete="current-password"
-              enterkeyhint="next"
-              minlength={1}
-              required
-              bind:value={emailPasswordInput} />
-          </label>
           {#if emailError}
             <p class="text-danger text-sm">{emailError}</p>
           {/if}
@@ -465,8 +444,7 @@
               class="btn btn-primary"
               disabled={saveEmailMut.loading ||
                 !emailInput.trim() ||
-                emailInput.trim() === auth.user?.email ||
-                !emailPasswordInput}>
+                emailInput.trim() === auth.user?.email}>
               {saveEmailMut.loading ? m.common_save_loading() : m.common_save()}
             </button>
           </div>
@@ -489,13 +467,17 @@
               name="code"
               inputmode="numeric"
               autocomplete="one-time-code"
-              minlength="6"
-              maxlength="6"
+              minlength={OTP_CODE_LENGTH}
               required
               enterkeyhint="done"
               class="input"
               placeholder="123456"
-              bind:value={emailCodeInput} />
+              value={emailCodeInput}
+              oninput={(e) =>
+                (emailCodeInput = normalizeCodeInput(
+                  e.currentTarget,
+                  OTP_CODE_LENGTH,
+                ))} />
           </label>
           {#if confirmEmailMut.error}
             <p class="text-danger text-sm">{confirmEmailMut.error}</p>
@@ -511,7 +493,7 @@
               type="submit"
               class="btn btn-primary"
               disabled={confirmEmailMut.loading ||
-                emailCodeInput.trim().length !== 6}>
+                emailCodeInput.trim().length !== OTP_CODE_LENGTH}>
               {confirmEmailMut.loading
                 ? m.common_verifying()
                 : m.common_confirm()}
@@ -550,8 +532,8 @@
             name="newPassword"
             autocomplete="new-password"
             enterkeyhint="next"
-            minlength={8}
-            maxlength={72}
+            minlength={PASSWORD_MIN_LENGTH}
+            maxlength={PASSWORD_MAX_LENGTH}
             required
             bind:value={newPasswordInput} />
           <div class="mt-2">
@@ -566,8 +548,8 @@
             name="confirmPassword"
             autocomplete="new-password"
             enterkeyhint="done"
-            minlength={8}
-            maxlength={72}
+            minlength={PASSWORD_MIN_LENGTH}
+            maxlength={PASSWORD_MAX_LENGTH}
             required
             bind:value={confirmPasswordInput} />
         </label>

@@ -1,12 +1,15 @@
 import {
   Domain,
   ErrorCode,
+  HOME_GRID_COLUMNS,
   LEGAL_VERSION,
+  OTP_CODE_LENGTH,
+  RealtimeEvent,
+  REQUIRED_SHORTCUT,
   UserDto,
   UsernameAvailabilityDto,
   XpReason,
   type AccountDeletionSummaryDto,
-  type CalendarTokenDto,
   type CsvExportDto,
   type EntitlementDto,
   type SocialProfileDto,
@@ -15,17 +18,22 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { User } from "@prisma/client";
+import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
-import { randomBytes, randomInt } from "node:crypto";
-import { BCRYPT_ROUNDS, hashToken, toUserDto } from "../auth/auth.service";
+import { ApiKeysService } from "../api-keys/api-keys.service";
+import { BCRYPT_ROUNDS, toUserDto } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
+import { randomNumericCode, sha256Hex } from "../common/crypto.util";
 import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { XpService } from "../gamification/xp.service";
 import { MailService } from "../mail/mail.service";
+import {
+  mergeAlertPrefs,
+  readAlertPrefs,
+} from "../notifications/alert-prefs.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { ProfileService } from "../social/profile.service";
@@ -41,10 +49,11 @@ import { DataExportService } from "./data-export.service";
 import type { ChangeEmailDto } from "./dto/change-email.dto";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
 import type { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";
-import type { DeleteAccountDto } from "./dto/delete-account.dto";
+import type { HomeLayoutBody } from "./dto/home-layout.dto";
 import type { UpdateUserDto } from "./dto/update-user.dto";
 import type { UpdateUsernameDto } from "./dto/update-username.dto";
 import type { UploadAvatarDto } from "./dto/upload-avatar.dto";
+import { toHomeLayoutJson } from "./home-layout.util";
 import { signWidgetToken } from "./widget-token.util";
 
 // Decoded byte ceiling for an uploaded avatar — base64 for this is checked by
@@ -70,6 +79,7 @@ export class UsersService {
     private readonly accountDeletion: AccountDeletionService,
     private readonly xp: XpService,
     private readonly events: EventsGateway,
+    private readonly apiKeys: ApiKeysService,
   ) {}
 
   async getMe(userId: string): Promise<UserDto> {
@@ -228,61 +238,12 @@ export class UsersService {
   }
 
   /**
-   * Returns the token for the user's public .ics calendar subscription URL,
-   * generating one on first call. Stable across calls — use the regenerate
-   * endpoint below to revoke a previously shared link. Premium
-   * (docs/adr/0001-open-core-agpl.md) — see LibraryService#getCalendarIcs
-   * for the matching check on the feed itself.
-   */
-  async getCalendarToken(userId: string): Promise<CalendarTokenDto> {
-    await this.requirePremium(userId);
-
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { calendarToken: true },
-    });
-
-    if (user.calendarToken) {
-      return { token: user.calendarToken };
-    }
-
-    const { calendarToken } = await this.prisma.user.update({
-      where: { id: userId },
-      data: { calendarToken: randomBytes(24).toString("base64url") },
-      select: { calendarToken: true },
-    });
-    return { token: calendarToken! };
-  }
-
-  async regenerateCalendarToken(userId: string): Promise<CalendarTokenDto> {
-    await this.requirePremium(userId);
-
-    const { calendarToken } = await this.prisma.user.update({
-      where: { id: userId },
-      data: { calendarToken: randomBytes(24).toString("base64url") },
-      select: { calendarToken: true },
-    });
-    return { token: calendarToken! };
-  }
-
-  /**
    * The user's real plan (not gated by `premium-features` — see
    * `EntitlementService#isEffectivelyPremium`) so the web can decide what to
    * lock: `showLock = flag on && !isPremium`.
    */
   async getMyEntitlement(userId: string): Promise<EntitlementDto> {
     return { isPremium: await this.entitlements.hasPremium(userId) };
-  }
-
-  private async requirePremium(userId: string): Promise<void> {
-    if (!(await this.entitlements.isEffectivelyPremium(userId))) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.UserPremiumRequired,
-        undefined,
-        "This feature is reserved for premium accounts",
-      );
-    }
   }
 
   async completeOnboarding(userId: string): Promise<UserDto> {
@@ -309,6 +270,39 @@ export class UsersService {
     return toUserDto(user);
   }
 
+  /**
+   * Stores the home grid as sent, only pulled back inside the grid: a widget
+   * overflowing the right edge slides left, and a repeated id keeps its first
+   * widget. Overlaps are left alone — the web compacts on every render.
+   */
+  async setHomeLayout(userId: string, body: HomeLayoutBody): Promise<UserDto> {
+    const seen = new Set<string>();
+    const widgets = body.widgets
+      .filter((widget) => {
+        if (seen.has(widget.id)) return false;
+        seen.add(widget.id);
+        return true;
+      })
+      .map((widget) => ({
+        ...widget,
+        x: Math.min(widget.x, HOME_GRID_COLUMNS - widget.w),
+      }));
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { homeLayout: toHomeLayoutJson({ widgets }) },
+    });
+    return toUserDto(user);
+  }
+
+  /** Back to the default grid, which follows the enabled domains again. */
+  async resetHomeLayout(userId: string): Promise<UserDto> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { homeLayout: Prisma.DbNull },
+    });
+    return toUserDto(user);
+  }
+
   async updateMe(userId: string, dto: UpdateUserDto): Promise<UserDto> {
     if (dto.birthDate && new Date(dto.birthDate) > new Date()) {
       throw new AppException(
@@ -325,6 +319,7 @@ export class UsersService {
         birthDate: true,
         allowAdultContent: true,
         notifyNewsletter: true,
+        alertPrefs: true,
       },
     });
 
@@ -370,12 +365,28 @@ export class UsersService {
     }
 
     // The "menu" launcher must always be reachable from the bottom bar.
-    if (dto.mobileNavShortcuts && !dto.mobileNavShortcuts.includes("menu")) {
+    if (
+      dto.mobileNavShortcuts &&
+      !dto.mobileNavShortcuts.includes(REQUIRED_SHORTCUT)
+    ) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.UserMobileNavMissingMenu,
         undefined,
         'mobileNavShortcuts must include the "menu" launcher',
+      );
+    }
+
+    const alertPrefs = dto.alertPrefs
+      ? mergeAlertPrefs(readAlertPrefs(current.alertPrefs), dto.alertPrefs)
+      : undefined;
+
+    if (alertPrefs === null) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ValidationFailed,
+        undefined,
+        "alertPrefs names an alert or channel that has no setting",
       );
     }
 
@@ -388,6 +399,7 @@ export class UsersService {
         notifyEmail: dto.notifyEmail,
         notifyPush: dto.notifyPush,
         notifyNewsletter: dto.notifyNewsletter,
+        alertPrefs,
         newsletterOptInAt,
         timezone: dto.timezone,
         enabledDomains: dto.enabledDomains,
@@ -398,8 +410,14 @@ export class UsersService {
         defaultListVisibility: dto.defaultListVisibility,
         locale: dto.locale as string,
         hideProgression: dto.hideProgression,
+        chatShowPresence: dto.chatShowPresence,
+        chatShowReadReceipts: dto.chatShowReadReceipts,
+        chatShareWatchProviders: dto.chatShareWatchProviders,
+        feedbackWidget: dto.feedbackWidget,
         spoilerSensitivity: dto.spoilerSensitivity,
         domainOrder: dto.domainOrder,
+        watchRegion: dto.watchRegion,
+        watchProviderIds: dto.watchProviderIds,
       },
     });
     await this.maybeAwardProfileCompleted(userId, user);
@@ -421,7 +439,7 @@ export class UsersService {
       // complete_profile is one of the onboarding checklist's steps
       // (OnboardingService) — this method's own condition is exactly that
       // step's own check.
-      this.events.emitToUser(userId, "onboarding-updated");
+      this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
     }
   }
 
@@ -431,7 +449,9 @@ export class UsersService {
    * the new address; see confirmEmailChange().
    */
   async changeEmail(userId: string, dto: ChangeEmailDto): Promise<void> {
-    const current = await this.requireVerifiedUser(userId, dto.currentPassword);
+    const current = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
 
     if (dto.newEmail === current.email) {
       throw new AppException(
@@ -456,14 +476,14 @@ export class UsersService {
       );
     }
 
-    const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+    const code = randomNumericCode(OTP_CODE_LENGTH);
     await this.prisma.$transaction([
       this.prisma.emailChangeRequest.deleteMany({ where: { userId } }),
       this.prisma.emailChangeRequest.create({
         data: {
           userId,
           newEmail: dto.newEmail,
-          codeHash: hashToken(code),
+          codeHash: sha256Hex(code),
           expiresAt: new Date(Date.now() + EMAIL_CHANGE_TTL_MINUTES * 60_000),
         },
       }),
@@ -498,7 +518,7 @@ export class UsersService {
 
     const matches =
       stored &&
-      stored.codeHash === hashToken(dto.code) &&
+      stored.codeHash === sha256Hex(dto.code) &&
       stored.expiresAt >= new Date();
 
     if (!stored || !matches) {
@@ -530,17 +550,18 @@ export class UsersService {
       }),
       this.prisma.emailChangeRequest.deleteMany({ where: { userId } }),
     ]);
-    await this.mail.sendEmailChanged(
-      current.email,
-      stored.newEmail,
-      current.locale,
-    );
-    await this.security.record({
+    const occurredAt = await this.security.record({
       type: "EMAIL_CHANGED",
       userId,
       detail: `${current.email} → ${stored.newEmail}`,
       userAgent,
     });
+    await this.mail.sendEmailChanged(
+      current.email,
+      stored.newEmail,
+      current.locale,
+      occurredAt,
+    );
     return toUserDto(user);
   }
 
@@ -578,78 +599,207 @@ export class UsersService {
       }),
       this.prisma.refreshToken.deleteMany({ where: { userId } }),
     ]);
-    await this.mail.sendPasswordChanged({
-      email: current.email,
-      locale: current.locale,
-    });
-    await this.security.record({
+    const occurredAt = await this.security.record({
       type: "PASSWORD_CHANGED",
       userId,
       userAgent,
     });
+    await this.mail.sendPasswordChanged(
+      { email: current.email, locale: current.locale },
+      await this.apiKeys.reviewAfterPasswordChange(userId),
+      occurredAt,
+    );
   }
 
   /**
    * Live preview of what deleting the account would do, for the confirmation
    * modal — every category is always present, even at 0 rows, so the summary
-   * reads as exhaustive. Mirrors the `onDelete` behaviour in schema.prisma:
-   * most owned rows cascade away, Review/Comment/Report are detached
-   * (SetNull) instead since their content is visible to other users.
+   * reads as exhaustive. Mirrors the `onDelete` behaviour in schema.prisma and
+   * AccountDeletionService: owned rows cascade away; what other members can
+   * see (reviews, comments, items added to their lists) is detached
+   * (SetNull) instead; lists with editors change hands.
    */
   async deletionSummary(userId: string): Promise<AccountDeletionSummaryDto> {
+    const own = { userId };
     const [
+      sessions,
+      user,
       library,
-      watchHistory,
+      episodeWatches,
+      movieRewatches,
       games,
+      gamePlaythroughs,
+      gameSessions,
       books,
+      bookReadings,
+      bookSessions,
+      readingGoals,
+      sessionTimers,
       music,
-      lists,
-      notifications,
-      followers,
-      following,
+      soloLists,
+      listMemberships,
+      listMutes,
+      follows,
       blocks,
+      reviewVotes,
+      commentReactions,
+      notifications,
       activity,
+      achievements,
+      savedViews,
+      visibilitySettings,
+      devices,
+      apiKeys,
+      passkeys,
+      recoveryCodes,
+      pushSubscriptions,
+      emailChanges,
+      emailedLinks,
+      premiumPlans,
+      subscriptions,
       reviews,
+      reviewRevisions,
       comments,
+      listItemsAdded,
       reports,
+      imports,
+      securityEvents,
+      moderationDecisions,
+      removedContentCopies,
+      sharedLists,
     ] = await Promise.all([
-      this.prisma.libraryEntry.count({ where: { userId } }),
-      this.prisma.episodeWatch.count({ where: { userId } }),
-      this.prisma.gameEntry.count({ where: { userId } }),
-      this.prisma.bookEntry.count({ where: { userId } }),
-      this.prisma.musicEntry.count({ where: { userId } }),
-      // A list with editors isn't deleted, ownership is transferred instead
-      // (see deleteAccount) — only count lists that will actually cascade.
+      this.prisma.refreshToken.count({ where: own }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { mfaTotpEnabled: true, mfaEmailEnabled: true },
+      }),
+      this.prisma.libraryEntry.count({ where: own }),
+      this.prisma.episodeWatch.count({ where: own }),
+      this.prisma.movieReplay.count({ where: { libraryEntry: own } }),
+      this.prisma.gameEntry.count({ where: own }),
+      this.prisma.gamePlaythrough.count({ where: { gameEntry: own } }),
+      this.prisma.gameSession.count({ where: { gameEntry: own } }),
+      this.prisma.bookEntry.count({ where: own }),
+      this.prisma.bookReading.count({ where: { bookEntry: own } }),
+      this.prisma.bookSession.count({ where: { bookEntry: own } }),
+      this.prisma.readingGoal.count({ where: own }),
+      this.prisma.sessionTimer.count({ where: own }),
+      this.prisma.musicEntry.count({ where: own }),
       this.prisma.list.count({ where: { userId, members: { none: {} } } }),
-      this.prisma.notification.count({ where: { userId } }),
-      this.prisma.follow.count({ where: { followeeId: userId } }),
-      this.prisma.follow.count({ where: { followerId: userId } }),
+      this.prisma.listMember.count({ where: own }),
+      this.prisma.listNotificationMute.count({ where: own }),
+      this.prisma.follow.count({
+        where: { OR: [{ followerId: userId }, { followeeId: userId }] },
+      }),
       this.prisma.block.count({
         where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
       }),
-      this.prisma.activityEvent.count({ where: { userId } }),
-      this.prisma.review.count({ where: { userId } }),
+      this.prisma.reviewVote.count({ where: own }),
+      this.prisma.commentReaction.count({ where: own }),
+      this.prisma.notification.count({ where: own }),
+      this.prisma.activityEvent.count({ where: own }),
+      this.prisma.userAchievement.count({ where: own }),
+      this.prisma.savedView.count({ where: own }),
+      this.prisma.visibilitySetting.count({ where: own }),
+      this.prisma.userDevice.count({ where: own }),
+      this.prisma.apiKey.count({ where: own }),
+      this.prisma.webauthnCredential.count({ where: own }),
+      this.prisma.mfaRecoveryCode.count({ where: own }),
+      this.prisma.pushSubscription.count({ where: own }),
+      this.prisma.emailChangeRequest.count({ where: own }),
+      this.prisma.userToken.count({ where: own }),
+      this.prisma.userEntitlement.count({
+        where: { userId, plan: "PREMIUM" },
+      }),
+      this.prisma.subscription.count({ where: own }),
+      this.prisma.review.count({ where: own }),
+      this.prisma.reviewRevision.count({ where: { review: own } }),
       this.prisma.comment.count({ where: { authorId: userId } }),
+      // Items in the account's own solo lists go with those lists.
+      this.prisma.listItem.count({
+        where: {
+          addedById: userId,
+          NOT: { list: { userId, members: { none: {} } } },
+        },
+      }),
       this.prisma.report.count({ where: { reporterId: userId } }),
+      this.prisma.importRun.count({ where: own }),
+      this.prisma.securityEvent.count({ where: own }),
+      this.prisma.moderationDecision.count({
+        where: { subjectUserId: userId },
+      }),
+      this.prisma.moderationDecision.count({
+        where: { subjectUserId: userId, contentSnapshot: { not: null } },
+      }),
+      this.prisma.list.findMany({
+        where: { userId, members: { some: {} } },
+        orderBy: { title: "asc" },
+        select: {
+          title: true,
+          members: {
+            orderBy: { createdAt: "asc" },
+            take: 1,
+            select: { user: { select: { displayName: true } } },
+          },
+        },
+      }),
     ]);
 
+    const twoFactor =
+      Number(user?.mfaTotpEnabled ?? false) +
+      Number(user?.mfaEmailEnabled ?? false) +
+      recoveryCodes;
+
     return {
+      sessions,
       deleted: [
         { category: "LIBRARY", count: library },
-        { category: "WATCH_HISTORY", count: watchHistory },
+        { category: "EPISODE_WATCHES", count: episodeWatches },
+        { category: "MOVIE_REWATCHES", count: movieRewatches },
         { category: "GAMES", count: games },
+        { category: "GAME_PLAYTHROUGHS", count: gamePlaythroughs },
+        { category: "GAME_SESSIONS", count: gameSessions },
         { category: "BOOKS", count: books },
+        { category: "BOOK_READINGS", count: bookReadings },
+        { category: "BOOK_SESSIONS", count: bookSessions },
+        { category: "READING_GOALS", count: readingGoals },
+        { category: "SESSION_TIMER", count: sessionTimers },
         { category: "MUSIC", count: music },
-        { category: "LISTS", count: lists },
-        { category: "NOTIFICATIONS", count: notifications },
-        { category: "FOLLOWS", count: followers + following },
+        { category: "LISTS", count: soloLists },
+        { category: "LIST_MEMBERSHIPS", count: listMemberships },
+        { category: "LIST_MUTES", count: listMutes },
+        { category: "FOLLOWS", count: follows },
         { category: "BLOCKS", count: blocks },
+        { category: "REACTIONS", count: reviewVotes + commentReactions },
+        { category: "NOTIFICATIONS", count: notifications },
         { category: "ACTIVITY", count: activity },
+        { category: "PROGRESSION", count: achievements },
+        { category: "SAVED_VIEWS", count: savedViews },
+        { category: "VISIBILITY_SETTINGS", count: visibilitySettings },
+        { category: "DEVICES", count: devices },
+        { category: "API_KEYS", count: apiKeys },
+        { category: "PASSKEYS", count: passkeys },
+        { category: "TWO_FACTOR", count: twoFactor },
+        { category: "PUSH_SUBSCRIPTIONS", count: pushSubscriptions },
+        { category: "PENDING_REQUESTS", count: emailChanges + emailedLinks },
+        { category: "PREMIUM", count: premiumPlans + subscriptions },
       ],
       anonymized: [
         { category: "REVIEWS", count: reviews },
+        { category: "REVIEW_REVISIONS", count: reviewRevisions },
         { category: "COMMENTS", count: comments },
+        { category: "LIST_ITEMS_ADDED", count: listItemsAdded },
         { category: "REPORTS", count: reports },
+        { category: "IMPORTS", count: imports },
+      ],
+      transferredLists: sharedLists.map((list) => ({
+        title: list.title,
+        newOwner: list.members[0].user.displayName,
+      })),
+      kept: [
+        { category: "SECURITY_EVENTS", count: securityEvents },
+        { category: "MODERATION_DECISIONS", count: moderationDecisions },
+        { category: "REMOVED_CONTENT_COPIES", count: removedContentCopies },
       ],
     };
   }
@@ -664,15 +814,10 @@ export class UsersService {
    * editor first (see ListService.reassignOwnedListsOnAccountDeletion), so
    * shared work doesn't vanish because one collaborator left.
    */
-  async deleteAccount(
-    userId: string,
-    dto: DeleteAccountDto,
-    userAgent?: string,
-  ): Promise<void> {
-    await this.requireVerifiedUser(userId, dto.currentPassword);
-
+  async deleteAccount(userId: string, userAgent?: string): Promise<void> {
     await this.accountDeletion.deleteAccount(
       userId,
+      "self",
       "Suppression demandée par l'utilisateur",
       userAgent,
     );
@@ -721,9 +866,8 @@ export class UsersService {
   }
 
   /**
-   * Loads the account and re-confirms its password — the shared guard for the
-   * sensitive self-service actions (email/password change, deletion), where
-   * the current password is required since email doubles as the login id.
+   * Loads the account and re-confirms its password, which a password change
+   * still asks for itself on top of any recent confirmation.
    */
   private async requireVerifiedUser(
     userId: string,

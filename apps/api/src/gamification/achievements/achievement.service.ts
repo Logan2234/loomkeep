@@ -1,23 +1,27 @@
 import {
   ErrorCode,
   MAX_EQUIPPED_BADGES,
+  RealtimeEvent,
   XpReason,
   type AchievementDto,
+  type AchievementRarityDto,
   type PendingAchievementDto,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { Cron } from "@nestjs/schedule";
-import { Prisma } from "@prisma/client";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import type { Prisma } from "@prisma/client";
 import { AppException } from "../../common/app.exception";
+import { sinceDaysAgo } from "../../common/date.util";
+import { isUniqueViolation } from "../../common/prisma-error.util";
 import { EventsGateway } from "../../events/events.gateway";
-import { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
 import { JOB_KEYS } from "../../jobs/job-keys";
 import { JobRunService } from "../../jobs/job-run.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import { isSocialEnabled } from "../../social/social.config";
 import { isGamificationEnabled } from "../gamification.config";
 import { XpService } from "../xp.service";
+import { RARITY_ACTIVE_WINDOW_DAYS, toRarity } from "./rarity.util";
 import {
   ACHIEVEMENT_LIST,
   ACHIEVEMENTS,
@@ -37,7 +41,6 @@ export class AchievementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly flags: FeatureFlagsService,
     private readonly xp: XpService,
     private readonly jobRuns: JobRunService,
     private readonly events: EventsGateway,
@@ -50,9 +53,9 @@ export class AchievementService {
    * No-ops entirely when gamification is off.
    */
   async evaluate(userId: string, keys?: string[]): Promise<void> {
-    if (!isGamificationEnabled(this.config, this.flags)) return;
+    if (!isGamificationEnabled(this.config)) return;
 
-    const socialEnabled = isSocialEnabled(this.config, this.flags);
+    const socialEnabled = isSocialEnabled(this.config);
     const definitions = (
       keys
         ? keys
@@ -111,10 +114,7 @@ export class AchievementService {
       // or two live sites in the same request) hits the unique constraint —
       // expected under concurrency, not an error. No XP credit in this case:
       // the call that actually created the row already credited it.
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === "P2002"
-      ) {
+      if (isUniqueViolation(err)) {
         this.logger.debug(
           `Achievement ${definition.key} already unlocked for user ${userId} (concurrent)`,
         );
@@ -134,7 +134,7 @@ export class AchievementService {
     // Only benefits async grants (nightly sweep, an import completing while
     // another tab is open) — a live user action already gets this instantly
     // via its own mutation's `invalidates: [keys.gamification.pending()]`.
-    this.events.emitToUser(userId, "achievement-unlocked");
+    this.events.emitToUser(userId, RealtimeEvent.ACHIEVEMENT_UNLOCKED);
   }
 
   /**
@@ -146,7 +146,7 @@ export class AchievementService {
    * (userId, key) makes a second call a no-op that never re-credits XP.
    */
   async markVersionLinkClicked(userId: string): Promise<void> {
-    if (!isGamificationEnabled(this.config, this.flags)) return;
+    if (!isGamificationEnabled(this.config)) return;
 
     const definition = ACHIEVEMENTS.curious_cat;
     const already = await this.prisma.userAchievement.findUnique({
@@ -169,16 +169,20 @@ export class AchievementService {
    * is never even run, since nothing about it may reach the client.
    */
   async list(userId: string): Promise<AchievementDto[]> {
-    if (!isGamificationEnabled(this.config, this.flags)) return [];
+    if (!isGamificationEnabled(this.config)) return [];
 
-    const socialEnabled = isSocialEnabled(this.config, this.flags);
-    const [unlockedRows, equippedKeys] = await Promise.all([
+    const socialEnabled = isSocialEnabled(this.config);
+    const [unlockedRows, equippedKeys, rarityRows] = await Promise.all([
       this.prisma.userAchievement.findMany({
         where: { userId },
         select: { key: true, unlockedAt: true },
       }),
       this.equippedKeys(userId),
+      this.prisma.achievementRarity.findMany(),
     ]);
+    const rarityByKey = new Map(
+      rarityRows.map((r) => [r.key, toRarity(r.holders, r.eligibleUsers)]),
+    );
     const unlockedAtByKey = new Map(
       unlockedRows.map((r) => [r.key, r.unlockedAt]),
     );
@@ -198,6 +202,7 @@ export class AchievementService {
           definition,
           unlockedAtByKey.get(definition.key),
           equipped.has(definition.key),
+          rarityByKey.get(definition.key) ?? null,
         ),
       ),
     );
@@ -208,6 +213,7 @@ export class AchievementService {
     definition: AchievementDefinition,
     unlockedAt: Date | undefined,
     equipped: boolean,
+    rarity: AchievementRarityDto | null,
   ): Promise<AchievementDto> {
     const unlocked = unlockedAt !== undefined;
 
@@ -223,6 +229,7 @@ export class AchievementService {
         unlockedAt: null,
         progress: null,
         equipped: false,
+        rarity,
       };
     }
 
@@ -239,6 +246,7 @@ export class AchievementService {
       unlockedAt: unlockedAt?.toISOString() ?? null,
       progress: result.progress ?? null,
       equipped,
+      rarity,
     };
   }
 
@@ -329,7 +337,7 @@ export class AchievementService {
    * rather than an error when gamification is off.
    */
   async pending(userId: string): Promise<PendingAchievementDto[]> {
-    if (!isGamificationEnabled(this.config, this.flags)) return [];
+    if (!isGamificationEnabled(this.config)) return [];
 
     const rows = await this.prisma.userAchievement.findMany({
       where: { userId, displayedAt: null },
@@ -343,6 +351,7 @@ export class AchievementService {
       where: {
         sourceType: "UserAchievement",
         sourceId: { in: rows.map((r) => r.id) },
+        revokedAt: null,
       },
       select: { sourceId: true, amount: true },
     });
@@ -391,7 +400,9 @@ export class AchievementService {
    * This is a full sweep without activity-based targeting. Revisit that if
    * the catalogue makes the loop expensive.
    */
-  @Cron("0 5 * * *")
+  @Cron(CronExpression.EVERY_DAY_AT_5AM, {
+    name: JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP,
+  })
   async runAchievementsSweepJob(): Promise<string> {
     return this.jobRuns.record(
       JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP,
@@ -407,6 +418,46 @@ export class AchievementService {
       await this.evaluate(user.id);
     }
 
-    return `Swept ${users.length} user(s)`;
+    const eligible = await this.recomputeRarity();
+    return `Swept ${users.length} user(s), rarity over ${eligible} member(s)`;
+  }
+
+  /**
+   * Snapshots how many eligible members hold each achievement, right after
+   * the sweep has granted whatever the day's activity earned — the screen
+   * reads this instead of counting on every request. Eligible: onboarded,
+   * active within RARITY_ACTIVE_WINDOW_DAYS, neither a Figurant nor hiding
+   * their progression (their achievements aren't shown to others either).
+   */
+  private async recomputeRarity(): Promise<number> {
+    const activeSince = sinceDaysAgo(new Date(), RARITY_ACTIVE_WINDOW_DAYS);
+    const eligible: Prisma.UserWhereInput = {
+      onboardedAt: { not: null },
+      lastActiveAt: { gte: activeSince },
+      profileAccess: { not: "GHOST" },
+      hideProgression: false,
+    };
+    const [eligibleUsers, counts] = await Promise.all([
+      this.prisma.user.count({ where: eligible }),
+      this.prisma.userAchievement.groupBy({
+        by: ["key"],
+        where: { user: eligible },
+        _count: { _all: true },
+      }),
+    ]);
+    const holdersByKey = new Map(counts.map((c) => [c.key, c._count._all]));
+
+    await this.prisma.$transaction([
+      this.prisma.achievementRarity.deleteMany(),
+      this.prisma.achievementRarity.createMany({
+        data: ACHIEVEMENT_LIST.map(({ key }) => ({
+          key,
+          holders: holdersByKey.get(key) ?? 0,
+          eligibleUsers,
+        })),
+      }),
+    ]);
+
+    return eligibleUsers;
   }
 }

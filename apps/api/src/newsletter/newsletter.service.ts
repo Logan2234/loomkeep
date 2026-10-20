@@ -1,14 +1,16 @@
 import { ErrorCode, type NewsletterSendDto } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import type { NewsletterSend } from "@prisma/client";
-import { Prisma } from "@prisma/client";
-import { randomBytes } from "node:crypto";
 import { AppException } from "../common/app.exception";
+import { randomToken } from "../common/crypto.util";
+import { HTTP_TIMEOUT_MS } from "../common/http.util";
+import { QUACKBACK_ORIGIN } from "../common/instance-defaults";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { notSuspended } from "../users/suspension.util";
 
-const QUACKBACK_CHANGELOG_API_URL =
-  "https://feedback.loomkeep.app/api/v1/changelog";
+const QUACKBACK_CHANGELOG_API_URL = `${QUACKBACK_ORIGIN}/api/v1/changelog`;
 
 @Injectable()
 export class NewsletterService {
@@ -66,10 +68,7 @@ export class NewsletterService {
         data: { quackbackChangelogId, title },
       });
     } catch (err) {
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === "P2002"
-      ) {
+      if (isUniqueViolation(err)) {
         return null;
       }
 
@@ -90,7 +89,7 @@ export class NewsletterService {
       contentHtml,
     );
     const recipients = await this.prisma.user.findMany({
-      where: { notifyNewsletter: true },
+      where: { notifyNewsletter: true, ...notSuspended() },
       select: {
         id: true,
         email: true,
@@ -131,6 +130,7 @@ export class NewsletterService {
     }
 
     const apiKey = process.env.QUACKBACK_API_KEY;
+
     if (!apiKey) {
       this.logger.warn(
         `Quackback did not include the full content for ${changelogId}, and QUACKBACK_API_KEY is not configured`,
@@ -141,8 +141,12 @@ export class NewsletterService {
     try {
       const response = await fetch(
         `${QUACKBACK_CHANGELOG_API_URL}/${encodeURIComponent(changelogId)}`,
-        { headers: { Authorization: `Bearer ${apiKey}` } },
+        {
+          headers: { Authorization: `Bearer ${apiKey}` },
+          signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+        },
       );
+
       if (!response.ok) {
         throw new Error(`Quackback returned HTTP ${response.status}`);
       }
@@ -150,6 +154,7 @@ export class NewsletterService {
       const payload: unknown = await response.json();
       const content = (payload as { data?: { content?: unknown } }).data
         ?.content;
+
       if (typeof content !== "string" || !content) {
         throw new Error("Quackback returned no changelog content");
       }
@@ -175,7 +180,7 @@ export class NewsletterService {
   ): Promise<string> {
     if (existing) return existing;
 
-    const token = randomBytes(32).toString("hex");
+    const token = randomToken(32, "hex");
     await this.prisma.user.update({
       where: { id: userId },
       data: { newsletterUnsubscribeToken: token },

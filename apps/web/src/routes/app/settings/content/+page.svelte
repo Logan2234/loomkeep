@@ -1,15 +1,18 @@
 <script lang="ts">
-  import { updateMe } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import Switch from "$lib/components/Switch.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { localDateInput } from "#lib/date.js";
+  import { updateMe } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import Switch from "#lib/components/Switch.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import { SpoilerSensitivity } from "@loomkeep/shared";
   import SettingRow from "../components/SettingRow.svelte";
   import SettingsSection from "../components/SettingsSection.svelte";
 
-  const SPOILER_OPTIONS: { label: string; value: SpoilerSensitivity }[] = [
+  const SPOILER_OPTIONS: SelectOption<SpoilerSensitivity>[] = [
     { label: m.settings_spoiler_auto(), value: SpoilerSensitivity.AUTO },
     {
       label: m.settings_spoiler_always_hidden(),
@@ -24,7 +27,7 @@
   let birthDate = $state(auth.user?.birthDate ?? "");
 
   // Today, formatted for the date input's `max` bound (no future birth dates).
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = localDateInput();
 
   const saveBirthDateMut = createApiMutation(() => ({
     mutate: () => updateMe({ birthDate: birthDate || null }),

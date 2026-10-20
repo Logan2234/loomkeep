@@ -14,6 +14,7 @@ function entry(over: Partial<AchievementDto> = {}): AchievementDto {
     unlockedAt: null,
     progress: null,
     equipped: false,
+    rarity: null,
     ...over,
   };
 }

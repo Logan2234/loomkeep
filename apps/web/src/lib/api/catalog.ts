@@ -13,16 +13,39 @@ export function searchCatalog(query: string, type?: MediaType, page = 1) {
   });
 }
 
+// `region` undefined: the API picks it from the browser's language.
 export function getMediaExtras(
   source: string,
   sourceId: string,
   type: MediaType,
+  region: string | undefined,
 ) {
   return typedRequest("/catalog/{source}/{id}/extras", {
     params: { source: source.toLowerCase(), id: sourceId },
-    query: { type, lang: getLocale() },
+    query: { type, lang: getLocale(), region },
   });
 }
+
+/** A TMDB series episode's stills and videos, live. */
+export const getEpisodeMedia = (
+  sourceId: string,
+  season: number,
+  episode: number,
+) =>
+  typedRequest("/catalog/tmdb/{id}/seasons/{season}/episodes/{episode}/media", {
+    params: { id: sourceId, season: String(season), episode: String(episode) },
+    query: { lang: getLocale() },
+  });
+
+/** A TMDB series season's posters, live. */
+export const getSeasonImages = (sourceId: string, season: number) =>
+  typedRequest("/catalog/tmdb/{id}/seasons/{season}/images", {
+    params: { id: sourceId, season: String(season) },
+    query: { lang: getLocale() },
+  });
+
+export const getWatchProviderCatalog = (region: string | undefined) =>
+  typedRequest("/catalog/watch-providers", { query: { region } });
 
 export const getCastDetail = (source: string, id: string) =>
   typedRequest("/catalog/{source}/person/{id}", {
@@ -33,6 +56,13 @@ export const getCastDetail = (source: string, id: string) =>
 // segment is needed in the URL.
 export function getMediaDetail(type: MediaType, sourceId: string) {
   return typedRequest("/media/{type}/{id}", {
+    params: { type: type.toLowerCase(), id: sourceId },
+    query: { lang: getLocale() },
+  });
+}
+
+export function getMediaSaga(type: MediaType, sourceId: string) {
+  return typedRequest("/media/{type}/{id}/saga", {
     params: { type: type.toLowerCase(), id: sourceId },
     query: { lang: getLocale() },
   });

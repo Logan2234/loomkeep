@@ -8,6 +8,7 @@ import {
 import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { AppException } from "../common/app.exception";
+import { notificationCopy } from "../notifications/notification-copy";
 import { PushService } from "../notifications/push.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminOnly } from "./admin-only.decorator";
@@ -75,13 +76,12 @@ export class AdminPushController {
   ): Promise<AdminPushSendResponseDto> {
     const user = await this.findUserByEmail(dto.email);
     const devices = await this.push.listSubscriptions(user.id);
+    const copy = notificationCopy(user.locale);
 
     const results = await this.push.sendToUserDetailed(user.id, {
       title: dto.title?.trim() || "Loomkeep (admin)",
-      body:
-        dto.body?.trim() ||
-        "Ceci est une notification de test envoyée depuis le panel admin.",
-      url: "/",
+      body: dto.body?.trim() || copy.adminTestPush,
+      url: "/app",
     });
 
     return { subscriptionCount: devices.length, results };
@@ -95,17 +95,17 @@ export class AdminPushController {
   ): Promise<AdminPushBroadcastResponseDto> {
     const subscribed = await this.prisma.pushSubscription.findMany({
       distinct: ["userId"],
-      select: { userId: true },
+      select: { userId: true, user: { select: { locale: true } } },
     });
 
     const perAccount = await Promise.all(
-      subscribed.map(({ userId }) =>
+      subscribed.map(({ userId, user }) =>
         this.push.sendToUserDetailed(userId, {
           title: dto.title?.trim() || "Loomkeep (admin)",
           body:
             dto.body?.trim() ||
-            "Message envoyé à tous les comptes depuis le panel admin.",
-          url: "/",
+            notificationCopy(user.locale).adminBroadcastPush,
+          url: "/app",
         }),
       ),
     );
@@ -119,10 +119,12 @@ export class AdminPushController {
     };
   }
 
-  private async findUserByEmail(email: string): Promise<{ id: string }> {
+  private async findUserByEmail(
+    email: string,
+  ): Promise<{ id: string; locale: string }> {
     const user = await this.prisma.user.findUnique({
       where: { email },
-      select: { id: true },
+      select: { id: true, locale: true },
     });
     if (!user)
       throw new AppException(

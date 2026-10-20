@@ -1,13 +1,16 @@
 <script
   lang="ts"
   generics="T extends { period: TrendPeriod; points: TrendPointDto[] }">
+  import { type SelectOption } from "#lib/types/select-option.js";
+
   // A curve card owning its own bucket-size picker: /admin/stats has no global
   // period selector, so each temporal card re-queries its own endpoint. The
   // payload carries the default (weekly) curve; picking another period
   // overrides it locally, and remounting the section drops the override.
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import TrendChart from "$lib/components/TrendChart.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import TrendChart from "#lib/components/TrendChart.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
 
@@ -27,7 +30,7 @@
     footer: Snippet<[T]>;
   } = $props();
 
-  const PERIODS: { value: TrendPeriod; label: string }[] = [
+  const PERIODS: SelectOption<TrendPeriod>[] = [
     { value: "day", label: m.common_day() },
     { value: "week", label: m.common_week() },
     { value: "month", label: m.common_month() },
@@ -56,22 +59,19 @@
   <div class="mb-3.5 flex flex-wrap items-start justify-between gap-2">
     <div>
       <h3 class="font-display text-[15px] font-bold">{title}</h3>
-      <p class="text-dim mt-0.5 text-[11.5px]">
+      <p class="text-dim mt-0.5 text-xs">
         {#if description}{description}
         {/if}{CADENCE[trend.period]}
       </p>
     </div>
-    <div class="flex gap-1">
-      {#each PERIODS as p (p.value)}
-        <button
-          class="chip !px-2.5 !py-1 !text-xs"
-          class:chip-on={trend.period === p.value}
-          disabled={periodMut.loading}
-          onclick={() => setPeriod(p.value)}>
-          {p.label}
-        </button>
-      {/each}
-    </div>
+    <SegmentedControl
+      label={title}
+      options={PERIODS.map((period) => ({
+        ...period,
+        disabled: periodMut.loading,
+      }))}
+      value={trend.period}
+      onChange={setPeriod} />
   </div>
 
   <div class="transition-opacity" class:opacity-50={periodMut.loading}>

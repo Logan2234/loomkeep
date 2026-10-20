@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { API_URL } from "$lib/api/core";
-  import { m } from "$lib/paraglide/messages.js";
+  import { API_URL } from "#lib/api/core.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   // Falls back to a deterministic identicon generated from a username when
   // no `url` (uploaded profile picture) is given. Séance-restrained: a single

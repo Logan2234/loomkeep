@@ -8,12 +8,12 @@
  * of `$state` lets a unit test drive them with fake timers. The component
  * mirrors `current` into a rune of its own.
  *
- * Shaped after `$lib/toast.svelte.ts` (a global queue of transient
+ * Shaped after `#lib/toast.svelte.ts` (a global queue of transient
  * messages), but deliberately not reusing it: Toast is anchored at the
  * bottom, shows several at once, and carries system messages. This is a
  * different object with different rules.
  */
-import { prefersReducedMotion } from "$lib/motion";
+import { prefersReducedMotion } from "#lib/motion.js";
 
 /** One achievement unlock the API hasn't been told we displayed yet. */
 interface AchievementUnlock {

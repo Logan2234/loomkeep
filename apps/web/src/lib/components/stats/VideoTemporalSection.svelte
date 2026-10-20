@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   // "Activité dans le temps" — video-only for now (EpisodeWatch is the only
   // true per-event log in the app). `period` narrows only the weekday/hour
   // curves; the heatmap and monthly/yearly bars always show their own
   // natural full range (see VideoTemporalDto).
   import type { StatsWindow } from "@loomkeep/shared";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { getVideoTemporal } from "$lib/api/stats";
-  import { MONTH_SHORT_OPTIONS, formatDate } from "$lib/format";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { getVideoTemporal } from "#lib/api/stats.js";
+  import { MONTH_SHORT_OPTIONS, formatDate } from "#lib/format.js";
   import CalendarHeatmap from "./CalendarHeatmap.svelte";
   import LineChart from "./LineChart.svelte";
 

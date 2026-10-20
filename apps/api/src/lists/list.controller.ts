@@ -7,6 +7,7 @@ import {
   type ListMemberDto,
   type ListMembershipDto,
   type MyListDto,
+  type UserSummaryDto,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -15,17 +16,23 @@ import {
   Get,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
   UseGuards,
 } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 import {
   CurrentUser,
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
+import { REPORT_THROTTLE } from "../common/throttle.constants";
+import { CreateReportBody } from "../reports/dto/create-report.dto";
+import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import { AddListItemBody } from "./dto/add-list-item.dto";
 import { AddListMemberBody } from "./dto/add-list-member.dto";
@@ -36,6 +43,7 @@ import { ListMemberResponseDto } from "./dto/list-member-response.dto";
 import { ListResponseDto } from "./dto/list-response.dto";
 import { MyListResponseDto } from "./dto/my-list-response.dto";
 import { ReorderListItemsBody } from "./dto/reorder-list-items.dto";
+import { UpdateListItemBody } from "./dto/update-list-item.dto";
 import { UpdateListBody } from "./dto/update-list.dto";
 import { ListService } from "./list.service";
 
@@ -43,7 +51,10 @@ const LIST_ITEM_TARGET_TYPES: string[] = ["MEDIA", "GAME", "BOOK", "MUSIC"];
 
 @Controller("lists")
 export class ListController {
-  constructor(private readonly lists: ListService) {}
+  constructor(
+    private readonly lists: ListService,
+    private readonly reports: ReportService,
+  ) {}
 
   // Owned + editor lists — feeds "Ajouter à une liste" on a work's page, so an
   // editor can add to a shared list, not just their own.
@@ -128,6 +139,17 @@ export class ListController {
     return this.lists.addItem(user.sub, id, body);
   }
 
+  @Patch(":id/items/:itemId")
+  @ApiOkResponse({ type: ListItemResponseDto })
+  setItemNote(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("itemId") itemId: string,
+    @Body() body: UpdateListItemBody,
+  ): Promise<ListItemDto> {
+    return this.lists.setItemNote(user.sub, id, itemId, body.note ?? null);
+  }
+
   @Delete(":id/items/:itemId")
   removeItem(
     @CurrentUser() user: JwtPayload,
@@ -165,6 +187,17 @@ export class ListController {
     return this.lists.listMembers(user.sub, id);
   }
 
+  /** The owner's friends who could still be added as editors. */
+  @Get(":id/members/candidates")
+  @UseGuards(SocialFeatureGuard)
+  @ApiOkResponse({ type: UserSummaryResponseDto, isArray: true })
+  memberCandidates(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<UserSummaryDto[]> {
+    return this.lists.memberCandidates(user.sub, id);
+  }
+
   @Post(":id/members")
   @UseGuards(SocialFeatureGuard)
   @ApiCreatedResponse({ type: ListMemberResponseDto })
@@ -184,6 +217,27 @@ export class ListController {
     @Param("memberUserId") memberUserId: string,
   ): Promise<void> {
     return this.lists.removeMember(user.sub, id, memberUserId);
+  }
+
+  // Muting only means something on a list shared with editors, hence the
+  // social gate, like the members routes above.
+
+  @Put(":id/mute")
+  @UseGuards(SocialFeatureGuard)
+  mute(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.lists.setNotificationsMuted(user.sub, id, true);
+  }
+
+  @Delete(":id/mute")
+  @UseGuards(SocialFeatureGuard)
+  unmute(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.lists.setNotificationsMuted(user.sub, id, false);
   }
 
   // Viewer-selected lists are social-gated and visibility-filtered.
@@ -209,5 +263,26 @@ export class ListController {
     if (!list)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
     return list;
+  }
+
+  @Post(":id/report")
+  @UseGuards(SocialFeatureGuard)
+  @Throttle(REPORT_THROTTLE)
+  async report(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: CreateReportBody,
+  ): Promise<void> {
+    // Only a list the reporter can actually see — never confirms a private one exists.
+    if (!(await this.lists.getForViewer(user.sub, id)))
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
+    await this.reports.create(
+      user.sub,
+      "LIST",
+      id,
+      body.category,
+      body.motif,
+      body.reason,
+    );
   }
 }

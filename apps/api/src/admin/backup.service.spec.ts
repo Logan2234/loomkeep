@@ -1,6 +1,9 @@
 import { EventEmitter } from "node:events";
+import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { PassThrough } from "node:stream";
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { BackupService } from "./backup.service";
@@ -14,17 +17,33 @@ vi.mock("node:child_process", () => ({
 class FakeChildProcess extends EventEmitter {
   stdout = new PassThrough();
   stderr = new PassThrough();
-  stdin = { write: vi.fn(), end: vi.fn() };
+  stdin = new PassThrough();
+  kill = vi.fn();
 }
 
 /** Registers the next spawn() call to succeed immediately with exit code 0. */
 function mockNextSpawnSuccess(): FakeChildProcess {
+  return mockNextSpawnExit(0);
+}
+
+/** Registers the next spawn() call to exit with `code` once its stdout is drained. */
+function mockNextSpawnExit(code: number): FakeChildProcess {
   const child = new FakeChildProcess();
   spawnMock.mockImplementationOnce(() => {
-    queueMicrotask(() => child.emit("close", 0));
+    queueMicrotask(() => child.emit("close", code));
     return child;
   });
   return child;
+}
+
+/** Fakes `pg_dump | age`: age's stdout is what lands on disk. */
+function mockDumpPipeline(encrypted: string, dumpExit = 0) {
+  const dump = mockNextSpawnExit(dumpExit);
+  const age = mockNextSpawnSuccess();
+  dump.stdout.end("dump");
+  age.stdin.resume();
+  age.stdout.end(encrypted);
+  return { dump, age };
 }
 
 function makeService() {
@@ -75,5 +94,168 @@ describe("BackupService.restore", () => {
       ["migrate", "deploy"],
       expect.anything(),
     );
+  });
+});
+
+describe("BackupService file consistency", () => {
+  let backupDir: string;
+  const previousDir = process.env.BACKUP_DIR;
+  const previousDatabaseUrl = process.env.DATABASE_URL;
+
+  beforeEach(async () => {
+    backupDir = await mkdtemp(join(tmpdir(), "loomkeep-backup-test-"));
+    process.env.BACKUP_DIR = backupDir;
+    process.env.DATABASE_URL = "postgresql://user:pass@localhost:5432/db";
+    spawnMock.mockReset();
+  });
+
+  afterEach(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(backupDir, { recursive: true, force: true });
+    if (previousDir === undefined) delete process.env.BACKUP_DIR;
+    else process.env.BACKUP_DIR = previousDir;
+    if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previousDatabaseUrl;
+  });
+
+  function makeBackupService() {
+    const prisma = {
+      backupFile: {
+        create: vi.fn(),
+        delete: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([]),
+        findUnique: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+    } as unknown as PrismaService;
+    const jobRuns = {
+      record: vi.fn((_key, action: () => Promise<unknown>) => action()),
+    } as unknown as JobRunService;
+    const config = {
+      get: vi.fn().mockReturnValue("age1test"),
+    } as never;
+    return { service: new BackupService(prisma, jobRuns, config), prisma };
+  }
+
+  it("removes the encrypted file when saving its database row fails", async () => {
+    const { service, prisma } = makeBackupService();
+    mockDumpPipeline("encrypted");
+    (prisma.backupFile.create as Mock).mockRejectedValue(new Error("db down"));
+
+    await expect(service.runScheduled()).rejects.toThrow("db down");
+    expect(await readdir(backupDir)).toEqual([]);
+  });
+
+  it("streams pg_dump through age to disk and records the file's size", async () => {
+    const { service, prisma } = makeBackupService();
+    const { dump, age } = mockDumpPipeline(
+      "-----BEGIN AGE ENCRYPTED FILE-----",
+    );
+    (prisma.backupFile.create as Mock).mockImplementation(
+      ({ data }: { data: { filename: string; sizeBytes: number } }) => ({
+        id: "b1",
+        ...data,
+        createdAt: new Date(),
+      }),
+    );
+    const piped: string[] = [];
+    age.stdin.on("data", (chunk: Buffer) => piped.push(chunk.toString()));
+
+    const file = await service.runScheduled();
+
+    expect(spawnMock.mock.calls.map((call) => call[0])).toEqual([
+      "pg_dump",
+      "age",
+    ]);
+    expect(piped.join("")).toBe("dump");
+    expect(dump.kill).not.toHaveBeenCalled();
+    expect(file.sizeBytes).toBe(34);
+    expect(await readdir(backupDir)).toEqual([file.filename]);
+    expect(await readFile(join(backupDir, file.filename), "utf8")).toBe(
+      "-----BEGIN AGE ENCRYPTED FILE-----",
+    );
+  });
+
+  it("removes the partial file when pg_dump fails mid-stream", async () => {
+    const { service, prisma } = makeBackupService();
+    mockDumpPipeline("truncated", 1);
+
+    await expect(service.runScheduled()).rejects.toThrow();
+    expect(prisma.backupFile.create).not.toHaveBeenCalled();
+    expect(await readdir(backupDir)).toEqual([]);
+  });
+
+  it("restores a staged file if deleting its database row fails", async () => {
+    const { service, prisma } = makeBackupService();
+    const filename = "loomkeep-2026-09-23-12-00-00.sql.age";
+    await writeFile(join(backupDir, filename), "encrypted");
+    (prisma.backupFile.findUnique as Mock).mockResolvedValue({
+      id: "backup-1",
+      filename,
+    });
+    (prisma.backupFile.delete as Mock).mockRejectedValue(new Error("db down"));
+
+    await expect(service.deleteFile("backup-1")).rejects.toThrow("db down");
+    expect(await readFile(join(backupDir, filename), "utf8")).toBe("encrypted");
+  });
+
+  it("removes a missing-file row and reports orphaned encrypted files", async () => {
+    const { service, prisma } = makeBackupService();
+    const orphan = "loomkeep-2026-09-23-12-00-00.sql.age";
+    await writeFile(join(backupDir, orphan), "encrypted");
+    (prisma.backupFile.findMany as Mock).mockResolvedValueOnce([
+      {
+        id: "missing-1",
+        filename: "loomkeep-2026-09-22-12-00-00.sql.age",
+        sizeBytes: 10,
+        createdAt: new Date("2026-09-22T12:00:00Z"),
+      },
+    ]);
+
+    const inventory = await service.listFiles();
+
+    expect(prisma.backupFile.delete).toHaveBeenCalledWith({
+      where: { id: "missing-1" },
+    });
+    expect(inventory.files).toEqual([]);
+    expect(inventory.orphans).toEqual([
+      expect.objectContaining({ filename: orphan, sizeBytes: 9 }),
+    ]);
+  });
+
+  it("keeps missing metadata visible when automatic cleanup fails", async () => {
+    const { service, prisma } = makeBackupService();
+    const row = {
+      id: "missing-1",
+      filename: "loomkeep-2026-09-22-12-00-00.sql.age",
+      sizeBytes: 10,
+      createdAt: new Date("2026-09-22T12:00:00Z"),
+    };
+    (prisma.backupFile.findMany as Mock).mockResolvedValueOnce([row]);
+    (prisma.backupFile.delete as Mock).mockRejectedValue(new Error("db down"));
+
+    const inventory = await service.listFiles();
+
+    expect(inventory.files).toEqual([
+      expect.objectContaining({ id: row.id, status: "MISSING" }),
+    ]);
+  });
+
+  it("only deletes an unregistered orphan after an explicit request", async () => {
+    const { service, prisma } = makeBackupService();
+    const filename = "loomkeep-2026-09-23-12-00-00.sql.age";
+    await writeFile(join(backupDir, filename), "encrypted");
+
+    await service.listFiles();
+    expect(await readdir(backupDir)).toEqual([filename]);
+
+    (prisma.backupFile.findFirst as Mock).mockResolvedValueOnce({
+      id: "registered",
+    });
+    await expect(service.deleteOrphanFile(filename)).rejects.toThrow();
+    expect(await readdir(backupDir)).toEqual([filename]);
+
+    await service.deleteOrphanFile(filename);
+    expect(await readdir(backupDir)).toEqual([]);
   });
 });

@@ -3,10 +3,9 @@ import type { ConfigService } from "@nestjs/config";
 import type { JwtService } from "@nestjs/jwt";
 import type { FastifyReply } from "fastify";
 import type { Socket } from "socket.io";
-import { afterEach, beforeEach, vi } from "vitest";
+import { vi } from "vitest";
 import { setAuthCookies } from "../auth/auth-cookies";
 import { SessionCacheService } from "../auth/session-cache.service";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { MetricsService } from "../metrics/metrics.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { EventsGateway } from "./events.gateway";
@@ -38,12 +37,6 @@ function makeConfig(): ConfigService {
   return {
     getOrThrow: vi.fn().mockReturnValue("access-secret"),
   } as unknown as ConfigService;
-}
-
-function makeFlags(): FeatureFlagsService {
-  return {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
 }
 
 function makeMetrics(): MetricsService {
@@ -81,14 +74,12 @@ describe("EventsGateway.handleConnection", () => {
       listMember: { findUnique: vi.fn() },
       refreshToken: { findUnique: vi.fn().mockResolvedValue({ id: "sid-1" }) },
     } as unknown as PrismaService;
-    const flags = makeFlags();
     const sessionCache = new SessionCacheService();
     const metrics = makeMetrics();
     const gateway = new EventsGateway(
       jwtService,
       makeConfig(),
       prisma,
-      flags,
       sessionCache,
       metrics,
     );
@@ -178,7 +169,6 @@ describe("EventsGateway.handleConnection", () => {
       jwtService,
       makeConfig(),
       prisma,
-      makeFlags(),
       new SessionCacheService(),
       makeMetrics(),
     );
@@ -208,7 +198,6 @@ describe("EventsGateway.handleConnection", () => {
       jwtService,
       makeConfig(),
       prisma,
-      makeFlags(),
       new SessionCacheService(),
       metrics,
     );
@@ -248,7 +237,6 @@ describe("EventsGateway.disconnectSession", () => {
       {} as JwtService,
       makeConfig(),
       {} as PrismaService,
-      makeFlags(),
       new SessionCacheService(),
       makeMetrics(),
     );
@@ -267,19 +255,22 @@ describe("EventsGateway.disconnectSession", () => {
 
 describe("EventsGateway.handleJoinComments", () => {
   function make(socialEnabled: boolean) {
-    const prisma = {} as unknown as PrismaService;
+    // Every work exists except "missing".
+    const prisma = {
+      mediaItem: {
+        findUnique: vi.fn(({ where }: { where: { id: string } }) =>
+          Promise.resolve(where.id === "missing" ? null : { id: where.id }),
+        ),
+      },
+    } as unknown as PrismaService;
     const config = {
       getOrThrow: vi.fn(),
       get: vi.fn(() => (socialEnabled ? "true" : "false")),
     } as unknown as ConfigService;
-    const flags = {
-      isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-    } as unknown as FeatureFlagsService;
     return new EventsGateway(
       {} as JwtService,
       config,
       prisma,
-      flags,
       new SessionCacheService(),
       makeMetrics(),
     );
@@ -371,6 +362,41 @@ describe("EventsGateway.handleJoinComments", () => {
     });
   });
 
+  it("silently refuses a thread whose work doesn't exist", async () => {
+    const gateway = make(true);
+    const client = fakeSocket();
+    client.data.userId = "user-1";
+
+    await gateway.handleJoinComments(client, {
+      targetType: "MEDIA",
+      targetId: "missing",
+    });
+    await gateway.handleJoinComments(client, {
+      targetType: "NOT_A_TYPE",
+      targetId: "m1",
+    });
+
+    expect(client.join).not.toHaveBeenCalled();
+  });
+
+  it("caps how many threads one socket can follow at once", async () => {
+    const gateway = make(true);
+    (gateway as unknown as { server: unknown }).server = {
+      to: vi.fn().mockReturnValue({ emit: vi.fn() }),
+    };
+    const client = fakeSocket();
+    client.data.userId = "user-1";
+
+    for (let i = 0; i < 25; i++) {
+      await gateway.handleJoinComments(client, {
+        targetType: "MEDIA",
+        targetId: `m${i}`,
+      });
+    }
+
+    expect(client.join).toHaveBeenCalledTimes(20);
+  });
+
   it("silently refuses when social is disabled", async () => {
     const gateway = make(false);
     const client = fakeSocket();
@@ -408,14 +434,10 @@ describe("EventsGateway.handleJoinList", () => {
       getOrThrow: vi.fn(),
       get: vi.fn(() => (opts.socialEnabled !== false ? "true" : "false")),
     } as unknown as ConfigService;
-    const flags = {
-      isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-    } as unknown as FeatureFlagsService;
     return new EventsGateway(
       {} as JwtService,
       config,
       prisma,
-      flags,
       new SessionCacheService(),
       makeMetrics(),
     );
@@ -481,7 +503,6 @@ describe("EventsGateway.evictFromList", () => {
       {} as JwtService,
       makeConfig(),
       {} as PrismaService,
-      makeFlags(),
       new SessionCacheService(),
       makeMetrics(),
     );
@@ -498,5 +519,69 @@ describe("EventsGateway.evictFromList", () => {
     expect(fakeServer.in).toHaveBeenCalledWith("list:l1");
     expect(theirSocket.leave).toHaveBeenCalledWith("list:l1");
     expect(someoneElsesSocket.leave).not.toHaveBeenCalled();
+  });
+});
+
+describe("EventsGateway.handleChatTyping", () => {
+  function make(presence: { me: boolean; lea: boolean }, blocked = false) {
+    const prisma = {
+      conversationMember: {
+        findMany: vi.fn().mockResolvedValue([
+          { userId: "me", user: { chatShowPresence: presence.me } },
+          { userId: "lea", user: { chatShowPresence: presence.lea } },
+        ]),
+      },
+      block: { count: vi.fn().mockResolvedValue(blocked ? 1 : 0) },
+    } as unknown as PrismaService;
+    const config = {
+      getOrThrow: vi.fn(),
+      get: vi.fn(() => "true"),
+    } as unknown as ConfigService;
+    const gateway = new EventsGateway(
+      {} as JwtService,
+      config,
+      prisma,
+      new SessionCacheService(),
+      makeMetrics(),
+    );
+    const emit = vi.fn();
+    const to = vi.fn().mockReturnValue({ emit });
+    (gateway as unknown as { server: unknown }).server = { to };
+    const client = fakeSocket();
+    client.data.userId = "me";
+    return { gateway, client, to, emit };
+  }
+
+  it("relays typing to the other member when both show their presence", async () => {
+    const { gateway, client, to, emit } = make({ me: true, lea: true });
+
+    await gateway.handleChatTyping(client, { conversationId: "cv1" });
+
+    expect(to).toHaveBeenCalledWith("user:lea");
+    expect(emit).toHaveBeenCalledWith("chat-typing", {
+      conversationId: "cv1",
+      userId: "me",
+    });
+  });
+
+  // Typing tells as much as being online: hidden presence hides it too,
+  // whichever side hid it.
+  it("relays nothing once either of them hides their presence", async () => {
+    for (const presence of [
+      { me: false, lea: true },
+      { me: true, lea: false },
+    ]) {
+      const { gateway, client, emit } = make(presence);
+      await gateway.handleChatTyping(client, { conversationId: "cv1" });
+      expect(emit).not.toHaveBeenCalled();
+    }
+  });
+
+  it("relays nothing between blocked accounts", async () => {
+    const { gateway, client, emit } = make({ me: true, lea: true }, true);
+
+    await gateway.handleChatTyping(client, { conversationId: "cv1" });
+
+    expect(emit).not.toHaveBeenCalled();
   });
 });

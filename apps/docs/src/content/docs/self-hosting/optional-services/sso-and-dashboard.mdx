@@ -1,0 +1,167 @@
+---
+title: Single sign-on & dashboard
+description: Authelia for one login across the admin tools, and Homepage as their start page.
+sidebar:
+  order: 6
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+With several admin tools, each with its own password, two services help:
+
+- [Authelia](https://www.authelia.com), at `auth.<DOMAIN>`: one login, with
+  two-factor authentication, for Grafana, GlitchTip and Portainer, which
+  hand sign-in over to it.
+- [Homepage](https://gethomepage.dev), at `home.<DOMAIN>`: one page with a
+  tile per tool and live figures. It has no login of its own, so it
+  **requires Authelia** in front of it.
+
+These are for you, the administrator: Loomkeep's own accounts don't go
+through Authelia. Unleash and Umami keep their own login, since parts of
+them must stay public: see [Feature flags](/self-hosting/optional-services/feature-flags/)
+and [Analytics](/self-hosting/optional-services/analytics/).
+
+## Setting up Authelia
+
+Authelia's commands below run through its Docker image, so there is nothing
+to install. Never paste the plain values they print anywhere but the files
+named.
+
+<Steps>
+
+1. **Copy the two templates**, then fill in every `REPLACE_ME` as you go:
+
+   ```sh
+   cp docker/authelia/configuration.yml.example docker/authelia/configuration.yml
+   cp docker/authelia/users_database.yml.example docker/authelia/users_database.yml
+   ```
+
+2. **Generate the four secrets**: the password reset JWT secret, the session
+   secret, the storage encryption key and the OIDC HMAC secret. Run this once
+   for each:
+
+   ```sh
+   docker run --rm authelia/authelia:4.39.28 authelia crypto rand --length 64
+   ```
+
+   Each command prints `Random Value: …`: copy only what follows the label.
+   Pasting the label too is the most common reason sign-in later fails.
+
+3. **Generate the OIDC signing key**, from `docker/authelia/`:
+
+   ```sh
+   docker run --rm -v "$(pwd):/out" authelia/authelia:4.39.28 \
+     authelia crypto pair rsa generate -d /out
+   ```
+
+   Paste the whole of `private.pem`, `BEGIN` and `END` lines included and
+   indented, into the `oidc.jwks` key, then delete `private.pem` and
+   `public.pem`.
+
+4. **Create your login** in `users_database.yml`, with your password's hash:
+
+   ```sh
+   docker run --rm authelia/authelia:4.39.28 \
+     authelia crypto hash generate argon2 --password 'your-password'
+   ```
+
+   Copy what follows `Digest:`. You sign in with the **username**, the YAML
+   key in that file, not the email address.
+
+5. **Give each tool a client secret.** For `grafana`, `glitchtip` and
+   `portainer` in `configuration.yml`, generate a secret and its hash. Keep
+   the plain secret for the next steps; the hash goes in `client_secret`:
+
+   ```sh
+   docker run --rm authelia/authelia:4.39.28 \
+     authelia crypto rand --length 64 --charset alphanumeric
+   docker run --rm authelia/authelia:4.39.28 \
+     authelia crypto hash generate pbkdf2 --variant sha512 --password 'the-plain-secret'
+   ```
+
+6. **Fill in SMTP** under `notifier.smtp`, with the same login as
+   `SMTP_USER` and `SMTP_PASS`. Authelia checks it at startup and **refuses
+   to start without working SMTP**.
+
+7. **Start it**: set `GRAFANA_OIDC_CLIENT_SECRET` in `.env` to Grafana's
+   plain secret, add `docker/docker-compose.authelia.yml` to `COMPOSE_FILE`,
+   then:
+
+   ```sh
+   docker compose pull
+   docker compose up -d
+   ```
+
+</Steps>
+
+Grafana is then connected already. GlitchTip and Portainer take one more
+step each, in their own interface.
+
+### GlitchTip
+
+<Steps>
+
+1. Set `ENABLE_ADMIN: true` in `docker/docker-compose.glitchtip.yml`, then
+   `docker compose up -d glitchtip`.
+
+2. At `https://errors.<DOMAIN>/admin/socialaccount/socialapp/`, add an
+   application: provider **OpenID Connect**, provider id `authelia`, client
+   id `glitchtip`, secret key GlitchTip's plain secret, and settings:
+
+   ```json
+   { "server_url": "https://auth.<DOMAIN>/.well-known/openid-configuration" }
+   ```
+
+3. Set `ENABLE_ADMIN` back to `false`, and run
+   `docker compose up -d glitchtip` again.
+
+</Steps>
+
+### Portainer
+
+In **Settings › Authentication › OAuth**, choose the **Custom** provider:
+
+| Field             | Value                                          |
+| ----------------- | ---------------------------------------------- |
+| Client ID         | `portainer`                                    |
+| Client secret     | Portainer's plain secret                       |
+| Authorization URL | `https://auth.<DOMAIN>/api/oidc/authorization` |
+| Access token URL  | `https://auth.<DOMAIN>/api/oidc/token`         |
+| Resource URL      | `https://auth.<DOMAIN>/api/oidc/userinfo`      |
+| Redirect URL      | `https://portainer.<DOMAIN>`                   |
+| User identifier   | `preferred_username`                           |
+| Scopes            | `openid profile email`                         |
+
+<Aside type="caution">
+  Separate the scopes with **spaces**, not commas, whatever Portainer's
+  placeholder suggests: with commas, sign-in fails with `invalid_scope`.
+</Aside>
+
+### Signing out
+
+Authelia can't yet pass a sign-out on to the tools, nor take one from them:
+signing out of Grafana ends Grafana's session only. To end the single
+sign-on itself, sign out at `auth.<DOMAIN>`; otherwise it expires after an
+hour (`session.expiration` in `configuration.yml`).
+
+## Setting up Homepage
+
+With Authelia running, add `docker/docker-compose.homepage.yml` to
+`COMPOSE_FILE` and restart. Homepage gets no access to the Docker socket:
+its tiles read each tool's own API, through keys set in `.env`. A missing
+key only leaves its tile without figures.
+
+| Tile                   | Variables                                                                    |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| Portainer              | `PORTAINER_API_KEY` (**My account › Access tokens**), `PORTAINER_ENV_ID`     |
+| GlitchTip              | `GLITCHTIP_API_TOKEN` (an auth token with `project:read`), `GLITCHTIP_ORG_SLUG` |
+| Healthchecks.io        | `HEALTHCHECKS_API_KEY` (read-only)                                           |
+| UptimeRobot            | `UPTIMEROBOT_API_KEY` (read-only)                                            |
+| Loomkeep's own figures | `HOMEPAGE_STATS_API_KEY`: any long random string, shared with the API        |
+
+Grafana's tile reuses `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD`. The
+tiles themselves are in `docker/homepage/services.yaml`: edit them to your
+liking.
+
+To add Loomkeep's figures to a Homepage you already run, see the
+[Homepage recipe](/api/recipes/homepage/).

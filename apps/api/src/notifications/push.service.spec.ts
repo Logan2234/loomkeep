@@ -88,6 +88,7 @@ describe("PushService.sendToUserDetailed", () => {
   it("drops a pre-existing subscription whose endpoint isn't an allowed push host", async () => {
     process.env.VAPID_PUBLIC_KEY = VAPID_KEYS.publicKey;
     process.env.VAPID_PRIVATE_KEY = VAPID_KEYS.privateKey;
+    process.env.VAPID_SUBJECT = "mailto:admin@example.com";
 
     const prisma = {
       pushSubscription: {
@@ -120,5 +121,93 @@ describe("PushService.sendToUserDetailed", () => {
 
     delete process.env.VAPID_PUBLIC_KEY;
     delete process.env.VAPID_PRIVATE_KEY;
+  });
+});
+
+describe("PushService app badge", () => {
+  it("sends the app icon's badge count along with the push", async () => {
+    process.env.VAPID_PUBLIC_KEY = VAPID_KEYS.publicKey;
+    process.env.VAPID_PRIVATE_KEY = VAPID_KEYS.privateKey;
+    process.env.VAPID_SUBJECT = "mailto:admin@example.com";
+    const send = vi
+      .spyOn(webpush, "sendNotification")
+      .mockResolvedValue({} as never);
+    const prisma = {
+      pushSubscription: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "sub1",
+            endpoint: ALLOWED_ENDPOINT,
+            p256dh: "p",
+            auth: "a",
+            userAgent: "Chrome",
+          },
+        ]),
+      },
+    } as unknown as PrismaService;
+    const service = new PushService(prisma);
+    service.setBadgeSource((userId) =>
+      Promise.resolve(userId === "u1" ? 4 : 0),
+    );
+
+    await service.sendToUser("u1", { title: "t", body: "b", url: "/app" });
+
+    expect(JSON.parse(send.mock.calls[0][1] as string)).toEqual({
+      title: "t",
+      body: "b",
+      url: "/app",
+      badge: 4,
+    });
+
+    send.mockRestore();
+    delete process.env.VAPID_PUBLIC_KEY;
+    delete process.env.VAPID_PRIVATE_KEY;
+  });
+});
+
+describe("PushService VAPID subject", () => {
+  const env = { ...process.env };
+
+  beforeEach(() => {
+    process.env.VAPID_PUBLIC_KEY = VAPID_KEYS.publicKey;
+    process.env.VAPID_PRIVATE_KEY = VAPID_KEYS.privateKey;
+    delete process.env.VAPID_SUBJECT;
+  });
+
+  afterEach(() => {
+    process.env = { ...env };
+    vi.restoreAllMocks();
+  });
+
+  it("falls back to the instance's own address, never a hardcoded one", () => {
+    process.env.WEB_ORIGIN =
+      "https://tracker.example.org,https://other.example.org";
+    const setVapidDetails = vi.spyOn(webpush, "setVapidDetails");
+
+    const { service } = makeService();
+
+    expect(setVapidDetails).toHaveBeenCalledWith(
+      "https://tracker.example.org",
+      VAPID_KEYS.publicKey,
+      VAPID_KEYS.privateKey,
+    );
+    expect(service.publicKey()).toBe(VAPID_KEYS.publicKey);
+  });
+
+  it("returns the public key validated at startup even if the environment changes", () => {
+    process.env.WEB_ORIGIN = "https://tracker.example.org";
+    const { service } = makeService();
+    delete process.env.VAPID_PUBLIC_KEY;
+    expect(service.publicKey()).toBe(VAPID_KEYS.publicKey);
+  });
+
+  it("stays off without a subject when the instance isn't on HTTPS", () => {
+    process.env.WEB_ORIGIN = "http://localhost:8080";
+    const setVapidDetails = vi.spyOn(webpush, "setVapidDetails");
+
+    const { service } = makeService();
+
+    expect(setVapidDetails).not.toHaveBeenCalled();
+    expect(service.publicKey()).toBe("");
   });
 });

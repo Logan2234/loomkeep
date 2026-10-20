@@ -1,10 +1,25 @@
 import type {
   BookEntryDto,
   BookOwnershipStatus,
+  BookReadingDto,
   BookStatus,
 } from "@loomkeep/shared";
 import { BookItemResponseDto } from "./book-item-response.dto";
-import { BookReplayResponseDto } from "./book-replay-response.dto";
+
+export class BookReadingResponseDto implements BookReadingDto {
+  id!: string;
+  number!: number;
+  status!: BookReadingDto["status"];
+  editionKey!: string | null;
+  referencePageCount!: number | null;
+  currentPage!: number;
+  startedAt!: string | null;
+  finishedAt!: string | null;
+  sessionCount!: number;
+  trackedMinutes!: number;
+  pagesRead!: number;
+  legacyIncomplete!: boolean;
+}
 
 export class BookEntryResponseDto implements BookEntryDto {
   id!: string;
@@ -14,10 +29,14 @@ export class BookEntryResponseDto implements BookEntryDto {
   notes!: string | null;
   favorite!: boolean;
   currentPage!: number;
+  editionKey!: string | null;
+  referencePageCount!: number | null;
+  trackedReadingMinutes!: number;
+  lastSessionAt!: string | null;
   startedAt!: string | null;
   finishedAt!: string | null;
   createdAt!: string;
-  replays!: BookReplayResponseDto[];
+  readings!: BookReadingResponseDto[];
   ownershipStatus!: BookOwnershipStatus;
   ownershipSource!: string | null;
 }

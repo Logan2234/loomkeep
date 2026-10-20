@@ -1,0 +1,49 @@
+Loomkeep Enterprise Edition (EE) License
+
+Copyright (c) 2026 Logan Willem. All rights reserved.
+
+This license applies to every file in a directory named "ee" in this
+repository (currently apps/api/src/ee and apps/web/src/lib/ee), and to any
+derivative work of those files (the "EE Software"). Everything else in this
+repository is licensed under the GNU Affero General Public License v3.0 (see
+LICENSE).
+
+1. Production use requires a license key. You may use the EE Software in
+   production only with a valid license key issued by the copyright holder
+   ("License Key"), and only within the limits and for the term stated in that
+   License Key. Without a valid License Key, the EE Software's features must
+   stay inactive.
+
+2. What you may do without a License Key.
+   a. Receive, store and distribute the EE Software as an unmodified, inactive
+      part of Loomkeep, including in builds and container images of Loomkeep.
+   b. Read, copy and modify the EE Software for development and testing
+      purposes only, on non-production instances.
+   c. Use the EE Software's features for as long as the copyright holder
+      makes them available without a License Key, as Loomkeep does until the
+      premium offer is launched.
+
+3. What you may not do.
+   a. Circumvent, disable, remove or alter the license key check, including by
+      replacing the public key used to verify License Keys.
+   b. Use the EE Software's features in production without a valid License
+      Key, except as allowed by section 2.c.
+   c. Sell, sublicense, rent, lease or otherwise make the EE Software, or a
+      service built mainly on it, available to third parties for a fee.
+   d. Remove or alter any license, copyright or other notice in the EE
+      Software.
+
+4. Contributions. Contributions to the EE Software are accepted only under
+   the Contributor License Agreement (CLA.md).
+
+5. Termination. Any breach of this license terminates your rights under it
+   automatically.
+
+6. No warranty. THE EE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+   KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+   NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR
+   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+   ARISING FROM, OUT OF OR IN CONNECTION WITH THE EE SOFTWARE OR ITS USE.
+
+For a License Key, contact the copyright holder through https://loomkeep.app.

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import ProfileView from "$lib/components/profile/ProfileView.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import ProfileView from "#lib/components/profile/ProfileView.svelte";
+  import { m } from "#lib/paraglide/messages.js";
 
   let username = $derived(page.params.username ?? "");
 </script>

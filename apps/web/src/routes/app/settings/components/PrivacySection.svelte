@@ -1,31 +1,34 @@
 <script lang="ts">
+  import { orderedDomains } from "#lib/domain-availability.js";
+
   import { page } from "$app/state";
   import {
     getGhostSwitchImpact,
     getPrivacySettings,
     updateMe,
     updatePrivacySettings,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import Switch from "$lib/components/Switch.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { m } from "$lib/paraglide/messages.js";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import Switch from "#lib/components/Switch.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     ACCESS,
     ACCESS_OPTIONS,
     AUDIENCES,
     FACETS,
     MODE_MATRIX,
-  } from "$lib/privacy-options";
+  } from "#lib/privacy-options.js";
   import {
     Domain,
+    type ListVisibility,
     ProfileAccess,
     type ReviewVisibility,
     VisibilityAudience,
@@ -33,7 +36,7 @@
     type VisibilitySettingsDto,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { flashAnchor } from "../flash-anchor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
   import SettingRow from "./SettingRow.svelte";
 
   let showModesModal = $state(false);
@@ -127,6 +130,16 @@
     reviewVisibilityMut.mutate(v);
   }
 
+  const listVisibilityMut = createApiMutation(() => ({
+    mutate: (v: ListVisibility) => updateMe({ defaultListVisibility: v }),
+    errorToast: true,
+  }));
+
+  function setDefaultListVisibility(v: ListVisibility) {
+    if (auth.user?.defaultListVisibility === v) return;
+    listVisibilityMut.mutate(v);
+  }
+
   const hideProgressionMut = createApiMutation(() => ({
     mutate: (hideProgression: boolean) => updateMe({ hideProgression }),
     errorToast: true,
@@ -137,6 +150,23 @@
     hideProgressionMut.mutate(!auth.user.hideProgression);
   }
 
+  const chatPresenceMut = createApiMutation(() => ({
+    mutate: (chatShowPresence: boolean) => updateMe({ chatShowPresence }),
+    errorToast: true,
+  }));
+
+  const chatReadReceiptsMut = createApiMutation(() => ({
+    mutate: (chatShowReadReceipts: boolean) =>
+      updateMe({ chatShowReadReceipts }),
+    errorToast: true,
+  }));
+
+  const chatShareProvidersMut = createApiMutation(() => ({
+    mutate: (chatShareWatchProviders: boolean) =>
+      updateMe({ chatShareWatchProviders }),
+    errorToast: true,
+  }));
+
   let isPrivate = $derived(settings?.profileAccess !== ProfileAccess.PUBLIC);
 
   // Only domains the user actually kept visible (see enabledDomains on
@@ -144,9 +174,9 @@
   // or the early-access ones on a free account) would still show a row here
   // even though it's absent everywhere else in the app.
   const visibleDomainEntries = $derived(
-    Object.entries(DOMAINS).filter(([id]) =>
-      auth.user?.enabledDomains.includes(id as Domain),
-    ) as [Domain, (typeof DOMAINS)[Domain]][],
+    orderedDomains(auth.user?.domainOrder)
+      .filter((id) => auth.user?.enabledDomains.includes(id))
+      .map((id): [Domain, (typeof DOMAINS)[Domain]] => [id, DOMAINS[id]]),
   );
 </script>
 
@@ -209,13 +239,13 @@
             <div
               class="mt-4 flex w-full flex-wrap justify-between gap-4 md:flex-col">
               {#each FACETS as f (f.id)}
-                {@const current = audienceOf(domainId as Domain, f.id)}
+                {@const current = audienceOf(domainId, f.id)}
                 <div>
                   <p
                     class="text-dim mb-1.5 text-xs font-semibold tracking-wide uppercase">
                     {f.label}
                   </p>
-                  {@render audienceSegmented(domainId as Domain, f.id, current)}
+                  {@render audienceSegmented(domainId, f.id, current)}
                 </div>
               {/each}
             </div>
@@ -233,7 +263,7 @@
             mutation={reviewVisibilityMut}>
             {#snippet control()}
               <SegmentedControl
-                label={m.settings_privacy_scope()}
+                label={m.common_visibility()}
                 options={[
                   { label: m.common_friends(), value: "FRIENDS" },
                   { label: m.common_public(), value: "PUBLIC" },
@@ -241,6 +271,24 @@
                 value={user.defaultReviewVisibility}
                 onChange={(v) =>
                   setDefaultReviewVisibility(v as ReviewVisibility)} />
+            {/snippet}
+          </SettingRow>
+          <SettingRow
+            anchor="list-visibility"
+            label={m.settings_privacy_default_lists()}
+            description={m.settings_privacy_default_lists_hint()}
+            mutation={listVisibilityMut}>
+            {#snippet control()}
+              <SegmentedControl
+                label={m.common_visibility()}
+                options={[
+                  { label: m.common_private(), value: "PRIVATE" },
+                  { label: m.common_friends(), value: "FRIENDS" },
+                  { label: m.common_public(), value: "PUBLIC" },
+                ]}
+                value={user.defaultListVisibility}
+                onChange={(v) =>
+                  setDefaultListVisibility(v as ListVisibility)} />
             {/snippet}
           </SettingRow>
         </div>
@@ -269,6 +317,54 @@
       {m.settings_privacy_content_hint()}
     </p>
   </section>
+
+  {#if appConfig.chatEnabled && auth.user}
+    {@const chatUser = auth.user}
+    <section class="card mt-5 p-5 md:p-6">
+      <p class="font-semibold">{m.settings_chat_title()}</p>
+      <p class="text-dim mt-0.5 mb-2 text-xs">
+        {m.settings_chat_description()}
+      </p>
+      <div class="divide-border divide-y">
+        <SettingRow
+          anchor="chat-presence"
+          label={m.settings_chat_presence()}
+          description={m.settings_chat_presence_desc()}
+          mutation={chatPresenceMut}>
+          {#snippet control()}
+            <Switch
+              label={m.settings_chat_presence()}
+              checked={chatUser.chatShowPresence}
+              onChange={(value) => chatPresenceMut.mutate(value)} />
+          {/snippet}
+        </SettingRow>
+        <SettingRow
+          anchor="chat-read-receipts"
+          label={m.settings_chat_read_receipts()}
+          description={m.settings_chat_read_receipts_desc()}
+          mutation={chatReadReceiptsMut}>
+          {#snippet control()}
+            <Switch
+              label={m.settings_chat_read_receipts()}
+              checked={chatUser.chatShowReadReceipts}
+              onChange={(value) => chatReadReceiptsMut.mutate(value)} />
+          {/snippet}
+        </SettingRow>
+        <SettingRow
+          anchor="chat-share-providers"
+          label={m.settings_chat_share_providers()}
+          description={m.settings_chat_share_providers_desc()}
+          mutation={chatShareProvidersMut}>
+          {#snippet control()}
+            <Switch
+              label={m.settings_chat_share_providers()}
+              checked={chatUser.chatShareWatchProviders}
+              onChange={(value) => chatShareProvidersMut.mutate(value)} />
+          {/snippet}
+        </SettingRow>
+      </div>
+    </section>
+  {/if}
 {/if}
 
 {#if showModesModal}

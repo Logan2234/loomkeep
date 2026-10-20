@@ -20,8 +20,7 @@ describe("AdminSecurityController.getSecurityEvents", () => {
     expect(securityEvents.list).toHaveBeenCalledWith({
       type: undefined,
       identifier: undefined,
-      page: 2,
-      limit: 50,
+      page: { page: 2, limit: 50, skip: 50, take: 50 },
     });
   });
 
@@ -33,8 +32,7 @@ describe("AdminSecurityController.getSecurityEvents", () => {
     expect(securityEvents.list).toHaveBeenCalledWith({
       type: "LOGIN_FAILED",
       identifier: "alice@example.com",
-      page: 1,
-      limit: 50,
+      page: { page: 1, limit: 50, skip: 0, take: 50 },
     });
   });
 });

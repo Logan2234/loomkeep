@@ -1,0 +1,110 @@
+---
+title: Feature flags
+description: Unleash, for per-domain maintenance and a site-wide news banner.
+sidebar:
+  order: 4
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+[Unleash](https://www.getunleash.io) switches things on and off at runtime,
+without a redeploy. On Loomkeep it serves two things:
+
+- **Maintenance per domain**: a `MAINTENANCE_MEDIA` flag (or `_GAMES`,
+  `_BOOKS`, `_MUSIC`) takes that domain offline for everyone, live, while the
+  rest keeps working.
+- **A news banner** across the top of the site, from the `NEWS_BANNER` flag:
+  see [below](#the-news-banner).
+
+Permanent choices aren't flags: they live in
+[instance settings](/self-hosting/instance-settings/).
+
+## Enabling it
+
+<Steps>
+
+1. Set `UNLEASH_ADMIN_PASSWORD`, `UNLEASH_API_TOKEN` and
+   `PUBLIC_UNLEASH_FRONTEND_TOKEN` in `.env` (their format is in
+   `.env.example`).
+
+2. Add `docker/docker-compose.unleash.yml` to `COMPOSE_FILE` in `.env`, then:
+
+   ```sh
+   docker compose pull
+   docker compose up -d
+   ```
+
+3. At `flags.<DOMAIN>`, sign in as `UNLEASH_ADMIN_USERNAME` (`admin` by
+   default) with `UNLEASH_ADMIN_PASSWORD`.
+
+4. In **Admin settings › Access control › CORS origins**, allow your
+   instance's address: the web app reads flags straight from the browser.
+
+</Steps>
+
+Unleash keeps its data in a database of its own inside Loomkeep's
+PostgreSQL. That database is created only on a new install: on an instance
+that already ran, create it once with the command at the top of
+`docker/docker-compose.unleash.yml`.
+
+<Aside type="caution" title="Behind a login proxy">
+  Unleash's open-source edition has no single sign-on, and two of its paths
+  must stay reachable without a login: `/api/client/*`, which the API polls,
+  and `/api/frontend/*`, which every visitor's browser polls. Each already
+  requires its own token. Behind Cloudflare Access or a similar gate, let
+  those two paths through, or every flag silently falls back to its default:
+  see [Behind Cloudflare](/self-hosting/cloudflare/#cloudflare-access).
+</Aside>
+
+## The news banner
+
+A strip across the top of the site, shown and hidden for everyone without a
+reload or a deploy. The `NEWS_BANNER` flag is the switch: turned off, the
+banner is gone whatever its payload says. What it shows comes from a variant
+of that flag with a **JSON** payload:
+
+```json
+{
+  "id": "2026-10-04-db-upgrade",
+  "key": "maintenance_scheduled",
+  "severity": "warning",
+  "dismissible": false,
+  "placement": "all",
+  "startsAt": "2026-10-01T08:00:00Z",
+  "endsAt": "2026-10-04T05:00:00Z",
+  "data": { "start": "2026-10-04T01:00:00Z", "end": "2026-10-04T03:00:00Z" },
+  "href": "https://status.example.com"
+}
+```
+
+| Field                 | Required | Meaning                                                                                                                                                                         |
+| --------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `key`                 | yes      | Which message: `maintenance_scheduled` (needs `data.start` and `data.end`, shown in each reader's time zone), `degraded_service`, or `custom`.                                   |
+| `id`                  | no       | A closed banner stays closed for that id only, so a new announcement needs a new id. Without one, it is derived from the content: editing the text brings a closed banner back. |
+| `severity`            | no       | `info` (default) or `warning`.                                                                                                                                                  |
+| `dismissible`         | no       | `true` by default; `false` keeps it on screen.                                                                                                                                  |
+| `placement`           | no       | `app` (signed-in pages), `public` (the landing page, legal pages, sign-in) or `all` (default).                                                                                  |
+| `startsAt` / `endsAt` | no       | Display window, ISO dates. Without them, the flag alone decides.                                                                                                                |
+| `data`                | depends  | The values the message needs.                                                                                                                                                   |
+| `href`                | no       | Adds a "Learn more" button. A site path (`/app/…`) opens in place; an `http(s)` URL opens in a new tab.                                                                         |
+
+Apart from `custom`, the text comes from Loomkeep's translations, so each
+reader gets it in their language. With `"key": "custom"`, `data` holds the
+text itself, one entry per language: `{ "en": "…", "fr": "…" }`. A reader
+gets their language, else English, else the first one given.
+
+A malformed payload shows nothing; the browser's console says why.
+
+## Taking the whole site down
+
+Without Unleash, create the file `docker/caddy-flags/maintenance` on the
+server: every visitor gets a maintenance page. Delete it to come back. It
+needs the [HTTPS override](/self-hosting/https/), since Caddy serves that
+page.
+
+```sh
+touch docker/caddy-flags/maintenance   # down
+rm docker/caddy-flags/maintenance      # back
+```
+
+To warn people ahead of time, use the news banner first.

@@ -11,11 +11,11 @@
   // role rather than a real <button> (whose content model forbids the flow
   // content inside: the progress bar, the ladder) or an <article> (which has
   // a landmark role of its own, and may not be repurposed as a button).
-  import Icon from "$lib/components/Icon.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import { formatNumber } from "$lib/format";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import { formatNumber } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { AchievementGroup } from "../achievements";
   import {
     achievementDescription,
@@ -23,7 +23,7 @@
     groupIcon,
   } from "../labels";
   import AchievementLadder from "./AchievementLadder.svelte";
-  import AchievementMedallion from "$lib/components/AchievementMedallion.svelte";
+  import AchievementMedallion from "#lib/components/AchievementMedallion.svelte";
   import TierPips from "./TierPips.svelte";
 
   let {
@@ -48,14 +48,22 @@
   let flashing = $state(false);
   $effect(() => {
     if (!highlighted || !node) return;
+    const card = node;
 
-    node.scrollIntoView({
-      block: "center",
-      behavior: prefersReducedMotion() ? "auto" : "smooth",
-    });
+    // Next frame: a card whose data is cached mounts during the navigation
+    // itself, and SvelteKit's reset to the top right after would undo it.
+    const frame = requestAnimationFrame(() =>
+      card.scrollIntoView({
+        block: "center",
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+      }),
+    );
     flashing = true;
     const timer = setTimeout(() => (flashing = false), FLASH_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
   });
 
   // The card speaks for the tier still to earn — its threshold is what the
@@ -127,6 +135,10 @@
     {#if progress && !complete}
       <ProgressBar
         value={(progress.current / progress.target) * 100}
+        label={m.common_selection_summary({
+          label: m.common_progress(),
+          selection: achievementName(focusEntry),
+        })}
         height="h-1"
         track="bg-border"
         rounded={false} />

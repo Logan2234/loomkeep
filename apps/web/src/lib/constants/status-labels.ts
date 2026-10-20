@@ -1,5 +1,42 @@
-import { m } from "$lib/paraglide/messages";
-import type { BookStatus, GameStatus, MusicStatus } from "@loomkeep/shared";
+import { m } from "#lib/paraglide/messages.js";
+import {
+  type BookStatus,
+  type EntryStatus,
+  type GameStatus,
+  type MediaFilterStatus,
+  type MusicStatus,
+} from "@loomkeep/shared";
+
+export const MEDIA_STATUS_META: Record<
+  EntryStatus,
+  { label: string; cls: string }
+> = {
+  PLANNED: { label: m.media_status_planned(), cls: "bg-surface-2 text-dim" },
+  WATCHING: {
+    label: m.library_status_in_progress(),
+    cls: "bg-accent text-accent-fg",
+  },
+  UP_TO_DATE: {
+    label: m.media_status_caught_up(),
+    cls: "border border-success text-success",
+  },
+  COMPLETED: {
+    label: m.library_status_completed(),
+    cls: "bg-success/15 text-success",
+  },
+  DROPPED: {
+    label: m.library_status_dropped(),
+    cls: "border border-danger text-danger",
+  },
+};
+
+export const MEDIA_STATUS_DESC: Record<EntryStatus, string> = {
+  PLANNED: m.media_status_planned_hint(),
+  WATCHING: m.media_status_watching_hint(),
+  UP_TO_DATE: m.media_status_caught_up_hint(),
+  COMPLETED: m.media_status_completed_hint(),
+  DROPPED: m.library_status_dropped_description(),
+};
 
 export const BOOK_STATUS_LABELS: Record<BookStatus, string> = {
   TO_READ: m.book_status_to_read(),
@@ -116,3 +153,18 @@ export const MUSIC_STATUS_SEG_ACTIVE: Record<MusicStatus, string> = {
   TO_LISTEN: "bg-surface text-fg shadow-sm",
   LISTENED: "bg-success/20 text-success",
 };
+
+export const MEDIA_STATUS_ORDER = [
+  "WATCHING",
+  "PLANNED",
+  "COMPLETED",
+  "DORMANT",
+  "GHOST",
+  "DROPPED",
+] as const satisfies readonly MediaFilterStatus[];
+
+export function mediaFilterLabel(status: MediaFilterStatus): string {
+  if (status === "DORMANT") return m.media_status_paused();
+  if (status === "GHOST") return m.media_status_ghost();
+  return MEDIA_STATUS_META[status].label;
+}

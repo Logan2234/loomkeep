@@ -1,3 +1,5 @@
+import { sleep } from "./async.util";
+
 /**
  * Serialises calls to at most one per `intervalMs`. Shared across every
  * caller of a single instance — the intended use is one instance per
@@ -31,8 +33,4 @@ export class RequestThrottle {
 
     this.lastRequestAt = Date.now();
   }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

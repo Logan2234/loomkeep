@@ -1,17 +1,18 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
+  import { MEDIA_TYPE_PLURAL_LABEL } from "#lib/constants/media-types.js";
+
+  import { m } from "#lib/paraglide/messages.js";
   // "Vidéo — en détail" section of /stats. Self-contained: fetches on mount,
   // reuses the MEDIA status breakdown already loaded by the overview (avoids
   // re-deriving "en cours" from scratch) and StatsWorksModal for the
   // ghost/paused drill-down, same pattern as the ratings/decades modal.
-  import { resolveApiError } from "$lib/api/errors";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { getVideoSeries, getVideoStats } from "$lib/api/stats";
-  import type {
-    DomainStatusBreakdownDto,
-    StatsWorkDto,
-    WatchStaleness,
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { getVideoSeries, getVideoStats } from "#lib/api/stats.js";
+  import {
+    type DomainStatusBreakdownDto,
+    type WatchStaleness,
+    type MediaType,
   } from "@loomkeep/shared";
   import PremiumTeaser from "../PremiumTeaser.svelte";
   import RankBars from "./RankBars.svelte";
@@ -42,12 +43,7 @@
   const hours = $derived(video ? Math.round(video.totalMinutes / 60) : 0);
   const days = $derived(video ? Math.round(video.totalMinutes / 1440) : 0);
 
-  const TYPE_LABEL: Record<string, string> = {
-    MOVIE: m.media_movies(),
-    SERIES: m.media_series_plural(),
-    ANIME: m.media_anime(),
-  };
-  const TYPE_TINT: Record<string, string> = {
+  const TYPE_TINT: Record<MediaType, string> = {
     SERIES: "var(--stat-media)",
     ANIME: "color-mix(in srgb, var(--stat-media) 55%, var(--surface))",
     MOVIE: "color-mix(in srgb, var(--stat-media) 25%, var(--surface))",
@@ -56,7 +52,7 @@
   const typeSegments = $derived(
     video
       ? video.typeSplit.map((t) => ({
-          label: TYPE_LABEL[t.type] ?? t.type,
+          label: MEDIA_TYPE_PLURAL_LABEL[t.type] ?? t.type,
           color: TYPE_TINT[t.type] ?? "var(--stat-media)",
           value: Math.round(t.minutes / 60),
           altValue: t.count,
@@ -108,18 +104,19 @@
 
   // Ghost/paused drill-down modal — same StatsWorksModal as ratings/decades.
   let modalKind = $state<WatchStaleness | null>(null);
-  let modalWorks = $state<StatsWorkDto[]>([]);
-  let modalLoading = $state(false);
-  let modalError = $state<string | null>(null);
+  // Keyed on the kind, so switching between the two lists never shows one
+  // under the other's title.
+  const seriesQuery = createApiQuery(() => {
+    const kind = modalKind;
+    return {
+      key: keys.stats.videoSeries(kind ?? ""),
+      fetch: () => getVideoSeries(kind ?? "PAUSED"),
+      enabled: kind !== null,
+    };
+  });
 
   function openStaleness(kind: WatchStaleness) {
     modalKind = kind;
-    modalLoading = true;
-    modalError = null;
-    getVideoSeries(kind)
-      .then((w) => (modalWorks = w))
-      .catch((e) => (modalError = resolveApiError(e)))
-      .finally(() => (modalLoading = false));
   }
 </script>
 
@@ -263,8 +260,8 @@
     title={modalKind === "PAUSED"
       ? m.stats_video_paused_series()
       : m.stats_video_ghost_series()}
-    works={modalWorks}
-    loading={modalLoading}
-    error={modalError}
+    works={seriesQuery.data ?? []}
+    loading={seriesQuery.loading}
+    error={seriesQuery.error}
     onclose={() => (modalKind = null)} />
 {/if}

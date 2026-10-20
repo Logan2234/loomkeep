@@ -3,24 +3,24 @@
     getImportAvailability,
     getImportQuota,
     getLastImportRun,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
   import { page } from "$app/state";
-  import Icon from "$lib/components/Icon.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import RelativeTime from "$lib/components/RelativeTime.svelte";
-  import Tooltip from "$lib/components/Tooltip.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-  import { isDomainEnabled } from "$lib/domains";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { m } from "$lib/paraglide/messages.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import RelativeTime from "#lib/components/RelativeTime.svelte";
+  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { m } from "#lib/paraglide/messages.js";
   import SettingsSection from "../components/SettingsSection.svelte";
-  import { flashAnchor } from "../flash-anchor";
-  import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
+  import { flashAnchor } from "#lib/flash-anchor.js";
+  import type { ImportSourceDescriptor } from "#lib/types/import-descriptor.js";
   import {
     Domain,
     type ImportAvailabilityDto,
@@ -42,6 +42,12 @@
       return prev;
     },
     {} as Record<Domain, (ImportSourceDescriptor & { type: ImportSource })[]>,
+  );
+
+  const orderedGroups = $derived(
+    orderedDomains(auth.user?.domainOrder)
+      .filter((domain) => groups[domain]?.length)
+      .map((domain) => ({ domain, sources: groups[domain] })),
   );
 
   // A source absent from this map needs no server config of its own, so it
@@ -100,10 +106,10 @@
           {#if lastRunOk}
             ·
             {lastRun.itemCount > 1
-              ? m.settings_import_last_run_items_many({
+              ? m.settings_import_history_items_many({
                   count: lastRun.itemCount,
                 })
-              : m.settings_import_last_run_items_one({
+              : m.settings_import_history_items_one({
                   count: lastRun.itemCount,
                 })}
           {/if}
@@ -126,12 +132,12 @@
   {/if}
 
   <div class="flex flex-col gap-8">
-    {#each Object.entries(groups) as [domain, sources] (domain)}
-      {#if isDomainEnabled(domain as Domain)}
-        {@const usedUp = premiumLocked && quota[domain as Domain] === true}
+    {#each orderedGroups as { domain, sources } (domain)}
+      {#if isDomainEnabled(domain)}
+        {@const usedUp = premiumLocked && quota[domain] === true}
         <section>
           <p class="timecode mb-3 flex items-center gap-2 text-xs uppercase">
-            {DOMAINS[domain as Domain].label}
+            {DOMAINS[domain].label}
             {#if premiumLocked && !usedUp}
               <span
                 class="bg-surface-2 text-dim rounded-full px-2 py-0.5 text-[0.65rem] font-semibold normal-case">
@@ -142,8 +148,10 @@
           <div class="flex flex-col gap-2">
             {#each sources as source (source.label)}
               {@const available =
-                !!source.href && availability[source.type] !== false && !usedUp}
-              {#if available}
+                !source.comingSoon &&
+                availability[source.type] !== false &&
+                !usedUp}
+              {#if !source.comingSoon && available}
                 <a
                   id={`import-source-${source.type}`}
                   use:flashAnchor={{
@@ -153,7 +161,7 @@
                   href={source.href}
                   class="border-border bg-bg hover:border-accent hover:bg-surface-2 flex items-center gap-3 rounded-lg border p-4 transition-colors">
                   <Icon
-                    name={DOMAINS[domain as Domain].icon}
+                    name={DOMAINS[domain].icon}
                     class="text-accent h-6 w-6" />
                   <span class="flex-1">
                     <span class="flex items-center gap-2 font-semibold">
@@ -174,9 +182,7 @@
                     hash: page.url.hash,
                   }}
                   class="border-border bg-bg flex items-center gap-3 rounded-lg border p-4 opacity-60">
-                  <Icon
-                    name={DOMAINS[domain as Domain].icon}
-                    class="text-dim h-6 w-6" />
+                  <Icon name={DOMAINS[domain].icon} class="text-dim h-6 w-6" />
                   <span class="flex-1">
                     <span class="flex items-center gap-2 font-semibold">
                       {source.label}
@@ -197,9 +203,9 @@
                   {:else}
                     <span
                       class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                      {source.href
-                        ? m.common_unavailable()
-                        : m.common_coming_soon()}
+                      {source.comingSoon
+                        ? m.common_coming_soon()
+                        : m.common_unavailable()}
                     </span>
                   {/if}
                 </div>

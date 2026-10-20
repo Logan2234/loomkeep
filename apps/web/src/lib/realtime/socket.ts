@@ -1,6 +1,6 @@
-import { API_URL, tryRefresh } from "$lib/api/core";
-import { auth } from "$lib/auth.svelte";
-import type { RealtimeEvent } from "@loomkeep/shared";
+import { API_URL, tryRefresh } from "#lib/api/core.js";
+import { auth } from "#lib/auth.svelte.js";
+import { type RealtimeEvent, RealtimeCommand } from "@loomkeep/shared";
 import { io } from "socket.io-client";
 
 const API_ORIGIN = API_URL.replace(/\/api\/?$/, "");
@@ -82,8 +82,10 @@ export function onRealtimeEvent<T = void>(
  * stops re-joining, for the component's own effect teardown.
  */
 export function joinRealtimeRoom(
-  joinEvent: "join-list" | "join-comments",
-  leaveEvent: "leave-list" | "leave-comments",
+  joinEvent:
+    typeof RealtimeCommand.JOIN_LIST | typeof RealtimeCommand.JOIN_COMMENTS,
+  leaveEvent:
+    typeof RealtimeCommand.LEAVE_LIST | typeof RealtimeCommand.LEAVE_COMMENTS,
   payload: unknown,
 ): () => void {
   const join = () => socket.emit(joinEvent, payload);

@@ -1,6 +1,7 @@
 import { CatalogSource, MediaType } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../../catalog/media-item.service";
+import { ListService } from "../../../lists/list.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";
@@ -10,10 +11,7 @@ import {
   type ResolvedMatch,
 } from "../media/media-import.source";
 import { MediaMatchResolver } from "../media/media-match-resolver";
-import {
-  LETTERBOXD_FILES,
-  parseLetterboxdExport,
-} from "./parse-letterboxd-export";
+import { LETTERBOXD_FILES, parseLetterboxdExport } from "./letterboxd.parser";
 
 /** The archive members worth extracting, as path suffixes. */
 const WANTED_FILES: readonly string[] = Object.values(LETTERBOXD_FILES);
@@ -35,8 +33,9 @@ export class LetterboxdImportSource extends MediaImportSource<ParsedImport> {
     mediaItemService: MediaItemService,
     matchResolver: MediaMatchResolver,
     reviews: ReviewService,
+    lists: ListService,
   ) {
-    super(prisma, mediaItemService, matchResolver, reviews);
+    super(prisma, mediaItemService, matchResolver, reviews, lists);
   }
 
   parseInput(input: string): ParsedImport {

@@ -1,10 +1,14 @@
 import type {
   CatalogSource,
   Domain,
-  EntryStatus,
   MediaOwnershipStatus,
   MediaType,
 } from "../enums";
+import { EntryStatus } from "../enums";
+import type { GameItemDto } from "./game";
+
+export const ENTRY_NOTES_MAX_LENGTH = 5000;
+export const OWNERSHIP_SOURCE_MAX_LENGTH = 100;
 
 /**
  * Tracked-item count per domain, hidden domains included — the settings
@@ -12,6 +16,18 @@ import type {
  * navigation, which the enabled-domain-scoped stats endpoints can't tell them.
  */
 export type LibraryDomainCountsDto = Partial<Record<Domain, number>>;
+
+/**
+ * `GET /library/tracked`: every work of the media library, reduced to what
+ * flags a catalogue search result as already tracked — its identity and its
+ * effective status (derived from watch progress, as in the library list).
+ */
+export interface TrackedMediaDto {
+  type: MediaType;
+  /** The catalogue id, same as `MediaItemDto.sourceId`. */
+  sourceId: string;
+  status: EntryStatus;
+}
 
 /** A persisted media referenced by at least one user (on-demand cache). */
 export interface MediaItemDto {
@@ -25,6 +41,8 @@ export interface MediaItemDto {
    * identity used to address the media page (`/media/{type}/{sourceId}`).
    */
   sourceId: string;
+  /** Not out yet (unreleased film, unaired anime); absent on older responses. */
+  upcoming?: boolean;
 }
 
 export interface LibraryEntryDto {
@@ -49,6 +67,9 @@ export interface LibraryEntryDto {
   ownershipStatus: MediaOwnershipStatus;
   /** Free-form detail for DIGITAL/STREAMING (e.g. "Netflix"); null otherwise. */
   ownershipSource: string | null;
+  /** Series/anime: left out of the new-episode push/email digest (still in the calendar). */
+  episodeAlertsMuted: boolean;
+  movieReleaseAlertsEnabled?: boolean;
   /** Completed rewatches beyond the first, movies only, most recent first. */
   replays: MovieReplayDto[];
 }
@@ -68,12 +89,25 @@ export const DORMANT_AFTER_DAYS = 30;
 
 /** Whether an entry is a WATCHING series/anime with no recent viewing. */
 export function isDormant(
-  entry: LibraryEntryDto,
+  entry: Pick<LibraryEntryDto, "status" | "lastWatchedAt">,
   now: Date = new Date(),
 ): boolean {
   if (entry.status !== "WATCHING" || !entry.lastWatchedAt) return false;
   const elapsedMs = now.getTime() - new Date(entry.lastWatchedAt).getTime();
   return elapsedMs > DORMANT_AFTER_DAYS * 24 * 60 * 60 * 1000;
+}
+
+/** A dormant series/anime left alone this many days is a "ghost". */
+export const GHOST_AFTER_DAYS = 180;
+
+/** Whether a dormant entry has gone untouched long enough to be a ghost. */
+export function isGhost(
+  entry: Pick<LibraryEntryDto, "status" | "lastWatchedAt">,
+  now: Date = new Date(),
+): boolean {
+  if (entry.status !== "WATCHING" || !entry.lastWatchedAt) return false;
+  const elapsedMs = now.getTime() - new Date(entry.lastWatchedAt).getTime();
+  return elapsedMs >= GHOST_AFTER_DAYS * 24 * 60 * 60 * 1000;
 }
 
 /** The next episode to watch (first released, unwatched regular episode). */
@@ -128,12 +162,28 @@ export interface EntryEpisodesResponseDto {
   seasons: SeasonWithWatchesDto[];
 }
 
-/** An upcoming episode of a tracked series/anime (release calendar). */
+/** An upcoming episode, local movie release or game release from the user's library. */
 export interface CalendarEntryDto {
-  mediaItem: MediaItemDto;
-  seasonNumber: number;
-  episodeNumber: number;
+  /** The show or movie; null for a game. */
+  mediaItem: MediaItemDto | null;
+  /** The game; null for a show or movie. */
+  game: GameItemDto | null;
+  /** The user's library entry for the work — the target for muting its alerts. */
+  entryId: string;
+  /** Show-level mute; for movies and games, true means the user has not opted into a release reminder. */
+  episodeAlertsMuted: boolean;
+  /**
+   * The show's regular episodes aired before today that the user hasn't
+   * watched — the backlog to catch up on before this one.
+   */
+  episodesBehind: number;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
   episodeTitle: string | null;
+  releaseRegion?: string;
+  releaseType?: "cinema" | "digital";
+  /** A game dated to a month sits on its 1st. */
+  releasePrecision?: "DAY" | "MONTH";
   /** ISO air date (always in the future for the calendar feed). */
   airDate: string;
 }
@@ -142,3 +192,40 @@ export interface CalendarEntryDto {
 export interface CalendarTokenDto {
   token: string;
 }
+
+export function episodeCode(
+  season: number | null,
+  episode: number | null,
+): string {
+  return `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
+}
+
+export function progressPercent(
+  progress:
+    Pick<ProgressDto, "watchedEpisodes" | "totalEpisodes"> | null | undefined,
+): number {
+  if (!progress || progress.totalEpisodes === 0) return 0;
+  return Math.round((progress.watchedEpisodes / progress.totalEpisodes) * 100);
+}
+
+export const MEDIA_SORT_KEYS = [
+  "recent",
+  "added",
+  "title",
+  "rating",
+  "progress",
+  "finished",
+  "started",
+  "status",
+] as const;
+export type MediaSortKey = (typeof MEDIA_SORT_KEYS)[number];
+
+export const MEDIA_SYNTHETIC_STATUS = {
+  DORMANT: "DORMANT",
+  GHOST: "GHOST",
+} as const;
+export const MEDIA_FILTER_STATUSES = [
+  ...Object.values(EntryStatus),
+  ...Object.values(MEDIA_SYNTHETIC_STATUS),
+] as const;
+export type MediaFilterStatus = (typeof MEDIA_FILTER_STATUSES)[number];

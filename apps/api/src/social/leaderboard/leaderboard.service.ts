@@ -6,6 +6,8 @@ import {
   ProfileAccess,
 } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
+import assert from "node:assert/strict";
+import { utcMonthRange, utcYearRange } from "../../common/date.util";
 import { PrismaService } from "../../prisma/prisma.service";
 import { avatarUrl } from "../../users/avatar.util";
 import { FollowService } from "../follow.service";
@@ -37,7 +39,8 @@ export class LeaderboardService {
 
   /**
    * Ranks by XP summed over the given calendar period — recomputed live from
-   * the ledger every call, without a snapshot table. GHOST and
+   * the ledger every call, without a snapshot table — or, for `all`, by the
+   * account's total XP (see xpTotals). GHOST and
    * `hideProgression` accounts never appear, in either
    * scope: a leaderboard is exactly the "other viewers" a Figurant or a
    * hidden-progression account already opted out of showing XP to.
@@ -55,24 +58,11 @@ export class LeaderboardService {
     scope: LeaderboardScope,
     period: LeaderboardPeriod,
   ): Promise<LeaderboardDto> {
-    const { start, end } = periodRange(period);
     const candidateIds =
       scope === "friends"
         ? [viewerId, ...(await this.follow.listFriendIds(viewerId))]
         : null;
-
-    const sums = await this.prisma.xpEntry.groupBy({
-      by: ["userId"],
-      where: {
-        createdAt: { gte: start, lt: end },
-        ...(candidateIds ? { userId: { in: candidateIds } } : {}),
-        user: {
-          profileAccess: { not: ProfileAccess.GHOST },
-          hideProgression: false,
-        },
-      },
-      _sum: { amount: true },
-    });
+    const sums = await this.xpTotals(period, candidateIds);
 
     if (sums.length === 0) {
       return { entries: [], viewerOutsideTop: null };
@@ -92,11 +82,11 @@ export class LeaderboardService {
     const userById = new Map(users.map((u) => [u.id, u]));
 
     const sorted = sums
-      .map((s) => ({
-        id: s.userId,
-        xp: s._sum.amount ?? 0,
-        user: userById.get(s.userId)!,
-      }))
+      .map((s) => {
+        const user = userById.get(s.userId);
+        assert(user, "Every ranked account must have a resolved user");
+        return { id: s.userId, xp: s.xp, user };
+      })
       // Older account wins a tie — arbitrary but deterministic, and it's
       // what decides which of two tied rows shows the shared rank number
       // versus a dash (see LeaderboardEntryDto.rank).
@@ -124,6 +114,41 @@ export class LeaderboardService {
       viewerRow && viewerRow.rank > TOP_CUTOFF ? toDto(viewerRow) : null;
 
     return { entries, viewerOutsideTop };
+  }
+
+  /**
+   * Each ranked account's XP for the period. `all` reads the materialised
+   * total (UserScore, kept in sync with the ledger by XpService) rather than
+   * summing a ledger that only grows; accounts that never earned any XP are
+   * left out, as they are from a period without activity.
+   */
+  private async xpTotals(
+    period: LeaderboardPeriod,
+    candidateIds: string[] | null,
+  ): Promise<{ userId: string; xp: number }[]> {
+    const where = {
+      ...(candidateIds ? { userId: { in: candidateIds } } : {}),
+      user: {
+        profileAccess: { not: ProfileAccess.GHOST },
+        hideProgression: false,
+      },
+    };
+
+    if (period === "all") {
+      return this.prisma.userScore.findMany({
+        where: { ...where, xp: { gt: 0 } },
+        select: { userId: true, xp: true },
+      });
+    }
+
+    const { start, end } = periodRange(period);
+    const sums = await this.prisma.xpEntry.groupBy({
+      by: ["userId"],
+      where: { ...where, createdAt: { gte: start, lt: end }, revokedAt: null },
+      _sum: { amount: true },
+    });
+
+    return sums.map((s) => ({ userId: s.userId, xp: s._sum.amount ?? 0 }));
   }
 
   /**
@@ -182,18 +207,12 @@ export class LeaderboardService {
 
 /** Calendar month/year in UTC — exported for direct testing. */
 export function periodRange(
-  period: LeaderboardPeriod,
+  period: Exclude<LeaderboardPeriod, "all">,
   now: Date = new Date(),
 ): { start: Date; end: Date } {
-  if (period === "month") {
-    return {
-      start: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
-      end: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)),
-    };
-  }
-
-  return {
-    start: new Date(Date.UTC(now.getUTCFullYear(), 0, 1)),
-    end: new Date(Date.UTC(now.getUTCFullYear() + 1, 0, 1)),
-  };
+  const range =
+    period === "month"
+      ? utcMonthRange(now)
+      : utcYearRange(now.getUTCFullYear());
+  return { start: range.gte, end: range.lt };
 }

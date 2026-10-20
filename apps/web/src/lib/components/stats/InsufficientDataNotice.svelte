@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   // Guard state for sparse opt-in data (possession breakdown today; any
   // future stat below its own data floor can reuse this). Renders instead of
   // a near-empty/misleading chart.

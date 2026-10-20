@@ -6,15 +6,16 @@ vi.mock("@sentry/sveltekit", () => ({ captureException }));
 
 async function loadRequest(dsn: string | undefined) {
   vi.resetModules();
-  vi.doMock("$env/dynamic/public", () => ({
-    env: { PUBLIC_GLITCHTIP_WEB_DSN: dsn },
+  vi.doMock("$app/env/public", () => ({
+    PUBLIC_API_URL: undefined,
+    PUBLIC_GLITCHTIP_WEB_DSN: dsn,
   }));
   const { request } = await import("./core");
   return request;
 }
 
 // Each case calls loadRequest(), which resets the module registry and
-// re-imports ./core — pulling the whole $env/paraglide graph through the
+// re-imports ./core — pulling the whole $app/env/paraglide graph through the
 // SvelteKit transform again. That costs seconds when the rest of the suite
 // is competing for workers, and the 5s default made this block fail
 // intermittently depending on scheduling, not on anything it asserts.
@@ -25,7 +26,7 @@ describe("request() → GlitchTip reporting", { timeout: 20_000 }, () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    vi.doUnmock("$env/dynamic/public");
+    vi.doUnmock("$app/env/public");
   });
 
   it("reports a 5xx with the requestId tag when a DSN is configured", async () => {
@@ -124,7 +125,10 @@ describe("request() → GlitchTip reporting", { timeout: 20_000 }, () => {
 describe("fetchAllPages() → runaway guards", { timeout: 20_000 }, () => {
   async function loadFetchAllPages() {
     vi.resetModules();
-    vi.doMock("$env/dynamic/public", () => ({ env: {} }));
+    vi.doMock("$app/env/public", () => ({
+      PUBLIC_API_URL: undefined,
+      PUBLIC_GLITCHTIP_WEB_DSN: undefined,
+    }));
     const { fetchAllPages } = await import("./core");
     return fetchAllPages;
   }

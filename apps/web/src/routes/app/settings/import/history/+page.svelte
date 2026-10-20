@@ -1,16 +1,18 @@
 <script lang="ts">
-  import { getImportHistory } from "$lib/api/client";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { keys } from "$lib/api/keys";
-  import Banner from "$lib/components/Banner.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import RelativeTime from "$lib/components/RelativeTime.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
-  import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-  import { m } from "$lib/paraglide/messages.js";
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
+  import { getImportHistory } from "#lib/api/client.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import RelativeTime from "#lib/components/RelativeTime.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type {
     Domain,
     ImportHistoryRunDto,
@@ -116,14 +118,7 @@
 
     {#if historyQuery.hasNextPage}
       <div class="mt-5 flex justify-center">
-        <button
-          class="btn btn-ghost"
-          disabled={historyQuery.isFetchingNextPage}
-          onclick={() => historyQuery.fetchNextPage()}>
-          {historyQuery.isFetchingNextPage
-            ? m.common_loading()
-            : m.common_see_more()}
-        </button>
+        <LoadMoreButton query={historyQuery} class="btn btn-ghost" />
       </div>
     {/if}
   {/if}

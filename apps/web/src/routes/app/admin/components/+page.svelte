@@ -1,34 +1,39 @@
 <script lang="ts">
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import BetaBadge from "$lib/components/BetaBadge.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import Carousel from "$lib/components/Carousel.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import FieldError from "$lib/components/FieldError.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import PasswordInput from "$lib/components/PasswordInput.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import PosterCard from "$lib/components/PosterCard.svelte";
-  import PosterGrid from "$lib/components/PosterGrid.svelte";
-  import PosterGridSkeleton from "$lib/components/PosterGridSkeleton.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import ProviderMark from "$lib/components/ProviderMark.svelte";
-  import RatingSlider from "$lib/components/RatingSlider.svelte";
-  import RelativeTime from "$lib/components/RelativeTime.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
-  import Switch from "$lib/components/Switch.svelte";
-  import Wizard from "$lib/components/Wizard.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { ProviderBrandKey } from "$lib/provider-brands";
-  import type { IconName } from "$lib/types/icon-name";
+  import { type BannerVariant } from "#lib/components/banner-semantics.js";
+
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import BetaBadge from "#lib/components/BetaBadge.svelte";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import Carousel from "#lib/components/Carousel.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import FieldError from "#lib/components/FieldError.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import PasswordInput from "#lib/components/PasswordInput.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import PosterCard from "#lib/components/PosterCard.svelte";
+  import PosterGrid from "#lib/components/PosterGrid.svelte";
+  import PosterGridSkeleton from "#lib/components/PosterGridSkeleton.svelte";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import ProviderMark from "#lib/components/ProviderMark.svelte";
+  import RatingSlider from "#lib/components/RatingSlider.svelte";
+  import RelativeTime from "#lib/components/RelativeTime.svelte";
+  import SectionRail from "#lib/components/SectionRail.svelte";
+  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import Switch from "#lib/components/Switch.svelte";
+  import Wizard from "#lib/components/Wizard.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { ProviderBrandKey } from "#lib/provider-brands.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import type { Snippet } from "svelte";
+  import { foldAdminSearch } from "#lib/admin-search.js";
+  import GenericStatsShowcase from "./GenericStatsShowcase.svelte";
+  import StressShowcase from "./StressShowcase.svelte";
   import OverlayShowcase from "./OverlayShowcase.svelte";
 
-  type BannerVariant = "error" | "warning" | "info" | "neutral";
   type ViewMode = "compact" | "comfortable";
 
   const SECTIONS = [
@@ -37,6 +42,11 @@
     { id: "feedback", label: m.admin_components_family_feedback() },
     { id: "overlays", label: m.admin_components_family_overlays() },
     { id: "content", label: m.admin_components_family_content() },
+    {
+      id: "statistics",
+      label: m.admin_components_statistics(),
+      navLabel: m.common_stats(),
+    },
   ];
 
   const BUTTONS: {
@@ -222,6 +232,7 @@
   let viewMode = $state<ViewMode>("compact");
   let genres = $state<string[]>(["drama"]);
   let sources = $state<string[]>(["tmdb", "anilist"]);
+  let longSelection = $state<string[]>(["long"]);
   let rating = $state<number | null>(7);
   let wizardStep = $state(0);
 
@@ -230,6 +241,7 @@
     { value: "comedy", label: m.admin_components_option_comedy() },
     { value: "documentary", label: m.admin_components_option_documentary() },
     { value: "animation", label: m.admin_components_option_animation() },
+    { value: "long", label: m.admin_components_option_long() },
   ];
   const SOURCE_OPTIONS = [
     { value: "tmdb", label: "TMDB" },
@@ -238,24 +250,120 @@
     { value: "musicbrainz", label: "MusicBrainz" },
   ];
 
+  let componentSearch = $state("");
+  let activeSection = $state("foundations");
+  function specimenId(name: string) {
+    return (
+      "specimen-" +
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+    );
+  }
+  function matches(text: string) {
+    return foldAdminSearch(text).includes(
+      foldAdminSearch(componentSearch).trim().replace(/^\./, ""),
+    );
+  }
+  const sectionTerms: Record<string, string> = {
+    foundations:
+      "Tokens Bricolage Hanken btn btn-icon btn-icon-bordered chip badges NewBadge BetaBadge Icon " +
+      SWATCH_GROUPS.flatMap((group) => group.swatches).join(" ") +
+      " " +
+      BUTTONS.map((button) => button.className).join(" ") +
+      " " +
+      ICONS.join(" "),
+    forms:
+      "input FieldError PasswordInput Switch SegmentedControl Combobox Wizard stress",
+    feedback: "Banner ProgressBar EmptyState CardRowSkeleton loading",
+    overlays:
+      "Modal Drawer Dropdown Tooltip Toast FocusOverlay Lightbox SidePanel stress",
+    content:
+      "Avatar RelativeTime Poster PosterGrid PosterCard ProviderMark RatingSlider Carousel",
+    statistics: "StatFigure KpiStrip RankBars HistogramBars TrendChart",
+  };
+  function sectionMatches(id: string) {
+    return matches(
+      sectionTerms[id] +
+        " " +
+        SECTIONS.find((section) => section.id === id)?.label,
+    );
+  }
+  function specimenMatches(name: string, detail: string) {
+    const extra =
+      name === "Icon"
+        ? ICONS.join(" ")
+        : name === ".btn"
+          ? BUTTONS.map((button) => button.className).join(" ") +
+            " btn-icon btn-icon-bordered"
+          : name === "Tokens"
+            ? SWATCH_GROUPS.flatMap((group) => group.swatches).join(" ") +
+              " Bricolage Hanken"
+            : "";
+    return matches(name + " " + detail + " " + extra);
+  }
+  const matchCount = $derived(
+    SECTIONS.filter((section) => sectionMatches(section.id)).length,
+  );
+  const sectionNavItems = $derived(
+    SECTIONS.flatMap((section, index) =>
+      sectionMatches(section.id)
+        ? [
+            {
+              id: section.id,
+              label: section.navLabel ?? section.label,
+              href: `#${section.id}`,
+              prefix: String(index + 1).padStart(2, "0"),
+            },
+          ]
+        : [],
+    ),
+  );
+  $effect(() => {
+    void componentSearch;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort(
+            (a, b) => a.boundingClientRect.top - b.boundingClientRect.top,
+          )[0];
+        if (entry) activeSection = entry.target.id;
+      },
+      { rootMargin: "-10% 0px -65% 0px", threshold: 0 },
+    );
+    for (const section of SECTIONS) {
+      const element = document.getElementById(section.id);
+      if (element && !element.hidden) observer.observe(element);
+    }
+    return () => observer.disconnect();
+  });
   const relativeDate = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
 </script>
 
 {#snippet specimen(name: string, detail: string, children: Snippet)}
-  <article class="border-border border-t pt-5 first:border-t-0 first:pt-0">
-    <div
-      class="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-      <h3 class="font-display text-lg font-bold">{name}</h3>
-      <p class="timecode text-xs">{detail}</p>
-    </div>
-    {@render children()}
-  </article>
+  {#if specimenMatches(name, detail)}
+    <article
+      id={specimenId(name)}
+      class="border-border scroll-mt-6 border-t pt-5 first:border-t-0 first:pt-0"
+      data-specimen={name}>
+      <div
+        class="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h3 class="font-display text-lg font-bold">
+          <a class="hover:text-accent" href={"#" + specimenId(name)}>{name}</a>
+        </h3>
+        <p class="timecode text-xs">{detail}</p>
+      </div>
+      {@render children()}
+    </article>
+  {/if}
 {/snippet}
 
 {#snippet familyHeading(index: number, title: string, description: string)}
   <div class="mb-6 grid gap-2 md:grid-cols-[7rem_1fr] md:gap-6">
     <span class="timecode text-xs"
-      >{String(index + 1).padStart(2, "0")} / 05</span>
+      >{String(index + 1).padStart(2, "0")} / {SECTIONS.length}</span>
     <div>
       <h2
         class="font-display text-2xl font-extrabold tracking-tight md:text-3xl">
@@ -266,7 +374,7 @@
   </div>
 {/snippet}
 
-<div class="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="compass"
     title={m.admin_components_title()}
@@ -274,26 +382,28 @@
     back="/app/admin"
     class="mb-5" />
 
-  <div class="lg:grid lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-10">
-    <aside
-      class="border-border mb-8 border-y py-3 lg:mb-0 lg:border-y-0 lg:border-r lg:py-0 lg:pr-6">
-      <nav
-        aria-label={m.admin_components_section_navigation()}
-        class="no-scrollbar flex gap-2 overflow-x-auto lg:sticky lg:top-6 lg:flex-col lg:gap-1 lg:overflow-visible">
-        {#each SECTIONS as section, index (section.id)}
-          <a
-            href={"#" + section.id}
-            class="chip shrink-0 lg:flex lg:items-center lg:justify-start lg:border-0 lg:px-2 lg:py-2">
-            <span class="timecode mr-1 text-[0.65rem]"
-              >{String(index + 1).padStart(2, "0")}</span>
-            {section.label}
-          </a>
-        {/each}
-      </nav>
+  <input
+    type="search"
+    bind:value={componentSearch}
+    aria-label={m.admin_components_search()}
+    placeholder={m.admin_components_search()}
+    class="input mb-6" />
+  {#if !matchCount}<EmptyState>{m.admin_no_matches()}</EmptyState>{/if}
+  <div class="lg:grid lg:grid-cols-[272px_minmax(0,1fr)] lg:gap-10">
+    <aside class="mb-8 min-w-0 lg:sticky lg:top-8 lg:mb-0 lg:self-start">
+      <SectionRail
+        label={m.admin_components_section_navigation()}
+        items={sectionNavItems}
+        activeId={sectionNavItems.some((item) => item.id === activeSection)
+          ? activeSection
+          : (sectionNavItems[0]?.id ?? "")} />
     </aside>
 
     <div class="space-y-14 md:space-y-18">
-      <section id="foundations" class="scroll-mt-6">
+      <section
+        id="foundations"
+        hidden={!sectionMatches("foundations")}
+        class="scroll-mt-6">
         {@render familyHeading(
           0,
           m.admin_components_family_foundations(),
@@ -319,7 +429,7 @@
         </div>
       </section>
 
-      <section id="forms" class="scroll-mt-6">
+      <section id="forms" hidden={!sectionMatches("forms")} class="scroll-mt-6">
         {@render familyHeading(
           1,
           m.admin_components_family_forms(),
@@ -347,6 +457,11 @@
             comboboxes,
           )}
           {@render specimen(
+            "Stress Combobox Banner EmptyState CardRowSkeleton",
+            m.admin_components_stress(),
+            stress,
+          )}
+          {@render specimen(
             "Wizard",
             m.admin_components_wizard_detail(),
             wizard,
@@ -354,7 +469,10 @@
         </div>
       </section>
 
-      <section id="feedback" class="scroll-mt-6">
+      <section
+        id="feedback"
+        hidden={!sectionMatches("feedback")}
+        class="scroll-mt-6">
         {@render familyHeading(
           2,
           m.admin_components_family_feedback(),
@@ -384,7 +502,10 @@
         </div>
       </section>
 
-      <section id="overlays" class="scroll-mt-6">
+      <section
+        id="overlays"
+        hidden={!sectionMatches("overlays")}
+        class="scroll-mt-6">
         {@render familyHeading(
           3,
           m.admin_components_family_overlays(),
@@ -403,7 +524,10 @@
         </div>
       </section>
 
-      <section id="content" class="scroll-mt-6">
+      <section
+        id="content"
+        hidden={!sectionMatches("content")}
+        class="scroll-mt-6">
         {@render familyHeading(
           4,
           m.admin_components_family_content(),
@@ -442,6 +566,19 @@
           )}
         </div>
       </section>
+      <section
+        id="statistics"
+        hidden={!sectionMatches("statistics")}
+        class="scroll-mt-6">
+        {@render familyHeading(
+          5,
+          m.admin_components_statistics(),
+          m.admin_components_content_desc(),
+        )}
+        <div class="card p-5 md:p-6">
+          <GenericStatsShowcase query={componentSearch} />
+        </div>
+      </section>
     </div>
   </div>
 </div>
@@ -454,7 +591,7 @@
       <p class="timecode text-xs tracking-wide">00:42:16 · S02E07 · 18 / 24</p>
     </div>
     <div class="grid gap-4 sm:grid-cols-2">
-      {#each SWATCH_GROUPS as group (group.label)}
+      {#each SWATCH_GROUPS.map( (group) => ({ ...group, swatches: group.swatches.filter((swatch) => !componentSearch || matches(swatch) || matches("Tokens")) }) ).filter((group) => group.swatches.length) as group (group.label)}
         <section>
           <p class="timecode mb-2 text-[0.65rem]">{group.label}</p>
           <div class="grid grid-cols-5 gap-2">
@@ -477,7 +614,7 @@
 
 {#snippet buttons()}
   <div class="flex flex-wrap items-center gap-3">
-    {#each BUTTONS as button (button.label)}
+    {#each BUTTONS.filter((button) => !componentSearch || matches(button.className) || matches(".btn")) as button (button.label)}
       <button type="button" class={button.className} disabled={button.disabled}
         >{button.label}</button>
     {/each}
@@ -496,7 +633,7 @@
 {#snippet icons()}
   <div
     class="grid grid-cols-3 gap-px overflow-hidden rounded-lg sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
-    {#each ICONS as icon (icon)}
+    {#each ICONS.filter((icon) => !componentSearch || matches(icon) || matches("Icon")) as icon (icon)}
       <div
         class="bg-surface-2 flex min-w-0 flex-col items-center gap-2 px-2 py-3">
         <Icon name={icon} class="text-accent h-5 w-5" />
@@ -596,6 +733,11 @@
       options={GENRE_OPTIONS}
       disabled
       onChange={() => {}} />
+    <Combobox
+      label={m.admin_components_combobox_long_label()}
+      options={GENRE_OPTIONS}
+      values={longSelection}
+      onChange={(values) => (longSelection = values)} />
   </div>
 {/snippet}
 
@@ -633,7 +775,10 @@
           <span>{progress.label}</span>
           <span class="timecode">{progress.value}%</span>
         </div>
-        <ProgressBar value={progress.value} fillClass={progress.fillClass} />
+        <ProgressBar
+          value={progress.value}
+          label={progress.label}
+          fillClass={progress.fillClass} />
       </div>
     {/each}
   </div>
@@ -648,7 +793,7 @@
 {/snippet}
 
 {#snippet loadingState()}
-  <div aria-label={m.common_loading()}><CardRowSkeleton count={2} /></div>
+  <CardRowSkeleton count={2} />
 {/snippet}
 
 {#snippet identity()}
@@ -667,7 +812,7 @@
   <div class="grid max-w-md grid-cols-2 gap-4 sm:grid-cols-3">
     {#each CAROUSEL_ITEMS.slice(0, 3) as title, index (title)}
       <div class="card">
-        <Poster {title} adult={index === 2} />
+        <Poster {title} alt="" adult={index === 2} />
         <p class="truncate p-3 text-sm font-semibold">{title}</p>
       </div>
     {/each}
@@ -699,10 +844,20 @@
     {#each PROVIDERS as provider (provider)}
       <span
         class="border-border bg-surface-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
-        <ProviderMark brand={provider} />
+        <ProviderMark brand={provider} decorative />
         {provider}
       </span>
     {/each}
+    <span
+      class="border-border bg-surface-2 flex max-w-sm items-start gap-2 rounded-lg border px-3 py-2 text-sm">
+      <ProviderMark
+        brand="openlibrary"
+        decorative
+        class="mt-0.5 h-4 w-4 shrink-0" />
+      <span class="wrap-anywhere">
+        {m.admin_components_provider_long_name()}
+      </span>
+    </span>
   </div>
 {/snippet}
 
@@ -713,12 +868,17 @@
 {/snippet}
 
 {#snippet carousel()}
-  <Carousel items={CAROUSEL_ITEMS} keyOf={(item) => item}>
+  <Carousel
+    items={CAROUSEL_ITEMS}
+    keyOf={(item) => item}
+    label={m.admin_components_carousel_label()}>
     {#snippet card(title)}
       <div class="card w-32">
-        <Poster {title} />
+        <Poster {title} alt="" />
         <p class="truncate p-3 text-xs font-semibold">{title}</p>
       </div>
     {/snippet}
   </Carousel>
 {/snippet}
+
+{#snippet stress()}<StressShowcase />{/snippet}

@@ -5,7 +5,6 @@ import type {
   VisibilityFacet,
 } from "../enums";
 import type { AchievementDto } from "./gamification";
-import type { LabelCountDto } from "./stats";
 
 /** Minimal identity of a user, for lists (followers, following, requests). */
 export interface UserSummaryDto {
@@ -32,6 +31,16 @@ export interface UserSummaryDto {
    * set for an anonymized (Figurant) author.
    */
   xp?: number;
+}
+
+/** An account in someone's followers/following, seen from the viewer. */
+export interface ConnectionDto extends UserSummaryDto {
+  /** The viewer follows this account. */
+  following: boolean;
+  /** The viewer asked to follow this (PRIVATE) account; not accepted yet. */
+  requested: boolean;
+  /** A friend of the viewer — the same rule as `RelationshipDto.isFriend`. */
+  isFriend: boolean;
 }
 
 /** Live counts of what a switch to Figurant mode would immediately affect. */
@@ -72,29 +81,22 @@ export interface ProfileDomainStatDto {
 }
 
 /**
- * Video-derived activity summary shown on a profile (streak, heatmap teaser,
- * genres…) — deliberately video-only (the only domain with a per-event log),
- * gated as one block by the MEDIA domain's ACTIVITY facet.
+ * The activity streak shown on a profile (header badge, home widget): dated
+ * watches, game sessions and reading sessions. Shown whatever the ACTIVITY
+ * facets say — only a locked profile withholds it.
  */
 export interface ProfileActivityStatsDto {
+  /** False only on a locked profile, where the streak is withheld. */
   visible: boolean;
-  /** Consecutive days (ending today or yesterday) with at least one watch. */
+  /** Consecutive days (ending today or yesterday) with at least one activity. */
   streakDays: number;
   /**
-   * Whether today already has a watch counted toward `streakDays` — i.e. the
-   * streak needs nothing more before midnight to survive. Lets the badge
-   * show a "you still need to watch something today" cue near the end of
-   * the day without the frontend re-deriving it from the heatmap.
+   * Whether today already has an activity counted toward `streakDays` — i.e.
+   * the streak needs nothing more before midnight to survive. Lets the badge
+   * show a "you still need to do something today" cue near the end of the
+   * day without the frontend re-deriving it.
    */
   streakSecuredToday: boolean;
-  firstActivityAt: string | null;
-  lastActivityAt: string | null;
-  totalMinutes: number;
-  mostActiveYear: number | null;
-  /** Top 3 genres by viewing count — for display chips. */
-  topGenres: LabelCountDto[];
-  /** Daily watch counts, last 90 days, zero-filled — a teaser for /stats. */
-  heatmap: { date: string; count: number }[];
 }
 
 /** A user's social profile as seen by a given viewer (post-visibility). */
@@ -169,4 +171,37 @@ export interface VisibilitySettingsDto {
 export interface UpdateVisibilitySettingsDto {
   profileAccess?: ProfileAccess;
   settings?: VisibilitySettingItemDto[];
+}
+
+/** Where someone stands with a work, in its domain's own terms. */
+export interface WorkProgressDto {
+  /** The domain's status value (EntryStatus, GameStatus, BookStatus…). */
+  status: string;
+  /** A series: the furthest episode seen, specials aside. */
+  season: number | null;
+  episode: number | null;
+  /** A book: the page reached, out of `pageCount` when known. */
+  page: number | null;
+  pageCount: number | null;
+  /** A game: time played. */
+  playtimeMinutes: number | null;
+  /** Last time they moved on it. */
+  updatedAt: string;
+}
+
+/** A friend who tracks the work, as their library visibility allows. */
+export interface WorkFriendDto extends WorkProgressDto {
+  user: UserSummaryDto;
+  /** Their rating, only when they published a review the viewer may read. */
+  rating: number | null;
+}
+
+/** `GET /social/works/:type/:id/friends`. */
+export interface WorkFriendsDto {
+  /** Most recently active first. */
+  friends: WorkFriendDto[];
+  /** The viewer's own progress, to place them among their friends. */
+  me: WorkProgressDto | null;
+  /** A series: episodes per season, specials aside; empty otherwise. */
+  seasons: number[];
 }

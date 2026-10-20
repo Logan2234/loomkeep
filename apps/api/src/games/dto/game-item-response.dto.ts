@@ -12,4 +12,5 @@ export class GameItemResponseDto implements GameItemDto {
   canonicalSource!: GameSource;
 
   sourceId!: string;
+  upcoming?: boolean;
 }

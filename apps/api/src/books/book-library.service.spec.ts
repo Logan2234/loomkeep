@@ -1,28 +1,9 @@
 import { vi } from "vitest";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
-import type { EventsGateway } from "../events/events.gateway";
-import type { AchievementService } from "../gamification/achievements/achievement.service";
-import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
 import type { AgeGateService } from "../users/age-gate.service";
 import type { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
-
-function stubXp(): XpService {
-  return {
-    award: vi.fn(),
-    awardMany: vi.fn(),
-    revokeBySource: vi.fn(),
-  } as unknown as XpService;
-}
-
-function stubAchievements(): AchievementService {
-  return { evaluate: vi.fn() } as unknown as AchievementService;
-}
-
-function stubEvents(): EventsGateway {
-  return { emitToUser: vi.fn() } as unknown as EventsGateway;
-}
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   const id = (overrides.id as string) ?? "entry-1";
@@ -41,7 +22,8 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
     ownershipSource: null,
     createdAt: overrides.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
     updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-    replays: [],
+    readings: [],
+    sessions: [],
     bookItem: {
       id: `book-${id}`,
       title: overrides.title ?? "Dune",
@@ -54,96 +36,14 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-function makeService(rows: ReturnType<typeof makeRow>[]) {
-  const prisma = {
-    bookEntry: { findMany: vi.fn().mockResolvedValue(rows) },
-  } as unknown as PrismaService;
-  const reviews = {
-    getRatings: vi.fn(() =>
-      Promise.resolve(
-        new Map(
-          rows
-            .filter((r) => r.rating !== null)
-            .map((r) => [r.bookItemId, r.rating]),
-        ),
-      ),
-    ),
-    getRating: vi.fn((_u: string, _t: string, id: string) =>
-      Promise.resolve(rows.find((r) => r.bookItemId === id)?.rating ?? null),
-    ),
-    setRating: vi.fn(),
-  } as unknown as import("../reviews/review.service").ReviewService;
-  const service = new BookLibraryService(
-    prisma,
-    {} as BookItemService,
-    {} as AgeGateService,
-    reviews,
-    {
-      emit: vi.fn(),
-    } as unknown as import("../social/activity.service").ActivityService,
-    stubXp(),
-    stubAchievements(),
-    stubEvents(),
-  );
-  return { service, prisma };
-}
-
-describe("BookLibraryService.listEntries", () => {
-  it("paginates and reports total/hasMore", async () => {
-    const rows = Array.from({ length: DEFAULT_PAGE_SIZE + 5 }, (_, i) =>
-      makeRow({ id: `e${i}`, title: `Book ${i}` }),
-    );
-    const { service } = makeService(rows);
-
-    const page1 = await service.listEntries("user-1", {});
-    expect(page1.items).toHaveLength(DEFAULT_PAGE_SIZE);
-    expect(page1.total).toBe(DEFAULT_PAGE_SIZE + 5);
-    expect(page1.hasMore).toBe(true);
-
-    const page2 = await service.listEntries("user-1", { page: 2 });
-    expect(page2.items).toHaveLength(5);
-    expect(page2.hasMore).toBe(false);
-  });
-
-  it("filters by favorite", async () => {
-    const rows = [
-      makeRow({ id: "a", favorite: true }),
-      makeRow({ id: "b", favorite: false }),
-    ];
-    const { service } = makeService(rows);
-
-    const result = await service.listEntries("user-1", { favorite: true });
-    expect(result.items.map((i) => i.id)).toEqual(["a"]);
-  });
-
-  it("filters by free-text title search, case-insensitive", async () => {
-    const rows = [
-      makeRow({ id: "a", title: "Dune" }),
-      makeRow({ id: "b", title: "Foundation" }),
-    ];
-    const { service } = makeService(rows);
-
-    const result = await service.listEntries("user-1", { q: "dun" });
-    expect(result.items.map((i) => i.id)).toEqual(["a"]);
-  });
-
-  it("sorts by pages, descending by default", async () => {
-    const rows = [
-      makeRow({ id: "a", pageCount: 200 }),
-      makeRow({ id: "b", pageCount: 900 }),
-    ];
-    const { service } = makeService(rows);
-
-    const result = await service.listEntries("user-1", { sort: "pages" });
-    expect(result.items.map((i) => i.id)).toEqual(["b", "a"]);
-  });
-});
-
 describe("BookLibraryService.deleteEntry", () => {
   it("wipes the user's reviews and comments for the book, not just the entry row", async () => {
     const reviewDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
     const commentUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
     const bookEntryDelete = vi.fn().mockResolvedValue({});
+    const sessionCreatedAt = new Date("2026-01-02T12:00:00.000Z");
+    const deleteLinked = vi.fn();
+    const refreshAfterDelete = vi.fn();
 
     const prisma = {
       bookEntry: {
@@ -159,7 +59,14 @@ describe("BookLibraryService.deleteEntry", () => {
         deleteMany: reviewDeleteMany,
       },
       comment: { updateMany: commentUpdateMany },
-      bookReplay: { findMany: vi.fn().mockResolvedValue([]) },
+      bookReading: { findMany: vi.fn().mockResolvedValue([]) },
+      bookSession: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { id: "session-1", createdAt: sessionCreatedAt },
+          ]),
+      },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
     const xp = stubXp();
@@ -171,24 +78,67 @@ describe("BookLibraryService.deleteEntry", () => {
       {} as import("../reviews/review.service").ReviewService,
       {
         emit: vi.fn(),
+        deleteLinked,
       } as unknown as import("../social/activity.service").ActivityService,
       xp,
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
+      { refreshAfterDelete } as never,
     );
 
     await service.deleteEntry("user-1", "entry-1");
 
     expect(reviewDeleteMany).toHaveBeenCalledWith({
-      where: { userId: "user-1", targetId: "book-1" },
+      where: {
+        userId: "user-1",
+        targetType: { in: ["BOOK"] },
+        targetId: { in: ["book-1"] },
+      },
     });
     expect(commentUpdateMany).toHaveBeenCalledWith({
-      where: { authorId: "user-1", targetId: "book-1", deletedAt: null },
+      where: {
+        authorId: "user-1",
+        targetType: { in: ["BOOK"] },
+        targetId: { in: ["book-1"] },
+        deletedAt: null,
+      },
       data: { text: null, deletedAt: expect.any(Date) },
     });
     expect(bookEntryDelete).toHaveBeenCalledWith({ where: { id: "entry-1" } });
-    expect(xp.revokeBySource).toHaveBeenCalledWith("BookEntry", ["entry-1"]);
     expect(xp.revokeBySource).toHaveBeenCalledWith("Entry", ["entry-1"]);
+    expect(deleteLinked).toHaveBeenCalledWith("BookSession", "session-1");
+    expect(refreshAfterDelete).toHaveBeenCalledWith("user-1", sessionCreatedAt);
+  });
+});
+
+describe("BookLibraryService.getPile", () => {
+  it("turns the paused pseudo-status into a dated-session filter", async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const service = new BookLibraryService(
+      { bookEntry: { findMany } } as unknown as PrismaService,
+      {} as BookItemService,
+      {} as AgeGateService,
+      {} as import("../reviews/review.service").ReviewService,
+      {} as import("../social/activity.service").ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+
+    await service.getPile("user-1", { statuses: ["PAUSED"] });
+
+    const [[query]] = findMany.mock.calls;
+    expect(query.where.AND[0].AND[0].OR).toEqual([
+      {
+        status: "READING",
+        sessions: {
+          some: { occurredAt: { lt: expect.any(Date) } },
+          none: { occurredAt: { gte: expect.any(Date) } },
+        },
+      },
+    ]);
   });
 });
 
@@ -200,18 +150,40 @@ describe("BookLibraryService — finishedAt sync", () => {
     const findUnique = vi
       .fn()
       // assertEntryOwnership
-      .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
-      // updateEntry's own "before" lookup
-      .mockResolvedValueOnce({ status: "TO_READ", favorite: false })
+      .mockResolvedValueOnce({
+        id: "e1",
+        userId: "user-1",
+        status: "TO_READ",
+        favorite: false,
+        finishedAt: null,
+      })
       // syncFinishedAt's lookup, post-write
       .mockResolvedValueOnce({ status: "READ", finishedAt: null });
-    const update = vi
-      .fn()
-      .mockResolvedValueOnce({ ...entryRow, status: "READ" })
-      .mockResolvedValueOnce({});
+    const update = vi.fn().mockResolvedValueOnce({
+      ...entryRow,
+      status: "READ",
+      finishedAt: new Date("2026-01-02T00:00:00.000Z"),
+    });
 
     const prisma = {
-      bookEntry: { findUnique, update },
+      bookEntry: {
+        findUnique,
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          editionKey: null,
+          referencePageCount: null,
+          readingBaselinePage: 0,
+          currentPage: 0,
+        }),
+        update,
+      },
+      bookReading: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
+        update: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
+      },
+      // No goal set, no series: what a finish can also complete.
+      readingGoal: { findUnique: vi.fn().mockResolvedValue(null) },
+      bookItem: { findUnique: vi.fn().mockResolvedValue({ seriesKey: null }) },
     } as unknown as PrismaService;
     const reviews = {
       getRating: vi.fn().mockResolvedValue(null),
@@ -229,6 +201,7 @@ describe("BookLibraryService — finishedAt sync", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -236,9 +209,11 @@ describe("BookLibraryService — finishedAt sync", () => {
     });
 
     expect(result.finishedAt).not.toBeNull();
-    expect(update).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ data: { finishedAt: expect.any(Date) } }),
+    expect(findUnique).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ finishedAt: expect.any(Date) }),
+      }),
     );
   });
 
@@ -246,10 +221,12 @@ describe("BookLibraryService — finishedAt sync", () => {
     const entryRow = makeRow({ id: "e1", status: "TO_READ" });
     const explicit = "2026-01-15T00:00:00.000Z";
 
-    const findUnique = vi
-      .fn()
-      .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
-      .mockResolvedValueOnce({ status: "TO_READ", favorite: false });
+    const findUnique = vi.fn().mockResolvedValueOnce({
+      id: "e1",
+      userId: "user-1",
+      status: "TO_READ",
+      favorite: false,
+    });
     const update = vi.fn().mockResolvedValueOnce({
       ...entryRow,
       status: "READ",
@@ -257,7 +234,24 @@ describe("BookLibraryService — finishedAt sync", () => {
     });
 
     const prisma = {
-      bookEntry: { findUnique, update },
+      bookEntry: {
+        findUnique,
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          editionKey: null,
+          referencePageCount: null,
+          readingBaselinePage: 0,
+          currentPage: 0,
+        }),
+        update,
+      },
+      bookReading: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
+        update: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
+      },
+      // No goal set, no series: what a finish can also complete.
+      readingGoal: { findUnique: vi.fn().mockResolvedValue(null) },
+      bookItem: { findUnique: vi.fn().mockResolvedValue({ seriesKey: null }) },
     } as unknown as PrismaService;
     const reviews = {
       getRating: vi.fn().mockResolvedValue(null),
@@ -275,6 +269,7 @@ describe("BookLibraryService — finishedAt sync", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -290,33 +285,29 @@ describe("BookLibraryService — finishedAt sync", () => {
 describe("BookLibraryService reading goal", () => {
   function makeGoalPrisma(overrides: {
     goal?: { target: number } | null;
-    entryCount?: number;
-    replayCount?: number;
+    completedCount?: number;
   }) {
     const readingGoalFindUnique = vi
       .fn()
       .mockResolvedValue(overrides.goal ?? null);
     const readingGoalUpsert = vi.fn().mockResolvedValue({});
-    const bookEntryCount = vi.fn().mockResolvedValue(overrides.entryCount ?? 0);
-    const bookReplayCount = vi
+    const bookReadingCount = vi
       .fn()
-      .mockResolvedValue(overrides.replayCount ?? 0);
+      .mockResolvedValue(overrides.completedCount ?? 0);
 
     const prisma = {
       readingGoal: {
         findUnique: readingGoalFindUnique,
         upsert: readingGoalUpsert,
       },
-      bookEntry: { count: bookEntryCount },
-      bookReplay: { count: bookReplayCount },
+      bookReading: { count: bookReadingCount },
     } as unknown as PrismaService;
 
     return {
       prisma,
       readingGoalFindUnique,
       readingGoalUpsert,
-      bookEntryCount,
-      bookReplayCount,
+      bookReadingCount,
     };
   }
 
@@ -330,35 +321,36 @@ describe("BookLibraryService reading goal", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
   }
 
   it("reports target 0 with no goal set, but still counts progress", async () => {
-    const { prisma, bookEntryCount } = makeGoalPrisma({
+    const { prisma, bookReadingCount } = makeGoalPrisma({
       goal: null,
-      entryCount: 3,
+      completedCount: 3,
     });
     const service = makeGoalService(prisma);
 
     const result = await service.getReadingGoal("user-1", 2026);
 
     expect(result).toEqual({ year: 2026, target: 0, completed: 3 });
-    expect(bookEntryCount).toHaveBeenCalledWith({
+    expect(bookReadingCount).toHaveBeenCalledWith({
       where: {
-        userId: "user-1",
         finishedAt: {
           gte: new Date(Date.UTC(2026, 0, 1)),
           lt: new Date(Date.UTC(2027, 0, 1)),
         },
+        status: "COMPLETED",
+        bookEntry: { userId: "user-1" },
       },
     });
   });
 
-  it("adds rereads (BookReplay) to the completed count", async () => {
+  it("counts every completed reading cycle", async () => {
     const { prisma } = makeGoalPrisma({
       goal: { target: 30 },
-      entryCount: 10,
-      replayCount: 2,
+      completedCount: 12,
     });
     const service = makeGoalService(prisma);
 
@@ -368,17 +360,18 @@ describe("BookLibraryService reading goal", () => {
   });
 
   it("scopes the replay count to the current user's entries only", async () => {
-    const { prisma, bookReplayCount } = makeGoalPrisma({ goal: null });
+    const { prisma, bookReadingCount } = makeGoalPrisma({ goal: null });
     const service = makeGoalService(prisma);
 
     await service.getReadingGoal("user-1", 2026);
 
-    expect(bookReplayCount).toHaveBeenCalledWith({
+    expect(bookReadingCount).toHaveBeenCalledWith({
       where: {
         finishedAt: {
           gte: new Date(Date.UTC(2026, 0, 1)),
           lt: new Date(Date.UTC(2027, 0, 1)),
         },
+        status: "COMPLETED",
         bookEntry: { userId: "user-1" },
       },
     });
@@ -386,8 +379,7 @@ describe("BookLibraryService reading goal", () => {
 
   it("upserts the target and returns fresh progress", async () => {
     const { prisma, readingGoalUpsert } = makeGoalPrisma({
-      entryCount: 5,
-      replayCount: 1,
+      completedCount: 6,
     });
     const service = makeGoalService(prisma);
 
@@ -442,6 +434,7 @@ describe("BookLibraryService — XP wiring", () => {
       xp,
       stubAchievements(),
       events,
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.upsertEntry("user-1", {
@@ -481,7 +474,16 @@ describe("BookLibraryService — XP wiring", () => {
     );
   });
 
-  it("awards BOOK_FINISHED on the TO_READ -> READ transition, not on other updates", async () => {
+  /** Marks a book READ from TO_READ, with what the finish may also complete. */
+  async function finishBook(
+    extra: {
+      pages?: number | null;
+      goal?: { target: number; updatedAt: Date } | null;
+      booksThisYear?: number;
+      seriesKey?: string | null;
+      saga?: { title: string; works: number } | null;
+    } = {},
+  ) {
     const findUnique = vi
       .fn()
       .mockResolvedValueOnce({ status: "TO_READ", favorite: false })
@@ -490,9 +492,51 @@ describe("BookLibraryService — XP wiring", () => {
       .fn()
       .mockResolvedValue({ ...makeRow({ id: "e1" }), status: "READ" });
     const prisma = {
-      bookEntry: { findUnique, upsert, count: vi.fn().mockResolvedValue(1) },
+      bookEntry: {
+        findUnique,
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          ...makeRow({ id: "e1" }),
+          status: "READ",
+          editionKey: null,
+          referencePageCount: null,
+          readingBaselinePage: 0,
+          currentPage: 0,
+        }),
+        upsert,
+        count: vi.fn().mockResolvedValue(1),
+      },
+      bookReading: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({
+          id: "reading-1",
+          number: 1,
+          finishedAt: new Date("2026-10-05T12:00:00Z"),
+        }),
+        update: vi.fn().mockResolvedValue({
+          id: "reading-1",
+          number: 1,
+          finishedAt: new Date("2026-10-05T12:00:00Z"),
+        }),
+        count: vi.fn().mockResolvedValue(extra.booksThisYear ?? 0),
+      },
+      readingGoal: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue(
+            extra.goal ? { id: "goal-1", ...extra.goal } : null,
+          ),
+      },
+      bookItem: {
+        findUnique: vi.fn().mockResolvedValue({
+          seriesKey: extra.seriesKey ?? null,
+          pageCount: extra.pages ?? null,
+        }),
+      },
     } as unknown as PrismaService;
     const xp = stubXp();
+    const sagas = {
+      completed: vi.fn().mockResolvedValue(extra.saga ?? null),
+    } as unknown as import("./book-saga.service").BookSagaService;
 
     const service = new BookLibraryService(
       prisma,
@@ -505,6 +549,9 @@ describe("BookLibraryService — XP wiring", () => {
       xp,
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
+      undefined,
+      sagas,
     );
 
     await service.upsertEntry("user-1", {
@@ -512,53 +559,81 @@ describe("BookLibraryService — XP wiring", () => {
       sourceId: "ol-1",
       status: "READ",
     } as never);
+    return xp;
+  }
 
-    expect(xp.award).toHaveBeenCalledWith("user-1", "BOOK_FINISHED", "e1");
-  });
+  it("awards BOOK_FINISHED on the TO_READ -> READ transition, not on other updates", async () => {
+    const xp = await finishBook();
 
-  it("awards BOOK_REPLAYED on addReplay and revokes it on deleteReplay", async () => {
-    const findUnique = vi
-      .fn()
-      .mockResolvedValueOnce({ id: "e1", userId: "user-1" }); // assertEntryOwnership
-    const bookEntryFindUniqueOrThrow = vi
-      .fn()
-      .mockResolvedValue(makeRow({ id: "e1" }));
-    const replayCreate = vi.fn().mockResolvedValue({ id: "replay-1" });
-    const prisma = {
-      bookEntry: {
-        findUnique,
-        findUniqueOrThrow: bookEntryFindUniqueOrThrow,
-      },
-      bookReplay: {
-        create: replayCreate,
-        findUnique: vi.fn().mockResolvedValue({
-          id: "replay-1",
-          bookEntry: { userId: "user-1" },
-        }),
-        delete: vi.fn().mockResolvedValue({}),
-      },
-    } as unknown as PrismaService;
-    const xp = stubXp();
-
-    const service = new BookLibraryService(
-      prisma,
-      {} as BookItemService,
-      {} as AgeGateService,
-      reviews,
-      activity,
-      xp,
-      stubAchievements(),
-      stubEvents(),
-    );
-
-    await service.addReplay("user-1", "e1", {} as never);
+    // No page count known: the flat amount.
     expect(xp.award).toHaveBeenCalledWith(
       "user-1",
-      "BOOK_REPLAYED",
-      "replay-1",
+      "BOOK_FINISHED",
+      "reading-1",
+      150,
     );
+  });
 
-    await service.deleteReplay("user-1", "replay-1");
-    expect(xp.revokeBySource).toHaveBeenCalledWith("BookReplay", ["replay-1"]);
+  it("pays a finished book by its length", async () => {
+    const xp = await finishBook({ pages: 48 });
+
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "BOOK_FINISHED",
+      "reading-1",
+      66,
+    );
+  });
+
+  it("pays the reading goal it completes, sized by the goal, once it has stood a month", async () => {
+    const xp = await finishBook({
+      goal: { target: 12, updatedAt: new Date(Date.now() - 40 * 86_400_000) },
+      booksThisYear: 12,
+    });
+
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "READING_GOAL_REACHED",
+      "goal-1",
+      612,
+      {
+        title: null,
+        href: "/app/books",
+        data: { goalTarget: 12, goalYear: 2026 },
+      },
+    );
+  });
+
+  it.each([
+    ["set less than a month before it's met", 12, 5],
+    ["below the smallest rewarded goal", 2, 40],
+  ])("doesn't pay a reading goal %s", async (_case, target, ageDays) => {
+    const xp = await finishBook({
+      goal: { target, updatedAt: new Date(Date.now() - ageDays * 86_400_000) },
+      booksThisYear: 12,
+    });
+
+    expect(xp.award).not.toHaveBeenCalledWith(
+      "user-1",
+      "READING_GOAL_REACHED",
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it("pays the series a finish completes, sized by the series", async () => {
+    const xp = await finishBook({
+      seriesKey: "OL82563L",
+      saga: { title: "Harry Potter", works: 7 },
+    });
+
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "SAGA_COMPLETED",
+      "OL82563L",
+      385,
+      { title: "Harry Potter", href: "/app/books?vue=sagas", data: {} },
+    );
   });
 });

@@ -1,7 +1,6 @@
 import { ReportStatus } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { AdminSocialStatsService } from "./admin-social-stats.service";
 
@@ -36,13 +35,14 @@ function make(options: { social?: boolean } = {}) {
     block: { count: vi.fn().mockResolvedValue(0) },
   } as unknown as PrismaService;
 
-  const config = { get: vi.fn() } as unknown as ConfigService;
-  const flags = {
-    isEnabled: vi.fn().mockReturnValue(options.social ?? true),
-  } as unknown as FeatureFlagsService;
+  const config = {
+    get: vi.fn((key: string) =>
+      key === "SOCIAL_ENABLED" ? String(options.social ?? true) : undefined,
+    ),
+  } as unknown as ConfigService;
 
   return {
-    service: new AdminSocialStatsService(prisma, config, flags),
+    service: new AdminSocialStatsService(prisma, config),
     prisma,
   };
 }

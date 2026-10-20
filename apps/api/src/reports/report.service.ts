@@ -1,29 +1,46 @@
 import {
   ErrorCode,
   NotificationType,
-  REPORT_CATEGORY_MOTIFS,
+  REPORT_MOTIFS_REQUIRING_REASON,
+  REPORT_PROFILE_PART_CATEGORIES,
   isReportCategoryAllowed,
+  reportMotifsFor,
   type PagedResult,
   type ReportCategory,
+  type ReportContextMessageDto,
   type ReportDto,
   type ReportMotif,
+  type ReportProfilePart,
+  type ReportResolution,
+  type ReportStatus,
   type ReportTargetSummaryDto,
   type ReportTargetType,
 } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
+import {
+  DEFAULT_PAGE_SIZE,
+  toPagedResult,
+  type ParsedPage,
+} from "../common/pagination.util";
 import { resolveWorkHref } from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
+import { AdminAlertService } from "../notifications/admin-alert.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 
-export const REPORT_PAGE_SIZE = 20;
 const EXCERPT_LENGTH = 120;
+
+/** How many messages around a reported one the moderation queue shows. */
+const MESSAGE_CONTEXT_BEFORE = 5;
+const MESSAGE_CONTEXT_AFTER = 2;
 
 type ReportRow = {
   id: string;
@@ -31,15 +48,19 @@ type ReportRow = {
   targetId: string;
   category: string | null;
   motif: string | null;
+  profilePart: string | null;
   reason: string | null;
   status: string;
   createdAt: Date;
   resolvedAt: Date | null;
+  targetOwnerId: string | null;
+  targetOwner: { username: string } | null;
   reporter: Parameters<typeof toUserSummaryDto>[0] | null;
 };
 
 type ReviewTarget = {
   rating: number;
+  updatedAt: Date;
   text: string | null;
   targetType: string;
   targetId: string;
@@ -56,20 +77,25 @@ const REPORTER_SELECT = {
 
 @Injectable()
 export class ReportService {
+  private readonly logger = new Logger(ReportService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
     private readonly jobRuns: JobRunService,
     private readonly notifications: NotificationService,
     private readonly events: EventsGateway,
+    private readonly adminAlerts: AdminAlertService,
   ) {}
 
   /**
    * Files a report against a polymorphic target. Fire-and-forget from the
    * caller's POV. OTHER requires a non-empty `reason` (it has no motif to
-   * fall back on); every other category requires a `motif` that actually
-   * belongs to it — REPORT_CATEGORY_MOTIFS is the single source of truth for
-   * that pairing, shared with the picker UI.
+   * fall back on), and so does a motif in REPORT_MOTIFS_REQUIRING_REASON;
+   * every other category requires a `motif` that actually belongs to it for
+   * this target — reportMotifsFor() is the single source of truth for that
+   * pairing, shared with the picker UI. A USER report also names the part of
+   * the profile it's about, which must allow the category.
    *
    * DSA art. 16(4)'s receipt confirmation is the caller's own success toast
    * (e.g. CommentThread.svelte) — synchronous with submission, nothing "without
@@ -83,8 +109,14 @@ export class ReportService {
     category: ReportCategory,
     motif?: ReportMotif,
     reason?: string,
+    profilePart?: ReportProfilePart,
   ): Promise<void> {
-    if (!isReportCategoryAllowed(category, targetType)) {
+    const partAllows =
+      targetType !== "USER" ||
+      (profilePart !== undefined &&
+        REPORT_PROFILE_PART_CATEGORIES[profilePart].includes(category));
+
+    if (!isReportCategoryAllowed(category, targetType) || !partAllows) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.ReportInvalidMotif,
@@ -102,18 +134,31 @@ export class ReportService {
           "A detail is required for the 'Other' category",
         );
       }
-    } else if (!motif || !REPORT_CATEGORY_MOTIFS[category].includes(motif)) {
+    } else if (
+      !motif ||
+      !reportMotifsFor(category, targetType).includes(motif)
+    ) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.ReportInvalidMotif,
         undefined,
         "Invalid motif for this category",
       );
+    } else if (
+      REPORT_MOTIFS_REQUIRING_REASON.includes(motif) &&
+      !reason?.trim()
+    ) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ReportReasonRequired,
+        undefined,
+        "A detail is required for this motif",
+      );
     }
 
-    const ownerId = await this.reportableContentOwner(targetType, targetId);
+    const ownerIds = await this.reportableContentOwners(targetType, targetId);
 
-    if (ownerId === reporterId) {
+    if (ownerIds.includes(reporterId)) {
       throw new AppException(
         HttpStatus.FORBIDDEN,
         ErrorCode.ReportCannotReportOwnContent,
@@ -136,7 +181,10 @@ export class ReportService {
         targetId,
         category,
         motif: category === "OTHER" ? null : motif,
+        ...(targetType === "USER" && { profilePart }),
         reason: reason?.trim() || null,
+        // The author, list owner or profile's account — listed first.
+        targetOwnerId: ownerIds[0] ?? null,
       },
     });
 
@@ -144,14 +192,14 @@ export class ReportService {
   }
 
   /**
-   * The author of a reportable piece of content (null once their account is
-   * gone), 404ing when the content itself no longer exists. `undefined` for
-   * target types filed without an ownership check (USER, LIST).
+   * Who may not report a piece of content because it's theirs — its author,
+   * the profile's own account, or a list's owner and editors — 404ing when
+   * the content itself no longer exists.
    */
-  private async reportableContentOwner(
+  private async reportableContentOwners(
     targetType: ReportTargetType,
     targetId: string,
-  ): Promise<string | null | undefined> {
+  ): Promise<string[]> {
     if (targetType === "COMMENT") {
       const comment = await this.prisma.comment.findUnique({
         where: { id: targetId },
@@ -162,7 +210,23 @@ export class ReportService {
         throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
       }
 
-      return comment.authorId;
+      return comment.authorId ? [comment.authorId] : [];
+    }
+
+    if (targetType === "MESSAGE") {
+      const message = await this.prisma.message.findUnique({
+        where: { id: targetId },
+        select: { authorId: true, deletedAt: true },
+      });
+
+      if (!message || message.deletedAt) {
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.ChatMessageNotFound,
+        );
+      }
+
+      return message.authorId ? [message.authorId] : [];
     }
 
     if (targetType === "REVIEW") {
@@ -175,10 +239,32 @@ export class ReportService {
         throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
       }
 
-      return review.userId;
+      return review.userId ? [review.userId] : [];
     }
 
-    return undefined;
+    if (targetType === "LIST") {
+      const list = await this.prisma.list.findUnique({
+        where: { id: targetId },
+        select: { userId: true, members: { select: { userId: true } } },
+      });
+
+      if (!list) {
+        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
+      }
+
+      return [list.userId, ...list.members.map((m) => m.userId)];
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: targetId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+    }
+
+    return [user.id];
   }
 
   async pendingCount(): Promise<number> {
@@ -206,80 +292,109 @@ export class ReportService {
   }
 
   async list(
-    status: "PENDING" | "RESOLVED" | "DISMISSED" | undefined,
-    page: number,
+    status: ReportStatus | undefined,
+    page: ParsedPage,
     reporterId?: string,
-    limit = REPORT_PAGE_SIZE,
   ): Promise<PagedResult<ReportDto>> {
+    const { skip, take, limit } = page;
     const rows = await this.prisma.report.findMany({
       where: {
         ...(status ? { status } : {}),
         ...(reporterId ? { reporterId } : {}),
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      skip: (page - 1) * limit,
-      take: limit + 1,
-      include: { reporter: { select: REPORTER_SELECT } },
+      skip,
+      take: take + 1,
+      include: {
+        reporter: { select: REPORTER_SELECT },
+        targetOwner: { select: { username: true } },
+      },
     });
-    const hasMore = rows.length > limit;
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
 
-    return { items: await this.toDtos(rows.slice(0, limit)), hasMore };
+    return { items: await this.toDtos(pageRows), hasMore };
   }
 
   async resolve(
     adminId: string,
     id: string,
-    status: "RESOLVED" | "DISMISSED",
+    status: ReportResolution,
   ): Promise<void> {
-    const { count } = await this.prisma.report.updateMany({
+    const reporterId = await this.prisma.$transaction((tx) =>
+      this.resolveInTransaction(tx, adminId, id, status),
+    );
+    this.publishResolution(reporterId);
+  }
+
+  /** Persists the outcome and the art. 16(5) notice before either becomes visible. */
+  async resolveInTransaction(
+    tx: Prisma.TransactionClient,
+    adminId: string,
+    id: string,
+    status: ReportResolution,
+  ): Promise<string | null> {
+    const { count } = await tx.report.updateMany({
       where: { id, status: "PENDING" },
       data: { status, resolvedAt: new Date(), resolvedById: adminId },
     });
     if (count === 0)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReportNotFound);
 
-    this.events.emitReportsCount();
-    await this.notifyReporterOfResolution(id, status);
+    const report = await tx.report.findUnique({
+      where: { id },
+      select: { reporter: { select: { id: true, locale: true } } },
+    });
+    if (!report?.reporter) return null;
+
+    const copy = notificationCopy(report.reporter.locale).reportResolution;
+    const created = await this.notifications.createInTransaction(tx, {
+      userId: report.reporter.id,
+      type: NotificationType.REPORT_RESOLVED,
+      title: copy.title,
+      body: status === "RESOLVED" ? copy.resolved : copy.dismissed,
+      dedupeKey: `report:${id}:resolved`,
+      data: { outcome: status },
+    });
+    return created ? report.reporter.id : null;
   }
 
-  /**
-   * DSA art. 16(5): tells the reporter what happened to their report, via the
-   * same channel (in-app) they used to file it — no email, no legal
-   * requirement to use one here. Deliberately generic — no detail on what
-   * measure (if any) was taken against the reported content's author, which
-   * the sanctioned user gets separately via ModerationDecisionService.
-   * Silently skipped if the reporter's account was deleted since filing
-   * (Report.reporterId SetNull).
-   */
-  private async notifyReporterOfResolution(
-    reportId: string,
-    status: "RESOLVED" | "DISMISSED",
-  ): Promise<void> {
-    const report = await this.prisma.report.findUnique({
-      where: { id: reportId },
-      select: { reporterId: true },
-    });
-    if (!report?.reporterId) return;
+  publishResolution(reporterId: string | null): void {
+    try {
+      this.events.emitReportsCount();
+    } catch (err) {
+      this.logger.warn(
+        "The live admin report count could not be published",
+        err,
+      );
+    }
 
-    await this.notifications.create({
-      userId: report.reporterId,
-      type: NotificationType.REPORT_RESOLVED,
-      title: "Ton signalement a été traité",
-      body:
-        status === "RESOLVED"
-          ? "Une mesure a été prise suite à ton signalement."
-          : "Nous n'avons pas donné suite à ton signalement.",
-    });
+    if (reporterId) {
+      try {
+        this.notifications.publishCreated(
+          reporterId,
+          NotificationType.REPORT_RESOLVED,
+        );
+      } catch (err) {
+        this.logger.warn(
+          "The reporter notification could not be published",
+          err,
+        );
+      }
+    }
   }
 
   /**
    * Reports filed against a user: directly (targetType USER) or against a
-   * comment or review they authored. Lists aren't covered — no filing UI
-   * exists for them yet (see resolveTarget). Not paginated: an admin-drawer
+   * comment, review or list of theirs. Not paginated: an admin-drawer
    * shortcut, not the moderation queue itself.
    */
   async listAgainstUser(userId: string): Promise<ReportDto[]> {
-    const [authoredCommentIds, authoredReviewIds] = await Promise.all([
+    const [
+      authoredCommentIds,
+      authoredReviewIds,
+      ownedListIds,
+      authoredMessageIds,
+    ] = await Promise.all([
       this.prisma.comment.findMany({
         where: { authorId: userId },
         select: { id: true },
@@ -288,11 +403,21 @@ export class ReportService {
         where: { userId },
         select: { id: true },
       }),
+      this.prisma.list.findMany({
+        where: { userId },
+        select: { id: true },
+      }),
+      this.prisma.message.findMany({
+        where: { authorId: userId },
+        select: { id: true },
+      }),
     ]);
 
     const rows = await this.prisma.report.findMany({
       where: {
         OR: [
+          // Also reaches reports whose content its author since deleted.
+          { targetOwnerId: userId },
           { targetType: "USER", targetId: userId },
           {
             targetType: "COMMENT",
@@ -302,11 +427,22 @@ export class ReportService {
             targetType: "REVIEW",
             targetId: { in: authoredReviewIds.map((r) => r.id) },
           },
+          {
+            targetType: "LIST",
+            targetId: { in: ownedListIds.map((l) => l.id) },
+          },
+          {
+            targetType: "MESSAGE",
+            targetId: { in: authoredMessageIds.map((m) => m.id) },
+          },
         ],
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 50,
-      include: { reporter: { select: REPORTER_SELECT } },
+      take: DEFAULT_PAGE_SIZE,
+      include: {
+        reporter: { select: REPORTER_SELECT },
+        targetOwner: { select: { username: true } },
+      },
     });
 
     return this.toDtos(rows);
@@ -316,6 +452,22 @@ export class ReportService {
     const reviews = await this.reviewTargets(
       rows.filter((r) => r.targetType === "REVIEW").map((r) => r.targetId),
     );
+    const ownerIds = [
+      ...new Set(
+        rows.flatMap((r) => (r.targetOwnerId ? [r.targetOwnerId] : [])),
+      ),
+    ];
+    const reportsPerOwner = new Map(
+      ownerIds.length === 0
+        ? []
+        : (
+            await this.prisma.report.groupBy({
+              by: ["targetOwnerId"],
+              where: { targetOwnerId: { in: ownerIds } },
+              _count: { _all: true },
+            })
+          ).map((g) => [g.targetOwnerId, g._count._all]),
+    );
 
     return Promise.all(
       rows.map(async (r): Promise<ReportDto> => ({
@@ -324,18 +476,72 @@ export class ReportService {
         targetId: r.targetId,
         category: r.category as ReportCategory | null,
         motif: r.motif as ReportMotif | null,
+        profilePart: r.profilePart as ReportProfilePart | null,
         reason: r.reason,
         status: r.status as ReportDto["status"],
         createdAt: r.createdAt.toISOString(),
         resolvedAt: r.resolvedAt?.toISOString() ?? null,
         reporter: r.reporter ? toUserSummaryDto(r.reporter) : null,
+        targetOwner:
+          r.targetOwnerId && r.targetOwner
+            ? {
+                username: r.targetOwner.username,
+                reportCount: reportsPerOwner.get(r.targetOwnerId) ?? 1,
+              }
+            : null,
         target: await this.resolveTarget(
           r.targetType as ReportTargetType,
           r.targetId,
+          r.createdAt,
           reviews,
         ),
       })),
     );
+  }
+
+  /** The reported message with a few before and after it, oldest first. */
+  private async messageContext(
+    messageId: string,
+  ): Promise<ReportContextMessageDto[]> {
+    const target = await this.prisma.message.findUnique({
+      where: { id: messageId },
+      select: { conversationId: true, createdAt: true },
+    });
+    if (!target) return [];
+
+    const select = {
+      id: true,
+      text: true,
+      createdAt: true,
+      author: { select: { username: true } },
+    } as const;
+    const [before, after] = await Promise.all([
+      this.prisma.message.findMany({
+        where: {
+          conversationId: target.conversationId,
+          createdAt: { lte: target.createdAt },
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: MESSAGE_CONTEXT_BEFORE + 1,
+        select,
+      }),
+      this.prisma.message.findMany({
+        where: {
+          conversationId: target.conversationId,
+          createdAt: { gt: target.createdAt },
+        },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: MESSAGE_CONTEXT_AFTER,
+        select,
+      }),
+    ]);
+
+    return [...before.reverse(), ...after].map((m) => ({
+      authorUsername: m.author?.username ?? null,
+      text: m.text,
+      createdAt: m.createdAt.toISOString(),
+      reported: m.id === messageId,
+    }));
   }
 
   /** Every reported review of a page in one query, keyed by id. */
@@ -349,6 +555,7 @@ export class ReportService {
         id: true,
         rating: true,
         text: true,
+        updatedAt: true,
         targetType: true,
         targetId: true,
         user: { select: { username: true } },
@@ -358,13 +565,12 @@ export class ReportService {
   }
 
   /** Daily 7h admin-only digest of pending reports. Skipped entirely when there's nothing pending. */
-  @Cron("0 7 * * *")
+  @Cron(CronExpression.EVERY_DAY_AT_7AM, { name: JOB_KEYS.REPORTS_DIGEST })
   async sendDailyDigest(): Promise<number> {
     return this.jobRuns.record(
       JOB_KEYS.REPORTS_DIGEST,
       () => this.runDailyDigest(),
-      (sent) =>
-        sent > 0 ? `Envoyé à ${sent} admin(s)` : "Aucun signalement en attente",
+      (sent) => (sent > 0 ? `Sent to ${sent} admin(s)` : "No pending report"),
     );
   }
 
@@ -372,47 +578,49 @@ export class ReportService {
     const pending = await this.pendingCount();
     if (pending === 0) return 0;
 
-    const admins = await this.prisma.user.findMany({
-      where: { role: "ADMIN" },
-      select: { email: true, locale: true },
+    return this.adminAlerts.notify("ADMIN_REPORTS_PENDING", {
+      email: (admin) => this.mail.sendReportsDigest(admin, pending),
+      push: (copy) => ({
+        ...copy.adminAlerts.reportsPending(pending),
+        url: "/app/admin/reports",
+      }),
     });
-
-    await Promise.all(
-      admins.map((a) =>
-        this.mail.sendReportsDigest(
-          { email: a.email, locale: a.locale },
-          pending,
-        ),
-      ),
-    );
-
-    return admins.length;
   }
 
   private async resolveTarget(
     targetType: ReportTargetType,
     targetId: string,
+    reportedAt: Date,
     reviews: Map<string, ReviewTarget>,
   ): Promise<ReportTargetSummaryDto | null> {
+    // The moderator may not be reading what was reported. Flagged rather
+    // than snapshotted at report time: a snapshot would keep what its
+    // author chose to remove.
+    const editedSince = (updatedAt: Date) => updatedAt > reportedAt;
+
     if (targetType === "COMMENT") {
       const comment = await this.prisma.comment.findUnique({
         where: { id: targetId },
         select: {
           text: true,
           deletedAt: true,
+          updatedAt: true,
           targetType: true,
           targetId: true,
           author: { select: { username: true } },
         },
       });
       if (!comment) return null;
-      const excerpt = comment.deletedAt
-        ? "(commentaire supprimé)"
-        : (comment.text ?? "").slice(0, EXCERPT_LENGTH);
       return {
         // No "@username — " prefix: the client renders the owner's username as
         // its own clickable link (targetOwnerUsername), not embedded in text.
-        label: excerpt,
+        label: comment.deletedAt
+          ? ""
+          : (comment.text ?? "").slice(0, EXCERPT_LENGTH),
+        deleted: comment.deletedAt !== null,
+        editedAfterReport:
+          comment.deletedAt === null && editedSince(comment.updatedAt),
+        authorDeleted: false,
         href: await resolveWorkHref(
           this.prisma,
           comment.targetType,
@@ -422,14 +630,45 @@ export class ReportService {
       };
     }
 
+    if (targetType === "MESSAGE") {
+      const message = await this.prisma.message.findUnique({
+        where: { id: targetId },
+        select: {
+          text: true,
+          deletedAt: true,
+          updatedAt: true,
+          author: { select: { username: true } },
+        },
+      });
+      if (!message) return null;
+      return {
+        label: message.deletedAt
+          ? ""
+          : (message.text ?? "").slice(0, EXCERPT_LENGTH),
+        deleted: message.deletedAt !== null,
+        editedAfterReport:
+          message.deletedAt === null && editedSince(message.updatedAt),
+        authorDeleted: false,
+        // A private conversation has no page a moderator could open.
+        href: null,
+        targetOwnerUsername: message.author?.username ?? null,
+        context: await this.messageContext(targetId),
+      };
+    }
+
     if (targetType === "USER") {
       const user = await this.prisma.user.findUnique({
         where: { id: targetId },
-        select: { username: true },
+        select: { username: true, displayName: true },
       });
       if (!user) return null;
       return {
-        label: "Profil utilisateur",
+        label: user.displayName,
+        deleted: false,
+        // A profile has no edit date of its own (User.updatedAt moves with
+        // every sign-in).
+        editedAfterReport: false,
+        authorDeleted: false,
         href: `/app/u/${user.username}`,
         targetOwnerUsername: user.username,
       };
@@ -438,11 +677,18 @@ export class ReportService {
     if (targetType === "LIST") {
       const list = await this.prisma.list.findUnique({
         where: { id: targetId },
-        select: { title: true, user: { select: { username: true } } },
+        select: {
+          title: true,
+          updatedAt: true,
+          user: { select: { username: true } },
+        },
       });
       if (!list) return null;
       return {
         label: list.title,
+        deleted: false,
+        editedAfterReport: editedSince(list.updatedAt),
+        authorDeleted: false,
         href: `/app/lists/${targetId}`,
         targetOwnerUsername: list.user.username,
       };
@@ -455,7 +701,10 @@ export class ReportService {
       ? `${review.rating}/10 — ${excerpt}`
       : `${review.rating}/10`;
     return {
-      label: review.user ? label : `${label} (auteur supprimé)`,
+      label,
+      deleted: false,
+      editedAfterReport: editedSince(review.updatedAt),
+      authorDeleted: review.user === null,
       href: await resolveWorkHref(
         this.prisma,
         review.targetType,

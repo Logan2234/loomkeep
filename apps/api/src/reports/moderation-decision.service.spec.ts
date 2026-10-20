@@ -1,17 +1,29 @@
+import type { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { MailService } from "../mail/mail.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ModerationDecisionService } from "./moderation-decision.service";
 
+const DECISION = {
+  id: "decision-1",
+  decidedAt: new Date("2026-10-03T10:15:00Z"),
+};
+
 function make() {
   const prisma = {
-    moderationDecision: { create: vi.fn() },
+    moderationDecision: { create: vi.fn().mockResolvedValue(DECISION) },
   } as unknown as PrismaService;
   const mail = {
     sendModerationDecision: vi.fn(),
   } as unknown as MailService;
-  const notifications = { create: vi.fn() } as unknown as NotificationService;
+  const notifications = {
+    create: vi.fn().mockResolvedValue(DECISION),
+    createInTransaction: vi.fn().mockResolvedValue(true),
+    publishCreated: vi.fn(),
+    copyFor: () => notificationCopy("fr"),
+  } as unknown as NotificationService;
 
   return {
     svc: new ModerationDecisionService(prisma, mail, notifications),
@@ -44,6 +56,7 @@ describe("ModerationDecisionService.record", () => {
     await svc.record(BASE_INPUT);
 
     expect(prisma.moderationDecision.create).toHaveBeenCalledWith({
+      select: { id: true, decidedAt: true },
       data: expect.objectContaining({
         measure: "COMMENT_REMOVED",
         subjectUserId: "u1",
@@ -58,14 +71,20 @@ describe("ModerationDecisionService.record", () => {
     expect(mail.sendModerationDecision).toHaveBeenCalledWith(
       { email: "alice@example.com", locale: "en" },
       expect.objectContaining({
-        measure: "COMMENT_REMOVED",
+        decisionIds: [DECISION.id],
+        decidedAt: DECISION.decidedAt,
+        measures: ["COMMENT_REMOVED"],
         reasonText: "Insultes répétées.",
         legalBasis: "TOS_BREACH",
         tosClause: "§7 — Règles de conduite",
       }),
     );
     expect(notifications.create).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "u1", type: "MODERATION_ACTION" }),
+      expect.objectContaining({
+        userId: "u1",
+        type: "MODERATION_ACTION",
+        data: { measure: "COMMENT_REMOVED" },
+      }),
     );
   });
 
@@ -85,6 +104,49 @@ describe("ModerationDecisionService.record", () => {
 
     expect(notifications.create).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Une de tes critiques a été retirée" }),
+    );
+  });
+});
+
+describe("ModerationDecisionService report notice", () => {
+  it("persists the decision and in-app notice in the caller's transaction without sending email", async () => {
+    const { svc, mail, notifications } = make();
+    const tx = {
+      moderationDecision: { create: vi.fn().mockResolvedValue(DECISION) },
+    } as unknown as Prisma.TransactionClient;
+
+    await svc.recordForReportInTransaction(tx, BASE_INPUT);
+    expect(tx.moderationDecision.create).toHaveBeenCalledWith({
+      select: { id: true, decidedAt: true },
+      data: expect.objectContaining({ reportId: "r1" }),
+    });
+    expect(notifications.createInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        userId: "u1",
+        type: "MODERATION_ACTION",
+        dedupeKey: "moderation:r1",
+        data: { measure: "COMMENT_REMOVED" },
+      }),
+    );
+    expect(mail.sendModerationDecision).not.toHaveBeenCalled();
+  });
+
+  it("sends the committed notice to the subject's email and locale", async () => {
+    const { svc, mail } = make();
+
+    await svc.sendEmail(BASE_INPUT, DECISION);
+
+    expect(mail.sendModerationDecision).toHaveBeenCalledWith(
+      { email: "alice@example.com", locale: "en" },
+      expect.objectContaining({
+        decisionIds: [DECISION.id],
+        decidedAt: DECISION.decidedAt,
+        measures: ["COMMENT_REMOVED"],
+        reasonText: "Insultes répétées.",
+        legalBasis: "TOS_BREACH",
+        tosClause: "§7 — Règles de conduite",
+      }),
     );
   });
 });

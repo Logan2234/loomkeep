@@ -1,7 +1,9 @@
 import { NotificationType } from "@loomkeep/shared";
 import { vi, type Mock } from "vitest";
+import { parsePageQuery } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { BlockService } from "./block.service";
@@ -15,8 +17,10 @@ function makeService(opts: {
   targetAccess: "PUBLIC" | "PRIVATE";
   upsertStatus?: "ACCEPTED" | "PENDING";
   viewerAccess?: "PUBLIC" | "PRIVATE" | "GHOST";
+  listMemberships?: { id: string; listId: string; userId: string }[];
 }) {
   const create = vi.fn().mockResolvedValue(undefined);
+  const settleFollowRequest = vi.fn().mockResolvedValue(undefined);
 
   const prisma = {
     user: {
@@ -42,7 +46,16 @@ function makeService(opts: {
     block: {
       findUnique: vi.fn().mockResolvedValue(null),
       findMany: vi.fn().mockResolvedValue([]),
+      upsert: vi.fn().mockResolvedValue({}),
     },
+    listMember: {
+      findMany: vi.fn().mockResolvedValue(opts.listMemberships ?? []),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+    listNotificationMute: {
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+    $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     follow: {
       upsert: vi.fn().mockResolvedValue({
         status:
@@ -50,7 +63,9 @@ function makeService(opts: {
           (opts.targetAccess === "PUBLIC" ? "ACCEPTED" : "PENDING"),
       }),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
   } as unknown as PrismaService;
@@ -60,13 +75,21 @@ function makeService(opts: {
     toRelationshipDto: vi.fn().mockReturnValue({}),
   } as unknown as VisibilityService;
 
-  const notifications = { create } as unknown as NotificationService;
+  const notifications = {
+    create,
+    settleFollowRequest,
+    copyFor: () => notificationCopy("fr"),
+  } as unknown as NotificationService;
   const achievements = {
     evaluate: vi.fn().mockResolvedValue(undefined),
   } as unknown as AchievementService;
 
   const blocks = new BlockService(prisma);
-  const events = { emitToUser: vi.fn() } as unknown as EventsGateway;
+  const events = {
+    emitToUser: vi.fn(),
+    emitToList: vi.fn(),
+    evictFromList: vi.fn(),
+  } as unknown as EventsGateway;
 
   return {
     service: new FollowService(
@@ -79,6 +102,7 @@ function makeService(opts: {
     ),
     prisma,
     create,
+    settleFollowRequest,
     achievements,
     events,
   };
@@ -173,7 +197,7 @@ describe("FollowService notifications", () => {
 
 describe("FollowService.unfollow", () => {
   it("pushes a live update to the target when cancelling a pending request", async () => {
-    const { service, prisma, events } = makeService({
+    const { service, prisma, events, settleFollowRequest } = makeService({
       targetAccess: "PRIVATE",
     });
     (prisma.follow.findUnique as Mock).mockResolvedValue({
@@ -186,6 +210,7 @@ describe("FollowService.unfollow", () => {
       "target",
       "follow-request-changed",
     );
+    expect(settleFollowRequest).toHaveBeenCalledWith("target", "viewer");
   });
 
   it("pushes nothing when unfollowing an already-accepted relationship", async () => {
@@ -199,6 +224,147 @@ describe("FollowService.unfollow", () => {
     await service.unfollow("viewer", "alice");
 
     expect(events.emitToUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("FollowService.removeFollower", () => {
+  it("deletes their follow on the viewer and sends them nothing", async () => {
+    const { service, prisma, create, events } = makeService({
+      targetAccess: "PUBLIC",
+    });
+    (prisma.follow.findUnique as Mock).mockResolvedValue({
+      status: "ACCEPTED",
+    });
+
+    await service.removeFollower("viewer", "alice");
+
+    expect(prisma.follow.deleteMany).toHaveBeenCalledWith({
+      where: { followerId: "target", followeeId: "viewer" },
+    });
+    expect(create).not.toHaveBeenCalled();
+    expect(events.emitToUser).not.toHaveBeenCalled();
+  });
+
+  it("refreshes the viewer's own pending list when it declines a request", async () => {
+    const { service, prisma, events, settleFollowRequest } = makeService({
+      targetAccess: "PUBLIC",
+    });
+    (prisma.follow.findUnique as Mock).mockResolvedValue({
+      status: "PENDING",
+    });
+
+    await service.removeFollower("viewer", "alice");
+
+    expect(events.emitToUser).toHaveBeenCalledWith(
+      "viewer",
+      "follow-request-changed",
+    );
+    expect(settleFollowRequest).toHaveBeenCalledWith("viewer", "target");
+  });
+});
+
+describe("FollowService.withViewerRelation", () => {
+  it("tags each account with the viewer's follow and friendship", async () => {
+    const { service, prisma } = makeService({ targetAccess: "PUBLIC" });
+    const findMany = vi.fn(({ where }: { where: Record<string, unknown> }) => {
+      // The viewer's follows towards the listed accounts.
+      if (where.followeeId && typeof where.followeeId === "object") {
+        return Promise.resolve([
+          { followeeId: "camille", status: "ACCEPTED" },
+          { followeeId: "theo", status: "PENDING" },
+        ]);
+      }
+
+      // listFriendIds: the viewer's accepted follows, then their followers.
+      if (where.followerId === "viewer") {
+        return Promise.resolve([
+          { followeeId: "camille", followee: { profileAccess: "PUBLIC" } },
+        ]);
+      }
+
+      return Promise.resolve([
+        { followerId: "camille" },
+        { followerId: "jules" },
+      ]);
+    });
+    (prisma.follow as unknown as { findMany: Mock }).findMany = findMany;
+    const user = (id: string) => ({
+      id,
+      username: id,
+      displayName: id,
+      profileAccess: "PUBLIC" as const,
+      avatarUrl: null,
+    });
+
+    const tagged = await service.withViewerRelation("viewer", [
+      user("camille"),
+      user("theo"),
+      user("jules"),
+    ]);
+
+    expect(
+      tagged.map(({ id, following, requested, isFriend }) => ({
+        id,
+        following,
+        requested,
+        isFriend,
+      })),
+    ).toEqual([
+      { id: "camille", following: true, requested: false, isFriend: true },
+      { id: "theo", following: false, requested: true, isFriend: false },
+      { id: "jules", following: false, requested: false, isFriend: false },
+    ]);
+  });
+});
+
+describe("FollowService.block", () => {
+  it("ends list editing both ways, since only friends can edit a list", async () => {
+    // Viewer edits a list of the target's, and the target edits one of the
+    // viewer's: both grants go with the friendship.
+    const memberships = [
+      { id: "lm1", listId: "target-list", userId: "viewer" },
+      { id: "lm2", listId: "viewer-list", userId: "target" },
+    ];
+    const { service, prisma, events } = makeService({
+      targetAccess: "PUBLIC",
+      listMemberships: memberships,
+    });
+
+    await service.block("viewer", "target-username");
+
+    expect((prisma.listMember.findMany as Mock).mock.calls[0][0].where).toEqual(
+      {
+        OR: [
+          { userId: "target", list: { userId: "viewer" } },
+          { userId: "viewer", list: { userId: "target" } },
+        ],
+      },
+    );
+    expect(prisma.listMember.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["lm1", "lm2"] } },
+    });
+    // Their mutes go with the membership, as when an editor leaves.
+    expect(prisma.listNotificationMute.deleteMany).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { listId: "target-list", userId: "viewer" },
+          { listId: "viewer-list", userId: "target" },
+        ],
+      },
+    });
+    expect(events.evictFromList).toHaveBeenCalledWith("target-list", "viewer");
+    expect(events.evictFromList).toHaveBeenCalledWith("viewer-list", "target");
+  });
+
+  it("settles a pending request either way, which the block deleted", async () => {
+    const { service, settleFollowRequest } = makeService({
+      targetAccess: "PUBLIC",
+    });
+
+    await service.block("viewer", "target-username");
+
+    expect(settleFollowRequest).toHaveBeenCalledWith("viewer", "target");
+    expect(settleFollowRequest).toHaveBeenCalledWith("target", "viewer");
   });
 });
 
@@ -217,7 +383,9 @@ describe("FollowService.listBlocked", () => {
       },
     ]);
 
-    await expect(service.listBlocked("viewer", 1, 20)).resolves.toEqual({
+    await expect(
+      service.listBlocked("viewer", parsePageQuery("1", "20", 20)),
+    ).resolves.toEqual({
       items: [
         {
           id: "blocked-1",
@@ -243,7 +411,7 @@ describe("FollowService.listBlocked", () => {
 
 describe("FollowService.acceptRequest", () => {
   it("posts a FOLLOW_ACCEPTED notification to the requester on approval", async () => {
-    const { service, prisma, create } = makeService({
+    const { service, prisma, create, settleFollowRequest } = makeService({
       targetAccess: "PRIVATE",
     });
     (prisma.follow.findUnique as Mock).mockResolvedValue({
@@ -260,5 +428,35 @@ describe("FollowService.acceptRequest", () => {
         dedupeKey: "accept:me",
       }),
     );
+    expect(settleFollowRequest).toHaveBeenCalledWith("me", "requester");
+  });
+});
+
+describe("FollowService.rejectRequest", () => {
+  it("settles the request's notification once the request is gone", async () => {
+    const { service, prisma, settleFollowRequest } = makeService({
+      targetAccess: "PRIVATE",
+    });
+    (prisma.follow.findFirst as Mock).mockResolvedValue({
+      followerId: "requester",
+    });
+
+    await service.rejectRequest("me", "f1");
+
+    expect(prisma.follow.delete).toHaveBeenCalledWith({ where: { id: "f1" } });
+    expect(settleFollowRequest).toHaveBeenCalledWith("me", "requester");
+  });
+
+  it("answers 404 for a request that isn't pending for this account", async () => {
+    const { service, prisma, settleFollowRequest } = makeService({
+      targetAccess: "PRIVATE",
+    });
+    (prisma.follow.findFirst as Mock).mockResolvedValue(null);
+
+    await expect(service.rejectRequest("me", "f1")).rejects.toMatchObject({
+      code: "social.follow_request_not_found",
+    });
+    expect(prisma.follow.delete).not.toHaveBeenCalled();
+    expect(settleFollowRequest).not.toHaveBeenCalled();
   });
 });

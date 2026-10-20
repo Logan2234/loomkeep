@@ -11,16 +11,21 @@ export async function initConfig(): Promise<void> {
   try {
     const config = await getPublicConfig();
     appConfig.socialEnabled = config.socialEnabled;
+    appConfig.chatEnabled = config.chatEnabled;
     appConfig.gamificationEnabled = config.gamificationEnabled;
     appConfig.registrationEnabled = config.registrationEnabled;
+    appConfig.publicApiEnabled = config.publicApiEnabled;
     appConfig.erdEnabled = config.erdEnabled;
     appConfig.adminMfaEnforced = config.adminMfaEnforced;
     appConfig.version = config.version;
     appConfig.gitSha = config.gitSha;
+    appConfig.supportEmail = config.supportEmail;
   } catch {
     appConfig.socialEnabled = false;
+    appConfig.chatEnabled = false;
     appConfig.gamificationEnabled = false;
     appConfig.registrationEnabled = false;
+    appConfig.publicApiEnabled = false;
     appConfig.erdEnabled = false;
     appConfig.adminMfaEnforced = true;
     appConfig.version = "";

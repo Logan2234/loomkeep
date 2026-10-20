@@ -21,6 +21,7 @@ export const Domain = {
   PODCASTS: "PODCASTS",
   BOARDGAMES: "BOARDGAMES",
 } as const;
+
 export type Domain = (typeof Domain)[keyof typeof Domain];
 
 /**
@@ -45,6 +46,7 @@ export const Role = {
   USER: "USER",
   ADMIN: "ADMIN",
 } as const;
+
 export type Role = (typeof Role)[keyof typeof Role];
 
 /**
@@ -56,6 +58,7 @@ export const Plan = {
   FREE: "FREE",
   PREMIUM: "PREMIUM",
 } as const;
+
 export type Plan = (typeof Plan)[keyof typeof Plan];
 
 /**
@@ -70,6 +73,7 @@ export const DigestCadence = {
   WEEKLY: "WEEKLY",
   DAILY: "DAILY",
 } as const;
+
 export type DigestCadence = (typeof DigestCadence)[keyof typeof DigestCadence];
 
 /**
@@ -79,6 +83,8 @@ export type DigestCadence = (typeof DigestCadence)[keyof typeof DigestCadence];
  */
 export const NotificationType = {
   NEW_EPISODE: "NEW_EPISODE",
+  NEW_MOVIE: "NEW_MOVIE",
+  NEW_GAME: "NEW_GAME",
   /** Someone started following you (public profile). */
   FOLLOW: "FOLLOW",
   /** Someone asked to follow your private profile. */
@@ -90,11 +96,31 @@ export const NotificationType = {
   COMMENT_REACTIONS: "COMMENT_REACTIONS",
   /** Someone added you as an editor on one of their lists. */
   LIST_MEMBER_ADDED: "LIST_MEMBER_ADDED",
+  /** Someone else added a work to a list you own or edit. */
+  LIST_ITEM_ADDED: "LIST_ITEM_ADDED",
   /** A moderation decision (content removal) was taken against you — see ModerationDecision. */
   MODERATION_ACTION: "MODERATION_ACTION",
   /** DSA art. 16(5): a report you filed has been resolved or dismissed. */
   REPORT_RESOLVED: "REPORT_RESOLVED",
+  /** The password changed while API keys are active: worth a look. `data.count`. */
+  API_KEYS_REVIEW: "API_KEYS_REVIEW",
+  /** A key found in public by GitHub's secret scanning was revoked. `data.name`, `data.foundAt`. */
+  API_KEY_LEAKED: "API_KEY_LEAKED",
+  /** A key expires within a week. `data.name`, `data.expiresAt`. */
+  API_KEY_EXPIRING: "API_KEY_EXPIRING",
+  /** An import finished while its owner wasn't in the app. `data.source`, `data.failed`. */
+  IMPORT_FINISHED: "IMPORT_FINISHED",
+  /**
+   * A new work joined a saga you finished part of. `data.sagaKey`,
+   * `data.sagaTitle`.
+   */
+  SAGA_SEQUEL_ANNOUNCED: "SAGA_SEQUEL_ANNOUNCED",
+  /** Someone joined the instance through your invitation. */
+  INVITATION_ACCEPTED: "INVITATION_ACCEPTED",
+  /** Your review crossed the upvote notification threshold. `data.count`. */
+  REVIEW_VOTES: "REVIEW_VOTES",
 } as const;
+
 export type NotificationType =
   (typeof NotificationType)[keyof typeof NotificationType];
 
@@ -116,8 +142,41 @@ export const ActivityType = {
   LIST_ITEM_ADDED: "LIST_ITEM_ADDED",
   /** A list's visibility moved from PRIVATE to FRIENDS/PUBLIC. */
   LIST_SHARED: "LIST_SHARED",
+  /**
+   * Every episode of one season now watched — distinct from the work-level
+   * FINISHED, so a feed can tell "finished season 3" from "finished the
+   * whole show". MEDIA only, level SEASON, `data.seasonNumber` set.
+   */
+  SEASON_FINISHED: "SEASON_FINISHED",
 } as const;
+
 export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType];
+
+export const SessionSource = {
+  MANUAL: "MANUAL",
+  TIMER: "TIMER",
+  IMPORT: "IMPORT",
+} as const;
+
+export type SessionSource = (typeof SessionSource)[keyof typeof SessionSource];
+
+export const TrackingCycleStatus = {
+  ACTIVE: "ACTIVE",
+  COMPLETED: "COMPLETED",
+  DROPPED: "DROPPED",
+} as const;
+
+export type TrackingCycleStatus =
+  (typeof TrackingCycleStatus)[keyof typeof TrackingCycleStatus];
+
+export const SessionCycleAction = {
+  CONTINUE: "CONTINUE",
+  RESTART: "RESTART",
+  HISTORY_ONLY: "HISTORY_ONLY",
+} as const;
+
+export type SessionCycleAction =
+  (typeof SessionCycleAction)[keyof typeof SessionCycleAction];
 
 /** Kind of media. MOVIE/SERIES come from TMDB, ANIME from AniList. */
 export const MediaType = {
@@ -125,6 +184,7 @@ export const MediaType = {
   SERIES: "SERIES",
   ANIME: "ANIME",
 } as const;
+
 export type MediaType = (typeof MediaType)[keyof typeof MediaType];
 
 /**
@@ -138,6 +198,7 @@ export const MediaSource = {
   TVDB: "TVDB",
   IMDB: "IMDB",
 } as const;
+
 export type MediaSource = (typeof MediaSource)[keyof typeof MediaSource];
 
 /** Sources the catalogue can be queried from (canonical only). */
@@ -145,18 +206,19 @@ export const CatalogSource = {
   TMDB: MediaSource.TMDB,
   ANILIST: MediaSource.ANILIST,
 } as const;
+
 export type CatalogSource = (typeof CatalogSource)[keyof typeof CatalogSource];
 
 export const GameSource = {
   IGDB: "IGDB",
 } as const;
+
 export type GameSource = (typeof GameSource)[keyof typeof GameSource];
 
 /**
- * Status of a game in a user's library. Unlike media (whose status is derived
- * from episode progress), a game's status is entirely user-set: there is no
- * per-episode progress to infer "playing" or "completed" from. BACKLOG doubles
- * as the wishlist ("want to play").
+ * Status of a game in a user's library. The first play session moves BACKLOG
+ * to PLAYING, but completion and abandonment remain explicit user choices.
+ * BACKLOG doubles as the wishlist ("want to play").
  */
 export const GameStatus = {
   BACKLOG: "BACKLOG",
@@ -164,6 +226,7 @@ export const GameStatus = {
   COMPLETED: "COMPLETED",
   DROPPED: "DROPPED",
 } as const;
+
 export type GameStatus = (typeof GameStatus)[keyof typeof GameStatus];
 
 /**
@@ -178,19 +241,37 @@ export const GameOwnershipStatus = {
   SUBSCRIPTION: "SUBSCRIPTION",
   BORROWED: "BORROWED",
 } as const;
+
 export type GameOwnershipStatus =
   (typeof GameOwnershipStatus)[keyof typeof GameOwnershipStatus];
+
+/**
+ * How precisely a game's release date is known, after IGDB's `date_format`.
+ * Anything but DAY dates the release to its period's first day.
+ */
+export const ReleaseDatePrecision = {
+  DAY: "DAY",
+  MONTH: "MONTH",
+  QUARTER: "QUARTER",
+  YEAR: "YEAR",
+  /** Announced, not dated. */
+  TBD: "TBD",
+} as const;
+
+export type ReleaseDatePrecision =
+  (typeof ReleaseDatePrecision)[keyof typeof ReleaseDatePrecision];
 
 export const BookSource = {
   OPEN_LIBRARY: "OPEN_LIBRARY",
 } as const;
+
 export type BookSource = (typeof BookSource)[keyof typeof BookSource];
 
 /**
- * Status of a book in a user's library. Like GameStatus it is entirely
- * user-set: books have no per-chapter progress to derive "reading"/"read" from
- * (page progress is tracked separately, on the entry). TO_READ doubles as the
- * wishlist ("want to read").
+ * Status of a book in a user's library. Reading sessions move TO_READ to
+ * READING and then READ once page progress reaches the selected edition's
+ * reference page count. DROPPED remains an explicit user choice. TO_READ
+ * doubles as the wishlist ("want to read").
  */
 export const BookStatus = {
   TO_READ: "TO_READ",
@@ -198,6 +279,7 @@ export const BookStatus = {
   READ: "READ",
   DROPPED: "DROPPED",
 } as const;
+
 export type BookStatus = (typeof BookStatus)[keyof typeof BookStatus];
 
 /**
@@ -212,6 +294,7 @@ export const BookOwnershipStatus = {
   AUDIO: "AUDIO",
   BORROWED: "BORROWED",
 } as const;
+
 export type BookOwnershipStatus =
   (typeof BookOwnershipStatus)[keyof typeof BookOwnershipStatus];
 
@@ -232,6 +315,7 @@ export const EntryStatus = {
   DROPPED: "DROPPED",
   UP_TO_DATE: "UP_TO_DATE",
 } as const;
+
 export type EntryStatus = (typeof EntryStatus)[keyof typeof EntryStatus];
 
 /**
@@ -246,12 +330,14 @@ export const MediaOwnershipStatus = {
   STREAMING: "STREAMING",
   BORROWED: "BORROWED",
 } as const;
+
 export type MediaOwnershipStatus =
   (typeof MediaOwnershipStatus)[keyof typeof MediaOwnershipStatus];
 
 export const MusicSource = {
   MUSICBRAINZ: "MUSICBRAINZ",
 } as const;
+
 export type MusicSource = (typeof MusicSource)[keyof typeof MusicSource];
 
 /**
@@ -264,6 +350,7 @@ export const MusicStatus = {
   TO_LISTEN: "TO_LISTEN",
   LISTENED: "LISTENED",
 } as const;
+
 export type MusicStatus = (typeof MusicStatus)[keyof typeof MusicStatus];
 
 /**
@@ -278,6 +365,7 @@ export const MusicOwnershipStatus = {
   STREAMING: "STREAMING",
   BORROWED: "BORROWED",
 } as const;
+
 export type MusicOwnershipStatus =
   (typeof MusicOwnershipStatus)[keyof typeof MusicOwnershipStatus];
 
@@ -311,7 +399,14 @@ export const SecurityEventType = {
   // A pending MfaLoginChallenge was deleted for exceeding MAX_MFA_CHALLENGE_ATTEMPTS —
   // the 2nd-factor equivalent of LOGIN_FAILED's brute-force signal.
   MFA_CHALLENGE_LOCKED: "MFA_CHALLENGE_LOCKED",
+  // Too many failed identity confirmations: the session that tried was signed out.
+  REAUTH_LOCKED: "REAUTH_LOCKED",
+  API_KEY_CREATED: "API_KEY_CREATED",
+  API_KEY_REVOKED: "API_KEY_REVOKED",
+  // Revoked automatically: GitHub's secret scanning found the key in public.
+  API_KEY_LEAKED: "API_KEY_LEAKED",
 } as const;
+
 export type SecurityEventType =
   (typeof SecurityEventType)[keyof typeof SecurityEventType];
 
@@ -332,6 +427,7 @@ export const ProfileAccess = {
   PRIVATE: "PRIVATE",
   GHOST: "GHOST",
 } as const;
+
 export type ProfileAccess = (typeof ProfileAccess)[keyof typeof ProfileAccess];
 
 /**
@@ -344,6 +440,7 @@ export const VisibilityAudience = {
   FRIENDS: "FRIENDS",
   NONE: "NONE",
 } as const;
+
 export type VisibilityAudience =
   (typeof VisibilityAudience)[keyof typeof VisibilityAudience];
 
@@ -360,6 +457,7 @@ export const VisibilityFacet = {
   LIBRARY: "LIBRARY",
   ACTIVITY: "ACTIVITY",
 } as const;
+
 export type VisibilityFacet =
   (typeof VisibilityFacet)[keyof typeof VisibilityFacet];
 
@@ -371,6 +469,7 @@ export const FollowStatus = {
   PENDING: "PENDING",
   ACCEPTED: "ACCEPTED",
 } as const;
+
 export type FollowStatus = (typeof FollowStatus)[keyof typeof FollowStatus];
 
 /**
@@ -385,6 +484,7 @@ export const ReviewTargetType = {
   BOOK: "BOOK",
   MUSIC: "MUSIC",
 } as const;
+
 export type ReviewTargetType =
   (typeof ReviewTargetType)[keyof typeof ReviewTargetType];
 
@@ -398,11 +498,9 @@ export const ReviewVisibility = {
   FRIENDS: "FRIENDS",
   PUBLIC: "PUBLIC",
 } as const;
+
 export type ReviewVisibility =
   (typeof ReviewVisibility)[keyof typeof ReviewVisibility];
-
-/** Max length of a review's optional text (frontend + backend DTO). */
-export const REVIEW_TEXT_MAX_LENGTH = 2000;
 
 /**
  * How spoiler-tagged reviews and comments are masked for the reader by
@@ -416,6 +514,7 @@ export const SpoilerSensitivity = {
   ALWAYS_HIDDEN: "ALWAYS_HIDDEN",
   ALWAYS_REVEALED: "ALWAYS_REVEALED",
 } as const;
+
 export type SpoilerSensitivity =
   (typeof SpoilerSensitivity)[keyof typeof SpoilerSensitivity];
 
@@ -428,6 +527,7 @@ export const ReviewVoteValue = {
   UP: "UP",
   DOWN: "DOWN",
 } as const;
+
 export type ReviewVoteValue =
   (typeof ReviewVoteValue)[keyof typeof ReviewVoteValue];
 
@@ -443,6 +543,7 @@ export const CommentTargetType = {
   BOOK: "BOOK",
   MUSIC: "MUSIC",
 } as const;
+
 export type CommentTargetType =
   (typeof CommentTargetType)[keyof typeof CommentTargetType];
 
@@ -455,35 +556,18 @@ export const CommentEmote = {
   SAD: "SAD",
   DISLIKE: "DISLIKE",
 } as const;
+
 export type CommentEmote = (typeof CommentEmote)[keyof typeof CommentEmote];
 
-/** Display glyph for each CommentEmote, in a fixed picker order. */
-export const COMMENT_EMOTE_DISPLAY: Record<CommentEmote, string> = {
-  LIKE: "👍",
-  LOVE: "❤️",
-  LAUGH: "😂",
-  WOW: "😮",
-  SAD: "😢",
-  DISLIKE: "👎",
-};
-
-/** Max length of a comment's text (frontend + backend DTO). */
-export const COMMENT_TEXT_MAX_LENGTH = 500;
-
-/** How many reactions on one comment trigger the aggregated notification. */
-export const COMMENT_REACTION_NOTIFY_THRESHOLD = 10;
-
-/**
- * What a report targets. COMMENT is the only kind produced today; REVIEW/USER
- * are modelled now so reporting a review or a profile later needs no
- * migration, just a new emitter.
- */
+/** What a report targets. */
 export const ReportTargetType = {
   COMMENT: "COMMENT",
   REVIEW: "REVIEW",
   USER: "USER",
   LIST: "LIST",
+  MESSAGE: "MESSAGE",
 } as const;
+
 export type ReportTargetType =
   (typeof ReportTargetType)[keyof typeof ReportTargetType];
 
@@ -493,19 +577,27 @@ export const ReportStatus = {
   RESOLVED: "RESOLVED",
   DISMISSED: "DISMISSED",
 } as const;
+
 export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus];
 
 /**
- * The two restrictive measures actually implemented (see ModerationDecision
- * and CGU §9) — comment removal and admin account deletion. Keep this in
- * lockstep with what the CGU list: DSA art. 14 requires the CGU to describe
- * exactly what the code can do, not more.
+ * The restrictive measures actually implemented (see ModerationDecision and
+ * CGU §9). Keep this in lockstep with what the CGU list: DSA art. 14 requires
+ * the CGU to describe exactly what the code can do, not more.
  */
 export const ModerationMeasure = {
   COMMENT_REMOVED: "COMMENT_REMOVED",
+  MESSAGE_REMOVED: "MESSAGE_REMOVED",
   REVIEW_REMOVED: "REVIEW_REMOVED",
+  LIST_REMOVED: "LIST_REMOVED",
+  LIST_EDITED: "LIST_EDITED",
+  AVATAR_REMOVED: "AVATAR_REMOVED",
+  BIO_CLEARED: "BIO_CLEARED",
+  DISPLAY_NAME_CHANGED: "DISPLAY_NAME_CHANGED",
+  ACCOUNT_SUSPENDED: "ACCOUNT_SUSPENDED",
   ACCOUNT_DELETED: "ACCOUNT_DELETED",
 } as const;
+
 export type ModerationMeasure =
   (typeof ModerationMeasure)[keyof typeof ModerationMeasure];
 
@@ -517,15 +609,15 @@ export const ModerationLegalBasis = {
   ILLEGAL_CONTENT: "ILLEGAL_CONTENT",
   TOS_BREACH: "TOS_BREACH",
 } as const;
+
 export type ModerationLegalBasis =
   (typeof ModerationLegalBasis)[keyof typeof ModerationLegalBasis];
 
 /**
  * Top-level reason bucket for a report, chosen before a precise ReportMotif.
- * Deliberately generic across every ReportTargetType (not comment-specific) —
- * COMMENT is the only target with a report button today, but the categories
- * were designed to also make sense for a future REVIEW/USER/LIST report.
- * OTHER skips the motif step: the free-text `reason` carries the detail.
+ * Shared by every ReportTargetType; REPORT_CATEGORY_TARGETS narrows the few
+ * that only make sense for some of them. OTHER skips the motif step: the
+ * free-text `reason` carries the detail.
  */
 export const ReportCategory = {
   SPAM: "SPAM",
@@ -540,8 +632,10 @@ export const ReportCategory = {
   MISINFORMATION: "MISINFORMATION",
   STOLEN_CONTENT: "STOLEN_CONTENT",
   MISLEADING_REVIEW: "MISLEADING_REVIEW",
+  NONCOMPLIANT_ACCOUNT: "NONCOMPLIANT_ACCOUNT",
   OTHER: "OTHER",
 } as const;
+
 export type ReportCategory =
   (typeof ReportCategory)[keyof typeof ReportCategory];
 
@@ -551,6 +645,9 @@ export const ReportMotif = {
   SPAM_SUSPICIOUS_LINK: "SPAM_SUSPICIOUS_LINK",
   SPAM_REPEATED: "SPAM_REPEATED",
   ILLEGAL_PIRACY_LINK: "ILLEGAL_PIRACY_LINK",
+  ILLEGAL_TERRORISM: "ILLEGAL_TERRORISM",
+  ILLEGAL_DEFAMATION: "ILLEGAL_DEFAMATION",
+  ILLEGAL_OTHER: "ILLEGAL_OTHER",
   HARASSMENT_INSULTS: "HARASSMENT_INSULTS",
   HARASSMENT_THREATS: "HARASSMENT_THREATS",
   HARASSMENT_STALKING: "HARASSMENT_STALKING",
@@ -564,75 +661,33 @@ export const ReportMotif = {
   MINOR_ENDANGERMENT_SOLICITATION: "MINOR_ENDANGERMENT_SOLICITATION",
   SPOILER_UNTAGGED: "SPOILER_UNTAGGED",
   IMPERSONATION_REAL_PERSON: "IMPERSONATION_REAL_PERSON",
-  IMPERSONATION_FAKE_ACCOUNT: "IMPERSONATION_FAKE_ACCOUNT",
   MISINFORMATION_FALSE_FACT: "MISINFORMATION_FALSE_FACT",
   STOLEN_CONTENT_PLAGIARIZED: "STOLEN_CONTENT_PLAGIARIZED",
+  STOLEN_CONTENT_IMAGE: "STOLEN_CONTENT_IMAGE",
   MISLEADING_REVIEW_MANIPULATION: "MISLEADING_REVIEW_MANIPULATION",
   MISLEADING_REVIEW_OFF_TOPIC: "MISLEADING_REVIEW_OFF_TOPIC",
+  ACCOUNT_BOT: "ACCOUNT_BOT",
+  ACCOUNT_UNDERAGE: "ACCOUNT_UNDERAGE",
+  ACCOUNT_BAN_EVASION: "ACCOUNT_BAN_EVASION",
+  ACCOUNT_MANIPULATION: "ACCOUNT_MANIPULATION",
 } as const;
+
 export type ReportMotif = (typeof ReportMotif)[keyof typeof ReportMotif];
 
 /**
- * Which ReportMotif values are valid under each ReportCategory — the single
- * source of truth for both the picker UI (category -> motif options) and
- * server-side validation (ReportService.create rejects a mismatched pair).
- * OTHER maps to an empty list: it has no motif, only the free-text `reason`.
+ * The part of a profile a USER report is about, picked before the category:
+ * it narrows the categories to the ones that can happen there, and tells the
+ * moderator which measure fits.
  */
-export const REPORT_CATEGORY_MOTIFS: Record<ReportCategory, ReportMotif[]> = {
-  SPAM: [
-    ReportMotif.SPAM_PROMOTIONAL,
-    ReportMotif.SPAM_SUSPICIOUS_LINK,
-    ReportMotif.SPAM_REPEATED,
-  ],
-  ILLEGAL_CONTENT: [ReportMotif.ILLEGAL_PIRACY_LINK],
-  HARASSMENT: [
-    ReportMotif.HARASSMENT_INSULTS,
-    ReportMotif.HARASSMENT_THREATS,
-    ReportMotif.HARASSMENT_STALKING,
-    ReportMotif.HARASSMENT_DOXXING,
-  ],
-  HATE_SPEECH: [
-    ReportMotif.HATE_RACISM,
-    ReportMotif.HATE_SEXISM_LGBTQ,
-    ReportMotif.HATE_OTHER,
-  ],
-  SEXUAL_CONTENT: [ReportMotif.SEXUAL_EXPLICIT],
-  VIOLENCE: [ReportMotif.VIOLENCE_GRAPHIC],
-  MINOR_ENDANGERMENT: [
-    ReportMotif.MINOR_ENDANGERMENT_CONTENT,
-    ReportMotif.MINOR_ENDANGERMENT_SOLICITATION,
-  ],
-  SPOILER: [ReportMotif.SPOILER_UNTAGGED],
-  IMPERSONATION: [
-    ReportMotif.IMPERSONATION_REAL_PERSON,
-    ReportMotif.IMPERSONATION_FAKE_ACCOUNT,
-  ],
-  MISINFORMATION: [ReportMotif.MISINFORMATION_FALSE_FACT],
-  STOLEN_CONTENT: [ReportMotif.STOLEN_CONTENT_PLAGIARIZED],
-  MISLEADING_REVIEW: [
-    ReportMotif.MISLEADING_REVIEW_MANIPULATION,
-    ReportMotif.MISLEADING_REVIEW_OFF_TOPIC,
-  ],
-  OTHER: [],
-};
+export const ReportProfilePart = {
+  NAME: "NAME",
+  PHOTO: "PHOTO",
+  BIO: "BIO",
+  BEHAVIOUR: "BEHAVIOUR",
+} as const;
 
-/**
- * Categories that only make sense for some target types (a comment has no
- * rating to manipulate). Any category not listed applies to every target.
- * Shared by the picker UI and ReportService.create's validation.
- */
-const REPORT_CATEGORY_TARGETS: Partial<
-  Record<ReportCategory, ReportTargetType[]>
-> = {
-  MISLEADING_REVIEW: [ReportTargetType.REVIEW],
-};
-
-export function isReportCategoryAllowed(
-  category: ReportCategory,
-  targetType: ReportTargetType,
-): boolean {
-  return REPORT_CATEGORY_TARGETS[category]?.includes(targetType) ?? true;
-}
+export type ReportProfilePart =
+  (typeof ReportProfilePart)[keyof typeof ReportProfilePart];
 
 /**
  * A list's kind: RANKED shows explicit rank order (drag-to-reorder, "top
@@ -643,6 +698,7 @@ export const ListKind = {
   RANKED: "RANKED",
   COLLECTION: "COLLECTION",
 } as const;
+
 export type ListKind = (typeof ListKind)[keyof typeof ListKind];
 
 /**
@@ -655,17 +711,13 @@ export const ListVisibility = {
   FRIENDS: "FRIENDS",
   PUBLIC: "PUBLIC",
 } as const;
+
 export type ListVisibility =
   (typeof ListVisibility)[keyof typeof ListVisibility];
 
-export const Locale = ["fr", "en"] as const;
-export type Locale = (typeof Locale)[number];
-
-// Mirrors XpEntry.reason, a String column so new reasons need no migration.
-// Amount, cap, and source rules live in xp-rules.ts.
-
 /**
- * Every source of XP the app can credit. See `xp-rules.ts` for the amount,
+ * Every source of XP the app can credit. Mirrors XpEntry.reason, a String
+ * column so new reasons need no migration. See `xp-rules.ts` for the amount,
  * daily cap and source table backing each one. `ADMIN_ADJUSTMENT` has no
  * automatic caller by design — it exists so an admin can correct a total by
  * hand.
@@ -680,6 +732,7 @@ export const XpReason = {
   GAME_REPLAYED: "GAME_REPLAYED",
   BOOK_FINISHED: "BOOK_FINISHED",
   BOOK_REPLAYED: "BOOK_REPLAYED",
+  SESSION_DAY_LOGGED: "SESSION_DAY_LOGGED",
   ALBUM_LISTENED: "ALBUM_LISTENED",
   WORK_ADDED: "WORK_ADDED",
   DOMAIN_STARTED: "DOMAIN_STARTED",
@@ -693,6 +746,9 @@ export const XpReason = {
   IMPORT_COMPLETED: "IMPORT_COMPLETED",
   PROFILE_COMPLETED: "PROFILE_COMPLETED",
   ACHIEVEMENT_UNLOCKED: "ACHIEVEMENT_UNLOCKED",
+  SAGA_COMPLETED: "SAGA_COMPLETED",
+  READING_GOAL_REACHED: "READING_GOAL_REACHED",
   ADMIN_ADJUSTMENT: "ADMIN_ADJUSTMENT",
 } as const;
+
 export type XpReason = (typeof XpReason)[keyof typeof XpReason];

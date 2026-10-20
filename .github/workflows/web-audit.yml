@@ -16,6 +16,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Advisory: nobody acts on a Lighthouse score per PR, so it runs with the
+  # other audits rather than in CI, where it added ~3 minutes to every run.
+  # Audits a local `vite preview` build (.lighthouserc.json), so it needs
+  # neither the ephemeral stack below nor the OpenAPI document — the typed
+  # API client is type-only, and the Paraglide Vite plugin compiles its own
+  # messages.
+  lighthouse:
+    name: Lighthouse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:package
+      - name: Web production build
+        run: pnpm --filter @loomkeep/web build
+      - name: Lighthouse
+        run: pnpm exec lhci autorun
+        continue-on-error: true
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lighthouse-reports
+          path: lighthouse-results/
+
   audit:
     name: Web Audit (Pa11y + OWASP ZAP)
     runs-on: ubuntu-latest
@@ -81,7 +113,7 @@ jobs:
           done
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 22
           cache: pnpm
@@ -101,7 +133,7 @@ jobs:
       # violation exits pa11y-ci non-zero, but the SARIF is still written.
       - name: Upload Pa11y SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           sarif_file: pa11y-results.sarif
           category: pa11y
@@ -198,13 +230,13 @@ jobs:
           PY
       - name: Upload ZAP SARIF (web)
         if: always()
-        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           sarif_file: zap-results/zap-results.fixed.sarif.json
           category: zap
       - name: Upload ZAP SARIF (api)
         if: always()
-        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           sarif_file: zap-results/zap-api-results.fixed.sarif.json
           category: zap-api

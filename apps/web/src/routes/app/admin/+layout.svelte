@@ -1,22 +1,46 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { auth } from "$lib/auth.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { type LayoutProps } from "./$types";
 
-  let { children } = $props();
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { keys } from "#lib/api/keys.js";
+  import { getMfaStatus } from "#lib/api/mfa.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import AdminPageShell from "./AdminPageShell.svelte";
+
+  let { children }: LayoutProps = $props();
 
   $effect(() => {
     if (auth.user && !auth.isAdmin) void goto("/app");
   });
 
-  const mfaBlocked = $derived(
+  // TOTP and email MFA are on the user itself; a security key or passkey
+  // (which AdminGuard counts too) is only in the MFA status, fetched just for
+  // the accounts that have neither — same cache entry as the 2FA settings.
+  const needsKeyCheck = $derived(
     appConfig.adminMfaEnforced &&
       auth.isAdmin &&
       !auth.user?.mfaTotpEnabled &&
       !auth.user?.mfaEmailEnabled,
   );
+  const mfaQuery = createApiQuery(() => ({
+    key: keys.mfa.status(),
+    fetch: getMfaStatus,
+    enabled: needsKeyCheck,
+  }));
+  const mfaBlocked = $derived(
+    needsKeyCheck &&
+      !!mfaQuery.data &&
+      mfaQuery.data.webauthnCredentials.length === 0,
+  );
+  // Nothing to show while the key check runs: rendering the panel first
+  // would only flash it, then its own requests' 403s. If the check itself
+  // fails, the panel renders and AdminGuard has the last word.
+  const mfaPending = $derived(needsKeyCheck && mfaQuery.loading);
 </script>
 
 {#if auth.isAdmin && mfaBlocked}
@@ -31,6 +55,8 @@
       {m.admin_mfa_required_cta()}
     </a>
   </div>
-{:else if auth.isAdmin}
-  {@render children()}
+{:else if auth.isAdmin && !mfaPending}
+  <AdminPageShell pathname={page.url.pathname}>
+    {@render children()}
+  </AdminPageShell>
 {/if}

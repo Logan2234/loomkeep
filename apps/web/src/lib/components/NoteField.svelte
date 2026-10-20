@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
+  import { ENTRY_NOTES_MAX_LENGTH } from "@loomkeep/shared";
+
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     value = null,
@@ -19,7 +21,7 @@
   <textarea
     name="notes"
     rows="3"
-    maxlength="5000"
+    maxlength={ENTRY_NOTES_MAX_LENGTH}
     {placeholder}
     class="input bg-surface-2 min-h-16.5 rounded-l-sm text-sm"
     value={value ?? ""}

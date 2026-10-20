@@ -1,21 +1,62 @@
 <script lang="ts">
-  import { getFeed } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import ActivityItem from "$lib/components/ActivityItem.svelte";
-  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "$lib/components/EmptyState.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import type { ActivityEventDto, PagedResult } from "@loomkeep/shared";
+  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { getFeed } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import ActivityItem from "#lib/components/ActivityItem.svelte";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import TabPanels from "#lib/components/TabPanels.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { ActivityEventDto, Domain, PagedResult } from "@loomkeep/shared";
+
+  type Tab = "ALL" | Domain;
+
+  const domainTabs = $derived(
+    orderedDomains(auth.user?.domainOrder).filter(isDomainEnabled),
+  );
+  const tabs = $derived<(SelectOption<Tab> & { disabled?: boolean })[]>([
+    { value: "ALL", label: m.common_all() },
+    ...domainTabs.map((value) => ({
+      value,
+      label: DOMAINS[value].label,
+      disabled: DOMAINS[value].comingSoon,
+    })),
+  ]);
+
+  // In the URL so the tab survives a reload and a shared link. A domain the
+  // viewer has since turned off falls back to every domain.
+  const domain = $derived.by<Domain | null>(() => {
+    const requested = page.url.searchParams.get("domain");
+    return (
+      domainTabs.find((d) => d === requested && !DOMAINS[d].comingSoon) ?? null
+    );
+  });
+
+  function changeTab(next: Tab) {
+    const url = new URL(page.url.href);
+    if (next === "ALL") url.searchParams.delete("domain");
+    else url.searchParams.set("domain", next);
+    void goto(url, { replace: true, reset: false });
+  }
 
   const feed = createApiInfiniteQuery<
     PagedResult<ActivityEventDto>,
     number,
     ActivityEventDto
   >(() => ({
-    key: keys.feed.all(),
-    fetch: (page) => getFeed(page),
+    key: keys.feed.list(domain),
+    fetch: (page) => getFeed(page, domain ?? undefined),
     getPageItems: (page) => page.items,
     initialPageParam: 1,
     getNextPageParam: (last, allPages) =>
@@ -29,37 +70,45 @@
     title={m.common_activity_feed()}
     subtitle={m.feed_subtitle()} />
 
-  {#if feed.loading}
-    <CardRowSkeleton count={6} />
-  {:else if feed.error}
-    <p class="text-danger text-sm">{feed.error}</p>
-  {:else if feed.data.length === 0}
-    <EmptyState>
-      <p class="font-display text-lg font-bold">
-        {m.feed_empty_title()}
-      </p>
-      <p class="mt-1 text-sm">
-        {m.feed_empty_body()}
-      </p>
-      <a href="/app/profile" class="btn btn-ghost mt-3"
-        >{m.feed_share_profile()}</a>
-    </EmptyState>
-  {:else}
-    <ul class="flex flex-col gap-2">
-      {#each feed.data as event (event.id)}
-        <ActivityItem {event} />
-      {/each}
-    </ul>
-
-    {#if feed.hasNextPage}
-      <div class="mt-4 flex justify-center">
-        <button
-          class="btn btn-ghost"
-          disabled={feed.isFetchingNextPage}
-          onclick={() => feed.fetchNextPage()}>
-          {feed.isFetchingNextPage ? m.common_loading() : m.common_see_more()}
-        </button>
-      </div>
-    {/if}
+  {#if domainTabs.length > 1}
+    <Tabs
+      class="mb-5"
+      label={m.common_activity_feed()}
+      {tabs}
+      current={domain ?? "ALL"}
+      onSelect={changeTab} />
   {/if}
+
+  <TabPanels current={domain ?? "ALL"}>
+    {#if feed.loading}
+      <CardRowSkeleton count={6} />
+    {:else if feed.error}
+      <p class="text-danger text-sm">{feed.error}</p>
+    {:else if feed.data.length === 0 && domain}
+      <EmptyState>{m.feed_empty_domain()}</EmptyState>
+    {:else if feed.data.length === 0}
+      <EmptyState>
+        <p class="font-display text-lg font-bold">
+          {m.feed_empty_title()}
+        </p>
+        <p class="mt-1 text-sm">
+          {m.feed_empty_body()}
+        </p>
+        <a href="/app/profile" class="btn btn-ghost mt-3"
+          >{m.feed_share_profile()}</a>
+      </EmptyState>
+    {:else}
+      <ul class="flex flex-col gap-2">
+        {#each feed.data as event (event.id)}
+          <ActivityItem {event} />
+        {/each}
+      </ul>
+
+      {#if feed.hasNextPage}
+        <div class="mt-4 flex justify-center">
+          <LoadMoreButton query={feed} class="btn btn-ghost" />
+        </div>
+      {/if}
+    {/if}
+  </TabPanels>
 </div>

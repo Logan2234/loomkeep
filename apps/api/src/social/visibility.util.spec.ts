@@ -1,6 +1,5 @@
 import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared";
 import {
-  canAccessProfile,
   computeIsFriend,
   resolveFacet,
   resolveProfileVisibility,
@@ -35,35 +34,6 @@ describe("computeIsFriend", () => {
 
   it("GHOST is never a friend", () => {
     expect(computeIsFriend(ProfileAccess.GHOST, true, true)).toBe(false);
-  });
-});
-
-describe("canAccessProfile", () => {
-  it("self and PUBLIC are reachable; GHOST is not", () => {
-    expect(
-      canAccessProfile(ProfileAccess.PRIVATE, relation({ isSelf: true })),
-    ).toBe(true);
-    expect(canAccessProfile(ProfileAccess.PUBLIC, relation())).toBe(true);
-    expect(canAccessProfile(ProfileAccess.GHOST, relation())).toBe(false);
-  });
-
-  it("PRIVATE is reachable only by an approved follower", () => {
-    expect(
-      canAccessProfile(ProfileAccess.PRIVATE, relation({ following: true })),
-    ).toBe(true);
-    expect(canAccessProfile(ProfileAccess.PRIVATE, relation())).toBe(false);
-  });
-
-  it("a block in either direction hides the profile", () => {
-    expect(
-      canAccessProfile(ProfileAccess.PUBLIC, relation({ blocking: true })),
-    ).toBe(false);
-    expect(
-      canAccessProfile(
-        ProfileAccess.PUBLIC,
-        relation({ blockedByTarget: true }),
-      ),
-    ).toBe(false);
   });
 });
 

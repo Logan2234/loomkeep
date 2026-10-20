@@ -12,7 +12,7 @@ set -euo pipefail
 # Covers: loomkeep, unleash, glitchtip, umami (separate databases on the
 # shared Postgres instance) and Quackback's own Postgres + MinIO uploads
 # (a completely separate compose project, sibling checkout). Deliberately
-# NOT covered (see docker/README.md "Backups"): Grafana/Loki/Prometheus,
+# NOT covered: Grafana/Loki/Prometheus,
 # Portainer, Caddy's TLS certs.
 #
 # Every dump is age-encrypted (ASCII-armored) before it leaves this host,
@@ -20,9 +20,9 @@ set -euo pipefail
 # the public key is ever needed here. Uploaded to Cloudflare R2 via rclone;
 # a 30-day lifecycle rule on the bucket handles retention.
 #
-# One-time setup this script assumes is already done (see docker/README.md
-# "Offsite setup"): `age`/`rclone` installed, `rclone config` has a remote
-# named $R2_REMOTE, the R2 bucket exists with its lifecycle rule, and both
+# One-time setup this script assumes is already done: `age`/`rclone`
+# installed, `rclone config` has a remote named $R2_REMOTE, the R2 bucket
+# exists with its lifecycle rule, and both
 # this checkout's .env and the Quackback sibling checkout's .env have their
 # credentials set.
 

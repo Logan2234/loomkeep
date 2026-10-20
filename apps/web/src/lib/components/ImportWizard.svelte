@@ -1,4 +1,9 @@
 <script lang="ts">
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+
+  import { labeledOptions } from "#lib/options.js";
+
   import {
     analyzeImport,
     commitImport,
@@ -7,23 +12,27 @@
     searchBooks,
     searchCatalog,
     searchGames,
-  } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-  import { formatNumber } from "$lib/format";
-  import { readImportFile } from "$lib/import-file";
-  import { m } from "$lib/paraglide/messages.js";
-  import { onRealtimeEvent, socket } from "$lib/realtime/socket";
+  } from "#lib/api/client.js";
+  import { resolveApiError } from "#lib/api/errors.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import {
+    IMPORTS_DEFINITION,
+    type AvailableImportSource,
+  } from "#lib/constants/import-sources.js";
+  import type { AvailableImportSourceDescriptor } from "#lib/types/import-descriptor.js";
+  import { formatNumber } from "#lib/format.js";
+  import { readImportFile } from "#lib/import-file.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { onRealtimeEvent, socket } from "#lib/realtime/socket.js";
   import {
     Domain,
     type BookSummaryDto,
@@ -33,7 +42,6 @@
     type ImportPlan,
     type ImportPlanItem,
     type ImportProgressEvent,
-    type ImportSource,
     type MediaSummaryDto,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -64,7 +72,8 @@
     source,
     intro,
     autoInput,
-  }: { source: ImportSource; intro?: Snippet; autoInput?: string } = $props();
+  }: { source: AvailableImportSource; intro?: Snippet; autoInput?: string } =
+    $props();
 
   type Phase = "input" | "analyzing" | "review" | "committing" | "done";
   let phase = $state<Phase>("input");
@@ -80,7 +89,8 @@
   let fileError = $state<string | null>(null);
   let dragOver = $state(false);
 
-  const descriptor = IMPORTS_DEFINITION[source];
+  const descriptor: AvailableImportSourceDescriptor =
+    IMPORTS_DEFINITION[source];
   const queryClient = useQueryClient();
 
   const quotaQuery = createApiQuery(() => ({
@@ -89,15 +99,6 @@
   }));
   const quotaUsed = $derived(quotaQuery.data?.[descriptor.domain] === true);
   const premiumLocked = $derived(auth.isPremiumLocked);
-
-  const DOMAIN_TO_HREF = {
-    [Domain.MEDIA]: "/app/media",
-    [Domain.GAMES]: "/app/games",
-    [Domain.BOOKS]: "/app/books",
-    [Domain.MUSIC]: "/app/music",
-    [Domain.BOARDGAMES]: "/app/boardgames",
-    [Domain.PODCASTS]: "/app/podcasts",
-  };
 
   let analyzeJobId = $state<string | null>(null);
   let job = $state<ImportJobDto | null>(null);
@@ -144,7 +145,7 @@
     const jobId = pollingJobId;
     const jobKey = keys.import.job(source, jobId);
 
-    const apply = (payload: ImportProgressEvent & { jobId: string }) => {
+    const apply = (payload: ImportProgressEvent) => {
       if (payload.jobId !== jobId) return;
       if (payload.status !== "running") {
         void queryClient.invalidateQueries({ queryKey: jobKey });
@@ -186,15 +187,9 @@
   // Per-item status options (books/games); media derives status server-side.
   const statusOptions = $derived(
     descriptor.domain === Domain.BOOKS
-      ? BOOK_STATUS_ORDER.map((s) => ({
-          value: s,
-          label: BOOK_STATUS_LABELS[s],
-        }))
+      ? labeledOptions(BOOK_STATUS_LABELS, BOOK_STATUS_ORDER)
       : descriptor.domain === Domain.GAMES
-        ? GAME_STATUS_ORDER.map((s) => ({
-            value: s,
-            label: GAME_STATUS_LABELS[s],
-          }))
+        ? labeledOptions(GAME_STATUS_LABELS, GAME_STATUS_ORDER)
         : [],
   );
 
@@ -241,6 +236,21 @@
     });
   }
 
+  async function handleFiles(files: File[]) {
+    if (!descriptor.input.multiple) return handleFile(files[0]);
+    fileError = null;
+    jobError = null;
+    inputValue = "";
+    const read = await Promise.all(
+      files.map(async (file) => ({
+        name: file.name,
+        text: await readImportFile(file, descriptor.input.textEncoding),
+      })),
+    );
+    inputValue = JSON.stringify(read);
+    fileName = files.map((file) => file.name).join(", ");
+  }
+
   async function handleFile(file: File) {
     fileError = null;
     jobError = null;
@@ -264,15 +274,15 @@
   }
 
   function onFile(e: Event) {
-    const file = (e.currentTarget as HTMLInputElement).files?.[0];
-    if (file) void handleFile(file);
+    const files = [...((e.currentTarget as HTMLInputElement).files ?? [])];
+    if (files.length > 0) void handleFiles(files);
   }
 
   function onDrop(e: DragEvent) {
     e.preventDefault();
     dragOver = false;
-    const file = e.dataTransfer?.files?.[0];
-    if (file) void handleFile(file);
+    const files = [...(e.dataTransfer?.files ?? [])];
+    if (files.length > 0) void handleFiles(files);
   }
 
   // Both go through createApiMutation rather than a hand-rolled try/catch:
@@ -403,7 +413,7 @@
 
   function commit() {
     if (!analyzeJobId || !plan || selectedCount === 0) return;
-    if (overwrite) {
+    if (source !== "steam" && overwrite) {
       showOverwriteConfirm = true;
       return;
     }
@@ -430,7 +440,7 @@
           { source: m.source, sourceId: m.sourceId, type: m.type },
         ]),
       ),
-      overwrite,
+      overwrite: source === "steam" ? false : overwrite,
     });
   }
 
@@ -487,6 +497,16 @@
     {#if intro}
       <div class="text-dim mb-6 max-w-xl text-sm">{@render intro()}</div>
     {/if}
+    {#if descriptor.guide}
+      <a
+        href={descriptor.guide}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-accent -mt-4 mb-6 flex w-fit items-center gap-1 text-sm">
+        {m.import_export_guide_link()}
+        <Icon name="external" class="h-3.5 w-3.5" />
+      </a>
+    {/if}
 
     {#if isFileInput}
       <label
@@ -504,13 +524,17 @@
           type="file"
           name="file"
           accept={descriptor.input.accept}
+          multiple={descriptor.input.multiple}
           class="hidden"
           onchange={onFile} />
         {#if inputValue}
           <span class="font-semibold">📦 {fileName}</span>
           <span class="timecode text-sm">{m.import_file_change_hint()}</span>
         {:else}
-          <span class="font-semibold">{m.import_file_drop()}</span>
+          <span class="font-semibold"
+            >{descriptor.input.multiple
+              ? m.import_files_drop()
+              : m.import_file_drop()}</span>
           <span class="text-dim text-sm">{m.import_file_browse()}</span>
         {/if}
       </label>
@@ -538,7 +562,12 @@
       <p class="mb-2 font-semibold">
         {phase === "analyzing" ? m.import_analyzing() : m.import_committing()}
       </p>
-      <ProgressBar value={progressPct} height="h-2.5" />
+      <ProgressBar
+        value={progressPct}
+        label={phase === "analyzing"
+          ? m.import_analyzing()
+          : m.import_committing()}
+        height="h-2.5" />
       {#if job}
         <p class="timecode mt-2 text-sm">
           {job.progress.done}/{job.progress.total}
@@ -547,10 +576,9 @@
     </section>
   {:else if phase === "review" && plan}
     {#if plan.groups.length === 0}
-      <div
-        class="border-border text-dim mt-6 mb-24 rounded-xl border border-dashed px-6 py-12 text-center">
+      <EmptyState padding="py-12" class="mt-6 mb-24">
         {m.import_export_empty()}
-      </div>
+      </EmptyState>
     {:else if filterUnresolved && unresolvedRemaining === 0}
       <div
         class="border-border text-dim mt-2 mb-24 rounded-xl border border-dashed px-6 py-12 text-center text-sm">
@@ -619,21 +647,25 @@
         </span>
       </p>
       <div class="flex items-center gap-3">
-        <label
-          class="border-danger/30 bg-danger/5 text-danger flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium">
-          <input
-            type="checkbox"
-            name="overwrite"
-            value="true"
-            bind:checked={overwrite}
-            class="accent-danger" />
-          {m.import_overwrite_data()}
-        </label>
+        {#if source !== "steam"}
+          <label
+            class="border-danger/30 bg-danger/5 text-danger flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium">
+            <input
+              type="checkbox"
+              name="overwrite"
+              value="true"
+              bind:checked={overwrite}
+              class="accent-danger" />
+            {m.import_overwrite_data()}
+          </label>
+        {/if}
         <button
           class="btn btn-primary"
           disabled={selectedCount === 0}
           onclick={commit}>
-          {m.common_import_action()}
+          {source === "steam"
+            ? m.import_steam_sync_action()
+            : m.common_import_action()}
         </button>
       </div>
     </div>
@@ -666,8 +698,11 @@
           </div>
         {/each}
       </div>
+      {#if source === "steam"}
+        <p class="text-dim mt-4 text-sm">{m.import_steam_no_sessions()}</p>
+      {/if}
       <div class="mt-5 flex gap-2">
-        <a href={DOMAIN_TO_HREF[descriptor.domain]} class="btn btn-primary"
+        <a href={DOMAINS[descriptor.domain].href} class="btn btn-primary"
           >{m.library_view_own()}</a>
         <button class="btn btn-ghost" onclick={reset}>{m.import_new()}</button>
       </div>
@@ -776,7 +811,7 @@
                       class="hover:bg-surface-2 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm"
                       onclick={() => chooseMatch(item.key, r)}>
                       <div class="h-10 w-7 shrink-0 overflow-hidden rounded">
-                        <Poster src={r.coverUrl} title={r.title} />
+                        <Poster src={r.coverUrl} title={r.title} alt="" />
                       </div>
                       <span class="min-w-0 flex-1 truncate">
                         {r.title}

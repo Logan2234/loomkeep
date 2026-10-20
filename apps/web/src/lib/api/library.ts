@@ -1,25 +1,57 @@
-import type {
-  LibraryEntryDto,
-  MediaType,
-  UpsertLibraryEntryDto,
+import {
+  type BulkEntriesTargetDto,
+  type BulkUpdateEntriesDto,
+  type LibraryEntryDto,
+  type LibrarySagaSort,
+  type MEDIA_BULK_STATUSES,
+  type MediaFilterStatus,
+  type MediaOwnershipStatus,
+  type MediaSortKey,
+  type MediaType,
+  type SortOrder,
+  type UpsertLibraryEntryDto,
 } from "@loomkeep/shared";
+import { pageParam } from "./query-params";
+
 import { getLocale } from "../paraglide/runtime.js";
 import { typedRequest } from "./generated/typed-request";
 
 export interface ListLibraryFilters {
   query?: string;
   favorite?: boolean;
-  /** Includes the synthetic "DORMANT" status alongside real `EntryStatus` values. */
-  statuses?: string[];
+  /** Includes the synthetic "DORMANT" and "GHOST" statuses alongside real `EntryStatus` values. */
+  statuses?: MediaFilterStatus[];
   types?: MediaType[];
-  sort?: string;
-  order?: "asc" | "desc";
+  sort?: MediaSortKey;
+  order?: SortOrder;
   page?: number;
 }
+
+export interface LibrarySagaFilters {
+  query?: string;
+  types?: MediaType[];
+  sort?: LibrarySagaSort;
+  order?: SortOrder;
+}
+
+/** The library's sagas in progress, and the ones waiting on a sequel. */
+export const listLibrarySagas = (filters: LibrarySagaFilters = {}) =>
+  typedRequest("/library/sagas", {
+    query: {
+      q: filters.query || undefined,
+      type: filters.types,
+      sort: filters.sort,
+      order: filters.order,
+      lang: getLocale(),
+    },
+  });
 
 /** Tracked-item count per domain, the user's hidden domains included. */
 export const getLibraryDomainCounts = () =>
   typedRequest("/library/domain-counts");
+
+/** Every tracked work and its effective status, in one request (search's "already added" flags). */
+export const listTrackedMedia = () => typedRequest("/library/tracked");
 
 export function listLibrary(filters: ListLibraryFilters = {}) {
   return typedRequest("/library", {
@@ -31,7 +63,20 @@ export function listLibrary(filters: ListLibraryFilters = {}) {
       type: filters.types,
       sort: filters.sort,
       order: filters.order,
-      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      page: pageParam(filters.page),
+    },
+  });
+}
+
+/** What's left to watch among the entries `listLibrary` returns for the same filters. */
+export function getLibraryPile(filters: ListLibraryFilters = {}) {
+  return typedRequest("/library/pile", {
+    query: {
+      lang: getLocale(),
+      q: filters.query,
+      favorite: filters.favorite ? "true" : undefined,
+      status: filters.statuses,
+      type: filters.types,
     },
   });
 }
@@ -50,6 +95,8 @@ export const updateLibraryEntry = (
       | "favorite"
       | "ownershipStatus"
       | "ownershipSource"
+      | "episodeAlertsMuted"
+      | "movieReleaseAlertsEnabled"
     >
   >,
 ) =>
@@ -115,3 +162,13 @@ export const unwatchSeason = (seasonId: string): Promise<void> =>
   });
 
 export const getCalendar = () => typedRequest("/library/calendar");
+
+export const bulkUpdateLibraryEntries = (
+  body: BulkUpdateEntriesDto<
+    (typeof MEDIA_BULK_STATUSES)[number],
+    MediaOwnershipStatus
+  >,
+) => typedRequest("/library/entries/bulk", { method: "POST", body });
+
+export const bulkDeleteLibraryEntries = (body: BulkEntriesTargetDto) =>
+  typedRequest("/library/entries/bulk-delete", { method: "POST", body });

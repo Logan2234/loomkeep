@@ -1,13 +1,22 @@
-import type { MediaDetailDto } from "@loomkeep/shared";
+import type { MediaDetailDto, MediaSagaResponseDto } from "@loomkeep/shared";
 import { ErrorCode, MediaType } from "@loomkeep/shared";
-import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Headers,
+  HttpStatus,
+  Param,
+  Query,
+} from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
 import { safeLang } from "../common/locale.util";
 import { MediaDetailResponseDto } from "./dto/media-detail-response.dto";
+import { MediaSagaResponseDto as MediaSagaResponse } from "./dto/media-saga-response.dto";
 import { LibraryService } from "./library.service";
+import { SagaService } from "./saga.service";
 
 /**
  * Unified media page, addressed by catalogue identity (`type` + source `id`).
@@ -17,7 +26,10 @@ import { LibraryService } from "./library.service";
  */
 @Controller("media")
 export class MediaController {
-  constructor(private readonly libraryService: LibraryService) {}
+  constructor(
+    private readonly libraryService: LibraryService,
+    private readonly sagas: SagaService,
+  ) {}
 
   @Get(":type/:id")
   @ApiOkResponse({ type: MediaDetailResponseDto })
@@ -26,13 +38,33 @@ export class MediaController {
     @Param("type") typeParam: string,
     @Param("id") id: string,
     @Query("lang") lang?: string,
+    @Headers("accept-language") acceptLanguage?: string,
   ): Promise<MediaDetailDto> {
     return this.libraryService.getMediaDetail(
       user.sub,
       parseType(typeParam),
       id,
       safeLang(lang),
+      acceptLanguage,
     );
+  }
+
+  /** The saga the work belongs to, with the viewer's status on each work. */
+  @Get(":type/:id/saga")
+  @ApiOkResponse({ type: MediaSagaResponse })
+  async getMediaSaga(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") typeParam: string,
+    @Param("id") id: string,
+    @Query("lang") lang?: string,
+  ): Promise<MediaSagaResponseDto> {
+    const saga = await this.sagas.getSaga(
+      user.sub,
+      parseType(typeParam),
+      id,
+      safeLang(lang),
+    );
+    return { saga };
   }
 }
 

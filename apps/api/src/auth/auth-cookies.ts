@@ -6,11 +6,13 @@ import {
   createHash,
   randomBytes,
 } from "node:crypto";
+import {
+  ACCESS_TOKEN_TTL_SECONDS,
+  REFRESH_TOKEN_TTL_DAYS,
+} from "./jwt.constants";
 
 const ACCESS_COOKIE = "loomkeep_access";
 const REFRESH_COOKIE = "loomkeep_refresh";
-const ACCESS_MAX_AGE_SECONDS = 15 * 60;
-const REFRESH_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 const INITIALIZATION_VECTOR_BYTES = 12;
 const AUTHENTICATION_TAG_BYTES = 16;
 
@@ -34,12 +36,12 @@ export function setAuthCookies(
   tokens: AuthTokensDto,
 ): void {
   reply.header("Set-Cookie", [
-    cookie(ACCESS_COOKIE, tokens.accessToken, "/api", ACCESS_MAX_AGE_SECONDS),
+    cookie(ACCESS_COOKIE, tokens.accessToken, "/api", ACCESS_TOKEN_TTL_SECONDS),
     cookie(
       REFRESH_COOKIE,
       tokens.refreshToken,
       "/api/auth",
-      REFRESH_MAX_AGE_SECONDS,
+      REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60,
     ),
   ]);
 }

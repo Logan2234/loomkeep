@@ -1,3 +1,4 @@
+import type { UpsertReviewDto } from "@loomkeep/shared";
 import {
   REVIEW_TEXT_MAX_LENGTH,
   type ReviewVisibility,
@@ -14,7 +15,7 @@ import {
   Min,
 } from "class-validator";
 
-export class UpsertReviewBody {
+export class UpsertReviewBody implements UpsertReviewDto {
   // Mandatory /10 rating. The UI only writes integers; half-points are
   // still accepted because imported/legacy reviews carry them.
   @IsNumber()

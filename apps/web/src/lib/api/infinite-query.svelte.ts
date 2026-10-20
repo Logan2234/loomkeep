@@ -1,8 +1,8 @@
 // createApiInfiniteQuery() — thin wrapper over TanStack's
-// createInfiniteQuery(), the third helper from the centralized API layer
-// (docs/plans/centralized-api-layer.md §3). "Infinite" means accumulating
-// pages, not a scroll mechanism — the trigger (IntersectionObserver
-// sentinel, "load more" button) stays the component's business. Supports
+// createInfiniteQuery(), the third helper from the centralized API layer.
+// "Infinite" means accumulating pages, not a scroll mechanism — the trigger
+// (IntersectionObserver sentinel, "load more" button) stays the component's
+// business. Supports
 // both server paging styles (cursor or page number) through
 // `getNextPageParam`, not a mode flag — and there is deliberately no
 // accumulate-vs-replace flag either, since every paginated list in this app
@@ -10,7 +10,7 @@
 // site whose source can repeat an item across pages (MediaSearchPanel's
 // external catalog search) de-dupes it locally, since that's specific to
 // one source, not something every call site needs.
-import { toast } from "$lib/toast.svelte";
+import { toast } from "#lib/toast.svelte.js";
 import {
   createInfiniteQuery,
   keepPreviousData,
@@ -36,12 +36,26 @@ interface ApiInfiniteQueryOptions<TPage, TPageParam, TItem> {
    * `false`.
    */
   keepPreviousData?: boolean;
+  refetchInterval?: number | false;
   /** Don't fetch until this holds. Default `true`. */
   enabled?: boolean;
   /** Default: the global retry (queryClient.ts). */
   retry?: number;
   onError?: (err: unknown) => void;
   errorToast?: boolean;
+}
+
+export function flattenInfinitePages<TPage, TItem>(
+  pages: readonly TPage[],
+  getPageItems: (
+    page: TPage,
+  ) => readonly (TItem | null | undefined)[] | null | undefined,
+): TItem[] {
+  return pages.flatMap((page) =>
+    (getPageItems(page) ?? []).filter(
+      (item): item is TItem => item !== null && item !== undefined,
+    ),
+  );
 }
 
 export function createApiInfiniteQuery<TPage, TPageParam, TItem>(
@@ -61,6 +75,7 @@ export function createApiInfiniteQuery<TPage, TPageParam, TItem>(
       initialPageParam: opts.initialPageParam,
       getNextPageParam: opts.getNextPageParam,
       enabled: opts.enabled ?? true,
+      refetchInterval: opts.refetchInterval ?? false,
       placeholderData: opts.keepPreviousData ? keepPreviousData : undefined,
       ...(opts.retry !== undefined ? { retry: opts.retry } : {}),
     };
@@ -83,9 +98,7 @@ export function createApiInfiniteQuery<TPage, TPageParam, TItem>(
   return {
     get data(): TItem[] {
       const opts = optionsFn();
-      return (query.data?.pages ?? []).flatMap((page) =>
-        opts.getPageItems(page),
-      );
+      return flattenInfinitePages(query.data?.pages ?? [], opts.getPageItems);
     },
     // Raw pages, for call sites that also need per-page metadata (a total
     // count) alongside the flattened `data`.
@@ -97,6 +110,9 @@ export function createApiInfiniteQuery<TPage, TPageParam, TItem>(
     },
     get loading() {
       return query.isPending;
+    },
+    get fetching() {
+      return query.isFetching;
     },
     get hasNextPage() {
       return query.hasNextPage;

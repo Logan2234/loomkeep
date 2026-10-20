@@ -5,15 +5,19 @@ import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { createHash } from "node:crypto";
 import { vi, type Mock } from "vitest";
+import type { ApiKeysService } from "../api-keys/api-keys.service";
 import { AppException } from "../common/app.exception";
 import type { HibpService } from "../common/hibp.service";
 import type { EventsGateway } from "../events/events.gateway";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { MailService } from "../mail/mail.service";
+import type { AdminAlertService } from "../notifications/admin-alert.service";
+import { notificationCopy } from "../notifications/notification-copy";
+import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
 import type { AuthResult } from "./auth.service";
 import { AuthService } from "./auth.service";
+import type { InvitationService } from "./invitation.service";
 import type { MfaService } from "./mfa.service";
 import { SessionCacheService } from "./session-cache.service";
 import type { TurnstileService } from "./turnstile.service";
@@ -91,8 +95,10 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     mfaLoginChallenge: {
       create: vi.fn(),
       findUnique: vi.fn(),
-      update: vi.fn(),
+      // The attempt verifyMfaLogin consumes before checking a code.
+      update: vi.fn().mockResolvedValue({ attempts: 1 }),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
     },
     userToken: {
       create: vi.fn(),
@@ -134,7 +140,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
   } as unknown as MailService;
 
   const security = {
-    record: vi.fn(),
+    record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
   } as unknown as SecurityEventService;
 
   const turnstile = {
@@ -145,12 +151,8 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     isPasswordPwned: vi.fn().mockResolvedValue(false),
   } as unknown as HibpService;
 
-  const flags = {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
-
   const mfa = {
-    validateTotpCode: vi.fn(),
+    acceptTotpCode: vi.fn(),
     verifyRecoveryCode: vi.fn().mockResolvedValue(false),
   } as unknown as MfaService;
 
@@ -160,6 +162,22 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
 
   const sessionCache = new SessionCacheService();
   const events = { disconnectSession: vi.fn() } as unknown as EventsGateway;
+  const invitations = {
+    findRedeemableFor: vi.fn(),
+    claim: vi.fn(),
+  } as unknown as InvitationService;
+
+  const apiKeys = {
+    reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
+  } as unknown as ApiKeysService;
+
+  const notifications = {
+    create: vi.fn(),
+    copyFor: vi.fn(async () => notificationCopy("en")),
+  } as unknown as NotificationService;
+  const adminAlerts = {
+    notify: vi.fn().mockResolvedValue(0),
+  } as unknown as AdminAlertService;
 
   const service = new AuthService(
     prisma,
@@ -169,11 +187,14 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     security,
     turnstile,
     hibp,
-    flags,
     mfa,
     webauthn,
     sessionCache,
     events,
+    invitations,
+    apiKeys,
+    notifications,
+    adminAlerts,
   );
 
   return {
@@ -185,13 +206,132 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     security,
     turnstile,
     hibp,
-    flags,
     mfa,
     webauthn,
     sessionCache,
     events,
+    invitations,
+    notifications,
+    adminAlerts,
   };
 }
+
+describe("AuthService.register with an invitation", () => {
+  const dto = {
+    email: "bob@example.com",
+    password: "secret1234",
+    displayName: "Bob",
+    acceptedTerms: true,
+    certifiedAge: true,
+    inviteToken: "raw-invite",
+  };
+
+  function withFreshAccount(prisma: PrismaService) {
+    (prisma.user.findUnique as Mock)
+      .mockResolvedValueOnce(null) // email uniqueness
+      .mockResolvedValueOnce(null); // username uniqueness
+    (prisma.user.create as Mock).mockImplementation(
+      async ({ data }: { data: Partial<User> }) => makeUser(data),
+    );
+  }
+
+  it("lets the sign-up through while registration is closed", async () => {
+    const { service, prisma, invitations } = makeService(undefined, "false");
+    (invitations.findRedeemableFor as Mock).mockResolvedValue({
+      id: "inv-1",
+      email: null,
+    });
+    withFreshAccount(prisma);
+
+    await service.register(dto);
+
+    expect(invitations.findRedeemableFor).toHaveBeenCalledWith(
+      "raw-invite",
+      "bob@example.com",
+    );
+    expect(invitations.claim).toHaveBeenCalledWith(prisma, "inv-1");
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        invitationId: "inv-1",
+        emailVerified: false,
+      }),
+    });
+  });
+
+  it("marks the email verified and skips the verification mail for an address-bound invitation", async () => {
+    const { service, prisma, invitations, mail } = makeService();
+    (invitations.findRedeemableFor as Mock).mockResolvedValue({
+      id: "inv-1",
+      email: "bob@example.com",
+    });
+    withFreshAccount(prisma);
+
+    await service.register(dto);
+
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ emailVerified: true }),
+    });
+    expect(prisma.userToken.create).not.toHaveBeenCalled();
+    expect(mail.sendVerifyEmail).not.toHaveBeenCalled();
+    expect(mail.sendWelcome).toHaveBeenCalled();
+  });
+
+  it("tells the inviter and the administrators that someone joined", async () => {
+    const { service, prisma, invitations, notifications, adminAlerts } =
+      makeService();
+    (invitations.findRedeemableFor as Mock).mockResolvedValue({
+      id: "inv-1",
+      email: null,
+      createdById: "alice",
+    });
+    withFreshAccount(prisma);
+
+    await service.register(dto);
+
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "alice",
+        type: "INVITATION_ACCEPTED",
+        title: "Bob",
+        body: "joined Loomkeep through your invitation",
+      }),
+    );
+    expect(adminAlerts.notify).toHaveBeenCalledWith(
+      "ADMIN_NEW_USER",
+      expect.anything(),
+    );
+  });
+
+  it("creates no account when the invitation can't be redeemed", async () => {
+    const { service, prisma, invitations } = makeService(undefined, "false");
+    (invitations.findRedeemableFor as Mock).mockRejectedValue(
+      new AppException(400, ErrorCode.AuthInvalidInvitation),
+    );
+
+    await expect(service.register(dto)).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidInvitation,
+    });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it("rolls the account back when the last place was taken meanwhile", async () => {
+    const { service, prisma, invitations } = makeService();
+    (invitations.findRedeemableFor as Mock).mockResolvedValue({
+      id: "inv-1",
+      email: null,
+    });
+    (invitations.claim as Mock).mockRejectedValue(
+      new AppException(400, ErrorCode.AuthInvalidInvitation),
+    );
+    withFreshAccount(prisma);
+
+    await expect(service.register(dto)).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidInvitation,
+    });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+  });
+});
 
 describe("AuthService.register", () => {
   it("throws AppException(auth.registration_disabled) when registration is disabled", async () => {
@@ -479,7 +619,7 @@ describe("AuthService.login", () => {
   });
 
   it("returns tokens and records a session on success", async () => {
-    const { service, prisma } = makeService();
+    const { service, prisma, jwtService } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
     (prisma.user.findFirst as Mock).mockResolvedValue(user);
@@ -494,6 +634,16 @@ describe("AuthService.login", () => {
     expect(result.user.id).toBe(user.id);
     expect(result.tokens.accessToken).toBeTruthy();
     expect(result.tokens.refreshToken).toBeTruthy();
+    expect(jwtService.signAsync).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      expect.objectContaining({ expiresIn: 900 }),
+    );
+    expect(jwtService.signAsync).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      expect.objectContaining({ expiresIn: 2592000 }),
+    );
     expect(prisma.refreshToken.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ userId: user.id }),
@@ -518,7 +668,7 @@ describe("AuthService.login", () => {
     });
   });
 
-  it("drops any prior session for the same device before recording the new one", async () => {
+  it("keeps the sessions of other machines sending the same User-Agent", async () => {
     const { service, prisma } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
@@ -529,9 +679,7 @@ describe("AuthService.login", () => {
       "some-user-agent",
     );
 
-    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
-      where: { userId: user.id, userAgent: "some-user-agent" },
-    });
+    expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
   });
 
   it("alerts by email and logs a security event when the device has never been seen", async () => {
@@ -559,6 +707,7 @@ describe("AuthService.login", () => {
       { email: user.email, locale: user.locale },
       "Chrome · Windows",
       "203.0.113.42",
+      new Date("2026-10-03T10:15:00Z"),
     );
     expect(security.record).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -593,6 +742,31 @@ describe("AuthService.login", () => {
     expect(security.record).not.toHaveBeenCalledWith(
       expect.objectContaining({ type: "NEW_DEVICE_LOGIN" }),
     );
+  });
+
+  it("still signs in when a concurrent login from the same browser recorded the device first", async () => {
+    const { service, prisma, mail } = makeService();
+    const passwordHash = await bcrypt.hash("correct-password", 4);
+    const user = makeUser({ passwordHash });
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
+    (prisma.userDevice.findUnique as Mock).mockResolvedValue(null);
+    (prisma.userDevice.create as Mock).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+
+    const result = asAuthResult(
+      await service.login(
+        { identifier: "alice@example.com", password: "correct-password" },
+        "Mozilla/5.0 (Windows NT 10.0) Chrome/140.0 Safari/537.36",
+      ),
+    );
+
+    expect(result.tokens.accessToken).toBeDefined();
+    // The request that recorded the device owns the new-device alert.
+    expect(mail.sendNewDeviceLogin).not.toHaveBeenCalled();
   });
 });
 
@@ -721,6 +895,7 @@ describe("AuthService.refresh", () => {
     (prisma.refreshToken.findUnique as Mock).mockResolvedValue(null);
     (prisma.consumedRefreshToken.findUnique as Mock).mockResolvedValue({
       sessionId: "rt-1",
+      createdAt: new Date(Date.now() - 60_000),
     });
 
     await expect(service.refresh("replayed-token")).rejects.toMatchObject({
@@ -731,7 +906,23 @@ describe("AuthService.refresh", () => {
     });
   });
 
-  it("revokes the token family when a concurrent rotation loses the compare-and-swap", async () => {
+  // Two tabs share the cookies, hence the expiry: both refresh with the
+  // same token within milliseconds. The loser isn't a thief.
+  it("keeps the session when another tab rotated the token a moment ago", async () => {
+    const { service, prisma } = makeService();
+    (prisma.refreshToken.findUnique as Mock).mockResolvedValue(null);
+    (prisma.consumedRefreshToken.findUnique as Mock).mockResolvedValue({
+      sessionId: "rt-1",
+      createdAt: new Date(Date.now() - 2_000),
+    });
+
+    await expect(service.refresh("just-rotated")).rejects.toMatchObject({
+      code: ErrorCode.AuthRefreshSuperseded,
+    });
+    expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("keeps the session when a concurrent rotation wins the compare-and-swap", async () => {
     const { service, prisma } = makeService();
     (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
       id: "rt-1",
@@ -742,11 +933,9 @@ describe("AuthService.refresh", () => {
     (prisma.refreshToken.updateMany as Mock).mockResolvedValue({ count: 0 });
 
     await expect(service.refresh("old-token")).rejects.toMatchObject({
-      code: ErrorCode.AuthInvalidRefreshToken,
+      code: ErrorCode.AuthRefreshSuperseded,
     });
-    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
-      where: { id: "rt-1" },
-    });
+    expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
   });
 
   it("throws AppException(auth.invalid_refresh_token) when the stored session already expired", async () => {
@@ -1071,10 +1260,14 @@ describe("AuthService.resetPassword", () => {
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { userId: "user-1" },
     });
-    expect(mail.sendPasswordChanged).toHaveBeenCalledWith({
-      email: user.email,
-      locale: user.locale,
-    });
+    expect(mail.sendPasswordChanged).toHaveBeenCalledWith(
+      {
+        email: user.email,
+        locale: user.locale,
+      },
+      0,
+      new Date("2026-10-03T10:15:00Z"),
+    );
     expect(security.record).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "PASSWORD_RESET",
@@ -1354,7 +1547,7 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
-    (mfa.validateTotpCode as Mock).mockReturnValue(true);
+    (mfa.acceptTotpCode as Mock).mockResolvedValue("accepted");
 
     const result = await service.verifyMfaLogin("challenge-1", "123456");
 
@@ -1379,7 +1572,7 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
-    (mfa.validateTotpCode as Mock).mockReturnValue(false);
+    (mfa.acceptTotpCode as Mock).mockResolvedValue("invalid");
     (mfa.verifyRecoveryCode as Mock).mockResolvedValue(true);
 
     const result = await service.verifyMfaLogin("challenge-1", "ABCDE12345");
@@ -1400,17 +1593,19 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
-    (mfa.validateTotpCode as Mock).mockReturnValue(false);
+    (mfa.acceptTotpCode as Mock).mockResolvedValue("invalid");
     (mfa.verifyRecoveryCode as Mock).mockResolvedValue(false);
 
     await expect(
       service.verifyMfaLogin("challenge-1", "000000"),
     ).rejects.toMatchObject({ code: ErrorCode.AuthMfaInvalidCode });
     expect(prisma.mfaLoginChallenge.update).toHaveBeenCalledWith({
-      where: { id: "challenge-1" },
+      where: { id: "challenge-1", attempts: { lt: 5 } },
       data: { attempts: { increment: 1 } },
+      select: { attempts: true },
     });
     expect(prisma.mfaLoginChallenge.delete).not.toHaveBeenCalled();
+    expect(prisma.mfaLoginChallenge.deleteMany).not.toHaveBeenCalled();
   });
 
   it("deletes the challenge once the attempt cap is reached", async () => {
@@ -1427,16 +1622,49 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
-    (mfa.validateTotpCode as Mock).mockReturnValue(false);
+    (prisma.mfaLoginChallenge.update as Mock).mockResolvedValue({
+      attempts: 5,
+    });
+    (mfa.acceptTotpCode as Mock).mockResolvedValue("invalid");
     (mfa.verifyRecoveryCode as Mock).mockResolvedValue(false);
 
     await expect(
       service.verifyMfaLogin("challenge-1", "000000"),
     ).rejects.toMatchObject({ code: ErrorCode.AuthMfaTooManyAttempts });
-    expect(prisma.mfaLoginChallenge.delete).toHaveBeenCalledWith({
+    expect(prisma.mfaLoginChallenge.deleteMany).toHaveBeenCalledWith({
       where: { id: "challenge-1" },
     });
-    expect(prisma.mfaLoginChallenge.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses to even check a code once parallel guesses have spent every attempt", async () => {
+    const { service, prisma, mfa } = makeService();
+    const user = makeUser({ mfaTotpEnabled: true, mfaTotpSecretEnc: "enc" });
+    // Read before the other requests incremented it: still looks fresh.
+    (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue({
+      id: "challenge-1",
+      userId: user.id,
+      totpAllowed: true,
+      emailAllowed: false,
+      emailCodeHash: null,
+      emailCodeExpiresAt: null,
+      attempts: 0,
+      expiresAt: new Date(Date.now() + 60_000),
+      user,
+    });
+    (prisma.mfaLoginChallenge.update as Mock).mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Record to update not found", {
+        code: "P2025",
+        clientVersion: "test",
+      }),
+    );
+
+    await expect(
+      service.verifyMfaLogin("challenge-1", "123456"),
+    ).rejects.toMatchObject({ code: ErrorCode.AuthMfaTooManyAttempts });
+    expect(mfa.acceptTotpCode).not.toHaveBeenCalled();
+    expect(prisma.mfaLoginChallenge.deleteMany).toHaveBeenCalledWith({
+      where: { id: "challenge-1" },
+    });
   });
 
   it("accepts a valid emailed code, compared in constant time", async () => {

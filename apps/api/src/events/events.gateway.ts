@@ -1,4 +1,9 @@
-import { RealtimeEvent } from "@loomkeep/shared";
+import {
+  type ChatPresenceEvent,
+  type ChatTypingEvent,
+  RealtimeCommand,
+  RealtimeEvent,
+} from "@loomkeep/shared";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
@@ -22,7 +27,9 @@ import {
 } from "../auth/jwt.constants";
 import { SessionCacheService } from "../auth/session-cache.service";
 import { isSessionLive } from "../auth/session-live.util";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import { isChatEnabled } from "../chat/chat.config";
+import { webOrigins } from "../common/web-origin.util";
+import { workTargetExists } from "../common/work-href.util";
 import {
   MetricsService,
   type WsRejectionReason,
@@ -31,6 +38,9 @@ import { PrismaService } from "../prisma/prisma.service";
 import { isSocialEnabled } from "../social/social.config";
 
 const ADMIN_REPORTS_ROOM = "admin:reports";
+// Comment threads one socket can follow at once: a page shows one, a few
+// tabs a few more. Far above any real use, low enough to bound the maps.
+const MAX_COMMENT_ROOMS_PER_SOCKET = 20;
 const userRoom = (userId: string) => `user:${userId}`;
 const sessionRoom = (sessionId: string) => `session:${sessionId}`;
 const listRoom = (listId: string) => `list:${listId}`;
@@ -70,7 +80,7 @@ function classifyRejection(error: unknown): WsRejectionReason {
  * endpoints enforce.
  *
  * Deliberately depends on nothing but the globally-registered PrismaService/
- * ConfigService/JwtService/FeatureFlagsService/SessionCacheService, plus one
+ * ConfigService/JwtService/SessionCacheService, plus one
  * real import (MetricsModule, a leaf module with no dependency of its own):
  * every domain module that needs to emit (notifications, reports,
  * gamification, comments, lists, import) imports this module
@@ -82,13 +92,10 @@ function classifyRejection(error: unknown): WsRejectionReason {
 // Nest's DI is available to inject ConfigService), same constraint as
 // main.ts's own CORS setup — mirrored here directly from process.env for the
 // same reason.
-const webOrigins = (process.env.WEB_ORIGIN ?? "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedWebOrigins = webOrigins(process.env.WEB_ORIGIN);
 
 @WebSocketGateway({
-  cors: { origin: webOrigins, credentials: true },
+  cors: { origin: allowedWebOrigins, credentials: true },
   // @nestjs/platform-fastify's raw http.Server never completes engine.io's
   // polling→websocket upgrade handshake (confirmed with curl: it 101s then
   // hangs, never sending the expected probe packet) — polling would just be
@@ -130,7 +137,6 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
-    private readonly flags: FeatureFlagsService,
     private readonly sessionCache: SessionCacheService,
     private readonly metrics: MetricsService,
   ) {}
@@ -181,6 +187,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
       if (user?.role === "ADMIN") await client.join(ADMIN_REPORTS_ROOM);
 
+      this.announcePresence(payload.sub, true);
+
       const msUntilExpiry = payload.exp * 1000 - Date.now();
       this.expiryTimers.set(
         client.id,
@@ -197,6 +205,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket): void {
+    const userId = client.data.userId as string | undefined;
+    if (userId) this.announcePresence(userId, false);
+
     const timer = this.expiryTimers.get(client.id);
 
     if (timer) {
@@ -218,14 +229,27 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  /** Comments are entirely social-gated (see CommentController) — refused silently, same "don't advertise the surface" rule as the REST side. */
-  @SubscribeMessage("join-comments")
+  /**
+   * Comments are entirely social-gated (see CommentController) — refused
+   * silently, same "don't advertise the surface" rule as the REST side. So is
+   * a target that doesn't exist, and a socket already in
+   * MAX_COMMENT_ROOMS_PER_SOCKET threads: every room joined here also lives
+   * in the presence maps below, so arbitrary keys would grow them without
+   * bound.
+   */
+  @SubscribeMessage(RealtimeCommand.JOIN_COMMENTS)
   async handleJoinComments(
     @ConnectedSocket() client: Socket,
     @MessageBody()
     { targetType, targetId }: { targetType: string; targetId: string },
   ): Promise<void> {
-    if (!isSocialEnabled(this.config, this.flags)) return;
+    if (!isSocialEnabled(this.config)) return;
+    if (typeof targetType !== "string" || typeof targetId !== "string") return;
+
+    const joined = this.commentRoomsBySocket.get(client.id)?.size ?? 0;
+    if (joined >= MAX_COMMENT_ROOMS_PER_SOCKET) return;
+    if (!(await workTargetExists(this.prisma, targetType, targetId))) return;
+
     await client.join(commentsRoom(targetType, targetId));
 
     const userId = client.data.userId as string | undefined;
@@ -235,7 +259,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.emitCommentPresence(targetType, targetId);
   }
 
-  @SubscribeMessage("leave-comments")
+  @SubscribeMessage(RealtimeCommand.LEAVE_COMMENTS)
   async handleLeaveComments(
     @ConnectedSocket() client: Socket,
     @MessageBody()
@@ -249,7 +273,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /** Owner or editor only — the same audience ListService.canEdit grants write access to. */
-  @SubscribeMessage("join-list")
+  @SubscribeMessage(RealtimeCommand.JOIN_LIST)
   async handleJoinList(
     @ConnectedSocket() client: Socket,
     @MessageBody() listId: string,
@@ -259,12 +283,93 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await client.join(listRoom(listId));
   }
 
-  @SubscribeMessage("leave-list")
+  @SubscribeMessage(RealtimeCommand.LEAVE_LIST)
   async handleLeaveList(
     @ConnectedSocket() client: Socket,
     @MessageBody() listId: string,
   ): Promise<void> {
     await client.leave(listRoom(listId));
+  }
+
+  /**
+   * Relayed to the other member of the conversation, never stored. Only
+   * while both show their presence: typing reveals as much as being online.
+   */
+  @SubscribeMessage("chat-typing")
+  async handleChatTyping(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() { conversationId }: { conversationId: string },
+  ): Promise<void> {
+    const userId = client.data.userId as string | undefined;
+    if (!userId || !isChatEnabled(this.config)) return;
+
+    const members = await this.prisma.conversationMember.findMany({
+      where: { conversationId },
+      select: { userId: true, user: { select: { chatShowPresence: true } } },
+    });
+    const self = members.find((m) => m.userId === userId);
+    const peer = members.find((m) => m.userId !== userId);
+    if (!self?.user.chatShowPresence || !peer?.user.chatShowPresence) return;
+    if (await this.blockedEitherWay(userId, peer.userId)) return;
+
+    const event: ChatTypingEvent = { conversationId, userId };
+    this.emitToUser(peer.userId, RealtimeEvent.CHAT_TYPING, event);
+  }
+
+  /**
+   * Only the first device to connect, and the last to leave, change what
+   * friends see. Never awaited: presence must not hold up, or fail, a
+   * connection.
+   */
+  private announcePresence(userId: string, online: boolean): void {
+    void (async () => {
+      const sockets = await this.server.in(userRoom(userId)).fetchSockets();
+      if (online ? sockets.length !== 1 : sockets.length > 0) return;
+      await this.publishPresence(userId, online);
+    })().catch((err: unknown) =>
+      this.logger.warn("Presence could not be published", err),
+    );
+  }
+
+  /** Tells the people the user has a conversation with, when both show their presence. */
+  private async publishPresence(
+    userId: string,
+    online: boolean,
+  ): Promise<void> {
+    if (!isChatEnabled(this.config)) return;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { chatShowPresence: true },
+    });
+    if (!user?.chatShowPresence) return;
+
+    const peers = await this.prisma.conversationMember.findMany({
+      where: {
+        userId: { not: userId },
+        user: { chatShowPresence: true },
+        conversation: { members: { some: { userId } } },
+      },
+      select: { userId: true },
+    });
+    const event: ChatPresenceEvent = { userId, online };
+
+    for (const peer of peers) {
+      if (await this.blockedEitherWay(userId, peer.userId)) continue;
+      this.emitToUser(peer.userId, RealtimeEvent.CHAT_PRESENCE, event);
+    }
+  }
+
+  private async blockedEitherWay(a: string, b: string): Promise<boolean> {
+    const blocks = await this.prisma.block.count({
+      where: {
+        OR: [
+          { blockerId: a, blockedId: b },
+          { blockerId: b, blockedId: a },
+        ],
+      },
+    });
+    return blocks > 0;
   }
 
   private async canAccessList(
@@ -277,7 +382,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
     if (!list) return false;
     if (list.userId === userId) return true;
-    if (!isSocialEnabled(this.config, this.flags)) return false;
+    if (!isSocialEnabled(this.config)) return false;
 
     const member = await this.prisma.listMember.findUnique({
       where: { listId_userId: { listId, userId } },
@@ -336,6 +441,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   emitToUser(userId: string, event: RealtimeEvent, payload?: unknown): void {
     this.server.to(userRoom(userId)).emit(event, payload);
+  }
+
+  /** Whether the account has the app open somewhere right now. */
+  async isOnline(userId: string): Promise<boolean> {
+    const sockets = await this.server.in(userRoom(userId)).fetchSockets();
+    return sockets.length > 0;
   }
 
   emitReportsCount(): void {

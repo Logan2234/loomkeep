@@ -1,5 +1,5 @@
-import { m } from "$lib/paraglide/messages.js";
-import { getLocale, overwriteGetLocale } from "$lib/paraglide/runtime.js";
+import { m } from "#lib/paraglide/messages.js";
+import { getLocale, overwriteGetLocale } from "#lib/paraglide/runtime.js";
 import {
   ErrorCode,
   type ImportItemContext,
@@ -129,6 +129,17 @@ describe("import presentation", () => {
           }),
         ),
       ).toBe(m.library_status_planned());
+      expect(
+        importItemSubtitle(
+          item({
+            kind: "series",
+            episodesWatched: 0,
+            status: "WATCHING",
+            rating: 7,
+            favorite: false,
+          }),
+        ),
+      ).toBe(`${m.library_status_in_progress()} · ★ 7/10`);
       expect(
         importItemSubtitle(
           item({

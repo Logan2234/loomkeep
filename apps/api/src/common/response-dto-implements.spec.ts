@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import ts from "typescript";
 
 // Guardrail for the "typed API responses" effort: a *-response.dto.ts class
@@ -51,5 +51,88 @@ function findResponseDtoFiles(dir: string): string[] {
     }
 
     return [];
+  });
+}
+
+describe("request DTO classes stay linked to their shared contract", () => {
+  it("every request class with a shared counterpart implements it", () => {
+    const root = join(__dirname, "../../../..");
+    const sharedInterfaces = new Set(
+      findTypeScriptFiles(join(root, "packages/shared/src")).flatMap((file) => {
+        const source = ts.createSourceFile(
+          file,
+          readFileSync(file, "utf8"),
+          ts.ScriptTarget.Latest,
+          true,
+        );
+        return source.statements
+          .filter(ts.isInterfaceDeclaration)
+          .map((node) => node.name.text);
+      }),
+    );
+    const aliases: Record<string, string> = {
+      CommentMentionBody: "CommentMentionInputDto",
+      BulkUpdateEntriesBaseBody: "BulkUpdateEntriesDto",
+      BulkUpdateBookEntriesBody: "BulkUpdateEntriesDto",
+      BulkUpdateGameEntriesBody: "BulkUpdateEntriesDto",
+      BulkUpdateMusicEntriesBody: "BulkUpdateEntriesDto",
+    };
+    const counterparts: string[] = [];
+    const offenders: string[] = [];
+
+    for (const file of findTypeScriptFiles(join(root, "apps/api/src")).filter(
+      (file) => file.includes(`${sep}dto${sep}`),
+    )) {
+      const source = ts.createSourceFile(
+        file,
+        readFileSync(file, "utf8"),
+        ts.ScriptTarget.Latest,
+        true,
+      );
+
+      for (const cls of source.statements.filter(ts.isClassDeclaration)) {
+        const name = cls.name?.text;
+        if (
+          !name?.endsWith("Body") ||
+          !cls.modifiers?.some(
+            (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+          )
+        )
+          continue;
+        const base = name.slice(0, -4);
+        const contract =
+          aliases[name] ??
+          [base + "Dto", base + "RequestDto"].find((candidate) =>
+            sharedInterfaces.has(candidate),
+          );
+        if (!contract) continue;
+        counterparts.push(name);
+        const implemented =
+          cls.heritageClauses
+            ?.filter(
+              (clause) => clause.token === ts.SyntaxKind.ImplementsKeyword,
+            )
+            .flatMap((clause) =>
+              clause.types.map((type) => type.expression.getText(source)),
+            ) ?? [];
+        if (!implemented.includes(contract))
+          offenders.push(`${name} in ${file}`);
+      }
+    }
+
+    expect(counterparts.length).toBeGreaterThan(0);
+    expect(offenders).toEqual([]);
+  });
+});
+
+function findTypeScriptFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) return findTypeScriptFiles(full);
+    return entry.isFile() &&
+      entry.name.endsWith(".ts") &&
+      !entry.name.endsWith(".spec.ts")
+      ? [full]
+      : [];
   });
 }

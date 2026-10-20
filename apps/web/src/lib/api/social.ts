@@ -1,5 +1,9 @@
 import type {
+  ListItemTargetType,
   PagedResult,
+  ReportCategory,
+  ReportMotif,
+  ReportProfilePart,
   UpdateVisibilitySettingsDto,
   UserSummaryDto,
 } from "@loomkeep/shared";
@@ -33,6 +37,12 @@ export const unfollowUser = (username: string) =>
     params: { username },
   });
 
+export const removeFollower = (username: string) =>
+  typedRequest("/social/users/{username}/follower", {
+    method: "DELETE",
+    params: { username },
+  });
+
 export const blockUser = (username: string) =>
   typedRequest("/social/users/{username}/block", {
     method: "POST",
@@ -43,6 +53,21 @@ export const unblockUser = (username: string) =>
   typedRequest("/social/users/{username}/block", {
     method: "DELETE",
     params: { username },
+  });
+
+export const reportUser = (
+  username: string,
+  report: {
+    profilePart: ReportProfilePart;
+    category: ReportCategory;
+    motif?: ReportMotif;
+    reason?: string;
+  },
+): Promise<void> =>
+  typedRequest("/social/users/{username}/report", {
+    method: "POST",
+    params: { username },
+    body: report,
   });
 
 export const getFollowRequests = () => typedRequest("/social/requests");
@@ -79,3 +104,9 @@ export const updatePrivacySettings = (body: UpdateVisibilitySettingsDto) =>
 
 export const getGhostSwitchImpact = () =>
   typedRequest("/social/me/privacy/ghost-impact");
+
+/** The friends who track a work, where their library visibility allows. */
+export const getWorkFriends = (targetType: ListItemTargetType, id: string) =>
+  typedRequest("/social/works/{type}/{id}/friends", {
+    params: { type: targetType, id },
+  });

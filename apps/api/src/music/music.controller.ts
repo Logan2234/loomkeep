@@ -1,4 +1,8 @@
-import type { PagedResult } from "@loomkeep/shared";
+import type {
+  BulkEntriesResultDto,
+  PagedResult,
+  PileSummaryDto,
+} from "@loomkeep/shared";
 import {
   Domain,
   ErrorCode,
@@ -16,6 +20,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
   Put,
   Query,
 } from "@nestjs/common";
@@ -23,11 +28,16 @@ import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import {
+  BulkEntriesResultResponseDto,
+  BulkEntriesTargetBody,
+} from "../common/dto/bulk-entries.dto";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
-import { safeLang } from "../common/locale.util";
+import { parseListEntriesQuery } from "../common/entry-lifecycle.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
-import { toQueryArray } from "../common/query-array.util";
+import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { DomainGateService } from "../users/domain-gate.service";
+import { BulkUpdateMusicEntriesBody } from "./dto/bulk-update-music-entries.dto";
 import { MusicDetailResponseDto } from "./dto/music-detail-response.dto";
 import { MusicEntryResponseDto } from "./dto/music-entry-response.dto";
 import { MusicSearchResultResponseDto } from "./dto/music-search-response.dto";
@@ -81,14 +91,32 @@ export class MusicController {
   ): Promise<PagedResult<MusicEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.listEntries(user.sub, {
-      q,
-      favorite: favorite === "true",
-      statuses: toQueryArray(status),
-      sort,
-      order: order === "asc" ? "asc" : "desc",
-      page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
-      lang: safeLang(lang),
+      ...parseListEntriesQuery({
+        q,
+        favorite,
+        status,
+        sort,
+        order,
+        page,
+        limit,
+        lang,
+      }),
+    });
+  }
+
+  /** What's left in the pile among the entries the list shows under the same filters. */
+  @Get("pile")
+  @ApiOkResponse({ type: PileSummaryResponseDto })
+  async getPile(
+    @CurrentUser() user: JwtPayload,
+    @Query("q") q?: string,
+    @Query("favorite") favorite?: string,
+    @Query("status") status?: string | string[],
+    @Query("lang") lang?: string,
+  ): Promise<PileSummaryDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
+    return this.musicLibraryService.getPile(user.sub, {
+      ...parseListEntriesQuery({ q, favorite, status, lang }),
     });
   }
 
@@ -121,6 +149,29 @@ export class MusicController {
   ): Promise<MusicEntryDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.updateEntry(user.sub, entryId, dto);
+  }
+
+  /** One change applied to many entries (UX-04), with a single update's side effects on each. */
+  @HttpCode(HttpStatus.OK)
+  @Post("entries/bulk")
+  @ApiOkResponse({ type: BulkEntriesResultResponseDto })
+  async bulkUpdate(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkUpdateMusicEntriesBody,
+  ): Promise<BulkEntriesResultDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
+    return this.musicLibraryService.bulkUpdate(user.sub, dto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post("entries/bulk-delete")
+  @ApiOkResponse({ type: BulkEntriesResultResponseDto })
+  async bulkDelete(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkEntriesTargetBody,
+  ): Promise<BulkEntriesResultDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
+    return this.musicLibraryService.bulkDelete(user.sub, dto);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

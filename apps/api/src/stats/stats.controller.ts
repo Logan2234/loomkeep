@@ -1,17 +1,23 @@
-import type {
-  BookStatsDto,
-  GameStatsDto,
-  MusicStatsDto,
-  SocialStatsDto,
-  StatsDomain,
-  StatsOverviewDto,
-  StatsWindow,
-  StatsWorkDto,
-  VideoStatsDto,
-  VideoTemporalDto,
-  WatchStaleness,
+import {
+  type BookStatsDto,
+  type DomainPileDto,
+  type GameStatsDto,
+  type MusicStatsDto,
+  type SocialStatsDto,
+  type StatsDomain,
+  type StatsOverviewDto,
+  type StatsWindow,
+  type StatsWorkDto,
+  type VideoStatsDto,
+  type VideoTemporalDto,
+  type WatchStaleness,
+  Domain,
+  ErrorCode,
+  STATS_DOMAINS,
+  STATS_WINDOWS,
+  WATCH_STALENESS,
 } from "@loomkeep/shared";
-import { Domain, ErrorCode, STATS_DOMAINS } from "@loomkeep/shared";
+
 import { Controller, Get, HttpStatus, Query, UseGuards } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
@@ -24,16 +30,16 @@ import { DomainGateService } from "../users/domain-gate.service";
 import { BookStatsResponseDto } from "./dto/book-stats-response.dto";
 import { GameStatsResponseDto } from "./dto/game-stats-response.dto";
 import { MusicStatsResponseDto } from "./dto/music-stats-response.dto";
+import { DomainPileResponseDto } from "./dto/pile-summary-response.dto";
 import { SocialStatsResponseDto } from "./dto/social-stats-response.dto";
 import { StatsOverviewResponseDto } from "./dto/stats-overview-response.dto";
 import { StatsWorkResponseDto } from "./dto/stats-work-response.dto";
 import { VideoStatsResponseDto } from "./dto/video-stats-response.dto";
 import { VideoTemporalResponseDto } from "./dto/video-temporal-response.dto";
+import { PileService } from "./pile.service";
 import { StatsService } from "./stats.service";
 
 const DOMAIN_CHOICES = ["ALL", ...STATS_DOMAINS] as const;
-const STALENESS_CHOICES = ["PAUSED", "GHOST"] as const;
-const WINDOW_CHOICES = ["ALL", "YEAR", "MONTH", "WEEK"] as const;
 
 @Controller("stats")
 export class StatsController {
@@ -41,7 +47,18 @@ export class StatsController {
     private readonly statsService: StatsService,
     private readonly domainGate: DomainGateService,
     private readonly entitlements: EntitlementService,
+    private readonly piles: PileService,
   ) {}
+
+  /** What's left in each enabled domain's pile, unfiltered (UX-02). */
+  @Get("pile")
+  @ApiOkResponse({ type: DomainPileResponseDto, isArray: true })
+  getPiles(
+    @CurrentUser() user: JwtPayload,
+    @Query("domain") domainParam = "ALL",
+  ): Promise<DomainPileDto[]> {
+    return this.piles.getPiles(user.sub, parseDomain(domainParam));
+  }
 
   @Get("overview")
   @ApiOkResponse({ type: StatsOverviewResponseDto })
@@ -94,7 +111,7 @@ export class StatsController {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     const kind = parseEnumParam(
       kindParam,
-      STALENESS_CHOICES,
+      WATCH_STALENESS,
       "series kind",
     ) as WatchStaleness;
     return this.statsService.getVideoSeries(user.sub, kind);
@@ -109,7 +126,7 @@ export class StatsController {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     const period = parseEnumParam(
       periodParam,
-      WINDOW_CHOICES,
+      STATS_WINDOWS,
       "stats window",
     ) as StatsWindow;
     const premium = await this.entitlements.isEffectivelyPremium(user.sub);

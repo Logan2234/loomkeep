@@ -1,26 +1,34 @@
 <script lang="ts">
-  import { browser } from "$app/environment";
-  import { goto } from "$app/navigation";
+  import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
+
+  import { type Snippet } from "svelte";
+
+  import { browser } from "$app/env";
+  import { readStorage, writeStorage } from "#lib/local-storage.js";
+
   import { navigating, page } from "$app/state";
-  import { logout } from "$lib/api/auth";
-  import { auth } from "$lib/auth.svelte";
-  import Avatar from "$lib/components/Avatar.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
-  import { isDomainEnabled } from "$lib/domains";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { visibleNavSections } from "$lib/navigation";
-  import { m } from "$lib/paraglide/messages.js";
-  import { useReportsPendingCount } from "$lib/reports-pending.svelte";
+  import { signOutAndRedirect } from "#lib/api/auth.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
+  import { isDomainEnabled } from "#lib/domain-availability.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import {
+    visibleNavSections,
+    profileHref as resolveProfileHref,
+  } from "#lib/navigation.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
   import { scale } from "svelte/transition";
 
   const reduced = prefersReducedMotion();
 
   let pinned = $state(
-    browser ? localStorage.getItem("lk-rail-pinned") === "true" : false,
+    browser ? readStorage(STORAGE_KEYS.railPinned) === "true" : false,
   );
   let hovered = $state(false);
 
@@ -38,7 +46,7 @@
   const inSettings = $derived(page.url.pathname.startsWith("/app/settings"));
   let expanded = $derived((pinned && !inSettings) || hovered);
 
-  let { children } = $props();
+  let { children }: { children: Snippet } = $props();
 
   const reportsPending = useReportsPendingCount();
 
@@ -53,19 +61,14 @@
 
   // "Mon profil" only exists when social is enabled — self-host without it
   // still needs a way to the account settings from the sidebar footer.
-  const profileHref = $derived(
-    appConfig.socialEnabled ? "/app/profile" : "/app/settings",
-  );
+  const profileHref = $derived(resolveProfileHref());
 
-  async function signOut() {
-    await logout();
-    await goto("/login");
-  }
+  const signOut = signOutAndRedirect;
 
   function togglePinned() {
     pinned = !pinned;
     if (browser) {
-      localStorage.setItem("lk-rail-pinned", pinned ? "true" : "false");
+      writeStorage(STORAGE_KEYS.railPinned, pinned ? "true" : "false");
     }
   }
 
@@ -122,9 +125,9 @@
   });
 </script>
 
-<div class="flex min-h-screen">
+<div class="flex min-h-svh">
   <aside
-    class="border-border bg-surface sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r px-3 py-3 transition-[width] duration-200 md:flex
+    class="border-border bg-surface sticky top-0 hidden h-svh shrink-0 flex-col overflow-hidden border-r px-3 py-3 transition-[width] duration-200 md:flex
     {expanded ? 'w-60' : 'w-16'}"
     onmouseenter={() => (hovered = true)}
     onmouseleave={onRailLeave}>
@@ -190,49 +193,52 @@
             </span>
           </a>
 
-          {#if expanded}
-            <div
-              class="text-dim sticky top-0 px-3 pt-3 pb-2 text-[0.6rem] font-bold tracking-[0.13em] uppercase">
-              {m.nav_administration()}
-            </div>
-          {:else}
-            <div
-              class="border-border mx-3 mt-4.5 mb-4 border-t"
-              aria-hidden="true">
-            </div>
-          {/if}
+          {#each VISIBLE_ADMIN_NAV_GROUPS as group (group.label)}
+            {#if expanded}
+              <div
+                class="text-dim px-3 pt-3 pb-2 text-[0.6rem] font-bold tracking-[0.13em] whitespace-nowrap uppercase">
+                {group.label}
+              </div>
+            {:else}
+              <div
+                class="border-border mx-3 mt-3 mb-2 border-t"
+                aria-hidden="true">
+              </div>
+            {/if}
 
-          {#each VISIBLE_ADMIN_NAV as item (item.href)}
-            {@const active = item.match(page.url.pathname)}
-            <a
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              title={expanded ? undefined : item.label}
-              class="flex w-full shrink-0 items-center overflow-hidden rounded-xl transition-colors {active
-                ? 'text-accent'
-                : 'text-dim hover:bg-surface-2 hover:text-fg'}">
-              <span class="relative grid h-10 w-10 shrink-0 place-items-center">
-                <Icon name={item.icon} class="h-5 w-5" />
-                {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
-                  {#key reportsPending.count}
-                    <span
-                      in:scale|global={{
-                        duration: reduced ? 0 : 200,
-                        start: 0.5,
-                      }}
-                      class="bg-accent text-accent-fg absolute top-1.5 right-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
-                      {reportsPending.count > 9 ? "9+" : reportsPending.count}
-                    </span>
-                  {/key}
-                {/if}
-              </span>
-              <span
-                class="text-sm font-semibold whitespace-nowrap transition-opacity duration-150 {expanded
-                  ? 'opacity-100'
-                  : 'opacity-0'}">
-                {item.label}
-              </span>
-            </a>
+            {#each group.items as item (item.href)}
+              {@const active = item.match(page.url.pathname)}
+              <a
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                title={expanded ? undefined : item.label}
+                class="flex w-full shrink-0 items-center overflow-hidden rounded-xl transition-colors {active
+                  ? 'text-accent'
+                  : 'text-dim hover:bg-surface-2 hover:text-fg'}">
+                <span
+                  class="relative grid h-10 w-10 shrink-0 place-items-center">
+                  <Icon name={item.icon} class="h-5 w-5" />
+                  {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
+                    {#key reportsPending.count}
+                      <span
+                        in:scale|global={{
+                          duration: reduced ? 0 : 200,
+                          start: 0.5,
+                        }}
+                        class="bg-accent text-accent-fg absolute top-1.5 right-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
+                        {reportsPending.count > 9 ? "9+" : reportsPending.count}
+                      </span>
+                    {/key}
+                  {/if}
+                </span>
+                <span
+                  class="text-sm font-semibold whitespace-nowrap transition-opacity duration-150 {expanded
+                    ? 'opacity-100'
+                    : 'opacity-0'}">
+                  {item.label}
+                </span>
+              </a>
+            {/each}
           {/each}
         {:else}
           {#each visibleSections as section (section.label)}

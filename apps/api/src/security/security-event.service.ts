@@ -1,18 +1,38 @@
 import type {
+  AccountSecurityEventDto,
   AdminSecuritySummaryDto,
   PagedResult,
   SecurityEventDto,
   SecurityEventType,
 } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { sinceDaysAgo } from "../common/date.util";
+import {
+  parsePageQuery,
+  toPagedResult,
+  type ParsedPage,
+} from "../common/pagination.util";
+import { currentRequest } from "../common/request-context";
+import {
+  SECURITY_ALERT_EVENTS,
+  type SecurityAlertEvent,
+} from "../mail/mail.i18n";
+import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
-import { rankFailedTargets, sinceDaysAgo } from "./login-failure.util";
+import { rankFailedTargets } from "./login-failure.util";
 
 /** Default events per page on the admin "Sécurité" list. */
 export const SECURITY_EVENT_PAGE_SIZE = 50;
 
 /** Window the "most targeted identifiers" ranking looks back over, in days. */
 const TARGETS_WINDOW_DAYS = 7;
+
+/** How long an event is kept, for the account owner and the admin alike. */
+const RETENTION_DAYS = 365;
+
+/** A lock emails at most once per this window: an attacker retrying mustn't flood the inbox. */
+const LOCKED_ALERT_WINDOW_MS = 60 * 60 * 1000;
 
 export interface RecordSecurityEventParams {
   type: SecurityEventType;
@@ -21,6 +41,7 @@ export interface RecordSecurityEventParams {
   /** Only meaningful for LOGIN_FAILED (the string actually typed) — every other type derives its display email from userId at read time, so pass nothing. */
   identifier?: string;
   detail?: string;
+  /** Defaults to the current request's, like the IP. */
   userAgent?: string;
 }
 
@@ -28,24 +49,154 @@ export interface ListSecurityEventsParams {
   type?: SecurityEventType;
   /** Matches either the stored identifier (LOGIN_FAILED) or the linked account's current email. */
   identifier?: string;
-  page?: number;
-  limit?: number;
+  page?: ParsedPage;
 }
 
 @Injectable()
 export class SecurityEventService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(SecurityEventService.name);
 
-  async record(params: RecordSecurityEventParams): Promise<void> {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mail: MailService,
+  ) {}
+
+  async record(params: RecordSecurityEventParams): Promise<Date> {
+    const occurredAt = new Date();
+    const request = currentRequest();
+    const alert = params.userId
+      ? await this.alertFor(params.type, params.userId)
+      : null;
+
     await this.prisma.securityEvent.create({
       data: {
+        createdAt: occurredAt,
         type: params.type,
         userId: params.userId ?? null,
         identifier: params.identifier,
         detail: params.detail,
-        userAgent: params.userAgent,
+        userAgent: params.userAgent ?? request?.userAgent,
+        ip: request?.ip,
       },
     });
+
+    if (alert)
+      await this.mail.sendSecurityAlert(
+        alert.recipient,
+        alert.event,
+        occurredAt,
+      );
+    return occurredAt;
+  }
+
+  /**
+   * Whom to email about this event, if anyone. Changes to how the account
+   * signs in reach its owner by email, the one channel an intruder holding
+   * the session can't dismiss. Checked before the event is written, so the
+   * once-an-hour limit doesn't count the event itself.
+   */
+  private async alertFor(
+    type: SecurityEventType,
+    userId: string,
+  ): Promise<{
+    recipient: { email: string; locale: string };
+    event: SecurityAlertEvent;
+  } | null> {
+    const event = SECURITY_ALERT_EVENTS.find((e) => e === type);
+    if (!event) return null;
+
+    if (event === "MFA_CHALLENGE_LOCKED" || event === "REAUTH_LOCKED") {
+      const recent = await this.prisma.securityEvent.count({
+        where: {
+          userId,
+          type: event,
+          createdAt: { gt: new Date(Date.now() - LOCKED_ALERT_WINDOW_MS) },
+        },
+      });
+      if (recent > 0) return null;
+    }
+
+    const recipient = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, locale: true },
+    });
+    return recipient ? { recipient, event } : null;
+  }
+
+  /**
+   * The account's own trail, most recent first. USER_DELETED is left out: it
+   * can only ever be read by someone else, the account being gone.
+   */
+  async listForAccount(
+    userId: string,
+    page: ParsedPage,
+  ): Promise<PagedResult<AccountSecurityEventDto>> {
+    const { skip, take, limit } = page;
+    const rows = await this.prisma.securityEvent.findMany({
+      where: { userId, type: { not: "USER_DELETED" } },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: take + 1,
+    });
+
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
+    return {
+      hasMore,
+      items: pageRows.map((e) => ({
+        id: e.id,
+        type: e.type as SecurityEventType,
+        detail: e.detail,
+        ip: e.ip,
+        userAgent: e.userAgent,
+        createdAt: e.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  /**
+   * Called just before an account is deleted: its trail survives, anonymised
+   * (see SecurityEvent), so the addresses go too. Failed logins keep theirs —
+   * the privacy policy keeps them for abuse prevention, whatever the account.
+   */
+  async forgetIps(userId: string): Promise<void> {
+    await this.prisma.securityEvent.updateMany({
+      where: { userId, type: { not: "LOGIN_FAILED" } },
+      data: { ip: null },
+    });
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_6AM)
+  async purgeExpired(now = new Date()): Promise<void> {
+    const { count } = await this.prisma.securityEvent.deleteMany({
+      where: { createdAt: { lt: sinceDaysAgo(now, RETENTION_DAYS) } },
+    });
+
+    if (count > 0) this.logger.log(`Purged ${count} expired security events`);
+
+    await this.purgeExpiredCredentials(now);
+  }
+
+  /**
+   * The one-time secrets an authentication flow leaves behind when it is
+   * never finished: a login whose second factor was abandoned, a passkey
+   * prompt dismissed (`webauthn/login-options` is public, so anyone can
+   * create these), a reset or verification link never clicked, an email
+   * change never confirmed. Each flow deletes its own row on success, but
+   * nothing else ever did once it expired, so they piled up for good.
+   */
+  private async purgeExpiredCredentials(now: Date): Promise<void> {
+    const expired = { expiresAt: { lt: now } };
+    const counts = await this.prisma.$transaction([
+      this.prisma.mfaLoginChallenge.deleteMany({ where: expired }),
+      this.prisma.webauthnChallenge.deleteMany({ where: expired }),
+      this.prisma.userToken.deleteMany({ where: expired }),
+      this.prisma.emailChangeRequest.deleteMany({ where: expired }),
+    ]);
+    const total = counts.reduce((sum, { count }) => sum + count, 0);
+
+    if (total > 0) {
+      this.logger.log(`Purged ${total} expired authentication challenges`);
+    }
   }
 
   /**
@@ -103,11 +254,9 @@ export class SecurityEventService {
   async list(
     params: ListSecurityEventsParams,
   ): Promise<PagedResult<SecurityEventDto>> {
-    const page = params.page && params.page > 0 ? params.page : 1;
-    const limit =
-      params.limit && params.limit > 0
-        ? params.limit
-        : SECURITY_EVENT_PAGE_SIZE;
+    const { skip, take, limit } =
+      params.page ??
+      parsePageQuery(undefined, undefined, SECURITY_EVENT_PAGE_SIZE);
 
     const rows = await this.prisma.securityEvent.findMany({
       where: {
@@ -132,11 +281,10 @@ export class SecurityEventService {
       },
       include: { user: { select: { email: true } } },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
     });
-    const hasMore = rows.length > limit;
-    const events = rows.slice(0, limit);
+    const { items: events, hasMore } = toPagedResult(rows, limit);
 
     return {
       hasMore,

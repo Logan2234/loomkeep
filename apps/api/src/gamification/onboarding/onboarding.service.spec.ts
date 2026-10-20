@@ -1,8 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared";
-import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
-import type { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
 import type { PrismaService } from "../../prisma/prisma.service";
+import { makeConfig } from "../../test-utils/stubs";
 import type { AchievementService } from "../achievements/achievement.service";
 import { OnboardingService } from "./onboarding.service";
 
@@ -21,20 +20,6 @@ const ALL_DONE = {
   create_list: true,
   comment: true,
 };
-
-function makeConfig(values: Record<string, string> = {}): ConfigService {
-  return {
-    get: vi.fn((key: string) => values[key]),
-  } as unknown as ConfigService;
-}
-
-// No Unleash client in tests — isEnabled always returns its fallback, same
-// convention as achievement.service.spec.ts.
-function makeFlags(): FeatureFlagsService {
-  return {
-    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
-  } as unknown as FeatureFlagsService;
-}
 
 function makeService(
   opts: {
@@ -71,9 +56,8 @@ function makeService(
     SOCIAL_ENABLED: "true",
     ...opts.configValues,
   });
-  const flags = makeFlags();
 
-  const service = new OnboardingService(prisma, config, flags, achievements);
+  const service = new OnboardingService(prisma, config, achievements);
   return { service, prisma, achievements };
 }
 

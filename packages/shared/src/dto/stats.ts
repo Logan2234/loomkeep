@@ -56,7 +56,8 @@ export type PossessionBreakdownDto =
  * `TrendPeriod` (a bucket *size* for trend curves) — this is a filter
  * *window* applied to all-time aggregates.
  */
-export type StatsWindow = "ALL" | "YEAR" | "MONTH" | "WEEK";
+export const STATS_WINDOWS = ["ALL", "YEAR", "MONTH", "WEEK"] as const;
+export type StatsWindow = (typeof STATS_WINDOWS)[number];
 
 export interface RatingBucketDto {
   /** 1..10, integer. */
@@ -147,7 +148,8 @@ export interface VideoStatsDto {
 }
 
 /** Staleness bucket for a WATCHING series/anime — mutually exclusive. */
-export type WatchStaleness = "PAUSED" | "GHOST";
+export const WATCH_STALENESS = ["PAUSED", "GHOST"] as const;
+export type WatchStaleness = (typeof WATCH_STALENESS)[number];
 
 export interface LabelCountDto {
   label: string;
@@ -174,6 +176,8 @@ export interface GameStatsDto {
   totalPlaytimeMinutes: number;
   avgPlaytimePerCompletedMinutes: number | null;
   neverLaunchedCount: number;
+  /** PLAYING entries whose latest session is older than 30 days. */
+  pausedInProgressCount: number;
   /** Completed replays beyond each game's first completion. */
   replaysCount: number;
   /** Full ranked list, minutes descending — the front caps the display. */
@@ -212,9 +216,8 @@ export interface BookStatsDto {
   distinctAuthorsCount: number;
   /** Completed rereads beyond each book's first completion. */
   rereadsCount: number;
-  // READING entries untouched 30+ days (proxy: `updatedAt`, the entry has
-  // no per-page-turn log).
-  stagnantInProgressCount: number;
+  /** READING entries whose latest session is older than 30 days. */
+  pausedInProgressCount: number;
 }
 
 // The Musique deep section on /stats — everything not already covered by
@@ -339,4 +342,43 @@ export interface SocialStatsDto {
   socialActivityByMonth: MonthCountDto[];
   /** Consecutive days with a review or comment, same rule as the video streak. */
   contributionStreakDays: number;
+}
+
+export type OnThisDayKind = "watched" | "started" | "finished";
+
+/** A work you were on around this date a year ago ("Il y a un an"). */
+export interface OnThisDayEntryDto {
+  domain: StatsDomain;
+  title: string;
+  imageUrl: string | null;
+  href: string | null;
+  kind: OnThisDayKind;
+  /** ISO — the day it happened. */
+  date: string;
+  /** Episodes watched that week, for a series; 1 otherwise. */
+  count: number;
+}
+
+/**
+ * What's left in one library's pile (UX-02): everything planned, plus the
+ * rest of what's in progress. Minutes for video, games and music, pages for
+ * books.
+ */
+export interface PileSummaryDto {
+  unit: "MINUTES" | "PAGES";
+  amount: number;
+  /** Pile entries matching the request's filters. */
+  entries: number;
+  /**
+   * Among them, those with enough data to count. Always `entries` for video,
+   * where a title with no length falls back to a per-type default instead.
+   */
+  counted: number;
+  /** Part of `amount` is an estimate: a default length, or an IGDB average. */
+  estimated: boolean;
+}
+
+export interface DomainPileDto {
+  domain: StatsDomain;
+  pile: PileSummaryDto;
 }

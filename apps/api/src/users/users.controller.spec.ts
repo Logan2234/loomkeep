@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
+import { fakeReply } from "../test-utils/fake-reply";
 import { UsersController } from "./users.controller";
 import type { UsersService } from "./users.service";
 
@@ -24,8 +25,6 @@ function makeController() {
     deleteAvatar: vi.fn(),
     exportData: vi.fn(),
     exportCsv: vi.fn(),
-    getCalendarToken: vi.fn(),
-    regenerateCalendarToken: vi.fn(),
     getMyEntitlement: vi.fn(),
     completeOnboarding: vi.fn(),
     acceptTerms: vi.fn(),
@@ -38,16 +37,7 @@ function makeController() {
     checkUsernameAvailability: vi.fn(),
     updateUsername: vi.fn(),
   } as unknown as UsersService;
-  return { controller: new UsersController(users), users };
-}
-
-function fakeReply() {
-  const reply = {
-    header: vi.fn().mockReturnThis(),
-    type: vi.fn().mockReturnThis(),
-    send: vi.fn().mockReturnThis(),
-  };
-  return reply as unknown as import("fastify").FastifyReply;
+  return { controller: new UsersController(users, {} as never), users };
 }
 
 describe("UsersController — delegation to UsersService", () => {
@@ -74,7 +64,7 @@ describe("UsersController — delegation to UsersService", () => {
 
   it("getAvatar streams the resolved buffer with the public-image headers", async () => {
     const { controller, users } = makeController();
-    const reply = fakeReply();
+    const reply = fakeReply(true).reply;
 
     await controller.getAvatar("target-id", reply);
 
@@ -106,18 +96,6 @@ describe("UsersController — delegation to UsersService", () => {
     const { controller, users } = makeController();
     void controller.exportCsv(payload, "MEDIA");
     expect(users.exportCsv).toHaveBeenCalledWith(userId, "MEDIA");
-  });
-
-  it("getCalendarToken", () => {
-    const { controller, users } = makeController();
-    void controller.getCalendarToken(payload);
-    expect(users.getCalendarToken).toHaveBeenCalledWith(userId);
-  });
-
-  it("regenerateCalendarToken", () => {
-    const { controller, users } = makeController();
-    void controller.regenerateCalendarToken(payload);
-    expect(users.regenerateCalendarToken).toHaveBeenCalledWith(userId);
   });
 
   it("getMyEntitlement", () => {
@@ -178,9 +156,8 @@ describe("UsersController — delegation to UsersService", () => {
 
   it("deleteAccount", () => {
     const { controller, users } = makeController();
-    const dto = { currentPassword: "pw" };
-    void controller.deleteAccount(payload, dto, "some-ua");
-    expect(users.deleteAccount).toHaveBeenCalledWith(userId, dto, "some-ua");
+    void controller.deleteAccount(payload, "some-ua");
+    expect(users.deleteAccount).toHaveBeenCalledWith(userId, "some-ua");
   });
 
   it("checkUsernameAvailability", () => {

@@ -12,19 +12,19 @@ function escapeRegExp(value: string): string {
 /**
  * Title-match score against the query (higher = better):
  * 4 exact · 3 starts-with · 2 whole-word · 1 substring · 0 none.
- * Both the localized and the original title are considered.
+ * Each title is considered — a localized and an original one, say.
  */
-export function relevanceScore(media: MediaSummaryDto, query: string): number {
+export function titleRelevance(
+  titles: (string | null | undefined)[],
+  query: string,
+): number {
   const q = normalize(query);
   if (!q) return 0;
   const wholeWord = new RegExp(`\\b${escapeRegExp(q)}\\b`);
-  const titles = [media.title, media.originalTitle]
-    .filter((t): t is string => !!t)
-    .map(normalize);
 
   let best = 0;
 
-  for (const t of titles) {
+  for (const t of titles.filter((t): t is string => !!t).map(normalize)) {
     if (t === q) best = Math.max(best, 4);
     else if (t.startsWith(q)) best = Math.max(best, 3);
     else if (wholeWord.test(t)) best = Math.max(best, 2);
@@ -32,6 +32,11 @@ export function relevanceScore(media: MediaSummaryDto, query: string): number {
   }
 
   return best;
+}
+
+/** {@link titleRelevance} of a media's localized and original titles. */
+export function relevanceScore(media: MediaSummaryDto, query: string): number {
+  return titleRelevance([media.title, media.originalTitle], query);
 }
 
 /**

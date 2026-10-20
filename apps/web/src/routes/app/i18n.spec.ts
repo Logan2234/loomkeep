@@ -7,11 +7,15 @@ import enCommon from "../../../messages/en/common.json";
 import enErrors from "../../../messages/en/errors.json";
 import enGamification from "../../../messages/en/gamification.json";
 import enOther from "../../../messages/en/other.json";
+import enSettings from "../../../messages/en/settings.json";
+import enSite from "../../../messages/en/site.json";
 import frAdmin from "../../../messages/fr/admin.json";
 import frCommon from "../../../messages/fr/common.json";
 import frErrors from "../../../messages/fr/errors.json";
 import frGamification from "../../../messages/fr/gamification.json";
 import frOther from "../../../messages/fr/other.json";
+import frSettings from "../../../messages/fr/settings.json";
+import frSite from "../../../messages/fr/site.json";
 
 const routeDirectory = fileURLToPath(new URL("./", import.meta.url));
 const routes = readdirSync(routeDirectory, {
@@ -27,8 +31,24 @@ const routes = readdirSync(routeDirectory, {
     ),
   }));
 const catalogs: Record<string, Record<string, string>> = {
-  fr: { ...frAdmin, ...frCommon, ...frErrors, ...frGamification, ...frOther },
-  en: { ...enAdmin, ...enCommon, ...enErrors, ...enGamification, ...enOther },
+  fr: {
+    ...frAdmin,
+    ...frCommon,
+    ...frErrors,
+    ...frGamification,
+    ...frOther,
+    ...frSettings,
+    ...frSite,
+  },
+  en: {
+    ...enAdmin,
+    ...enCommon,
+    ...enErrors,
+    ...enGamification,
+    ...enOther,
+    ...enSettings,
+    ...enSite,
+  },
 };
 const textAttributes = new Set([
   "title",

@@ -1,4 +1,10 @@
-import type { ErrorCode, ImportJobDto } from "@loomkeep/shared";
+import {
+  type ErrorCode,
+  type ImportJobDto,
+  type ImportJobStatus,
+  IMPORT_JOB_STATUSES,
+} from "@loomkeep/shared";
+import { ApiProperty } from "@nestjs/swagger";
 import { ImportPlanResponseDto } from "./import-plan-response.dto";
 import { ImportReportResponseDto } from "./import-report-response.dto";
 
@@ -9,7 +15,9 @@ class ImportJobProgressResponseDto {
 
 export class ImportJobResponseDto implements ImportJobDto {
   id!: string;
-  status!: "running" | "completed" | "failed";
+  @ApiProperty({ enum: IMPORT_JOB_STATUSES })
+  status!: ImportJobStatus;
+
   progress!: ImportJobProgressResponseDto;
   plan!: ImportPlanResponseDto | null;
   report!: ImportReportResponseDto | null;

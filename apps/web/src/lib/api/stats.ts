@@ -1,15 +1,16 @@
-import type {
-  StatsDomain,
-  StatsWindow,
-  WatchStaleness,
-} from "@loomkeep/shared";
+import { type StatsDomainChoice } from "#lib/components/stats/stats-domain.js";
+import type { StatsWindow, WatchStaleness } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
-export const getStatsOverview = (domain: StatsDomain | "ALL" = "ALL") =>
+/** What's left in each enabled domain's pile, unfiltered. */
+export const getStatsPiles = (domain: StatsDomainChoice = "ALL") =>
+  typedRequest("/stats/pile", { query: { domain } });
+
+export const getStatsOverview = (domain: StatsDomainChoice = "ALL") =>
   typedRequest("/stats/overview", { query: { domain } });
 
 export const getStatsWorksByRating = (
-  domain: StatsDomain | "ALL",
+  domain: StatsDomainChoice,
   rating: number,
 ) =>
   typedRequest("/stats/works", {
@@ -17,7 +18,7 @@ export const getStatsWorksByRating = (
   });
 
 export const getStatsWorksByDecade = (
-  domain: StatsDomain | "ALL",
+  domain: StatsDomainChoice,
   decade: number,
 ) =>
   typedRequest("/stats/works", {
@@ -39,3 +40,7 @@ export const getVideoTemporal = (period: StatsWindow = "ALL") =>
   typedRequest("/stats/video/temporal", { query: { period } });
 
 export const getSocialStats = () => typedRequest("/stats/social");
+
+/** What the viewer was on around `date` (local YYYY-MM-DD) a year ago. */
+export const getOnThisDay = (date: string) =>
+  typedRequest("/stats/on-this-day", { query: { date } });

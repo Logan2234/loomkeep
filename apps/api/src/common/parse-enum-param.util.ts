@@ -3,25 +3,30 @@ import { HttpStatus } from "@nestjs/common";
 import { AppException } from "./app.exception";
 
 /**
- * Parse a case-insensitive route/query param into one of `allowed`'s enum
- * values, throwing a 400 (`Unknown <label> '<value>'`) when it matches none.
- * `label` names the enum in the error, e.g. "catalog source".
+ * Parses an enum parameter case-insensitively by default. Options preserve
+ * route-specific case matching, error codes, messages and interpolation data.
  */
 export function parseEnumParam<T extends string>(
   value: string,
   allowed: readonly T[],
   label: string,
+  options: {
+    caseSensitive?: boolean;
+    errorCode?: ErrorCode;
+    message?: string;
+    includeDetails?: boolean;
+  } = {},
 ): T {
-  const upper = value.toUpperCase();
+  const parsed = options.caseSensitive ? value : value.toUpperCase();
 
-  if (!allowed.includes(upper as T)) {
+  if (!allowed.includes(parsed as T)) {
     throw new AppException(
       HttpStatus.BAD_REQUEST,
-      ErrorCode.InvalidParam,
-      { label, value },
-      `Unknown ${label} '${value}'`,
+      options.errorCode ?? ErrorCode.InvalidParam,
+      options.includeDetails === false ? undefined : { label, value },
+      options.message ?? `Unknown ${label} '${value}'`,
     );
   }
 
-  return upper as T;
+  return parsed as T;
 }

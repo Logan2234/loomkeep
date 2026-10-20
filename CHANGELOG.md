@@ -12,6 +12,305 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.11.0 — Messages, sagas, and a unified notifications registry
+
+- **Friends can exchange private messages.** Conversations exist between
+  two accounts that follow each other, behind the `chatEnabled` instance
+  setting (`CHAT_ENABLED`). Messages carry restricted markdown, can be
+  edited, deleted (tombstoned), reacted to and reported; typing, presence
+  and read receipts travel over the socket, the last two as reciprocal
+  per-account settings. A push goes out only when the recipient has the app
+  open nowhere, and never carries the text. Reported messages reach the
+  moderation queue with their surrounding context and can be taken down
+  (`MESSAGE_REMOVED`); a deleted account's messages are erased and
+  conversations are part of the data export. Messages can carry work cards
+  (a `MessageEmbed` snapshot, so display costs no lookup) attached by hand or
+  resolved from up to three links, never for 18+ titles. A work's "…" menu
+  gains Share (friends first, system share sheet, link, QR code), which
+  sends through `POST /chat/recommendations` after checking every recipient.
+  Conversations also support pins (fifty at most), forwarding without naming
+  the author, mark-as-unread with a "New" line, search, a ledger of shared
+  works, `#` work mentions and episode codes. A feedback launcher now needs
+  `PUBLIC_QUACKBACK_URL` and can be hidden per account.
+- **Work discussions are followed from Messages.** The "Œuvres" tab lists
+  the discussions a member wrote in or was mentioned in, with unread counts
+  kept in `CommentThreadRead`; discussions can be muted, marked unread from
+  a comment, and searched (`GET /comments/:type/:id/search`). Comments reuse
+  the Messages composer (`CommentComposer`, spoilers, `#` mentions, `@`
+  people), render through the same message text component, and gain the
+  same reaction and action pills. Comment reactions and review upvotes get
+  their own push switch, off by default, sent once at the threshold.
+- **Sagas group the works of a franchise.** A film's TMDB collection, an
+  anime's main line (prequels and sequels walked from the viewed work), a
+  game's IGDB series (main games only) and a book's Open Library series
+  (whole numbered volumes only) resolve to one saga model (`Saga`,
+  `GameSaga`, `MediaItem.sagaKey`, `BookItem.seriesKey`), served by
+  `GET /media/:type/:id/saga` and `GET /library/sagas`. Work pages show a
+  saga block and offer the sequel on finishing; libraries gain a
+  Works/Sagas switch listing sagas in progress, waiting on an announcement,
+  then finished. The stale-media refresh re-reads tracked sagas, and a newly
+  announced sequel raises `SAGA_SEQUEL_ANNOUNCED` (bell, push, email opt-in)
+  for those who finished a work of the saga. The saga block and view are
+  domain-agnostic components fed by a per-domain mapping.
+- **Upcoming releases are tracked precisely.** Movies get regional release
+  reminders. IGDB's `date_format` gives each game a release precision (day,
+  month, quarter, year, TBD) dated to the start of its period instead of
+  December 31st; an unreleased game is held in "À venir", keeps its status,
+  ownership and ratings, and offers a release reminder (`NEW_GAME` joins the
+  release digest, the calendar, the `.ics` feed and the RSS/Atom release
+  feed, which now also lists movies and games). Calendar day tiles count
+  releases rather than episodes. A not-yet-aired AniList anime is treated
+  like an unreleased film, refused for completion, rating and reviews with
+  `library.anime_not_aired`. A Ghost filter (180+ days) separates abandoned
+  shows from paused ones, and every domain shares one status icon badge.
+- **Every alert is declared once.** `ALERTS` (`packages/shared/src/alerts.ts`)
+  lists each alert's channels (bell, web push, email), which ones an account
+  can switch and their defaults, stored in `User.alertPrefs`. Settings ›
+  Communications and the docs' Notifications page are drawn from it, and
+  tests fail on a notification type or mail template it omits. Push is now
+  per alert and per device; existing accounts keep their activity pushes on
+  while new ones start with them off. New alerts cover security changes
+  (second factor, security key, passwordless, recovery codes, lockout), an
+  account-deletion confirmation, API key expiry, finished imports, accepted
+  invitations and reviews reaching 10 upvotes; administrators receive
+  reports, failing jobs, quotas and new accounts by email and push. Digest
+  pushes are written in the recipient's language and name each show once;
+  the VAPID subject falls back to the instance's HTTPS `WEB_ORIGIN` instead
+  of a maintainer address. Séance emails and the admin email gallery were
+  reworked alongside.
+- **XP is auditable and sized by what was done.** The level card opens a
+  day-by-day XP history; revoked entries are stamped `revokedAt` instead of
+  deleted and each entry snapshots what earned it. First finishes of games
+  and books are now credited and revoked per cycle, which un-finishing used
+  to miss. The daily cap is a rolling 24 hours rather than a calendar day.
+  Finishes pay by size (book pages, IGDB time to beat, episodes per season,
+  seasons per series, half for replays), `SAGA_COMPLETED` and
+  `READING_GOAL_REACHED` pay progressively, and new achievements cover sagas,
+  pages read, hours played and finishing a work three times. Behaviour
+  achievements only read activity dated after account creation, so an
+  imported history no longer unlocks them.
+- **Moderation covers lists and profiles; audiences are applied
+  consistently.** Lists and profiles can be reported, with a "noncompliant
+  account" category and new offence and image-rights motifs. Moderators can
+  edit or delete a reported list, and on a profile remove the picture, clear
+  the bio, rename, suspend (`suspendedUntil`, sign-in refused with the end
+  date, sessions and API keys cut) or delete; each measure is its own
+  decision row under one notice. `LEGAL_VERSION` is bumped and the terms and
+  privacy policy updated. On the privacy side, list activity is gated on the
+  list's owner rather than the editor who added the item, a review's rating
+  must pass the review's own audience, season and episode reviews resolve to
+  their show, profile activity facets gate their own domain's share, and
+  only "hide my progression" hides XP. A viewer's disabled domains are
+  respected on the profile, lists, reviews and the bell, with a shared
+  domain-off mark instead of a dead link. The profile's "En chiffres" card
+  and its queries were removed, the streak staying.
+- **Account deletion and export were audited.** Deletion now closes the
+  account's sessions, clears the notifications it caused for others, strips
+  emails, device names and import details from what it leaves, and is shown
+  as a step-by-step timeline. The export adds film rewatches, consents,
+  photo, activity, progression, sign-in methods, every playthrough and
+  reading, sessions, pending changes and items added to others' lists. The
+  inactivity scan no longer deletes a dormant account whose warning email
+  did not actually go out.
+- **Admin tooling gains search, status and detail.** The admin shell has a
+  shared search, an attention summary, filter bars and a reworked drawer.
+  The jobs page shows running, next and overdue runs from the scheduler
+  registry; imports record their selection and outcome (`details`) and list
+  in-flight runs; invitations filter by state and text. The reviews page
+  gains search, sorting and domain filters, and the report, add-to-list,
+  followers and collaborators modals were reworked.
+- **AniList episodes are named correctly.** Streaming episode titles are
+  matched by the number parsed from their title instead of list position,
+  a later cour's absolute numbering is shifted back, a single-season entry
+  is named after the entry, and names a franchise copied across entries are
+  dropped.
+- **Outbound requests are bounded and the audit's findings are resolved.**
+  Turnstile, OMDb, Simkl, Steam, Healthchecks, Quackback and Cover Art
+  Archive calls share a deadline instead of hanging a worker. Following
+  `docs/audit-refacto.md`, date helpers, token generation, pagination
+  (`parsePageQuery`/`toPagedResult`), field-length limits, session mappers
+  and web-origin handling were unified across API, web and
+  `packages/shared`, fixing the copies that had diverged. Production error
+  reporting moves to Sentry v11 with safe GlitchTip handling, and the
+  report-only CSP allows the feature-flag and feedback hosts.
+- **Platform, CI and docs.** The web moves to SvelteKit 3, adapter-node and
+  MSW 3; images are published for linux/arm64 as well, with the amd64 push
+  no longer blocked by it. CI cuts the web job roughly in half (per-locale
+  Paraglide module, Lighthouse moved to the weekly web audit, cached OpenAPI
+  document, Trivy scanning the images CI already built). The READMEs' setup
+  guides moved to docs.loomkeep.app, which the app now links, counts with
+  Umami when configured, and exposes the public API under readable
+  `operationId`s. Backloggd is no longer a planned import. Wizard steps
+  animate, and routine dependency bumps landed.
+
+## 1.10.0 — Customizable libraries, tracking sessions, and the public API
+
+- **The home page is an account-persisted widget grid.** `User.homeLayout`
+  stores a 12-column layout edited from Settings > Appearance, with drag,
+  resize, widget settings and mobile stacking. A null layout derives the
+  default from enabled domains. Widgets include quick search, favorites,
+  lists and saved library views, dormant shows, a daily watchlist pick,
+  "on this day", reading goals, notes and social/gamification summaries.
+- **Libraries gain display modes and bulk editing.** Table, wall and
+  compact layouts share the same filtering and sorting; display mode and
+  visible columns persist per device. Rows support inline status,
+  ownership and rating actions. Bulk endpoints accept explicit ids or the
+  current filters, reuse single-entry lifecycle operations for XP and
+  activity consistency, and expose selection controls with keyboard
+  navigation and a timed undo before deletion. Named saved views retain
+  filters and order, can feed a home widget, and are included in exports.
+- **Games and books now keep dated sessions and tracking cycles.** Manual
+  sessions and timers record duration, reading progress and notes, with
+  editable history and weekly summaries. `GamePlaythrough` and
+  `BookReading` separate successive playthroughs and rereads; deliberately
+  history-only sessions retain a null cycle relation. Tracking panels and
+  resume controls share the resulting session-based presentation.
+- **Remaining-work estimates use richer catalogue data.** Episode runtime,
+  overview and still are persisted from TMDB; watch-time calculations use
+  the episode length, title average, then domain default. Series with no
+  provider average use the median of known episode lengths. IGDB completion
+  estimates are stored only with at least three submissions, and stale
+  tracked games refresh through a six-hourly job. Library pile endpoints
+  follow the active filters and count unwatched aired episodes, remaining
+  game time, book pages or album duration. Book refreshes backfill ISBNs;
+  anime format distinguishes films for migration exports.
+- **Discovery and the release calendar became more personal.** Regional
+  streaming-provider preferences prioritize selected services without
+  hiding other offers, including free and ad-supported tiers. The calendar
+  adds a weekly overview, filters, tonight's cards and episode backlog.
+  Per-series alert muting leaves calendar entries visible and prevents
+  muted episodes from resurfacing in a later digest. Shared or pasted
+  catalogue links resolve to a quick-add panel; supported ids are parsed
+  without fetching arbitrary URLs, and Loomkeep links resolve within the
+  current instance.
+- **Social progression and data portability expand.** Achievement rarity
+  is snapshotted per tier among eligible active members, with minimum
+  population and holder thresholds to avoid identifying individuals.
+  `SEASON_FINISHED` records a season's actual completion transition.
+  A token-protected, entitlement-checked Atom feed exposes the owner's
+  activity. Migration exports produce Letterboxd diary/watchlist CSVs and
+  Goodreads-compatible book CSVs, including optional reviews but never
+  private notes.
+- **A scoped, read-only public API is available under `/api/v1`.** Personal
+  keys are hashed at rest and accepted only on explicitly opted-in routes.
+  Public DTOs cover libraries and history, calendar, lists, statistics,
+  reviews, profile, achievements, notifications and the complete export.
+  Account-level request quotas span all keys, return rate-limit headers
+  and typed 429 responses, and limit the full export once per hour.
+  Key creation/revocation enters the security log; maintenance warns before
+  expiry and removes keys unused for a year. Checksummed keys reported by
+  signed GitHub secret-scanning alerts are revoked and their owners notified.
+  Public API CORS permits bearer-key requests from other origins while
+  internal routes retain their existing cookie/origin rules.
+- **Operators gain invitations and persistent instance settings.** Closed
+  registration accepts address-bound or multi-seat invitations, redeemed
+  atomically during account creation and manageable from the admin UI.
+  `InstanceSettings` centralizes social, gamification, registration, public
+  API availability and quotas; initial values come from the environment,
+  whose overrides still take priority and lock the corresponding controls.
+  Job failures and recovery notify admins without repeating every failure,
+  and the services page covers more instance dependencies. Docker now
+  forwards `ADMIN_EMAIL` and instance-setting variables to the API.
+  A social-gated public transparency page reports moderation by year.
+- **Documentation now has its own site at `docs.loomkeep.app`.** Starlight
+  hosts user, import, security, self-hosting and contributor guides; Scalar
+  renders the v1-only OpenAPI reference with descriptions, examples,
+  response errors and quota headers. Generation rejects undocumented
+  public fields. The site includes integration recipes, link validation,
+  theme/reduced-motion support and GitHub Pages deployment. Scalar assets
+  are served locally with hosted extras disabled, and an rxjs peer
+  declaration fixes API startup after the docs joined the workspace.
+- **Italian joins the shipped locales across web and API copy.** Language
+  pickers derive from the supported-locale list, API copy uses a shared
+  fallback rule, and catalogue tests enforce locale and file consistency.
+  Settings, site, admin and gamification messages were reorganized and
+  duplicate/dead keys removed; Italian covers emails, notifications and
+  feeds as well as the interface.
+- **Component tests and accessibility fixes harden the web UI.** A Vitest
+  happy-dom project exercises components through Testing Library, MSW and
+  a reactive navigation fake. It caught spaced-code paste truncation,
+  saved-view selection loss, unsafe login redirect prefix checks and a
+  tooltip that ignored reduced motion. Shared components improve focus,
+  keyboard behavior, semantics and long-content layouts. Library lists
+  rank light rows before loading a page, push applicable filtering/sorting
+  into SQL, escape literal search wildcards and aggregate media progress.
+  Email and Simkl links now use the first configured web origin.
+  Newsletter rendering recognizes the new `electric_plug`, `books` and
+  `house` aliases in HTML and plain text; dependency and CI updates round
+  out the release.
+
+## 1.9.0 — Real-time push, the open-core `ee/` split, and passkeys
+
+- **Real-time push over WebSocket.** A single socket.io `EventsGateway`
+  replaces the notification badge's 20s poll and the comment/import polling:
+  a per-user room for private pushes (notifications, admin report counts,
+  achievement unlocks, import progress, onboarding, follow requests) and
+  joined rooms for shared resources (comment threads, collaborative lists),
+  gated by the same rules as their REST endpoints. The gateway lives under
+  `/api/socket.io` so the `Path=/api` access cookie reaches the handshake,
+  runs websocket-only (Fastify never completes engine.io's polling upgrade),
+  and the global `JwtAuthGuard`/`ThrottlerGuard` now no-op outside HTTP
+  contexts. Session revocation and list-editor removal evict live sockets;
+  Prometheus gets `ws_connections_active` and `ws_connection_rejections_total`.
+- **The first premium features move to `ee/` under `LICENSE-EE`** (option B
+  of ADR 0001). The iCal subscription, the Dock/Board navigation styles and
+  the advanced/temporal/social stats now live in `apps/api/src/ee` /
+  `apps/web/src/lib/ee`; the core never imports them (ESLint-enforced) and
+  ee/ hands itself to the core at startup, so routes and DTOs are unchanged.
+  An offline-signed annual `LOOMKEEP_LICENSE_KEY` is required only once
+  `premium-features` is on — without it ee/ routes 404 and the web locks
+  their screens — and a self-host (`--instance`) key makes every account of
+  its instance premium. Contributors now sign a CLA (CLA Assistant) so
+  contributions can ship under both licenses.
+- **Accounts gained passkeys and an activity history.** WebAuthn joins TOTP
+  and email as an MFA method, with optional passwordless sign-in once a key
+  is registered. Auth tokens moved to encrypted `HttpOnly` cookies, session
+  revocation now takes effect immediately (sid checked against a cached live
+  session) instead of after the access token expires, and a new "Account
+  activity" settings screen lists every sensitive action of the last year
+  with its device and IP (IPs purged after a year and on account deletion).
+- **Settings became an index plus one route per section**, driven by a single
+  `nav.ts` model with keyword search (⌘K), a shared `SettingRow`, new
+  `GET /library/domain-counts` and `GET /import/last-run` endpoints, and
+  redirects for legacy `/app/settings#…` anchors.
+- **Social and community surfaces grew.** Shared lists are collaborative
+  (per-item author, editor notifications with per-list mute, editors picked
+  among friends); reviews were redesigned (rating slider, community summary,
+  spoiler tags, reporting, and a `REVIEW_REMOVED` moderation measure);
+  comment discussions were redesigned and go live; the activity feed filters
+  by domain (and now hides disabled/locked domains everywhere); the XP
+  leaderboard gains an all-time tab; a gamified onboarding checklist ends on
+  the "première séance" achievement.
+- **More ways in and out of the library.** MyAnimeList (XML) and Babelio
+  (CSV) imports; a manual, language-based Open Library edition selector on
+  book pages (`GET /books/:source/:sourceId/editions`); and RSS/Atom feeds
+  of recent episodes (`/library/releases.{atom,rss}`) behind the iCal token.
+- **Operators got new levers.** A `NEWS_BANNER` Unleash flag drives a live,
+  translated maintenance/degraded-service (or custom) banner; admins are
+  emailed (and GlitchTip alerted) when OMDb, Simkl, Steam or SMTP reach 80%
+  and 100% of their daily quota, with counters now counting every HTTP retry;
+  admins can adjust a user's XP by hand (`ADMIN_ADJUSTMENT` ledger entries);
+  every registered admin job can actually be run; Postgres metrics and
+  `pg_stat_statements` join the observability stack.
+- **Mobile audit cleared end to end.** One JS-selected app shell instead of
+  two CSS-hidden trees, `viewport-fit=cover`, `svh`/`dvh` full-height
+  surfaces, pinned modal action footers, scrollable bottom sheets, an 11px
+  floor for running text, per-screen `<title>`s, theme-following status bar,
+  no logout on a dropped connection, and a French catalogue settled on "tu"
+  and "critique" (spec-enforced).
+- **Four internal audit rounds** fixed provider-throttle and XP daily-cap
+  races, batched episode sync and XP reconciliation, turned the hourly
+  notification scan episode-driven, pushed stats filtering into Postgres,
+  re-encode uploaded avatars through sharp (dropping EXIF/GPS), release import
+  parse models once committed, require library ownership to record a watch,
+  keep the Twitch secret out of query strings, and slim `/api/health`. The
+  four library domains now share one entry lifecycle
+  (`common/entry-lifecycle.util.ts`), persisted API copy follows the
+  recipient's locale (operator-facing strings are English), argument-less
+  validation failures return 400 instead of 500, and knip plus type-aware
+  promise rules became blocking CI gates. The e2e suite was split per flow
+  (MFA, import, social) with a shared bootstrap.
+
 ## 1.8.0 — Gamification, complete localization, and security hardening
 
 - **Gamification is now a broad product surface.** An append-only
@@ -93,8 +392,7 @@ this point beyond the roadmap phases already documented in the README.
   app, fixing several real unhandled-rejection bugs uncovered along the way
   (ProfileView's follow/block actions, review casting, stats drill-downs).
   Every paginated list endpoint now shares one `page`/`limit` +
-  `PagedResult<T>` contract. Full design in
-  [docs/plans/centralized-api-layer.md](docs/plans/centralized-api-layer.md).
+  `PagedResult<T>` contract.
 - **Notification digests** replace instant push/email on new episodes with a
   per-channel cadence (weekly free, daily premium) timed at each user's
   local hour.

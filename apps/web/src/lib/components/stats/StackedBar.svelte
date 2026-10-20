@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { formatNumber, PERCENT_OPTIONS } from "$lib/format";
-  import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
+  import { type ChartDatum } from "#lib/types/chart.js";
 
-  type Segment = {
-    label: string;
+  import { formatNumber, PERCENT_OPTIONS } from "#lib/format.js";
+  import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
+
+  type Segment = ChartDatum & {
     color: string;
-    value: number;
     altValue?: number;
   };
 

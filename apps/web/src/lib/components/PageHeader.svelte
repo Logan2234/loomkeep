@@ -1,13 +1,14 @@
 <script lang="ts">
+  import { type IconName } from "#lib/types/icon-name.js";
+
   // Recurring top-of-page block: icon + title (+ optional subtitle / actions).
   // Not used by the auth pages (login/register/...), which have their own
   // centered LOOMKEEP wordmark instead of this icon+title layout.
-  import type { ComponentProps, Snippet } from "svelte";
+  import type { Snippet } from "svelte";
   import Icon from "./Icon.svelte";
 
-  type IconName = ComponentProps<typeof Icon>["name"];
-
-  import { m } from "$lib/paraglide/messages.js";
+  import { goBack } from "#lib/back-nav.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import NewBadge from "./NewBadge.svelte";
 
   let {
@@ -16,6 +17,7 @@
     subtitle,
     actions,
     back,
+    backInHistory = false,
     isNew = false,
     documentTitle,
     class: cls = "mb-8",
@@ -27,6 +29,9 @@
     /** Where the "<" leads. Set on pages reached from another one (the
      * profile hub, a settings sub-page), omitted on nav destinations. */
     back?: string;
+    /** The "<" returns to the previous page instead, `back` only serving a
+     * page loaded fresh: for a page reached from anywhere. */
+    backInHistory?: boolean;
     /** Shows a "Nouveau" pill next to the title — see feature-badges.ts. */
     isNew?: boolean;
     /** Overrides the <title>, for headings that don't read well in a tab
@@ -49,13 +54,18 @@
          wrapped to two lines, which it does on a phone ("Appareils
          connectés", "Statistiques d'instance"). The slot keeps them centred
          on the first line at both text sizes. -->
-    <h1
-      class="font-display flex items-start gap-2 text-3xl font-extrabold tracking-tight md:text-4xl">
+    <div class="flex items-start gap-2 text-3xl md:text-4xl">
       {#if back}
         <a
           href={back}
+          onclick={backInHistory ? goBack : undefined}
           class="text-dim hover:text-fg -ml-1 flex h-lh shrink-0 items-center transition-all hover:-translate-x-0.5 hover:scale-105 active:scale-90"
-          aria-label={m.common_back()}>
+          aria-label={back === "/app/admin"
+            ? m.admin_back_to_overview()
+            : m.common_back()}
+          title={back === "/app/admin"
+            ? m.admin_back_to_overview()
+            : undefined}>
           <Icon name="chevron-left" class="h-6 w-6" />
         </a>
       {/if}
@@ -64,11 +74,13 @@
           <Icon name={icon} class="text-accent h-7 w-7" />
         </span>
       {/if}
-      {title}
+      <h1 class="font-display min-w-0 font-extrabold tracking-tight">
+        {title}
+      </h1>
       {#if isNew}
         <span class="flex h-lh shrink-0 items-center"><NewBadge /></span>
       {/if}
-    </h1>
+    </div>
     {#if subtitle}
       <p class="text-dim mt-1">{subtitle}</p>
     {/if}

@@ -1,7 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/project-settings",
   "baseLocale": "en",
-  "locales": ["fr", "en"],
+  "locales": ["fr", "en", "it"],
   "modules": [
     "https://cdn.jsdelivr.net/npm/@inlang/plugin-message-format@4.4.0/dist/index.js",
     "https://cdn.jsdelivr.net/npm/@inlang/plugin-m-function-matcher@2.2.6/dist/index.js"
@@ -12,7 +12,9 @@
       "./messages/{locale}/errors.json",
       "./messages/{locale}/admin.json",
       "./messages/{locale}/other.json",
-      "./messages/{locale}/gamification.json"
+      "./messages/{locale}/gamification.json",
+      "./messages/{locale}/settings.json",
+      "./messages/{locale}/site.json"
     ]
   }
 }

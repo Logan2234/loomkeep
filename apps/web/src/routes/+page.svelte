@@ -1,15 +1,19 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { env } from "$env/dynamic/public";
-  import { auth } from "$lib/auth.svelte";
-  import { bootstrap } from "$lib/bootstrap.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import { appConfig } from "$lib/config.svelte";
-  import { FEEDBACK_URL, GITHUB_REPO_URL } from "$lib/constants/external-links";
-  import { prefersReducedMotion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages.js";
-  import { theme } from "$lib/theme.svelte";
+  import * as env from "$app/env/public";
+  import { auth } from "#lib/auth.svelte.js";
+  import { bootstrap } from "#lib/bootstrap.svelte.js";
+  import Icon from "#lib/components/Icon.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
+  import {
+    DOCS_URL,
+    FEEDBACK_URL,
+    GITHUB_REPO_URL,
+  } from "#lib/constants/external-links.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { theme } from "#lib/theme.svelte.js";
   import LandingFooter from "./components/LandingFooter.svelte";
   import { LANDING_LIBRARY } from "./components/landing-mock-data";
 
@@ -271,19 +275,19 @@
     { name: "Trakt", what: m.landing_import_done_trakt_what },
     { name: "Simkl", what: m.landing_import_done_simkl_what },
     { name: "MyAnimeList", what: m.landing_import_done_myanimelist_what },
+    { name: "AniList", what: m.landing_import_done_anilist_what },
     { name: "Steam", what: m.landing_import_done_steam_what },
     { name: "Goodreads", what: m.landing_import_done_goodreads_what },
     { name: "StoryGraph", what: m.landing_import_done_storygraph_what },
+    { name: "Babelio", what: m.landing_import_done_babelio_what },
     { name: "Letterboxd", what: m.landing_import_done_letterboxd_what },
     { name: "IMDb", what: m.landing_import_done_imdb_what },
   ];
 
   const IMPORTS_TODO: { name: string; what: () => string }[] = [
     { name: "Serializd", what: m.landing_import_todo_serializd_what },
-    { name: "Backloggd", what: m.landing_import_todo_backloggd_what },
     { name: "Last.fm", what: m.landing_import_todo_lastfm_what },
     { name: "RateYourMusic", what: m.landing_import_todo_rym_what },
-    { name: "Babelio", what: m.landing_import_todo_babelio_what },
     { name: "BoardGameGeek", what: m.landing_import_todo_bgg_what },
   ];
 
@@ -307,6 +311,12 @@
     return () => hero.removeEventListener("pointermove", move);
   });
 
+  // The signed-out buttons render right away; before /api/config answers we
+  // assume registration is open, the common case, so nothing jumps in later.
+  const showRegister = $derived(
+    !bootstrap.ready || appConfig.registrationEnabled,
+  );
+
   $effect(() => {
     void bootstrap.ready;
     void appConfig.registrationEnabled;
@@ -324,14 +334,11 @@
 </script>
 
 {#snippet primaryCta(label: string, event: string, cls: string)}
-  {#if !bootstrap.ready}
-    <!-- Reserve the button slot while /api/config loads to prevent layout shift. -->
-    <span class="{cls} invisible" aria-hidden="true">{label}</span>
-  {:else if auth.isLoggedIn}
+  {#if auth.isLoggedIn}
     <a href="/app" class={cls} data-umami-event="{event}-open-app">
       {m.landing_open_app()}
     </a>
-  {:else if appConfig.registrationEnabled}
+  {:else if showRegister}
     <a href="/register" class={cls} data-umami-event={event}>{label}</a>
   {:else}
     <a href="/login" class={cls} data-umami-event="{event}-login">
@@ -353,7 +360,7 @@
   {/if}
 </svelte:head>
 
-<div class="min-h-screen">
+<div class="min-h-svh">
   <header
     class="border-border bg-bg/85 sticky top-0 z-30 border-b backdrop-blur">
     <div
@@ -372,33 +379,27 @@
           <Icon name={theme.mode === "dark" ? "sun" : "moon"} class="h-4 w-4" />
         </button>
 
-        {#if !bootstrap.ready}
-          <span class="btn btn-primary invisible" aria-hidden="true">
-            {m.common_login()}
-          </span>
+        {#if auth.isLoggedIn}
+          <a
+            href="/app"
+            class="btn btn-primary"
+            data-umami-event="cta-nav-open-app">
+            {m.landing_open_app()}
+          </a>
         {:else}
-          {#if auth.isLoggedIn}
+          <a
+            href="/login"
+            class="btn btn-ghost"
+            data-umami-event="cta-nav-login">
+            {m.common_login()}
+          </a>
+          {#if showRegister}
             <a
-              href="/app"
-              class="btn btn-primary"
-              data-umami-event="cta-nav-open-app">
-              {m.landing_open_app()}
+              href="/register"
+              data-umami-event="cta-nav-register"
+              class="btn btn-primary hidden sm:inline-flex">
+              {m.common_register()}
             </a>
-          {:else}
-            <a
-              href="/login"
-              class="btn btn-ghost"
-              data-umami-event="cta-nav-login">
-              {m.common_login()}
-            </a>
-            {#if appConfig.registrationEnabled}
-              <a
-                href="/register"
-                data-umami-event="cta-nav-register"
-                class="btn btn-primary hidden sm:inline-flex">
-                {m.common_register()}
-              </a>
-            {/if}
           {/if}
         {/if}
       </div>
@@ -788,6 +789,14 @@
               class="btn btn-ghost">
               {m.landing_source_cta()}
             </a>
+            <a
+              href={`${DOCS_URL}/self-hosting/installation/`}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-umami-event="cta-name-selfhost-guide"
+              class="btn btn-ghost">
+              {m.landing_selfhost_guide_cta()}
+            </a>
           </div>
         </div>
 
@@ -837,6 +846,15 @@
             class="btn btn-ghost btn-lg">
             <Icon name="shield" class="h-4 w-4" />
             {m.landing_source_cta()}
+          </a>
+          <a
+            href={`${DOCS_URL}/self-hosting/installation/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-umami-event="cta-final-selfhost-guide"
+            class="btn btn-ghost btn-lg">
+            <Icon name="book-open" class="h-4 w-4" />
+            {m.landing_selfhost_guide_cta()}
           </a>
         </div>
       </div>

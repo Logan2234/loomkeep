@@ -1,20 +1,26 @@
 import {
+  type ConnectionDto,
   ErrorCode,
   type FollowRequestDto,
   NotificationType,
   type PagedResult,
   ProfileAccess,
+  RealtimeEvent,
   type RelationshipDto,
   type UserSummaryDto,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
+import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
-import { ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED } from "../gamification/achievements/registry";
+
+import { ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED } from "../gamification/achievements/triggers";
+import type { NotificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { isSuspended } from "../users/suspension.util";
 import { BlockService } from "./block.service";
 import { VisibilityService } from "./visibility.service";
 import { computeIsFriend } from "./visibility.util";
@@ -46,28 +52,19 @@ export class FollowService {
   private async resolveTarget(viewerId: string, username: string) {
     const target = await this.prisma.user.findUnique({
       where: { username },
-      select: { id: true, profileAccess: true },
+      select: { id: true, profileAccess: true, suspendedUntil: true },
     });
-    if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+    if (!target || isSuspended(target))
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     if (target.id !== viewerId) {
       if (target.profileAccess === ProfileAccess.GHOST) {
-        throw new AppException(
-          HttpStatus.NOT_FOUND,
-          ErrorCode.SocialUserNotFound,
-        );
+        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
       }
 
       const blocked = await this.blocks.isBlocked(target.id, viewerId);
       if (blocked)
-        throw new AppException(
-          HttpStatus.NOT_FOUND,
-          ErrorCode.SocialUserNotFound,
-        );
+        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     }
 
     return target;
@@ -131,7 +128,7 @@ export class FollowService {
     if (follow.status === "ACCEPTED") {
       await this.notifyActor(target.id, viewerId, {
         type: NotificationType.FOLLOW,
-        body: "vous suit",
+        body: (copy) => copy.follow.followed,
         dedupeKey: `follow:${viewerId}`,
         urlToActor: true,
       });
@@ -149,13 +146,13 @@ export class FollowService {
     } else {
       await this.notifyActor(target.id, viewerId, {
         type: NotificationType.FOLLOW_REQUEST,
-        body: "souhaite vous suivre",
+        body: (copy) => copy.follow.requested,
         dedupeKey: `request:${viewerId}`,
       });
       // FOLLOW_REQUEST is excluded from the bell feed (NotificationService's
       // own FEED_EXCLUDED_TYPES), so it never triggers that live push either
       // — the pending-requests panel needs its own signal.
-      this.events.emitToUser(target.id, "follow-request-changed");
+      this.events.emitToUser(target.id, RealtimeEvent.FOLLOW_REQUEST_CHANGED);
     }
 
     return this.relationship(viewerId, username);
@@ -177,7 +174,8 @@ export class FollowService {
     // A cancelled request should disappear from the target's pending list
     // live, the same way a new one appears.
     if (existing?.status === "PENDING") {
-      this.events.emitToUser(target.id, "follow-request-changed");
+      await this.notifications.settleFollowRequest(target.id, viewerId);
+      this.events.emitToUser(target.id, RealtimeEvent.FOLLOW_REQUEST_CHANGED);
     }
 
     return this.relationship(viewerId, username);
@@ -203,11 +201,12 @@ export class FollowService {
       where: { id: followId },
       data: { status: "ACCEPTED" },
     });
+    await this.notifications.settleFollowRequest(userId, follow.followerId);
 
     // Tell the requester their request was approved (they can now see us).
     await this.notifyActor(follow.followerId, userId, {
       type: NotificationType.FOLLOW_ACCEPTED,
-      body: "a accepté votre demande",
+      body: (copy) => copy.follow.accepted,
       dedupeKey: `accept:${userId}`,
       urlToActor: true,
     });
@@ -232,7 +231,8 @@ export class FollowService {
     actorId: string,
     opts: {
       type: NotificationType;
-      body: string;
+      /** Built from the recipient's own copy bundle — the text is persisted. */
+      body: (copy: NotificationCopy) => string;
       dedupeKey: string;
       /** Link to the actor's profile, or a fixed url, or neither. */
       urlToActor?: boolean;
@@ -245,11 +245,13 @@ export class FollowService {
     });
     if (!actor) return;
 
+    const copy = await this.notifications.copyFor(recipientId);
+
     await this.notifications.create({
       userId: recipientId,
       type: opts.type,
       title: actor.displayName,
-      body: opts.body,
+      body: opts.body(copy),
       url: opts.urlToActor ? `/app/u/${actor.username}` : (opts.url ?? null),
       dedupeKey: opts.dedupeKey,
       data: {
@@ -260,27 +262,32 @@ export class FollowService {
   }
 
   async rejectRequest(userId: string, followId: string): Promise<void> {
-    const { count } = await this.prisma.follow.deleteMany({
+    const request = await this.prisma.follow.findFirst({
       where: { id: followId, followeeId: userId, status: "PENDING" },
+      select: { followerId: true },
     });
-    if (count === 0)
+    if (!request)
       throw new AppException(
         HttpStatus.NOT_FOUND,
         ErrorCode.SocialFollowRequestNotFound,
       );
+
+    await this.prisma.follow.delete({ where: { id: followId } });
+    await this.notifications.settleFollowRequest(userId, request.followerId);
   }
 
-  /** Blocks a user: removes any follow edges both ways, then records the block. */
+  /**
+   * Blocks a user: removes any follow edges both ways, then records the block.
+   * Also ends any editing of each other's lists — only friends can edit a
+   * list, and a block ends the friendship.
+   */
   async block(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.prisma.user.findUnique({
       where: { username },
       select: { id: true },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
     if (target.id === viewerId) {
       throw new AppException(
@@ -290,6 +297,16 @@ export class FollowService {
         "Cannot block yourself",
       );
     }
+
+    const memberships = await this.prisma.listMember.findMany({
+      where: {
+        OR: [
+          { userId: target.id, list: { userId: viewerId } },
+          { userId: viewerId, list: { userId: target.id } },
+        ],
+      },
+      select: { id: true, listId: true, userId: true },
+    });
 
     await this.prisma.$transaction([
       this.prisma.follow.deleteMany({
@@ -307,7 +324,24 @@ export class FollowService {
         update: {},
         create: { blockerId: viewerId, blockedId: target.id },
       }),
+      this.prisma.listMember.deleteMany({
+        where: { id: { in: memberships.map((m) => m.id) } },
+      }),
+      this.prisma.listNotificationMute.deleteMany({
+        where: {
+          OR: memberships.map((m) => ({ listId: m.listId, userId: m.userId })),
+        },
+      }),
     ]);
+
+    for (const membership of memberships) {
+      this.events.emitToList(membership.listId, "list-updated");
+      await this.events.evictFromList(membership.listId, membership.userId);
+    }
+
+    await this.notifications.settleFollowRequest(viewerId, target.id);
+    await this.notifications.settleFollowRequest(target.id, viewerId);
+
     return this.relationship(viewerId, username);
   }
 
@@ -317,10 +351,7 @@ export class FollowService {
       select: { id: true },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     await this.prisma.block.deleteMany({
       where: { blockerId: viewerId, blockedId: target.id },
     });
@@ -336,10 +367,7 @@ export class FollowService {
       select: { id: true, profileAccess: true },
     });
     if (!target)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.SocialUserNotFound,
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     const relation = await this.visibility.getRelation(viewerId, target);
     return this.visibility.toRelationshipDto(relation);
   }
@@ -364,22 +392,85 @@ export class FollowService {
   /** Accounts this user chose to block, with the action needed to reverse it. */
   async listBlocked(
     userId: string,
-    page: number,
-    limit: number,
+    page: ParsedPage,
   ): Promise<PagedResult<UserSummaryDto>> {
+    const { skip, take, limit } = page;
     const rows = await this.prisma.block.findMany({
       where: { blockerId: userId },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit + 1,
+      skip,
+      take: take + 1,
       select: { blocked: { select: USER_SUMMARY_SELECT } },
     });
-    const hasMore = rows.length > limit;
+    const { items: pageRows, hasMore } = toPagedResult(rows, limit);
 
     return {
       hasMore,
-      items: rows.slice(0, limit).map((row) => toUserSummaryDto(row.blocked)),
+      items: pageRows.map((row) => toUserSummaryDto(row.blocked)),
     };
+  }
+
+  /**
+   * Removes someone's follow (or pending request) on the viewer. Silent — no
+   * notification — and they can follow again. Idempotent.
+   */
+  async removeFollower(
+    viewerId: string,
+    username: string,
+  ): Promise<RelationshipDto> {
+    const follower = await this.prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+    if (!follower)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+
+    const existing = await this.prisma.follow.findUnique({
+      where: {
+        followerId_followeeId: {
+          followerId: follower.id,
+          followeeId: viewerId,
+        },
+      },
+      select: { status: true },
+    });
+    await this.prisma.follow.deleteMany({
+      where: { followerId: follower.id, followeeId: viewerId },
+    });
+
+    // A declined request leaves the viewer's own pending list too.
+    if (existing?.status === "PENDING") {
+      await this.notifications.settleFollowRequest(viewerId, follower.id);
+      this.events.emitToUser(viewerId, RealtimeEvent.FOLLOW_REQUEST_CHANGED);
+    }
+
+    return this.relationship(viewerId, username);
+  }
+
+  /** Tags listed accounts with where the viewer stands with each of them. */
+  async withViewerRelation(
+    viewerId: string,
+    users: UserSummaryDto[],
+  ): Promise<ConnectionDto[]> {
+    const [outgoing, friendIds] = await Promise.all([
+      this.prisma.follow.findMany({
+        where: {
+          followerId: viewerId,
+          followeeId: { in: users.map((u) => u.id) },
+        },
+        select: { followeeId: true, status: true },
+      }),
+      this.listFriendIds(viewerId),
+    ]);
+    const status = new Map(outgoing.map((f) => [f.followeeId, f.status]));
+    const friends = new Set(friendIds);
+
+    return users.map((user) => ({
+      ...user,
+      following: status.get(user.id) === "ACCEPTED",
+      requested: status.get(user.id) === "PENDING",
+      isFriend: friends.has(user.id),
+    }));
   }
 
   async listFollowers(userId: string): Promise<UserSummaryDto[]> {

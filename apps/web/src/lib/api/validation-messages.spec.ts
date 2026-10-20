@@ -1,4 +1,4 @@
-import { m } from "$lib/paraglide/messages.js";
+import { m } from "#lib/paraglide/messages.js";
 import { ErrorCode } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
 import en from "../../../messages/en/errors.json";

@@ -5,9 +5,10 @@ Covers `apps/api/src/social/`, plus the adjacent `reviews/`, `comments/`, and
 
 ## Feature flag
 
-Gated behind the runtime `SOCIAL_ENABLED` env var, read by the web via
+Gated behind the `socialEnabled` instance setting (Admin › Settings, or the
+`SOCIAL_ENABLED` env var, which wins when set), read by the web via
 `GET /api/config` (`RuntimeConfigModule`) — self-host defaults to off, the
-public VPS build turns it on (see `docker/docker-compose.prod.yml`).
+public VPS build pins it on (see `docker/docker-compose.prod.yml`).
 `SocialFeatureGuard` 404s every social route when off (never 403 — a
 self-host install shouldn't even advertise the surface exists).
 
@@ -35,7 +36,11 @@ Content stays split into three registers, never conflated:
 
 `ActivityEvent` is a materialised, append-only feed log — two read surfaces,
 the home feed (followed users' milestones only) and a user's full profile
-timeline.
+timeline. Both are gated per event by the actor's per-domain ACTIVITY
+facet, with two own-scope exceptions: a list event follows the list's own
+visibility read against its _owner_ (the actor may be an editor), and a
+REVIEWED event must also pass the review's own audience, since it carries
+the rating.
 
 `Report` is a polymorphic moderation target (`ReportTargetType`:
 COMMENT/REVIEW/USER/LIST) feeding the admin `/admin/reports` queue. Only

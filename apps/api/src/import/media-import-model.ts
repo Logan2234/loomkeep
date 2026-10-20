@@ -5,7 +5,11 @@
  * simpler parse models.
  */
 
-import type { EntryStatus, MediaOwnershipStatus } from "@loomkeep/shared";
+import type {
+  EntryStatus,
+  ImportMatch,
+  MediaOwnershipStatus,
+} from "@loomkeep/shared";
 
 /** External identifiers a source may expose for a title (any subset). */
 type ExternalIdMap = {
@@ -35,6 +39,13 @@ interface ImportWatchedEpisode {
 export interface ImportShow {
   title: string;
   externalIds: ExternalIdMap;
+  /**
+   * The catalogue match, when the source settled it itself (an AniList list,
+   * whose ids are the catalogue's; an IMDb id looked up while loading): taken
+   * as is. `null` means the source looked and found nothing, so no title
+   * search second-guesses an exact id. Absent: resolved by the plan.
+   */
+  match?: ImportMatch | null;
   /** Distinct watched episodes; empty means the show is only on the watchlist. */
   episodes: ImportWatchedEpisode[];
   /** The source's own 1-10 rating, when it has one. */
@@ -75,6 +86,8 @@ export interface ImportMovie {
   /** When the user added it on the source — becomes the entry's creation date. */
   addedAt?: Date | null;
   externalIds: ExternalIdMap;
+  /** Same contract as {@link ImportShow.match}. */
+  match?: ImportMatch | null;
 }
 
 /**
@@ -91,14 +104,20 @@ export interface ImportListFilm {
    * series looked up as a film resolves to nothing. Absent means film.
    */
   type?: "MOVIE" | "SERIES";
+  /** The user's note on this entry of the list, kept as the list item's note. */
+  note?: string | null;
+  /** Same contract as {@link ImportShow.match}. */
+  match?: ImportMatch | null;
 }
 
-/** One custom list the source exports (Letterboxd `lists/`, IMDb lists). */
+/**
+ * One custom list the source exports (Letterboxd `lists/`, IMDb lists). It
+ * becomes a collection in the export's order: neither source says whether a
+ * list is ranked.
+ */
 export interface ImportList {
   name: string;
   description: string | null;
-  /** Ranked lists keep their export order; the rest become a collection. */
-  ranked: boolean;
   items: ImportListFilm[];
 }
 
@@ -109,4 +128,9 @@ export interface ParsedImport {
   movies: ImportMovie[];
   /** Custom lists, when the source exports any. */
   lists?: ImportList[];
+  /**
+   * Rows the source could place nowhere (an IMDb episode TMDB does not know),
+   * counted as unresolved in the plan since there is no item to show them on.
+   */
+  unplaced?: number;
 }

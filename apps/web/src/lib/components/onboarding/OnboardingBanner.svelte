@@ -1,13 +1,13 @@
 <script lang="ts">
   // MobileLayout reserves room for this bar above the bottom navigation.
   import { afterNavigate } from "$app/navigation";
-  import { skipOnboardingStep } from "$lib/api/gamification";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import Drawer from "$lib/components/Drawer.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { useOnboardingChecklist } from "$lib/gamification/onboarding-checklist.svelte";
-  import { m } from "$lib/paraglide/messages.js";
+  import { skipOnboardingStep } from "#lib/api/gamification.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import Drawer from "#lib/components/Drawer.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import { useOnboardingChecklist } from "#lib/gamification/onboarding-checklist.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { OnboardingStepKey } from "@loomkeep/shared";
   import { deriveStepViews } from "./onboarding-checklist";
   import OnboardingChecklistRows from "./OnboardingChecklistRows.svelte";
@@ -48,14 +48,14 @@
     type="button"
     onclick={() => (open = true)}
     class="border-border bg-surface active:bg-surface-2 fixed inset-x-0 z-20 flex w-full items-center gap-2.5 border-t px-4 py-2.5 text-left transition-colors duration-150"
-    style="bottom: calc(4.5rem + env(safe-area-inset-bottom));">
+    style="bottom: calc(4.42rem + env(safe-area-inset-bottom));">
     <span
       class="border-accent/40 bg-accent/10 grid h-8 w-8 shrink-0 place-items-center rounded-full border">
       <Icon name="flag" class="text-accent h-4 w-4" />
     </span>
     <span class="min-w-0 flex-1">
       <span class="text-fg block text-xs font-semibold">
-        {m.gamification_onboarding_checklist_title()}
+        {m.gamification_premiere_seance_name()}
       </span>
       <span class="text-dim timecode block text-[0.65rem]">
         {done} / {steps.length}
@@ -71,11 +71,11 @@
     labelledby="onboarding-checklist-title">
     <div
       data-drawer-scroll
-      class="touch-pan-y overflow-y-auto px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+      class="min-h-0 flex-1 touch-pan-y overflow-y-auto px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
       <h2
         id="onboarding-checklist-title"
         class="font-display mb-3 text-lg font-bold">
-        {m.gamification_onboarding_checklist_title()}
+        {m.gamification_premiere_seance_name()}
       </h2>
       <OnboardingChecklistRows
         {steps}

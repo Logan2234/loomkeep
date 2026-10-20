@@ -18,6 +18,7 @@ export const VALIDATION_CONSTRAINT_NAMES = [
   "isIso8601",
   "isIn",
   "equals",
+  "notEquals",
   "minLength",
   "maxLength",
   "isLength",

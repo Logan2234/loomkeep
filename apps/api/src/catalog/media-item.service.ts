@@ -6,6 +6,10 @@ import type {
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { Prisma, type MediaItem } from "@prisma/client";
+import {
+  CATALOG_SYNC_TTL_MS,
+  isCatalogFresh,
+} from "../common/catalog-sync.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -16,11 +20,12 @@ import type {
   CatalogProvider,
   ProviderEpisode,
   ProviderMediaDetails,
+  ProviderSeason,
 } from "./providers/provider.types";
 import { TmdbProvider } from "./providers/tmdb.provider";
+import { SagaSyncService } from "./saga-sync.service";
 
 // A cached media referenced by users is refreshed at most once a day.
-const SYNC_TTL_MS = 24 * 60 * 60 * 1000;
 
 // Upper bound on how many stale media items one cron execution refreshes.
 // The cron runs every 6h; at this cap and the concurrency below, a full
@@ -37,7 +42,7 @@ const MAX_REFRESHED_PER_RUN = 500;
 // refreshing one at a time.
 const REFRESH_CONCURRENCY = 3;
 
-// Episode rows whose title or air date actually changed, updated at a time.
+// Episode rows whose provider fields actually changed, updated at a time.
 // Matches REFRESH_CONCURRENCY above: same pool, same reason to bound it.
 const EPISODE_UPDATE_CONCURRENCY = 3;
 
@@ -62,27 +67,30 @@ export class MediaItemService {
     private readonly tmdbProvider: TmdbProvider,
     private readonly anilistProvider: AnilistProvider,
     private readonly jobRuns: JobRunService,
+    private readonly sagas: SagaSyncService,
   ) {}
 
   /**
    * Every 6h: re-sync tracked (non-dropped) media whose cache is stale, so
    * newly announced episodes reach the DB before the notification scan looks
    * for them. One upsert per distinct MediaItem, regardless of follower count.
+   * Films and anime get their saga re-read on the same pass, which is how a
+   * newly announced sequel is spotted.
    */
-  @Cron(CronExpression.EVERY_6_HOURS)
+  @Cron(CronExpression.EVERY_6_HOURS, { name: JOB_KEYS.MEDIA_REFRESH_STALE })
   async refreshStale(): Promise<number> {
     return this.jobRuns.record(
       JOB_KEYS.MEDIA_REFRESH_STALE,
       () => this.runRefreshStale(),
       (refreshed) =>
         refreshed > 0
-          ? `${refreshed} média(s) rafraîchi(s)`
-          : "Rien à rafraîchir",
+          ? `${refreshed} media item(s) refreshed`
+          : "Nothing to refresh",
     );
   }
 
   private async runRefreshStale(): Promise<number> {
-    const staleBefore = new Date(Date.now() - SYNC_TTL_MS);
+    const staleBefore = new Date(Date.now() - CATALOG_SYNC_TTL_MS);
     const items = await this.prisma.mediaItem.findMany({
       where: {
         lastSyncedAt: { lt: staleBefore },
@@ -110,11 +118,20 @@ export class MediaItemService {
             sourceId,
             item.type as MediaType,
           );
-          return true;
         } catch (err) {
           this.logger.error(`Refresh failed for media ${item.id}`, err);
           return false;
         }
+
+        if (item.type !== "SERIES") {
+          try {
+            await this.sagas.sync(item.type as MediaType, sourceId);
+          } catch (err) {
+            this.logger.warn(`Saga sync failed for media ${item.id}`, err);
+          }
+        }
+
+        return true;
       },
     );
 
@@ -191,11 +208,76 @@ export class MediaItemService {
       type,
       locale,
     );
-    return this.prisma.mediaItemTranslation.upsert({
+    const translation = await this.prisma.mediaItemTranslation.upsert({
       where: { mediaItemId_locale: { mediaItemId, locale } },
       update: this.translationFields(details),
       create: { mediaItemId, locale, ...this.translationFields(details) },
     });
+    await this.storeSeasonTranslations(mediaItemId, locale, details);
+    return translation;
+  }
+
+  /**
+   * Season and episode titles/synopses from a localized fetch, stored next
+   * to the base (English) rows. Episodes are rewritten in one go per locale
+   * — one delete and one insert, whatever the show's length.
+   */
+  private async storeSeasonTranslations(
+    mediaItemId: string,
+    locale: string,
+    details: ProviderMediaDetails,
+  ): Promise<void> {
+    if (details.seasons.length === 0) return;
+
+    const stored = await this.prisma.season.findMany({
+      where: { mediaItemId },
+      select: {
+        id: true,
+        number: true,
+        title: true,
+        overview: true,
+        episodes: { select: { id: true, number: true, title: true } },
+      },
+    });
+    const byNumber = new Map(stored.map((s) => [s.number, s]));
+
+    const episodeRows: Prisma.EpisodeTranslationCreateManyInput[] = [];
+
+    for (const season of details.seasons) {
+      const base = byNumber.get(season.number);
+      if (!base) continue;
+
+      const fields = {
+        title: localizedText(season.title, base.title),
+        overview: localizedText(season.overview, base.overview),
+      };
+      await this.prisma.seasonTranslation.upsert({
+        where: { seasonId_locale: { seasonId: base.id, locale } },
+        update: fields,
+        create: { seasonId: base.id, locale, ...fields },
+      });
+
+      const episodes = new Map(base.episodes.map((e) => [e.number, e]));
+
+      for (const episode of season.episodes) {
+        const target = episodes.get(episode.number);
+        if (!target) continue;
+        const title = localizedEpisodeTitle(episode.title, target.title);
+        const overview = episode.overview?.trim() || null;
+
+        if (title || overview) {
+          episodeRows.push({ episodeId: target.id, locale, title, overview });
+        }
+      }
+    }
+
+    const episodeIds = stored.flatMap((s) => s.episodes.map((e) => e.id));
+    await this.prisma.$transaction([
+      this.prisma.episodeTranslation.deleteMany({
+        where: { locale, episodeId: { in: episodeIds } },
+      }),
+      this.prisma.episodeTranslation.createMany({ data: episodeRows }),
+    ]);
   }
 
   /**
@@ -242,11 +324,30 @@ export class MediaItemService {
       backdropUrl: details.backdropUrl,
       genres: details.genres,
       status: details.status,
+      releaseDate: details.releaseDate,
+      movieReleaseDates: details.movieReleaseDates ?? [],
+      runtimeMin: details.runtimeMin,
       seasons: details.seasons.map((season) => ({
         id: null,
         number: season.number,
         title: season.title,
-        episodes: season.episodes.map((episode) => ({ id: null, ...episode })),
+        overview: season.overview,
+        posterUrl: season.posterUrl,
+        airDate: season.airDate,
+        voteAverage: season.voteAverage,
+        episodes: season.episodes.map((episode) => ({
+          id: null,
+          number: episode.number,
+          title: episode.title,
+          airDate: episode.airDate,
+          runtimeMin: episode.runtimeMin,
+          overview: episode.overview,
+          stillUrl: episode.stillUrl,
+          voteAverage: episode.voteAverage,
+          voteCount: episode.voteCount,
+          streamingUrl: episode.streamingUrl,
+          streamingSite: episode.streamingSite,
+        })),
       })),
     };
   }
@@ -274,7 +375,8 @@ export class MediaItemService {
 
     if (
       existingRef &&
-      Date.now() - existingRef.mediaItem.lastSyncedAt.getTime() < SYNC_TTL_MS
+      (type !== "MOVIE" || existingRef.mediaItem.movieReleaseDates !== null) &&
+      isCatalogFresh(existingRef.mediaItem.lastSyncedAt)
     ) {
       return existingRef.mediaItem;
     }
@@ -338,12 +440,11 @@ export class MediaItemService {
         seasons: {
           create: details.seasons.map((season) => ({
             number: season.number,
-            title: season.title,
+            ...seasonFields(season),
             episodes: {
               create: season.episodes.map((episode) => ({
                 number: episode.number,
-                title: episode.title,
-                airDate: episode.airDate ? new Date(episode.airDate) : null,
+                ...episodeFields(episode),
               })),
             },
           })),
@@ -388,8 +489,12 @@ export class MediaItemService {
     for (const season of details.seasons) {
       const storedSeason = await this.prisma.season.upsert({
         where: { mediaItemId_number: { mediaItemId, number: season.number } },
-        update: { title: season.title },
-        create: { mediaItemId, number: season.number, title: season.title },
+        update: seasonFields(season),
+        create: {
+          mediaItemId,
+          number: season.number,
+          ...seasonFields(season),
+        },
       });
 
       await this.syncEpisodes(storedSeason.id, season.episodes);
@@ -413,6 +518,7 @@ export class MediaItemService {
           where: { mediaItemId_locale: { mediaItemId, locale } },
           data: this.translationFields(localized),
         });
+        await this.storeSeasonTranslations(mediaItemId, locale, localized);
       } catch (err) {
         this.logger.error(
           `Translation refresh failed for media ${mediaItemId} (${locale})`,
@@ -427,7 +533,7 @@ export class MediaItemService {
   /**
    * Brings one season's episodes in line with the provider in a fixed number
    * of queries: read what's stored, insert what's missing, and update only
-   * the rows whose title or air date actually moved.
+   * the rows where one of the provider's fields actually moved.
    *
    * It used to be one upsert per episode, strictly sequential — thousands of
    * round-trips for a long-running series, on a path taken both by the
@@ -445,37 +551,33 @@ export class MediaItemService {
 
     const stored = await this.prisma.episode.findMany({
       where: { seasonId },
-      select: { number: true, title: true, airDate: true },
+      select: {
+        number: true,
+        title: true,
+        airDate: true,
+        runtimeMin: true,
+        overview: true,
+        stillUrl: true,
+        voteAverage: true,
+        voteCount: true,
+        episodeType: true,
+        streamingUrl: true,
+        streamingSite: true,
+      },
     });
     const byNumber = new Map(stored.map((e) => [e.number, e]));
 
     const toCreate: Prisma.EpisodeCreateManyInput[] = [];
-    const toUpdate: {
-      number: number;
-      title: string | null;
-      airDate: Date | null;
-    }[] = [];
+    const toUpdate: ({ number: number } & EpisodeFields)[] = [];
 
     for (const episode of episodes) {
-      const airDate = episode.airDate ? new Date(episode.airDate) : null;
+      const fields = episodeFields(episode);
       const current = byNumber.get(episode.number);
 
       if (!current) {
-        toCreate.push({
-          seasonId,
-          number: episode.number,
-          title: episode.title,
-          airDate,
-        });
-      } else if (
-        current.title !== episode.title ||
-        current.airDate?.getTime() !== airDate?.getTime()
-      ) {
-        toUpdate.push({
-          number: episode.number,
-          title: episode.title,
-          airDate,
-        });
+        toCreate.push({ seasonId, number: episode.number, ...fields });
+      } else if (episodeChanged(current, fields)) {
+        toUpdate.push({ number: episode.number, ...fields });
       }
     }
 
@@ -492,11 +594,14 @@ export class MediaItemService {
     // Bounded rather than Promise.all: a provider-wide retitling (or a first
     // sync after a listing overhaul) can touch every episode at once, and an
     // unbounded fan-out would empty the connection pool.
-    await mapWithConcurrency(toUpdate, EPISODE_UPDATE_CONCURRENCY, (episode) =>
-      this.prisma.episode.update({
-        where: { seasonId_number: { seasonId, number: episode.number } },
-        data: { title: episode.title, airDate: episode.airDate },
-      }),
+    await mapWithConcurrency(
+      toUpdate,
+      EPISODE_UPDATE_CONCURRENCY,
+      ({ number, ...fields }) =>
+        this.prisma.episode.update({
+          where: { seasonId_number: { seasonId, number } },
+          data: fields,
+        }),
     );
   }
 
@@ -507,7 +612,11 @@ export class MediaItemService {
       backdropUrl: details.backdropUrl,
       overview: details.overview,
       releaseDate: details.releaseDate ? new Date(details.releaseDate) : null,
+      movieReleaseDates: (details.movieReleaseDates ?? []).map((r) => ({
+        ...r,
+      })),
       status: details.status,
+      format: details.format,
       genres: details.genres,
       runtimeMin: details.runtimeMin,
       isAdult: details.summary.isAdult,
@@ -522,4 +631,77 @@ export class MediaItemService {
       genres: details.genres,
     };
   }
+}
+
+function seasonFields(season: ProviderSeason) {
+  return {
+    title: season.title,
+    overview: season.overview,
+    posterUrl: season.posterUrl,
+    airDate: season.airDate ? new Date(season.airDate) : null,
+    voteAverage: season.voteAverage,
+  };
+}
+
+// Every provider field the episode row mirrors; `airDate` is compared by
+// time, the rest by value.
+const EPISODE_FIELDS = [
+  "title",
+  "runtimeMin",
+  "overview",
+  "stillUrl",
+  "voteAverage",
+  "voteCount",
+  "episodeType",
+  "streamingUrl",
+  "streamingSite",
+] as const;
+
+type EpisodeFields = Pick<
+  Prisma.EpisodeCreateManyInput,
+  (typeof EPISODE_FIELDS)[number]
+> & { airDate: Date | null };
+
+function episodeFields(episode: ProviderEpisode): EpisodeFields {
+  return {
+    title: episode.title,
+    airDate: episode.airDate ? new Date(episode.airDate) : null,
+    runtimeMin: episode.runtimeMin,
+    overview: episode.overview,
+    stillUrl: episode.stillUrl,
+    voteAverage: episode.voteAverage,
+    voteCount: episode.voteCount,
+    episodeType: episode.episodeType,
+    streamingUrl: episode.streamingUrl,
+    streamingSite: episode.streamingSite,
+  };
+}
+
+function episodeChanged(current: EpisodeFields, next: EpisodeFields): boolean {
+  return (
+    current.airDate?.getTime() !== next.airDate?.getTime() ||
+    EPISODE_FIELDS.some((field) => current[field] !== next[field])
+  );
+}
+
+/** A localized text worth storing: present, and not just the English one again. */
+function localizedText(
+  localized: string | null,
+  base: string | null,
+): string | null {
+  const text = localized?.trim() || null;
+  return text && text !== base ? text : null;
+}
+
+// What TMDB answers for an episode with no title in the requested language
+// ("Épisode 5", "Episodio 5"): a placeholder, never worth replacing the
+// English title with.
+const GENERIC_EPISODE_TITLE = /^(episode|épisode|episodio)\s+\d+$/iu;
+
+function localizedEpisodeTitle(
+  localized: string | null,
+  base: string | null,
+): string | null {
+  const text = localizedText(localized, base);
+  return text && !GENERIC_EPISODE_TITLE.test(text) ? text : null;
 }

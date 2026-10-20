@@ -1,4 +1,4 @@
-import { makeZip } from "./make-zip";
+import { makeZip } from "../../test/make-zip";
 import { readZipEntries, readZipEntriesMatching } from "./zip";
 
 describe("readZipEntries", () => {

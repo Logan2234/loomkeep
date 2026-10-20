@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import { getGameStats } from "$lib/api/stats";
+  import { m } from "#lib/paraglide/messages.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { getGameStats } from "#lib/api/stats.js";
   import type { DomainStatusBreakdownDto } from "@loomkeep/shared";
   import PremiumTeaser from "../PremiumTeaser.svelte";
   import RankBars from "./RankBars.svelte";
@@ -115,7 +115,7 @@
 {#if error}
   <p class="text-danger text-sm">{error}</p>
 {:else if games}
-  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
     <StatTile
       value={hours}
       unit={m.common_hours_short()}
@@ -132,6 +132,9 @@
     <StatTile
       value={games.neverLaunchedCount}
       label={m.stats_games_never_launched()} />
+    <StatTile
+      value={games.pausedInProgressCount}
+      label={m.stats_games_paused()} />
     <StatTile value={games.replaysCount} label={m.stats_games_replays()} />
   </div>
 

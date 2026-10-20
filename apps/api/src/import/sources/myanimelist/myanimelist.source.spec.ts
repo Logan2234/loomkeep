@@ -1,8 +1,8 @@
 import { CatalogSource, MediaType } from "@loomkeep/shared";
 import { vi } from "vitest";
 import { AnilistMatchResolver } from "./anilist-match-resolver";
+import { parseMyAnimeListXml } from "./myanimelist.parser";
 import { MyAnimeListImportSource } from "./myanimelist.source";
-import { parseMyAnimeListXml } from "./parse-myanimelist-xml";
 
 const EXPORT = `<?xml version="1.0" encoding="UTF-8"?>
 <myanimelist>
@@ -65,11 +65,17 @@ function makeSource() {
     episodeWatch: {
       count: vi.fn().mockResolvedValue(0),
       createMany: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
     },
     mediaExternalId: {
       findUnique: vi.fn().mockResolvedValue({ mediaItemId: "media-1" }),
     },
-    libraryEntry: { upsert: vi.fn() },
+    // Nothing tracked yet, and every title already out.
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
+    libraryEntry: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      upsert: vi.fn(),
+    },
   };
   const mediaItemService = {
     upsertFromSource: vi.fn().mockResolvedValue({ id: "media-1" }),

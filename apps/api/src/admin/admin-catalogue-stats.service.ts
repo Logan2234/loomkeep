@@ -6,6 +6,7 @@ import type {
 } from "@loomkeep/shared";
 import { Domain } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
+import { CATALOG_SYNC_TTL_MS } from "../common/catalog-sync.util";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   percent,
@@ -16,10 +17,7 @@ import {
 } from "./admin-catalogue-stats.util";
 import { cumulativeBucketize, trendBucketStarts } from "./admin-stats.util";
 
-// Mirrors the 24h refresh TTL in MediaItemService — a freshness proxy only.
-// Games/books/music have no periodic refresh cron, so their staleness stays
-// null rather than being invented from `lastSyncedAt`.
-const MEDIA_SYNC_TTL_MS = 24 * 60 * 60 * 1000;
+// Only media staleness is currently exposed in the catalogue summary.
 
 /**
  * Fixed window of the per-domain growth sparklines: 12 weekly buckets. Unlike
@@ -109,7 +107,7 @@ export class AdminCatalogueStatsService {
       this.domainRow(Domain.MEDIA, this.prisma.mediaItem, starts),
       this.prisma.mediaItem.count({
         where: {
-          lastSyncedAt: { lt: new Date(Date.now() - MEDIA_SYNC_TTL_MS) },
+          lastSyncedAt: { lt: new Date(Date.now() - CATALOG_SYNC_TTL_MS) },
         },
       }),
     ]);

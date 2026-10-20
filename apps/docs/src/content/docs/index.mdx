@@ -1,0 +1,53 @@
+---
+title: Home
+description: Everything about Loomkeep, the self-hosted tracker for series, films, anime, games, books and music.
+template: splash
+hero:
+  title: Loomkeep Docs
+  tagline: Track what you watch, play, read and listen to — on loomkeep.app or on your own server.
+  image:
+    file: ../../assets/logo.svg
+  actions:
+    - text: Read the guide
+      link: /guide/
+      icon: right-arrow
+    - text: Open Loomkeep
+      link: https://loomkeep.app
+      icon: external
+      variant: minimal
+---
+
+import { CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+<CardGrid>
+  <LinkCard
+    title="Guide"
+    description="Key concepts, importing from TV Time, Trakt, Goodreads and more, calendar links, account security, your data, free and premium."
+    href="/guide/"
+  />
+  <LinkCard
+    title="Self-hosting"
+    description="Run your own instance with Docker: installation, configuration, HTTPS, backups and optional services."
+    href="/self-hosting/"
+  />
+  <LinkCard
+    title="Public API"
+    description="Read your library, history, lists and stats from your own scripts and tools, with a personal API key."
+    href="/api/"
+  />
+  <LinkCard
+    title="API recipes"
+    description="Ready-made uses: a Homepage widget, a Home Assistant sensor, an iPhone widget, a Google Sheet, nightly backups and more."
+    href="/api/recipes/homepage/"
+  />
+  <LinkCard
+    title="API reference"
+    description="Every endpoint, its parameters and responses, with a console to try them."
+    href="/api/reference/"
+  />
+  <LinkCard
+    title="Project"
+    description="Who makes Loomkeep, how to contribute, its architecture, security and licenses."
+    href="/project/"
+  />
+</CardGrid>

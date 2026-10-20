@@ -30,6 +30,7 @@ export const PROVIDER_BRANDS = {
   omdb: {
     name: "OMDb",
     color: "#d84a32",
+    foreground: "#120a04",
     url: OMDB_API,
     monogram: "OM",
   },
@@ -48,9 +49,21 @@ export const PROVIDER_BRANDS = {
   openlibrary: {
     name: "Open Library",
     color: "#1a75a8",
+    foreground: "#ffffff",
     url: OPENLIBRARY_API,
     monogram: "OL",
   },
 } as const;
 
 export type ProviderBrandKey = keyof typeof PROVIDER_BRANDS;
+
+export const RATING_SOURCE_STYLES: Record<string, string> = {
+  IGDB: "bg-[#9147ff] text-white",
+  Critiques: "bg-[#66cc33] text-black",
+  "Open Library": "bg-[#e1dcc5] text-black",
+  TMDB: "bg-[#01d277] text-black",
+  IMDb: "bg-[#f5c518] text-black",
+  RT: "bg-[#fa320a] text-white",
+  Metacritic: "bg-[#66cc33] text-black",
+  AniList: "bg-[#02a9ff] text-white",
+};

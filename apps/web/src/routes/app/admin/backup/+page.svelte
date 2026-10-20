@@ -1,51 +1,60 @@
 <script lang="ts">
   import {
     deleteAdminBackupFile,
+    deleteAdminOrphanBackupFile,
     getAdminBackupFile,
     getAdminBackupFiles,
     restoreAdminBackup,
     runAdminJob,
-  } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Banner from "$lib/components/Banner.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import PasswordInput from "$lib/components/PasswordInput.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import { downloadBlob } from "$lib/download";
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import AdminQueryError from "../AdminQueryError.svelte";
+  import Banner from "#lib/components/Banner.svelte";
+  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
+  import Icon from "#lib/components/Icon.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { downloadBlob } from "#lib/download.js";
   import {
     DATETIME_NUMERIC_OPTIONS,
     formatBytes,
     formatDateTime,
-  } from "$lib/format";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
-  import type { AdminBackupFileDto } from "@loomkeep/shared";
+  } from "#lib/format.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { toast } from "#lib/toast.svelte.js";
+  import type {
+    AdminBackupFileDto,
+    AdminOrphanBackupFileDto,
+  } from "@loomkeep/shared";
+  import { flip } from "svelte/animate";
+  import { fade, slide } from "svelte/transition";
 
   // Mirrors JOB_KEYS.BACKUP in apps/api/src/jobs/job-keys.ts — the daily
   // 3h cron this button also triggers on demand (same code path either way,
   // see BackupService.runScheduled).
   const BACKUP_JOB_KEY = "backup.run";
   const CONFIRM_PHRASE = "RESTAURER";
+  const reduced = prefersReducedMotion();
 
   const filesQuery = createApiQuery(() => ({
     key: keys.admin.backups(),
     fetch: getAdminBackupFiles,
   }));
-  const files = $derived(filesQuery.data);
+  const files = $derived(filesQuery.data?.files);
+  const orphans = $derived(filesQuery.data?.orphans);
   const loading = $derived(filesQuery.loading);
   const loadError = $derived(filesQuery.error);
 
   let pendingDelete = $state<AdminBackupFileDto | null>(null);
+  let pendingOrphanDelete = $state<AdminOrphanBackupFileDto | null>(null);
 
   let fileInput = $state<HTMLInputElement | null>(null);
   let pendingFile = $state<File | null>(null);
   let showRestoreModal = $state(false);
   let confirmText = $state("");
-  let restorePasswordInput = $state("");
   let restoreDone = $state(false);
 
   const runNowMut = createApiMutation(() => ({
@@ -84,6 +93,15 @@
     deleteMut.mutate(pendingDelete);
   }
 
+  const deleteOrphanMut = createApiMutation(() => ({
+    mutate: (file: AdminOrphanBackupFileDto) =>
+      deleteAdminOrphanBackupFile(file.filename),
+    invalidates: [keys.admin.backups()],
+    successToast: m.admin_backup_orphan_deleted(),
+    errorToast: true,
+    onSuccess: () => (pendingOrphanDelete = null),
+  }));
+
   function pickFile() {
     fileInput?.click();
   }
@@ -93,7 +111,6 @@
     if (!file) return;
     pendingFile = file;
     confirmText = "";
-    restorePasswordInput = "";
     restoreMut.reset();
     restoreDone = false;
     showRestoreModal = true;
@@ -103,20 +120,13 @@
     if (restoreMut.loading) return;
     showRestoreModal = false;
     pendingFile = null;
-    restorePasswordInput = "";
     if (fileInput) fileInput.value = "";
   }
 
   const restoreMut = createApiMutation(() => ({
-    mutate: async ({
-      file,
-      currentPassword,
-    }: {
-      file: File;
-      currentPassword: string;
-    }) => restoreAdminBackup({ sql: await file.text(), currentPassword }),
+    mutate: async (file: File) =>
+      restoreAdminBackup({ sql: await file.text() }),
     onSuccess: () => {
-      restorePasswordInput = "";
       restoreDone = true;
       toast.success(m.admin_backup_restored());
     },
@@ -124,14 +134,11 @@
 
   function confirmRestore() {
     if (!pendingFile || confirmText !== CONFIRM_PHRASE) return;
-    restoreMut.mutate({
-      file: pendingFile,
-      currentPassword: restorePasswordInput,
-    });
+    restoreMut.mutate(pendingFile);
   }
 </script>
 
-<div class="mx-auto max-w-2xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="archive"
     title={m.admin_backup_title()}
@@ -154,9 +161,9 @@
     <h2 class="font-display mb-3 text-lg font-bold">{m.admin_backups()}</h2>
 
     {#if loadError}
-      <Banner variant="error">{loadError}</Banner>
+      <AdminQueryError message={loadError} queryKey={keys.admin.backups()} />
     {:else if loading}
-      <div class="space-y-2">
+      <div transition:fade={{ duration: reduced ? 0 : 120 }} class="space-y-2">
         {#each { length: 3 } as _, i (i)}
           <div class="skeleton h-12 rounded-lg"></div>
         {/each}
@@ -165,7 +172,11 @@
       <ul
         class="border-border divide-border divide-y overflow-hidden rounded-lg border">
         {#each files as f (f.id)}
-          <li class="flex items-center gap-3 px-3 py-2.5">
+          <li
+            animate:flip={{ duration: reduced ? 0 : 160 }}
+            in:fade|global={{ duration: reduced ? 0 : 140 }}
+            out:fade|global={{ duration: reduced ? 0 : 100 }}
+            class="flex items-center gap-3 px-3 py-2.5">
             <div class="min-w-0 flex-1">
               <p class="text-fg truncate text-sm font-semibold">
                 {f.filename}
@@ -174,12 +185,15 @@
                 {formatDateTime(f.createdAt, DATETIME_NUMERIC_OPTIONS)} ·
                 {formatBytes(f.sizeBytes)}
               </p>
+              {#if f.status === "MISSING"}
+                <p class="text-danger text-xs">{m.admin_backup_missing()}</p>
+              {/if}
             </div>
             <button
               type="button"
               aria-label={m.admin_backup_download()}
-              disabled={downloadMut.loading &&
-                downloadMut.variables?.id === f.id}
+              disabled={f.status === "MISSING" ||
+                (downloadMut.loading && downloadMut.variables?.id === f.id)}
               onclick={() => downloadFile(f)}
               class="text-dim hover:bg-surface-2 hover:text-fg shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-50">
               <Icon name="download" class="h-4 w-4" />
@@ -196,11 +210,50 @@
         {/each}
       </ul>
     {:else}
-      <p class="text-dim py-6 text-center text-sm">
+      <p
+        transition:fade={{ duration: reduced ? 0 : 120 }}
+        class="text-dim py-6 text-center text-sm">
         {m.admin_backup_empty()}
       </p>
     {/if}
   </section>
+
+  {#if orphans && orphans.length > 0}
+    <section
+      transition:slide={{ duration: reduced ? 0 : 180 }}
+      class="card mb-5 p-5 md:p-6">
+      <h2 class="font-display mb-1 text-lg font-bold">
+        {m.admin_backup_orphans()}
+      </h2>
+      <p class="text-dim mb-3 text-sm">{m.admin_backup_orphans_hint()}</p>
+      <ul class="border-border divide-border divide-y rounded-lg border">
+        {#each orphans as file (file.filename)}
+          <li
+            animate:flip={{ duration: reduced ? 0 : 160 }}
+            in:fade|global={{ duration: reduced ? 0 : 140 }}
+            out:fade|global={{ duration: reduced ? 0 : 100 }}
+            class="flex items-center gap-3 px-3 py-2.5">
+            <div class="min-w-0 flex-1">
+              <p class="text-fg truncate text-sm font-semibold">
+                {file.filename}
+              </p>
+              <p class="timecode text-xs">
+                {formatDateTime(file.createdAt, DATETIME_NUMERIC_OPTIONS)} ·
+                {formatBytes(file.sizeBytes)}
+              </p>
+            </div>
+            <button
+              type="button"
+              class="text-dim hover:bg-danger/10 hover:text-danger shrink-0 rounded-lg p-1.5 transition-colors"
+              aria-label={m.admin_backup_delete_orphan()}
+              onclick={() => (pendingOrphanDelete = file)}>
+              <Icon name="trash" class="h-4 w-4" />
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
 
   <section class="card border-danger/40 p-5 md:p-6">
     <h2 class="font-display text-danger mb-1 text-lg font-bold">
@@ -234,9 +287,13 @@
 {#if pendingDelete}
   <ConfirmationModal
     title={m.admin_backup_delete_title()}
-    message={m.admin_backup_delete_message({
-      filename: pendingDelete.filename,
-    })}
+    message={pendingDelete.status === "MISSING"
+      ? m.admin_backup_delete_missing_message({
+          filename: pendingDelete.filename,
+        })
+      : m.admin_backup_delete_message({
+          filename: pendingDelete.filename,
+        })}
     confirmLabel={m.common_delete()}
     danger
     busy={deleteMut.loading}
@@ -244,17 +301,29 @@
     onCancel={() => (pendingDelete = null)} />
 {/if}
 
+{#if pendingOrphanDelete}
+  <ConfirmationModal
+    title={m.admin_backup_delete_orphan_title()}
+    message={m.admin_backup_delete_orphan_message({
+      filename: pendingOrphanDelete.filename,
+    })}
+    confirmLabel={m.common_delete()}
+    danger
+    busy={deleteOrphanMut.loading}
+    onConfirm={() =>
+      pendingOrphanDelete && deleteOrphanMut.mutate(pendingOrphanDelete)}
+    onCancel={() => (pendingOrphanDelete = null)} />
+{/if}
+
 {#if showRestoreModal && pendingFile}
-  <Modal title={m.admin_backup_restore_title()} onclose={closeRestoreModal}>
+  <Modal
+    title={m.admin_backup_restore_title()}
+    onclose={closeRestoreModal}
+    dismissable={!restoreMut.loading}>
     {#if restoreDone}
       <Banner variant="info">
         {m.admin_backup_restored_hint()}
       </Banner>
-      <div class="mt-5 flex justify-end">
-        <button class="btn btn-primary" onclick={() => location.reload()}>
-          {m.common_reload()}
-        </button>
-      </div>
     {:else}
       <p class="text-dim text-sm">
         {m.admin_backup_selected_file()}
@@ -275,42 +344,38 @@
         bind:value={confirmText}
         disabled={restoreMut.loading}
         placeholder={CONFIRM_PHRASE}
-        class="border-border bg-surface mt-3 w-full rounded-lg border px-3 py-2 text-sm" />
-      <label class="mt-3 block">
-        <span class="mb-1.5 block text-sm font-semibold">
-          {m.common_current_password()}
-        </span>
-        <PasswordInput
-          name="currentPassword"
-          autocomplete="current-password"
-          enterkeyhint="done"
-          minlength={1}
-          required
-          bind:value={restorePasswordInput} />
-      </label>
+        class="input mt-3 text-sm" />
       {#if restoreMut.error}
         <Banner variant="error" class="mt-3">{restoreMut.error}</Banner>
       {/if}
-      <div class="mt-5 flex justify-end gap-2">
-        <button
-          type="button"
-          class="btn btn-ghost"
-          disabled={restoreMut.loading}
-          onclick={closeRestoreModal}>
-          {m.common_cancel()}
-        </button>
-        <button
-          type="button"
-          class="btn btn-danger"
-          disabled={restoreMut.loading ||
-            confirmText !== CONFIRM_PHRASE ||
-            !restorePasswordInput}
-          onclick={confirmRestore}>
-          {restoreMut.loading
-            ? m.admin_backup_restoring()
-            : m.admin_backup_restore_confirm()}
-        </button>
-      </div>
     {/if}
+    {#snippet actions()}
+      {#if restoreDone}
+        <div class="flex justify-end">
+          <button class="btn btn-primary" onclick={() => location.reload()}>
+            {m.common_reload()}
+          </button>
+        </div>
+      {:else}
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="btn btn-ghost"
+            disabled={restoreMut.loading}
+            onclick={closeRestoreModal}>
+            {m.common_cancel()}
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            disabled={restoreMut.loading || confirmText !== CONFIRM_PHRASE}
+            onclick={confirmRestore}>
+            {restoreMut.loading
+              ? m.admin_backup_restoring()
+              : m.admin_backup_restore_confirm()}
+          </button>
+        </div>
+      {/if}
+    {/snippet}
   </Modal>
 {/if}

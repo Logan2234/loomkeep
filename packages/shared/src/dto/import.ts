@@ -6,6 +6,7 @@ import type {
   MediaType,
 } from "../enums";
 import type { ErrorCode } from "../error-codes";
+import type { ImportJobStatus } from "../realtime";
 
 // Every import source runs through one async job framework: `analyze`
 // parses the export and resolves it against the catalogue into a reviewable
@@ -21,10 +22,10 @@ export type ImportSource =
   | "letterboxd"
   | "imdb"
   | "myanimelist"
+  | "anilist"
   | "simkl"
   | "kitsu"
   | "steam"
-  | "backloggd"
   | "storygraph"
   | "goodreads"
   | "babelio"
@@ -33,6 +34,27 @@ export type ImportSource =
   | "opml"
   | "spotify"
   | "boardgamegeek";
+
+/** Each source's own name, for text the API writes (a finished-import alert). */
+export const IMPORT_SOURCE_NAMES: Record<ImportSource, string> = {
+  tvtime: "TV Time",
+  trakt: "Trakt",
+  letterboxd: "Letterboxd",
+  imdb: "IMDb",
+  myanimelist: "MyAnimeList",
+  anilist: "AniList",
+  simkl: "Simkl",
+  kitsu: "Kitsu",
+  steam: "Steam",
+  storygraph: "The StoryGraph",
+  goodreads: "Goodreads",
+  babelio: "Babelio",
+  librarything: "LibraryThing",
+  bookwyrm: "Bookwyrm",
+  opml: "OPML",
+  spotify: "Spotify",
+  boardgamegeek: "BoardGameGeek",
+};
 
 /** A catalogue title a source item resolved to (auto or via manual search). */
 export interface ImportMatch {
@@ -58,6 +80,11 @@ export type ImportItemContext =
   | {
       kind: "series";
       episodesWatched: number;
+      /**
+       * The status the source states outright, when it says nothing about
+       * episodes (a rated IMDb series is being watched). Null otherwise.
+       */
+      status?: EntryStatus | null;
       rating: number | null;
       favorite: boolean;
     }
@@ -154,7 +181,7 @@ export interface ImportReport {
 /** An async import job (analyze or commit), polled by the client. */
 export interface ImportJobDto {
   id: string;
-  status: "running" | "completed" | "failed";
+  status: ImportJobStatus;
   /** Items processed so far / total to process. */
   progress: { done: number; total: number };
   /** Populated once an analysis job completes (the plan to review). */
@@ -268,14 +295,4 @@ export interface TvTimeImportFilesDto {
   rewatchedCsv?: string;
   /** `user_tv_show_data.csv` — show names + TVDB id + episodes-seen count (watchlist detection). */
   showsCsv?: string;
-}
-
-/** Map a series' watched/total regular episodes to a library entry status. */
-export function entryStatusFromProgress(
-  watched: number,
-  total: number,
-): EntryStatus {
-  if (watched === 0) return "PLANNED";
-  if (total > 0 && watched >= total) return "COMPLETED";
-  return "WATCHING";
 }

@@ -2,7 +2,7 @@
   "$schema": "https://www.schemastore.org/package",
   "name": "loomkeep",
   "description": "Personal tracker for everything you watch, play, read and listen to — series, movies, anime, games, books and albums, with more on the way — hosted or self-hosted, open-core.",
-  "version": "1.8.0",
+  "version": "1.11.0",
   "author": {
     "name": "Logan WILLEM",
     "email": "loganwi322.dev@gmail.com"
@@ -14,9 +14,9 @@
     "url": "https://feedback.loomkeep.app/?board=bug-reports"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.17"
   },
-  "packageManager": "pnpm@11.25.0",
+  "packageManager": "pnpm@12.14.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Logan2234/loomkeep.git"
@@ -39,9 +39,10 @@
     "nestjs"
   ],
   "scripts": {
-    "dev": "pnpm build:package && pnpm --parallel --filter \"./apps/*\" dev",
+    "dev": "pnpm build:package && pnpm --parallel --filter \"./apps/*\" --filter \"!@loomkeep/docs\" dev",
+    "dev:docs": "pnpm --filter @loomkeep/docs dev",
     "build:package": "pnpm --filter \"./packages/*\" build",
-    "build": "pnpm build:package && pnpm --filter \"./apps/*\" build",
+    "build": "pnpm build:package && pnpm --filter \"./apps/*\" --filter \"!@loomkeep/docs\" build",
     "generate": "pnpm build:package && pnpm --filter @loomkeep/api exec prisma generate && pnpm --filter @loomkeep/api build && pnpm --filter @loomkeep/api generate:openapi && pnpm --filter @loomkeep/web generate:api-types",
     "test": "pnpm --recursive --no-bail test",
     "lint": "pnpm --recursive --no-bail lint",
@@ -60,18 +61,19 @@
     "@eslint/js": "^10.0.1",
     "@lhci/cli": "^0.15.1",
     "@stylistic/eslint-plugin": "^5.10.0",
-    "eslint": "^10.10.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.6",
-    "globals": "^17.12.0",
+    "eslint-plugin-prettier": "^5.5.7",
+    "globals": "^17.13.0",
     "husky": "^9.1.7",
-    "knip": "^6.35.1",
-    "lint-staged": "^17.5.1",
-    "prettier": "^3.9.6",
+    "knip": "^6.41.0",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-svelte": "^4.1.1",
     "prettier-plugin-tailwindcss": "^0.8.1",
-    "typescript": "^6.0.3",
-    "typescript-eslint": "^8.70.0"
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.71.2"
   }
 }

@@ -1,13 +1,17 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { resetPassword } from "$lib/api/client";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
-  import AuthShell from "$lib/components/AuthShell.svelte";
-  import PasswordInput from "$lib/components/PasswordInput.svelte";
-  import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { isPasswordValid } from "@loomkeep/shared";
+  import { resetPassword } from "#lib/api/client.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import AuthShell from "#lib/components/AuthShell.svelte";
+  import PasswordInput from "#lib/components/PasswordInput.svelte";
+  import PasswordRequirements from "#lib/components/PasswordRequirements.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import {
+    isPasswordValid,
+    PASSWORD_MIN_LENGTH,
+    PASSWORD_MAX_LENGTH,
+  } from "@loomkeep/shared";
 
   const token = page.url.searchParams.get("token") ?? "";
 
@@ -25,11 +29,6 @@
   function submit(event: SubmitEvent) {
     event.preventDefault();
     localError = null;
-
-    if (!isPasswordValid(newPassword)) {
-      localError = m.auth_reset_password_requirements_unmet();
-      return;
-    }
 
     if (newPassword !== confirmPassword) {
       localError = m.auth_reset_password_mismatch();
@@ -63,8 +62,8 @@
           autocomplete="new-password"
           enterkeyhint="next"
           bind:value={newPassword}
-          minlength={8}
-          maxlength={72}
+          minlength={PASSWORD_MIN_LENGTH}
+          maxlength={PASSWORD_MAX_LENGTH}
           required />
         <PasswordRequirements value={newPassword} />
         <PasswordInput
@@ -74,14 +73,14 @@
           autocomplete="new-password"
           enterkeyhint="done"
           bind:value={confirmPassword}
-          minlength={8}
-          maxlength={72}
+          minlength={PASSWORD_MIN_LENGTH}
+          maxlength={PASSWORD_MAX_LENGTH}
           required />
         {#if error}<p class="text-danger text-sm">{error}</p>{/if}
         <button
           type="submit"
           class="btn btn-primary"
-          disabled={resetMut.loading}>
+          disabled={resetMut.loading || !isPasswordValid(newPassword)}>
           {resetMut.loading ? m.common_save_loading() : m.common_reset()}
         </button>
       </form>

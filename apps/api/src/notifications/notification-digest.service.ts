@@ -1,4 +1,8 @@
-import { DigestCadence, NotificationType } from "@loomkeep/shared";
+import {
+  DigestCadence,
+  NotificationType,
+  type AlertChannel,
+} from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { localParts } from "../common/local-day.util";
@@ -7,10 +11,9 @@ import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { notSuspended } from "../users/suspension.util";
+import { notificationCopy, type DigestPeriod } from "./notification-copy";
 import { PushService } from "./push.service";
-
-type Channel = "email" | "push";
-type Period = "daily" | "weekly";
 
 interface DigestItem {
   title: string;
@@ -18,47 +21,28 @@ interface DigestItem {
   url: string;
 }
 
-/**
- * DRAFT WORDING — needs Logan's sign-off before any real send goes out (see
- * the notification-digest feature plan). One random pick per send so the
- * same user doesn't see the exact same sentence every day.
- */
-const PUSH_VARIANTS: Record<
-  "one" | "two" | "many",
-  ((period: Period, items: DigestItem[]) => string)[]
-> = {
-  one: [
-    (period, items) => `${items[0].title} sort ${periodLabel(period)} !`,
-    (period, items) =>
-      `Ça y est, ${items[0].title} est de retour ${periodLabel(period)}.`,
-  ],
-  two: [
-    (period, items) =>
-      `${items[0].title} et ${items[1].title} sortent ${periodLabel(period)}`,
-    (period, items) =>
-      `Double sortie ${periodLabel(period)} : ${items[0].title} et ${items[1].title}`,
-  ],
-  many: [
-    (period, items) =>
-      `${items.length} sorties t'attendent ${periodLabel(period)}`,
-    (period, items) =>
-      `${items[0].title}, ${items[1].title} et ${items.length - 2} autre(s) sortent ${periodLabel(period)}`,
-  ],
-};
-
-function periodLabel(period: Period): string {
-  return period === "daily" ? "aujourd'hui" : "cette semaine";
-}
-
-function pushBody(period: Period, items: DigestItem[]): string {
-  const tier = items.length === 1 ? "one" : items.length === 2 ? "two" : "many";
-  const variants = PUSH_VARIANTS[tier];
-  return variants[Math.floor(Math.random() * variants.length)](period, items);
+/** Varied so the same user doesn't read the same sentence at every send. */
+function pushBody(
+  locale: string,
+  period: DigestPeriod,
+  items: DigestItem[],
+  hasReleases: boolean,
+) {
+  if (hasReleases)
+    return notificationCopy(locale).releaseDigestPush(
+      period,
+      items.map((item) => item.title),
+    );
+  const variants = notificationCopy(locale).episodeDigestPush(
+    period,
+    items.map((item) => item.title),
+  );
+  return variants[Math.floor(Math.random() * variants.length)];
 }
 
 /**
  * Delivers the "new episode" digest at each user's local hour, cadenced
- * independently per channel (email/push). Content is whatever `NEW_EPISODE`
+ * independently per channel (email/push). Content is whatever `NEW_EPISODE` / `NEW_MOVIE` / `NEW_GAME`
  * ledger rows (created by `NotificationService.scan()`) haven't been
  * digested yet on that channel — no date-window recomputation needed, just
  * `[channel]DigestedAt IS NULL`.
@@ -79,21 +63,26 @@ export class NotificationDigestService {
    * Hourly: for each user, checks whether it's currently their local digest
    * hour on each channel (18h daily, Monday 9h weekly) and sends if so.
    */
-  @Cron(CronExpression.EVERY_HOUR)
+  @Cron(CronExpression.EVERY_HOUR, { name: JOB_KEYS.NOTIFICATIONS_DIGEST })
   async runDigests(): Promise<number> {
     return this.jobRuns.record(
       JOB_KEYS.NOTIFICATIONS_DIGEST,
       () => this.run(),
-      (sent) => (sent > 0 ? `${sent} digest(s) envoyé(s)` : "Rien à envoyer"),
+      (sent) => (sent > 0 ? `${sent} digest(s) sent` : "Nothing to send"),
     );
   }
 
   private async run(): Promise<number> {
     const users = await this.prisma.user.findMany({
       where: {
-        OR: [
-          { notifyEmail: { not: DigestCadence.DISABLED } },
-          { notifyPush: { not: DigestCadence.DISABLED } },
+        AND: [
+          {
+            OR: [
+              { notifyEmail: { not: DigestCadence.DISABLED } },
+              { notifyPush: { not: DigestCadence.DISABLED } },
+            ],
+          },
+          notSuspended(),
         ],
       },
       select: {
@@ -140,7 +129,7 @@ export class NotificationDigestService {
   /** Returns 1 if a digest was sent on this channel, 0 otherwise. */
   private async deliverChannel(
     user: { id: string; email: string; locale: string; timezone: string },
-    channel: Channel,
+    channel: AlertChannel,
     stored: DigestCadence,
   ): Promise<number> {
     if (stored === DigestCadence.DISABLED) return 0;
@@ -159,22 +148,87 @@ export class NotificationDigestService {
     const pending = await this.prisma.notification.findMany({
       where: {
         userId: user.id,
-        type: NotificationType.NEW_EPISODE,
+        type: {
+          in: [
+            NotificationType.NEW_EPISODE,
+            NotificationType.NEW_MOVIE,
+            NotificationType.NEW_GAME,
+          ],
+        },
         ...(channel === "email"
           ? { emailDigestedAt: null }
           : { pushDigestedAt: null }),
       },
-      select: { id: true, title: true, body: true, url: true },
+      select: { id: true, title: true, body: true, url: true, dedupeKey: true },
       orderBy: { createdAt: "asc" },
     });
     if (pending.length === 0) return 0;
 
-    const items: DigestItem[] = pending.map((n) => ({
+    // Shows the user muted are filtered here rather than at scan time: their
+    // rows are still marked digested below, so an episode that aired while
+    // muted never resurfaces once the user unmutes.
+    const muted = await this.mutedEpisodeIds(user.id, pending);
+    const movieIds = pending.flatMap((n) =>
+      n.dedupeKey?.startsWith("movie:") ? [n.dedupeKey.slice(6)] : [],
+    );
+    const activeMovies =
+      movieIds.length === 0
+        ? []
+        : await this.prisma.libraryEntry.findMany({
+            where: {
+              userId: user.id,
+              mediaItemId: { in: movieIds },
+              movieReleaseReminderAt: { not: null },
+              status: { not: "DROPPED" },
+            },
+            select: { mediaItemId: true },
+          });
+    const activeMovieIds = new Set(activeMovies.map((e) => e.mediaItemId));
+    const gameIds = pending.flatMap((n) =>
+      n.dedupeKey?.startsWith("game:") ? [n.dedupeKey.slice(5)] : [],
+    );
+    const activeGames =
+      gameIds.length === 0
+        ? []
+        : await this.prisma.gameEntry.findMany({
+            where: {
+              userId: user.id,
+              gameItemId: { in: gameIds },
+              releaseReminderAt: { not: null },
+              status: { not: "DROPPED" },
+            },
+            select: { gameItemId: true },
+          });
+    const activeGameIds = new Set(activeGames.map((e) => e.gameItemId));
+    const deliverable = pending.filter((n) =>
+      n.dedupeKey?.startsWith("movie:")
+        ? activeMovieIds.has(n.dedupeKey.slice(6))
+        : n.dedupeKey?.startsWith("game:")
+          ? activeGameIds.has(n.dedupeKey.slice(5))
+          : !muted.has(episodeIdOf(n.dedupeKey)),
+    );
+
+    const now = new Date();
+    const markDigested = () =>
+      this.prisma.notification.updateMany({
+        where: { id: { in: pending.map((n) => n.id) } },
+        data:
+          channel === "email"
+            ? { emailDigestedAt: now }
+            : { pushDigestedAt: now },
+      });
+
+    if (deliverable.length === 0) {
+      await markDigested();
+      return 0;
+    }
+
+    const items: DigestItem[] = deliverable.map((n) => ({
       title: n.title,
       body: n.body ?? "",
       url: n.url ?? "/app/calendar",
     }));
-    const period: Period =
+    const period: DigestPeriod =
       effective === DigestCadence.DAILY ? "daily" : "weekly";
 
     if (channel === "email") {
@@ -186,20 +240,52 @@ export class NotificationDigestService {
     } else {
       await this.push.sendToUser(user.id, {
         title: "Loomkeep",
-        body: pushBody(period, items),
+        body: pushBody(
+          user.locale,
+          period,
+          items,
+          deliverable.some(
+            (n) =>
+              n.dedupeKey?.startsWith("movie:") ||
+              n.dedupeKey?.startsWith("game:"),
+          ),
+        ),
         url: items.length === 1 ? items[0].url : "/app/calendar",
       });
     }
 
-    const now = new Date();
-    await this.prisma.notification.updateMany({
-      where: { id: { in: pending.map((n) => n.id) } },
-      data:
-        channel === "email"
-          ? { emailDigestedAt: now }
-          : { pushDigestedAt: now },
-    });
+    await markDigested();
 
     return 1;
   }
+
+  /** Episode ids, among these rows, of shows the user muted episode alerts for. */
+  private async mutedEpisodeIds(
+    userId: string,
+    rows: { dedupeKey: string | null }[],
+  ): Promise<Set<string | null>> {
+    const episodes = await this.prisma.episode.findMany({
+      where: {
+        id: {
+          in: rows
+            .map((n) => episodeIdOf(n.dedupeKey))
+            .filter((id): id is string => id !== null),
+        },
+        season: {
+          mediaItem: {
+            entries: { some: { userId, episodeAlertsMuted: true } },
+          },
+        },
+      },
+      select: { id: true },
+    });
+    return new Set(episodes.map((e) => e.id));
+  }
+}
+
+/** `episode:<id>` (see `NotificationService`) back to the bare episode id. */
+function episodeIdOf(dedupeKey: string | null): string | null {
+  return dedupeKey?.startsWith("episode:")
+    ? dedupeKey.slice("episode:".length)
+    : null;
 }

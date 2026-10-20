@@ -8,38 +8,58 @@ import type {
   WebauthnLoginOptionsResponseDto,
   WebauthnMfaOptionsResponseDto,
 } from "@loomkeep/shared";
-import { deviceLabel, ErrorCode, LEGAL_VERSION } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import {
+  deviceLabel,
+  ErrorCode,
+  LEGAL_VERSION,
+  NotificationType,
+  OTP_CODE_LENGTH,
+} from "@loomkeep/shared";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
-import { Prisma, type User } from "@prisma/client";
+import type { Prisma, User } from "@prisma/client";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import * as bcrypt from "bcryptjs";
-import {
-  createHash,
-  randomBytes,
-  randomInt,
-  randomUUID,
-  timingSafeEqual,
-} from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
+import { ApiKeysService } from "../api-keys/api-keys.service";
 import { AppException } from "../common/app.exception";
+import {
+  randomNumericCode,
+  randomToken,
+  sha256Hex,
+} from "../common/crypto.util";
+import { utcDateKey } from "../common/date.util";
 import { normalizeEmail } from "../common/email.util";
 import { HibpService } from "../common/hibp.service";
+import {
+  isRecordNotFound,
+  isUniqueViolation,
+} from "../common/prisma-error.util";
 import { EventsGateway } from "../events/events.gateway";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { MailService } from "../mail/mail.service";
+import { AdminAlertService } from "../notifications/admin-alert.service";
+import { readAlertPrefs } from "../notifications/alert-prefs.util";
+import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
+import { isSocialEnabled } from "../social/social.config";
 import { avatarUrl } from "../users/avatar.util";
+import { readHomeLayout } from "../users/home-layout.util";
+import { assertNotSuspended, isSuspended } from "../users/suspension.util";
 import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
+import { InvitationService } from "./invitation.service";
 import {
+  ACCESS_TOKEN_TTL_SECONDS,
   JWT_ACCESS_AUDIENCE,
   JWT_ALGORITHM,
   JWT_ISSUER,
   JWT_REFRESH_AUDIENCE,
+  REFRESH_REUSE_GRACE_MS,
+  REFRESH_TOKEN_TTL_DAYS,
 } from "./jwt.constants";
 import { MfaService } from "./mfa.service";
 import { isRegistrationEnabled } from "./registration.config";
@@ -47,8 +67,6 @@ import { SessionCacheService } from "./session-cache.service";
 import { TurnstileService } from "./turnstile.service";
 import { WebauthnService } from "./webauthn.service";
 
-const ACCESS_TOKEN_TTL = "15m";
-const REFRESH_TOKEN_TTL_DAYS = 30;
 const RESET_TOKEN_TTL_MINUTES = 60;
 const VERIFY_TOKEN_TTL_HOURS = 24;
 export const BCRYPT_ROUNDS = 12;
@@ -78,6 +96,8 @@ type LoginResult =
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -86,11 +106,14 @@ export class AuthService {
     private readonly security: SecurityEventService,
     private readonly turnstile: TurnstileService,
     private readonly hibp: HibpService,
-    private readonly flags: FeatureFlagsService,
     private readonly mfa: MfaService,
     private readonly webauthn: WebauthnService,
     private readonly sessionCache: SessionCacheService,
     private readonly events: EventsGateway,
+    private readonly invitations: InvitationService,
+    private readonly apiKeys: ApiKeysService,
+    private readonly notifications: NotificationService,
+    private readonly adminAlerts: AdminAlertService,
   ) {}
 
   async register(
@@ -99,7 +122,13 @@ export class AuthService {
     ip?: string,
     acceptLanguage?: string,
   ): Promise<AuthResult> {
-    if (!isRegistrationEnabled(this.configService, this.flags)) {
+    // An invitation is what lets a sign-up through a closed instance — so it
+    // is checked first, and only its absence falls back on the global switch.
+    const invitation = dto.inviteToken
+      ? await this.invitations.findRedeemableFor(dto.inviteToken, dto.email)
+      : null;
+
+    if (!invitation && !isRegistrationEnabled(this.configService)) {
       throw new AppException(
         HttpStatus.FORBIDDEN,
         ErrorCode.AuthRegistrationDisabled,
@@ -131,22 +160,31 @@ export class AuthService {
       );
     }
 
+    // An address-bound invitation reached this mailbox (or someone who knows
+    // it), which is what the verification email would otherwise prove.
+    const emailVerified = Boolean(invitation?.email);
+    const data: Prisma.UserUncheckedCreateInput = {
+      email: dto.email,
+      passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
+      displayName: dto.displayName,
+      username: await this.generateUniqueUsername(dto.displayName),
+      locale: dto.locale ?? detectLocale(acceptLanguage),
+      acceptedTermsAt: new Date(),
+      acceptedTermsVersion: LEGAL_VERSION,
+      certifiedAgeAt: new Date(),
+      lastActiveAt: new Date(),
+      emailVerified,
+      invitationId: invitation?.id,
+    };
     let user: User;
 
     try {
-      user = await this.prisma.user.create({
-        data: {
-          email: dto.email,
-          passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
-          displayName: dto.displayName,
-          username: await this.generateUniqueUsername(dto.displayName),
-          locale: dto.locale ?? detectLocale(acceptLanguage),
-          acceptedTermsAt: new Date(),
-          acceptedTermsVersion: LEGAL_VERSION,
-          certifiedAgeAt: new Date(),
-          lastActiveAt: new Date(),
-        },
-      });
+      user = invitation
+        ? await this.prisma.$transaction(async (tx) => {
+            await this.invitations.claim(tx, invitation.id);
+            return tx.user.create({ data });
+          })
+        : await this.prisma.user.create({ data });
     } catch (err) {
       // The findUnique() email check above doesn't prevent two concurrent
       // registrations for the same email from both passing it and racing to
@@ -156,11 +194,7 @@ export class AuthService {
       // generateUniqueUsername) can independently collide under the same
       // race, and that's a distinct, much rarer failure that shouldn't be
       // reported to the user as "email already taken".
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === "P2002" &&
-        (err.meta?.target as string[] | undefined)?.includes("email")
-      ) {
+      if (isUniqueViolation(err, "email")) {
         throw new AppException(
           HttpStatus.CONFLICT,
           ErrorCode.AuthEmailAlreadyExists,
@@ -170,18 +204,18 @@ export class AuthService {
       throw err;
     }
 
-    const verifyToken = randomBytes(32).toString("hex");
-    await this.prisma.userToken.create({
-      data: {
-        userId: user.id,
-        type: "EMAIL_VERIFICATION",
-        tokenHash: hashToken(verifyToken),
-        expiresAt: new Date(Date.now() + VERIFY_TOKEN_TTL_HOURS * 60 * 60_000),
-      },
-    });
     const recipient = { email: user.email, locale: user.locale };
     await this.mail.sendWelcome(recipient, user.displayName);
-    await this.mail.sendVerifyEmail(recipient, verifyToken);
+
+    if (!emailVerified) {
+      const verifyToken = await this.issueUserToken(
+        user.id,
+        "EMAIL_VERIFICATION",
+        VERIFY_TOKEN_TTL_HOURS * 60 * 60_000,
+      );
+      await this.mail.sendVerifyEmail(recipient, verifyToken);
+    }
+
     await this.security.record({
       type: "USER_REGISTERED",
       userId: user.id,
@@ -189,6 +223,7 @@ export class AuthService {
     });
     // Seed this device so it isn't flagged as "new" on the user's next login.
     await this.recordDevice(user.id, userAgent);
+    await this.announceArrival(user, invitation?.createdById ?? null);
 
     const promoted = await this.ensureAdminRole(user);
     return {
@@ -197,10 +232,49 @@ export class AuthService {
     };
   }
 
+  /**
+   * Tells whoever sent the invitation, and the administrators, that someone
+   * joined. Best-effort: the account exists either way.
+   */
+  private async announceArrival(
+    user: User,
+    inviterId: string | null,
+  ): Promise<void> {
+    try {
+      if (inviterId) {
+        const copy = await this.notifications.copyFor(inviterId);
+        await this.notifications.create({
+          userId: inviterId,
+          type: NotificationType.INVITATION_ACCEPTED,
+          title: user.displayName,
+          body: copy.invitationAccepted,
+          url: isSocialEnabled(this.configService)
+            ? `/app/u/${user.username}`
+            : null,
+          dedupeKey: `invitation-accepted:${user.id}`,
+          data: {
+            actorUsername: user.username,
+            actorDisplayName: user.displayName,
+          },
+        });
+      }
+
+      await this.adminAlerts.notify("ADMIN_NEW_USER", {
+        email: (admin) => this.mail.sendAdminNewUser(admin, user.displayName),
+        push: (copy) => ({
+          ...copy.adminAlerts.newUser(user.displayName),
+          url: "/app/admin/users",
+        }),
+      });
+    } catch (err) {
+      this.logger.error(`Arrival alerts failed for ${user.id}`, err);
+    }
+  }
+
   /** Consumes an email-verification link. Informational only — nothing is gated on it. */
   async verifyEmail(token: string): Promise<void> {
     const stored = await this.prisma.userToken.findUnique({
-      where: { tokenHash: hashToken(token) },
+      where: { tokenHash: sha256Hex(token) },
     });
 
     if (
@@ -248,22 +322,11 @@ export class AuthService {
       );
     }
 
-    const verifyToken = randomBytes(32).toString("hex");
-    await this.prisma.$transaction([
-      this.prisma.userToken.deleteMany({
-        where: { userId: user.id, type: "EMAIL_VERIFICATION" },
-      }),
-      this.prisma.userToken.create({
-        data: {
-          userId: user.id,
-          type: "EMAIL_VERIFICATION",
-          tokenHash: hashToken(verifyToken),
-          expiresAt: new Date(
-            Date.now() + VERIFY_TOKEN_TTL_HOURS * 60 * 60_000,
-          ),
-        },
-      }),
-    ]);
+    const verifyToken = await this.issueUserToken(
+      user.id,
+      "EMAIL_VERIFICATION",
+      VERIFY_TOKEN_TTL_HOURS * 60 * 60_000,
+    );
     await this.mail.sendVerifyEmail(
       { email: user.email, locale: user.locale },
       verifyToken,
@@ -298,6 +361,8 @@ export class AuthService {
       );
     }
 
+    assertNotSuspended(user);
+
     const webauthnAllowed = await this.webauthn.hasCredentials(user.id);
 
     if (user.mfaTotpEnabled || user.mfaEmailEnabled || webauthnAllowed) {
@@ -326,8 +391,8 @@ export class AuthService {
     let emailCodeExpiresAt: Date | undefined;
 
     if (user.mfaEmailEnabled && !user.mfaTotpEnabled && !webauthnAllowed) {
-      const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
-      emailCodeHash = hashToken(code);
+      const code = randomNumericCode(OTP_CODE_LENGTH);
+      emailCodeHash = sha256Hex(code);
       emailCodeExpiresAt = new Date(
         Date.now() + MFA_EMAIL_CODE_TTL_MINUTES * 60_000,
       );
@@ -380,11 +445,11 @@ export class AuthService {
       );
     }
 
-    const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+    const code = randomNumericCode(OTP_CODE_LENGTH);
     await this.prisma.mfaLoginChallenge.update({
       where: { id: challenge.id },
       data: {
-        emailCodeHash: hashToken(code),
+        emailCodeHash: sha256Hex(code),
         emailCodeExpiresAt: new Date(
           Date.now() + MFA_EMAIL_CODE_TTL_MINUTES * 60_000,
         ),
@@ -426,22 +491,32 @@ export class AuthService {
       );
     }
 
+    const attempts = await this.consumeMfaAttempt(challenge.id);
+
+    if (attempts === null) {
+      return this.lockMfaChallenge(challenge.id, challenge.userId, userAgent);
+    }
+
     const totpVerified =
       challenge.totpAllowed &&
       /^\d{6}$/.test(rawCode) &&
       challenge.user.mfaTotpSecretEnc !== null &&
-      this.mfa.validateTotpCode(challenge.user.mfaTotpSecretEnc, rawCode);
+      (await this.mfa.acceptTotpCode(
+        challenge.userId,
+        challenge.user.mfaTotpSecretEnc,
+        rawCode,
+      )) === "accepted";
     const emailVerified =
       challenge.emailAllowed &&
       challenge.emailCodeHash !== null &&
       challenge.emailCodeExpiresAt !== null &&
       challenge.emailCodeExpiresAt >= new Date() &&
-      // Both sides are hex-encoded SHA-256 digests (hashToken()), so they're
+      // Both sides are hex-encoded SHA-256 digests (sha256Hex()), so they're
       // always the same length — timingSafeEqual can't throw here the way it
       // would on attacker-controlled input, hence no length guard.
       timingSafeEqual(
         Buffer.from(challenge.emailCodeHash),
-        Buffer.from(hashToken(rawCode)),
+        Buffer.from(sha256Hex(rawCode)),
       );
     const recoveryVerified =
       !totpVerified &&
@@ -449,25 +524,10 @@ export class AuthService {
       (await this.mfa.verifyRecoveryCode(challenge.userId, rawCode));
 
     if (!totpVerified && !emailVerified && !recoveryVerified) {
-      if (challenge.attempts + 1 >= MAX_MFA_CHALLENGE_ATTEMPTS) {
-        await this.prisma.mfaLoginChallenge.delete({
-          where: { id: challenge.id },
-        });
-        await this.security.record({
-          type: "MFA_CHALLENGE_LOCKED",
-          userId: challenge.userId,
-          userAgent,
-        });
-        throw new AppException(
-          HttpStatus.UNAUTHORIZED,
-          ErrorCode.AuthMfaTooManyAttempts,
-        );
+      if (attempts >= MAX_MFA_CHALLENGE_ATTEMPTS) {
+        return this.lockMfaChallenge(challenge.id, challenge.userId, userAgent);
       }
 
-      await this.prisma.mfaLoginChallenge.update({
-        where: { id: challenge.id },
-        data: { attempts: { increment: 1 } },
-      });
       throw new AppException(
         HttpStatus.UNAUTHORIZED,
         ErrorCode.AuthMfaInvalidCode,
@@ -485,6 +545,50 @@ export class AuthService {
     }
 
     return this.completeLogin(challenge.user, userAgent, ip);
+  }
+
+  /**
+   * Takes one attempt on a pending challenge before its code is checked, and
+   * returns how many it has used — null once they're all spent. A single
+   * conditional write, so parallel guesses on the same challenge each take
+   * their own attempt: reading `attempts` and incrementing it afterwards let
+   * N concurrent requests all see the same count and all be evaluated.
+   */
+  private async consumeMfaAttempt(challengeId: string): Promise<number | null> {
+    try {
+      const { attempts } = await this.prisma.mfaLoginChallenge.update({
+        where: {
+          id: challengeId,
+          attempts: { lt: MAX_MFA_CHALLENGE_ATTEMPTS },
+        },
+        data: { attempts: { increment: 1 } },
+        select: { attempts: true },
+      });
+      return attempts;
+    } catch (err) {
+      if (isRecordNotFound(err)) return null;
+      throw err;
+    }
+  }
+
+  /** Ends a challenge whose attempts are spent: the login has to start over. */
+  private async lockMfaChallenge(
+    challengeId: string,
+    userId: string,
+    userAgent?: string,
+  ): Promise<never> {
+    await this.prisma.mfaLoginChallenge.deleteMany({
+      where: { id: challengeId },
+    });
+    await this.security.record({
+      type: "MFA_CHALLENGE_LOCKED",
+      userId,
+      userAgent,
+    });
+    throw new AppException(
+      HttpStatus.UNAUTHORIZED,
+      ErrorCode.AuthMfaTooManyAttempts,
+    );
   }
 
   /** Options for the WebAuthn 2nd factor of a pending (password-verified) login challenge. */
@@ -531,23 +635,16 @@ export class AuthService {
     return this.completeLogin(user, userAgent, ip);
   }
 
-  /** Options for a passwordless login — no password check at all, gated on `passwordlessEnabled`. */
-  async passwordlessLoginOptions(
+  /**
+   * Options for a passwordless login — no password check at all, gated on
+   * `passwordlessEnabled`. Always answers with options, decoys for an
+   * identifier that isn't eligible: mirrors login()'s DUMMY_PASSWORD_HASH
+   * enumeration guard.
+   */
+  passwordlessLoginOptions(
     identifier: string,
   ): Promise<WebauthnLoginOptionsResponseDto> {
-    const options = await this.webauthn.passwordlessOptions(identifier);
-
-    if (!options) {
-      // Same response whether the account doesn't exist or simply isn't
-      // passwordless-eligible — mirrors login()'s DUMMY_PASSWORD_HASH
-      // enumeration guard.
-      throw new AppException(
-        HttpStatus.UNAUTHORIZED,
-        ErrorCode.AuthPasswordlessNotEligible,
-      );
-    }
-
-    return options;
+    return this.webauthn.passwordlessOptions(identifier);
   }
 
   /** Verifies a passwordless login's WebAuthn assertion and completes it directly — the key itself is the whole factor, there's no separate MFA step. */
@@ -570,23 +667,25 @@ export class AuthService {
     userAgent?: string,
     ip?: string,
   ): Promise<AuthResult> {
+    // Also covers passkey logins, which never go through the password check.
+    assertNotSuspended(user);
     const promoted = await this.ensureAdminRole(user);
     const isNewDevice = await this.recordDevice(promoted.id, userAgent);
     await this.touchActivity(promoted.id);
     const tokens = await this.startSession(promoted, userAgent);
 
     if (isNewDevice) {
+      const occurredAt = await this.security.record({
+        type: "NEW_DEVICE_LOGIN",
+        userId: promoted.id,
+        userAgent,
+      });
       await this.mail.sendNewDeviceLogin(
         { email: promoted.email, locale: promoted.locale },
         deviceLabel(userAgent),
         ip ?? null,
+        occurredAt,
       );
-      await this.security.record({
-        type: "NEW_DEVICE_LOGIN",
-        userId: promoted.id,
-        detail: ip ? `IP: ${ip}` : undefined,
-        userAgent,
-      });
     }
 
     return { user: toUserDto(promoted), tokens };
@@ -612,7 +711,7 @@ export class AuthService {
       );
     }
 
-    const tokenHash = hashToken(refreshToken);
+    const tokenHash = sha256Hex(refreshToken);
     await this.prisma.consumedRefreshToken.deleteMany({
       where: { expiresAt: { lt: new Date() } },
     });
@@ -624,9 +723,23 @@ export class AuthService {
     if (!stored) {
       const consumed = await this.prisma.consumedRefreshToken.findUnique({
         where: { tokenHash },
-        select: { sessionId: true },
+        select: { sessionId: true, createdAt: true },
       });
 
+      // Rotated a moment ago: another tab of the same browser, refreshing
+      // at the same instant — its new cookies are already this tab's too.
+      if (
+        consumed &&
+        Date.now() - consumed.createdAt.getTime() < REFRESH_REUSE_GRACE_MS
+      ) {
+        throw new AppException(
+          HttpStatus.CONFLICT,
+          ErrorCode.AuthRefreshSuperseded,
+        );
+      }
+
+      // Replayed later than that: taken as a stolen token, the whole
+      // session goes.
       if (consumed) {
         await this.prisma.refreshToken.deleteMany({
           where: { id: consumed.sessionId },
@@ -647,22 +760,26 @@ export class AuthService {
       );
     }
 
+    if (isSuspended(stored.user)) {
+      await this.prisma.refreshToken.deleteMany({ where: { id: stored.id } });
+      assertNotSuspended(stored.user);
+    }
+
     const signed = await this.signTokens(stored.user, stored.id);
     const rotated = await this.prisma.$transaction(async (tx) => {
       const update = await tx.refreshToken.updateMany({
         where: { id: stored.id, tokenHash },
         data: {
-          tokenHash: hashToken(signed.refreshToken),
+          tokenHash: sha256Hex(signed.refreshToken),
           jti: signed.jti,
           expiresAt: signed.expiresAt,
           lastUsedAt: new Date(),
         },
       });
 
-      if (update.count !== 1) {
-        await tx.refreshToken.deleteMany({ where: { id: stored.id } });
-        return false;
-      }
+      // A concurrent refresh rotated it between the read above and this
+      // write — the same race the grace window covers, milliseconds apart.
+      if (update.count !== 1) return false;
 
       await tx.consumedRefreshToken.create({
         data: {
@@ -680,8 +797,8 @@ export class AuthService {
 
     if (!rotated) {
       throw new AppException(
-        HttpStatus.UNAUTHORIZED,
-        ErrorCode.AuthInvalidRefreshToken,
+        HttpStatus.CONFLICT,
+        ErrorCode.AuthRefreshSuperseded,
       );
     }
 
@@ -693,7 +810,7 @@ export class AuthService {
 
   /** Invalidates one refresh token (logout on the current device). */
   async logout(refreshToken: string): Promise<void> {
-    const tokenHash = hashToken(refreshToken);
+    const tokenHash = sha256Hex(refreshToken);
     const session = await this.prisma.refreshToken.findUnique({
       where: { tokenHash },
       select: { id: true },
@@ -784,20 +901,11 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) return;
 
-    const token = randomBytes(32).toString("hex");
-    await this.prisma.$transaction([
-      this.prisma.userToken.deleteMany({
-        where: { userId: user.id, type: "PASSWORD_RESET" },
-      }),
-      this.prisma.userToken.create({
-        data: {
-          userId: user.id,
-          type: "PASSWORD_RESET",
-          tokenHash: hashToken(token),
-          expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60_000),
-        },
-      }),
-    ]);
+    const token = await this.issueUserToken(
+      user.id,
+      "PASSWORD_RESET",
+      RESET_TOKEN_TTL_MINUTES * 60_000,
+    );
     await this.mail.sendPasswordResetLink(
       { email: user.email, locale: user.locale },
       token,
@@ -814,7 +922,7 @@ export class AuthService {
     userAgent?: string,
   ): Promise<void> {
     const stored = await this.prisma.userToken.findUnique({
-      where: { tokenHash: hashToken(token) },
+      where: { tokenHash: sha256Hex(token) },
       include: { user: true },
     });
 
@@ -858,15 +966,16 @@ export class AuthService {
     const ids = sessions.map((s) => s.id);
     this.sessionCache.invalidateAll(ids);
     ids.forEach((id) => this.events.disconnectSession(id));
-    await this.mail.sendPasswordChanged({
-      email: stored.user.email,
-      locale: stored.user.locale,
-    });
-    await this.security.record({
+    const occurredAt = await this.security.record({
       type: "PASSWORD_RESET",
       userId: stored.userId,
       userAgent,
     });
+    await this.mail.sendPasswordChanged(
+      { email: stored.user.email, locale: stored.user.locale },
+      await this.apiKeys.reviewAfterPasswordChange(stored.userId),
+      occurredAt,
+    );
   }
 
   /**
@@ -930,7 +1039,7 @@ export class AuthService {
 
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.getOrThrow<string>("JWT_ACCESS_SECRET"),
-      expiresIn: ACCESS_TOKEN_TTL,
+      expiresIn: ACCESS_TOKEN_TTL_SECONDS,
       algorithm: JWT_ALGORITHM,
       issuer: JWT_ISSUER,
       audience: JWT_ACCESS_AUDIENCE,
@@ -942,7 +1051,7 @@ export class AuthService {
       { sub: user.id, jti },
       {
         secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
-        expiresIn: `${REFRESH_TOKEN_TTL_DAYS}d`,
+        expiresIn: REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60,
         algorithm: JWT_ALGORITHM,
         issuer: JWT_ISSUER,
         audience: JWT_REFRESH_AUDIENCE,
@@ -995,9 +1104,18 @@ export class AuthService {
       return false;
     }
 
-    await this.prisma.userDevice.create({
-      data: { userId, deviceKey, userAgent: userAgent ?? null },
-    });
+    try {
+      await this.prisma.userDevice.create({
+        data: { userId, deviceKey, userAgent: userAgent ?? null },
+      });
+    } catch (err) {
+      // Two sign-ins from the same browser at once (a double submit, two
+      // tabs): the other one recorded the device first, and already owns the
+      // new-device alert. Failing here would fail the login itself.
+      if (!isUniqueViolation(err)) throw err;
+      return false;
+    }
+
     return true;
   }
 
@@ -1014,17 +1132,17 @@ export class AuthService {
   ): Promise<AuthTokensDto> {
     const sessionId = randomUUID();
     const signed = await this.signTokens(user, sessionId);
-    await this.prisma.refreshToken.deleteMany({
-      where: { userId: user.id, userAgent: userAgent ?? null },
-    });
     await this.prisma.refreshToken.create({
       data: {
         id: sessionId,
         userId: user.id,
-        tokenHash: hashToken(signed.refreshToken),
+        tokenHash: sha256Hex(signed.refreshToken),
         jti: signed.jti,
         userAgent: userAgent ?? null,
         expiresAt: signed.expiresAt,
+        // Signing in is the strongest proof there is: sensitive actions
+        // right after it don't ask again.
+        reauthenticatedAt: new Date(),
       },
     });
     return {
@@ -1032,10 +1150,26 @@ export class AuthService {
       refreshToken: signed.refreshToken,
     };
   }
-}
 
-export function hashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
+  private async issueUserToken(
+    userId: string,
+    type: "EMAIL_VERIFICATION" | "PASSWORD_RESET",
+    ttlMs: number,
+  ): Promise<string> {
+    const token = randomToken(32, "hex");
+    await this.prisma.$transaction([
+      this.prisma.userToken.deleteMany({ where: { userId, type } }),
+      this.prisma.userToken.create({
+        data: {
+          userId,
+          type,
+          tokenHash: sha256Hex(token),
+          expiresAt: new Date(Date.now() + ttlMs),
+        },
+      }),
+    ]);
+    return token;
+  }
 }
 
 /** First tag of the Accept-Language header, "fr" if it starts with "fr", "en" otherwise (covers "no header" too). */
@@ -1050,13 +1184,12 @@ export function toUserDto(user: User): UserDto {
     email: user.email,
     username: user.username,
     displayName: user.displayName,
-    birthDate: user.birthDate
-      ? user.birthDate.toISOString().slice(0, 10)
-      : null,
+    birthDate: user.birthDate ? utcDateKey(user.birthDate) : null,
     allowAdultContent: user.allowAdultContent,
     notifyEmail: user.notifyEmail as UserDto["notifyEmail"],
     notifyPush: user.notifyPush as UserDto["notifyPush"],
     notifyNewsletter: user.notifyNewsletter,
+    alertPrefs: readAlertPrefs(user.alertPrefs),
     timezone: user.timezone,
     emailVerified: user.emailVerified,
     role: user.role,
@@ -1076,8 +1209,15 @@ export function toUserDto(user: User): UserDto {
     mfaTotpEnabled: user.mfaTotpEnabled,
     mfaEmailEnabled: user.mfaEmailEnabled,
     hideProgression: user.hideProgression,
+    chatShowPresence: user.chatShowPresence,
+    chatShowReadReceipts: user.chatShowReadReceipts,
+    chatShareWatchProviders: user.chatShareWatchProviders,
+    feedbackWidget: user.feedbackWidget,
     spoilerSensitivity:
       user.spoilerSensitivity as UserDto["spoilerSensitivity"],
     domainOrder: user.domainOrder as UserDto["domainOrder"],
+    watchRegion: user.watchRegion,
+    watchProviderIds: user.watchProviderIds,
+    homeLayout: readHomeLayout(user.homeLayout),
   };
 }

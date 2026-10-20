@@ -1,7 +1,20 @@
-import type { CastDetailDto, MediaExtrasDto } from "@loomkeep/shared";
-import { CatalogSource, MediaSummaryDto, MediaType } from "@loomkeep/shared";
+import type {
+  CastDetailDto,
+  EpisodeMediaDto,
+  MediaExtrasDto,
+  MediaSagaDto,
+  SeasonImagesDto,
+  WatchProviderDto,
+} from "@loomkeep/shared";
+import {
+  CatalogSource,
+  MediaSummaryDto,
+  MediaType,
+  regionalLocale,
+} from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { utcDateKey } from "../../common/date.util";
 import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { OmdbService } from "../omdb.service";
@@ -11,36 +24,118 @@ import type {
   ProviderSeason,
 } from "./provider.types";
 import {
-  tmdbLanguage,
   toCastDetail,
+  toEpisodeMedia,
   toExtras,
   toMovieDetails,
+  toMovieSagaMember,
   toMovieSummary,
+  toSeasonImages,
   toTvDetails,
   toTvSeason,
   toTvSummary,
+  toWatchProviders,
+  type TmdbCollection,
+  type TmdbEpisodeMedia,
   type TmdbExtras,
   type TmdbFindResult,
   type TmdbMovieDetails,
   type TmdbMovieResult,
   type TmdbPersonDetails,
   type TmdbSeasonDetails,
+  type TmdbSeasonImages,
   type TmdbTvDetails,
   type TmdbTvResult,
+  type TmdbWatchProvider,
 } from "./tmdb.mapper";
 
-const BASE_URL = "https://api.themoviedb.org/3";
+export const TMDB_API_URL = "https://api.themoviedb.org/3";
+
+// The provider lists barely move: a day-old copy spares two TMDB calls each
+// time someone opens their services settings.
+const WATCH_LIST_TTL_MS = 24 * 60 * 60 * 1000;
+
+const GALLERY_TTL_MS = 6 * 60 * 60 * 1000;
+const GALLERY_CACHE_SIZE = 500;
 
 /** Films and (western) series, from The Movie Database. */
 @Injectable()
 export class TmdbProvider implements CatalogProvider {
   readonly source = CatalogSource.TMDB;
 
+  // Episode and season galleries barely move either, and a panel tends to
+  // be reopened while browsing a season.
+  private readonly galleries = new Map<
+    string,
+    { fetchedAt: number; media: EpisodeMediaDto | SeasonImagesDto }
+  >();
+
+  private readonly watchProviderLists = new Map<
+    string,
+    { fetchedAt: number; providers: WatchProviderDto[] }
+  >();
+
+  private watchRegions: { fetchedAt: number; codes: string[] } | null = null;
+
   constructor(
     private readonly configService: ConfigService,
     private readonly omdb: OmdbService,
     private readonly quota: QuotaTrackerService,
   ) {}
+
+  /** Every provider JustWatch lists in a region, the most used there first. */
+  async listWatchProviders(region: string): Promise<WatchProviderDto[]> {
+    const cached = this.watchProviderLists.get(region);
+
+    if (cached && Date.now() - cached.fetchedAt < WATCH_LIST_TTL_MS) {
+      return cached.providers;
+    }
+
+    // Films and series have a list each: some services only carry one kind.
+    const [movie, tv] = await Promise.all(
+      ["movie", "tv"].map((kind) =>
+        this.get<{ results?: TmdbWatchProvider[] }>(
+          `/watch/providers/${kind}`,
+          { watch_region: region },
+        ),
+      ),
+    );
+    const byId = new Map<number, TmdbWatchProvider>();
+
+    for (const provider of [...(movie.results ?? []), ...(tv.results ?? [])]) {
+      byId.set(provider.provider_id, provider);
+    }
+
+    const rank = (p: TmdbWatchProvider) =>
+      p.display_priorities?.[region] ??
+      p.display_priority ??
+      Number.MAX_SAFE_INTEGER;
+    const providers = toWatchProviders(
+      [...byId.values()].sort((a, b) => rank(a) - rank(b)),
+    );
+
+    this.watchProviderLists.set(region, { fetchedAt: Date.now(), providers });
+    return providers;
+  }
+
+  /** ISO 3166-1 codes of the countries JustWatch covers. */
+  async listWatchRegions(): Promise<string[]> {
+    if (
+      this.watchRegions &&
+      Date.now() - this.watchRegions.fetchedAt < WATCH_LIST_TTL_MS
+    ) {
+      return this.watchRegions.codes;
+    }
+
+    const data = await this.get<{ results?: { iso_3166_1: string }[] }>(
+      "/watch/providers/regions",
+      {},
+    );
+    const codes = (data.results ?? []).map((r) => r.iso_3166_1);
+
+    this.watchRegions = { fetchedAt: Date.now(), codes };
+    return codes;
+  }
 
   async search(
     query: string,
@@ -56,7 +151,7 @@ export class TmdbProvider implements CatalogProvider {
       query,
       page: String(page),
       include_adult: "true",
-      language: tmdbLanguage(lang),
+      language: regionalLocale(lang),
     };
 
     const [movies, series] = await Promise.all([
@@ -92,6 +187,8 @@ export class TmdbProvider implements CatalogProvider {
   async findSeriesSummaryByTvdbId(
     tvdbId: string,
   ): Promise<MediaSummaryDto | null> {
+    // From an uploaded export, like the IMDb ids below.
+    if (!/^\d+$/.test(tvdbId)) return null;
     const found = await this.get<TmdbFindResult>(`/find/${tvdbId}`, {
       external_source: "tvdb_id",
     });
@@ -120,46 +217,85 @@ export class TmdbProvider implements CatalogProvider {
   async findMovieSummaryByImdbId(
     imdbId: string,
   ): Promise<MediaSummaryDto | null> {
-    const found = await this.get<TmdbFindResult>(`/find/${imdbId}`, {
-      external_source: "imdb_id",
-    });
-    const movie = found.movie_results?.[0];
-    return movie ? toMovieSummary(movie) : null;
+    return (await this.findByImdbId(imdbId)).movie;
   }
 
   /** IMDb counterpart of {@link findSeriesSummaryByTvdbId}. */
   async findSeriesSummaryByImdbId(
     imdbId: string,
   ): Promise<MediaSummaryDto | null> {
-    const found = await this.get<TmdbFindResult>(`/find/${imdbId}`, {
-      external_source: "imdb_id",
-    });
-    const tv = found.tv_results?.[0];
-    return tv ? toTvSummary(tv) : null;
+    return (await this.findByImdbId(imdbId)).series;
   }
 
   /**
-   * Resolve an IMDb **episode** id (`tt…`) to the series it belongs to and its
-   * position. IMDb lets a user rate a single episode, and the export carries
-   * only that episode's id — the series, season and episode numbers all have
-   * to come from here. Null when TMDB knows no episode for that id.
+   * Everything TMDB files under an IMDb id, in one call: a film, a series, or
+   * an episode with the series it belongs to and its position. An IMDb export
+   * types its rows, but TMDB does not always agree (a TV special can be an
+   * episode there), so the caller routes on what actually came back.
    */
-  async findEpisodeByImdbId(imdbId: string): Promise<{
-    seriesTmdbId: string;
-    season: number;
-    episode: number;
-  } | null> {
+  async findByImdbId(imdbId: string): Promise<{
+    movie: MediaSummaryDto | null;
+    series: MediaSummaryDto | null;
+    episode: { seriesTmdbId: string; season: number; episode: number } | null;
+  }> {
+    // The id comes from an uploaded file: anything else could reach another
+    // TMDB endpoint with our token.
+    if (!/^tt\d+$/.test(imdbId)) {
+      return { movie: null, series: null, episode: null };
+    }
+
     const found = await this.get<TmdbFindResult>(`/find/${imdbId}`, {
       external_source: "imdb_id",
     });
+    const movie = found.movie_results?.[0];
+    const series = found.tv_results?.[0];
     const episode = found.tv_episode_results?.[0];
-    if (!episode) return null;
 
     return {
-      seriesTmdbId: String(episode.show_id),
-      season: episode.season_number,
-      episode: episode.episode_number,
+      movie: movie ? toMovieSummary(movie) : null,
+      series: series ? toTvSummary(series) : null,
+      episode: episode
+        ? {
+            seriesTmdbId: String(episode.show_id),
+            season: episode.season_number,
+            episode: episode.episode_number,
+          }
+        : null,
     };
+  }
+
+  /** The collection a film belongs to, in release order. Null when none. */
+  async getSaga(sourceId: string, lang?: string): Promise<MediaSagaDto | null> {
+    // The id comes straight from the page's URL: anything but digits could
+    // reach another TMDB endpoint with our token.
+    if (!/^\d+$/.test(sourceId)) return null;
+    const language = regionalLocale(lang);
+    const movie = await this.get<TmdbMovieDetails>(`/movie/${sourceId}`, {
+      language,
+    });
+    const collectionId = movie.belongs_to_collection?.id;
+    if (!collectionId) return null;
+
+    return this.getCollection(String(collectionId), lang);
+  }
+
+  /** A collection's films in release order. Null under two films. */
+  async getCollection(
+    collectionId: string,
+    lang?: string,
+  ): Promise<MediaSagaDto | null> {
+    if (!/^\d+$/.test(collectionId)) return null;
+    const collection = await this.get<TmdbCollection>(
+      `/collection/${collectionId}`,
+      { language: regionalLocale(lang) },
+    );
+    const today = utcDateKey(new Date());
+    const members = (collection.parts ?? [])
+      .map((part) => toMovieSagaMember(part, today))
+      .sort(byRelease);
+    if (members.length < 2) return null;
+
+    return { key: `TMDB:${collection.id}`, title: collection.name, members };
   }
 
   private async getMovieDetails(
@@ -167,8 +303,8 @@ export class TmdbProvider implements CatalogProvider {
     lang?: string,
   ): Promise<ProviderMediaDetails> {
     const movie = await this.get<TmdbMovieDetails>(`/movie/${sourceId}`, {
-      append_to_response: "external_ids",
-      language: tmdbLanguage(lang),
+      append_to_response: "external_ids,release_dates",
+      language: regionalLocale(lang),
     });
 
     return toMovieDetails(movie);
@@ -180,15 +316,16 @@ export class TmdbProvider implements CatalogProvider {
   ): Promise<ProviderMediaDetails> {
     const tv = await this.get<TmdbTvDetails>(`/tv/${sourceId}`, {
       append_to_response: "external_ids",
-      language: tmdbLanguage(lang),
+      language: regionalLocale(lang),
     });
 
-    // Episode lists live on per-season endpoints.
+    // Episode lists live on per-season endpoints. Same language as the show
+    // itself, so a translation fetch also brings episode titles/synopses.
     const seasons: ProviderSeason[] = await Promise.all(
       (tv.seasons ?? []).map(async (season) => {
         const detail = await this.get<TmdbSeasonDetails>(
           `/tv/${sourceId}/season/${season.season_number}`,
-          {},
+          { language: regionalLocale(lang) },
         );
         return toTvSeason(season, detail);
       }),
@@ -197,11 +334,83 @@ export class TmdbProvider implements CatalogProvider {
     return toTvDetails(tv, seasons);
   }
 
+  /**
+   * One episode's stills and videos, live (one call per episode, so only
+   * when its side panel opens). Images are requested in every language:
+   * stills carry no text, and a language filter drops most of them.
+   */
+  getEpisodeMedia(
+    sourceId: string,
+    seasonNumber: number,
+    episodeNumber: number,
+    lang?: string,
+  ): Promise<EpisodeMediaDto> {
+    return this.cachedGallery(
+      `episode:${sourceId}:${seasonNumber}:${episodeNumber}:${lang ?? ""}`,
+      async () =>
+        toEpisodeMedia(
+          await this.get<TmdbEpisodeMedia>(
+            `/tv/${sourceId}/season/${seasonNumber}/episode/${episodeNumber}`,
+            {
+              append_to_response: "images,videos",
+              include_image_language: "null",
+              include_video_language: `${lang ?? "en"},en,null`,
+              language: regionalLocale(lang),
+            },
+          ),
+        ),
+    );
+  }
+
+  /**
+   * A season's posters, live, for its lightbox. Posters carry their title,
+   * so the viewer's language comes first, then English and textless ones.
+   */
+  getSeasonImages(
+    sourceId: string,
+    seasonNumber: number,
+    lang?: string,
+  ): Promise<SeasonImagesDto> {
+    return this.cachedGallery(
+      `season:${sourceId}:${seasonNumber}:${lang ?? ""}`,
+      async () =>
+        toSeasonImages(
+          await this.get<TmdbSeasonImages>(
+            `/tv/${sourceId}/season/${seasonNumber}/images`,
+            { include_image_language: `${lang ?? "en"},en,null` },
+          ),
+        ),
+    );
+  }
+
+  private async cachedGallery<T extends EpisodeMediaDto | SeasonImagesDto>(
+    key: string,
+    fetch: () => Promise<T>,
+  ): Promise<T> {
+    const cached = this.galleries.get(key);
+
+    if (cached && Date.now() - cached.fetchedAt < GALLERY_TTL_MS) {
+      return cached.media as T;
+    }
+
+    const media = await fetch();
+    // Oldest entry out first (a Map iterates in insertion order).
+    this.galleries.delete(key);
+    this.galleries.set(key, { fetchedAt: Date.now(), media });
+
+    if (this.galleries.size > GALLERY_CACHE_SIZE) {
+      this.galleries.delete(this.galleries.keys().next().value!);
+    }
+
+    return media;
+  }
+
   /** Live extras (where to watch, cast, similar) in a single append call. */
   async getExtras(
     sourceId: string,
     type: MediaType,
-    lang?: string,
+    lang: string | undefined,
+    watchRegion: string,
   ): Promise<MediaExtrasDto> {
     const path = type === MediaType.MOVIE ? "movie" : "tv";
     // Movie and TV certifications live under different append keys.
@@ -212,7 +421,7 @@ export class TmdbProvider implements CatalogProvider {
       // TMDB's /images endpoint defaults to the request's language, filtering
       // out most backdrops; an empty language keeps the full (unfiltered) set.
       include_image_language: "null",
-      language: tmdbLanguage(lang),
+      language: regionalLocale(lang),
     });
 
     // IMDb / Rotten Tomatoes / Metacritic from OMDb (via the IMDb id).
@@ -220,7 +429,7 @@ export class TmdbProvider implements CatalogProvider {
       data.external_ids?.imdb_id ?? null,
     );
 
-    return toExtras(type, sourceId, data, omdbRatings);
+    return toExtras(type, sourceId, data, omdbRatings, watchRegion);
   }
 
   /** Live detail of a TMDB person for the cast modal. */
@@ -236,13 +445,12 @@ export class TmdbProvider implements CatalogProvider {
     path: string,
     params: Record<string, string>,
   ): Promise<T> {
-    const url = new URL(`${BASE_URL}${path}`);
+    const url = new URL(`${TMDB_API_URL}${path}`);
 
     for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, value);
     }
 
-    this.quota.record("tmdb");
     return fetchJson<T>(
       url,
       {
@@ -251,7 +459,22 @@ export class TmdbProvider implements CatalogProvider {
           Accept: "application/json",
         },
       },
-      { sourceLabel: "TMDB", notFoundMessage: "Media not found on TMDB" },
+      {
+        sourceLabel: "TMDB",
+        notFoundMessage: "Media not found on TMDB",
+        onAttempt: () => this.quota.record("tmdb"),
+      },
     );
   }
+}
+
+// Oldest first; a film with no date yet is an announcement and goes last.
+function byRelease(
+  a: { releaseDate: string | null },
+  b: { releaseDate: string | null },
+): number {
+  if (a.releaseDate === b.releaseDate) return 0;
+  if (!a.releaseDate) return 1;
+  if (!b.releaseDate) return -1;
+  return a.releaseDate < b.releaseDate ? -1 : 1;
 }

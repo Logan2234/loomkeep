@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { AchievementDto, AchievementTier } from "@loomkeep/shared";
 
   let { entries }: { entries: AchievementDto[] } = $props();

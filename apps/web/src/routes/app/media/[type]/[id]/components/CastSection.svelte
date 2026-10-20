@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
-  import { getCastDetail } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
-  import Carousel from "$lib/components/Carousel.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import Poster from "$lib/components/Poster.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getCastDetail } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Carousel from "#lib/components/Carousel.svelte";
+  import Modal from "#lib/components/Modal.svelte";
+  import Poster from "#lib/components/Poster.svelte";
   import type { CastMemberDto } from "@loomkeep/shared";
 
   let { cast, source }: { cast: CastMemberDto[]; source: "anilist" | "tmdb" } =
@@ -70,14 +70,18 @@
     {c.name}
   </p>
   {#if c.role}
-    <p class="text-dim truncate text-[0.65rem]">{c.role}</p>
+    <p class="text-dim text-micro truncate">{c.role}</p>
   {/if}
 {/snippet}
 
 {#if cast.length > 0}
   <section class="mt-10">
     <h2 class="font-display mb-3 text-xl font-bold">{m.media_cast()}</h2>
-    <Carousel items={cast} keyOf={(c) => c.name + (c.role ?? "")} gap="gap-3">
+    <Carousel
+      items={cast}
+      keyOf={(c) => c.name + (c.role ?? "")}
+      label={m.media_cast()}
+      gap="gap-3">
       {#snippet card(c)}
         {#if c.id}
           <button
@@ -169,6 +173,7 @@
         <Carousel
           items={castDetail.knownFor}
           keyOf={(k) => `${k.source}:${k.sourceId}`}
+          label={m.media_known_for()}
           gap="gap-3"
           wrapClass="-mx-1"
           innerClass="px-1 pb-1"
@@ -180,7 +185,7 @@
               class="block w-20">
               <div
                 class="card hover:border-accent overflow-hidden transition-[border-color]">
-                <Poster src={k.posterUrl} title={k.title} />
+                <Poster src={k.posterUrl} title={k.title} alt="" />
               </div>
               <p class="mt-1 truncate text-[0.65rem] font-semibold">
                 {k.title}

@@ -1,14 +1,19 @@
-import { browser } from "$app/environment";
+import { goto } from "$app/navigation";
+
+import { LEGACY_STORAGE_KEYS } from "#lib/constants/storage-keys.js";
+import { browser } from "$app/env";
 import type {
   AccountDeletionSummaryDto,
   ChangeEmailRequestDto,
   ChangePasswordRequestDto,
   ConfirmEmailChangeRequestDto,
-  DeleteAccountRequestDto,
+  CreateApiKeyDto,
   Domain,
+  HomeLayoutDto,
   LoginRequestDto,
   LoginResponseDto,
   MfaVerifyRequestDto,
+  ReauthRequestDto,
   RegisterRequestDto,
   UpdateUsernameRequestDto,
   UpdateUserRequestDto,
@@ -21,9 +26,11 @@ import {
   type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
 import { auth } from "../auth.svelte";
+import { removeStorage } from "../local-storage";
 import { getLocale, isLocale, setLocale } from "../paraglide/runtime.js";
 import { ApiError } from "./core";
 import { typedRequest } from "./generated/typed-request";
+import { pageParam } from "./query-params";
 
 /**
  * Restores the session, and reports whether the answer is trustworthy.
@@ -36,7 +43,7 @@ export async function initAuth(): Promise<boolean> {
   if (browser) {
     // Tokens written by previous releases are no longer used after the
     // HttpOnly-cookie migration, so remove the durable XSS-readable copy.
-    localStorage.removeItem("loomkeep.tokens");
+    removeStorage(LEGACY_STORAGE_KEYS.tokens);
   }
 
   try {
@@ -100,6 +107,14 @@ export const resetPassword = (
 
 export const verifyEmail = (token: string): Promise<void> =>
   typedRequest("/auth/verify-email", {
+    method: "POST",
+    body: { token },
+    withAuth: false,
+  });
+
+/** What the sign-up page shows about an invitation link — throws when it can't be redeemed. */
+export const previewInvitation = (token: string) =>
+  typedRequest("/auth/invitations/preview", {
     method: "POST",
     body: { token },
     withAuth: false,
@@ -229,6 +244,24 @@ export async function deleteAvatar(): Promise<UserDto> {
   return user;
 }
 
+export async function saveHomeLayout(body: HomeLayoutDto): Promise<UserDto> {
+  const user = await typedRequest("/users/me/home-layout", {
+    method: "PUT",
+    body,
+  });
+  auth.user = user;
+  return user;
+}
+
+/** Back to the default home page, which follows the enabled domains again. */
+export async function resetHomeLayout(): Promise<UserDto> {
+  const user = await typedRequest("/users/me/home-layout", {
+    method: "DELETE",
+  });
+  auth.user = user;
+  return user;
+}
+
 export const changeEmail = (body: ChangeEmailRequestDto): Promise<void> =>
   typedRequest("/users/me/email", { method: "PATCH", body });
 
@@ -266,11 +299,15 @@ export const exportMyData = () => typedRequest("/users/me/export");
 export const exportMyDataCsv = (domain: Domain) =>
   typedRequest("/users/me/export.csv", { query: { domain } });
 
-// Creates the token on first call.
-export const getCalendarToken = () => typedRequest("/users/me/calendar-token");
+export const exportForLetterboxd = (withReviews: boolean) =>
+  typedRequest("/users/me/export/letterboxd", {
+    query: { reviews: String(withReviews) },
+  });
 
-export const regenerateCalendarToken = () =>
-  typedRequest("/users/me/calendar-token/regenerate", { method: "POST" });
+export const exportForGoodreads = (withReviews: boolean) =>
+  typedRequest("/users/me/export/goodreads", {
+    query: { reviews: String(withReviews) },
+  });
 
 const _getWidgetToken = (): Promise<WidgetTokenDto> =>
   typedRequest("/users/me/widget-token");
@@ -279,11 +316,28 @@ export const getAccountDeletionSummary =
   (): Promise<AccountDeletionSummaryDto> =>
     typedRequest("/users/me/deletion-summary");
 
-export async function deleteAccount(
-  body: DeleteAccountRequestDto,
-): Promise<void> {
-  await typedRequest("/users/me", { method: "DELETE", body });
+export async function deleteAccount(): Promise<void> {
+  await typedRequest("/users/me", { method: "DELETE" });
   auth.clear();
+}
+
+/** The methods to confirm it's you with, and this session's confirmation. */
+export const getReauthStatus = () => typedRequest("/auth/reauth");
+
+export const confirmReauth = (body: ReauthRequestDto) =>
+  typedRequest("/auth/reauth", { method: "POST", body });
+
+/** Confirming with a passkey: a challenge, the browser's signature, the check. */
+export async function confirmReauthWithPasskey() {
+  const { webauthnChallengeId, options } = await typedRequest(
+    "/auth/reauth/webauthn-options",
+    { method: "POST" },
+  );
+  const response = await startAuthentication({
+    // Same opaque-JSON cast as verifyWebauthnMfaLogin above.
+    optionsJSON: options as unknown as PublicKeyCredentialRequestOptionsJSON,
+  });
+  return confirmReauth({ method: "webauthn", webauthnChallengeId, response });
 }
 
 export const getSessions = () => typedRequest("/auth/sessions");
@@ -294,10 +348,33 @@ export const revokeSession = (id: string): Promise<void> =>
 export const revokeOtherSessions = (): Promise<void> =>
   typedRequest("/auth/sessions", { method: "DELETE" });
 
-export async function logout(): Promise<void> {
+export const getApiKeys = () => typedRequest("/api-keys");
+
+export const getApiKeyQuota = () => typedRequest("/api-keys/quota");
+
+export const createApiKey = (body: CreateApiKeyDto) =>
+  typedRequest("/api-keys", { method: "POST", body });
+
+export const revokeAllApiKeys = (): Promise<void> =>
+  typedRequest("/api-keys", { method: "DELETE" });
+
+export const revokeApiKey = (id: string): Promise<void> =>
+  typedRequest("/api-keys/{id}", { method: "DELETE", params: { id } });
+
+export const getAccountSecurityEvents = (page: number) =>
+  typedRequest("/auth/security-events", {
+    query: { page: pageParam(page) },
+  });
+
+async function logout(): Promise<void> {
   await typedRequest("/auth/logout", { method: "POST", withAuth: false }).catch(
     () => undefined,
   );
 
   auth.clear();
+}
+
+export async function signOutAndRedirect(): Promise<void> {
+  await logout();
+  await goto("/login");
 }
