@@ -34,6 +34,7 @@ const game: GameEntryDto = {
   steamSyncedAt: null,
   playthroughs: [],
   releaseAlertsEnabled: false,
+  platform: null,
   game: {
     id: "game",
     title: "Game",

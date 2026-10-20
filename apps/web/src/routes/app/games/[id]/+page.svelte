@@ -485,10 +485,10 @@
                     ownershipSource: source,
                   })} />
 
-              {#if entry.game.platforms.length > 0}
+              {#if detail.platforms.length > 0}
                 <GamePlatformField
                   platform={entry.platform}
-                  platforms={entry.game.platforms}
+                  platforms={detail.platforms}
                   onChange={(platform) => patchMut.mutate({ platform })} />
               {/if}
             {/if}
