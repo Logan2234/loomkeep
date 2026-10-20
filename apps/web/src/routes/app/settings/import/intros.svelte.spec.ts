@@ -8,6 +8,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import AnilistPage from "./anilist/+page.svelte";
 import BabelioPage from "./babelio/+page.svelte";
 import GoodreadsPage from "./goodreads/+page.svelte";
+import ImdbPage from "./imdb/+page.svelte";
+import LetterboxdPage from "./letterboxd/+page.svelte";
 import MyAnimeListPage from "./myanimelist/+page.svelte";
 import StoryGraphPage from "./storygraph/+page.svelte";
 import TraktPage from "./trakt/+page.svelte";
@@ -36,6 +38,18 @@ const INTROS: [string, Component, string, string][] = [
     TraktPage,
     m.settings_import_trakt_intro(),
     ` ${m.settings_import_trakt_hint()}`,
+  ],
+  [
+    "Letterboxd",
+    LetterboxdPage,
+    m.settings_import_letterboxd_intro(),
+    `. ${m.settings_import_letterboxd_hint()}`,
+  ],
+  [
+    "IMDb",
+    ImdbPage,
+    m.settings_import_imdb_intro(),
+    `. ${m.settings_import_imdb_hint()}`,
   ],
   [
     "MyAnimeList",

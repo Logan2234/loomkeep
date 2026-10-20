@@ -55,16 +55,31 @@ function analyzeDto(
 }
 
 function makeService() {
+  const createWatches =
+    vi.fn<(args: { data: { episodeId: string }[] }) => void>();
   const prisma = {
     season: { findMany: vi.fn() },
     episode: { count: vi.fn() },
     episodeWatch: {
       count: vi.fn().mockResolvedValue(0),
-      createMany: vi.fn(),
+      createMany: createWatches,
+      // The watches the commit wrote, read back as the series' progress.
+      findMany: vi.fn(async () =>
+        [
+          ...new Set(
+            createWatches.mock.calls.flatMap(([args]) =>
+              args.data.map((watch) => watch.episodeId),
+            ),
+          ),
+        ].map((episodeId) => ({ episodeId })),
+      ),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     mediaExternalId: { findUnique: vi.fn() },
+    // Nothing tracked yet, and every title already out.
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
     libraryEntry: {
+      findUnique: vi.fn().mockResolvedValue(null),
       upsert: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },

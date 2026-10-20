@@ -594,6 +594,34 @@ export class ListService {
   }
 
   /**
+   * Fills a list an import has just created for `userId`, in the source's
+   * order, in one write. None of {@link addItem}'s per-item activity or
+   * notifications: the list is brand new, and hundreds of "added" events
+   * would only flood the activity log.
+   */
+  async addImportedItems(
+    userId: string,
+    listId: string,
+    items: {
+      targetType: ListItemTargetType;
+      targetId: string;
+      note: string | null;
+    }[],
+  ): Promise<void> {
+    await this.prisma.listItem.createMany({
+      data: items.map((item, position) => ({
+        listId,
+        targetType: item.targetType,
+        targetId: item.targetId,
+        note: item.note,
+        position,
+        addedById: userId,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  /**
    * Tells the list's other collaborators — the owner and every editor, minus
    * whoever added it and whoever muted the list. Whether it's pushed too is
    * each one's LIST_ITEM_ADDED setting (see NotificationService).

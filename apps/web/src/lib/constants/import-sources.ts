@@ -29,10 +29,34 @@ export const IMPORTS_DEFINITION = {
     guide: `${DOCS_URL}/guide/imports/trakt/`,
   },
   letterboxd: {
-    comingSoon: true,
+    comingSoon: false,
     domain: Domain.MEDIA,
     label: IMPORT_SOURCE_NAMES.letterboxd,
     description: m.import_source_letterboxd_description(),
+    href: "/app/settings/import/letterboxd",
+    input: { type: "zip", accept: ".zip" },
+    noun: { one: m.library_title_one(), many: m.library_title_many() },
+    newBadgeKey: "letterboxd",
+    guide: `${DOCS_URL}/guide/imports/letterboxd/`,
+  },
+  imdb: {
+    comingSoon: false,
+    domain: Domain.MEDIA,
+    label: IMPORT_SOURCE_NAMES.imdb,
+    description: m.import_source_imdb_description(),
+    href: "/app/settings/import/imdb",
+    // IMDb exports ratings, watchlist and each list as separate CSVs, taken
+    // in one run. They have shipped as UTF-8 and as Windows-1252 depending on
+    // the year, so the decoder sniffs rather than trusting one of them.
+    input: {
+      type: "csv",
+      accept: ".csv,text/csv",
+      textEncoding: "auto",
+      multiple: true,
+    },
+    noun: { one: m.library_title_one(), many: m.library_title_many() },
+    newBadgeKey: "imdb",
+    guide: `${DOCS_URL}/guide/imports/imdb/`,
   },
   myanimelist: {
     comingSoon: false,

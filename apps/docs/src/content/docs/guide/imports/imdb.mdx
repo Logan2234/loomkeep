@@ -1,0 +1,45 @@
+---
+title: IMDb
+description: Your ratings, watchlist and lists from IMDb.
+sidebar:
+  order: 2.6
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+**What comes in:** your rated films, series and episodes, your watchlist, and
+your lists, with the notes you wrote on their titles. Video games, podcasts and
+anything else IMDb tracks outside films and series aren't imported.
+
+<Steps>
+
+1. On IMDb, export your ratings, your watchlist and any list you want, from
+   each page's **Export** option (or IMDb's **Exports** page). Each export is a
+   CSV file.
+2. In Loomkeep, open **Settings › Import › IMDb** and drop all the CSV files at
+   once.
+3. Review and import: see [how an import works](/guide/imports/#how-an-import-works).
+
+</Steps>
+
+IMDb's ids match exactly: there is nothing to confirm by hand. A title TMDB
+doesn't know stays unmatched instead of being guessed from its name, and can
+be searched by hand in the review step.
+
+A few things to know:
+
+- **Ratings** come in as they are: IMDb rates out of 10, like Loomkeep. A rated
+  title counts as watched. IMDb only dates the rating, never the viewing, so
+  the watch stays undated.
+- **Series:** a rated series comes in as being watched, since rating a series
+  says nothing about how far you got.
+- **Episodes:** a rated episode is marked as watched on its series, and its
+  rating goes to the episode. An episode TMDB can't place is skipped and
+  counted among the unmatched titles.
+- **Watchlist or list:** IMDb exports both with the same columns, so the file
+  name tells them apart. Keep the watchlist file's name (it contains
+  "watchlist"). Any other list file becomes a Loomkeep list named after the
+  file, whose titles don't join your library.
+- **Anime** are matched on TMDB, like everything IMDb exports. To keep AniList's
+  data for them, import them from [AniList](/guide/imports/anilist/) or
+  [MyAnimeList](/guide/imports/myanimelist/) too.

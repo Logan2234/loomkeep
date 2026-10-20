@@ -132,6 +132,17 @@ describe("import presentation", () => {
       expect(
         importItemSubtitle(
           item({
+            kind: "series",
+            episodesWatched: 0,
+            status: "WATCHING",
+            rating: 7,
+            favorite: false,
+          }),
+        ),
+      ).toBe(`${m.library_status_in_progress()} · ★ 7/10`);
+      expect(
+        importItemSubtitle(
+          item({
             kind: "movie",
             year: 2024,
             rewatches: 2,

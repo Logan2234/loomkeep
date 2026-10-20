@@ -236,6 +236,21 @@
     });
   }
 
+  async function handleFiles(files: File[]) {
+    if (!descriptor.input.multiple) return handleFile(files[0]);
+    fileError = null;
+    jobError = null;
+    inputValue = "";
+    const read = await Promise.all(
+      files.map(async (file) => ({
+        name: file.name,
+        text: await readImportFile(file, descriptor.input.textEncoding),
+      })),
+    );
+    inputValue = JSON.stringify(read);
+    fileName = files.map((file) => file.name).join(", ");
+  }
+
   async function handleFile(file: File) {
     fileError = null;
     jobError = null;
@@ -259,15 +274,15 @@
   }
 
   function onFile(e: Event) {
-    const file = (e.currentTarget as HTMLInputElement).files?.[0];
-    if (file) void handleFile(file);
+    const files = [...((e.currentTarget as HTMLInputElement).files ?? [])];
+    if (files.length > 0) void handleFiles(files);
   }
 
   function onDrop(e: DragEvent) {
     e.preventDefault();
     dragOver = false;
-    const file = e.dataTransfer?.files?.[0];
-    if (file) void handleFile(file);
+    const files = [...(e.dataTransfer?.files ?? [])];
+    if (files.length > 0) void handleFiles(files);
   }
 
   // Both go through createApiMutation rather than a hand-rolled try/catch:
@@ -509,13 +524,17 @@
           type="file"
           name="file"
           accept={descriptor.input.accept}
+          multiple={descriptor.input.multiple}
           class="hidden"
           onchange={onFile} />
         {#if inputValue}
           <span class="font-semibold">📦 {fileName}</span>
           <span class="timecode text-sm">{m.import_file_change_hint()}</span>
         {:else}
-          <span class="font-semibold">{m.import_file_drop()}</span>
+          <span class="font-semibold"
+            >{descriptor.input.multiple
+              ? m.import_files_drop()
+              : m.import_file_drop()}</span>
           <span class="text-dim text-sm">{m.import_file_browse()}</span>
         {/if}
       </label>

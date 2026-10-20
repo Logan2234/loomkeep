@@ -20,7 +20,7 @@ export function parseCsv(
   text: string,
   delimiter = ",",
 ): Record<string, string>[] {
-  const rows = parseRows(text, delimiter);
+  const rows = parseCsvRows(text, delimiter);
   if (rows.length === 0) return [];
 
   const header = rows[0];
@@ -44,7 +44,7 @@ export function parseCsv(
 }
 
 /** Split CSV text into rows of raw string cells, honouring quoted fields. */
-function parseRows(text: string, delimiter: string): string[][] {
+export function parseCsvRows(text: string, delimiter = ","): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";

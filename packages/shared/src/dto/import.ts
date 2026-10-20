@@ -1,4 +1,10 @@
-import type { BookStatus, Domain, GameStatus, MediaType } from "../enums";
+import type {
+  BookStatus,
+  Domain,
+  EntryStatus,
+  GameStatus,
+  MediaType,
+} from "../enums";
 import type { ErrorCode } from "../error-codes";
 import type { ImportJobStatus } from "../realtime";
 
@@ -14,6 +20,7 @@ export type ImportSource =
   | "tvtime"
   | "trakt"
   | "letterboxd"
+  | "imdb"
   | "myanimelist"
   | "anilist"
   | "simkl"
@@ -33,6 +40,7 @@ export const IMPORT_SOURCE_NAMES: Record<ImportSource, string> = {
   tvtime: "TV Time",
   trakt: "Trakt",
   letterboxd: "Letterboxd",
+  imdb: "IMDb",
   myanimelist: "MyAnimeList",
   anilist: "AniList",
   simkl: "Simkl",
@@ -72,6 +80,11 @@ export type ImportItemContext =
   | {
       kind: "series";
       episodesWatched: number;
+      /**
+       * The status the source states outright, when it says nothing about
+       * episodes (a rated IMDb series is being watched). Null otherwise.
+       */
+      status?: EntryStatus | null;
       rating: number | null;
       favorite: boolean;
     }
@@ -147,7 +160,8 @@ export interface ImportReportTile {
     | "series"
     | "movies"
     | "episodes"
-    | "playtime";
+    | "playtime"
+    | "lists";
   /** Legacy heading for older clients and the admin audit log. */
   label: string;
   value: number;

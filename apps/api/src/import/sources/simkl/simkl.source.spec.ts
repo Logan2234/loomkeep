@@ -17,10 +17,14 @@ function makeService(env: Record<string, string> = {}) {
     episodeWatch: {
       count: vi.fn().mockResolvedValue(0),
       createMany: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     mediaExternalId: { findUnique: vi.fn() },
+    // Nothing tracked yet, and every title already out.
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
     libraryEntry: {
+      findUnique: vi.fn().mockResolvedValue(null),
       upsert: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },

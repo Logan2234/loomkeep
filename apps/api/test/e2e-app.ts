@@ -151,6 +151,11 @@ function providerStubs() {
       search: vi.fn().mockResolvedValue([]),
       getDetails: vi.fn(),
       getExtras: vi.fn().mockResolvedValue(EMPTY_EXTRAS),
+      // The IMDb import's lookups; a spec gives them its own catalogue.
+      findByImdbId: vi
+        .fn()
+        .mockResolvedValue({ movie: null, series: null, episode: null }),
+      getSeriesSummaryByTmdbId: vi.fn(),
     },
   };
 }

@@ -187,6 +187,8 @@ export class TmdbProvider implements CatalogProvider {
   async findSeriesSummaryByTvdbId(
     tvdbId: string,
   ): Promise<MediaSummaryDto | null> {
+    // From an uploaded export, like the IMDb ids below.
+    if (!/^\d+$/.test(tvdbId)) return null;
     const found = await this.get<TmdbFindResult>(`/find/${tvdbId}`, {
       external_source: "tvdb_id",
     });
@@ -215,22 +217,51 @@ export class TmdbProvider implements CatalogProvider {
   async findMovieSummaryByImdbId(
     imdbId: string,
   ): Promise<MediaSummaryDto | null> {
-    const found = await this.get<TmdbFindResult>(`/find/${imdbId}`, {
-      external_source: "imdb_id",
-    });
-    const movie = found.movie_results?.[0];
-    return movie ? toMovieSummary(movie) : null;
+    return (await this.findByImdbId(imdbId)).movie;
   }
 
   /** IMDb counterpart of {@link findSeriesSummaryByTvdbId}. */
   async findSeriesSummaryByImdbId(
     imdbId: string,
   ): Promise<MediaSummaryDto | null> {
+    return (await this.findByImdbId(imdbId)).series;
+  }
+
+  /**
+   * Everything TMDB files under an IMDb id, in one call: a film, a series, or
+   * an episode with the series it belongs to and its position. An IMDb export
+   * types its rows, but TMDB does not always agree (a TV special can be an
+   * episode there), so the caller routes on what actually came back.
+   */
+  async findByImdbId(imdbId: string): Promise<{
+    movie: MediaSummaryDto | null;
+    series: MediaSummaryDto | null;
+    episode: { seriesTmdbId: string; season: number; episode: number } | null;
+  }> {
+    // The id comes from an uploaded file: anything else could reach another
+    // TMDB endpoint with our token.
+    if (!/^tt\d+$/.test(imdbId)) {
+      return { movie: null, series: null, episode: null };
+    }
+
     const found = await this.get<TmdbFindResult>(`/find/${imdbId}`, {
       external_source: "imdb_id",
     });
-    const tv = found.tv_results?.[0];
-    return tv ? toTvSummary(tv) : null;
+    const movie = found.movie_results?.[0];
+    const series = found.tv_results?.[0];
+    const episode = found.tv_episode_results?.[0];
+
+    return {
+      movie: movie ? toMovieSummary(movie) : null,
+      series: series ? toTvSummary(series) : null,
+      episode: episode
+        ? {
+            seriesTmdbId: String(episode.show_id),
+            season: episode.season_number,
+            episode: episode.episode_number,
+          }
+        : null,
+    };
   }
 
   /** The collection a film belongs to, in release order. Null when none. */

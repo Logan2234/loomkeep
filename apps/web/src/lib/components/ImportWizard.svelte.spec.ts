@@ -226,6 +226,42 @@ describe("ImportWizard", () => {
     expect(commitBody?.overwrite).toBe(true);
   });
 
+  it("sends every file of a multi-file source, named, in one analysis", async () => {
+    let input: string | null = null;
+    server.use(
+      http.post(apiUrl("/import/imdb/analyze"), async ({ request }) => {
+        ({ input } = (await request.json()) as { input: string });
+        return HttpResponse.json(running("analysis"));
+      }),
+      http.get(apiUrl("/import/imdb/analysis"), () =>
+        HttpResponse.json(job("analysis", { plan: PLAN })),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithQuery(ImportWizard, { source: "imdb" });
+
+    expect(screen.getByText(m.import_files_drop())).toBeTruthy();
+    await user.upload(
+      document.querySelector<HTMLInputElement>('input[type="file"]')!,
+      [
+        new File(["Const\ntt1\n"], "ratings.csv", { type: "text/csv" }),
+        new File(["Position,Const\n1,tt2\n"], "WATCHLIST.csv", {
+          type: "text/csv",
+        }),
+      ],
+    );
+    expect(
+      await screen.findByText(/ratings\.csv, WATCHLIST\.csv/),
+    ).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: m.common_analyze() }));
+
+    await waitFor(() => expect(input).not.toBeNull());
+    expect(JSON.parse(input!)).toEqual([
+      { name: "ratings.csv", text: "Const\ntt1\n" },
+      { name: "WATCHLIST.csv", text: "Position,Const\n1,tt2\n" },
+    ]);
+  });
+
   it("returns to the upload step when the analysis fails", async () => {
     const failed = job("analysis", {
       status: "failed",

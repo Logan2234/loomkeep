@@ -10,7 +10,6 @@ These sources are planned. Each will get its own page once it ships.
 
 | Source        | Domain      | What it will bring                                      |
 | ------------- | ----------- | ------------------------------------------------------- |
-| Letterboxd    | Films       | Diary, ratings and watchlist (ZIP export)               |
 | Kitsu         | Anime       | Anime list, matched through MyAnimeList and AniList ids |
 | LibraryThing  | Books       | Library and reading history                             |
 | BookWyrm      | Books       | Library and reading history                             |

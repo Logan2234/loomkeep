@@ -10,20 +10,21 @@ import { Steps } from "@astrojs/starlight/components";
 Loomkeep imports your history from the apps you used before, from
 **Settings › Import**. Each source has its own page:
 
-| Domain               | Sources                                                                                                                                        |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Films, series, anime | [TV Time](/guide/imports/tv-time/), [Trakt](/guide/imports/trakt/), [Simkl](/guide/imports/simkl/), [MyAnimeList](/guide/imports/myanimelist/), [AniList](/guide/imports/anilist/) |
-| Games                | [Steam](/guide/imports/steam/)                                                                                                                 |
-| Books                | [Goodreads](/guide/imports/goodreads/), [StoryGraph](/guide/imports/storygraph/), [Babelio](/guide/imports/babelio/)                           |
+| Domain               | Sources                                                                                                                                                                                                                                                    |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Films, series, anime | [TV Time](/guide/imports/tv-time/), [Trakt](/guide/imports/trakt/), [Letterboxd](/guide/imports/letterboxd/), [IMDb](/guide/imports/imdb/), [Simkl](/guide/imports/simkl/), [MyAnimeList](/guide/imports/myanimelist/), [AniList](/guide/imports/anilist/) |
+| Games                | [Steam](/guide/imports/steam/)                                                                                                                                                                                                                             |
+| Books                | [Goodreads](/guide/imports/goodreads/), [StoryGraph](/guide/imports/storygraph/), [Babelio](/guide/imports/babelio/)                                                                                                                                       |
 
-On their way: Letterboxd, Kitsu, LibraryThing, BookWyrm.
+On their way: Kitsu, LibraryThing, BookWyrm.
 
 ## How an import works
 
 <Steps>
 
 1. **You give Loomkeep your data**: a file exported from the other app, or a
-   connection to your account there (Simkl), or your profile (Steam).
+   connection to your account there (Simkl), or your profile (Steam,
+   AniList).
 2. **Loomkeep analyses it** without writing anything: each title is matched
    to its catalogue, through the ids the export carries when it has some, by
    title and year otherwise.

@@ -15,6 +15,11 @@ export type AvailableImportSourceDescriptor = ImportSourceBase & {
     accept?: string;
     placeholder?: string;
     textEncoding?: string;
+    /**
+     * Several files in one run (IMDb's ratings, watchlist and lists), sent as
+     * a JSON array of `{ name, text }` — the name tells them apart.
+     */
+    multiple?: boolean;
   };
   noun: {
     one: string;
