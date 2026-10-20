@@ -736,6 +736,8 @@
   "import_steam_no_sessions": "Aucune session n'a été créée. Les temps Steam ont été actualisés séparément de tes sessions Loomkeep.",
   "import_source_anime_description": "Anime et manga.",
   "import_source_myanimelist_description": "Animes, progression, notes et possession (XML).",
+  "import_source_anilist_description": "Animes, progression, notes et commentaires, depuis ton pseudo.",
+  "import_source_anilist_placeholder": "Ton pseudo, ou anilist.co/user/…",
   "import_source_simkl_description": "Films, séries et anime (via connexion à ton compte).",
   "import_source_letterboxd_description": "Films.",
   "import_source_trakt_description": "Films et séries (historique et watchlist, export .zip).",

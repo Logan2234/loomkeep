@@ -611,6 +611,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           "storygraph",
           "babelio",
           "myanimelist",
+          "anilist",
           "simkl",
           "letterboxd",
           "kitsu",

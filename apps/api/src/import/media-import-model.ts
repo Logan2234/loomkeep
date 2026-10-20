@@ -5,7 +5,11 @@
  * simpler parse models.
  */
 
-import type { EntryStatus, MediaOwnershipStatus } from "@loomkeep/shared";
+import type {
+  EntryStatus,
+  ImportMatch,
+  MediaOwnershipStatus,
+} from "@loomkeep/shared";
 
 /** External identifiers a source may expose for a title (any subset). */
 type ExternalIdMap = {
@@ -30,6 +34,11 @@ interface ImportWatchedEpisode {
 export interface ImportShow {
   title: string;
   externalIds: ExternalIdMap;
+  /**
+   * The catalogue title, when the source's own ids are the catalogue's
+   * (an AniList list): taken as is, without a lookup.
+   */
+  match?: ImportMatch;
   /** Distinct watched episodes; empty means the show is only on the watchlist. */
   episodes: ImportWatchedEpisode[];
   /** The source's own 1-10 rating, when it has one. */

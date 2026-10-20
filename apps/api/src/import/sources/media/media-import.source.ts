@@ -114,7 +114,8 @@ export abstract class MediaImportSource<
       parsed.shows,
       RESOLVE_CONCURRENCY,
       async (show) => {
-        const match = await this.matchResolver.resolveShow(show);
+        const match =
+          show.match ?? (await this.matchResolver.resolveShow(show));
         progress.tick();
         return match;
       },

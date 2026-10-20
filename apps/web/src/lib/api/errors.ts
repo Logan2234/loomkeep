@@ -259,6 +259,10 @@ const MESSAGES = {
   [ErrorCode.UserAvatarInvalidType]: () => m.apierr_user_avatar_invalid_type(),
   [ErrorCode.ImportSimklConnectionFailed]: () =>
     m.apierr_import_simkl_connection_failed(),
+  [ErrorCode.ImportAnilistUserNotFound]: () =>
+    m.apierr_import_anilist_user_not_found(),
+  [ErrorCode.ImportAnilistListPrivate]: () =>
+    m.apierr_import_anilist_list_private(),
   [ErrorCode.ImportMalformedExport]: () => m.apierr_import_malformed_export(),
   [ErrorCode.ImportJobNotFound]: () => m.apierr_import_job_not_found(),
   [ErrorCode.ImportJobForbidden]: () => m.apierr_import_job_forbidden(),

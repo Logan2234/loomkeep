@@ -30,6 +30,8 @@
   "apierr_user_avatar_too_large": "The image is too large.",
   "apierr_user_avatar_invalid_type": "The file doesn't match the expected image type.",
   "apierr_import_simkl_connection_failed": "Couldn't connect to Simkl. Try the import again from the start.",
+  "apierr_import_anilist_user_not_found": "No AniList account goes by that name. Check the username, as it appears in your profile’s address.",
+  "apierr_import_anilist_list_private": "This AniList list is private. Make it public in your AniList settings, import, then make it private again.",
   "apierr_ee_unlicensed": "This feature isn't available on this instance.",
   "apierr_library_calendar_unavailable": "This calendar is unavailable.",
   "apierr_library_episode_not_found": "This episode could not be found.",

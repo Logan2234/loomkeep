@@ -777,4 +777,64 @@ describe("AnilistProvider", () => {
       await expect(provider.getPerson("999999")).rejects.toThrow();
     });
   });
+
+  describe("getUserAnimeList", () => {
+    const respond = (status: number, body: unknown) =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { "Content-Type": "application/json" },
+      });
+    const list = (ids: number[], isCustomList = false) => ({
+      isCustomList,
+      entries: ids.map((id) => ({ status: "CURRENT", media: { id } })),
+    });
+
+    it("reads every chunk and leaves custom lists out", async () => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          respond(200, {
+            data: {
+              MediaListCollection: {
+                hasNextChunk: true,
+                lists: [list([1, 2]), list([1], true)],
+              },
+            },
+          }),
+        )
+        .mockResolvedValueOnce(
+          respond(200, {
+            data: {
+              MediaListCollection: { hasNextChunk: false, lists: [list([3])] },
+            },
+          }),
+        );
+      global.fetch = fetch as typeof global.fetch;
+
+      const entries = await provider.getUserAnimeList("Josh");
+
+      expect(entries.map((e) => e.media.id)).toEqual([1, 2, 3]);
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("tells a private list from a missing user", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(
+          respond(404, { errors: [{ message: "Private User", status: 404 }] }),
+        ) as typeof global.fetch;
+      await expect(provider.getUserAnimeList("Josh")).rejects.toMatchObject({
+        code: "import.anilist_list_private",
+      });
+
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(
+          respond(404, { errors: [{ message: "Not Found.", status: 404 }] }),
+        ) as typeof global.fetch;
+      await expect(provider.getUserAnimeList("Nobody")).rejects.toMatchObject({
+        code: "import.anilist_user_not_found",
+      });
+    });
+  });
 });

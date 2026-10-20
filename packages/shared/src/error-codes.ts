@@ -240,6 +240,8 @@ export const ErrorCode = {
   ImportSourceUnavailable: "import.source_unavailable",
   ImportSteamProfileNotFound: "import.steam_profile_not_found",
   ImportSteamLibraryPrivate: "import.steam_library_private",
+  ImportAnilistUserNotFound: "import.anilist_user_not_found",
+  ImportAnilistListPrivate: "import.anilist_list_private",
   ImportArchiveEmpty: "import.archive_empty",
   ImportArchiveUnreadable: "import.archive_unreadable",
   ImportArchiveMissingFiles: "import.archive_missing_files",

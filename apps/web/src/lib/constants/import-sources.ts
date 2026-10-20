@@ -44,6 +44,20 @@ export const IMPORTS_DEFINITION = {
     noun: { one: m.library_title_one(), many: m.library_title_many() },
     guide: `${DOCS_URL}/guide/imports/myanimelist/`,
   },
+  anilist: {
+    comingSoon: false,
+    domain: Domain.MEDIA,
+    label: IMPORT_SOURCE_NAMES.anilist,
+    description: m.import_source_anilist_description(),
+    href: "/app/settings/import/anilist",
+    input: {
+      type: "username",
+      placeholder: m.import_source_anilist_placeholder(),
+    },
+    noun: { one: m.library_title_one(), many: m.library_title_many() },
+    newBadgeKey: "anilist-import",
+    guide: `${DOCS_URL}/guide/imports/anilist/`,
+  },
   simkl: {
     comingSoon: false,
     domain: Domain.MEDIA,

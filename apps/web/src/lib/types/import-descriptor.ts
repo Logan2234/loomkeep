@@ -11,7 +11,7 @@ export type AvailableImportSourceDescriptor = ImportSourceBase & {
   comingSoon?: false;
   href: string;
   input: {
-    type: "csv" | "xml" | "zip" | "steamId" | "oauth";
+    type: "csv" | "xml" | "zip" | "steamId" | "username" | "oauth";
     accept?: string;
     placeholder?: string;
     textEncoding?: string;

@@ -15,6 +15,7 @@ export type ImportSource =
   | "trakt"
   | "letterboxd"
   | "myanimelist"
+  | "anilist"
   | "simkl"
   | "kitsu"
   | "steam"
@@ -33,6 +34,7 @@ export const IMPORT_SOURCE_NAMES: Record<ImportSource, string> = {
   trakt: "Trakt",
   letterboxd: "Letterboxd",
   myanimelist: "MyAnimeList",
+  anilist: "AniList",
   simkl: "Simkl",
   kitsu: "Kitsu",
   steam: "Steam",
