@@ -55,7 +55,8 @@ function analyzeDto(
 }
 
 function makeService() {
-  const createWatches = vi.fn();
+  const createWatches =
+    vi.fn<(args: { data: { episodeId: string }[] }) => void>();
   const prisma = {
     season: { findMany: vi.fn() },
     episode: { count: vi.fn() },
@@ -66,9 +67,8 @@ function makeService() {
       findMany: vi.fn(async () =>
         [
           ...new Set(
-            createWatches.mock.calls.flatMap(
-              ([args]: [{ data: { episodeId: string }[] }]) =>
-                args.data.map((watch) => watch.episodeId),
+            createWatches.mock.calls.flatMap(([args]) =>
+              args.data.map((watch) => watch.episodeId),
             ),
           ),
         ].map((episodeId) => ({ episodeId })),
