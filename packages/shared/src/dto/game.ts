@@ -11,6 +11,9 @@ import type { RatingDto } from "./catalog";
 import type { SessionWeekDayDto } from "./session";
 import { SESSION_FILTER_PAUSED } from "./session";
 
+/** IGDB platform names run to "Super Nintendo Entertainment System" and beyond. */
+export const GAME_PLATFORM_MAX_LENGTH = 100;
+
 /** A game as returned by a live catalogue search (not persisted). */
 export interface GameSummaryDto {
   source: GameSource;
@@ -138,6 +141,8 @@ export interface GameEntryDto {
   playthroughs: GamePlaythroughDto[];
   /** How the user holds this game, if set (NONE = unset). */
   ownershipStatus: GameOwnershipStatus;
+  /** The platform it's played on, one of `game.platforms`; null when unset. */
+  platform: string | null;
   /** Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise. */
   ownershipSource: string | null;
   /** The user asked to be told when the game comes out. */
@@ -166,6 +171,8 @@ export interface UpdateGameEntryDto {
   finishedAt?: string | null;
   ownershipStatus?: GameOwnershipStatus;
   ownershipSource?: string | null;
+  /** One of the game's platforms; null clears it. */
+  platform?: string | null;
   releaseAlertsEnabled?: boolean;
 }
 

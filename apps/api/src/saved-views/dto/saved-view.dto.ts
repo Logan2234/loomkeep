@@ -1,4 +1,5 @@
 import {
+  GAME_PLATFORM_MAX_LENGTH,
   MediaType,
   SAVED_VIEW_DOMAINS,
   SAVED_VIEW_LIMITS,
@@ -28,6 +29,7 @@ import {
 // the view's domain by the service, or ignored by its list.
 const KEY_LENGTH = 32;
 const MAX_STATUSES = 10;
+const MAX_PLATFORMS = 20;
 
 export class SavedViewFiltersBody implements SavedViewFiltersDto {
   @IsOptional()
@@ -51,6 +53,13 @@ export class SavedViewFiltersBody implements SavedViewFiltersDto {
   @ArrayMaxSize(Object.values(MediaType).length)
   @IsIn(Object.values(MediaType), { each: true })
   types?: MediaType[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_PLATFORMS)
+  @IsString({ each: true })
+  @MaxLength(GAME_PLATFORM_MAX_LENGTH, { each: true })
+  platforms?: string[];
 
   @IsOptional()
   @IsString()
@@ -115,6 +124,12 @@ export class SavedViewFiltersResponseDto implements SavedViewFiltersDto {
    * @example ["SERIES"]
    */
   types?: MediaType[];
+
+  /**
+   * Game platforms kept.
+   * @example ["Nintendo Switch"]
+   */
+  platforms?: string[];
 
   /**
    * The list's sort key.

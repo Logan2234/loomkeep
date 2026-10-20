@@ -49,6 +49,7 @@ export const keys = {
     detail: (source: string, sourceId: string) =>
       ["games", "detail", source, sourceId] as const,
     tracked: () => ["games", "tracked"] as const,
+    platforms: () => ["games", "platforms"] as const,
     search: (query: string) => ["games", "search", query] as const,
     sessionsRoot: (entryId: string) => ["games", "sessions", entryId] as const,
     sessions: (entryId: string, page = 1) =>

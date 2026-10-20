@@ -41,6 +41,7 @@ import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { parseListEntriesQuery } from "../common/entry-lifecycle.util";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
+import { toQueryArray } from "../common/query-array.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
@@ -160,9 +161,11 @@ export class GamesController {
     @Query("page") page?: string,
     @Query("limit") limit?: string,
     @Query("lang") lang?: string,
+    @Query("platform") platform?: string | string[],
   ): Promise<PagedResult<GameEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.listEntries(user.sub, {
+      platforms: toQueryArray(platform),
       ...parseListEntriesQuery({
         q,
         favorite,
@@ -202,11 +205,21 @@ export class GamesController {
     @Query("favorite") favorite?: string,
     @Query("status") status?: string | string[],
     @Query("lang") lang?: string,
+    @Query("platform") platform?: string | string[],
   ): Promise<PileSummaryDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.getPile(user.sub, {
+      platforms: toQueryArray(platform),
       ...parseListEntriesQuery({ q, favorite, status, lang }),
     });
+  }
+
+  /** The platforms the user plays on, for the library's platform filter. */
+  @Get("platforms")
+  @ApiOkResponse({ type: [String] })
+  async listPlatforms(@CurrentUser() user: JwtPayload): Promise<string[]> {
+    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
+    return this.gameLibraryService.listPlatforms(user.sub);
   }
 
   @Put()

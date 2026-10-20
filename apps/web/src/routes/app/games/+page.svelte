@@ -10,8 +10,11 @@
   import {
     bulkDeleteGameEntries,
     bulkUpdateGameEntries,
+    listGamePlatforms,
     updateGameEntry,
   } from "#lib/api/games.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
   import type {
     LibraryLoadParams,
     PileLoadParams,
@@ -109,6 +112,12 @@
       numeric: true,
     },
     {
+      key: "platform",
+      kind: "text",
+      label: m.game_platform_title(),
+      value: (e) => e.platform,
+    },
+    {
       key: "ownership",
       kind: "text",
       ownership: true,
@@ -168,6 +177,7 @@
       query: params.query,
       favorite: params.favoritesOnly,
       statuses: params.statuses as GameFilterStatus[],
+      platforms: params.extra as string[],
       sort: params.sort as GameSortKey,
       order: params.order,
       page: params.page,
@@ -178,7 +188,16 @@
       query: params.query,
       favorite: params.favoritesOnly,
       statuses: params.statuses as GameFilterStatus[],
+      platforms: params.extra as string[],
     });
+
+  const platformsQuery = createApiQuery(() => ({
+    key: keys.games.platforms(),
+    fetch: listGamePlatforms,
+  }));
+  const platformOptions = $derived(
+    (platformsQuery.data ?? []).map((p) => ({ label: p, value: p })),
+  );
 
   const mode = $derived(sagasMode(page.url));
 </script>
@@ -208,6 +227,7 @@
     {itemView}
     columns={COLUMNS}
     bulk={BULK}
+    {platformOptions}
     {setFavorite}>
     {#snippet headerActions()}
       {@render modeSwitch()}

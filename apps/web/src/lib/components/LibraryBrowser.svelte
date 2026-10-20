@@ -17,7 +17,7 @@
     query: string;
     statuses: string[];
     favoritesOnly: boolean;
-    /** The domain's extra filter value (media's type list), opaque here. */
+    /** The domain's extra filter value (media's types, games' platforms), opaque here. */
     extra: unknown;
     sort: string;
     order: SortOrder;
@@ -119,6 +119,7 @@
     headerActions,
     bulk,
     setFavorite,
+    platformOptions = [],
   }: {
     icon: IconName;
     title: string;
@@ -152,6 +153,8 @@
     bulk?: LibraryBulkActions;
     /** Saves an entry's favorite flag; the list shows it at once. */
     setFavorite: (entry: T, next: boolean) => Promise<unknown>;
+    /** GAMES only: the platforms played on, for the platform filter. */
+    platformOptions?: Option[];
   } = $props();
 
   // Result count reported by `catalogPreview`, reset whenever the query
@@ -181,6 +184,13 @@
       [],
   );
 
+  // GAMES' extra filter: the platforms played on.
+  let platforms = $state<string[]>(
+    initialParams.get("platform")?.split(",").filter(Boolean) ?? [],
+  );
+  // Each domain has at most one extra filter, opaque to the loaders.
+  const extra = $derived(domain === "GAMES" ? platforms : types);
+
   const reduced = prefersReducedMotion();
 
   let mode = $state<LibraryViewMode>(readLibraryViewMode(domain));
@@ -200,6 +210,7 @@
     statuses,
     favorite: favoritesOnly,
     types,
+    platforms,
     sort,
     order: reversed ? "asc" : "desc",
   });
@@ -209,6 +220,7 @@
     statuses = filters.statuses ?? [];
     favoritesOnly = filters.favorite ?? false;
     types = filters.types ?? [];
+    platforms = filters.platforms ?? [];
     // A sort this library no longer offers falls back to its default.
     sort = sorts.some((o) => o.value === filters.sort)
       ? filters.sort!
@@ -259,7 +271,7 @@
       query: queryFilter,
       statuses,
       favoritesOnly,
-      extra: types,
+      extra,
       sort,
       order: reversed ? "asc" : "desc",
     }),
@@ -272,7 +284,7 @@
         query: queryFilter,
         statuses,
         favoritesOnly,
-        extra: types,
+        extra,
         sort,
         order: reversed ? "asc" : "desc",
         page: pageNum,
@@ -288,7 +300,7 @@
     query: queryFilter,
     statuses,
     favoritesOnly,
-    extra: types,
+    extra,
   });
   const pileQuery = createApiQuery(() => ({
     key: keys.library.pile(domain, pileParams),
@@ -714,13 +726,17 @@
 
   const hasQuery = $derived(query.trim() !== "");
   const hasFilters = $derived(
-    statuses.length > 0 || favoritesOnly || types.length > 0,
+    statuses.length > 0 ||
+      favoritesOnly ||
+      types.length > 0 ||
+      platforms.length > 0,
   );
 
   function clearFilters() {
     statuses = [];
     favoritesOnly = false;
     types = [];
+    platforms = [];
   }
 </script>
 
@@ -769,6 +785,14 @@
           options={TYPE_OPTIONS}
           values={types}
           onChange={(v) => (types = v as MediaType[])} />
+      {/if}
+      {#if domain === "GAMES" && (platformOptions.length > 0 || platforms.length > 0)}
+        <Combobox
+          label={m.game_platform_filter()}
+          multiselect
+          options={platformOptions}
+          values={platforms}
+          onChange={(v) => (platforms = v)} />
       {/if}
       <Combobox
         label={m.common_status()}

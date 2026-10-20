@@ -2243,6 +2243,8 @@ model GameEntry {
   ownershipStatus        GameOwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise.
   ownershipSource        String?
+  // The platform it's played on, one of GameItem.platforms (IGDB's names).
+  platform               String?
   // Set when the user asked to be told of the release; a release dated
   // before it never alerts.
   releaseReminderAt      DateTime?

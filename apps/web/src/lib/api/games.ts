@@ -27,6 +27,8 @@ export interface ListGamesFilters {
   sort?: GameSortKey;
   order?: SortOrder;
   page?: number;
+  /** The platforms played on. */
+  platforms?: string[];
 }
 
 export function listGames(filters: ListGamesFilters = {}) {
@@ -36,12 +38,16 @@ export function listGames(filters: ListGamesFilters = {}) {
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
       status: filters.statuses,
+      platform: filters.platforms,
       sort: filters.sort,
       order: filters.order,
       page: pageParam(filters.page),
     },
   });
 }
+
+/** The platforms the user plays on, for the library's platform filter. */
+export const listGamePlatforms = () => typedRequest("/games/platforms");
 
 /** What's left in the pile among the entries `listGames` returns for the same filters. */
 export function getGamesPile(filters: ListGamesFilters = {}) {
@@ -51,6 +57,7 @@ export function getGamesPile(filters: ListGamesFilters = {}) {
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
       status: filters.statuses,
+      platform: filters.platforms,
     },
   });
 }

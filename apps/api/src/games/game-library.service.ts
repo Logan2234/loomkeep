@@ -2,6 +2,7 @@ import {
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
   Domain,
+  ErrorCode,
   GAME_SORT_KEYS,
   type GameDetailDto,
   type GameEntryDto,
@@ -21,8 +22,9 @@ import {
   TrackingCycleStatus,
   XpReason,
 } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import type { GameStatus as DbGameStatus, Prisma } from "@prisma/client";
+import { AppException } from "../common/app.exception";
 import {
   addToList,
   applyBulkUpdate,
@@ -93,6 +95,11 @@ const ENTRY_INCLUDE = {
 type EntryWithGame = Prisma.GameEntryGetPayload<{
   include: typeof ENTRY_INCLUDE;
 }>;
+
+/** The shared list filters, plus the platforms played on. */
+export interface GameListFilters extends ListEntriesFilters {
+  platforms?: string[];
+}
 
 const GAME_STATUS_SORT_ORDER = [
   "BACKLOG",
@@ -359,7 +366,7 @@ export class GameLibraryService {
 
   async listEntries(
     userId: string,
-    filters: ListEntriesFilters,
+    filters: GameListFilters,
   ): Promise<PagedResult<GameEntryDto>> {
     const where = this.entryWhere(userId, filters);
     const ratingsOf = (gameItemIds: string[]) =>
@@ -424,7 +431,7 @@ export class GameLibraryService {
    */
   async getPile(
     userId: string,
-    filters: ListEntriesFilters,
+    filters: GameListFilters,
   ): Promise<PileSummaryDto> {
     const entries = await this.prisma.gameEntry.findMany({
       where: {
@@ -526,7 +533,7 @@ export class GameLibraryService {
 
   private entryWhere(
     userId: string,
-    filters: ListEntriesFilters,
+    filters: GameListFilters,
   ): Prisma.GameEntryWhereInput {
     const q = searchTerm(filters);
     const statuses = filters.statuses ?? [];
@@ -547,8 +554,39 @@ export class GameLibraryService {
       userId,
       AND: statusFilters.length > 0 ? [{ OR: statusFilters }] : undefined,
       favorite: filters.favorite ? true : undefined,
+      platform: filters.platforms?.length
+        ? { in: filters.platforms }
+        : undefined,
       gameItem: q ? { title: titleContains(q) } : undefined,
     };
+  }
+
+  /** The platforms the user plays on, for the library's platform filter. */
+  async listPlatforms(userId: string): Promise<string[]> {
+    const rows = await this.prisma.gameEntry.findMany({
+      where: { userId, platform: { not: null } },
+      distinct: ["platform"],
+      select: { platform: true },
+    });
+    return rows
+      .flatMap((r) => (r.platform ? [r.platform] : []))
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  /** IGDB's own platform names: one the game isn't on is refused. */
+  private async assertPlatformOf(
+    gameItemId: string,
+    platform: string,
+  ): Promise<void> {
+    const game = await this.prisma.gameItem.findUniqueOrThrow({
+      where: { id: gameItemId },
+      select: { platforms: true },
+    });
+    if (!game.platforms.includes(platform))
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryGamePlatformInvalid,
+      );
   }
 
   async getEntry(userId: string, entryId: string): Promise<GameEntryDto> {
@@ -588,6 +626,9 @@ export class GameLibraryService {
       await assertGameReleased(this.prisma, owned.gameItemId);
     }
 
+    const platform = dto.platform?.trim() || null;
+    if (platform) await this.assertPlatformOf(owned.gameItemId, platform);
+
     const before = owned;
 
     const completedPlaythrough =
@@ -612,6 +653,7 @@ export class GameLibraryService {
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,
+        platform: dto.platform === undefined ? undefined : platform,
         releaseReminderAt:
           dto.releaseAlertsEnabled === undefined
             ? undefined
@@ -859,6 +901,7 @@ function toEntryDto(entry: EntryWithGame, rating: number | null): GameEntryDto {
     playthroughs: entry.playthroughs.map(toPlaythroughDto),
     ownershipStatus: entry.ownershipStatus,
     ownershipSource: entry.ownershipSource,
+    platform: entry.platform,
     releaseAlertsEnabled: entry.releaseReminderAt !== null,
   };
 }
