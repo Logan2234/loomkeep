@@ -1,4 +1,6 @@
 {
+  "completion_estimate_finish": "Estimated finish: {date}",
+  "completion_estimate_caught_up": "Estimated catch-up: {date}",
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "notif_follow_accepted_body": "accepted your follow request",
   "notif_reactions_title": "Your comment is getting reactions",
@@ -1594,5 +1596,10 @@
   "notif_empty_title": "Nothing new",
   "notif_empty_unread_title": "You're all caught up",
   "notif_empty_unread": "Nothing left unread. The history stays under “All”.",
-  "notif_follows_you_now": "{name} now follows you"
+  "notif_follows_you_now": "{name} now follows you",
+  "cancel_deletion_title": "Cancel the deletion",
+  "cancel_deletion_pending": "Cancelling…",
+  "cancel_deletion_done_title": "Deletion cancelled",
+  "cancel_deletion_done": "Your account is kept, with everything in it. If you didn't make the request, change your password.",
+  "cancel_deletion_open": "Open Loomkeep"
 }

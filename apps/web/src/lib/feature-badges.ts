@@ -1,6 +1,7 @@
 const NEW_BADGE_DAYS = 21;
 
 const SHIPPED = {
+  "completion-estimate": "2026-10-22",
   "episode-details": "2026-10-14",
   "movie-releases": "2026-10-03",
   "game-releases": "2026-10-04",
@@ -40,6 +41,9 @@ const SHIPPED = {
   "anilist-import": "2026-10-20",
   letterboxd: "2026-10-20",
   imdb: "2026-10-20",
+  "paused-reminder": "2026-10-21",
+  "update-check": "2026-10-21",
+  "newsletter-preview": "2026-10-21",
 };
 
 export type FeatureBadgeKey = keyof typeof SHIPPED;

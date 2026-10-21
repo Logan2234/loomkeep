@@ -8,7 +8,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // The bucketing maths lives in admin-accounts-stats.util (own spec). What
 // this pins is the orchestration the service owns: which window each count
 // is read over, and how an instance with no users is reported.
-function make(users: unknown[] = []) {
+function make(users: unknown[] = [], departures: unknown[] = []) {
   const prisma = {
     user: {
       count: vi.fn().mockResolvedValue(0),
@@ -16,6 +16,9 @@ function make(users: unknown[] = []) {
       groupBy: vi.fn().mockResolvedValue([]),
     },
     refreshToken: { count: vi.fn().mockResolvedValue(0) },
+    accountDeletionFeedback: {
+      groupBy: vi.fn().mockResolvedValue(departures),
+    },
   } as unknown as PrismaService;
 
   return { service: new AdminAccountsStatsService(prisma), prisma };
@@ -86,5 +89,26 @@ describe("AdminAccountsStatsService on an empty instance", () => {
     expect(stats.total).toBe(0);
     expect(stats.age.birthDateSetPercent).toBe(0);
     expect(stats.age.adultContentPercent).toBe(0);
+  });
+});
+
+describe("AdminAccountsStatsService departures", () => {
+  it("counts every self-deletion but lists only the reasons given", async () => {
+    const { service } = make(
+      [],
+      [
+        { reason: null, _count: { _all: 4 } },
+        { reason: "PRIVACY", _count: { _all: 1 } },
+        { reason: "NOT_USING", _count: { _all: 3 } },
+      ],
+    );
+
+    const stats = await service.getStats();
+
+    expect(stats.departures).toBe(8);
+    expect(stats.departureReasons).toEqual([
+      { reason: "NOT_USING", count: 3 },
+      { reason: "PRIVACY", count: 1 },
+    ]);
   });
 });

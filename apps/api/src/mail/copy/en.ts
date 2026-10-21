@@ -26,6 +26,13 @@ export const EN_COPY: MailCopy = {
     apiKeyLeaked: "A publicly exposed API key has been revoked.",
     securityAlert:
       "A security change or sign-in attempt concerns your account.",
+    accountDeletionScheduled:
+      "Your request is recorded. You can still cancel it in one click.",
+    accountDeletionReminder:
+      "Two days left to cancel the deletion of your account.",
+    accountDeletionCancelled: "The deletion of your account was cancelled.",
+    updateAvailable: "A new version of Loomkeep is available.",
+    pausedReminder: "Shows, books or games are waiting where you left them.",
     accountDeleted: "Your Loomkeep account deletion is confirmed.",
     adminNewUser: "A new account was created on your instance.",
     inactivityWarning:
@@ -241,6 +248,68 @@ export const EN_COPY: MailCopy = {
     lockedHint:
       "Someone else probably knows your password: change it right away.",
     button: "Open my security settings",
+  },
+  accountDeletionScheduled: {
+    subject: (date) => `Your Loomkeep account will be deleted on ${date}`,
+    heading: "Deletion scheduled",
+    intro: (date) =>
+      `You asked for your Loomkeep account to be deleted. It will happen on ${date}. Until then, your account keeps working.`,
+    cancelIntro:
+      "Wasn't you, or changed your mind? One click is enough, no need to sign in:",
+    button: "Cancel the deletion",
+    exportBefore:
+      "Before you go, you can export all your data: library, history, reviews and lists.",
+    exportLink: "Export my data",
+    notYou:
+      "If someone else made this request, cancel it, then change your password.",
+  },
+  accountDeletionReminder: {
+    subject: "2 days left before your account is deleted",
+    heading: "Last reminder",
+    intro: (date) =>
+      `Your Loomkeep account will be deleted on ${date}. After that date, nothing can be recovered.`,
+    button: "Cancel the deletion",
+    exportLink: "Export my data",
+    hint: "Sign in to cancel, or use the link in the first email.",
+  },
+  accountDeletionCancelled: {
+    subject: "The deletion of your Loomkeep account is cancelled",
+    heading: "Deletion cancelled",
+    intro:
+      "As you asked, an administrator cancelled the deletion of your account. It is kept, with everything in it.",
+    hint: "If you didn't ask for anything, reply to this email.",
+    button: "Open Loomkeep",
+  },
+  updateAvailable: {
+    subject: (version) => `Loomkeep ${version} is available`,
+    heading: "Update available",
+    intro: (current, latest) =>
+      `Your instance runs ${current}, and Loomkeep ${latest} is out.`,
+    steps: "Take a backup, then update: the command is in Admin › Services.",
+    button: "See the update",
+    changelog: "See what's new",
+  },
+  pausedReminder: {
+    subject: (count) =>
+      count === 1
+        ? "A work is waiting for you"
+        : `${count} works are waiting for you`,
+    heading: "You left these along the way",
+    intro: "What you started and set aside for more than a month:",
+    episodesLeft: (count) =>
+      count === 1 ? "One episode left" : `${count} episodes left`,
+    pagesLeft: (count) =>
+      count === 1 ? "One page left" : `${count} pages left`,
+    pausedFor: (weeks, months) =>
+      months >= 2
+        ? `on pause for ${months} months`
+        : `on pause for ${weeks} weeks`,
+    releasedSince: (count) =>
+      count === 1
+        ? "1 episode came out since"
+        : `${count} episodes came out since`,
+    button: "See my paused works",
+    reason: "You get this monthly reminder because you turned it on.",
   },
   accountDeleted: {
     subject: "Your Loomkeep account was deleted",

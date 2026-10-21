@@ -51,7 +51,7 @@ export function reauthReason(method: string, path: string): string {
   if (path.startsWith("/users/me/mfa")) return m.reauth_reason_mfa();
   if (path.startsWith("/admin/backup")) return m.reauth_reason_restore();
 
-  if (method === "DELETE" && path === "/users/me") {
+  if (method === "POST" && path === "/users/me/deletion") {
     return m.reauth_reason_delete();
   }
 

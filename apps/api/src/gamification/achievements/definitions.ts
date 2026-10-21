@@ -3,6 +3,7 @@ import {
   checkComfortGame,
   checkCultFilm,
   checkFullCircle,
+  checkPhoenix,
   checkWorthTheWait,
 } from "./checks/finishers";
 import {
@@ -651,6 +652,15 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     xpAward: 50,
     secret: true,
     check: checkWelcomeBack,
+  },
+  // welcome_back's sibling, on one work: picked back up after six months and
+  // seen through to the end.
+  phoenix: {
+    key: "phoenix",
+    family: "ritual",
+    xpAward: 50,
+    secret: true,
+    check: checkPhoenix,
   },
   double_life: {
     key: "double_life",

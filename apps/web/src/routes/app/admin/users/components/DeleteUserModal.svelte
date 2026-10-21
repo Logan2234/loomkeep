@@ -107,7 +107,7 @@
         onclick={confirm}>
         {busy
           ? m.settings_delete_account_deleting()
-          : m.settings_delete_account_confirm()}
+          : m.admin_users_delete_permanently()}
       </button>
     </div>
   {/snippet}

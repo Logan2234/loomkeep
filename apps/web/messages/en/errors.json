@@ -231,5 +231,8 @@
   "apierr_auth_reauth_required": "Confirm your identity to continue.",
   "apierr_auth_reauth_too_many_attempts": "Too many attempts: this device was signed out. Sign in again.",
   "apierr_auth_totp_code_reused": "This code was just used. Wait for the next one in your app.",
-  "apierr_auth_reauth_cancelled": "Action cancelled: your identity wasn't confirmed."
+  "apierr_auth_reauth_cancelled": "Action cancelled: your identity wasn't confirmed.",
+  "apierr_user_deletion_cancel_link_invalid": "This link is no longer valid: the deletion already happened or was cancelled.",
+  "apierr_user_deletion_not_scheduled": "No deletion is scheduled for this account.",
+  "apierr_newsletter_send_not_found": "This send no longer exists."
 }

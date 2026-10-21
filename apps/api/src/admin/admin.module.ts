@@ -43,6 +43,7 @@ import { BackupService } from "./backup.service";
 import { PublicStatsController } from "./public-stats.controller";
 import { PublicStatsGuard } from "./public-stats.guard";
 import { QuotaAlertService } from "./quota-alert.service";
+import { UpdateCheckService } from "./update-check.service";
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { QuotaAlertService } from "./quota-alert.service";
     AdminSocialStatsService,
     AdminSystemStatsService,
     BackupService,
+    UpdateCheckService,
   ],
 })
 export class AdminModule {}

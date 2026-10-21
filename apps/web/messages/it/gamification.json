@@ -251,5 +251,7 @@
   "gamification_comfort_game_description": "Lo stesso gioco finito 3 volte.",
   "gamification_xp_reason_saga_completed": "Saga completata",
   "gamification_xp_reason_reading_goal_reached": "Obiettivo di lettura raggiunto",
-  "gamification_xp_history_goal": "Obiettivo {year} · {count} libri"
+  "gamification_xp_history_goal": "Obiettivo {year} · {count} libri",
+  "gamification_phoenix_name": "Fenice",
+  "gamification_phoenix_description": "Termina una serie, un libro o un gioco ripreso dopo oltre 6 mesi di pausa."
 }

@@ -2,6 +2,16 @@ import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { AdminService } from "./admin.service";
 import { PublicStatsController } from "./public-stats.controller";
+import type { UpdateCheckService } from "./update-check.service";
+
+const UP_TO_DATE = {
+  enabled: true,
+  currentVersion: "1.11.0",
+  latestVersion: "1.11.0",
+  updateAvailable: false,
+  checkedAt: "2026-10-20T05:30:00.000Z",
+  lastCheckFailed: false,
+};
 
 function makeController(
   counts: {
@@ -14,6 +24,7 @@ function makeController(
     configured: boolean;
     reachable: boolean | null;
   }[] = [],
+  update = UP_TO_DATE,
 ) {
   const userCountMock = vi
     .fn()
@@ -28,7 +39,10 @@ function makeController(
       .fn()
       .mockResolvedValue({ services, checkedAt: new Date().toISOString() }),
   } as unknown as AdminService;
-  return new PublicStatsController(prisma, admin);
+  const updateCheck = {
+    status: vi.fn().mockResolvedValue(update),
+  } as unknown as UpdateCheckService;
+  return new PublicStatsController(prisma, admin, updateCheck);
 }
 
 describe("PublicStatsController.getSummary", () => {
@@ -52,6 +66,9 @@ describe("PublicStatsController.getSummary", () => {
       newUsers7d: 2,
       operational: "0/0",
       gitSha: "a1b2c3d",
+      version: "1.11.0",
+      latestVersion: "1.11.0",
+      updateAvailable: "no",
     });
   });
 
@@ -69,6 +86,9 @@ describe("PublicStatsController.getSummary", () => {
       newUsers7d: 0,
       operational: "0/0",
       gitSha: "unknown",
+      version: "1.11.0",
+      latestVersion: "1.11.0",
+      updateAvailable: "no",
     });
   });
 
@@ -87,6 +107,35 @@ describe("PublicStatsController.getSummary", () => {
     ]);
     await expect(controller.getSummary()).resolves.toMatchObject({
       operational: "2/4",
+    });
+  });
+
+  it("flags a newer published version for the widget", async () => {
+    const controller = makeController(
+      { userCount: 0, openReports: 0, newUsers7d: 0 },
+      [],
+      { ...UP_TO_DATE, latestVersion: "1.12.0", updateAvailable: true },
+    );
+    await expect(controller.getSummary()).resolves.toMatchObject({
+      latestVersion: "1.12.0",
+      updateAvailable: "yes",
+    });
+  });
+
+  it("says unknown when the check is off, whatever an older check found", async () => {
+    const controller = makeController(
+      { userCount: 0, openReports: 0, newUsers7d: 0 },
+      [],
+      {
+        ...UP_TO_DATE,
+        enabled: false,
+        latestVersion: "1.12.0",
+        updateAvailable: true,
+      },
+    );
+    await expect(controller.getSummary()).resolves.toMatchObject({
+      latestVersion: "unknown",
+      updateAvailable: "unknown",
     });
   });
 });

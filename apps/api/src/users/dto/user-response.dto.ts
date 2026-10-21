@@ -228,4 +228,10 @@ export class UserResponseDto implements UserDto {
 
   /** The home page's widget grid; null for the default one. */
   homeLayout!: HomeLayoutBody | null;
+
+  /**
+   * When the account is due to be deleted; null when no deletion is scheduled.
+   * @example "2026-11-04T05:15:00.000Z"
+   */
+  deletionScheduledFor!: string | null;
 }

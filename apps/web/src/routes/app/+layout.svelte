@@ -11,6 +11,7 @@
   import ChatLauncher from "#lib/components/chat/ChatLauncher.svelte";
   import ChatRealtime from "#lib/components/chat/ChatRealtime.svelte";
   import ChatSheet from "#lib/components/chat/ChatSheet.svelte";
+  import DeletionScheduledBanner from "#lib/components/DeletionScheduledBanner.svelte";
   import { chat } from "#lib/chat/chat.svelte.js";
   import { appConfig } from "#lib/config.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
@@ -112,21 +113,25 @@
        duplicated every `id` on the page, which broke `#section` anchors and
        `aria-describedby`. See layout.svelte.ts for why the choice isn't a
        plain `md:` width breakpoint. -->
+  {#snippet content()}
+    <DeletionScheduledBanner />
+    {@render children()}
+  {/snippet}
   {#if layout.compact}
     <MobileLayout navStyle={effectiveNavStyle}>
-      {@render children()}
+      {@render content()}
     </MobileLayout>
   {:else if effectiveNavStyle === "dock"}
     <ProjectorDockDesktop>
-      {@render children()}
+      {@render content()}
     </ProjectorDockDesktop>
   {:else if effectiveNavStyle === "board"}
     <ProgrammeBoardDesktop>
-      {@render children()}
+      {@render content()}
     </ProgrammeBoardDesktop>
   {:else}
     <DesktopSidebar>
-      {@render children()}
+      {@render content()}
     </DesktopSidebar>
   {/if}
 

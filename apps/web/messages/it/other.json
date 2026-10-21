@@ -1,4 +1,6 @@
 {
+  "completion_estimate_finish": "Fine stimata: {date}",
+  "completion_estimate_caught_up": "In pari entro il {date}",
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "notif_follow_accepted_body": "ha accettato la tua richiesta di follow",
   "notif_reactions_title": "Il tuo commento sta ricevendo reazioni",
@@ -1594,5 +1596,10 @@
   "notif_empty_title": "Niente di nuovo",
   "notif_empty_unread_title": "Sei in pari",
   "notif_empty_unread": "Niente da leggere. La cronologia resta in “Tutte”.",
-  "notif_follows_you_now": "{name} ora ti segue"
+  "notif_follows_you_now": "{name} ora ti segue",
+  "cancel_deletion_title": "Annulla l'eliminazione",
+  "cancel_deletion_pending": "Annullamento in corso…",
+  "cancel_deletion_done_title": "Eliminazione annullata",
+  "cancel_deletion_done": "Il tuo account viene conservato, con tutto ciò che contiene. Se non hai fatto tu la richiesta, cambia la password.",
+  "cancel_deletion_open": "Apri Loomkeep"
 }

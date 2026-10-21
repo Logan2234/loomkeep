@@ -201,6 +201,8 @@ const MESSAGES = {
     m.apierr_newsletter_webhook_invalid_payload(),
   [ErrorCode.NewsletterInvalidUnsubscribeLink]: () =>
     m.apierr_newsletter_invalid_unsubscribe_link(),
+  [ErrorCode.NewsletterSendNotFound]: () =>
+    m.apierr_newsletter_send_not_found(),
   [ErrorCode.NewsletterWebhookUnauthorized]: () =>
     m.apierr_newsletter_webhook_unauthorized(),
   [ErrorCode.NotificationNotFound]: () => m.apierr_notifications_not_found(),
@@ -255,6 +257,10 @@ const MESSAGES = {
   [ErrorCode.UserPasswordSameAsCurrent]: () =>
     m.apierr_user_password_same_as_current(),
   [ErrorCode.UserUsernameTaken]: () => m.apierr_user_username_taken(),
+  [ErrorCode.UserDeletionCancelLinkInvalid]: () =>
+    m.apierr_user_deletion_cancel_link_invalid(),
+  [ErrorCode.UserDeletionNotScheduled]: () =>
+    m.apierr_user_deletion_not_scheduled(),
   [ErrorCode.UserAvatarTooLarge]: () => m.apierr_user_avatar_too_large(),
   [ErrorCode.UserAvatarInvalidType]: () => m.apierr_user_avatar_invalid_type(),
   [ErrorCode.ImportSimklConnectionFailed]: () =>

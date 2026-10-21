@@ -1,4 +1,6 @@
+import { formatDate } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
+import { formatSessionMinutes } from "#lib/session-presentation.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import {
@@ -61,6 +63,45 @@ const book: BookEntryDto = {
     sourceId: "OL1W",
   },
 };
+
+describe("game completion estimate", () => {
+  it.each(["PLAYING", "COMPLETED"] as const)(
+    "shows the date only while playing (%s)",
+    async (status) => {
+      server.use(
+        http.get(apiUrl("/session-timer"), () => HttpResponse.json(null)),
+        http.get(apiUrl("/games/entries/entry/sessions"), () =>
+          HttpResponse.json({
+            items: [],
+            hasMore: false,
+            totalSessions: 3,
+            totalTrackedMinutes: 180,
+            weekMinutes: 0,
+            weekSessions: 0,
+            weekDays: [],
+            monthMinutes: 180,
+            activePlaythrough: null,
+            estimatedCompletionDate: "2026-11-13",
+          }),
+        ),
+      );
+      renderWithQuery(GameSessionDock, {
+        entry: { ...game, status },
+        detailKey: ["detail"],
+      });
+      const text = m.completion_estimate_finish({
+        date: formatDate("2026-11-13T12:00:00"),
+      });
+
+      if (status === "PLAYING") {
+        expect(await screen.findByText(text)).toBeTruthy();
+      } else {
+        await screen.findByText(formatSessionMinutes(180));
+        expect(screen.queryByText(text)).toBeNull();
+      }
+    },
+  );
+});
 
 describe("session timer confirmation", () => {
   it.each(["GAMES", "BOOKS"] as const)(

@@ -20,6 +20,7 @@ export {
   checkComfortGame,
   checkCultFilm,
   checkFullCircle,
+  checkPhoenix,
   checkWorthTheWait,
 } from "./checks/finishers";
 /** @public Compatibility exports retained for the existing registry import path. */

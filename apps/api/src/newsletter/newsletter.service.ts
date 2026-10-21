@@ -1,4 +1,8 @@
-import { ErrorCode, type NewsletterSendDto } from "@loomkeep/shared";
+import {
+  ErrorCode,
+  type MailTemplatePreviewDto,
+  type NewsletterSendDto,
+} from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import type { NewsletterSend } from "@prisma/client";
 import { AppException } from "../common/app.exception";
@@ -116,8 +120,41 @@ export class NewsletterService {
 
     await this.prisma.newsletterSend.update({
       where: { id },
-      data: { recipientCount: recipients.length },
+      data: {
+        recipientCount: recipients.length,
+        contentPreview: content.preview,
+        contentHtml: content.html || null,
+      },
     });
+  }
+
+  /**
+   * The email a send carried, rendered for Admin › Newsletter — without its
+   * per-recipient unsubscribe token. A send older than the stored content
+   * is fetched back from Quackback (needs QUACKBACK_API_KEY).
+   */
+  async preview(id: string, locale: string): Promise<MailTemplatePreviewDto> {
+    const send = await this.prisma.newsletterSend.findUnique({
+      where: { id },
+    });
+
+    if (!send) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.NewsletterSendNotFound,
+      );
+    }
+
+    const content =
+      send.contentPreview !== null
+        ? { preview: send.contentPreview, html: send.contentHtml ?? "" }
+        : await this.resolveContent(send.quackbackChangelogId, "", "");
+    return this.mail.renderNewsletterPreview(
+      locale,
+      send.title,
+      content.preview,
+      content.html,
+    );
   }
 
   private async resolveContent(

@@ -31,6 +31,11 @@ export type ModerationReasonBody = ModerationReasonRequestDto;
 
 export const getAdminServices = () => typedRequest("/admin/services");
 
+export const getAdminUpdateStatus = () => typedRequest("/admin/update");
+
+export const checkAdminUpdate = () =>
+  typedRequest("/admin/update/check", { method: "POST" });
+
 export const getAdminEmailTemplates = () => typedRequest("/admin/emails");
 
 // Not migrated: the query is a fully dynamic Record<string, string> (one
@@ -281,6 +286,13 @@ export const reactivateAdminUser = (userId: string): Promise<void> =>
     params: { userId },
   });
 
+/** Cancels a self-requested deletion, at the account's request to support. */
+export const cancelAdminUserDeletion = (userId: string): Promise<void> =>
+  typedRequest("/admin/users/{userId}/deletion/cancel", {
+    method: "POST",
+    params: { userId },
+  });
+
 /** Permanently deletes an account and all its data. Irreversible. */
 export const deleteAdminUser = (
   userId: string,
@@ -293,6 +305,12 @@ export const deleteAdminUser = (
   });
 
 export const getAdminNewsletterSends = () => typedRequest("/admin/newsletter");
+
+export const getAdminNewsletterPreview = (id: string, locale: string) =>
+  typedRequest("/admin/newsletter/{id}/preview", {
+    params: { id },
+    query: { locale },
+  });
 
 export const getAdminBackupFiles = async () =>
   normalizeAdminBackupInventory(await typedRequest("/admin/backup/files"));

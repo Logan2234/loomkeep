@@ -31,6 +31,14 @@ export const IT_COPY: MailCopy = {
     apiKeyLeaked: "Una chiave API esposta pubblicamente è stata revocata.",
     securityAlert:
       "Una modifica di sicurezza o un tentativo di accesso riguarda il tuo account.",
+    accountDeletionScheduled:
+      "La tua richiesta è registrata. Puoi ancora annullarla con un clic.",
+    accountDeletionReminder:
+      "Mancano due giorni per annullare l’eliminazione del tuo account.",
+    accountDeletionCancelled:
+      "L’eliminazione del tuo account è stata annullata.",
+    updateAvailable: "È disponibile una nuova versione di Loomkeep.",
+    pausedReminder: "Serie, libri o giochi ti aspettano dove li hai lasciati.",
     accountDeleted: "L’eliminazione del tuo account Loomkeep è confermata.",
     adminNewUser: "È stato creato un nuovo account sulla tua istanza.",
     inactivityWarning:
@@ -249,6 +257,66 @@ export const IT_COPY: MailCopy = {
     lockedHint:
       "Probabilmente qualcun altro conosce la tua password: cambiala subito.",
     button: "Apri le impostazioni di sicurezza",
+  },
+  accountDeletionScheduled: {
+    subject: (date) => `Il tuo account Loomkeep sarà eliminato il ${date}`,
+    heading: "Eliminazione programmata",
+    intro: (date) =>
+      `Hai chiesto di eliminare il tuo account Loomkeep. Avverrà il ${date}. Fino ad allora, il tuo account continua a funzionare.`,
+    cancelIntro:
+      "Non sei stato tu, o hai cambiato idea? Basta un clic, senza accedere:",
+    button: "Annulla l'eliminazione",
+    exportBefore:
+      "Prima di andare, puoi esportare tutti i tuoi dati: libreria, cronologia, recensioni e liste.",
+    exportLink: "Esporta i miei dati",
+    notYou:
+      "Se qualcun altro ha fatto questa richiesta, annullala e poi cambia la password.",
+  },
+  accountDeletionReminder: {
+    subject: "Mancano 2 giorni all'eliminazione del tuo account",
+    heading: "Ultimo promemoria",
+    intro: (date) =>
+      `Il tuo account Loomkeep sarà eliminato il ${date}. Dopo quella data, non si potrà recuperare nulla.`,
+    button: "Annulla l'eliminazione",
+    exportLink: "Esporta i miei dati",
+    hint: "Accedi per annullare, oppure usa il link della prima email.",
+  },
+  accountDeletionCancelled: {
+    subject: "L'eliminazione del tuo account Loomkeep è annullata",
+    heading: "Eliminazione annullata",
+    intro:
+      "Come hai chiesto, un amministratore ha annullato l'eliminazione del tuo account. Viene conservato, con tutto ciò che contiene.",
+    hint: "Se non hai chiesto nulla, rispondi a questa email.",
+    button: "Apri Loomkeep",
+  },
+  updateAvailable: {
+    subject: (version) => `Loomkeep ${version} è disponibile`,
+    heading: "Aggiornamento disponibile",
+    intro: (current, latest) =>
+      `La tua istanza usa la ${current}, ed è uscito Loomkeep ${latest}.`,
+    steps: "Fai un backup, poi aggiorna: il comando è in Admin › Servizi.",
+    button: "Vedi l'aggiornamento",
+    changelog: "Vedi le novità",
+  },
+  pausedReminder: {
+    subject: (count) =>
+      count === 1 ? "Un'opera ti aspetta" : `${count} opere ti aspettano`,
+    heading: "Le avevi lasciate a metà",
+    intro: "Ciò che hai iniziato e messo da parte da più di un mese:",
+    episodesLeft: (count) =>
+      count === 1 ? "Manca un episodio" : `Mancano ${count} episodi`,
+    pagesLeft: (count) =>
+      count === 1 ? "Manca una pagina" : `Mancano ${count} pagine`,
+    pausedFor: (weeks, months) =>
+      months >= 2
+        ? `in pausa da ${months} mesi`
+        : `in pausa da ${weeks} settimane`,
+    releasedSince: (count) =>
+      count === 1
+        ? "Nel frattempo è uscito 1 episodio"
+        : `Nel frattempo sono usciti ${count} episodi`,
+    button: "Vedi le mie opere in pausa",
+    reason: "Ricevi questo promemoria mensile perché l'hai attivato.",
   },
   accountDeleted: {
     subject: "Il tuo account Loomkeep è stato eliminato",

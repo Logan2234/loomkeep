@@ -30,6 +30,7 @@ export {
 } from "./admin-comms";
 export { JobDto, JobListResponseDto, JobRunDto, JobStatus } from "./admin-jobs";
 export {
+  AdminUpdateStatusDto,
   LicenseStatusDto,
   QuotaWindow,
   SchemaGraphResponseDto,

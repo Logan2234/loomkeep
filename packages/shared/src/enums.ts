@@ -431,6 +431,23 @@ export const ProfileAccess = {
 export type ProfileAccess = (typeof ProfileAccess)[keyof typeof ProfileAccess];
 
 /**
+ * Why someone left, picked (optionally) when scheduling their account's
+ * deletion. Kept with no link to the account — see `AccountDeletionFeedback`.
+ */
+export const AccountDeletionReason = {
+  NOT_USING: "NOT_USING",
+  MISSING_FEATURE: "MISSING_FEATURE",
+  OTHER_SERVICE: "OTHER_SERVICE",
+  PRIVACY: "PRIVACY",
+  TOO_COMPLEX: "TOO_COMPLEX",
+  NEW_ACCOUNT: "NEW_ACCOUNT",
+  OTHER: "OTHER",
+} as const;
+
+export type AccountDeletionReason =
+  (typeof AccountDeletionReason)[keyof typeof AccountDeletionReason];
+
+/**
  * Who may see a given passive-content facet — the "authorization" layer.
  * Ordered NONE < FRIENDS < PUBLIC; the effective audience is capped by
  * ProfileAccess (a PRIVATE profile tops out at FRIENDS).

@@ -144,6 +144,14 @@ export const ALERTS = {
     email: "off",
     mailTemplate: "sagaSequel",
   },
+  // Once a month (first Monday, 9h local): series, books and games left alone
+  // for 30 to 180 days. Off on both channels until the account turns it on.
+  PAUSED_REMINDER: {
+    group: AlertGroup.RELEASES,
+    push: "off",
+    email: "off",
+    mailTemplate: "pausedReminder",
+  },
 
   // Your account: things to know about, settings or not.
   MODERATION_ACTION: {
@@ -189,6 +197,23 @@ export const ALERTS = {
     group: AlertGroup.ACCOUNT,
     email: "always",
     mailTemplate: "inactivityWarning",
+  },
+  ACCOUNT_DELETION_SCHEDULED: {
+    group: AlertGroup.ACCOUNT,
+    email: "always",
+    mailTemplate: "accountDeletionScheduled",
+  },
+  // 48 hours before the scheduled date.
+  ACCOUNT_DELETION_REMINDER: {
+    group: AlertGroup.ACCOUNT,
+    email: "always",
+    mailTemplate: "accountDeletionReminder",
+  },
+  // Only when an administrator cancelled it: the person did it themselves otherwise.
+  ACCOUNT_DELETION_CANCELLED: {
+    group: AlertGroup.ACCOUNT,
+    email: "always",
+    mailTemplate: "accountDeletionCancelled",
   },
   ACCOUNT_DELETED: {
     group: AlertGroup.ACCOUNT,
@@ -288,6 +313,14 @@ export const ALERTS = {
     email: "on",
     push: "off",
     mailTemplate: "adminNewUser",
+    audience: "admins",
+  },
+  // Once per newly published version, while `updateCheckEnabled` is on.
+  ADMIN_UPDATE_AVAILABLE: {
+    group: AlertGroup.ADMIN,
+    email: "off",
+    push: "off",
+    mailTemplate: "updateAvailable",
     audience: "admins",
   },
 } as const satisfies Record<string, AlertDefinition>;

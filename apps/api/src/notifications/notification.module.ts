@@ -6,6 +6,7 @@ import { MailModule } from "../mail/mail.module";
 import { NotificationDigestService } from "./notification-digest.service";
 import { NotificationController } from "./notification.controller";
 import { NotificationService } from "./notification.service";
+import { PausedReminderService } from "./paused-reminder.service";
 import { PushModule } from "./push.module";
 
 // PrismaService comes from the global PrismaModule.
@@ -18,7 +19,16 @@ import { PushModule } from "./push.module";
     PushModule,
   ],
   controllers: [NotificationController],
-  providers: [NotificationService, NotificationDigestService],
-  exports: [PushModule, NotificationService, NotificationDigestService],
+  providers: [
+    NotificationService,
+    NotificationDigestService,
+    PausedReminderService,
+  ],
+  exports: [
+    PushModule,
+    NotificationService,
+    NotificationDigestService,
+    PausedReminderService,
+  ],
 })
 export class NotificationModule {}

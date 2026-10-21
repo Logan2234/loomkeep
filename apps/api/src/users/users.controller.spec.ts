@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { fakeReply } from "../test-utils/fake-reply";
+import type { ScheduledDeletionService } from "./scheduled-deletion.service";
 import { UsersController } from "./users.controller";
 import type { UsersService } from "./users.service";
 
@@ -33,11 +34,19 @@ function makeController() {
     confirmEmailChange: vi.fn(),
     changePassword: vi.fn(),
     deletionSummary: vi.fn(),
-    deleteAccount: vi.fn(),
     checkUsernameAvailability: vi.fn(),
     updateUsername: vi.fn(),
   } as unknown as UsersService;
-  return { controller: new UsersController(users, {} as never), users };
+  const scheduledDeletions = {
+    schedule: vi.fn(),
+    cancel: vi.fn(),
+    cancelWithToken: vi.fn(),
+  } as unknown as ScheduledDeletionService;
+  return {
+    controller: new UsersController(users, {} as never, scheduledDeletions),
+    users,
+    scheduledDeletions,
+  };
 }
 
 describe("UsersController — delegation to UsersService", () => {
@@ -154,10 +163,22 @@ describe("UsersController — delegation to UsersService", () => {
     expect(users.deletionSummary).toHaveBeenCalledWith(userId);
   });
 
-  it("deleteAccount", () => {
-    const { controller, users } = makeController();
-    void controller.deleteAccount(payload, "some-ua");
-    expect(users.deleteAccount).toHaveBeenCalledWith(userId, "some-ua");
+  it("scheduleDeletion", () => {
+    const { controller, scheduledDeletions } = makeController();
+    void controller.scheduleDeletion(payload, { reason: "PRIVACY" });
+    expect(scheduledDeletions.schedule).toHaveBeenCalledWith(userId, "PRIVACY");
+  });
+
+  it("cancelDeletion", () => {
+    const { controller, scheduledDeletions } = makeController();
+    void controller.cancelDeletion(payload);
+    expect(scheduledDeletions.cancel).toHaveBeenCalledWith(userId);
+  });
+
+  it("cancelDeletionWithToken", () => {
+    const { controller, scheduledDeletions } = makeController();
+    void controller.cancelDeletionWithToken({ token: "t" });
+    expect(scheduledDeletions.cancelWithToken).toHaveBeenCalledWith("t");
   });
 
   it("checkUsernameAvailability", () => {

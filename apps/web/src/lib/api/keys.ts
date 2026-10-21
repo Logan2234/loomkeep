@@ -116,6 +116,8 @@ export const keys = {
     email: (token: string) => ["verification", "email", token] as const,
     newsletterUnsubscribe: (token: string) =>
       ["verification", "newsletter-unsubscribe", token] as const,
+    cancelDeletion: (token: string) =>
+      ["verification", "cancel-deletion", token] as const,
     invitation: (token: string) =>
       ["verification", "invitation", token] as const,
   },
@@ -265,6 +267,9 @@ export const keys = {
     instanceSettings: () => ["admin", "instance-settings"] as const,
     reportsPendingCount: () => ["admin", "reports-pending-count"] as const,
     newsletterSends: () => ["admin", "newsletter-sends"] as const,
+    newsletterPreview: (id: string, locale: string) =>
+      ["admin", "newsletter-preview", id, locale] as const,
+    update: () => ["admin", "update"] as const,
     schema: () => ["admin", "schema"] as const,
     emailTemplates: () => ["admin", "email-templates"] as const,
     pushDevices: (email: string) => ["admin", "push-devices", email] as const,

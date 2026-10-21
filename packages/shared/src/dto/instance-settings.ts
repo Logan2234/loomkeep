@@ -13,6 +13,8 @@ export interface InstanceSettingsValues {
   /** Requests per minute on the public API, per account. */
   apiRateLimitFree: number;
   apiRateLimitPremium: number;
+  /** Daily check for a newer Loomkeep version, shown in Admin › Services. */
+  updateCheckEnabled: boolean;
 }
 export type InstanceSettingKey = keyof InstanceSettingsValues;
 
@@ -24,6 +26,7 @@ export const INSTANCE_SETTING_ENV: Record<InstanceSettingKey, string> = {
   publicApiEnabled: "PUBLIC_API_ENABLED",
   apiRateLimitFree: "API_RATE_LIMIT_FREE",
   apiRateLimitPremium: "API_RATE_LIMIT_PREMIUM",
+  updateCheckEnabled: "UPDATE_CHECK_ENABLED",
 };
 
 /** What a fresh instance starts with — the same as the env defaults used to be. */
@@ -35,6 +38,7 @@ export const DEFAULT_INSTANCE_SETTINGS: InstanceSettingsValues = {
   publicApiEnabled: true,
   apiRateLimitFree: 60,
   apiRateLimitPremium: 300,
+  updateCheckEnabled: true,
 };
 
 export const API_RATE_LIMIT_BOUNDS = { min: 1, max: 10_000 } as const;

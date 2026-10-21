@@ -19,6 +19,7 @@
   import { DOCS_URL, GITHUB_REPO_URL } from "#lib/constants/external-links.js";
   import { formatNumber, formatRelative } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { useAdminUpdateAvailable } from "#lib/admin-update.svelte.js";
   import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
   import type { ServiceStatusDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -44,6 +45,7 @@
     fetch: getAdminBackupFiles,
   }));
   const reportsPending = useReportsPendingCount();
+  const adminUpdate = useAdminUpdateAvailable();
 
   const overview = $derived(overviewQuery.data);
   const services = $derived(servicesQuery.data?.services ?? null);
@@ -363,13 +365,21 @@
             detail={m.admin_backup_title()}
             tone="warning" />
         </li>{/if}
+      {#if adminUpdate.available}<li>
+          <AttentionLink
+            href="/app/admin/services"
+            icon="sparkles"
+            title={m.admin_update_attention()}
+            detail={m.admin_services_title()}
+            tone="warning" />
+        </li>{/if}
     </ul>
     {#if overviewQuery.loading || servicesQuery.loading || jobsQuery.loading || backupsQuery.loading || (appConfig.socialEnabled && !reportsPending.available && !reportsPending.error)}<p
         class="text-dim mt-3 text-sm"
         role="status">
         {m.common_loading()}
       </p>
-    {:else if !attention.degraded.length && !attention.failed.length && !(appConfig.socialEnabled && reportsPending.count > 0) && !(backupsQuery.data && (attention.anomalies || !attention.latest))}<p
+    {:else if !attention.degraded.length && !attention.failed.length && !(appConfig.socialEnabled && reportsPending.count > 0) && !(backupsQuery.data && (attention.anomalies || !attention.latest)) && !adminUpdate.available}<p
         class="text-dim text-sm">
         {m.admin_attention_empty()}
       </p>{/if}

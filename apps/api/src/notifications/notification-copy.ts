@@ -98,6 +98,24 @@ const COPY = {
         "Il n'a pas pu aller au bout. Les détails sont dans tes réglages.",
     },
     sagaSequel: (saga: string) => `Nouvelle suite annoncée · ${saga}`,
+    pausedReminderPush: (
+      title: string,
+      releasedSince: number,
+      others: number,
+    ) =>
+      `« ${title} » t'attend${
+        releasedSince === 0
+          ? ""
+          : releasedSince === 1
+            ? ", et un épisode est sorti depuis"
+            : `, et ${releasedSince} épisodes sont sortis depuis`
+      }.${
+        others === 0
+          ? ""
+          : others === 1
+            ? " Une autre œuvre est en pause."
+            : ` ${others} autres œuvres sont en pause.`
+      }`,
     adminAlerts: {
       reportsPending: (count: number) => ({
         title: "Signalements en attente",
@@ -121,6 +139,10 @@ const COPY = {
       newUser: (name: string) => ({
         title: "Nouvelle inscription",
         body: `${name} vient de créer un compte.`,
+      }),
+      updateAvailable: (version: string) => ({
+        title: "Mise à jour disponible",
+        body: `Loomkeep ${version} est disponible pour ton instance.`,
       }),
     },
     apiKeys: {
@@ -218,6 +240,24 @@ const COPY = {
       failedBody: "It couldn't finish. The details are in your settings.",
     },
     sagaSequel: (saga: string) => `New sequel announced · ${saga}`,
+    pausedReminderPush: (
+      title: string,
+      releasedSince: number,
+      others: number,
+    ) =>
+      `“${title}” is waiting for you${
+        releasedSince === 0
+          ? ""
+          : releasedSince === 1
+            ? ", and an episode came out since"
+            : `, and ${releasedSince} episodes came out since`
+      }.${
+        others === 0
+          ? ""
+          : others === 1
+            ? " One more work is on pause."
+            : ` ${others} more works are on pause.`
+      }`,
     adminAlerts: {
       reportsPending: (count: number) => ({
         title: "Reports waiting",
@@ -241,6 +281,10 @@ const COPY = {
       newUser: (name: string) => ({
         title: "New account",
         body: `${name} just signed up.`,
+      }),
+      updateAvailable: (version: string) => ({
+        title: "Update available",
+        body: `Loomkeep ${version} is available for your instance.`,
       }),
     },
     apiKeys: {
@@ -341,6 +385,24 @@ const COPY = {
         "Non è riuscita ad arrivare in fondo. I dettagli sono nelle impostazioni.",
     },
     sagaSequel: (saga: string) => `Nuovo seguito annunciato · ${saga}`,
+    pausedReminderPush: (
+      title: string,
+      releasedSince: number,
+      others: number,
+    ) =>
+      `“${title}” ti aspetta${
+        releasedSince === 0
+          ? ""
+          : releasedSince === 1
+            ? ", e nel frattempo è uscito un episodio"
+            : `, e nel frattempo sono usciti ${releasedSince} episodi`
+      }.${
+        others === 0
+          ? ""
+          : others === 1
+            ? " Un'altra opera è in pausa."
+            : ` Altre ${others} opere sono in pausa.`
+      }`,
     adminAlerts: {
       reportsPending: (count: number) => ({
         title: "Segnalazioni in attesa",
@@ -364,6 +426,10 @@ const COPY = {
       newUser: (name: string) => ({
         title: "Nuova iscrizione",
         body: `${name} ha appena creato un account.`,
+      }),
+      updateAvailable: (version: string) => ({
+        title: "Aggiornamento disponibile",
+        body: `Loomkeep ${version} è disponibile per la tua istanza.`,
       }),
     },
     apiKeys: {
@@ -433,12 +499,22 @@ export interface NotificationCopy {
   };
   /** Body under the new work's title: which saga it joins. */
   sagaSequel: (saga: string) => string;
+  /**
+   * The monthly paused-works push: the first work by name, how many of its
+   * episodes came out during the pause, and how many other works wait.
+   */
+  pausedReminderPush: (
+    title: string,
+    releasedSince: number,
+    others: number,
+  ) => string;
   adminAlerts: {
     reportsPending: (count: number) => PushText;
     jobFailed: (job: string) => PushText;
     jobRecovered: (job: string) => PushText;
     quota: (provider: string, percent: number) => PushText;
     newUser: (name: string) => PushText;
+    updateAvailable: (version: string) => PushText;
   };
   apiKeys: {
     reviewTitle: string;

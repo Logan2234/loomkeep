@@ -20,12 +20,14 @@
   import { isFeatureNew, type FeatureBadgeKey } from "#lib/feature-badges.js";
   import { resolveMenuGroups } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { useAdminUpdateAvailable } from "#lib/admin-update.svelte.js";
   import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
 
   let open = $state(false);
 
   const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
   const reportsPending = useReportsPendingCount();
+  const adminUpdate = useAdminUpdateAvailable();
 
   const groups = $derived(
     resolveMenuGroups({
@@ -85,6 +87,12 @@
       {/if}
       <Icon name={dest.icon} class="text-accent h-6 w-6" />
       <span class="text-xs font-semibold">{dest.label}</span>
+      {#if dest.href === "/app/admin/services" && adminUpdate.available}
+        <span
+          class="bg-accent ring-surface absolute top-2 right-2 h-2 w-2 rounded-full ring-2"
+          aria-hidden="true"></span
+        ><span class="sr-only">{m.admin_update_badge()}</span>
+      {/if}
       {#if dest.href === "/app/admin/reports" && appConfig.socialEnabled && reportsPending.available && reportsPending.count > 0}
         <span
           class="bg-accent text-accent-fg absolute top-2 right-2 rounded-full px-1.5 py-0.5 text-xs font-bold">

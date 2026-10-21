@@ -59,6 +59,21 @@ interface SendArgs {
 
 type TemplateBody = Omit<SendArgs, "to" | "replyTo">;
 
+/** One work in the monthly paused-works reminder. */
+export interface PausedReminderItem {
+  title: string;
+  /** App path of the work's page. */
+  url: string;
+  /** Series and anime: episodes still to watch. */
+  episodesLeft: number | null;
+  /** Books: pages still to read. */
+  pagesLeft: number | null;
+  /** Days since the last episode, session or reading page. */
+  pausedDays: number;
+  /** Series and anime: episodes aired since the last one watched. */
+  releasedSince: number;
+}
+
 /** One DSA art. 17 notice: every measure a single moderation decision applied. */
 export interface ModerationDecisionMail {
   measures: ModerationMeasure[];
@@ -563,6 +578,84 @@ export class MailService {
           v.reason === "inactive" ? "inactive" : "self",
         ),
     },
+    accountDeletionScheduled: {
+      label: "Suppression de compte programmée",
+      fields: [
+        {
+          key: "scheduledFor",
+          label: "Date de suppression",
+          default: "2026-11-03T05:15:00Z",
+        },
+      ],
+      build: (locale, v) =>
+        this.buildAccountDeletionScheduled(
+          locale,
+          new Date(v.scheduledFor),
+          "preview-token",
+        ),
+    },
+    accountDeletionReminder: {
+      label: "Rappel avant suppression (48 h)",
+      fields: [
+        {
+          key: "scheduledFor",
+          label: "Date de suppression",
+          default: "2026-11-03T05:15:00Z",
+        },
+      ],
+      build: (locale, v) =>
+        this.buildAccountDeletionReminder(locale, new Date(v.scheduledFor)),
+    },
+    accountDeletionCancelled: {
+      label: "Suppression annulée par un admin",
+      fields: [],
+      build: (locale) => this.buildAccountDeletionCancelled(locale),
+    },
+    updateAvailable: {
+      label: "Mise à jour disponible (admins)",
+      fields: [
+        { key: "current", label: "Version installée", default: "1.11.0" },
+        { key: "latest", label: "Version publiée", default: "1.12.0" },
+      ],
+      build: (locale, v) =>
+        this.buildUpdateAvailable(locale, v.current, v.latest),
+    },
+    pausedReminder: {
+      label: "Rappel des œuvres en pause",
+      fields: [
+        { key: "itemCount", label: "Nombre d'œuvres (1-3)", default: "3" },
+      ],
+      build: (locale, v) => {
+        const samples: PausedReminderItem[] = [
+          {
+            title: "Severance",
+            url: "/app/media/series/95396",
+            episodesLeft: 2,
+            pagesLeft: null,
+            pausedDays: 36,
+            releasedSince: 4,
+          },
+          {
+            title: "Dune",
+            url: "/app/books/OL893415W",
+            episodesLeft: null,
+            pagesLeft: 68,
+            pausedDays: 64,
+            releasedSince: 0,
+          },
+          {
+            title: "Hades",
+            url: "/app/games/113112",
+            episodesLeft: null,
+            pagesLeft: null,
+            pausedDays: 95,
+            releasedSince: 0,
+          },
+        ];
+        const count = Math.max(1, Math.min(3, Number(v.itemCount) || 3));
+        return this.buildPausedReminder(locale, samples.slice(0, count));
+      },
+    },
     adminNewUser: {
       label: "Nouvelle inscription (admins)",
       fields: [{ key: "name", label: "Nom affiché", default: "Alice" }],
@@ -730,6 +823,22 @@ export class MailService {
     );
   }
 
+  /** A newsletter as it went out, minus its per-recipient unsubscribe link. */
+  renderNewsletterPreview(
+    locale: string,
+    title: string,
+    contentPreview: string,
+    contentHtml: string,
+  ): TemplateBody {
+    return this.buildNewsletter(
+      resolveCopyLocale(locale),
+      title,
+      contentPreview,
+      contentHtml,
+      "preview-token",
+    );
+  }
+
   /** Sends one template, rendered with the same (possibly overridden) sample data as the preview, to `to`. */
   async sendTemplateTest(
     key: string,
@@ -868,6 +977,69 @@ export class MailService {
     await this.send({
       to: recipient.email,
       ...this.buildAccountDeleted(locale, reason),
+    });
+  }
+
+  async sendAccountDeletionScheduled(
+    recipient: MailRecipient,
+    scheduledFor: Date,
+    cancelToken: string,
+  ): Promise<void> {
+    await this.send({
+      to: recipient.email,
+      ...this.buildAccountDeletionScheduled(
+        resolveCopyLocale(recipient.locale),
+        scheduledFor,
+        cancelToken,
+      ),
+    });
+  }
+
+  async sendAccountDeletionReminder(
+    recipient: MailRecipient,
+    scheduledFor: Date,
+  ): Promise<void> {
+    await this.send({
+      to: recipient.email,
+      ...this.buildAccountDeletionReminder(
+        resolveCopyLocale(recipient.locale),
+        scheduledFor,
+      ),
+    });
+  }
+
+  async sendAccountDeletionCancelled(recipient: MailRecipient): Promise<void> {
+    await this.send({
+      to: recipient.email,
+      replyTo: this.supportAddress,
+      ...this.buildAccountDeletionCancelled(
+        resolveCopyLocale(recipient.locale),
+      ),
+    });
+  }
+
+  async sendUpdateAvailable(
+    recipient: MailRecipient,
+    current: string,
+    latest: string,
+  ): Promise<void> {
+    await this.send({
+      to: recipient.email,
+      ...this.buildUpdateAvailable(
+        resolveCopyLocale(recipient.locale),
+        current,
+        latest,
+      ),
+    });
+  }
+
+  async sendPausedReminder(
+    recipient: MailRecipient,
+    items: PausedReminderItem[],
+  ): Promise<void> {
+    await this.send({
+      to: recipient.email,
+      ...this.buildPausedReminder(resolveCopyLocale(recipient.locale), items),
     });
   }
 
@@ -1481,6 +1653,159 @@ ${url}`,
         `<p>${escapeHtml(intro)}</p>
          <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.outro)}</p>`,
         { template: "accountDeleted" },
+      ),
+    };
+  }
+
+  private formatDay(locale: Locale, date: Date): string {
+    return new Intl.DateTimeFormat(regionalLocale(resolveCopyLocale(locale)), {
+      dateStyle: "long",
+      timeZone: "UTC",
+    }).format(date);
+  }
+
+  private buildAccountDeletionScheduled(
+    locale: Locale,
+    scheduledFor: Date,
+    cancelToken: string,
+  ): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].accountDeletionScheduled;
+    const date = this.formatDay(locale, scheduledFor);
+    const cancelUrl = `${this.webOrigin}/account/cancel-deletion?token=${encodeURIComponent(cancelToken)}`;
+    const exportUrl = `${this.webOrigin}/app/settings/export`;
+    return {
+      subject: copy.subject(date),
+      text: `${copy.intro(date)}\n\n${copy.cancelIntro}\n${cancelUrl}\n\n${copy.exportBefore}\n${exportUrl}\n\n${copy.notYou}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(date))}</p>
+         <p>${escapeHtml(copy.cancelIntro)}</p>
+         ${this.button(cancelUrl, copy.button)}
+         <p>${escapeHtml(copy.exportBefore)} <a href="${exportUrl}">${escapeHtml(copy.exportLink)}</a></p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.notYou)}</p>`,
+        { template: "accountDeletionScheduled" },
+      ),
+    };
+  }
+
+  private buildAccountDeletionReminder(
+    locale: Locale,
+    scheduledFor: Date,
+  ): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].accountDeletionReminder;
+    const date = this.formatDay(locale, scheduledFor);
+    const settingsUrl = `${this.webOrigin}/app/settings/delete-account`;
+    const exportUrl = `${this.webOrigin}/app/settings/export`;
+    return {
+      subject: copy.subject,
+      text: `${copy.intro(date)}\n\n${copy.button}: ${settingsUrl}\n${copy.exportLink}: ${exportUrl}\n\n${copy.hint}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(date))}</p>
+         ${this.button(settingsUrl, copy.button)}
+         <p><a href="${exportUrl}">${escapeHtml(copy.exportLink)}</a></p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.hint)}</p>`,
+        { template: "accountDeletionReminder" },
+      ),
+    };
+  }
+
+  private buildAccountDeletionCancelled(locale: Locale): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].accountDeletionCancelled;
+    const url = `${this.webOrigin}/app`;
+    return {
+      subject: copy.subject,
+      text: `${copy.intro}\n\n${url}\n\n${copy.hint}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro)}</p>
+         ${this.button(url, copy.button)}
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.hint)}</p>`,
+        { template: "accountDeletionCancelled" },
+      ),
+    };
+  }
+
+  private buildUpdateAvailable(
+    locale: Locale,
+    current: string,
+    latest: string,
+  ): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].updateAvailable;
+    const url = `${this.webOrigin}/app/admin/services`;
+    const changelogUrl = `${QUACKBACK_ORIGIN}/changelog`;
+    return {
+      subject: `[Admin] ${copy.subject(latest)}`,
+      text: `${copy.intro(current, latest)}\n\n${copy.steps}\n${url}\n\n${copy.changelog}: ${changelogUrl}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(current, latest))}</p>
+         <p>${escapeHtml(copy.steps)}</p>
+         ${this.button(url, copy.button)}
+         <p><a href="${changelogUrl}">${escapeHtml(copy.changelog)}</a></p>`,
+        { template: "updateAvailable", footer: { type: "admin" } },
+      ),
+    };
+  }
+
+  private buildPausedReminder(
+    locale: Locale,
+    items: PausedReminderItem[],
+  ): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].pausedReminder;
+    const prefsUrl = `${this.webOrigin}/app/settings/communications`;
+    const listUrl = `${this.webOrigin}/app/media?status=DORMANT`;
+    const lines = items.map((item) => {
+      const left =
+        item.episodesLeft !== null && item.episodesLeft > 0
+          ? copy.episodesLeft(item.episodesLeft)
+          : item.pagesLeft !== null && item.pagesLeft > 0
+            ? copy.pagesLeft(item.pagesLeft)
+            : null;
+      const paused = copy.pausedFor(
+        Math.max(1, Math.round(item.pausedDays / 7)),
+        Math.round(item.pausedDays / 30),
+      );
+      return {
+        item,
+        detail: left ? `${left} · ${paused}` : paused,
+        released:
+          item.releasedSince > 0
+            ? copy.releasedSince(item.releasedSince)
+            : null,
+      };
+    });
+
+    const listHtml = lines
+      .map(
+        ({ item, detail, released }) =>
+          `<p style="margin:0 0 16px;"><a href="${this.webOrigin}${item.url}" style="color:${COLOR_TEXT};font-weight:600;text-decoration:none;">${escapeHtml(item.title)}</a><br/><span style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(detail)}</span>${released ? `<br/><span style="font-size:13px;font-weight:600;">${escapeHtml(released)}</span>` : ""}</p>`,
+      )
+      .join("");
+    const listText = lines
+      .map(
+        ({ item, detail, released }) =>
+          `${item.title} — ${detail}${released ? ` · ${released}` : ""}\n${this.webOrigin}${item.url}`,
+      )
+      .join("\n\n");
+    const subject = copy.subject(items.length);
+
+    return {
+      subject,
+      text: `${copy.intro}\n\n${listText}\n\n${copy.button}: ${listUrl}\n\n${copy.reason}\n${prefsUrl}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro)}</p>${listHtml}
+         ${this.button(listUrl, copy.button)}`,
+        {
+          template: "pausedReminder",
+          footer: { type: "communications", preferencesUrl: prefsUrl },
+        },
       ),
     };
   }
