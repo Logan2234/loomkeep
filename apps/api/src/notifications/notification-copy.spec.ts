@@ -30,4 +30,28 @@ describe("notificationCopy", () => {
       "Mes classiques",
     );
   });
+
+  it("words the paused-works push by what's there to say", () => {
+    const { pausedReminderPush } = notificationCopy("fr");
+
+    expect(pausedReminderPush("Severance", 0, 0)).toBe(
+      "« Severance » t'attend.",
+    );
+    expect(pausedReminderPush("Severance", 1, 1)).toBe(
+      "« Severance » t'attend, et un épisode est sorti depuis. Une autre œuvre est en pause.",
+    );
+    expect(pausedReminderPush("Severance", 4, 2)).toBe(
+      "« Severance » t'attend, et 4 épisodes sont sortis depuis. 2 autres œuvres sont en pause.",
+    );
+  });
+
+  it("names the version in the update alert, in every language", () => {
+    for (const locale of Locale) {
+      const copy = notificationCopy(locale);
+      expect(copy.adminAlerts.updateAvailable("1.12.0").body).toContain(
+        "1.12.0",
+      );
+      expect(copy.pausedReminderPush("Dune", 3, 5)).toContain("Dune");
+    }
+  });
 });
