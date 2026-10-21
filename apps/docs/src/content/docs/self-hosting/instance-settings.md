@@ -36,6 +36,7 @@ page.
 | Public API        | `PUBLIC_API_ENABLED`     |
 | Free limit        | `API_RATE_LIMIT_FREE`    |
 | Premium limit     | `API_RATE_LIMIT_PREMIUM` |
+| Update check      | `UPDATE_CHECK_ENABLED`   |
 
 The first time the instance starts with this page, its values are taken from
 these variables. After that, remove a variable from `.env` to unlock its

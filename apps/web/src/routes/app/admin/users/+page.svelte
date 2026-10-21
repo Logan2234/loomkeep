@@ -234,6 +234,7 @@
     { value: "unverified", label: m.admin_users_unverified() },
     { value: "never", label: m.admin_users_never_logged_in() },
     { value: "premium", label: m.admin_users_premium_filter() },
+    { value: "deletion", label: m.admin_users_deletion_filter() },
   ];
   const DATE_FIELDS = [
     { key: "createdFrom", label: m.admin_users_created_from() },
@@ -487,6 +488,17 @@
                             <span
                               class="border-border text-dim rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
                               {m.admin_users_unverified()}
+                            </span>
+                          {/if}
+                          {#if u.deletionScheduledFor}
+                            <span
+                              class="border-danger/40 text-danger rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold whitespace-nowrap uppercase">
+                              {m.admin_users_deletion_badge({
+                                date: formatDate(u.deletionScheduledFor, {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                }),
+                              })}
                             </span>
                           {/if}
                         </div>

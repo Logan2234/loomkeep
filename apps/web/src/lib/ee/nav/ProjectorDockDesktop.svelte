@@ -15,11 +15,13 @@
     profileHref as resolveProfileHref,
   } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { useAdminUpdateAvailable } from "#lib/admin-update.svelte.js";
   import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
 
   let { children }: { children: Snippet } = $props();
 
   const reportsPending = useReportsPendingCount();
+  const adminUpdate = useAdminUpdateAvailable();
 
   const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
   const profileHref = $derived(resolveProfileHref());
@@ -71,6 +73,12 @@
                 ? 'bg-accent/15 text-accent'
                 : 'text-dim hover:bg-surface-2 hover:text-fg'}">
               <Icon name={item.icon} class="h-5 w-5" />
+              {#if item.href === "/app/admin/services" && adminUpdate.available}
+                <span
+                  class="bg-accent ring-surface absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-2"
+                  aria-hidden="true"></span
+                ><span class="sr-only">{m.admin_update_badge()}</span>
+              {/if}
               {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
                 <span
                   class="bg-accent text-accent-fg absolute top-1 right-1 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
@@ -129,8 +137,13 @@
           <a
             href="/app/admin"
             aria-label={m.common_admin()}
-            class="text-dim hover:bg-surface-2 hover:text-fg grid h-11 w-11 place-items-center rounded-xl transition-all duration-150 ease-out group-hover:scale-110">
+            class="text-dim hover:bg-surface-2 hover:text-fg relative grid h-11 w-11 place-items-center rounded-xl transition-all duration-150 ease-out group-hover:scale-110">
             <Icon name="shield" class="h-5 w-5" />
+            {#if adminUpdate.available}
+              <span
+                class="bg-accent ring-surface absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-2"
+                aria-hidden="true"></span>
+            {/if}
           </a>
           <span
             class="bg-fg text-bg pointer-events-none absolute top-1/2 left-full ml-3 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-semibold whitespace-nowrap opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">

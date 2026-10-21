@@ -20,6 +20,12 @@
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import AdminQueryError from "../AdminQueryError.svelte";
   import { filterNewsletterSends } from "./newsletter-filters";
+  import NewsletterPreviewModal from "./NewsletterPreviewModal.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import type { NewsletterSendDto } from "@loomkeep/shared";
+
+  let previewed = $state<NewsletterSendDto | null>(null);
 
   const sendsQuery = createApiQuery(() => ({
     key: keys.admin.newsletterSends(),
@@ -137,17 +143,22 @@
     <ul class="divide-border divide-y">
       {#each sends as send (send.id)}
         <li class="flex flex-wrap items-center justify-between gap-3 py-3">
-          <div class="min-w-0">
-            <p class="text-fg text-sm font-semibold break-words">
+          <button
+            type="button"
+            class="hover:bg-surface-2 -mx-2 min-w-0 flex-1 rounded-lg px-2 py-1 text-left transition-colors"
+            onclick={() => (previewed = send)}>
+            <span class="text-fg block text-sm font-semibold break-words">
               {send.title}
-            </p>
-            <p class="timecode mt-1 text-xs">
+              {#if isFeatureNew("newsletter-preview")}<NewBadge />{/if}
+            </span>
+            <span class="timecode mt-1 block text-xs">
               {formatDateTime(send.sentAt, DATETIME_NUMERIC_OPTIONS)} · {send.recipientCount ===
               1
                 ? m.admin_recipient_count_one({ count: send.recipientCount })
                 : m.admin_recipient_count_many({ count: send.recipientCount })}
-            </p>
-          </div>
+            </span>
+            <span class="sr-only">— {m.admin_newsletter_preview_open()}</span>
+          </button>
           <a
             class="btn btn-ghost btn-sm"
             href={`${CHANGELOG_URL}/${encodeURIComponent(send.quackbackChangelogId)}`}
@@ -173,3 +184,7 @@
         >{/if}</EmptyState
     >{/if}
 </section>
+
+{#if previewed}
+  <NewsletterPreviewModal send={previewed} onclose={() => (previewed = null)} />
+{/if}

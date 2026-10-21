@@ -1,11 +1,17 @@
+import { auth } from "#lib/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
+import { reauth } from "#lib/reauth.svelte.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { AccountDeletionSummaryDto } from "@loomkeep/shared";
-import { screen, within } from "@testing-library/svelte";
+import type {
+  AccountDeletionSummaryDto,
+  ScheduleAccountDeletionRequestDto,
+  UserDto,
+} from "@loomkeep/shared";
+import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import DeleteAccountPage from "./+page.svelte";
 
 vi.mock("$app/state", async () => import("#lib/test/navigation.svelte.js"));
@@ -111,5 +117,99 @@ describe("Account deletion timeline", () => {
     });
     expect(link.getAttribute("href")).toBe("/app/settings/export");
     expect(link.getAttribute("target")).toBeNull();
+  });
+});
+
+describe("Scheduling the deletion", () => {
+  beforeEach(() => {
+    auth.user = {
+      id: "user-1",
+      email: "alice@example.com",
+      deletionScheduledFor: null,
+    } as UserDto;
+  });
+
+  it("sends the reason picked, then shows the date instead of the button", async () => {
+    let sent: ScheduleAccountDeletionRequestDto | null = null;
+    server.use(
+      http.post(apiUrl("/users/me/deletion"), async ({ request }) => {
+        sent = (await request.json()) as ScheduleAccountDeletionRequestDto;
+        return HttpResponse.json({ scheduledFor: "2026-11-04T05:15:00.000Z" });
+      }),
+    );
+    const { user, dialog } = await openModal(summary());
+
+    await user.click(
+      within(dialog).getByRole("button", {
+        name: m.settings_delete_account_reason_privacy(),
+      }),
+    );
+    await user.click(
+      within(dialog).getByRole("button", {
+        name: m.settings_delete_account_confirm({ days: 14 }),
+      }),
+    );
+    reauth.confirmed(new Date(Date.now() + 60_000).toISOString());
+
+    await waitFor(() => expect(sent).toEqual({ reason: "PRIVACY" }));
+    expect(
+      await screen.findByRole("button", {
+        name: m.settings_delete_account_cancel(),
+      }),
+    ).toBeTruthy();
+    expect(auth.user?.deletionScheduledFor).toBe("2026-11-04T05:15:00.000Z");
+  });
+
+  it("asks for no reason when none is picked", async () => {
+    let sent: ScheduleAccountDeletionRequestDto | null = null;
+    server.use(
+      http.post(apiUrl("/users/me/deletion"), async ({ request }) => {
+        sent = (await request.json()) as ScheduleAccountDeletionRequestDto;
+        return HttpResponse.json({ scheduledFor: "2026-11-04T05:15:00.000Z" });
+      }),
+    );
+    const { user, dialog } = await openModal(summary());
+
+    await user.click(
+      within(dialog).getByRole("button", {
+        name: m.settings_delete_account_confirm({ days: 14 }),
+      }),
+    );
+    reauth.confirmed(new Date(Date.now() + 60_000).toISOString());
+
+    await waitFor(() => expect(sent).toEqual({}));
+  });
+
+  it("cancels a scheduled deletion from the page", async () => {
+    auth.user = {
+      ...auth.user!,
+      deletionScheduledFor: "2026-11-04T05:15:00.000Z",
+    };
+    let cancelled = false;
+    server.use(
+      http.delete(apiUrl("/users/me/deletion"), () => {
+        cancelled = true;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    renderWithQuery(DeleteAccountPage, {});
+    const user = userEvent.setup();
+
+    expect(
+      screen.queryByRole("button", {
+        name: m.settings_delete_account_button(),
+      }),
+    ).toBeNull();
+    await user.click(
+      screen.getByRole("button", { name: m.settings_delete_account_cancel() }),
+    );
+
+    await waitFor(() => expect(cancelled).toBe(true));
+    expect(auth.user?.deletionScheduledFor).toBeNull();
+    expect(
+      await screen.findByRole("button", {
+        name: m.settings_delete_account_button(),
+      }),
+    ).toBeTruthy();
   });
 });

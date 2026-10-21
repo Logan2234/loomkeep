@@ -31,6 +31,8 @@ const LABELS: Record<string, string> = {
   NEW_MOVIE: "Local releases of movies with a reminder enabled (the same summary)",
   NEW_GAME: "Releases of games with a reminder enabled (the same summary)",
   SAGA_SEQUEL_ANNOUNCED: "A sequel announced in a saga you finished part of",
+  PAUSED_REMINDER:
+    "Once a month, the shows, books and games you set aside for over 30 days",
   MODERATION_ACTION: "A moderation decision about your content",
   REPORT_RESOLVED: "A report you filed was reviewed",
   API_KEYS_REVIEW: "Your password changed while API keys are active",
@@ -40,6 +42,9 @@ const LABELS: Record<string, string> = {
   VERIFY_EMAIL: "Confirming your email address",
   INVITATION: "An invitation to join an instance",
   INACTIVITY_WARNING: "Your account unused for two years",
+  ACCOUNT_DELETION_SCHEDULED: "Your account's deletion scheduled, with a link to cancel it",
+  ACCOUNT_DELETION_REMINDER: "Two days before your account is deleted",
+  ACCOUNT_DELETION_CANCELLED: "An administrator cancelled your account's deletion",
   ACCOUNT_DELETED: "Your account deleted",
   NEWSLETTER: "What's new in each release",
   ADMIN_BROADCAST: "A message from the instance's administrators",
@@ -60,6 +65,7 @@ const LABELS: Record<string, string> = {
   ADMIN_JOB_FAILED: "A scheduled job failing, then working again",
   ADMIN_QUOTA: "A catalogue reaching 80% and 100% of its daily quota",
   ADMIN_NEW_USER: "A new account",
+  ADMIN_UPDATE_AVAILABLE: "A new Loomkeep version published",
 };
 
 const CELL: Record<AlertRule, string> = {

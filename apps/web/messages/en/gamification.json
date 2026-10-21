@@ -251,5 +251,7 @@
   "gamification_comfort_game_description": "The same game finished 3 times.",
   "gamification_xp_reason_saga_completed": "Saga completed",
   "gamification_xp_reason_reading_goal_reached": "Reading goal reached",
-  "gamification_xp_history_goal": "{year} goal · {count} books"
+  "gamification_xp_history_goal": "{year} goal · {count} books",
+  "gamification_phoenix_name": "Phoenix",
+  "gamification_phoenix_description": "Finish a series, book or game picked back up after a pause of over 6 months."
 }

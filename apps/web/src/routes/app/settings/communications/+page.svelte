@@ -247,6 +247,20 @@
     },
   ];
 
+  // Its own matrix too: push and email, no bell, both off until turned on.
+  const pausedGroups: AlertGroupRows[] = [
+    {
+      alerts: [
+        {
+          key: "PAUSED_REMINDER",
+          label: m.settings_alert_paused_reminder(),
+          hint: m.settings_alert_paused_reminder_hint(),
+          newBadgeKey: "paused-reminder",
+        },
+      ],
+    },
+  ];
+
   const adminGroups: AlertGroupRows[] = [
     {
       alerts: [
@@ -257,6 +271,11 @@
         { key: "ADMIN_JOB_FAILED", label: m.settings_alert_admin_job_failed() },
         { key: "ADMIN_QUOTA", label: m.settings_alert_admin_quota() },
         { key: "ADMIN_NEW_USER", label: m.settings_alert_admin_new_user() },
+        {
+          key: "ADMIN_UPDATE_AVAILABLE",
+          label: m.settings_alert_admin_update_available(),
+          newBadgeKey: "update-check",
+        },
       ],
     },
   ];
@@ -340,6 +359,13 @@
             description=""
             groups={sagaGroups}
             columns={["bell", "push", "email"]}
+            {pushBlocked} />
+          <AlertGrid
+            anchor="paused-reminder"
+            title=""
+            description=""
+            groups={pausedGroups}
+            columns={["push", "email"]}
             {pushBlocked} />
         </div>
       </section>

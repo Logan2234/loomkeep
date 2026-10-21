@@ -43,6 +43,7 @@ const GROUP_ICON: Record<string, IconName> = {
   streak: "flame",
   full_circle: "circle-arrow",
   welcome_back: "circle-arrow",
+  phoenix: "flame",
   cult_film: "play",
   bedside_book: "book",
   comfort_game: "gamepad",

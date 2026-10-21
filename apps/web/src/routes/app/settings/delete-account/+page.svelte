@@ -1,21 +1,32 @@
 <script lang="ts">
   import SettingsSection from "../components/SettingsSection.svelte";
 
-  import { goto } from "$app/navigation";
-  import { deleteAccount, getAccountDeletionSummary } from "#lib/api/client.js";
+  import {
+    cancelAccountDeletion,
+    getAccountDeletionSummary,
+    scheduleAccountDeletion,
+  } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
   import Modal from "#lib/components/Modal.svelte";
+  import {
+    DELETION_REASON_LABELS,
+    DELETION_REASONS,
+  } from "#lib/constants/deletion-reasons.js";
+  import { formatDate } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { reauth } from "#lib/reauth.svelte.js";
   import { toast } from "#lib/toast.svelte.js";
-  import type {
-    AccountDeletionAnonymizedCategory,
-    AccountDeletionDeletedCategory,
-    AccountDeletionKeptCategory,
+  import {
+    ACCOUNT_DELETION_GRACE_DAYS,
+    type AccountDeletionAnonymizedCategory,
+    type AccountDeletionDeletedCategory,
+    type AccountDeletionKeptCategory,
+    type AccountDeletionReason,
   } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
   import { slide } from "svelte/transition";
@@ -121,13 +132,38 @@
   };
 
   type Step =
-    "now" | "deleted" | "anonymized" | "transferred" | "kept" | "after";
+    | "now"
+    | "reminder"
+    | "deleted"
+    | "anonymized"
+    | "transferred"
+    | "kept"
+    | "after";
+
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const DAY_LABEL: Intl.DateTimeFormatOptions = {
+    day: "numeric",
+    month: "short",
+  };
 
   const reduced = prefersReducedMotion();
 
   let showModal = $state(false);
   // An accordion: every step starts closed, and opening one closes the other.
   let openStep = $state<Step | null>(null);
+  let reason = $state<AccountDeletionReason | null>(null);
+  // Fixed when the modal opens, so the dates shown don't drift while it's read.
+  let plannedFor = $state(new Date());
+
+  const scheduledFor = $derived(auth.user?.deletionScheduledFor ?? null);
+  const daysLeft = $derived(
+    scheduledFor
+      ? Math.max(
+          0,
+          Math.ceil((new Date(scheduledFor).getTime() - Date.now()) / DAY_MS),
+        )
+      : 0,
+  );
 
   const summaryQuery = createApiQuery(() => ({
     key: keys.account.deletionSummary(),
@@ -139,7 +175,9 @@
 
   function openDeleteModal() {
     openStep = null;
-    deleteMut.reset();
+    reason = null;
+    plannedFor = new Date(Date.now() + ACCOUNT_DELETION_GRACE_DAYS * DAY_MS);
+    scheduleMut.reset();
     showModal = true;
   }
 
@@ -151,11 +189,26 @@
     openStep = openStep === step ? null : step;
   }
 
-  const deleteMut = createApiMutation(() => ({
-    mutate: deleteAccount,
+  function setScheduledFor(value: string | null) {
+    if (auth.user) auth.user = { ...auth.user, deletionScheduledFor: value };
+  }
+
+  const scheduleMut = createApiMutation(() => ({
+    mutate: () => scheduleAccountDeletion({ reason: reason ?? undefined }),
+    onSuccess: ({ scheduledFor }) => {
+      setScheduledFor(scheduledFor);
+      toast.success(
+        m.settings_delete_account_success({ date: formatDate(scheduledFor) }),
+      );
+      showModal = false;
+    },
+  }));
+
+  const cancelMut = createApiMutation(() => ({
+    mutate: cancelAccountDeletion,
     onSuccess: () => {
-      toast.success(m.settings_delete_account_success());
-      void goto("/login");
+      setScheduledFor(null);
+      toast.success(m.settings_delete_account_cancelled());
     },
   }));
 </script>
@@ -217,12 +270,21 @@
 
 {#snippet nowBody()}
   <p class="text-dim text-sm">
-    {m.settings_delete_account_now_body({ count: summary?.sessions ?? 0 })}
+    {m.settings_delete_account_now_body({ days: ACCOUNT_DELETION_GRACE_DAYS })}
   </p>
+{/snippet}
+
+{#snippet reminderBody()}
+  <p class="text-dim text-sm">{m.settings_delete_account_reminder_body()}</p>
 {/snippet}
 
 {#snippet deletedBody()}
   <div class="flex flex-col gap-3">
+    <p class="text-dim text-sm">
+      {m.settings_delete_account_sessions_body({
+        count: summary?.sessions ?? 0,
+      })}
+    </p>
     {#each DELETED_GROUPS as group (group.title)}
       <div>
         <p class="timecode text-micro mb-1 tracking-wide uppercase">
@@ -287,15 +349,51 @@
       <h2 class="font-display text-danger text-lg font-bold">
         {m.settings_danger_zone_title()}
       </h2>
-      <p class="text-dim mt-2 max-w-2xl text-sm">
-        {m.settings_delete_account_modal_description()}
-      </p>
+      {#if scheduledFor}
+        <p class="mt-2 max-w-2xl text-sm">
+          {m.settings_delete_account_scheduled({
+            date: formatDate(scheduledFor),
+          })}
+          {daysLeft === 1
+            ? m.settings_delete_account_scheduled_days_one()
+            : m.settings_delete_account_scheduled_days_many({
+                count: daysLeft,
+              })}
+        </p>
+        <p class="text-dim mt-1 max-w-2xl text-sm">
+          {m.settings_delete_account_scheduled_mail({
+            email: auth.user?.email ?? "",
+          })}
+        </p>
+      {:else}
+        <p class="text-dim mt-2 max-w-2xl text-sm">
+          {m.settings_delete_account_modal_description({
+            days: ACCOUNT_DELETION_GRACE_DAYS,
+          })}
+        </p>
+      {/if}
     </div>
-    <div class="border-danger/30 border-t px-5 py-4 md:px-6">
-      <button class="btn btn-danger" onclick={openDeleteModal}>
-        {m.settings_delete_account_button()}
-      </button>
+    <div
+      class="border-danger/30 flex flex-wrap items-center gap-2 border-t px-5 py-4 md:px-6">
+      {#if scheduledFor}
+        <button
+          class="btn btn-primary"
+          disabled={cancelMut.loading}
+          onclick={() => cancelMut.mutate()}>
+          {m.settings_delete_account_cancel()}
+        </button>
+        <a class="btn btn-ghost" href="/app/settings/export">
+          {m.settings_delete_account_export_link()}
+        </a>
+      {:else}
+        <button class="btn btn-danger" onclick={openDeleteModal}>
+          {m.settings_delete_account_button()}
+        </button>
+      {/if}
     </div>
+    {#if cancelMut.error}
+      <p class="text-danger px-5 pb-4 text-sm md:px-6">{cancelMut.error}</p>
+    {/if}
   </section>
 
   {#if showModal}
@@ -306,7 +404,7 @@
           e.preventDefault();
           // Asked every time, however recently the person confirmed.
           if (await reauth.confirm(m.reauth_reason_delete())) {
-            deleteMut.mutate();
+            scheduleMut.mutate();
           }
         }}>
         <a
@@ -324,6 +422,30 @@
           </span>
           <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
         </a>
+
+        <fieldset class="flex flex-col gap-2">
+          <legend class="mb-2 font-semibold">
+            {m.settings_delete_account_reason_legend()}
+            <span class="text-dim text-sm font-normal">
+              {m.settings_delete_account_reason_hint()}
+            </span>
+          </legend>
+          <div class="flex flex-wrap gap-1.5">
+            {#each DELETION_REASONS as value (value)}
+              <button
+                type="button"
+                class="chip"
+                class:chip-on={reason === value}
+                aria-pressed={reason === value}
+                onclick={() => (reason = reason === value ? null : value)}>
+                {DELETION_REASON_LABELS[value]()}
+              </button>
+            {/each}
+          </div>
+          <p class="text-dim text-xs">
+            {m.settings_delete_account_reason_note()}
+          </p>
+        </fieldset>
 
         <div>
           <p class="mb-2 font-semibold">
@@ -343,14 +465,24 @@
             <ol class="border-border ml-3 flex flex-col border-l pl-4">
               {@render step(
                 "now",
-                m.settings_delete_account_step_now(),
+                m.common_today(),
                 m.settings_delete_account_now_title(),
-                "text-danger border-danger",
+                "text-accent border-accent",
                 nowBody,
               )}
               {@render step(
+                "reminder",
+                formatDate(
+                  new Date(plannedFor.getTime() - 2 * DAY_MS),
+                  DAY_LABEL,
+                ),
+                m.settings_delete_account_reminder_title(),
+                "text-dim border-dim",
+                reminderBody,
+              )}
+              {@render step(
                 "deleted",
-                m.settings_delete_account_step_deleted(),
+                formatDate(plannedFor, DAY_LABEL),
                 m.settings_delete_account_deleted_title(),
                 "text-danger border-danger",
                 deletedBody,
@@ -391,8 +523,8 @@
           {/if}
         </div>
 
-        {#if deleteMut.error}
-          <p class="text-danger text-sm">{deleteMut.error}</p>
+        {#if scheduleMut.error}
+          <p class="text-danger text-sm">{scheduleMut.error}</p>
         {/if}
         <div class="mt-2 flex justify-end gap-2">
           <button type="button" class="btn btn-ghost" onclick={closeModal}>
@@ -401,10 +533,12 @@
           <button
             type="submit"
             class="btn btn-danger"
-            disabled={deleteMut.loading}>
-            {deleteMut.loading
+            disabled={scheduleMut.loading}>
+            {scheduleMut.loading
               ? m.settings_delete_account_deleting()
-              : m.settings_delete_account_confirm()}
+              : m.settings_delete_account_confirm({
+                  days: ACCOUNT_DELETION_GRACE_DAYS,
+                })}
           </button>
         </div>
       </form>

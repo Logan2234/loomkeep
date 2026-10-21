@@ -3,6 +3,7 @@ import { goto } from "$app/navigation";
 import { LEGACY_STORAGE_KEYS } from "#lib/constants/storage-keys.js";
 import { browser } from "$app/env";
 import type {
+  AccountDeletionScheduleDto,
   AccountDeletionSummaryDto,
   ChangeEmailRequestDto,
   ChangePasswordRequestDto,
@@ -15,6 +16,7 @@ import type {
   MfaVerifyRequestDto,
   ReauthRequestDto,
   RegisterRequestDto,
+  ScheduleAccountDeletionRequestDto,
   UpdateUsernameRequestDto,
   UpdateUserRequestDto,
   UploadAvatarRequestDto,
@@ -316,10 +318,21 @@ export const getAccountDeletionSummary =
   (): Promise<AccountDeletionSummaryDto> =>
     typedRequest("/users/me/deletion-summary");
 
-export async function deleteAccount(): Promise<void> {
-  await typedRequest("/users/me", { method: "DELETE" });
-  auth.clear();
-}
+export const scheduleAccountDeletion = (
+  body: ScheduleAccountDeletionRequestDto,
+): Promise<AccountDeletionScheduleDto> =>
+  typedRequest("/users/me/deletion", { method: "POST", body });
+
+export const cancelAccountDeletion = (): Promise<void> =>
+  typedRequest("/users/me/deletion", { method: "DELETE" });
+
+/** The emailed cancel link: works signed out. */
+export const cancelAccountDeletionWithToken = (token: string): Promise<void> =>
+  typedRequest("/users/deletion/cancel", {
+    method: "POST",
+    body: { token },
+    withAuth: false,
+  });
 
 /** The methods to confirm it's you with, and this session's confirmation. */
 export const getReauthStatus = () => typedRequest("/auth/reauth");

@@ -30,6 +30,7 @@
     | "gamificationEnabled"
     | "registrationEnabled"
     | "publicApiEnabled"
+    | "updateCheckEnabled"
   >;
   type LimitKey = Extract<
     InstanceSettingKey,
@@ -74,6 +75,11 @@
       key: "registrationEnabled",
       label: m.admin_settings_registration(),
       hint: m.admin_settings_registration_hint(),
+    },
+    {
+      key: "updateCheckEnabled",
+      label: m.admin_settings_update_check(),
+      hint: m.admin_settings_update_check_hint(),
     },
   ];
   const LIMITS: { key: LimitKey; label: string }[] = [

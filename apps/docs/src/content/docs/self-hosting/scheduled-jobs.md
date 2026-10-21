@@ -11,6 +11,7 @@ each job's recent runs and runs one by hand.
 | ------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
 | New episodes             | Every hour    | Finds the episodes newly out for the shows people follow.                                                            | `HEALTHCHECKS_NOTIFICATIONS_SCAN_URL`              |
 | Notification digests     | Every hour    | Sends each person's digest at their local time: 6 p.m. for the daily one, Monday 9 a.m. for the weekly one.          | `HEALTHCHECKS_NOTIFICATIONS_DIGEST_URL`            |
+| Paused works reminder    | Every hour    | On the first Monday of the month, 9 a.m. local time, reminds those who turned it on of the works they set aside.     | `HEALTHCHECKS_PAUSED_REMINDER_URL`                 |
 | Films and series refresh | Every 6 hours | Refreshes tracked titles not synced for a day, so new episodes are known before the hourly check.                    | `HEALTHCHECKS_MEDIA_REFRESH_STALE_URL`             |
 | Games refresh            | Every 6 hours | The same for games.                                                                                                  | `HEALTHCHECKS_GAMES_REFRESH_STALE_URL`             |
 | Books refresh            | Every 6 hours | The same for books.                                                                                                  | `HEALTHCHECKS_BOOKS_REFRESH_STALE_URL`             |
@@ -18,6 +19,8 @@ each job's recent runs and runs one by hand.
 | XP reconciliation        | 4 a.m.        | Takes back experience points whose cause is gone (an episode unticked, a review deleted), then recounts totals.      | `HEALTHCHECKS_GAMIFICATION_RECONCILE_URL`          |
 | Achievements sweep       | 5 a.m.        | Awards any achievement missed along the way, imports included.                                                       | `HEALTHCHECKS_GAMIFICATION_ACHIEVEMENTS_SWEEP_URL` |
 | Inactive accounts        | 5 a.m.        | Warns accounts unused for 2 years by email, and deletes them after 3. Any sign-in cancels the warning.               | `HEALTHCHECKS_INACTIVE_ACCOUNTS_SCAN_URL`          |
+| Scheduled deletions      | 5:15 a.m.     | Reminds accounts whose deletion is 2 days away, then deletes those whose 14 days are over.                           | `HEALTHCHECKS_SCHEDULED_DELETIONS_URL`             |
+| Update check             | 5:30 a.m.     | Reads the version published on GitHub, shown in Admin › Services. Turned off by `UPDATE_CHECK_ENABLED=false`.        | `HEALTHCHECKS_UPDATE_CHECK_URL`                    |
 | API keys                 | 6 a.m.        | Warns a week before a key expires, and deletes keys unused for a year.                                               | `HEALTHCHECKS_API_KEYS_MAINTENANCE_URL`            |
 | Reports digest           | 7 a.m.        | Emails administrators the pending moderation reports, if there are any.                                              | `HEALTHCHECKS_REPORTS_DIGEST_URL`                  |
 | Security log clean-up    | 6 a.m.        | Deletes security log entries older than a year.                                                                      | —                                                  |

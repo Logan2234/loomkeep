@@ -40,6 +40,9 @@ const SHIPPED = {
   "anilist-import": "2026-10-20",
   letterboxd: "2026-10-20",
   imdb: "2026-10-20",
+  "paused-reminder": "2026-10-21",
+  "update-check": "2026-10-21",
+  "newsletter-preview": "2026-10-21",
 };
 
 export type FeatureBadgeKey = keyof typeof SHIPPED;

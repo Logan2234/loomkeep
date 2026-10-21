@@ -13,7 +13,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 14/10/2026</em></p>
+    <p><em>Dernière mise à jour : 21/10/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -607,6 +607,14 @@
     <p>
       L'utilisateur peut supprimer son compte selon les fonctionnalités
       proposées par Loomkeep.
+    </p>
+    <p>
+      La suppression demandée par l'utilisateur prend effet 14 jours après sa
+      demande. Pendant ce délai, le compte reste utilisable normalement, et la
+      demande peut être annulée depuis l'application ou par le lien envoyé par
+      e-mail ; un rappel est envoyé 48 heures avant l'échéance. Le motif de
+      départ éventuellement indiqué est conservé sans aucun lien avec le compte,
+      à des fins statistiques.
     </p>
     <p>
       La suppression entraîne la suppression des données personnelles dans les

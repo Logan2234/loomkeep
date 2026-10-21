@@ -231,5 +231,8 @@
   "apierr_auth_reauth_required": "Confirme ton identité pour continuer.",
   "apierr_auth_reauth_too_many_attempts": "Trop de tentatives : cet appareil a été déconnecté. Reconnecte-toi.",
   "apierr_auth_totp_code_reused": "Ce code vient de servir. Attends le suivant dans ton application.",
-  "apierr_auth_reauth_cancelled": "Action annulée : ton identité n'a pas été confirmée."
+  "apierr_auth_reauth_cancelled": "Action annulée : ton identité n'a pas été confirmée.",
+  "apierr_user_deletion_cancel_link_invalid": "Ce lien n'est plus valable : la suppression a déjà eu lieu ou a été annulée.",
+  "apierr_user_deletion_not_scheduled": "Aucune suppression n'est programmée pour ce compte.",
+  "apierr_newsletter_send_not_found": "Cet envoi n'existe plus."
 }
