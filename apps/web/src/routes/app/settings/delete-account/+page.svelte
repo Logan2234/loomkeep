@@ -10,6 +10,7 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
+  import Combobox from "#lib/components/Combobox.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import Modal from "#lib/components/Modal.svelte";
   import {
@@ -152,6 +153,13 @@
   // An accordion: every step starts closed, and opening one closes the other.
   let openStep = $state<Step | null>(null);
   let reason = $state<AccountDeletionReason | null>(null);
+  const REASON_OPTIONS = [
+    { value: "", label: m.settings_delete_account_reason_none() },
+    ...DELETION_REASONS.map((value) => ({
+      value,
+      label: DELETION_REASON_LABELS[value](),
+    })),
+  ];
   // Fixed when the modal opens, so the dates shown don't drift while it's read.
   let plannedFor = $state(new Date());
 
@@ -423,29 +431,23 @@
           <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
         </a>
 
-        <fieldset class="flex flex-col gap-2">
-          <legend class="mb-2 font-semibold">
+        <div class="flex flex-col gap-2">
+          <p class="font-semibold">
             {m.settings_delete_account_reason_legend()}
             <span class="text-dim text-sm font-normal">
               {m.settings_delete_account_reason_hint()}
             </span>
-          </legend>
-          <div class="flex flex-wrap gap-1.5">
-            {#each DELETION_REASONS as value (value)}
-              <button
-                type="button"
-                class="chip"
-                class:chip-on={reason === value}
-                aria-pressed={reason === value}
-                onclick={() => (reason = reason === value ? null : value)}>
-                {DELETION_REASON_LABELS[value]()}
-              </button>
-            {/each}
-          </div>
+          </p>
+          <Combobox
+            label={m.settings_delete_account_reason_legend()}
+            options={REASON_OPTIONS}
+            values={[reason ?? ""]}
+            onChange={([value]) =>
+              (reason = (value || null) as AccountDeletionReason | null)} />
           <p class="text-dim text-xs">
             {m.settings_delete_account_reason_note()}
           </p>
-        </fieldset>
+        </div>
 
         <div>
           <p class="mb-2 font-semibold">

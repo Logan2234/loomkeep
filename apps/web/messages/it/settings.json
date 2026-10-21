@@ -594,5 +594,6 @@
   "settings_deletion_banner_hint": "Fino ad allora, tutto funziona normalmente.",
   "settings_alert_paused_reminder": "Opere in pausa",
   "settings_alert_paused_reminder_hint": "Un promemoria mensile di serie, libri e giochi lasciati da più di 30 giorni, con gli episodi usciti nel frattempo.",
-  "settings_alert_admin_update_available": "Una nuova versione di Loomkeep pubblicata"
+  "settings_alert_admin_update_available": "Una nuova versione di Loomkeep pubblicata",
+  "settings_delete_account_reason_none": "Preferisco non rispondere"
 }

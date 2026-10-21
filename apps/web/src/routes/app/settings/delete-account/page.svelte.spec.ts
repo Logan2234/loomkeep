@@ -139,8 +139,9 @@ describe("Scheduling the deletion", () => {
     );
     const { user, dialog } = await openModal(summary());
 
+    await user.click(within(dialog).getByRole("combobox"));
     await user.click(
-      within(dialog).getByRole("button", {
+      within(dialog).getByRole("option", {
         name: m.settings_delete_account_reason_privacy(),
       }),
     );

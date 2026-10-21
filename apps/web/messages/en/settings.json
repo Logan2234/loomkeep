@@ -594,5 +594,6 @@
   "settings_deletion_banner_hint": "Until then, everything works as usual.",
   "settings_alert_paused_reminder": "Paused works",
   "settings_alert_paused_reminder_hint": "A monthly reminder of the shows, books and games left alone for over 30 days, with the episodes released meanwhile.",
-  "settings_alert_admin_update_available": "A new Loomkeep version published"
+  "settings_alert_admin_update_available": "A new Loomkeep version published",
+  "settings_delete_account_reason_none": "I'd rather not say"
 }
