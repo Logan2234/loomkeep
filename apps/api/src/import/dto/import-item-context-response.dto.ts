@@ -52,6 +52,13 @@ class MovieImportContextResponseDto implements MovieContext {
   rewatches!: number;
   rating!: number | null;
   favorite!: boolean;
+
+  @ApiProperty({
+    enum: Object.values(EntryStatus),
+    nullable: true,
+    required: false,
+  })
+  status?: EntryStatus | null;
 }
 
 export const IMPORT_ITEM_CONTEXT_MODELS = [

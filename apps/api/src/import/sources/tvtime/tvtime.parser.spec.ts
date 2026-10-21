@@ -97,6 +97,22 @@ describe("parseTvTimeExport", () => {
     expect(shows.map((s) => s.tvdbId)).toEqual(["12345"]);
   });
 
+  it("dates a show from its v2 follow row, when the export has one", () => {
+    const episodesCsv = [
+      "key,series_name,episode_id,season_number,episode_number,s_id,bulk_type,created_at,is_for_later,is_archived",
+      "user-series-a,My Show,,,,100,,2023-12-01 09:00:00,false,false",
+      "watch-episode-1,My Show,295295,1,2,100,,2023-12-29 01:07:02,,",
+      "watch-episode-2,Other,295300,1,1,200,,2024-01-02 10:00:00,,",
+    ].join("\n");
+
+    const { shows } = parseTvTimeExport({ episodesCsv });
+
+    expect(shows.map((s) => [s.tvdbId, s.addedAt])).toEqual([
+      ["100", new Date("2023-12-01T09:00:00.000Z")],
+      ["200", null],
+    ]);
+  });
+
   it("keeps a show set aside for later on the watchlist, even unfollowed", () => {
     // The v2 file's `user-series-*` rows carry a show's follow flags.
     const episodesCsv = [
@@ -155,6 +171,8 @@ describe("parseTvTimeExport", () => {
       rewatchedAt: [],
       rating: null,
       favorite: false,
+      // Its first row, the follow, is when it entered TV Time.
+      addedAt: new Date("2022-01-01T00:00:00.000Z"),
     });
     const dune = movies.find((m) => m.title === "Dune")!;
     expect(dune).toEqual({
@@ -165,6 +183,7 @@ describe("parseTvTimeExport", () => {
       rewatchedAt: [],
       rating: null,
       favorite: false,
+      addedAt: null,
     });
   });
 
@@ -194,6 +213,7 @@ describe("parseTvTimeExport", () => {
         ],
         rating: null,
         favorite: false,
+        addedAt: new Date("2020-04-13T15:43:02.000Z"),
       },
     ]);
   });

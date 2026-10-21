@@ -8,7 +8,10 @@ sidebar:
 import { Steps } from "@astrojs/starlight/components";
 
 **What comes in:** your anime list, with progress, scores, start and finish
-dates, and notes. Custom lists and manga aren't imported.
+dates, notes and the date you added each anime, your favourite anime, and
+your custom lists.
+
+**Not imported:** manga, rewatch counts, and whether an entry is private.
 
 <Steps>
 
@@ -22,4 +25,6 @@ dates, and notes. Custom lists and manga aren't imported.
 
 There is nothing to match: AniList is the catalogue Loomkeep uses for anime,
 so every title comes in as itself. Paused and rewatched titles come in as
-watching, and a score is rounded to the nearest half point.
+watching, and a score is rounded to the nearest half point. Each custom list
+becomes a Loomkeep list with the same name; a list you already have under
+that name is left alone.

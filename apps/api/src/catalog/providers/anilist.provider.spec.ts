@@ -784,12 +784,13 @@ describe("AnilistProvider", () => {
         status,
         headers: { "Content-Type": "application/json" },
       });
-    const list = (ids: number[], isCustomList = false) => ({
+    const list = (ids: number[], isCustomList = false, name = "Watching") => ({
+      name,
       isCustomList,
       entries: ids.map((id) => ({ status: "CURRENT", media: { id } })),
     });
 
-    it("reads every chunk and leaves custom lists out", async () => {
+    it("reads every chunk and keeps custom lists apart", async () => {
       const fetch = vi
         .fn()
         .mockResolvedValueOnce(
@@ -797,7 +798,7 @@ describe("AnilistProvider", () => {
             data: {
               MediaListCollection: {
                 hasNextChunk: true,
-                lists: [list([1, 2]), list([1], true)],
+                lists: [list([1, 2]), list([1], true, "Comfy")],
               },
             },
           }),
@@ -805,15 +806,22 @@ describe("AnilistProvider", () => {
         .mockResolvedValueOnce(
           respond(200, {
             data: {
-              MediaListCollection: { hasNextChunk: false, lists: [list([3])] },
+              MediaListCollection: {
+                hasNextChunk: false,
+                lists: [list([3]), list([3], true, "Comfy")],
+              },
             },
           }),
         );
       global.fetch = fetch as typeof global.fetch;
 
-      const entries = await provider.getUserAnimeList("Josh");
+      const { entries, customLists } = await provider.getUserAnimeList("Josh");
 
       expect(entries.map((e) => e.media.id)).toEqual([1, 2, 3]);
+      // A custom list split across chunks is still one list.
+      expect(
+        customLists.map((l) => [l.name, l.entries.map((e) => e.media.id)]),
+      ).toEqual([["Comfy", [1, 3]]]);
       expect(fetch).toHaveBeenCalledTimes(2);
     });
 
@@ -835,6 +843,38 @@ describe("AnilistProvider", () => {
       await expect(provider.getUserAnimeList("Nobody")).rejects.toMatchObject({
         code: "import.anilist_user_not_found",
       });
+    });
+  });
+
+  describe("getUserFavouriteAnimeIds", () => {
+    const page = (ids: number[], hasNextPage: boolean) =>
+      new Response(
+        JSON.stringify({
+          data: {
+            User: {
+              favourites: {
+                anime: {
+                  pageInfo: { hasNextPage },
+                  nodes: ids.map((id) => ({ id })),
+                },
+              },
+            },
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+
+    it("reads every page of the user's favourite anime", async () => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(page([1, 2], true))
+        .mockResolvedValueOnce(page([3], false));
+      global.fetch = fetch as typeof global.fetch;
+
+      expect(await provider.getUserFavouriteAnimeIds("Josh")).toEqual([
+        1, 2, 3,
+      ]);
+      expect(fetch).toHaveBeenCalledTimes(2);
     });
   });
 });

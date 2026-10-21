@@ -127,24 +127,29 @@ function providerStubs() {
       // The MyAnimeList import resolves exclusively through AniList's `idMal`.
       getSummaryByMalId: vi.fn().mockResolvedValue(ANIME_SUMMARY),
       // The AniList import reads a user's list: one show, two episodes in.
-      getUserAnimeList: vi.fn().mockResolvedValue([
-        {
-          status: "CURRENT",
-          score: 8,
-          progress: 2,
-          notes: null,
-          startedAt: { year: 2026, month: 1, day: 3 },
-          completedAt: null,
-          media: {
-            id: Number(ANIME_SUMMARY.sourceId),
-            title: { english: ANIME_SUMMARY.title, romaji: null },
-            seasonYear: ANIME_SUMMARY.year,
-            coverImage: { large: ANIME_SUMMARY.posterUrl },
-            isAdult: false,
-            format: "TV",
+      getUserAnimeList: vi.fn().mockResolvedValue({
+        entries: [
+          {
+            status: "CURRENT",
+            score: 8,
+            progress: 2,
+            notes: null,
+            startedAt: { year: 2026, month: 1, day: 3 },
+            completedAt: null,
+            createdAt: null,
+            media: {
+              id: Number(ANIME_SUMMARY.sourceId),
+              title: { english: ANIME_SUMMARY.title, romaji: null },
+              seasonYear: ANIME_SUMMARY.year,
+              coverImage: { large: ANIME_SUMMARY.posterUrl },
+              isAdult: false,
+              format: "TV",
+            },
           },
-        },
-      ]),
+        ],
+        customLists: [],
+      }),
+      getUserFavouriteAnimeIds: vi.fn().mockResolvedValue([]),
     },
     tmdb: {
       source: CatalogSource.TMDB,

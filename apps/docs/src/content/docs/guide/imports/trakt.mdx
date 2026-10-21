@@ -7,11 +7,12 @@ sidebar:
 
 import { Steps } from "@astrojs/starlight/components";
 
-**What comes in:** your watch history, films and series, your watchlist,
-your favorites, and your ratings of films, series, seasons and episodes. A
-title you rated but never marked as watched joins your watchlist with its
-rating, and a rated episode you never marked keeps its rating without
-counting as watched.
+**What comes in:** your watch history (films and episodes, with their dates
+and rewatches), your watchlist with the date you added each title, your
+favourites, and your ratings of films, series, seasons and episodes.
+
+**Not imported yet:** your comments and reviews, custom lists, collection and
+notes.
 
 <Steps>
 
@@ -24,3 +25,10 @@ counting as watched.
 
 Trakt's export carries each title's TMDB, TVDB and IMDb ids, so most titles
 match exactly.
+
+A few things to know:
+
+- **Rated, never watched:** Trakt lets you rate a title without marking it
+  watched. Such a film or series joins your watchlist with its rating.
+- **Episodes:** a rated episode you never marked as watched keeps its rating
+  without counting as watched, so your progress stays as it was.

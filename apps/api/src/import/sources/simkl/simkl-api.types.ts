@@ -42,8 +42,17 @@ interface SimklSeason {
   episodes: SimklEpisode[];
 }
 
+/** What every entry carries besides its status and title. */
+interface SimklEntryExtras {
+  /** 1-10, null when unrated. */
+  user_rating?: number | null;
+  added_to_watchlist_at?: string | null;
+  /** Present with `memos=yes`; an empty memo comes as `{}`. Up to 140 characters. */
+  memo?: { text?: string; is_private?: boolean };
+}
+
 /** One show/anime entry, keyed under `show` even for anime items. */
-export interface SimklShowEntry {
+export interface SimklShowEntry extends SimklEntryExtras {
   status: SimklWatchlistStatus;
   show: SimklShowRef;
   /** Present with `extended=full`; absent for a watchlist-only (never started) entry. */
@@ -51,7 +60,7 @@ export interface SimklShowEntry {
 }
 
 /** One movie entry. */
-export interface SimklMovieEntry {
+export interface SimklMovieEntry extends SimklEntryExtras {
   status: SimklWatchlistStatus;
   last_watched_at?: string;
   movie: SimklMovieRef;

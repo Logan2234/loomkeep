@@ -226,6 +226,7 @@ export abstract class MediaImportSource<
           rewatches: movie.rewatchedAt.length,
           rating: movie.rating ?? null,
           favorite: movie.favorite ?? false,
+          status: movie.status ?? null,
         },
         coverUrl: match?.coverUrl ?? null,
         match,
@@ -233,7 +234,9 @@ export abstract class MediaImportSource<
         alreadyInLibrary: false,
         defaultStatus: null,
       };
-      (movie.watched ? moviesWatched : moviesWatchlist).push(item);
+      (movie.watched || movie.status ? moviesWatched : moviesWatchlist).push(
+        item,
+      );
     });
 
     const listFilms: ImportPlanItem[] = [];
@@ -611,7 +614,7 @@ export abstract class MediaImportSource<
     });
     const status = furthestStatus(
       existing?.status ?? null,
-      watched ? "COMPLETED" : "PLANNED",
+      movie.status ?? (watched ? "COMPLETED" : "PLANNED"),
     );
     // Only ever turns favorite ON — an importer never has grounds to unset
     // something the user set manually in the app.

@@ -116,8 +116,8 @@ const MAL_ID_QUERY = `
   }
 `;
 
-// A user's whole anime list, by chunks: custom lists repeat entries already
-// in a status list, so they're left out.
+// A user's whole anime list, by chunks. Custom lists repeat entries already
+// in a status list, so they come back apart, as lists.
 const USER_LIST_QUERY = `
   query ($userName: String, $chunk: Int) {
     MediaListCollection(
@@ -129,6 +129,7 @@ const USER_LIST_QUERY = `
     ) {
       hasNextChunk
       lists {
+        name
         isCustomList
         entries {
           status
@@ -137,6 +138,7 @@ const USER_LIST_QUERY = `
           notes
           startedAt { year month day }
           completedAt { year month day }
+          createdAt
           media {
             id
             title { romaji english }
@@ -154,6 +156,22 @@ const USER_LIST_QUERY = `
 // 500 entries a chunk: 40 chunks is 20 000 anime, past any real list.
 const MAX_USER_LIST_CHUNKS = 40;
 
+const USER_FAVOURITES_QUERY = `
+  query ($userName: String, $page: Int) {
+    User(name: $userName) {
+      favourites {
+        anime(page: $page, perPage: 25) {
+          pageInfo { hasNextPage }
+          nodes { id }
+        }
+      }
+    }
+  }
+`;
+
+// 25 a page: 20 pages is 500 favourites, past any real profile.
+const MAX_USER_FAVOURITE_PAGES = 20;
+
 /** One entry of an AniList user's anime list, as {@link AnilistProvider.getUserAnimeList} returns it. */
 export interface AnilistListEntry {
   /** CURRENT, PLANNING, COMPLETED, DROPPED, PAUSED or REPEATING. */
@@ -165,7 +183,15 @@ export interface AnilistListEntry {
   notes: string | null;
   startedAt: AnilistFuzzyDate | null;
   completedAt: AnilistFuzzyDate | null;
+  /** When the entry was added, in Unix seconds; 0 or null when unknown. */
+  createdAt: number | null;
   media: AnilistMedia & { format?: string | null };
+}
+
+/** A user's anime list: every status list's entries, and their custom lists. */
+export interface AnilistUserList {
+  entries: AnilistListEntry[];
+  customLists: { name: string; entries: AnilistListEntry[] }[];
 }
 
 export interface AnilistFuzzyDate {
@@ -360,24 +386,64 @@ export class AnilistProvider implements CatalogProvider {
   }
 
   /**
-   * A user's anime list, every status list. Not through {@link query}: a
-   * missing user and a private list both answer 404, told apart only by
-   * the error's own message.
+   * A user's anime list, every status list and custom list. Not through
+   * {@link query}: a missing user and a private list both answer 404, told
+   * apart only by the error's own message.
    */
-  async getUserAnimeList(userName: string): Promise<AnilistListEntry[]> {
+  async getUserAnimeList(userName: string): Promise<AnilistUserList> {
     const entries: AnilistListEntry[] = [];
+    // A custom list can run across chunks: gathered by name.
+    const customLists = new Map<string, AnilistListEntry[]>();
 
     for (let chunk = 1; chunk <= MAX_USER_LIST_CHUNKS; chunk++) {
       const page = await this.userListChunk(userName, chunk);
 
       for (const list of page.lists ?? []) {
-        if (!list.isCustomList) entries.push(...list.entries);
+        if (!list.isCustomList) {
+          entries.push(...list.entries);
+          continue;
+        }
+
+        const listed = customLists.get(list.name) ?? [];
+        listed.push(...list.entries);
+        customLists.set(list.name, listed);
       }
 
       if (!page.hasNextChunk) break;
     }
 
-    return entries;
+    return {
+      entries,
+      customLists: [...customLists].map(([name, listed]) => ({
+        name,
+        entries: listed,
+      })),
+    };
+  }
+
+  /** The ids of a user's favourite anime, as their public profile shows them. */
+  async getUserFavouriteAnimeIds(userName: string): Promise<number[]> {
+    const ids: number[] = [];
+
+    for (let page = 1; page <= MAX_USER_FAVOURITE_PAGES; page++) {
+      const data = await this.query<{
+        User: {
+          favourites: {
+            anime: {
+              pageInfo: { hasNextPage: boolean };
+              nodes: { id: number }[];
+            };
+          };
+        } | null;
+      }>(USER_FAVOURITES_QUERY, { userName, page });
+      const anime = data.User?.favourites.anime;
+      if (!anime) break;
+
+      ids.push(...anime.nodes.map((node) => node.id));
+      if (!anime.pageInfo.hasNextPage) break;
+    }
+
+    return ids;
   }
 
   private async userListChunk(
@@ -385,7 +451,9 @@ export class AnilistProvider implements CatalogProvider {
     chunk: number,
   ): Promise<{
     hasNextChunk: boolean;
-    lists: { isCustomList: boolean; entries: AnilistListEntry[] }[] | null;
+    lists:
+      | { name: string; isCustomList: boolean; entries: AnilistListEntry[] }[]
+      | null;
   }> {
     await this.throttle.wait();
     this.quota.record("anilist");
@@ -416,7 +484,11 @@ export class AnilistProvider implements CatalogProvider {
       data?: {
         MediaListCollection: {
           hasNextChunk: boolean;
-          lists: { isCustomList: boolean; entries: AnilistListEntry[] }[];
+          lists: {
+            name: string;
+            isCustomList: boolean;
+            entries: AnilistListEntry[];
+          }[];
         } | null;
       };
       errors?: { message: string }[];

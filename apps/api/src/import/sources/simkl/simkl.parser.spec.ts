@@ -45,6 +45,9 @@ describe("buildImportShows", () => {
             totalWatches: 1,
           },
         ],
+        rating: null,
+        notes: null,
+        addedAt: null,
       },
     ]);
   });
@@ -64,6 +67,9 @@ describe("buildImportShows", () => {
         title: "Charmed",
         externalIds: { tmdb: undefined, tvdb: undefined, imdb: undefined },
         episodes: [],
+        rating: null,
+        notes: null,
+        addedAt: null,
       },
     ]);
   });
@@ -127,6 +133,9 @@ describe("buildImportMovies", () => {
         watchedAt: new Date("1994-09-01T16:00:00Z"),
         rewatchedAt: [],
         externalIds: { tmdb: "238", tvdb: undefined, imdb: "tt0068646" },
+        rating: null,
+        notes: null,
+        addedAt: null,
       },
     ]);
   });
@@ -148,16 +157,73 @@ describe("buildImportMovies", () => {
     expect(buildImportMovies(data)[0].watched).toBe(false);
   });
 
-  it("treats a dropped movie as watched (it was started)", () => {
+  it("keeps a dropped movie as dropped, not as watched", () => {
     const data: SimklAllItemsResponse = {
       movies: [
         {
           status: "dropped",
+          last_watched_at: "2026-01-01T20:00:00Z",
           movie: { title: "Some Movie", year: 2019, ids: { simkl: 5 } },
         },
       ],
     };
 
-    expect(buildImportMovies(data)[0].watched).toBe(true);
+    expect(buildImportMovies(data)[0]).toMatchObject({
+      watched: false,
+      watchedAt: null,
+      status: "DROPPED",
+    });
+  });
+
+  it("carries a movie's rating, memo and the date it was added", () => {
+    const data: SimklAllItemsResponse = {
+      movies: [
+        {
+          status: "plantowatch",
+          user_rating: 7,
+          added_to_watchlist_at: "2025-03-01T10:00:00Z",
+          memo: { text: "Recommended by Sam", is_private: true },
+          movie: { title: "Dune", year: 2021, ids: { simkl: 99 } },
+        },
+      ],
+    };
+
+    expect(buildImportMovies(data)[0]).toMatchObject({
+      rating: 7,
+      notes: "Recommended by Sam",
+      addedAt: new Date("2025-03-01T10:00:00Z"),
+    });
+  });
+});
+
+describe("Simkl show statuses and extras", () => {
+  it("states dropped and on-hold shows outright, and carries rating, memo and added date", () => {
+    const show = (status: "dropped" | "hold" | "watching", simkl: number) => ({
+      status,
+      user_rating: simkl === 1 ? 9 : null,
+      added_to_watchlist_at: simkl === 1 ? "2024-02-02T00:00:00Z" : null,
+      memo: simkl === 1 ? { text: "  Rewatch with Alex  " } : {},
+      show: { title: `Show ${simkl}`, year: 2020, ids: { simkl } },
+    });
+
+    const shows = buildImportShows({
+      shows: [show("dropped", 1), show("hold", 2), show("watching", 3)],
+    });
+
+    expect(shows.map((s) => s.status)).toEqual([
+      "DROPPED",
+      "WATCHING",
+      undefined,
+    ]);
+    expect(shows[0]).toMatchObject({
+      rating: 9,
+      notes: "Rewatch with Alex",
+      addedAt: new Date("2024-02-02T00:00:00Z"),
+    });
+    expect(shows[1]).toMatchObject({
+      rating: null,
+      notes: null,
+      addedAt: null,
+    });
   });
 });

@@ -199,6 +199,21 @@ describe("import presentation", () => {
     );
   });
 
+  it("names the status a source states for a movie", () => {
+    expect(
+      importItemSubtitle(
+        item({
+          kind: "movie",
+          year: 2019,
+          rewatches: 0,
+          rating: null,
+          favorite: false,
+          status: "DROPPED",
+        }),
+      ),
+    ).toBe(`2019 · ${m.library_status_dropped()}`);
+  });
+
   it("counts the titles of a list to create", () => {
     expect(importListSubtitle({ name: "Kdrama", itemCount: 1 })).toBe(
       m.import_list_title({ count: "1" }),
