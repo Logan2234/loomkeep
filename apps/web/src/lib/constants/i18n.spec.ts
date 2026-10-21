@@ -30,8 +30,8 @@ describe("translated constants", () => {
       );
       expect(IMPORTS_DEFINITION.tvtime.description).toBe(
         locale === "en"
-          ? "Movies, series and anime."
-          : "Films, séries et anime.",
+          ? "Movies, series and anime: history, watchlist, ratings, favorites and lists (ZIP)."
+          : "Films, séries et anime : historique, watchlist, notes, favoris et listes (ZIP).",
       );
       expect(IMPORTS_DEFINITION.tvtime.input.type).toBe("zip");
       expect(IMPORTS_DEFINITION.steam.label).toBe("Steam");
