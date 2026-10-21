@@ -87,10 +87,10 @@ export type ImportItemContext =
       status?: EntryStatus | null;
       rating: number | null;
       favorite: boolean;
-      /** Seasons the source rates on their own. */
-      ratedSeasons: number;
-      /** Episodes the source rates on their own, watched or not. */
-      ratedEpisodes: number;
+      /** Seasons the source rates on their own. Absent from an older API. */
+      ratedSeasons?: number;
+      /** Episodes the source rates on their own, watched or not. Absent from an older API. */
+      ratedEpisodes?: number;
     }
   | {
       kind: "movie";

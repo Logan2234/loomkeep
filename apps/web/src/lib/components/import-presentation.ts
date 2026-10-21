@@ -122,20 +122,23 @@ export function importItemSubtitle(item: ImportPlanItem): string | null {
             : m.import_episodes_watched({ count }),
       );
 
-      // Absent from a plan an older API built.
-      if (context.ratedSeasons > 0) {
-        const seasons = number(context.ratedSeasons);
+      const ratedSeasons = context.ratedSeasons ?? 0;
+
+      if (ratedSeasons > 0) {
+        const seasons = number(ratedSeasons);
         parts.push(
-          context.ratedSeasons === 1
+          ratedSeasons === 1
             ? m.import_season_rated({ count: seasons })
             : m.import_seasons_rated({ count: seasons }),
         );
       }
 
-      if (context.ratedEpisodes > 0) {
-        const episodes = number(context.ratedEpisodes);
+      const ratedEpisodes = context.ratedEpisodes ?? 0;
+
+      if (ratedEpisodes > 0) {
+        const episodes = number(ratedEpisodes);
         parts.push(
-          context.ratedEpisodes === 1
+          ratedEpisodes === 1
             ? m.import_episode_rated({ count: episodes })
             : m.import_episodes_rated({ count: episodes }),
         );
