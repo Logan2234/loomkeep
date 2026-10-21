@@ -13,6 +13,7 @@ import {
   importItemSubtitle,
   importItemTitle,
   importJobError,
+  importListSubtitle,
   importReportLabel,
   importReportSubtitle,
 } from "./import-presentation";
@@ -106,6 +107,8 @@ describe("import presentation", () => {
             episodesWatched: 1,
             rating: null,
             favorite: false,
+            ratedSeasons: 0,
+            ratedEpisodes: 0,
           }),
         ),
       ).toBe(locale === "fr" ? "1 épisode vu" : "1 episode watched");
@@ -116,6 +119,8 @@ describe("import presentation", () => {
             episodesWatched: 2,
             rating: null,
             favorite: false,
+            ratedSeasons: 0,
+            ratedEpisodes: 0,
           }),
         ),
       ).toBe(locale === "fr" ? "2 épisodes vus" : "2 episodes watched");
@@ -126,6 +131,8 @@ describe("import presentation", () => {
             episodesWatched: 0,
             rating: null,
             favorite: false,
+            ratedSeasons: 0,
+            ratedEpisodes: 0,
           }),
         ),
       ).toBe(m.library_status_planned());
@@ -137,6 +144,8 @@ describe("import presentation", () => {
             status: "WATCHING",
             rating: 7,
             favorite: false,
+            ratedSeasons: 0,
+            ratedEpisodes: 0,
           }),
         ),
       ).toBe(`${m.library_status_in_progress()} · ★ 7/10`);
@@ -168,6 +177,36 @@ describe("import presentation", () => {
       ).toBe(m.common_unknown());
     },
   );
+
+  it("counts the seasons and episodes a series has rated on their own", () => {
+    expect(
+      importItemSubtitle(
+        item({
+          kind: "series",
+          episodesWatched: 0,
+          rating: null,
+          favorite: false,
+          ratedSeasons: 1,
+          ratedEpisodes: 3,
+        }),
+      ),
+    ).toBe(
+      [
+        m.library_status_planned(),
+        m.import_season_rated({ count: "1" }),
+        m.import_episodes_rated({ count: "3" }),
+      ].join(" · "),
+    );
+  });
+
+  it("counts the titles of a list to create", () => {
+    expect(importListSubtitle({ name: "Kdrama", itemCount: 1 })).toBe(
+      m.import_list_title({ count: "1" }),
+    );
+    expect(importListSubtitle({ name: "Kdrama", itemCount: 4 })).toBe(
+      m.import_list_titles({ count: "4" }),
+    );
+  });
 
   it("never displays unlocalized legacy fields or unknown error diagnostics", () => {
     overwriteGetLocale(() => "en");

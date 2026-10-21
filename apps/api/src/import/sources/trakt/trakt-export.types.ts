@@ -14,13 +14,13 @@ interface TraktIds {
   tvdb?: number;
 }
 
-interface TraktMovieRef {
+export interface TraktMovieRef {
   title: string;
   year: number | null;
   ids: TraktIds;
 }
 
-interface TraktShowRef {
+export interface TraktShowRef {
   title: string;
   year: number | null;
   ids: TraktIds;
@@ -84,12 +84,34 @@ export interface TraktMovieRatingEntry {
  * (empty in every sample export seen so far); inferred from the same
  * `{rated_at, rating, type, ...ref}` shape {@link TraktMovieRatingEntry} was
  * confirmed with, and from Trakt's live API. Treat as best-effort until
- * verified. `ratings-seasons.json`/`ratings-episodes.json` aren't modeled
- * yet — season/episode-level ratings need a further increment.
+ * verified.
  */
 export interface TraktShowRatingEntry {
   rated_at: string;
   rating: number;
   type: "show";
+  show: TraktShowRef;
+}
+
+/**
+ * One row of `ratings-seasons.json` — not confirmed against our own data
+ * (empty in every sample export seen so far); the shape is the one Trakt's
+ * own importer reads back from its exports (`trakt/trakt-web`'s
+ * `TraktJsonParser`), which is also the live API's.
+ */
+export interface TraktSeasonRatingEntry {
+  rated_at: string;
+  rating: number;
+  type: "season";
+  season: { number: number };
+  show: TraktShowRef;
+}
+
+/** One row of `ratings-episodes.json` — same provenance as {@link TraktSeasonRatingEntry}. */
+export interface TraktEpisodeRatingEntry {
+  rated_at: string;
+  rating: number;
+  type: "episode";
+  episode: TraktEpisodeRef;
   show: TraktShowRef;
 }

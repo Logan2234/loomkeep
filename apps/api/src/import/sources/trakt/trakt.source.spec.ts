@@ -66,11 +66,12 @@ function makeService() {
     search: vi.fn().mockResolvedValue([]),
   };
   const matchResolver = new MediaMatchResolver(tmdb as never);
+  const reviews = { setRating: vi.fn() };
   const source = new TraktImportSource(
     prisma as never,
     mediaItemService as never,
     matchResolver,
-    {} as never,
+    reviews as never,
   );
   const service = new ImportJobService(
     [source],
@@ -85,7 +86,7 @@ function makeService() {
     } as never, // EventsGateway stub
     { create: vi.fn() } as never, // NotificationService stub
   );
-  return { prisma, mediaItemService, tmdb, service };
+  return { prisma, mediaItemService, tmdb, reviews, service };
 }
 
 async function runToEnd(
@@ -230,5 +231,111 @@ describe("TraktImportSource (via ImportJobService)", () => {
         },
       ],
     });
+  });
+
+  it("commit keeps the ratings of a movie and an episode never watched, and of a season", async () => {
+    const { service, prisma, tmdb, reviews } = makeService();
+    tmdb.getSeriesSummaryByTmdbId.mockResolvedValue({
+      source: "TMDB",
+      sourceId: "114868",
+      type: "SERIES",
+      title: "Record of Ragnarok",
+      year: 2021,
+      posterUrl: null,
+    });
+    tmdb.getMovieSummaryByTmdbId.mockResolvedValue({
+      source: "TMDB",
+      sourceId: "762504",
+      type: "MOVIE",
+      title: "Nope",
+      year: 2022,
+      posterUrl: null,
+    });
+    prisma.season.findMany.mockResolvedValue([
+      {
+        id: "season-2",
+        number: 2,
+        episodes: [
+          { id: "ep-1", number: 1 },
+          { id: "ep-2", number: 2 },
+        ],
+      },
+    ]);
+    prisma.mediaExternalId.findUnique.mockResolvedValue({
+      mediaItemId: "media-1",
+    });
+
+    const show = JSON.parse(HISTORY)[0].show;
+    const input = zipBase64([
+      {
+        name: "watched-history.json",
+        content: JSON.stringify([JSON.parse(HISTORY)[0]]),
+      },
+      {
+        name: "ratings-movies.json",
+        content: JSON.stringify([
+          {
+            rated_at: "2026-08-17T17:13:58.000Z",
+            rating: 8,
+            type: "movie",
+            movie: {
+              title: "Nope",
+              year: 2022,
+              ids: { trakt: 1, tmdb: 762504 },
+            },
+          },
+        ]),
+      },
+      {
+        name: "ratings-seasons.json",
+        content: JSON.stringify([
+          {
+            rated_at: "2026-08-17T17:13:58.000Z",
+            rating: 7,
+            type: "season",
+            season: { number: 2 },
+            show,
+          },
+        ]),
+      },
+      {
+        name: "ratings-episodes.json",
+        content: JSON.stringify([
+          {
+            rated_at: "2026-08-17T17:13:58.000Z",
+            rating: 9,
+            type: "episode",
+            episode: { title: null, season: 2, number: 2 },
+            show,
+          },
+        ]),
+      },
+    ]);
+
+    const analyzed = await service.startAnalyze("u1", "trakt", { input });
+    await runToEnd(service, "u1", analyzed.id);
+    const committed = service.commit("u1", "trakt", analyzed.id, {
+      include: ["tmdb:114868", "tmdb:762504"],
+    });
+    const job = await runToEnd(service, "u1", committed.id);
+
+    expect(job.status).toBe("completed");
+    expect(prisma.libraryEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ status: "PLANNED" }),
+      }),
+    );
+    expect(reviews.setRating).toHaveBeenCalledWith("u1", "MEDIA", "media-1", 8);
+    expect(reviews.setRating).toHaveBeenCalledWith(
+      "u1",
+      "SEASON",
+      "season-2",
+      7,
+    );
+    expect(reviews.setRating).toHaveBeenCalledWith("u1", "EPISODE", "ep-2", 9);
+    const watched = prisma.episodeWatch.createMany.mock.calls.flatMap(
+      ([args]) => args.data.map((w: { episodeId: string }) => w.episodeId),
+    );
+    expect(watched).toEqual(["ep-1"]);
   });
 });

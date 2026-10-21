@@ -5,8 +5,15 @@ import { parseTvTimeExport } from "./tvtime.parser";
 const EPISODES_HEADER =
   "series_name,episode_id,season_number,episode_number,s_id,bulk_type,created_at";
 const REWATCHED_HEADER = "episode_id,cpt";
-const SHOWS_HEADER = "tv_show_name,tv_show_id,nb_episodes_seen";
+const SHOWS_HEADER = "tv_show_name,tv_show_id,nb_episodes_seen,is_followed";
 const RECORDS_HEADER = "type,entity_type,movie_name,release_date,created_at";
+const TRACKED_MOVIES_HEADER =
+  "uuid,type,entity_type,movie_name,release_date,created_at";
+const MOVIE_VOTES_HEADER = "user_id,vote_key,movie_name,uuid,episode_id";
+const EPISODE_VOTES_HEADER =
+  "user_id,vote_key,episode_id,series_name,season_number,episode_number";
+const LISTS_HEADER =
+  "lists,user_id,s_key,is_public,objects,name,type,created_at,description,ordering";
 
 describe("parseTvTimeExport", () => {
   it("groups watched episodes per show and dedups the repeated rows", () => {
@@ -63,8 +70,8 @@ describe("parseTvTimeExport", () => {
   it("adds never-started followed shows as empty watchlist entries", () => {
     const showsCsv = [
       SHOWS_HEADER,
-      "Watched Show,78804,5",
-      "Planned Show,12345,0",
+      "Watched Show,78804,5,1",
+      "Planned Show,12345,0,1",
     ].join("\n");
     const episodesCsv = [
       EPISODES_HEADER,
@@ -78,8 +85,42 @@ describe("parseTvTimeExport", () => {
     expect(planned.episodes).toHaveLength(0);
   });
 
+  it("leaves out a never-started show the user no longer follows", () => {
+    const showsCsv = [
+      SHOWS_HEADER,
+      "Planned Show,12345,0,1",
+      "Unfollowed Show,67890,0,0",
+    ].join("\n");
+
+    const { shows } = parseTvTimeExport({ showsCsv });
+
+    expect(shows.map((s) => s.tvdbId)).toEqual(["12345"]);
+  });
+
+  it("keeps a show set aside for later on the watchlist, even unfollowed", () => {
+    // The v2 file's `user-series-*` rows carry a show's follow flags.
+    const episodesCsv = [
+      "key,series_name,episode_id,season_number,episode_number,s_id,bulk_type,created_at,is_for_later,is_archived",
+      "user-series-a,Later Show,,,,300,,2024-01-01 10:00:00,true,false",
+      "user-series-b,Archived Show,,,,301,,2024-01-01 10:00:00,true,true",
+      "user-series-c,Unlisted Later,,,,302,,2024-01-01 10:00:00,true,false",
+    ].join("\n");
+    const showsCsv = [
+      SHOWS_HEADER,
+      "Later Show (2024),300,0,0",
+      "Archived Show,301,0,0",
+    ].join("\n");
+
+    const { shows } = parseTvTimeExport({ episodesCsv, showsCsv });
+
+    expect(shows.map((s) => [s.tvdbId, s.name, s.episodes.length])).toEqual([
+      ["300", "Later Show (2024)", 0],
+      ["302", "Unlisted Later", 0],
+    ]);
+  });
+
   it("prefers the show name from user_tv_show_data over the v2 series_name", () => {
-    const showsCsv = [SHOWS_HEADER, "Doctor Who (2005),78804,5"].join("\n");
+    const showsCsv = [SHOWS_HEADER, "Doctor Who (2005),78804,5,1"].join("\n");
     const episodesCsv = [
       EPISODES_HEADER,
       "Doctor Who,295295,1,2,78804,,2023-12-29 01:07:02",
@@ -112,6 +153,8 @@ describe("parseTvTimeExport", () => {
       watched: true,
       watchedAt: new Date("2022-04-10T12:00:00.000Z"),
       rewatchedAt: [],
+      rating: null,
+      favorite: false,
     });
     const dune = movies.find((m) => m.title === "Dune")!;
     expect(dune).toEqual({
@@ -120,6 +163,8 @@ describe("parseTvTimeExport", () => {
       watched: false,
       watchedAt: null,
       rewatchedAt: [],
+      rating: null,
+      favorite: false,
     });
   });
 
@@ -147,6 +192,128 @@ describe("parseTvTimeExport", () => {
           new Date("2023-06-25T11:35:29.000Z"),
           new Date("2024-06-30T09:37:30.000Z"),
         ],
+        rating: null,
+        favorite: false,
+      },
+    ]);
+  });
+
+  it("rates movies from TV Time's star codes, joined on the tracking uuid", () => {
+    const recordsCsv = [
+      TRACKED_MOVIES_HEADER,
+      "uuid-wow,watch,movie,Coherence,2013-09-19 00:00:00,2020-04-13 15:43:08",
+      "uuid-ok,watch,movie,Nope,2022-07-22 00:00:00,2022-08-01 20:00:00",
+      "uuid-odd,watch,movie,Gundala,2019-08-29 00:00:00,2021-01-01 20:00:00",
+    ].join("\n");
+    const movieVotesCsv = [
+      MOVIE_VOTES_HEADER,
+      "1,uuid-wow-1-3,Coherence,uuid-wow,0",
+      "1,uuid-ok-1-27,Nope,uuid-ok,0",
+      "1,uuid-odd-1-5,Gundala,uuid-odd,0", // not a rating code
+    ].join("\n");
+
+    const { movies } = parseTvTimeExport({ recordsCsv, movieVotesCsv });
+
+    expect(Object.fromEntries(movies.map((m) => [m.title, m.rating]))).toEqual({
+      Coherence: 10,
+      Nope: 4,
+      Gundala: null,
+    });
+  });
+
+  it("rates watched episodes, the newest vote file winning and a contradictory vote skipped", () => {
+    const episodesCsv = [
+      EPISODES_HEADER,
+      "My Show,900,1,1,100,,2024-01-01 10:00:00",
+      "My Show,901,1,2,100,,2024-01-02 10:00:00",
+      "My Show,902,1,3,100,,2024-01-03 10:00:00",
+    ].join("\n");
+    const legacyEpisodeVotesCsv = [
+      EPISODE_VOTES_HEADER,
+      "1,900-1-28,900,My Show,1,1",
+      "1,902-1-1,902,My Show,1,3",
+    ].join("\n");
+    const episodeVotesCsv = [
+      EPISODE_VOTES_HEADER,
+      "1,900-1-29,900,My Show,1,1",
+      // Two different votes for one episode, with nothing to tell which is current.
+      "1,901-1-28,901,My Show,1,2",
+      "1,901-1-29,901,My Show,1,2",
+    ].join("\n");
+
+    const { shows } = parseTvTimeExport({
+      episodesCsv,
+      episodeVotesCsv,
+      legacyEpisodeVotesCsv,
+    });
+
+    expect(shows[0].episodes.map((e) => [e.episode, e.rating])).toEqual([
+      [1, 8],
+      [2, null],
+      [3, 2],
+    ]);
+  });
+
+  it("marks favorites from the favorite-series and favorite-movies pseudo-lists", () => {
+    const showsCsv = [SHOWS_HEADER, "My Show,100,0,1", "Other,200,0,1"].join(
+      "\n",
+    );
+    const recordsCsv = [
+      TRACKED_MOVIES_HEADER,
+      "uuid-a,watch,movie,Coherence,2013-09-19 00:00:00,2020-04-13 15:43:08",
+      "uuid-b,watch,movie,Nope,2022-07-22 00:00:00,2022-08-01 20:00:00",
+    ].join("\n");
+    const listsCsv = [
+      LISTS_HEADER,
+      ",1,favorite-series,false,[map[created_at:1.59e+09 id:100 type:series]],,list,,,0",
+      ",1,favorite-movies,false,[map[created_at:1.61e+09 type:movie uuid:uuid-b]],,list,,,0",
+    ].join("\n");
+
+    const { shows, movies, lists } = parseTvTimeExport({
+      showsCsv,
+      recordsCsv,
+      listsCsv,
+    });
+
+    expect(shows.map((s) => [s.name, s.favorite])).toEqual([
+      ["My Show", true],
+      ["Other", false],
+    ]);
+    expect(movies.map((m) => [m.title, m.favorite])).toEqual([
+      ["Coherence", false],
+      ["Nope", true],
+    ]);
+    expect(lists).toEqual([]);
+  });
+
+  it("reads custom lists, naming one from the collection row when its own row has no name", () => {
+    const showsCsv = [SHOWS_HEADER, "My Show,100,0,1"].join("\n");
+    const recordsCsv = [
+      TRACKED_MOVIES_HEADER,
+      "uuid-a,watch,movie,Coherence,2013-09-19 00:00:00,2020-04-13 15:43:08",
+    ].join("\n");
+    const listsCsv = [
+      LISTS_HEADER,
+      "[map[created_at:1.7e+09 description:<nil> is_public:true name:Kdrama night order:<nil> posters:[https://a.jpg https://b.jpg] s_key:list-1 type:list]],1,collection,,,,,,,",
+      ",1,list-1,true,[map[created_at:1.7e+09 id:100 type:series] map[created_at:1.7e+09 type:movie uuid:uuid-a] map[created_at:1.7e+09 type:movie uuid:uuid-unknown]],,list,2024-02-12 19:28:40,<nil>,0",
+      ",1,list-2,false,[map[created_at:1.7e+09 id:555 type:series]],Slice of life,list,2024-02-12 19:28:40,Cosy shows,0",
+    ].join("\n");
+
+    const { lists } = parseTvTimeExport({ showsCsv, recordsCsv, listsCsv });
+
+    expect(lists).toEqual([
+      {
+        name: "Kdrama night",
+        description: null,
+        items: [
+          { kind: "series", tvdbId: "100", name: "My Show" },
+          { kind: "movie", title: "Coherence", year: 2013 },
+        ],
+      },
+      {
+        name: "Slice of life",
+        description: "Cosy shows",
+        items: [{ kind: "series", tvdbId: "555", name: "555" }],
       },
     ]);
   });

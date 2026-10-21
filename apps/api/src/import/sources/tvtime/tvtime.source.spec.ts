@@ -21,11 +21,11 @@ const UNDATED_EPISODES_CSV = [
   "My Show,900,1,1,100,,",
 ].join("\n");
 const SHOWS_CSV = [
-  "tv_show_name,tv_show_id,nb_episodes_seen",
-  "My Show,100,2",
-  "Planned Show,200,0",
+  "tv_show_name,tv_show_id,nb_episodes_seen,is_followed",
+  "My Show,100,2,1",
+  "Planned Show,200,0,1",
 ].join("\n");
-const EMPTY_SHOWS = "tv_show_name,tv_show_id,nb_episodes_seen";
+const EMPTY_SHOWS = "tv_show_name,tv_show_id,nb_episodes_seen,is_followed";
 const EMPTY_EPISODES =
   "series_name,episode_id,season_number,episode_number,s_id,bulk_type,created_at";
 
@@ -35,12 +35,16 @@ function zipBase64(files: {
   showsCsv?: string;
   recordsCsv?: string;
   rewatchedCsv?: string;
+  episodeVotesCsv?: string;
+  listsCsv?: string;
 }): string {
   const names: Record<string, string> = {
     episodesCsv: "tracking-prod-records-v2.csv",
     showsCsv: "user_tv_show_data.csv",
     recordsCsv: "tracking-prod-records.csv",
     rewatchedCsv: "rewatched_episode.csv",
+    episodeVotesCsv: "ratings-3-prod-episode_votes.csv",
+    listsCsv: "lists-prod-lists.csv",
   };
   const entries = Object.entries(files)
     .filter(([, content]) => content !== undefined)
@@ -83,6 +87,10 @@ function makeService() {
       upsert: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    list: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
     user: {
       findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
@@ -97,11 +105,17 @@ function makeService() {
     search: vi.fn().mockResolvedValue([]),
   };
   const matchResolver = new MediaMatchResolver(tmdb as never);
+  const reviews = { setRating: vi.fn() };
+  const lists = {
+    create: vi.fn().mockResolvedValue({ id: "list-1" }),
+    addImportedItems: vi.fn(),
+  };
   const source = new TvTimeImportSource(
     prisma as never,
     mediaItemService as never,
     matchResolver,
-    {} as never,
+    reviews as never,
+    lists as never,
   );
   const service = new ImportJobService(
     [source],
@@ -116,7 +130,7 @@ function makeService() {
     } as never, // EventsGateway stub
     { create: vi.fn() } as never, // NotificationService stub
   );
-  return { prisma, mediaItemService, tmdb, service };
+  return { prisma, mediaItemService, tmdb, reviews, lists, service };
 }
 
 async function runToEnd(
@@ -308,6 +322,95 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       { id: "episodes" },
       { id: "movies", watchlistCount: 0 },
     ]);
+  });
+
+  it("commit rates episodes and recreates a list whose series is tracked as one item", async () => {
+    const { prisma, tmdb, reviews, lists, service } = makeService();
+    tmdb.findSeriesSummaryByTvdbId.mockResolvedValue({
+      source: "TMDB",
+      sourceId: "500",
+      type: "SERIES",
+      title: "My Show",
+      year: 2024,
+      posterUrl: null,
+    });
+    prisma.season.findMany.mockResolvedValue([
+      {
+        number: 1,
+        episodes: [
+          { id: "e1", number: 1 },
+          { id: "e2", number: 2 },
+        ],
+      },
+    ]);
+    prisma.mediaExternalId.findUnique.mockResolvedValue({
+      mediaItemId: "media-100",
+    });
+    const episodeVotesCsv = [
+      "user_id,vote_key,episode_id,series_name,season_number,episode_number",
+      "1,900-1-3,900,My Show,1,1",
+    ].join("\n");
+    const listsCsv = [
+      "lists,user_id,s_key,is_public,objects,name,type,created_at,description,ordering",
+      ",1,list-1,false,[map[created_at:1.7e+09 id:100 type:series]],To rewatch,list,,,0",
+    ].join("\n");
+
+    const analyze = await service.startAnalyze(
+      "u1",
+      "tvtime",
+      analyzeDto({
+        episodesCsv: EPISODES_CSV,
+        showsCsv: SHOWS_CSV,
+        episodeVotesCsv,
+        listsCsv,
+      }),
+    );
+    const analyzed = await runToEnd(service, "u1", analyze.id);
+    expect(group(analyzed.plan!, "listFilms")).toEqual([]);
+    expect(group(analyzed.plan!, "seriesTracked")[0].context).toMatchObject({
+      ratedSeasons: 0,
+      ratedEpisodes: 1,
+    });
+    expect(analyzed.plan!.lists).toEqual([
+      { name: "To rewatch", itemCount: 1 },
+    ]);
+
+    const commit = service.commit("u1", "tvtime", analyze.id, {
+      include: ["tvdb:100"],
+    });
+    const job = await runToEnd(service, "u1", commit.id);
+
+    expect(job.status).toBe("completed");
+    expect(reviews.setRating).toHaveBeenCalledWith("u1", "EPISODE", "e1", 10);
+    expect(lists.create).toHaveBeenCalledWith(
+      "u1",
+      expect.objectContaining({ title: "To rewatch" }),
+    );
+    expect(lists.addImportedItems).toHaveBeenCalledWith("u1", "list-1", [
+      { targetId: "media-100", note: null, targetType: "MEDIA" },
+    ]);
+  });
+
+  it("analyze leaves out of the plan a list whose title the user already has", async () => {
+    const { prisma, service } = makeService();
+    prisma.list.findMany.mockResolvedValue([{ title: "To rewatch" }]);
+    const listsCsv = [
+      "lists,user_id,s_key,is_public,objects,name,type,created_at,description,ordering",
+      ",1,list-1,false,[map[created_at:1.7e+09 id:100 type:series]],To rewatch,list,,,0",
+    ].join("\n");
+
+    const { id } = await service.startAnalyze(
+      "u1",
+      "tvtime",
+      analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV, listsCsv }),
+    );
+    const job = await runToEnd(service, "u1", id);
+
+    expect(prisma.list.findMany).toHaveBeenCalledWith({
+      where: { userId: "u1", title: { in: ["To rewatch"] } },
+      select: { title: true },
+    });
+    expect(job.plan!.lists).toBeUndefined();
   });
 
   it("keeps an episode watch date null when the export does not provide one", async () => {

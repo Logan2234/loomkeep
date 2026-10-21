@@ -31,7 +31,8 @@ interface ImportWatchedEpisode {
   totalWatches: number;
   /**
    * Per-episode 1-10 rating, for sources that rate episodes individually
-   * (IMDb). Written as a Review targeting the episode, not the show.
+   * (IMDb, Trakt, TV Time). Written as a Review targeting the episode, not
+   * the show.
    */
   rating?: number | null;
 }
@@ -50,6 +51,13 @@ export interface ImportShow {
   episodes: ImportWatchedEpisode[];
   /** The source's own 1-10 rating, when it has one. */
   rating?: number | null;
+  /** Per-season 1-10 ratings, written as Reviews targeting the season. */
+  seasonRatings?: { season: number; rating: number }[];
+  /**
+   * Ratings of episodes outside `episodes`: rated but never watched (Trakt
+   * allows it). Written as the episode's Review, without recording a watch.
+   */
+  episodeRatings?: { season: number; episode: number; rating: number }[];
   /** Marked as a favorite on the source. */
   favorite?: boolean;
   /** Explicit source status, for sources which expose one. */

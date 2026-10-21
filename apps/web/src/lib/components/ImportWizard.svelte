@@ -58,6 +58,7 @@
     importItemSubtitle,
     importItemTitle,
     importJobError,
+    importListSubtitle,
     importReportLabel,
     importReportSubtitle,
   } from "./import-presentation";
@@ -622,6 +623,24 @@
             </details>
           {/if}
         {/each}
+        {#if plan.lists && !filterUnresolved}
+          <section class="card mb-3 p-4">
+            <h3 class="font-display font-bold">
+              {m.import_lists_heading()} ({plan.lists.length})
+            </h3>
+            <p class="text-dim mt-2 text-sm">{m.import_lists_hint()}</p>
+            <ul class="divide-border mt-3 flex flex-col divide-y">
+              {#each plan.lists as list, i (i)}
+                <li class="flex items-center justify-between gap-3 py-2.5">
+                  <span class="truncate text-sm font-semibold"
+                    >{list.name}</span>
+                  <span class="timecode shrink-0 text-xs"
+                    >{importListSubtitle(list)}</span>
+                </li>
+              {/each}
+            </ul>
+          </section>
+        {/if}
       </div>
     {/if}
 

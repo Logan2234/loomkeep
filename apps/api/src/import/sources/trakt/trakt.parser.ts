@@ -1,10 +1,14 @@
 import { earlierOf, parseDateOrNull } from "../../import-date.util";
 import type { ImportMovie, ImportShow } from "../../media-import-model";
 import type {
+  TraktEpisodeRatingEntry,
   TraktFavoriteEntry,
   TraktHistoryEntry,
   TraktMovieRatingEntry,
+  TraktMovieRef,
+  TraktSeasonRatingEntry,
   TraktShowRatingEntry,
+  TraktShowRef,
   TraktWatchlistEntry,
 } from "./trakt-export.types";
 
@@ -16,6 +20,13 @@ interface MutableEpisode {
   totalWatches: number;
 }
 
+/** The three show-side ratings files of the export, each optional. */
+export interface TraktShowRatings {
+  shows?: TraktShowRatingEntry[];
+  seasons?: TraktSeasonRatingEntry[];
+  episodes?: TraktEpisodeRatingEntry[];
+}
+
 /**
  * Turn Trakt's export into the canonical media import model.
  *
@@ -25,12 +36,18 @@ interface MutableEpisode {
  * both watched movies and per-episode show data; repeated events for the
  * same episode/movie fold into a rewatch count / an earliest-watched date,
  * exactly like the TV Time and Trakt-API importers already do.
+ *
+ * Trakt lets a user rate a title without marking it watched. A rated show
+ * that nothing else mentions still enters the import, on the watchlist, so
+ * its ratings are not lost. A rated episode the history lacks keeps its
+ * rating apart, in `episodeRatings`, and is not marked watched: a rating
+ * says nothing about how far the user got.
  */
 export function buildImportShows(
   history: TraktHistoryEntry[],
   watchlist: TraktWatchlistEntry[],
   favorites: TraktFavoriteEntry[] = [],
-  ratings: TraktShowRatingEntry[] = [],
+  ratings: TraktShowRatings = {},
 ): ImportShow[] {
   const byTraktId = new Map<
     number,
@@ -41,20 +58,25 @@ export function buildImportShows(
     }
   >();
 
-  for (const entry of history) {
-    if (entry.type !== "episode" || !entry.show || !entry.episode) continue;
-
-    let show = byTraktId.get(entry.show.ids.trakt);
+  const showFor = (ref: TraktShowRef) => {
+    let show = byTraktId.get(ref.ids.trakt);
 
     if (!show) {
       show = {
-        title: entry.show.title,
-        externalIds: toExternalIds(entry.show.ids),
+        title: ref.title,
+        externalIds: toExternalIds(ref.ids),
         episodes: new Map(),
       };
-      byTraktId.set(entry.show.ids.trakt, show);
+      byTraktId.set(ref.ids.trakt, show);
     }
 
+    return show;
+  };
+
+  for (const entry of history) {
+    if (entry.type !== "episode" || !entry.show || !entry.episode) continue;
+
+    const show = showFor(entry.show);
     const { season, number: episode } = entry.episode;
     const key = `${season}|${episode}`;
     const watchedAt = parseDateOrNull(entry.watched_at);
@@ -75,15 +97,15 @@ export function buildImportShows(
   }
 
   for (const entry of watchlist) {
-    if (entry.type !== "show" || !entry.show) continue;
+    if (entry.type === "show" && entry.show) showFor(entry.show);
+  }
 
-    if (!byTraktId.has(entry.show.ids.trakt)) {
-      byTraktId.set(entry.show.ids.trakt, {
-        title: entry.show.title,
-        externalIds: toExternalIds(entry.show.ids),
-        episodes: new Map(),
-      });
-    }
+  const showRatings = ratings.shows ?? [];
+  const seasonRatings = ratings.seasons ?? [];
+  const episodeRatings = ratings.episodes ?? [];
+
+  for (const entry of [...showRatings, ...seasonRatings, ...episodeRatings]) {
+    showFor(entry.show);
   }
 
   const favoriteIds = new Set(
@@ -94,15 +116,54 @@ export function buildImportShows(
       )
       .map((e) => e.show.ids.trakt),
   );
-  const ratingById = new Map(ratings.map((r) => [r.show.ids.trakt, r.rating]));
+  const ratingById = new Map(
+    showRatings.map((r) => [r.show.ids.trakt, r.rating]),
+  );
+  const seasonRatingsById = new Map<
+    number,
+    { season: number; rating: number }[]
+  >();
 
-  return [...byTraktId.entries()].map(([traktId, show]) => ({
-    title: show.title,
-    externalIds: show.externalIds,
-    episodes: [...show.episodes.values()],
-    favorite: favoriteIds.has(traktId),
-    rating: ratingById.get(traktId) ?? null,
-  }));
+  for (const r of seasonRatings) {
+    const list = seasonRatingsById.get(r.show.ids.trakt) ?? [];
+    list.push({ season: r.season.number, rating: r.rating });
+    seasonRatingsById.set(r.show.ids.trakt, list);
+  }
+
+  const episodeRatingsById = new Map<
+    number,
+    { season: number; episode: number; rating: number }[]
+  >();
+
+  for (const r of episodeRatings) {
+    const list = episodeRatingsById.get(r.show.ids.trakt) ?? [];
+    list.push({
+      season: r.episode.season,
+      episode: r.episode.number,
+      rating: r.rating,
+    });
+    episodeRatingsById.set(r.show.ids.trakt, list);
+  }
+
+  return [...byTraktId.entries()].map(([traktId, show]) => {
+    const rated = episodeRatingsById.get(traktId) ?? [];
+    return {
+      title: show.title,
+      externalIds: show.externalIds,
+      episodes: [...show.episodes.values()].map((ep) => ({
+        ...ep,
+        rating:
+          rated.find((r) => r.season === ep.season && r.episode === ep.episode)
+            ?.rating ?? null,
+      })),
+      favorite: favoriteIds.has(traktId),
+      rating: ratingById.get(traktId) ?? null,
+      seasonRatings: seasonRatingsById.get(traktId) ?? [],
+      episodeRatings: rated.filter(
+        (r) => !show.episodes.has(`${r.season}|${r.episode}`),
+      ),
+    };
+  });
 }
 
 /** Movie accumulator while scanning history, before its dates are sorted. */
@@ -116,7 +177,10 @@ interface MutableMovie {
   dates: Date[];
 }
 
-/** Movie counterpart of {@link buildImportShows}. */
+/**
+ * Movie counterpart of {@link buildImportShows}: a movie rated but never
+ * watched is kept as not watched, carrying its rating.
+ */
 export function buildImportMovies(
   history: TraktHistoryEntry[],
   watchlist: TraktWatchlistEntry[],
@@ -124,6 +188,17 @@ export function buildImportMovies(
   ratings: TraktMovieRatingEntry[] = [],
 ): ImportMovie[] {
   const byTraktId = new Map<number, MutableMovie>();
+
+  const addUnwatched = (ref: TraktMovieRef) => {
+    if (byTraktId.has(ref.ids.trakt)) return;
+    byTraktId.set(ref.ids.trakt, {
+      title: ref.title,
+      year: ref.year,
+      watched: false,
+      externalIds: toExternalIds(ref.ids),
+      dates: [],
+    });
+  };
 
   for (const entry of history) {
     if (entry.type !== "movie" || !entry.movie) continue;
@@ -145,18 +220,10 @@ export function buildImportMovies(
   }
 
   for (const entry of watchlist) {
-    if (entry.type !== "movie" || !entry.movie) continue;
-
-    if (!byTraktId.has(entry.movie.ids.trakt)) {
-      byTraktId.set(entry.movie.ids.trakt, {
-        title: entry.movie.title,
-        year: entry.movie.year,
-        watched: false,
-        externalIds: toExternalIds(entry.movie.ids),
-        dates: [],
-      });
-    }
+    if (entry.type === "movie" && entry.movie) addUnwatched(entry.movie);
   }
+
+  for (const entry of ratings) addUnwatched(entry.movie);
 
   const favoriteIds = new Set(
     favorites

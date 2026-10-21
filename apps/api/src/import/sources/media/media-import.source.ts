@@ -4,6 +4,7 @@ import type {
   ImportPlan,
   ImportPlanGroup,
   ImportPlanItem,
+  ImportPlanList,
   ImportReport,
   ImportSource,
   MediaType,
@@ -122,7 +123,7 @@ export abstract class MediaImportSource<
   }
 
   async buildPlan(
-    _userId: string,
+    userId: string,
     parsed: TParsed,
     progress: ProgressReporter,
   ): Promise<ImportPlan> {
@@ -185,6 +186,11 @@ export abstract class MediaImportSource<
           status: show.status ?? null,
           rating: show.rating ?? null,
           favorite: show.favorite ?? false,
+          ratedSeasons: show.seasonRatings?.length ?? 0,
+          ratedEpisodes:
+            show.episodes.filter(
+              (ep) => ep.rating !== null && ep.rating !== undefined,
+            ).length + (show.episodeRatings?.length ?? 0),
         },
         coverUrl: match?.coverUrl ?? null,
         match,
@@ -246,7 +252,7 @@ export abstract class MediaImportSource<
       const match = listMatches[i];
       if (!match) unresolved++;
       listFilms.push({
-        key: movieKey(film),
+        key: listItemKey(film),
         title: match?.title ?? film.title,
         sourceTitle: film.title,
         subtitle: film.year ? String(film.year) : null,
@@ -290,12 +296,39 @@ export abstract class MediaImportSource<
       parsed.movies.length +
       listOnlyFilms.length +
       unplaced;
+    const lists = await this.plannedLists(userId, parsed.lists ?? []);
     return {
       groups,
       counts: { total, matched: total - unresolved, unresolved, apiErrors: 0 },
       searchDomain: Domain.MEDIA,
       searchMediaType: this.manualSearchMediaType,
+      ...(lists.length > 0 && { lists }),
     };
+  }
+
+  /** The lists {@link writeLists} will create, which skips a title the user has. */
+  private async plannedLists(
+    userId: string,
+    lists: ImportList[],
+  ): Promise<ImportPlanList[]> {
+    if (!this.lists) return [];
+    const titled = lists
+      .map((list) => ({ list, title: listTitle(list) }))
+      .filter(({ title }) => title !== "");
+    if (titled.length === 0) return [];
+
+    const existing = await this.prisma.list.findMany({
+      where: { userId, title: { in: titled.map(({ title }) => title) } },
+      select: { title: true },
+    });
+    const taken = new Set(existing.map(({ title }) => title));
+
+    return titled
+      .filter(({ title }) => !taken.has(title))
+      .map(({ list, title }) => ({
+        name: title,
+        itemCount: list.items.length,
+      }));
   }
 
   async commit(
@@ -439,7 +472,7 @@ export abstract class MediaImportSource<
     tally: CommitTally,
   ): Promise<void> {
     if (show.episodes.length === 0) {
-      await this.mediaItemService.upsertFromSource(
+      const media = await this.mediaItemService.upsertFromSource(
         match.source,
         match.sourceId,
         match.type,
@@ -452,6 +485,7 @@ export abstract class MediaImportSource<
         show.status ?? "PLANNED",
         show,
       );
+      await this.writeSeasonAndEpisodeRatings(userId, media.id, show);
       if (status === "PLANNED") tally.showsWatchlist++;
       else tally.showsImported++;
       return;
@@ -472,8 +506,8 @@ export abstract class MediaImportSource<
         ep.totalWatches,
         ep.watchedAt,
       );
-      // IMDb rates episodes individually; the rating belongs to the episode,
-      // not to the show (ReviewTargetType.EPISODE).
+      // A rated episode keeps its own rating, apart from the show's
+      // (ReviewTargetType.EPISODE).
       await this.writeRating(
         userId,
         ReviewTargetType.EPISODE,
@@ -504,8 +538,55 @@ export abstract class MediaImportSource<
         entryStatusFromProgress(watchedRegular.length, index.totalRegular),
       show,
     );
+    await this.writeSeasonAndEpisodeRatings(userId, index.mediaItemId, show);
     if (status === "PLANNED") tally.showsWatchlist++;
     else tally.showsImported++;
+  }
+
+  /**
+   * Ratings that ride on no watch: a season's, and an episode's the user
+   * rated without watching. Each lands on the catalogue's season or episode
+   * of that number, if it has one.
+   */
+  private async writeSeasonAndEpisodeRatings(
+    userId: string,
+    mediaItemId: string,
+    show: ImportShow,
+  ): Promise<void> {
+    if (!show.seasonRatings?.length && !show.episodeRatings?.length) return;
+
+    const seasons = await this.prisma.season.findMany({
+      where: { mediaItemId },
+      select: {
+        id: true,
+        number: true,
+        episodes: { select: { id: true, number: true } },
+      },
+    });
+
+    for (const { season, rating } of show.seasonRatings ?? []) {
+      const target = seasons.find((s) => s.number === season);
+      if (!target) continue;
+      await this.writeRating(
+        userId,
+        ReviewTargetType.SEASON,
+        target.id,
+        rating,
+      );
+    }
+
+    for (const { season, episode, rating } of show.episodeRatings ?? []) {
+      const target = seasons
+        .find((s) => s.number === season)
+        ?.episodes.find((e) => e.number === episode);
+      if (!target) continue;
+      await this.writeRating(
+        userId,
+        ReviewTargetType.EPISODE,
+        target.id,
+        rating,
+      );
+    }
   }
 
   private async writeMovie(
@@ -566,15 +647,15 @@ export abstract class MediaImportSource<
       await this.recordMovieReplays(entry.id, movie.rewatchedAt);
     }
 
-    if (watched) {
-      await this.writeRating(
-        userId,
-        ReviewTargetType.MEDIA,
-        media.id,
-        movie.rating,
-        movie.review,
-      );
-    }
+    // Kept on a film still to watch too: a source can rate without a watch
+    // (Trakt). An upcoming film refuses it, and writeRating skips it then.
+    await this.writeRating(
+      userId,
+      ReviewTargetType.MEDIA,
+      media.id,
+      movie.rating,
+      movie.review,
+    );
 
     if (status === "PLANNED") tally.moviesWatchlist++;
     else tally.moviesImported++;
@@ -660,7 +741,7 @@ export abstract class MediaImportSource<
     if (!this.lists) return;
 
     for (const list of lists) {
-      const title = list.name.trim().slice(0, LIST_LIMITS.title);
+      const title = listTitle(list);
       if (!title) continue;
       const existing = await this.prisma.list.findFirst({
         where: { userId, title },
@@ -671,7 +752,7 @@ export abstract class MediaImportSource<
       const items: { targetId: string; note: string | null }[] = [];
 
       for (const film of list.items) {
-        const key = movieKey(film);
+        const key = listItemKey(film);
         if (!decisions.include.has(key)) continue;
 
         const match = this.resolvedMatch(key, decisions, matchByKey);
@@ -899,8 +980,8 @@ function movieKey(
 /**
  * List entries no show/movie entry already covers, deduplicated.
  *
- * `showKey` and `movieKey` agree on an `imdb:`/`tmdb:` prefix, so a title that
- * is both tracked and listed is recognised as one item whichever it is.
+ * A listed series is keyed like a show (see {@link listItemKey}), so a title
+ * that is both tracked and listed is recognised as one item whichever it is.
  */
 function collectListOnlyFilms(parsed: ParsedImport): ImportListFilm[] {
   const covered = new Set<string>([
@@ -911,7 +992,7 @@ function collectListOnlyFilms(parsed: ParsedImport): ImportListFilm[] {
 
   for (const list of parsed.lists ?? []) {
     for (const film of list.items) {
-      const key = movieKey(film);
+      const key = listItemKey(film);
       if (covered.has(key)) continue;
       covered.add(key);
       films.push(film);
@@ -919,6 +1000,19 @@ function collectListOnlyFilms(parsed: ParsedImport): ImportListFilm[] {
   }
 
   return films;
+}
+
+/**
+ * A listed series takes its show's key: a TV Time list names series by TVDB
+ * id only, which `movieKey` does not read.
+ */
+function listItemKey(film: ImportListFilm): string {
+  return film.type === "SERIES" ? showKey(asShow(film)) : movieKey(film);
+}
+
+/** The title a list is created under; empty means it is not created. */
+function listTitle(list: ImportList): string {
+  return list.name.trim().slice(0, LIST_LIMITS.title);
 }
 
 /** A list entry as the matcher's input, which reads nothing else. */

@@ -1,5 +1,15 @@
-import type { Domain, ImportPlan, MediaType } from "@loomkeep/shared";
+import type {
+  Domain,
+  ImportPlan,
+  ImportPlanList,
+  MediaType,
+} from "@loomkeep/shared";
 import { ImportPlanGroupResponseDto } from "./import-plan-group-response.dto";
+
+class ImportPlanListResponseDto implements ImportPlanList {
+  name!: string;
+  itemCount!: number;
+}
 
 class ImportPlanCountsResponseDto {
   total!: number;
@@ -13,4 +23,5 @@ export class ImportPlanResponseDto implements ImportPlan {
   counts!: ImportPlanCountsResponseDto;
   searchDomain!: Domain;
   searchMediaType?: MediaType;
+  lists?: ImportPlanListResponseDto[];
 }

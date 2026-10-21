@@ -63,7 +63,9 @@ function makeSource(
   const resolveMovie = vi.fn();
   const resolveShow = vi.fn();
   const source = new ImdbImportSource(
-    {} as unknown as PrismaService,
+    {
+      list: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService,
     {} as unknown as MediaItemService,
     { resolveMovie, resolveShow } as unknown as MediaMatchResolver,
     {} as unknown as ReviewService,

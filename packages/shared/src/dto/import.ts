@@ -87,6 +87,10 @@ export type ImportItemContext =
       status?: EntryStatus | null;
       rating: number | null;
       favorite: boolean;
+      /** Seasons the source rates on their own. Absent from an older API. */
+      ratedSeasons?: number;
+      /** Episodes the source rates on their own, watched or not. Absent from an older API. */
+      ratedEpisodes?: number;
     }
   | {
       kind: "movie";
@@ -148,6 +152,17 @@ export interface ImportPlan {
   searchDomain: Domain;
   /** Optional media-type restriction for a source tied to one catalogue. */
   searchMediaType?: MediaType;
+  /**
+   * Custom lists the commit will create, absent when the source exports none.
+   * A list whose title the user already has is left out: the commit skips it.
+   */
+  lists?: ImportPlanList[];
+}
+
+export interface ImportPlanList {
+  name: string;
+  /** Titles the export puts in it; unmatched or excluded ones are dropped at commit. */
+  itemCount: number;
 }
 
 export interface ImportReportTile {
@@ -295,4 +310,14 @@ export interface TvTimeImportFilesDto {
   rewatchedCsv?: string;
   /** `user_tv_show_data.csv` — show names + TVDB id + episodes-seen count (watchlist detection). */
   showsCsv?: string;
+  /** `ratings-live-votes.csv` — the current movie (and episode) rating votes. */
+  movieVotesCsv?: string;
+  /** `ratings-v2-prod-votes.csv` — the previous generation of rating votes, movies and episodes. */
+  votesV2Csv?: string;
+  /** `ratings-3-prod-episode_votes.csv` — episode rating votes. */
+  episodeVotesCsv?: string;
+  /** `ratings-prod-episode_votes.csv` — the oldest generation of episode rating votes. */
+  legacyEpisodeVotesCsv?: string;
+  /** `lists-prod-lists.csv` — custom lists, plus the favorite-series/favorite-movies pseudo-lists. */
+  listsCsv?: string;
 }
