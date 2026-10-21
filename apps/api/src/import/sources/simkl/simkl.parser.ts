@@ -1,3 +1,4 @@
+import type { EntryStatus } from "@loomkeep/shared";
 import { parseDateOrNull } from "../../import-date.util";
 import type { ImportMovie, ImportShow } from "../../media-import-model";
 import type {
@@ -39,22 +40,43 @@ function toImportShow(entry: SimklShowEntry): ImportShow {
     title: entry.show.title,
     externalIds: toExternalIds(entry.show.ids),
     episodes,
+    // Other statuses follow from the episodes. On hold reads as still in
+    // progress, as MyAnimeList's On-Hold and AniList's PAUSED do.
+    status: SHOW_STATUS[entry.status],
+    ...extras(entry),
   };
 }
 
+const SHOW_STATUS: Partial<Record<SimklShowEntry["status"], EntryStatus>> = {
+  dropped: "DROPPED",
+  hold: "WATCHING",
+};
+
 function toImportMovie(entry: SimklMovieEntry): ImportMovie {
-  const watched = entry.status !== "plantowatch";
+  // Movies only ever carry plantowatch/completed/dropped.
+  const watched = entry.status === "completed";
   return {
     title: entry.movie.title,
     year: entry.movie.year,
-    // Movies only ever carry plantowatch/completed/dropped — anything but
-    // "still on the watchlist" counts as watched.
     watched,
     watchedAt: watched ? parseDateOrNull(entry.last_watched_at) : null,
     // Simkl's free tier has no per-movie rewatch signal (that needs the
     // Pro/VIP-only `allow_rewatch` flag) — every watched movie counts once.
     rewatchedAt: [],
     externalIds: toExternalIds(entry.movie.ids),
+    // A film dropped midway was not seen: it is dropped, not completed.
+    ...(entry.status === "dropped" && { status: "DROPPED" as const }),
+    ...extras(entry),
+  };
+}
+
+function extras(
+  entry: SimklShowEntry | SimklMovieEntry,
+): Pick<ImportShow, "rating" | "notes" | "addedAt"> {
+  return {
+    rating: entry.user_rating ?? null,
+    notes: entry.memo?.text?.trim() || null,
+    addedAt: parseDateOrNull(entry.added_to_watchlist_at ?? undefined),
   };
 }
 

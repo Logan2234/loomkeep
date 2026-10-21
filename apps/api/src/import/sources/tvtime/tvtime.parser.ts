@@ -23,6 +23,8 @@ export interface ParsedShow {
   /** Distinct watched episodes; empty means the show is only on the watchlist. */
   episodes: ParsedWatchedEpisode[];
   favorite: boolean;
+  /** When the show entered TV Time: its v2 follow row's creation. */
+  addedAt: Date | null;
 }
 
 export interface ParsedMovie {
@@ -37,6 +39,8 @@ export interface ParsedMovie {
   /** 1-10, from the movie's rating vote. */
   rating: number | null;
   favorite: boolean;
+  /** When the movie entered TV Time: its earliest row. */
+  addedAt: Date | null;
 }
 
 type ParsedListItem =
@@ -142,6 +146,7 @@ function parseShows(
   const byTvdbId = new Map<string, ParsedShow>();
   // tvdbId → the v2 file's series name, for shows set aside "for later".
   const forLater = new Map<string, string>();
+  const addedAtById = new Map<string, Date | null>();
 
   // 1. Shows with watched episodes, from the source-of-truth table.
   for (const row of episodesCsv ? parseCsv(episodesCsv) : []) {
@@ -149,6 +154,8 @@ function parseShows(
 
     // A `user-series-*` row holds the show's follow flags, not a watch.
     if (row.key?.startsWith("user-series-")) {
+      if (tvdbId) addedAtById.set(tvdbId, toDateOrNull(row.created_at));
+
       if (
         tvdbId &&
         row.is_for_later?.trim() === "true" &&
@@ -176,6 +183,7 @@ function parseShows(
         name: names.get(tvdbId)?.name ?? row.series_name?.trim() ?? tvdbId,
         episodes: [],
         favorite: false,
+        addedAt: null,
       };
       byTvdbId.set(tvdbId, show);
     }
@@ -210,6 +218,7 @@ function parseShows(
         name: entry.name,
         episodes: [],
         favorite: false,
+        addedAt: null,
       });
     }
   }
@@ -223,8 +232,13 @@ function parseShows(
         name: names.get(tvdbId)?.name ?? seriesName,
         episodes: [],
         favorite: false,
+        addedAt: null,
       });
     }
+  }
+
+  for (const show of byTvdbId.values()) {
+    show.addedAt = addedAtById.get(show.tvdbId) ?? null;
   }
 
   return [...byTvdbId.values()];
@@ -260,6 +274,7 @@ interface MutableMovie {
   year: number | null;
   watched: boolean;
   dates: Date[];
+  addedAt: Date | null;
 }
 
 /**
@@ -299,7 +314,8 @@ function parseMovies(csv?: string): {
 
     const year = toYear(row.release_date);
     const watched = type === "watch" || type === "rewatch";
-    const watchedAt = watched ? toDateOrNull(row.created_at) : null;
+    const createdAt = toDateOrNull(row.created_at);
+    const watchedAt = watched ? createdAt : null;
 
     const key = title.toLowerCase();
     const uuid = row.uuid?.trim();
@@ -310,12 +326,14 @@ function parseMovies(csv?: string): {
       existing.watched ||= watched;
       if (existing.year === null && year !== null) existing.year = year;
       if (watchedAt) existing.dates.push(watchedAt);
+      existing.addedAt = earlierOf(existing.addedAt, createdAt);
     } else {
       byTitle.set(key, {
         title,
         year,
         watched,
         dates: watchedAt ? [watchedAt] : [],
+        addedAt: createdAt,
       });
     }
   }
@@ -333,6 +351,7 @@ function parseMovies(csv?: string): {
           rewatchedAt: sorted.slice(1),
           rating: null,
           favorite: false,
+          addedAt: m.addedAt,
         },
       ];
     }),

@@ -4,7 +4,7 @@ import type {
   AnilistListEntry,
   AnilistProvider,
 } from "../../../catalog/providers/anilist.provider";
-import { buildAnilistShows } from "./anilist.parser";
+import { buildAnilistLists, buildAnilistShows } from "./anilist.parser";
 import { AnilistImportSource } from "./anilist.source";
 
 const entry = (
@@ -16,6 +16,7 @@ const entry = (
   notes: null,
   startedAt: null,
   completedAt: null,
+  createdAt: 0,
   ...overrides,
   media: {
     id: overrides.id ?? 154587,
@@ -81,14 +82,55 @@ describe("buildAnilistShows", () => {
     expect(shows).toHaveLength(1);
     expect(shows[0].rating).toBeNull();
   });
+
+  it("marks favourites and dates the entry from when it was added", () => {
+    const [favourite, other] = buildAnilistShows(
+      [entry({ id: 1, createdAt: 1_700_000_000 }), entry({ id: 2 })],
+      new Set([1]),
+    );
+
+    expect(favourite.favorite).toBe(true);
+    expect(favourite.addedAt).toEqual(new Date(1_700_000_000 * 1000));
+    expect(other.favorite).toBe(false);
+    expect(other.addedAt).toBeNull();
+  });
+});
+
+describe("buildAnilistLists", () => {
+  it("turns each custom list into a list of anime carrying their match", () => {
+    const lists = buildAnilistLists([
+      { name: "Comfy", entries: [entry({ id: 1 }), entry({ id: 2 })] },
+      { name: "Empty", entries: [] },
+    ]);
+
+    expect(lists).toEqual([
+      {
+        name: "Comfy",
+        description: null,
+        items: [
+          expect.objectContaining({
+            externalIds: { anilist: "1" },
+            type: "SERIES",
+            match: expect.objectContaining({ sourceId: "1" }),
+          }),
+          expect.objectContaining({ externalIds: { anilist: "2" } }),
+        ],
+      },
+    ]);
+  });
 });
 
 describe("AnilistImportSource", () => {
   function makeSource(entries: AnilistListEntry[] = []) {
     const anilist = {
-      getUserAnimeList: vi.fn().mockResolvedValue(entries),
+      getUserAnimeList: vi.fn().mockResolvedValue({
+        entries,
+        customLists: [{ name: "Comfy", entries }],
+      }),
+      getUserFavouriteAnimeIds: vi.fn().mockResolvedValue([154587]),
     } as unknown as AnilistProvider;
     const source = new AnilistImportSource(
+      {} as never,
       {} as never,
       {} as never,
       {} as never,
@@ -111,13 +153,16 @@ describe("AnilistImportSource", () => {
     );
   });
 
-  it("loads the user's list as shows", async () => {
+  it("loads the user's list as shows, with favourites and custom lists", async () => {
     const { source, anilist } = makeSource([entry()]);
     const parsed = source.parseInput("Josh");
 
     await source["load"](parsed);
 
     expect(anilist.getUserAnimeList).toHaveBeenCalledWith("Josh");
+    expect(anilist.getUserFavouriteAnimeIds).toHaveBeenCalledWith("Josh");
     expect(parsed.shows).toHaveLength(1);
+    expect(parsed.shows[0].favorite).toBe(true);
+    expect(parsed.lists?.map((l) => l.name)).toEqual(["Comfy"]);
   });
 });

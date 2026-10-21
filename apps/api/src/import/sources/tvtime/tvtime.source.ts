@@ -77,6 +77,7 @@ function toImportShow(show: ParsedShow): ImportShow {
       rating: e.rating,
     })),
     favorite: show.favorite,
+    addedAt: show.addedAt,
   };
 }
 
@@ -89,6 +90,7 @@ function toImportMovie(movie: ParsedMovie): ImportMovie {
     rewatchedAt: movie.rewatchedAt,
     rating: movie.rating,
     favorite: movie.favorite,
+    addedAt: movie.addedAt,
     externalIds: {},
   };
 }

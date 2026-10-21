@@ -65,6 +65,7 @@ describe("buildImportShows", () => {
         rating: null,
         seasonRatings: [],
         episodeRatings: [],
+        addedAt: null,
         episodes: [
           {
             season: 2,
@@ -112,9 +113,25 @@ describe("buildImportShows", () => {
         rating: null,
         seasonRatings: [],
         episodeRatings: [],
+        addedAt: null,
         episodes: [],
       },
     ]);
+  });
+
+  it("dates a watchlist show from when it was listed", () => {
+    const shows = buildImportShows(
+      [],
+      [
+        {
+          listed_at: "2024-09-09T09:09:09.000Z",
+          type: "show",
+          show: { title: "Planned Show", year: 2024, ids: { trakt: 5 } },
+        },
+      ],
+    );
+
+    expect(shows[0].addedAt).toEqual(new Date("2024-09-09T09:09:09.000Z"));
   });
 
   it("does not duplicate a show already watched when it also sits on the watchlist", () => {
@@ -256,13 +273,15 @@ describe("buildImportMovies", () => {
         externalIds: { tmdb: "1083381", tvdb: undefined, imdb: "tt26657236" },
         favorite: false,
         rating: null,
+        addedAt: null,
       },
     ]);
   });
 
-  it("adds a watchlist-only movie as not watched, with no watch date", () => {
+  it("adds a watchlist-only movie as not watched, dated from when it was listed", () => {
     const watchlist: TraktWatchlistEntry[] = [
       {
+        listed_at: "2025-05-05T12:00:00.000Z",
         type: "movie",
         movie: { title: "Dune", year: 2021, ids: { trakt: 99 } },
       },
@@ -275,7 +294,18 @@ describe("buildImportMovies", () => {
       watched: false,
       watchedAt: null,
       rewatchedAt: [],
+      addedAt: new Date("2025-05-05T12:00:00.000Z"),
     });
+  });
+
+  it("dates a watched movie from when it was listed, if it sits on the watchlist", () => {
+    const dune = { title: "Dune", year: 2021, ids: { trakt: 99 } };
+    const movies = buildImportMovies(
+      [{ watched_at: "2026-01-01T00:00:00.000Z", type: "movie", movie: dune }],
+      [{ listed_at: "2025-05-05T12:00:00.000Z", type: "movie", movie: dune }],
+    );
+
+    expect(movies[0].addedAt).toEqual(new Date("2025-05-05T12:00:00.000Z"));
   });
 
   it("marks a movie as favorited and carries its rating", () => {

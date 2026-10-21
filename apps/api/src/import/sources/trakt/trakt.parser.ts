@@ -96,8 +96,12 @@ export function buildImportShows(
     }
   }
 
+  const listedAtById = new Map<number, Date | null>();
+
   for (const entry of watchlist) {
-    if (entry.type === "show" && entry.show) showFor(entry.show);
+    if (entry.type !== "show" || !entry.show) continue;
+    showFor(entry.show);
+    listedAtById.set(entry.show.ids.trakt, parseDateOrNull(entry.listed_at));
   }
 
   const showRatings = ratings.shows ?? [];
@@ -162,6 +166,7 @@ export function buildImportShows(
       episodeRatings: rated.filter(
         (r) => !show.episodes.has(`${r.season}|${r.episode}`),
       ),
+      addedAt: listedAtById.get(traktId) ?? null,
     };
   });
 }
@@ -219,8 +224,12 @@ export function buildImportMovies(
     }
   }
 
+  const listedAtById = new Map<number, Date | null>();
+
   for (const entry of watchlist) {
-    if (entry.type === "movie" && entry.movie) addUnwatched(entry.movie);
+    if (entry.type !== "movie" || !entry.movie) continue;
+    addUnwatched(entry.movie);
+    listedAtById.set(entry.movie.ids.trakt, parseDateOrNull(entry.listed_at));
   }
 
   for (const entry of ratings) addUnwatched(entry.movie);
@@ -246,6 +255,7 @@ export function buildImportMovies(
       externalIds: movie.externalIds,
       favorite: favoriteIds.has(traktId),
       rating: ratingById.get(traktId) ?? null,
+      addedAt: listedAtById.get(traktId) ?? null,
     };
   });
 }

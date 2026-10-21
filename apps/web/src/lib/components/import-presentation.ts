@@ -153,6 +153,7 @@ export function importItemSubtitle(item: ImportPlanItem): string | null {
         parts.push(
           m.import_viewing_count({ count: number(context.rewatches + 1) }),
         );
+      if (context.status) parts.push(SERIES_STATUS[context.status]());
       break;
   }
 

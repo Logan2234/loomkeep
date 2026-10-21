@@ -118,6 +118,7 @@ export class SimklImportSource extends MediaImportSource<SimklParsed> {
     url.searchParams.set("extended", "full");
     url.searchParams.set("episode_watched_at", "yes");
     url.searchParams.set("include_all_episodes", "yes");
+    url.searchParams.set("memos", "yes");
 
     this.quota.record("simkl");
     const response = await fetch(url, {

@@ -3,6 +3,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { AnilistProvider } from "../../../catalog/providers/anilist.provider";
 import { AppException } from "../../../common/app.exception";
+import { ListService } from "../../../lists/list.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";
@@ -11,7 +12,7 @@ import {
   type ResolvedMatch,
 } from "../media/media-import.source";
 import { AnilistMatchResolver } from "../myanimelist/anilist-match-resolver";
-import { buildAnilistShows } from "./anilist.parser";
+import { buildAnilistLists, buildAnilistShows } from "./anilist.parser";
 
 /** Parse model: the user name, filled in with the fetched list by {@link load}. */
 interface AnilistParsed extends ParsedImport {
@@ -37,9 +38,10 @@ export class AnilistImportSource extends MediaImportSource<AnilistParsed> {
     // Every show carries its match: this one only serves a manual search.
     matchResolver: AnilistMatchResolver,
     reviews: ReviewService,
+    lists: ListService,
     private readonly anilist: AnilistProvider,
   ) {
-    super(prisma, mediaItemService, matchResolver, reviews);
+    super(prisma, mediaItemService, matchResolver, reviews, lists);
   }
 
   parseInput(input: string): AnilistParsed {
@@ -59,9 +61,12 @@ export class AnilistImportSource extends MediaImportSource<AnilistParsed> {
   }
 
   protected override async load(parsed: AnilistParsed): Promise<void> {
-    parsed.shows = buildAnilistShows(
-      await this.anilist.getUserAnimeList(parsed.userName),
+    const list = await this.anilist.getUserAnimeList(parsed.userName);
+    const favouriteIds = await this.anilist.getUserFavouriteAnimeIds(
+      parsed.userName,
     );
+    parsed.shows = buildAnilistShows(list.entries, new Set(favouriteIds));
+    parsed.lists = buildAnilistLists(list.customLists);
   }
 
   protected override acceptsMatch(match: ResolvedMatch): boolean {

@@ -3,8 +3,9 @@ import { toSummary } from "../../../catalog/providers/anilist.mapper";
 import type {
   AnilistFuzzyDate,
   AnilistListEntry,
+  AnilistUserList,
 } from "../../../catalog/providers/anilist.provider";
-import type { ImportShow } from "../../media-import-model";
+import type { ImportList, ImportShow } from "../../media-import-model";
 import { toMatch } from "../media/media-match-resolver";
 
 const MAX_WATCHED_EPISODES_PER_ENTRY = 10_000;
@@ -23,7 +24,10 @@ const STATUS: Record<string, EntryStatus> = {
  * An AniList user's anime list as import shows. Its ids are the catalogue's
  * own (AniList is Loomkeep's anime provider), so each show carries its match.
  */
-export function buildAnilistShows(entries: AnilistListEntry[]): ImportShow[] {
+export function buildAnilistShows(
+  entries: AnilistListEntry[],
+  favouriteIds: ReadonlySet<number> = new Set(),
+): ImportShow[] {
   const seen = new Set<number>();
   const shows: ImportShow[] = [];
 
@@ -54,10 +58,37 @@ export function buildAnilistShows(entries: AnilistListEntry[]): ImportShow[] {
       startedAt: status === "PLANNED" ? null : toDate(entry.startedAt),
       finishedAt: status === "COMPLETED" ? toDate(entry.completedAt) : null,
       notes: entry.notes?.trim() || null,
+      favorite: favouriteIds.has(entry.media.id),
+      addedAt: entry.createdAt ? new Date(entry.createdAt * 1000) : null,
     });
   }
 
   return shows;
+}
+
+/**
+ * The user's custom lists. Every entry also sits in a status list, so each
+ * item carries the same match its show does and lands on one plan item.
+ */
+export function buildAnilistLists(
+  customLists: AnilistUserList["customLists"],
+): ImportList[] {
+  return customLists
+    .filter((list) => list.entries.length > 0)
+    .map((list) => ({
+      name: list.name,
+      description: null,
+      items: list.entries.map((entry) => {
+        const summary = toSummary(entry.media);
+        return {
+          title: summary.title,
+          year: summary.year,
+          externalIds: { anilist: String(entry.media.id) },
+          type: "SERIES" as const,
+          match: toMatch(summary),
+        };
+      }),
+    }));
 }
 
 /** AniList's fuzzy date, only when it's a whole, real day. */

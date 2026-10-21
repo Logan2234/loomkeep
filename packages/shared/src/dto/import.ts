@@ -98,6 +98,8 @@ export type ImportItemContext =
       rewatches: number;
       rating: number | null;
       favorite: boolean;
+      /** The status the source states outright (a film dropped midway). Null otherwise. */
+      status?: EntryStatus | null;
     };
 
 export interface ImportPlanItem {
