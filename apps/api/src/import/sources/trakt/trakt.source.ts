@@ -9,18 +9,26 @@ import { readZipEntriesMatching } from "../../zip";
 import { MediaImportSource } from "../media/media-import.source";
 import { MediaMatchResolver } from "../media/media-match-resolver";
 import type {
+  TraktEpisodeRatingEntry,
   TraktFavoriteEntry,
   TraktHistoryEntry,
   TraktMovieRatingEntry,
+  TraktSeasonRatingEntry,
   TraktShowRatingEntry,
   TraktWatchlistEntry,
 } from "./trakt-export.types";
-import { buildImportMovies, buildImportShows } from "./trakt.parser";
+import {
+  buildImportMovies,
+  buildImportShows,
+  type TraktShowRatings,
+} from "./trakt.parser";
 
 const WATCHLIST_FILE = "lists-watchlist.json";
 const FAVORITES_FILE = "lists-favorites.json";
 const MOVIE_RATINGS_FILE = "ratings-movies.json";
 const SHOW_RATINGS_FILE = "ratings-shows.json";
+const SEASON_RATINGS_FILE = "ratings-seasons.json";
+const EPISODE_RATINGS_FILE = "ratings-episodes.json";
 
 /**
  * Trakt's own account data export (`.zip` of many small JSON files, from
@@ -63,7 +71,7 @@ function extractFiles(input: Buffer): {
   watchlist: TraktWatchlistEntry[];
   favorites: TraktFavoriteEntry[];
   movieRatings: TraktMovieRatingEntry[];
-  showRatings: TraktShowRatingEntry[];
+  showRatings: TraktShowRatings;
 } {
   if (input.length === 0) {
     throw new AppException(
@@ -82,7 +90,9 @@ function extractFiles(input: Buffer): {
         name === WATCHLIST_FILE ||
         name === FAVORITES_FILE ||
         name === MOVIE_RATINGS_FILE ||
-        name === SHOW_RATINGS_FILE,
+        name === SHOW_RATINGS_FILE ||
+        name === SEASON_RATINGS_FILE ||
+        name === EPISODE_RATINGS_FILE,
     );
   } catch (error) {
     throw new AppException(
@@ -121,10 +131,20 @@ function extractFiles(input: Buffer): {
         entries,
         MOVIE_RATINGS_FILE,
       ),
-      showRatings: parseJsonEntry<TraktShowRatingEntry[]>(
-        entries,
-        SHOW_RATINGS_FILE,
-      ),
+      showRatings: {
+        shows: parseJsonEntry<TraktShowRatingEntry[]>(
+          entries,
+          SHOW_RATINGS_FILE,
+        ),
+        seasons: parseJsonEntry<TraktSeasonRatingEntry[]>(
+          entries,
+          SEASON_RATINGS_FILE,
+        ),
+        episodes: parseJsonEntry<TraktEpisodeRatingEntry[]>(
+          entries,
+          EPISODE_RATINGS_FILE,
+        ),
+      },
     };
   } catch {
     throw new AppException(

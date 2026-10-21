@@ -2,9 +2,11 @@ import { ErrorCode, type TvTimeImportFilesDto } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { AppException } from "../../../common/app.exception";
+import { ListService } from "../../../lists/list.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type {
+  ImportList,
   ImportMovie,
   ImportShow,
   ParsedImport,
@@ -14,6 +16,7 @@ import { MediaImportSource } from "../media/media-import.source";
 import { MediaMatchResolver } from "../media/media-match-resolver";
 import {
   parseTvTimeExport,
+  type ParsedList,
   type ParsedMovie,
   type ParsedShow,
 } from "./tvtime.parser";
@@ -23,6 +26,11 @@ const FILE_NAMES: Record<keyof TvTimeImportFilesDto, string> = {
   showsCsv: "user_tv_show_data.csv",
   recordsCsv: "tracking-prod-records.csv",
   rewatchedCsv: "rewatched_episode.csv",
+  movieVotesCsv: "ratings-live-votes.csv",
+  votesV2Csv: "ratings-v2-prod-votes.csv",
+  episodeVotesCsv: "ratings-3-prod-episode_votes.csv",
+  legacyEpisodeVotesCsv: "ratings-prod-episode_votes.csv",
+  listsCsv: "lists-prod-lists.csv",
 };
 
 /**
@@ -39,17 +47,19 @@ export class TvTimeImportSource extends MediaImportSource<ParsedImport> {
     mediaItemService: MediaItemService,
     matchResolver: MediaMatchResolver,
     reviews: ReviewService,
+    lists: ListService,
   ) {
-    super(prisma, mediaItemService, matchResolver, reviews);
+    super(prisma, mediaItemService, matchResolver, reviews, lists);
   }
 
   parseInput(input: string): ParsedImport {
     const files = extractFiles(Buffer.from(input, "base64"));
-    const { shows, movies } = parseTvTimeExport(files);
+    const { shows, movies, lists } = parseTvTimeExport(files);
     return {
       source: this.id,
       shows: shows.map(toImportShow),
       movies: movies.map(toImportMovie),
+      lists: lists.map(toImportList),
     };
   }
 }
@@ -64,7 +74,9 @@ function toImportShow(show: ParsedShow): ImportShow {
       sourceEpisodeId: e.tvdbEpisodeId,
       watchedAt: e.watchedAt,
       totalWatches: e.totalWatches,
+      rating: e.rating,
     })),
+    favorite: show.favorite,
   };
 }
 
@@ -75,14 +87,38 @@ function toImportMovie(movie: ParsedMovie): ImportMovie {
     watched: movie.watched,
     watchedAt: movie.watchedAt,
     rewatchedAt: movie.rewatchedAt,
+    rating: movie.rating,
+    favorite: movie.favorite,
     externalIds: {},
   };
 }
 
 /**
+ * List items carry the same identity as their tracked counterpart (a series'
+ * TVDB id, a movie's title and year), so a title both tracked and listed is
+ * one item of the plan.
+ */
+function toImportList(list: ParsedList): ImportList {
+  return {
+    name: list.name,
+    description: list.description,
+    items: list.items.map((item) =>
+      item.kind === "series"
+        ? {
+            title: item.name,
+            year: null,
+            externalIds: { tvdb: item.tvdbId },
+            type: "SERIES",
+          }
+        : { title: item.title, year: item.year, externalIds: {} },
+    ),
+  };
+}
+
+/**
  * Decode + validate the archive and extract the CSVs we need. Throws
- * {@link AppException} on a bad or incomplete archive. Movies are
- * optional: their file may be absent (then there are simply no movies).
+ * {@link AppException} on a bad or incomplete archive. Movies, ratings and
+ * lists are optional: their file may be absent (then there are simply none).
  */
 function extractFiles(input: Buffer): TvTimeImportFilesDto {
   if (input.length === 0) {
@@ -110,6 +146,11 @@ function extractFiles(input: Buffer): TvTimeImportFilesDto {
     showsCsv: entries.get(FILE_NAMES.showsCsv),
     recordsCsv: entries.get(FILE_NAMES.recordsCsv),
     rewatchedCsv: entries.get(FILE_NAMES.rewatchedCsv),
+    movieVotesCsv: entries.get(FILE_NAMES.movieVotesCsv),
+    votesV2Csv: entries.get(FILE_NAMES.votesV2Csv),
+    episodeVotesCsv: entries.get(FILE_NAMES.episodeVotesCsv),
+    legacyEpisodeVotesCsv: entries.get(FILE_NAMES.legacyEpisodeVotesCsv),
+    listsCsv: entries.get(FILE_NAMES.listsCsv),
   };
 
   const missing: string[] = [];

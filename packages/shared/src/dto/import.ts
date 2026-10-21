@@ -295,4 +295,14 @@ export interface TvTimeImportFilesDto {
   rewatchedCsv?: string;
   /** `user_tv_show_data.csv` — show names + TVDB id + episodes-seen count (watchlist detection). */
   showsCsv?: string;
+  /** `ratings-live-votes.csv` — the current movie (and episode) rating votes. */
+  movieVotesCsv?: string;
+  /** `ratings-v2-prod-votes.csv` — the previous generation of rating votes, movies and episodes. */
+  votesV2Csv?: string;
+  /** `ratings-3-prod-episode_votes.csv` — episode rating votes. */
+  episodeVotesCsv?: string;
+  /** `ratings-prod-episode_votes.csv` — the oldest generation of episode rating votes. */
+  legacyEpisodeVotesCsv?: string;
+  /** `lists-prod-lists.csv` — custom lists, plus the favorite-series/favorite-movies pseudo-lists. */
+  listsCsv?: string;
 }
