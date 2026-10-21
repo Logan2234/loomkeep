@@ -15,7 +15,6 @@ import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
 import type { ProfileService } from "../social/profile.service";
-import type { AccountDeletionService } from "./account-deletion.service";
 import type { CsvExportService } from "./csv-export.service";
 import type { DataExportService } from "./data-export.service";
 import { UsersService } from "./users.service";
@@ -66,7 +65,6 @@ describe("UsersService — email change", () => {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
       {
@@ -280,7 +278,6 @@ describe("UsersService — updateMe mobile nav shortcuts", () => {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
       {
@@ -342,7 +339,6 @@ describe("UsersService — home layout", () => {
       {} as unknown as HibpService,
       {} as unknown as EntitlementService,
       {} as unknown as ProfileService,
-      {} as unknown as AccountDeletionService,
       {} as unknown as XpService,
       {} as unknown as EventsGateway,
       {
@@ -424,7 +420,6 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
       {
@@ -528,7 +523,6 @@ describe("UsersService — uploadAvatar", () => {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       events,
       {
@@ -672,7 +666,6 @@ describe("UsersService — changePassword", () => {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
       {
@@ -739,61 +732,6 @@ describe("UsersService — changePassword", () => {
       },
       0,
       new Date("2026-10-03T10:15:00Z"),
-    );
-  });
-});
-
-describe("UsersService — deleteAccount", () => {
-  const userId = "user-1";
-  let prisma: PrismaService;
-  let accountDeletion: AccountDeletionService;
-  let service: UsersService;
-
-  beforeEach(async () => {
-    const passwordHash = await bcrypt.hash("correct-password", 4);
-    prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: userId,
-          email: "alice@example.com",
-          passwordHash,
-        }),
-      },
-    } as unknown as PrismaService;
-    accountDeletion = {
-      deleteAccount: vi.fn(),
-    } as unknown as AccountDeletionService;
-    service = new UsersService(
-      prisma,
-      {} as unknown as MailService,
-      {
-        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
-      } as unknown as SecurityEventService,
-      {} as unknown as DataExportService,
-      {} as unknown as CsvExportService,
-      {} as unknown as ConfigService,
-      { isPasswordPwned: vi.fn() } as unknown as HibpService,
-      {
-        hasPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
-      { getProfile: vi.fn() } as unknown as ProfileService,
-      accountDeletion,
-      { award: vi.fn() } as unknown as XpService,
-      { emitToUser: vi.fn() } as unknown as EventsGateway,
-      {
-        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
-      } as unknown as ApiKeysService,
-    );
-  });
-
-  it("delegates to AccountDeletionService", async () => {
-    await service.deleteAccount(userId);
-
-    expect(accountDeletion.deleteAccount).toHaveBeenCalledWith(
-      userId,
-      "self",
-      expect.any(String),
-      undefined,
     );
   });
 });
@@ -872,7 +810,6 @@ describe("UsersService — deletionSummary", () => {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
       {
@@ -986,7 +923,6 @@ describe("UsersService.getMyEntitlement", () => {
       { isPasswordPwned: vi.fn() } as unknown as HibpService,
       entitlements,
       { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
       { emitToUser: vi.fn() } as unknown as EventsGateway,
       {

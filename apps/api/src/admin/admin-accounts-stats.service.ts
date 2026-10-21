@@ -47,6 +47,7 @@ export class AdminAccountsStatsService {
       health,
       age,
       byLocale,
+      departures,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.getNewAccountsTrend(DEFAULT_PERIOD, now),
@@ -56,6 +57,7 @@ export class AdminAccountsStatsService {
       this.health(now),
       this.ageStats(now),
       this.localeStats(),
+      this.departures(now),
     ]);
 
     return {
@@ -68,6 +70,8 @@ export class AdminAccountsStatsService {
       health,
       age,
       byLocale,
+      departureReasons: departures.reasons,
+      departures: departures.total,
     };
   }
 
@@ -207,6 +211,28 @@ export class AdminAccountsStatsService {
       adultContentPercent: percent(
         users.filter((u) => u.allowAdultContent).length,
       ),
+    };
+  }
+
+  /** Self-deletions of the last 12 months, and the reasons some gave. */
+  private async departures(now: Date): Promise<{
+    total: number;
+    reasons: AdminAccountsSectionDto["departureReasons"];
+  }> {
+    const since = new Date(now);
+    since.setUTCFullYear(since.getUTCFullYear() - 1);
+    const rows = await this.prisma.accountDeletionFeedback.groupBy({
+      by: ["reason"],
+      where: { deletedAt: { gte: since } },
+      _count: { _all: true },
+    });
+    return {
+      total: rows.reduce((sum, r) => sum + r._count._all, 0),
+      reasons: rows
+        .flatMap((r) =>
+          r.reason === null ? [] : [{ reason: r.reason, count: r._count._all }],
+        )
+        .sort((a, b) => b.count - a.count),
     };
   }
 

@@ -37,7 +37,6 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { ProfileService } from "../social/profile.service";
-import { AccountDeletionService } from "./account-deletion.service";
 import { isAdult } from "./age.util";
 import {
   matchesMimeType,
@@ -76,7 +75,6 @@ export class UsersService {
     private readonly hibp: HibpService,
     private readonly entitlements: EntitlementService,
     private readonly profiles: ProfileService,
-    private readonly accountDeletion: AccountDeletionService,
     private readonly xp: XpService,
     private readonly events: EventsGateway,
     private readonly apiKeys: ApiKeysService,
@@ -814,15 +812,6 @@ export class UsersService {
    * editor first (see ListService.reassignOwnedListsOnAccountDeletion), so
    * shared work doesn't vanish because one collaborator left.
    */
-  async deleteAccount(userId: string, userAgent?: string): Promise<void> {
-    await this.accountDeletion.deleteAccount(
-      userId,
-      "self",
-      "Suppression demandée par l'utilisateur",
-      userAgent,
-    );
-  }
-
   /** Live check backing the debounced availability hint in the username form. */
   async checkUsernameAvailability(
     userId: string,

@@ -100,5 +100,6 @@ function toValues(row: InstanceSettings): InstanceSettingsValues {
     publicApiEnabled: row.publicApiEnabled,
     apiRateLimitFree: row.apiRateLimitFree,
     apiRateLimitPremium: row.apiRateLimitPremium,
+    updateCheckEnabled: row.updateCheckEnabled,
   };
 }

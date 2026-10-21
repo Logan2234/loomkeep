@@ -139,3 +139,97 @@ export async function checkFullCircle(
   });
   return { unlocked: replay !== null };
 }
+
+const PHOENIX_GAP_MS = 182 * DAY_MS;
+
+/** Whether two consecutive dates, in ascending order, sit PHOENIX_GAP_MS or more apart. */
+function hasPhoenixGap(dates: Date[]): boolean {
+  return dates.some(
+    (date, i) =>
+      i > 0 && date.getTime() - dates[i - 1].getTime() >= PHOENIX_GAP_MS,
+  );
+}
+
+/**
+ * "phoenix": one series, book or game finished after lying untouched for
+ * six months (182 days) or more along the way — unlike welcome_back, the gap
+ * is on that one work, not on the whole account. Only what was logged here
+ * counts (dated after sign-up, no imported session), so an import can't
+ * manufacture the gap.
+ */
+export async function checkPhoenix(
+  prisma: PrismaService,
+  userId: string,
+): Promise<AchievementCheckResult> {
+  const user = await behaviourUser(prisma, userId);
+  if (!user) return { unlocked: false };
+  const since = user.createdAt;
+  const loggedSessions = {
+    where: { occurredAt: { gte: since }, source: { not: "IMPORT" as const } },
+    select: { occurredAt: true },
+    orderBy: { occurredAt: "asc" as const },
+  };
+
+  const [readings, playthroughs, series] = await Promise.all([
+    prisma.bookReading.findMany({
+      where: {
+        status: "COMPLETED",
+        finishedAt: { gte: since },
+        bookEntry: { userId },
+      },
+      select: { finishedAt: true, sessions: loggedSessions },
+    }),
+    prisma.gamePlaythrough.findMany({
+      where: {
+        status: "COMPLETED",
+        finishedAt: { gte: since },
+        gameEntry: { userId },
+      },
+      select: { finishedAt: true, sessions: loggedSessions },
+    }),
+    prisma.libraryEntry.findMany({
+      where: {
+        userId,
+        status: "COMPLETED",
+        mediaItem: { type: { in: ["SERIES", "ANIME"] } },
+      },
+      select: { mediaItemId: true },
+    }),
+  ]);
+
+  // The finish itself closes the cycle: a pause right before the last
+  // session counts as much as one in the middle.
+  const cycles = [...readings, ...playthroughs].map((cycle) => [
+    ...cycle.sessions.map((s) => s.occurredAt),
+    ...(cycle.finishedAt ? [cycle.finishedAt] : []),
+  ]);
+  if (cycles.some(hasPhoenixGap)) return { unlocked: true };
+  if (series.length === 0) return { unlocked: false };
+
+  const watches = await prisma.episodeWatch.findMany({
+    where: {
+      userId,
+      watchedAt: { gte: since },
+      episode: {
+        season: {
+          mediaItemId: { in: series.map((s) => s.mediaItemId) },
+          number: { gt: 0 },
+        },
+      },
+    },
+    select: {
+      watchedAt: true,
+      episode: { select: { season: { select: { mediaItemId: true } } } },
+    },
+    orderBy: { watchedAt: "asc" },
+  });
+  const byWork = new Map<string, Date[]>();
+
+  for (const watch of watches) {
+    if (!watch.watchedAt) continue;
+    const key = watch.episode.season.mediaItemId;
+    byWork.set(key, [...(byWork.get(key) ?? []), watch.watchedAt]);
+  }
+
+  return { unlocked: [...byWork.values()].some(hasPhoenixGap) };
+}

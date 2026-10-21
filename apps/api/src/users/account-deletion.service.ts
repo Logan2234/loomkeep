@@ -33,7 +33,12 @@ export class AccountDeletionService {
   ): Promise<void> {
     const account = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true, locale: true, username: true },
+      select: {
+        email: true,
+        locale: true,
+        username: true,
+        deletionReason: true,
+      },
     });
 
     // Evicts the session cache and closes the sockets too: the cascade alone
@@ -84,6 +89,14 @@ export class AccountDeletionService {
 
     await this.prisma.user.delete({ where: { id: userId } });
     await this.chat.purgeEmptyConversations();
+
+    // Written only once the account is gone, with nothing pointing back at
+    // it: a cancelled deletion leaves no trace in the departure figures.
+    if (account && reason === "self") {
+      await this.prisma.accountDeletionFeedback.create({
+        data: { reason: account.deletionReason },
+      });
+    }
 
     // The confirmation the GDPR erasure calls for; the address is used one
     // last time, after the account it belonged to is gone. Administrative

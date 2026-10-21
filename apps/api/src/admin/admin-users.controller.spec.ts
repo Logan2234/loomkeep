@@ -19,6 +19,7 @@ import type { SecurityEventService } from "../security/security-event.service";
 import type { FollowService } from "../social/follow.service";
 import { AccountDeletionService } from "../users/account-deletion.service";
 import type { DataExportService } from "../users/data-export.service";
+import type { ScheduledDeletionService } from "../users/scheduled-deletion.service";
 import { AdminUsersController } from "./admin-users.controller";
 
 function jwtPayload(sub: string): JwtPayload {
@@ -92,6 +93,9 @@ function makeController() {
     } as unknown as ChatService,
   );
 
+  const scheduledDeletions = {
+    cancelByAdmin: vi.fn(),
+  } as unknown as ScheduledDeletionService;
   const controller = new AdminUsersController(
     prisma,
     authService,
@@ -106,6 +110,7 @@ function makeController() {
     entitlements,
     xp,
     accountDeletion,
+    scheduledDeletions,
   );
   return {
     controller,

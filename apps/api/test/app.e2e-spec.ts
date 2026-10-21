@@ -2,6 +2,7 @@ import { ErrorCode } from "@loomkeep/shared";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
+import { ScheduledDeletionService } from "../src/users/scheduled-deletion.service";
 import {
   ANIME_SUMMARY,
   authCookies,
@@ -689,7 +690,7 @@ describe("Loomkeep API (e2e)", () => {
       .expect(200);
   });
 
-  it("deletes the account and wipes access to it", async () => {
+  it("schedules the deletion, then deletes the account and wipes access to it", async () => {
     // Throwaway account so the shared suite user stays intact.
     const victim = {
       email: "e2e-delete@loomkeep.test",
@@ -711,8 +712,9 @@ describe("Loomkeep API (e2e)", () => {
       data: { reauthenticatedAt: new Date(Date.now() - 3 * 60_000) },
     });
     await request(http)
-      .delete("/api/users/me")
+      .post("/api/users/me/deletion")
       .set("Cookie", victimCookies)
+      .send({})
       .expect(403)
       .expect(({ body }) =>
         expect(body.code).toBe(ErrorCode.AuthReauthRequired),
@@ -728,10 +730,31 @@ describe("Loomkeep API (e2e)", () => {
       .send({ method: "password", password: victim.password })
       .expect(200);
 
-    await request(http)
-      .delete("/api/users/me")
+    const scheduled = await request(http)
+      .post("/api/users/me/deletion")
       .set("Cookie", victimCookies)
-      .expect(204);
+      .send({ reason: "NOT_USING" })
+      .expect(200);
+    // Nothing changes until the date: the account keeps working.
+    await request(http)
+      .get("/api/users/me")
+      .set("Cookie", victimCookies)
+      .expect(200)
+      .expect(({ body }) =>
+        expect(body.deletionScheduledFor).toBe(scheduled.body.scheduledFor),
+      );
+
+    // Fourteen days on, the daily job carries it out.
+    await prisma.user.update({
+      where: { email: victim.email },
+      data: { deletionScheduledFor: new Date(Date.now() - 1000) },
+    });
+    await app.get(ScheduledDeletionService).scan();
+    expect(
+      await prisma.accountDeletionFeedback.count({
+        where: { reason: "NOT_USING" },
+      }),
+    ).toBeGreaterThan(0);
 
     // Every session went with the account: the access token, though not
     // expired yet, no longer gets in…

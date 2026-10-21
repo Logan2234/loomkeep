@@ -226,6 +226,50 @@ export interface MailCopy {
     lockedHint: string;
     button: string;
   };
+  accountDeletionScheduled: {
+    subject: (date: string) => string;
+    heading: string;
+    intro: (date: string) => string;
+    cancelIntro: string;
+    button: string;
+    exportBefore: string;
+    exportLink: string;
+    notYou: string;
+  };
+  accountDeletionReminder: {
+    subject: string;
+    heading: string;
+    intro: (date: string) => string;
+    button: string;
+    exportLink: string;
+    hint: string;
+  };
+  accountDeletionCancelled: {
+    subject: string;
+    heading: string;
+    intro: string;
+    hint: string;
+    button: string;
+  };
+  updateAvailable: {
+    subject: (version: string) => string;
+    heading: string;
+    intro: (current: string, latest: string) => string;
+    steps: string;
+    button: string;
+    changelog: string;
+  };
+  pausedReminder: {
+    subject: (count: number) => string;
+    heading: string;
+    intro: string;
+    episodesLeft: (count: number) => string;
+    pagesLeft: (count: number) => string;
+    pausedFor: (weeks: number, months: number) => string;
+    releasedSince: (count: number) => string;
+    button: string;
+    reason: string;
+  };
   accountDeleted: {
     subject: string;
     heading: string;

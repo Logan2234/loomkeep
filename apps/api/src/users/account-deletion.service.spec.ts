@@ -16,8 +16,10 @@ function makeService() {
         email: "alice@example.com",
         locale: "en",
         username: "alice",
+        deletionReason: "MISSING_FEATURE",
       }),
     },
+    accountDeletionFeedback: { create: vi.fn() },
     notification: { deleteMany: vi.fn() },
     securityEvent: { updateMany: vi.fn() },
     invitation: { updateMany: vi.fn() },
@@ -52,6 +54,24 @@ function makeService() {
 }
 
 describe("AccountDeletionService.deleteAccount", () => {
+  it("keeps the reason a self-deletion gave, with nothing naming the account", async () => {
+    const { service, prisma } = makeService();
+
+    await service.deleteAccount("user-1", "self", "Suppression demandée");
+
+    expect(prisma.accountDeletionFeedback.create).toHaveBeenCalledWith({
+      data: { reason: "MISSING_FEATURE" },
+    });
+  });
+
+  it("leaves the departure figures alone for an administrative deletion", async () => {
+    const { service, prisma } = makeService();
+
+    await service.deleteAccount("user-1", "admin", "Suppression par un admin");
+
+    expect(prisma.accountDeletionFeedback.create).not.toHaveBeenCalled();
+  });
+
   it("records USER_DELETED, forgets the IPs, reassigns owned lists, then deletes the account", async () => {
     const { service, prisma, lists, security } = makeService();
     const calls: string[] = [];

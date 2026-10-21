@@ -30,6 +30,7 @@ const PARSE: {
   publicApiEnabled: (raw) => raw !== "false",
   apiRateLimitFree: (raw) => Number(raw),
   apiRateLimitPremium: (raw) => Number(raw),
+  updateCheckEnabled: (raw) => raw !== "false",
 };
 
 /** The env var's value when it's set, else null. */
