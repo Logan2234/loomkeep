@@ -452,7 +452,7 @@ export abstract class MediaImportSource<
         show.status ?? "PLANNED",
         show,
       );
-      await this.writeSeasonRatings(userId, media.id, show);
+      await this.writeSeasonAndEpisodeRatings(userId, media.id, show);
       if (status === "PLANNED") tally.showsWatchlist++;
       else tally.showsImported++;
       return;
@@ -505,30 +505,51 @@ export abstract class MediaImportSource<
         entryStatusFromProgress(watchedRegular.length, index.totalRegular),
       show,
     );
-    await this.writeSeasonRatings(userId, index.mediaItemId, show);
+    await this.writeSeasonAndEpisodeRatings(userId, index.mediaItemId, show);
     if (status === "PLANNED") tally.showsWatchlist++;
     else tally.showsImported++;
   }
 
-  /** A season rating lands on the catalogue's season of that number, if any. */
-  private async writeSeasonRatings(
+  /**
+   * Ratings that ride on no watch: a season's, and an episode's the user
+   * rated without watching. Each lands on the catalogue's season or episode
+   * of that number, if it has one.
+   */
+  private async writeSeasonAndEpisodeRatings(
     userId: string,
     mediaItemId: string,
     show: ImportShow,
   ): Promise<void> {
-    if (!show.seasonRatings?.length) return;
+    if (!show.seasonRatings?.length && !show.episodeRatings?.length) return;
 
     const seasons = await this.prisma.season.findMany({
       where: { mediaItemId },
-      select: { id: true, number: true },
+      select: {
+        id: true,
+        number: true,
+        episodes: { select: { id: true, number: true } },
+      },
     });
 
-    for (const { season, rating } of show.seasonRatings) {
+    for (const { season, rating } of show.seasonRatings ?? []) {
       const target = seasons.find((s) => s.number === season);
       if (!target) continue;
       await this.writeRating(
         userId,
         ReviewTargetType.SEASON,
+        target.id,
+        rating,
+      );
+    }
+
+    for (const { season, episode, rating } of show.episodeRatings ?? []) {
+      const target = seasons
+        .find((s) => s.number === season)
+        ?.episodes.find((e) => e.number === episode);
+      if (!target) continue;
+      await this.writeRating(
+        userId,
+        ReviewTargetType.EPISODE,
         target.id,
         rating,
       );

@@ -233,7 +233,7 @@ describe("TraktImportSource (via ImportJobService)", () => {
     });
   });
 
-  it("commit keeps the rating of a movie never watched and of a season", async () => {
+  it("commit keeps the ratings of a movie and an episode never watched, and of a season", async () => {
     const { service, prisma, tmdb, reviews } = makeService();
     tmdb.getSeriesSummaryByTmdbId.mockResolvedValue({
       source: "TMDB",
@@ -252,7 +252,14 @@ describe("TraktImportSource (via ImportJobService)", () => {
       posterUrl: null,
     });
     prisma.season.findMany.mockResolvedValue([
-      { id: "season-2", number: 2, episodes: [{ id: "ep-1", number: 1 }] },
+      {
+        id: "season-2",
+        number: 2,
+        episodes: [
+          { id: "ep-1", number: 1 },
+          { id: "ep-2", number: 2 },
+        ],
+      },
     ]);
     prisma.mediaExternalId.findUnique.mockResolvedValue({
       mediaItemId: "media-1",
@@ -291,6 +298,18 @@ describe("TraktImportSource (via ImportJobService)", () => {
           },
         ]),
       },
+      {
+        name: "ratings-episodes.json",
+        content: JSON.stringify([
+          {
+            rated_at: "2026-08-17T17:13:58.000Z",
+            rating: 9,
+            type: "episode",
+            episode: { title: null, season: 2, number: 2 },
+            show,
+          },
+        ]),
+      },
     ]);
 
     const analyzed = await service.startAnalyze("u1", "trakt", { input });
@@ -313,5 +332,10 @@ describe("TraktImportSource (via ImportJobService)", () => {
       "season-2",
       7,
     );
+    expect(reviews.setRating).toHaveBeenCalledWith("u1", "EPISODE", "ep-2", 9);
+    const watched = prisma.episodeWatch.createMany.mock.calls.flatMap(
+      ([args]) => args.data.map((w: { episodeId: string }) => w.episodeId),
+    );
+    expect(watched).toEqual(["ep-1"]);
   });
 });

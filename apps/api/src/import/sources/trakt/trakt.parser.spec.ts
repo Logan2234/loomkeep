@@ -64,6 +64,7 @@ describe("buildImportShows", () => {
         favorite: false,
         rating: null,
         seasonRatings: [],
+        episodeRatings: [],
         episodes: [
           {
             season: 2,
@@ -110,6 +111,7 @@ describe("buildImportShows", () => {
         favorite: false,
         rating: null,
         seasonRatings: [],
+        episodeRatings: [],
         episodes: [],
       },
     ]);
@@ -134,7 +136,7 @@ describe("buildImportShows", () => {
     expect(shows[0].episodes).toHaveLength(1);
   });
 
-  it("carries episode ratings onto the watched episode and season ratings onto the show", () => {
+  it("carries episode and season ratings, an unwatched episode's apart from the watches", () => {
     const show = { title: "Show", year: 2020, ids: { trakt: 1 } };
     const history: TraktHistoryEntry[] = [
       {
@@ -163,10 +165,21 @@ describe("buildImportShows", () => {
           episode: { title: "Ep 1", season: 1, number: 1 },
           show,
         },
+        {
+          rated_at: "2026-08-01T00:00:00.000Z",
+          rating: 6,
+          type: "episode",
+          episode: { title: "Ep 2", season: 1, number: 2 },
+          show,
+        },
       ],
     });
 
+    expect(shows[0].episodes).toHaveLength(1);
     expect(shows[0].episodes[0].rating).toBe(9);
+    expect(shows[0].episodeRatings).toEqual([
+      { season: 1, episode: 2, rating: 6 },
+    ]);
     expect(shows[0].seasonRatings).toEqual([{ season: 1, rating: 7 }]);
   });
 

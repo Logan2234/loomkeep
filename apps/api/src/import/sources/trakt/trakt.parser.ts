@@ -39,8 +39,9 @@ export interface TraktShowRatings {
  *
  * Trakt lets a user rate a title without marking it watched. A rated show
  * that nothing else mentions still enters the import, on the watchlist, so
- * its ratings are not lost. An episode rating only lands on an episode the
- * history has: a rating says nothing about how far the user got.
+ * its ratings are not lost. A rated episode the history lacks keeps its
+ * rating apart, in `episodeRatings`, and is not marked watched: a rating
+ * says nothing about how far the user got.
  */
 export function buildImportShows(
   history: TraktHistoryEntry[],
@@ -129,25 +130,40 @@ export function buildImportShows(
     seasonRatingsById.set(r.show.ids.trakt, list);
   }
 
-  const episodeRatingByKey = new Map(
-    episodeRatings.map((r) => [
-      `${r.show.ids.trakt}|${r.episode.season}|${r.episode.number}`,
-      r.rating,
-    ]),
-  );
+  const episodeRatingsById = new Map<
+    number,
+    { season: number; episode: number; rating: number }[]
+  >();
 
-  return [...byTraktId.entries()].map(([traktId, show]) => ({
-    title: show.title,
-    externalIds: show.externalIds,
-    episodes: [...show.episodes.values()].map((ep) => ({
-      ...ep,
-      rating:
-        episodeRatingByKey.get(`${traktId}|${ep.season}|${ep.episode}`) ?? null,
-    })),
-    favorite: favoriteIds.has(traktId),
-    rating: ratingById.get(traktId) ?? null,
-    seasonRatings: seasonRatingsById.get(traktId) ?? [],
-  }));
+  for (const r of episodeRatings) {
+    const list = episodeRatingsById.get(r.show.ids.trakt) ?? [];
+    list.push({
+      season: r.episode.season,
+      episode: r.episode.number,
+      rating: r.rating,
+    });
+    episodeRatingsById.set(r.show.ids.trakt, list);
+  }
+
+  return [...byTraktId.entries()].map(([traktId, show]) => {
+    const rated = episodeRatingsById.get(traktId) ?? [];
+    return {
+      title: show.title,
+      externalIds: show.externalIds,
+      episodes: [...show.episodes.values()].map((ep) => ({
+        ...ep,
+        rating:
+          rated.find((r) => r.season === ep.season && r.episode === ep.episode)
+            ?.rating ?? null,
+      })),
+      favorite: favoriteIds.has(traktId),
+      rating: ratingById.get(traktId) ?? null,
+      seasonRatings: seasonRatingsById.get(traktId) ?? [],
+      episodeRatings: rated.filter(
+        (r) => !show.episodes.has(`${r.season}|${r.episode}`),
+      ),
+    };
+  });
 }
 
 /** Movie accumulator while scanning history, before its dates are sorted. */

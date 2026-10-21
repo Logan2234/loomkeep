@@ -97,6 +97,28 @@ describe("parseTvTimeExport", () => {
     expect(shows.map((s) => s.tvdbId)).toEqual(["12345"]);
   });
 
+  it("keeps a show set aside for later on the watchlist, even unfollowed", () => {
+    // The v2 file's `user-series-*` rows carry a show's follow flags.
+    const episodesCsv = [
+      "key,series_name,episode_id,season_number,episode_number,s_id,bulk_type,created_at,is_for_later,is_archived",
+      "user-series-a,Later Show,,,,300,,2024-01-01 10:00:00,true,false",
+      "user-series-b,Archived Show,,,,301,,2024-01-01 10:00:00,true,true",
+      "user-series-c,Unlisted Later,,,,302,,2024-01-01 10:00:00,true,false",
+    ].join("\n");
+    const showsCsv = [
+      SHOWS_HEADER,
+      "Later Show (2024),300,0,0",
+      "Archived Show,301,0,0",
+    ].join("\n");
+
+    const { shows } = parseTvTimeExport({ episodesCsv, showsCsv });
+
+    expect(shows.map((s) => [s.tvdbId, s.name, s.episodes.length])).toEqual([
+      ["300", "Later Show (2024)", 0],
+      ["302", "Unlisted Later", 0],
+    ]);
+  });
+
   it("prefers the show name from user_tv_show_data over the v2 series_name", () => {
     const showsCsv = [SHOWS_HEADER, "Doctor Who (2005),78804,5,1"].join("\n");
     const episodesCsv = [

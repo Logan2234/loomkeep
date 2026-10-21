@@ -140,13 +140,29 @@ function parseShows(
   rewatchByEpisodeId: Map<string, number>,
 ): ParsedShow[] {
   const byTvdbId = new Map<string, ParsedShow>();
+  // tvdbId → the v2 file's series name, for shows set aside "for later".
+  const forLater = new Map<string, string>();
 
   // 1. Shows with watched episodes, from the source-of-truth table.
   for (const row of episodesCsv ? parseCsv(episodesCsv) : []) {
+    const tvdbId = row.s_id?.trim();
+
+    // A `user-series-*` row holds the show's follow flags, not a watch.
+    if (row.key?.startsWith("user-series-")) {
+      if (
+        tvdbId &&
+        row.is_for_later?.trim() === "true" &&
+        row.is_archived?.trim() !== "true"
+      ) {
+        forLater.set(tvdbId, row.series_name?.trim() || tvdbId);
+      }
+
+      continue;
+    }
+
     // `bulk_type` (""/"fill-previous"/"season") only records HOW the watch was
     // entered — every row with an episode id is a real watched episode. Rows
     // without one (e.g. the series-follow record) are skipped just below.
-    const tvdbId = row.s_id?.trim();
     const episodeId = row.episode_id?.trim();
     const season = toInt(row.season_number);
     const episode = toInt(row.episode_number);
@@ -192,6 +208,19 @@ function parseShows(
       byTvdbId.set(tvdbId, {
         tvdbId,
         name: entry.name,
+        episodes: [],
+        favorite: false,
+      });
+    }
+  }
+
+  // 3. Shows set aside "for later": TV Time's own watchlist, which does not
+  //    need the show to be followed (Trakt's TV Time importer reads it so).
+  for (const [tvdbId, seriesName] of forLater) {
+    if (!byTvdbId.has(tvdbId)) {
+      byTvdbId.set(tvdbId, {
+        tvdbId,
+        name: names.get(tvdbId)?.name ?? seriesName,
         episodes: [],
         favorite: false,
       });

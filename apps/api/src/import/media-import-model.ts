@@ -53,6 +53,11 @@ export interface ImportShow {
   rating?: number | null;
   /** Per-season 1-10 ratings, written as Reviews targeting the season. */
   seasonRatings?: { season: number; rating: number }[];
+  /**
+   * Ratings of episodes outside `episodes`: rated but never watched (Trakt
+   * allows it). Written as the episode's Review, without recording a watch.
+   */
+  episodeRatings?: { season: number; episode: number; rating: number }[];
   /** Marked as a favorite on the source. */
   favorite?: boolean;
   /** Explicit source status, for sources which expose one. */
