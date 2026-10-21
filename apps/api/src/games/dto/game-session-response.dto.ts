@@ -21,6 +21,12 @@ export class GameSessionResponseDto implements GameSessionDto {
 }
 
 export class GameSessionSummaryResponseDto implements GameSessionSummaryDto {
+  /**
+   * Estimated finish date of the active playthrough, or null without a known duration and three recent active days.
+   * @example "2026-11-13"
+   */
+  estimatedCompletionDate!: string | null;
+
   @ApiProperty({ type: GameSessionResponseDto, isArray: true })
   items!: GameSessionResponseDto[];
 

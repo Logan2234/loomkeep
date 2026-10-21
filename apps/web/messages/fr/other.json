@@ -1,4 +1,6 @@
 {
+  "completion_estimate_finish": "Fin estimée : {date}",
+  "completion_estimate_caught_up": "À jour estimé le {date}",
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "notif_follow_accepted_body": "a accepté ta demande de suivi",
   "notif_reactions_title": "Ton commentaire fait réagir",
