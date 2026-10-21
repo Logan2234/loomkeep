@@ -39,7 +39,7 @@ const ago = (ms: number) => new Date(Date.now() - ms);
 
 describe("RecentAuthGuard", () => {
   const createKey = ApiKeysController.prototype.create;
-  const deleteAccount = UsersController.prototype.deleteAccount;
+  const deleteAccount = UsersController.prototype.scheduleDeletion;
 
   it("lets a session confirmed less than ten minutes ago through", async () => {
     await expect(
@@ -73,7 +73,7 @@ describe("RecentAuthGuard", () => {
       SessionsController.prototype.revokeOthers,
       SessionsController.prototype.revokeSession,
       UsersController.prototype.changeEmail,
-      UsersController.prototype.deleteAccount,
+      UsersController.prototype.scheduleDeletion,
       MfaController.prototype.setupTotp,
       MfaController.prototype.disableTotp,
       MfaController.prototype.setEmailMfa,

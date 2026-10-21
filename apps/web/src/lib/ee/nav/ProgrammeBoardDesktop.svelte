@@ -15,6 +15,7 @@
     profileHref as resolveProfileHref,
   } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { useAdminUpdateAvailable } from "#lib/admin-update.svelte.js";
   import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
 
   let { children }: { children: Snippet } = $props();
@@ -22,6 +23,7 @@
   let open = $state(false);
 
   const reportsPending = useReportsPendingCount();
+  const adminUpdate = useAdminUpdateAvailable();
 
   const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
   const profileHref = $derived(resolveProfileHref());
@@ -154,6 +156,12 @@
                   ? 'bg-[#f5b841] shadow-[0_0_6px_1px_#f5b841]'
                   : 'bg-white/15'}"></span>
               {item.label}
+              {#if item.href === "/app/admin/services" && adminUpdate.available}
+                <span
+                  class="ml-auto h-2 w-2 rounded-full bg-[#f5b841]"
+                  aria-hidden="true"></span
+                ><span class="sr-only">{m.admin_update_badge()}</span>
+              {/if}
               {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
                 <span
                   class="ml-auto rounded-full bg-[#f5b841] px-1.5 text-[0.6rem] font-bold text-[#1a1406]">

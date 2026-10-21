@@ -7,6 +7,7 @@
   import RankBars from "#lib/components/stats/RankBars.svelte";
   import StatFigure from "#lib/components/stats/StatFigure.svelte";
   import { formatNumber, formatPercent, formatLanguage } from "#lib/format.js";
+  import { DELETION_REASON_LABELS } from "#lib/constants/deletion-reasons.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     DORMANT_AFTER_DAYS,
@@ -89,6 +90,16 @@
       label: formatLanguage(l.locale),
       value: l.count,
     })),
+  );
+
+  const departureItems = $derived(
+    stats.departureReasons.map((r) => ({
+      label: DELETION_REASON_LABELS[r.reason](),
+      value: r.count,
+    })),
+  );
+  const departureAnswers = $derived(
+    stats.departureReasons.reduce((sum, r) => sum + r.count, 0),
   );
 </script>
 
@@ -182,5 +193,22 @@
       {m.admin_accounts_locale_desc()}
     </p>
     <RankBars items={localeItems} />
+  </div>
+
+  <div class="card p-4">
+    <h3 class="font-display text-[15px] font-bold">
+      {m.admin_accounts_departures_title()}
+    </h3>
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
+      {m.admin_accounts_departures_desc({
+        answers: formatNumber(departureAnswers),
+        departures: formatNumber(stats.departures),
+      })}
+    </p>
+    {#if departureItems.length}
+      <RankBars items={departureItems} />
+    {:else}
+      <p class="text-dim text-sm">{m.admin_accounts_departures_empty()}</p>
+    {/if}
   </div>
 </div>

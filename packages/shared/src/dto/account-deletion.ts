@@ -1,3 +1,5 @@
+import type { AccountDeletionReason } from "../enums";
+
 /** Rows hard-deleted (cascade) when the account is removed. */
 export type AccountDeletionDeletedCategory =
   | "LIBRARY"
@@ -68,4 +70,22 @@ export interface AccountDeletionSummaryDto {
   anonymized: AccountDeletionCategoryCount<AccountDeletionAnonymizedCategory>[];
   transferredLists: AccountDeletionTransferredListDto[];
   kept: AccountDeletionCategoryCount<AccountDeletionKeptCategory>[];
+}
+
+/** Days between asking for the deletion and the account actually going. */
+export const ACCOUNT_DELETION_GRACE_DAYS = 14;
+
+export interface ScheduleAccountDeletionRequestDto {
+  /** Optional, recorded anonymously once the account is gone. */
+  reason?: AccountDeletionReason;
+}
+
+export interface AccountDeletionScheduleDto {
+  /** ISO datetime from which the daily job deletes the account. */
+  scheduledFor: string;
+}
+
+/** The token from the link in the "deletion scheduled" email. */
+export interface CancelAccountDeletionRequestDto {
+  token: string;
 }

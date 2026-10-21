@@ -1,4 +1,5 @@
 import type {
+  AccountDeletionScheduleDto,
   AccountDeletionSummaryDto,
   CsvExportDto,
   EntitlementDto,
@@ -36,7 +37,12 @@ import {
   SENSITIVE_ACTION_THROTTLE,
 } from "../common/throttle.constants";
 import { SocialProfileResponseDto } from "../social/dto/social-profile-response.dto";
+import { AccountDeletionScheduleResponseDto } from "./dto/account-deletion-schedule-response.dto";
 import { AccountDeletionSummaryResponseDto } from "./dto/account-deletion-summary-response.dto";
+import {
+  CancelAccountDeletionDto,
+  ScheduleAccountDeletionDto,
+} from "./dto/account-deletion.dto";
 import { ChangeEmailDto } from "./dto/change-email.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
 import { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";
@@ -52,9 +58,10 @@ import { UserResponseDto } from "./dto/user-response.dto";
 import { UsernameAvailabilityResponseDto } from "./dto/username-availability-response.dto";
 import { WidgetTokenResponseDto } from "./dto/widget-token-response.dto";
 import { MigrationExportService } from "./migration-export.service";
+import { ScheduledDeletionService } from "./scheduled-deletion.service";
 import { UsersService } from "./users.service";
 
-// Deleting the account can't be undone: the web always asks for a
+// Once carried out, the deletion can't be undone: the web always asks for a
 // confirmation first, and the server takes none older than this.
 const DELETE_ACCOUNT_REAUTH_MS = 2 * 60 * 1000;
 
@@ -63,6 +70,7 @@ export class UsersController {
   constructor(
     private readonly users: UsersService,
     private readonly migrationExport: MigrationExportService,
+    private readonly scheduledDeletions: ScheduledDeletionService,
   ) {}
 
   @Get("me")
@@ -320,23 +328,38 @@ export class UsersController {
   }
 
   /**
-   * Permanently deletes the account. Being irreversible, it wants a
-   * confirmation of the last two minutes, not the usual ten. All owned rows (library entries, watches, refresh
-   * tokens, notifications) go with it via `onDelete: Cascade`; Review/Comment/
-   * Report are detached (SetNull) instead of deleted — see deletionSummary()
-   * above — and the shared MediaItem cache is untouched. A list with editors
-   * is the one exception to the cascade: ownership passes to the earliest
-   * editor first (see ListService.reassignOwnedListsOnAccountDeletion), so
-   * shared work doesn't vanish because one collaborator left.
+   * Schedules the account's deletion ACCOUNT_DELETION_GRACE_DAYS from now
+   * and emails a one-click cancel link; ScheduledDeletionService carries it
+   * out then. It wants a confirmation of the last two minutes, not the
+   * usual ten. What the deletion itself does: see deletionSummary() above
+   * and AccountDeletionService.
    */
   @RequireRecentAuth(DELETE_ACCOUNT_REAUTH_MS)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete("me")
-  deleteAccount(
+  @Post("me/deletion")
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: AccountDeletionScheduleResponseDto })
+  scheduleDeletion(
     @CurrentUser() payload: JwtPayload,
-    @Headers("user-agent") userAgent?: string,
+    @Body() dto: ScheduleAccountDeletionDto,
+  ): Promise<AccountDeletionScheduleDto> {
+    return this.scheduledDeletions.schedule(payload.sub, dto.reason);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete("me/deletion")
+  cancelDeletion(@CurrentUser() payload: JwtPayload): Promise<void> {
+    return this.scheduledDeletions.cancel(payload.sub);
+  }
+
+  /** Behind the "Annuler la suppression" link of the scheduling email — no login required. */
+  @Public()
+  @Throttle(SENSITIVE_ACTION_THROTTLE)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post("deletion/cancel")
+  cancelDeletionWithToken(
+    @Body() dto: CancelAccountDeletionDto,
   ): Promise<void> {
-    return this.users.deleteAccount(payload.sub, userAgent);
+    return this.scheduledDeletions.cancelWithToken(dto.token);
   }
 
   /** Live check backing the debounced availability hint in the username form. */

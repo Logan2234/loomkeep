@@ -2,6 +2,7 @@ import type {
   AdminBackupFileContentDto,
   AdminBackupInventoryDto,
   AdminOverviewDto,
+  AdminUpdateStatusDto,
   SchemaGraphResponseDto,
   ServiceStatusResponseDto,
 } from "@loomkeep/shared";
@@ -24,9 +25,11 @@ import { BackupService } from "./backup.service";
 import { AdminBackupFileContentResponseDto } from "./dto/admin-backup-file-content-response.dto";
 import { AdminBackupInventoryResponseDto } from "./dto/admin-backup-inventory-response.dto";
 import { AdminOverviewResponseDto } from "./dto/admin-overview-response.dto";
+import { AdminUpdateStatusResponseDto } from "./dto/admin-update-status-response.dto";
 import { RestoreBackupDto } from "./dto/restore-backup.dto";
 import { SchemaGraphResultResponseDto } from "./dto/schema-graph-response.dto";
 import { ServiceStatusListResponseDto } from "./dto/service-status-response.dto";
+import { UpdateCheckService } from "./update-check.service";
 
 /** Instance-wide system info: backup, dependency health, schema, overview. */
 @AdminOnly()
@@ -36,6 +39,7 @@ export class AdminSystemController {
     private readonly admin: AdminService,
     private readonly overview: AdminOverviewService,
     private readonly backup: BackupService,
+    private readonly updateCheck: UpdateCheckService,
   ) {}
 
   /** Persisted backup dumps on disk (BACKUP_DIR), most recent first — up to 7, pruned by the daily job. */
@@ -82,6 +86,21 @@ export class AdminSystemController {
   @ApiOkResponse({ type: ServiceStatusListResponseDto })
   getServices(): Promise<ServiceStatusResponseDto> {
     return this.admin.getServicesStatus();
+  }
+
+  /** Whether a newer Loomkeep version is published, as of the last daily check. */
+  @Get("update")
+  @ApiOkResponse({ type: AdminUpdateStatusResponseDto })
+  getUpdateStatus(): Promise<AdminUpdateStatusDto> {
+    return this.updateCheck.status();
+  }
+
+  /** "Vérifier maintenant": runs the check outside its daily tick. */
+  @Post("update/check")
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: AdminUpdateStatusResponseDto })
+  checkForUpdate(): Promise<AdminUpdateStatusDto> {
+    return this.updateCheck.check();
   }
 
   /** Locally-generated architecture diagrams (DB ERD, module graph). */

@@ -1,7 +1,11 @@
 import type { Locale } from "../locale";
 // Sections have separate endpoints, refresh cadences, and failure modes.
 
-import type { ProfileAccess, ReportCategory } from "../enums";
+import type {
+  AccountDeletionReason,
+  ProfileAccess,
+  ReportCategory,
+} from "../enums";
 import type { TrendPeriod, TrendPointDto } from "./admin";
 import type { RatingBucketDto, StatsDomain } from "./stats";
 
@@ -92,6 +96,15 @@ export interface AdminAccountsSectionDto {
   age: AdminAgeStatsDto;
   /** Descending by count. */
   byLocale: AdminLocaleCountDto[];
+  /** Reasons given by accounts deleted in the last 12 months, descending by count. */
+  departureReasons: AdminDepartureReasonCountDto[];
+  /** Accounts self-deleted in the last 12 months, with or without a reason. */
+  departures: number;
+}
+
+interface AdminDepartureReasonCountDto {
+  reason: AccountDeletionReason;
+  count: number;
 }
 
 export interface AdminCacheDomainRowDto {

@@ -12,6 +12,7 @@ export type AdminAlertKey = Extract<
   | "ADMIN_JOB_FAILED"
   | "ADMIN_QUOTA"
   | "ADMIN_NEW_USER"
+  | "ADMIN_UPDATE_AVAILABLE"
 >;
 
 /**

@@ -22,6 +22,7 @@
     profileHref as resolveProfileHref,
   } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { useAdminUpdateAvailable } from "#lib/admin-update.svelte.js";
   import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
   import { scale } from "svelte/transition";
 
@@ -49,6 +50,7 @@
   let { children }: { children: Snippet } = $props();
 
   const reportsPending = useReportsPendingCount();
+  const adminUpdate = useAdminUpdateAvailable();
 
   const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
   const visibleSections = $derived(
@@ -218,6 +220,12 @@
                 <span
                   class="relative grid h-10 w-10 shrink-0 place-items-center">
                   <Icon name={item.icon} class="h-5 w-5" />
+                  {#if item.href === "/app/admin/services" && adminUpdate.available}
+                    <span
+                      class="bg-accent ring-surface absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-2"
+                      aria-hidden="true"></span
+                    ><span class="sr-only">{m.admin_update_badge()}</span>
+                  {/if}
                   {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
                     {#key reportsPending.count}
                       <span
@@ -343,8 +351,14 @@
           )
             ? 'bg-accent/15 text-accent'
             : 'text-dim hover:bg-surface-2 hover:text-fg'}">
-          <span class="grid h-10 w-10 shrink-0 place-items-center">
+          <span class="relative grid h-10 w-10 shrink-0 place-items-center">
             <Icon name="shield" class="h-5 w-5" />
+            {#if adminUpdate.available}
+              <span
+                class="bg-accent ring-surface absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-2"
+                aria-hidden="true"></span
+              ><span class="sr-only">{m.admin_update_badge()}</span>
+            {/if}
           </span>
           <span
             class="text-sm font-semibold whitespace-nowrap transition-opacity duration-150 {expanded

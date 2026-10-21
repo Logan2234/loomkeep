@@ -34,4 +34,8 @@ export class UpdateInstanceSettingsRequestDto implements UpdateInstanceSettingsD
   @Min(API_RATE_LIMIT_BOUNDS.min)
   @Max(API_RATE_LIMIT_BOUNDS.max)
   apiRateLimitPremium?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  updateCheckEnabled?: boolean;
 }

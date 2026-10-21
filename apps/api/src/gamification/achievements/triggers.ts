@@ -66,6 +66,7 @@ export const ACHIEVEMENT_KEYS_BY_XP_REASON: Partial<
     "well_rounded",
     "guilty_pleasure",
     "new_year_finish",
+    "phoenix",
   ],
   GAME_FINISHED: [
     "game_finisher_bronze",
@@ -84,6 +85,7 @@ export const ACHIEVEMENT_KEYS_BY_XP_REASON: Partial<
     "omnivore",
     "well_rounded",
     "new_year_finish",
+    "phoenix",
   ],
   SAGA_COMPLETED: [
     "saga_finisher_bronze",
@@ -107,6 +109,7 @@ export const ACHIEVEMENT_KEYS_BY_XP_REASON: Partial<
     "omnivore",
     "well_rounded",
     "new_year_finish",
+    "phoenix",
   ],
 };
 

@@ -213,6 +213,17 @@
             mappings:
               - field: gitSha
                 label: SHA déployé
+              - field: version
+                label: Version
+              - field: updateAvailable
+                label: Mise à jour
+                remap:
+                  - value: "yes"
+                    to: Disponible
+                  - value: "no"
+                    to: À jour
+                  - any: true
+                    to: Inconnue
           - type: customapi
             url: https://api.github.com/repos/Logan2234/loomkeep/commits/main
             refreshInterval: 300000

@@ -132,6 +132,11 @@ export interface UserDto {
    * keeps following them until the user edits the page.
    */
   homeLayout: HomeLayoutDto | null;
+  /**
+   * When the account is due to be deleted, null when no deletion is
+   * scheduled. The account keeps working normally until then.
+   */
+  deletionScheduledFor: string | null;
 }
 
 export interface UpdateUserRequestDto {

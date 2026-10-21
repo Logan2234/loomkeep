@@ -19,6 +19,7 @@ import { DomainGateModule } from "./domain-gate.module";
 import { InactiveAccountService } from "./inactive-account.service";
 import { MfaController } from "./mfa.controller";
 import { MigrationExportService } from "./migration-export.service";
+import { ScheduledDeletionService } from "./scheduled-deletion.service";
 import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
 
@@ -46,6 +47,7 @@ import { UsersService } from "./users.service";
     MigrationExportService,
     AccountDeletionService,
     InactiveAccountService,
+    ScheduledDeletionService,
     UsersService,
   ],
   exports: [
@@ -55,6 +57,7 @@ import { UsersService } from "./users.service";
     CsvExportService,
     AccountDeletionService,
     InactiveAccountService,
+    ScheduledDeletionService,
     EntitlementModule,
   ],
 })

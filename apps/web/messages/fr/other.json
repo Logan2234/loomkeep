@@ -1586,5 +1586,10 @@
   "notif_empty_title": "Rien de neuf",
   "notif_empty_unread_title": "Tu es à jour",
   "notif_empty_unread": "Plus rien de non lu. L'historique reste dans « Toutes ».",
-  "notif_follows_you_now": "{name} te suit maintenant"
+  "notif_follows_you_now": "{name} te suit maintenant",
+  "cancel_deletion_title": "Annuler la suppression",
+  "cancel_deletion_pending": "Annulation en cours…",
+  "cancel_deletion_done_title": "Suppression annulée",
+  "cancel_deletion_done": "Ton compte est conservé, avec tout ce qu'il contient. Si tu n'étais pas à l'origine de la demande, change ton mot de passe.",
+  "cancel_deletion_open": "Ouvrir Loomkeep"
 }

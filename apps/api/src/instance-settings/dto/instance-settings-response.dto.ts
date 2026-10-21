@@ -12,6 +12,7 @@ class InstanceSettingsValuesResponseDto implements InstanceSettingsValues {
   publicApiEnabled!: boolean;
   apiRateLimitFree!: number;
   apiRateLimitPremium!: number;
+  updateCheckEnabled!: boolean;
 }
 
 class InstanceSettingsLocksResponseDto implements Partial<
@@ -24,6 +25,7 @@ class InstanceSettingsLocksResponseDto implements Partial<
   publicApiEnabled?: string;
   apiRateLimitFree?: string;
   apiRateLimitPremium?: string;
+  updateCheckEnabled?: string;
 }
 
 export class InstanceSettingsResponseDto implements InstanceSettingsDto {

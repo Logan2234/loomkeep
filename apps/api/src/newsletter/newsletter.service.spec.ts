@@ -1,3 +1,4 @@
+import { ErrorCode } from "@loomkeep/shared";
 import { vi, type Mock } from "vitest";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -67,7 +68,11 @@ describe("NewsletterService.handleChangelogPublished", () => {
     );
     expect(prisma.newsletterSend.update).toHaveBeenCalledWith({
       where: { id: "send_1" },
-      data: { recipientCount: 1 },
+      data: {
+        recipientCount: 1,
+        contentPreview: "content",
+        contentHtml: "<p>content</p>",
+      },
     });
   });
 
@@ -224,5 +229,43 @@ describe("NewsletterService.unsubscribe", () => {
       "Invalid unsubscribe link",
     );
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("NewsletterService.preview", () => {
+  function makeService(send: unknown) {
+    const prisma = {
+      newsletterSend: { findUnique: vi.fn().mockResolvedValue(send) },
+    } as unknown as PrismaService;
+    const rendered = { subject: "s", html: "<p>h</p>", text: "t" };
+    const mail = {
+      renderNewsletterPreview: vi.fn().mockReturnValue(rendered),
+    } as unknown as MailService;
+    return { service: new NewsletterService(prisma, mail), mail, rendered };
+  }
+
+  it("renders the content stored with the send", async () => {
+    const { service, mail, rendered } = makeService({
+      quackbackChangelogId: "changelog_1",
+      title: "Loomkeep 1.11.0",
+      contentPreview: "## New",
+      contentHtml: "<h2>New</h2>",
+    });
+
+    await expect(service.preview("send_1", "fr")).resolves.toBe(rendered);
+    expect(mail.renderNewsletterPreview).toHaveBeenCalledWith(
+      "fr",
+      "Loomkeep 1.11.0",
+      "## New",
+      "<h2>New</h2>",
+    );
+  });
+
+  it("404s on an unknown send", async () => {
+    const { service } = makeService(null);
+
+    await expect(service.preview("nope", "fr")).rejects.toMatchObject({
+      code: ErrorCode.NewsletterSendNotFound,
+    });
   });
 });

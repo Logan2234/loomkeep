@@ -5,6 +5,7 @@
 
   import {
     adjustAdminUserXp,
+    cancelAdminUserDeletion,
     deleteAdminUser,
     getAdminUserComments,
     getAdminUserExport,
@@ -60,6 +61,7 @@
   } = $props();
 
   let showRevokeAllConfirm = $state(false);
+  let showCancelDeletionConfirm = $state(false);
   let showDeleteModal = $state(false);
   let activeModal = $state<ActivityKind | null>(null);
   let avatarLightbox = $state(false);
@@ -241,6 +243,14 @@
     errorToast: true,
   }));
 
+  const cancelDeletionMut = createApiMutation(() => ({
+    mutate: () => cancelAdminUserDeletion(user.id),
+    invalidates: [usersKey],
+    successToast: m.admin_users_deletion_cancelled(),
+    errorToast: true,
+    onSuccess: () => (showCancelDeletionConfirm = false),
+  }));
+
   const resetMut = createApiMutation(() => ({
     mutate: () => sendAdminUserPasswordReset(user.id),
     successToast: m.admin_users_reset_link_sent(),
@@ -359,6 +369,24 @@
           disabled={reactivateMut.loading}
           onclick={() => reactivateMut.mutate()}>
           {m.admin_users_reactivate()}
+        </button>
+      </div>
+    {/if}
+
+    {#if user.deletionScheduledFor}
+      <div
+        class="border-danger/40 bg-danger/10 text-danger mb-4 flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs">
+        <span>
+          {m.admin_users_deletion_scheduled({
+            date: formatDate(user.deletionScheduledFor),
+          })}
+        </span>
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm shrink-0"
+          disabled={cancelDeletionMut.loading}
+          onclick={() => (showCancelDeletionConfirm = true)}>
+          {m.settings_delete_account_cancel()}
         </button>
       </div>
     {/if}
@@ -700,6 +728,16 @@
     busy={revokeAllMut.loading}
     onConfirm={() => revokeAllMut.mutate()}
     onCancel={() => (showRevokeAllConfirm = false)} />
+{/if}
+
+{#if showCancelDeletionConfirm}
+  <ConfirmationModal
+    title={m.settings_delete_account_cancel()}
+    message={m.admin_users_deletion_cancel_message({ name: user.displayName })}
+    confirmLabel={m.settings_delete_account_cancel()}
+    busy={cancelDeletionMut.loading}
+    onConfirm={() => cancelDeletionMut.mutate()}
+    onCancel={() => (showCancelDeletionConfirm = false)} />
 {/if}
 
 {#if showDeleteModal}

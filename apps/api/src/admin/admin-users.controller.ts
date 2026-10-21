@@ -66,6 +66,7 @@ import { AccountDeletionService } from "../users/account-deletion.service";
 import { avatarUrl } from "../users/avatar.util";
 import { DataExportService } from "../users/data-export.service";
 import { UserDataExportResponseDto } from "../users/dto/data-export/user-data-export-response.dto";
+import { ScheduledDeletionService } from "../users/scheduled-deletion.service";
 import { isSuspended } from "../users/suspension.util";
 import { AdminOnly } from "./admin-only.decorator";
 import { AdjustAdminUserXpDto } from "./dto/adjust-admin-user-xp.dto";
@@ -97,6 +98,7 @@ export class AdminUsersController {
     private readonly entitlements: EntitlementService,
     private readonly xp: XpService,
     private readonly accountDeletion: AccountDeletionService,
+    private readonly scheduledDeletions: ScheduledDeletionService,
   ) {}
 
   /**
@@ -144,6 +146,9 @@ export class AdminUsersController {
       ...(activeFilter === "never" ? { lastActiveAt: null } : {}),
       ...(activeFilter === "premium"
         ? { entitlement: { is: { plan: "PREMIUM" as const } } }
+        : {}),
+      ...(activeFilter === "deletion"
+        ? { deletionScheduledFor: { not: null } }
         : {}),
     };
 
@@ -225,6 +230,7 @@ export class AdminUsersController {
         inactivityWarningSentAt:
           u.inactivityWarningSentAt?.toISOString() ?? null,
         suspendedUntil: isSuspended(u) ? u.suspendedUntil!.toISOString() : null,
+        deletionScheduledFor: u.deletionScheduledFor?.toISOString() ?? null,
         xp: u.score?.xp ?? 0,
         invitation: u.invitation
           ? {
@@ -457,6 +463,16 @@ export class AdminUsersController {
     if (count === 0) {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
     }
+  }
+
+  /**
+   * Cancels a self-requested deletion, for someone who asked support to.
+   * The account is told by email: it wasn't them who clicked.
+   */
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post("users/:userId/deletion/cancel")
+  cancelScheduledDeletion(@Param("userId") userId: string): Promise<void> {
+    return this.scheduledDeletions.cancelByAdmin(userId);
   }
 
   /** Re-sends the account's email-verification link. No-op target: already-verified accounts 400. */

@@ -19,11 +19,14 @@ import { JOB_KEYS, type JobKey } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { NotificationDigestService } from "../notifications/notification-digest.service";
 import { NotificationService } from "../notifications/notification.service";
+import { PausedReminderService } from "../notifications/paused-reminder.service";
 import { ReportService } from "../reports/report.service";
 import { InactiveAccountService } from "../users/inactive-account.service";
+import { ScheduledDeletionService } from "../users/scheduled-deletion.service";
 import { AdminOnly } from "./admin-only.decorator";
 import { BackupService } from "./backup.service";
 import { JobListResponseResponseDto } from "./dto/job-list-response.dto";
+import { UpdateCheckService } from "./update-check.service";
 
 /** Narrows a raw path segment to a known job key, rather than trusting it as an index. */
 function isJobKey(key: string): key is JobKey {
@@ -47,6 +50,9 @@ export class AdminJobsController {
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
     private readonly apiKeyLifecycle: ApiKeyLifecycleService,
+    private readonly updateCheck: UpdateCheckService,
+    private readonly scheduledDeletions: ScheduledDeletionService,
+    private readonly pausedReminders: PausedReminderService,
   ) {}
 
   /** Every known scheduled job, with its recent run history. */
@@ -82,6 +88,9 @@ export class AdminJobsController {
         this.achievements.runAchievementsSweepJob(),
       [JOB_KEYS.API_KEYS_MAINTENANCE]: () =>
         this.apiKeyLifecycle.runMaintenance(),
+      [JOB_KEYS.UPDATE_CHECK]: () => this.updateCheck.runScheduled(),
+      [JOB_KEYS.SCHEDULED_DELETIONS]: () => this.scheduledDeletions.scan(),
+      [JOB_KEYS.PAUSED_REMINDER]: () => this.pausedReminders.runReminders(),
     };
   }
 

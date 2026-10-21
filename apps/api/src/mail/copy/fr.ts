@@ -28,6 +28,14 @@ export const FR_COPY: MailCopy = {
     apiKeyLeaked: "Une clé API exposée publiquement a été révoquée.",
     securityAlert:
       "Une modification de sécurité ou une tentative de connexion concerne ton compte.",
+    accountDeletionScheduled:
+      "Ta demande est enregistrée. Tu peux encore l’annuler en un clic.",
+    accountDeletionReminder:
+      "Plus que deux jours pour annuler la suppression de ton compte.",
+    accountDeletionCancelled: "La suppression de ton compte a été annulée.",
+    updateAvailable: "Une nouvelle version de Loomkeep est disponible.",
+    pausedReminder:
+      "Des séries, livres ou jeux t’attendent là où tu les as laissés.",
     accountDeleted: "La suppression de ton compte Loomkeep est confirmée.",
     adminNewUser: "Un nouveau compte a été créé sur ton instance.",
     inactivityWarning:
@@ -247,6 +255,67 @@ export const FR_COPY: MailCopy = {
     lockedHint:
       "Ton mot de passe est sans doute connu de quelqu'un d'autre : change-le tout de suite.",
     button: "Voir mes réglages de sécurité",
+  },
+  accountDeletionScheduled: {
+    subject: (date) => `Ton compte Loomkeep sera supprimé le ${date}`,
+    heading: "Suppression programmée",
+    intro: (date) =>
+      `Tu as demandé la suppression de ton compte Loomkeep. Elle aura lieu le ${date}. D'ici là, ton compte reste utilisable.`,
+    cancelIntro:
+      "Ce n'est pas toi, ou tu as changé d'avis ? Un clic suffit, sans te connecter :",
+    button: "Annuler la suppression",
+    exportBefore:
+      "Avant de partir, tu peux exporter toutes tes données : bibliothèque, historique, critiques et listes.",
+    exportLink: "Exporter mes données",
+    notYou:
+      "Si quelqu'un d'autre a fait cette demande, annule-la puis change ton mot de passe.",
+  },
+  accountDeletionReminder: {
+    subject: "Plus que 2 jours avant la suppression de ton compte",
+    heading: "Dernier rappel",
+    intro: (date) =>
+      `Ton compte Loomkeep sera supprimé le ${date}. Après cette date, rien ne pourra être récupéré.`,
+    button: "Annuler la suppression",
+    exportLink: "Exporter mes données",
+    hint: "Connecte-toi pour annuler, ou utilise le lien du premier email.",
+  },
+  accountDeletionCancelled: {
+    subject: "La suppression de ton compte Loomkeep est annulée",
+    heading: "Suppression annulée",
+    intro:
+      "À ta demande, un administrateur a annulé la suppression de ton compte. Il est conservé, avec tout ce qu'il contient.",
+    hint: "Si tu n'as rien demandé, réponds à cet email.",
+    button: "Ouvrir Loomkeep",
+  },
+  updateAvailable: {
+    subject: (version) => `Loomkeep ${version} est disponible`,
+    heading: "Mise à jour disponible",
+    intro: (current, latest) =>
+      `Ton instance tourne en ${current}, et Loomkeep ${latest} est publié.`,
+    steps:
+      "Fais une sauvegarde, puis mets à jour : la commande est dans Admin › Services.",
+    button: "Voir la mise à jour",
+    changelog: "Voir les nouveautés",
+  },
+  pausedReminder: {
+    subject: (count) =>
+      count === 1 ? "Une œuvre t'attend" : `${count} œuvres t'attendent`,
+    heading: "Tu les avais laissées en route",
+    intro: "Ce que tu as commencé et mis de côté depuis plus d'un mois :",
+    episodesLeft: (count) =>
+      count === 1 ? "Plus qu'un épisode" : `Plus que ${count} épisodes`,
+    pagesLeft: (count) =>
+      count === 1 ? "Plus qu'une page" : `Plus que ${count} pages`,
+    pausedFor: (weeks, months) =>
+      months >= 2
+        ? `en pause depuis ${months} mois`
+        : `en pause depuis ${weeks} semaines`,
+    releasedSince: (count) =>
+      count === 1
+        ? "1 épisode est sorti depuis"
+        : `${count} épisodes sont sortis depuis`,
+    button: "Voir mes œuvres en pause",
+    reason: "Tu reçois ce rappel mensuel parce que tu l'as activé.",
   },
   accountDeleted: {
     subject: "Ton compte Loomkeep a été supprimé",

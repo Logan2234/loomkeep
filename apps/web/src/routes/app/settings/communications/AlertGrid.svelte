@@ -2,11 +2,17 @@
   import { type AlertChannel } from "@loomkeep/shared";
 
   import type { AlertKey } from "@loomkeep/shared";
+  import type { FeatureBadgeKey } from "#lib/feature-badges.js";
 
   export interface AlertGroupRows {
     /** Left out for a matrix short enough to need no sections. */
     label?: string;
-    alerts: { key: AlertKey; label: string; hint?: string }[];
+    alerts: {
+      key: AlertKey;
+      label: string;
+      hint?: string;
+      newBadgeKey?: FeatureBadgeKey;
+    }[];
   }
 </script>
 
@@ -15,7 +21,9 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
   import Switch from "#lib/components/Switch.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { IconName } from "#lib/types/icon-name.js";
   import {
@@ -110,6 +118,9 @@
           <tr class="border-border border-t">
             <th scope="row" class="py-3 pr-2 text-left font-normal">
               {alert.label}
+              {#if alert.newBadgeKey && isFeatureNew(alert.newBadgeKey)}
+                <NewBadge />
+              {/if}
               {#if alert.hint}
                 <span class="text-dim block text-xs">{alert.hint}</span>
               {/if}

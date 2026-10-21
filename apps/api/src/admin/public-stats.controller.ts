@@ -7,6 +7,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AdminService } from "./admin.service";
 import { PublicStatsSummaryResponseDto } from "./dto/public-stats-summary-response.dto";
 import { PublicStatsGuard } from "./public-stats.guard";
+import { UpdateCheckService } from "./update-check.service";
 
 /**
  * Minimal, cheap endpoint for the Homepage dashboard widget (polled every
@@ -20,6 +21,7 @@ export class PublicStatsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly admin: AdminService,
+    private readonly updateCheck: UpdateCheckService,
   ) {}
 
   @Get("summary")
@@ -30,13 +32,15 @@ export class PublicStatsController {
     // getServicesStatus() is the odd one out among these four: it live-probes
     // every external provider (TMDB, AniList, IGDB...) with no caching, so
     // this endpoint costs one probe round on every ~10s Homepage poll.
-    const [userCount, openReports, newUsers7d, { services }] =
+    const [userCount, openReports, newUsers7d, { services }, update] =
       await Promise.all([
         this.prisma.user.count(),
         this.prisma.report.count({ where: { status: "PENDING" } }),
         this.prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
         this.admin.getServicesStatus(),
+        this.updateCheck.status(),
       ]);
+    const knowsLatest = update.enabled && update.latestVersion !== null;
 
     // Same "healthy/live" definition as apps/web's /admin/services page:
     // planned (comingSoon) providers excluded, healthy = configured and
@@ -60,6 +64,13 @@ export class PublicStatsController {
       // CI-built image (pnpm dev, or any docker compose run against a
       // locally-tagged image rather than one pulled from GHCR).
       gitSha: (process.env.GIT_SHA ?? "unknown").slice(0, 7),
+      version: update.currentVersion,
+      latestVersion: knowsLatest ? update.latestVersion! : "unknown",
+      updateAvailable: !knowsLatest
+        ? "unknown"
+        : update.updateAvailable
+          ? "yes"
+          : "no",
     };
   }
 }

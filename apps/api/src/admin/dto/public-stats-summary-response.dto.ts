@@ -10,4 +10,9 @@ export class PublicStatsSummaryResponseDto implements PublicStatsSummaryDto {
   newUsers7d!: number;
   operational!: string;
   gitSha!: string;
+  version!: string;
+  latestVersion!: string;
+
+  @ApiProperty({ enum: ["yes", "no", "unknown"] })
+  updateAvailable!: "yes" | "no" | "unknown";
 }

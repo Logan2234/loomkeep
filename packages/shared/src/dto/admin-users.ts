@@ -19,6 +19,8 @@ export interface AdminUserDto {
   inactivityWarningSentAt: string | null;
   /** End of a moderation suspension still in force, null otherwise. */
   suspendedUntil: string | null;
+  /** When the account's self-requested deletion is due, null when none is scheduled. */
+  deletionScheduledFor: string | null;
   /** Total XP (`UserScore`), 0 before any gain. */
   xp: number;
   /** The invitation this account signed up through — null for an open registration. */
@@ -108,6 +110,7 @@ export const ADMIN_USER_FILTERS = [
   "unverified",
   "never",
   "premium",
+  "deletion",
 ] as const;
 
 export type AdminUserFilter = (typeof ADMIN_USER_FILTERS)[number];

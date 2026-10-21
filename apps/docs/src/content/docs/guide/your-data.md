@@ -32,11 +32,17 @@ To save the complete archive every night without thinking about it, use the
 
 ## Deleting your account
 
-**Settings › Delete my account** erases your account at once, after you
-[confirm it's you](/guide/security/#confirming-its-you). Before confirming, you can see exactly what is
-deleted and what stays:
+**Settings › Delete my account** schedules the deletion of your account
+**14 days** later, after you
+[confirm it's you](/guide/security/#confirming-its-you). Until then nothing
+changes: the account keeps working, an email gives you a one-click link to
+cancel, a reminder comes 48 hours before, and the banner at the top of the
+app or the same settings page lets you cancel too. You can say why you are
+leaving if you like: only the reason is kept, with nothing linking it to
+you. Before confirming, you can see exactly what will be deleted and what
+stays:
 
-- **Right away**: every session is closed; API keys and passkeys stop
+- **On the day**: every session is closed; API keys and passkeys stop
   working.
 - **Deleted**: your profile, libraries, history, playthroughs, readings and
   their sessions, a running timer, lists only you edit, follows, blocks,
@@ -57,7 +63,9 @@ deleted and what stays:
   without your identity. An invitation sent to your address forgets it. Backups erase
   themselves within 30 days and are never used to bring an account back.
 
-There is no undo: export first if you might want your data back.
+Once the 14 days are over there is no undo: export first if you might want
+your data back. An administrator can cancel a scheduled deletion for you if
+you ask them before the date.
 
 ## Inactive accounts
 

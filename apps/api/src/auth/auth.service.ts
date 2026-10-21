@@ -1219,5 +1219,6 @@ export function toUserDto(user: User): UserDto {
     watchRegion: user.watchRegion,
     watchProviderIds: user.watchProviderIds,
     homeLayout: readHomeLayout(user.homeLayout),
+    deletionScheduledFor: user.deletionScheduledFor?.toISOString() ?? null,
   };
 }

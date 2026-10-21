@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../../prisma/prisma.service";
 import {
   ACHIEVEMENT_LIST,
@@ -40,6 +40,7 @@ import {
   checkNoFavorites,
   checkOmnivore,
   checkOneSided,
+  checkPhoenix,
   checkPremiereSeance,
   checkProfileComplete,
   checkStandingOvation,
@@ -167,6 +168,7 @@ describe("ACHIEVEMENTS catalogue shape", () => {
       "full_circle",
       "anniversary",
       "welcome_back",
+      "phoenix",
       "double_life",
       "icebreaker",
       "first_take",
@@ -902,6 +904,112 @@ describe("checkWelcomeBack", () => {
     await expect(checkWelcomeBack(prisma, "user-1")).resolves.toEqual({
       unlocked: true,
     });
+  });
+});
+
+describe("checkPhoenix", () => {
+  function prismaWith(rows: {
+    readings?: unknown[];
+    playthroughs?: unknown[];
+    series?: unknown[];
+    watches?: unknown[];
+  }) {
+    return {
+      user: { findUnique: vi.fn().mockResolvedValue(SIGNED_UP) },
+      bookReading: { findMany: vi.fn().mockResolvedValue(rows.readings ?? []) },
+      gamePlaythrough: {
+        findMany: vi.fn().mockResolvedValue(rows.playthroughs ?? []),
+      },
+      libraryEntry: { findMany: vi.fn().mockResolvedValue(rows.series ?? []) },
+      episodeWatch: { findMany: vi.fn().mockResolvedValue(rows.watches ?? []) },
+    } as unknown as PrismaService;
+  }
+
+  it("unlocks off a book finished after a 6-month pause in its sessions", async () => {
+    const prisma = prismaWith({
+      readings: [
+        {
+          finishedAt: new Date("2025-09-10T00:00:00Z"),
+          sessions: [
+            { occurredAt: new Date("2025-01-05T00:00:00Z") },
+            { occurredAt: new Date("2025-09-01T00:00:00Z") },
+          ],
+        },
+      ],
+    });
+
+    await expect(checkPhoenix(prisma, "user-1")).resolves.toEqual({
+      unlocked: true,
+    });
+  });
+
+  it("counts the finish date itself as the end of the pause", async () => {
+    const prisma = prismaWith({
+      playthroughs: [
+        {
+          finishedAt: new Date("2025-12-01T00:00:00Z"),
+          sessions: [{ occurredAt: new Date("2025-02-01T00:00:00Z") }],
+        },
+      ],
+    });
+
+    await expect(checkPhoenix(prisma, "user-1")).resolves.toEqual({
+      unlocked: true,
+    });
+  });
+
+  it("stays locked for a pause spread over two different series", async () => {
+    // welcome_back's case, not this one: no single work was set aside.
+    const prisma = prismaWith({
+      series: [{ mediaItemId: "a" }, { mediaItemId: "b" }],
+      watches: [
+        {
+          watchedAt: new Date("2025-01-01T00:00:00Z"),
+          episode: { season: { mediaItemId: "a" } },
+        },
+        {
+          watchedAt: new Date("2025-08-01T00:00:00Z"),
+          episode: { season: { mediaItemId: "b" } },
+        },
+      ],
+    });
+
+    await expect(checkPhoenix(prisma, "user-1")).resolves.toEqual({
+      unlocked: false,
+    });
+  });
+
+  it("unlocks off a finished series resumed after six months", async () => {
+    const prisma = prismaWith({
+      series: [{ mediaItemId: "a" }],
+      watches: [
+        {
+          watchedAt: new Date("2025-01-01T00:00:00Z"),
+          episode: { season: { mediaItemId: "a" } },
+        },
+        {
+          watchedAt: new Date("2025-08-01T00:00:00Z"),
+          episode: { season: { mediaItemId: "a" } },
+        },
+      ],
+    });
+
+    await expect(checkPhoenix(prisma, "user-1")).resolves.toEqual({
+      unlocked: true,
+    });
+  });
+
+  it("ignores imported sessions and anything before sign-up", async () => {
+    const prisma = prismaWith({});
+
+    await checkPhoenix(prisma, "user-1");
+
+    const [[query]] = (prisma.bookReading.findMany as Mock).mock.calls;
+    expect(query.select.sessions.where).toEqual({
+      occurredAt: { gte: SIGNED_UP.createdAt },
+      source: { not: "IMPORT" },
+    });
+    expect(query.where.finishedAt).toEqual({ gte: SIGNED_UP.createdAt });
   });
 });
 

@@ -105,6 +105,9 @@ const JOB_LABELS = {
   "gamification.achievementsSweep": () =>
     m.admin_job_gamification_achievements_sweep(),
   "apiKeys.maintenance": () => m.admin_job_api_keys_maintenance(),
+  "admin.updateCheck": () => m.admin_job_update_check(),
+  "users.scheduledDeletions": () => m.admin_job_scheduled_deletions(),
+  "notifications.pausedReminder": () => m.admin_job_paused_reminder(),
 };
 
 export function adminJobLabel(key: string): string {
@@ -128,6 +131,11 @@ const JOB_DESCRIPTIONS = {
   "gamification.achievementsSweep": () =>
     m.admin_job_gamification_achievements_sweep_description(),
   "apiKeys.maintenance": () => m.admin_job_api_keys_maintenance_description(),
+  "admin.updateCheck": () => m.admin_job_update_check_description(),
+  "users.scheduledDeletions": () =>
+    m.admin_job_scheduled_deletions_description(),
+  "notifications.pausedReminder": () =>
+    m.admin_job_paused_reminder_description(),
 };
 
 export function adminJobDescription(key: string): string | null {
@@ -168,6 +176,12 @@ export function adminJobSchedule(key: string): string | null {
       return m.admin_job_daily_at({ time: "05:00" });
     case "apiKeys.maintenance":
       return m.admin_job_daily_at({ time: "06:00" });
+    case "admin.updateCheck":
+      return m.admin_job_daily_at({ time: "05:30" });
+    case "users.scheduledDeletions":
+      return m.admin_job_daily_at({ time: "05:15" });
+    case "notifications.pausedReminder":
+      return m.admin_job_hourly();
     default:
       return null;
   }
@@ -179,6 +193,11 @@ const TEMPLATE_LABELS = {
   invitation: () => m.admin_template_invitation(),
   securityAlert: () => m.admin_template_security_alert(),
   accountDeleted: () => m.admin_template_account_deleted(),
+  accountDeletionScheduled: () => m.admin_template_deletion_scheduled(),
+  accountDeletionReminder: () => m.admin_template_deletion_reminder(),
+  accountDeletionCancelled: () => m.admin_template_deletion_cancelled(),
+  updateAvailable: () => m.admin_template_update_available(),
+  pausedReminder: () => m.admin_template_paused_reminder(),
   adminNewUser: () => m.admin_template_admin_new_user(),
   verifyEmail: () => m.admin_template_verify_email(),
   passwordResetLink: () => m.admin_template_reset_link(),
@@ -216,6 +235,9 @@ const FIELD_LABELS = {
   deviceLabel: () => m.common_device(),
   ip: () => m.common_ip_address(),
   deletionDate: () => m.admin_template_deletion_date(),
+  scheduledFor: () => m.admin_template_deletion_date(),
+  current: () => m.admin_template_current_version(),
+  latest: () => m.admin_template_latest_version(),
   measure: () => m.admin_template_measure(),
   suspendedUntil: () => m.admin_template_suspended_until(),
   legalBasis: () => m.admin_template_basis(),
@@ -247,6 +269,9 @@ const TEMPLATE_GROUPS = [
       "verifyEmail",
       "emailChangeCode",
       "inactivityWarning",
+      "accountDeletionScheduled",
+      "accountDeletionReminder",
+      "accountDeletionCancelled",
       "accountDeleted",
     ],
   },
@@ -267,7 +292,7 @@ const TEMPLATE_GROUPS = [
   },
   {
     label: () => m.admin_template_group_updates(),
-    keys: ["newsletter", "episodeDigest", "sagaSequel"],
+    keys: ["newsletter", "episodeDigest", "sagaSequel", "pausedReminder"],
   },
   {
     label: () => m.admin_template_group_moderation(),
@@ -275,7 +300,13 @@ const TEMPLATE_GROUPS = [
   },
   {
     label: () => m.admin_template_group_admin(),
-    keys: ["adminNewUser", "quotaAlert", "jobAlert", "reportsDigest"],
+    keys: [
+      "adminNewUser",
+      "quotaAlert",
+      "jobAlert",
+      "reportsDigest",
+      "updateAvailable",
+    ],
   },
 ];
 

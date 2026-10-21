@@ -7,6 +7,7 @@
   import { auth } from "#lib/auth.svelte.js";
   import { scrollToAdminAnchor } from "#lib/admin-anchor.js";
   import AdminQueryError from "../AdminQueryError.svelte";
+  import UpdateCard from "./UpdateCard.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import ProgressBar from "#lib/components/ProgressBar.svelte";
   import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
@@ -178,6 +179,8 @@
       </button>
     {/snippet}
   </PageHeader>
+
+  <UpdateCard />
 
   {#if error}
     <AdminQueryError message={error} queryKey={keys.admin.services()} />
