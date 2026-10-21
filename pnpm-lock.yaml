@@ -240,8 +240,8 @@ importers:
   apps/api:
     dependencies:
       '@fastify/helmet':
-        specifier: ^13.1.2
-        version: 13.1.2
+        specifier: ^13.2.0
+        version: 13.2.0
       '@loomkeep/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -454,8 +454,8 @@ importers:
         specifier: ^14.0.0
         version: 14.0.0
       '@tanstack/svelte-query':
-        specifier: ^6.3.3
-        version: 6.3.3(svelte@5.57.2(@typescript-eslint/types@8.71.2))
+        specifier: ^6.3.4
+        version: 6.3.4(svelte@5.57.2(@typescript-eslint/types@8.71.2))
       qr-scanner:
         specifier: ^1.4.2
         version: 1.4.2
@@ -1275,8 +1275,8 @@ packages:
   '@fastify/forwarded@3.0.2':
     resolution: {integrity: sha512-NE8HgKLgYejV9lDpqkEFaDKMLYelJBVfHekhB0UKvX0ghagXRJqg68feg8er1NPXxG4N9i6vPxzt8E+3wHfcmA==}
 
-  '@fastify/helmet@13.1.2':
-    resolution: {integrity: sha512-fXTultrEFW9bczr3jcffZD7NLlsTYa8eCCzVFsJvLIVO7SUiY/VWp18qCJbf2N9AXIEzIC11NYlNB3BlzBEZeg==}
+  '@fastify/helmet@13.2.0':
+    resolution: {integrity: sha512-2u41U5hR9o1u3HUHLT3Njp7vWuWw+XXw8qCBwVY17pRQAN179YYKiU9f7/qEn1ITabgNTkq/Yk6gmrYPSraagA==}
 
   '@fastify/merge-json-schemas@0.2.1':
     resolution: {integrity: sha512-OA3KGBCy6KtIvLf8DINC5880o5iBlDX4SxzLQS8HorJAbqluzLRn80UXU0bxZn7UOFhFgpRJDasfwn9nG4FG4A==}
@@ -4013,8 +4013,8 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
 
-  '@tanstack/query-core@5.104.3':
-    resolution: {integrity: sha512-DZY9TuJAOgU3UyHUhXb4CcTYEHNZszlwkPg4VViIwTxOKzLprPUU+rbaPZQd3srqkGOtpaDdKpW972UV/LKlcg==}
+  '@tanstack/query-core@5.104.4':
+    resolution: {integrity: sha512-nU4Yrb8Sjn0DeVb7PKG9uiepNavys3yoxy1FX0hViY4/P6Ng/mBje2SMl7i9812rtyHKtHyqiaC/td6GkI8StA==}
 
   '@tanstack/react-virtual@3.14.6':
     resolution: {integrity: sha512-4+Uq8m0/gzO4kMCHUEpTtGX1RnONK0C+g88b2ltwPMWUBiaVarBuWKoPJaz7gj1cKCVRAdyu+U8GcKhwCc2beA==}
@@ -4022,8 +4022,8 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  '@tanstack/svelte-query@6.3.3':
-    resolution: {integrity: sha512-yPCaSm53NGgFM8gLgJUPZNrTMGNqjcJ8eguh0zFrqqmJDNr6lxhgqN2szmsrgViJ64DC9NYnOminmLlw8IxgXw==}
+  '@tanstack/svelte-query@6.3.4':
+    resolution: {integrity: sha512-PGh1+qdwx2296wX9+CwA2W9qZZL4jj7MVbqSR0MoGipn0lFZWQ10oXLmDUd6uFdC0SekekcKwLKeQ5x136chGA==}
     peerDependencies:
       svelte: ^5.25.0
 
@@ -10860,7 +10860,7 @@ snapshots:
 
   '@fastify/forwarded@3.0.2': {}
 
-  '@fastify/helmet@13.1.2':
+  '@fastify/helmet@13.2.0':
     dependencies:
       fastify-plugin: 6.0.0
       helmet: 8.3.0
@@ -13518,7 +13518,7 @@ snapshots:
       tailwindcss: 4.3.3
       vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.1)
 
-  '@tanstack/query-core@5.104.3': {}
+  '@tanstack/query-core@5.104.4': {}
 
   '@tanstack/react-virtual@3.14.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
@@ -13527,9 +13527,9 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
     optional: true
 
-  '@tanstack/svelte-query@6.3.3(svelte@5.57.2(@typescript-eslint/types@8.71.2))':
+  '@tanstack/svelte-query@6.3.4(svelte@5.57.2(@typescript-eslint/types@8.71.2))':
     dependencies:
-      '@tanstack/query-core': 5.104.3
+      '@tanstack/query-core': 5.104.4
       svelte: 5.57.2(@typescript-eslint/types@8.71.2)
 
   '@tanstack/virtual-core@3.17.11': {}
