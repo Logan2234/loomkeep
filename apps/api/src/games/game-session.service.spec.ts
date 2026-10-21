@@ -43,6 +43,8 @@ describe("GameSessionService", () => {
   };
   let service: GameSessionService;
 
+  afterEach(() => vi.useRealTimers());
+
   beforeEach(() => {
     vi.clearAllMocks();
     tx.gameSession.create.mockImplementation(({ data }) =>
@@ -74,6 +76,8 @@ describe("GameSessionService", () => {
     });
     prisma.gameEntry.findUniqueOrThrow.mockResolvedValue({
       user: { timezone: "UTC" },
+      status: "PLAYING",
+      gameItem: { timeToBeatNormallyMin: 1200 },
       playthroughs: [],
     });
     prisma.gameSession.findMany
@@ -92,6 +96,110 @@ describe("GameSessionService", () => {
       sessionXp as never,
     );
   });
+
+  it("estimates only the active playthrough, independently of Steam and history pagination", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-22T12:00:00Z"));
+    prisma.gameEntry.findUnique.mockResolvedValue({
+      id: "entry-1",
+      userId: "user-1",
+      trackedPlaytimeMinutes: 9000,
+      steamPlaytimeMinutes: 15000,
+    });
+    prisma.gameEntry.findUniqueOrThrow.mockResolvedValue({
+      user: { timezone: "UTC" },
+      status: "PLAYING",
+      gameItem: { timeToBeatNormallyMin: 360 },
+      playthroughs: [
+        {
+          id: "active",
+          number: 2,
+          status: "ACTIVE",
+          trackedMinutes: 180,
+          startedAt: new Date("2026-10-01"),
+          finishedAt: null,
+          legacyIncomplete: false,
+          _count: { sessions: 3 },
+        },
+      ],
+    });
+    prisma.gameSession.findMany.mockReset();
+    prisma.gameSession.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        ...[1, 8, 15].map((day) => ({
+          occurredAt: new Date(
+            `2026-10-${String(day).padStart(2, "0")}T12:00:00Z`,
+          ),
+          durationMinutes: 60,
+          playthroughId: "active",
+        })),
+        {
+          occurredAt: new Date("2026-10-20"),
+          durationMinutes: 8000,
+          playthroughId: "previous",
+        },
+        {
+          occurredAt: new Date("2026-10-21"),
+          durationMinutes: 8000,
+          playthroughId: null,
+        },
+      ]);
+    const summary = await service.list("user-1", "entry-1", 2);
+    expect(summary.estimatedCompletionDate).toBe("2026-11-13");
+    expect(summary.items).toEqual([]);
+  });
+
+  it.each(["BACKLOG", "COMPLETED", "DROPPED"])(
+    "hides the estimate when the entry is %s",
+    async (status) => {
+      prisma.gameEntry.findUnique.mockResolvedValue({
+        id: "entry-1",
+        userId: "user-1",
+        trackedPlaytimeMinutes: 0,
+      });
+      prisma.gameEntry.findUniqueOrThrow.mockResolvedValue({
+        user: { timezone: "UTC" },
+        status,
+        gameItem: { timeToBeatNormallyMin: 1200 },
+        playthroughs: [],
+      });
+      expect(
+        (await service.list("user-1", "entry-1")).estimatedCompletionDate,
+      ).toBeNull();
+    },
+  );
+
+  it.each([null, 0, 180])(
+    "hides the estimate without remaining game duration (%s)",
+    async (target) => {
+      prisma.gameEntry.findUnique.mockResolvedValue({
+        id: "entry-1",
+        userId: "user-1",
+        trackedPlaytimeMinutes: 180,
+      });
+      prisma.gameEntry.findUniqueOrThrow.mockResolvedValue({
+        user: { timezone: "UTC" },
+        status: "PLAYING",
+        gameItem: { timeToBeatNormallyMin: target },
+        playthroughs: [
+          {
+            id: "active",
+            number: 1,
+            status: "ACTIVE",
+            trackedMinutes: 180,
+            startedAt: null,
+            finishedAt: null,
+            legacyIncomplete: false,
+            _count: { sessions: 3 },
+          },
+        ],
+      });
+      expect(
+        (await service.list("user-1", "entry-1")).estimatedCompletionDate,
+      ).toBeNull();
+    },
+  );
 
   it("keeps imported Steam playtime separate from Loomkeep sessions", async () => {
     prisma.gameEntry.findUnique.mockResolvedValue({

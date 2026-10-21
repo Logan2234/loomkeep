@@ -9,6 +9,7 @@ import {
   ReviewTargetType,
   SessionCycleAction,
   TrackingCycleStatus,
+  estimateCompletionDate,
 } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import {
@@ -258,6 +259,8 @@ export class GameSessionService {
         where: { id: entry.id },
         select: {
           user: { select: { timezone: true } },
+          status: true,
+          gameItem: { select: { timeToBeatNormallyMin: true } },
           playthroughs: {
             where: { status: TrackingCycleStatus.ACTIVE },
             take: 1,
@@ -279,10 +282,29 @@ export class GameSessionService {
       }),
       this.prisma.gameSession.findMany({
         where: { gameEntryId: entry.id, occurredAt: { gte: since } },
-        select: { occurredAt: true, durationMinutes: true },
+        select: {
+          occurredAt: true,
+          durationMinutes: true,
+          playthroughId: true,
+        },
       }),
     ]);
     const periods = sessionPeriodMinutes(recent, user.user.timezone ?? "UTC");
+    const active = user.playthroughs[0];
+    const targetMinutes = user.gameItem.timeToBeatNormallyMin;
+    const estimatedCompletionDate =
+      user.status === "PLAYING" && active && targetMinutes
+        ? estimateCompletionDate(
+            targetMinutes - active.trackedMinutes,
+            recent
+              .filter((session) => session.playthroughId === active.id)
+              .map((session) => ({
+                occurredAt: session.occurredAt,
+                minutes: session.durationMinutes,
+              })),
+            user.user.timezone ?? "UTC",
+          )
+        : null;
     const { items, hasMore } = toPagedResult(rows, PAGE_SIZE);
     return {
       items: items.map((session) =>
@@ -291,6 +313,7 @@ export class GameSessionService {
       hasMore,
       totalSessions,
       totalTrackedMinutes: entry.trackedPlaytimeMinutes,
+      estimatedCompletionDate,
       activePlaythrough: user.playthroughs[0]
         ? toPlaythroughDto(user.playthroughs[0])
         : null,

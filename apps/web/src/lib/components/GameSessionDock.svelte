@@ -33,7 +33,7 @@
   import { toast } from "#lib/toast.svelte.js";
 
   import type { QueryKey } from "@tanstack/svelte-query";
-  import { fly } from "svelte/transition";
+  import { fly, fade } from "svelte/transition";
   import Banner from "./Banner.svelte";
   import AnimatedNumberInput from "./AnimatedNumberInput.svelte";
   import ConfirmationModal from "./ConfirmationModal.svelte";
@@ -456,7 +456,7 @@
         </div>
       </dl>
 
-      <div class="mt-4 flex flex-wrap items-center gap-3">
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-2">
           <button type="button" class="btn btn-primary" onclick={openAdd}>
             <Icon name="plus" class="h-4 w-4" />
@@ -468,6 +468,16 @@
             compact
             onFinish={finishTimedSession} />
         </div>
+        {#if entry.status === "PLAYING" && summary?.estimatedCompletionDate}
+          <p
+            class="text-dim flex flex-wrap items-center gap-2 text-xs"
+            transition:fade={{ duration: reduced ? 0 : 200 }}>
+            {m.completion_estimate_finish({
+              date: formatDate(`${summary.estimatedCompletionDate}T12:00:00`),
+            })}
+            {#if isFeatureNew("completion-estimate")}<NewBadge />{/if}
+          </p>
+        {/if}
       </div>
     </div>
 

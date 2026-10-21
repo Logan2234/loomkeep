@@ -39,6 +39,9 @@
   import OwnershipField from "#lib/components/OwnershipField.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { mediaCompletionEstimate } from "#lib/media-completion-estimate.js";
   import ProviderMark from "#lib/components/ProviderMark.svelte";
   import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "#lib/components/ReviewsSection.svelte";
@@ -270,6 +273,11 @@
       : null,
   );
   const dormant = $derived(entry ? isDormant(entry) : false);
+  const estimatedCompletionDate = $derived(
+    detail && !isMovie && entry?.status === "WATCHING"
+      ? mediaCompletionEstimate(detail, auth.user?.timezone ?? "UTC")
+      : null,
+  );
   const ghost = $derived(entry ? isGhost(entry) : false);
   const pct = $derived(progressPercent(entry?.progress));
 
@@ -573,6 +581,20 @@
             </span>
           {/if}
         </p>
+        {#if estimatedCompletionDate}
+          <p
+            class="text-dim mt-2 flex flex-wrap items-center gap-2 text-xs"
+            transition:slide={{ duration: reduced ? 0 : 200 }}>
+            {detail.airingFinished
+              ? m.completion_estimate_finish({
+                  date: formatDate(`${estimatedCompletionDate}T12:00:00`),
+                })
+              : m.completion_estimate_caught_up({
+                  date: formatDate(`${estimatedCompletionDate}T12:00:00`),
+                })}
+            {#if isFeatureNew("completion-estimate")}<NewBadge />{/if}
+          </p>
+        {/if}
       </div>
     {/if}
 

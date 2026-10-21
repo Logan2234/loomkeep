@@ -202,6 +202,8 @@ export interface UpdateGameSessionDto {
 }
 
 export interface GameSessionSummaryDto {
+  /** Estimated finish date for the active playthrough (YYYY-MM-DD), or null without enough recent activity. */
+  estimatedCompletionDate: string | null;
   items: GameSessionDto[];
   hasMore: boolean;
   totalSessions: number;
