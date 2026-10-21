@@ -64,8 +64,10 @@ describe("security headers", () => {
       },
     });
 
+    // camera=(self): the ISBN and profile QR scanners call getUserMedia from
+    // the top-level page, which an empty allowlist would refuse.
     expect(response.headers.get("Permissions-Policy")).toBe(
-      "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+      "camera=(self), microphone=(), geolocation=(), payment=(), usb=()",
     );
     expect(response.headers.get("Cross-Origin-Opener-Policy")).toBe(
       "same-origin",
