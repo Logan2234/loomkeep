@@ -28,12 +28,6 @@ beforeEach(() => {
 // whole: no sentence stitched from fragments that say the same thing twice.
 const INTROS: [string, Component, string, string][] = [
   [
-    "TV Time",
-    TvTimePage,
-    m.settings_import_tvtime_intro(),
-    `. ${m.settings_import_tvtime_hint()}`,
-  ],
-  [
     "Trakt",
     TraktPage,
     m.settings_import_trakt_intro(),
@@ -95,4 +89,16 @@ describe("import intros", () => {
       expect(intro.trim()).toBe(`${link}${rest}`);
     },
   );
+
+  // TV Time has shut down: its export page is gone, only the archive remains.
+  it("TV Time says it has closed and links nowhere", () => {
+    renderWithQuery(TvTimePage, {});
+
+    expect(screen.getByText(m.settings_import_tvtime_hint())).toBeTruthy();
+    expect(
+      screen
+        .queryAllByRole("link")
+        .filter((a) => /tvtime/.test(a.getAttribute("href") ?? "")),
+    ).toEqual([]);
+  });
 });

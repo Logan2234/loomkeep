@@ -1,29 +1,45 @@
 ---
 title: TV Time
-description: Films, series and anime, from TV Time's GDPR export.
+description: Films, series and anime, from the archive TV Time sent before it closed.
 sidebar:
   order: 1
 ---
 
 import { Steps } from "@astrojs/starlight/components";
 
-TV Time has no export button: its data comes through the **GDPR request**
-it has to answer.
+TV Time shut down on 15 July 2026. Its data came through the **GDPR request**
+it had to answer: if you downloaded your `gdpr-data.zip` archive before the
+closure, you can still import it.
 
-**What comes in:** your series with every episode watched and when, your
-films, your watchlist, your favorites, your custom lists, and your ratings
-of films and episodes. TV Time's reactions (the emotions you pick after an
-episode) have no equivalent in Loomkeep and stay behind.
+**What comes in:** your series with every episode watched and when, your films
+with their rewatches, your watchlist and the shows you set aside for later,
+your favourites, your custom lists, your ratings of films and episodes, and
+the date each title joined your TV Time library.
+
+**What stays behind:** your reactions (the emotions you pick after an
+episode), favourite characters, where you watched, friends and badges have no
+equivalent in Loomkeep. The archive keeps no text for your comments. A show
+you stopped following without ever starting it isn't imported.
 
 <Steps>
 
-1. Ask for your data on [TV Time's GDPR page](https://gdpr.tvtime.com/gdpr/self-service).
-   TV Time emails you a link to a `.zip` file.
-2. In Loomkeep, open **Settings › Import › TV Time** and drop the `.zip` as it
-   is, without unzipping it.
+1. Find the `gdpr-data.zip` archive TV Time emailed you.
+2. In Loomkeep, open **Settings › Import › TV Time** and drop the archive as
+   it is, without unzipping it.
 3. Review and import: see [how an import works](/guide/imports/#how-an-import-works).
 
 </Steps>
 
 Loomkeep matches TV Time's shows through their TVDB ids, so series land on
 the right title even when names differ.
+
+A few things to know:
+
+- **Dates:** TV Time recorded when you ticked an episode or a film, not when
+  you watched it. A season ticked in one go shares a single date.
+- **Ratings:** TV Time's five steps, from "bad" to "wow", become 2, 4, 6, 8
+  and 10 out of 10. An episode TV Time kept two different votes for stays
+  unrated, since nothing tells which one is current.
+- **Lists:** each custom list becomes a Loomkeep list with the same name. Its
+  titles don't join your library. A list you already have under that name is
+  left alone.
