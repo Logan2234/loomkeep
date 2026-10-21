@@ -1,0 +1,32 @@
+{
+  "name": "@loomkeep/mobile",
+  "description": "Loomkeep's native Android shell (Capacitor) around the hosted web app",
+  "version": "1.11.0",
+  "author": {
+    "name": "Logan WILLEM",
+    "email": "loganwi322.dev@gmail.com"
+  },
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "bugs": {
+    "email": "loganwi322.dev@gmail.com",
+    "url": "https://feedback.loomkeep.app/?board=bug-reports"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Logan2234/loomkeep.git",
+    "directory": "apps/mobile"
+  },
+  "scripts": {
+    "sync": "cap sync",
+    "open:android": "cap open android",
+    "clean": "rm -rf node_modules android/app/build android/build"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
+  }
+}

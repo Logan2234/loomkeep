@@ -3,3 +3,6 @@
 *.ico binary
 *.jpg binary
 *.webp binary
+*.jar binary
+# cmd.exe misparses labels in LF batch files (apps/mobile/android/gradlew.bat).
+*.bat text eol=crlf
