@@ -158,6 +158,23 @@ describe("ImportWizard", () => {
     });
   });
 
+  it("previews the lists the import will create", async () => {
+    serveImport(
+      job("analysis", {
+        plan: { ...PLAN, lists: [{ name: "Kdrama night", itemCount: 4 }] },
+      }),
+    );
+    await analyzeExport();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: `${m.import_lists_heading()} (1)`,
+      }),
+    ).toBeTruthy();
+    expect(screen.getByText("Kdrama night")).toBeTruthy();
+    expect(screen.getByText(m.import_list_titles({ count: "4" }))).toBeTruthy();
+  });
+
   it("imports an item the user matched by hand", async () => {
     serveImport();
     server.use(

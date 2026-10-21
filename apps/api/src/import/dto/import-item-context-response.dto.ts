@@ -40,6 +40,8 @@ class SeriesImportContextResponseDto implements SeriesContext {
 
   rating!: number | null;
   favorite!: boolean;
+  ratedSeasons!: number;
+  ratedEpisodes!: number;
 }
 
 class MovieImportContextResponseDto implements MovieContext {

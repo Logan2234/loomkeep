@@ -87,6 +87,10 @@ export type ImportItemContext =
       status?: EntryStatus | null;
       rating: number | null;
       favorite: boolean;
+      /** Seasons the source rates on their own. */
+      ratedSeasons: number;
+      /** Episodes the source rates on their own, watched or not. */
+      ratedEpisodes: number;
     }
   | {
       kind: "movie";
@@ -148,6 +152,17 @@ export interface ImportPlan {
   searchDomain: Domain;
   /** Optional media-type restriction for a source tied to one catalogue. */
   searchMediaType?: MediaType;
+  /**
+   * Custom lists the commit will create, absent when the source exports none.
+   * A list whose title the user already has is left out: the commit skips it.
+   */
+  lists?: ImportPlanList[];
+}
+
+export interface ImportPlanList {
+  name: string;
+  /** Titles the export puts in it; unmatched or excluded ones are dropped at commit. */
+  itemCount: number;
 }
 
 export interface ImportReportTile {

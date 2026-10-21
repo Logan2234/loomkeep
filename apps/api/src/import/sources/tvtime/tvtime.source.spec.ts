@@ -87,7 +87,10 @@ function makeService() {
       upsert: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
-    list: { findFirst: vi.fn().mockResolvedValue(null) },
+    list: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
     user: {
       findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
@@ -364,6 +367,13 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     );
     const analyzed = await runToEnd(service, "u1", analyze.id);
     expect(group(analyzed.plan!, "listFilms")).toEqual([]);
+    expect(group(analyzed.plan!, "seriesTracked")[0].context).toMatchObject({
+      ratedSeasons: 0,
+      ratedEpisodes: 1,
+    });
+    expect(analyzed.plan!.lists).toEqual([
+      { name: "To rewatch", itemCount: 1 },
+    ]);
 
     const commit = service.commit("u1", "tvtime", analyze.id, {
       include: ["tvdb:100"],
@@ -379,6 +389,28 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     expect(lists.addImportedItems).toHaveBeenCalledWith("u1", "list-1", [
       { targetId: "media-100", note: null, targetType: "MEDIA" },
     ]);
+  });
+
+  it("analyze leaves out of the plan a list whose title the user already has", async () => {
+    const { prisma, service } = makeService();
+    prisma.list.findMany.mockResolvedValue([{ title: "To rewatch" }]);
+    const listsCsv = [
+      "lists,user_id,s_key,is_public,objects,name,type,created_at,description,ordering",
+      ",1,list-1,false,[map[created_at:1.7e+09 id:100 type:series]],To rewatch,list,,,0",
+    ].join("\n");
+
+    const { id } = await service.startAnalyze(
+      "u1",
+      "tvtime",
+      analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV, listsCsv }),
+    );
+    const job = await runToEnd(service, "u1", id);
+
+    expect(prisma.list.findMany).toHaveBeenCalledWith({
+      where: { userId: "u1", title: { in: ["To rewatch"] } },
+      select: { title: true },
+    });
+    expect(job.plan!.lists).toBeUndefined();
   });
 
   it("keeps an episode watch date null when the export does not provide one", async () => {

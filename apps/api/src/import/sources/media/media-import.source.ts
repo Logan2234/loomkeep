@@ -4,6 +4,7 @@ import type {
   ImportPlan,
   ImportPlanGroup,
   ImportPlanItem,
+  ImportPlanList,
   ImportReport,
   ImportSource,
   MediaType,
@@ -122,7 +123,7 @@ export abstract class MediaImportSource<
   }
 
   async buildPlan(
-    _userId: string,
+    userId: string,
     parsed: TParsed,
     progress: ProgressReporter,
   ): Promise<ImportPlan> {
@@ -185,6 +186,11 @@ export abstract class MediaImportSource<
           status: show.status ?? null,
           rating: show.rating ?? null,
           favorite: show.favorite ?? false,
+          ratedSeasons: show.seasonRatings?.length ?? 0,
+          ratedEpisodes:
+            show.episodes.filter(
+              (ep) => ep.rating !== null && ep.rating !== undefined,
+            ).length + (show.episodeRatings?.length ?? 0),
         },
         coverUrl: match?.coverUrl ?? null,
         match,
@@ -290,12 +296,39 @@ export abstract class MediaImportSource<
       parsed.movies.length +
       listOnlyFilms.length +
       unplaced;
+    const lists = await this.plannedLists(userId, parsed.lists ?? []);
     return {
       groups,
       counts: { total, matched: total - unresolved, unresolved, apiErrors: 0 },
       searchDomain: Domain.MEDIA,
       searchMediaType: this.manualSearchMediaType,
+      ...(lists.length > 0 && { lists }),
     };
+  }
+
+  /** The lists {@link writeLists} will create, which skips a title the user has. */
+  private async plannedLists(
+    userId: string,
+    lists: ImportList[],
+  ): Promise<ImportPlanList[]> {
+    if (!this.lists) return [];
+    const titled = lists
+      .map((list) => ({ list, title: listTitle(list) }))
+      .filter(({ title }) => title !== "");
+    if (titled.length === 0) return [];
+
+    const existing = await this.prisma.list.findMany({
+      where: { userId, title: { in: titled.map(({ title }) => title) } },
+      select: { title: true },
+    });
+    const taken = new Set(existing.map(({ title }) => title));
+
+    return titled
+      .filter(({ title }) => !taken.has(title))
+      .map(({ list, title }) => ({
+        name: title,
+        itemCount: list.items.length,
+      }));
   }
 
   async commit(
@@ -708,7 +741,7 @@ export abstract class MediaImportSource<
     if (!this.lists) return;
 
     for (const list of lists) {
-      const title = list.name.trim().slice(0, LIST_LIMITS.title);
+      const title = listTitle(list);
       if (!title) continue;
       const existing = await this.prisma.list.findFirst({
         where: { userId, title },
@@ -975,6 +1008,11 @@ function collectListOnlyFilms(parsed: ParsedImport): ImportListFilm[] {
  */
 function listItemKey(film: ImportListFilm): string {
   return film.type === "SERIES" ? showKey(asShow(film)) : movieKey(film);
+}
+
+/** The title a list is created under; empty means it is not created. */
+function listTitle(list: ImportList): string {
+  return list.name.trim().slice(0, LIST_LIMITS.title);
 }
 
 /** A list entry as the matcher's input, which reads nothing else. */

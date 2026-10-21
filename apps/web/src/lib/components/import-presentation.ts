@@ -7,6 +7,7 @@ import type {
   EntryStatus,
   ImportJobDto,
   ImportPlanItem,
+  ImportPlanList,
   ImportReportTile,
 } from "@loomkeep/shared";
 
@@ -120,6 +121,26 @@ export function importItemSubtitle(item: ImportPlanItem): string | null {
             ? m.import_episode_watched({ count })
             : m.import_episodes_watched({ count }),
       );
+
+      // Absent from a plan an older API built.
+      if (context.ratedSeasons > 0) {
+        const seasons = number(context.ratedSeasons);
+        parts.push(
+          context.ratedSeasons === 1
+            ? m.import_season_rated({ count: seasons })
+            : m.import_seasons_rated({ count: seasons }),
+        );
+      }
+
+      if (context.ratedEpisodes > 0) {
+        const episodes = number(context.ratedEpisodes);
+        parts.push(
+          context.ratedEpisodes === 1
+            ? m.import_episode_rated({ count: episodes })
+            : m.import_episodes_rated({ count: episodes }),
+        );
+      }
+
       break;
     }
 
@@ -136,6 +157,13 @@ export function importItemSubtitle(item: ImportPlanItem): string | null {
   if ("favorite" in context && context.favorite)
     parts.push(`♥ ${m.common_favorite()}`);
   return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+export function importListSubtitle(list: ImportPlanList): string {
+  const count = number(list.itemCount);
+  return list.itemCount === 1
+    ? m.import_list_title({ count })
+    : m.import_list_titles({ count });
 }
 
 export function importJobError(
