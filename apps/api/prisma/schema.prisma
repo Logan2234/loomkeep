@@ -143,6 +143,16 @@ enum ProfileAccess {
   GHOST // "Figurant": invisible but can participate anonymously.
 }
 
+enum AccountDeletionReason {
+  NOT_USING
+  MISSING_FEATURE
+  OTHER_SERVICE
+  PRIVACY
+  TOO_COMPLEX
+  NEW_ACCOUNT
+  OTHER
+}
+
 // Who may see a passive-content facet (the authZ layer). NONE < FRIENDS < PUBLIC.
 enum VisibilityAudience {
   PUBLIC
@@ -653,6 +663,15 @@ model User {
   // active again on its own once it passes. Null means never suspended or
   // lifted early by an admin.
   suspendedUntil                DateTime?
+  // Self-requested deletion, carried out by ScheduledDeletionService once
+  // this passes. Nothing else changes in the meantime: the account keeps
+  // working, and signing in is enough to cancel. Null when none is scheduled.
+  deletionScheduledFor          DateTime?
+  // The reason picked when asking, moved to AccountDeletionFeedback (with
+  // no link to the account) at the actual deletion.
+  deletionReason                AccountDeletionReason?
+  // SHA-256 of the token in the "deletion scheduled" email's cancel link.
+  deletionCancelTokenHash       String?            @unique
   // Invitation this account signed up through — null for an open
   // registration. "Invité par" is read through invitation.createdBy rather
   // than a second FK. SetNull: purging an invitation never touches accounts.
@@ -1454,7 +1473,31 @@ model InstanceSettings {
   publicApiEnabled    Boolean  @default(true)
   apiRateLimitFree    Int      @default(60)
   apiRateLimitPremium Int      @default(300)
+  updateCheckEnabled  Boolean  @default(true)
   updatedAt           DateTime @updatedAt
+}
+
+// Outcome of UpdateCheckService's last look at the published version — a
+// single row, so a restart shows the last result instead of nothing.
+model UpdateCheck {
+  id              Int       @id @default(1)
+  latestVersion   String?
+  // Last successful check.
+  checkedAt       DateTime?
+  lastCheckFailed Boolean   @default(false)
+  // The newest version administrators were emailed about, so each version
+  // is announced once.
+  notifiedVersion String?
+}
+
+// One row per self-requested account deletion actually carried out, with
+// no link to the account: only what Admin › Statistics shows.
+model AccountDeletionFeedback {
+  id        String                 @id @default(cuid())
+  reason    AccountDeletionReason?
+  deletedAt DateTime               @default(now())
+
+  @@index([deletedAt])
 }
 
 // A personal API key for the public API (/api/v1). Only the SHA-256 of the
@@ -1692,6 +1735,10 @@ model NewsletterSend {
   id                   String   @id @default(cuid())
   quackbackChangelogId String   @unique
   title                String
+  // What the email carried, for Admin › Newsletter's preview. Null on sends
+  // that predate these columns: the preview then fetches it from Quackback.
+  contentPreview       String?
+  contentHtml          String?
   recipientCount       Int      @default(0)
   sentAt               DateTime @default(now())
 

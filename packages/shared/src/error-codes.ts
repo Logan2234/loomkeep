@@ -131,6 +131,7 @@ export const ErrorCode = {
   // newsletter
   NewsletterWebhookInvalidPayload: "newsletter.webhook_invalid_payload",
   NewsletterInvalidUnsubscribeLink: "newsletter.invalid_unsubscribe_link",
+  NewsletterSendNotFound: "newsletter.send_not_found",
   NewsletterWebhookUnauthorized: "newsletter.webhook_unauthorized",
 
   // notifications
@@ -226,6 +227,9 @@ export const ErrorCode = {
   UserEmailChangeCodeInvalid: "user.email_change_code_invalid",
   UserPasswordSameAsCurrent: "user.password_same_as_current",
   UserUsernameTaken: "user.username_taken",
+  /** The link in the "deletion scheduled" email is unknown, used, or the account is gone. */
+  UserDeletionCancelLinkInvalid: "user.deletion_cancel_link_invalid",
+  UserDeletionNotScheduled: "user.deletion_not_scheduled",
 
   // import
   ImportSimklConnectionFailed: "import.simkl_connection_failed",
