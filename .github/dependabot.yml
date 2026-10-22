@@ -13,7 +13,22 @@ updates:
       - "dependencies"
     commit-message:
       prefix: "⚡"
+    # A Capacitor major comes with `npx cap migrate` and native changes to
+    # apps/mobile/android: done by hand, not merged from a PR.
+    ignore:
+      - dependency-name: "@capacitor/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@capacitor-mlkit/*"
+        update-types: ["version-update:semver-major"]
     groups:
+      # Core, CLI, Android platform and plugins move together, in apps/web
+      # and apps/mobile alike (src/lib/native/plugins.spec.ts checks the two
+      # agree): a partial bump would leave the APK and the web disagreeing.
+      capacitor:
+        patterns:
+          - "@capacitor/*"
+          - "@capacitor-mlkit/*"
+        update-types: ["minor", "patch"]
       prisma:
         patterns:
           - "prisma"
@@ -33,6 +48,26 @@ updates:
         update-types: ["minor", "patch"]
       prod-dependencies:
         dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  # The Android project's Gradle plugins and AndroidX libraries (versions
+  # in build.gradle and variables.gradle) and the Gradle wrapper. Majors
+  # stay with Capacitor's own upgrades.
+  - package-ecosystem: "gradle"
+    directory: "/apps/mobile/android"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "mobile"
+    commit-message:
+      prefix: "⚡"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      android:
         update-types: ["minor", "patch"]
 
   - package-ecosystem: "github-actions"
