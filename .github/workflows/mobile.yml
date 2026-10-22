@@ -73,6 +73,8 @@ jobs:
       # against what's deployed: the bridge reaching the remote page, the
       # plugins, the shortcuts, an App Link, no crash.
       - name: Smoke test on an emulator
+        env:
+          PUSH_EXPECTED: ${{ env.GOOGLE_SERVICES != '' }}
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
@@ -80,3 +82,34 @@ jobs:
           target: google_apis
           disable-animations: true
           script: bash apps/mobile/scripts/smoke-test.sh
+
+  # Main's APK as a GitHub pre-release, for Obtainium on the phone to notice
+  # and install over the previous one (same debug key, so the session
+  # stays). One release per build, since Obtainium spots an update by a new
+  # tag; only the three latest are kept. Main only, once the smoke test
+  # passed: a PR's APK stays a run artifact.
+  publish-dev-apk:
+    needs: android-debug
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: loomkeep-android-debug
+      - name: Publish the dev pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: android-dev-${{ github.run_number }}
+        run: |
+          mv app-debug.apk loomkeep-dev.apk
+          gh release create "$TAG" loomkeep-dev.apk \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Android dev build ${GITHUB_SHA::7}" \
+            --notes "Debug build of main at ${GITHUB_SHA::7} (\"Loomkeep Dev\", app.loomkeep.debug), for testing: not a supported release."
+          gh release list --limit 100 --json tagName --jq '.[].tagName' \
+            | grep '^android-dev-' | tail -n +4 \
+            | xargs -r -n1 gh release delete --cleanup-tag --yes

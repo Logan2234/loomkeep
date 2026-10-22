@@ -4,7 +4,15 @@
 // Usage: node smoke-check.mjs <text the page's URL must contain>
 
 const expectedInUrl = process.argv[2] ?? "/";
-const PLUGINS = ["App", "Filesystem", "Share", "BarcodeScanner", "SystemBars"];
+const PLUGINS = [
+  "App",
+  "Filesystem",
+  "Share",
+  "BarcodeScanner",
+  "SystemBars",
+  // Only in a build made with Firebase's config (capacitor.config.ts).
+  ...(process.env.PUSH_EXPECTED === "true" ? ["PushNotifications"] : []),
+];
 const deadline = Date.now() + 90_000;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -12,6 +20,7 @@ const PROBE = `(() => {
   const capacitor = window.Capacitor;
   return {
     href: location.href,
+    userAgent: navigator.userAgent,
     ready: document.readyState === "complete",
     native: capacitor?.isNativePlatform?.() ?? false,
     plugins: Object.fromEntries(
