@@ -51,7 +51,7 @@
   $effect(() => (isNativeApp() ? startAppShell() : undefined));
 
   $effect(() => {
-    if (isNativeApp()) syncSystemBars(theme.mode);
+    if (isNativeApp()) void syncSystemBars(theme.mode);
   });
 </script>
 

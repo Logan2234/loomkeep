@@ -1,7 +1,13 @@
 import { dismissTopmostDialog } from "#lib/actions/dialog-focus.js";
+import { THEME_COLOR } from "#lib/theme.svelte.js";
 import { goto } from "$app/navigation";
 import { App } from "@capacitor/app";
-import { Capacitor, SystemBars, SystemBarsStyle } from "@capacitor/core";
+import {
+  Capacitor,
+  registerPlugin,
+  SystemBars,
+  SystemBarsStyle,
+} from "@capacitor/core";
 import { isNativePushAvailable, startNativePush } from "./push";
 
 /** Whether the page runs inside the Android app (apps/mobile), not a browser. */
@@ -45,9 +51,22 @@ export function startAppShell(): () => void {
   };
 }
 
-/** Light icons over the dark theme, dark ones over the light theme. */
-export function syncSystemBars(mode: "light" | "dark"): void {
-  void SystemBars.setStyle({
+/** apps/mobile's own plugin (ShellThemePlugin.java). */
+const ShellTheme = registerPlugin<{
+  setBackground(options: { color: string }): Promise<void>;
+}>("ShellTheme");
+
+/**
+ * Light icons over the dark theme, dark ones over the light theme, on the
+ * theme's own background: where the WebView doesn't draw under the bars,
+ * the window shows through, and SystemBars resets it to Android's theme.
+ */
+export async function syncSystemBars(mode: "light" | "dark"): Promise<void> {
+  await SystemBars.setStyle({
     style: mode === "dark" ? SystemBarsStyle.Dark : SystemBarsStyle.Light,
   });
+
+  if (Capacitor.isPluginAvailable("ShellTheme")) {
+    await ShellTheme.setBackground({ color: THEME_COLOR[mode] });
+  }
 }
