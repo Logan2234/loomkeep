@@ -63,6 +63,8 @@
     if (bootstrap.ready && !bootstrap.apiUnreachable && !auth.isLoggedIn)
       void goto(
         `/login?redirectTo=${encodeURIComponent(page.url.pathname + page.url.search)}`,
+        // The gated page never showed: it leaves nothing to go back to.
+        { replace: true },
       );
   });
 

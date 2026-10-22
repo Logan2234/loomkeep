@@ -88,7 +88,9 @@ describe("login page", () => {
     serveLogin();
     await signIn();
 
-    await waitFor(() => expect(goto).toHaveBeenCalledWith("/app"));
+    await waitFor(() =>
+      expect(goto).toHaveBeenCalledWith("/app", { replace: true }),
+    );
     expect(posted["/auth/login"]).toEqual({
       identifier: "logan",
       password: "hunter2",
@@ -101,7 +103,9 @@ describe("login page", () => {
     serveLogin();
     await signIn();
 
-    await waitFor(() => expect(goto).toHaveBeenCalledWith("/app/books?fav=1"));
+    await waitFor(() =>
+      expect(goto).toHaveBeenCalledWith("/app/books?fav=1", { replace: true }),
+    );
   });
 
   // Browsers read "\" as "/" and drop tabs/newlines in a URL, so the last
@@ -117,7 +121,9 @@ describe("login page", () => {
     serveLogin();
     await signIn();
 
-    await waitFor(() => expect(goto).toHaveBeenCalledWith("/app"));
+    await waitFor(() =>
+      expect(goto).toHaveBeenCalledWith("/app", { replace: true }),
+    );
   });
 
   it("falls back to the app on a redirect target that isn't a URL", async () => {
@@ -125,7 +131,9 @@ describe("login page", () => {
     serveLogin();
     await signIn();
 
-    await waitFor(() => expect(goto).toHaveBeenCalledWith("/app"));
+    await waitFor(() =>
+      expect(goto).toHaveBeenCalledWith("/app", { replace: true }),
+    );
   });
 
   it("explains a rejected sign-in and stays on the form", async () => {
@@ -155,7 +163,9 @@ describe("login page", () => {
     expect(await screen.findByText(m.auth_mfa_code_totp_hint())).toBeTruthy();
     await enterCode(user, "123456");
 
-    await waitFor(() => expect(goto).toHaveBeenCalledWith("/app"));
+    await waitFor(() =>
+      expect(goto).toHaveBeenCalledWith("/app", { replace: true }),
+    );
     expect(posted["/auth/mfa/verify"]).toEqual({
       challengeId: "challenge-1",
       code: "123456",
