@@ -221,7 +221,7 @@ describe("PushService VAPID subject", () => {
 });
 
 describe("PushService on the Android app", () => {
-  const TOKEN = "fcm-token:APA91bHun4MxP5egoKMwt2KZFBaFUH-1RYqx";
+  const TOKEN = "fcm-token-of-the-android-app";
   const SERVICE_ACCOUNT = Buffer.from(
     JSON.stringify({
       project_id: "loomkeep-test",

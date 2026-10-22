@@ -1,5 +1,13 @@
 import { createVerify, generateKeyPairSync } from "node:crypto";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mock,
+  vi,
+} from "vitest";
 import { FcmClient, type FcmMessage } from "./fcm.client";
 
 const { privateKey, publicKey } = generateKeyPairSync("rsa", {
@@ -23,7 +31,7 @@ const MESSAGE: FcmMessage = {
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status });
 
-let fetchMock: ReturnType<typeof vi.fn>;
+let fetchMock: Mock<(url: string, init: RequestInit) => Promise<Response>>;
 
 beforeEach(() => {
   fetchMock = vi.fn((url: string) =>
@@ -67,8 +75,10 @@ describe("FcmClient", () => {
     expect(sendUrl).toBe(
       "https://fcm.googleapis.com/v1/projects/loomkeep-test/messages:send",
     );
-    expect(sendInit.headers.Authorization).toBe("Bearer oauth-1");
-    expect(JSON.parse(sendInit.body)).toEqual({
+    expect(new Headers(sendInit.headers).get("Authorization")).toBe(
+      "Bearer oauth-1",
+    );
+    expect(JSON.parse(sendInit.body as string)).toEqual({
       message: { token: "device-token", ...MESSAGE },
     });
   });

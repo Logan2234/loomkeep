@@ -1,4 +1,4 @@
-import { createSign } from "node:crypto";
+import { sign } from "node:crypto";
 
 const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -129,9 +129,12 @@ export class FcmClient {
       iat: issuedAt,
       exp: issuedAt + 3600,
     })}`;
-    const signature = createSign("RSA-SHA256")
-      .update(unsigned)
-      .sign(this.account.private_key, "base64url");
+    // RS256: an RSA signature over SHA-256, as Google's OAuth endpoint wants.
+    const signature = sign(
+      "sha256",
+      Buffer.from(unsigned),
+      this.account.private_key,
+    ).toString("base64url");
     return `${unsigned}.${signature}`;
   }
 }
