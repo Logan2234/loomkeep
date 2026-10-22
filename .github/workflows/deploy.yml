@@ -116,5 +116,6 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          export MAIN_SHA=$(gh api "repos/${{ github.repository }}/commits/main" --jq .sha)
+          MAIN_SHA=$(gh api "repos/${{ github.repository }}/commits/main" --jq .sha)
+          export MAIN_SHA
           bash .github/deploy/notify.sh

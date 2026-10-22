@@ -19,6 +19,13 @@ that commit). Which override files run comes from `COMPOSE_FILE` in the
 VPS's own `.env`, not the workflow: turning a service on or off in
 production is editing that line.
 
+Each run then reports on ntfy (`.github/deploy/notify.sh`): an alert when
+CI failed or was cancelled on main's latest commit (nothing deployed) or
+when the deploy itself failed, and a low-priority note once a commit is
+live. Set the repo secret `NTFY_TOPIC_URL` to a topic's full URL with an
+unguessable name (`https://ntfy.sh/loomkeep-deploy-<random>`, anyone
+knowing it can read and post) and subscribe to it in the ntfy app.
+
 ## Shared Postgres for add-ons
 
 GlitchTip, Unleash and Umami each get a database on the app's `db` service
