@@ -45,8 +45,8 @@ natives à maintenir).
 | MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              | ✅ #433 |
 | MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         | ✅ #436 |
 | MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         | ✅ #436 |
-| MOB-04 | API : push natif via FCM                               | 1     | M      | —              |         |
-| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 |         |
+| MOB-04 | API : push natif via FCM                               | 1     | M      | —              | ✅ #438 |
+| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 | ✅ #438 |
 | MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436 |
 | MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         | ✅ #439 |
 | MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436 |
@@ -158,20 +158,21 @@ monochrome Android 13+ ; pas de flash blanc au démarrage en thème sombre.
 
 **Périmètre**
 
-- Prisma : `PushSubscription` gagne `platform` (`WEB`/`ANDROID`/`IOS`) et
-  `token` ; `endpoint`, `p256dh` et `auth` deviennent spécifiques au Web
-  Push. Migration.
+- Prisma : `PushSubscription` gagne `platform` (`WEB`/`ANDROID`, `IOS`
+  viendra avec MOB-12) ; une ligne Android range son token FCM dans
+  `endpoint`, sans `p256dh` ni `auth`. Migration.
 - `IsPushEndpoint` ne s'applique qu'au Web Push ; un token natif a sa
   propre validation.
 - `PushService` choisit l'émetteur par plateforme : Web Push inchangé,
   FCM HTTP v1 (compte de service en variable d'environnement, désactivé
   proprement si absente) pour Android et iOS.
-- Tokens refusés par FCM (`UNREGISTERED`, `INVALID_ARGUMENT`) supprimés,
-  comme les 410 du Web Push aujourd'hui.
+- Tokens que FCM déclare `UNREGISTERED` supprimés, comme les 410 du Web
+  Push ; une autre erreur ne supprime rien.
 - Payload : titre et corps depuis `notification-copy.ts`, chemin `/app/...`
-  à ouvrir, type d'alerte (pour les canaux Android).
-- `GET /api/config` indique si l'instance a FCM configuré, pour que le web
-  ne propose pas le push natif quand il ne peut pas aboutir.
+  à ouvrir, groupe `ALERTS` (le canal Android).
+- `GET /notifications/push/public-key` indique (`nativeEnabled`) si
+  l'instance a FCM configuré, pour que le web ne propose pas le push natif
+  quand il ne peut pas aboutir.
 
 **Critères d'acceptation** : tests unitaires du dispatch et du nettoyage ;
 cas e2e d'enregistrement d'un token natif ; une alerte coupée dans
@@ -182,10 +183,13 @@ cas e2e d'enregistrement d'un token natif ; une alerte coupée dans
 **Périmètre**
 
 - `push.ts` utilise `@capacitor/push-notifications` dans la coque, le Web
-  Push ailleurs ; même interface pour Settings › Communications, qui
-  affiche la plateforme de chaque appareil.
-- Un canal de notification Android par type d'alerte, dérivé de `ALERTS`
-  (l'utilisateur les règle aussi dans les paramètres système).
+  Push ailleurs ; même interface pour Settings › Communications et
+  l'onboarding.
+- Un canal de notification Android par groupe d'`ALERTS` (activité,
+  sorties, compte, sécurité, admin, annonces) : un par type en aurait fait
+  une cinquantaine dans les paramètres Android.
+- Build sans `google-services.json` : le plugin est exclu (il ferait
+  planter l'app), et le web considère le push indisponible.
 - Tap sur une notification : navigation vers le chemin du payload, app
   froide ou en arrière-plan.
 

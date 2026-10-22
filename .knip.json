@@ -15,6 +15,7 @@
         "@capacitor-mlkit/barcode-scanning",
         "@capacitor/app",
         "@capacitor/filesystem",
+        "@capacitor/push-notifications",
         "@capacitor/share"
       ]
     },

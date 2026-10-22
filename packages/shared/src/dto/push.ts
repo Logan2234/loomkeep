@@ -9,8 +9,16 @@ export interface PushSubscriptionRequestDto {
   };
 }
 
+/** The Android app's Firebase Cloud Messaging registration token. */
+export interface NativePushSubscriptionRequestDto {
+  token: string;
+}
+
 export interface PushPublicKeyDto {
+  /** VAPID public key; empty when Web Push is off on this instance. */
   publicKey: string;
+  /** Whether this instance can push to the Android app (FCM configured). */
+  nativeEnabled: boolean;
 }
 
 /** How many devices of the account receive push (Settings › Communications). */

@@ -45,6 +45,14 @@
 
         </activity>
 
+        <!-- Pushes Android draws itself (app in the background) get Loomkeep's mark. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notify" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent" />
+
         <!-- Play installs Google's barcode scanner module with the app (MOB-07);
              a sideloaded APK downloads it on its first scan instead. -->
         <meta-data

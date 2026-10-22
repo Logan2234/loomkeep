@@ -1,4 +1,5 @@
 import {
+  AlertGroup,
   DORMANT_AFTER_DAYS,
   GHOST_AFTER_DAYS,
   isAlertEnabled,
@@ -108,6 +109,7 @@ export class PausedReminderService {
             works.length - 1,
           ),
           url: items[0].url,
+          group: AlertGroup.RELEASES,
         });
       }
 

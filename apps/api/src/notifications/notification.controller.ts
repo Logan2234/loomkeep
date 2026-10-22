@@ -25,6 +25,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
+import { NativePushSubscriptionDto } from "./dto/native-push-subscription.dto";
 import { NotificationCountsResponseDto } from "./dto/notification-counts-response.dto";
 import { NotificationResponseDto } from "./dto/notification-response.dto";
 import { PushDeviceCountResponseDto } from "./dto/push-device-count-response.dto";
@@ -44,7 +45,10 @@ export class NotificationController {
   @Get("push/public-key")
   @ApiOkResponse({ type: PushPublicKeyResponseDto })
   publicKey(): PushPublicKeyDto {
-    return { publicKey: this.push.publicKey() };
+    return {
+      publicKey: this.push.publicKey(),
+      nativeEnabled: this.push.nativeEnabled(),
+    };
   }
 
   /** The account's push choices apply to every device: this says whether any receives them. */
@@ -79,6 +83,26 @@ export class NotificationController {
     @Body("endpoint") endpoint: string,
   ): Promise<void> {
     await this.push.unsubscribe(user.sub, endpoint);
+  }
+
+  /** The Android app's FCM token: from then on it gets pushes like a browser does. */
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post("push/native")
+  async subscribeNative(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: NativePushSubscriptionDto,
+    @Headers("user-agent") userAgent?: string,
+  ): Promise<void> {
+    await this.push.subscribeNative(user.sub, dto.token, userAgent);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete("push/native")
+  async unsubscribeNative(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: NativePushSubscriptionDto,
+  ): Promise<void> {
+    await this.push.unsubscribe(user.sub, dto.token);
   }
 
   /** Looks for new releases now rather than at the next hourly scan. */

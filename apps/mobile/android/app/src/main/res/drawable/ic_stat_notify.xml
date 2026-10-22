@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status bar icon: Android keeps only its shape (white on the bar), so the
+     mark's strokes are drawn in one colour. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:scaleX="0.2"
+        android:scaleY="0.2"
+        android:translateX="2"
+        android:translateY="2">
+        <path android:pathData="M16,12 L16,88 M36,12 L36,88 M56,12 L56,88 M76,12 L76,88 M8,30 L92,30"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="14" />
+    </group>
+</vector>
