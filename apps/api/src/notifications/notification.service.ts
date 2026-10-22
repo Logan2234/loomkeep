@@ -1,4 +1,5 @@
 import {
+  ALERTS,
   DigestCadence,
   episodeCode,
   ErrorCode,
@@ -810,6 +811,7 @@ export class NotificationService {
         body: input.body ?? "",
         url: input.url ?? "/app",
         notificationId,
+        group: ALERTS[input.type].group,
       });
     } catch (err) {
       // The bell entry is saved: a push service failing mustn't fail the

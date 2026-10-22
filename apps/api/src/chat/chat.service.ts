@@ -1,4 +1,5 @@
 import {
+  AlertGroup,
   CHAT_SEARCH_MIN_LENGTH,
   type ChatMessageEvent,
   type ChatReadEvent,
@@ -1372,6 +1373,7 @@ export class ChatService {
         body: notificationCopy(recipient.locale).chatMessage,
         url: `/app?messages=${conversationId}`,
         tag: `chat:${conversationId}`,
+        group: AlertGroup.ACTIVITY,
       });
     } catch (err) {
       // The message is saved: a push service failing mustn't fail sending it.

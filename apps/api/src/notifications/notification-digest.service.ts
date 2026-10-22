@@ -1,4 +1,5 @@
 import {
+  AlertGroup,
   DigestCadence,
   NotificationType,
   type AlertChannel,
@@ -251,6 +252,7 @@ export class NotificationDigestService {
           ),
         ),
         url: items.length === 1 ? items[0].url : "/app/calendar",
+        group: AlertGroup.RELEASES,
       });
     }
 

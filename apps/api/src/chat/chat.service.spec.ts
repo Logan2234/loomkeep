@@ -307,6 +307,7 @@ describe("ChatService", () => {
         body: notificationCopy("fr").chatMessage,
         url: "/app?messages=cv1",
         tag: "chat:cv1",
+        group: "activity",
       });
 
       const here = setup({ online: true });

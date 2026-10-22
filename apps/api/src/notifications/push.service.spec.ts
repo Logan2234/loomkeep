@@ -1,8 +1,9 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { AlertGroup, ErrorCode } from "@loomkeep/shared";
 import { vi } from "vitest";
 import webpush from "web-push";
 import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";
+import { FcmClient } from "./fcm.client";
 import { PushService } from "./push.service";
 
 // web-push validates the VAPID key's byte length at setVapidDetails() time —
@@ -110,6 +111,7 @@ describe("PushService.sendToUserDetailed", () => {
       title: "t",
       body: "b",
       url: "/",
+      group: AlertGroup.ACTIVITY,
     });
 
     expect(outcomes).toEqual([
@@ -150,12 +152,18 @@ describe("PushService app badge", () => {
       Promise.resolve(userId === "u1" ? 4 : 0),
     );
 
-    await service.sendToUser("u1", { title: "t", body: "b", url: "/app" });
+    await service.sendToUser("u1", {
+      title: "t",
+      body: "b",
+      url: "/app",
+      group: AlertGroup.ACTIVITY,
+    });
 
     expect(JSON.parse(send.mock.calls[0][1] as string)).toEqual({
       title: "t",
       body: "b",
       url: "/app",
+      group: AlertGroup.ACTIVITY,
       badge: 4,
     });
 
@@ -209,5 +217,132 @@ describe("PushService VAPID subject", () => {
 
     expect(setVapidDetails).not.toHaveBeenCalled();
     expect(service.publicKey()).toBe("");
+  });
+});
+
+describe("PushService on the Android app", () => {
+  const TOKEN = "fcm-token:APA91bHun4MxP5egoKMwt2KZFBaFUH-1RYqx";
+  const SERVICE_ACCOUNT = Buffer.from(
+    JSON.stringify({
+      project_id: "loomkeep-test",
+      client_email: "push@loomkeep-test.iam.gserviceaccount.com",
+      private_key: "unused: FcmClient.send is stubbed",
+    }),
+  ).toString("base64");
+
+  function makeAndroidService(fcmConfigured = true) {
+    if (fcmConfigured) process.env.FCM_SERVICE_ACCOUNT_BASE64 = SERVICE_ACCOUNT;
+    else delete process.env.FCM_SERVICE_ACCOUNT_BASE64;
+    const prisma = {
+      pushSubscription: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "app1",
+            platform: "ANDROID",
+            endpoint: TOKEN,
+            p256dh: null,
+            auth: null,
+            userAgent: "LoomkeepApp/1.11.0",
+          },
+        ]),
+        delete: vi.fn(),
+      },
+    } as unknown as PrismaService;
+    return { service: new PushService(prisma), prisma };
+  }
+
+  const payload = {
+    title: "Severance",
+    body: "S02E03 is out",
+    url: "/app/media/tv/95396",
+    notificationId: "n1",
+    tag: "release:95396",
+    group: AlertGroup.RELEASES,
+  };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete process.env.FCM_SERVICE_ACCOUNT_BASE64;
+  });
+
+  it("stores the app's FCM token as an Android subscription", async () => {
+    const { service, prisma } = makeAndroidService();
+
+    await service.subscribeNative("u1", TOKEN, "LoomkeepApp/1.11.0");
+
+    expect(prisma.pushSubscription.upsert).toHaveBeenCalledWith({
+      where: { endpoint: TOKEN },
+      update: { userId: "u1", userAgent: "LoomkeepApp/1.11.0" },
+      create: {
+        userId: "u1",
+        platform: "ANDROID",
+        endpoint: TOKEN,
+        userAgent: "LoomkeepApp/1.11.0",
+      },
+    });
+    expect(service.nativeEnabled()).toBe(true);
+  });
+
+  it("delivers through FCM on the alert group's channel, with the page to open", async () => {
+    const send = vi
+      .spyOn(FcmClient.prototype, "send")
+      .mockResolvedValue({ ok: true });
+    const { service, prisma } = makeAndroidService();
+
+    const outcomes = await service.sendToUserDetailed("u1", payload);
+
+    expect(send).toHaveBeenCalledWith(TOKEN, {
+      notification: { title: "Severance", body: "S02E03 is out" },
+      data: { url: "/app/media/tv/95396", notificationId: "n1" },
+      android: {
+        priority: "HIGH",
+        notification: { channel_id: "releases", tag: "release:95396" },
+      },
+    });
+    expect(outcomes).toEqual([{ userAgent: "LoomkeepApp/1.11.0", ok: true }]);
+    // A token isn't a URL: the Web Push host filter must leave it alone.
+    expect(prisma.pushSubscription.delete).not.toHaveBeenCalled();
+  });
+
+  it("forgets a token FCM says is dead", async () => {
+    vi.spyOn(FcmClient.prototype, "send").mockResolvedValue({
+      ok: false,
+      unregistered: true,
+      error: "HTTP 404 UNREGISTERED",
+    });
+    const { service, prisma } = makeAndroidService();
+
+    await service.sendToUserDetailed("u1", payload);
+
+    expect(prisma.pushSubscription.delete).toHaveBeenCalledWith({
+      where: { id: "app1" },
+    });
+  });
+
+  it("keeps a token through a passing FCM failure", async () => {
+    vi.spyOn(FcmClient.prototype, "send").mockRejectedValue(
+      new Error("socket hang up"),
+    );
+    const { service, prisma } = makeAndroidService();
+
+    const outcomes = await service.sendToUserDetailed("u1", payload);
+
+    expect(outcomes).toEqual([
+      expect.objectContaining({ ok: false, error: "Error: socket hang up" }),
+    ]);
+    expect(prisma.pushSubscription.delete).not.toHaveBeenCalled();
+  });
+
+  it("skips the app while FCM isn't configured", async () => {
+    const send = vi.spyOn(FcmClient.prototype, "send");
+    const { service } = makeAndroidService(false);
+
+    await expect(service.sendToUserDetailed("u1", payload)).resolves.toEqual(
+      [],
+    );
+    expect(send).not.toHaveBeenCalled();
+    expect(service.nativeEnabled()).toBe(false);
   });
 });

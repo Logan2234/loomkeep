@@ -655,6 +655,7 @@ describe("NotificationService push", () => {
       body: "Totally agree",
       url: "/app/media/series/42",
       notificationId: "n1",
+      group: "activity",
     });
   });
 
