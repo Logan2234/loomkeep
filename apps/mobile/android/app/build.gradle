@@ -28,6 +28,22 @@ android {
     buildFeatures {
         resValues = true
     }
+    signingConfigs {
+        // CI signs with the shared debug key (mobile.yml), so each build
+        // installs over the last and matches ANDROID_APP_LINKS. Pointed at
+        // explicitly: the runner's default debug keystore isn't the one
+        // ~/.android holds, and changed with every run. Elsewhere, the
+        // machine's own debug key.
+        debug {
+            def sharedKeystore = System.getenv("LOOMKEEP_DEBUG_KEYSTORE")
+            if (sharedKeystore) {
+                storeFile file(sharedKeystore)
+                storePassword "android"
+                keyAlias "androiddebugkey"
+                keyPassword "android"
+            }
+        }
+    }
     buildTypes {
         // Installs next to the store build instead of replacing it.
         debug {
