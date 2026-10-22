@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single-colour mark for Android 13+ themed icons; the launcher tints it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- The 100-unit mark scaled into the 66dp circle every launcher mask keeps. -->
+    <group
+        android:scaleX="0.56"
+        android:scaleY="0.56"
+        android:translateX="26"
+        android:translateY="26">
+        <path
+            android:pathData="M16,12 L16,88"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="14" />
+        <path
+            android:pathData="M36,12 L36,88"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="14" />
+        <path
+            android:pathData="M56,12 L56,88"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="14" />
+        <path
+            android:pathData="M76,12 L76,88"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="14" />
+        <path
+            android:pathData="M8,30 L92,30"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="14" />
+        <path
+            android:pathData="M36,23 L36,37"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="14" />
+        <path
+            android:pathData="M76,23 L76,37"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="14" />
+    </group>
+</vector>
