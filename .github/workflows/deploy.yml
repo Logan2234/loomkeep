@@ -11,8 +11,9 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
-# No checkout and no GitHub API call here — everything happens over SSH on
-# the VPS with its own secrets, so GITHUB_TOKEN needs no scope at all.
+# The deploy needs no checkout and no GitHub API call — everything happens
+# over SSH on the VPS with its own secrets — so GITHUB_TOKEN gets no scope;
+# only the notify job asks for read access, to check main's head.
 permissions: {}
 
 jobs:
@@ -90,3 +91,30 @@ jobs:
             done
             docker image prune -a -f --filter "until=168h"
             docker builder prune -f --filter "until=168h"
+
+  # Says how it went on ntfy (NTFY_TOPIC_URL: the topic's full URL, e.g.
+  # https://ntfy.sh/<unguessable name>, which is all it takes to post or
+  # read): a skipped deploy otherwise goes unnoticed, as #433 and #438 did.
+  notify:
+    needs: deploy
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/deploy
+      - name: Notify on ntfy
+        env:
+          NTFY_TOPIC_URL: ${{ secrets.NTFY_TOPIC_URL }}
+          CI_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          COMMIT_MESSAGE: ${{ github.event.workflow_run.head_commit.message }}
+          CI_URL: ${{ github.event.workflow_run.html_url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          export MAIN_SHA=$(gh api "repos/${{ github.repository }}/commits/main" --jq .sha)
+          bash .github/deploy/notify.sh
