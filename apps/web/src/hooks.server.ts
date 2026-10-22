@@ -9,11 +9,12 @@ import type { Handle } from "@sveltejs/kit/hooks";
 const SECURITY_HEADERS = {
   "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
-  // No camera/mic/geolocation/payment/USB feature is used anywhere in the
-  // app — denying them outright means an injected or compromised script
-  // can't invoke one via an embedded/child context either.
+  // The camera stays allowed for the app's own origin only (ISBN and
+  // profile QR scanners); no mic/geolocation/payment/USB feature is used
+  // anywhere, so denying them outright means an injected or compromised
+  // script can't invoke one via an embedded/child context either.
   "Permissions-Policy":
-    "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+    "camera=(self), microphone=(), geolocation=(), payment=(), usb=()",
   // Isolates this app's window from cross-origin windows it opens or is
   // opened by (no popup/postMessage flow anywhere in the app relies on
   // sharing a browsing context group), closing off a class of cross-origin

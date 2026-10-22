@@ -1,3 +1,6 @@
+import { isNativeApp } from "./native/app-shell";
+import { shareNatively } from "./native/share";
+
 /** Absolute link to a profile — what both the native share sheet and the QR code point at. */
 export const profileUrl = (username: string): string =>
   `${window.location.origin}/app/u/${username}`;
@@ -13,6 +16,11 @@ export async function shareProfile(
   username: string,
   displayName: string,
 ): Promise<boolean> {
+  if (isNativeApp()) {
+    await shareNatively({ title: displayName, url: profileUrl(username) });
+    return true;
+  }
+
   if (!navigator.share) return false;
 
   try {

@@ -87,7 +87,8 @@
   {/if}
 {/snippet}
 
-<div class="bg-bg border-border sticky top-0 z-20 border-b">
+<div
+  class="bg-bg border-border sticky top-[env(safe-area-inset-top)] z-20 border-b">
   <div
     class="mx-auto flex max-w-4xl flex-wrap items-center gap-x-2.5 gap-y-2 px-5 py-3 md:px-8">
     <h2

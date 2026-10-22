@@ -1,5 +1,8 @@
+import { registerServiceWorker } from "#lib/native/service-worker.js";
 import * as env from "$app/env/public";
 import * as Sentry from "@sentry/sveltekit";
+
+registerServiceWorker();
 
 const dsn = env.PUBLIC_GLITCHTIP_WEB_DSN;
 

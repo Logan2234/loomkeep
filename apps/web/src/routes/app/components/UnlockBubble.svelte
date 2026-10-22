@@ -180,7 +180,7 @@
 
 {#if enabled && current}
   <div
-    class="pointer-events-none fixed inset-x-0 top-0 z-70 flex justify-center px-4 pt-3"
+    class="pointer-events-none fixed inset-x-0 top-0 z-70 flex justify-center px-4 pt-[calc(0.75rem+env(safe-area-inset-top))]"
     role="status"
     aria-live="polite">
     <!-- The whole bubble is the target: clicking it opens what it announced

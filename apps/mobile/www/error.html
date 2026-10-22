@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Loomkeep</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0c0d10;
+        --fg: #ececea;
+        --dim: #9aa0ae;
+        --accent: #f5b841;
+        --accent-fg: #1a1406;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: system-ui, sans-serif;
+        text-align: center;
+      }
+      main {
+        max-width: 22rem;
+        padding: 2rem 1.5rem;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 0 0 0.75rem;
+      }
+      p {
+        color: var(--dim);
+        line-height: 1.5;
+        margin: 0 0 1.5rem;
+      }
+      button {
+        border: 0;
+        border-radius: 0.75rem;
+        padding: 0.75rem 1.5rem;
+        background: var(--accent);
+        color: var(--accent-fg);
+        font: inherit;
+        font-weight: 600;
+        transition: opacity 150ms ease;
+      }
+      button:active {
+        opacity: 0.8;
+      }
+      a {
+        display: block;
+        margin-top: 1.25rem;
+        color: var(--accent);
+        font-size: 0.875rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1 id="title"></h1>
+      <p id="body"></p>
+      <button id="retry" type="button"></button>
+      <a
+        id="update"
+        href="https://play.google.com/store/apps/details?id=com.google.android.webview"></a>
+    </main>
+    <script>
+      const copy = {
+        en: {
+          title: "Loomkeep can't load",
+          body: "Check your connection and try again. If it keeps failing, update Android System WebView.",
+          retry: "Try again",
+          update: "Update Android System WebView",
+        },
+        fr: {
+          title: "Impossible de charger Loomkeep",
+          body: "Vérifie ta connexion puis réessaie. Si le problème persiste, mets à jour Android System WebView.",
+          retry: "Réessayer",
+          update: "Mettre à jour Android System WebView",
+        },
+        it: {
+          title: "Impossibile caricare Loomkeep",
+          body: "Controlla la connessione e riprova. Se il problema persiste, aggiorna Android System WebView.",
+          retry: "Riprova",
+          update: "Aggiorna Android System WebView",
+        },
+      };
+      const locale =
+        navigator.languages
+          .map((language) => language.toLowerCase().split("-")[0])
+          .find((language) => language in copy) ?? "en";
+      document.documentElement.lang = locale;
+      for (const key of Object.keys(copy[locale])) {
+        document.getElementById(key).textContent = copy[locale][key];
+      }
+
+      const retryUrl = new URLSearchParams(location.search).get("retry");
+      document.getElementById("retry").addEventListener("click", () => {
+        if (retryUrl) location.replace(retryUrl);
+      });
+    </script>
+  </body>
+</html>

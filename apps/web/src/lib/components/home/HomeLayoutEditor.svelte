@@ -373,7 +373,7 @@
 {/snippet}
 
 <div
-  class="bg-bg/85 border-border sticky top-0 z-40 -mx-5 mb-4 flex flex-wrap items-center gap-2 border-b px-5 py-3 backdrop-blur md:-mx-8 md:px-8">
+  class="bg-bg/85 border-border sticky top-[env(safe-area-inset-top)] z-40 -mx-5 mb-4 flex flex-wrap items-center gap-2 border-b px-5 py-3 backdrop-blur md:-mx-8 md:px-8">
   <div class="min-w-0 flex-1 text-xs">
     {#if dirty && !hasContent}
       <span class="text-dim" in:fade={{ duration: reduced ? 0 : 150 }}>
