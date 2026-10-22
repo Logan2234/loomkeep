@@ -48,9 +48,7 @@
     layout.init();
   });
 
-  $effect(() => {
-    if (isNativeApp()) return startAppShell();
-  });
+  $effect(() => (isNativeApp() ? startAppShell() : undefined));
 
   $effect(() => {
     if (isNativeApp()) syncSystemBars(theme.mode);
