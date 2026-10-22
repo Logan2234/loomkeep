@@ -3,6 +3,7 @@ import { defineEnvVars } from "@sveltejs/kit/env";
 const optionalString = (value: string | undefined) => value;
 
 export const variables = defineEnvVars({
+  ANDROID_APP_LINKS: { schema: optionalString },
   PUBLIC_API_URL: { public: true, schema: optionalString },
   PUBLIC_GLITCHTIP_WEB_DSN: { public: true, schema: optionalString },
   PUBLIC_IS_BETA: { public: true, schema: optionalString },
