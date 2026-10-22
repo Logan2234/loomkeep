@@ -24,6 +24,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- "Share" from another app (MOB-18): MainActivity hands the text to /app/share. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
             <!-- App Links (MOB-08): verified against https://loomkeep.app/.well-known/assetlinks.json.
                  The app pages, plus the account pages emails link to. -->
             <intent-filter android:autoVerify="true">

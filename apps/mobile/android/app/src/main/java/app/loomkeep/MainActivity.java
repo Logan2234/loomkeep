@@ -1,5 +1,6 @@
 package app.loomkeep;
 
+import android.content.Intent;
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 
@@ -11,5 +12,11 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ShellThemePlugin.class);
         super.onCreate(savedInstanceState);
         AppShortcuts.publish(this, getBridge().getServerUrl());
+    }
+
+    // Also runs on the launch intent, once the bridge exists (BridgeActivity.load).
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(SharedText.asAppLink(intent, getBridge() == null ? null : getBridge().getServerUrl()));
     }
 }

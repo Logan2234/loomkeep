@@ -38,6 +38,12 @@ adb shell am start -W -a android.intent.action.VIEW \
   -d "https://loomkeep.app/app/search" "$PACKAGE"
 node "$HERE/smoke-check.mjs" "search"
 
+# Another app sharing a link: the shell opens the web's share page (signed
+# out, /login?redirectTo=/app/share…).
+adb shell am start -W -a android.intent.action.SEND -t text/plain \
+  --es android.intent.extra.TEXT "https://www.imdb.com/title/tt0133093/" "$PACKAGE"
+node "$HERE/smoke-check.mjs" "share"
+
 if adb logcat -d | grep -q "FATAL EXCEPTION"; then
   adb logcat -d | grep -A 40 "FATAL EXCEPTION" >&2
   exit 1

@@ -6,6 +6,7 @@
 const expectedInUrl = process.argv[2] ?? "/";
 const PLUGINS = [
   "App",
+  "Browser",
   "Filesystem",
   "Share",
   "BarcodeScanner",
