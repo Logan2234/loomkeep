@@ -40,30 +40,30 @@ natives à maintenir).
 
 ## Vue d'ensemble
 
-| Ticket | Titre                                                  | Phase | Taille | Dépend de      | Statut     |
-| ------ | ------------------------------------------------------ | ----- | ------ | -------------- | ---------- |
-| MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              | ✅ #433 📱 |
-| MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         | ✅ #436    |
-| MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         | ✅ #436 📱 |
-| MOB-04 | API : push natif via FCM                               | 1     | M      | —              | ✅ #438    |
-| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 | ✅ #438    |
-| MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436    |
-| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         | ✅ #439    |
-| MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436    |
-| MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         |            |
-| MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 |            |
-| MOB-11 | Projet iOS + build CI macOS + TestFlight               | 2     | M      | MOB-02         |            |
-| MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 |            |
-| MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         |            |
-| MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 |            |
-| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         |            |
-| MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |            |
-| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |            |
-| MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 |            |
-| MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439    |
-| MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-11         |            |
-| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |            |
-| MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |            |
+| Ticket | Titre                                                  | Phase | Taille | Dépend de      | Statut            |
+| ------ | ------------------------------------------------------ | ----- | ------ | -------------- | ----------------- |
+| MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              | ✅ #433 📱        |
+| MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         | ✅ #436           |
+| MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         | ✅ #436 📱        |
+| MOB-04 | API : push natif via FCM                               | 1     | M      | —              | ✅ #438           |
+| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 | ✅ #438           |
+| MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436           |
+| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         | ✅ #439           |
+| MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436           |
+| MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         | ✅ #447           |
+| MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 |                   |
+| MOB-11 | Projet iOS + build CI macOS + TestFlight               | 2     | M      | MOB-02         |                   |
+| MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 |                   |
+| MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         |                   |
+| MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 |                   |
+| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         |                   |
+| MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |                   |
+| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |                   |
+| MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 | ✅ #447 (Android) |
+| MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439           |
+| MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-11         |                   |
+| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |                   |
+| MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |                   |
 
 Statut : ✅ = mergé dans `main`, avec le numéro de la PR qui le livre ;
 📱 = validé sur téléphone (voir « Recette » plus bas).
@@ -190,6 +190,19 @@ son 📱 dans le tableau.
 - [ ] Appui long sur l'icône : Recherche, Calendrier, Statistiques,
       Mon profil, Paramètres, en français.
 - [ ] Chaque raccourci ouvre sa page, app fermée comme ouverte.
+
+### MOB-09 — Simkl
+
+- [ ] Réglages › Import › Simkl › Se connecter : Simkl s'ouvre dans un
+      onglet par-dessus l'app (pas dans Chrome).
+- [ ] Après « Autoriser », l'onglet se ferme et l'app affiche l'import
+      Simkl, connectée ; l'import va au bout.
+
+### MOB-18 — Partager vers Loomkeep
+
+- [ ] Depuis IMDb, Letterboxd ou Chrome, « Partager » propose Loomkeep Dev.
+- [ ] Le lien partagé ouvre la page de partage de Loomkeep sur l'œuvre (ou
+      une recherche quand le lien n'est pas reconnu).
 
 ---
 
@@ -343,9 +356,12 @@ l'app.
 (`disallowed_useragent`), et le navigateur in-app ne partage pas les
 cookies de la WebView.
 
-**Périmètre** : flux OAuth Simkl ouvert avec `@capacitor/browser`, retour
-par App Link avec le `state`, que la coque transmet au web pour finaliser
-l'import.
+**Périmètre** : flux OAuth Simkl ouvert dans un Custom Tab
+(`@capacitor/browser`) ; la redirection vers le callback est un App Link
+qui ramène l'app (son activité `singleTask` ferme l'onglet) et route la
+WebView vers le callback, qui finalise l'import avec la session de l'app.
+Si Simkl ne montrait pas d'écran de consentement, Chrome pourrait garder
+la redirection dans l'onglet : repli prévu, le flux PIN de Simkl.
 
 **Critères d'acceptation** : import Simkl complet depuis l'app Android, et
 flux navigateur inchangé.
@@ -438,9 +454,10 @@ appelables depuis l'action sans ouvrir l'app.
 
 ### MOB-18 — Partager vers Loomkeep
 
-Android : intent-filter `SEND` routé vers `/app/share` (équivalent du
-`share_target` du manifest). iOS : Share Extension en Swift. Cas d'usage :
-partager un lien IMDb, Letterboxd, Netflix ou Spotify pour ajouter l'œuvre.
+Android (fait) : intent-filter `SEND` texte, transformé par `SharedText.java`
+en `/app/share` (le `share_target` du manifest). iOS : Share Extension en
+Swift, avec la phase 2. Cas d'usage : partager un lien IMDb, Letterboxd,
+Netflix ou Spotify pour ajouter l'œuvre.
 
 ### MOB-19 — Raccourcis d'icône
 
