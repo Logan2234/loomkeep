@@ -95,14 +95,14 @@ son 📱 dans le tableau.
 
 ### Avant de tester
 
-- [ ] Le dernier CI de `main` est vert **et** `Deploy` a tourné : l'app
+- [x] Le dernier CI de `main` est vert **et** `Deploy` a tourné : l'app
       affiche le web de l'instance, donc rien de ce qui est web ne se teste
       avant le déploiement. Contrôle rapide :
       `https://loomkeep.app/.well-known/assetlinks.json` ne renvoie plus la
       page 404 du site.
-- [ ] APK du dernier run `Mobile` sur `main` installé **par-dessus**
+- [x] APK du dernier run `Mobile` sur `main` installé **par-dessus**
       l'ancien (même clé de debug : la session est gardée).
-- [ ] VPS : `FCM_SERVICE_ACCOUNT_BASE64` (push) et
+- [x] VPS : `FCM_SERVICE_ACCOUNT_BASE64` (push) et
       `ANDROID_APP_LINKS=app.loomkeep.debug=<SHA-256 de la clé de debug>`
       (App Links) dans le `.env`.
 
@@ -113,20 +113,26 @@ son 📱 dans le tableau.
 
 ### Réglages de la coque (#436)
 
-- [ ] « Loomkeep Dev » s'installe à côté d'une éventuelle « Loomkeep ».
-- [ ] Pas de flash blanc au lancement.
-- [ ] Mode avion : page « Impossible de charger Loomkeep » ; réseau revenu,
+- [x] « Loomkeep Dev » s'installe à côté d'une éventuelle « Loomkeep ».
+- [x] Pas de flash blanc au lancement.
+- [x] Mode avion : page « Impossible de charger Loomkeep » ; réseau revenu,
       « Réessayer » recharge l'app.
 - [ ] Paramètres Android › Apps › Loomkeep Dev › Langue : en, fr, it.
+      Introuvable sur un Poco X5 Pro (MIUI/HyperOS) : à chercher dans
+      Paramètres supplémentaires › Langues et saisie.
 
 ### MOB-02 — Intégration web ↔ natif
 
-- [ ] Une modale ou un tiroir ouvert se ferme au bouton retour, sans
+- [x] Une modale ou un tiroir ouvert se ferme au bouton retour, sans
       changer de page.
 - [ ] Retour depuis la page d'accueil : l'app passe en arrière-plan.
+      Après une connexion, l'app clignotait (/login ↔ /app) : corrigé,
+      à revérifier.
 - [ ] Icônes de la barre de statut lisibles en thème clair comme sombre,
       y compris juste après avoir changé de thème.
-- [ ] Rien ne passe sous l'heure et la batterie (fiche d'œuvre en faisant
+      La barre restait claire en thème sombre : corrigé (ShellTheme),
+      à revérifier.
+- [x] Rien ne passe sous l'heure et la batterie (fiche d'œuvre en faisant
       défiler, cloche, bulle de succès).
 
 ### MOB-03 — Icônes et écran de lancement
