@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_search">Cerca</string>
+    <string name="shortcut_calendar">Calendario</string>
+    <string name="shortcut_stats">Statistiche</string>
+    <string name="shortcut_profile">Il mio profilo</string>
+    <string name="shortcut_settings">Impostazioni</string>
+</resources>
