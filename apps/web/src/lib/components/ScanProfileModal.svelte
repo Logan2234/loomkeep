@@ -9,6 +9,7 @@
   import WorkerPath from "qr-scanner/qr-scanner-worker.min.js?url";
   import { onDestroy, onMount, tick } from "svelte";
   import { m } from "#lib/paraglide/messages.js";
+  import { profileUsernameFromQr } from "#lib/scan-codes.js";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
 
@@ -21,23 +22,8 @@
   let status = $state<"starting" | "scanning" | "denied" | "error">("starting");
   let notice = $state("");
 
-  // Only a same-origin `/app/u/:username` link resolves in-app — a QR scanned
-  // from anything else (a random URL, another site's code) is rejected
-  // rather than silently opened, since this modal's whole point is a fast
-  // path straight to a profile, not a general-purpose QR reader.
-  function resolveUsername(data: string): string | null {
-    try {
-      const url = new URL(data);
-      if (url.origin !== window.location.origin) return null;
-      const match = url.pathname.match(/^\/app\/u\/([^/]+)\/?$/);
-      return match ? decodeURIComponent(match[1]) : null;
-    } catch {
-      return null;
-    }
-  }
-
   async function onDecode(result: QrScanner.ScanResult) {
-    const username = resolveUsername(result.data);
+    const username = profileUsernameFromQr(result.data, location.origin);
     if (!username) {
       notice = m.scan_profile_invalid_code();
       return;

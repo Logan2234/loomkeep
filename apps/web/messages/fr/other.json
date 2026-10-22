@@ -1603,5 +1603,7 @@
   "cancel_deletion_done": "Ton compte est conservé, avec tout ce qu'il contient. Si tu n'étais pas à l'origine de la demande, change ton mot de passe.",
   "cancel_deletion_open": "Ouvrir Loomkeep",
   "push_channel_releases": "Sorties",
-  "push_channel_announcements": "Annonces"
+  "push_channel_announcements": "Annonces",
+  "scan_isbn_invalid_code": "Ce code-barres n'est pas l'ISBN d'un livre.",
+  "scan_unavailable": "Le scanner n'a pas pu démarrer. Réessaie dans un instant."
 }

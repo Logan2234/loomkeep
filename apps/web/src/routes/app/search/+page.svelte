@@ -28,6 +28,10 @@
   import { auth } from "#lib/auth.svelte.js";
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { isNativeScanAvailable, scanNatively } from "#lib/native/scan.js";
+  import { isIsbnBarcode } from "#lib/scan-codes.js";
+  import { toast } from "#lib/toast.svelte.js";
+  import { BarcodeFormat } from "@capacitor-mlkit/barcode-scanning";
   import { quickAddTarget } from "#lib/quick-add.js";
   import { isPastedLink } from "#lib/share-link.js";
   import { Domain, type MediaType } from "@loomkeep/shared";
@@ -201,16 +205,37 @@
     };
   });
 
-  // ISBN barcode scan (mobile only) — feature-detected since BarcodeDetector
-  // is Chrome/Edge-only today; the trigger just doesn't render on browsers
+  // ISBN barcode scan (mobile only): Google's scanner in the Android app,
+  // else the web's — feature-detected since BarcodeDetector is
+  // Chrome/Edge-only today; the trigger just doesn't render on browsers
   // without it rather than opening a scanner that can never decode anything.
   let scanOpen = $state(false);
   const barcodeSupported =
-    typeof window !== "undefined" && "BarcodeDetector" in window;
+    typeof window !== "undefined" &&
+    (isNativeScanAvailable() || "BarcodeDetector" in window);
 
   function onIsbnScanned(isbn: string) {
     bookMode = "isbn";
     query = isbn;
+  }
+
+  async function scanIsbn() {
+    if (!isNativeScanAvailable()) {
+      scanOpen = true;
+      return;
+    }
+
+    let code: string | null;
+    try {
+      code = await scanNatively(BarcodeFormat.Ean13);
+    } catch {
+      toast.error(m.scan_unavailable());
+      return;
+    }
+    if (code === null) return;
+
+    if (isIsbnBarcode(code)) onIsbnScanned(code);
+    else toast.error(m.scan_isbn_invalid_code());
   }
 </script>
 
@@ -338,7 +363,7 @@
           type="button"
           class="guichet-scan-btn"
           aria-label={m.scan_isbn_title()}
-          onclick={() => (scanOpen = true)}>
+          onclick={scanIsbn}>
           <Icon name="camera" class="h-4 w-4" />
         </button>
       {/if}

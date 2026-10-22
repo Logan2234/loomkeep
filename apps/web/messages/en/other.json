@@ -1603,5 +1603,7 @@
   "cancel_deletion_done": "Your account is kept, with everything in it. If you didn't make the request, change your password.",
   "cancel_deletion_open": "Open Loomkeep",
   "push_channel_releases": "Releases",
-  "push_channel_announcements": "Announcements"
+  "push_channel_announcements": "Announcements",
+  "scan_isbn_invalid_code": "This barcode isn't a book's ISBN.",
+  "scan_unavailable": "The scanner couldn't start. Try again in a moment."
 }

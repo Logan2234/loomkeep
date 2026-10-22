@@ -8,6 +8,7 @@
   // support (the trigger button feature-detects and hides itself otherwise).
   import { onDestroy, onMount } from "svelte";
   import { m } from "#lib/paraglide/messages.js";
+  import { isIsbnBarcode } from "#lib/scan-codes.js";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
 
@@ -22,18 +23,11 @@
   let frameHandle: number | undefined;
   let stopped = false;
 
-  // Book ISBNs are EAN-13 codes under the "Bookland" 978/979 prefix — this
-  // rules out a stray barcode from something else (a snack wrapper in frame)
-  // being accepted as an ISBN.
-  const ISBN_BARCODE = /^97[89]\d{10}$/;
-
   async function scanFrame(detector: BarcodeDetector) {
     if (stopped || !videoEl) return;
     try {
       const codes = await detector.detect(videoEl);
-      const isbn = codes
-        .map((c) => c.rawValue)
-        .find((v) => ISBN_BARCODE.test(v));
+      const isbn = codes.map((c) => c.rawValue).find(isIsbnBarcode);
       if (isbn) {
         stop();
         onclose();

@@ -2,4 +2,10 @@
 <resources>
     <string name="package_name">app.loomkeep</string>
     <string name="custom_url_scheme">app.loomkeep</string>
+    <!-- App icon shortcuts (AppShortcuts.java), as in the PWA manifest. -->
+    <string name="shortcut_search">Search</string>
+    <string name="shortcut_calendar">Calendar</string>
+    <string name="shortcut_stats">Stats</string>
+    <string name="shortcut_profile">My profile</string>
+    <string name="shortcut_settings">Settings</string>
 </resources>

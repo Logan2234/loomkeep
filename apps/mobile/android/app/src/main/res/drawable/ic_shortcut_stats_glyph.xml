@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- apps/web/static/shortcut-stats.svg's glyph, centred in the adaptive icon's safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="1.5"
+        android:scaleY="1.5"
+        android:translateX="36"
+        android:translateY="36">
+        <path
+            android:pathData="M5,12 h2 a1,1 0 0 1 1,1 v6 a1,1 0 0 1 -1,1 h-2 a1,1 0 0 1 -1,-1 v-6 a1,1 0 0 1 1,-1 Z"
+            android:strokeColor="#FFECECEA"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="1.7" />
+        <path
+            android:pathData="M11,7 h2 a1,1 0 0 1 1,1 v11 a1,1 0 0 1 -1,1 h-2 a1,1 0 0 1 -1,-1 v-11 a1,1 0 0 1 1,-1 Z"
+            android:strokeColor="#FFECECEA"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="1.7" />
+        <path
+            android:pathData="M17,10 h2 a1,1 0 0 1 1,1 v8 a1,1 0 0 1 -1,1 h-2 a1,1 0 0 1 -1,-1 v-8 a1,1 0 0 1 1,-1 Z"
+            android:strokeColor="#FFECECEA"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="1.7" />
+    </group>
+</vector>

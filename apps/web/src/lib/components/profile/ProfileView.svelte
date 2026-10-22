@@ -37,6 +37,11 @@
   import { appConfig } from "#lib/config.svelte.js";
   import { formatDate, MONTH_YEAR_OPTIONS } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { isNativeScanAvailable, scanNatively } from "#lib/native/scan.js";
+  import { profileUsernameFromQr } from "#lib/scan-codes.js";
+  import { toast } from "#lib/toast.svelte.js";
+  import { goto } from "$app/navigation";
+  import { BarcodeFormat } from "@capacitor-mlkit/barcode-scanning";
   import type { RelationshipDto, SocialProfileDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import LevelCard from "../LevelCard.svelte";
@@ -225,6 +230,26 @@
 
   let shareModalOpen = $state(false);
   let scanModalOpen = $state(false);
+
+  async function scanProfile() {
+    if (!isNativeScanAvailable()) {
+      scanModalOpen = true;
+      return;
+    }
+
+    let code: string | null;
+    try {
+      code = await scanNatively(BarcodeFormat.QrCode);
+    } catch {
+      toast.error(m.scan_unavailable());
+      return;
+    }
+    if (code === null) return;
+
+    const username = profileUsernameFromQr(code, location.origin);
+    if (username) await goto(`/app/u/${username}`);
+    else toast.error(m.scan_profile_invalid_code());
+  }
   let avatarModalOpen = $state(false);
   let editProfileModalOpen = $state(false);
   let xpHistoryOpen = $state(false);
@@ -356,7 +381,7 @@
         onOpenAvatarModal={() => (avatarModalOpen = true)}
         onOpenEditProfile={() => (editProfileModalOpen = true)}
         onOpenShareModal={() => (shareModalOpen = true)}
-        onOpenScanModal={() => (scanModalOpen = true)}
+        onOpenScanModal={scanProfile}
         onOpenConnections={openConnections} />
       {#if appConfig.gamificationEnabled && xp !== null}
         <aside class="card self-start p-5 md:p-6">

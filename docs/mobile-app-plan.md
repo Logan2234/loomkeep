@@ -48,7 +48,7 @@ natives à maintenir).
 | MOB-04 | API : push natif via FCM                               | 1     | M      | —              | ✅ #438 |
 | MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 | ✅ #438 |
 | MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436 |
-| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         |         |
+| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         | ✅ #439 |
 | MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436 |
 | MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         |         |
 | MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 |         |
@@ -60,7 +60,7 @@ natives à maintenir).
 | MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |         |
 | MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |         |
 | MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 |         |
-| MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         |         |
+| MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439 |
 | MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-11         |         |
 | MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |         |
 | MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |         |
@@ -210,12 +210,15 @@ Trakt…) fonctionne depuis le sélecteur Android.
 
 ### MOB-07 — Scan ISBN et QR natif
 
-**Périmètre** : plugin de scan ML Kit pour `ScanIsbnModal` et
-`ScanProfileModal` dans la coque ; le bouton de scan apparaît aussi là où
-`BarcodeDetector` manque (iOS).
+**Périmètre** : dans la coque, le scan ISBN de la recherche et le scan de
+QR de profil ouvrent le scanner prêt à l'emploi de Google Play services
+(`@capacitor-mlkit/barcode-scanning`) au lieu des modales web ; le bouton
+apparaît même sans `BarcodeDetector`. L'écran de Google tient la caméra :
+aucune permission à demander.
 
 **Critères d'acceptation** : scan d'un EAN-13 et d'un QR de profil sur
-Android ; permission caméra demandée au premier usage, refus géré.
+Android ; un code qui n'est ni un ISBN ni un profil le dit ; annuler ne
+fait rien.
 
 ### MOB-08 — Android App Links
 
@@ -336,7 +339,8 @@ partager un lien IMDb, Letterboxd, Netflix ou Spotify pour ajouter l'œuvre.
 ### MOB-19 — Raccourcis d'icône
 
 Les `shortcuts` du manifest (recherche, calendrier, stats, profil,
-réglages) en raccourcis Android et quick actions iOS.
+réglages) en raccourcis Android (fait, Android 8+) ; les quick actions iOS
+restent à faire avec la phase 2.
 
 ### MOB-20 — Widgets « À suivre » et « Sorties du jour »
 
