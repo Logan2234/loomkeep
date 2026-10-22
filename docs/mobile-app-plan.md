@@ -40,30 +40,32 @@ natives à maintenir).
 
 ## Vue d'ensemble
 
-| Ticket | Titre                                                  | Phase | Taille | Dépend de      |
-| ------ | ------------------------------------------------------ | ----- | ------ | -------------- |
-| MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              |
-| MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         |
-| MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         |
-| MOB-04 | API : push natif via FCM                               | 1     | M      | —              |
-| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 |
-| MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         |
-| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         |
-| MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         |
-| MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         |
-| MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 |
-| MOB-11 | Projet iOS + build CI macOS + TestFlight               | 2     | M      | MOB-02         |
-| MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 |
-| MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         |
-| MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 |
-| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         |
-| MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |
-| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |
-| MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 |
-| MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         |
-| MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-11         |
-| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |
-| MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |
+| Ticket | Titre                                                  | Phase | Taille | Dépend de      | Statut  |
+| ------ | ------------------------------------------------------ | ----- | ------ | -------------- | ------- |
+| MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              | ✅ #433 |
+| MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         | ✅ #436 |
+| MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         | ✅ #436 |
+| MOB-04 | API : push natif via FCM                               | 1     | M      | —              |         |
+| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 |         |
+| MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436 |
+| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         |         |
+| MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436 |
+| MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         |         |
+| MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 |         |
+| MOB-11 | Projet iOS + build CI macOS + TestFlight               | 2     | M      | MOB-02         |         |
+| MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 |         |
+| MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         |         |
+| MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 |         |
+| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         |         |
+| MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |         |
+| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |         |
+| MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 |         |
+| MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         |         |
+| MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-11         |         |
+| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |         |
+| MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |         |
+
+Statut : ✅ = implémenté, avec le numéro de la PR qui le livre.
 
 Tailles : S ≈ une demi-journée à une journée, M ≈ deux à quatre jours,
 L ≈ une semaine ou plus.
@@ -127,10 +129,11 @@ toucher au web ni à l'API.
 
 - `@capacitor/core` dans `apps/web` et un module de détection
   (`isNativeApp()`) ; aucun code natif ne doit se charger hors de la coque.
-- Bouton retour Android (`@capacitor/app`) branché sur
-  `back-nav.svelte.ts` ; quitter l'app à la racine.
-- Barre de statut aux couleurs du thème Séance (`@capacitor/status-bar`),
-  clair/sombre suivi en direct.
+- Bouton retour Android (`@capacitor/app`) : ferme d'abord la modale
+  ouverte, remonte ensuite l'historique, et met l'app en arrière-plan à la
+  racine.
+- Icônes des barres système suivant le thème Séance (plugin `SystemBars`
+  intégré à Capacitor 8), clair/sombre suivi en direct.
 - Safe areas vérifiées en plein écran ; pas de bannière d'installation PWA
   ni de proposition Web Push dans la coque.
 - Service worker non enregistré dans la coque (il n'y apporte rien et
@@ -142,9 +145,9 @@ composants sur `isNativeApp()` faux).
 
 ### MOB-03 — Icônes, splash screen et nom d'application
 
-**Périmètre** : icônes adaptatives Android générées depuis
-`pwa-maskable-512.png`, splash screen (`@capacitor/splash-screen`) aux
-couleurs Séance, nom affiché « Loomkeep ».
+**Périmètre** : icône adaptative Android dessinée en vectoriel depuis
+`favicon.svg`, écran de lancement aux couleurs Séance via le thème Android
+(sans plugin), nom affiché « Loomkeep » (« Loomkeep Dev » en debug).
 
 **Critères d'acceptation** : icône correcte en rond, carré et thème
 monochrome Android 13+ ; pas de flash blanc au démarrage en thème sombre.
