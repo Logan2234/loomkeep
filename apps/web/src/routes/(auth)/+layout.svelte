@@ -24,7 +24,7 @@
 
   $effect(() => {
     if (!bootstrap.ready) return;
-    if (untrack(() => auth.isLoggedIn)) void goto("/app");
+    if (untrack(() => auth.isLoggedIn)) void goto("/app", { replace: true });
     else allowed = true;
   });
 </script>

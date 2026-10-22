@@ -95,7 +95,7 @@
         }
         return;
       }
-      void goto(safeRedirect(page.url.searchParams.get("redirectTo")));
+      void openAfterSignIn();
     },
   }));
 
@@ -138,23 +138,28 @@
     step = "code";
   }
 
+  // Replaces the sign-in page in the history: back from the app must not
+  // land on it, only to be sent straight back into the app.
+  function openAfterSignIn() {
+    return goto(safeRedirect(page.url.searchParams.get("redirectTo")), {
+      replace: true,
+    });
+  }
+
   const webauthnMfaMut = createApiMutation(() => ({
     mutate: () => verifyWebauthnMfaLogin(challengeId),
-    onSuccess: () =>
-      goto(safeRedirect(page.url.searchParams.get("redirectTo"))),
+    onSuccess: () => openAfterSignIn(),
   }));
 
   const passwordlessMut = createApiMutation(() => ({
     mutate: () => loginWithPasskey(identifier.trim()),
     onError: noteSuspension,
-    onSuccess: () =>
-      goto(safeRedirect(page.url.searchParams.get("redirectTo"))),
+    onSuccess: () => openAfterSignIn(),
   }));
 
   const verifyMut = createApiMutation(() => ({
     mutate: () => verifyMfaLogin({ challengeId, code: codeInput.trim() }),
-    onSuccess: () =>
-      goto(safeRedirect(page.url.searchParams.get("redirectTo"))),
+    onSuccess: () => openAfterSignIn(),
   }));
 
   function verifyCode(event: SubmitEvent) {
