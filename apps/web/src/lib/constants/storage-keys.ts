@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   onboardingStep: "lk-onboarding-step",
   dismissedNews: "lk-news-banner-dismissed",
   reauthMethod: "lk-reauth-method",
+  nativePushToken: "lk-native-push-token",
   libraryView: (domain: SavedViewDomain) =>
     `lk-library-view-${domain.toLowerCase()}`,
   libraryColumns: (domain: SavedViewDomain) =>

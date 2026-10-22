@@ -58,6 +58,11 @@ enum Plan {
   PREMIUM
 }
 
+enum PushPlatform {
+  WEB
+  ANDROID
+}
+
 // How a user came to have their current plan — informational, for support/admin
 // visibility (e.g. "why is this account premium") rather than a behavioral
 // switch. STRIPE accounts are the only ones with a backing Subscription row;
@@ -1304,16 +1309,19 @@ model SavedView {
   @@index([userId])
 }
 
-// One row per browser/device push subscription (Web Push). endpoint is the
-// natural unique key: re-subscribing the same device updates its keys in place.
+// One row per browser/device push subscription. endpoint is the natural
+// unique key: re-subscribing the same device updates it in place. For WEB it
+// is the browser's push service URL (with its p256dh/auth keys); for ANDROID
+// it is the app's FCM registration token (no keys).
 model PushSubscription {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   userId    String
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
+  platform  PushPlatform @default(WEB)
+  endpoint  String       @unique
+  p256dh    String?
+  auth      String?
   userAgent String?
-  createdAt DateTime @default(now())
+  createdAt DateTime     @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

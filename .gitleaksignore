@@ -1,3 +1,5 @@
 # Test fixtures that look like secrets to gitleaks' generic-api-key rule but
 # are not: a made-up API key shown by the create-key modal's spec.
 cb0492a41f3600c12bde9d9fdf25ea48e7235426:apps/web/src/routes/app/settings/integrations/components/ApiKeyCreateModal.svelte.spec.ts:generic-api-key:11
+# A made-up FCM registration token in the push service's spec, since replaced.
+364be616fb100abeab0c052da47d2dcde5c7aaa7:apps/api/src/notifications/push.service.spec.ts:generic-api-key:224

@@ -1,9 +1,11 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { type AlertGroup, ErrorCode, PushPlatform } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
+import type { PushSubscription } from "@prisma/client";
 import webpush from "web-push";
 import { AppException } from "../common/app.exception";
 import { primaryWebOrigin } from "../common/web-origin.util";
 import { PrismaService } from "../prisma/prisma.service";
+import { FcmClient } from "./fcm.client";
 import { isAllowedPushEndpoint } from "./push-endpoint.validator";
 
 export interface PushPayload {
@@ -15,6 +17,8 @@ export interface PushPayload {
   tag?: string;
   /** The bell entry it announces, so opening the push can mark it read. */
   notificationId?: string;
+  /** Its ALERTS group: the Android app files it under that notification channel. */
+  group: AlertGroup;
 }
 
 export interface PushDevice {
@@ -35,9 +39,17 @@ export class PushService {
   private readonly logger = new Logger(PushService.name);
   private readonly enabled: boolean = false;
   private readonly vapidPublicKey: string = "";
+  private readonly fcm: FcmClient | null = null;
   private badgeSource: ((userId: string) => Promise<number>) | null = null;
 
   constructor(private readonly prisma: PrismaService) {
+    try {
+      this.fcm = FcmClient.fromEnv();
+    } catch (err) {
+      // A malformed key turns the Android app's push off, not the whole API.
+      this.logger.error("Android push disabled", err);
+    }
+
     const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } = process.env;
     const subject = vapidSubject();
 
@@ -68,6 +80,11 @@ export class PushService {
     return this.vapidPublicKey;
   }
 
+  /** Whether the Android app can be pushed to (FCM_SERVICE_ACCOUNT_BASE64 set). */
+  nativeEnabled(): boolean {
+    return this.fcm !== null;
+  }
+
   async subscribe(
     userId: string,
     endpoint: string,
@@ -75,10 +92,41 @@ export class PushService {
     auth: string,
     userAgent?: string,
   ): Promise<void> {
-    // An endpoint belongs to the browser that issued it — never transfer it
-    // from one account to another (it would silently cut off the original
-    // owner's notifications). Endpoints are unguessable opaque tokens, but
-    // the check costs nothing and closes the gap regardless.
+    await this.assertEndpointFree(userId, endpoint);
+    await this.prisma.pushSubscription.upsert({
+      where: { endpoint },
+      update: { userId, p256dh, auth, userAgent },
+      create: { userId, endpoint, p256dh, auth, userAgent },
+    });
+  }
+
+  /** The Android app's FCM registration token, stored as its endpoint. */
+  async subscribeNative(
+    userId: string,
+    token: string,
+    userAgent?: string,
+  ): Promise<void> {
+    await this.assertEndpointFree(userId, token);
+    await this.prisma.pushSubscription.upsert({
+      where: { endpoint: token },
+      update: { userId, userAgent },
+      create: {
+        userId,
+        platform: PushPlatform.ANDROID,
+        endpoint: token,
+        userAgent,
+      },
+    });
+  }
+
+  // An endpoint belongs to the browser or app install that issued it — never
+  // transfer it from one account to another (it would silently cut off the
+  // original owner's notifications). Endpoints are unguessable opaque
+  // tokens, but the check costs nothing and closes the gap regardless.
+  private async assertEndpointFree(
+    userId: string,
+    endpoint: string,
+  ): Promise<void> {
     const existing = await this.prisma.pushSubscription.findUnique({
       where: { endpoint },
       select: { userId: true },
@@ -90,12 +138,6 @@ export class PushService {
         ErrorCode.NotificationPushEndpointTaken,
       );
     }
-
-    await this.prisma.pushSubscription.upsert({
-      where: { endpoint },
-      update: { userId, p256dh, auth, userAgent },
-      create: { userId, endpoint, p256dh, auth, userAgent },
-    });
   }
 
   async unsubscribe(userId: string, endpoint: string): Promise<void> {
@@ -127,15 +169,21 @@ export class PushService {
     userId: string,
     payload: PushPayload,
   ): Promise<PushSendOutcome[]> {
-    const subscriptions = await this.prisma.pushSubscription.findMany({
-      where: { userId },
-    });
-    if (!this.enabled || subscriptions.length === 0) return [];
+    const subscriptions = (
+      await this.prisma.pushSubscription.findMany({ where: { userId } })
+    ).filter((sub) =>
+      sub.platform === PushPlatform.ANDROID ? this.fcm : this.enabled,
+    );
+    if (subscriptions.length === 0) return [];
     const badge = await this.badgeSource?.(userId);
     const body = JSON.stringify({ ...payload, badge });
 
     return Promise.all(
       subscriptions.map(async (sub): Promise<PushSendOutcome> => {
+        if (sub.platform === PushPlatform.ANDROID) {
+          return this.sendNative(sub, payload);
+        }
+
         // Rows created before IsPushEndpoint existed were never validated —
         // filter here too, not just at subscribe(), so a pre-existing
         // malicious endpoint can't still be used for SSRF.
@@ -152,7 +200,7 @@ export class PushService {
           await webpush.sendNotification(
             {
               endpoint: sub.endpoint,
-              keys: { p256dh: sub.p256dh, auth: sub.auth },
+              keys: { p256dh: sub.p256dh ?? "", auth: sub.auth ?? "" },
             },
             body,
           );
@@ -177,6 +225,46 @@ export class PushService {
         }
       }),
     );
+  }
+
+  private async sendNative(
+    sub: PushSubscription,
+    payload: PushPayload,
+  ): Promise<PushSendOutcome> {
+    try {
+      const result = await this.fcm!.send(sub.endpoint, {
+        notification: { title: payload.title, body: payload.body },
+        // Read back by the web when the notification is tapped.
+        data: {
+          url: payload.url,
+          ...(payload.notificationId && {
+            notificationId: payload.notificationId,
+          }),
+        },
+        android: {
+          priority: "HIGH",
+          notification: {
+            channel_id: payload.group,
+            ...(payload.tag && { tag: payload.tag }),
+          },
+        },
+      });
+      if (result.ok) return { userAgent: sub.userAgent, ok: true };
+
+      if (result.unregistered) {
+        // The app was uninstalled or its data cleared — stop trying it.
+        await this.prisma.pushSubscription.delete({ where: { id: sub.id } });
+      } else {
+        this.logger.error(
+          `Android push failed for subscription ${sub.id}: ${result.error}`,
+        );
+      }
+
+      return { userAgent: sub.userAgent, ok: false, error: result.error };
+    } catch (err) {
+      this.logger.error(`Android push failed for subscription ${sub.id}`, err);
+      return { userAgent: sub.userAgent, ok: false, error: String(err) };
+    }
   }
 }
 

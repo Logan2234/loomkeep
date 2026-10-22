@@ -2,6 +2,7 @@ import { dismissTopmostDialog } from "#lib/actions/dialog-focus.js";
 import { goto } from "$app/navigation";
 import { App } from "@capacitor/app";
 import { Capacitor, SystemBars, SystemBarsStyle } from "@capacitor/core";
+import { isNativePushAvailable, startNativePush } from "./push";
 
 /** Whether the page runs inside the Android app (apps/mobile), not a browser. */
 export const isNativeApp = (): boolean => Capacitor.isNativePlatform();
@@ -34,8 +35,12 @@ export function startAppShell(): () => void {
     // Also delivers the link of a cold start, held until this listener exists.
     App.addListener("appUrlOpen", openAppLink),
   ];
-  return () =>
+  const stopPush = isNativePushAvailable() ? startNativePush() : undefined;
+
+  return () => {
     listeners.forEach((listener) => void listener.then((l) => l.remove()));
+    stopPush?.();
+  };
 }
 
 /** Light icons over the dark theme, dark ones over the light theme. */

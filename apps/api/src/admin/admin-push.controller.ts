@@ -1,4 +1,5 @@
 import {
+  AlertGroup,
   ErrorCode,
   type AdminPushBroadcastResponseDto,
   type AdminPushDeviceDto,
@@ -82,6 +83,7 @@ export class AdminPushController {
       title: dto.title?.trim() || "Loomkeep (admin)",
       body: dto.body?.trim() || copy.adminTestPush,
       url: "/app",
+      group: AlertGroup.ANNOUNCEMENTS,
     });
 
     return { subscriptionCount: devices.length, results };
@@ -106,6 +108,7 @@ export class AdminPushController {
             dto.body?.trim() ||
             notificationCopy(user.locale).adminBroadcastPush,
           url: "/app",
+          group: AlertGroup.ANNOUNCEMENTS,
         }),
       ),
     );

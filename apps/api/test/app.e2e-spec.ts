@@ -490,6 +490,34 @@ describe("Loomkeep API (e2e)", () => {
       .expect(404);
   });
 
+  it("push: registers and forgets the Android app's FCM token", async () => {
+    const token = "e2e-fcm-token:APA91bAndroidAppRegistrationToken";
+
+    await request(http)
+      .post("/api/notifications/push/native")
+      .set("Cookie", sessionCookies)
+      .send({ token })
+      .expect(204);
+    await expect(
+      prisma.pushSubscription.findUnique({ where: { endpoint: token } }),
+    ).resolves.toMatchObject({ platform: "ANDROID", p256dh: null, auth: null });
+
+    await request(http)
+      .post("/api/notifications/push/native")
+      .set("Cookie", sessionCookies)
+      .send({ token: "not a token" })
+      .expect(400);
+
+    await request(http)
+      .delete("/api/notifications/push/native")
+      .set("Cookie", sessionCookies)
+      .send({ token })
+      .expect(204);
+    await expect(
+      prisma.pushSubscription.findUnique({ where: { endpoint: token } }),
+    ).resolves.toBeNull();
+  });
+
   it("media extras: returns where-to-watch, cast and similar", async () => {
     const res = await request(http)
       .get("/api/catalog/anilist/5555/extras?type=ANIME")

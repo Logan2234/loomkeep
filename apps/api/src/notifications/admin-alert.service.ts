@@ -1,4 +1,4 @@
-import { type AlertKey, isAlertEnabled } from "@loomkeep/shared";
+import { AlertGroup, type AlertKey, isAlertEnabled } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import type { MailRecipient } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -31,7 +31,7 @@ export class AdminAlertService {
     key: AdminAlertKey,
     send: {
       email: (admin: MailRecipient) => Promise<unknown>;
-      push: (copy: NotificationCopy) => PushPayload;
+      push: (copy: NotificationCopy) => Omit<PushPayload, "group">;
     },
   ): Promise<number> {
     const admins = await this.prisma.user.findMany({
@@ -48,10 +48,10 @@ export class AdminAlertService {
         }
 
         if (isAlertEnabled(prefs, key, "push")) {
-          await this.push.sendToUser(
-            admin.id,
-            send.push(notificationCopy(admin.locale)),
-          );
+          await this.push.sendToUser(admin.id, {
+            ...send.push(notificationCopy(admin.locale)),
+            group: AlertGroup.ADMIN,
+          });
         }
       }),
     );

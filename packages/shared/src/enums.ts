@@ -62,6 +62,18 @@ export const Plan = {
 export type Plan = (typeof Plan)[keyof typeof Plan];
 
 /**
+ * Where a push subscription delivers, mirrors Prisma's `PushPlatform`: a
+ * browser through Web Push, or the Android app through Firebase Cloud
+ * Messaging.
+ */
+export const PushPlatform = {
+  WEB: "WEB",
+  ANDROID: "ANDROID",
+} as const;
+
+export type PushPlatform = (typeof PushPlatform)[keyof typeof PushPlatform];
+
+/**
  * How often a user wants the "new episode" digest delivered on a given
  * channel (email/push, configured independently). `DAILY` requires
  * effective premium (see `EntitlementService.isEffectivelyPremium`) — a
