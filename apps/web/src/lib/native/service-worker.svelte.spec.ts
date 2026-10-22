@@ -20,26 +20,23 @@ afterEach(() => {
 });
 
 describe("registerServiceWorker", () => {
-  it("registers the PWA worker in a browser, as a module in dev", () => {
-    registerServiceWorker(true);
-    registerServiceWorker(false);
+  // Same registration as SvelteKit's own: the built worker is an ES module.
+  it("registers the PWA worker as a module once the page has loaded", () => {
+    registerServiceWorker();
+    expect(serviceWorker.register).not.toHaveBeenCalled();
 
-    expect(serviceWorker.register).toHaveBeenNthCalledWith(
-      1,
-      "/service-worker.js",
-      { type: "module" },
-    );
-    expect(serviceWorker.register).toHaveBeenNthCalledWith(
-      2,
-      "/service-worker.js",
-      { type: "classic" },
-    );
+    window.dispatchEvent(new Event("load"));
+
+    expect(serviceWorker.register).toHaveBeenCalledWith("/service-worker.js", {
+      type: "module",
+    });
   });
 
   it("skips it in the Android app and removes an earlier registration", async () => {
     native.value = true;
 
-    registerServiceWorker(false);
+    registerServiceWorker();
+    window.dispatchEvent(new Event("load"));
 
     expect(serviceWorker.register).not.toHaveBeenCalled();
     await vi.waitFor(() => expect(unregister).toHaveBeenCalledOnce());
