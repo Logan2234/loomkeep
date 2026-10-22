@@ -14,6 +14,11 @@
   import { queryClient } from "#lib/query-client.js";
   import { accessibility } from "#lib/accessibility.svelte.js";
   import { theme } from "#lib/theme.svelte.js";
+  import {
+    isNativeApp,
+    startAppShell,
+    syncSystemBars,
+  } from "#lib/native/app-shell.js";
   import "@fontsource-variable/bricolage-grotesque/wght.css";
   import "@fontsource-variable/hanken-grotesk/wght.css";
   import "@fontsource/space-mono/400.css";
@@ -42,6 +47,12 @@
   $effect(() => {
     layout.init();
   });
+
+  $effect(() => (isNativeApp() ? startAppShell() : undefined));
+
+  $effect(() => {
+    if (isNativeApp()) syncSystemBars(theme.mode);
+  });
 </script>
 
 <svelte:head>
@@ -67,6 +78,11 @@
   <link rel="preconnect" href={env.PUBLIC_API_URL} />
   <link rel="canonical" href={page.url.href} />
 </svelte:head>
+
+<div
+  aria-hidden="true"
+  class="bg-bg pointer-events-none fixed inset-x-0 top-0 z-45 h-[env(safe-area-inset-top)]">
+</div>
 
 <NewsBanner />
 

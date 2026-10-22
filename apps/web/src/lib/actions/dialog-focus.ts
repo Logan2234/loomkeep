@@ -6,7 +6,20 @@ type DialogFocusOptions = {
 type InertState = { count: number; wasInert: boolean };
 
 const dialogStack: HTMLElement[] = [];
+const escapeHandlers = new Map<HTMLElement, () => (() => void) | undefined>();
 const inertStates = new Map<HTMLElement, InertState>();
+
+/**
+ * Closes the topmost dialog the way Escape would — Android's back button.
+ * True whenever a dialog is open, even one that can't be dismissed: back
+ * must not navigate away from under it.
+ */
+export function dismissTopmostDialog(): boolean {
+  const topmost = dialogStack.at(-1);
+  if (!topmost) return false;
+  escapeHandlers.get(topmost)?.()?.();
+  return true;
+}
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -116,6 +129,7 @@ export function dialogFocus(
 
   if (!hadTabindex) node.setAttribute("tabindex", "-1");
   dialogStack.push(node);
+  escapeHandlers.set(node, () => currentOptions.onEscape);
   makeInert(inertElements);
 
   const isTopmost = () => dialogStack.at(-1) === node;
@@ -193,6 +207,7 @@ export function dialogFocus(
       document.removeEventListener("focusin", onFocusIn, true);
       const index = dialogStack.lastIndexOf(node);
       if (index !== -1) dialogStack.splice(index, 1);
+      escapeHandlers.delete(node);
       restoreInert(inertElements);
 
       if (!hadTabindex) node.removeAttribute("tabindex");

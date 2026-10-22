@@ -31,6 +31,8 @@ export default defineConfig(({ command }) => ({
       // adapter-node: the web app ships as a plain Node server, self-hostable in Docker.
       adapter: adapter(),
       files: { serviceWorker: "src/service-worker/service-worker" },
+      // Registered by hooks.client.ts instead, which skips it in the Android app.
+      serviceWorker: { register: false },
     }),
 
   ],

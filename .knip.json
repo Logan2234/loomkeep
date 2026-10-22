@@ -10,6 +10,13 @@
       "ignoreDependencies": ["pino-pretty"]
     },
     "apps/web": {},
+    "apps/mobile": {
+      "ignoreDependencies": [
+        "@capacitor/app",
+        "@capacitor/filesystem",
+        "@capacitor/share"
+      ]
+    },
     "packages/shared": {
       "includeEntryExports": true
     }
