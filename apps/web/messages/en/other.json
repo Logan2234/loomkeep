@@ -1601,5 +1601,7 @@
   "cancel_deletion_pending": "Cancelling…",
   "cancel_deletion_done_title": "Deletion cancelled",
   "cancel_deletion_done": "Your account is kept, with everything in it. If you didn't make the request, change your password.",
-  "cancel_deletion_open": "Open Loomkeep"
+  "cancel_deletion_open": "Open Loomkeep",
+  "push_channel_releases": "Releases",
+  "push_channel_announcements": "Announcements"
 }

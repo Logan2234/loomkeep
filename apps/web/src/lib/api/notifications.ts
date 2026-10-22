@@ -58,3 +58,16 @@ export const unsubscribePush = (endpoint: string): Promise<void> =>
     method: "DELETE",
     body: { endpoint },
   });
+
+/** The Android app's FCM registration token. */
+export const subscribeNativePush = (token: string): Promise<void> =>
+  typedRequest("/notifications/push/native", {
+    method: "POST",
+    body: { token },
+  });
+
+export const unsubscribeNativePush = (token: string): Promise<void> =>
+  typedRequest("/notifications/push/native", {
+    method: "DELETE",
+    body: { token },
+  });

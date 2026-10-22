@@ -1,5 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
-import { version } from "./package.json";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { dependencies, version } from "./package.json";
 
 // The shell loads the instance's own /app instead of bundling the web build:
 // web and API stay deployed together, and the session cookies stay
@@ -7,6 +9,15 @@ import { version } from "./package.json";
 // LOOMKEEP_APP_URL points a dev build elsewhere, e.g. the emulator's view of
 // the local dev server: http://10.0.2.2:5173/app
 const appUrl = process.env.LOOMKEEP_APP_URL ?? "https://loomkeep.app/app";
+
+// Firebase's config for this app (Firebase console › Project settings), put
+// there by mobile.yml from a secret. Without it the push plugin crashes the
+// app as soon as it registers: the build leaves it out, and the web sees
+// push as unavailable.
+const hasFirebase = existsSync(
+  join(__dirname, "android/app/google-services.json"),
+);
+const PUSH_PLUGIN = "@capacitor/push-notifications";
 
 const config: CapacitorConfig = {
   appId: "app.loomkeep",
@@ -28,7 +39,16 @@ const config: CapacitorConfig = {
     // The local page has no other way to know where "retry" should go.
     errorPath: `error.html?retry=${encodeURIComponent(appUrl)}`,
   },
+  includePlugins: hasFirebase
+    ? undefined
+    : Object.keys(dependencies).filter(
+        (name) =>
+          name !== PUSH_PLUGIN &&
+          !["@capacitor/core", "@capacitor/android"].includes(name),
+      ),
   plugins: {
+    // Shown even with the app open, like the web's service worker does.
+    PushNotifications: { presentationOptions: ["alert"] },
     // Edge to edge: the web pads itself with env(safe-area-inset-*), and
     // app.html's viewport-fit=cover is known up front, so no layout jump.
     SystemBars: {

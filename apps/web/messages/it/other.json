@@ -1601,5 +1601,7 @@
   "cancel_deletion_pending": "Annullamento in corso…",
   "cancel_deletion_done_title": "Eliminazione annullata",
   "cancel_deletion_done": "Il tuo account viene conservato, con tutto ciò che contiene. Se non hai fatto tu la richiesta, cambia la password.",
-  "cancel_deletion_open": "Apri Loomkeep"
+  "cancel_deletion_open": "Apri Loomkeep",
+  "push_channel_releases": "Uscite",
+  "push_channel_announcements": "Annunci"
 }

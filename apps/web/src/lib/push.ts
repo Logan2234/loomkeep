@@ -1,16 +1,26 @@
 import { getPushPublicKey, subscribePush, unsubscribePush } from "./api/client";
 import { isNativeApp } from "./native/app-shell";
+import {
+  disableNativePush,
+  enableNativePush,
+  isNativePushAvailable,
+  isNativePushEnabledHere,
+} from "./native/push";
 
 /**
- * Web Push is only available with a service worker and the Push API — and
- * never in the Android app, whose WebView has neither (native push: MOB-05).
+ * Web Push needs a service worker and the Push API, which the Android app's
+ * WebView lacks: there, push goes through the app itself (FCM), when its
+ * build includes it.
  */
-export const isPushSupported = (): boolean =>
-  typeof window !== "undefined" &&
-  !isNativeApp() &&
-  "serviceWorker" in navigator &&
-  "PushManager" in window &&
-  "Notification" in window;
+export const isPushSupported = (): boolean => {
+  if (typeof window === "undefined") return false;
+  if (isNativeApp()) return isNativePushAvailable();
+  return (
+    "serviceWorker" in navigator &&
+    "PushManager" in window &&
+    "Notification" in window
+  );
+};
 
 // VAPID keys are base64url; PushManager wants a Uint8Array over a real
 // ArrayBuffer (not the ArrayBufferLike that Uint8Array.from infers).
@@ -23,12 +33,17 @@ function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
 }
 
 /**
- * Requests notification permission, subscribes this device to Web Push and
- * registers it with the API. Returns false if unsupported, denied, or the
- * server has push disabled (no VAPID key).
+ * Requests notification permission, subscribes this device to Web Push (or
+ * the app to FCM) and registers it with the API. Returns false if
+ * unsupported, denied, or the server has that kind of push disabled.
  */
 export async function enablePush(): Promise<boolean> {
   if (!isPushSupported()) return false;
+
+  if (isNativeApp()) {
+    const { nativeEnabled } = await getPushPublicKey();
+    return nativeEnabled && enableNativePush();
+  }
 
   const { publicKey } = await getPushPublicKey();
   if (!publicKey) return false;
@@ -53,11 +68,11 @@ export async function enablePush(): Promise<boolean> {
   return true;
 }
 
-/** Whether this device is currently subscribed to Web Push. */
+/** Whether this device is currently subscribed to push. */
 export async function isPushEnabledHere(): Promise<boolean> {
-  if (!isPushSupported() || Notification.permission !== "granted") {
-    return false;
-  }
+  if (!isPushSupported()) return false;
+  if (isNativeApp()) return isNativePushEnabledHere();
+  if (Notification.permission !== "granted") return false;
 
   const registration = await navigator.serviceWorker.ready;
   return (await registration.pushManager.getSubscription()) !== null;
@@ -66,6 +81,7 @@ export async function isPushEnabledHere(): Promise<boolean> {
 /** Unsubscribes this device locally and on the API. */
 export async function disablePush(): Promise<void> {
   if (!isPushSupported()) return;
+  if (isNativeApp()) return disableNativePush();
 
   const registration = await navigator.serviceWorker.ready;
   const subscription = await registration.pushManager.getSubscription();
