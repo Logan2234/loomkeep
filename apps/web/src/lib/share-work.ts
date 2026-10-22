@@ -1,16 +1,21 @@
+import { isNativeApp } from "./native/app-shell";
+import { shareNatively } from "./native/share";
+
 /** Absolute link to a work's page — what the share sheet, the copy and the QR code carry. */
 export const workUrl = (href: string): string =>
   `${window.location.origin}${href}`;
 
 /** Whether this browser has a system share sheet to hand the link to. */
 export const canShareNatively = (): boolean =>
-  typeof navigator !== "undefined" && !!navigator.share;
+  typeof navigator !== "undefined" && (isNativeApp() || !!navigator.share);
 
 /** Hands the work's link to the system share sheet; closing it isn't a failure. */
 export async function shareWorkNatively(
   title: string,
   href: string,
 ): Promise<void> {
+  if (isNativeApp()) return shareNatively({ title, url: workUrl(href) });
+
   try {
     await navigator.share({ title, url: workUrl(href) });
   } catch (err) {
