@@ -1,5 +1,14 @@
+import { Capacitor } from "@capacitor/core";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 import { Share, type ShareOptions } from "@capacitor/share";
+
+/** Whether the installed Android app has the share sheet (an older APK may not). */
+export const isNativeShareAvailable = (): boolean =>
+  Capacitor.isPluginAvailable("Share");
+
+/** Whether it can also write the file to hand over: exports. */
+export const isNativeFileShareAvailable = (): boolean =>
+  isNativeShareAvailable() && Capacitor.isPluginAvailable("Filesystem");
 
 /**
  * The system share sheet, for the Android app: its WebView has no

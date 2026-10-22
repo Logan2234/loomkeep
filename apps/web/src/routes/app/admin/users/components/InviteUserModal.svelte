@@ -15,8 +15,7 @@
   import SegmentedControl from "#lib/components/SegmentedControl.svelte";
   import { formatDate } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
-  import { isNativeApp } from "#lib/native/app-shell.js";
-  import { shareNatively } from "#lib/native/share.js";
+  import { isNativeShareAvailable, shareNatively } from "#lib/native/share.js";
   import { canShareNatively } from "#lib/share-work.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -144,7 +143,9 @@
     if (!result) return;
     const share = { title: m.auth_invitation_generic(), url: result.url };
     try {
-      await (isNativeApp() ? shareNatively(share) : navigator.share(share));
+      await (isNativeShareAvailable()
+        ? shareNatively(share)
+        : navigator.share(share));
     } catch {
       // Sheet dismissed — nothing to do, the link is still on screen.
     }

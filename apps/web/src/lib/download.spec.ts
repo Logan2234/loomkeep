@@ -4,8 +4,10 @@ import { datedFilename, downloadBlob } from "./download";
 const { shareFile } = vi.hoisted(() => ({
   shareFile: vi.fn(() => Promise.resolve()),
 }));
-vi.mock("./native/app-shell", () => ({ isNativeApp: () => true }));
-vi.mock("./native/share", () => ({ shareFile }));
+vi.mock("./native/share", () => ({
+  isNativeFileShareAvailable: () => true,
+  shareFile,
+}));
 
 describe("export filenames", () => {
   it("preserves UTC dates, prefixes and extensions", () => {

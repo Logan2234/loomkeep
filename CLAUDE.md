@@ -279,6 +279,15 @@ relationship primitive (friend = reciprocal accepted follow). Details:
   before writing a new Svelte component — extend or reuse instead.
 - Installable as a PWA — check the mobile viewport, not just desktop, on
   every `apps/web` UI change.
+- The Android app (`apps/mobile`) runs the deployed web, so its web side is
+  always current while the installed APK can be several releases old: web
+  code reaches a native plugin only once `Capacitor.isPluginAvailable()`
+  says the APK has it (directly or through a `src/lib/native/` helper such
+  as `isNativeShareAvailable()`), never on `isNativeApp()` alone. A new
+  plugin goes in both `apps/web` and `apps/mobile` at the same version
+  (`src/lib/native/plugins.spec.ts` checks) and in `.knip.json`'s
+  `apps/mobile` ignore list. Web changes reach phones on deploy; only
+  `apps/mobile/**` changes need a new APK.
 - Visual identity ("Séance" — fonts, palette, nav pattern):
   `apps/web/DESIGN.md`.
 - Every `apps/web` UI change ships its transitions (hover and focus states,
