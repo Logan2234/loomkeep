@@ -45,6 +45,12 @@
 
         </activity>
 
+        <!-- Play installs Google's barcode scanner module with the app (MOB-07);
+             a sideloaded APK downloads it on its first scan instead. -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

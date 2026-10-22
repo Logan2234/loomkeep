@@ -12,6 +12,7 @@
     "apps/web": {},
     "apps/mobile": {
       "ignoreDependencies": [
+        "@capacitor-mlkit/barcode-scanning",
         "@capacitor/app",
         "@capacitor/filesystem",
         "@capacitor/share"

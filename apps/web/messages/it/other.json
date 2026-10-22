@@ -1601,5 +1601,7 @@
   "cancel_deletion_pending": "Annullamento in corso…",
   "cancel_deletion_done_title": "Eliminazione annullata",
   "cancel_deletion_done": "Il tuo account viene conservato, con tutto ciò che contiene. Se non hai fatto tu la richiesta, cambia la password.",
-  "cancel_deletion_open": "Apri Loomkeep"
+  "cancel_deletion_open": "Apri Loomkeep",
+  "scan_isbn_invalid_code": "Questo codice a barre non è l'ISBN di un libro.",
+  "scan_unavailable": "Lo scanner non è riuscito ad avviarsi. Riprova tra poco."
 }
