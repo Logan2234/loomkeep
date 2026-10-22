@@ -40,32 +40,33 @@ natives à maintenir).
 
 ## Vue d'ensemble
 
-| Ticket | Titre                                                  | Phase | Taille | Dépend de      | Statut  |
-| ------ | ------------------------------------------------------ | ----- | ------ | -------------- | ------- |
-| MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              | ✅ #433 |
-| MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         | ✅ #436 |
-| MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         | ✅ #436 |
-| MOB-04 | API : push natif via FCM                               | 1     | M      | —              | ✅ #438 |
-| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 | ✅ #438 |
-| MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436 |
-| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         | ✅ #439 |
-| MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436 |
-| MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         |         |
-| MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 |         |
-| MOB-11 | Projet iOS + build CI macOS + TestFlight               | 2     | M      | MOB-02         |         |
-| MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 |         |
-| MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         |         |
-| MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 |         |
-| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         |         |
-| MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |         |
-| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |         |
-| MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 |         |
-| MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439 |
-| MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-11         |         |
-| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |         |
-| MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |         |
+| Ticket | Titre                                                  | Phase | Taille | Dépend de      | Statut     |
+| ------ | ------------------------------------------------------ | ----- | ------ | -------------- | ---------- |
+| MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              | ✅ #433 📱 |
+| MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         | ✅ #436    |
+| MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         | ✅ #436 📱 |
+| MOB-04 | API : push natif via FCM                               | 1     | M      | —              | ✅ #438    |
+| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 | ✅ #438    |
+| MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436    |
+| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         | ✅ #439    |
+| MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436    |
+| MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         |            |
+| MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 |            |
+| MOB-11 | Projet iOS + build CI macOS + TestFlight               | 2     | M      | MOB-02         |            |
+| MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 |            |
+| MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         |            |
+| MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 |            |
+| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         |            |
+| MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |            |
+| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |            |
+| MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 |            |
+| MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439    |
+| MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-11         |            |
+| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |            |
+| MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |            |
 
-Statut : ✅ = implémenté, avec le numéro de la PR qui le livre.
+Statut : ✅ = mergé dans `main`, avec le numéro de la PR qui le livre ;
+📱 = validé sur téléphone (voir « Recette » plus bas).
 
 Tailles : S ≈ une demi-journée à une journée, M ≈ deux à quatre jours,
 L ≈ une semaine ou plus.
@@ -84,6 +85,101 @@ L ≈ une semaine ou plus.
   incompatibles avec la GPL. En tant que titulaire des droits, Logan peut
   publier son propre code ; toute contribution externe doit passer par la
   CLA (`CLA.md`) pour que ce reste vrai.
+
+---
+
+## Recette (tests sur téléphone)
+
+À cocher au fil des tests ; une case cochée partout pour un ticket lui vaut
+son 📱 dans le tableau.
+
+### Avant de tester
+
+- [ ] Le dernier CI de `main` est vert **et** `Deploy` a tourné : l'app
+      affiche le web de l'instance, donc rien de ce qui est web ne se teste
+      avant le déploiement. Contrôle rapide :
+      `https://loomkeep.app/.well-known/assetlinks.json` ne renvoie plus la
+      page 404 du site.
+- [ ] APK du dernier run `Mobile` sur `main` installé **par-dessus**
+      l'ancien (même clé de debug : la session est gardée).
+- [ ] VPS : `FCM_SERVICE_ACCOUNT_BASE64` (push) et
+      `ANDROID_APP_LINKS=app.loomkeep.debug=<SHA-256 de la clé de debug>`
+      (App Links) dans le `.env`.
+
+### MOB-01 — Coque
+
+- [x] L'app ouvre loomkeep.app/app et la connexion fonctionne.
+- [x] La session survit à la fermeture de l'app.
+
+### Réglages de la coque (#436)
+
+- [ ] « Loomkeep Dev » s'installe à côté d'une éventuelle « Loomkeep ».
+- [ ] Pas de flash blanc au lancement.
+- [ ] Mode avion : page « Impossible de charger Loomkeep » ; réseau revenu,
+      « Réessayer » recharge l'app.
+- [ ] Paramètres Android › Apps › Loomkeep Dev › Langue : en, fr, it.
+
+### MOB-02 — Intégration web ↔ natif
+
+- [ ] Une modale ou un tiroir ouvert se ferme au bouton retour, sans
+      changer de page.
+- [ ] Retour depuis la page d'accueil : l'app passe en arrière-plan.
+- [ ] Icônes de la barre de statut lisibles en thème clair comme sombre,
+      y compris juste après avoir changé de thème.
+- [ ] Rien ne passe sous l'heure et la batterie (fiche d'œuvre en faisant
+      défiler, cloche, bulle de succès).
+
+### MOB-03 — Icônes et écran de lancement
+
+- [x] Icône Loomkeep, ronde ou carrée selon le launcher.
+- [x] Icônes à thème (Android 13+) : l'icône prend les couleurs du système.
+- [x] Lancement : logo sur fond sombre.
+
+### MOB-04 / MOB-05 — Push natif
+
+- [ ] Réglages › Communications : activer le push demande la permission
+      Android, et l'interrupteur reste activé en revenant sur la page.
+- [ ] Paramètres Android › Loomkeep Dev › Notifications : six canaux
+      (Activité, Sorties, Compte, Sécurité, Admin, Annonces) en français.
+- [ ] Admin › test de push : reçu app ouverte et app fermée ; le tap ouvre
+      la page.
+- [ ] Message de chat reçu sans Loomkeep ouvert nulle part : notification,
+      et le tap ouvre la conversation.
+- [ ] Une notification de la cloche ouverte depuis le push est marquée lue.
+- [ ] Désactiver le push : plus rien n'arrive.
+
+### MOB-06 — Exports et partage
+
+- [ ] Réglages › Export, JSON puis CSV : la feuille de partage s'ouvre et
+      « Enregistrer » produit un fichier lisible.
+- [ ] Export de migration : les fichiers s'enchaînent, une feuille après
+      l'autre.
+- [ ] « Partager » sur une œuvre et sur un profil ouvre la feuille Android ;
+      la fermer sans choisir n'affiche pas d'erreur.
+
+### MOB-07 — Scan natif
+
+- [ ] Recherche › Livres › caméra : l'écran de Google s'ouvre (le premier
+      scan d'un APK installé à la main télécharge d'abord le module).
+- [ ] Dos d'un livre : la recherche passe en mode ISBN avec le code.
+- [ ] Code-barres d'un produit : « Ce code-barres n'est pas l'ISBN d'un
+      livre ».
+- [ ] Profil › scanner : le QR d'un autre profil l'ouvre ; un autre QR est
+      refusé avec un message.
+
+### MOB-08 — App Links
+
+- [ ] `https://loomkeep.app/.well-known/assetlinks.json` renvoie le JSON
+      avec `app.loomkeep.debug`.
+- [ ] Un lien `https://loomkeep.app/app/settings` reçu par mail ou message
+      ouvre l'app directement sur cette page (app fermée et ouverte).
+- [ ] Le lien de réinitialisation de mot de passe ouvre l'app.
+
+### MOB-19 — Raccourcis de l'icône
+
+- [ ] Appui long sur l'icône : Recherche, Calendrier, Statistiques,
+      Mon profil, Paramètres, en français.
+- [ ] Chaque raccourci ouvre sa page, app fermée comme ouverte.
 
 ---
 
