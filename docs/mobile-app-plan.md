@@ -100,8 +100,12 @@ son 📱 dans le tableau.
       avant le déploiement. Contrôle rapide :
       `https://loomkeep.app/.well-known/assetlinks.json` ne renvoie plus la
       page 404 du site.
-- [x] APK du dernier run `Mobile` sur `main` installé **par-dessus**
-      l'ancien (même clé de debug : la session est gardée).
+- [x] Dernier APK de `main` installé **par-dessus** l'ancien (même clé de
+      debug : la session est gardée). Chaque build natif de `main` est publié
+      en pré-release `android-dev-<n>` ; Obtainium la suit : ajouter
+      `https://github.com/Logan2234/loomkeep` en cochant les pré-releases,
+      et désactiver sa détection de version (le `versionName` ne change
+      qu'aux montées de version).
 - [x] VPS : `FCM_SERVICE_ACCOUNT_BASE64` (push) et
       `ANDROID_APP_LINKS=app.loomkeep.debug=<SHA-256 de la clé de debug>`
       (App Links) dans le `.env`.

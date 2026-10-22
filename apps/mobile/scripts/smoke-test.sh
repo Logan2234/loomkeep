@@ -23,7 +23,9 @@ for _ in $(seq 1 45); do
 done
 adb forward tcp:9222 "localabstract:webview_devtools_remote_$pid"
 
-node "$HERE/smoke-check.mjs" "loomkeep.app"
+# Signed out on the emulator, the shell settles on the login page: waiting
+# for it keeps that redirect from overtaking the App Link sent next.
+node "$HERE/smoke-check.mjs" "loomkeep.app/login"
 
 if ! adb shell dumpsys shortcut | grep -q "id=search"; then
   echo "The app icon's shortcuts weren't published" >&2
