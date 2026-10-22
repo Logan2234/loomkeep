@@ -102,6 +102,9 @@ html {
 
 body {
   margin: 0;
+  /* Non-zero only where the page draws under the status bar: the Android
+     app (edge to edge) and an iOS notch. The root layout's strip covers it. */
+  padding-top: env(safe-area-inset-top);
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);

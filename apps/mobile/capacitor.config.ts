@@ -28,6 +28,14 @@ const config: CapacitorConfig = {
     // The local page has no other way to know where "retry" should go.
     errorPath: `error.html?retry=${encodeURIComponent(appUrl)}`,
   },
+  plugins: {
+    // Edge to edge: the web pads itself with env(safe-area-inset-*), and
+    // app.html's viewport-fit=cover is known up front, so no layout jump.
+    SystemBars: {
+      insetsHandling: "native",
+      initialViewportFitValueHint: "cover",
+    },
+  },
 };
 
 export default config;

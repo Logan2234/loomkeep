@@ -1,8 +1,13 @@
 import { getPushPublicKey, subscribePush, unsubscribePush } from "./api/client";
+import { isNativeApp } from "./native/app-shell";
 
-/** Web Push is only available with a service worker and the Push API. */
+/**
+ * Web Push is only available with a service worker and the Push API — and
+ * never in the Android app, whose WebView has neither (native push: MOB-05).
+ */
 export const isPushSupported = (): boolean =>
   typeof window !== "undefined" &&
+  !isNativeApp() &&
   "serviceWorker" in navigator &&
   "PushManager" in window &&
   "Notification" in window;

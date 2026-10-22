@@ -158,7 +158,7 @@
 </script>
 
 {#if !layout.compact}
-  <div class="fixed top-4 right-4 z-40">
+  <div class="fixed top-[calc(1rem+env(safe-area-inset-top))] right-4 z-40">
     <button
       bind:this={buttonEl}
       type="button"
