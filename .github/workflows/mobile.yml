@@ -73,6 +73,8 @@ jobs:
       # against what's deployed: the bridge reaching the remote page, the
       # plugins, the shortcuts, an App Link, no crash.
       - name: Smoke test on an emulator
+        env:
+          PUSH_EXPECTED: ${{ env.GOOGLE_SERVICES != '' }}
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
