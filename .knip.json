@@ -11,13 +11,8 @@
     },
     "apps/web": {},
     "apps/mobile": {
-      "ignoreDependencies": [
-        "@capacitor-mlkit/barcode-scanning",
-        "@capacitor/app",
-        "@capacitor/filesystem",
-        "@capacitor/push-notifications",
-        "@capacitor/share"
-      ]
+      "entry": ["scripts/*.mjs"],
+      "ignoreDependencies": ["@capacitor/push-notifications"]
     },
     "packages/shared": {
       "includeEntryExports": true

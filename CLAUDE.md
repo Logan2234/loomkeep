@@ -285,9 +285,9 @@ relationship primitive (friend = reciprocal accepted follow). Details:
   says the APK has it (directly or through a `src/lib/native/` helper such
   as `isNativeShareAvailable()`), never on `isNativeApp()` alone. A new
   plugin goes in both `apps/web` and `apps/mobile` at the same version
-  (`src/lib/native/plugins.spec.ts` checks) and in `.knip.json`'s
-  `apps/mobile` ignore list. Web changes reach phones on deploy; only
-  `apps/mobile/**` changes need a new APK.
+  (`src/lib/native/plugins.spec.ts` checks). Web changes reach phones on
+  deploy; only `apps/mobile/**` changes need a new APK, which `mobile.yml`
+  builds and smoke-tests on an emulator.
 - Visual identity ("Séance" — fonts, palette, nav pattern):
   `apps/web/DESIGN.md`.
 - Every `apps/web` UI change ships its transitions (hover and focus states,

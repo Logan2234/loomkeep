@@ -21,8 +21,8 @@ permissions:
 
 jobs:
   # Debug build of the Android shell (docs/mobile-app-plan.md, MOB-01). The
-  # APK is kept as a run artifact so it can be sideloaded on a phone; signing
-  # and store builds come with MOB-10.
+  # APK is kept as a run artifact so it can be sideloaded on a phone, then
+  # smoke-tested on an emulator; signing and store builds come with MOB-10.
   android-debug:
     runs-on: ubuntu-latest
     env:
@@ -62,3 +62,21 @@ jobs:
           name: loomkeep-android-debug
           path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
+      # GitHub's Linux runners have KVM, but the runner user can't open it
+      # until this rule lets it: without it the emulator would crawl.
+      - name: Enable KVM for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      # The page comes from loomkeep.app itself, so this checks the APK
+      # against what's deployed: the bridge reaching the remote page, the
+      # plugins, the shortcuts, an App Link, no crash.
+      - name: Smoke test on an emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: bash apps/mobile/scripts/smoke-test.sh
