@@ -6,6 +6,12 @@ web:
   - changed-files:
       - any-glob-to-any-file: apps/web/**
 
+mobile:
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/mobile/**
+          - apps/web/src/lib/native/**
+
 shared:
   - changed-files:
       - any-glob-to-any-file: packages/shared/**

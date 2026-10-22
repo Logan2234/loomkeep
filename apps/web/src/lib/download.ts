@@ -1,5 +1,4 @@
-import { isNativeApp } from "./native/app-shell";
-import { shareFile } from "./native/share";
+import { isNativeFileShareAvailable, shareFile } from "./native/share";
 
 /**
  * Triggers a browser download for in-memory content, without a server
@@ -10,7 +9,7 @@ export function downloadBlob(
   mimeType: string,
   filename: string,
 ): void {
-  if (isNativeApp()) {
+  if (isNativeFileShareAvailable()) {
     void shareFile(content, filename);
     return;
   }

@@ -177,6 +177,10 @@ jobs:
       - name: Web production server regression tests
         run: pnpm --filter @loomkeep/web test:build
       - name: Upload ESLint Web results
+        # Publishing the report to code scanning can fail on GitHub's side
+        # ("Unexpected end of JSON input" once held up a deploy): the lint
+        # itself already passed or failed in its own step.
+        continue-on-error: true
         if: always()
         uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
@@ -248,12 +252,14 @@ jobs:
           flags: shared-unit
           fail_ci_if_error: false
       - name: Upload ESLint API results
+        continue-on-error: true
         if: always()
         uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           sarif_file: apps/api/eslint-results.sarif
           category: eslint-api
       - name: Upload ESLint Packages results
+        continue-on-error: true
         if: always()
         uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
@@ -406,6 +412,7 @@ jobs:
       # Same category as trivy.yml's scan of main, which is what lets code
       # scanning tell this PR's new alerts from the ones main already has.
       - name: upload ${{ matrix.name }} scan
+        continue-on-error: true
         if: needs.changes.outputs[matrix.name] == 'true'
         uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:

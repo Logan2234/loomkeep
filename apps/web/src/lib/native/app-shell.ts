@@ -30,11 +30,13 @@ export function openAppLink({ url }: { url: string }): void {
 
 /** Wires the shell's native events; returns the teardown for an `$effect`. */
 export function startAppShell(): () => void {
-  const listeners = [
-    App.addListener("backButton", handleBackButton),
-    // Also delivers the link of a cold start, held until this listener exists.
-    App.addListener("appUrlOpen", openAppLink),
-  ];
+  const listeners = Capacitor.isPluginAvailable("App")
+    ? [
+        App.addListener("backButton", handleBackButton),
+        // Also delivers the link of a cold start, held until this listener exists.
+        App.addListener("appUrlOpen", openAppLink),
+      ]
+    : [];
   const stopPush = isNativePushAvailable() ? startNativePush() : undefined;
 
   return () => {

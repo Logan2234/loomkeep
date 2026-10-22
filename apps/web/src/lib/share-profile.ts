@@ -1,5 +1,4 @@
-import { isNativeApp } from "./native/app-shell";
-import { shareNatively } from "./native/share";
+import { isNativeShareAvailable, shareNatively } from "./native/share";
 
 /** Absolute link to a profile — what both the native share sheet and the QR code point at. */
 export const profileUrl = (username: string): string =>
@@ -16,7 +15,7 @@ export async function shareProfile(
   username: string,
   displayName: string,
 ): Promise<boolean> {
-  if (isNativeApp()) {
+  if (isNativeShareAvailable()) {
     await shareNatively({ title: displayName, url: profileUrl(username) });
     return true;
   }

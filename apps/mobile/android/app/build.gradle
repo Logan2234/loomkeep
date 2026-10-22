@@ -2,6 +2,12 @@ apply plugin: 'com.android.application'
 
 // Follows the lockstep version bumped across every workspace package.json.
 def mobilePackage = new groovy.json.JsonSlurper().parse(file('../../package.json'))
+// Android refuses an update with a lower versionCode (the Play Store, an
+// equal one too):
+// 1.11.0 → 1011000, rising with every bump as long as minor and patch stay
+// under 1000.
+def (major, minor, patch) = mobilePackage.version.tokenize('.')*.toInteger()
+def mobileVersionCode = major * 1_000_000 + minor * 1_000 + patch
 
 android {
     namespace = "app.loomkeep"
@@ -10,7 +16,7 @@ android {
         applicationId "app.loomkeep"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode mobileVersionCode
         versionName mobilePackage.version
         resValue "string", "app_name", "Loomkeep"
         aaptOptions {
