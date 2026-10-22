@@ -35,7 +35,7 @@ const { plugin, emit } = vi.hoisted(() => {
       return Promise.resolve();
     }),
     unregister: vi.fn(() => Promise.resolve()),
-    createChannel: vi.fn(() => Promise.resolve()),
+    createChannel: vi.fn((_channel: { id: string }) => Promise.resolve()),
     addListener: vi.fn((event: string, listener: Listener) => {
       if (!listeners.has(event)) listeners.set(event, new Set());
       listeners.get(event)!.add(listener);
