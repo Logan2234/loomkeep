@@ -1,0 +1,72 @@
+---
+title: Android app
+description: Install Loomkeep's Android app, keep it up to date, and use it with your own instance.
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+Loomkeep has an Android app. It shows the same Loomkeep as the website, so
+new features reach it as soon as they reach the site, and adds what a web
+app can't do:
+
+- **Notifications** from Android itself, sorted into channels (episodes,
+  messages…) you can tune in Android's settings.
+- **Scanner**: a book's barcode or a friend's profile QR code, straight
+  from the camera.
+- **Share to Loomkeep**: share a link from IMDb, Letterboxd or your browser,
+  and Loomkeep opens the work.
+- **Links and shortcuts**: links from Loomkeep's emails open in the app, and
+  a long press on its icon jumps to search, the calendar or your stats.
+
+It isn't on Google Play yet: you install it from GitHub.
+
+## Install
+
+<Steps>
+
+1. On your phone, download
+   [**loomkeep-android.apk**](https://github.com/Logan2234/loomkeep/releases/latest/download/loomkeep-android.apk),
+   the latest release.
+2. Open it. The first time, Android asks you to allow installs from your
+   browser or file manager: allow it, then go back.
+3. Tap **Install**, open Loomkeep and sign in.
+
+</Steps>
+
+The app needs Android 7.0 or later and an up-to-date **Android System
+WebView** (from Google Play); with an older one, it says so and links to the
+update.
+
+<Aside>
+  Google Play Protect may warn that the app comes from an unknown developer:
+  it only means the app wasn't installed from Google Play. Every release is
+  built from this repository by GitHub Actions.
+</Aside>
+
+## Keep it up to date
+
+Most changes need nothing from you: the app loads Loomkeep from the server,
+like the website. A new version of the app itself only comes out when its
+Android side changes.
+
+Android doesn't update apps installed outside Google Play on its own.
+[Obtainium](https://obtainium.imranr.dev) does it for you: add
+`https://github.com/Logan2234/loomkeep` as an app, and it installs each new
+release over the previous one, keeping you signed in. You can also download
+the new APK from the link above and install it over the old one.
+
+## Your own instance
+
+The app opens loomkeep.app by default. To use a
+[self-hosted](/self-hosting/) instance, tap **Use another instance** under
+the sign-in form, and enter its address (it must use https). The same
+screen takes you back to loomkeep.app, and the page shown when Loomkeep
+can't load offers it too.
+
+On another instance, two things don't work yet:
+
+- **Push notifications**: the app's notifications go through loomkeep.app's
+  keys, which another instance doesn't have. Alerts still come by email,
+  and the installed [web app](/guide/install/) can get push notifications
+  if the instance has them set up.
+- **Links from emails** open in the browser rather than in the app.

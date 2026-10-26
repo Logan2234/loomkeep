@@ -22,11 +22,15 @@ permissions:
 jobs:
   # Debug build of the Android shell (docs/mobile-app-plan.md, MOB-01). The
   # APK is kept as a run artifact so it can be sideloaded on a phone, then
-  # smoke-tested on an emulator; signing and store builds come with MOB-10.
+  # smoke-tested on an emulator; the release build rides along (MOB-23).
   android-debug:
     runs-on: ubuntu-latest
+    outputs:
+      release-apk: ${{ steps.release-apk.outcome }}
     env:
       DEBUG_KEYSTORE: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
+      RELEASE_KEYSTORE: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+      LOOMKEEP_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
       GOOGLE_SERVICES: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -59,24 +63,40 @@ jobs:
       - name: Assemble debug APK
         working-directory: apps/mobile/android
         run: ./gradlew assembleDebug --no-daemon
-      # A step that "restored" the key while Gradle signed with another one
-      # once went unnoticed through several builds: compare the APK's
-      # certificate with the shared key's.
       - name: Check the APK carries the shared debug key
         if: env.DEBUG_KEYSTORE != ''
-        run: |
-          expected=$(keytool -list -v -keystore "$LOOMKEEP_DEBUG_KEYSTORE" -storepass android -alias androiddebugkey \
-            | sed -n 's/^.*SHA256: //p' | tr -d ':' | tr '[:upper:]' '[:lower:]')
-          apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
-          actual=$("$apksigner" verify --print-certs apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk \
-            | sed -n 's/^.*SHA-256 digest: //p')
-          echo "Shared key: $expected"
-          echo "APK signed with: $actual"
-          [ -n "$expected" ] && [ "$expected" = "$actual" ]
+        run: >-
+          bash apps/mobile/scripts/check-signature.sh
+          apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          "$LOOMKEEP_DEBUG_KEYSTORE" android androiddebugkey
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: loomkeep-android-debug
           path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+      # The build GitHub releases publish (MOB-23), made on every run that
+      # has the key so a PR proves it still builds and signs.
+      - name: Restore the release signing key
+        if: env.RELEASE_KEYSTORE != ''
+        run: |
+          echo "$RELEASE_KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "LOOMKEEP_RELEASE_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+      - name: Assemble release APK
+        if: env.RELEASE_KEYSTORE != ''
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Check the release APK carries the release key
+        if: env.RELEASE_KEYSTORE != ''
+        run: >-
+          bash apps/mobile/scripts/check-signature.sh
+          apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          "$LOOMKEEP_RELEASE_KEYSTORE" "$LOOMKEEP_RELEASE_KEYSTORE_PASSWORD" loomkeep
+      - id: release-apk
+        if: env.RELEASE_KEYSTORE != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: loomkeep-android-release
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 14
       # GitHub's Linux runners have KVM, but the runner user can't open it
       # until this rule lets it: without it the emulator would crawl.
@@ -129,3 +149,47 @@ jobs:
           gh release list --limit 100 --json tagName --jq '.[].tagName' \
             | grep '^android-dev-' | tail -n +4 \
             | xargs -r -n1 gh release delete --cleanup-tag --yes
+
+  # The app users install (MOB-23): one GitHub release per version of
+  # apps/mobile, published by the first main run after its bump. The asset
+  # keeps one name, so releases/latest/download/loomkeep-android.apk (the
+  # landing's and the docs' link) always serves the newest.
+  publish-release-apk:
+    needs: android-debug
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+      && needs.android-debug.outputs.release-apk == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: apps/mobile/package.json
+          sparse-checkout-cone-mode: false
+      - name: Look for this version's release
+        id: version
+        run: |
+          version=$(jq -r .version apps/mobile/package.json)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "android-v$version" > /dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.version.outputs.published != 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: loomkeep-android-release
+      - name: Publish the release
+        if: steps.version.outputs.published != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mv app-release.apk loomkeep-android.apk
+          gh release create "android-v$VERSION" loomkeep-android.apk \
+            --latest \
+            --target "$GITHUB_SHA" \
+            --title "Loomkeep for Android $VERSION" \
+            --notes "Install and update: https://docs.loomkeep.app/guide/android-app/ · What's new: https://feedback.loomkeep.app/changelog"

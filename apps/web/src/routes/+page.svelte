@@ -7,6 +7,7 @@
   import Poster from "#lib/components/Poster.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import {
+    ANDROID_APK_URL,
     DOCS_URL,
     FEEDBACK_URL,
     GITHUB_REPO_URL,
@@ -14,6 +15,7 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { theme } from "#lib/theme.svelte.js";
+  import type { IconName } from "#lib/types/icon-name.js";
   import LandingFooter from "./components/LandingFooter.svelte";
   import { LANDING_LIBRARY } from "./components/landing-mock-data";
 
@@ -289,6 +291,33 @@
     { name: "Last.fm", what: m.landing_import_todo_lastfm_what },
     { name: "RateYourMusic", what: m.landing_import_todo_rym_what },
     { name: "BoardGameGeek", what: m.landing_import_todo_bgg_what },
+  ];
+
+  const MOBILE_FEATURES: {
+    icon: IconName;
+    name: () => string;
+    what: () => string;
+  }[] = [
+    {
+      icon: "bell",
+      name: m.common_notifications,
+      what: m.landing_mobile_push_what,
+    },
+    {
+      icon: "camera",
+      name: m.landing_mobile_scan_name,
+      what: m.landing_mobile_scan_what,
+    },
+    {
+      icon: "share",
+      name: m.landing_mobile_share_name,
+      what: m.landing_mobile_share_what,
+    },
+    {
+      icon: "link",
+      name: m.landing_mobile_links_name,
+      what: m.landing_mobile_links_what,
+    },
   ];
 
   $effect(() => {
@@ -758,6 +787,65 @@
               {/each}
             </ul>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Sur le téléphone ────────────────────────────────────────────── -->
+    <section class="border-border border-t">
+      <div class="mx-auto max-w-5xl px-5 py-16 md:px-8 md:py-24">
+        <div class="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div>
+            <h2
+              class="font-display text-2xl font-extrabold tracking-tight md:text-4xl">
+              {m.landing_mobile_title()}
+            </h2>
+            <p class="text-dim mt-4">
+              {m.landing_mobile_body()}
+            </p>
+            <div class="mt-6 flex flex-wrap gap-3">
+              <a
+                href={ANDROID_APK_URL}
+                data-umami-event="cta-mobile-android"
+                class="btn btn-primary">
+                <Icon name="download" class="h-4 w-4" />
+                {m.landing_mobile_android_cta()}
+              </a>
+              <a
+                href={`${DOCS_URL}/guide/install/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-umami-event="cta-mobile-webapp"
+                class="btn btn-ghost">
+                {m.landing_mobile_webapp_cta()}
+              </a>
+            </div>
+            <p class="text-dim mt-6 text-sm">
+              {m.landing_mobile_note_lead()}
+              <a
+                href={`${DOCS_URL}/guide/android-app/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link-accent">
+                {m.landing_mobile_note_link()}
+              </a>.
+            </p>
+          </div>
+
+          <ul
+            class="border-border grid gap-px overflow-hidden rounded-2xl border sm:grid-cols-2">
+            {#each MOBILE_FEATURES as feature (feature.icon)}
+              <li class="bg-surface px-5 py-4">
+                <p class="font-display flex items-center gap-2 font-bold">
+                  <Icon
+                    name={feature.icon}
+                    class="text-accent h-4 w-4 shrink-0" />
+                  {feature.name()}
+                </p>
+                <p class="text-dim mt-0.5 text-sm">{feature.what()}</p>
+              </li>
+            {/each}
+          </ul>
         </div>
       </div>
     </section>

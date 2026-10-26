@@ -43,6 +43,19 @@ android {
                 keyPassword "android"
             }
         }
+        // The key every published release is signed with (MOB-23), restored
+        // by mobile.yml: Android installs an update only when it's signed
+        // by the same key, so it can never change. Without it, the release
+        // build comes out unsigned.
+        release {
+            def releaseKeystore = System.getenv("LOOMKEEP_RELEASE_KEYSTORE")
+            if (releaseKeystore) {
+                storeFile file(releaseKeystore)
+                storePassword System.getenv("LOOMKEEP_RELEASE_KEYSTORE_PASSWORD")
+                keyAlias "loomkeep"
+                keyPassword System.getenv("LOOMKEEP_RELEASE_KEYSTORE_PASSWORD")
+            }
+        }
     }
     buildTypes {
         // Installs next to the store build instead of replacing it.
@@ -51,6 +64,9 @@ android {
             resValue "string", "app_name", "Loomkeep Dev"
         }
         release {
+            if (signingConfigs.release.storeFile) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
