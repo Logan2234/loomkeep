@@ -300,7 +300,7 @@
   }[] = [
     {
       icon: "bell",
-      name: m.landing_mobile_push_name,
+      name: m.common_notifications,
       what: m.landing_mobile_push_what,
     },
     {
