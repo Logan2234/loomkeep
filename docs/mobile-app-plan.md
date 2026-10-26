@@ -56,7 +56,7 @@ natives à maintenir).
 | MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 |                   |
 | MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         |                   |
 | MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 |                   |
-| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         | ✅ #459           |
+| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         | ✅ #459, #460     |
 | MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |                   |
 | MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |                   |
 | MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 | ✅ #447 (Android) |
@@ -64,7 +64,7 @@ natives à maintenir).
 | MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-11         |                   |
 | MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |                   |
 | MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |                   |
-| MOB-23 | APK release sur GitHub, landing et docs                | 1     | M      | MOB-03, MOB-15 |                   |
+| MOB-23 | APK release sur GitHub, landing et docs                | 1     | M      | MOB-03, MOB-15 | ✅ #461           |
 
 Statut : ✅ = mergé dans `main`, avec le numéro de la PR qui le livre ;
 📱 = validé sur téléphone (voir « Recette » plus bas).
