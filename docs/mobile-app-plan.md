@@ -56,7 +56,7 @@ natives à maintenir).
 | MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 |                   |
 | MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         |                   |
 | MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 |                   |
-| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         |                   |
+| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         | ✅ #459           |
 | MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |                   |
 | MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |                   |
 | MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 | ✅ #447 (Android) |
@@ -203,6 +203,18 @@ son 📱 dans le tableau.
 - [ ] Depuis IMDb, Letterboxd ou Chrome, « Partager » propose Loomkeep Dev.
 - [ ] Le lien partagé ouvre la page de partage de Loomkeep sur l'œuvre (ou
       une recherche quand le lien n'est pas reconnu).
+
+### MOB-15 — Choix d'instance
+
+- [ ] Déconnecté : « Utiliser une autre instance » sous le formulaire de
+      connexion ouvre l'écran de choix (absent dans un navigateur).
+- [ ] `docs.loomkeep.app` est refusé (« n'est pas une instance Loomkeep »),
+      une adresse inexistante aussi (« ne répond pas »).
+- [ ] Une vraie instance self-hostée : l'app redémarre dessus, on peut s'y
+      connecter, et elle reste choisie après avoir fermé l'app.
+- [ ] « Utiliser loomkeep.app » ramène sur loomkeep.app, session conservée.
+- [ ] En mode avion, la page d'erreur propose « Utiliser une autre
+      instance » ; « Annuler » ramène à l'instance actuelle.
 
 ---
 
@@ -432,11 +444,18 @@ dont `server.url` vient des préférences `instance` (`InstanceConfig`).
 Changer d'instance veut dire recréer l'activité. Le smoke test pointe l'app
 sur une autre origine et y retrouve le pont et tous les plugins.
 
-**Reste à faire** : la page hors ligne existe déjà (`www/error.html`) ; il
-manque l'écran de choix (saisie, validation par `GET /api/config`, retour
-à loomkeep.app) et la façon d'y accéder depuis l'app. Sur une autre
-instance, les App Links de loomkeep.app et le push natif (MOB-16) ne
-s'appliquent pas.
+**Réalisé (#459)** : `www/instance.html`, page locale (elle s'affiche
+donc même quand l'instance ne répond pas), ouverte par le plugin local
+`ShellInstance` depuis la page de connexion (« Utiliser une autre
+instance », seulement si l'APK a le plugin) ou depuis la page d'erreur.
+Une page locale n'a pas le pont Capacitor : elle répond en naviguant vers
+`/_instance?use=<adresse>`, que le plugin intercepte pour interroger
+`GET /api/config` (https seulement) puis enregistrer l'instance et
+recréer l'activité ; `/_instance` seul revient à loomkeep.app. La page
+d'erreur réessaie sur l'instance choisie.
+
+**Limites** : sur une autre instance, les App Links de loomkeep.app
+n'ouvrent pas l'app et le push natif attend MOB-16.
 
 ### MOB-16 — Relais de push pour les instances self-hostées
 
