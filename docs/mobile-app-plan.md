@@ -424,9 +424,19 @@ s'affiche sans réseau, avec « Réessayer » ; réglage « Changer d'instance �
 qui valide une URL via `GET /api/config` puis recharge la coque sur cette
 instance. loomkeep.app reste la valeur par défaut.
 
-**Point à valider d'abord** : le pont Capacitor doit rester disponible sur
-une instance choisie à l'exécution (et non fixée dans `server.url` au
-build). Si ce n'est pas le cas, ce ticket redéfinit l'architecture.
+**Point validé (#459)** : le pont Capacitor reste disponible sur une
+instance choisie à l'exécution. Le Bridge calcule les origines où il
+s'injecte à partir de `server.url` au moment de sa création ; `MainActivity`
+lui passe donc, avant `super.onCreate`, une copie de la config embarquée
+dont `server.url` vient des préférences `instance` (`InstanceConfig`).
+Changer d'instance veut dire recréer l'activité. Le smoke test pointe l'app
+sur une autre origine et y retrouve le pont et tous les plugins.
+
+**Reste à faire** : la page hors ligne existe déjà (`www/error.html`) ; il
+manque l'écran de choix (saisie, validation par `GET /api/config`, retour
+à loomkeep.app) et la façon d'y accéder depuis l'app. Sur une autre
+instance, les App Links de loomkeep.app et le push natif (MOB-16) ne
+s'appliquent pas.
 
 ### MOB-16 — Relais de push pour les instances self-hostées
 
