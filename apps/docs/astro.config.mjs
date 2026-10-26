@@ -123,6 +123,7 @@ export default defineConfig({
                   items: [
                     { label: "Key concepts", link: "/guide/" },
                     "guide/install",
+                    "guide/android-app",
                     "guide/calendar-and-feeds",
                     "guide/notifications",
                     "guide/messages",
