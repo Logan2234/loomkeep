@@ -48,8 +48,14 @@ adb shell am start -W -a android.intent.action.SEND -t text/plain \
   --es android.intent.extra.TEXT "https://www.imdb.com/title/tt0133093/" "$PACKAGE"
 node "$HERE/smoke-check.mjs" "share"
 
-# Another instance, picked at runtime (MOB-15): the bridge and the plugins
-# must reach that origin too. Any https site will do to check that.
+# The instance picker refuses what isn't Loomkeep, then switches to
+# loomkeep.app (MOB-15).
+node "$HERE/smoke-instance.mjs"
+node "$HERE/smoke-check.mjs" "loomkeep.app/login"
+
+# Another instance, picked at runtime: the bridge and the plugins must reach
+# that origin too. Any https site will do, stored behind the picker's back
+# since it only accepts a Loomkeep instance.
 printf '<map><string name="url">https://docs.loomkeep.app/</string></map>' > /tmp/instance.xml
 adb push /tmp/instance.xml /data/local/tmp/instance.xml
 adb shell chmod 644 /data/local/tmp/instance.xml
