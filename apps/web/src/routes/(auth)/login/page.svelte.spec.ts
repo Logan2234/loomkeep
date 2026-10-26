@@ -9,11 +9,19 @@ import { ErrorCode, type MfaMethod, type UserDto } from "@loomkeep/shared";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "./+page.svelte";
 
 vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
 vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
+
+const { instancePicker } = vi.hoisted(() => ({
+  instancePicker: { available: false, open: vi.fn(() => Promise.resolve()) },
+}));
+vi.mock("#lib/native/instance.js", () => ({
+  isInstancePickerAvailable: () => instancePicker.available,
+  openInstancePicker: instancePicker.open,
+}));
 
 const USER = { id: "u1", displayName: "Logan" } as UserDto;
 
@@ -245,5 +253,32 @@ describe("login page", () => {
         name: m.auth_login_identifier_placeholder(),
       }).value,
     ).toBe("logan");
+  });
+});
+
+describe("login page in the Android app", () => {
+  afterEach(() => {
+    instancePicker.available = false;
+    instancePicker.open.mockClear();
+  });
+
+  it("offers no other instance in a browser", () => {
+    renderWithQuery(LoginPage, {});
+
+    expect(
+      screen.queryByRole("button", { name: m.auth_other_instance() }),
+    ).toBeNull();
+  });
+
+  it("opens the app's instance picker", async () => {
+    instancePicker.available = true;
+    const user = userEvent.setup();
+    renderWithQuery(LoginPage, {});
+
+    await user.click(
+      screen.getByRole("button", { name: m.auth_other_instance() }),
+    );
+
+    expect(instancePicker.open).toHaveBeenCalledOnce();
   });
 });

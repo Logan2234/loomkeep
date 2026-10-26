@@ -10,18 +10,22 @@ HERE=$(dirname "$0")
 
 adb install -r "$APK"
 adb logcat -c
-adb shell am start -W -n "$PACKAGE/app.loomkeep.MainActivity"
 
 # A debug WebView listens on webview_devtools_remote_<pid> once it's up.
-pid=""
-for _ in $(seq 1 45); do
-  pid=$(adb shell pidof "$PACKAGE" | tr -d '\r') || true
-  if [ -n "$pid" ] && adb shell cat /proc/net/unix | grep -q "webview_devtools_remote_$pid"; then
-    break
-  fi
-  sleep 2
-done
-adb forward tcp:9222 "localabstract:webview_devtools_remote_$pid"
+launch() {
+  adb shell am start -W -n "$PACKAGE/app.loomkeep.MainActivity"
+  pid=""
+  for _ in $(seq 1 45); do
+    pid=$(adb shell pidof "$PACKAGE" | tr -d '\r') || true
+    if [ -n "$pid" ] && adb shell cat /proc/net/unix | grep -q "webview_devtools_remote_$pid"; then
+      break
+    fi
+    sleep 2
+  done
+  adb forward tcp:9222 "localabstract:webview_devtools_remote_$pid"
+}
+
+launch
 
 # Signed out on the emulator, the shell settles on the login page: waiting
 # for it keeps that redirect from overtaking the App Link sent next.
@@ -43,6 +47,24 @@ node "$HERE/smoke-check.mjs" "search"
 adb shell am start -W -a android.intent.action.SEND -t text/plain \
   --es android.intent.extra.TEXT "https://www.imdb.com/title/tt0133093/" "$PACKAGE"
 node "$HERE/smoke-check.mjs" "share"
+
+# The instance picker refuses what isn't Loomkeep, then switches to
+# loomkeep.app (MOB-15).
+node "$HERE/smoke-instance.mjs"
+node "$HERE/smoke-check.mjs" "loomkeep.app/login"
+
+# Another instance, picked at runtime: the bridge and the plugins must reach
+# that origin too. Any https site will do, stored behind the picker's back
+# since it only accepts a Loomkeep instance.
+printf '<map><string name="url">https://docs.loomkeep.app/</string></map>' > /tmp/instance.xml
+adb push /tmp/instance.xml /data/local/tmp/instance.xml
+adb shell chmod 644 /data/local/tmp/instance.xml
+adb shell run-as "$PACKAGE" mkdir -p shared_prefs
+adb shell run-as "$PACKAGE" cp /data/local/tmp/instance.xml shared_prefs/instance.xml
+adb shell am force-stop "$PACKAGE"
+adb forward --remove tcp:9222
+launch
+node "$HERE/smoke-check.mjs" "docs.loomkeep.app"
 
 if adb logcat -d | grep -q "FATAL EXCEPTION"; then
   adb logcat -d | grep -A 40 "FATAL EXCEPTION" >&2
