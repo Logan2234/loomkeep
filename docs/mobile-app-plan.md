@@ -444,15 +444,18 @@ dont `server.url` vient des préférences `instance` (`InstanceConfig`).
 Changer d'instance veut dire recréer l'activité. Le smoke test pointe l'app
 sur une autre origine et y retrouve le pont et tous les plugins.
 
-**Réalisé (#459)** : `www/instance.html`, page locale (elle s'affiche
-donc même quand l'instance ne répond pas), ouverte par le plugin local
-`ShellInstance` depuis la page de connexion (« Utiliser une autre
-instance », seulement si l'APK a le plugin) ou depuis la page d'erreur.
-Une page locale n'a pas le pont Capacitor : elle répond en naviguant vers
-`/_instance?use=<adresse>`, que le plugin intercepte pour interroger
-`GET /api/config` (https seulement) puis enregistrer l'instance et
-recréer l'activité ; `/_instance` seul revient à loomkeep.app. La page
-d'erreur réessaie sur l'instance choisie.
+**Réalisé (#459)** : le choix d'instance est la vue `#pick` de
+`www/error.html` : une fois `server.url` fixé, Capacitor ne sert plus en
+local que l'URL exacte de la page d'erreur (il envoie toute autre page
+locale au réseau), et le fragment ne compte pas dans la requête. Elle
+s'affiche donc même quand l'instance ne répond pas. Le plugin local
+`ShellInstance` l'ouvre depuis la page de connexion (« Utiliser une autre
+instance », seulement si l'APK a le plugin), la page d'erreur y mène
+aussi. Une page locale n'a pas le pont Capacitor : elle répond en naviguant
+vers `/_instance?use=<adresse>`, que le plugin intercepte pour interroger
+`GET /api/config` (https seulement) puis enregistrer l'instance et recréer
+l'activité ; `/_instance?cancel` revient à l'instance actuelle et
+`/_instance` seul à loomkeep.app. La page d'erreur réessaie sur l'instance choisie.
 
 **Limites** : sur une autre instance, les App Links de loomkeep.app
 n'ouvrent pas l'app et le push natif attend MOB-16.

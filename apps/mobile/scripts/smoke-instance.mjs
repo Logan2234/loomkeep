@@ -12,14 +12,14 @@ await onPage(
   "loomkeep.app/login",
   `void window.Capacitor.registerPlugin("ShellInstance").open()`,
 );
-await onPage("instance.html", submit("docs.loomkeep.app"));
+await onPage("#pick", submit("docs.loomkeep.app"));
 
 const refusal = await onPage(
   "error=not-loomkeep",
-  `document.getElementById("error").textContent`,
+  `document.getElementById("pickError").textContent`,
 );
 if (!refusal)
   throw new Error("The picker didn't say why it refused the address");
 console.log("The picker refused docs.loomkeep.app");
 
-await onPage("instance.html", submit("loomkeep.app"));
+await onPage("#pick", submit("loomkeep.app"));

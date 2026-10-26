@@ -15,8 +15,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * The instance picker (MOB-15): www/instance.html, a local page so it still
- * shows when the instance is unreachable. Local pages get no Capacitor
+ * The instance picker (MOB-15): the #pick view of www/error.html, the one
+ * local page Capacitor still serves once server.url is set, so it shows
+ * even when the instance is unreachable. Local pages get no Capacitor
  * bridge, so the picker talks back by navigating to /_instance, which this
  * plugin intercepts: ?use=<address> checks the address and switches to it,
  * ?cancel returns to the current instance, no parameter goes back to the
@@ -25,7 +26,6 @@ import org.json.JSONObject;
 @CapacitorPlugin(name = "ShellInstance")
 public class ShellInstancePlugin extends Plugin {
 
-    private static final String PICKER_PATH = "/instance.html";
     private static final String ACTION_PATH = "/_instance";
 
     @PluginMethod
@@ -76,12 +76,10 @@ public class ShellInstancePlugin extends Plugin {
     }
 
     private void showPicker(String address, String error) {
-        Uri.Builder picker = Uri.parse(getBridge().getLocalUrl() + PICKER_PATH)
-            .buildUpon()
-            .appendQueryParameter("current", getBridge().getServerUrl());
-        if (address != null) picker.appendQueryParameter("address", address);
-        if (error != null) picker.appendQueryParameter("error", error);
-        getBridge().getWebView().loadUrl(picker.build().toString());
+        Uri.Builder view = new Uri.Builder().appendQueryParameter("pick", "");
+        if (address != null) view.appendQueryParameter("address", address);
+        if (error != null) view.appendQueryParameter("error", error);
+        getBridge().getWebView().loadUrl(getBridge().getErrorUrl() + "#" + view.build().getEncodedQuery());
     }
 
     /** A new Bridge, built from the config that now names the instance. */

@@ -6,17 +6,139 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Loomkeep</title>
-    <link rel="stylesheet" href="shell.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0c0d10;
+        --fg: #ececea;
+        --dim: #9aa0ae;
+        --line: #2a2d35;
+        --accent: #f5b841;
+        --accent-fg: #1a1406;
+        --danger: #f2777a;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: system-ui, sans-serif;
+        text-align: center;
+      }
+      main {
+        width: 100%;
+        max-width: 22rem;
+        box-sizing: border-box;
+        padding: 2rem 1.5rem;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 0 0 0.75rem;
+      }
+      p {
+        color: var(--dim);
+        line-height: 1.5;
+        margin: 0 0 1.5rem;
+      }
+      button {
+        border: 0;
+        border-radius: 0.75rem;
+        padding: 0.75rem 1.5rem;
+        background: var(--accent);
+        color: var(--accent-fg);
+        font: inherit;
+        font-weight: 600;
+        transition: opacity 150ms ease;
+      }
+      button:active {
+        opacity: 0.8;
+      }
+      button:disabled {
+        opacity: 0.6;
+      }
+      button.secondary {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--line);
+      }
+      a {
+        display: block;
+        margin-top: 1.25rem;
+        color: var(--accent);
+        font-size: 0.875rem;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: left;
+      }
+      label {
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+      input {
+        border: 1px solid var(--line);
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        background: transparent;
+        color: var(--fg);
+        font: inherit;
+        transition: border-color 150ms ease;
+      }
+      input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      #pickError {
+        color: var(--danger);
+        font-size: 0.875rem;
+        margin: 0;
+      }
+      #pickError:empty {
+        display: none;
+      }
+      #current {
+        font-size: 0.875rem;
+        margin: 1.25rem 0 0;
+      }
+    </style>
   </head>
   <body>
-    <main>
+    <main id="failure">
       <h1 id="title"></h1>
       <p id="body"></p>
       <button id="retry" type="button"></button>
-      <a id="change"></a>
+      <a id="change" href="#pick"></a>
       <a
         id="update"
         href="https://play.google.com/store/apps/details?id=com.google.android.webview"></a>
+    </main>
+    <main id="picker" hidden>
+      <h1 id="pickTitle"></h1>
+      <p id="pickBody"></p>
+      <form id="form">
+        <label id="label" for="address"></label>
+        <input
+          id="address"
+          type="text"
+          inputmode="url"
+          autocapitalize="none"
+          autocomplete="url"
+          spellcheck="false"
+          placeholder="media.example.com"
+          required />
+        <p id="pickError" role="alert"></p>
+        <button id="connect" type="submit"></button>
+        <button id="reset" class="secondary" type="button"></button>
+      </form>
+      <p id="current"></p>
+      <a id="cancel" href="#"></a>
     </main>
     <script>
       const copy = {
@@ -26,6 +148,18 @@
           retry: "Try again",
           change: "Use another instance",
           update: "Update Android System WebView",
+          pickTitle: "Choose your instance",
+          pickBody: "Enter the address of the Loomkeep server you use.",
+          label: "Instance address",
+          connect: "Connect",
+          checking: "Checking…",
+          reset: "Use loomkeep.app",
+          current: "Current instance: {host}",
+          cancel: "Cancel",
+          invalid: "Enter an https address, such as media.example.com.",
+          unreachable:
+            "This address doesn't answer. Check it, and your connection.",
+          "not-loomkeep": "This address isn't a Loomkeep instance.",
         },
         fr: {
           title: "Impossible de charger Loomkeep",
@@ -33,6 +167,18 @@
           retry: "Réessayer",
           change: "Utiliser une autre instance",
           update: "Mettre à jour Android System WebView",
+          pickTitle: "Choisir ton instance",
+          pickBody: "Saisis l'adresse du serveur Loomkeep que tu utilises.",
+          label: "Adresse de l'instance",
+          connect: "Se connecter",
+          checking: "Vérification…",
+          reset: "Utiliser loomkeep.app",
+          current: "Instance actuelle : {host}",
+          cancel: "Annuler",
+          invalid: "Saisis une adresse en https, par exemple media.example.com.",
+          unreachable:
+            "Cette adresse ne répond pas. Vérifie-la, ainsi que ta connexion.",
+          "not-loomkeep": "Cette adresse n'est pas une instance Loomkeep.",
         },
         it: {
           title: "Impossibile caricare Loomkeep",
@@ -40,23 +186,93 @@
           retry: "Riprova",
           change: "Usa un'altra istanza",
           update: "Aggiorna Android System WebView",
+          pickTitle: "Scegli la tua istanza",
+          pickBody: "Inserisci l'indirizzo del server Loomkeep che usi.",
+          label: "Indirizzo dell'istanza",
+          connect: "Connetti",
+          checking: "Verifica…",
+          reset: "Usa loomkeep.app",
+          current: "Istanza attuale: {host}",
+          cancel: "Annulla",
+          invalid: "Inserisci un indirizzo https, ad esempio media.example.com.",
+          unreachable:
+            "Questo indirizzo non risponde. Controllalo, insieme alla connessione.",
+          "not-loomkeep": "Questo indirizzo non è un'istanza Loomkeep.",
         },
       };
+      const ERRORS = ["invalid", "unreachable", "not-loomkeep"];
       const locale =
         navigator.languages
           .map((language) => language.toLowerCase().split("-")[0])
           .find((language) => language in copy) ?? "en";
+      const text = copy[locale];
       document.documentElement.lang = locale;
-      for (const key of Object.keys(copy[locale])) {
-        document.getElementById(key).textContent = copy[locale][key];
+      for (const key of Object.keys(text)) {
+        const element = document.getElementById(key);
+        if (element) element.textContent = text[key];
       }
 
+      // Capacitor serves no other local page once server.url is set (it
+      // proxies the rest to the network), so the instance picker (MOB-15) is
+      // this page's #pick view. ShellInstancePlugin.java opens it, and
+      // reopens it with what was typed and why it was refused; any page can
+      // link here with other values, so they're only ever displayed.
       const retryUrl = new URLSearchParams(location.search).get("retry");
       document.getElementById("retry").addEventListener("click", () => {
         if (retryUrl) location.replace(retryUrl);
       });
-      document.getElementById("change").href =
-        `instance.html?${new URLSearchParams({ current: retryUrl ?? "" })}`;
+
+      let currentHost = null;
+      try {
+        currentHost = new URL(retryUrl).host;
+      } catch {
+        // Opened without its instance: nothing to show.
+      }
+      if (currentHost) {
+        document.getElementById("current").textContent = text.current.replace(
+          "{host}",
+          currentHost,
+        );
+      }
+      document.getElementById("reset").hidden = currentHost === "loomkeep.app";
+
+      const address = document.getElementById("address");
+      const connect = document.getElementById("connect");
+
+      function render() {
+        const view = new URLSearchParams(location.hash.slice(1));
+        const picking = view.has("pick");
+        document.getElementById("failure").hidden = picking;
+        document.getElementById("picker").hidden = !picking;
+        if (!picking) return;
+
+        address.value = view.get("address") ?? "";
+        const error = view.get("error");
+        document.getElementById("pickError").textContent = ERRORS.includes(
+          error,
+        )
+          ? text[error]
+          : "";
+        connect.disabled = false;
+        connect.textContent = text.connect;
+      }
+      render();
+      addEventListener("hashchange", render);
+
+      // The /_instance navigations are the plugin's: this page has no bridge.
+      document.getElementById("form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        connect.disabled = true;
+        connect.textContent = text.checking;
+        location.href = `/_instance?${new URLSearchParams({ use: address.value })}`;
+      });
+      document
+        .getElementById("reset")
+        .addEventListener("click", () => location.replace("/_instance"));
+      document.getElementById("cancel").addEventListener("click", (event) => {
+        event.preventDefault();
+        location.replace("/_instance?cancel");
+      });
     </script>
   </body>
 </html>
