@@ -64,6 +64,7 @@ natives à maintenir).
 | MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-11         |                   |
 | MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |                   |
 | MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |                   |
+| MOB-23 | APK release sur GitHub, landing et docs                | 1     | M      | MOB-03, MOB-15 |                   |
 
 Statut : ✅ = mergé dans `main`, avec le numéro de la PR qui le livre ;
 📱 = validé sur téléphone (voir « Recette » plus bas).
@@ -77,7 +78,10 @@ L ≈ une semaine ou plus.
   doit passer un test fermé de **12 testeurs pendant 14 jours** avant la
   production ; un compte organisation (numéro D-U-N-S) en est exempté.
 - Compte Apple Developer (99 €/an) et un iPhone de test, ou TestFlight.
-- Projet Firebase (gratuit) pour FCM.
+- Projet Firebase (gratuit) pour FCM, avec une app Android par nom de
+  paquet (`app.loomkeep.debug`, `app.loomkeep`).
+- Clé de signature release (MOB-23) : générée une fois, sauvegardée hors du
+  repo. Perdue, plus aucune installation ne peut être mise à jour.
 - Un environnement macOS pour iOS : runner `macos-latest` de GitHub
   Actions, Codemagic ou un Mac mini. Android se construit sur Windows
   (Android Studio) et en CI Ubuntu.
@@ -391,6 +395,35 @@ flux navigateur inchangé.
 - Test fermé (12 testeurs, 14 jours) puis production.
 - Doc utilisateur dans `apps/docs`.
 
+### MOB-23 — APK release sur GitHub, landing et docs
+
+**But** : distribuer l'app Android sans store, en attendant MOB-10.
+
+**Périmètre**
+
+- Build release (`app.loomkeep`, « Loomkeep », WebView non inspectable)
+  signé avec la clé release, construit par `mobile.yml` sur `main` quand la
+  version de `apps/mobile` n'a pas encore sa release, et publié en release
+  GitHub `android-v<version>` (les pré-releases `android-dev-<n>` restent
+  pour les tests). Obtainium suit ces releases.
+- Page de docs « Application Android » (installation, mises à jour, autre
+  instance, limites) et section sur la landing.
+
+**Configuration (Logan)**
+
+- Secrets GitHub `ANDROID_RELEASE_KEYSTORE_BASE64` et
+  `ANDROID_RELEASE_KEYSTORE_PASSWORD` ; sans eux, rien n'est publié.
+- Firebase : ajouter l'app Android `app.loomkeep` au projet, puis remplacer
+  `ANDROID_GOOGLE_SERVICES_JSON_BASE64` par le nouveau
+  `google-services.json`, qui contient les deux paquets (sans quoi le build
+  release échoue).
+- VPS : `ANDROID_APP_LINKS` gagne `app.loomkeep=<SHA-256 de la clé
+release>`, séparé par une virgule de l'entrée debug.
+
+**Point d'attention** : Google impose progressivement (2026-2027) que les
+APK installés hors Play Store viennent de développeurs vérifiés ; la
+distribution par GitHub passera alors par l'enregistrement de MOB-10.
+
 ---
 
 ## Phase 2 — iOS
@@ -457,8 +490,15 @@ vers `/_instance?use=<adresse>`, que le plugin intercepte pour interroger
 l'activité ; `/_instance?cancel` revient à l'instance actuelle et
 `/_instance` seul à loomkeep.app. La page d'erreur réessaie sur l'instance choisie.
 
-**Limites** : sur une autre instance, les App Links de loomkeep.app
-n'ouvrent pas l'app et le push natif attend MOB-16.
+**À traiter plus tard** (limites sur une autre instance que loomkeep.app) :
+
+- **Liens d'email** : les App Links ne valent que pour les domaines déclarés
+  dans le manifeste au build ; un lien de l'instance (vérification
+  d'email, mot de passe oublié, push par email) s'ouvre donc dans le
+  navigateur, pas dans l'app. Piste : un schéma `loomkeep://` que
+  l'instance ajouterait à ses emails en bouton « Ouvrir dans l'app ».
+- **Push natif** : l'instance ne peut pas envoyer de push à l'app publiée,
+  dont les clés FCM sont celles de loomkeep.app ; c'est MOB-16.
 
 ### MOB-16 — Relais de push pour les instances self-hostées
 
