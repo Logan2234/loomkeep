@@ -13,8 +13,8 @@ every field of a public DTO needs a JSDoc description and `@example`, read by
 the Swagger plugin's `introspectComments`; `generate:openapi` fails on a gap),
 `apps/mobile` (Capacitor Android shell that loads the instance's `/app`
 rather than bundling the web build — roadmap and rationale in
-[docs/mobile-app-plan.md](docs/mobile-app-plan.md); debug APK built by
-`mobile.yml`), `packages/shared`
+[docs/mobile-app-plan.md](docs/mobile-app-plan.md); debug and release APKs
+built by `mobile.yml`), `packages/shared`
 (DTOs/enums — consumed from its built `dist/`, so run `pnpm build:package` after any change
 there). Catalogs are queried live (TMDB/AniList/IGDB/Open Library/
 MusicBrainz) and nothing is persisted until a user tracks an item — see
@@ -265,7 +265,10 @@ relationship primitive (friend = reciprocal accepted follow). Details:
 - Versioning: the six `package.json` versions (root, `apps/api`,
   `apps/web`, `apps/docs`, `apps/mobile`, `packages/shared`) are kept in
   lockstep (the Android `versionName` reads `apps/mobile`'s) — minor for a new module/capability, patch for a smaller
-  fix/polish. No tagged releases otherwise. Bump via the `version-bump`
+  fix/polish. The only tagged releases are the Android app's: `mobile.yml`
+  publishes `android-v<version>` (the APK users install) on the first
+  `main` run after a bump, besides the `android-dev-<n>` test
+  pre-releases. Bump via the `version-bump`
   skill (`CHANGELOG.md` + a Quackback changelog draft) — **publishing that
   draft sends the release newsletter**, so it always needs Logan's go-ahead.
 - Feedback lives on Quackback (feedback.loomkeep.app), not GitHub Issues:
