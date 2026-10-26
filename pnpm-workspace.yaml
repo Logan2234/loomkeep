@@ -49,6 +49,9 @@ overrides:
   tmp@<0.2.6: ^0.2.6
   uuid@<11.1.1: ^11.1.1
   qs@<6.16.0: ^6.16.0
+  basic-ftp@<=6.2.0: ^6.2.1
+  happy-dom@>=17.0.0 <=21.0.3: ^21.0.4
+  zod@<4.6.6: ^4.6.6
 # @nestjs/platform-fastify imports rxjs without declaring it, so it used
 # whichever rxjs pnpm hoisted — rxjs 6 once apps/docs joined the workspace,
 # which crashes the API at boot. Declared here, it gets the app's rxjs 7.
