@@ -18,6 +18,10 @@
   import { appConfig } from "#lib/config.svelte.js";
   import { Cooldown } from "#lib/cooldown.svelte.js";
   import { formatDateTime } from "#lib/format.js";
+  import {
+    isInstancePickerAvailable,
+    openInstancePicker,
+  } from "#lib/native/instance.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { normalizeCodeInput } from "#lib/one-time-code.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -272,6 +276,14 @@
         <p class="text-dim text-center text-sm">
           {m.auth_registration_invite_only()}
         </p>
+      {/if}
+      {#if isInstancePickerAvailable()}
+        <button
+          type="button"
+          class="btn-text self-center text-sm"
+          onclick={() => void openInstancePicker()}>
+          {m.auth_other_instance()}
+        </button>
       {/if}
     </form>
   {:else if step === "choose-method"}

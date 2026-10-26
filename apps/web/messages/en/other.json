@@ -1218,6 +1218,7 @@
   "auth_invitation_checking": "Checking the invitation…",
   "auth_invitation_back_to_login": "Back to sign in",
   "auth_registration_invite_only": "Sign-up is by invitation only.",
+  "auth_other_instance": "Use another instance",
   "library_display": "Display",
   "library_view_cards": "Cards",
   "library_view_table": "Table",

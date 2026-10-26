@@ -1218,6 +1218,7 @@
   "auth_invitation_checking": "Vérification de l'invitation…",
   "auth_invitation_back_to_login": "Retour à la connexion",
   "auth_registration_invite_only": "Les inscriptions se font sur invitation.",
+  "auth_other_instance": "Utiliser une autre instance",
   "library_display": "Affichage",
   "library_view_cards": "Cartes",
   "library_view_table": "Tableau",
