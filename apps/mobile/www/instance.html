@@ -123,14 +123,26 @@
       }
 
       // ShellInstancePlugin.java opens this page with the instance the app is
-      // on, and reopens it with what was typed and why it was refused.
+      // on, and reopens it with what was typed and why it was refused. Any
+      // page can link here with other parameters, so they're only displayed:
+      // cancelling asks the plugin where to go back.
       const params = new URLSearchParams(location.search);
-      const current = params.get("current");
-      const currentHost = current ? new URL(current).host : null;
+      let currentHost = null;
+      try {
+        currentHost = new URL(params.get("current")).host;
+      } catch {
+        // Opened without its instance: nothing to show.
+      }
       const address = document.getElementById("address");
       address.value = params.get("address") ?? "";
-      document.getElementById("error").textContent =
-        text[params.get("error")] ?? "";
+      const error = params.get("error");
+      document.getElementById("error").textContent = [
+        "invalid",
+        "unreachable",
+        "not-loomkeep",
+      ].includes(error)
+        ? text[error]
+        : "";
 
       if (currentHost) {
         document.getElementById("current").textContent = text.current.replace(
@@ -143,10 +155,9 @@
       reset.addEventListener("click", () => location.replace("/_instance"));
 
       const cancel = document.getElementById("cancel");
-      cancel.hidden = !current;
       cancel.addEventListener("click", (event) => {
         event.preventDefault();
-        location.replace(current);
+        location.replace("/_instance?cancel");
       });
 
       document.getElementById("form").addEventListener("submit", (event) => {

@@ -20,6 +20,6 @@ const refusal = await onPage(
 );
 if (!refusal)
   throw new Error("The picker didn't say why it refused the address");
-console.log(`Refused docs.loomkeep.app: ${refusal}`);
+console.log("The picker refused docs.loomkeep.app");
 
 await onPage("instance.html", submit("loomkeep.app"));

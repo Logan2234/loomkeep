@@ -19,7 +19,8 @@ import org.json.JSONObject;
  * shows when the instance is unreachable. Local pages get no Capacitor
  * bridge, so the picker talks back by navigating to /_instance, which this
  * plugin intercepts: ?use=<address> checks the address and switches to it,
- * no parameter goes back to the bundled instance.
+ * ?cancel returns to the current instance, no parameter goes back to the
+ * bundled instance.
  */
 @CapacitorPlugin(name = "ShellInstance")
 public class ShellInstancePlugin extends Plugin {
@@ -41,7 +42,9 @@ public class ShellInstancePlugin extends Plugin {
         if (!ACTION_PATH.equals(url.getPath())) return false;
 
         String address = url.getQueryParameter("use");
-        if (address == null) {
+        if (url.getQueryParameter("cancel") != null) {
+            getBridge().getWebView().loadUrl(getBridge().getAppUrl());
+        } else if (address == null) {
             InstanceConfig.clear(getContext());
             restart();
         } else {
