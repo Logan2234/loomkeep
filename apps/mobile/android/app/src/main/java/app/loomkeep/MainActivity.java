@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         // Local plugins register before the bridge starts in super.onCreate.
         registerPlugin(ShellThemePlugin.class);
+        config = InstanceConfig.load(this);
         super.onCreate(savedInstanceState);
         AppShortcuts.publish(this, getBridge().getServerUrl());
     }
