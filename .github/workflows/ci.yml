@@ -168,7 +168,6 @@ jobs:
         continue-on-error: true
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           files: apps/web/coverage/lcov.info
           flags: web-unit
           fail_ci_if_error: false
@@ -233,7 +232,6 @@ jobs:
         continue-on-error: true
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           files: apps/api/coverage/lcov.info
           flags: api-unit
           fail_ci_if_error: false
@@ -247,7 +245,6 @@ jobs:
         continue-on-error: true
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           files: packages/shared/coverage/lcov.info
           flags: shared-unit
           fail_ci_if_error: false
@@ -304,7 +301,6 @@ jobs:
         continue-on-error: true
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           files: apps/api/coverage-e2e/lcov.info
           flags: api-e2e
           fail_ci_if_error: false
