@@ -182,7 +182,7 @@ jobs:
         # itself already passed or failed in its own step.
         continue-on-error: true
         if: always()
-        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           sarif_file: apps/web/eslint-results.sarif
           category: eslint-web
@@ -254,14 +254,14 @@ jobs:
       - name: Upload ESLint API results
         continue-on-error: true
         if: always()
-        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           sarif_file: apps/api/eslint-results.sarif
           category: eslint-api
       - name: Upload ESLint Packages results
         continue-on-error: true
         if: always()
-        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           sarif_file: packages/shared/eslint-results.sarif
           category: eslint-packages
@@ -414,7 +414,7 @@ jobs:
       - name: upload ${{ matrix.name }} scan
         continue-on-error: true
         if: needs.changes.outputs[matrix.name] == 'true'
-        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           sarif_file: trivy-${{ matrix.name }}.sarif
           category: trivy-${{ matrix.name }}
@@ -486,7 +486,7 @@ jobs:
       # ARM cloud servers (see the second build step).
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v3
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
