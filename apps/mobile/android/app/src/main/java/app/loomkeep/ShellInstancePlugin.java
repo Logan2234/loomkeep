@@ -15,9 +15,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * The instance picker (MOB-15): the #pick view of www/error.html, the one
- * local page Capacitor still serves once server.url is set, so it shows
- * even when the instance is unreachable. Local pages get no Capacitor
+ * The instance picker (MOB-15): the #pick view of www/error.html, served
+ * from the APK (ShellWebViewClient), so it shows even when the instance is
+ * unreachable. Local pages get no Capacitor
  * bridge, so the picker talks back by navigating to /_instance, which this
  * plugin intercepts: ?use=<address> checks the address and switches to it,
  * ?cancel returns to the current instance, no parameter goes back to the

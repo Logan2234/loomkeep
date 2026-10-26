@@ -212,9 +212,8 @@
         if (element) element.textContent = text[key];
       }
 
-      // Capacitor serves no other local page once server.url is set (it
-      // proxies the rest to the network), so the instance picker (MOB-15) is
-      // this page's #pick view. ShellInstancePlugin.java opens it, and
+      // ShellWebViewClient.java serves this page alone, so the instance
+      // picker (MOB-15) is its #pick view. ShellInstancePlugin.java opens it, and
       // reopens it with what was typed and why it was refused; any page can
       // link here with other values, so they're only ever displayed.
       const retryUrl = new URLSearchParams(location.search).get("retry");

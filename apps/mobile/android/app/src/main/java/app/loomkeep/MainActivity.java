@@ -13,6 +13,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ShellInstancePlugin.class);
         config = InstanceConfig.load(this);
         super.onCreate(savedInstanceState);
+        getBridge().setWebViewClient(new ShellWebViewClient(getBridge()));
         AppShortcuts.publish(this, getBridge().getServerUrl());
     }
 

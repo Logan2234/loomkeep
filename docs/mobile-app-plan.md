@@ -445,10 +445,10 @@ Changer d'instance veut dire recréer l'activité. Le smoke test pointe l'app
 sur une autre origine et y retrouve le pont et tous les plugins.
 
 **Réalisé (#459)** : le choix d'instance est la vue `#pick` de
-`www/error.html` : une fois `server.url` fixé, Capacitor ne sert plus en
-local que l'URL exacte de la page d'erreur (il envoie toute autre page
-locale au réseau), et le fragment ne compte pas dans la requête. Elle
-s'affiche donc même quand l'instance ne répond pas. Le plugin local
+`www/error.html`, servie depuis l'APK par `ShellWebViewClient` : une fois
+`server.url` fixé, Capacitor ne sert plus en local que l'URL exacte de la
+page d'erreur (toute autre page locale part au réseau), et la WebView
+garde le fragment dans l'URL demandée. Elle s'affiche donc même quand l'instance ne répond pas. Le plugin local
 `ShellInstance` l'ouvre depuis la page de connexion (« Utiliser une autre
 instance », seulement si l'APK a le plugin), la page d'erreur y mène
 aussi. Une page locale n'a pas le pont Capacitor : elle répond en naviguant
