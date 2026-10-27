@@ -11,16 +11,51 @@ comment next to it, in its compose or Caddy file.
 
 The `docker-push` job in `.github/workflows/ci.yml` builds
 `apps/api/Dockerfile` and `apps/web/Dockerfile` on every push to `main`, for
-`amd64` and `arm64`, each on a runner of that architecture, and
-`docker-tag` puts both under `latest` and the 12-character commit hash
-(arm64 is optional: if it fails, amd64 is tagged alone).
-`ghcr-cleanup.yml` keeps `latest`, version tags and the 30 newest commit
-tags. `.github/workflows/deploy.yml` then redeploys the VPS after
-every successful CI run (`git reset --hard origin/main`, then
-`docker compose pull && docker compose up -d` with `IMAGE_TAG` pinned to
-that commit). Which override files run comes from `COMPOSE_FILE` in the
-VPS's own `.env`, not the workflow: turning a service on or off in
-production is editing that line.
+`amd64` and `arm64`, each on a runner of that architecture. `docker-tag`
+then tags both platforms together (arm64 is optional: if it fails, amd64 is
+tagged alone):
+
+| Tag                             | Set on                                 | For                                    |
+| ------------------------------- | -------------------------------------- | -------------------------------------- |
+| 12-character commit SHA         | every commit on `main`                 | `deploy.yml`, pinning a build          |
+| `edge`                          | every commit on `main`                 | following `main`; Trivy's weekly scan  |
+| `1.12.0`, `1.12`, `1`, `latest` | the commit that bumps the root version | self-hosters (`latest` is the default) |
+
+`ghcr-cleanup.yml` keeps those named tags and the 30 newest commit tags,
+and deletes the rest every Monday, with the platform images and
+attestations that belong to them (the "untagged" versions in the package
+view). The `unknown/unknown` platform there is each image's provenance
+attestation, not an image.
+
+`.github/workflows/deploy.yml` redeploys the VPS after every successful CI
+run on `main`: it resets the checkout to that commit and runs
+`.github/deploy/vps-deploy.sh`. That script dumps the database (encrypted,
+the last 5 kept in `~/loomkeep-predeploy/`), pulls the commit's images, and
+waits for the healthchecks. When the new containers don't come up and no
+migration ran, it starts the previous images again; after a migration it
+leaves them stopped (old code on a newer schema) and the dump is the way
+back. Either way the job fails and ntfy alerts. Which override files run
+comes from `COMPOSE_FILE` in the VPS's own `.env`, not the workflow:
+turning a service on or off in production is editing that line.
+
+## Releases
+
+Merging a PR that bumps the version (the `version-bump` skill) is the
+release; nothing is tagged by hand:
+
+1. CI passes on the bump commit; `docker-tag` adds the version tags and
+   moves `latest`.
+2. `release.yml` creates the GitHub release `v1.12.0` (a tag on that
+   commit), its notes being the version's `CHANGELOG.md` section.
+3. `mobile.yml` attaches `loomkeep-android.apk` and its Sigstore
+   provenance, then marks the release latest, so
+   `releases/latest/download/loomkeep-android.apk` keeps working.
+
+A release is created once and never rewritten: merging more commits
+without a bump changes no release. Dev APKs are `android-dev-<n>`
+pre-releases on every `main` change to `apps/mobile`, the three newest
+kept. Releases and their tags otherwise stay: they are the history and the
+only way to install an older version.
 
 Each run then reports on ntfy (`.github/deploy/notify.sh`): an alert when
 CI failed or was cancelled on main's latest commit (nothing deployed) or

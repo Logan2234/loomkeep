@@ -37,70 +37,15 @@ jobs:
           # without it, a hijacked DNS or route gets the key and the script.
           fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
           envs: DEPLOY_SHA
+          # Deploys the exact commit CI validated, not whatever main's head is
+          # by now. The rest (pre-deploy dump, start, health wait, rollback)
+          # is the checked-out commit's own .github/deploy/vps-deploy.sh.
           script: |
             set -e
             cd ${{ secrets.VPS_DEPLOY_PATH }}
             git fetch origin main
-            # Deploy the exact commit CI validated, not whatever HEAD of main
-            # happens to be by the time this job runs — main could have moved
-            # again in between (e.g. a second push landing before this job starts).
             git reset --hard "$DEPLOY_SHA"
-            # Which override files to combine (prod, observability, portainer,
-            # glitchtip, ...) is NOT hardcoded here — it comes from COMPOSE_FILE
-            # in the VPS's own .env (Compose reads that automatically). Adding a
-            # new optional add-on later means editing .env on the VPS, not this
-            # workflow. See COMPOSE_FILE in .env.example for the format.
-            #
-            # IMAGE_TAG pins docker-compose.yml's api/web `image:` to the
-            # exact images the CI docker-push job built and pushed to GHCR
-            # for this SHA (see .github/workflows/ci.yml), instead of the
-            # floating `latest` tag — same "exact commit CI validated"
-            # guarantee as the git reset above. Also feeds the Homepage
-            # "Version" widget, which reads GIT_SHA baked into the api image.
-            export IMAGE_TAG="${DEPLOY_SHA:0:12}"
-            docker compose pull
-            # --remove-orphans cleans up containers for services dropped from
-            # COMPOSE_FILE (e.g. an add-on removed from the VPS .env). It does
-            # NOT address "port is already allocated" on a service that's
-            # still part of the config — that's usually a stale container
-            # from an interrupted previous deploy not yet releasing its port,
-            # a transient docker daemon race, so retry a few times before
-            # giving up.
-            for attempt in 1 2 3; do
-              if docker compose up -d --remove-orphans; then
-                break
-              fi
-              if [ "$attempt" = 3 ]; then
-                echo "docker compose up -d failed after 3 attempts" >&2
-                exit 1
-              fi
-              echo "docker compose up -d failed (attempt $attempt/3), retrying in 5s..."
-              sleep 5
-            done
-            # `up -d` succeeds as soon as the containers start: an API stuck
-            # re-running a failed migration would otherwise sit behind a green
-            # deploy. Wait for the healthchecks in docker-compose.yml instead,
-            # and show the logs of whatever doesn't come up.
-            for service in api web; do
-              container=$(docker compose ps -q "$service")
-              for attempt in $(seq 1 60); do
-                status=$(docker inspect -f '{{.State.Health.Status}}' "$container")
-                if [ "$status" = healthy ]; then
-                  break
-                fi
-                if [ "$attempt" = 60 ]; then
-                  echo "$service is still $status after 5 minutes" >&2
-                  docker compose logs --tail=80 "$service" >&2
-                  exit 1
-                fi
-                sleep 5
-              done
-            done
-            # Every deploy pulls a new api + web pair, several times a day: a
-            # week of unused images filled the disk. A day keeps the previous
-            # pair for a manual rollback; images in use are never removed.
-            docker image prune -a -f --filter "until=24h"
-            docker builder prune -f --filter "until=24h"
+            DEPLOY_SHA="$DEPLOY_SHA" bash .github/deploy/vps-deploy.sh
       # The healthchecks above run inside the containers: a broken Caddy
       # route, certificate or Cloudflare rule would still pass them. This
       # goes through the same path as a visitor; a failure fails the job,

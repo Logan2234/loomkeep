@@ -2,7 +2,9 @@
 # at the root (lockfile, shared configs) checks everything, once: selecting
 # the root alongside a package would run that package's check twice in
 # parallel, and two `svelte-kit sync` in one folder race each other.
-# Markdown, workflows and docker/ never change what typechecks.
+# Markdown, workflows and docker/ never change what typechecks. `run
+# --if-present`: apps/mobile and apps/docs have no check script, and a bare
+# `check` on them is run as a command that doesn't exist.
 if ! git rev-parse --verify -q origin/main >/dev/null; then
   pnpm check
 elif git diff --name-only origin/main -- ':!apps/' ':!packages/' ':!*.md' ':!.github/' ':!docker/' | grep -q .; then
@@ -12,5 +14,5 @@ else
     --changed-files-ignore-pattern "**/*.md" \
     --changed-files-ignore-pattern ".github/**" \
     --changed-files-ignore-pattern "docker/**" \
-    check
+    run --if-present check
 fi

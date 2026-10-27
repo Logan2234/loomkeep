@@ -7,19 +7,51 @@ description: Bump the app version (package.json lockstep, CHANGELOG.md, Quackbac
 
 Triggered manually by Logan, usually right after merging the PR(s) for a feature domain or a
 significant fix. Do the ritual described in [AGENTS.md](../../../AGENTS.md) → Conventions →
-Versioning, but mechanically, in one pass, on `main` (`git pull` first, work directly on `main` —
-this isn't feature work, no branch needed unless Logan says otherwise).
+Versioning, mechanically, in one pass. `main` takes no direct pushes: work on a branch
+(`chore/release-X.Y.Z`) cut from a freshly fetched `origin/main`, and open a PR.
 
-## 1. Decide the bump
+**Merging that PR is the release.** Once CI passes on it, `release.yml` creates the GitHub release
+`vX.Y.Z` from the CHANGELOG section, `ci.yml`'s docker-tag tags the images `X.Y.Z`, `X.Y`, `X`
+and `latest`, and `mobile.yml` attaches the APK. Nothing to tag or publish by hand.
 
-- `git log <last-tag-or-last-CHANGELOG-entry>..HEAD --oneline` (or just read recent merged PRs) to
-  see what shipped since the last version.
-- Minor if a new module/significant capability shipped, patch for smaller fixes/polish — per
-  AGENTS.md. If it's ambiguous, ask Logan rather than guessing (this determines X.Y.**Z** vs
-  X.**Y**.0).
-- Read the current version from root `package.json`.
+## 1. Gather what shipped, from two sources
 
-## 2. Bump package.json in lockstep
+- Read the current version from root `package.json`. The previous release is the tag
+  `v<current>` when it exists; before the first one, find the bump commit:
+  `git log -S'"version": "<current>"' --format='%h %ad %s' -- package.json`.
+- **Source 1, the commits.** Read the **full** history since then, bodies included — never only
+  `--oneline`: `git log <since>..origin/main --no-merges --format='=== %h %ad %s%n%b' --date=short`.
+  Write it to the scratchpad if it is long. A squashed PR whose body is only a list of titles (or
+  empty) says nothing about what changed: read its real diff (`git show --stat <hash>`, then the
+  key files). `docs/` files added by a PR (audits, ADRs) often describe it. Skip Dependabot
+  dependency lists and CI-only commits unless user-visible.
+- **Source 2, `## [Unreleased]` in CHANGELOG.md.** Every PR with a noticeable change is meant to
+  add its bullet there (AGENTS.md → Conventions).
+
+## 2. Reconcile the two, and report before writing
+
+Build a table, one row per change, and show it to Logan before editing anything:
+
+| Change | Commit(s) | In `[Unreleased]`? | Action |
+| ------ | --------- | ------------------ | ------ |
+
+- **Shipped but missing from `[Unreleased]`** (✨ / 🐛 / user-visible ⚡ commit with no bullet):
+  draft the missing bullet from the diff.
+- **In `[Unreleased]` but no matching commit since the last release** (reverted, never merged,
+  already released, or describing something the code doesn't do): flag it; don't silently keep
+  or drop it.
+- **Bullet that disagrees with its commit** (names a different flag, default, route or
+  behaviour than the diff shows): correct it from the diff, and say so.
+- Self-hosting upgrade steps (new required env var, changed default, port, volume, migration to
+  watch) get their own bullet, worded as what a self-hoster must do.
+
+## 3. Decide the bump
+
+Minor if a new module/significant capability shipped, patch for smaller fixes/polish — per
+AGENTS.md. If it's ambiguous, ask Logan rather than guessing (this determines X.Y.**Z** vs
+X.**Y**.0).
+
+## 4. Bump package.json in lockstep
 
 Edit the `version` field in all six, to the same new value:
 
@@ -35,14 +67,15 @@ Then check none was missed — every line must show the new version:
 
 Don't touch anything else in these files.
 
-## 3. CHANGELOG.md entry
+## 5. CHANGELOG.md
 
-- Add a new `## X.Y.Z — <short title>` section right under `## [Unreleased]`, in the same
-  technical/git-facing tone as existing entries (see the file for examples) — bullet points on
-  what changed and why, written for a future engineer reading git history, not for end users.
-- If `[Unreleased]` already has bullets, fold them into the new section instead of duplicating.
+- Turn `## [Unreleased]` into `## X.Y.Z — <short title>` (reconciled per step 2), and put a fresh,
+  empty `## [Unreleased]` above it. The heading must start with `## X.Y.Z ` exactly: `release.yml`
+  finds the release notes by it and fails without it.
+- Same technical, git-facing tone as existing entries: what changed and why, for a future
+  engineer, not for end users.
 
-## 4. Quackback changelog entry (user-facing)
+## 6. Quackback changelog entry (user-facing)
 
 - Fetch the permanent draft titled `Template — Loomkeep X.Y.Z` (`search()` or `list_conversations`-style
   lookup on the changelog, then `get_details`) to get the current structure/tone to reuse.
@@ -64,10 +97,9 @@ Don't touch anything else in these files.
   a Quackback status change, separate from the post's Quackback comment/PR-link handling done in
   the quackback-ticket skill.
 
-## 5. Commit
+## 7. Commit and open the PR
 
-- `git add` the six `package.json` files + `CHANGELOG.md`, commit with `:bookmark: Bump version to X.Y.Z`
-  (no dedicated gitmoji for releases in AGENTS.md's list — `:bookmark:` is the conventional-commits
-  choice for version bumps; ask Logan if he'd rather use something else).
-- Push only if Logan confirms — committing to `main` directly is already a bit unusual, don't also
-  push without asking.
+- `git add` the six `package.json` files + `CHANGELOG.md`, commit with `🔖 Bump version to X.Y.Z`.
+- Push the branch and open the PR titled `🔖 Bump version to X.Y.Z`, the reconciliation table
+  from step 2 in its body. Logan merges it; after CI, check the release `vX.Y.Z` exists with its
+  APK and that `ghcr.io/logan2234/loomkeep-api:X.Y.Z` lists `linux/amd64` and `linux/arm64`.
