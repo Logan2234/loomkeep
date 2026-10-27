@@ -11,8 +11,11 @@ comment next to it, in its compose or Caddy file.
 
 The `docker-push` job in `.github/workflows/ci.yml` builds
 `apps/api/Dockerfile` and `apps/web/Dockerfile` on every push to `main`, for
-`amd64` and `arm64` (the latter under QEMU emulation), and pushes them to
-GHCR tagged `latest` and with the short commit hash. `.github/workflows/deploy.yml` then redeploys the VPS after
+`amd64` and `arm64`, each on a runner of that architecture, and
+`docker-tag` puts both under `latest` and the 12-character commit hash
+(arm64 is optional: if it fails, amd64 is tagged alone).
+`ghcr-cleanup.yml` keeps `latest`, version tags and the 30 newest commit
+tags. `.github/workflows/deploy.yml` then redeploys the VPS after
 every successful CI run (`git reset --hard origin/main`, then
 `docker compose pull && docker compose up -d` with `IMAGE_TAG` pinned to
 that commit). Which override files run comes from `COMPOSE_FILE` in the
