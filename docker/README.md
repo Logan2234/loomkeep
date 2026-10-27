@@ -15,11 +15,11 @@ The `docker-push` job in `.github/workflows/ci.yml` builds
 then tags both platforms together (arm64 is optional: if it fails, amd64 is
 tagged alone):
 
-| Tag                             | Set on                                 | For                                    |
-| ------------------------------- | -------------------------------------- | -------------------------------------- |
-| 12-character commit SHA         | every commit on `main`                 | `deploy.yml`, pinning a build          |
-| `edge`                          | every commit on `main`                 | following `main`; Trivy's weekly scan  |
-| `1.12.0`, `1.12`, `1`, `latest` | the commit that bumps the root version | self-hosters (`latest` is the default) |
+| Tag                             | Set on                                | For                                    |
+| ------------------------------- | ------------------------------------- | -------------------------------------- |
+| 12-character commit SHA         | every commit on `main`                | the deploy, pinning a build            |
+| `edge`                          | every commit on `main`                | following `main`; Trivy's weekly scan  |
+| `1.12.0`, `1.12`, `1`, `latest` | the first build of a new root version | self-hosters (`latest` is the default) |
 
 `ghcr-cleanup.yml` keeps those named tags and the 30 newest commit tags,
 and deletes the rest every Monday, with the platform images and
@@ -27,8 +27,9 @@ attestations that belong to them (the "untagged" versions in the package
 view). The `unknown/unknown` platform there is each image's provenance
 attestation, not an image.
 
-`.github/workflows/deploy.yml` redeploys the VPS after every successful CI
-run on `main`: it resets the checkout to that commit and runs
+`.github/workflows/ci.yml` ends every `main` run by redeploying the VPS,
+once every check passed and the images are tagged (its `deploy` job; a run
+whose commit is no longer `main`'s head leaves it to the newer one): it resets the checkout to that commit and runs
 `.github/deploy/vps-deploy.sh`. That script dumps the database (encrypted,
 the last 5 kept in `~/loomkeep-predeploy/`), pulls the commit's images, and
 waits for the healthchecks. When the new containers don't come up and no
@@ -45,11 +46,15 @@ release; nothing is tagged by hand:
 
 1. CI passes on the bump commit; `docker-tag` adds the version tags and
    moves `latest`.
-2. `release.yml` creates the GitHub release `v1.12.0` (a tag on that
+2. The `release` job creates the GitHub release `v1.12.0` (a tag on that
    commit), its notes being the version's `CHANGELOG.md` section.
-3. `mobile.yml` attaches `loomkeep-android.apk` and its Sigstore
+3. `publish-release-apk` attaches `loomkeep-android.apk` and its Sigstore
    provenance, then marks the release latest, so
    `releases/latest/download/loomkeep-android.apk` keeps working.
+
+All three happen in the same `ci.yml` run and check what already exists
+rather than whether the commit changed the version: when the bump's run
+never gets that far, the next commit on `main` makes up for it.
 
 A release is created once and never rewritten: merging more commits
 without a bump changes no release. Dev APKs are `android-dev-<n>`

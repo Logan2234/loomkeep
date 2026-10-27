@@ -29,7 +29,7 @@ android {
         resValues = true
     }
     signingConfigs {
-        // CI signs with the shared debug key (mobile.yml), so each build
+        // CI signs with the shared debug key (ci.yml), so each build
         // installs over the last and matches ANDROID_APP_LINKS. Pointed at
         // explicitly: the runner's default debug keystore isn't the one
         // ~/.android holds, and changed with every run. Elsewhere, the
@@ -44,7 +44,7 @@ android {
             }
         }
         // The key every published release is signed with (MOB-23), restored
-        // by mobile.yml: Android installs an update only when it's signed
+        // by ci.yml: Android installs an update only when it's signed
         // by the same key, so it can never change. Without it, the release
         // build comes out unsigned.
         release {

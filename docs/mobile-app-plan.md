@@ -402,9 +402,9 @@ flux navigateur inchangé.
 **Périmètre**
 
 - Build release (`app.loomkeep`, « Loomkeep », WebView non inspectable)
-  signé avec la clé release, construit par `mobile.yml` sur le commit `main`
+  signé avec la clé release, construit par `ci.yml` sur le commit `main`
   qui change la version, et joint à la release GitHub `v<version>` de
-  l'application entière (`release.yml`) ; jusqu'à 1.11.0, c'était une release
+  l'application entière (créée par le même run) ; jusqu'à 1.11.0, c'était une release
   séparée `android-v<version>`. Les pré-releases `android-dev-<n>` restent
   pour les tests. Obtainium suit ces releases.
 - Page de docs « Application Android » (installation, mises à jour, autre

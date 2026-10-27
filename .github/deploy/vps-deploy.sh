@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs on the VPS, from the checkout deploy.yml has just reset to the commit
+# Runs on the VPS, from the checkout ci.yml's deploy job has just reset to the commit
 # CI validated (DEPLOY_SHA). Which compose files run comes from COMPOSE_FILE
 # in the VPS's own .env, not from here.
 #

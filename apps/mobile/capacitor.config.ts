@@ -11,7 +11,7 @@ import { dependencies, version } from "./package.json";
 const appUrl = process.env.LOOMKEEP_APP_URL ?? "https://loomkeep.app/app";
 
 // Firebase's config for this app (Firebase console › Project settings), put
-// there by mobile.yml from a secret. Without it the push plugin crashes the
+// there by ci.yml from a secret. Without it the push plugin crashes the
 // app as soon as it registers: the build leaves it out, and the web sees
 // push as unavailable.
 const hasFirebase = existsSync(
