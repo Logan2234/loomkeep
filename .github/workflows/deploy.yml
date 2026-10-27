@@ -20,6 +20,9 @@ jobs:
   deploy:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    # The VPS_* secrets live in this environment, limited to main, so no
+    # other branch's workflow can read them; it also records each deploy.
+    environment: production
     steps:
       - name: Deploy over SSH
         env:
@@ -29,6 +32,10 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          # The host key the runner must find (`SHA256:…`, from
+          # `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the VPS):
+          # without it, a hijacked DNS or route gets the key and the script.
+          fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
           envs: DEPLOY_SHA
           script: |
             set -e
