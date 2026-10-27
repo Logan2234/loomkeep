@@ -27,9 +27,9 @@ see "Feature flags & entitlements".
 ## Commands
 
 ```sh
-pnpm dev                                       # api on :3000 + web on :5173 (parallel)
+pnpm dev                                       # api on :3000 + web on :5173 (parallel), packages/shared rebuilt on save
 pnpm test                                      # runs all tests
-pnpm build:package                             # REQUIRED after any change in packages/shared
+pnpm build:package                             # REQUIRED after any change in packages/shared, outside `pnpm dev`
 pnpm dev:docs                                  # docs site on :4321 (needs apps/api built + generate:openapi first)
 
 # API
@@ -54,8 +54,9 @@ e2e tests reuse the dev Postgres but run in an isolated `e2e` schema
 
 **Never lint, format, typecheck, or run the test suite yourself as a
 verification step, mid-task or at the end.** `pre-commit` (lint-staged)
-already formats/lints staged files, `pre-push` already typechecks the whole
-repo, and CI runs the full test suite + e2e on every PR — running any of
+already formats/lints staged files, `pre-push` already typechecks every
+package changed since `origin/main` and what depends on them (the whole repo
+when a root file changed), and CI runs the full test suite + e2e on every PR — running any of
 that yourself only duplicates the gate. Judge whether a change plausibly
 broke something before reaching for a test run at all: a style tweak, a
 wording change, a rename almost never needs one; new/changed logic or a bug
@@ -259,7 +260,7 @@ relationship primitive (friend = reciprocal accepted follow). Details:
   `apps/web/messages/{locale}/{common,other,errors,gamification,admin,settings,site}.json`
   (a `settings_`, `landing_`/`transparency_`, `gamification_` or `admin_` key
   goes in its matching file; `src/catalogs.spec.ts` enforces it).
-- Prefer no new runtime deps (global `fetch`, Node ≥22). pnpm blocks
+- Prefer no new runtime deps (global `fetch`, Node 26, pinned in `.nvmrc`). pnpm blocks
   postinstall scripts by default — allow-list in `pnpm-workspace.yaml`'s
   `allowBuilds`. Ask before adding one.
 - Versioning: the six `package.json` versions (root, `apps/api`,
