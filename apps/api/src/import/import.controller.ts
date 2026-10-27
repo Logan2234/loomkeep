@@ -97,6 +97,9 @@ export class ImportController {
   @ApiOkResponse({ type: ImportJobResponseDto })
   status(
     @CurrentUser() user: JwtPayload,
+    // Unused: a job id is unique on its own. Read so the OpenAPI document
+    // declares the route's `{source}`, which ZAP refuses to import without.
+    @Param("source") _source: ImportSource,
     @Param("jobId") jobId: string,
   ): ImportJobDto {
     return this.jobs.getJob(user.sub, jobId);

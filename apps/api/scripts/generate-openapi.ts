@@ -20,6 +20,7 @@ import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { enableApiVersioning } from "../src/common/api-versioning";
+import { undeclaredPathParameters } from "../src/common/openapi-path-parameters";
 
 const DIST_APP_MODULE = join(__dirname, "../dist/src/app.module.js");
 const DIST_PUBLIC_API_DOCUMENT = join(
@@ -56,6 +57,18 @@ async function main() {
       .addBearerAuth()
       .build(),
   );
+
+  // An invalid document still types the web client, but ZAP's API scan
+  // (web-audit.yml) and any other OpenAPI tool reject it.
+  const undeclared = undeclaredPathParameters(document);
+
+  if (undeclared.length > 0) {
+    console.error(
+      `The API document declares ${undeclared.length} path parameter(s) no operation defines — read them with @Param() or describe them with @ApiParam():\n  ${undeclared.join("\n  ")}`,
+    );
+    await app.close();
+    process.exit(1);
+  }
 
   writeFileSync(
     join(__dirname, "../openapi.json"),
