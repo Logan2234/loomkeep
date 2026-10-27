@@ -452,27 +452,31 @@ jobs:
   # docker-build-images above) so a SHA-tagged pair of images always exists for
   # whatever commit deploy.yml is about to check out — a push that only
   # touched apps/api must still produce a web image at that SHA, otherwise
-  # `docker compose pull` on the VPS would have nothing to fetch. api/web
-  # build on separate runners (matrix) rather than sequentially in one job.
+  # `docker compose pull` on the VPS would have nothing to fetch.
+  #
+  # Each image is built once per platform, each on a runner of that
+  # architecture (GitHub's arm64 runners are free for public repositories),
+  # and pushed untagged, by digest; docker-tag below then puts both under
+  # the same tags. No QEMU: emulated arm64 builds crashed in the api's
+  # `prisma generate`, so the api had no arm64 image at all, and a native
+  # build also gets the right binaries for sharp and Prisma's engines.
   docker-push:
-    # Depends on openapi-artifact (whose own `if:` already runs it on every
-    # main push) via plain `needs`, not `always()`: unlike docker-build-images
-    # above, both legs here are meant to stay in lockstep (see the comment
-    # above this job), so a failed artifact should block pushing either image
-    # rather than pushing a web image built without one.
+    # Plain `needs`, not `always()`: both images stay in lockstep (see
+    # above), so a failed artifact should block pushing either.
     needs: openapi-artifact
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    # arm64 serves Raspberry Pis, ARM NAS models and ARM servers, not the
+    # hosted instance: its failure leaves amd64 tagged and the deploy going.
+    continue-on-error: ${{ matrix.platform == 'arm64' }}
     permissions:
       contents: read
       packages: write
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - name: api
-            dockerfile: apps/api/Dockerfile
-          - name: web
-            dockerfile: apps/web/Dockerfile
+        name: [api, web]
+        platform: [amd64, arm64]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Download OpenAPI document
@@ -481,9 +485,6 @@ jobs:
         with:
           name: openapi-json
           path: apps/api
-      # arm64 is built under emulation, for Raspberry Pis, ARM NAS models and
-      # ARM cloud servers (see the second build step).
-      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
       - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v3
         with:
@@ -496,47 +497,62 @@ jobs:
         run: |
           echo "short=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
           echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
-      - name: build and push ${{ matrix.name }} image
+      - name: build and push the ${{ matrix.platform }} ${{ matrix.name }} image
+        id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
-          platforms: linux/amd64
-          push: true
+          file: apps/${{ matrix.name }}/Dockerfile
+          platforms: linux/${{ matrix.platform }}
           # Only the api Dockerfile declares a GIT_SHA ARG (see its
           # ARG GIT_SHA=unknown) — passing it for web too would just be an
           # unused build-arg warning.
           build-args: ${{ matrix.name == 'api' && format('GIT_SHA={0}', steps.vars.outputs.short) || '' }}
-          tags: |
-            ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}:latest
-            ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}:${{ steps.vars.outputs.short }}
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
-      # arm64 alone, pushed untagged (by digest), then added to the tags
-      # above: amd64 is neither rebuilt nor re-exported for it. arm64 builds
-      # under QEMU and may fail where amd64 doesn't: the amd64 images then
-      # stay as they are, and the deploy goes ahead regardless. Its own cache
-      # scope, so the two platforms don't evict each other's layers.
-      - name: build the arm64 ${{ matrix.name }} image
-        id: arm64
-        continue-on-error: true
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
-        with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          platforms: linux/arm64
-          build-args: ${{ matrix.name == 'api' && format('GIT_SHA={0}', steps.vars.outputs.short) || '' }}
           outputs: type=image,name=ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=${{ matrix.name }}-arm64
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}-arm64
-      - name: add arm64 to the ${{ matrix.name }} tags
-        if: steps.arm64.outcome == 'success'
-        continue-on-error: true
+          cache-from: type=gha,scope=${{ matrix.name }}-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}-${{ matrix.platform }}
+      - name: Hand the digest to docker-tag
         env:
-          IMAGE: ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}
-          SHORT: ${{ steps.vars.outputs.short }}
-          ARM64_DIGEST: ${{ steps.arm64.outputs.digest }}
+          DIGEST: ${{ steps.build.outputs.digest }}
         run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digest-${{ matrix.name }}-${{ matrix.platform }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # Puts each image's platform digests under `latest` and the commit's short
+  # SHA: amd64 always, arm64 when its build succeeded.
+  docker-tag:
+    needs: docker-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        name: [api, web]
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: digest-${{ matrix.name }}-*
+          path: ${{ runner.temp }}/digests
+          merge-multiple: true
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: tag the ${{ matrix.name }} image
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-${{ matrix.name }}"
+          short="${GITHUB_SHA:0:12}"
           docker buildx imagetools create \
-            --tag "$IMAGE:latest" --tag "$IMAGE:$SHORT" \
-            "$IMAGE:$SHORT" "$IMAGE@$ARM64_DIGEST"
+            --tag "$image:latest" --tag "$image:$short" \
+            $(printf "$image@sha256:%s " *)
+          docker buildx imagetools inspect "$image:$short"
