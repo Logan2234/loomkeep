@@ -20,20 +20,22 @@ variable with its own comments; optional services have theirs on
 
 ## Addresses
 
-| Variable         | Default                     | What it is                                                       |
-| ---------------- | --------------------------- | ---------------------------------------------------------------- |
-| `PUBLIC_API_URL` | `http://localhost:3000/api` | Where browsers reach the API.                                    |
-| `WEB_ORIGIN`     | `http://localhost:8080`     | Where the web app is served; also the origin the API accepts.    |
-| `DOMAIN`         | —                           | With the HTTPS override: your domain. Sets both addresses above. |
-| `COMPOSE_FILE`   | —                           | The compose files to combine, separated by colons.               |
+| Variable                | Default                     | What it is                                                                                                                                        |
+| ----------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PUBLIC_API_URL`        | `http://localhost:3000/api` | Where browsers reach the API.                                                                                                                     |
+| `WEB_ORIGIN`            | `http://localhost:8080`     | Where the web app is served; also the origin the API accepts.                                                                                     |
+| `DOMAIN`                | —                           | With the HTTPS override: your domain. Sets both addresses above.                                                                                  |
+| `COMPOSE_FILE`          | —                           | The compose files to combine, separated by colons.                                                                                                |
+| `LOOMKEEP_BIND_ADDRESS` | `127.0.0.1`                 | Where the base setup publishes ports 8080 and 3000. `0.0.0.0` opens them to your network (a NAS): see [Ports](/self-hosting/installation/#ports). |
 
 ## Accounts and instance
 
-| Variable                                                                                                                                                                        | What it is                                                                                      |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `ADMIN_EMAIL`                                                                                                                                                                   | The account with this email becomes administrator when it signs up or in.                       |
-| `SOCIAL_ENABLED`, `CHAT_ENABLED`, `GAMIFICATION_ENABLED`, `REGISTRATION_ENABLED`, `PUBLIC_API_ENABLED`, `API_RATE_LIMIT_FREE`, `API_RATE_LIMIT_PREMIUM`, `UPDATE_CHECK_ENABLED` | Optional: override and lock the matching [instance settings](/self-hosting/instance-settings/). |
-| `LOOMKEEP_LICENSE_KEY`                                                                                                                                                          | Not needed for now: see [Premium edition](/self-hosting/premium/).                              |
+| Variable                                                                                                                                                                        | What it is                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ADMIN_EMAIL`                                                                                                                                                                   | The account with this email becomes administrator when it signs up or in.                                                                  |
+| `SOCIAL_ENABLED`, `CHAT_ENABLED`, `GAMIFICATION_ENABLED`, `REGISTRATION_ENABLED`, `PUBLIC_API_ENABLED`, `API_RATE_LIMIT_FREE`, `API_RATE_LIMIT_PREMIUM`, `UPDATE_CHECK_ENABLED` | Optional: override and lock the matching [instance settings](/self-hosting/instance-settings/).                                            |
+| `LOOMKEEP_LICENSE_KEY`                                                                                                                                                          | Not needed for now: see [Premium edition](/self-hosting/premium/).                                                                         |
+| `PUBLIC_SEARCH_INDEXING`                                                                                                                                                        | `true` lets search engines index your instance's public pages. Off by default: see [Opening up](/self-hosting/opening-up/#search-engines). |
 
 ## Catalogues and imports
 

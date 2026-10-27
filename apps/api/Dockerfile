@@ -37,9 +37,10 @@ FROM node:26-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f8
 
 # postgresql18-client matches the postgres:18-alpine server in docker-compose.yml
 # — pg_dump/psql (admin backup & restore) shell out to it via BackupService.
-# age encrypts every dump before it touches disk — same service.
+# age encrypts every dump before it touches disk — same service. su-exec
+# lets the entrypoint drop from root to `node` (see docker-entrypoint.sh).
 RUN apk upgrade --no-cache \
-  && apk add --no-cache postgresql18-client age \
+  && apk add --no-cache postgresql18-client age su-exec \
   && rm -rf /usr/local/lib/node_modules/npm \
     /usr/local/lib/node_modules/corepack \
     /usr/local/bin/npm \
@@ -68,6 +69,12 @@ ARG GIT_SHA=unknown
 ENV GIT_SHA=$GIT_SHA
 
 EXPOSE 3000
+
+# The API runs as `node`, not root: the entrypoint only hands it the backup
+# volume first. A plain `USER node` would leave an existing volume, created
+# while the image ran as root, unwritable.
+COPY --chmod=755 apps/api/docker-entrypoint.sh /usr/local/bin/loomkeep-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/loomkeep-entrypoint.sh"]
 
 # Migrations run at boot so a self-host upgrade is just "pull + up".
 # The build nests output under dist/src (prisma.config.ts at the api root

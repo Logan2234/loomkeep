@@ -34,7 +34,7 @@ NOUVEAU), and at 12px they stop reading as pills at all.
 | border    | `#2A2E38`         | `#D3C7A8`                                                 |
 | fg        | `#ECECEA`         | `#1C1712`                                                 |
 | dim       | `#9AA0AE`         | `#6B6354`                                                 |
-| accent    | `#F5B841`         | `#8E620B` (deep gold, AA-compliant as both text and fill) |
+| accent    | `#F5B841`         | `#8A5F0A` (deep gold, AA-compliant as both text and fill) |
 | accent-fg | `#1A1406`         | `#FFFFFF`                                                 |
 | button    | `#F5B841`         | `#1C1712`                                                 |
 | button-fg | `#1A1406`         | `#FFFFFF`                                                 |

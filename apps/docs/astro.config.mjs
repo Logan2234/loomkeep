@@ -94,7 +94,7 @@ export default defineConfig({
             editorActiveTabBackground: ({ theme }) =>
               theme.type === "dark" ? "#15171c" : "#ffffff",
             editorActiveTabIndicatorTopColor: ({ theme }) =>
-              theme.type === "dark" ? "#f5b841" : "#8e620b",
+              theme.type === "dark" ? "#f5b841" : "#8a5f0a",
             terminalTitlebarBackground: ({ theme }) =>
               theme.type === "dark" ? "#0c0d10" : "#edeae3",
             terminalTitlebarBorderBottomColor: ({ theme }) =>

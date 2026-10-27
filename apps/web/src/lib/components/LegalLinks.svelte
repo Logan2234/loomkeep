@@ -62,6 +62,6 @@
         <span class="opacity-60">({appConfig.gitSha})</span>
       {/if}
     </a>
-    {#if env.PUBLIC_IS_BETA}<BetaBadge />{/if}
+    {#if env.PUBLIC_IS_BETA === "true"}<BetaBadge />{/if}
   </p>
 </footer>

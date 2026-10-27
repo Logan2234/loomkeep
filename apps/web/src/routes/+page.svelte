@@ -320,8 +320,12 @@
     },
   ];
 
+  // WCAG 2.2.2: moving text that runs on needs a way to stop it. Hovering the
+  // title holds the current word.
+  let verbPaused = $state(false);
+
   $effect(() => {
-    if (prefersReducedMotion()) return;
+    if (prefersReducedMotion() || verbPaused) return;
     const id = setInterval(() => {
       verb = (verb + 1) % VERBS.length;
     }, 2200);
@@ -491,11 +495,19 @@
           {m.landing_hero_kicker()}
         </p>
         <h1
+          onpointerenter={() => (verbPaused = true)}
+          onpointerleave={() => (verbPaused = false)}
           class="font-display mt-6 text-[min(clamp(3rem,9vw,6rem),14svh)] leading-[0.95] font-extrabold tracking-[-0.035em]">
           {m.landing_hero_title_lead()}<br />
           {m.landing_hero_title_sub()}
+          <!-- Screen readers get every verb at once rather than a heading
+               whose text changes every two seconds. -->
+          <span class="sr-only">{m.landing_verb_all()}</span>
           {#key verb}
-            <span class="verb" style={`color: ${VERBS[verb].color}`}>
+            <span
+              aria-hidden="true"
+              class="verb"
+              style={`color: ${VERBS[verb].color}`}>
               {VERBS[verb].word()}
             </span>
           {/key}

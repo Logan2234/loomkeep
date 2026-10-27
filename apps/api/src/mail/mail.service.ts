@@ -208,7 +208,7 @@ const COLOR_BG = "#F7F5F3";
 const COLOR_SURFACE = "#FFFFFF";
 const COLOR_BORDER = "#D3C7A8";
 const COLOR_TEXT = "#1C1712";
-const COLOR_ACCENT = "#8E620B";
+const COLOR_ACCENT = "#8A5F0A";
 const COLOR_MUTED = "#6B6354";
 
 // Umami Link slugs (see UMAMI_LINKS_BASE_URL in .env.example) — fixed

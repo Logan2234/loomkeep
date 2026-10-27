@@ -41,6 +41,20 @@ In [instance settings](/self-hosting/instance-settings/):
   [invitation](/self-hosting/administration/#invitations), by email or by a
   link, lets someone in. The right choice for a family or a group of friends.
 
+## Search engines
+
+An instance stays out of search results by default: its `robots.txt` turns
+every crawler away and each page carries a `noindex` tag, so its address
+and its copy of the Loomkeep landing page don't show up when people search.
+Being reachable from the internet is enough for the people you give the
+address to.
+
+To be found by search engines (a public instance open to sign-ups, say),
+set `PUBLIC_SEARCH_INDEXING=true` in `.env` and restart the `web` service:
+the landing page and the legal pages become indexable, and `robots.txt`
+points crawlers to the sitemap. The app itself, behind sign-in, is never
+indexed.
+
 ## Social features
 
 With social features on, people see each other's activity, reviews and
