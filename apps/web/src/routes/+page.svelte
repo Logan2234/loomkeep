@@ -360,6 +360,27 @@
       }
     });
   });
+
+  // schema.org description for search engines. Kept to what the page itself
+  // states (free, web and Android): no rating, which Google penalises when it
+  // isn't backed by visible reviews. `<` is escaped so no text can close the
+  // script tag early, and the closing tag is written `<\/script>` because a
+  // literal one would end this component's own <script> block.
+  /* eslint-disable no-useless-escape */
+  const structuredDataTag = $derived(
+    `<script type="application/ld+json">${JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: m.common_loomkeep(),
+      description: m.landing_meta_description(),
+      url: `${page.url.origin}/`,
+      image: `${page.url.origin}/og.png`,
+      applicationCategory: "EntertainmentApplication",
+      operatingSystem: "Web, Android",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+    }).replaceAll("<", "\\u003c")}<\/script>`,
+  );
+  /* eslint-enable no-useless-escape */
 </script>
 
 {#snippet primaryCta(label: string, event: string, cls: string)}
@@ -378,6 +399,8 @@
 
 <svelte:head>
   <title>{m.common_loomkeep()} — {m.landing_meta_tagline()}</title>
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -- static JSON, `<` escaped above -->
+  {@html structuredDataTag}
 
   {#if env.PUBLIC_UMAMI_WEBSITE_ID && env.PUBLIC_UMAMI_SCRIPT_URL}
     <script
