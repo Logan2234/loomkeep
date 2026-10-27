@@ -57,6 +57,21 @@ describe("LandingFooter language picker", () => {
   });
 });
 
+describe("LandingFooter support link", () => {
+  // Donations pay for the server, and signed-out visitors had no way to
+  // find the platforms.
+  it("points to the list of donation platforms", () => {
+    renderWithQuery(LandingFooter, {});
+
+    const link = screen.getByRole("link", {
+      name: m.landing_footer_link_support(),
+    });
+    expect(link.getAttribute("href")).toBe(
+      "https://github.com/Logan2234/loomkeep#support",
+    );
+  });
+});
+
 describe("LandingFooter catalogue attribution", () => {
   // The landing page shows these providers' artwork to signed-out visitors,
   // and TMDB's API terms require its notice wherever its data appears.

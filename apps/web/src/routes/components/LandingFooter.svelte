@@ -117,6 +117,14 @@
           external: true,
           event: "footer-selfhost",
         },
+        {
+          // The README's Support section lists every donation platform; the
+          // in-app page that does the same is behind sign-in.
+          label: m.landing_footer_link_support(),
+          href: `${GITHUB_REPO_URL}#support`,
+          external: true,
+          event: "footer-support",
+        },
       ],
     },
     {
