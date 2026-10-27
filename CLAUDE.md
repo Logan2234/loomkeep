@@ -268,12 +268,20 @@ relationship primitive (friend = reciprocal accepted follow). Details:
 - Versioning: the six `package.json` versions (root, `apps/api`,
   `apps/web`, `apps/docs`, `apps/mobile`, `packages/shared`) are kept in
   lockstep (the Android `versionName` reads `apps/mobile`'s) — minor for a new module/capability, patch for a smaller
-  fix/polish. The only tagged releases are the Android app's: `mobile.yml`
-  publishes `android-v<version>` (the APK users install) on the first
-  `main` run after a bump, besides the `android-dev-<n>` test
-  pre-releases. Bump via the `version-bump`
-  skill (`CHANGELOG.md` + a Quackback changelog draft) — **publishing that
-  draft sends the release newsletter**, so it always needs Logan's go-ahead.
+  fix/polish. Bump via the `version-bump` skill, in a PR (`main` takes no
+  direct pushes): `CHANGELOG.md` + a Quackback changelog draft —
+  **publishing that draft sends the release newsletter**, so it always
+  needs Logan's go-ahead. Merging the bump is the release: `release.yml`
+  creates the GitHub release `v<version>` from its CHANGELOG section,
+  `ci.yml`'s docker-tag tags the images `<version>`, `<major.minor>`,
+  `<major>` and `latest` (every main commit gets its SHA and `edge`), and
+  `mobile.yml` attaches the APK. Dev APKs stay `android-dev-<n>`
+  pre-releases, the three newest kept.
+- **Every PR with a change someone outside the code would notice** (a
+  feature, a fix, a behaviour or config change, a self-hosting upgrade
+  step) adds a bullet under `## [Unreleased]` in `CHANGELOG.md`, in the
+  file's technical tone. The version bump turns that section into the
+  release's notes; a change missing from it ships unannounced.
 - Feedback lives on Quackback (feedback.loomkeep.app), not GitHub Issues:
   **Feature Requests**/**Bug Reports** (public) vs **Internal Roadmap**
   (private, business-sensitive) — new posts need adding to the matching

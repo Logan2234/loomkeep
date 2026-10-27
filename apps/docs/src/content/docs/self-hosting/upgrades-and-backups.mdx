@@ -22,12 +22,22 @@ migrations on its own as it starts: nothing else to run.
 Before upgrading, read the [changelog](https://feedback.loomkeep.app/changelog)
 and the notes below: a few releases ask for a step of your own.
 
-### Pinning a version
+### Choosing what you run
 
-By default the images follow `latest`, the newest build of `main`. Every
-build is also tagged with its short commit hash, so `IMAGE_TAG=<hash>` in
-`.env`
-holds your instance on that exact build until you change it.
+`IMAGE_TAG` in `.env` picks which images `docker compose pull` fetches,
+for `amd64` (most servers) and `arm64` (Raspberry Pi, ARM NAS) alike:
+
+| `IMAGE_TAG`               | What you get                                                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `latest` (default)        | The latest [release](https://github.com/Logan2234/loomkeep/releases). Moves only when a new version comes out. |
+| `1`, `1.12`               | The latest release within that major or minor version: fixes come, larger changes wait for you.               |
+| `1.12.0`                  | That exact release, until you change it.                                                                       |
+| `edge`                    | Every commit merged into `main`, as loomkeep.app runs it. Newer, less settled.                                 |
+| a 12-character commit SHA | That exact build of `main`. Only the 30 most recent stay available.                                            |
+
+Each release's notes, on GitHub and in the
+[changelog](https://feedback.loomkeep.app/changelog), say when an upgrade
+asks for a step of your own.
 
 ### Notes needing action
 

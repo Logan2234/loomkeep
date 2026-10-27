@@ -2,7 +2,7 @@ name: Trivy
 
 # Scans the api/web images CI already pushed to GHCR rather than building
 # its own: after every CI run on main (the exact SHA-tagged images the
-# deploy pulls), and weekly on `latest` — what's in production — to catch
+# deploy pulls), and weekly on `edge` — main, what's in production — to catch
 # new CVEs in an unchanged base image. PRs are scanned by ci.yml's
 # docker-build-images job, on the image it builds anyway; both upload to the
 # same trivy-api/trivy-web categories, so code scanning's PR check compares
@@ -53,7 +53,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_run" ]; then
             echo "tag=${BUILT_SHA:0:12}" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "tag=edge" >> "$GITHUB_OUTPUT"
           fi
           echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
       # Trivy pulls the image with the credentials docker login stores.
