@@ -41,6 +41,7 @@ if [ -n "$previous_tag" ]; then
   docker compose exec -T db pg_dump -U "$DB_USER" -d "$DB_NAME" --no-owner --no-privileges |
     age -r "$BACKUP_ENCRYPTION_PUBLIC_KEY" >"$dump"
   echo "Pre-deploy dump: $dump"
+  # shellcheck disable=SC2012 # our own timestamped names, no spaces
   ls -1t "$DUMP_DIR"/predeploy-*.sql.age | tail -n +6 | xargs -r rm --
 fi
 migrations_before=$(applied_migrations)
