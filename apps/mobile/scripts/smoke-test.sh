@@ -8,6 +8,14 @@ PACKAGE=app.loomkeep.debug
 APK=apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
 HERE=$(dirname "$0")
 
+# The APK loads the deployed site, which a deploy restarts for a minute or
+# two, and on main the deploy can land while this test runs.
+for _ in $(seq 1 30); do
+  curl -fsS -o /dev/null --max-time 10 https://loomkeep.app/api/health && break
+  echo "loomkeep.app isn't answering yet, waiting…"
+  sleep 10
+done
+
 adb install -r "$APK"
 adb logcat -c
 
