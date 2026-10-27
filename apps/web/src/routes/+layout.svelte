@@ -19,6 +19,8 @@
     startAppShell,
     syncSystemBars,
   } from "#lib/native/app-shell.js";
+  import bricolageLatin from "@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2?url";
+  import hankenLatin from "@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2?url";
   import "@fontsource-variable/bricolage-grotesque/wght.css";
   import "@fontsource-variable/hanken-grotesk/wght.css";
   import "@fontsource/space-mono/400.css";
@@ -59,6 +61,11 @@
   <title>{m.common_loomkeep()}</title>
 
   <meta name="description" content={m.landing_meta_description()} />
+  {#if env.PUBLIC_SEARCH_INDEXING !== "true"}
+    <!-- Self-hosted instances stay out of search results unless their admin
+         opts in; see robots.txt/+server.ts. -->
+    <meta name="robots" content="noindex" />
+  {/if}
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content={m.common_loomkeep()} />
   <!-- Without the query string: a campaign link (?utm_source=…) must not
@@ -77,6 +84,18 @@
     content={regionalLocale(getLocale()).replace("-", "_")} />
   <meta name="twitter:card" content="summary_large_image" />
 
+  <!-- Without these the browser only finds the fonts once the stylesheet is
+       parsed, which delays the landing title (its largest element). Latin
+       subsets only: the others load on demand, by unicode-range. Same URLs
+       as the stylesheet's, since Vite emits each file once. -->
+  {#each [bricolageLatin, hankenLatin] as font (font)}
+    <link
+      rel="preload"
+      href={font}
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous" />
+  {/each}
   <link rel="preconnect" href={env.PUBLIC_API_URL} />
   <link rel="canonical" href={page.url.origin + page.url.pathname} />
 </svelte:head>

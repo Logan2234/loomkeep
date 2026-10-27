@@ -74,6 +74,37 @@ test("names the page's canonical URL without its query string", async () => {
   assert.match(html, new RegExp(`<meta property="og:url" content="${home}`));
 });
 
+// A preload whose URL differs from the stylesheet's downloads the font twice.
+test("preloads the two Latin fonts the stylesheet actually uses", async () => {
+  const html = await (await fetch(serverOrigin)).text();
+  const preloads = [
+    ...html.matchAll(/<link rel="preload" href="([^"]+\.woff2)"/g),
+  ].map(([, href]) => href);
+  assert.equal(preloads.length, 2);
+  const css = await Promise.all(
+    [...html.matchAll(/<link href="([^"]+\.css)" rel="stylesheet"/g)].map(
+      async ([, href]) =>
+        (await fetch(new URL(href, `${serverOrigin}/`))).text(),
+    ),
+  );
+
+  for (const href of preloads) {
+    const file = href.split("/").pop();
+    assert.ok(
+      css.some((sheet) => sheet.includes(file)),
+      `${file} isn't referenced by the stylesheet`,
+    );
+  }
+});
+
+// The server runs without PUBLIC_SEARCH_INDEXING, like a fresh self-host.
+test("keeps an instance out of search results unless indexing is switched on", async () => {
+  const html = await (await fetch(serverOrigin)).text();
+  assert.match(html, /<meta name="robots" content="noindex"/);
+  const robots = await (await fetch(`${serverOrigin}/robots.txt`)).text();
+  assert.match(robots, /^Disallow: \/$/m);
+});
+
 test("describes Loomkeep as a free application in structured data", async () => {
   const html = await (await fetch(serverOrigin)).text();
   const [, json] =
