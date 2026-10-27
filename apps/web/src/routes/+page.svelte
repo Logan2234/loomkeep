@@ -403,6 +403,7 @@
 
 <svelte:head>
   <title>{m.common_loomkeep()} — {m.landing_meta_tagline()}</title>
+  <meta name="description" content={m.landing_meta_description()} />
   <!-- eslint-disable-next-line svelte/no-at-html-tags -- static JSON, `<` escaped above -->
   {@html structuredDataTag}
 
@@ -477,10 +478,14 @@
       bind:this={heroEl}
       class="relative flex min-h-[86svh] flex-col justify-center overflow-hidden py-[clamp(2rem,8svh,5rem)]">
       <div
-        class="absolute inset-0 grid grid-cols-3 gap-2 p-2 sm:grid-cols-5 lg:grid-cols-8"
+        class="absolute inset-0 grid grid-cols-3 gap-2 p-2 select-none sm:grid-cols-5 lg:grid-cols-8"
         aria-hidden="true">
         {#each LANDING_LIBRARY as work (work.title)}
-          <Poster src={work.cover} title={work.title} class="rounded" />
+          <Poster
+            src={work.cover}
+            title={work.title}
+            draggable={false}
+            class="rounded" />
         {/each}
       </div>
 

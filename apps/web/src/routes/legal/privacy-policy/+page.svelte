@@ -1,5 +1,8 @@
 <svelte:head>
   <title>Politique de confidentialité - Loomkeep</title>
+  <meta
+    name="description"
+    content="Comment loomkeep.app traite les données personnelles : données collectées, finalités, durées de conservation, prestataires et droits RGPD." />
 </svelte:head>
 
 <main lang="fr" class="mx-auto max-w-3xl px-5 py-10 md:py-16">

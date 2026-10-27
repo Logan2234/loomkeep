@@ -12,6 +12,7 @@
     caption = true,
     fallback,
     containerClass = "",
+    draggable,
   }: {
     src?: string | null;
     title: string;
@@ -24,6 +25,8 @@
     caption?: boolean;
     fallback?: Snippet;
     containerClass?: string;
+    /** `false` for decorative posters the browser shouldn't let anyone drag out. */
+    draggable?: boolean;
   } = $props();
 
   const resolvedAlt = $derived(alt ?? title);
@@ -45,6 +48,7 @@
     <img
       {src}
       alt={resolvedAlt}
+      {draggable}
       loading="lazy"
       onerror={() => (failed = true)}
       class="bg-surface-2 aspect-2/3 w-full object-cover {cls}" />

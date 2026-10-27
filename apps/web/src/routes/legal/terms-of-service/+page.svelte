@@ -5,6 +5,9 @@
 
 <svelte:head>
   <title>Conditions générales d'utilisation - Loomkeep</title>
+  <meta
+    name="description"
+    content="Conditions générales d'utilisation de loomkeep.app : compte, contenus publiés, règles de conduite, modération et responsabilités." />
 </svelte:head>
 
 <main lang="fr" class="mx-auto max-w-3xl px-5 py-10 md:py-16">

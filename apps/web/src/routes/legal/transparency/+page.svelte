@@ -63,6 +63,7 @@
 
 <svelte:head>
   <title>{m.transparency_page_title()} - Loomkeep</title>
+  <meta name="description" content={m.transparency_page_description()} />
 </svelte:head>
 
 <main class="mx-auto max-w-3xl px-5 py-10 md:py-16">
