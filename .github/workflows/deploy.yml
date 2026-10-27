@@ -91,6 +91,17 @@ jobs:
             done
             docker image prune -a -f --filter "until=168h"
             docker builder prune -f --filter "until=168h"
+      # The healthchecks above run inside the containers: a broken Caddy
+      # route, certificate or Cloudflare rule would still pass them. This
+      # goes through the same path as a visitor; a failure fails the job,
+      # so the ntfy alert below fires.
+      - name: Check the public site
+        run: |
+          for url in https://loomkeep.app/ https://loomkeep.app/api/health; do
+            curl --fail --silent --show-error --output /dev/null \
+              --retry 5 --retry-delay 6 --retry-all-errors --max-time 15 "$url"
+            echo "$url answers"
+          done
 
   # Says how it went on ntfy (NTFY_TOPIC_URL: the topic's full URL, e.g.
   # https://ntfy.sh/<unguessable name>, which is all it takes to post or

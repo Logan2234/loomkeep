@@ -36,17 +36,20 @@ jobs:
       matrix:
         name: [api, web]
     steps:
-      # At the commit CI built, so `git rev-parse --short` yields the same
-      # tag docker-push gave the images (same shallow checkout there).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - id: vars
+        # The tag docker-push gave the images: the commit CI built, not
+        # GITHUB_SHA, which a workflow_run sets to main's tip when this run
+        # starts — a newer commit whose images may not exist yet.
         # GHCR image paths must be lowercase; github.repository_owner
         # preserves the account's actual casing (Logan2234).
+        env:
+          BUILT_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            echo "tag=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+            echo "tag=${BUILT_SHA:0:12}" >> "$GITHUB_OUTPUT"
           else
             echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi

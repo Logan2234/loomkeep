@@ -24,12 +24,20 @@ jobs:
       security-events: write
       actions: read
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # actions: the workflows themselves (script injection, untrusted
+        # checkouts). java-kotlin: the Android shell, which is plain Java, so
+        # it is read without a Gradle build.
+        language: [javascript-typescript, actions, java-kotlin]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
-          languages: javascript-typescript
+          languages: ${{ matrix.language }}
+          build-mode: none
           config-file: ./.github/codeql/codeql-config.yml
       - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
-          category: "/language:javascript-typescript"
+          category: "/language:${{ matrix.language }}"
