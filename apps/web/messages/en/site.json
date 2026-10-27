@@ -145,6 +145,7 @@
   "landing_footer_link_docs": "Documentation",
   "landing_footer_link_api": "API",
   "landing_footer_signature": "Built and hosted by one person. No investor, so nothing to sell.",
+  "landing_footer_data_sources": "Catalogue data and images:",
   "transparency_page_title": "Moderation transparency",
   "transparency_eyebrow": "Loomkeep / legal information",
   "transparency_lead": "The yearly record of reports received and measures taken on this instance. Every decision is made by a person: none is automated.",

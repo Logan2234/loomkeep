@@ -4,6 +4,7 @@
   import { auth } from "#lib/auth.svelte.js";
   import Combobox from "#lib/components/Combobox.svelte";
   import Icon from "#lib/components/Icon.svelte";
+  import ProviderMark from "#lib/components/ProviderMark.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import {
     CHANGELOG_URL,
@@ -16,7 +17,21 @@
   import { m } from "#lib/paraglide/messages.js";
   import { languageOptions } from "#lib/locales.js";
   import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
+  import {
+    PROVIDER_BRANDS,
+    type ProviderBrandKey,
+  } from "#lib/provider-brands.js";
   import type { Locale } from "@loomkeep/shared";
+
+  // The catalogues whose artwork the landing page shows. TMDB's API terms
+  // require its notice wherever its data appears, signed out included.
+  const DATA_SOURCES: ProviderBrandKey[] = [
+    "tmdb",
+    "anilist",
+    "igdb",
+    "openlibrary",
+    "musicbrainz",
+  ];
 
   // Signed in, initAuth re-applies the account's locale on every load, so the
   // choice is saved there too — or the page would switch back mid-visit.
@@ -176,6 +191,33 @@
           </ul>
         </nav>
       {/each}
+    </div>
+
+    <div class="text-dim mt-10 grid gap-2 text-xs">
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <p id="footer-data-sources">{m.landing_footer_data_sources()}</p>
+        <ul
+          aria-labelledby="footer-data-sources"
+          class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          {#each DATA_SOURCES as source (source)}
+            <li>
+              <a
+                href={PROVIDER_BRANDS[source].url}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-umami-event={`footer-data-source-${source}`}
+                class="hover:text-fg inline-flex items-center gap-1.5 transition-colors">
+                <ProviderMark
+                  brand={source}
+                  decorative
+                  class="h-3.5 w-3.5 shrink-0" />
+                {PROVIDER_BRANDS[source].name}
+              </a>
+            </li>
+          {/each}
+        </ul>
+      </div>
+      <p>{m.datasource_tmdb_notice()}</p>
     </div>
 
     <div
