@@ -84,7 +84,7 @@ function serveImport(analysis: ImportJobDto = job("analysis", { plan: PLAN })) {
     http.post(apiUrl("/import/goodreads/analyze"), () =>
       HttpResponse.json(running(analysis.id)),
     ),
-    http.get(apiUrl(`/import/goodreads/${analysis.id}`), () =>
+    http.get(apiUrl(`/import/${analysis.id}`), () =>
       HttpResponse.json(analysis),
     ),
     http.post(
@@ -94,7 +94,7 @@ function serveImport(analysis: ImportJobDto = job("analysis", { plan: PLAN })) {
         return HttpResponse.json(running("commit"));
       },
     ),
-    http.get(apiUrl("/import/goodreads/commit"), () =>
+    http.get(apiUrl("/import/commit"), () =>
       HttpResponse.json(
         job("commit", {
           report: {
