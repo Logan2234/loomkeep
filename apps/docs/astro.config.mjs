@@ -75,7 +75,6 @@ export default defineConfig({
       lastUpdated: true,
       disable404Route: false,
       defaultLocale: "en",
-      pagefind: false,
       pagination: true,
       expressiveCode: {
         // Vesper's amber-on-black is close to Séance's dark room.
