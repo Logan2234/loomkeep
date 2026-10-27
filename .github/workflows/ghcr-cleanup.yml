@@ -2,10 +2,15 @@ name: GHCR cleanup
 
 on:
   schedule:
-    # Weekly is plenty — untagged versions only pile up one push to main at a
-    # time (docker-push in ci.yml), never in bulk.
+    # Weekly is plenty: images only pile up one push to main at a time
+    # (docker-push in ci.yml), never in bulk.
     - cron: "12 4 * * 1"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only list what would be deleted
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -16,19 +21,24 @@ jobs:
     permissions:
       packages: write
     steps:
-      # Every push to main tags both loomkeep-api and loomkeep-web with
-      # `latest` and the commit's short SHA (see ci.yml's docker-push job) —
-      # nothing is ever pushed genuinely untagged by that job itself. What
-      # accumulates as "untagged" in the package view is Buildx's build
-      # provenance/SBOM attestation manifests, one extra per pushed image.
-      # GHCR has no built-in expiry for a personal-account package (that's an
-      # org-only setting), so without this, they'd sit there forever. This
-      # action understands the referrer/attestation relationship and only
-      # removes what nothing else points to — a plain "delete anything
-      # untagged" approach would be unsafe here.
+      # Every push to main tags loomkeep-api and loomkeep-web with `latest`
+      # and the commit's short SHA. Each tag is an index whose platform
+      # images and provenance attestations show as "untagged" versions in
+      # the package view: they belong to it and go when it goes.
+      #
+      # Kept: `latest`, version tags (v1.2.3, 1.2, 1), and the 30 newest SHA
+      # tags, enough to pin or roll back to any recent deploy. Older SHA
+      # tags, untagged leftovers and orphaned attestations are deleted.
+      # GHCR has no built-in expiry for a personal-account package.
       - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
         with:
           package: loomkeep-api,loomkeep-web
+          keep-n-tagged: 30
+          exclude-tags: "^(latest|v?\\d{1,3}(\\.\\d{1,3}){0,2})$"
+          use-regex: true
           delete-untagged: true
           delete-orphaned-images: true
+          delete-partial-images: true
+          # Deleting is final: a manual run lists first unless unticked.
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
           registry-url: "https://ghcr.io"
