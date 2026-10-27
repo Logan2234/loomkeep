@@ -2325,7 +2325,15 @@ ${url}`,
       });
       return true;
     } catch (err) {
-      this.logger.error(`Failed to send email to ${to}`, err);
+      // Neither the recipient nor the SMTP server's text, which usually
+      // quotes the address: logs are kept 30 days and reach GlitchTip.
+      const { code, responseCode } = err as {
+        code?: string;
+        responseCode?: number;
+      };
+      this.logger.error(
+        `Failed to send "${subject}" (${code ?? "unknown"}${responseCode ? ` ${responseCode}` : ""})`,
+      );
       return false;
     }
   }

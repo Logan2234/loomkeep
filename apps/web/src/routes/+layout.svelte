@@ -61,7 +61,9 @@
   <meta name="description" content={m.landing_meta_description()} />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content={m.common_loomkeep()} />
-  <meta property="og:url" content={page.url.href} />
+  <!-- Without the query string: a campaign link (?utm_source=…) must not
+       declare itself canonical and compete with the page. -->
+  <meta property="og:url" content={page.url.origin + page.url.pathname} />
   <meta
     property="og:title"
     content="{m.common_loomkeep()} — {m.landing_meta_tagline()}" />
@@ -76,7 +78,7 @@
   <meta name="twitter:card" content="summary_large_image" />
 
   <link rel="preconnect" href={env.PUBLIC_API_URL} />
-  <link rel="canonical" href={page.url.href} />
+  <link rel="canonical" href={page.url.origin + page.url.pathname} />
 </svelte:head>
 
 <div

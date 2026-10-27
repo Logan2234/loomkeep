@@ -1,4 +1,5 @@
 import { ALERTS, type AlertDefinition } from "@loomkeep/shared";
+import { Logger } from "@nestjs/common";
 import nodemailer from "nodemailer";
 import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../common/quota-tracker.service";
@@ -21,6 +22,39 @@ describe("MailService", () => {
 
   afterAll(() => {
     process.env = ORIGINAL_ENV;
+  });
+
+  // Failed sends land in Loki and GlitchTip: the recipient's address, in our
+  // own message or in the SMTP server's rejection text, must not go with it.
+  it("logs a failed send without the recipient's address", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+    const rejection = Object.assign(
+      new Error("550 5.1.1 <bob@example.com>: Recipient address rejected"),
+      { code: "EENVELOPE", responseCode: 550 },
+    );
+    vi.mocked(nodemailer.createTransport).mockReturnValue({
+      sendMail: vi.fn().mockRejectedValue(rejection),
+    } as never);
+    const error = vi
+      .spyOn(Logger.prototype, "error")
+      .mockImplementation(() => {});
+    const service = new MailService(quota);
+
+    await service.sendTemplateTest(
+      "welcome",
+      { email: "bob@example.com", locale: "en" },
+      {},
+    );
+
+    expect(error).toHaveBeenCalled();
+    const logged = JSON.stringify(error.mock.calls, (_key, value: unknown) =>
+      value instanceof Error ? value.message : value,
+    );
+    expect(logged).not.toContain("bob@example.com");
+    expect(logged).toContain("550");
+    error.mockRestore();
   });
 
   it("is a no-op when SMTP is not configured", async () => {

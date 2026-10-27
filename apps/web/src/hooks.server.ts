@@ -20,6 +20,11 @@ const SECURITY_HEADERS = {
   // sharing a browsing context group), closing off a class of cross-origin
   // window-reference attacks.
   "Cross-Origin-Opener-Policy": "same-origin",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  // Browsers ignore it on a plain-HTTP response, so a LAN install over HTTP
+  // is unaffected. No includeSubDomains, unlike the Caddyfile: a self-hoster
+  // may serve other plain-HTTP sites under the same domain.
+  "Strict-Transport-Security": "max-age=31536000",
 };
 
 const DEV_ONLY_ROUTES = new Set(["/app/admin/components", "/app/admin/schema"]);

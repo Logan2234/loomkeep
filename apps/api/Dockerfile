@@ -73,5 +73,7 @@ EXPOSE 3000
 # The build nests output under dist/src (prisma.config.ts at the api root
 # widens tsc's rootDir), so the entrypoint is dist/src/main.js. Calling the
 # local binary directly (rather than `pnpm exec`) means the runtime image
-# doesn't need pnpm installed at all.
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/src/main.js"]
+# doesn't need pnpm installed at all. `exec` hands PID 1 over to node: sh
+# doesn't relay SIGTERM, so without it `docker stop` killed the API after its
+# 10 s grace period, before the shutdown hooks (main.ts) could run.
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && exec node dist/src/main.js"]

@@ -63,6 +63,29 @@ test("renders the public landing page and signed-in app shell", async () => {
   }
 });
 
+// A campaign link (?utm_source=…) must not declare itself canonical: every
+// variant would compete with the page in search indexes.
+test("names the page's canonical URL without its query string", async () => {
+  const response = await fetch(`${serverOrigin}/?utm_source=newsletter&ref=x`);
+  const html = await response.text();
+  // The scheme is whatever adapter-node infers; only the path matters here.
+  const home = `https?://${new URL(serverOrigin).host}/"`;
+  assert.match(html, new RegExp(`<link rel="canonical" href="${home}`));
+  assert.match(html, new RegExp(`<meta property="og:url" content="${home}`));
+});
+
+test("describes Loomkeep as a free application in structured data", async () => {
+  const html = await (await fetch(serverOrigin)).text();
+  const [, json] =
+    html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s) ?? [];
+  assert.ok(json, "no JSON-LD on the landing page");
+  const data = JSON.parse(json);
+  assert.equal(data["@type"], "SoftwareApplication");
+  assert.equal(data.name, "Loomkeep");
+  assert.equal(data.offers.price, "0");
+  assert.match(data.url, new RegExp(`${new URL(serverOrigin).host}/$`));
+});
+
 test("serves the precaching service worker through the production asset manifest", async () => {
   const response = await fetch(`${serverOrigin}/service-worker.js`);
   assert.equal(response.status, 200);

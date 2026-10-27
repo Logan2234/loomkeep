@@ -12,7 +12,7 @@ import { MailService } from "../mail/mail.service";
 import { AdminAlertService } from "../notifications/admin-alert.service";
 import { PrismaService } from "../prisma/prisma.service";
 
-// The five package.json versions move in lockstep, and the images published
+// The six package.json versions move in lockstep, and the images published
 // on GHCR are built from `main`: its root package.json is the version a
 // `docker compose pull` would bring.
 export const LATEST_PACKAGE_URL =

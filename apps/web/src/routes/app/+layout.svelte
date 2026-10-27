@@ -22,6 +22,7 @@
   import RealtimeConnection from "#lib/components/RealtimeConnection.svelte";
   import ReauthModal from "#lib/components/ReauthModal.svelte";
   import DesktopSidebar from "#lib/components/sidebars/DesktopSidebar.svelte";
+  import SkipLink from "#lib/components/SkipLink.svelte";
   import { layout } from "#lib/layout.svelte.js";
   import MobileLayout from "#lib/components/sidebars/MobileLayout.svelte";
   import { useEeLock } from "#lib/ee/license.svelte.js";
@@ -96,6 +97,7 @@
     </button>
   </div>
 {:else if auth.isLoggedIn}
+  <SkipLink />
   <RealtimeConnection />
   <NotificationBell />
   <!-- Mounting triggers level-up bubbles; achievement unlocks can also arrive live. -->
