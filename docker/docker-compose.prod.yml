@@ -23,7 +23,7 @@ services:
       TRUST_PROXY_HOPS: "1"
 
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2.11.7-alpine
     restart: unless-stopped
     logging:
       driver: json-file
