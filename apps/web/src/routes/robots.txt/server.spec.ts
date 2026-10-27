@@ -1,5 +1,4 @@
 import * as env from "$app/env/public";
-import type { RequestEvent } from "@sveltejs/kit";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GET } from "./+server";
 
@@ -9,7 +8,7 @@ async function robots() {
   const response = await GET({
     url: new URL("https://tracker.example.org/robots.txt"),
     setHeaders: () => {},
-  } as unknown as RequestEvent);
+  } as unknown as Parameters<typeof GET>[0]);
   return response.text();
 }
 
