@@ -1,14 +1,15 @@
 # Changelog
 
-All notable changes to this project are documented here, grouped by the
-roadmap phase they belong to (see `README.md` → Roadmap). No tagged releases
-exist yet — the `version` field in `package.json` (root + every
-`apps/*`/`packages/*`, kept in lockstep) is the current record of where the
-app stands; see `CLAUDE.md` → Conventions for the versioning rule.
+All notable changes to this project are documented here, one section per
+version. The roadmap lives on
+[feedback.loomkeep.app/roadmap](https://feedback.loomkeep.app/roadmap). The
+`version` field in `package.json` (root + every `apps/*`/`packages/*`, kept
+in lockstep) is the record of where the app stands; the only tagged releases
+are the Android app's (`android-v<version>`). See `CLAUDE.md` → Conventions
+for the versioning rule.
 
-This file starts from the current state and is updated going forward on each
-version bump — it does not attempt to reconstruct exhaustive history prior to
-this point beyond the roadmap phases already documented in the README.
+This file is updated on each version bump; it does not reconstruct the
+history from before it was started.
 
 ## [Unreleased]
 

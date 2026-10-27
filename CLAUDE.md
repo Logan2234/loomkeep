@@ -96,7 +96,8 @@ fix does.
   app; `progressDrift` in the e2e suite checks they match.
 - **Import sources** (`apps/api/src/import/sources/`) share a base class per
   domain: `MediaImportSource` (TV Time CSV, Trakt account-export ZIP, Simkl
-  OAuth, MyAnimeList XML) and `BookCsvSource` (Goodreads, StoryGraph, Babelio) own the
+  OAuth, MyAnimeList XML, Letterboxd export ZIP, IMDb CSVs, AniList public
+  list by user name) and `BookCsvSource` (Goodreads, StoryGraph, Babelio) own the
   common analyze/resolve/commit flow — a new source only supplies its
   parsing. Steam implements `ImportReq` directly (no shared base, single
   source). `GET /import/availability` greys out a source when its env key
@@ -158,7 +159,8 @@ fix does.
 ### Web routing & data fetching
 
 - App lives under `/app`, public site at root (`+page.svelte`, `legal/*` —
-  both prerendered). Auth is enforced by **layout nesting, not a route
+  both server-rendered per request, for absolute URLs on any origin and the
+  visitor's language). Auth is enforced by **layout nesting, not a route
   allowlist**: `app/+layout.svelte` ↔ `(auth)/+layout.svelte` mirror-redirect
   each other. Adding a screen under `app/` gates it automatically — never
   reintroduce a `PUBLIC_ROUTES` array.

@@ -17,7 +17,7 @@
 ## Checklist
 
 - [ ] Tests added/updated for the behavior this changes (a bug fix includes a regression test that failed before it)
-- [ ] New user-facing strings added to **both** `fr` and `en` message catalogs
+- [ ] New user-facing strings added to the `fr` and `en` message catalogs (`it` may follow, see Translating)
 - [ ] `pnpm build:package` run if `packages/shared` changed
 - [ ] A Prisma migration is included if `schema.prisma` changed
 - [ ] No `--no-verify` — hooks ran clean
