@@ -52,7 +52,9 @@ Please **do not** open a public issue for a security vulnerability.
 Instead, use GitHub's private reporting: go to the
 [Security tab](https://github.com/Logan2234/loomkeep/security) →
 **Report a vulnerability**. This opens a private advisory visible only to
-the maintainer.
+the maintainer. Without a GitHub account, e-mail contact@loomkeep.app
+instead. Both are also listed in every instance's
+`/.well-known/security.txt`.
 
 Dependency vulnerabilities are additionally tracked automatically via
 Dependabot and CodeQL, both enabled on this repository.

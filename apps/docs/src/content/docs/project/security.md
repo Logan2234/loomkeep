@@ -7,7 +7,9 @@ description: Reporting a vulnerability, and how Loomkeep protects accounts and d
 
 **Don't open a public issue.** Report it privately through GitHub: on the
 repository's [Security tab](https://github.com/Logan2234/loomkeep/security),
-choose **Report a vulnerability**. Only the maintainer sees it.
+choose **Report a vulnerability**. Only the maintainer sees it. Without a
+GitHub account, e-mail contact@loomkeep.app. Every instance lists both in
+its `/.well-known/security.txt`.
 
 Reports against loomkeep.app are handled as real incidents: it holds real
 accounts. Reports against the self-hosted setup matter just as much, since
