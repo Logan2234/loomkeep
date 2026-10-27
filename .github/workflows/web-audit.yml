@@ -48,8 +48,15 @@ jobs:
           name: lighthouse-reports
           path: lighthouse-results/
 
+  # The API scan imports apps/api/openapi.json. The reusable job makes it
+  # against its own Postgres, cached by source hash; regenerating it below
+  # failed for weeks for want of a DATABASE_URL.
+  openapi-artifact:
+    uses: ./.github/workflows/generate-openapi-artifact.yml
+
   audit:
     name: Web Audit (Pa11y + OWASP ZAP)
+    needs: openapi-artifact
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -70,8 +77,10 @@ jobs:
       # sit on GHCR from CI's docker-push job (.github/workflows/ci.yml), so
       # this job never needs to build anything itself.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # 12 characters, like the tags docker-push gives the images (ci.yml):
+      # `git rev-parse --short` gave 7 and pulled images that don't exist.
       - id: vars
-        run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+        run: echo "sha=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
 
       # Stand up an ephemeral api+web+db stack (docker/docker-compose.yml)
       # instead of scanning https://loomkeep.app directly — activeScan sends
@@ -147,8 +156,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:package
       - run: pnpm --filter @loomkeep/api exec prisma generate
-      - run: pnpm --filter @loomkeep/api build
-      - run: pnpm --filter @loomkeep/api generate:openapi
+      - name: Download OpenAPI document
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: openapi-json
+          path: apps/api
       - name: Seed synthetic data
         env:
           DATABASE_URL: postgresql://loomkeep:ci-zap-postgres-password@localhost:5432/loomkeep?schema=public
