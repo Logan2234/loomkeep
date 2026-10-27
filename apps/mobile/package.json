@@ -20,6 +20,7 @@
   "scripts": {
     "sync": "cap sync",
     "open:android": "cap open android",
+    "test": "node --test scripts/error-page.spec.mjs",
     "clean": "rm -rf node_modules android/app/build android/build"
   },
   "dependencies": {
