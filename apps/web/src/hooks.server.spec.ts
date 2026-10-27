@@ -75,4 +75,21 @@ describe("security headers", () => {
     expect(response.headers.get("X-Frame-Options")).toBe("DENY");
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });
+
+  it("sets Referrer-Policy and HSTS like the Caddyfile", async () => {
+    const request = new Request("https://loomkeep.example/");
+    const response = await handle({
+      event: { request } as RequestEvent,
+      resolve: async () => new Response("ok"),
+    });
+
+    expect(response.headers.get("Referrer-Policy")).toBe(
+      "strict-origin-when-cross-origin",
+    );
+    // No includeSubDomains here, unlike the Caddyfile: a self-hoster may
+    // serve other plain-HTTP sites under the same domain.
+    expect(response.headers.get("Strict-Transport-Security")).toBe(
+      "max-age=31536000",
+    );
+  });
 });
