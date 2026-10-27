@@ -45,7 +45,8 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 </Steps>
 
 <Aside title="On a NAS or another machine">
-  Point the two addresses at that machine in `.env`, for instance
+  Open the ports to your network and point the two addresses at that machine
+  in `.env`, for instance `LOOMKEEP_BIND_ADDRESS=0.0.0.0`,
   `PUBLIC_API_URL=http://nas.local:3000/api` and
   `WEB_ORIGIN=http://nas.local:8080`, then run the two commands again.
 </Aside>
@@ -53,7 +54,11 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 ## Ports
 
 The base setup publishes the web app on port **8080** and the API on
-**3000**, both over plain HTTP. That's fine on a home network; for anything
+**3000**, both over plain HTTP and, by default, to this machine only
+(`127.0.0.1`). Docker's published ports go around host firewalls such as
+`ufw`, so on a server with a public address, `0.0.0.0` would put both on the
+internet. `LOOMKEEP_BIND_ADDRESS=0.0.0.0` opens them to your network, which
+is fine at home; for anything
 reachable from the internet, or to install the app on a phone, use
 [a domain with HTTPS](/self-hosting/https/) instead, which publishes only
 80 and 443.

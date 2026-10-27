@@ -65,4 +65,7 @@ COPY --from=build /app/apps/web/build ./deploy/build
 WORKDIR /app/deploy
 ENV PORT=3000
 EXPOSE 3000
+# The web server writes nothing to disk: the image's unprivileged user is
+# enough, and limits what a compromised process could do in the container.
+USER node
 CMD ["node", "build"]

@@ -13,6 +13,15 @@ history from before it was started.
 
 ## [Unreleased]
 
+- **Self-hosting, before upgrading:** without the HTTPS override, ports 8080
+  and 3000 are now published to the machine itself only (`127.0.0.1`).
+  An instance reached from another device (a NAS) needs
+  `LOOMKEEP_BIND_ADDRESS=0.0.0.0` in `.env`.
+- **Self-hosting:** instances stay out of search engines unless
+  `PUBLIC_SEARCH_INDEXING=true`.
+- **Self-hosting:** the API container now runs as `node`, not root; it hands
+  the existing backup volume over on its own at startup.
+
 ## 1.11.0 — Messages, sagas, and a unified notifications registry
 
 - **Friends can exchange private messages.** Conversations exist between

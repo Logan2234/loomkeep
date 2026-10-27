@@ -116,8 +116,11 @@ services:
       UMAMI_LINKS_BASE_URL: ${UMAMI_LINKS_BASE_URL:-}
     volumes:
       - backup-data:/data/backups
+    # This machine only by default: Docker's published ports bypass host
+    # firewalls such as ufw, so 0.0.0.0 would put this plain-HTTP API on the
+    # internet. LOOMKEEP_BIND_ADDRESS=0.0.0.0 opens it to the network (a NAS).
     ports:
-      - "3000:3000"
+      - "${LOOMKEEP_BIND_ADDRESS:-127.0.0.1}:3000:3000"
     # GET /api/health (database ping + memory). The deploy workflow waits on
     # this status, so a container stuck re-running a failed migration fails
     # the deploy instead of hiding behind `up -d`. start_period covers
@@ -150,9 +153,11 @@ services:
       PUBLIC_UMAMI_SCRIPT_URL: ${PUBLIC_UMAMI_SCRIPT_URL:-}
       PUBLIC_IS_BETA: ${PUBLIC_IS_BETA:-false}
       PUBLIC_QUACKBACK_URL: ${PUBLIC_QUACKBACK_URL:-}
+      # "true" to appear in search engines (loomkeep.app); off by default.
+      PUBLIC_SEARCH_INDEXING: ${PUBLIC_SEARCH_INDEXING:-}
       ANDROID_APP_LINKS: ${ANDROID_APP_LINKS:-}
     ports:
-      - "8080:3000"
+      - "${LOOMKEEP_BIND_ADDRESS:-127.0.0.1}:8080:3000"
     # The prerendered landing page: answers once the SvelteKit server is up.
     healthcheck:
       test:
