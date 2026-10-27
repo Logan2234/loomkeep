@@ -6,11 +6,6 @@ on:
     # (docker-push in ci.yml), never in bulk.
     - cron: "12 4 * * 1"
   workflow_dispatch:
-    inputs:
-      dry_run:
-        description: Only list what would be deleted
-        type: boolean
-        default: true
 
 permissions:
   contents: read
@@ -39,6 +34,4 @@ jobs:
           delete-untagged: true
           delete-orphaned-images: true
           delete-partial-images: true
-          # Deleting is final: a manual run lists first unless unticked.
-          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
           registry-url: "https://ghcr.io"
