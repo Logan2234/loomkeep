@@ -36,9 +36,11 @@ jobs:
       matrix:
         name: [api, web]
     steps:
+      # The workflow's own commit, not the one that triggered it: nothing here
+      # runs the repository's code, the image tag and the SARIF's sha come
+      # from the event. Checking out an event's head ref in a workflow_run is
+      # the pattern Scorecard's Dangerous-Workflow check flags.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - id: vars
         # The tag docker-push gave the images: the commit CI built, not
         # GITHUB_SHA, which a workflow_run sets to main's tip when this run
