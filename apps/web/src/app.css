@@ -48,7 +48,7 @@
   --border: #d3c7a8;
   --fg: #1c1712;
   --dim: #6b6354;
-  --accent: #8e620b;
+  --accent: #8a5f0a;
   --accent-fg: #ffffff;
   --btn: #1c1712;
   --btn-fg: #ffffff;
@@ -67,7 +67,7 @@
      anything else — same rule as the per-domain stat hues above. */
   --tier-bronze: #8a5423;
   --tier-silver: #68707c;
-  --tier-gold: #8e620b;
+  --tier-gold: #8a5f0a;
   color-scheme: light;
 }
 
