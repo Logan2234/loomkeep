@@ -68,11 +68,13 @@ describe("message catalogs", () => {
           .map((match) => match[1])
           .filter((key) => key !== "$schema");
         expect(rawKeys.length, name).toBe(new Set(rawKeys).size);
+
         for (const key of rawKeys) {
           expect(key.startsWith("common_"), key).toBe(name === "common");
           const home = prefixHomes.find(([prefix]) => key.startsWith(prefix));
           if (home) expect(name, key).toBe(home[1]);
         }
+
         for (const value of Object.values(messages))
           expect(typeof value).toBe("string");
         keys.push(...rawKeys);
