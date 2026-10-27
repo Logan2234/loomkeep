@@ -1,0 +1,31 @@
+name: PR title
+
+# Pull requests are squash-merged, so the title becomes the commit on main:
+# it follows the commit convention (CONTRIBUTING, docs › Contributing).
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  emoji:
+    # Dependabot's titles come from dependabot.yml, and its security updates
+    # ignore that file's prefix: nothing a contributor can fix here.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Title starts with a convention emoji
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # The same emoji may arrive with or without its U+FE0F variant
+          # selector (♻ / ♻️), depending on the keyboard that typed it.
+          title=${TITLE//$'️'/}
+          case "$title" in
+            "✨ "* | "🐛 "* | "♻ "* | "📝 "* | "⚡ "* | "🔖 "*) ;;
+            *)
+              echo "::error::Start the title with one of ✨ 🐛 ♻️ 📝 ⚡ 🔖 and a space, e.g. \"🐛 Fix the import retry\"."
+              exit 1
+              ;;
+          esac

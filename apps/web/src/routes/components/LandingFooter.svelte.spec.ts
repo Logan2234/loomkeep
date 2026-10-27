@@ -1,5 +1,6 @@
 import { auth } from "#lib/auth.svelte.js";
 import { languageName } from "#lib/locales.js";
+import { m } from "#lib/paraglide/messages.js";
 import { setLocale } from "#lib/paraglide/runtime.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
@@ -53,5 +54,27 @@ describe("LandingFooter language picker", () => {
     await chooseItalian();
 
     expect(setLocale).toHaveBeenCalledWith("it");
+  });
+});
+
+describe("LandingFooter catalogue attribution", () => {
+  // The landing page shows these providers' artwork to signed-out visitors,
+  // and TMDB's API terms require its notice wherever its data appears.
+  it("carries TMDB's notice", () => {
+    renderWithQuery(LandingFooter, {});
+
+    expect(screen.getByText(m.datasource_tmdb_notice())).toBeTruthy();
+  });
+
+  it.each([
+    ["TMDB", "https://www.themoviedb.org/"],
+    ["AniList", "https://anilist.co/"],
+    ["IGDB", "https://www.igdb.com/"],
+    ["Open Library", "https://openlibrary.org/"],
+    ["MusicBrainz", "https://musicbrainz.org/"],
+  ])("credits %s with a link to it", (name, href) => {
+    renderWithQuery(LandingFooter, {});
+
+    expect(screen.getByRole("link", { name }).getAttribute("href")).toBe(href);
   });
 });

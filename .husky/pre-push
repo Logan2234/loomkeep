@@ -1,1 +1,16 @@
-pnpm check
+# Only the packages changed since main and those depending on them. A change
+# at the root (lockfile, shared configs) checks everything, once: selecting
+# the root alongside a package would run that package's check twice in
+# parallel, and two `svelte-kit sync` in one folder race each other.
+# Markdown, workflows and docker/ never change what typechecks.
+if ! git rev-parse --verify -q origin/main >/dev/null; then
+  pnpm check
+elif git diff --name-only origin/main -- ':!apps/' ':!packages/' ':!*.md' ':!.github/' ':!docker/' | grep -q .; then
+  pnpm check
+else
+  pnpm --filter "...[origin/main]" \
+    --changed-files-ignore-pattern "**/*.md" \
+    --changed-files-ignore-pattern ".github/**" \
+    --changed-files-ignore-pattern "docker/**" \
+    check
+fi

@@ -2,7 +2,7 @@
   <title>Mentions légales - Loomkeep</title>
 </svelte:head>
 
-<main class="mx-auto max-w-3xl px-5 py-10 md:py-16">
+<main lang="fr" class="mx-auto max-w-3xl px-5 py-10 md:py-16">
   <header class="border-border mb-10 border-b pb-8 md:mb-14">
     <p class="timecode mb-4 text-xs tracking-[0.16em] uppercase">
       Loomkeep / informations légales

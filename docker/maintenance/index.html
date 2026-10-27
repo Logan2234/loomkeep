@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -18,8 +18,8 @@
         margin: 0;
         min-height: 100vh;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
         padding: 1.5rem;
         background: #0c0d10;
         color: #ececea;
@@ -30,6 +30,7 @@
 
       .card {
         max-width: 26rem;
+        margin-block: auto;
       }
 
       .wordmark {
@@ -84,24 +85,98 @@
       a:hover {
         border-bottom-color: #f5b841;
       }
+
+      /* Language switch without JavaScript: the checked radio decides which
+         copy shows. A browser without :has() drops both rules and shows the
+         two languages one after the other. */
+      body:has(#lang-fr:checked) [data-copy="en"],
+      body:not(:has(#lang-fr:checked)) [data-copy="fr"] {
+        display: none;
+      }
+
+      .languages {
+        display: flex;
+        gap: 0.5rem;
+        border: none;
+        margin: 2rem 0 0;
+        padding: 0;
+      }
+
+      .languages legend,
+      .languages input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      .languages label {
+        cursor: pointer;
+        font-size: 0.85rem;
+        color: #a8abb4;
+        border: 1px solid #2a2e38;
+        border-radius: 999px;
+        padding: 0.3rem 0.85rem;
+        transition:
+          color 150ms ease-out,
+          border-color 150ms ease-out;
+      }
+
+      .languages label:hover {
+        color: #ececea;
+      }
+
+      .languages input:checked + label {
+        color: #f5b841;
+        border-color: #f5b841;
+      }
+
+      .languages input:focus-visible + label {
+        outline: 2px solid #f5b841;
+        outline-offset: 2px;
+      }
     </style>
   </head>
   <body>
-    <div class="card">
+    <main class="card">
       <p class="wordmark">LOOM<span>KEEP</span></p>
       <hr class="rule" />
-      <p class="status">Maintenance en cours</p>
-      <p>
-        On bricole en coulisses pour améliorer ton expérience. Le site est
-        temporairement indisponible, mais nous travaillons dur pour le remettre
-        en ligne rapidement.
-      </p>
-      <a
-        href="https://status.loomkeep.app"
-        target="_blank"
-        rel="noopener noreferrer">
-        Suivre l'état du service
-      </a>
-    </div>
+      <div data-copy="en">
+        <p class="status">Under maintenance</p>
+        <p>
+          We're working behind the scenes to improve your experience. The site
+          is unavailable for a moment, and will be back online shortly.
+        </p>
+        <a
+          href="https://status.loomkeep.app"
+          target="_blank"
+          rel="noopener noreferrer">
+          Follow the service status
+        </a>
+      </div>
+      <div data-copy="fr" lang="fr">
+        <p class="status">Maintenance en cours</p>
+        <p>
+          On bricole en coulisses pour améliorer ton expérience. Le site est
+          temporairement indisponible, mais nous travaillons dur pour le
+          remettre en ligne rapidement.
+        </p>
+        <a
+          href="https://status.loomkeep.app"
+          target="_blank"
+          rel="noopener noreferrer">
+          Suivre l'état du service
+        </a>
+      </div>
+    </main>
+    <fieldset class="languages">
+      <legend>Language / Langue</legend>
+      <input type="radio" name="lang" id="lang-en" checked />
+      <label for="lang-en">English</label>
+      <input type="radio" name="lang" id="lang-fr" />
+      <label for="lang-fr" lang="fr">Français</label>
+    </fieldset>
   </body>
 </html>

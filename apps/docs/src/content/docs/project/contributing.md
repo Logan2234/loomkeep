@@ -16,7 +16,7 @@ on their spare time, so answers can take a few days.
 
 ## Development setup
 
-You need Node.js 22 or later, [pnpm](https://pnpm.io) and Docker for the
+You need Node.js 26 (the version in `.nvmrc`), [pnpm](https://pnpm.io) and Docker for the
 database.
 
 ```sh
@@ -80,7 +80,9 @@ Commit messages are short, imperative, in English, and start with an emoji:
 ## Pull requests
 
 Target `main` and fill in the template; it is short on purpose. Draft pull
-requests are welcome for early feedback.
+requests are welcome for early feedback. Pull requests are squash-merged, so
+the title becomes the commit on `main`: it starts with one of the emojis
+above, and a check fails until it does.
 
 Before your first pull request is merged, you sign the
 [Contributor License Agreement](https://github.com/Logan2234/loomkeep/blob/main/CLA.md)

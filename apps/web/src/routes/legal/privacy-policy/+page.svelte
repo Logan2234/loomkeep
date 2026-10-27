@@ -2,7 +2,7 @@
   <title>Politique de confidentialité - Loomkeep</title>
 </svelte:head>
 
-<main class="mx-auto max-w-3xl px-5 py-10 md:py-16">
+<main lang="fr" class="mx-auto max-w-3xl px-5 py-10 md:py-16">
   <header class="border-border mb-10 border-b pb-8 md:mb-14">
     <p class="timecode mb-4 text-xs tracking-[0.16em] uppercase">
       Loomkeep / informations légales
@@ -13,7 +13,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 21/10/2026</em></p>
+    <p><em>Dernière mise à jour : 27/10/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -406,6 +406,20 @@
       Finalité : sécurité, disponibilité et performance du service. Base légale
       : intérêt légitime.
     </p>
+    <h3>Sauvegardes hors site</h3>
+    <p>
+      Chaque jour, une copie des bases de données de l'instance officielle est
+      chiffrée sur le serveur, puis stockée sur <strong>Cloudflare R2</strong>,
+      le service de stockage de <strong>Cloudflare Inc.</strong>, dans un espace
+      dont les données restent dans l'Union européenne (juridiction « EU » de
+      R2). Elle y est conservée 30 jours. Le chiffrement a lieu avant l'envoi,
+      avec une clé dont Cloudflare ne dispose pas : Cloudflare n'a pas accès au
+      contenu de ces copies.
+    </p>
+    <p>
+      Finalité : pouvoir restaurer le service si le serveur est perdu. Base
+      légale : intérêt légitime.
+    </p>
     <h3>Services techniques supplémentaires</h3>
     <p>
       Loomkeep peut utiliser d'autres prestataires techniques nécessaires
@@ -586,8 +600,8 @@
               >7 jours glissants (7 sauvegardes)</td
             ></tr>
           <tr
-            ><td>Sauvegardes hors site (offsite)</td><td>30 jours glissants</td
-            ></tr>
+            ><td>Sauvegardes hors site (offsite, chiffrées, Cloudflare R2)</td
+            ><td>30 jours glissants</td></tr>
           <tr
             ><td>Snapshots infrastructure (hébergeur)</td><td
               >Snapshot quotidien, un seul point de restauration conservé (~24
@@ -729,9 +743,10 @@
       notamment les États-Unis.
     </p>
     <p>
-      L'hébergement applicatif (OVHcloud), l'envoi d'e-mails (Brevo) et le suivi
-      des erreurs (GlitchTip, auto-hébergé) sont opérés depuis l'Union
-      européenne.
+      L'hébergement applicatif (OVHcloud), l'envoi d'e-mails (Brevo), le suivi
+      des erreurs (GlitchTip, auto-hébergé) et le stockage des sauvegardes hors
+      site (Cloudflare R2, juridiction UE, copies chiffrées) sont opérés depuis
+      l'Union européenne.
     </p>
     <p>Sont notamment concernés par un traitement hors UE :</p>
     <ul>

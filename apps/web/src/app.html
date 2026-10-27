@@ -19,7 +19,8 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <script>
-      const localeMap = { fr: "fr-FR", en: "en-US" };
+      // Keep in sync with Locale / LOCALE_REGIONS in packages/shared (app-html.spec.ts checks).
+      const localeMap = { fr: "fr-FR", en: "en-US", it: "it-IT" };
       let locale;
 
       try {
