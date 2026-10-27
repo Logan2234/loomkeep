@@ -13,14 +13,119 @@ history from before it was started.
 
 ## [Unreleased]
 
-- **Self-hosting, before upgrading:** without the HTTPS override, ports 8080
-  and 3000 are now published to the machine itself only (`127.0.0.1`).
-  An instance reached from another device (a NAS) needs
+## 1.12.0 — The Android app, imports from every tracker, and commands in Messages
+
+### Before upgrading a self-hosted instance
+
+- **Ports stay on the machine.** Without the HTTPS override, ports 8080 and
+  3000 are published on `127.0.0.1` only: Docker's published ports bypass
+  `ufw`, so `0.0.0.0` exposed a plain-HTTP API on any server with a public
+  address. An instance reached from another device (a NAS) needs
   `LOOMKEEP_BIND_ADDRESS=0.0.0.0` in `.env`.
-- **Self-hosting:** instances stay out of search engines unless
-  `PUBLIC_SEARCH_INDEXING=true`.
-- **Self-hosting:** the API container now runs as `node`, not root; it hands
-  the existing backup volume over on its own at startup.
+- **`latest` is now the last release**, no longer every commit on `main`.
+  Images are also tagged `1.12.0`, `1.12` and `1`; `edge` follows `main`.
+  `IMAGE_TAG` picks one (docs › Upgrades & backups).
+- **Out of search engines by default.** `robots.txt` answers `Disallow: /`
+  and pages carry `noindex` unless `PUBLIC_SEARCH_INDEXING=true`.
+- **The API container runs as `node`**, not root; its entrypoint hands the
+  existing backup volume over at startup. The web container runs as `node`
+  too.
+- **`PUBLIC_IS_BETA` is read as a boolean**: only `"true"` shows the beta
+  badge, where compose's default `"false"` used to show it everywhere.
+- **arm64 images exist for the API too.** Each platform is built natively;
+  the emulated arm64 API build had always failed, silently.
+
+### Android app
+
+- **A Capacitor shell for Android** (`apps/mobile`) that loads the
+  instance's `/app` rather than bundling the web: back button, icon and
+  launch screen, share sheet for exports and links, App Links for
+  loomkeep.app URLs, app icon shortcuts, status bar in the app's theme.
+  Its data stays out of Android backups and device transfers.
+- **Native push** through Firebase Cloud Messaging (MOB-04/05), and
+  **native ISBN and profile QR scanning**
+  with Google's code scanner (MOB-07/19).
+- **Simkl connects in an in-app tab** whose redirect returns to the app
+  (MOB-09), and other apps can share links to Loomkeep (MOB-18).
+- **Another instance than loomkeep.app** can be picked at runtime, from
+  the login page or the offline page (MOB-15).
+- **Releases**: a signed APK per version, attached to the GitHub release
+  with a Sigstore provenance attestation; `android-dev-<n>` pre-releases
+  of `main` for testing, followable in Obtainium. The landing page and the
+  docs present the app. The web only calls a native plugin once
+  `Capacitor.isPluginAvailable()` says the installed APK has it.
+
+### Imports
+
+- **Letterboxd and IMDb imports**, and an **AniList** list by user name.
+- **Trakt and TV Time bring everything they hold**: ratings (season and
+  episode ones included, and titles rated but never watched), favourites,
+  custom lists, statuses, memos and add dates. The preview shows the rated
+  seasons, episodes and lists before committing. TV Time shut down on
+  2026-07-15: its import reads an export made before then.
+
+### Messages and social
+
+- **Commands**: `/review` and `/list` attach a review or a list,
+  `/poll` asks the conversation, `/saga` shows a series in order, `/pick`
+  rolls through the pile before landing on a work, `/where` finds where to
+  stream a film or series, and `:emoji:` completes emoji.
+- **Live formatting in the composer** (SOC-09): a CodeMirror field whose
+  markdown markers only show while the caret is inside them. Emoji alone
+  show large, and comments complete emoji too.
+- **Friends on a work's page** (SOC-03): who tracks it and where they stand.
+
+### Library and works
+
+- **Unified work search** across every enabled domain, as a "Tout" tab
+  first in search and in the home quick search, behind `/reco` and `#` in
+  Messages, and on a list's page to add a work without tracking it.
+- **Episodes and seasons rework**: stills, synopses, scores and
+  translations stored per episode; a seasons strip, richer rows and an
+  episode panel with a timeline and arrow-key navigation.
+- **Completion estimates** for series and games, from the viewer's pace.
+- **A note on each list item** (UX-05) and **the platform a game is played
+  on** (UX-03).
+- **Paused works are recalled** after a while, by an alert of their own.
+- The media library ranks and filters on progress kept by Postgres
+  triggers (`LibraryEntry.watchedEpisodes`/`lastWatchedAt`,
+  `MediaItem.episodeCount`) instead of aggregating every watch per page.
+- Book series are kept in the database, and film sagas' translated titles
+  too, instead of asking Open Library or TMDB again.
+
+### Account, security and notifications
+
+- **Account deletion is deferred**: a self-deletion is scheduled and can be
+  cancelled from the email it sends, before it runs.
+- **Confirm it's you** (TRU-05): sensitive actions ask a recent sign-in
+  check (`@RequireRecentAuth`) in a modal.
+- **Notifications**: a reworked bell and a history page; read
+  notifications are kept 90 days instead of deleted. Admins are alerted
+  when a newer Loomkeep version is out.
+- Two tabs refreshing at once keep their session, and a sign-in no longer
+  ends another machine's session. Passwordless login options answer
+  stable decoys for unknown accounts, reported content changed before
+  moderation is flagged, and a self-host's mail replies no longer default
+  to Loomkeep's mailbox. Caddy's admin API stays on loopback, metrics move
+  to `:2020`. The nightly backup streams from `pg_dump` through `age`.
+- `/.well-known/security.txt` lists where to report a vulnerability.
+
+### Site, accessibility and SEO
+
+- The legal pages declare their French text as French, the admin area no
+  longer nests a second `<main>`, the app has a skip-to-content link, the
+  landing's rotating verb pauses on hover and reads as one sentence to
+  screen readers, and the light theme's amber reaches 4.5:1 on every
+  surface.
+- Italian is kept from the boot script on (`<html lang>`, manifest).
+- The maintenance page is in English with a French switch, without
+  JavaScript.
+- Each public page has its own description, canonical URLs drop their
+  query string, the landing carries `SoftwareApplication` structured data
+  and credits the catalogues with TMDB's notice, the comparator's facts
+  are dated, the poster wall weighs half as much, and the Latin fonts are
+  preloaded.
+- Documentation search (Pagefind).
 
 ## 1.11.0 — Messages, sagas, and a unified notifications registry
 
