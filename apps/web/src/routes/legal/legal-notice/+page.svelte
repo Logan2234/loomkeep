@@ -1,5 +1,8 @@
 <svelte:head>
   <title>Mentions légales - Loomkeep</title>
+  <meta
+    name="description"
+    content="Mentions légales de loomkeep.app : éditeur, directeur de la publication, hébergeur, nom de domaine et contact." />
 </svelte:head>
 
 <main lang="fr" class="mx-auto max-w-3xl px-5 py-10 md:py-16">

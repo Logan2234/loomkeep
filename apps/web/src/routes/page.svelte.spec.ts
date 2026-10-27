@@ -7,6 +7,23 @@ import LandingPage from "./+page.svelte";
 vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
 vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
+describe("landing poster wall", () => {
+  // Decoration behind the title: dragging a poster out of it, or selecting
+  // it, broke the illusion of a backdrop.
+  it("can't be dragged out", () => {
+    const { container } = renderWithQuery(LandingPage, {});
+
+    const posters = container.querySelectorAll(
+      "section [aria-hidden='true'] img",
+    );
+    expect(posters.length).toBeGreaterThan(0);
+
+    for (const poster of posters) {
+      expect(poster.getAttribute("draggable")).toBe("false");
+    }
+  });
+});
+
 describe("landing hero title", () => {
   // The shared setup turns reduced motion on, which stops the rotation.
   beforeEach(() => {

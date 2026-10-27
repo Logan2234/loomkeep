@@ -60,7 +60,6 @@
 <svelte:head>
   <title>{m.common_loomkeep()}</title>
 
-  <meta name="description" content={m.landing_meta_description()} />
   {#if env.PUBLIC_SEARCH_INDEXING !== "true"}
     <!-- Self-hosted instances stay out of search results unless their admin
          opts in; see robots.txt/+server.ts. -->

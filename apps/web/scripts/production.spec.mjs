@@ -97,6 +97,33 @@ test("preloads the two Latin fonts the stylesheet actually uses", async () => {
   }
 });
 
+// Search engines flag pages sharing one description, and every public page
+// used to carry the landing page's.
+test("gives each public page its own single description", async () => {
+  const descriptions = [];
+
+  for (const pathname of [
+    "/",
+    "/legal/legal-notice",
+    "/legal/privacy-policy",
+    "/legal/terms-of-service",
+    "/legal/transparency",
+  ]) {
+    const html = await (await fetch(serverOrigin + pathname)).text();
+    const found = [
+      ...html.matchAll(/<meta name="description" content="([^"]*)"/g),
+    ];
+    assert.equal(
+      found.length,
+      1,
+      `${pathname} has ${found.length} descriptions`,
+    );
+    descriptions.push(found[0][1]);
+  }
+
+  assert.equal(new Set(descriptions).size, descriptions.length);
+});
+
 // The server runs without PUBLIC_SEARCH_INDEXING, like a fresh self-host.
 test("keeps an instance out of search results unless indexing is switched on", async () => {
   const html = await (await fetch(serverOrigin)).text();
