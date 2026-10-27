@@ -17,7 +17,7 @@ describe("AniList import (e2e)", () => {
   async function settled(jobId: string) {
     for (let attempt = 0; attempt < 60; attempt++) {
       const res = await request(http)
-        .get(`/api/import/anilist/${jobId}`)
+        .get(`/api/import/${jobId}`)
         .set("Cookie", cookies)
         .expect(200);
       if (res.body.status !== "running") return res.body;

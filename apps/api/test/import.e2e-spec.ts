@@ -52,7 +52,7 @@ describe("Import (e2e)", () => {
   async function settled(jobId: string) {
     for (let attempt = 0; attempt < 60; attempt++) {
       const res = await request(http)
-        .get(`/api/import/myanimelist/${jobId}`)
+        .get(`/api/import/${jobId}`)
         .set("Cookie", cookies)
         .expect(200);
       if (res.body.status !== "running") return res.body;
@@ -163,7 +163,7 @@ describe("Import (e2e)", () => {
       .expect(201);
 
     await request(http)
-      .get(`/api/import/myanimelist/${job.id}`)
+      .get(`/api/import/${job.id}`)
       .set("Cookie", authCookies(registered))
       .expect(403);
   });

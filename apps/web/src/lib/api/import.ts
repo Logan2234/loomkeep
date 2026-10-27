@@ -38,5 +38,5 @@ export const commitImport = (
     body,
   });
 
-export const getImportJob = (source: ImportSource, jobId: string) =>
-  typedRequest("/import/{source}/{jobId}", { params: { source, jobId } });
+export const getImportJob = (jobId: string) =>
+  typedRequest("/import/{jobId}", { params: { jobId } });

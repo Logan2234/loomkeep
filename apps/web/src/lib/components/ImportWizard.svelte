@@ -117,7 +117,7 @@
   // not this object.
   const _jobQuery = createApiQuery(() => ({
     key: keys.import.job(source, pollingJobId ?? ""),
-    fetch: () => getImportJob(source, pollingJobId!),
+    fetch: () => getImportJob(pollingJobId!),
     enabled: !!pollingJobId,
     onSuccess: (j) => {
       job = j;

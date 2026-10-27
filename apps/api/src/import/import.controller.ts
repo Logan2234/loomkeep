@@ -25,7 +25,7 @@ import { ImportJobService } from "./import-job.service";
 /**
  * One generic import surface for every source. `:source` selects the plugged-in
  * {@link ImportSource} (tvtime, storygraph, goodreads, steam, …); analyze and
- * commit both return a job to poll at `GET /import/:source/:jobId`.
+ * commit both return a job to poll at `GET /import/:jobId`.
  */
 @Controller("import")
 export class ImportController {
@@ -93,13 +93,10 @@ export class ImportController {
   }
 
   /** Poll progress and, once finished, the plan or report. */
-  @Get(":source/:jobId")
+  @Get(":jobId")
   @ApiOkResponse({ type: ImportJobResponseDto })
   status(
     @CurrentUser() user: JwtPayload,
-    // Unused: a job id is unique on its own. Read so the OpenAPI document
-    // declares the route's `{source}`, which ZAP refuses to import without.
-    @Param("source") _source: ImportSource,
     @Param("jobId") jobId: string,
   ): ImportJobDto {
     return this.jobs.getJob(user.sub, jobId);
