@@ -96,8 +96,11 @@ jobs:
                 sleep 5
               done
             done
-            docker image prune -a -f --filter "until=168h"
-            docker builder prune -f --filter "until=168h"
+            # Every deploy pulls a new api + web pair, several times a day: a
+            # week of unused images filled the disk. A day keeps the previous
+            # pair for a manual rollback; images in use are never removed.
+            docker image prune -a -f --filter "until=24h"
+            docker builder prune -f --filter "until=24h"
       # The healthchecks above run inside the containers: a broken Caddy
       # route, certificate or Cloudflare rule would still pass them. This
       # goes through the same path as a visitor; a failure fails the job,
