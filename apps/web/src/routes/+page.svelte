@@ -404,6 +404,13 @@
 <svelte:head>
   <title>{m.common_loomkeep()} — {m.landing_meta_tagline()}</title>
   <meta name="description" content={m.landing_meta_description()} />
+  <!-- The poster wall's CDNs: opening the connections while the page parses
+       saves a DNS + TLS round trip on each before the first poster. Open
+       Library and Cover Art Archive redirect to archive.org, where a
+       preconnect gains little. -->
+  <link rel="preconnect" href="https://image.tmdb.org" />
+  <link rel="preconnect" href="https://s4.anilist.co" />
+  <link rel="preconnect" href="https://images.igdb.com" />
   <!-- eslint-disable-next-line svelte/no-at-html-tags -- static JSON, `<` escaped above -->
   {@html structuredDataTag}
 
