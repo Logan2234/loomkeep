@@ -1,5 +1,7 @@
+import { cleanup } from "@testing-library/svelte";
 import "@testing-library/svelte/vitest";
-import { afterAll, afterEach, beforeAll, vi } from "vitest";
+import axe from "axe-core";
+import { afterAll, afterEach, beforeAll, expect, vi } from "vitest";
 import { server } from "./msw";
 
 // Component tests do not receive SvelteKit's runtime environment payload.
@@ -45,3 +47,30 @@ document.dispatchEvent = (event: Event) => {
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
+
+// Whatever state a test leaves on screen (a modal open, a wizard's third
+// step, an error) gets an axe pass, which web-audit's page-by-page Pa11y never
+// reaches. It runs before testing-library's own cleanup (registered first,
+// so run last), and cleans up itself so a failure here doesn't leave the
+// next test a second copy of the screen. WCAG A/AA rules only; contrast needs
+// real layout and colours, the document-level rules have no page around a
+// lone component, and iframes (the email preview's) are another document.
+afterEach(async () => {
+  const { violations } = await axe
+    .run(document.body, {
+      runOnly: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"],
+      rules: {
+        "color-contrast": { enabled: false },
+        "document-title": { enabled: false },
+        "html-has-lang": { enabled: false },
+      },
+      iframes: false,
+    })
+    .finally(cleanup);
+  expect(
+    violations.map(
+      (violation) =>
+        `${violation.id}: ${violation.help}\n  ${violation.nodes.map((node) => node.target.join(" ")).join("\n  ")}`,
+    ),
+  ).toEqual([]);
+});

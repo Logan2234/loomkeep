@@ -18,7 +18,11 @@ const event: ActivityEventDto = {
 };
 describe("activity cover fallback", () => {
   it("replaces a failed artwork instead of leaving a broken image", async () => {
-    const { container } = render(ActivityItem, { event });
+    // It's a list item: its parents (feed, home widget) render it in a <ul>.
+    const { container } = render(ActivityItem, {
+      props: { event },
+      target: document.body.appendChild(document.createElement("ul")),
+    });
     const image = container.querySelector<HTMLImageElement>(
       'img[src="/broken-cover.jpg"]',
     );

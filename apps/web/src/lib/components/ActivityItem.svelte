@@ -43,9 +43,13 @@
   </div>
 
   {#if event.imageUrl}
+    <!-- The title link above already names this target: the cover is a
+         second, pointer-only way in. -->
     <svelte:element
       this={event.href ? "a" : "div"}
       href={event.href ?? undefined}
+      aria-hidden={event.href ? "true" : undefined}
+      tabindex={event.href ? -1 : undefined}
       class="shrink-0">
       <Poster
         src={event.imageUrl}
