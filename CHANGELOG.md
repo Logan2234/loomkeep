@@ -32,6 +32,14 @@ history from before it was started.
   downloads, Google's code scanner, passkeys through Credential Manager,
   what stays on the device. Section 7 now says the app's notifications,
   unlike the browser's, reach Google (FCM) unencrypted.
+- **Buttons on the app's notifications** (MOB-17), done without opening
+  it: reply to a chat message or a comment from the notification, mark a
+  message or a bell entry read, accept or decline a follow request,
+  follow back, add an announced sequel to "To watch" / "To play". The app
+  draws these notifications itself (`ShellMessagingService`, data-only
+  FCM messages); each button carries a token signed for that device,
+  valid seven days, sent to `POST /api/notifications/actions`. Needs the
+  next APK; older ones keep the notifications Android draws.
 
 ## 1.12.0 — The Android app, imports from every tracker, and commands in Messages
 
