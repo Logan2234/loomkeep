@@ -52,15 +52,25 @@ const { plugin, emit } = vi.hoisted(() => {
 vi.mock("@capacitor/push-notifications", () => ({
   PushNotifications: plugin,
 }));
+const { native } = vi.hoisted(() => ({
+  native: { plugins: new Set<string>() },
+}));
+vi.mock("@capacitor/core", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@capacitor/core")>()),
+  Capacitor: { isPluginAvailable: (name: string) => native.plugins.has(name) },
+}));
 vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 /** Records each native-push call the API receives. */
 function recordApi() {
-  const calls: { method: string; token: string }[] = [];
+  const calls: { method: string; token: string; actions?: boolean }[] = [];
 
   const record = async ({ request }: { request: Request }) => {
-    const { token } = (await request.json()) as { token: string };
-    calls.push({ method: request.method, token });
+    const { token, actions } = (await request.json()) as {
+      token: string;
+      actions?: boolean;
+    };
+    calls.push({ method: request.method, token, actions });
     return new HttpResponse(null, { status: 204 });
   };
 
@@ -73,6 +83,7 @@ function recordApi() {
 
 afterEach(() => {
   localStorage.clear();
+  native.plugins.clear();
   plugin.permission = "granted";
   plugin.token = "fcm-token-1";
   vi.clearAllMocks();
@@ -84,8 +95,38 @@ describe("native push", () => {
 
     await expect(enableNativePush()).resolves.toBe(true);
 
-    expect(calls).toEqual([{ method: "POST", token: "fcm-token-1" }]);
+    expect(calls).toEqual([
+      { method: "POST", token: "fcm-token-1", actions: false },
+    ]);
     await expect(isNativePushEnabledHere()).resolves.toBe(true);
+  });
+
+  it("tells the API when the APK draws its notifications, with buttons", async () => {
+    native.plugins.add("NotificationActions");
+    const calls = recordApi();
+
+    await enableNativePush();
+
+    expect(calls).toEqual([
+      { method: "POST", token: "fcm-token-1", actions: true },
+    ]);
+  });
+
+  it("says it again at each start, once push is on here", async () => {
+    const calls = recordApi();
+    await enableNativePush();
+    native.plugins.add("NotificationActions");
+
+    const stop = startNativePush();
+
+    await vi.waitFor(() =>
+      expect(calls.at(-1)).toEqual({
+        method: "POST",
+        token: "fcm-token-1",
+        actions: true,
+      }),
+    );
+    stop();
   });
 
   it("stops at a refused permission, before asking FCM or the API", async () => {
@@ -115,8 +156,8 @@ describe("native push", () => {
 
     await emit("registration", { value: "fcm-token-2" });
 
-    expect(calls.slice(1)).toEqual([
-      { method: "POST", token: "fcm-token-2" },
+    expect(calls.slice(2)).toEqual([
+      { method: "POST", token: "fcm-token-2", actions: false },
       { method: "DELETE", token: "fcm-token-1" },
     ]);
     expect(localStorage.getItem(STORAGE_KEYS.nativePushToken)).toBe(
