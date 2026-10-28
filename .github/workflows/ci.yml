@@ -629,6 +629,11 @@ jobs:
 
   deploy:
     needs: ready-to-ship
+    # A job's default success() also requires every job further up its
+    # needs chain to have succeeded, so a check skipped for want of changes
+    # (lint-test-api on a web-only commit) would skip it: ready-to-ship's own
+    # result is what counts.
+    if: ${{ !cancelled() && needs.ready-to-ship.result == 'success' }}
     runs-on: ubuntu-latest
     # The VPS_* secrets live in this environment, limited to main, so no
     # other branch's workflow can read them; it also records each deploy.
@@ -723,6 +728,8 @@ jobs:
   # release the latest one.
   release:
     needs: ready-to-ship
+    # See deploy.
+    if: ${{ !cancelled() && needs.ready-to-ship.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -931,8 +938,9 @@ jobs:
   # the docs' link) always serves the newest.
   publish-release-apk:
     needs: [android-debug, release]
+    # See deploy.
     if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main'
+      !cancelled() && needs.release.result == 'success'
       && needs.android-debug.outputs.release-apk == 'success'
     runs-on: ubuntu-latest
     permissions:
