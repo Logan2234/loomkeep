@@ -93,7 +93,12 @@ export class NotificationController {
     @Body() dto: NativePushSubscriptionDto,
     @Headers("user-agent") userAgent?: string,
   ): Promise<void> {
-    await this.push.subscribeNative(user.sub, dto.token, userAgent);
+    await this.push.subscribeNative(
+      user.sub,
+      dto.token,
+      userAgent,
+      dto.actions,
+    );
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

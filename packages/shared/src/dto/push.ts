@@ -12,6 +12,8 @@ export interface PushSubscriptionRequestDto {
 /** The Android app's Firebase Cloud Messaging registration token. */
 export interface NativePushSubscriptionRequestDto {
   token: string;
+  /** The installed APK draws its notifications itself, with buttons (MOB-17). */
+  actions?: boolean;
 }
 
 export interface PushPublicKeyDto {
