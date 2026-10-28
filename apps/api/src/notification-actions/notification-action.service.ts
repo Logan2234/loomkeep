@@ -119,6 +119,8 @@ export class NotificationActionService {
       case NotificationAction.MARK_READ:
         // perform() marks the notification read after every action.
         return;
+      case NotificationAction.TEST:
+        return;
     }
   }
 }

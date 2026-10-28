@@ -10,6 +10,8 @@ export const NotificationAction = {
   COMMENT_REPLY: "comment.reply",
   PLAN_WORK: "work.plan",
   MARK_READ: "notification.read",
+  /** A sample's button (Admin › Communications): reaches the API, does nothing. */
+  TEST: "test",
 } as const;
 
 export type NotificationAction =

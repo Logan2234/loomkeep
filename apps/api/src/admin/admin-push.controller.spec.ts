@@ -44,6 +44,33 @@ describe("AdminPushController.sendAdminTestPush", () => {
     );
   });
 
+  it("sends an alert's sample in the recipient's language, ignoring a custom text", async () => {
+    const { controller, prisma, push } = makeController();
+    (prisma.user.findUnique as Mock).mockResolvedValue({
+      id: "user-1",
+      locale: "fr",
+    });
+
+    await controller.sendAdminTestPush({
+      email: "alice@example.com",
+      type: "FOLLOW_REQUEST",
+      title: "ignored",
+    });
+
+    expect(push.sendToUserDetailed).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({
+        title: "Alice",
+        body: "souhaite vous suivre",
+        group: "activity",
+        actions: [
+          expect.objectContaining({ action: "test", label: "Accepter" }),
+          expect.objectContaining({ action: "test", label: "Refuser" }),
+        ],
+      }),
+    );
+  });
+
   it("uses the recipient's language for the default test message", async () => {
     const { controller, prisma, push } = makeController();
     (prisma.user.findUnique as Mock).mockResolvedValue({

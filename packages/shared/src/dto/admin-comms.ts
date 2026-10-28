@@ -1,3 +1,4 @@
+import type { AlertKey } from "../alerts";
 import type { Locale } from "../locale";
 
 export interface MailTemplateFieldDto {
@@ -37,6 +38,11 @@ export interface SendTestEmailRequestDto {
 /** Which registered account to target when sending an admin test push. */
 export interface SendAdminTestPushRequestDto {
   email: string;
+  /**
+   * A sample of this alert's push, as the account would get it, buttons
+   * included; `title` and `body` are then ignored. Omitted: a custom push.
+   */
+  type?: AlertKey;
   /** Defaults to a canned admin-test message when omitted. */
   title?: string;
   body?: string;
