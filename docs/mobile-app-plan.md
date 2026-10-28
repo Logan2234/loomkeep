@@ -40,34 +40,36 @@ natives à maintenir).
 
 ## Vue d'ensemble
 
-| Ticket | Titre                                                  | Phase | Taille | Dépend de      | Statut            |
-| ------ | ------------------------------------------------------ | ----- | ------ | -------------- | ----------------- |
-| MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              | ✅ #433 📱        |
-| MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         | ✅ #436           |
-| MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         | ✅ #436 📱        |
-| MOB-04 | API : push natif via FCM                               | 1     | M      | —              | ✅ #438           |
-| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 | ✅ #438           |
-| MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436           |
-| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         | ✅ #439           |
-| MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436           |
-| MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         | ✅ #447           |
-| MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 |                   |
-| MOB-11 | Projet iOS + build CI macOS + TestFlight               | 2     | M      | MOB-02         |                   |
-| MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 |                   |
-| MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         |                   |
-| MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 |                   |
-| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         | ✅ #459, #460     |
-| MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |                   |
-| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |                   |
-| MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 | ✅ #447 (Android) |
-| MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439           |
-| MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-11         |                   |
-| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |                   |
-| MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |                   |
-| MOB-23 | APK release sur GitHub, landing et docs                | 1     | M      | MOB-03, MOB-15 | ✅ #461           |
+| Ticket | Titre                                                  | Phase | Taille | Dépend de      | Statut                    |
+| ------ | ------------------------------------------------------ | ----- | ------ | -------------- | ------------------------- |
+| MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              | ✅ #433 📱                |
+| MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         | ✅ #436                   |
+| MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         | ✅ #436 📱                |
+| MOB-04 | API : push natif via FCM                               | 1     | M      | —              | ✅ #438                   |
+| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 | ✅ #438                   |
+| MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436                   |
+| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         | ✅ #439                   |
+| MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436                   |
+| MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         | ✅ #447                   |
+| MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 | 🚧 en partie              |
+| MOB-11 | Projet iOS + build CI macOS + TestFlight               | 2     | M      | MOB-02         | ⏳ plus tard              |
+| MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 | ⏳ plus tard              |
+| MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         | ⏳ plus tard              |
+| MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 | ⏳ plus tard              |
+| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         | ✅ #459, #460             |
+| MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |                           |
+| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |                           |
+| MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 | ✅ #447 (Android), iOS ⏳ |
+| MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439 (Android), iOS ⏳ |
+| MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-02         | iOS ⏳                    |
+| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |                           |
+| MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |                           |
+| MOB-23 | APK release sur GitHub, landing et docs                | 1     | M      | MOB-03, MOB-15 | ✅ #461                   |
 
 Statut : ✅ = mergé dans `main`, avec le numéro de la PR qui le livre ;
-📱 = validé sur téléphone (voir « Recette » plus bas).
+📱 = validé sur téléphone (voir « Recette » plus bas) ; 🚧 = en partie
+(le ticket dit ce qui reste) ; ⏳ = plus tard, pas prévu à court terme
+(toute la phase iOS, et les parties iOS des tickets de la phase 4).
 
 Tailles : S ≈ une demi-journée à une journée, M ≈ deux à quatre jours,
 L ≈ une semaine ou plus.
@@ -77,14 +79,15 @@ L ≈ une semaine ou plus.
 - Compte Google Play Console (25 $ une fois). Un compte personnel neuf
   doit passer un test fermé de **12 testeurs pendant 14 jours** avant la
   production ; un compte organisation (numéro D-U-N-S) en est exempté.
-- Compte Apple Developer (99 €/an) et un iPhone de test, ou TestFlight.
+- ⏳ iOS, plus tard : compte Apple Developer (99 €/an) et un iPhone de
+  test, ou TestFlight.
 - Projet Firebase (gratuit) pour FCM, avec une app Android par nom de
   paquet (`app.loomkeep.debug`, `app.loomkeep`).
 - Clé de signature release (MOB-23) : générée une fois, sauvegardée hors du
   repo. Perdue, plus aucune installation ne peut être mise à jour.
-- Un environnement macOS pour iOS : runner `macos-latest` de GitHub
-  Actions, Codemagic ou un Mac mini. Android se construit sur Windows
-  (Android Studio) et en CI Ubuntu.
+- ⏳ iOS, plus tard : un environnement macOS (runner `macos-latest` de
+  GitHub Actions, Codemagic ou un Mac mini). Android se construit sur
+  Windows (Android Studio) et en CI Ubuntu.
 - AGPL et App Store : la FSF juge les conditions de l'App Store
   incompatibles avec la GPL. En tant que titulaire des droits, Logan peut
   publier son propre code ; toute contribution externe doit passer par la
@@ -387,16 +390,40 @@ flux navigateur inchangé.
 
 ### MOB-10 — Publication Android
 
-**Périmètre**
+**But** : publier `app.loomkeep` sur Google Play, ce qui règle aussi la
+vérification des développeurs qu'Android impose aux APK installés hors
+store (voir MOB-23).
 
-- Keystore de signature en secret GitHub, build `bundleRelease` (AAB) en
-  CI, `versionCode` dérivé de la version lockstep.
-- Fiche Play Store FR/EN/IT, captures (réutiliser les
-  `pwa-screenshot-*`), politique de confidentialité (`/legal`), formulaire
-  Data safety (GlitchTip, Umami), classification du contenu (social,
-  contenu utilisateur).
+**Déjà fait**
+
+- Clé de signature release en secrets GitHub, APK release signé et
+  vérifié par la CI (MOB-23). Elle peut servir de clé de signature Play
+  (Play App Signing, « utiliser une clé existante ») : l'APK de GitHub et
+  celui du Play Store auront la même signature, et l'un pourra se mettre
+  à jour par l'autre.
+- `versionCode` dérivé de la version lockstep (#441) ; `targetSdk` 36,
+  au niveau de ce que Play exige.
+- Doc utilisateur dans `apps/docs` (Guide › Android app, MOB-23).
+- Suppression du compte depuis l'app (Réglages › Supprimer le compte).
+- Captures téléphone existantes (`static/pwa-screenshot-*-mobile.jpg`), à
+  vérifier contre les formats de Play.
+
+**Reste à faire**
+
+- Compte Play Console (25 $) et vérification de l'identité du développeur.
+- Build `bundleRelease` (AAB, le seul format accepté par Play) en CI,
+  signé avec la même clé ; envoi manuel au début, puis par l'API Play
+  (compte de service en secret).
+- Fiche FR/EN/IT : description courte (80 caractères) et longue, icône
+  512 px, bannière 1024 × 500, captures.
+- Politique de confidentialité : elle ne parle que du push web ; y ajouter
+  l'app (jeton FCM natif, scanner de Google, Credential Manager).
+- Formulaire Data safety (compte, bibliothèque, jeton de push, rapports
+  d'erreur GlitchTip, mesure d'audience Umami) et lien de suppression de
+  compte accessible sans l'app, que Play exige.
+- Classification du contenu (contenu utilisateur, social, messagerie) et
+  public cible.
 - Test fermé (12 testeurs, 14 jours) puis production.
-- Doc utilisateur dans `apps/docs`.
 
 ### MOB-23 — APK release sur GitHub, landing et docs
 
@@ -430,7 +457,11 @@ distribution par GitHub passera alors par l'enregistrement de MOB-10.
 
 ---
 
-## Phase 2 — iOS
+## Phase 2 — iOS ⏳ plus tard
+
+Pas prévu à court terme : la phase attend le compte Apple Developer
+(99 €/an) et un environnement macOS. Les tickets restent décrits pour le
+jour où elle démarre.
 
 ### MOB-11 — Projet iOS + build CI macOS + TestFlight
 
@@ -531,20 +562,21 @@ appelables depuis l'action sans ouvrir l'app.
 ### MOB-18 — Partager vers Loomkeep
 
 Android (fait) : intent-filter `SEND` texte, transformé par `SharedText.java`
-en `/app/share` (le `share_target` du manifest). iOS : Share Extension en
-Swift, avec la phase 2. Cas d'usage : partager un lien IMDb, Letterboxd,
+en `/app/share` (le `share_target` du manifest). ⏳ iOS : Share Extension
+en Swift, avec la phase 2. Cas d'usage : partager un lien IMDb, Letterboxd,
 Netflix ou Spotify pour ajouter l'œuvre.
 
 ### MOB-19 — Raccourcis d'icône
 
 Les `shortcuts` du manifest (recherche, calendrier, stats, profil,
-réglages) en raccourcis Android (fait, Android 8+) ; les quick actions iOS
-restent à faire avec la phase 2.
+réglages) en raccourcis Android (fait, Android 8+) ; ⏳ les quick actions
+iOS restent à faire avec la phase 2.
 
 ### MOB-20 — Widgets « À suivre » et « Sorties du jour »
 
-WidgetKit (Swift) et Glance (Kotlin), alimentés par une route API dédiée et
-rafraîchis en arrière-plan ; variante gamification (série, XP) possible.
+Glance (Kotlin) côté Android, alimenté par une route API dédiée et
+rafraîchi en arrière-plan ; variante gamification (série, XP) possible.
+⏳ WidgetKit (Swift) côté iOS, avec la phase 2.
 
 ### MOB-21 — Haptique et biométrie
 
