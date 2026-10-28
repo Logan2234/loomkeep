@@ -188,6 +188,9 @@ son 📱 dans le tableau.
 - [ ] Un lien `https://loomkeep.app/app/settings` reçu par mail ou message
       ouvre l'app directement sur cette page (app fermée et ouverte).
 - [ ] Le lien de réinitialisation de mot de passe ouvre l'app.
+- [ ] `assetlinks.json` donne aussi `delegate_permission/common.get_login_creds`
+      à chaque paquet ; dans l'app, « Se connecter avec une passkey » et la
+      confirmation par passkey ouvrent la feuille de Google et aboutissent.
 
 ### MOB-19 — Raccourcis de l'icône
 
