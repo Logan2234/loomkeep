@@ -21,6 +21,21 @@ history from before it was started.
   `delegate_permission/common.get_login_creds`, without which Credential
   Manager refuses the app loomkeep.app's passkeys. Needs the next APK.
 
+### Accessibility
+
+- **Screen-reader fixes found by a new axe pass on every component test**:
+  the import wizard's item checkboxes are named after their title and its
+  All/None buttons left the group's `<summary>`; the activity feed's
+  cover link, a duplicate of the title link, is hidden from assistive tech;
+  a combobox's "no results" message moved out of its listbox; clickable
+  histogram bars are a group instead of an image; a tooltip around a
+  disabled control no longer wraps it in a second button.
+- **web-audit covers every page**: Pa11y on all ~80 routes, signed out and
+  signed in (admin included), light and dark, 375 and 1280 px; Lighthouse
+  on the real stack for a dozen representative screens, mobile and
+  desktop; ZAP's browser spider reaches the signed-in app. Advisory, with
+  an ntfy message when an audit finds something.
+
 ## 1.12.0 — The Android app, imports from every tracker, and commands in Messages
 
 ### Before upgrading a self-hosted instance

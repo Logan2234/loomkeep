@@ -1,5 +1,5 @@
-# Override for the ephemeral stack web-audit.yml stands up in CI to run ZAP
-# scans against (see .github/workflows/web-audit.yml).
+# Override for the ephemeral stack web-audit.yml stands up in CI to run
+# Lighthouse, Pa11y and ZAP against (see .github/actions/audit-stack).
 services:
   db:
     # Publishes Postgres on the host so the seed script — run via pnpm on

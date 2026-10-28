@@ -228,6 +228,11 @@ lk_…`), accepted only on routes marked `@AllowApiKey()` — the versioned
   updates it like SvelteKit does); the realtime socket per spec file. Props a
   test changes after mounting live in a `$state` object — the reason specs
   are `.svelte.spec.ts`.
+- Every component test ends with an axe pass over what it left rendered
+  (`src/lib/test/setup.ts`, WCAG A/AA, contrast excluded): a violation
+  fails the test it appeared in. Contrast and whole pages are web-audit's
+  weekly Pa11y run, which visits every route (`.github/web-audit/pages.mjs`
+  — a new route with a parameter needs a value or an exclusion there).
 - No coverage threshold (Codecov stays informational) and no snapshot tests.
   Browser E2E (Playwright against the API on the `e2e` schema) is
   deliberately deferred until the component layer is settled.
