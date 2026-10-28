@@ -1,5 +1,8 @@
 type AssetLinkStatement = {
-  relation: ["delegate_permission/common.handle_all_urls"];
+  relation: [
+    "delegate_permission/common.handle_all_urls",
+    "delegate_permission/common.get_login_creds",
+  ];
   target: {
     namespace: "android_app";
     package_name: string;
@@ -9,7 +12,8 @@ type AssetLinkStatement = {
 
 /**
  * The Digital Asset Links statements Android checks before opening this
- * instance's links in the app (MOB-08), from ANDROID_APP_LINKS:
+ * instance's links in the app (MOB-08) or letting it use the instance's
+ * passkeys, from ANDROID_APP_LINKS:
  * comma-separated `package=SHA-256 fingerprint` pairs, one per signing key
  * (the store build and the debug build are signed differently).
  */
@@ -28,7 +32,12 @@ export function assetLinkStatements(
   }
 
   return [...fingerprints].map(([packageName, keys]) => ({
-    relation: ["delegate_permission/common.handle_all_urls"],
+    relation: [
+      "delegate_permission/common.handle_all_urls",
+      // The app's WebView signs in with this site's passkeys only once the
+      // site vouches for the app sharing its credentials.
+      "delegate_permission/common.get_login_creds",
+    ],
     target: {
       namespace: "android_app",
       package_name: packageName,

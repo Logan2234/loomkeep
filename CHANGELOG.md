@@ -13,6 +13,14 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Android app
+
+- **Passkeys work in the Android app.** Its WebView turns on WebAuthn
+  (`WEB_AUTHENTICATION_SUPPORT_FOR_APP`, on WebViews that have it), and
+  `assetlinks.json` now grants each package from `ANDROID_APP_LINKS`
+  `delegate_permission/common.get_login_creds`, without which Credential
+  Manager refuses the app loomkeep.app's passkeys. Needs the next APK.
+
 ## 1.12.0 — The Android app, imports from every tracker, and commands in Messages
 
 ### Before upgrading a self-hosted instance
