@@ -58,7 +58,7 @@ natives à maintenir).
 | MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 | ⏳ plus tard              |
 | MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         | ✅ #459, #460             |
 | MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |                           |
-| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |                           |
+| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         | 🚧 #476 (API)             |
 | MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 | ✅ #447 (Android), iOS ⏳ |
 | MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439 (Android), iOS ⏳ |
 | MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-02         | iOS ⏳                    |
@@ -574,9 +574,48 @@ premium (`ee/`).
 
 ### MOB-17 — Notifications actionnables
 
-« Marquer comme vu » sur une sortie d'épisode, réponse directe à un message
-de chat, image de l'affiche dans la notification. Demande des routes API
-appelables depuis l'action sans ouvrir l'app.
+**Décisions (28/10/2026)** : les boutons agissent sans ouvrir l'app, avec un
+jeton signé propre à la notification ; les sorties (épisodes, films, jeux)
+restent sans action, puisqu'elles arrivent en récapitulatif ; Android
+seulement pour l'instant.
+
+| Notification                      | Boutons                                        |
+| --------------------------------- | ---------------------------------------------- |
+| Message de chat                   | Répondre (réponse directe), Marquer comme lu   |
+| Demande d'abonnement              | Accepter, Refuser                              |
+| Nouvel abonné                     | Suivre en retour (si ce n'est pas déjà le cas) |
+| Réponse à un commentaire, mention | Répondre (réponse directe)                     |
+| Suite annoncée d'une saga         | Ajouter à « À voir »                           |
+| Autres entrées de la cloche       | Marquer comme lu                               |
+
+Une action sur une entrée de la cloche la marque aussi comme lue.
+
+**Fonctionnement**
+
+- Android dessine lui-même les messages « notification » de FCM, sans
+  boutons possibles. Un appareil qui déclare gérer les actions
+  (`actions: true` à l'enregistrement de son jeton, quand l'APK a le plugin
+  local `NotificationActions`) reçoit donc un message « data » : l'app
+  construit la notification (canal, tag, boutons, réponse directe) dans son
+  propre `FirebaseMessagingService`, qui transmet le reste au plugin push.
+  Les APK plus anciens gardent le message actuel.
+- Chaque bouton porte un jeton signé (HMAC) : l'action, sa cible,
+  l'abonnement push et une expiration (7 jours). `POST
+/api/notifications/actions`, publique, le vérifie, contrôle que
+  l'abonnement existe encore pour ce compte (désactiver le push ou
+  désinstaller l'app révoque donc les jetons), puis appelle le même service
+  que l'action faite dans l'app, avec les mêmes contrôles (blocage, demande
+  déjà traitée…).
+- Le tap ouvre l'app comme aujourd'hui, avec les mêmes données : le web ne
+  change pas.
+- Comme le contenu, le jeton passe en clair par Google (FCM) : sa portée se
+  limite à une action, sur une cible, pendant sept jours, depuis un appareil
+  encore abonné.
+
+**Découpage** : une PR API et web (jetons, route, messages « data » pour
+les appareils qui les gèrent, déclaration de la capacité, sans effet tant
+qu'aucun APK ne la déclare), puis une PR Android (service de messagerie,
+receiver des boutons, plugin `NotificationActions`).
 
 ### MOB-18 — Partager vers Loomkeep
 

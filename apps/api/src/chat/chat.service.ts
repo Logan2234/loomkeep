@@ -32,6 +32,7 @@ import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { EventsGateway } from "../events/events.gateway";
 import { ListService } from "../lists/list.service";
 import { readAlertPrefs } from "../notifications/alert-prefs.util";
+import { NotificationAction } from "../notifications/notification-action";
 import { notificationCopy } from "../notifications/notification-copy";
 import { PushService } from "../notifications/push.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -1367,13 +1368,28 @@ export class ChatService {
       return;
     }
 
+    const copy = notificationCopy(recipient.locale);
+
     try {
       await this.push.sendToUser(recipientId, {
         title: author.displayName,
-        body: notificationCopy(recipient.locale).chatMessage,
+        body: copy.chatMessage,
         url: `/app?messages=${conversationId}`,
         tag: `chat:${conversationId}`,
         group: AlertGroup.ACTIVITY,
+        actions: [
+          {
+            action: NotificationAction.CHAT_REPLY,
+            label: copy.pushActions.reply,
+            replyHint: copy.pushActions.replyHint,
+            target: { conversationId },
+          },
+          {
+            action: NotificationAction.CHAT_READ,
+            label: copy.pushActions.markRead,
+            target: { conversationId },
+          },
+        ],
       });
     } catch (err) {
       // The message is saved: a push service failing mustn't fail sending it.

@@ -1321,6 +1321,9 @@ model PushSubscription {
   p256dh    String?
   auth      String?
   userAgent String?
+  // The Android app builds this device's notifications itself, with action
+  // buttons (MOB-17): it gets data-only FCM messages.
+  actions   Boolean      @default(false)
   createdAt DateTime     @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

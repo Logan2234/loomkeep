@@ -134,6 +134,7 @@
   "apierr_newsletter_webhook_unauthorized": "Unauthorized request.",
   "apierr_notifications_not_found": "This notification could not be found.",
   "apierr_notifications_push_endpoint_taken": "This device is already linked to another account.",
+  "apierr_notifications_action_invalid": "This notification's action has expired. Open Loomkeep to do it there.",
   "apierr_reports_reason_required": "A detail is required for the 'Other' category.",
   "apierr_reports_invalid_motif": "This reason doesn't match the category.",
   "apierr_reports_not_found": "This report could not be found.",

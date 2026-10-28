@@ -308,6 +308,17 @@ describe("ChatService", () => {
         url: "/app?messages=cv1",
         tag: "chat:cv1",
         group: "activity",
+        // On the Android app: reply or mark read from the notification.
+        actions: [
+          expect.objectContaining({
+            action: "chat.reply",
+            target: { conversationId: "cv1" },
+          }),
+          expect.objectContaining({
+            action: "chat.read",
+            target: { conversationId: "cv1" },
+          }),
+        ],
       });
 
       const here = setup({ online: true });

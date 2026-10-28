@@ -4,6 +4,7 @@ import webpush from "web-push";
 import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";
 import { FcmClient } from "./fcm.client";
+import { NotificationAction, verifyAction } from "./notification-action";
 import { PushService } from "./push.service";
 
 // web-push validates the VAPID key's byte length at setVapidDetails() time —
@@ -230,7 +231,7 @@ describe("PushService on the Android app", () => {
     }),
   ).toString("base64");
 
-  function makeAndroidService(fcmConfigured = true) {
+  function makeAndroidService(fcmConfigured = true, actions = false) {
     if (fcmConfigured) process.env.FCM_SERVICE_ACCOUNT_BASE64 = SERVICE_ACCOUNT;
     else delete process.env.FCM_SERVICE_ACCOUNT_BASE64;
     const prisma = {
@@ -245,6 +246,7 @@ describe("PushService on the Android app", () => {
             p256dh: null,
             auth: null,
             userAgent: "LoomkeepApp/1.11.0",
+            actions,
           },
         ]),
         delete: vi.fn(),
@@ -274,12 +276,13 @@ describe("PushService on the Android app", () => {
 
     expect(prisma.pushSubscription.upsert).toHaveBeenCalledWith({
       where: { endpoint: TOKEN },
-      update: { userId: "u1", userAgent: "LoomkeepApp/1.11.0" },
+      update: { userId: "u1", userAgent: "LoomkeepApp/1.11.0", actions: false },
       create: {
         userId: "u1",
         platform: "ANDROID",
         endpoint: TOKEN,
         userAgent: "LoomkeepApp/1.11.0",
+        actions: false,
       },
     });
     expect(service.nativeEnabled()).toBe(true);
@@ -304,6 +307,51 @@ describe("PushService on the Android app", () => {
     expect(outcomes).toEqual([{ userAgent: "LoomkeepApp/1.11.0", ok: true }]);
     // A token isn't a URL: the Web Push host filter must leave it alone.
     expect(prisma.pushSubscription.delete).not.toHaveBeenCalled();
+  });
+
+  it("sends an app that builds its own notifications the content and signed buttons as data", async () => {
+    process.env.JWT_ACCESS_SECRET = "access-secret";
+    const send = vi
+      .spyOn(FcmClient.prototype, "send")
+      .mockResolvedValue({ ok: true });
+    const { service } = makeAndroidService(true, true);
+
+    await service.sendToUserDetailed("u1", {
+      ...payload,
+      actions: [
+        {
+          action: NotificationAction.CHAT_REPLY,
+          label: "Reply",
+          replyHint: "Your reply",
+          target: { conversationId: "c1" },
+        },
+      ],
+    });
+
+    const [, message] = send.mock.calls[0]!;
+    expect(message.notification).toBeUndefined();
+    expect(message.android).toEqual({ priority: "HIGH" });
+    const { actions, ...data } = message.data;
+    expect(data).toEqual({
+      title: "Severance",
+      body: "S02E03 is out",
+      url: "/app/media/tv/95396",
+      notificationId: "n1",
+      channel: "releases",
+      tag: "release:95396",
+    });
+    const [button] = JSON.parse(actions!) as {
+      label: string;
+      replyHint?: string;
+      token: string;
+    }[];
+    expect(button).toMatchObject({ label: "Reply", replyHint: "Your reply" });
+    expect(verifyAction(button!.token)).toMatchObject({
+      action: NotificationAction.CHAT_REPLY,
+      target: { conversationId: "c1" },
+      subscriptionId: "app1",
+      notificationId: "n1",
+    });
   });
 
   it("forgets a token FCM says is dead", async () => {

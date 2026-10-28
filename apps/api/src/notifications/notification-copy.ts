@@ -29,6 +29,16 @@ const COPY = {
     },
     /** The push for a new message: its content stays off the lock screen. */
     chatMessage: "t'a envoyé un message",
+    pushActions: {
+      reply: "Répondre",
+      replyHint: "Ta réponse",
+      markRead: "Marquer comme lu",
+      accept: "Accepter",
+      reject: "Refuser",
+      followBack: "Suivre en retour",
+      planMedia: "Ajouter à « À voir »",
+      planGame: "Ajouter à « À jouer »",
+    },
     commentReactions: {
       title: "Ton commentaire fait réagir",
       body: (count: number) => `${count} réactions`,
@@ -173,6 +183,16 @@ const COPY = {
       accepted: "accepted your request",
     },
     chatMessage: "sent you a message",
+    pushActions: {
+      reply: "Reply",
+      replyHint: "Your reply",
+      markRead: "Mark as read",
+      accept: "Accept",
+      reject: "Decline",
+      followBack: "Follow back",
+      planMedia: "Add to “To watch”",
+      planGame: "Add to “To play”",
+    },
     commentReactions: {
       title: "Your comment is getting reactions",
       body: (count: number) => `${count} reactions`,
@@ -317,6 +337,16 @@ const COPY = {
       accepted: "ha accettato la tua richiesta",
     },
     chatMessage: "ti ha inviato un messaggio",
+    pushActions: {
+      reply: "Rispondi",
+      replyHint: "La tua risposta",
+      markRead: "Segna come letto",
+      accept: "Accetta",
+      reject: "Rifiuta",
+      followBack: "Segui anche tu",
+      planMedia: "Aggiungi a «Da vedere»",
+      planGame: "Aggiungi a «Da giocare»",
+    },
     commentReactions: {
       title: "Il tuo commento sta ricevendo reazioni",
       body: (count: number) => `${count} reazioni`,
@@ -461,6 +491,18 @@ export interface NotificationCopy {
   reportResolution: { title: string; resolved: string; dismissed: string };
   follow: { followed: string; requested: string; accepted: string };
   chatMessage: string;
+  /** Buttons on the Android app's notifications (MOB-17). */
+  pushActions: {
+    reply: string;
+    /** Shown in the direct reply's field. */
+    replyHint: string;
+    markRead: string;
+    accept: string;
+    reject: string;
+    followBack: string;
+    planMedia: string;
+    planGame: string;
+  };
   commentReactions: { title: string; body: (count: number) => string };
   listEditorAdded: (listTitle: string) => string;
   listItemAdded: (itemTitle: string | null, listTitle: string) => string;

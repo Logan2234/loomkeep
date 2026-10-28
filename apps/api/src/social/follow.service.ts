@@ -16,6 +16,10 @@ import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
 import { ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED } from "../gamification/achievements/triggers";
+import {
+  NotificationAction,
+  type PushAction,
+} from "../notifications/notification-action";
 import type { NotificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -120,17 +124,35 @@ export class FollowService {
       // Never silently downgrade an accepted follow back to pending.
       update: {},
       create: { followerId: viewerId, followeeId: target.id, status },
-      select: { status: true },
+      select: { id: true, status: true },
     });
 
     // Notify the target — a new accepted follow, or a pending request to review.
     // Deduped per actor so a re-follow doesn't repost. (In-app only for now.)
     if (follow.status === "ACCEPTED") {
+      const followsBack = await this.prisma.follow.findUnique({
+        where: {
+          followerId_followeeId: {
+            followerId: target.id,
+            followeeId: viewerId,
+          },
+        },
+        select: { id: true },
+      });
       await this.notifyActor(target.id, viewerId, {
         type: NotificationType.FOLLOW,
         body: (copy) => copy.follow.followed,
         dedupeKey: `follow:${viewerId}`,
         urlToActor: true,
+        pushActions: followsBack
+          ? undefined
+          : (copy, actor) => [
+              {
+                action: NotificationAction.FOLLOW_BACK,
+                label: copy.pushActions.followBack,
+                target: { username: actor.username },
+              },
+            ],
       });
       // has_friends/one_sided depend on the follower's own following/follower
       // sets; followers_* depend on the followee's follower count — both
@@ -148,6 +170,18 @@ export class FollowService {
         type: NotificationType.FOLLOW_REQUEST,
         body: (copy) => copy.follow.requested,
         dedupeKey: `request:${viewerId}`,
+        pushActions: (copy) => [
+          {
+            action: NotificationAction.FOLLOW_ACCEPT,
+            label: copy.pushActions.accept,
+            target: { followId: follow.id },
+          },
+          {
+            action: NotificationAction.FOLLOW_REJECT,
+            label: copy.pushActions.reject,
+            target: { followId: follow.id },
+          },
+        ],
       });
       // FOLLOW_REQUEST is excluded from the bell feed (NotificationService's
       // own FEED_EXCLUDED_TYPES), so it never triggers that live push either
@@ -237,6 +271,10 @@ export class FollowService {
       /** Link to the actor's profile, or a fixed url, or neither. */
       urlToActor?: boolean;
       url?: string;
+      pushActions?: (
+        copy: NotificationCopy,
+        actor: { username: string },
+      ) => PushAction[];
     },
   ): Promise<void> {
     const actor = await this.prisma.user.findUnique({
@@ -258,6 +296,8 @@ export class FollowService {
         actorUsername: actor.username,
         actorDisplayName: actor.displayName,
       },
+      pushActions:
+        opts.pushActions && ((copy) => opts.pushActions!(copy, actor)),
     });
   }
 

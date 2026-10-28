@@ -60,10 +60,13 @@ export const unsubscribePush = (endpoint: string): Promise<void> =>
   });
 
 /** The Android app's FCM registration token. */
-export const subscribeNativePush = (token: string): Promise<void> =>
+export const subscribeNativePush = (
+  token: string,
+  actions: boolean,
+): Promise<void> =>
   typedRequest("/notifications/push/native", {
     method: "POST",
-    body: { token },
+    body: { token, actions },
   });
 
 export const unsubscribeNativePush = (token: string): Promise<void> =>

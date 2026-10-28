@@ -35,6 +35,7 @@ import { MailModule } from "./mail/mail.module";
 import { MetricsModule } from "./metrics/metrics.module";
 import { MusicModule } from "./music/music.module";
 import { NewsletterModule } from "./newsletter/newsletter.module";
+import { NotificationActionsModule } from "./notification-actions/notification-actions.module";
 import { NotificationModule } from "./notifications/notification.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { PublicApiModule } from "./public-api/public-api.module";
@@ -84,6 +85,7 @@ import { UsersModule } from "./users/users.module";
     LinksModule,
     ImportModule,
     NotificationModule,
+    NotificationActionsModule,
     HealthModule,
     SocialModule,
     ReviewsModule,
