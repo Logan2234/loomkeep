@@ -11,7 +11,18 @@ fingerprint() { sed -n 's/^.*SHA256: //p' | tr -d ':' | tr '[:upper:]' '[:lower:
 
 expected=$(keytool -list -v -keystore "$keystore" -storepass "$password" -alias "$alias" | fingerprint)
 if [[ $artifact == *.aab ]]; then
-  # A bundle carries a JAR signature, which apksigner doesn't read.
+  # A bundle carries a JAR signature, which apksigner doesn't read. keytool
+  # only prints its certificate: jarsigner first checks every entry against
+  # it (failing on a digest mismatch, only warning on unsigned entries). Not
+  # -strict, which also fails on a self-signed certificate.
+  if ! verification=$(jarsigner -verify "$artifact" 2>&1); then
+    echo "$verification" >&2
+    exit 1
+  fi
+  if ! grep -qx "jar verified." <<<"$verification" || grep -q "unsigned entries" <<<"$verification"; then
+    echo "$verification" >&2
+    exit 1
+  fi
   actual=$(keytool -printcert -jarfile "$artifact" | fingerprint)
 else
   apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
