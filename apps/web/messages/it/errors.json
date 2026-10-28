@@ -134,6 +134,7 @@
   "apierr_newsletter_webhook_unauthorized": "Richiesta non autorizzata.",
   "apierr_notifications_not_found": "Impossibile trovare questa notifica.",
   "apierr_notifications_push_endpoint_taken": "Questo dispositivo è già collegato a un altro account.",
+  "apierr_notifications_action_invalid": "L'azione di questa notifica è scaduta. Apri Loomkeep per farla dall'app.",
   "apierr_reports_reason_required": "Per la categoria «Altro» serve un dettaglio.",
   "apierr_reports_invalid_motif": "Questo motivo non corrisponde alla categoria.",
   "apierr_reports_not_found": "Impossibile trovare questa segnalazione.",

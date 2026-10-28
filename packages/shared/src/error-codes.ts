@@ -137,6 +137,7 @@ export const ErrorCode = {
   // notifications
   NotificationNotFound: "notifications.not_found",
   NotificationPushEndpointTaken: "notifications.push_endpoint_taken",
+  NotificationActionInvalid: "notifications.action_invalid",
 
   // reports
   ReportReasonRequired: "reports.reason_required",
