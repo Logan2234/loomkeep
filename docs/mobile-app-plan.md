@@ -58,7 +58,7 @@ natives à maintenir).
 | MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 | ⏳ plus tard              |
 | MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         | ✅ #459, #460             |
 | MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |                           |
-| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |                           |
+| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         | 🚧 #476 (API)             |
 | MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 | ✅ #447 (Android), iOS ⏳ |
 | MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439 (Android), iOS ⏳ |
 | MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-02         | iOS ⏳                    |
