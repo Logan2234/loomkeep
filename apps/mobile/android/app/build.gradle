@@ -9,6 +9,10 @@ def mobilePackage = new groovy.json.JsonSlurper().parse(file('../../package.json
 def (major, minor, patch) = mobilePackage.version.tokenize('.')*.toInteger()
 def mobileVersionCode = major * 1_000_000 + minor * 1_000 + patch
 
+// Firebase's config, put there by CI: without it capacitor.config.ts leaves
+// the push plugin out, and src/push, which builds on it, stays out too.
+def hasFirebase = file('google-services.json').exists()
+
 android {
     namespace = "app.loomkeep"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -27,6 +31,11 @@ android {
     }
     buildFeatures {
         resValues = true
+    }
+    sourceSets {
+        main {
+            if (hasFirebase) java.srcDirs += 'src/push/java'
+        }
     }
     signingConfigs {
         // CI signs with the shared debug key (ci.yml), so each build
@@ -89,6 +98,11 @@ dependencies {
     implementation "androidx.webkit:webkit:$androidxWebkitVersion"
     implementation project(':capacitor-android')
     implementation project(':capacitor-cordova-android-plugins')
+    // Already in the APK through the push plugin, at the same version:
+    // declared for ShellMessagingService (MOB-17).
+    if (hasFirebase) {
+        implementation "com.google.firebase:firebase-messaging:$firebaseMessagingVersion"
+    }
 }
 
 apply from: 'capacitor.build.gradle'

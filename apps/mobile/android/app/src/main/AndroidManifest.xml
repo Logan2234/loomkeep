@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:allowBackup="false"
@@ -59,6 +60,23 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/notification_accent" />
+
+        <!-- FCM goes to ShellMessagingService instead of the push plugin's own
+             service, to draw data-only pushes with buttons (MOB-17). Its class
+             is only built with Firebase's config, like the plugin. -->
+        <service
+            android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"
+            tools:node="remove" />
+        <service
+            android:name=".ShellMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <receiver
+            android:name=".NotificationActionReceiver"
+            android:exported="false" />
 
         <!-- Play installs Google's barcode scanner module with the app (MOB-07);
              a sideloaded APK downloads it on its first scan instead. -->

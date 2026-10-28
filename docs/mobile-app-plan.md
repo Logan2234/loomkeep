@@ -208,6 +208,20 @@ son 📱 dans le tableau.
 - [ ] Après « Autoriser », l'onglet se ferme et l'app affiche l'import
       Simkl, connectée ; l'import va au bout.
 
+### MOB-17 — Notifications actionnables
+
+- [ ] Après la mise à jour de l'APK, les notifications arrivent avec leurs
+      boutons (relancer l'app une fois pour qu'elle le signale à l'API).
+- [ ] Message de chat, app fermée : « Répondre » envoie la réponse sans
+      ouvrir l'app, « Marquer comme lu » retire le badge de la conversation.
+- [ ] Demande d'abonnement : « Accepter » et « Refuser » fonctionnent ;
+      nouvel abonné : « Suivre en retour ».
+- [ ] Réponse ou mention dans un commentaire : « Répondre » publie la
+      réponse dans le fil.
+- [ ] Une autre notification de la cloche : « Marquer comme lu ».
+- [ ] Mode avion puis un bouton : la notification reste et dit que
+      l'action a échoué ; le tap ouvre toujours la bonne page.
+
 ### MOB-18 — Partager vers Loomkeep
 
 - [ ] Depuis IMDb, Letterboxd ou Chrome, « Partager » propose Loomkeep Dev.
