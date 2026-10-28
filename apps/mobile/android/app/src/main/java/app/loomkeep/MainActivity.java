@@ -13,6 +13,7 @@ public class MainActivity extends BridgeActivity {
         // Local plugins register before the bridge starts in super.onCreate.
         registerPlugin(ShellThemePlugin.class);
         registerPlugin(ShellInstancePlugin.class);
+        registerPlugin(NotificationActionsPlugin.class);
         config = InstanceConfig.load(this);
         super.onCreate(savedInstanceState);
         getBridge().setWebViewClient(new ShellWebViewClient(getBridge()));

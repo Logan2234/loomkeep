@@ -5,4 +5,5 @@
     <string name="shortcut_stats">Statistiques</string>
     <string name="shortcut_profile">Mon profil</string>
     <string name="shortcut_settings">Paramètres</string>
+    <string name="notification_action_failed">Échec : ouvre Loomkeep pour réessayer depuis l\'app.</string>
 </resources>
