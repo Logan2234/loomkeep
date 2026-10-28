@@ -656,6 +656,10 @@ describe("NotificationService push", () => {
       url: "/app/media/series/42",
       notificationId: "n1",
       group: "activity",
+      // A bell entry's push gets "Mark as read" when nothing else is set.
+      actions: [
+        { action: "notification.read", label: "Mark as read", target: {} },
+      ],
     });
   });
 
