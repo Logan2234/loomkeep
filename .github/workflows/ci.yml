@@ -834,22 +834,28 @@ jobs:
         run: |
           echo "$RELEASE_KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.keystore"
           echo "LOOMKEEP_RELEASE_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
-      - name: Assemble release APK
+      # The bundle is what Google Play takes (MOB-10), signed with the same
+      # key so the Play and GitHub builds can update each other.
+      - name: Build the release APK and Play bundle
         if: env.RELEASE_KEYSTORE != ''
         working-directory: apps/mobile/android
-        run: ./gradlew assembleRelease --no-daemon
-      - name: Check the release APK carries the release key
+        run: ./gradlew assembleRelease bundleRelease --no-daemon
+      - name: Check the release builds carry the release key
         if: env.RELEASE_KEYSTORE != ''
-        run: >-
-          bash apps/mobile/scripts/check-signature.sh
-          apps/mobile/android/app/build/outputs/apk/release/app-release.apk
-          "$LOOMKEEP_RELEASE_KEYSTORE" "$LOOMKEEP_RELEASE_KEYSTORE_PASSWORD" loomkeep
+        run: |
+          for build in apk/release/app-release.apk bundle/release/app-release.aab; do
+            bash apps/mobile/scripts/check-signature.sh \
+              "apps/mobile/android/app/build/outputs/$build" \
+              "$LOOMKEEP_RELEASE_KEYSTORE" "$LOOMKEEP_RELEASE_KEYSTORE_PASSWORD" loomkeep
+          done
       - id: release-apk
         if: env.RELEASE_KEYSTORE != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: loomkeep-android-release
-          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          path: |
+            apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+            apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 14
       # GitHub's Linux runners have KVM, but the runner user can't open it
       # until this rule lets it: without it the emulator would crawl.
@@ -964,20 +970,34 @@ jobs:
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: loomkeep-android-release
+      # The artifact keeps the build tree's paths below its common root.
       - if: steps.missing.outputs.apk
-        run: mv app-release.apk loomkeep-android.apk
+        run: |
+          mv apk/release/app-release.apk loomkeep-android.apk
+          mv bundle/release/app-release.aab loomkeep-android-play.aab
       - id: attest
         if: steps.missing.outputs.apk
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: loomkeep-android.apk
-      - name: Attach the APK to the release
+      - id: attest-bundle
+        if: steps.missing.outputs.apk
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: loomkeep-android-play.aab
+      # The bundle rides along for Google Play (MOB-10), uploaded by hand
+      # from here; Obtainium only looks at APKs. A release whose APK came
+      # before this got no bundle: it'd come from a later commit.
+      - name: Attach the APK and the Play bundle to the release
         if: steps.missing.outputs.apk
         env:
           BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+          AAB_BUNDLE: ${{ steps.attest-bundle.outputs.bundle-path }}
         run: |
           cp "$BUNDLE" loomkeep-android.apk.sigstore.json
-          gh release upload "$TAG" loomkeep-android.apk loomkeep-android.apk.sigstore.json --clobber
+          cp "$AAB_BUNDLE" loomkeep-android-play.aab.sigstore.json
+          gh release upload "$TAG" loomkeep-android.apk loomkeep-android.apk.sigstore.json \
+            loomkeep-android-play.aab loomkeep-android-play.aab.sigstore.json --clobber
           # Only now: as `latest` without its APK, the download link above
           # would have answered 404.
           gh release edit "$TAG" --latest
