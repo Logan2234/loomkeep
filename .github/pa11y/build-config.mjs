@@ -45,14 +45,15 @@ const config = {
       ],
     },
     reporters: ["cli", "./.github/pa11y/sarif-reporter.js"],
+    // pa11y-ci reads both from `defaults` only.
+    concurrency: 1,
+    useIncognitoBrowserContext: false,
   },
   urls: [
     ...publicPages.map((path) => BASE + path),
     signIn,
     ...appPages.filter((path) => path !== "/app").map((path) => BASE + path),
   ],
-  concurrency: 1,
-  useIncognitoBrowserContext: false,
 };
 
 process.stdout.write(JSON.stringify(config, null, 2));
