@@ -28,6 +28,9 @@ runs:
       shell: bash
       run: |
         export IMAGE_TAG=edge
+        # As on loomkeep.app: without it every page is noindex, which
+        # Lighthouse's SEO score counts against the pages meant to be indexed.
+        export PUBLIC_SEARCH_INDEXING=true
         docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml pull
         docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml up -d
 

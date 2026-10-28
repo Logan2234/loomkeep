@@ -24,6 +24,8 @@ const EXCLUDED = {
   "/app/games/[id]": "IGDB key",
   "/app/messages/[id]": "the seed has no conversation",
   "/app/settings/import/simkl/callback": "OAuth redirect target",
+  "/app/admin/components": "dev only, 404 in a production build",
+  "/app/admin/schema": "dev only, 404 in a production build",
 };
 
 function requireEnv(name) {
