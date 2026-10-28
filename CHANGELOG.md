@@ -20,6 +20,10 @@ history from before it was started.
   `assetlinks.json` now grants each package from `ANDROID_APP_LINKS`
   `delegate_permission/common.get_login_creds`, without which Credential
   Manager refuses the app loomkeep.app's passkeys. Needs the next APK.
+- **The privacy policy covers the Android app** (section 21): GitHub for
+  downloads, Google's code scanner, passkeys through Credential Manager,
+  what stays on the device. Section 7 now says the app's notifications,
+  unlike the browser's, reach Google (FCM) unencrypted.
 
 ## 1.12.0 — The Android app, imports from every tracker, and commands in Messages
 
