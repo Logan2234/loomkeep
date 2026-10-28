@@ -7,7 +7,7 @@ const html = await readFile(
   new URL("../www/error.html", import.meta.url),
   "utf8",
 );
-const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+const script = html.split("<script>")[1].split("</script>")[0];
 
 // Runs the page's script against just enough of a DOM, then clicks Retry:
 // returns where the page navigated to, if anywhere.
