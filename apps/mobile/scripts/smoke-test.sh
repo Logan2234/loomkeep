@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke test of the debug APK on an emulator (mobile.yml): the shell starts,
+# Smoke test of the debug APK on an emulator (ci.yml): the shell starts,
 # the remote page gets the Capacitor bridge and every plugin, the icon's
 # shortcuts are published, an App Link reaches the web, and nothing crashes.
 set -euo pipefail

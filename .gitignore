@@ -58,5 +58,5 @@ Thumbs.db
 # Claude Code worktrees (created/removed by the harness, not repo content)
 .claude/worktrees/
 
-# Firebase config of the Android app, restored by mobile.yml from a secret.
+# Firebase config of the Android app, restored by ci.yml from a secret.
 apps/mobile/android/app/google-services.json

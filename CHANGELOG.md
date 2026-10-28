@@ -48,7 +48,9 @@ history from before it was started.
 - **Simkl connects in an in-app tab** whose redirect returns to the app
   (MOB-09), and other apps can share links to Loomkeep (MOB-18).
 - **Another instance than loomkeep.app** can be picked at runtime, from
-  the login page or the offline page (MOB-15).
+  the login page or the offline page (MOB-15). The offline page's Retry
+  only follows an `http(s)` address: a link opening it with a
+  `javascript:` one ran script in the page (CodeQL `js/xss`).
 - **Releases**: a signed APK per version, attached to the GitHub release
   with a Sigstore provenance attestation; `android-dev-<n>` pre-releases
   of `main` for testing, followable in Obtainium. The landing page and the

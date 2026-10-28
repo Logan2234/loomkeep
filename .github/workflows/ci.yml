@@ -6,12 +6,16 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# A PR's newer push replaces its older run. On main every commit gets its own
+# run, never cancelled: a cancelled run used to leave its commit without
+# images, deploy or release (1.12.0's bump went that way). The deploy job
+# keeps its own queue below.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Nothing in this workflow needs to write to the repo, comment on PRs, or
-# touch packages — read-only is enough for checkout + Codecov's own token.
+# Read-only by default; the jobs that push images, create releases or sign
+# APKs ask for more themselves.
 permissions:
   contents: read
 
@@ -28,6 +32,7 @@ jobs:
       # workflow itself).
       lint: ${{ steps.filter.outputs.api == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.root == 'true' }}
       docker: ${{ steps.filter.outputs.docker }}
+      mobile: ${{ steps.filter.outputs.mobile }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -52,11 +57,15 @@ jobs:
               - 'package.json'
               - '.nvmrc'
               - '.github/workflows/ci.yml'
+              - '.github/actions/setup/**'
             docker:
               - 'docker/**'
               - '.github/workflows/ci.yml'
+            mobile:
+              - 'apps/mobile/**'
+              - '.github/workflows/ci.yml'
 
-  # docker/ is deployed as is by deploy.yml once CI on main is green, and no
+  # docker/ is deployed as is by the deploy job once CI on main is green, and no
   # other job looks at it: a Caddyfile or compose typo would otherwise reach
   # the VPS and take the whole site down, maintenance page included (Caddy
   # serves it). Checks the base file alone, base + prod, and base + prod +
@@ -128,13 +137,7 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build:package
+      - uses: ./.github/actions/setup
       - name: Generate Paraglide types
         run: pnpm --filter @loomkeep/web generate:paraglide
       # The typed API client (apps/web/src/lib/api/generated/schema.d.ts) is
@@ -198,13 +201,7 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build:package
+      - uses: ./.github/actions/setup
       - name: Install ESLint SARIF formatter
         run: pnpm add --save-dev --workspace-root @microsoft/eslint-formatter-sarif@3.1.0
       # Type-aware only here, never in the local hooks: building the type
@@ -290,13 +287,7 @@ jobs:
       JWT_REFRESH_SECRET: ci-test-refresh-secret
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build:package
+      - uses: ./.github/actions/setup
       - run: pnpm --filter @loomkeep/api exec prisma generate
       - run: pnpm --filter @loomkeep/api test:e2e:cov
       - name: upload e2e coverage to Codecov
@@ -314,16 +305,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      # api/web import the shared package through its dist/, so without this
-      # knip can't resolve those imports and reports every exported DTO in
-      # packages/shared as unused.
-      - run: pnpm build:package
+      # Builds packages/shared too: api/web import it through its dist/, so
+      # without it knip can't resolve those imports and reports every exported
+      # DTO in packages/shared as unused.
+      - uses: ./.github/actions/setup
       - run: pnpm --filter @loomkeep/web generate:paraglide
       - name: Download OpenAPI document
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -355,8 +340,8 @@ jobs:
   # PR/manual-dispatch validation only — build without pushing, to catch a
   # broken Dockerfile before merge, then Trivy-scan the image just built.
   # Skipped on a push to main: docker-push below builds the same images
-  # there (and pushes), and trivy.yml scans those pushed images afterwards.
-  # The scan rides here rather than in trivy.yml so a PR never builds an
+  # there (and pushes), and scan-images scans those pushed images afterwards.
+  # The scan rides here rather than in its own job so a PR never builds an
   # image twice. Advisory (exit-code 0): what blocks a PR is code scanning's
   # own "Trivy" check, which compares the SARIF below with main's alerts in
   # the same category, so it can fail on alerts this PR introduces without
@@ -408,7 +393,7 @@ jobs:
           output: trivy-${{ matrix.name }}.sarif
           severity: CRITICAL,HIGH
           exit-code: "0"
-      # Same category as trivy.yml's scan of main, which is what lets code
+      # Same category as scan-images' scan of main, which is what lets code
       # scanning tell this PR's new alerts from the ones main already has.
       - name: upload ${{ matrix.name }} scan
         continue-on-error: true
@@ -446,11 +431,11 @@ jobs:
           needs.openapi-artifact.result == 'cancelled'
         run: exit 1
 
-  # Pushes to GHCR so deploy.yml (and self-hosters) can `pull` a pre-built
+  # Pushes to GHCR so the deploy job (and self-hosters) can `pull` a pre-built
   # image instead of building on the target machine. Runs unconditionally
   # on every push to main (not gated on the `changes` filter like
   # docker-build-images above) so a SHA-tagged pair of images always exists for
-  # whatever commit deploy.yml is about to check out — a push that only
+  # whatever commit the deploy is about to check out — a push that only
   # touched apps/api must still produce a web image at that SHA, otherwise
   # `docker compose pull` on the VPS would have nothing to fetch.
   #
@@ -526,10 +511,11 @@ jobs:
 
   # Tags each image from its platform digests (amd64 always, arm64 when its
   # build succeeded):
-  # - every commit: its 12-character SHA (what deploy.yml pulls) and `edge`;
-  # - a commit that changes the root package.json version (a release, see
-  #   release.yml): `1.12.0`, `1.12`, `1` and `latest`, so `latest` is the
-  #   last release, the one self-hosters get by default.
+  # - every commit: its 12-character SHA (what the deploy pulls) and `edge`;
+  # - the first commit built at a new root package.json version (the bump,
+  #   or the next one if its run never got this far): `1.12.0`, `1.12`, `1`
+  #   and `latest`, so `latest` is the last release, the one self-hosters get
+  #   by default.
   docker-tag:
     needs: docker-push
     runs-on: ubuntu-latest
@@ -542,16 +528,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          fetch-depth: 2
           sparse-checkout: package.json
           sparse-checkout-cone-mode: false
-      - id: release
-        run: |
-          version=$(jq -r .version package.json)
-          previous=$(git show HEAD^:package.json 2>/dev/null | jq -r .version || true)
-          if [ "$version" != "$previous" ]; then
-            echo "version=$version" >> "$GITHUB_OUTPUT"
-          fi
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: digest-${{ matrix.name }}-*
@@ -563,16 +541,435 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - id: release
+        # GHCR image paths must be lowercase; github.repository_owner
+        # preserves the account's actual casing (Logan2234).
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-${{ matrix.name }}"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          version=$(jq -r .version package.json)
+          if ! docker buildx imagetools inspect "$image:$version" > /dev/null 2>&1; then
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+          fi
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        env:
+          DOCKER_METADATA_SHORT_SHA_LENGTH: 12
+        with:
+          images: ${{ steps.release.outputs.image }}
+          flavor: latest=false
+          tags: |
+            type=sha,prefix=,format=short
+            type=edge,branch=main
+            type=semver,pattern={{version}},value=${{ steps.release.outputs.version }},enable=${{ steps.release.outputs.version != '' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.release.outputs.version }},enable=${{ steps.release.outputs.version != '' }}
+            type=semver,pattern={{major}},value=${{ steps.release.outputs.version }},enable=${{ steps.release.outputs.version != '' }}
+            type=raw,value=latest,enable=${{ steps.release.outputs.version != '' }}
       - name: tag the ${{ matrix.name }} image
         working-directory: ${{ runner.temp }}/digests
         env:
-          VERSION: ${{ steps.release.outputs.version }}
+          IMAGE: ${{ steps.release.outputs.image }}
         run: |
-          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-${{ matrix.name }}"
-          short="${GITHUB_SHA:0:12}"
-          tags=(--tag "$image:$short" --tag "$image:edge")
-          if [ -n "$VERSION" ]; then
-            tags+=(--tag "$image:$VERSION" --tag "$image:${VERSION%.*}" --tag "$image:${VERSION%%.*}" --tag "$image:latest")
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("--tag " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf "$IMAGE@sha256:%s " *)
+          docker buildx imagetools inspect "$IMAGE:${GITHUB_SHA:0:12}"
+
+  # The SHA-tagged images the deploy pulls, scanned once pushed; trivy.yml
+  # rescans `edge` weekly, for new CVEs in an unchanged base image. PRs are
+  # scanned by docker-build-images, on the image it builds anyway: both upload
+  # to the same trivy-api/trivy-web categories, so code scanning's PR check
+  # compares a PR's alerts with main's. Advisory only (exit-code 0).
+  scan-images:
+    needs: docker-tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    strategy:
+      matrix:
+        name: [api, web]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Trivy pulls the image with the credentials docker login stores.
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: vars
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-${{ matrix.name }}:${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+      - name: scan ${{ matrix.name }} image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.vars.outputs.image }}
+          format: sarif
+          output: trivy-${{ matrix.name }}.sarif
+          severity: CRITICAL,HIGH
+          exit-code: "0"
+      - uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          sarif_file: trivy-${{ matrix.name }}.sarif
+          category: trivy-${{ matrix.name }}
+
+  # What everything shipped from main waits for: every check that ran passed
+  # and both images are tagged. Skipped checks (nothing of theirs changed)
+  # pass; the Android jobs don't count, they never block the web.
+  ready-to-ship:
+    needs: [docker-config, lint-test-web, lint-test-api, e2e, knip, docker-tag]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - if: |
+          contains(needs.*.result, 'failure') ||
+          contains(needs.*.result, 'cancelled') ||
+          needs.docker-tag.result != 'success'
+        run: exit 1
+
+  deploy:
+    needs: ready-to-ship
+    runs-on: ubuntu-latest
+    # The VPS_* secrets live in this environment, limited to main, so no
+    # other branch's workflow can read them; it also records each deploy.
+    environment: production
+    # One deploy at a time; a newer commit's replaces one still queued.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    outputs:
+      superseded: ${{ steps.head.outputs.superseded }}
+    steps:
+      # Runs no longer cancel each other on main, so an older commit's run can
+      # finish after a newer one's: deploying it then would roll production
+      # back. The newer commit's own run deploys instead.
+      - name: Is this still main's head?
+        id: head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::notice::main has moved on to ${head::7}, whose run deploys instead."
+            echo "superseded=true" >> "$GITHUB_OUTPUT"
           fi
-          docker buildx imagetools create "${tags[@]}" $(printf "$image@sha256:%s " *)
-          docker buildx imagetools inspect "$image:$short"
+      - name: Deploy over SSH
+        if: steps.head.outputs.superseded != 'true'
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          # The host key the runner must find (`SHA256:…`, from
+          # `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the VPS):
+          # without it, a hijacked DNS or route gets the key and the script.
+          fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
+          envs: DEPLOY_SHA
+          # Deploys the exact commit CI validated. The rest (pre-deploy dump,
+          # start, health wait, rollback) is the checked-out commit's own
+          # .github/deploy/vps-deploy.sh.
+          script: |
+            set -e
+            cd ${{ secrets.VPS_DEPLOY_PATH }}
+            git fetch origin main
+            git reset --hard "$DEPLOY_SHA"
+            DEPLOY_SHA="$DEPLOY_SHA" bash .github/deploy/vps-deploy.sh
+      # The healthchecks above run inside the containers: a broken Caddy
+      # route, certificate or Cloudflare rule would still pass them. This
+      # goes through the same path as a visitor; a failure fails the job,
+      # so the ntfy alert below fires.
+      - name: Check the public site
+        if: steps.head.outputs.superseded != 'true'
+        run: |
+          for url in https://loomkeep.app/ https://loomkeep.app/api/health; do
+            curl --fail --silent --show-error --output /dev/null \
+              --retry 5 --retry-delay 6 --retry-all-errors --max-time 15 "$url"
+            echo "$url answers"
+          done
+
+  # Says how it went on ntfy (NTFY_TOPIC_URL: the topic's full URL, e.g.
+  # https://ntfy.sh/<unguessable name>, which is all it takes to post or
+  # read): a skipped deploy otherwise goes unnoticed, as #433 and #438 did.
+  notify:
+    needs: [ready-to-ship, deploy]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/deploy
+      - name: Notify on ntfy
+        env:
+          NTFY_TOPIC_URL: ${{ secrets.NTFY_TOPIC_URL }}
+          CI_RESULT: ${{ needs.ready-to-ship.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          SUPERSEDED: ${{ needs.deploy.outputs.superseded }}
+          SHA: ${{ github.sha }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MAIN_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          export MAIN_SHA
+          bash .github/deploy/notify.sh
+
+  # One GitHub release per version, `v1.12.0`, notes from that version's
+  # CHANGELOG.md section, created by the first commit that passes on main at
+  # a version with no release yet: the version-bump skill's PR, or the next
+  # commit if its run never got this far. docker-tag above tagged the images
+  # in the same run; publish-release-apk attaches the APK, then marks the
+  # release the latest one.
+  release:
+    needs: ready-to-ship
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: |
+            package.json
+            CHANGELOG.md
+          sparse-checkout-cone-mode: false
+      - name: Create the version's release if it doesn't exist yet
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag="v$(jq -r .version package.json)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "$tag already exists."
+            exit 0
+          fi
+          heading=$(grep -m1 "^## ${tag#v} " CHANGELOG.md || true)
+          if [ -z "$heading" ]; then
+            echo "::error::CHANGELOG.md has no '## ${tag#v} …' section."
+            exit 1
+          fi
+          awk -v h="$heading" '$0 == h {f=1; next} f && /^## / {exit} f' CHANGELOG.md > notes.md
+          # Not `latest` yet: publish-release-apk makes it so once the APK is
+          # attached, or releases/latest/download/loomkeep-android.apk would
+          # 404 meanwhile.
+          gh release create "$tag" \
+            --target "$GITHUB_SHA" \
+            --title "Loomkeep ${heading#\#\# }" \
+            --notes-file notes.md \
+            --latest=false
+
+  # Debug build of the Android shell (docs/mobile-app-plan.md, MOB-01). The
+  # APK is kept as a run artifact so it can be sideloaded on a phone, then
+  # smoke-tested on an emulator; the release build rides along (MOB-23).
+  android-debug:
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      release-apk: ${{ steps.release-apk.outcome }}
+    env:
+      DEBUG_KEYSTORE: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
+      RELEASE_KEYSTORE: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+      LOOMKEEP_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+      GOOGLE_SERVICES: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # gradle-wrapper.jar is the one binary in the repository, and the build
+      # runs it: this checks it against Gradle's published checksums.
+      - uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      # Whole workspace: the Capacitor CLI compiles capacitor.config.ts with
+      # the root's TypeScript.
+      - uses: ./.github/actions/setup
+        with:
+          build-shared: false
+      - name: Error page tests
+        run: pnpm --filter @loomkeep/mobile test
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      # Before cap sync: without it, capacitor.config.ts leaves push out.
+      - name: Restore Firebase's config
+        if: env.GOOGLE_SERVICES != ''
+        run: echo "$GOOGLE_SERVICES" | base64 -d > apps/mobile/android/app/google-services.json
+      - run: pnpm --filter @loomkeep/mobile exec cap sync android
+      # Without it each run signs with a fresh key: a new APK won't install
+      # over the previous one, and the App Links fingerprint (ANDROID_APP_LINKS)
+      # goes stale. build.gradle reads its path from LOOMKEEP_DEBUG_KEYSTORE.
+      - name: Restore the shared debug signing key
+        if: env.DEBUG_KEYSTORE != ''
+        run: |
+          echo "$DEBUG_KEYSTORE" | base64 -d > "$RUNNER_TEMP/debug.keystore"
+          echo "LOOMKEEP_DEBUG_KEYSTORE=$RUNNER_TEMP/debug.keystore" >> "$GITHUB_ENV"
+      - name: Assemble debug APK
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Check the APK carries the shared debug key
+        if: env.DEBUG_KEYSTORE != ''
+        run: >-
+          bash apps/mobile/scripts/check-signature.sh
+          apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          "$LOOMKEEP_DEBUG_KEYSTORE" android androiddebugkey
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: loomkeep-android-debug
+          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+      # The build GitHub releases publish (MOB-23), made on every run that
+      # has the key so a PR proves it still builds and signs.
+      - name: Restore the release signing key
+        if: env.RELEASE_KEYSTORE != ''
+        run: |
+          echo "$RELEASE_KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "LOOMKEEP_RELEASE_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+      - name: Assemble release APK
+        if: env.RELEASE_KEYSTORE != ''
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Check the release APK carries the release key
+        if: env.RELEASE_KEYSTORE != ''
+        run: >-
+          bash apps/mobile/scripts/check-signature.sh
+          apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          "$LOOMKEEP_RELEASE_KEYSTORE" "$LOOMKEEP_RELEASE_KEYSTORE_PASSWORD" loomkeep
+      - id: release-apk
+        if: env.RELEASE_KEYSTORE != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: loomkeep-android-release
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 14
+      # GitHub's Linux runners have KVM, but the runner user can't open it
+      # until this rule lets it: without it the emulator would crawl.
+      - name: Enable KVM for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      # The emulator's system image is a ~1.5 GB download, which has come
+      # down corrupted and failed the run; once cached, sdkmanager finds it
+      # installed and skips it.
+      - name: Cache the emulator's system image
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /usr/local/lib/android/sdk/system-images/android-34/google_apis/x86_64
+          key: android-system-image-34-google_apis-x86_64
+      # The page comes from loomkeep.app itself, so this checks the APK
+      # against what's deployed: the bridge reaching the remote page, the
+      # plugins, the shortcuts, an App Link, no crash.
+      - name: Smoke test on an emulator
+        env:
+          PUSH_EXPECTED: ${{ env.GOOGLE_SERVICES != '' }}
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          # One retry: a deploy restarting the site mid-test (both follow a
+          # push to main) showed the app's offline page instead of the login.
+          script: bash apps/mobile/scripts/smoke-test.sh || (echo "Retrying once" && bash apps/mobile/scripts/smoke-test.sh)
+
+  # Main's APK as a GitHub pre-release, for Obtainium on the phone to notice
+  # and install over the previous one (same debug key, so the session
+  # stays). One release per build, since Obtainium spots an update by a new
+  # tag; only the three latest are kept. Main only, once the smoke test
+  # passed: a PR's APK stays a run artifact.
+  publish-dev-apk:
+    needs: android-debug
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      # Signing the build's provenance with GitHub's OIDC identity (Sigstore).
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: apps/mobile/package.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: loomkeep-android-debug
+      - run: mv app-debug.apk loomkeep-dev.apk
+      # Proves the APK came from this workflow at this commit; the bundle is
+      # attached so `gh attestation verify` works offline too.
+      - id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: loomkeep-dev.apk
+      - name: Publish the dev pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: android-dev-${{ github.run_number }}
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        # The title reads like the stable releases', with the version this
+        # build leads to and its build number, so the list sorts and scans.
+        run: |
+          version=$(jq -r .version apps/mobile/package.json)
+          cp "$BUNDLE" loomkeep-dev.apk.sigstore.json
+          gh release create "$TAG" loomkeep-dev.apk loomkeep-dev.apk.sigstore.json \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Loomkeep Android $version-dev.${{ github.run_number }}" \
+            --notes "Debug build of main at ${GITHUB_SHA::7} (\"Loomkeep Dev\", app.loomkeep.debug), for testing: not a supported release."
+          gh release list --limit 100 --json tagName --jq '.[].tagName' \
+            | grep '^android-dev-' | tail -n +4 \
+            | xargs -r -n1 gh release delete --cleanup-tag --yes
+
+  # The app users install (MOB-23), attached to its version's release
+  # (`v1.12.0`, created by the release job) by the first main build that
+  # finds it without one: usually the bump commit's own. The asset keeps one
+  # name, so releases/latest/download/loomkeep-android.apk (the landing's and
+  # the docs' link) always serves the newest.
+  publish-release-apk:
+    needs: [android-debug, release]
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+      && needs.android-debug.outputs.release-apk == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ needs.release.outputs.tag }}
+    steps:
+      - name: Does the release still lack its APK?
+        id: missing
+        run: |
+          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -qx loomkeep-android.apk; then
+            echo "$TAG already has its APK."
+          else
+            echo "apk=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.missing.outputs.apk
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: loomkeep-android-release
+      - if: steps.missing.outputs.apk
+        run: mv app-release.apk loomkeep-android.apk
+      - id: attest
+        if: steps.missing.outputs.apk
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: loomkeep-android.apk
+      - name: Attach the APK to the release
+        if: steps.missing.outputs.apk
+        env:
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          cp "$BUNDLE" loomkeep-android.apk.sigstore.json
+          gh release upload "$TAG" loomkeep-android.apk loomkeep-android.apk.sigstore.json --clobber
+          # Only now: as `latest` without its APK, the download link above
+          # would have answered 404.
+          gh release edit "$TAG" --latest

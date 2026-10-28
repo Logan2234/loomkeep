@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Fails unless an APK is signed with the given keystore's key: a step that
 # "restored" a key while Gradle signed with another once went unnoticed
-# through several builds (mobile.yml).
+# through several builds (ci.yml).
 # Usage: check-signature.sh <apk> <keystore> <store password> <alias>
 set -euo pipefail
 

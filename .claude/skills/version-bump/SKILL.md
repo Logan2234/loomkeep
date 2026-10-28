@@ -10,9 +10,10 @@ significant fix. Do the ritual described in [CLAUDE.md](../../../CLAUDE.md) → 
 Versioning, mechanically, in one pass. `main` takes no direct pushes: work on a branch
 (`chore/release-X.Y.Z`) cut from a freshly fetched `origin/main`, and open a PR.
 
-**Merging that PR is the release.** Once CI passes on it, `release.yml` creates the GitHub release
-`vX.Y.Z` from the CHANGELOG section, `ci.yml`'s docker-tag tags the images `X.Y.Z`, `X.Y`, `X`
-and `latest`, and `mobile.yml` attaches the APK. Nothing to tag or publish by hand.
+**Merging that PR is the release.** Once CI passes on it, `ci.yml` creates the GitHub release
+`vX.Y.Z` from the CHANGELOG section (its `release` job), tags the images `X.Y.Z`, `X.Y`, `X` and
+`latest` (`docker-tag`), and attaches the APK (`publish-release-apk`). Nothing to tag or publish
+by hand.
 
 ## 1. Gather what shipped, from two sources
 
@@ -70,8 +71,8 @@ Don't touch anything else in these files.
 ## 5. CHANGELOG.md
 
 - Turn `## [Unreleased]` into `## X.Y.Z — <short title>` (reconciled per step 2), and put a fresh,
-  empty `## [Unreleased]` above it. The heading must start with `## X.Y.Z ` exactly: `release.yml`
-  finds the release notes by it and fails without it.
+  empty `## [Unreleased]` above it. The heading must start with `## X.Y.Z ` exactly: `ci.yml`'s
+  `release` job finds the release notes by it and fails without it.
 - Same technical, git-facing tone as existing entries: what changed and why, for a future
   engineer, not for end users.
 

@@ -215,18 +215,23 @@
       // ShellWebViewClient.java serves this page alone, so the instance
       // picker (MOB-15) is its #pick view. ShellInstancePlugin.java opens it, and
       // reopens it with what was typed and why it was refused; any page can
-      // link here with other values, so they're only ever displayed.
-      const retryUrl = new URLSearchParams(location.search).get("retry");
+      // link here with other values, so they're only ever displayed. The
+      // same goes for ?retry: only a web address is followed, never a
+      // javascript: or data: URL that would run in this page.
+      let retryUrl = null;
+      try {
+        const url = new URL(new URLSearchParams(location.search).get("retry"));
+        if (url.protocol === "https:" || url.protocol === "http:") {
+          retryUrl = url;
+        }
+      } catch {
+        // Opened without its instance: nothing to retry or show.
+      }
       document.getElementById("retry").addEventListener("click", () => {
-        if (retryUrl) location.replace(retryUrl);
+        if (retryUrl) location.replace(retryUrl.href);
       });
 
-      let currentHost = null;
-      try {
-        currentHost = new URL(retryUrl).host;
-      } catch {
-        // Opened without its instance: nothing to show.
-      }
+      const currentHost = retryUrl?.host ?? null;
       if (currentHost) {
         document.getElementById("current").textContent = text.current.replace(
           "{host}",

@@ -14,13 +14,13 @@ the Swagger plugin's `introspectComments`; `generate:openapi` fails on a gap),
 `apps/mobile` (Capacitor Android shell that loads the instance's `/app`
 rather than bundling the web build — roadmap and rationale in
 [docs/mobile-app-plan.md](docs/mobile-app-plan.md); debug and release APKs
-built by `mobile.yml`), `packages/shared`
+built by `ci.yml`), `packages/shared`
 (DTOs/enums — consumed from its built `dist/`, so run `pnpm build:package` after any change
 there). Catalogs are queried live (TMDB/AniList/IGDB/Open Library/
 MusicBrainz) and nothing is persisted until a user tracks an item — see
 "Data model & catalog" below.
 
-Two destinations: Logan's own hosted VPS (auto-deployed, `deploy.yml`) and
+Two destinations: Logan's own hosted VPS (auto-deployed by `ci.yml`) and
 self-hosting via `docker/`. A premium plan exists as a seam, not sold yet —
 see "Feature flags & entitlements".
 
@@ -236,7 +236,7 @@ lk_…`), accepted only on routes marked `@AllowApiKey()` — the versioned
 
 - `docker/` holds every compose file, the Caddyfile, and add-on configs;
   `context: ..` resolves against the compose file's location, not repo root.
-  `deploy.yml` redeploys on every successful CI run on `main` — which
+  `ci.yml` redeploys at the end of every successful run on `main` — which
   override files get combined comes from `COMPOSE_FILE` in the VPS's own
   `.env`, not the workflow. The add-on stack (observability, Authelia SSO,
   Portainer, GlitchTip, Umami, Unleash, Homepage) is documented for
@@ -271,12 +271,13 @@ relationship primitive (friend = reciprocal accepted follow). Details:
   fix/polish. Bump via the `version-bump` skill, in a PR (`main` takes no
   direct pushes): `CHANGELOG.md` + a Quackback changelog draft —
   **publishing that draft sends the release newsletter**, so it always
-  needs Logan's go-ahead. Merging the bump is the release: `release.yml`
-  creates the GitHub release `v<version>` from its CHANGELOG section,
-  `ci.yml`'s docker-tag tags the images `<version>`, `<major.minor>`,
-  `<major>` and `latest` (every main commit gets its SHA and `edge`), and
-  `mobile.yml` attaches the APK. Dev APKs stay `android-dev-<n>`
-  pre-releases, the three newest kept.
+  needs Logan's go-ahead. Merging the bump is the release, all in that
+  commit's `ci.yml` run: `release` creates the GitHub release `v<version>`
+  from its CHANGELOG section, `docker-tag` tags the images `<version>`,
+  `<major.minor>`, `<major>` and `latest` (every main commit gets its SHA
+  and `edge`), and `publish-release-apk` attaches the APK. Each checks what
+  already exists, so a bump whose run failed is made up by the next commit.
+  Dev APKs stay `android-dev-<n>` pre-releases, the three newest kept.
 - **Every PR with a change someone outside the code would notice** (a
   feature, a fix, a behaviour or config change, a self-hosting upgrade
   step) adds a bullet under `## [Unreleased]` in `CHANGELOG.md`, in the
@@ -300,7 +301,7 @@ relationship primitive (friend = reciprocal accepted follow). Details:
   as `isNativeShareAvailable()`), never on `isNativeApp()` alone. A new
   plugin goes in both `apps/web` and `apps/mobile` at the same version
   (`src/lib/native/plugins.spec.ts` checks). Web changes reach phones on
-  deploy; only `apps/mobile/**` changes need a new APK, which `mobile.yml`
+  deploy; only `apps/mobile/**` changes need a new APK, which `ci.yml`
   builds and smoke-tests on an emulator.
 - Visual identity ("Séance" — fonts, palette, nav pattern):
   `apps/web/DESIGN.md`.

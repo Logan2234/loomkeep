@@ -1,23 +1,16 @@
 name: Trivy
 
-# Scans the api/web images CI already pushed to GHCR rather than building
-# its own: after every CI run on main (the exact SHA-tagged images the
-# deploy pulls), and weekly on `edge` — main, what's in production — to catch
-# new CVEs in an unchanged base image. PRs are scanned by ci.yml's
-# docker-build-images job, on the image it builds anyway; both upload to the
-# same trivy-api/trivy-web categories, so code scanning's PR check compares
-# a PR's alerts with main's.
+# Rescans `edge` (main, what's in production) weekly, to catch new CVEs in
+# an unchanged base image. Each main commit's images are scanned by ci.yml's
+# scan-images job once pushed, a PR's by docker-build-images; all three
+# upload to the same trivy-api/trivy-web categories.
 on:
-  workflow_run:
-    workflows: [CI]
-    branches: [main]
-    types: [completed]
   schedule:
     - cron: "17 4 * * 1"
   workflow_dispatch:
 
 concurrency:
-  group: trivy-${{ github.event_name }}
+  group: trivy
   cancel-in-progress: true
 
 permissions:
@@ -25,8 +18,6 @@ permissions:
 
 jobs:
   scan:
-    # A failed CI run may not have pushed both images.
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,26 +27,11 @@ jobs:
       matrix:
         name: [api, web]
     steps:
-      # The workflow's own commit, not the one that triggered it: nothing here
-      # runs the repository's code, the image tag and the SARIF's sha come
-      # from the event. Checking out an event's head ref in a workflow_run is
-      # the pattern Scorecard's Dangerous-Workflow check flags.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # GHCR image paths must be lowercase; github.repository_owner
+      # preserves the account's actual casing (Logan2234).
       - id: vars
-        # The tag docker-push gave the images: the commit CI built, not
-        # GITHUB_SHA, which a workflow_run sets to main's tip when this run
-        # starts — a newer commit whose images may not exist yet.
-        # GHCR image paths must be lowercase; github.repository_owner
-        # preserves the account's actual casing (Logan2234).
-        env:
-          BUILT_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            echo "tag=${BUILT_SHA:0:12}" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=edge" >> "$GITHUB_OUTPUT"
-          fi
-          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+        run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
       # Trivy pulls the image with the credentials docker login stores.
       - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v3
         with:
@@ -65,18 +41,14 @@ jobs:
       - name: scan ${{ matrix.name }} image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}:${{ steps.vars.outputs.tag }}
+          image-ref: ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}:edge
           format: sarif
           output: trivy-${{ matrix.name }}.sarif
           severity: CRITICAL,HIGH
           # Advisory only, same as codeql.yml — findings land in the
           # Security tab rather than failing anything.
           exit-code: "0"
-      # Pinned to the scanned commit on main: a workflow_run's own
-      # GITHUB_SHA is main's tip when it starts, which may already be newer.
       - uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           sarif_file: trivy-${{ matrix.name }}.sarif
           category: trivy-${{ matrix.name }}
-          ref: refs/heads/main
-          sha: ${{ github.event.workflow_run.head_sha || github.sha }}
