@@ -40,31 +40,31 @@ natives à maintenir).
 
 ## Vue d'ensemble
 
-| Ticket | Titre                                                  | Phase | Taille | Dépend de      | Statut            |
-| ------ | ------------------------------------------------------ | ----- | ------ | -------------- | ----------------- |
-| MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              | ✅ #433 📱        |
-| MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         | ✅ #436           |
-| MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         | ✅ #436 📱        |
-| MOB-04 | API : push natif via FCM                               | 1     | M      | —              | ✅ #438           |
-| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 | ✅ #438           |
-| MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436           |
-| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         | ✅ #439           |
-| MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436           |
-| MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         | ✅ #447           |
-| MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 | 🚧 en partie       |
-| MOB-11 | Projet iOS + build CI macOS + TestFlight               | 2     | M      | MOB-02         | ⏳ plus tard       |
-| MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 | ⏳ plus tard       |
-| MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         | ⏳ plus tard       |
-| MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 | ⏳ plus tard       |
-| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         | ✅ #459, #460     |
-| MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |                   |
-| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |                   |
+| Ticket | Titre                                                  | Phase | Taille | Dépend de      | Statut                    |
+| ------ | ------------------------------------------------------ | ----- | ------ | -------------- | ------------------------- |
+| MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              | ✅ #433 📱                |
+| MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         | ✅ #436                   |
+| MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         | ✅ #436 📱                |
+| MOB-04 | API : push natif via FCM                               | 1     | M      | —              | ✅ #438                   |
+| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 | ✅ #438                   |
+| MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436                   |
+| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         | ✅ #439                   |
+| MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436                   |
+| MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         | ✅ #447                   |
+| MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 | 🚧 en partie              |
+| MOB-11 | Projet iOS + build CI macOS + TestFlight               | 2     | M      | MOB-02         | ⏳ plus tard              |
+| MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 | ⏳ plus tard              |
+| MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         | ⏳ plus tard              |
+| MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 | ⏳ plus tard              |
+| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         | ✅ #459, #460             |
+| MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |                           |
+| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |                           |
 | MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 | ✅ #447 (Android), iOS ⏳ |
 | MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439 (Android), iOS ⏳ |
-| MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-02         | iOS ⏳ |
-| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |                   |
-| MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |                   |
-| MOB-23 | APK release sur GitHub, landing et docs                | 1     | M      | MOB-03, MOB-15 | ✅ #461           |
+| MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-02         | iOS ⏳                    |
+| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |                           |
+| MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |                           |
+| MOB-23 | APK release sur GitHub, landing et docs                | 1     | M      | MOB-03, MOB-15 | ✅ #461                   |
 
 Statut : ✅ = mergé dans `main`, avec le numéro de la PR qui le livre ;
 📱 = validé sur téléphone (voir « Recette » plus bas) ; 🚧 = en partie
