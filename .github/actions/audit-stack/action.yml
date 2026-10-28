@@ -20,12 +20,14 @@ outputs:
 runs:
   using: composite
   steps:
-    # The images CI pushed for this commit, 12-character SHA tags (ci.yml's
-    # docker-tag): this never builds anything itself.
+    # `edge`, main's last commit through CI (ci.yml's docker-tag): this never
+    # builds anything, a run on another branch audits main's images with its
+    # own audit setup, and a run while CI is still on main's tip doesn't find
+    # that commit's images missing.
     - name: Start the stack
       shell: bash
       run: |
-        export IMAGE_TAG="${GITHUB_SHA:0:12}"
+        export IMAGE_TAG=edge
         docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml pull
         docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml up -d
 
