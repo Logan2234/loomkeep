@@ -27,7 +27,8 @@ const desktop = process.env.LH_FORM_FACTOR === "desktop";
 module.exports = {
   ci: {
     collect: {
-      url: PAGES[group].map((path) => BASE + path),
+      // assert and upload load this file too, with no group.
+      url: (PAGES[group] ?? []).map((path) => BASE + path),
       numberOfRuns: 3,
       chromePath: "/usr/bin/google-chrome",
       ...(group === "app" && {
