@@ -14,11 +14,16 @@
   import { queryClient } from "#lib/query-client.js";
   import { accessibility } from "#lib/accessibility.svelte.js";
   import { theme } from "#lib/theme.svelte.js";
+  import { auth } from "#lib/auth.svelte.js";
   import {
     isNativeApp,
     startAppShell,
     syncSystemBars,
   } from "#lib/native/app-shell.js";
+  import {
+    isHomeScreenWidgetsAvailable,
+    syncHomeScreenWidgets,
+  } from "#lib/native/home-screen-widgets.js";
   import bricolageLatin from "@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2?url";
   import hankenLatin from "@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2?url";
   import "@fontsource-variable/bricolage-grotesque/wght.css";
@@ -54,6 +59,13 @@
 
   $effect(() => {
     if (isNativeApp()) void syncSystemBars(theme.mode);
+  });
+
+  $effect(() => {
+    const signedIn = auth.isLoggedIn;
+    if (isHomeScreenWidgetsAvailable()) {
+      void syncHomeScreenWidgets(signedIn).catch(() => undefined);
+    }
   });
 </script>
 

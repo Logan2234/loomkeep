@@ -6,4 +6,26 @@
     <string name="shortcut_profile">Il mio profilo</string>
     <string name="shortcut_settings">Impostazioni</string>
     <string name="notification_action_failed">Non riuscito: apri Loomkeep per riprovare dall\'app.</string>
+    <string name="widget_to_watch_name">Da guardare</string>
+    <string name="widget_to_watch_description">Le tue serie in corso, con un pulsante per segnare l\'episodio successivo</string>
+    <string name="widget_releases_name">Uscite</string>
+    <string name="widget_releases_description">Cosa esce oggi tra ciò che segui, altrimenti le prossime uscite</string>
+    <string name="widget_releases_today">Uscite di oggi</string>
+    <string name="widget_releases_next">Prossime uscite</string>
+    <string name="widget_today_short">OGGI</string>
+    <string name="widget_tomorrow">Domani</string>
+    <string name="widget_in_progress">%d in corso</string>
+    <string name="widget_episodes_left">%d rimasti</string>
+    <string name="widget_last_episode">ultimo</string>
+    <string name="widget_mark_watched">Segna %1$s di %2$s come visto</string>
+    <string name="widget_watched">Visto</string>
+    <string name="widget_movie">Film</string>
+    <string name="widget_game">Gioco</string>
+    <string name="widget_signed_out">Apri Loomkeep per collegare questo widget</string>
+    <string name="widget_offline">Loomkeep non è raggiungibile ora</string>
+    <string name="widget_to_watch_empty">Niente da recuperare</string>
+    <string name="widget_releases_empty">Nessuna uscita in arrivo</string>
+    <string name="widget_style_title">Stile del widget</string>
+    <string name="widget_style_posters">Locandine</string>
+    <string name="widget_style_list">Elenco</string>
 </resources>

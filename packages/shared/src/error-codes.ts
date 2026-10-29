@@ -139,6 +139,9 @@ export const ErrorCode = {
   NotificationPushEndpointTaken: "notifications.push_endpoint_taken",
   NotificationActionInvalid: "notifications.action_invalid",
 
+  // home-screen widgets (Android app)
+  HomeScreenWidgetTokenInvalid: "home_screen_widgets.token_invalid",
+
   // reports
   ReportReasonRequired: "reports.reason_required",
   ReportInvalidMotif: "reports.invalid_motif",

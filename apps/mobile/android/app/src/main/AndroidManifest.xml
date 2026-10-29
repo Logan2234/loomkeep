@@ -53,6 +53,40 @@
 
         </activity>
 
+        <!-- Home-screen widgets (MOB-20). -->
+        <receiver
+            android:name=".widgets.ToWatchWidgetReceiver"
+            android:label="@string/widget_to_watch_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_to_watch" />
+        </receiver>
+        <receiver
+            android:name=".widgets.ReleasesWidgetReceiver"
+            android:label="@string/widget_releases_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_releases" />
+        </receiver>
+        <activity
+            android:name=".widgets.WidgetStyleActivity"
+            android:theme="@style/WidgetStyleTheme"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <!-- Pushes Android draws itself (app in the background) get Loomkeep's mark. -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"

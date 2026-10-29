@@ -8,6 +8,10 @@ import {
   SystemBars,
   SystemBarsStyle,
 } from "@capacitor/core";
+import {
+  isHomeScreenWidgetsAvailable,
+  startHomeScreenWidgets,
+} from "./home-screen-widgets";
 import { isNativePushAvailable, startNativePush } from "./push";
 
 /** Whether the page runs inside the Android app (apps/mobile), not a browser. */
@@ -44,10 +48,14 @@ export function startAppShell(): () => void {
       ]
     : [];
   const stopPush = isNativePushAvailable() ? startNativePush() : undefined;
+  const stopWidgets = isHomeScreenWidgetsAvailable()
+    ? startHomeScreenWidgets()
+    : undefined;
 
   return () => {
     listeners.forEach((listener) => void listener.then((l) => l.remove()));
     stopPush?.();
+    stopWidgets?.();
   };
 }
 

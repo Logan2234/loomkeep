@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The home-screen widgets (MOB-20) in Séance's dark theme, "la salle". -->
+<resources>
+    <color name="widget_bg">#15171C</color>
+    <color name="widget_fg">#ECECEA</color>
+    <color name="widget_dim">#9AA0AE</color>
+    <color name="widget_accent">#F5B841</color>
+    <color name="widget_on_accent">#1A1406</color>
+    <color name="widget_divider">#2A2E38</color>
+    <color name="widget_poster_fallback">#1E2128</color>
+</resources>
