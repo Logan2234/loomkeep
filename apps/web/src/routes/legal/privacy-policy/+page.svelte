@@ -16,7 +16,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 27/10/2026</em></p>
+    <p><em>Dernière mise à jour : 28/10/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -459,6 +459,16 @@
       en bout : ce service ne peut pas le lire en clair.
     </p>
     <p>
+      Dans l'application Android (voir section 21), les notifications passent
+      par <strong>Firebase Cloud Messaging</strong> (Google) : l'application obtient
+      de Google un identifiant propre à l'appareil (jeton FCM), que Loomkeep conserve
+      pour lui adresser les notifications. Contrairement aux notifications du navigateur,
+      leur contenu (titre et texte) n'est pas chiffré de bout en bout : Google le
+      reçoit pour l'afficher sur l'appareil. Le jeton est supprimé lorsque l'utilisateur
+      désactive les notifications de l'application ou que Google le signale comme
+      invalide.
+    </p>
+    <p>
       L'utilisateur peut désactiver ces notifications depuis Loomkeep ou depuis
       les paramètres de son appareil ou navigateur, selon le mécanisme utilisé.
     </p>
@@ -731,7 +741,12 @@
       <li>les fournisseurs de services d'envoi d'e-mails ;</li>
       <li>
         les fournisseurs techniques nécessaires aux notifications, y compris les
-        services de notification push des navigateurs ;
+        services de notification push des navigateurs et, pour l'application
+        Android, Google (Firebase Cloud Messaging) ;
+      </li>
+      <li>
+        GitHub, pour le téléchargement de l'application Android, et Google pour
+        les statistiques de son scanner de codes ;
       </li>
       <li>les fournisseurs d'hébergement et de sauvegarde ;</li>
       <li>
@@ -778,7 +793,13 @@
       </li>
       <li>
         les services de notification push des navigateurs (notamment Google via
-        Firebase Cloud Messaging, Mozilla et Apple) ;
+        Firebase Cloud Messaging, Mozilla et Apple), et Google via Firebase
+        Cloud Messaging pour les notifications de l'application Android ;
+      </li>
+      <li>
+        GitHub, qui reçoit l'IP de l'appareil lors du téléchargement de
+        l'application Android, et Google, pour les statistiques du scanner de
+        codes de l'application (voir section 21) ;
       </li>
       <li>
         les plateformes de dons choisies par l'utilisateur (Ko-fi, Liberapay,
@@ -895,7 +916,57 @@
       auto-hébergées qu'il ne contrôle pas et n'est pas responsable de leur
       gestion, de leur sécurité ou de leur conformité réglementaire.
     </p>
-    <h2>21. Modification de la politique</h2>
+    <h2>21. Application Android</h2>
+    <p>
+      L'application Android affiche Loomkeep tel que le sert l'instance à
+      laquelle elle est reliée (loomkeep.app par défaut) : elle traite les mêmes
+      données que le site, selon la présente politique. Elle se signale au
+      serveur par son nom et sa version (en-tête technique
+      <code>User-Agent</code>). Elle n'intègre aucun outil publicitaire ni de
+      mesure d'audience.
+    </p>
+    <h3>Téléchargement</h3>
+    <p>
+      L'application est distribuée depuis <strong>GitHub</strong> (GitHub Inc.,
+      États-Unis), qui reçoit l'adresse IP de l'appareil lors du téléchargement
+      de l'application et de ses mises à jour, et le sera le cas échéant depuis
+      <strong>Google Play</strong>, selon les conditions de cette plateforme.
+    </p>
+    <h3>Fonctions propres à l'application</h3>
+    <ul>
+      <li>
+        <strong>Notifications</strong> : l'autorisation n'est demandée qu'à l'activation
+        des notifications push (voir section 7).
+      </li>
+      <li>
+        <strong>Scan de codes-barres et de QR codes</strong> : il utilise le scanner
+        de codes de Google (ML Kit, fourni par les services Google Play). L'image
+        est analysée sur l'appareil et n'est pas transmise à Loomkeep, qui ne reçoit
+        que le code lu ; l'application n'a pas elle-même accès à l'appareil photo.
+        Google peut recevoir des statistiques d'utilisation et de performance de ce
+        composant.
+      </li>
+      <li>
+        <strong>Passkeys</strong> : la connexion par passkey passe par le gestionnaire
+        d'identifiants d'Android et le gestionnaire de mots de passe choisi par l'utilisateur
+        (par exemple celui de Google), qui conserve la clé privée ; Loomkeep ne conserve
+        que la clé publique, comme sur le site.
+      </li>
+    </ul>
+    <h3>Données conservées sur l'appareil</h3>
+    <p>
+      Les cookies de connexion et le stockage local de l'application restent sur
+      l'appareil, et sont exclus des sauvegardes Android comme des transferts
+      vers un nouvel appareil. Lorsque l'utilisateur relie l'application à une
+      autre instance, l'adresse de celle-ci est conservée sur l'appareil ;
+      l'application n'échange alors qu'avec cette instance, dont
+      l'administrateur est responsable des traitements (voir section 20).
+    </p>
+    <p>
+      La désinstallation de l'application efface ces données de l'appareil ;
+      elle ne supprime pas le compte Loomkeep (voir section 12).
+    </p>
+    <h2>22. Modification de la politique</h2>
     <p>
       Cette politique peut être mise à jour afin de tenir compte de l'évolution
       du service, de ses fonctionnalités, de ses prestataires ou de la
@@ -907,7 +978,7 @@
       traitements des utilisateurs, une information appropriée pourra être
       fournie via Loomkeep ou par e-mail lorsque cela est nécessaire.
     </p>
-    <h2>22. Contact</h2>
+    <h2>23. Contact</h2>
     <p>
       Pour toute question concernant cette politique de confidentialité ou le
       traitement des données personnelles :

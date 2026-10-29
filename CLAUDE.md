@@ -280,7 +280,9 @@ relationship primitive (friend = reciprocal accepted follow). Details:
   commit's `ci.yml` run: `release` creates the GitHub release `v<version>`
   from its CHANGELOG section, `docker-tag` tags the images `<version>`,
   `<major.minor>`, `<major>` and `latest` (every main commit gets its SHA
-  and `edge`), and `publish-release-apk` attaches the APK. Each checks what
+  and `edge`), and `publish-release-apk` attaches the APK, then publishes
+  the release (a draft until then: releases are immutable, a published one
+  takes no assets). Each checks what
   already exists, so a bump whose run failed is made up by the next commit.
   Dev APKs stay `android-dev-<n>` pre-releases, the three newest kept.
 - **Every PR with a change someone outside the code would notice** (a

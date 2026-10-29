@@ -5,7 +5,8 @@ import webpush from "web-push";
 import { AppException } from "../common/app.exception";
 import { primaryWebOrigin } from "../common/web-origin.util";
 import { PrismaService } from "../prisma/prisma.service";
-import { FcmClient } from "./fcm.client";
+import { FcmClient, type FcmMessage } from "./fcm.client";
+import { type PushAction, signAction } from "./notification-action";
 import { isAllowedPushEndpoint } from "./push-endpoint.validator";
 
 export interface PushPayload {
@@ -19,6 +20,8 @@ export interface PushPayload {
   notificationId?: string;
   /** Its ALERTS group: the Android app files it under that notification channel. */
   group: AlertGroup;
+  /** Buttons for the Android app's notification (MOB-17); browsers ignore them. */
+  actions?: PushAction[];
 }
 
 export interface PushDevice {
@@ -100,21 +103,27 @@ export class PushService {
     });
   }
 
-  /** The Android app's FCM registration token, stored as its endpoint. */
+  /**
+   * The Android app's FCM registration token, stored as its endpoint, and
+   * whether the installed APK draws its notifications itself (MOB-17): the
+   * app says so again at each start, so an update takes effect.
+   */
   async subscribeNative(
     userId: string,
     token: string,
     userAgent?: string,
+    actions = false,
   ): Promise<void> {
     await this.assertEndpointFree(userId, token);
     await this.prisma.pushSubscription.upsert({
       where: { endpoint: token },
-      update: { userId, userAgent },
+      update: { userId, userAgent, actions },
       create: {
         userId,
         platform: PushPlatform.ANDROID,
         endpoint: token,
         userAgent,
+        actions,
       },
     });
   }
@@ -232,23 +241,12 @@ export class PushService {
     payload: PushPayload,
   ): Promise<PushSendOutcome> {
     try {
-      const result = await this.fcm!.send(sub.endpoint, {
-        notification: { title: payload.title, body: payload.body },
-        // Read back by the web when the notification is tapped.
-        data: {
-          url: payload.url,
-          ...(payload.notificationId && {
-            notificationId: payload.notificationId,
-          }),
-        },
-        android: {
-          priority: "HIGH",
-          notification: {
-            channel_id: payload.group,
-            ...(payload.tag && { tag: payload.tag }),
-          },
-        },
-      });
+      const result = await this.fcm!.send(
+        sub.endpoint,
+        sub.actions
+          ? appBuiltMessage(sub.id, payload)
+          : systemBuiltMessage(payload),
+      );
       if (result.ok) return { userAgent: sub.userAgent, ok: true };
 
       if (result.unregistered) {
@@ -266,6 +264,61 @@ export class PushService {
       return { userAgent: sub.userAgent, ok: false, error: String(err) };
     }
   }
+}
+
+// Read back by the web when the notification is tapped.
+const tapData = (payload: PushPayload): Record<string, string> => ({
+  url: payload.url,
+  ...(payload.notificationId && { notificationId: payload.notificationId }),
+});
+
+/** A notification Android draws itself: no buttons possible. */
+function systemBuiltMessage(payload: PushPayload): FcmMessage {
+  return {
+    notification: { title: payload.title, body: payload.body },
+    data: tapData(payload),
+    android: {
+      priority: "HIGH",
+      notification: {
+        channel_id: payload.group,
+        ...(payload.tag && { tag: payload.tag }),
+      },
+    },
+  };
+}
+
+/**
+ * Everything the app needs to draw the notification itself, buttons
+ * included, each with a token signed for this device only (MOB-17).
+ */
+function appBuiltMessage(
+  subscriptionId: string,
+  payload: PushPayload,
+): FcmMessage {
+  const actions = (payload.actions ?? []).map((button) => ({
+    label: button.label,
+    ...(button.replyHint && { replyHint: button.replyHint }),
+    token: signAction({
+      action: button.action,
+      target: button.target,
+      subscriptionId,
+      ...(payload.notificationId && {
+        notificationId: payload.notificationId,
+      }),
+    }),
+  }));
+
+  return {
+    data: {
+      ...tapData(payload),
+      title: payload.title,
+      body: payload.body,
+      channel: payload.group,
+      ...(payload.tag && { tag: payload.tag }),
+      actions: JSON.stringify(actions),
+    },
+    android: { priority: "HIGH" },
+  };
 }
 
 /**

@@ -38,6 +38,7 @@ import { ACHIEVEMENT_KEYS_ON_COMMENT_POSTED } from "../gamification/achievements
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { fetchXpByUser, withXp } from "../gamification/xp-lookup.util";
 import { XpService } from "../gamification/xp.service";
+import { NotificationAction } from "../notifications/notification-action";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { BlockService } from "../social/block.service";
@@ -1177,6 +1178,19 @@ export class CommentService {
         actorDisplayName: row.author.displayName,
         workTitle: work?.title ?? null,
       },
+      // Replies stay one level deep: answering a reply answers its thread.
+      pushActions: (copy) => [
+        {
+          action: NotificationAction.COMMENT_REPLY,
+          label: copy.pushActions.reply,
+          replyHint: copy.pushActions.replyHint,
+          target: {
+            targetType: row.targetType,
+            targetId: row.targetId,
+            parentId: row.parentId ?? row.id,
+          },
+        },
+      ],
     });
   }
 

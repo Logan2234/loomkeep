@@ -40,34 +40,36 @@ natives à maintenir).
 
 ## Vue d'ensemble
 
-| Ticket | Titre                                                  | Phase | Taille | Dépend de      | Statut            |
-| ------ | ------------------------------------------------------ | ----- | ------ | -------------- | ----------------- |
-| MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              | ✅ #433 📱        |
-| MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         | ✅ #436           |
-| MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         | ✅ #436 📱        |
-| MOB-04 | API : push natif via FCM                               | 1     | M      | —              | ✅ #438           |
-| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 | ✅ #438           |
-| MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436           |
-| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         | ✅ #439           |
-| MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436           |
-| MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         | ✅ #447           |
-| MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 |                   |
-| MOB-11 | Projet iOS + build CI macOS + TestFlight               | 2     | M      | MOB-02         |                   |
-| MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 |                   |
-| MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         |                   |
-| MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 |                   |
-| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         | ✅ #459, #460     |
-| MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |                   |
-| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         |                   |
-| MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 | ✅ #447 (Android) |
-| MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439           |
-| MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-11         |                   |
-| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |                   |
-| MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |                   |
-| MOB-23 | APK release sur GitHub, landing et docs                | 1     | M      | MOB-03, MOB-15 | ✅ #461           |
+| Ticket | Titre                                                  | Phase | Taille | Dépend de      | Statut                    |
+| ------ | ------------------------------------------------------ | ----- | ------ | -------------- | ------------------------- |
+| MOB-01 | Coque Capacitor Android + APK de debug en CI           | 0     | S      | —              | ✅ #433 📱                |
+| MOB-02 | Intégration web ↔ natif (plateforme, retour, statut)   | 1     | M      | MOB-01         | ✅ #436                   |
+| MOB-03 | Icônes, splash screen et nom d'application             | 1     | S      | MOB-01         | ✅ #436 📱                |
+| MOB-04 | API : push natif via FCM                               | 1     | M      | —              | ✅ #438                   |
+| MOB-05 | Web : enregistrement et ouverture des push natifs      | 1     | M      | MOB-02, MOB-04 | ✅ #438                   |
+| MOB-06 | Exports et téléchargements dans l'app                  | 1     | S      | MOB-02         | ✅ #436                   |
+| MOB-07 | Scan ISBN et QR natif                                  | 1     | M      | MOB-02         | ✅ #439                   |
+| MOB-08 | Android App Links (liens d'email et de partage)        | 1     | S      | MOB-01         | ✅ #436                   |
+| MOB-09 | Connexion Simkl via navigateur in-app                  | 1     | M      | MOB-08         | ✅ #447                   |
+| MOB-10 | Publication Android (signature, fiche, test fermé)     | 1     | M      | MOB-03, MOB-05 | 🚧 en partie              |
+| MOB-11 | Projet iOS + build CI macOS + TestFlight               | 2     | M      | MOB-02         | ⏳ plus tard              |
+| MOB-12 | Push APNs (via FCM) et badge serveur                   | 2     | S      | MOB-04, MOB-11 | ⏳ plus tard              |
+| MOB-13 | Universal Links et passkeys iOS                        | 2     | M      | MOB-11         | ⏳ plus tard              |
+| MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 | ⏳ plus tard              |
+| MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         | ✅ #459, #460             |
+| MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |                           |
+| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         | ✅ #476, #477             |
+| MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 | ✅ #447 (Android), iOS ⏳ |
+| MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439 (Android), iOS ⏳ |
+| MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-02         | iOS ⏳                    |
+| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         | 🚧 #480                   |
+| MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |                           |
+| MOB-23 | APK release sur GitHub, landing et docs                | 1     | M      | MOB-03, MOB-15 | ✅ #461                   |
 
 Statut : ✅ = mergé dans `main`, avec le numéro de la PR qui le livre ;
-📱 = validé sur téléphone (voir « Recette » plus bas).
+📱 = validé sur téléphone (voir « Recette » plus bas) ; 🚧 = en partie
+(le ticket dit ce qui reste) ; ⏳ = plus tard, pas prévu à court terme
+(toute la phase iOS, et les parties iOS des tickets de la phase 4).
 
 Tailles : S ≈ une demi-journée à une journée, M ≈ deux à quatre jours,
 L ≈ une semaine ou plus.
@@ -77,14 +79,15 @@ L ≈ une semaine ou plus.
 - Compte Google Play Console (25 $ une fois). Un compte personnel neuf
   doit passer un test fermé de **12 testeurs pendant 14 jours** avant la
   production ; un compte organisation (numéro D-U-N-S) en est exempté.
-- Compte Apple Developer (99 €/an) et un iPhone de test, ou TestFlight.
+- ⏳ iOS, plus tard : compte Apple Developer (99 €/an) et un iPhone de
+  test, ou TestFlight.
 - Projet Firebase (gratuit) pour FCM, avec une app Android par nom de
   paquet (`app.loomkeep.debug`, `app.loomkeep`).
 - Clé de signature release (MOB-23) : générée une fois, sauvegardée hors du
   repo. Perdue, plus aucune installation ne peut être mise à jour.
-- Un environnement macOS pour iOS : runner `macos-latest` de GitHub
-  Actions, Codemagic ou un Mac mini. Android se construit sur Windows
-  (Android Studio) et en CI Ubuntu.
+- ⏳ iOS, plus tard : un environnement macOS (runner `macos-latest` de
+  GitHub Actions, Codemagic ou un Mac mini). Android se construit sur
+  Windows (Android Studio) et en CI Ubuntu.
 - AGPL et App Store : la FSF juge les conditions de l'App Store
   incompatibles avec la GPL. En tant que titulaire des droits, Logan peut
   publier son propre code ; toute contribution externe doit passer par la
@@ -204,6 +207,20 @@ son 📱 dans le tableau.
       onglet par-dessus l'app (pas dans Chrome).
 - [ ] Après « Autoriser », l'onglet se ferme et l'app affiche l'import
       Simkl, connectée ; l'import va au bout.
+
+### MOB-17 — Notifications actionnables
+
+- [ ] Après la mise à jour de l'APK, les notifications arrivent avec leurs
+      boutons (relancer l'app une fois pour qu'elle le signale à l'API).
+- [ ] Message de chat, app fermée : « Répondre » envoie la réponse sans
+      ouvrir l'app, « Marquer comme lu » retire le badge de la conversation.
+- [ ] Demande d'abonnement : « Accepter » et « Refuser » fonctionnent ;
+      nouvel abonné : « Suivre en retour ».
+- [ ] Réponse ou mention dans un commentaire : « Répondre » publie la
+      réponse dans le fil.
+- [ ] Une autre notification de la cloche : « Marquer comme lu ».
+- [ ] Mode avion puis un bouton : la notification reste et dit que
+      l'action a échoué ; le tap ouvre toujours la bonne page.
 
 ### MOB-18 — Partager vers Loomkeep
 
@@ -387,16 +404,45 @@ flux navigateur inchangé.
 
 ### MOB-10 — Publication Android
 
-**Périmètre**
+**But** : publier `app.loomkeep` sur Google Play, ce qui règle aussi la
+vérification des développeurs qu'Android impose aux APK installés hors
+store (voir MOB-23).
 
-- Keystore de signature en secret GitHub, build `bundleRelease` (AAB) en
-  CI, `versionCode` dérivé de la version lockstep.
-- Fiche Play Store FR/EN/IT, captures (réutiliser les
-  `pwa-screenshot-*`), politique de confidentialité (`/legal`), formulaire
-  Data safety (GlitchTip, Umami), classification du contenu (social,
-  contenu utilisateur).
-- Test fermé (12 testeurs, 14 jours) puis production.
-- Doc utilisateur dans `apps/docs`.
+**Déjà fait**
+
+- Clé de signature release en secrets GitHub, APK release signé et
+  vérifié par la CI (MOB-23). Elle peut servir de clé de signature Play
+  (Play App Signing, « utiliser une clé existante ») : l'APK de GitHub et
+  celui du Play Store auront la même signature, et l'un pourra se mettre
+  à jour par l'autre.
+- `versionCode` dérivé de la version lockstep (#441) ; `targetSdk` 36,
+  au niveau de ce que Play exige.
+- Doc utilisateur dans `apps/docs` (Guide › Android app, MOB-23).
+- Suppression du compte depuis l'app (Réglages › Supprimer le compte).
+- Bundle `bundleRelease` (AAB, le seul format accepté par Play), construit
+  avec l'APK release, signé avec la même clé et vérifié par la CI, puis
+  joint à la release GitHub de la version (`loomkeep-android-play.aab`),
+  d'où on l'envoie à Play.
+- Politique de confidentialité : section 21 « Application Android »
+  (téléchargement, scanner de Google, passkeys, données sur l'appareil),
+  et la section 7 précise que les notifications de l'app ne sont pas
+  chiffrées de bout en bout pour Google.
+- Textes de la fiche, réponses Data safety et classification du contenu :
+  brouillons prêts dans l'annexe en fin de document.
+
+**Reste à faire**
+
+- Compte Play Console (25 $) et vérification de l'identité du développeur.
+- Visuels : icône 512 × 512, bannière 1024 × 500, et de nouvelles captures
+  téléphone. Les `static/pwa-screenshot-*-mobile.jpg` actuelles
+  (375 × 811) dépassent le rapport 2:1 que Play accepte, et Play
+  recommande au moins 1080 px de large.
+- Page de suppression de compte : Guide › Your data décrit le chemin dans
+  l'app ; y ajouter le recours par email quand on ne peut plus se
+  connecter, puis donner son adresse à Play.
+- Saisir l'annexe dans la console, puis test fermé (12 testeurs, 14 jours)
+  et production. Plus tard, envoi des AAB par l'API Play (compte de
+  service en secret) au lieu de l'envoi manuel.
 
 ### MOB-23 — APK release sur GitHub, landing et docs
 
@@ -430,7 +476,11 @@ distribution par GitHub passera alors par l'enregistrement de MOB-10.
 
 ---
 
-## Phase 2 — iOS
+## Phase 2 — iOS ⏳ plus tard
+
+Pas prévu à court terme : la phase attend le compte Apple Developer
+(99 €/an) et un environnement macOS. Les tickets restent décrits pour le
+jour où elle démarre.
 
 ### MOB-11 — Projet iOS + build CI macOS + TestFlight
 
@@ -524,36 +574,236 @@ premium (`ee/`).
 
 ### MOB-17 — Notifications actionnables
 
-« Marquer comme vu » sur une sortie d'épisode, réponse directe à un message
-de chat, image de l'affiche dans la notification. Demande des routes API
-appelables depuis l'action sans ouvrir l'app.
+**Décisions (28/10/2026)** : les boutons agissent sans ouvrir l'app, avec un
+jeton signé propre à la notification ; les sorties (épisodes, films, jeux)
+restent sans action, puisqu'elles arrivent en récapitulatif ; Android
+seulement pour l'instant.
+
+| Notification                      | Boutons                                        |
+| --------------------------------- | ---------------------------------------------- |
+| Message de chat                   | Répondre (réponse directe), Marquer comme lu   |
+| Demande d'abonnement              | Accepter, Refuser                              |
+| Nouvel abonné                     | Suivre en retour (si ce n'est pas déjà le cas) |
+| Réponse à un commentaire, mention | Répondre (réponse directe)                     |
+| Suite annoncée d'une saga         | Ajouter à « À voir »                           |
+| Autres entrées de la cloche       | Marquer comme lu                               |
+
+Une action sur une entrée de la cloche la marque aussi comme lue.
+
+**Fonctionnement**
+
+- Android dessine lui-même les messages « notification » de FCM, sans
+  boutons possibles. Un appareil qui déclare gérer les actions
+  (`actions: true` à l'enregistrement de son jeton, quand l'APK a le plugin
+  local `NotificationActions`) reçoit donc un message « data » : l'app
+  construit la notification (canal, tag, boutons, réponse directe) dans son
+  propre `FirebaseMessagingService`, qui transmet le reste au plugin push.
+  Les APK plus anciens gardent le message actuel.
+- Chaque bouton porte un jeton signé (HMAC) : l'action, sa cible,
+  l'abonnement push et une expiration (7 jours). `POST
+/api/notifications/actions`, publique, le vérifie, contrôle que
+  l'abonnement existe encore pour ce compte (désactiver le push ou
+  désinstaller l'app révoque donc les jetons), puis appelle le même service
+  que l'action faite dans l'app, avec les mêmes contrôles (blocage, demande
+  déjà traitée…).
+- Le tap ouvre l'app comme aujourd'hui, avec les mêmes données : le web ne
+  change pas.
+- Comme le contenu, le jeton passe en clair par Google (FCM) : sa portée se
+  limite à une action, sur une cible, pendant sept jours, depuis un appareil
+  encore abonné.
+
+**Découpage** : une PR API et web (jetons, route, messages « data » pour
+les appareils qui les gèrent, déclaration de la capacité, sans effet tant
+qu'aucun APK ne la déclare), puis une PR Android (service de messagerie,
+receiver des boutons, plugin `NotificationActions`).
 
 ### MOB-18 — Partager vers Loomkeep
 
 Android (fait) : intent-filter `SEND` texte, transformé par `SharedText.java`
-en `/app/share` (le `share_target` du manifest). iOS : Share Extension en
-Swift, avec la phase 2. Cas d'usage : partager un lien IMDb, Letterboxd,
+en `/app/share` (le `share_target` du manifest). ⏳ iOS : Share Extension
+en Swift, avec la phase 2. Cas d'usage : partager un lien IMDb, Letterboxd,
 Netflix ou Spotify pour ajouter l'œuvre.
 
 ### MOB-19 — Raccourcis d'icône
 
 Les `shortcuts` du manifest (recherche, calendrier, stats, profil,
-réglages) en raccourcis Android (fait, Android 8+) ; les quick actions iOS
-restent à faire avec la phase 2.
+réglages) en raccourcis Android (fait, Android 8+) ; ⏳ les quick actions
+iOS restent à faire avec la phase 2.
 
 ### MOB-20 — Widgets « À suivre » et « Sorties du jour »
 
-WidgetKit (Swift) et Glance (Kotlin), alimentés par une route API dédiée et
-rafraîchis en arrière-plan ; variante gamification (série, XP) possible.
+Glance (Kotlin) côté Android, alimenté par une route API dédiée et
+rafraîchi en arrière-plan ; variante gamification (série, XP) possible.
+⏳ WidgetKit (Swift) côté iOS, avec la phase 2.
 
 ### MOB-21 — Haptique et biométrie
 
 Retour haptique sur les gains d'XP et le marquage (iOS n'a pas d'API
 `vibrate`) ; Face ID / empreinte pour `@RequireRecentAuth` au lieu de
-retaper le mot de passe, avec stockage Keychain/Keystore.
+retaper le mot de passe.
+
+**Fait** :
+
+- `@capacitor/haptics` (web et app à la même version), derrière
+  `src/lib/native/haptics.ts` : `tapFeedback()` (impact léger) au marquage
+  d'un épisode, d'une saison, d'un rattrapage, d'un film, depuis l'accueil
+  (« À suivre », « Reprendre ») et à l'entrée en sélection par appui long ;
+  `successFeedback()` à chaque bulle de succès ou de niveau. Le plugin
+  déclare `VIBRATE`, sans laquelle la WebView ignore `navigator.vibrate` ;
+  un APK plus ancien le dit indisponible et ne vibre pas. Sur le web, son
+  implémentation passe par `navigator.vibrate` (Chrome Android, PWA).
+- La biométrie passe par les passkeys, pas par un mot de passe gardé dans
+  le Keystore : depuis #472, une passkey dans l'app ouvre Credential
+  Manager (empreinte, visage), et la re-confirmation les accepte déjà. Un
+  mot de passe stocké sur l'appareil serait moins sûr qu'une passkey, qui
+  n'en sort jamais, et doublerait un mécanisme qui existe. Ce qui manquait,
+  c'est d'y amener : après une re-confirmation par mot de passe ou code,
+  un compte sans passkey, sur un appareil qui sait en utiliser une
+  (`platformAuthenticatorIsAvailable`), se voit proposer une fois d'en
+  ajouter une (toast vers Paramètres › Double authentification).
+
+**Plus tard** : un verrouillage de l'app à l'ouverture par biométrie
+(réglage facultatif, `BiometricPrompt` dans un plugin local), si le besoin
+se confirme.
 
 ### MOB-22 — Exploratoire : scrobbling musical Android
 
 Lire les sessions média Android (à la Pano Scrobbler) pour enregistrer
 automatiquement les écoutes dans le domaine musique. Vérifier d'abord la
 politique Play Store sur les accès aux notifications.
+
+---
+
+## Annexe — Fiche Google Play et Data safety (MOB-10)
+
+Brouillons à coller dans la Play Console. Les textes reprennent le ton de
+la landing (tutoiement en français).
+
+### Fiche
+
+- **Nom** : Loomkeep
+- **Catégorie** : Divertissement
+- **Site** : https://loomkeep.app · **Email** : contact@loomkeep.app
+- **Politique de confidentialité** : https://loomkeep.app/legal/privacy-policy
+
+**Description courte** (80 caractères au plus)
+
+- FR : Séries, films, animes, jeux, livres, albums : tout ce que tu suis, réuni.
+- EN : Series, films, anime, games, books, albums: everything you follow, in one place.
+- IT : Serie, film, anime, giochi, libri, album: tutto ciò che segui, in un solo posto.
+
+**Description longue — FR**
+
+> Loomkeep garde la trace de tout ce que tu regardes, joues, lis et
+> écoutes : séries et animes épisode par épisode, films et revisionnages,
+> jeux avec leur temps de jeu, livres page par page, albums. Une seule
+> bibliothèque, une seule page de statistiques, au lieu d'une application
+> par passion.
+>
+> • Suivi précis : saisons, épisodes, relectures, parties en cours,
+> abandonnées ou terminées, avec les dates de chaque séance.
+> • Calendrier des sorties : les prochains épisodes de tes séries, et un
+> flux à ajouter à ton agenda.
+> • Statistiques : ton année en séries, films, jeux, livres et musique.
+> • Import de ton historique depuis TV Time, Trakt, Simkl, MyAnimeList,
+> AniList, Letterboxd, IMDb, Steam, Goodreads, StoryGraph et Babelio.
+> • Entre amis : profils, avis, listes partagées et messages.
+>
+> L'application ajoute les notifications Android (nouveaux épisodes,
+> réponses, messages), le scan du code-barres d'un livre ou du QR code
+> d'un ami, le partage d'un lien IMDb ou Letterboxd vers Loomkeep, et des
+> raccourcis sur son icône.
+>
+> Loomkeep est gratuit et sans publicité. C'est un logiciel libre (AGPL) :
+> tu peux exporter tes données à tout moment, ou héberger ta propre
+> instance et y connecter l'application.
+
+**Description longue — EN**
+
+> Loomkeep keeps track of everything you watch, play, read and listen to:
+> series and anime episode by episode, films and rewatches, games with
+> their playtime, books page by page, albums. One library and one stats
+> page, instead of one app per passion.
+>
+> • Precise tracking: seasons, episodes, rereads, games in progress,
+> dropped or finished, with the date of every session.
+> • Release calendar: your shows' upcoming episodes, and a feed for your
+> own calendar.
+> • Stats: your year in series, films, games, books and music.
+> • Bring your history from TV Time, Trakt, Simkl, MyAnimeList, AniList,
+> Letterboxd, IMDb, Steam, Goodreads, StoryGraph and Babelio.
+> • With friends: profiles, reviews, shared lists and messages.
+>
+> The app adds Android notifications (new episodes, replies, messages),
+> scanning a book's barcode or a friend's QR code, sharing an IMDb or
+> Letterboxd link to Loomkeep, and shortcuts on its icon.
+>
+> Loomkeep is free and has no ads. It's free software (AGPL): export your
+> data whenever you like, or host your own instance and connect the app to
+> it.
+
+**Description longue — IT**
+
+> Loomkeep tiene traccia di tutto ciò che guardi, giochi, leggi e ascolti:
+> serie e anime episodio per episodio, film e nuove visioni, giochi con il
+> tempo di gioco, libri pagina per pagina, album. Una sola libreria e una
+> sola pagina di statistiche, invece di un'app per ogni passione.
+>
+> • Tracciamento preciso: stagioni, episodi, riletture, giochi in corso,
+> abbandonati o finiti, con la data di ogni sessione.
+> • Calendario delle uscite: i prossimi episodi delle tue serie, e un feed
+> da aggiungere al tuo calendario.
+> • Statistiche: il tuo anno in serie, film, giochi, libri e musica.
+> • Importa la tua cronologia da TV Time, Trakt, Simkl, MyAnimeList,
+> AniList, Letterboxd, IMDb, Steam, Goodreads, StoryGraph e Babelio.
+> • Con gli amici: profili, recensioni, liste condivise e messaggi.
+>
+> L'app aggiunge le notifiche Android (nuovi episodi, risposte, messaggi),
+> la scansione del codice a barre di un libro o del QR di un amico, la
+> condivisione di un link IMDb o Letterboxd verso Loomkeep, e scorciatoie
+> sulla sua icona.
+>
+> Loomkeep è gratuito e senza pubblicità. È software libero (AGPL): puoi
+> esportare i tuoi dati in qualsiasi momento, o ospitare la tua istanza e
+> collegarci l'app.
+
+### Data safety
+
+Ce que l'app (donc le compte loomkeep.app) collecte, d'après la politique
+de confidentialité. « Partage » au sens de Play : aucun, car les
+prestataires (hébergement, email, FCM) agissent pour le compte de
+Loomkeep, et les imports lancés par l'utilisateur en sont exclus.
+
+| Catégorie Play                      | Donnée                                         | Obligatoire ? | Finalité                           |
+| ----------------------------------- | ---------------------------------------------- | ------------- | ---------------------------------- |
+| Infos personnelles › Email          | adresse du compte                              | oui           | gestion du compte, communications  |
+| Infos personnelles › Nom            | nom d'utilisateur, nom d'affichage             | oui           | fonctionnalités, gestion du compte |
+| Infos personnelles › ID utilisateur | identifiant du compte                          | oui           | gestion du compte                  |
+| Infos personnelles › Autres infos   | date de naissance (contenus adultes), bio      | non           | fonctionnalités                    |
+| Photos                              | avatar                                         | non           | fonctionnalités                    |
+| Messages › Autres messages          | messages privés, commentaires                  | non           | fonctionnalités                    |
+| Activité › Autre contenu généré     | bibliothèque, suivi, notes, avis, listes       | non           | fonctionnalités, personnalisation  |
+| Activité › Interactions             | abonnements, réactions, blocages, signalements | non           | fonctionnalités, sécurité          |
+| Infos et performances › Plantages   | rapports d'erreur (GlitchTip, auto-hébergé)    | oui           | analyse, sécurité                  |
+| Infos et performances › Diagnostics | journaux techniques                            | oui           | sécurité, prévention de la fraude  |
+| Identifiants de l'appareil          | jeton FCM                                      | non           | fonctionnalités (notifications)    |
+
+- Chiffrement en transit : oui (HTTPS partout).
+- Suppression : oui, depuis l'app (Réglages › Supprimer le compte) et par
+  la page de suppression (voir « Reste à faire »).
+- Collecte pour la publicité ou partage avec des tiers : non.
+- À vérifier avant de soumettre : que l'historique de recherche n'est pas
+  conservé côté serveur, et que les SDK embarqués (Firebase Messaging,
+  ML Kit) ne collectent rien d'autre que Play compterait au nom de l'app.
+
+### Classification du contenu et public cible
+
+- Public cible : 15 ans et plus (âge minimum des conditions
+  d'utilisation) ; l'app ne s'adresse pas aux enfants.
+- Contenu généré par les utilisateurs : oui (profils, avis,
+  commentaires, messages privés), avec blocage, signalement et
+  modération.
+- Interaction entre utilisateurs : oui. Partage de position : non. Achats
+  numériques : non.
+- Œuvres pour adultes : le catalogue peut en référencer ; leur accès est
+  limité par l'âge déclaré et les réglages du compte.

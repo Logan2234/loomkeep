@@ -2,7 +2,9 @@ import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
 import { m } from "#lib/paraglide/messages.js";
 import { reauth } from "#lib/reauth.svelte.js";
 import { apiUrl, server } from "#lib/test/msw.js";
+import { goto, page } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
+import { toast } from "#lib/toast.svelte.js";
 import { ErrorCode, type ReauthMethod } from "@loomkeep/shared";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
@@ -10,10 +12,17 @@ import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ReauthModal from "./ReauthModal.svelte";
 
-const { startAuthentication } = vi.hoisted(() => ({
-  startAuthentication: vi.fn(),
+const { startAuthentication, platformAuthenticatorIsAvailable } = vi.hoisted(
+  () => ({
+    startAuthentication: vi.fn(),
+    platformAuthenticatorIsAvailable: vi.fn(),
+  }),
+);
+vi.mock("@simplewebauthn/browser", () => ({
+  startAuthentication,
+  platformAuthenticatorIsAvailable,
 }));
-vi.mock("@simplewebauthn/browser", () => ({ startAuthentication }));
+vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 const UNTIL = "2026-10-13T12:10:00.000Z";
 
@@ -45,6 +54,8 @@ describe("ReauthModal", () => {
     proofs = [];
     localStorage.clear();
     startAuthentication.mockReset();
+    platformAuthenticatorIsAvailable.mockResolvedValue(true);
+    toast.items = [];
   });
   afterEach(() => reauth.cancelled());
 
@@ -67,6 +78,7 @@ describe("ReauthModal", () => {
       },
     ]);
     expect(reauth.confirmedUntil).toBe(Date.parse(UNTIL));
+    expect(toast.items).toEqual([]);
   });
 
   it("turns to the password once the key's prompt is closed, and remembers it", async () => {
@@ -119,6 +131,62 @@ describe("ReauthModal", () => {
       await screen.findByText(m.apierr_auth_totp_code_reused()),
     ).toBeTruthy();
     expect(proofs).toEqual([{ method: "totp", code: "135790" }]);
+  });
+
+  it("offers a passkey once, on a device that unlocks with one", async () => {
+    serve(["password"]);
+    const user = userEvent.setup();
+
+    const confirm = async () => {
+      const confirmed = open();
+      await user.type(
+        await screen.findByLabelText(m.common_current_password(), {
+          selector: "input",
+        }),
+        "popcorn",
+      );
+      await user.click(
+        screen.getByRole("button", { name: m.common_confirm() }),
+      );
+      await expect(confirmed).resolves.toBe(true);
+    };
+
+    await confirm();
+    await waitFor(() =>
+      expect(toast.items.map((item) => item.message)).toEqual([
+        m.reauth_passkey_suggestion(),
+      ]),
+    );
+    toast.items[0].actions[0].onSelect();
+    await waitFor(() =>
+      expect(page.url.pathname).toBe("/app/settings/two-factor-authentication"),
+    );
+
+    toast.items = [];
+    document.body.innerHTML = "";
+    await confirm();
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(toast.items).toEqual([]);
+    expect(goto).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers no passkey to a device that can't unlock with one", async () => {
+    platformAuthenticatorIsAvailable.mockResolvedValue(false);
+    serve(["password"]);
+    const user = userEvent.setup();
+    const confirmed = open();
+
+    await user.type(
+      await screen.findByLabelText(m.common_current_password(), {
+        selector: "input",
+      }),
+      "popcorn",
+    );
+    await user.click(screen.getByRole("button", { name: m.common_confirm() }));
+    await expect(confirmed).resolves.toBe(true);
+
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(toast.items).toEqual([]);
   });
 
   it("drops the action when it's closed", async () => {

@@ -25,6 +25,7 @@
     writeLastKnown,
   } from "#lib/last-known.js";
   import { prefersReducedMotion } from "#lib/motion.js";
+  import { successFeedback } from "#lib/native/haptics.js";
   import { m } from "#lib/paraglide/messages.js";
   import { onRealtimeEvent } from "#lib/realtime/socket.js";
   import { levelForXp } from "@loomkeep/shared";
@@ -55,7 +56,12 @@
   });
 
   let current = $state<UnlockBubble | null>(null);
-  $effect(() => queue.subscribe((value) => (current = value)));
+  $effect(() =>
+    queue.subscribe((value) => {
+      if (value) successFeedback();
+      current = value;
+    }),
+  );
   $effect(() => () => queue.destroy());
 
   const pendingQuery = createApiQuery(() => ({

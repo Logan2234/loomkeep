@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { PUSH_LIMITS } from "@loomkeep/shared";
+  import { type AlertKey, PUSH_LIMITS } from "@loomkeep/shared";
+  import { fly } from "svelte/transition";
 
   import { page } from "$app/state";
   import {
@@ -17,13 +18,25 @@
   import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
   import RankBars from "#lib/components/stats/RankBars.svelte";
   import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
   import UserSelector from "#lib/components/UserSelector.svelte";
   import { formatNumber } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { pushSampleOptions } from "./push-samples";
+
+  const reduced = prefersReducedMotion();
 
   let email = $state(page.url.searchParams.get("email") ?? "");
   let pushTitle = $state("");
   let pushBody = $state("");
+  // An alert's sample, or the custom title and message below.
+  let pushType = $state<AlertKey | null>(null);
+  const typeOptions: { value: AlertKey | ""; label: string; group?: string }[] =
+    [
+      { value: "", label: m.admin_communications_push_custom() },
+      ...pushSampleOptions(),
+    ];
 
   const devicesQuery = createApiQuery(() => ({
     key: keys.admin.pushDevices(email),
@@ -35,11 +48,15 @@
 
   const sendPushMut = createApiMutation(() => ({
     mutate: () =>
-      sendAdminTestPush({
-        email,
-        title: pushTitle.trim() || undefined,
-        body: pushBody.trim() || undefined,
-      }),
+      sendAdminTestPush(
+        pushType
+          ? { email, type: pushType }
+          : {
+              email,
+              title: pushTitle.trim() || undefined,
+              body: pushBody.trim() || undefined,
+            },
+      ),
     coveredFields: ["email", "title", "body"],
     invalidates: [keys.admin.pushDevices(email), keys.admin.pushSummary()],
   }));
@@ -158,38 +175,62 @@
         onChange={(value) => (email = value ?? "")} />
     </div>
 
-    <div>
-      <label
-        for="admin-push-title"
-        class="text-dim mb-1 block text-xs font-semibold">
-        {m.common_title()}
-        {m.common_optional_parentheses()}
-      </label>
-      <input
-        id="admin-push-title"
-        type="text"
-        name="pushTitle"
-        bind:value={pushTitle}
-        placeholder="Loomkeep (admin)"
-        maxlength={PUSH_LIMITS.title}
-        class="input text-sm" />
-    </div>
+    <Combobox
+      label={m.admin_communications_push_type()}
+      searchable
+      options={typeOptions}
+      values={[pushType ?? ""]}
+      onChange={(values) => {
+        pushType =
+          typeOptions.find((option) => option.value === values[0])?.value ||
+          null;
+        sendPushMut.reset();
+      }} />
 
-    <div>
-      <label
-        for="admin-push-body"
-        class="text-dim mb-1 block text-xs font-semibold">
-        {m.admin_communications_optional_message()}
-      </label>
-      <textarea
-        id="admin-push-body"
-        name="pushBody"
-        bind:value={pushBody}
-        placeholder={m.admin_communications_test_placeholder()}
-        maxlength={PUSH_LIMITS.body}
-        rows="2"
-        class="input resize-none text-sm"></textarea>
-    </div>
+    {#if pushType}
+      <p
+        class="text-dim text-sm"
+        in:fly={{ y: reduced ? 0 : -6, duration: reduced ? 0 : 200 }}>
+        {m.admin_communications_push_sample_hint()}
+      </p>
+    {:else}
+      <div
+        class="space-y-4"
+        in:fly={{ y: reduced ? 0 : -6, duration: reduced ? 0 : 200 }}>
+        <div>
+          <label
+            for="admin-push-title"
+            class="text-dim mb-1 block text-xs font-semibold">
+            {m.common_title()}
+            {m.common_optional_parentheses()}
+          </label>
+          <input
+            id="admin-push-title"
+            type="text"
+            name="pushTitle"
+            bind:value={pushTitle}
+            placeholder="Loomkeep (admin)"
+            maxlength={PUSH_LIMITS.title}
+            class="input text-sm" />
+        </div>
+
+        <div>
+          <label
+            for="admin-push-body"
+            class="text-dim mb-1 block text-xs font-semibold">
+            {m.admin_communications_optional_message()}
+          </label>
+          <textarea
+            id="admin-push-body"
+            name="pushBody"
+            bind:value={pushBody}
+            placeholder={m.admin_communications_test_placeholder()}
+            maxlength={PUSH_LIMITS.body}
+            rows="2"
+            class="input resize-none text-sm"></textarea>
+        </div>
+      </div>
+    {/if}
 
     {#if email && devicesQuery.error}<AdminQueryError
         message={devicesQuery.error}

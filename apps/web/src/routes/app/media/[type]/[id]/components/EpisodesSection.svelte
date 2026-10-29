@@ -23,6 +23,7 @@
   import ReviewsSection from "#lib/components/ReviewsSection.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
+  import { tapFeedback } from "#lib/native/haptics.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type {
@@ -92,12 +93,18 @@
   }));
   const confirmCatchupYesMut = createApiMutation(() => ({
     mutate: (episodeId: string) => watchThrough(episodeId),
-    onSuccess: () => reload(),
+    onSuccess: async () => {
+      await reload();
+      tapFeedback();
+    },
     onError: (err) => onError(resolveApiError(err)),
   }));
   const markSeasonMut = createApiMutation(() => ({
     mutate: (seasonId: string) => watchSeason(seasonId),
-    onSuccess: () => reload(),
+    onSuccess: async () => {
+      await reload();
+      tapFeedback();
+    },
     onError: (err) => onError(resolveApiError(err)),
   }));
   const confirmUnwatchSeasonMut = createApiMutation(() => ({
@@ -259,6 +266,7 @@
 
   function popCheck(episodeId: string) {
     justWatchedId = episodeId;
+    tapFeedback();
     setTimeout(() => {
       if (justWatchedId === episodeId) justWatchedId = null;
     }, CHECK_POP_MS);

@@ -46,11 +46,16 @@ release; nothing is tagged by hand:
 
 1. CI passes on the bump commit; `docker-tag` adds the version tags and
    moves `latest`.
-2. The `release` job creates the GitHub release `v1.12.0` (a tag on that
-   commit), its notes being the version's `CHANGELOG.md` section.
-3. `publish-release-apk` attaches `loomkeep-android.apk` and its Sigstore
-   provenance, then marks the release latest, so
-   `releases/latest/download/loomkeep-android.apk` keeps working.
+2. The `release` job creates the GitHub release `v1.12.0` as a draft
+   targeting that commit, its notes being the version's `CHANGELOG.md`
+   section.
+3. `publish-release-apk` attaches `loomkeep-android.apk`, the Play bundle
+   and their Sigstore provenance, then publishes the release (which creates
+   the tag) as the latest one, so
+   `releases/latest/download/loomkeep-android.apk` keeps working. The
+   repository's releases are immutable: a published release takes no more
+   assets, hence the draft. Until it is published, every commit on `main`
+   builds the release APK.
 
 All three happen in the same `ci.yml` run and check what already exists
 rather than whether the commit changed the version: when the bump's run

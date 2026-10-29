@@ -13,6 +13,7 @@ const PLUGINS = [
   "SystemBars",
   "ShellTheme",
   "ShellInstance",
+  "NotificationActions",
   // Only in a build made with Firebase's config (capacitor.config.ts).
   ...(process.env.PUSH_EXPECTED === "true" ? ["PushNotifications"] : []),
 ];

@@ -5,4 +5,5 @@
     <string name="shortcut_stats">Statistiche</string>
     <string name="shortcut_profile">Il mio profilo</string>
     <string name="shortcut_settings">Impostazioni</string>
+    <string name="notification_action_failed">Non riuscito: apri Loomkeep per riprovare dall\'app.</string>
 </resources>

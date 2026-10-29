@@ -327,6 +327,17 @@ export const ALERTS = {
 
 export type AlertKey = keyof typeof ALERTS;
 
+/**
+ * The alerts Admin › Communications can send a sample push of: every one
+ * with a push channel, the releases once (one digest carries episodes,
+ * films and games), and the broadcast left to its own form.
+ */
+export const PUSH_SAMPLE_KEYS = (Object.keys(ALERTS) as AlertKey[]).filter(
+  (key) =>
+    "push" in ALERTS[key] &&
+    !(["NEW_MOVIE", "NEW_GAME", "ADMIN_BROADCAST"] as AlertKey[]).includes(key),
+);
+
 /** One account's choices, only where it moved away from the default. */
 export type AlertPrefs = Partial<
   Record<AlertKey, Partial<Record<AlertChannel, boolean>>>

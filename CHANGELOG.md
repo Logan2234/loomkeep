@@ -13,13 +13,74 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Admin
+
+- **Admin › Communications › Push sends any notification as a sample**,
+  besides the custom test and the broadcast: pick an alert and the account
+  gets its push as it would for real, in its language, on its channel,
+  with its buttons on the Android app (which reach the API through a no-op
+  `test` action instead of accepting or sending anything).
+
 ### Android app
 
+- **Haptic feedback** (MOB-21): a light tap when an episode, a season, a
+  catch-up or a film is marked seen (detail page and home), and when a
+  long press starts a library selection; a fuller pattern with each
+  achievement or level bubble. Through `@capacitor/haptics`, which also
+  brings the `VIBRATE` permission the app's WebView lacked (its
+  `navigator.vibrate` did nothing); Android browsers and the PWA vibrate
+  through the same calls. Needs the next APK.
+- **Re-confirming with a fingerprint**: after confirming a sensitive
+  action with a password or a code, an account without a passkey, on a
+  device that can use one, is offered once to add one — a passkey then
+  confirms through the device's own unlock, in the app as in a browser.
 - **Passkeys work in the Android app.** Its WebView turns on WebAuthn
   (`WEB_AUTHENTICATION_SUPPORT_FOR_APP`, on WebViews that have it), and
   `assetlinks.json` now grants each package from `ANDROID_APP_LINKS`
   `delegate_permission/common.get_login_creds`, without which Credential
   Manager refuses the app loomkeep.app's passkeys. Needs the next APK.
+- **The privacy policy covers the Android app** (section 21): GitHub for
+  downloads, Google's code scanner, passkeys through Credential Manager,
+  what stays on the device. Section 7 now says the app's notifications,
+  unlike the browser's, reach Google (FCM) unencrypted.
+- **Buttons on the app's notifications** (MOB-17), done without opening
+  it: reply to a chat message or a comment from the notification, mark a
+  message or a bell entry read, accept or decline a follow request,
+  follow back, add an announced sequel to "To watch" / "To play". The app
+  draws these notifications itself (`ShellMessagingService`, data-only
+  FCM messages); each button carries a token signed for that device,
+  valid seven days, sent to `POST /api/notifications/actions`. Needs the
+  next APK; older ones keep the notifications Android draws.
+- **Each version's release gets its APK again.** The GitHub release is
+  created as a draft and only published once the signed APK and Play
+  bundle are attached: the repository's releases are immutable, so
+  1.12.0's, published first, refused them (HTTP 422) and has no APK; the
+  next version's is the first to carry one. Until it is published, every
+  `main` commit builds the release APK, whatever it changes.
+
+### Accessibility
+
+- **Screen-reader fixes found by a new axe pass on every component test**:
+  the import wizard's item checkboxes are named after their title and its
+  All/None buttons left the group's `<summary>`; the activity feed's
+  cover link, a duplicate of the title link, is hidden from assistive tech;
+  a combobox's "no results" message moved out of its listbox; clickable
+  histogram bars are a group instead of an image; a tooltip around a
+  disabled control no longer wraps it in a second button.
+- **Fixes from the first Pa11y pass over the signed-in app**: "Skip to
+  content" targets the shell's `<main id="main">` (it could land on the
+  fullscreen chat's); the note field of a work page is named by its visible
+  label; the import identifier field and the admin restore file picker have
+  a name; the admin cohort table and the Communications grid tie every cell
+  to its headers; the legal pages' tables, which scroll sideways on a phone,
+  can be scrolled from the keyboard; relative dates ("2 hours ago") give
+  screen readers the full date as text, where their `aria-label` was
+  ignored.
+- **web-audit covers every page**: Pa11y on all ~80 routes, signed out and
+  signed in (admin included), light and dark, 375 and 1280 px; Lighthouse
+  on the real stack for a dozen representative screens, mobile and
+  desktop; ZAP's browser spider reaches the signed-in app. Advisory, with
+  an ntfy message when an audit finds something.
 
 ### Accessibility
 

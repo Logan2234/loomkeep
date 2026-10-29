@@ -34,6 +34,7 @@ import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { isSuspended } from "../users/suspension.util";
 import { readAlertPrefs } from "./alert-prefs.util";
+import { NotificationAction, type PushAction } from "./notification-action";
 import { type NotificationCopy, notificationCopy } from "./notification-copy";
 import {
   type NewEpisodeNotification,
@@ -72,6 +73,8 @@ type CreateNotificationInput = {
   url?: string | null;
   dedupeKey?: string | null;
   data?: Record<string, unknown>;
+  /** Its push's buttons on the Android app (MOB-17); "Mark as read" by default. */
+  pushActions?: (copy: NotificationCopy) => PushAction[];
 };
 
 /** Digest body: `S01E02 · Title` (title suffix only when known). */
@@ -338,6 +341,16 @@ export class NotificationService {
         { ...work, sagaTitle: work.saga.title },
         recipients.map((r) => r.user),
         `/app/media/${work.type.toLowerCase()}/${work.sourceId}`,
+        (copy) => ({
+          action: NotificationAction.PLAN_WORK,
+          label: copy.pushActions.planMedia,
+          target: {
+            domain: "media",
+            source: work.source,
+            type: work.type,
+            sourceId: work.sourceId,
+          },
+        }),
       );
 
       await this.prisma.sagaMember.update({
@@ -397,6 +410,11 @@ export class NotificationService {
         { ...game, sagaTitle: game.saga.title },
         recipients.map((r) => r.user),
         `/app/games/${game.sourceId}`,
+        (copy) => ({
+          action: NotificationAction.PLAN_WORK,
+          label: copy.pushActions.planGame,
+          target: { domain: "game", sourceId: game.sourceId },
+        }),
       );
 
       await this.prisma.gameSagaMember.update({
@@ -424,6 +442,8 @@ export class NotificationService {
       suspendedUntil: Date | null;
     }[],
     url: string,
+    /** The push's button adding the work to the recipient's to-do status. */
+    plan: (copy: NotificationCopy) => PushAction,
   ): Promise<number> {
     for (const user of recipients) {
       await this.create({
@@ -434,6 +454,7 @@ export class NotificationService {
         url,
         dedupeKey: `saga-sequel:${work.sagaKey}:${work.sourceId}`,
         data: { sagaKey: work.sagaKey, sagaTitle: work.sagaTitle },
+        pushActions: (copy) => [plan(copy)],
       });
 
       if (
@@ -805,13 +826,22 @@ export class NotificationService {
       return;
     }
 
+    const copy = notificationCopy(user.locale);
+
     try {
       await this.push.sendToUser(input.userId, {
-        title: pushTitle(input, notificationCopy(user.locale)),
+        title: pushTitle(input, copy),
         body: input.body ?? "",
         url: input.url ?? "/app",
         notificationId,
         group: ALERTS[input.type].group,
+        actions: input.pushActions?.(copy) ?? [
+          {
+            action: NotificationAction.MARK_READ,
+            label: copy.pushActions.markRead,
+            target: {},
+          },
+        ],
       });
     } catch (err) {
       // The bell entry is saved: a push service failing mustn't fail the

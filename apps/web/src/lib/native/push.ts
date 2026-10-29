@@ -22,6 +22,13 @@ import { AlertGroup } from "@loomkeep/shared";
 export const isNativePushAvailable = (): boolean =>
   Capacitor.isPluginAvailable("PushNotifications");
 
+/**
+ * Whether the APK draws its notifications itself, with buttons (MOB-17):
+ * the API then sends it data-only messages, which an older APK wouldn't show.
+ */
+const drawsOwnNotifications = (): boolean =>
+  Capacitor.isPluginAvailable("NotificationActions");
+
 // Android notification importance: 4 pops up on screen, 3 only sounds.
 const CHANNELS: Record<AlertGroup, { name: () => string; importance: 3 | 4 }> =
   {
@@ -92,7 +99,7 @@ export async function enableNativePush(): Promise<boolean> {
   if (receive !== "granted") return false;
 
   const token = await requestToken();
-  await subscribeNativePush(token);
+  await subscribeNativePush(token, drawsOwnNotifications());
   writeStorage(STORAGE_KEYS.nativePushToken, token);
   return true;
 }
@@ -119,7 +126,7 @@ async function replaceToken({ value }: { value: string }): Promise<void> {
   const previous = readStorage(STORAGE_KEYS.nativePushToken);
   if (!previous || previous === value) return;
 
-  await subscribeNativePush(value);
+  await subscribeNativePush(value, drawsOwnNotifications());
   writeStorage(STORAGE_KEYS.nativePushToken, value);
   await unsubscribeNativePush(previous).catch(() => undefined);
 }
@@ -127,6 +134,16 @@ async function replaceToken({ value }: { value: string }): Promise<void> {
 /** Wires push in the app shell; returns the teardown for its `$effect`. */
 export function startNativePush(): () => void {
   void createChannels();
+  // Said again at each start: an updated APK (or an older one put back)
+  // changes what the API may send this device.
+  const token = readStorage(STORAGE_KEYS.nativePushToken);
+
+  if (token) {
+    void subscribeNativePush(token, drawsOwnNotifications()).catch(
+      () => undefined,
+    );
+  }
+
   const listeners = [
     // Also delivers the tap that cold-started the app, held until now.
     PushNotifications.addListener(

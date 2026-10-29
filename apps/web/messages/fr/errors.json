@@ -134,6 +134,7 @@
   "apierr_newsletter_webhook_unauthorized": "Requête non autorisée.",
   "apierr_notifications_not_found": "Cette notification est introuvable.",
   "apierr_notifications_push_endpoint_taken": "Cet appareil est déjà associé à un autre compte.",
+  "apierr_notifications_action_invalid": "L'action de cette notification a expiré. Ouvre Loomkeep pour la faire depuis l'app.",
   "apierr_reports_reason_required": "Un détail est requis pour la catégorie « Autre ».",
   "apierr_reports_invalid_motif": "Ce motif ne correspond pas à cette catégorie.",
   "apierr_reports_not_found": "Ce signalement est introuvable.",

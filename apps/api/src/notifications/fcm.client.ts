@@ -11,13 +11,16 @@ interface ServiceAccount {
   private_key: string;
 }
 
-/** The FCM HTTP v1 `Message`, minus the `token` set by `send()`. */
+/**
+ * The FCM HTTP v1 `Message`, minus the `token` set by `send()`. Without
+ * `notification`, it's a data-only message the app displays itself.
+ */
 export interface FcmMessage {
-  notification: { title: string; body: string };
+  notification?: { title: string; body: string };
   data: Record<string, string>;
   android: {
     priority: "HIGH" | "NORMAL";
-    notification: { channel_id: string; tag?: string };
+    notification?: { channel_id: string; tag?: string };
   };
 }
 
