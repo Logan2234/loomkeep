@@ -25,6 +25,7 @@ import { FeatureFlagsModule } from "./feature-flags/feature-flags.module";
 import { GamesModule } from "./games/games.module";
 import { GamificationModule } from "./gamification/gamification.module";
 import { HealthModule } from "./health/health.module";
+import { HomeScreenWidgetsModule } from "./home-screen-widgets/home-screen-widgets.module";
 import { ImportModule } from "./import/import.module";
 import { InstanceSettingsModule } from "./instance-settings/instance-settings.module";
 import { LibraryModule } from "./library/library.module";
@@ -86,6 +87,7 @@ import { UsersModule } from "./users/users.module";
     ImportModule,
     NotificationModule,
     NotificationActionsModule,
+    HomeScreenWidgetsModule,
     HealthModule,
     SocialModule,
     ReviewsModule,
