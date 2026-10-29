@@ -74,3 +74,7 @@ export const unsubscribeNativePush = (token: string): Promise<void> =>
     method: "DELETE",
     body: { token },
   });
+
+/** What the Android app's home-screen widgets (MOB-20) send instead of a session. */
+export const getHomeScreenWidgetToken = () =>
+  typedRequest("/home-screen-widgets/token", { method: "POST" });

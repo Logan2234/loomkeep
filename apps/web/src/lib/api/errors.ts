@@ -210,6 +210,8 @@ const MESSAGES = {
     m.apierr_notifications_push_endpoint_taken(),
   [ErrorCode.NotificationActionInvalid]: () =>
     m.apierr_notifications_action_invalid(),
+  [ErrorCode.HomeScreenWidgetTokenInvalid]: () =>
+    m.apierr_home_screen_widgets_token_invalid(),
   [ErrorCode.ReportReasonRequired]: () => m.apierr_reports_reason_required(),
   [ErrorCode.ReportInvalidMotif]: () => m.apierr_reports_invalid_motif(),
   [ErrorCode.ReportNotFound]: () => m.apierr_reports_not_found(),
