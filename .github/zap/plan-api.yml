@@ -76,13 +76,13 @@ jobs:
       reportTitle: Loomkeep API ZAP Security Scan
       reportDescription: OWASP ZAP security scan of Loomkeep's API against the ephemeral CI stack
       displayReport: false
+    # No informational alerts ("Modern Web Application", "User Agent
+    # Fuzzer"): they describe the app, not a problem. No false positives.
     risks:
       - high
       - medium
       - low
-      - info
     confidences:
       - high
       - medium
       - low
-      - falsepositive
