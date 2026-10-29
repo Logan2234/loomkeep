@@ -34,7 +34,7 @@ téléphone ; le reste attend sa recette.
 | ------ | --------------------------------------------------- | ------ | -------------- | -------------------------- |
 | MOB-10 | Publication sur Google Play                         | M      | —              | 🚧 reste le compte et Play |
 | MOB-16 | Relais de push pour les instances self-hostées      | L      | —              | décisions à prendre        |
-| MOB-20 | Widgets Android « À suivre » et « Sorties du jour » | L      | —              | 🚧 API et web en PR        |
+| MOB-20 | Widgets Android « À suivre » et « Sorties du jour » | L      | —              | 🚧 #486 (API), app en PR   |
 | MOB-22 | Exploratoire : scrobbling musical Android           | L      | MOB-10         |                            |
 | MOB-24 | Liens d'email vers l'app sur une autre instance     | S      | —              |                            |
 | MOB-25 | Verrouillage de l'app par biométrie                 | S      | —              | si le besoin se confirme   |
