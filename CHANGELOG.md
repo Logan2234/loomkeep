@@ -40,6 +40,12 @@ history from before it was started.
   FCM messages); each button carries a token signed for that device,
   valid seven days, sent to `POST /api/notifications/actions`. Needs the
   next APK; older ones keep the notifications Android draws.
+- **Each version's release gets its APK again.** The GitHub release is
+  created as a draft and only published once the signed APK and Play
+  bundle are attached: the repository's releases are immutable, so
+  1.12.0's, published first, refused them (HTTP 422) and has no APK; the
+  next version's is the first to carry one. Until it is published, every
+  `main` commit builds the release APK, whatever it changes.
 
 ### Accessibility
 
