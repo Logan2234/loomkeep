@@ -184,13 +184,15 @@
   onkeydown={onWindowKeydown}
   onresize={() => open && computePos()} />
 
-<!-- The wrapper is only focusable when the snippet has no keyboard-reachable trigger. -->
+<!-- The wrapper is only focusable when the snippet has no keyboard-reachable
+     trigger. Around a disabled control it takes no role: a button can't hold
+     another one, even a disabled one. -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <span
   bind:this={wrapperEl}
   class="relative {className}"
   data-escape-consumer={open ? "" : undefined}
-  role={hasKeyboardTrigger ? "presentation" : "button"}
+  role={hasKeyboardTrigger ? "presentation" : triggerEl ? undefined : "button"}
   tabindex={hasKeyboardTrigger ? undefined : 0}
   aria-describedby={hasKeyboardTrigger ? undefined : id}
   onmouseenter={onPointerEnter}

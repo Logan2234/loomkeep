@@ -334,12 +334,13 @@
           </span>
         </button>
       {/each}
-      {#if searchable && visibleOptions.length === 0}
-        <p role="status" class="text-dim px-3 py-2 text-sm">
-          {loading ? m.common_loading() : m.common_no_results()}
-        </p>
-      {/if}
     </div>
+    <!-- Outside the listbox, which may only hold options. -->
+    {#if searchable && visibleOptions.length === 0}
+      <p role="status" class="text-dim px-3 py-2 text-sm">
+        {loading ? m.common_loading() : m.common_no_results()}
+      </p>
+    {/if}
     {#if hasMore && onLoadMore}
       <button
         type="button"

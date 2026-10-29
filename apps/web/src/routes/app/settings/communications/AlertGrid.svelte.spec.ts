@@ -54,6 +54,21 @@ const pushSwitch = (label: string) =>
   });
 
 describe("AlertGrid", () => {
+  it("ties each cell to its channel, group and alert headers", () => {
+    renderWithQuery(AlertGrid, props);
+
+    const cell = pushSwitch("Replies")!.closest("td")!;
+    const headers = cell.headers
+      .split(" ")
+      .map((id) => document.getElementById(id)?.textContent?.trim());
+
+    expect(headers).toEqual([
+      m.settings_communications_push(),
+      "Comments",
+      "Replies",
+    ]);
+  });
+
   it("shows each alert's own choice, falling back to its default", () => {
     renderWithQuery(AlertGrid, props);
 

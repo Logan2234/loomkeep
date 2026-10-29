@@ -55,6 +55,12 @@
     notice?: Snippet;
   } = $props();
 
+  // scope alone doesn't tie a cell to its group header for every screen
+  // reader: with a row-group level, each cell lists its headers by id.
+  const componentId = $props.id();
+  const headerId = (...parts: (string | number)[]) =>
+    [componentId, ...parts].join("-");
+
   const COLUMNS: Record<
     "bell" | AlertChannel,
     { label: string; icon: IconName }
@@ -90,6 +96,7 @@
         <td></td>
         {#each columns as column (column)}
           <th
+            id={headerId("col", column)}
             scope="col"
             class="text-dim pb-1.5 text-center text-xs font-normal">
             <Icon name={COLUMNS[column].icon} class="mx-auto mb-0.5 h-4 w-4" />
@@ -103,6 +110,7 @@
         {#if group.label}
           <tr>
             <th
+              id={headerId("group", index)}
               scope="rowgroup"
               colspan={columns.length + 1}
               class="text-accent pb-1 text-left font-mono text-[0.65rem] font-normal tracking-[0.12em] uppercase
@@ -116,7 +124,10 @@
         {/if}
         {#each group.alerts as alert (alert.key)}
           <tr class="border-border border-t">
-            <th scope="row" class="py-3 pr-2 text-left font-normal">
+            <th
+              id={headerId("row", alert.key)}
+              scope="row"
+              class="py-3 pr-2 text-left font-normal">
               {alert.label}
               {#if alert.newBadgeKey && isFeatureNew(alert.newBadgeKey)}
                 <NewBadge />
@@ -126,7 +137,15 @@
               {/if}
             </th>
             {#each columns as column (column)}
-              <td class="py-3 text-center align-middle">
+              <td
+                headers={[
+                  headerId("col", column),
+                  group.label && headerId("group", index),
+                  headerId("row", alert.key),
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                class="py-3 text-center align-middle">
                 {#if column === "bell"}
                   {#if (ALERTS[alert.key] as AlertDefinition).bell}
                     <span

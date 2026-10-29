@@ -546,6 +546,7 @@
       <input
         type="text"
         name="identifier"
+        aria-label={m.common_identifier()}
         enterkeyhint="done"
         placeholder={descriptor.input.placeholder ?? m.common_identifier()}
         bind:value={inputValue}
@@ -598,29 +599,26 @@
             ? g.items.filter((it) => !matchOf(it))
             : g.items}
           {#if visibleItems.length > 0}
-            <details class="card mb-3 p-4" open={filterUnresolved || gi === 0}>
-              <summary
-                class="font-display flex cursor-pointer items-center justify-between font-bold">
-                <span
-                  >{importGroupLabel(g.id)} ({visibleItems.length}{#if filterUnresolved}
-                    / {g.items.length}{/if})</span>
-                <span class="flex gap-2 text-xs font-normal">
-                  <button
-                    class="chip"
-                    onclick={(e) => {
-                      e.preventDefault();
-                      setAll(visibleItems, true);
-                    }}>{m.common_all()}</button>
-                  <button
-                    class="chip"
-                    onclick={(e) => {
-                      e.preventDefault();
-                      setAll(visibleItems, false);
-                    }}>{m.common_none()}</button>
-                </span>
-              </summary>
-              {@render groupBody(visibleItems)}
-            </details>
+            <!-- The All/None buttons sit over the summary row rather than in
+                 it: a summary is itself a control, and can't hold others. -->
+            <div class="relative mb-3">
+              <details class="card p-4" open={filterUnresolved || gi === 0}>
+                <summary
+                  class="font-display flex cursor-pointer items-center pr-32 font-bold">
+                  <span
+                    >{importGroupLabel(g.id)} ({visibleItems.length}{#if filterUnresolved}
+                      / {g.items.length}{/if})</span>
+                </summary>
+                {@render groupBody(visibleItems)}
+              </details>
+              <span
+                class="absolute top-4 right-4 flex gap-2 text-xs font-normal">
+                <button class="chip" onclick={() => setAll(visibleItems, true)}
+                  >{m.common_all()}</button>
+                <button class="chip" onclick={() => setAll(visibleItems, false)}
+                  >{m.common_none()}</button>
+              </span>
+            </div>
           {/if}
         {/each}
         {#if plan.lists && !filterUnresolved}
@@ -752,6 +750,7 @@
             type="checkbox"
             name="itemKeys"
             value={item.key}
+            aria-label={match?.title ?? sourceTitle}
             class="accent-accent h-4 w-4 shrink-0"
             checked={on}
             disabled={!match}

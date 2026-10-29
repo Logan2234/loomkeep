@@ -52,6 +52,15 @@ jobs:
       user: zap-user
       maxDuration: 5
 
+  # The app is a SPA: the classic spider only finds the server-rendered
+  # pages and links; this one drives a browser through the signed-in screens.
+  - type: spiderAjax
+    parameters:
+      context: loomkeep
+      user: zap-user
+      browserId: firefox-headless
+      maxDuration: 10
+
   - type: passiveScan-wait
     parameters:
       maxDuration: 5

@@ -132,7 +132,11 @@
                 })}
               {/if}
             </p>
-            <div class="legal-table-wrap">
+            <div
+              class="legal-table-wrap"
+              role="region"
+              aria-label={m.transparency_reports_heading()}
+              tabindex="0">
               <table>
                 <thead>
                   <tr>

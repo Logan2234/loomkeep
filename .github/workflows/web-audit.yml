@@ -1,9 +1,13 @@
 name: Web Audit
 
+# Lighthouse, Pa11y and ZAP against an ephemeral stack built from main's
+# images, each in its own job so one failing never hides the others' results.
+# Weekly plus on demand: ~40 minutes of audits isn't worth it per merge.
+#
+# Advisory: findings never turn the run red. They go to Code Scanning (Pa11y,
+# ZAP) and the run's artifacts (Lighthouse), and the notify job says on ntfy
+# which audits found something past their threshold.
 on:
-  # Deliberately no push/PR-adjacent trigger: this job takes ~5 minutes and
-  # scans a full ephemeral stack, which isn't worth the wait on every merge
-  # to main. Weekly cadence plus on-demand covers it.
   schedule:
     - cron: "30 3 * * 0"
   workflow_dispatch:
@@ -15,26 +19,46 @@ concurrency:
   group: web-audit
   cancel-in-progress: true
 
+# docker/docker-compose.yml's `:?` interpolation needs these on every
+# `docker compose` call, `down` and `logs` included. Throwaway, CI-only
+# values: the stack never sees real traffic and goes with the job.
+env:
+  POSTGRES_PASSWORD: ci-audit-postgres-password
+  JWT_ACCESS_SECRET: ci-audit-access-secret
+  JWT_REFRESH_SECRET: ci-audit-refresh-secret
+  BACKUP_ENCRYPTION_PUBLIC_KEY: ci-audit-unused-backup-key
+
 jobs:
-  # Advisory: nobody acts on a Lighthouse score per PR, so it runs with the
-  # other audits rather than in CI, where it added ~3 minutes to every run.
-  # Audits a local `vite preview` build (.lighthouserc.json), so it needs
-  # neither the ephemeral stack below nor the OpenAPI document — the typed
-  # API client is type-only, and the Paraglide Vite plugin compiles its own
-  # messages.
+  # Three pages of the public site and a dozen screens of the app (one per
+  # kind), signed in as the seed's alice, mobile and desktop, median of
+  # three runs. Thresholds in .github/lighthouse/lighthouserc.cjs.
   lighthouse:
     name: Lighthouse
     runs-on: ubuntu-latest
+    outputs:
+      findings: ${{ steps.assert.outputs.findings }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/setup
-      - name: Web production build
-        run: pnpm --filter @loomkeep/web build
+      - id: stack
+        uses: ./.github/actions/audit-stack
       - name: Lighthouse
-        run: pnpm exec lhci autorun
-        continue-on-error: true
+        id: assert
         env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          LIST_ID: ${{ steps.stack.outputs.list-id }}
+        run: |
+          config=.github/lighthouse/lighthouserc.cjs
+          failed=()
+          for form_factor in mobile desktop; do
+            export LH_FORM_FACTOR=$form_factor
+            rm -rf .lighthouseci
+            LH_GROUP=public pnpm exec lhci collect --config=$config
+            LH_GROUP=app pnpm exec lhci collect --config=$config --additive
+            pnpm exec lhci assert --config=$config || failed+=("$form_factor")
+            pnpm exec lhci upload --config=$config
+          done
+          if [ ${#failed[@]} -gt 0 ]; then
+            echo "findings=Lighthouse: thresholds missed (${failed[*]})" >> "$GITHUB_OUTPUT"
+          fi
       - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -42,94 +66,41 @@ jobs:
           name: lighthouse-reports
           path: lighthouse-results/
 
-  # The API scan imports apps/api/openapi.json. The reusable job makes it
-  # against its own Postgres, cached by source hash; regenerating it below
-  # failed for weeks for want of a DATABASE_URL.
-  openapi-artifact:
-    uses: ./.github/workflows/generate-openapi-artifact.yml
-
-  audit:
-    name: Web Audit (Pa11y + OWASP ZAP)
-    needs: openapi-artifact
+  # Every page of apps/web (.github/web-audit/pages.mjs), signed out then
+  # signed in as alice made admin, in light and dark at 375 and 1280 px.
+  pa11y:
+    name: Pa11y
     runs-on: ubuntu-latest
     permissions:
       contents: read
       security-events: write
-
-    # Required by docker/docker-compose.yml's `:?` interpolation — every step
-    # that invokes `docker compose` (including `down` on teardown, and `logs`
-    # when readiness times out) needs these resolvable, not just the step
-    # that first brings the stack up.
-    env:
-      POSTGRES_PASSWORD: ci-zap-postgres-password
-      JWT_ACCESS_SECRET: ci-zap-access-secret
-      JWT_REFRESH_SECRET: ci-zap-refresh-secret
-      BACKUP_ENCRYPTION_PUBLIC_KEY: ci-zap-unused-backup-key
-
+    outputs:
+      findings: ${{ steps.pa11y.outputs.findings }}
     steps:
-      # Checks out main's current tip. Its SHA-tagged api/web images already
-      # sit on GHCR from CI's docker-push job (.github/workflows/ci.yml), so
-      # this job never needs to build anything itself.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      # 12 characters, like the tags docker-push gives the images (ci.yml):
-      # `git rev-parse --short` gave 7 and pulled images that don't exist.
-      - id: vars
-        run: echo "sha=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
-
-      # Stand up an ephemeral api+web+db stack (docker/docker-compose.yml)
-      # instead of scanning https://loomkeep.app directly — activeScan sends
-      # real attack payloads, and Logan isn't comfortable with that hitting
-      # production (no staging environment exists otherwise). Secrets are
-      # throwaway, CI-only values (job-level `env:` above): this stack never
-      # sees real traffic and is torn down at the end of the job.
-      - name: Start ephemeral stack
+      - id: stack
+        uses: ./.github/actions/audit-stack
+        with:
+          admin: true
+      - name: Pa11y
+        id: pa11y
         env:
-          IMAGE_TAG: ${{ steps.vars.outputs.sha }}
+          LIST_ID: ${{ steps.stack.outputs.list-id }}
         run: |
-          docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml pull
-          docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml up -d
-
-      # The api migrates its own schema on boot (see apps/api/Dockerfile's
-      # CMD), but there's no signal here for "migrations done, server
-      # listening" beyond polling — same for web, which depends_on: api with
-      # no condition, so compose considers it "up" the instant the container
-      # starts, well before SvelteKit's Node server is actually accepting
-      # connections.
-      - name: Wait for stack readiness
-        run: |
-          for service in "api http://localhost:3000/api/health" "web http://localhost:18080/"; do
-            name=${service%% *}
-            url=${service#* }
-            echo "waiting for $name ($url)..."
-            for attempt in $(seq 1 30); do
-              if curl -fsS -o /dev/null "$url"; then
-                echo "$name is up"
-                break
-              fi
-              if [ "$attempt" = 30 ]; then
-                echo "$name never became ready" >&2
-                docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml logs "$name" >&2
-                exit 1
-              fi
-              sleep 2
+          failed=()
+          for theme in light dark; do
+            for width in 375 1280; do
+              variant="$theme-$width"
+              echo "::group::$variant"
+              node .github/pa11y/build-config.mjs "$theme" "$width" > "$RUNNER_TEMP/pa11y-$variant.json"
+              PA11Y_VARIANT=$variant npx --yes pa11y-ci@4.1.1 --config "$RUNNER_TEMP/pa11y-$variant.json" \
+                || failed+=("$variant")
+              echo "::endgroup::"
             done
           done
-
-      - uses: ./.github/actions/setup
-
-      # Runs against the ephemeral stack instead of https://loomkeep.app —
-      # same reasoning as the ZAP steps below, one real environment to point
-      # every audit at. .github/pa11y/pa11yci.ci.json mirrors the root
-      # .pa11yci.json with localhost:18080 urls.
-      - name: Run Pa11y CI
-        run: npx --yes pa11y-ci@4.1.1 --config .github/pa11y/pa11yci.ci.json
-        continue-on-error: true
-      # pa11y-ci has no built-in SARIF reporter, so accessibility findings
-      # only ever lived in this step's console log. pa11yci.ci.json's
-      # defaults.reporters loads a small local reporter (alongside the
-      # normal "cli" one) that writes pa11y-results.sarif — see
-      # .github/pa11y/sarif-reporter.js. `if: always()` because a threshold
-      # violation exits pa11y-ci non-zero, but the SARIF is still written.
+          if [ ${#failed[@]} -gt 0 ]; then
+            echo "findings=Pa11y: errors in ${failed[*]}" >> "$GITHUB_OUTPUT"
+          fi
       - name: Upload Pa11y SARIF
         if: always() && hashFiles('pa11y-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
@@ -137,22 +108,30 @@ jobs:
           sarif_file: pa11y-results.sarif
           category: pa11y
 
-      # Seeds synthetic users/library data (apps/api/prisma/seed.ts) so the
-      # crawl/scan has real pages to find instead of an empty database.
-      # Runs from the runner rather than inside the api container: the seed
-      # script needs ts-node and other devDependencies that the prod-only
-      # runtime image (see apps/api/Dockerfile's `pnpm deploy --prod`)
-      # doesn't carry.
-      - run: pnpm --filter @loomkeep/api exec prisma generate
+  # The API scan imports apps/api/openapi.json, made by the reusable job
+  # against its own Postgres and cached by source hash.
+  openapi-artifact:
+    uses: ./.github/workflows/generate-openapi-artifact.yml
+
+  zap:
+    name: OWASP ZAP
+    needs: openapi-artifact
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    outputs:
+      findings: ${{ steps.high.outputs.findings }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Against the ephemeral stack, never https://loomkeep.app: the active
+      # scan sends real attack payloads, write endpoints included.
+      - uses: ./.github/actions/audit-stack
       - name: Download OpenAPI document
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: openapi-json
           path: apps/api
-      - name: Seed synthetic data
-        env:
-          DATABASE_URL: postgresql://loomkeep:ci-zap-postgres-password@localhost:5432/loomkeep?schema=public
-        run: pnpm --filter @loomkeep/api exec prisma db seed
 
       # The report job's reportDir (.github/zap/plan*.yml) isn't created
       # automatically by the automation framework — without this the report
@@ -163,23 +142,19 @@ jobs:
       # runs, so without this the container hits AccessDeniedException
       # trying to write the report into a dir it doesn't own.
       - run: mkdir -p zap-results && chmod a+w zap-results
+      # continue-on-error: the framework exits 2 on a plan warning (the
+      # OpenAPI import skipping an operation, say), not only on a finding.
+      # What counts is the High alerts check below.
       - name: Run ZAP (web)
+        continue-on-error: true
         uses: zaproxy/action-af@d186d5d9536d0f1380e5eaa58168432fefc8ed6d # v0.3.0
         with:
           plan: .github/zap/plan.yml
-      # The API scan may attack write endpoints because this ephemeral stack
-      # contains only synthetic data and is torn down after the job.
       - name: Run ZAP (api)
+        continue-on-error: true
         uses: zaproxy/action-af@d186d5d9536d0f1380e5eaa58168432fefc8ed6d # v0.3.0
         with:
           plan: .github/zap/plan-api.yml
-      - name: List ZAP results
-        if: always()
-        run: find zap-results -maxdepth 2 -type f -print 2>/dev/null || echo "No ZAP results"
-
-      - name: Tear down ephemeral stack
-        if: always()
-        run: docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml down -v
 
       # Code Scanning's upload-sarif step always sends a file:// checkoutURI
       # and rejects the whole upload if any result location is absolute
@@ -228,6 +203,22 @@ jobs:
               with open(dst, "w") as f:
                   json.dump(sarif, f)
           PY
+      # ZAP's SARIF gives High-risk alerts the `error` level.
+      - name: Count High alerts
+        id: high
+        if: always()
+        run: |
+          high=0
+          for sarif in zap-results/*.fixed.sarif.json; do
+            [ -e "$sarif" ] || continue
+            count=$(jq '[.runs[].results[] | select(.level == "error")] | length' "$sarif")
+            high=$((high + count))
+          done
+          if [ ! -e zap-results/zap-results.fixed.sarif.json ] || [ ! -e zap-results/zap-api-results.fixed.sarif.json ]; then
+            echo "findings=ZAP: a scan produced no report" >> "$GITHUB_OUTPUT"
+          elif [ "$high" -gt 0 ]; then
+            echo "findings=ZAP: $high High alert(s)" >> "$GITHUB_OUTPUT"
+          fi
       - name: Upload ZAP SARIF (web)
         if: always() && hashFiles('zap-results/zap-results.fixed.sarif.json') != ''
         uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
@@ -240,3 +231,33 @@ jobs:
         with:
           sarif_file: zap-results/zap-api-results.fixed.sarif.json
           category: zap-api
+
+  # One ntfy message listing what the audits found, or which of them broke:
+  # with nothing turning the run red, this is how anyone hears of it.
+  notify:
+    needs: [lighthouse, pa11y, zap]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify on ntfy
+        env:
+          NTFY_TOPIC_URL: ${{ secrets.NTFY_TOPIC_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FINDINGS: |
+            ${{ needs.lighthouse.outputs.findings }}
+            ${{ needs.pa11y.outputs.findings }}
+            ${{ needs.zap.outputs.findings }}
+            ${{ needs.lighthouse.result != 'success' && format('Lighthouse job: {0}', needs.lighthouse.result) || '' }}
+            ${{ needs.pa11y.result != 'success' && format('Pa11y job: {0}', needs.pa11y.result) || '' }}
+            ${{ needs.zap.result != 'success' && format('ZAP job: {0}', needs.zap.result) || '' }}
+        run: |
+          [ -n "$NTFY_TOPIC_URL" ] || exit 0
+          message=$(printf '%s\n' "$FINDINGS" | sed '/^[[:space:]]*$/d')
+          [ -n "$message" ] || exit 0
+          curl --fail --silent --show-error \
+            -H "Title: Web audit: findings past threshold" \
+            -H "Priority: default" \
+            -H "Tags: mag" \
+            -H "Click: $RUN_URL" \
+            -d "$message" \
+            "$NTFY_TOPIC_URL"

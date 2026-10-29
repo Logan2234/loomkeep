@@ -1,0 +1,81 @@
+name: Start the audit stack
+description: >-
+  Starts api + web + db (docker-compose.yml + docker-compose.ci.yml) from
+  main's images, waits for both to answer, installs the workspace and seeds
+  synthetic data. The job's env must hold the compose file's required values.
+
+inputs:
+  admin:
+    description: >-
+      Make the seed's alice an admin, for the pages under /app/admin. Not for
+      ZAP: its active scan would then also hit admin actions (purges, user
+      deletion) mid-scan.
+    default: "false"
+
+outputs:
+  list-id:
+    description: The id of alice's seeded list.
+    value: ${{ steps.seed.outputs.list-id }}
+
+runs:
+  using: composite
+  steps:
+    # `edge`, main's last commit through CI (ci.yml's docker-tag): this never
+    # builds anything, a run on another branch audits main's images with its
+    # own audit setup, and a run while CI is still on main's tip doesn't find
+    # that commit's images missing.
+    - name: Start the stack
+      shell: bash
+      run: |
+        export IMAGE_TAG=edge
+        # As on loomkeep.app: without it every page is noindex, which
+        # Lighthouse's SEO score counts against the pages meant to be indexed.
+        export PUBLIC_SEARCH_INDEXING=true
+        docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml pull
+        docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml up -d
+
+    # The api migrates its schema on boot and web's depends_on has no
+    # condition: compose calls both "up" well before they accept connections.
+    - name: Wait for the stack
+      shell: bash
+      run: |
+        for service in "api http://localhost:3000/api/health" "web http://localhost:18080/"; do
+          name=${service%% *}
+          url=${service#* }
+          for attempt in $(seq 1 30); do
+            if curl -fsS -o /dev/null "$url"; then
+              echo "$name is up"
+              break
+            fi
+            if [ "$attempt" = 30 ]; then
+              echo "$name never became ready" >&2
+              docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml logs "$name" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+        done
+
+    - uses: ./.github/actions/setup
+
+    # From the runner rather than the api container: the seed needs
+    # devDependencies the production image doesn't carry.
+    - name: Seed synthetic data
+      id: seed
+      shell: bash
+      env:
+        DATABASE_URL: postgresql://loomkeep:${{ env.POSTGRES_PASSWORD }}@localhost:5432/loomkeep?schema=public
+        ADMIN: ${{ inputs.admin }}
+      run: |
+        pnpm --filter @loomkeep/api exec prisma generate
+        pnpm --filter @loomkeep/api exec prisma db seed
+        sql() {
+          docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml \
+            exec -T db psql -U loomkeep -d loomkeep -tA -c "$1"
+        }
+        # NODE_ENV isn't production on this stack, so AdminGuard doesn't
+        # ask the admin for a second factor.
+        if [ "$ADMIN" = "true" ]; then
+          sql "UPDATE \"User\" SET role = 'ADMIN' WHERE email = 'alice@example.com'"
+        fi
+        echo "list-id=$(sql "SELECT l.id FROM \"List\" l JOIN \"User\" u ON u.id = l.\"userId\" WHERE u.email = 'alice@example.com' ORDER BY l.\"createdAt\" LIMIT 1")" >> "$GITHUB_OUTPUT"

@@ -32,9 +32,14 @@
     title={absolute}
     aria-pressed={showAbsolute}
     onclick={toggle}>
-    <time datetime={iso} aria-label={absolute}>{text}</time>
+    <time datetime={iso}>{@render label()}</time>
   </button>
 {:else}
-  <time datetime={iso} class={className} title={absolute} aria-label={absolute}
-    >{text}</time>
+  <time datetime={iso} class={className} title={absolute}
+    >{@render label()}</time>
 {/if}
+
+<!-- aria-label is ignored on a <time>: the absolute date is read as text. -->
+{#snippet label()}
+  <span aria-hidden="true">{text}</span><span class="sr-only">{absolute}</span>
+{/snippet}

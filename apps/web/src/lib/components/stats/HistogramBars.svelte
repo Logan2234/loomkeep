@@ -36,9 +36,10 @@
   });
 </script>
 
+<!-- An image can't hold controls: clickable bars make it a group. -->
 <div
   class="flex h-32 items-end gap-1.5"
-  role="img"
+  role={onSelect ? "group" : "img"}
   aria-label={m.stats_histogram()}>
   {#each bars as b (b.label)}
     {#if onSelect}

@@ -70,6 +70,7 @@
     "@testing-library/user-event": "^14.6.8",
     "@types/qrcode": "^1.5.6",
     "@vitest/coverage-v8": "^5.0.5",
+    "axe-core": "^4.14.0",
     "eslint-plugin-svelte": "^3.23.1",
     "happy-dom": "^21.0.4",
     "mermaid": "^12.2.0",

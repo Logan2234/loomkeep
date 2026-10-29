@@ -8,7 +8,9 @@
 // `defaults.reporters` loading (lib/helpers/loader.js: require(path)).
 //
 // Reporter shape: lib/pa11y-ci.js only ever calls afterAll(report) with the
-// full run — no incremental writes needed.
+// full run. web-audit runs pa11y-ci once per theme and width
+// (PA11Y_VARIANT, e.g. "dark-375"): each run adds its results to the file
+// the previous ones left, so Code Scanning gets one upload.
 
 const fs = require("fs");
 const path = require("path");
@@ -16,6 +18,8 @@ const path = require("path");
 const OUTPUT_FILE =
   process.env.PA11Y_SARIF_OUTPUT ||
   path.join(process.cwd(), "pa11y-results.sarif");
+
+const VARIANT = process.env.PA11Y_VARIANT;
 
 // pa11y issue.type is "error" | "warning" | "notice".
 const LEVEL_BY_TYPE = { error: "error", warning: "warning", notice: "note" };
@@ -30,7 +34,7 @@ const LEVEL_BY_TYPE = { error: "error", warning: "warning", notice: "note" };
 function relativeLocation(url) {
   const { pathname } = new URL(url);
   const slug = pathname === "/" ? "index" : pathname.replace(/^\//, "");
-  return `pa11y-pages/${slug}`;
+  return VARIANT ? `pa11y-pages/${VARIANT}/${slug}` : `pa11y-pages/${slug}`;
 }
 
 function toSarif(report) {
@@ -51,7 +55,9 @@ function toSarif(report) {
       results.push({
         ruleId: issue.code,
         level: LEVEL_BY_TYPE[issue.type] || "warning",
-        message: { text: `${issue.message} (${url})` },
+        message: {
+          text: `${issue.message} (${url}${VARIANT ? `, ${VARIANT}` : ""})`,
+        },
         locations: [
           {
             physicalLocation: {
@@ -64,6 +70,7 @@ function toSarif(report) {
           selector: issue.selector,
           context: issue.context,
           runner: issue.runner,
+          variant: VARIANT,
         },
       });
     }
@@ -88,10 +95,38 @@ function toSarif(report) {
   };
 }
 
+// Read without an existsSync() first: checking then reading is a race.
+function readPrevious() {
+  try {
+    return fs.readFileSync(OUTPUT_FILE, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
 module.exports = function sarifReporter() {
   return {
     afterAll(report) {
-      fs.writeFileSync(OUTPUT_FILE, JSON.stringify(toSarif(report), null, 2));
+      const sarif = toSarif(report);
+      const previousFile = readPrevious();
+
+      if (previousFile) {
+        const previous = JSON.parse(previousFile).runs[0];
+        const run = sarif.runs[0];
+        const known = new Set(
+          previous.tool.driver.rules.map((rule) => rule.id),
+        );
+
+        for (const rule of run.tool.driver.rules) {
+          if (!known.has(rule.id)) previous.tool.driver.rules.push(rule);
+        }
+
+        previous.results.push(...run.results);
+        sarif.runs[0] = previous;
+      }
+
+      fs.writeFileSync(OUTPUT_FILE, JSON.stringify(sarif, null, 2));
     },
   };
 };

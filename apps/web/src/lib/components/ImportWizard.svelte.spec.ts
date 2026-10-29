@@ -134,6 +134,14 @@ beforeEach(() => {
 });
 
 describe("ImportWizard", () => {
+  it("names the identifier field of a source read from a user name", () => {
+    renderWithQuery(ImportWizard, { source: "anilist" });
+
+    expect(
+      screen.getByRole("textbox", { name: m.common_identifier() }),
+    ).toBeTruthy();
+  });
+
   it("imports the reviewed selection and reports the outcome", async () => {
     serveImport();
     const user = await analyzeExport();

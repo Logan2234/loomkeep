@@ -26,6 +26,7 @@
 
 <div class="min-h-svh">
   <main
+    id="main"
     class="min-h-svh {showOnboarding
       ? 'pb-[calc(7.25rem+env(safe-area-inset-bottom))]'
       : 'pb-[calc(4.5rem+env(safe-area-inset-bottom))]'}">

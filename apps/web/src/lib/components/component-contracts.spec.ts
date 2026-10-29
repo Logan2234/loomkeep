@@ -182,7 +182,7 @@ describe("shared component contracts", () => {
 
     expect(source).toContain("<time");
     expect(source).toContain("datetime={iso}");
-    expect(source).toContain("aria-label={absolute}");
+    expect(source).toContain('<span class="sr-only">{absolute}</span>');
   });
 
   it("lets composed artwork avoid duplicate accessible names", () => {
