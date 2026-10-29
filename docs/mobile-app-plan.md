@@ -62,7 +62,7 @@ natives à maintenir).
 | MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 | ✅ #447 (Android), iOS ⏳ |
 | MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439 (Android), iOS ⏳ |
 | MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-02         | iOS ⏳                    |
-| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         | 🚧 PR à venir             |
+| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         | 🚧 #480                   |
 | MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |                           |
 | MOB-23 | APK release sur GitHub, landing et docs                | 1     | M      | MOB-03, MOB-15 | ✅ #461                   |
 
