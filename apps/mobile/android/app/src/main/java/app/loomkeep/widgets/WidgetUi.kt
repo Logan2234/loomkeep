@@ -52,8 +52,8 @@ val STYLE_KEY = stringPreferencesKey("style")
 const val STYLE_POSTERS = "posters"
 const val STYLE_LIST = "list"
 
-/** 2 × 2, 4 × 2 and 4 × 4 on a phone's grid. */
-val WIDGET_SIZES = setOf(DpSize(110.dp, 110.dp), DpSize(250.dp, 110.dp), DpSize(250.dp, 250.dp))
+/** From 2 × 2: narrow, then three columns wide, then three rows tall too. */
+val WIDGET_SIZES = setOf(DpSize(110.dp, 180.dp), DpSize(200.dp, 180.dp), DpSize(200.dp, 330.dp))
 
 /** What fits: one item, then a row of three, then two rows. */
 enum class WidgetLayout(val items: Int) {
@@ -66,8 +66,8 @@ enum class WidgetLayout(val items: Int) {
 fun currentLayout(): WidgetLayout {
     val size = LocalSize.current
     return when {
-        size.height >= 220.dp -> WidgetLayout.LARGE
-        size.width >= 220.dp -> WidgetLayout.WIDE
+        size.height >= 330.dp && size.width >= 200.dp -> WidgetLayout.LARGE
+        size.width >= 200.dp -> WidgetLayout.WIDE
         else -> WidgetLayout.SMALL
     }
 }
@@ -106,8 +106,14 @@ fun openApp(context: Context, path: String?): Action {
 
 @Composable
 fun WidgetFrame(content: @Composable () -> Unit) {
+    // A tap between the items opens the app; the items' own taps take precedence.
     Box(
-        modifier = GlanceModifier.fillMaxSize().cornerRadius(24.dp).background(WidgetColors.bg).padding(8.dp),
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .cornerRadius(24.dp)
+            .background(WidgetColors.bg)
+            .clickable(openApp(LocalContext.current, "/app"))
+            .padding(8.dp),
     ) {
         content()
     }
@@ -165,6 +171,7 @@ fun PosterTile(
     checkLabel: String?,
     progress: Float?,
     titleSize: TextUnit = 14.sp,
+    checked: Boolean = false,
 ) {
     Box(modifier = modifier.cornerRadius(16.dp).background(WidgetColors.posterFallback).clickable(open)) {
         if (poster != null) {
@@ -187,7 +194,7 @@ fun PosterTile(
                         .padding(horizontal = 6.dp, vertical = 2.dp),
                 )
                 Spacer(GlanceModifier.defaultWeight())
-                if (check != null) CheckButton(check, checkLabel, 36.dp, onPoster = true)
+                if (check != null) CheckButton(check, checkLabel, 36.dp, onPoster = true, checked = checked)
             }
             Spacer(GlanceModifier.defaultWeight())
             Text(title, style = sans(titleSize, WidgetColors.white, FontWeight.Bold), maxLines = 2)
@@ -208,19 +215,26 @@ fun PosterTile(
 
 /** The ✓ that marks the next episode watched, on a poster or in a list row. */
 @Composable
-fun CheckButton(action: Action, label: String?, size: Dp, onPoster: Boolean) {
+fun CheckButton(action: Action, label: String?, size: Dp, onPoster: Boolean, checked: Boolean = false) {
+    val background = when {
+        checked -> R.drawable.widget_check_done
+        onPoster -> R.drawable.widget_check_on_poster
+        else -> R.drawable.widget_check_outline
+    }
+    val base = GlanceModifier.size(size).background(ImageProvider(background))
     Box(
-        modifier = GlanceModifier
-            .size(size)
-            .background(ImageProvider(if (onPoster) R.drawable.widget_check_on_poster else R.drawable.widget_check_outline))
-            .clickable(action),
+        modifier = if (checked) base else base.clickable(action),
         contentAlignment = Alignment.Center,
     ) {
         Image(
             ImageProvider(R.drawable.ic_widget_check),
             contentDescription = label,
             modifier = GlanceModifier.size(size * 0.5f),
-            colorFilter = if (onPoster) null else ColorFilter.tint(WidgetColors.fg),
+            colorFilter = when {
+                checked -> ColorFilter.tint(ColorProvider(R.color.widget_on_success))
+                onPoster -> null
+                else -> ColorFilter.tint(WidgetColors.fg)
+            },
         )
     }
 }

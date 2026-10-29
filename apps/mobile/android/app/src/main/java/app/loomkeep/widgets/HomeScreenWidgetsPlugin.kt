@@ -60,7 +60,9 @@ class HomeScreenWidgetsPlugin : Plugin() {
         val context = context.applicationContext
         scope.launch {
             if (!HomeScreenWidgets.placed(context)) return@launch
-            if (refetch) WidgetRepository.load(context, force = true)
+            WidgetRepository.refresh(context, force = refetch)
+            // Starts a session for a widget that has none; a running one
+            // already redraws from WidgetRepository.snapshot.
             HomeScreenWidgets.updateAll(context)
         }
     }
