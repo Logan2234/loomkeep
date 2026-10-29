@@ -58,11 +58,11 @@ natives à maintenir).
 | MOB-14 | Dossier de review et soumission App Store              | 2     | M      | MOB-12, MOB-13 | ⏳ plus tard              |
 | MOB-15 | Écran local : choix d'instance et hors ligne           | 3     | M      | MOB-02         | ✅ #459, #460             |
 | MOB-16 | Relais de push pour les instances self-hostées         | 3     | L      | MOB-04, MOB-15 |                           |
-| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         | 🚧 #476 (API)             |
+| MOB-17 | Notifications actionnables                             | 4     | M      | MOB-05         | ✅ #476, #477             |
 | MOB-18 | Partager vers Loomkeep (intent Android, extension iOS) | 4     | L      | MOB-02, MOB-11 | ✅ #447 (Android), iOS ⏳ |
 | MOB-19 | Raccourcis d'icône (quick actions)                     | 4     | S      | MOB-02         | ✅ #439 (Android), iOS ⏳ |
 | MOB-20 | Widgets « À suivre » et « Sorties du jour »            | 4     | L      | MOB-02         | iOS ⏳                    |
-| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         |                           |
+| MOB-21 | Haptique et biométrie pour la re-confirmation          | 4     | M      | MOB-02         | 🚧 PR à venir             |
 | MOB-22 | Exploratoire : scrobbling musical Android              | 4     | L      | MOB-10         |                           |
 | MOB-23 | APK release sur GitHub, landing et docs                | 1     | M      | MOB-03, MOB-15 | ✅ #461                   |
 
@@ -640,7 +640,31 @@ rafraîchi en arrière-plan ; variante gamification (série, XP) possible.
 
 Retour haptique sur les gains d'XP et le marquage (iOS n'a pas d'API
 `vibrate`) ; Face ID / empreinte pour `@RequireRecentAuth` au lieu de
-retaper le mot de passe, avec stockage Keychain/Keystore.
+retaper le mot de passe.
+
+**Fait** :
+
+- `@capacitor/haptics` (web et app à la même version), derrière
+  `src/lib/native/haptics.ts` : `tapFeedback()` (impact léger) au marquage
+  d'un épisode, d'une saison, d'un rattrapage, d'un film, depuis l'accueil
+  (« À suivre », « Reprendre ») et à l'entrée en sélection par appui long ;
+  `successFeedback()` à chaque bulle de succès ou de niveau. Le plugin
+  déclare `VIBRATE`, sans laquelle la WebView ignore `navigator.vibrate` ;
+  un APK plus ancien le dit indisponible et ne vibre pas. Sur le web, son
+  implémentation passe par `navigator.vibrate` (Chrome Android, PWA).
+- La biométrie passe par les passkeys, pas par un mot de passe gardé dans
+  le Keystore : depuis #472, une passkey dans l'app ouvre Credential
+  Manager (empreinte, visage), et la re-confirmation les accepte déjà. Un
+  mot de passe stocké sur l'appareil serait moins sûr qu'une passkey, qui
+  n'en sort jamais, et doublerait un mécanisme qui existe. Ce qui manquait,
+  c'est d'y amener : après une re-confirmation par mot de passe ou code,
+  un compte sans passkey, sur un appareil qui sait en utiliser une
+  (`platformAuthenticatorIsAvailable`), se voit proposer une fois d'en
+  ajouter une (toast vers Paramètres › Double authentification).
+
+**Plus tard** : un verrouillage de l'app à l'ouverture par biométrie
+(réglage facultatif, `BiometricPrompt` dans un plugin local), si le besoin
+se confirme.
 
 ### MOB-22 — Exploratoire : scrobbling musical Android
 

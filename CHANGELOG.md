@@ -23,6 +23,17 @@ history from before it was started.
 
 ### Android app
 
+- **Haptic feedback** (MOB-21): a light tap when an episode, a season, a
+  catch-up or a film is marked seen (detail page and home), and when a
+  long press starts a library selection; a fuller pattern with each
+  achievement or level bubble. Through `@capacitor/haptics`, which also
+  brings the `VIBRATE` permission the app's WebView lacked (its
+  `navigator.vibrate` did nothing); Android browsers and the PWA vibrate
+  through the same calls. Needs the next APK.
+- **Re-confirming with a fingerprint**: after confirming a sensitive
+  action with a password or a code, an account without a passkey, on a
+  device that can use one, is offered once to add one — a passkey then
+  confirms through the device's own unlock, in the app as in a browser.
 - **Passkeys work in the Android app.** Its WebView turns on WebAuthn
   (`WEB_AUTHENTICATION_SUPPORT_FOR_APP`, on WebViews that have it), and
   `assetlinks.json` now grants each package from `ANDROID_APP_LINKS`
