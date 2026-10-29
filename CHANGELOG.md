@@ -13,6 +13,13 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Accessibility
+
+- Improve contrast for the mobile navigation, secondary buttons, and the
+  commit identifier in the legal footer.
+- Center mobile navigation labels beneath their icons and remove the
+  perforated top edge.
+
 ### Admin
 
 - **Admin › Communications › Push sends any notification as a sample**,
