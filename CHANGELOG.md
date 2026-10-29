@@ -106,6 +106,13 @@ history from before it was started.
   desktop; ZAP's browser spider reaches the signed-in app. Advisory, with
   an ntfy message when an audit finds something.
 
+### Account, security and notifications
+
+- **Newsletter unsubscribe page no longer ends on a server error.** The
+  unsubscription itself went through, but the page read the API's empty
+  response as a failed query and showed "A server error occurred" anyway;
+  it now confirms the unsubscription.
+
 ## 1.12.0 — The Android app, imports from every tracker, and commands in Messages
 
 ### Before upgrading a self-hosted instance
