@@ -36,18 +36,17 @@
      name stay, so nothing becomes unreachable.
 
      Séance signature: a "ticket stub" bar — the active tab punches up
-     through the line, sitting in a lit amber notch, and the top edge is
-     perforated like a torn ticket. -->
+     through the line, sitting in a lit amber notch. -->
 <nav
   data-mobile-navigation
   class="
-    border-border bg-surface/95 ticket-edge fixed inset-x-0
+    border-border bg-surface fixed inset-x-0
     bottom-0
     z-30 flex
     border-t
     pt-2
     pb-[calc(0.4rem+env(safe-area-inset-bottom))]
-    backdrop-blur
+    text-center
   ">
   {#each items as item (item.id)}
     {#if item.id === "menu"}
@@ -100,19 +99,3 @@
   {/if}
   <NotificationTab />
 </nav>
-
-<style>
-  /* Sprocket holes along the top edge — a 35mm frame line, quiet unless you
-     look closely. */
-  .ticket-edge {
-    background-image: radial-gradient(
-      circle,
-      var(--border) 1.1px,
-      transparent 1.2px
-    );
-    background-size: 18px 100%;
-    background-position: top center;
-    background-repeat: repeat-x;
-    background-origin: border-box;
-  }
-</style>

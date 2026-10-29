@@ -130,7 +130,7 @@ body {
     @apply rounded-full font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.25)];
   }
   .btn-ghost {
-    @apply border-border text-dim hover:text-fg relative overflow-hidden border;
+    @apply border-border bg-surface text-fg hover:bg-surface-2 relative overflow-hidden border;
   }
   /* Projector-beam hover: a soft radial glow in the accent color instead of
      a flat fill — nods to "la salle" rather than a generic hover state. */

@@ -59,7 +59,7 @@
       class="btn-text font-normal {appConfig.version ? '' : 'invisible'}">
       {m.app_version({ version: appConfig.version })}
       {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
-        <span class="opacity-60">({appConfig.gitSha})</span>
+        <span>({appConfig.gitSha})</span>
       {/if}
     </a>
     {#if env.PUBLIC_IS_BETA === "true"}<BetaBadge />{/if}
