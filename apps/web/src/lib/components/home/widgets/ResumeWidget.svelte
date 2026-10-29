@@ -8,6 +8,7 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
+  import { tapFeedback } from "#lib/native/haptics.js";
   import type { BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -60,6 +61,7 @@
         queryClient.invalidateQueries({ queryKey: keys.library.watching() }),
       ]);
     },
+    onSuccess: tapFeedback,
     errorToast: true,
   }));
   function resume(entry: LibraryEntryDto) {

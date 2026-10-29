@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
     confirmReauth,
     confirmReauthWithPasskey,
@@ -16,12 +17,14 @@
   import { normalizeCodeInput } from "#lib/one-time-code.js";
   import { m } from "#lib/paraglide/messages.js";
   import { reauth } from "#lib/reauth.svelte.js";
+  import { toast } from "#lib/toast.svelte.js";
   import {
     ErrorCode,
     OTP_CODE_LENGTH,
     type ReauthMethod,
     type ReauthResultDto,
   } from "@loomkeep/shared";
+  import { platformAuthenticatorIsAvailable } from "@simplewebauthn/browser";
   import { fly, scale } from "svelte/transition";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
@@ -80,6 +83,7 @@
       writeStorage(STORAGE_KEYS.reauthMethod, proof);
       done = true;
       setTimeout(() => reauth.confirmed(confirmedUntil), reduced ? 0 : 600);
+      if (!methods.includes("webauthn")) void suggestPasskey();
     },
     onError: (err) => {
       // The browser's own prompt was closed: nothing went wrong server-side.
@@ -94,6 +98,18 @@
   const error = $derived(
     passkeyCancelled ? m.reauth_webauthn_cancelled() : confirmMut.error,
   );
+
+  // The device's own unlock (fingerprint, face) could confirm instead, through
+  // a passkey: said once per device to whoever has none yet.
+  async function suggestPasskey() {
+    if (readStorage(STORAGE_KEYS.passkeySuggested)) return;
+    if (!(await platformAuthenticatorIsAvailable())) return;
+    writeStorage(STORAGE_KEYS.passkeySuggested, "1");
+    toast.action(m.reauth_passkey_suggestion(), {
+      label: m.common_add(),
+      onSelect: () => goto("/app/settings/two-factor-authentication"),
+    });
+  }
 
   function pick(next: ReauthMethod) {
     chosen = next;

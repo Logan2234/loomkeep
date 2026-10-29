@@ -1535,6 +1535,7 @@
   "reauth_password_desc": "Your account's password.",
   "reauth_done": "It's you",
   "reauth_sign_in_again": "Sign in again",
+  "reauth_passkey_suggestion": "Next time, confirm with your fingerprint or face: add a security key (it will also become a second factor at sign-in).",
   "media_episodes_progress": "{watched} / {aired} aired episodes watched",
   "media_episodes_up_to_date": "Up to date",
   "media_episodes_not_started": "Not started",
