@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The perforation between a ticket's stub and its body. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="2dp" android:height="40dp" android:viewportWidth="2" android:viewportHeight="40">
+    <path android:fillColor="@color/widget_roll" android:pathData="M0,0 h2 v4 h-2 z" />
+    <path android:fillColor="@color/widget_roll" android:pathData="M0,6 h2 v4 h-2 z" />
+    <path android:fillColor="@color/widget_roll" android:pathData="M0,12 h2 v4 h-2 z" />
+    <path android:fillColor="@color/widget_roll" android:pathData="M0,18 h2 v4 h-2 z" />
+    <path android:fillColor="@color/widget_roll" android:pathData="M0,24 h2 v4 h-2 z" />
+    <path android:fillColor="@color/widget_roll" android:pathData="M0,30 h2 v4 h-2 z" />
+    <path android:fillColor="@color/widget_roll" android:pathData="M0,36 h2 v4 h-2 z" />
+</vector>

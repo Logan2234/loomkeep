@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The home-screen widgets (MOB-20) in Séance's light theme, "le programme". -->
+<!-- The home-screen widgets (MOB-20), light: "Affiches" on white, "Liste"
+     as amber tickets on their roll. -->
 <resources>
     <color name="widget_bg">#FFFFFF</color>
     <color name="widget_fg">#1C1712</color>
-    <color name="widget_dim">#6B6354</color>
+    <color name="widget_dim">#5F584C</color>
     <color name="widget_accent">#8A5F0A</color>
-    <color name="widget_on_accent">#FFFFFF</color>
     <color name="widget_success">#257E58</color>
     <color name="widget_on_success">#FFFFFF</color>
-    <color name="widget_divider">#E2D9C4</color>
-    <color name="widget_poster_fallback">#EDEAE3</color>
+    <color name="widget_poster_fallback">#F0EEEA</color>
+    <color name="widget_roll">#E8C76F</color>
+    <color name="widget_roll_ink">#2B1D05</color>
+    <color name="widget_roll_dim">#5E4610</color>
+    <color name="widget_ticket">#FBEFC9</color>
+    <color name="widget_stub">#F4DE98</color>
+    <color name="widget_ticket_ink">#2B1D05</color>
+    <color name="widget_ticket_dim">#6A5320</color>
 </resources>

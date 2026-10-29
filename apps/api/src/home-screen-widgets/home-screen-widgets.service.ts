@@ -16,8 +16,8 @@ import { DomainGateService } from "../users/domain-gate.service";
 import { isSuspended } from "../users/suspension.util";
 import { signWidgetToken, verifyWidgetToken } from "./widget-token";
 
-/** The most a 4 × 4 widget shows. */
-const FEED_LENGTH = 6;
+/** The most a 5 × 5 widget shows: 3 × 3 posters. */
+const FEED_LENGTH = 9;
 /** Shows read to find FEED_LENGTH with an episode left to watch. */
 const SHOWS_SCANNED = 50;
 

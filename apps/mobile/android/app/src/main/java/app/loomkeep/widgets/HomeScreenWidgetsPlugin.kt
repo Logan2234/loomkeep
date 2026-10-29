@@ -35,6 +35,11 @@ object HomeScreenWidgets {
 class HomeScreenWidgetsPlugin : Plugin() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    override fun load() {
+        val context = context.applicationContext
+        scope.launch { WidgetPreviews.publish(context) }
+    }
+
     @PluginMethod
     fun connect(call: PluginCall) {
         val token = call.getString("token") ?: return call.reject("token is required")

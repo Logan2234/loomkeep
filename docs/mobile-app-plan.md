@@ -208,28 +208,39 @@ une Notification Service Extension), et gratuit ou premium (`ee/`).
 
 ### MOB-20 — Widgets « À suivre » et « Sorties du jour »
 
-Décidé le 29/10 (maquette : https://claude.ai/artifact/MkrxXX37TR2ogpNTbc3pBX) :
+Décidé le 29/10, revu le 30/10 après un premier essai sur téléphone
+(maquette de la refonte : https://claude.ai/artifact/HXhJptW1hDvrtdk2iBaf69) :
 
-- Deux widgets, « À suivre » et « Sorties », en 2×2, 4×2 et 4×4 : 1, 3
-  puis 6 éléments selon la taille. Style « Affiches » par défaut, « Liste »
-  au choix dans les réglages du widget (reconfigurable, Android 12+).
+- Chaque widget a deux styles, au choix dans ses réglages : « Affiches »
+  (par défaut : l'affiche, et dessous un bandeau dans sa propre teinte) et
+  « Liste » (des billets de cinéma, le code ou la date sur le talon). Ils
+  vont de 2×2 à 5×5, jusqu'à neuf œuvres, et le sélecteur de widgets en
+  montre un aperçu (généré par Glance à partir d'Android 15, une mise en
+  page fixe avant).
 - « À suivre » : séries et animes en cours avec un épisode à voir ; le
   bouton ✓ marque l'épisode suivant sans ouvrir l'app, le tap ouvre la
   fiche. « Sorties » : celles du jour, sinon « Prochaines sorties » avec
   leurs dates.
-- Glance (Kotlin), mise à jour toutes les 30 minutes, après un ✓, et quand
-  l'app passe en arrière-plan.
+- Glance (Kotlin). Les widgets suivent `WidgetRepository.snapshot` : Glance
+  ne rejoue `provideGlance` qu'à chaque nouvelle session de widget.
+  Mise à jour toutes les 30 minutes, après un ✓, et quand l'app passe en
+  arrière-plan.
 - Authentification : le web demande à l'API un jeton signé rattaché à sa
   session (`POST /api/home-screen-widgets/token`) et le remet au plugin
   local `HomeScreenWidgets` ; les widgets l'envoient en `X-Widget-Token`
   (`GET …/feed`, `POST …/watch-next`). Il meurt avec la session, et la
   déconnexion le retire.
 
-Découpage : l'API et le web d'abord (sans effet tant qu'aucun APK n'a le
-plugin), puis l'app Android.
+Reste : trois nouveaux widgets, dans les mêmes deux styles, après une
+extension de l'API (flux et actions par le jeton de widget) :
 
-Plus tard, d'autres widgets : chrono de session (jeu, lecture), série et
-niveau (gamification), barre de recherche rapide.
+- Chrono de session : lance, met en pause ou arrête le chrono de jeu ou de
+  lecture. Arrêter un jeu enregistre la session ; un livre ouvre l'app sur
+  l'écran de fin de session, pour les pages lues.
+- Série et niveau : jours d'affilée, niveau, XP, la semaine en cours et les
+  derniers gains (si la gamification est active sur l'instance).
+- Recherche : barre de recherche, scanner, raccourcis par catégorie et
+  derniers ajouts.
 
 ### MOB-22 — Exploratoire : scrobbling musical
 

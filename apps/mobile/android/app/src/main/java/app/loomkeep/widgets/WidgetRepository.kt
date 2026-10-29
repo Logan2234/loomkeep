@@ -28,10 +28,13 @@ sealed interface WidgetData {
     data class Ready(val feed: WidgetFeed) : WidgetData
 }
 
+/** A poster, and the shade of its band in the « Affiches » style. */
+data class Poster(val bitmap: Bitmap, val band: Int)
+
 /** Everything both widgets draw, posters included. */
 data class WidgetSnapshot(
     val data: WidgetData,
-    val posters: Map<String, Bitmap>,
+    val posters: Map<String, Poster>,
     /** The show whose ✓ was just pressed, drawn as checked until the API answers. */
     val checking: String? = null,
 )
@@ -149,8 +152,16 @@ object WidgetRepository {
 object WidgetPosters {
     private const val WIDTH_PX = 240
 
-    suspend fun load(context: Context, urls: List<String?>): Map<String, Bitmap> = withContext(Dispatchers.IO) {
-        urls.filterNotNull().distinct().mapNotNull { url -> poster(context, url)?.let { url to it } }.toMap()
+    suspend fun load(context: Context, urls: List<String?>): Map<String, Poster> = withContext(Dispatchers.IO) {
+        urls.filterNotNull().distinct().mapNotNull { url ->
+            poster(context, url)?.let { url to Poster(it, bandOf(it)) }
+        }.toMap()
+    }
+
+    /** The poster's average colour, darkened enough to carry white text. */
+    private fun bandOf(bitmap: Bitmap): Int {
+        val average = Bitmap.createScaledBitmap(bitmap, 1, 1, true).getPixel(0, 0)
+        return darken(average)
     }
 
     private fun poster(context: Context, url: String): Bitmap? {
@@ -185,4 +196,14 @@ object WidgetPosters {
 
     private fun sha1(text: String): String =
         MessageDigest.getInstance("SHA-1").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
+}
+
+/** 45 % towards black: white text stays readable on any poster's shade. */
+fun darken(color: Int): Int {
+    val keep = 0.55f
+    return android.graphics.Color.rgb(
+        (android.graphics.Color.red(color) * keep).toInt(),
+        (android.graphics.Color.green(color) * keep).toInt(),
+        (android.graphics.Color.blue(color) * keep).toInt(),
+    )
 }
