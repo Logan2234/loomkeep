@@ -1,9 +1,0 @@
-# Read by every Trivy image scan (trivy.yml, ci.yml): each job checks the
-# repo out and Trivy loads ./.trivyignore by default. Each entry says why it
-# doesn't apply and expires, so it gets looked at again.
-
-# deepmerge <= 4.3.1 prototype poisoning, no fixed release. It's in the web
-# image only through @sentry/sveltekit -> @sveltejs/kit ->
-# @sveltejs/vite-plugin-svelte, which merges Svelte config at build time;
-# the built server (apps/web/build) never loads it.
-CVE-2026-93753 exp:2027-04-29
