@@ -42,6 +42,7 @@
   import NewBadge from "#lib/components/NewBadge.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { mediaCompletionEstimate } from "#lib/media-completion-estimate.js";
+  import { tapFeedback } from "#lib/native/haptics.js";
   import ProviderMark from "#lib/components/ProviderMark.svelte";
   import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "#lib/components/ReviewsSection.svelte";
@@ -297,7 +298,10 @@
   // list (EpisodesSection) has its own copy for its per-row actions.
   const continueWatchingMut = createApiMutation(() => ({
     mutate: (episodeId: string) => watchEpisode(episodeId),
-    onSuccess: () => reload(),
+    onSuccess: async () => {
+      await reload();
+      tapFeedback();
+    },
     onError: (err) => (episodesError = resolveApiError(err)),
   }));
 
@@ -315,6 +319,7 @@
   // Movies: a single seen/not-seen toggle stands in for progress.
   function toggleWatched() {
     if (!entry) return;
+    if (entry.status !== "COMPLETED") tapFeedback();
     patchMut.mutate({
       status: entry.status === "COMPLETED" ? "PLANNED" : "COMPLETED",
     });

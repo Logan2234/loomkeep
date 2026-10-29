@@ -77,6 +77,7 @@
     type LibraryViewMode,
   } from "#lib/library-view.js";
   import { prefersReducedMotion } from "#lib/motion.js";
+  import { tapFeedback } from "#lib/native/haptics.js";
   import { m } from "#lib/paraglide/messages.js";
   import { pileHeaderLabel } from "#lib/pile.js";
   import { filtersToSearchParams } from "#lib/saved-views.js";
@@ -699,7 +700,7 @@
       selecting = true;
       if (!selection.has(entry)) toggle(entry, false);
       swallowClick = true;
-      navigator.vibrate?.(10);
+      tapFeedback();
     }, LONG_PRESS_MS);
   }
 
