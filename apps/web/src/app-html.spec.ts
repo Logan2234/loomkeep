@@ -6,7 +6,8 @@ import { describe, expect, it } from "vitest";
 const html = readFileSync(new URL("./app.html", import.meta.url), "utf8");
 // app.html has exactly one inline script, written by us: slicing between its
 // tags is enough, no HTML parsing involved.
-const scriptStart = html.indexOf("<script>") + "<script>".length;
+const scriptTag = '<script nonce="%sveltekit.nonce%">';
+const scriptStart = html.indexOf(scriptTag) + scriptTag.length;
 const bootScript = html.slice(
   scriptStart,
   html.indexOf("</script>", scriptStart),
