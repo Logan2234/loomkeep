@@ -30,6 +30,42 @@ export default defineConfig(({ command }) => ({
       },
       // adapter-node: the web app ships as a plain Node server, self-hostable in Docker.
       adapter: adapter(),
+      // Enforced. SvelteKit nonces its own scripts and app.html's; every page
+      // is rendered per request, so nonces work everywhere. The origins of an
+      // instance's own integrations (API, Umami, GlitchTip, Unleash,
+      // Quackback) come from its env at runtime: src/lib/server/csp.ts,
+      // applied in hooks.server.ts, appends them to the directives below.
+      csp: {
+        mode: "nonce",
+        directives: {
+          "default-src": ["self"],
+          // Turnstile (registration, when PUBLIC_TURNSTILE_SITE_KEY is set),
+          // and the Web Analytics beacon Cloudflare injects into pages it
+          // proxies when that's turned on in its dashboard.
+          "script-src": [
+            "self",
+            "https://challenges.cloudflare.com",
+            "https://static.cloudflareinsights.com",
+          ],
+          // Svelte's style: directives and transitions write inline styles.
+          "style-src": ["self", "unsafe-inline"],
+          // Catalog artwork comes from many CDNs (TMDB, IGDB, Open Library,
+          // Cover Art Archive…) and avatars may be any URL.
+          "img-src": ["self", "data:", "blob:", "https:"],
+          "font-src": ["self", "data:"],
+          "connect-src": ["self", "https://cloudflareinsights.com"],
+          // Trailers (Lightbox) and the Turnstile challenge.
+          "frame-src": [
+            "self",
+            "https://www.youtube-nocookie.com",
+            "https://challenges.cloudflare.com",
+          ],
+          "object-src": ["none"],
+          "base-uri": ["self"],
+          "frame-ancestors": ["none"],
+          "form-action": ["self"],
+        },
+      },
       files: { serviceWorker: "src/service-worker/service-worker" },
       // Registered by hooks.client.ts instead, which skips it in the Android app.
       serviceWorker: { register: false },

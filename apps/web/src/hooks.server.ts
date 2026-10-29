@@ -1,11 +1,13 @@
 import { paraglideMiddleware } from "#lib/paraglide/server.js";
+import { extendCsp, integrationSources } from "#lib/server/csp.js";
+import * as env from "$app/env/public";
 import type { Handle } from "@sveltejs/kit/hooks";
 
 // Caddy (docker/Caddyfile) sets these same headers at the edge for the
 // hosted VPS, but a self-host install running this container directly
 // (no reverse proxy, or one without equivalent headers) would otherwise
 // ship with neither - set them here too so the app is protected either way.
-// CSP stays out of scope here (see docker/Caddyfile's Report-Only comment).
+// The CSP is SvelteKit's (vite.config.ts), extended below.
 const SECURITY_HEADERS = {
   "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
@@ -47,6 +49,15 @@ export const handle: Handle = ({ event, resolve }) => {
       },
     );
     response.headers.append("Vary", "Accept-Language, Cookie");
+
+    const csp = response.headers.get("Content-Security-Policy");
+
+    if (csp) {
+      response.headers.set(
+        "Content-Security-Policy",
+        extendCsp(csp, integrationSources(env)),
+      );
+    }
 
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
       response.headers.set(name, value);

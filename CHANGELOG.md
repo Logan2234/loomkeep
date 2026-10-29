@@ -58,6 +58,21 @@ history from before it was started.
   next version's is the first to carry one. Until it is published, every
   `main` commit builds the release APK, whatever it changes.
 
+### Security
+
+- **The Content-Security-Policy is enforced.** The web app now sends it
+  itself (SvelteKit `csp`, a per-request nonce on its scripts and
+  app.html's), without `'unsafe-inline'` for scripts; Caddy no longer adds
+  a Report-Only one. The origins of an instance's own integrations are read
+  from the env it already sets (`PUBLIC_API_URL`, `PUBLIC_UMAMI_SCRIPT_URL`,
+  `PUBLIC_GLITCHTIP_WEB_DSN`, `PUBLIC_UNLEASH_FRONTEND_URL`,
+  `PUBLIC_QUACKBACK_URL`) instead of loomkeep.app's being hardcoded. The
+  policy also allows YouTube trailers, Turnstile and Cloudflare's Web
+  Analytics beacon. The CSP report collector (`POST
+/api/security/csp-report`) is gone. Self-hosting: a reverse proxy that
+  sets its own `Content-Security-Policy` now stacks with the app's (both
+  apply); drop the proxy's.
+
 ### Accessibility
 
 - **Screen-reader fixes found by a new axe pass on every component test**:

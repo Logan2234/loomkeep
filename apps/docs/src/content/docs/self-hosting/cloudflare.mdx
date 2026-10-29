@@ -85,8 +85,8 @@ For GlitchTip, replace `<project-id>` with each project id from your DSNs
 application for each ingestion path with **Bypass → Everyone**. Do not
 bypass `/api/*`: that would also expose the management API. A redirect to
 the Access login page prevents the SDK from delivering errors; allowing
-that login domain in the app's CSP does not solve it. The app's `connect-src`
-policy must also allow your GlitchTip origin.
+that login domain in the app's CSP does not solve it. The app's CSP allows
+your GlitchTip origin on its own, from `PUBLIC_GLITCHTIP_WEB_DSN`.
 
 <Aside>
   With Cloudflare in front, [Umami](/self-hosting/optional-services/analytics/)

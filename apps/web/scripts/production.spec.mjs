@@ -192,3 +192,36 @@ test("keeps admin development workshops unavailable in production", async () => 
     assert.equal(response.status, 404);
   }
 });
+
+// Enforced, not Report-Only: SvelteKit's scripts and app.html's boot script
+// run only because they carry this response's nonce.
+test("enforces a CSP whose nonce every inline script carries", async () => {
+  for (const pathname of ["/", "/app", "/login"]) {
+    const response = await fetch(serverOrigin + pathname);
+    const csp = response.headers.get("content-security-policy");
+    assert.ok(csp, `${pathname} has no Content-Security-Policy`);
+
+    const scriptSrc = csp
+      .split(";")
+      .find((d) => d.trim().startsWith("script-src"));
+    assert.doesNotMatch(scriptSrc, /'unsafe-inline'/);
+    const [, nonce] = scriptSrc.match(/'nonce-([^']+)'/) ?? [];
+    assert.ok(nonce, `${pathname}'s script-src has no nonce`);
+
+    const html = await response.text();
+    const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>/g)]
+      .map(([, attributes]) => attributes)
+      .filter((attributes) => !attributes.includes("application/ld+json"));
+    assert.ok(inline.length > 0);
+
+    for (const attributes of inline) {
+      assert.ok(
+        attributes.includes(`nonce="${nonce}"`),
+        `${pathname}: <script${attributes}> lacks the nonce`,
+      );
+    }
+
+    // PUBLIC_API_URL's origin, appended at runtime (src/lib/server/csp.ts).
+    assert.match(csp, new RegExp(`connect-src [^;]*${serverOrigin}`));
+  }
+});
