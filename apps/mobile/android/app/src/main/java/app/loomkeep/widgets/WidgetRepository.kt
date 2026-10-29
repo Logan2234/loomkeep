@@ -10,6 +10,10 @@ import java.net.URL
 import java.security.MessageDigest
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
@@ -24,14 +28,58 @@ sealed interface WidgetData {
     data class Ready(val feed: WidgetFeed) : WidgetData
 }
 
+/** Everything both widgets draw, posters included. */
+data class WidgetSnapshot(
+    val data: WidgetData,
+    val posters: Map<String, Bitmap>,
+    /** The show whose ✓ was just pressed, drawn as checked until the API answers. */
+    val checking: String? = null,
+)
+
 /**
  * The widgets' side of `/api/home-screen-widgets` (MOB-20). The feed is
  * cached: every widget redraw reads it, and only a stale one goes back to the
  * instance.
+ *
+ * Widgets draw [snapshot], collected inside their composition: Glance runs
+ * provideGlance once per session and recomposes it on update(), so data read
+ * there would stay what it was when the session started.
  */
 object WidgetRepository {
     private const val FRESH_MS = 10 * 60 * 1000L
     private const val TIMEOUT_MS = 10_000
+
+    private val state = MutableStateFlow<WidgetSnapshot?>(null)
+    val snapshot: StateFlow<WidgetSnapshot?> = state.asStateFlow()
+
+    /** Something to draw, fetched again once stale: what provideGlance waits for. */
+    suspend fun ensure(context: Context) {
+        val stale = WidgetStore.token(context) != null && WidgetStore.feedAge(context) >= FRESH_MS
+        if (state.value == null || stale) refresh(context)
+    }
+
+    suspend fun refresh(context: Context, force: Boolean = false) {
+        publish(context, load(context, force))
+    }
+
+    /** The ✓ on « À suivre »: checked at once, then redrawn from the API's answer. */
+    suspend fun watchNext(context: Context, entryId: String, episodeId: String) {
+        state.update { it?.copy(checking = entryId) }
+        val body = JSONObject().put("entryId", entryId).put("episodeId", episodeId)
+        val data = withContext(Dispatchers.IO) {
+            settle(context, request(context, "POST", "watch-next", body), WidgetStore.feed(context))
+        }
+        publish(context, data)
+    }
+
+    private suspend fun publish(context: Context, data: WidgetData) {
+        val posters = if (data is WidgetData.Ready) {
+            WidgetPosters.load(context, data.feed.toWatch.map(WidgetShow::posterUrl) + data.feed.releases.map(WidgetRelease::posterUrl))
+        } else {
+            emptyMap()
+        }
+        state.value = WidgetSnapshot(data, posters)
+    }
 
     private sealed interface Response {
         data class Ok(val body: String) : Response
@@ -39,7 +87,7 @@ object WidgetRepository {
         data object Failed : Response
     }
 
-    suspend fun load(context: Context, force: Boolean = false): WidgetData = withContext(Dispatchers.IO) {
+    private suspend fun load(context: Context, force: Boolean): WidgetData = withContext(Dispatchers.IO) {
         if (WidgetStore.token(context) == null) return@withContext WidgetData.SignedOut
         val cached = WidgetStore.feed(context)
 
@@ -49,13 +97,6 @@ object WidgetRepository {
 
         settle(context, request(context, "GET", "feed", null), cached)
     }
-
-    /** The ✓ on « À suivre »; the API answers with the feed as it now stands. */
-    suspend fun watchNext(context: Context, entryId: String, episodeId: String): WidgetData =
-        withContext(Dispatchers.IO) {
-            val body = JSONObject().put("entryId", entryId).put("episodeId", episodeId)
-            settle(context, request(context, "POST", "watch-next", body), WidgetStore.feed(context))
-        }
 
     private fun settle(context: Context, response: Response, cached: WidgetFeed?): WidgetData =
         when (response) {

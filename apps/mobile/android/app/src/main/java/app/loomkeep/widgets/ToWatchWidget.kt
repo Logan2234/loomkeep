@@ -2,10 +2,14 @@ package app.loomkeep.widgets
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.media.AudioAttributes
 import android.os.Build
+import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -51,21 +55,22 @@ class ToWatchWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val data = WidgetRepository.load(context)
-        val posters = (data as? WidgetData.Ready)
-            ?.let { WidgetPosters.load(context, it.feed.toWatch.map(WidgetShow::posterUrl)) }
-            .orEmpty()
+        WidgetRepository.ensure(context)
 
         provideContent {
+            val snapshot by WidgetRepository.snapshot.collectAsState()
             val style = currentState(STYLE_KEY) ?: STYLE_POSTERS
+            val data = snapshot?.data ?: WidgetData.SignedOut
+            val posters = snapshot?.posters.orEmpty()
+            val checking = snapshot?.checking
             WidgetFrame {
                 when (data) {
                     WidgetData.SignedOut -> WidgetMessage(R.string.widget_signed_out)
                     WidgetData.Offline -> WidgetMessage(R.string.widget_offline)
                     is WidgetData.Ready -> when {
                         data.feed.toWatch.isEmpty() -> WidgetMessage(R.string.widget_to_watch_empty)
-                        style == STYLE_LIST -> ShowList(data.feed.toWatch, posters)
-                        else -> ShowPosters(data.feed.toWatch, posters)
+                        style == STYLE_LIST -> ShowList(data.feed.toWatch, posters, checking)
+                        else -> ShowPosters(data.feed.toWatch, posters, checking)
                     }
                 }
             }
@@ -84,14 +89,25 @@ class WatchNextAction : ActionCallback {
         val episodeId = parameters[EPISODE_ID] ?: return
         tick(context)
         WidgetRepository.watchNext(context, entryId, episodeId)
-        HomeScreenWidgets.updateAll(context)
     }
 
-    // A launcher gives a widget's buttons no feedback of their own.
+    // A launcher gives a widget's buttons no feedback of their own. Android
+    // drops a vibration from an app in the background unless it's an alarm,
+    // a ringtone or a notification: the press counts as a notification's,
+    // and follows its vibration setting.
     private fun tick(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
         val vibrator = context.getSystemService(Vibrator::class.java) ?: return
-        vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
+        val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            vibrator.vibrate(effect, VibrationAttributes.createForUsage(VibrationAttributes.USAGE_NOTIFICATION))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(
+                effect,
+                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT).build(),
+            )
+        }
     }
 
     companion object {
@@ -118,7 +134,7 @@ private fun WidgetShow.left(context: Context): String {
 private fun Map<String, Bitmap>.of(show: WidgetShow) = show.posterUrl?.let { this[it] }
 
 @Composable
-private fun ShowPosters(shows: List<WidgetShow>, posters: Map<String, Bitmap>) {
+private fun ShowPosters(shows: List<WidgetShow>, posters: Map<String, Bitmap>, checking: String?) {
     val context = LocalContext.current
     val layout = currentLayout()
 
@@ -141,6 +157,7 @@ private fun ShowPosters(shows: List<WidgetShow>, posters: Map<String, Bitmap>) {
                     checkLabel = show.checkLabel(context),
                     progress = show.progress(),
                     titleSize = if (layout == WidgetLayout.SMALL) 19.sp else 14.sp,
+                    checked = show.entryId == checking,
                 )
             }
         }
@@ -148,12 +165,12 @@ private fun ShowPosters(shows: List<WidgetShow>, posters: Map<String, Bitmap>) {
 }
 
 @Composable
-private fun ShowList(shows: List<WidgetShow>, posters: Map<String, Bitmap>) {
+private fun ShowList(shows: List<WidgetShow>, posters: Map<String, Bitmap>, checking: String?) {
     val context = LocalContext.current
     val layout = currentLayout()
 
     if (layout == WidgetLayout.SMALL) {
-        SingleShow(shows.first(), posters.of(shows.first()))
+        SingleShow(shows.first(), posters.of(shows.first()), shows.first().entryId == checking)
         return
     }
 
@@ -195,7 +212,13 @@ private fun ShowList(shows: List<WidgetShow>, posters: Map<String, Bitmap>) {
                     }
                 }
                 Spacer(GlanceModifier.width(8.dp))
-                CheckButton(show.watchNext(), show.checkLabel(context), if (large) 40.dp else 36.dp, onPoster = false)
+                CheckButton(
+                    show.watchNext(),
+                    show.checkLabel(context),
+                    if (large) 40.dp else 36.dp,
+                    onPoster = false,
+                    checked = show.entryId == checking,
+                )
             }
         }
     }
@@ -203,7 +226,7 @@ private fun ShowList(shows: List<WidgetShow>, posters: Map<String, Bitmap>) {
 
 /** 2 × 2 in the list style: the latest show, and a wide « Vu ». */
 @Composable
-private fun SingleShow(show: WidgetShow, poster: Bitmap?) {
+private fun SingleShow(show: WidgetShow, poster: Bitmap?, checked: Boolean) {
     val context = LocalContext.current
 
     Column(modifier = GlanceModifier.fillMaxSize().padding(4.dp)) {
@@ -224,8 +247,8 @@ private fun SingleShow(show: WidgetShow, poster: Bitmap?) {
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .height(36.dp)
-                .background(ImageProvider(R.drawable.widget_pill_accent))
-                .clickable(show.watchNext()),
+                .background(ImageProvider(if (checked) R.drawable.widget_check_done else R.drawable.widget_pill_accent))
+                .let { if (checked) it else it.clickable(show.watchNext()) },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalAlignment = Alignment.CenterVertically,
         ) {

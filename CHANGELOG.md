@@ -26,7 +26,7 @@ history from before it was started.
 - **Home-screen widgets** (MOB-20): « To watch » (shows in progress, with a
   ✓ that marks the next episode watched without opening the app) and
   « Releases » (today's releases among what's followed, else the next
-  ones), from 2 × 2 to 4 × 4, posters by default or a list from the
+  ones), from 2 × 2 to 5 × 5, posters by default or a list from the
   widget's settings. They read `/api/home-screen-widgets` with a token the
   app hands them, tied to its session: signing out, or the session ending,
   signs them out. Written in Kotlin with Glance, which brings Kotlin into

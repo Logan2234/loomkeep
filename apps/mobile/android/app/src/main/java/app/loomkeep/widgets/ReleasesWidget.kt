@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -42,12 +44,12 @@ class ReleasesWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val data = WidgetRepository.load(context)
-        val posters = (data as? WidgetData.Ready)
-            ?.let { WidgetPosters.load(context, it.feed.releases.map(WidgetRelease::posterUrl)) }
-            .orEmpty()
+        WidgetRepository.ensure(context)
 
         provideContent {
+            val snapshot by WidgetRepository.snapshot.collectAsState()
+            val data = snapshot?.data ?: WidgetData.SignedOut
+            val posters = snapshot?.posters.orEmpty()
             val style = currentState(STYLE_KEY) ?: STYLE_POSTERS
             WidgetFrame {
                 when (data) {

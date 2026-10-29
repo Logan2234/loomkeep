@@ -6,6 +6,8 @@
     <color name="widget_dim">#6B6354</color>
     <color name="widget_accent">#8A5F0A</color>
     <color name="widget_on_accent">#FFFFFF</color>
+    <color name="widget_success">#257E58</color>
+    <color name="widget_on_success">#FFFFFF</color>
     <color name="widget_divider">#E2D9C4</color>
     <color name="widget_poster_fallback">#EDEAE3</color>
 </resources>
