@@ -15,6 +15,7 @@ config({ path: resolve(__dirname, "../../../.env") });
 import {
   ActivityType,
   DigestCadence,
+  LEGAL_VERSION,
   NotificationType,
 } from "@loomkeep/shared";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -109,6 +110,10 @@ async function main() {
       locale: "fr",
       calendarToken: randomUUID(),
       onboardedAt: new Date("2026-01-05"),
+      // On the current terms: an older version opens the re-acceptance
+      // modal over every /app page (and web-audit would audit that).
+      acceptedTermsVersion: LEGAL_VERSION,
+      acceptedTermsAt: new Date("2026-01-05"),
     },
   });
 
@@ -127,6 +132,8 @@ async function main() {
       enabledDomains: [Domain.MEDIA, Domain.BOOKS],
       locale: "fr",
       onboardedAt: new Date("2026-01-06"),
+      acceptedTermsVersion: LEGAL_VERSION,
+      acceptedTermsAt: new Date("2026-01-06"),
     },
   });
 
@@ -147,6 +154,8 @@ async function main() {
       enabledDomains: [Domain.MEDIA, Domain.GAMES, Domain.BOOKS, Domain.MUSIC],
       locale: "fr",
       onboardedAt: new Date("2026-02-01"),
+      acceptedTermsVersion: LEGAL_VERSION,
+      acceptedTermsAt: new Date("2026-02-01"),
     },
   });
 
@@ -162,6 +171,8 @@ async function main() {
       enabledDomains: [Domain.MEDIA, Domain.GAMES],
       locale: "fr",
       onboardedAt: new Date("2026-03-10"),
+      acceptedTermsVersion: LEGAL_VERSION,
+      acceptedTermsAt: new Date("2026-03-10"),
     },
   });
 
@@ -177,6 +188,8 @@ async function main() {
       enabledDomains: [Domain.MEDIA, Domain.MUSIC],
       locale: "fr",
       onboardedAt: new Date("2026-04-02"),
+      acceptedTermsVersion: LEGAL_VERSION,
+      acceptedTermsAt: new Date("2026-04-02"),
     },
   });
 
