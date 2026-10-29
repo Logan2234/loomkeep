@@ -34,7 +34,7 @@ téléphone ; le reste attend sa recette.
 | ------ | --------------------------------------------------- | ------ | -------------- | -------------------------- |
 | MOB-10 | Publication sur Google Play                         | M      | —              | 🚧 reste le compte et Play |
 | MOB-16 | Relais de push pour les instances self-hostées      | L      | —              | décisions à prendre        |
-| MOB-20 | Widgets Android « À suivre » et « Sorties du jour » | L      | —              |                            |
+| MOB-20 | Widgets Android « À suivre » et « Sorties du jour » | L      | —              | 🚧 API et web en PR        |
 | MOB-22 | Exploratoire : scrobbling musical Android           | L      | MOB-10         |                            |
 | MOB-24 | Liens d'email vers l'app sur une autre instance     | S      | —              |                            |
 | MOB-25 | Verrouillage de l'app par biométrie                 | S      | —              | si le besoin se confirme   |
@@ -208,10 +208,28 @@ une Notification Service Extension), et gratuit ou premium (`ee/`).
 
 ### MOB-20 — Widgets « À suivre » et « Sorties du jour »
 
-Glance (Kotlin), alimenté par une route API dédiée et rafraîchi en
-arrière-plan ; une variante gamification (série, XP) est possible. Le
-widget n'a pas la session de la WebView : il faut décider comment il
-s'authentifie (clé d'API dédiée, ou jeton remis par le web au plugin).
+Décidé le 29/10 (maquette : https://claude.ai/artifact/MkrxXX37TR2ogpNTbc3pBX) :
+
+- Deux widgets, « À suivre » et « Sorties », en 2×2, 4×2 et 4×4 : 1, 3
+  puis 6 éléments selon la taille. Style « Affiches » par défaut, « Liste »
+  au choix dans les réglages du widget (reconfigurable, Android 12+).
+- « À suivre » : séries et animes en cours avec un épisode à voir ; le
+  bouton ✓ marque l'épisode suivant sans ouvrir l'app, le tap ouvre la
+  fiche. « Sorties » : celles du jour, sinon « Prochaines sorties » avec
+  leurs dates.
+- Glance (Kotlin), mise à jour toutes les 30 minutes, après un ✓, et quand
+  l'app passe en arrière-plan.
+- Authentification : le web demande à l'API un jeton signé rattaché à sa
+  session (`POST /api/home-screen-widgets/token`) et le remet au plugin
+  local `HomeScreenWidgets` ; les widgets l'envoient en `X-Widget-Token`
+  (`GET …/feed`, `POST …/watch-next`). Il meurt avec la session, et la
+  déconnexion le retire.
+
+Découpage : l'API et le web d'abord (sans effet tant qu'aucun APK n'a le
+plugin), puis l'app Android.
+
+Plus tard, d'autres widgets : chrono de session (jeu, lecture), série et
+niveau (gamification), barre de recherche rapide.
 
 ### MOB-22 — Exploratoire : scrobbling musical
 
