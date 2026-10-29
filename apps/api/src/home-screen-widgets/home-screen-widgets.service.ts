@@ -45,19 +45,19 @@ export class HomeScreenWidgetsService {
 
   /** The account a widget acts for, while the session that gave it its token lasts. */
   async authenticate(token: string | undefined): Promise<string> {
-    const claims = token ? verifyWidgetToken(token) : null;
-    const session = claims
-      ? await this.prisma.refreshToken.findFirst({
-          where: {
-            id: claims.sessionId,
-            userId: claims.userId,
-            expiresAt: { gt: new Date() },
-          },
-          select: { user: { select: { suspendedUntil: true } } },
-        })
-      : null;
+    const claims = verifyWidgetToken(token ?? "");
+    if (!claims) throw tokenInvalid(HttpStatus.UNAUTHORIZED);
 
-    if (!claims || !session || isSuspended(session.user)) {
+    const session = await this.prisma.refreshToken.findFirst({
+      where: {
+        id: claims.sessionId,
+        userId: claims.userId,
+        expiresAt: { gt: new Date() },
+      },
+      select: { user: { select: { suspendedUntil: true } } },
+    });
+
+    if (!session || isSuspended(session.user)) {
       throw tokenInvalid(HttpStatus.UNAUTHORIZED);
     }
 
