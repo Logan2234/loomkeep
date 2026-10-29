@@ -28,18 +28,20 @@
       class="w-full border-separate border-spacing-0.75 font-mono text-xs tabular-nums">
       <thead>
         <tr>
-          <th class="text-dim p-0.5 font-normal"
+          <th scope="col" class="text-dim p-0.5 font-normal"
             ><span class="sr-only">{m.admin_cohort_signup_month_sr()}</span
             ></th>
           {#each columns as c (c)}
-            <th class="text-dim p-0.5 font-normal">+{c}</th>
+            <th scope="col" class="text-dim p-0.5 font-normal">+{c}</th>
           {/each}
         </tr>
       </thead>
       <tbody>
         {#each cohorts as row (row.month)}
           <tr>
-            <th class="text-dim p-0.5 text-right font-normal whitespace-nowrap">
+            <th
+              scope="row"
+              class="text-dim p-0.5 text-right font-normal whitespace-nowrap">
               {formatDate(row.month, MONTH_SHORT_OPTIONS)}
               <span class="opacity-60">({row.size})</span>
             </th>

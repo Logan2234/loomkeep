@@ -14,7 +14,7 @@
   } = $props();
 </script>
 
-<div class="flex flex-col gap-1.5">
+<label class="flex flex-col gap-1.5">
   <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase"
     >{m.notefield_label()}</span>
 
@@ -29,4 +29,4 @@
       const raw = e.currentTarget.value.trim();
       onChange(raw === "" ? null : raw);
     }}></textarea>
-</div>
+</label>

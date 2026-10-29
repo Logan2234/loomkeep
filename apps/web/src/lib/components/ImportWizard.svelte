@@ -546,6 +546,7 @@
       <input
         type="text"
         name="identifier"
+        aria-label={m.common_identifier()}
         enterkeyhint="done"
         placeholder={descriptor.input.placeholder ?? m.common_identifier()}
         bind:value={inputValue}

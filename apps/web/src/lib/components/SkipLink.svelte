@@ -1,10 +1,10 @@
 <script lang="ts">
   import { m } from "#lib/paraglide/messages.js";
 
-  // Each app shell (sidebar, dock, board, mobile) renders its own <main>, so
-  // the target is found at click time rather than through a shared id.
+  // Each app shell (sidebar, dock, board, mobile) renders its own
+  // <main id="main">; only one of them is mounted at a time.
   function skip(event: MouseEvent) {
-    const main = document.querySelector("main");
+    const main = document.getElementById("main");
     if (!main) return;
     event.preventDefault();
     main.tabIndex = -1;

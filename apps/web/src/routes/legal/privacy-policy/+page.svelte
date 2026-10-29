@@ -185,7 +185,12 @@
     </p>
     <h2>4. Finalités et bases légales</h2>
     <p>Les données sont traitées notamment pour les finalités suivantes :</p>
-    <div class="legal-table-wrap">
+    <!-- Scrolls sideways on a phone: focusable so a keyboard can scroll it. -->
+    <div
+      class="legal-table-wrap"
+      role="region"
+      aria-label="Finalités et bases légales"
+      tabindex="0">
       <table>
         <thead>
           <tr
@@ -536,7 +541,11 @@
       défense des droits.
     </p>
     <p>À titre indicatif :</p>
-    <div class="legal-table-wrap">
+    <div
+      class="legal-table-wrap"
+      role="region"
+      aria-label="Conservation des données"
+      tabindex="0">
       <table>
         <thead>
           <tr><th>Catégorie</th><th>Conservation</th></tr>

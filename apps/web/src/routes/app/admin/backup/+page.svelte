@@ -275,6 +275,7 @@
       bind:this={fileInput}
       type="file"
       name="backup"
+      aria-label={m.admin_backup_choose_file()}
       accept=".sql"
       class="hidden"
       onchange={onFileSelected} />

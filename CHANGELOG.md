@@ -30,6 +30,13 @@ history from before it was started.
   a combobox's "no results" message moved out of its listbox; clickable
   histogram bars are a group instead of an image; a tooltip around a
   disabled control no longer wraps it in a second button.
+- **Fixes from the first Pa11y pass over the signed-in app**: "Skip to
+  content" targets the shell's `<main id="main">` (it could land on the
+  fullscreen chat's); the note field of a work page is named by its visible
+  label; the import identifier field and the admin restore file picker have
+  a name; the admin cohort table and the Communications grid tie every cell
+  to its headers; the legal pages' tables, which scroll sideways on a phone,
+  can be scrolled from the keyboard.
 - **web-audit covers every page**: Pa11y on all ~80 routes, signed out and
   signed in (admin included), light and dark, 375 and 1280 px; Lighthouse
   on the real stack for a dozen representative screens, mobile and

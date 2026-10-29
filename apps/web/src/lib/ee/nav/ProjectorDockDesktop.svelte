@@ -180,7 +180,7 @@
     {/if}
   </aside>
 
-  <main class="min-w-0 flex-1">
+  <main id="main" class="min-w-0 flex-1">
     {#key page.url.pathname}
       {@render children()}
     {/key}
