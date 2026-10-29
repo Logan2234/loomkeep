@@ -33,7 +33,9 @@ describe("first-visit locale", () => {
         new URL("./app.html", import.meta.url),
         "utf8",
       );
-      const script = template.match(/<script>([\s\S]*?)<\/script>/)![1];
+      const script = template.match(
+        /<script nonce="%sveltekit.nonce%">([\s\S]*?)<\/script>/,
+      )![1];
       const manifest = { href: "/manifest.webmanifest" };
       const document = {
         cookie,
