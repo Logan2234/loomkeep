@@ -1535,6 +1535,7 @@
   "reauth_password_desc": "Le mot de passe de ton compte.",
   "reauth_done": "C'est bien toi",
   "reauth_sign_in_again": "Me reconnecter",
+  "reauth_passkey_suggestion": "La prochaine fois, confirme avec ton empreinte ou ton visage : ajoute une clé de sécurité (elle servira aussi de second facteur à la connexion).",
   "media_episodes_progress": "{watched} / {aired} épisodes diffusés vus",
   "media_episodes_up_to_date": "À jour",
   "media_episodes_not_started": "Pas commencée",
