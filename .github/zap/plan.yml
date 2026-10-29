@@ -46,6 +46,18 @@ env:
             password: Password123!
 
 jobs:
+  # Applied as alerts are raised, so it has to come before the scans.
+  - type: alertFilter
+    parameters:
+      deleteGlobalAlerts: false
+    alertFilters:
+      # "Timestamp Disclosure": numbers in the minified, content-hashed
+      # bundles that look like Unix times. Nothing there comes from a server.
+      - ruleId: 10096
+        newRisk: False Positive
+        url: http://localhost:18080/_app/immutable/.*
+        urlRegex: true
+
   - type: spider
     parameters:
       context: loomkeep
@@ -79,13 +91,13 @@ jobs:
       reportTitle: Loomkeep ZAP Security Scan
       reportDescription: OWASP ZAP security scan of Loomkeep
       displayReport: false
+    # No informational alerts ("Modern Web Application", "User Agent
+    # Fuzzer"): they describe the app, not a problem. No false positives.
     risks:
       - high
       - medium
       - low
-      - info
     confidences:
       - high
       - medium
       - low
-      - falsepositive
