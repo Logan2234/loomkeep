@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import androidx.webkit.WebSettingsCompat;
 import androidx.webkit.WebViewFeature;
+import app.loomkeep.widgets.HomeScreenWidgetsPlugin;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -14,6 +15,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ShellThemePlugin.class);
         registerPlugin(ShellInstancePlugin.class);
         registerPlugin(NotificationActionsPlugin.class);
+        registerPlugin(HomeScreenWidgetsPlugin.class);
         config = InstanceConfig.load(this);
         super.onCreate(savedInstanceState);
         getBridge().setWebViewClient(new ShellWebViewClient(getBridge()));
