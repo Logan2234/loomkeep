@@ -3,7 +3,7 @@ import type { FastifyInstance } from "fastify";
 /**
  * Every route parses at most this much JSON — Fastify's own default. The
  * adapter-wide limit used to be 25 MB for the sake of imports, which let any
- * anonymous request (login, CSP reports…) make the single API process parse
+ * anonymous request (login, registration…) make the single API process parse
  * 25 MB before a guard, the throttler included, could turn it away.
  */
 export const DEFAULT_BODY_LIMIT = 1024 * 1024;

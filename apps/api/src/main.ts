@@ -118,27 +118,6 @@ async function bootstrap() {
   registerNewsletterFormParser(app.getHttpAdapter().getInstance());
   registerBodyLimits(app.getHttpAdapter().getInstance());
 
-  // Browsers post CSP violation reports under their own media types, neither
-  // of which Fastify parses by default — without this the collector answers
-  // 415 and the reports are lost silently, which is indistinguishable from
-  // "the policy is clean". See CspReportController.
-  app
-    .getHttpAdapter()
-    .getInstance()
-    .addContentTypeParser(
-      ["application/csp-report", "application/reports+json"],
-      { parseAs: "string" },
-      (_req, body: string, done) => {
-        try {
-          done(null, JSON.parse(body));
-        } catch {
-          // Unparseable report: accept and drop rather than 400. The sender is
-          // a browser with nothing to do about the answer.
-          done(null, {});
-        }
-      },
-    );
-
   // An onResponse hook rather than a Nest interceptor: the interceptor chain
   // only sees requests that reach a handler, so everything a guard rejects
   // (401s, throttled 429s) and every unmatched 404 would go unmeasured —

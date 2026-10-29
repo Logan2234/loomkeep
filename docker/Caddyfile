@@ -49,13 +49,8 @@
 		# opened by — no popup/postMessage flow anywhere in the app relies on
 		# sharing a browsing context group.
 		Cross-Origin-Opener-Policy "same-origin"
-		# Still Report-Only: nothing is blocked. `report-uri` is what makes it
-		# worth anything — violations now reach /api/security/csp-report, which
-		# logs them (deduplicated) and forwards to GlitchTip, so the real
-		# breakage can be measured before switching to enforcement. The
-		# 'unsafe-inline' below has to go at that point; it is why this policy
-		# would be near-useless enforced as written.
-		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://stats.loomkeep.app https://feedback.loomkeep.app; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://loomkeep.app https://stats.loomkeep.app https://errors.loomkeep.app https://flags.loomkeep.app https://feedback.loomkeep.app; frame-src 'self' https://feedback.loomkeep.app; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; report-uri /api/security/csp-report"
+		# No Content-Security-Policy here: the web app sends its own, enforced,
+		# with a per-request nonce (apps/web/vite.config.ts).
 	}
 
 	# Maintenance mode: toggled by the presence of a marker file, not an env
