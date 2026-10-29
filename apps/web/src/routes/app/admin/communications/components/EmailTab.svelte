@@ -373,6 +373,7 @@
 
       {#if previewTab === "html"}<div
           class="flex gap-2"
+          role="group"
           aria-label={m.admin_communications_email_preview()}>
           <button
             class="btn btn-ghost btn-sm"

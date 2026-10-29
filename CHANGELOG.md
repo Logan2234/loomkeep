@@ -36,7 +36,9 @@ history from before it was started.
   label; the import identifier field and the admin restore file picker have
   a name; the admin cohort table and the Communications grid tie every cell
   to its headers; the legal pages' tables, which scroll sideways on a phone,
-  can be scrolled from the keyboard.
+  can be scrolled from the keyboard; relative dates ("2 hours ago") give
+  screen readers the full date as text, where their `aria-label` was
+  ignored.
 - **web-audit covers every page**: Pa11y on all ~80 routes, signed out and
   signed in (admin included), light and dark, 375 and 1280 px; Lighthouse
   on the real stack for a dozen representative screens, mobile and
