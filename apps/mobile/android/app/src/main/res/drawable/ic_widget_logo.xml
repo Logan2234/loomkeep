@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Loomkeep's mark (web favicon.svg), for the widgets' headers. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp"
+    android:height="18dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path android:fillColor="#0C0D10" android:pathData="M22,0 L78,0 A22,22 0 0 1 100,22 L100,78 A22,22 0 0 1 78,100 L22,100 A22,22 0 0 1 0,78 L0,22 A22,22 0 0 1 22,0 Z" />
+    <path android:strokeColor="#D6A02A" android:strokeWidth="14" android:strokeLineCap="round" android:pathData="M16,12 L16,88" />
+    <path android:strokeColor="#1F9DAE" android:strokeWidth="14" android:strokeLineCap="round" android:pathData="M36,12 L36,88" />
+    <path android:strokeColor="#D866A0" android:strokeWidth="14" android:strokeLineCap="round" android:pathData="M56,12 L56,88" />
+    <path android:strokeColor="#6E97E0" android:strokeWidth="14" android:strokeLineCap="round" android:pathData="M76,12 L76,88" />
+    <path android:strokeColor="#F5B841" android:strokeWidth="14" android:strokeLineCap="round" android:pathData="M8,30 L92,30" />
+    <path android:strokeColor="#1F9DAE" android:strokeWidth="14" android:strokeLineCap="round" android:pathData="M36,23 L36,37" />
+    <path android:strokeColor="#6E97E0" android:strokeWidth="14" android:strokeLineCap="round" android:pathData="M76,23 L76,37" />
+</vector>

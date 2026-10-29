@@ -9,4 +9,27 @@
     <string name="shortcut_profile">My profile</string>
     <string name="shortcut_settings">Settings</string>
     <string name="notification_action_failed">Couldn\'t do it: open Loomkeep to try there.</string>
+    <!-- Home-screen widgets (MOB-20). -->
+    <string name="widget_to_watch_name">To watch</string>
+    <string name="widget_to_watch_description">Your shows in progress, and a button to check off the next episode</string>
+    <string name="widget_releases_name">Releases</string>
+    <string name="widget_releases_description">What comes out today among what you follow, else what\'s next</string>
+    <string name="widget_releases_today">Out today</string>
+    <string name="widget_releases_next">Coming up</string>
+    <string name="widget_today_short">TODAY</string>
+    <string name="widget_tomorrow">Tomorrow</string>
+    <string name="widget_in_progress">%d in progress</string>
+    <string name="widget_episodes_left">%d left</string>
+    <string name="widget_last_episode">last one</string>
+    <string name="widget_mark_watched">Mark %1$s of %2$s watched</string>
+    <string name="widget_watched">Watched</string>
+    <string name="widget_movie">Film</string>
+    <string name="widget_game">Game</string>
+    <string name="widget_signed_out">Open Loomkeep to connect this widget</string>
+    <string name="widget_offline">Can\'t reach Loomkeep right now</string>
+    <string name="widget_to_watch_empty">Nothing to catch up on</string>
+    <string name="widget_releases_empty">No upcoming releases</string>
+    <string name="widget_style_title">Widget style</string>
+    <string name="widget_style_posters">Posters</string>
+    <string name="widget_style_list">List</string>
 </resources>

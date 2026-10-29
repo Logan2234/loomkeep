@@ -6,4 +6,26 @@
     <string name="shortcut_profile">Mon profil</string>
     <string name="shortcut_settings">Paramètres</string>
     <string name="notification_action_failed">Échec : ouvre Loomkeep pour réessayer depuis l\'app.</string>
+    <string name="widget_to_watch_name">À suivre</string>
+    <string name="widget_to_watch_description">Tes séries en cours, avec un bouton pour cocher l\'épisode suivant</string>
+    <string name="widget_releases_name">Sorties</string>
+    <string name="widget_releases_description">Ce qui sort aujourd\'hui parmi ce que tu suis, sinon les prochaines sorties</string>
+    <string name="widget_releases_today">Sorties du jour</string>
+    <string name="widget_releases_next">Prochaines sorties</string>
+    <string name="widget_today_short">AUJ.</string>
+    <string name="widget_tomorrow">Demain</string>
+    <string name="widget_in_progress">%d en cours</string>
+    <string name="widget_episodes_left">%d restants</string>
+    <string name="widget_last_episode">dernier</string>
+    <string name="widget_mark_watched">Marquer %1$s de %2$s comme vu</string>
+    <string name="widget_watched">Vu</string>
+    <string name="widget_movie">Film</string>
+    <string name="widget_game">Jeu</string>
+    <string name="widget_signed_out">Ouvre Loomkeep pour connecter ce widget</string>
+    <string name="widget_offline">Loomkeep est injoignable pour l\'instant</string>
+    <string name="widget_to_watch_empty">Rien à rattraper</string>
+    <string name="widget_releases_empty">Aucune sortie à venir</string>
+    <string name="widget_style_title">Style du widget</string>
+    <string name="widget_style_posters">Affiches</string>
+    <string name="widget_style_list">Liste</string>
 </resources>
