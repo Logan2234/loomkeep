@@ -348,7 +348,7 @@
                     <!-- The bell sits beside the card's link, not inside it:
                          a click on it mutes, never opens the page. -->
                     <article
-                      class="card has-[a:hover]:border-accent relative flex overflow-hidden transition-[border-color]">
+                      class="card [@media(hover:hover)]:has-[a:hover]:border-accent relative flex overflow-hidden transition-[border-color]">
                       <a href={href(e)} class="flex min-w-0 flex-1">
                         <div
                           class="w-28 shrink-0 transition-opacity {e.episodeAlertsMuted
@@ -393,7 +393,7 @@
                 <div class="flex flex-col gap-2.5">
                   {#each day.items as e (rowKey(e))}
                     <div
-                      class="card has-[a:hover]:border-accent flex items-center gap-3 p-3 transition-[border-color] sm:gap-4">
+                      class="card [@media(hover:hover)]:has-[a:hover]:border-accent flex items-center gap-3 p-3 transition-[border-color] sm:gap-4">
                       <a
                         href={href(e)}
                         class="flex min-w-0 flex-1 items-center gap-4">

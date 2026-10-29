@@ -40,20 +40,22 @@
       border-color 220ms ease;
   }
 
-  .badge-box.tier-bronze:hover {
-    border-color: var(--tier-bronze);
-    box-shadow: 0 14px 28px -6px
-      color-mix(in srgb, var(--tier-bronze) 55%, transparent);
-  }
-  .badge-box.tier-silver:hover {
-    border-color: var(--tier-silver);
-    box-shadow: 0 14px 28px -6px
-      color-mix(in srgb, var(--tier-silver) 55%, transparent);
-  }
-  .badge-box.tier-gold:hover {
-    border-color: var(--tier-gold);
-    box-shadow: 0 14px 28px -6px
-      color-mix(in srgb, var(--tier-gold) 55%, transparent);
+  @media (hover: hover) {
+    .badge-box.tier-bronze:hover {
+      border-color: var(--tier-bronze);
+      box-shadow: 0 14px 28px -6px
+        color-mix(in srgb, var(--tier-bronze) 55%, transparent);
+    }
+    .badge-box.tier-silver:hover {
+      border-color: var(--tier-silver);
+      box-shadow: 0 14px 28px -6px
+        color-mix(in srgb, var(--tier-silver) 55%, transparent);
+    }
+    .badge-box.tier-gold:hover {
+      border-color: var(--tier-gold);
+      box-shadow: 0 14px 28px -6px
+        color-mix(in srgb, var(--tier-gold) 55%, transparent);
+    }
   }
 
   .lift-name {

@@ -57,10 +57,15 @@ ships the transitions of what it adds.
 - What moves: anything that appears, disappears, expands or collapses
   (sections, modals, menus, toasts), and every state change a pointer or a key
   causes (hover, focus, pressed, selected, a chevron turning).
-- Character: quiet and precise, like the light of a projector — fades, short
-  slides, a slight scale (never below 0.95), colour and brightness shifts.
-  Never bouncy, elastic or cartoonish: no overshoot, no spring wobble, no
-  spinning or wiggling icons, no long travel across the screen.
+- Character: warm and lively, never loud, like the light of a projector
+  coming up — fades, short slides, a slight scale (never below 0.95), colour
+  and brightness shifts. A small playful touch is welcome where it rewards
+  the user (a card lifting under the cursor, a badge or a level arriving, a
+  count rolling up): a light overshoot of a few pixels or a few percent that
+  settles at once. What stays out is the loud: big or repeated bounces,
+  elastic wobble, spinning or shaking icons, long travel across the screen,
+  anything still moving once attention has moved on, and anything that slows
+  down an action repeated many times in a row (marking episodes, scrolling).
 - Timing: ~150 ms for hover, press and colour; 180–250 ms for entering,
   leaving, expanding; ease-out in, ease-in out. Nothing past 300 ms except a
   deliberate one-off moment (a level reached, a count-up), and those stay

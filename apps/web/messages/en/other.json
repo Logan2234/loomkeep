@@ -404,6 +404,8 @@
   "home_editor_saved": "Home page saved",
   "home_editor_reset_done": "Default home page restored",
   "home_editor_leave_confirm": "Your home page changes aren't saved. Leave anyway?",
+  "home_editor_leave_title": "Leave without saving?",
+  "home_editor_leave_action": "Leave",
   "home_editor_using_default": "You're using the default home page: it follows the domains you turn on, until you edit it.",
   "home_editor_unsaved": "Unsaved changes",
   "home_editor_narrow_hint": "On this screen, the home page stacks the widgets in grid order: top to bottom, then left to right.",

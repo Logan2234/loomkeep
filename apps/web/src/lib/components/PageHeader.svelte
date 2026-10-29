@@ -59,7 +59,7 @@
         <a
           href={back}
           onclick={backInHistory ? goBack : undefined}
-          class="text-dim hover:text-fg -ml-1 flex h-lh shrink-0 items-center transition-all hover:-translate-x-0.5 hover:scale-105 active:scale-90"
+          class="text-dim hover:text-fg relative -ml-1 flex h-lh shrink-0 items-center transition-all after:absolute after:-inset-3 hover:-translate-x-0.5 hover:scale-105 active:scale-90"
           aria-label={back === "/app/admin"
             ? m.admin_back_to_overview()
             : m.common_back()}

@@ -7,7 +7,7 @@
   // On a screen too narrow for the page's own grid, the widgets become plain
   // tiles on a scaled-down plan of it: the page stacks them there anyway, so
   // their real content at that width would say nothing about the desktop.
-  import { beforeNavigate } from "$app/navigation";
+  import { beforeNavigate, goto } from "$app/navigation";
   import { resetHomeLayout, saveHomeLayout } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
@@ -337,11 +337,27 @@
     ]);
   }
 
-  beforeNavigate(({ cancel, type }) => {
-    if (!dirty) return;
+  // In the Android app, confirm() would open a native dialog with
+  // hard-coded English buttons: the in-app modal asks instead.
+  let pendingLeave = $state<URL | null>(null);
+  let leaveConfirmed = false;
+
+  beforeNavigate(({ cancel, type, to }) => {
+    if (!dirty || leaveConfirmed) return;
+    cancel();
     // Closing the tab: cancelling is what makes the browser ask.
-    if (type === "leave" || !confirm(m.home_editor_leave_confirm())) cancel();
+    if (type === "leave" || !to) return;
+    pendingLeave = to.url;
   });
+
+  function leave() {
+    if (!pendingLeave) return;
+    const target = pendingLeave;
+    pendingLeave = null;
+    leaveConfirmed = true;
+    if (target.origin === location.origin) void goto(target);
+    else location.href = target.href;
+  }
 
   const cellStyle = (widget: HomeWidgetDto) => {
     const moving = active?.kind === "move" && active.id === widget.id;
@@ -631,6 +647,16 @@
     onclose={() => (configuring = null)} />
 {/if}
 
+{#if pendingLeave}
+  <ConfirmationModal
+    title={m.home_editor_leave_title()}
+    message={m.home_editor_leave_confirm()}
+    confirmLabel={m.home_editor_leave_action()}
+    danger
+    onConfirm={leave}
+    onCancel={() => (pendingLeave = null)} />
+{/if}
+
 {#if confirmingReset}
   <ConfirmationModal
     title={m.home_editor_reset()}
@@ -684,8 +710,10 @@
       color 150ms,
       transform 150ms;
   }
-  .control:hover {
-    background-color: var(--surface-2);
+  @media (hover: hover) {
+    .control:hover {
+      background-color: var(--surface-2);
+    }
   }
   .control:active {
     transform: scale(0.92);

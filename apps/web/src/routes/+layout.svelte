@@ -2,6 +2,7 @@
   import { type LayoutProps } from "./$types";
 
   import { page } from "$app/state";
+  import { afterNavigate, onNavigate } from "$app/navigation";
   import * as env from "$app/env/public";
   import { bootstrap } from "#lib/bootstrap.svelte.js";
   import NewsBanner from "#lib/components/NewsBanner.svelte";
@@ -56,6 +57,17 @@
   });
 
   $effect(() => (isNativeApp() ? startAppShell() : undefined));
+
+  // app.css scrolls smoothly for in-page anchors, but SvelteKit's own scroll
+  // after a page change (to the top, or back to the remembered position)
+  // would glide visibly across the new page.
+  onNavigate(({ from, to }) => {
+    if (from?.url.pathname !== to?.url.pathname)
+      document.documentElement.style.scrollBehavior = "auto";
+  });
+  afterNavigate(() => {
+    document.documentElement.style.scrollBehavior = "";
+  });
 
   $effect(() => {
     if (isNativeApp()) void syncSystemBars(theme.mode);

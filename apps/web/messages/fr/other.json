@@ -404,6 +404,8 @@
   "home_editor_saved": "Accueil enregistré",
   "home_editor_reset_done": "Accueil par défaut rétabli",
   "home_editor_leave_confirm": "Tes modifications de l'accueil ne sont pas enregistrées. Quitter quand même ?",
+  "home_editor_leave_title": "Quitter sans enregistrer ?",
+  "home_editor_leave_action": "Quitter",
   "home_editor_using_default": "Tu utilises l'accueil par défaut : il suit les domaines que tu actives, jusqu'à ce que tu le modifies.",
   "home_editor_unsaved": "Modifications non enregistrées",
   "home_editor_narrow_hint": "Sur cet écran, l'accueil empile les widgets dans l'ordre de la grille : de haut en bas, puis de gauche à droite.",

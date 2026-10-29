@@ -391,9 +391,14 @@
     transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
-  :global(.group:hover) .saga-card,
   :global(.group:focus-within) .saga-card {
     transform: translateX(var(--spread)) rotate(var(--tilt));
+  }
+
+  @media (hover: hover) {
+    :global(.group:hover) .saga-card {
+      transform: translateX(var(--spread)) rotate(var(--tilt));
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
