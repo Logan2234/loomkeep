@@ -9,7 +9,10 @@
 
   const unsubscribeQuery = createApiQuery(() => ({
     key: keys.verification.newsletterUnsubscribe(token),
-    fetch: () => unsubscribeNewsletter(token),
+    fetch: async () => {
+      await unsubscribeNewsletter(token);
+      return true;
+    },
     enabled: !!token,
   }));
 
