@@ -3,6 +3,7 @@
   "ignore": [".github/pa11y/sarif-reporter.js"],
   "workspaces": {
     ".": {
+      "entry": [".github/lighthouse/*.cjs"],
       "ignoreDependencies": ["rxjs"]
     },
     "apps/api": {

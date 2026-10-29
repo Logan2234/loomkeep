@@ -95,14 +95,24 @@ function toSarif(report) {
   };
 }
 
+// Read without an existsSync() first: checking then reading is a race.
+function readPrevious() {
+  try {
+    return fs.readFileSync(OUTPUT_FILE, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
 module.exports = function sarifReporter() {
   return {
     afterAll(report) {
       const sarif = toSarif(report);
+      const previousFile = readPrevious();
 
-      if (fs.existsSync(OUTPUT_FILE)) {
-        const previous = JSON.parse(fs.readFileSync(OUTPUT_FILE, "utf8"))
-          .runs[0];
+      if (previousFile) {
+        const previous = JSON.parse(previousFile).runs[0];
         const run = sarif.runs[0];
         const known = new Set(
           previous.tool.driver.rules.map((rule) => rule.id),
