@@ -13,6 +13,14 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Admin
+
+- **Admin › Communications › Push sends any notification as a sample**,
+  besides the custom test and the broadcast: pick an alert and the account
+  gets its push as it would for real, in its language, on its channel,
+  with its buttons on the Android app (which reach the API through a no-op
+  `test` action instead of accepting or sending anything).
+
 ### Android app
 
 - **Passkeys work in the Android app.** Its WebView turns on WebAuthn

@@ -98,6 +98,16 @@ describe("Notification actions (e2e)", () => {
     expect(profile.body.relationship).toMatchObject({ following: true });
   });
 
+  it("lets an admin sample's button through without doing anything", async () => {
+    const token = signAction({
+      action: NotificationAction.TEST,
+      target: {},
+      subscriptionId: await starDevice(),
+    });
+
+    await act(token).expect(204);
+  });
+
   it("refuses a token whose claims were changed", async () => {
     const token = signAction({
       action: NotificationAction.FOLLOW_BACK,

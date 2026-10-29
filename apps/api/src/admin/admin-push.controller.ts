@@ -20,6 +20,7 @@ import { AdminPushSendResultResponseDto } from "./dto/admin-push-send-response.d
 import { AdminPushSummaryResponseDto } from "./dto/admin-push-summary-response.dto";
 import { SendAdminBroadcastPushDto } from "./dto/send-admin-broadcast-push.dto";
 import { SendAdminTestPushDto } from "./dto/send-admin-test-push.dto";
+import { samplePush } from "./push-samples";
 
 /** Push administration: per-account test sends and instance-wide broadcasts. */
 @AdminOnly()
@@ -69,7 +70,10 @@ export class AdminPushController {
     }));
   }
 
-  /** Sends a sample push to every device of the account matching `email`. */
+  /**
+   * Sends a push to every device of the account matching `email`: one of
+   * an alert's, as the account would get it (`type`), or a custom one.
+   */
   @Post("push/test")
   @ApiCreatedResponse({ type: AdminPushSendResultResponseDto })
   async sendAdminTestPush(
@@ -79,12 +83,15 @@ export class AdminPushController {
     const devices = await this.push.listSubscriptions(user.id);
     const copy = notificationCopy(user.locale);
 
-    const results = await this.push.sendToUserDetailed(user.id, {
-      title: dto.title?.trim() || "Loomkeep (admin)",
-      body: dto.body?.trim() || copy.adminTestPush,
-      url: "/app",
-      group: AlertGroup.ANNOUNCEMENTS,
-    });
+    const results = await this.push.sendToUserDetailed(
+      user.id,
+      (dto.type && samplePush(dto.type, copy)) || {
+        title: dto.title?.trim() || "Loomkeep (admin)",
+        body: dto.body?.trim() || copy.adminTestPush,
+        url: "/app",
+        group: AlertGroup.ANNOUNCEMENTS,
+      },
+    );
 
     return { subscriptionCount: devices.length, results };
   }
