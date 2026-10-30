@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import {
     cancelSessionTimer,
     getSessionTimer,
@@ -12,6 +13,7 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { type SessionTimerDto, type SessionDomain } from "@loomkeep/shared";
+  import { untrack } from "svelte";
   import { slide } from "svelte/transition";
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
@@ -79,6 +81,16 @@
     if (timer.pausedAt) onFinish(elapsedSeconds);
     else pauseMut.mutate();
   }
+
+  // The Android widget's stop button on a book (`?finishSession`): opens the
+  // form asking for the pages read, once per link.
+  let finishRequested = false;
+  $effect(() => {
+    if (!page.url.searchParams.has("finishSession")) return;
+    if (!isCurrentEntry || finishRequested) return;
+    finishRequested = true;
+    untrack(finish);
+  });
 
   function formatClock(seconds: number): string {
     const hours = Math.floor(seconds / 3600);
