@@ -34,7 +34,7 @@ describe("Search page", () => {
   it("opens the scanner when the Android widget's button links here", async () => {
     visit("/app/search?type=BOOKS&scan=1");
 
-    renderWithQuery(SearchPage);
+    renderWithQuery(SearchPage, {});
 
     await waitFor(() => expect(scanNatively).toHaveBeenCalledTimes(1));
   });
@@ -42,7 +42,7 @@ describe("Search page", () => {
   it("doesn't scan on an ordinary visit", async () => {
     visit("/app/search?type=BOOKS");
 
-    renderWithQuery(SearchPage);
+    renderWithQuery(SearchPage, {});
 
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(scanNatively).not.toHaveBeenCalled();
