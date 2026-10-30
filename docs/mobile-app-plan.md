@@ -30,18 +30,18 @@ Livré : MOB-01 à MOB-09, MOB-15, MOB-17, MOB-21, MOB-23, et la partie
 Android de MOB-18 et MOB-19. Seuls MOB-01 et MOB-03 sont validés sur
 téléphone ; le reste attend sa recette.
 
-| Ticket | Titre                                               | Taille | Dépend de      | Statut                     |
-| ------ | --------------------------------------------------- | ------ | -------------- | -------------------------- |
-| MOB-10 | Publication sur Google Play                         | M      | —              | 🚧 reste le compte et Play |
-| MOB-16 | Relais de push pour les instances self-hostées      | L      | —              | décisions à prendre        |
-| MOB-20 | Widgets Android « À suivre » et « Sorties du jour » | L      | —              | 🚧 #486 (API), app en PR   |
-| MOB-22 | Exploratoire : scrobbling musical Android           | L      | MOB-10         |                            |
-| MOB-24 | Liens d'email vers l'app sur une autre instance     | S      | —              |                            |
-| MOB-25 | Verrouillage de l'app par biométrie                 | S      | —              | si le besoin se confirme   |
-| MOB-11 | Projet iOS + build CI macOS + TestFlight            | M      | —              | ⏳ plus tard               |
-| MOB-12 | Push APNs (via FCM) et badge serveur                | S      | MOB-11         | ⏳ plus tard               |
-| MOB-13 | Universal Links et passkeys iOS                     | M      | MOB-11         | ⏳ plus tard               |
-| MOB-14 | Dossier de review et soumission App Store           | M      | MOB-12, MOB-13 | ⏳ plus tard               |
+| Ticket | Titre                                             | Taille | Dépend de      | Statut                     |
+| ------ | ------------------------------------------------- | ------ | -------------- | -------------------------- |
+| MOB-10 | Publication sur Google Play                       | M      | —              | 🚧 reste le compte et Play |
+| MOB-16 | Relais de push pour les instances self-hostées    | L      | —              | décisions à prendre        |
+| MOB-20 | Widgets Android (cinq, en affiches ou en billets) | L      | —              | 🚧 à valider sur téléphone |
+| MOB-22 | Exploratoire : scrobbling musical Android         | L      | MOB-10         |                            |
+| MOB-24 | Liens d'email vers l'app sur une autre instance   | S      | —              |                            |
+| MOB-25 | Verrouillage de l'app par biométrie               | S      | —              | si le besoin se confirme   |
+| MOB-11 | Projet iOS + build CI macOS + TestFlight          | M      | —              | ⏳ plus tard               |
+| MOB-12 | Push APNs (via FCM) et badge serveur              | S      | MOB-11         | ⏳ plus tard               |
+| MOB-13 | Universal Links et passkeys iOS                   | M      | MOB-11         | ⏳ plus tard               |
+| MOB-14 | Dossier de review et soumission App Store         | M      | MOB-12, MOB-13 | ⏳ plus tard               |
 
 Tailles : S ≈ une journée, M ≈ deux à quatre jours, L ≈ une semaine ou
 plus. ⏳ = pas prévu à court terme.
@@ -153,6 +153,21 @@ par-dessus l'ancien garde la session.
       Mon profil, Paramètres, en français ; chaque raccourci ouvre sa page,
       app fermée comme ouverte.
 
+### Widgets (MOB-20)
+
+- [ ] Liste des widgets : les cinq montrent un aperçu.
+- [ ] Chacun redimensionné de 2×2 à 5×5, en Affiches et en Liste (appui long
+      › Réglages), en clair et en sombre : rien n'est coupé.
+- [ ] À suivre : le ✓ passe au vert, vibre, puis l'épisode suivant s'affiche.
+- [ ] Chrono : lancer sur un jeu, l'heure tourne seule ; pause, reprise ;
+      arrêter enregistre la session. Sur un livre, arrêter ouvre sa fiche sur
+      le formulaire des pages lues.
+- [ ] Série et niveau : jours d'affilée, niveau et semaine justes.
+- [ ] Recherche : la barre, le scanner et chaque catégorie ouvrent la bonne
+      page, app fermée comme ouverte.
+- [ ] Toucher le fond d'un widget ouvre l'app ; se déconnecter affiche
+      « Ouvre Loomkeep… » puis se connecter le remplace aussitôt.
+
 ### Haptique et passkey proposée (MOB-21)
 
 - [ ] Petite vibration en marquant un épisode, une saison ou un film, depuis
@@ -231,16 +246,16 @@ Décidé le 29/10, revu le 30/10 après un premier essai sur téléphone
   (`GET …/feed`, `POST …/watch-next`). Il meurt avec la session, et la
   déconnexion le retire.
 
-Reste : trois nouveaux widgets, dans les mêmes deux styles, après une
-extension de l'API (flux et actions par le jeton de widget) :
+Trois autres widgets, dans les mêmes deux styles, par le flux (`?include=`
+selon les widgets posés) et les actions du jeton de widget :
 
 - Chrono de session : lance, met en pause ou arrête le chrono de jeu ou de
   lecture. Arrêter un jeu enregistre la session ; un livre ouvre l'app sur
   l'écran de fin de session, pour les pages lues.
 - Série et niveau : jours d'affilée, niveau, XP, la semaine en cours et les
   derniers gains (si la gamification est active sur l'instance).
-- Recherche : barre de recherche, scanner, raccourcis par catégorie et
-  derniers ajouts.
+- Recherche : barre de recherche, scanner (`/app/search?scan`), raccourcis
+  par catégorie et derniers ajouts.
 
 ### MOB-22 — Exploratoire : scrobbling musical
 
