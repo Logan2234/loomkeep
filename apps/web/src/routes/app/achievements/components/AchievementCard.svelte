@@ -198,12 +198,20 @@
      mouse click leaves behind, which kept the ladder open after the cursor
      had moved away. `:focus-visible` is the one that means "arrived here by
      keyboard", which is the case this needs to serve. */
-  .achievement-card:hover .achievement-unfold,
   .achievement-card:focus-visible .achievement-unfold {
     max-height: 22rem;
     padding: 0.7rem 0.75rem 0.8rem;
     opacity: 1;
     pointer-events: auto;
+  }
+
+  @media (hover: hover) {
+    .achievement-card:hover .achievement-unfold {
+      max-height: 22rem;
+      padding: 0.7rem 0.75rem 0.8rem;
+      opacity: 1;
+      pointer-events: auto;
+    }
   }
 
   .achievement-card {
@@ -235,9 +243,15 @@
 
   /* The open card and its panel read as one object — no seam, no leftover
      rounding between them. */
-  .achievement-card:hover,
   .achievement-card:focus-visible {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
+  }
+
+  @media (hover: hover) {
+    .achievement-card:hover {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
   }
 </style>

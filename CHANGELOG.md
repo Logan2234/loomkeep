@@ -54,6 +54,32 @@ history from before it was started.
   `assetlinks.json` now grants each package from `ANDROID_APP_LINKS`
   `delegate_permission/common.get_login_creds`, without which Credential
   Manager refuses the app loomkeep.app's passkeys. Needs the next APK.
+- **Everything tappable answers the finger**: on touch screens, list rows,
+  menu items, bottom tabs, chips and links without a pressed state of their
+  own dim while pressed, replacing the WebView's tap rectangle.
+- **Feels less like a website**: no more translucent rectangle on every
+  tap, no text selection or Copy/Share toolbar from a long press on
+  buttons, tabs and the navigation (content stays selectable), and icon
+  buttons and the back chevron answer a 48 px touch while keeping their
+  look. A page change no longer glides from the old scroll position to the
+  top (or back down on return): SvelteKit's scroll after a navigation is
+  instant, in-page anchors stay smooth.
+- **Toasts swipe away sideways** on a phone, where the × is now for screen
+  readers only, and sit above the bottom bar whatever the system's
+  navigation inset (they overlapped it with gesture or three-button
+  navigation, and in landscape). A tap no longer freezes a toast's
+  countdown; only a mouse hovering it does.
+- **Sheets close with a flick**: a quick downward swipe closes them even
+  when short, as on Android, besides dragging past 30 % of their height.
+- **The bottom bar hides while typing** in the app, instead of riding on
+  top of the keyboard.
+- **Leaving the home editor with unsaved changes asks in Loomkeep's own
+  dialog**, not the WebView's native one with English « OK / Cancel ».
+- **Hover effects no longer stick after a tap** (badges, sagas,
+  achievements, search filters, calendar): hand-written `:hover` rules now
+  only apply to a pointer that can hover.
+- **« Loomkeep Dev » has its own icon**, the mark on light paper, to tell
+  it from « Loomkeep » on the home screen. Needs the next debug APK.
 - **The privacy policy covers the Android app** (section 21): GitHub for
   downloads, Google's code scanner, passkeys through Credential Manager,
   what stays on the device. Section 7 now says the app's notifications,

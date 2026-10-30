@@ -27,6 +27,7 @@
   import { portal } from "#lib/actions/portal.js";
   import { scrollLock } from "#lib/actions/scroll-lock.js";
   import { prefersReducedMotion } from "#lib/motion.js";
+  import { DragVelocity, isDismissed } from "#lib/swipe-dismiss.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import { onMount } from "svelte";
@@ -105,9 +106,10 @@
     return () => cleanups.forEach((fn) => fn());
   });
 
-  // Beyond this fraction of the panel's height,
-  // a released drag completes the close instead of snapping back.
+  // Beyond this fraction of the panel's height, or released in a flick,
+  // a drag completes the close instead of snapping back.
   const CLOSE_FRACTION = 0.3;
+  const velocity = new DragVelocity();
 
   function onPointerDown(e: PointerEvent) {
     if (closing || activePointer !== null) return;
@@ -134,6 +136,8 @@
     startY = e.clientY;
     startX = e.clientX;
     panelHeight = panelEl.getBoundingClientRect().height || 1;
+    velocity.reset();
+    velocity.add(e.clientY, e.timeStamp);
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -162,6 +166,7 @@
       gestureScroller!.scrollTop = Math.max(0, -delta);
     } else {
       dragY = Math.max(0, delta);
+      velocity.add(e.clientY, e.timeStamp);
     }
   }
 
@@ -175,7 +180,14 @@
 
   function onPointerUp(e: PointerEvent) {
     if (activePointer !== e.pointerId) return;
-    const close = gesture === "drag" && dragY / panelHeight > CLOSE_FRACTION;
+    const close =
+      gesture === "drag" &&
+      isDismissed({
+        distance: dragY,
+        size: panelHeight,
+        velocity: velocity.at(e.timeStamp),
+        fraction: CLOSE_FRACTION,
+      });
     cancelGesture();
     if (close) requestClose();
   }

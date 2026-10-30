@@ -4,6 +4,7 @@
   import ProgrammeBoardMobileBar from "#lib/ee/nav/ProgrammeBoardMobileBar.svelte";
   import ProjectorDockMobileBar from "#lib/ee/nav/ProjectorDockMobileBar.svelte";
   import { useOnboardingChecklist } from "#lib/gamification/onboarding-checklist.svelte.js";
+  import { keyboard } from "#lib/keyboard.svelte.js";
   import type { NavStyle } from "#lib/nav-style.svelte.js";
   import type { Snippet } from "svelte";
   import BottomNavigation from "./BottomNavigation.svelte";
@@ -22,28 +23,36 @@
   // position and nothing else reserves space for it.
   const checklistQuery = useOnboardingChecklist();
   const showOnboarding = $derived((checklistQuery.data?.steps.length ?? 0) > 0);
+
+  $effect(() => keyboard.init());
 </script>
 
 <div class="min-h-svh">
   <main
     id="main"
-    class="min-h-svh {showOnboarding
-      ? 'pb-[calc(7.25rem+env(safe-area-inset-bottom))]'
-      : 'pb-[calc(4.5rem+env(safe-area-inset-bottom))]'}">
+    class="min-h-svh {keyboard.open
+      ? 'pb-4'
+      : showOnboarding
+        ? 'pb-[calc(7.25rem+env(safe-area-inset-bottom))]'
+        : 'pb-[calc(4.5rem+env(safe-area-inset-bottom))]'}">
     {#key page.url.pathname}
       {@render children()}
     {/key}
   </main>
 
-  <OnboardingBanner />
+  <!-- Out of the way while typing in the Android app, where the keyboard
+       would otherwise carry them up (see keyboard.svelte.ts); kept mounted. -->
+  <div style:display={keyboard.open ? "none" : "contents"}>
+    <OnboardingBanner />
 
-  {#if navStyle === "dock"}
-    <ProjectorDockMobileBar />
-  {:else if navStyle === "board"}
-    <ProgrammeBoardMobileBar />
-  {:else}
-    <BottomNavigation />
-  {/if}
+    {#if navStyle === "dock"}
+      <ProjectorDockMobileBar />
+    {:else if navStyle === "board"}
+      <ProgrammeBoardMobileBar />
+    {:else}
+      <BottomNavigation />
+    {/if}
+  </div>
 
   <MenuSheet />
 </div>

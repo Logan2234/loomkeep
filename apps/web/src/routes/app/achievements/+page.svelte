@@ -133,7 +133,7 @@
      argument, so without it this rule outranks the one below and dims the
      card being read — panel included, letting the row beneath show through
      it. */
-  @media (min-width: 768px) {
+  @media (min-width: 768px) and (hover: hover) {
     .achievement-grid:has(> :global(.achievement-card:hover))
       > :global(.achievement-card:not(:hover)),
     .achievement-grid:has(> :global(.achievement-card:focus-visible))

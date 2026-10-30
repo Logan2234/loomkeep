@@ -361,8 +361,10 @@
       visibility 0s linear 0s;
   }
 
-  .veil:hover {
-    background: color-mix(in srgb, var(--surface) 15%, transparent);
+  @media (hover: hover) {
+    .veil:hover {
+      background: color-mix(in srgb, var(--surface) 15%, transparent);
+    }
   }
 
   .veil.gone {

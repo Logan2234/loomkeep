@@ -404,6 +404,8 @@
   "home_editor_saved": "Home salvata",
   "home_editor_reset_done": "Home predefinita ripristinata",
   "home_editor_leave_confirm": "Le modifiche alla home non sono salvate. Uscire comunque?",
+  "home_editor_leave_title": "Uscire senza salvare?",
+  "home_editor_leave_action": "Esci",
   "home_editor_using_default": "Stai usando la home predefinita: segue i domini che attivi, finché non la modifichi.",
   "home_editor_unsaved": "Modifiche non salvate",
   "home_editor_narrow_hint": "Su questo schermo, la home impila i widget nell'ordine della griglia: dall'alto in basso, poi da sinistra a destra.",

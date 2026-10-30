@@ -98,6 +98,10 @@
 
 html {
   scroll-behavior: smooth;
+  /* Pressed states are drawn by the components themselves (`active:`); the
+     WebView's translucent tap rectangle is what makes the Android app read
+     as a website. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -143,8 +147,10 @@ body {
     transition: opacity 0.25s;
     pointer-events: none;
   }
-  .btn-ghost:hover::before {
-    opacity: 0.12;
+  @media (hover: hover) {
+    .btn-ghost:hover::before {
+      opacity: 0.12;
+    }
   }
   .btn-danger {
     /* text-btn-fg reads oddly by name but is the correct contrast pair here
@@ -160,15 +166,16 @@ body {
     @apply text-dim hover:text-fg inline-flex items-center gap-1 text-xs font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50;
   }
   /* Icon-only round action button (rewatch, follow, dismiss…) — the icon
-     equivalent of `.btn-ghost`, sized for a touch target rather than text. */
+     equivalent of `.btn-ghost`. It looks 28px but answers a 48px touch, the
+     size Android asks of a target, through a transparent ::after. */
   .btn-icon {
-    @apply text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-md transition-colors active:scale-95 disabled:pointer-events-none disabled:opacity-50;
+    @apply text-dim hover:text-fg hover:bg-surface-2 relative grid h-7 w-7 shrink-0 place-items-center rounded-md transition-colors after:absolute after:-inset-2.5 active:scale-95 disabled:pointer-events-none disabled:opacity-50;
   }
   /* Same affordances as `.btn-icon`, in the larger bordered form the profile
      header uses for its standalone actions. Those five buttons hand-rolled
      their classes and so lost the transition and the press feedback. */
   .btn-icon-bordered {
-    @apply border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors active:scale-95 disabled:pointer-events-none disabled:opacity-50;
+    @apply border-border text-dim hover:bg-surface-2 hover:text-fg relative grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors after:absolute after:-inset-1.5 active:scale-95 disabled:pointer-events-none disabled:opacity-50;
   }
   /* Compact modifier for `.btn`, used in dense rows (table actions, batch
      toolbars). Was referenced across the app but never defined. */
@@ -281,6 +288,59 @@ body {
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
+  }
+
+  /* A long press on the interface itself would select its labels and open
+     Android's Copy / Share toolbar. Content (reviews, comments, synopses)
+     stays selectable. -webkit-touch-callout is iOS-only, hence this. */
+  nav,
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  summary {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  img {
+    -webkit-user-drag: none;
+  }
+
+  /* Touch has no hover, so without this a list row, a menu item or a bottom
+     tab gives nothing back under the finger. Anything tappable that doesn't
+     draw its own pressed state (.btn and friends, or an `active:` utility)
+     dims while pressed. In the base layer, so a component's own opacity or
+     transition still wins. */
+  @media (hover: none) {
+    :where(
+      a[href],
+      button:not(:disabled),
+      [role="button"]:not([aria-disabled="true"]),
+      [role="menuitem"],
+      [role="menuitemradio"],
+      [role="menuitemcheckbox"],
+      [role="option"],
+      [role="tab"],
+      summary
+    ):not(.btn, .btn-icon, .btn-icon-bordered, [class*="active:"]) {
+      transition: opacity 150ms ease-out;
+    }
+
+    :where(
+        a[href],
+        button:not(:disabled),
+        [role="button"]:not([aria-disabled="true"]),
+        [role="menuitem"],
+        [role="menuitemradio"],
+        [role="menuitemcheckbox"],
+        [role="option"],
+        [role="tab"],
+        summary
+      ):not(.btn, .btn-icon, .btn-icon-bordered, [class*="active:"]):active {
+      opacity: 0.7;
+      transition-duration: 75ms;
+    }
   }
 }
 

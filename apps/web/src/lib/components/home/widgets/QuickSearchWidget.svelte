@@ -158,8 +158,10 @@
       background-color 0.2s ease;
   }
 
-  .domain:hover {
-    color: var(--fg);
+  @media (hover: hover) {
+    .domain:hover {
+      color: var(--fg);
+    }
   }
 
   .domain.active {

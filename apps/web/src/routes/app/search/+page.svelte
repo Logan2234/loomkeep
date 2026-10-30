@@ -548,8 +548,10 @@
     transition: border-color 0.2s ease;
   }
 
-  .guichet-filter-btn:hover {
-    border-color: var(--domain-accent);
+  @media (hover: hover) {
+    .guichet-filter-btn:hover {
+      border-color: var(--domain-accent);
+    }
   }
 
   .guichet-filter-menu {
@@ -579,9 +581,11 @@
       background-color 0.15s ease;
   }
 
-  .guichet-filter-option:hover {
-    background: var(--surface-2);
-    color: var(--fg);
+  @media (hover: hover) {
+    .guichet-filter-option:hover {
+      background: var(--surface-2);
+      color: var(--fg);
+    }
   }
 
   .guichet-filter-option-active {
@@ -606,9 +610,11 @@
       border-color 0.2s ease;
   }
 
-  .guichet-scan-btn:hover {
-    color: var(--fg);
-    border-color: var(--domain-accent);
+  @media (hover: hover) {
+    .guichet-scan-btn:hover {
+      color: var(--fg);
+      border-color: var(--domain-accent);
+    }
   }
 
   /* Overlaid on the input's right edge, inside the bar, and only shown
