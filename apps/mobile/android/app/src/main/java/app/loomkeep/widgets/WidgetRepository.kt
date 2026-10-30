@@ -31,7 +31,7 @@ sealed interface WidgetData {
 /** A poster, and the shade of its band in the « Affiches » style. */
 data class Poster(val bitmap: Bitmap, val band: Int)
 
-/** Everything both widgets draw, posters included. */
+/** Everything the widgets draw, posters included. */
 data class WidgetSnapshot(
     val data: WidgetData,
     val posters: Map<String, Poster>,
@@ -57,9 +57,12 @@ object WidgetRepository {
 
     /** Something to draw, fetched again once stale: what provideGlance waits for. */
     suspend fun ensure(context: Context) {
-        val stale = WidgetStore.token(context) != null && WidgetStore.feedAge(context) >= FRESH_MS
+        val stale = WidgetStore.token(context) != null && !fresh(context, HomeScreenWidgets.parts(context))
         if (state.value == null || stale) refresh(context)
     }
+
+    private fun fresh(context: Context, parts: Set<String>) =
+        WidgetStore.feedAge(context) < FRESH_MS && WidgetStore.feedParts(context).containsAll(parts)
 
     suspend fun refresh(context: Context, force: Boolean = false) {
         publish(context, load(context, force))
@@ -68,16 +71,40 @@ object WidgetRepository {
     /** The ✓ on « À suivre »: checked at once, then redrawn from the API's answer. */
     suspend fun watchNext(context: Context, entryId: String, episodeId: String) {
         state.update { it?.copy(checking = entryId) }
+        val parts = HomeScreenWidgets.parts(context)
         val body = JSONObject().put("entryId", entryId).put("episodeId", episodeId)
         val data = withContext(Dispatchers.IO) {
-            settle(context, request(context, "POST", "watch-next", body), WidgetStore.feed(context))
+            settle(context, request(context, "POST", "watch-next", body, parts), WidgetStore.feed(context), parts)
+        }
+        publish(context, data)
+    }
+
+    /**
+     * A step of the session timer. Refused (a timer started elsewhere in the
+     * meantime, one already stopped), the widget was out of date: it reads the
+     * feed again rather than staying on what it drew.
+     */
+    suspend fun timerStep(context: Context, step: String, body: JSONObject?) {
+        val parts = HomeScreenWidgets.parts(context)
+        val data = withContext(Dispatchers.IO) {
+            val response = request(context, "POST", "timer/$step", body ?: JSONObject(), parts)
+            val settled = if (response == Response.Failed) request(context, "GET", "feed", null, parts) else response
+            settle(context, settled, WidgetStore.feed(context), parts)
         }
         publish(context, data)
     }
 
     private suspend fun publish(context: Context, data: WidgetData) {
         val posters = if (data is WidgetData.Ready) {
-            WidgetPosters.load(context, data.feed.toWatch.map(WidgetShow::posterUrl) + data.feed.releases.map(WidgetRelease::posterUrl))
+            val feed = data.feed
+            WidgetPosters.load(
+                context,
+                feed.toWatch.map(WidgetShow::posterUrl) +
+                    feed.releases.map(WidgetRelease::posterUrl) +
+                    feed.timer?.posterUrl +
+                    feed.sessions.map(WidgetSession::posterUrl) +
+                    feed.added.map(WidgetAdded::posterUrl),
+            )
         } else {
             emptyMap()
         }
@@ -93,18 +120,19 @@ object WidgetRepository {
     private suspend fun load(context: Context, force: Boolean): WidgetData = withContext(Dispatchers.IO) {
         if (WidgetStore.token(context) == null) return@withContext WidgetData.SignedOut
         val cached = WidgetStore.feed(context)
+        val parts = HomeScreenWidgets.parts(context)
 
-        if (!force && cached != null && WidgetStore.feedAge(context) < FRESH_MS) {
+        if (!force && cached != null && fresh(context, parts)) {
             return@withContext WidgetData.Ready(cached)
         }
 
-        settle(context, request(context, "GET", "feed", null), cached)
+        settle(context, request(context, "GET", "feed", null, parts), cached, parts)
     }
 
-    private fun settle(context: Context, response: Response, cached: WidgetFeed?): WidgetData =
+    private fun settle(context: Context, response: Response, cached: WidgetFeed?, parts: Set<String>): WidgetData =
         when (response) {
             is Response.Ok -> {
-                WidgetStore.saveFeed(context, response.body)
+                WidgetStore.saveFeed(context, response.body, parts)
                 WidgetData.Ready(WidgetFeed.parse(response.body))
             }
             Response.SignedOut -> {
@@ -114,11 +142,12 @@ object WidgetRepository {
             Response.Failed -> cached?.let { WidgetData.Ready(it) } ?: WidgetData.Offline
         }
 
-    private fun request(context: Context, method: String, route: String, body: JSONObject?): Response {
+    private fun request(context: Context, method: String, route: String, body: JSONObject?, parts: Set<String>): Response {
         val token = WidgetStore.token(context) ?: return Response.SignedOut
         val origin = WidgetStore.origin(context) ?: return Response.SignedOut
         val locale = Locale.getDefault()
-        val url = URL("$origin/api/home-screen-widgets/$route?lang=${locale.language}")
+        val include = parts.joinToString(",")
+        val url = URL("$origin/api/home-screen-widgets/$route?lang=${locale.language}&include=$include")
         val connection = url.openConnection() as HttpURLConnection
 
         return try {

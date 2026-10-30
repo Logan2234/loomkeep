@@ -35,6 +35,7 @@
   import { quickAddTarget } from "#lib/quick-add.js";
   import { isPastedLink } from "#lib/share-link.js";
   import { Domain, type MediaType } from "@loomkeep/shared";
+  import { untrack } from "svelte";
 
   // The "Tout" tab: every domain at once, by shelves (UnifiedSearchPanel).
   const ALL = "ALL";
@@ -237,6 +238,17 @@
     if (isIsbnBarcode(code)) onIsbnScanned(code);
     else toast.error(m.scan_isbn_invalid_code());
   }
+
+  // The Android widget's scanner button (`?scan`). Mirroring the search into
+  // the URL drops the parameter, so each tap on the widget scans once.
+  $effect(() => {
+    if (!page.url.searchParams.has("scan") || !barcodeSupported) return;
+    untrack(() => {
+      domain = "BOOKS";
+      debouncedSyncUrl.call();
+      void scanIsbn();
+    });
+  });
 </script>
 
 <div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">

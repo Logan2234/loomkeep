@@ -1,11 +1,6 @@
 package app.loomkeep.widgets
 
 import android.content.Context
-import android.media.AudioAttributes
-import android.os.Build
-import android.os.VibrationAttributes
-import android.os.VibrationEffect
-import android.os.Vibrator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -78,27 +73,8 @@ class WatchNextAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val entryId = parameters[ENTRY_ID] ?: return
         val episodeId = parameters[EPISODE_ID] ?: return
-        tick(context)
+        widgetTick(context)
         WidgetRepository.watchNext(context, entryId, episodeId)
-    }
-
-    // A launcher gives a widget's buttons no feedback of their own. Android
-    // drops a vibration from an app in the background unless it's an alarm,
-    // a ringtone or a notification: the press counts as a notification's,
-    // and follows its vibration setting.
-    private fun tick(context: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
-        val vibrator = context.getSystemService(Vibrator::class.java) ?: return
-        val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            vibrator.vibrate(effect, VibrationAttributes.createForUsage(VibrationAttributes.USAGE_NOTIFICATION))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(
-                effect,
-                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT).build(),
-            )
-        }
     }
 
     companion object {

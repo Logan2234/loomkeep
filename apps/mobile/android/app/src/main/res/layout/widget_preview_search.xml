@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget picker's preview before Android 15 (from 15 on, Glance draws
+     it from WidgetSamples). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_preview_bg"
+    android:orientation="vertical"
+    android:padding="6dp">
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="26dp"
+        android:drawableStart="@drawable/ic_widget_logo"
+        android:drawablePadding="7dp"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="6dp"
+        android:text="@string/widget_search_name"
+        android:textColor="@color/widget_fg"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_field_bg"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:paddingHorizontal="14dp"
+            android:text="@string/widget_search_hint"
+            android:textColor="@color/widget_dim"
+            android:textSize="14sp" />
+        <ImageView
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:background="@drawable/widget_scan_bg"
+            android:contentDescription="@string/widget_scan_label"
+            android:padding="13dp"
+            android:src="@drawable/ic_widget_scan"
+            android:tint="#1A1406" />
+    </LinearLayout>
+</LinearLayout>

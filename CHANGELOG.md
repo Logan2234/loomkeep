@@ -31,9 +31,12 @@ history from before it was started.
 ### Android app
 
 - **Home-screen widgets** (MOB-20): « To watch » (shows in progress, with a
-  ✓ that marks the next episode watched without opening the app) and
+  ✓ that marks the next episode watched without opening the app),
   « Releases » (today's releases among what's followed, else the next
-  ones), from 2 × 2 to 5 × 5 with up to nine works. Two looks, chosen in
+  ones), « Chrono » (starts, pauses and stops the session timer; stopping a
+  book opens its page for the pages read), « Streak and level » and
+  « Search » (search, the scanner, the categories, the latest additions),
+  from 2 × 2 to 5 × 5 with up to nine works. Two looks, chosen in
   each widget's settings: « Affiches » (the default: posters, each over a
   band in its own shade) and « Liste » (cinema tickets, the code or date on
   the stub). The widget picker previews them. They read `/api/home-screen-widgets` with a token the

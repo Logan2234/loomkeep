@@ -1,6 +1,7 @@
 package app.loomkeep.widgets
 
 import android.content.Context
+import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.updateAll
 import com.getcapacitor.Plugin
@@ -14,16 +15,35 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 object HomeScreenWidgets {
-    /** Whether any widget sits on the home screen: none, no reason to ask the instance. */
-    suspend fun placed(context: Context): Boolean {
+    /** The part of the feed each widget reads (`?include=`). */
+    private val PARTS = mapOf(
+        ToWatchWidget::class.java to "toWatch",
+        ReleasesWidget::class.java to "releases",
+        ChronoWidget::class.java to "timer",
+        StreakWidget::class.java to "progression",
+        SearchWidget::class.java to "added",
+    )
+
+    /** What the placed widgets read: none placed, no reason to ask the instance. */
+    suspend fun parts(context: Context): Set<String> {
         val manager = GlanceAppWidgetManager(context)
-        return manager.getGlanceIds(ToWatchWidget::class.java).isNotEmpty() ||
-            manager.getGlanceIds(ReleasesWidget::class.java).isNotEmpty()
+        return PARTS.filterKeys { manager.getGlanceIds(it).isNotEmpty() }.values.toSet()
     }
 
     suspend fun updateAll(context: Context) {
         ToWatchWidget().updateAll(context)
         ReleasesWidget().updateAll(context)
+        ChronoWidget().updateAll(context)
+        StreakWidget().updateAll(context)
+        SearchWidget().updateAll(context)
+    }
+
+    fun forReceiver(receiverClass: String): GlanceAppWidget = when (receiverClass) {
+        ReleasesWidgetReceiver::class.java.name -> ReleasesWidget()
+        ChronoWidgetReceiver::class.java.name -> ChronoWidget()
+        StreakWidgetReceiver::class.java.name -> StreakWidget()
+        SearchWidgetReceiver::class.java.name -> SearchWidget()
+        else -> ToWatchWidget()
     }
 }
 
@@ -64,7 +84,7 @@ class HomeScreenWidgetsPlugin : Plugin() {
     private fun redraw(refetch: Boolean) {
         val context = context.applicationContext
         scope.launch {
-            if (!HomeScreenWidgets.placed(context)) return@launch
+            if (HomeScreenWidgets.parts(context).isEmpty()) return@launch
             WidgetRepository.refresh(context, force = refetch)
             // Starts a session for a widget that has none; a running one
             // already redraws from WidgetRepository.snapshot.
