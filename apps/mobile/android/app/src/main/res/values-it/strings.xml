@@ -18,7 +18,6 @@
     <string name="widget_episodes_left">%d rimasti</string>
     <string name="widget_last_episode">ultimo</string>
     <string name="widget_mark_watched">Segna %1$s di %2$s come visto</string>
-    <string name="widget_watched">Visto</string>
     <string name="widget_movie">Film</string>
     <string name="widget_game">Gioco</string>
     <string name="widget_signed_out">Apri Loomkeep per collegare questo widget</string>
@@ -28,4 +27,7 @@
     <string name="widget_style_title">Stile del widget</string>
     <string name="widget_style_posters">Locandine</string>
     <string name="widget_style_list">Elenco</string>
+    <string name="widget_next_episode">Prossimo episodio</string>
+    <string name="widget_watched_of">%1$d di %2$d visti</string>
+    <string name="widget_today_count">%d oggi</string>
 </resources>

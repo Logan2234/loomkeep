@@ -2,13 +2,11 @@ package app.loomkeep.widgets
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,7 +19,6 @@ import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
-import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
@@ -47,29 +44,54 @@ import androidx.glance.unit.ColorProvider
 import app.loomkeep.MainActivity
 import app.loomkeep.R
 
-/** Each widget's look, chosen in WidgetStyleActivity: posters unless the list was picked. */
+/** Each widget's look, chosen in WidgetStyleActivity: « Affiches » unless « Liste » was picked. */
 val STYLE_KEY = stringPreferencesKey("style")
 const val STYLE_POSTERS = "posters"
 const val STYLE_LIST = "list"
 
-/** From 2 × 2: narrow, then three columns wide, then three rows tall too. */
-val WIDGET_SIZES = setOf(DpSize(110.dp, 180.dp), DpSize(200.dp, 180.dp), DpSize(200.dp, 330.dp))
-
-/** What fits: one item, then a row of three, then two rows. */
-enum class WidgetLayout(val items: Int) {
-    SMALL(1),
-    WIDE(3),
-    LARGE(6),
+/**
+ * The widget's size in home-screen cells, guessed from its size in dp (a
+ * phone cell is about 74 × 96 dp). Widgets draw with SizeMode.Exact, so the
+ * layout follows any size from 2 × 2 to 5 × 5.
+ */
+data class Cells(val cols: Int, val rows: Int) {
+    val single get() = cols <= 2 && rows <= 2
 }
 
 @Composable
-fun currentLayout(): WidgetLayout {
+fun currentCells(): Cells {
     val size = LocalSize.current
-    return when {
-        size.height >= 330.dp && size.width >= 200.dp -> WidgetLayout.LARGE
-        size.width >= 200.dp -> WidgetLayout.WIDE
-        else -> WidgetLayout.SMALL
+    val cols = when {
+        size.width < 185.dp -> 2
+        size.width < 260.dp -> 3
+        size.width < 340.dp -> 4
+        else -> 5
     }
+    val rows = when {
+        size.height < 250.dp -> 2
+        size.height < 400.dp -> 3
+        size.height < 520.dp -> 4
+        else -> 5
+    }
+    return Cells(cols, rows)
+}
+
+/** « Affiches »: columns and rows of posters — one, a row of two or three, then up to 3 × 3. */
+fun posterGrid(cells: Cells): Pair<Int, Int> = when {
+    cells.single -> 1 to 1
+    cells.rows == 2 -> (if (cells.cols <= 3) 2 else 3) to 1
+    else -> when (cells.cols) {
+        2 -> 1
+        3 -> 2
+        else -> 3
+    } to (if (cells.rows >= 5) 3 else 2)
+}
+
+/** « Liste »: as many tickets as the height holds under the header. */
+@Composable
+fun ticketCount(stripHeight: Dp): Int {
+    val available = LocalSize.current.height - 12.dp - 30.dp
+    return ((available + 4.dp) / (stripHeight + 4.dp)).toInt().coerceIn(1, 9)
 }
 
 /** Séance's palette, light or dark with the system (res/values-night/widget_colors.xml). */
@@ -78,20 +100,37 @@ object WidgetColors {
     val fg = ColorProvider(R.color.widget_fg)
     val dim = ColorProvider(R.color.widget_dim)
     val accent = ColorProvider(R.color.widget_accent)
-    val divider = ColorProvider(R.color.widget_divider)
-    val posterFallback = ColorProvider(R.color.widget_poster_fallback)
+    val onSuccess = ColorProvider(R.color.widget_on_success)
+    val rollInk = ColorProvider(R.color.widget_roll_ink)
+    val rollDim = ColorProvider(R.color.widget_roll_dim)
+    val ticket = ColorProvider(R.color.widget_ticket)
+    val ticketInk = ColorProvider(R.color.widget_ticket_ink)
+    val ticketDim = ColorProvider(R.color.widget_ticket_dim)
     val white = ColorProvider(Color.White)
     val whiteDim = ColorProvider(Color(0xD1FFFFFF))
     val marquee = ColorProvider(Color(0xFFF5B841))
-    val onMarquee = ColorProvider(Color(0xFF1A1406))
-    val transparent = ColorProvider(Color.Transparent)
 }
 
-fun mono(size: TextUnit, color: ColorProvider) =
-    TextStyle(color = color, fontSize = size, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+/** Android's own condensed Roboto: a widget can't load Séance's fonts. */
+private val CONDENSED = FontFamily("sans-serif-condensed")
+
+fun mono(size: TextUnit, color: ColorProvider, weight: FontWeight = FontWeight.Bold) =
+    TextStyle(color = color, fontSize = size, fontWeight = weight, fontFamily = FontFamily.Monospace)
 
 fun sans(size: TextUnit, color: ColorProvider, weight: FontWeight = FontWeight.Medium) =
     TextStyle(color = color, fontSize = size, fontWeight = weight)
+
+fun condensed(size: TextUnit, color: ColorProvider) =
+    TextStyle(color = color, fontSize = size, fontWeight = FontWeight.Bold, fontFamily = CONDENSED)
+
+/** A stand-in colour for a work without a poster, the same one each time. */
+fun fallbackColor(title: String): Int {
+    val shades = intArrayOf(
+        0xFF2E7189.toInt(), 0xFF7C9668.toInt(), 0xFFB5452F.toInt(), 0xFF6B5843.toInt(),
+        0xFF5E6577.toInt(), 0xFF7A4A8C.toInt(), 0xFFA9803F.toInt(),
+    )
+    return shades[Math.floorMod(title.hashCode(), shades.size)]
+}
 
 /** Opens the app on `path`, routed by the web like an App Link (appUrlOpen). */
 fun openApp(context: Context, path: String?): Action {
@@ -104,16 +143,21 @@ fun openApp(context: Context, path: String?): Action {
     return actionStartActivity(intent)
 }
 
+/**
+ * The widget's ground: white or night for « Affiches », the tickets' amber
+ * roll for « Liste ». A tap between the items opens the app; the items'
+ * own taps take precedence.
+ */
 @Composable
-fun WidgetFrame(content: @Composable () -> Unit) {
-    // A tap between the items opens the app; the items' own taps take precedence.
+fun WidgetFrame(style: String, edgeToEdge: Boolean, content: @Composable () -> Unit) {
+    val ground = if (style == STYLE_LIST) R.color.widget_roll else R.color.widget_bg
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .cornerRadius(24.dp)
-            .background(WidgetColors.bg)
+            .cornerRadius(22.dp)
+            .background(ColorProvider(ground))
             .clickable(openApp(LocalContext.current, "/app"))
-            .padding(8.dp),
+            .padding(if (edgeToEdge) 0.dp else 6.dp),
     ) {
         content()
     }
@@ -121,10 +165,10 @@ fun WidgetFrame(content: @Composable () -> Unit) {
 
 /** Signed out, offline or nothing to show: one line, which opens the app. */
 @Composable
-fun WidgetMessage(@StringRes text: Int) {
+fun WidgetMessage(@StringRes text: Int, style: String) {
     val context = LocalContext.current
     Column(
-        modifier = GlanceModifier.fillMaxSize().clickable(openApp(context, "/app")),
+        modifier = GlanceModifier.fillMaxSize().padding(12.dp).clickable(openApp(context, "/app")),
         verticalAlignment = Alignment.CenterVertically,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -132,141 +176,273 @@ fun WidgetMessage(@StringRes text: Int) {
         Spacer(GlanceModifier.height(8.dp))
         Text(
             context.getString(text),
-            style = TextStyle(color = WidgetColors.dim, fontSize = 13.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center),
+            style = TextStyle(
+                color = if (style == STYLE_LIST) WidgetColors.rollDim else WidgetColors.dim,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+            ),
         )
     }
 }
 
 @Composable
-fun WidgetHeader(title: String, trailing: String?, trailingColor: ColorProvider, logo: Boolean) {
+fun WidgetHeader(title: String, meta: String?, style: String) {
+    val list = style == STYLE_LIST
     Row(
-        modifier = GlanceModifier.fillMaxWidth().height(28.dp).padding(horizontal = 6.dp),
+        modifier = GlanceModifier.fillMaxWidth().height(26.dp).padding(horizontal = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (logo) {
-            Image(ImageProvider(R.drawable.ic_widget_logo), contentDescription = null, modifier = GlanceModifier.size(18.dp))
-            Spacer(GlanceModifier.width(8.dp))
+        Image(ImageProvider(R.drawable.ic_widget_logo), contentDescription = null, modifier = GlanceModifier.size(16.dp))
+        Spacer(GlanceModifier.width(7.dp))
+        Text(
+            title,
+            style = if (list) condensed(15.sp, WidgetColors.rollInk) else sans(15.sp, WidgetColors.fg, FontWeight.Bold),
+            maxLines = 1,
+            modifier = GlanceModifier.defaultWeight(),
+        )
+        if (meta != null) {
+            Text(meta, style = sans(12.sp, if (list) WidgetColors.rollDim else WidgetColors.dim), maxLines = 1)
         }
-        Text(title, style = sans(15.sp, WidgetColors.fg, FontWeight.Bold), maxLines = 1, modifier = GlanceModifier.defaultWeight())
-        if (trailing != null) Text(trailing, style = mono(12.sp, trailingColor), maxLines = 1)
     }
 }
 
+/**
+ * « Affiches »: the poster, and under it a band in the poster's own shade
+ * carrying the title — no scrim over the artwork.
+ */
 @Composable
-fun Divider() {
-    Box(modifier = GlanceModifier.fillMaxWidth().height(1.dp).background(WidgetColors.divider)) {}
-}
-
-/** An affiche: the poster, a chip at the top, the title over a scrim at the bottom. */
-@Composable
-fun PosterTile(
+fun BandTile(
     modifier: GlanceModifier,
-    poster: Bitmap?,
-    chip: String,
-    chipOnMarquee: Boolean,
+    poster: Poster?,
     title: String,
-    subtitle: String?,
+    meta: String,
+    metaLive: Boolean,
     open: Action,
-    check: Action?,
-    checkLabel: String?,
-    progress: Float?,
-    titleSize: TextUnit = 14.sp,
-    checked: Boolean = false,
+    action: Action?,
+    actionLabel: String?,
+    checked: Boolean,
+    big: Boolean,
 ) {
-    Box(modifier = modifier.cornerRadius(16.dp).background(WidgetColors.posterFallback).clickable(open)) {
-        if (poster != null) {
-            Image(ImageProvider(poster), contentDescription = null, modifier = GlanceModifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        }
-        Image(
-            ImageProvider(R.drawable.widget_poster_scrim),
-            contentDescription = null,
-            modifier = GlanceModifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds,
-        )
-        Column(modifier = GlanceModifier.fillMaxSize().padding(8.dp)) {
-            Row(modifier = GlanceModifier.fillMaxWidth()) {
+    val base = fallbackColor(title)
+    val band = poster?.band ?: darken(base)
+    Box(modifier = modifier.cornerRadius(if (big) 0.dp else 14.dp).background(ColorProvider(Color(band)))) {
+        Column(modifier = GlanceModifier.fillMaxSize().clickable(open)) {
+            Box(modifier = GlanceModifier.fillMaxWidth().defaultWeight().background(ColorProvider(Color(base)))) {
+                if (poster != null) {
+                    Image(
+                        ImageProvider(poster.bitmap),
+                        contentDescription = null,
+                        modifier = GlanceModifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                }
+            }
+            Column(
+                modifier = GlanceModifier
+                    .fillMaxWidth()
+                    .padding(start = if (big) 12.dp else 8.dp, end = if (big) 56.dp else 8.dp, top = 6.dp, bottom = 7.dp),
+            ) {
+                Text(title, style = sans(if (big) 16.sp else 13.sp, WidgetColors.white, FontWeight.Bold), maxLines = 1)
                 Text(
-                    chip,
-                    style = mono(11.sp, if (chipOnMarquee) WidgetColors.onMarquee else WidgetColors.white),
+                    meta,
+                    style = mono(if (big) 12.sp else 11.sp, if (metaLive) WidgetColors.marquee else WidgetColors.whiteDim, FontWeight.Medium),
                     maxLines = 1,
-                    modifier = GlanceModifier
-                        .background(ImageProvider(if (chipOnMarquee) R.drawable.widget_chip_accent else R.drawable.widget_chip_dark))
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
                 )
-                Spacer(GlanceModifier.defaultWeight())
-                if (check != null) CheckButton(check, checkLabel, 36.dp, onPoster = true, checked = checked)
             }
-            Spacer(GlanceModifier.defaultWeight())
-            Text(title, style = sans(titleSize, WidgetColors.white, FontWeight.Bold), maxLines = 2)
-            if (subtitle != null) Text(subtitle, style = mono(11.sp, WidgetColors.whiteDim), maxLines = 1)
         }
-        if (progress != null) {
-            Column(modifier = GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.Bottom) {
-                LinearProgressIndicator(
-                    progress = progress,
-                    modifier = GlanceModifier.fillMaxWidth().height(3.dp),
-                    color = WidgetColors.marquee,
-                    backgroundColor = WidgetColors.transparent,
-                )
+        if (action != null) {
+            Box(
+                modifier = GlanceModifier.fillMaxSize().padding(if (big) 10.dp else 6.dp),
+                contentAlignment = if (big) Alignment.BottomEnd else Alignment.TopEnd,
+            ) {
+                CheckButton(action, actionLabel, if (big) 40.dp else 34.dp, checked, onBand = band)
             }
         }
     }
 }
 
-/** The ✓ that marks the next episode watched, on a poster or in a list row. */
+/** A grid of band tiles; a short last row keeps its tiles the size of the others. */
 @Composable
-fun CheckButton(action: Action, label: String?, size: Dp, onPoster: Boolean, checked: Boolean = false) {
-    val background = when {
-        checked -> R.drawable.widget_check_done
-        onPoster -> R.drawable.widget_check_on_poster
-        else -> R.drawable.widget_check_outline
-    }
-    val base = GlanceModifier.size(size).background(ImageProvider(background))
-    Box(
-        modifier = if (checked) base else base.clickable(action),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            ImageProvider(R.drawable.ic_widget_check),
-            contentDescription = label,
-            modifier = GlanceModifier.size(size * 0.5f),
-            colorFilter = when {
-                checked -> ColorFilter.tint(ColorProvider(R.color.widget_on_success))
-                onPoster -> null
-                else -> ColorFilter.tint(WidgetColors.fg)
-            },
-        )
-    }
-}
-
-/** A thumbnail for the list style. */
-@Composable
-fun PosterThumb(poster: Bitmap?, width: Dp, height: Dp) {
-    Box(modifier = GlanceModifier.size(width, height).cornerRadius(5.dp).background(WidgetColors.posterFallback)) {
-        if (poster != null) {
-            Image(ImageProvider(poster), contentDescription = null, modifier = GlanceModifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        }
-    }
-}
-
-/** A grid of posters: one, a row of three, or two rows of three under a header. */
-@Composable
-fun <T> PosterGrid(items: List<T>, layout: WidgetLayout, tile: @Composable (T, GlanceModifier) -> Unit) {
-    val rows = items.chunked(3)
+fun <T> BandGrid(items: List<T>, cols: Int, tile: @Composable (T, GlanceModifier) -> Unit) {
     Column(modifier = GlanceModifier.fillMaxSize()) {
-        rows.forEachIndexed { index, row ->
-            if (index > 0) Spacer(GlanceModifier.height(8.dp))
+        items.chunked(cols).forEachIndexed { index, row ->
+            if (index > 0) Spacer(GlanceModifier.height(6.dp))
             Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
                 row.forEachIndexed { column, item ->
-                    if (column > 0) Spacer(GlanceModifier.width(8.dp))
+                    if (column > 0) Spacer(GlanceModifier.width(6.dp))
                     tile(item, GlanceModifier.defaultWeight().fillMaxHeight())
                 }
-                // A short last row keeps its tiles the width of the full ones.
-                repeat(if (layout == WidgetLayout.SMALL) 0 else 3 - row.size) {
-                    Spacer(GlanceModifier.width(8.dp))
+                repeat(cols - row.size) {
+                    Spacer(GlanceModifier.width(6.dp))
                     Spacer(GlanceModifier.defaultWeight())
                 }
             }
         }
+    }
+}
+
+/** « Liste »: a ticket — its stub (the code, the date, the time), the perforation, then its body. */
+@Composable
+fun TicketStrip(
+    height: Dp,
+    stubWidth: Dp,
+    stubTop: String,
+    stubBottom: String,
+    stubLive: Boolean,
+    poster: Poster?,
+    title: String,
+    sub: String,
+    open: Action,
+    action: Action?,
+    actionLabel: String?,
+    checked: Boolean,
+) {
+    val compact = height < 46.dp
+    Row(modifier = GlanceModifier.fillMaxWidth().height(height)) {
+        Column(
+            modifier = GlanceModifier
+                .width(stubWidth)
+                .fillMaxHeight()
+                .background(ImageProvider(R.drawable.widget_stub_bg))
+                .clickable(open)
+                .padding(horizontal = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                stubTop,
+                style = mono(if (stubTop.length > 7) 12.sp else 14.sp, if (stubLive) WidgetColors.accent else WidgetColors.ticketInk),
+                maxLines = 1,
+            )
+            if (stubBottom.isNotEmpty()) {
+                Text(stubBottom, style = mono(10.5.sp, WidgetColors.ticketDim, FontWeight.Medium), maxLines = 1)
+            }
+        }
+        Perforation(vertical = true)
+        Row(
+            modifier = GlanceModifier
+                .defaultWeight()
+                .fillMaxHeight()
+                .background(ImageProvider(R.drawable.widget_ticket_bg))
+                .padding(start = 10.dp, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(modifier = GlanceModifier.defaultWeight().clickable(open), verticalAlignment = Alignment.CenterVertically) {
+                Thumb(poster, title, if (compact) 22.dp else 26.dp, if (compact) 32.dp else 38.dp)
+                Spacer(GlanceModifier.width(9.dp))
+                Column {
+                    Text(title, style = condensed(15.sp, WidgetColors.ticketInk), maxLines = 1)
+                    Text(sub, style = sans(12.sp, WidgetColors.ticketDim), maxLines = 1)
+                }
+            }
+            if (action != null) {
+                Spacer(GlanceModifier.width(6.dp))
+                CheckButton(action, actionLabel, if (compact) 32.dp else 36.dp, checked, onBand = null)
+            }
+        }
+    }
+}
+
+/** 2 × 2 « Liste »: one ticket standing up, its stub at the bottom. */
+@Composable
+fun SingleTicket(
+    poster: Poster?,
+    title: String,
+    sub: String,
+    stubBig: String,
+    stubSmall: String,
+    open: Action,
+    action: Action?,
+    actionLabel: String?,
+    checked: Boolean,
+) {
+    Column(modifier = GlanceModifier.fillMaxSize()) {
+        Row(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .defaultWeight()
+                .background(ImageProvider(R.drawable.widget_ticket_top_bg))
+                .clickable(open)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Thumb(poster, title, 42.dp, 60.dp)
+            Spacer(GlanceModifier.width(10.dp))
+            Column {
+                Text(title, style = condensed(16.sp, WidgetColors.ticketInk), maxLines = 2)
+                Text(sub, style = sans(12.sp, WidgetColors.ticketDim), maxLines = 2)
+            }
+        }
+        Perforation(vertical = false)
+        Row(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .height(60.dp)
+                .background(ImageProvider(R.drawable.widget_stub_bottom_bg))
+                .padding(start = 12.dp, end = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = GlanceModifier.defaultWeight()) {
+                Text(stubBig, style = mono(19.sp, WidgetColors.accent), maxLines = 1)
+                Text(stubSmall, style = mono(11.sp, WidgetColors.ticketDim, FontWeight.Medium), maxLines = 1)
+            }
+            if (action != null) CheckButton(action, actionLabel, 40.dp, checked, onBand = null)
+        }
+    }
+}
+
+/** Dashes in the roll's colour, across the ticket's paper. */
+@Composable
+private fun Perforation(vertical: Boolean) {
+    val size = if (vertical) GlanceModifier.width(2.dp).fillMaxHeight() else GlanceModifier.fillMaxWidth().height(2.dp)
+    Box(modifier = size.background(WidgetColors.ticket)) {
+        Image(
+            ImageProvider(if (vertical) R.drawable.widget_perforation_v else R.drawable.widget_perforation_h),
+            contentDescription = null,
+            modifier = GlanceModifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds,
+        )
+    }
+}
+
+@Composable
+private fun Thumb(poster: Poster?, title: String, width: Dp, height: Dp) {
+    Box(
+        modifier = GlanceModifier
+            .size(width, height)
+            .cornerRadius(4.dp)
+            .background(ColorProvider(Color(fallbackColor(title)))),
+    ) {
+        if (poster != null) {
+            Image(ImageProvider(poster.bitmap), contentDescription = null, modifier = GlanceModifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        }
+    }
+}
+
+/**
+ * The ✓: a ring on a ticket, a white disc on a poster's band, green once
+ * pressed until the API answers.
+ */
+@Composable
+fun CheckButton(action: Action, label: String?, size: Dp, checked: Boolean, onBand: Int?) {
+    val background = when {
+        checked -> R.drawable.widget_check_done
+        onBand != null -> R.drawable.widget_check_on_band
+        else -> R.drawable.widget_check_ring
+    }
+    val base = GlanceModifier.size(size).background(ImageProvider(background))
+    Box(modifier = if (checked) base else base.clickable(action), contentAlignment = Alignment.Center) {
+        Image(
+            ImageProvider(R.drawable.ic_widget_check),
+            contentDescription = label,
+            modifier = GlanceModifier.size(size * 0.48f),
+            colorFilter = ColorFilter.tint(
+                when {
+                    checked -> WidgetColors.onSuccess
+                    onBand != null -> ColorProvider(Color(onBand))
+                    else -> WidgetColors.ticketInk
+                },
+            ),
+        )
     }
 }

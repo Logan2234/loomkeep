@@ -1,36 +1,27 @@
 package app.loomkeep.widgets
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
-import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
 import androidx.glance.currentState
-import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
-import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
-import androidx.glance.layout.padding
-import androidx.glance.layout.width
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
-import androidx.glance.text.FontWeight
-import androidx.glance.text.Text
 import app.loomkeep.R
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -40,7 +31,7 @@ import java.util.TimeZone
 
 /** « Sorties » (MOB-20): today's releases among what's followed, else the next ones. */
 class ReleasesWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(WIDGET_SIZES)
+    override val sizeMode = SizeMode.Exact
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -48,19 +39,27 @@ class ReleasesWidget : GlanceAppWidget() {
 
         provideContent {
             val snapshot by WidgetRepository.snapshot.collectAsState()
-            val data = snapshot?.data ?: WidgetData.SignedOut
-            val posters = snapshot?.posters.orEmpty()
             val style = currentState(STYLE_KEY) ?: STYLE_POSTERS
-            WidgetFrame {
-                when (data) {
-                    WidgetData.SignedOut -> WidgetMessage(R.string.widget_signed_out)
-                    WidgetData.Offline -> WidgetMessage(R.string.widget_offline)
-                    is WidgetData.Ready -> when {
-                        data.feed.releases.isEmpty() -> WidgetMessage(R.string.widget_releases_empty)
-                        style == STYLE_LIST -> ReleaseList(data.feed.releases, posters)
-                        else -> ReleasePosters(data.feed.releases, posters)
-                    }
+            val data = snapshot?.data ?: WidgetData.SignedOut
+            val releases = (data as? WidgetData.Ready)?.feed?.releases.orEmpty()
+            val cells = currentCells()
+
+            WidgetFrame(style, edgeToEdge = style == STYLE_POSTERS && cells.single && releases.isNotEmpty()) {
+                when {
+                    data == WidgetData.SignedOut -> WidgetMessage(R.string.widget_signed_out, style)
+                    data == WidgetData.Offline -> WidgetMessage(R.string.widget_offline, style)
+                    releases.isEmpty() -> WidgetMessage(R.string.widget_releases_empty, style)
+                    style == STYLE_LIST -> ReleaseTickets(releases, snapshot?.posters.orEmpty(), cells)
+                    else -> ReleaseBands(releases, snapshot?.posters.orEmpty(), cells)
                 }
+            }
+        }
+    }
+
+    override suspend fun providePreview(context: Context, widgetCategory: Int) {
+        provideContent {
+            WidgetFrame(STYLE_POSTERS, edgeToEdge = false) {
+                ReleaseBands(WidgetSamples.releases(), emptyMap(), currentCells())
             }
         }
     }
@@ -124,35 +123,62 @@ private fun WidgetRelease.what(context: Context): String = when (kind) {
     else -> "S%02dE%02d".format(Locale.ROOT, seasonNumber ?: 0, episodeNumber ?: 0)
 }
 
-private fun WidgetRelease.chip(context: Context): String =
-    listOfNotNull(dayLabel(context), if (isToday()) time(context) else null).joinToString(" ")
+private fun Map<String, Poster>.of(release: WidgetRelease) = release.posterUrl?.let { this[it] }
 
-private fun Map<String, Bitmap>.of(release: WidgetRelease) = release.posterUrl?.let { this[it] }
+/** « Sorties du jour » with today's count, else « Prochaines sorties ». */
+@Composable
+private fun ReleasesHeader(releases: List<WidgetRelease>, style: String) {
+    val context = LocalContext.current
+    val today = releases.count { it.isToday() }
+    WidgetHeader(
+        context.getString(if (today > 0) R.string.widget_releases_today else R.string.widget_releases_next),
+        if (today > 0) context.getString(R.string.widget_today_count, today) else null,
+        style,
+    )
+}
 
 @Composable
-private fun ReleasePosters(releases: List<WidgetRelease>, posters: Map<String, Bitmap>) {
+private fun ReleaseBands(releases: List<WidgetRelease>, posters: Map<String, Poster>, cells: Cells) {
     val context = LocalContext.current
-    val layout = currentLayout()
+    val (cols, rows) = posterGrid(cells)
+    val meta = { release: WidgetRelease ->
+        listOfNotNull(release.dayLabel(context), if (release.isToday()) release.time(context) else null, release.what(context))
+            .joinToString(" ")
+    }
+
+    if (cells.single) {
+        val release = releases.first()
+        BandTile(
+            modifier = GlanceModifier.fillMaxSize(),
+            poster = posters.of(release),
+            title = release.title,
+            meta = meta(release),
+            metaLive = release.isToday(),
+            open = openApp(context, release.path),
+            action = null,
+            actionLabel = null,
+            checked = false,
+            big = true,
+        )
+        return
+    }
 
     Column(modifier = GlanceModifier.fillMaxSize()) {
-        if (layout == WidgetLayout.LARGE) {
-            ReleasesHeader(releases)
-            Spacer(GlanceModifier.height(6.dp))
-        }
+        ReleasesHeader(releases, STYLE_POSTERS)
+        Spacer(GlanceModifier.height(4.dp))
         Box(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
-            PosterGrid(releases.take(layout.items), layout) { release, modifier ->
-                PosterTile(
+            BandGrid(releases.take(cols * rows), cols) { release, modifier ->
+                BandTile(
                     modifier = modifier,
                     poster = posters.of(release),
-                    chip = release.chip(context),
-                    chipOnMarquee = release.isToday(),
                     title = release.title,
-                    subtitle = release.what(context),
+                    meta = meta(release),
+                    metaLive = release.isToday(),
                     open = openApp(context, release.path),
-                    check = null,
-                    checkLabel = null,
-                    progress = null,
-                    titleSize = if (layout == WidgetLayout.SMALL) 17.sp else 14.sp,
+                    action = null,
+                    actionLabel = null,
+                    checked = false,
+                    big = false,
                 )
             }
         }
@@ -160,53 +186,46 @@ private fun ReleasePosters(releases: List<WidgetRelease>, posters: Map<String, B
 }
 
 @Composable
-private fun ReleasesHeader(releases: List<WidgetRelease>) {
+private fun ReleaseTickets(releases: List<WidgetRelease>, posters: Map<String, Poster>, cells: Cells) {
     val context = LocalContext.current
-    val today = releases.count { it.isToday() }
-    WidgetHeader(
-        context.getString(if (today > 0) R.string.widget_releases_today else R.string.widget_releases_next),
-        if (today > 0) "%02d".format(Locale.ROOT, today) else null,
-        WidgetColors.accent,
-        logo = false,
-    )
-}
 
-@Composable
-private fun ReleaseList(releases: List<WidgetRelease>, posters: Map<String, Bitmap>) {
-    val context = LocalContext.current
-    val layout = currentLayout()
-    val large = layout == WidgetLayout.LARGE
-    // The 2 × 2 fits two short rows rather than one.
-    val count = if (layout == WidgetLayout.SMALL) 2 else layout.items
+    if (cells.single) {
+        val release = releases.first()
+        SingleTicket(
+            poster = posters.of(release),
+            title = release.title,
+            sub = release.what(context),
+            stubBig = listOfNotNull(release.dayLabel(context), if (release.isToday()) release.time(context) else null).joinToString(" "),
+            stubSmall = releases.count { it.isToday() }.takeIf { it > 0 }
+                ?.let { context.getString(R.string.widget_today_count, it) }
+                .orEmpty(),
+            open = openApp(context, release.path),
+            action = null,
+            actionLabel = null,
+            checked = false,
+        )
+        return
+    }
 
+    val stripHeight = if (cells.rows == 2) 42.dp else 50.dp
     Column(modifier = GlanceModifier.fillMaxSize()) {
-        ReleasesHeader(releases)
-        releases.take(count).forEachIndexed { index, release ->
-            if (index > 0) Divider()
-            Row(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .defaultWeight()
-                    .padding(horizontal = 6.dp)
-                    .clickable(openApp(context, release.path)),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                PosterThumb(posters.of(release), if (large) 32.dp else 26.dp, if (large) 46.dp else 38.dp)
-                Spacer(GlanceModifier.width(10.dp))
-                Column(modifier = GlanceModifier.defaultWeight()) {
-                    Text(release.title, style = sans(14.sp, WidgetColors.fg, FontWeight.Bold), maxLines = 1)
-                    Text(
-                        "${release.dayLabel(context)} · ${release.what(context)}",
-                        style = mono(12.sp, WidgetColors.dim),
-                        maxLines = 1,
-                    )
-                }
-                val time = if (release.isToday()) release.time(context) else null
-                if (time != null && layout != WidgetLayout.SMALL) {
-                    Spacer(GlanceModifier.width(8.dp))
-                    Text(time, style = mono(12.sp, WidgetColors.accent), maxLines = 1)
-                }
-            }
+        ReleasesHeader(releases, STYLE_LIST)
+        releases.take(ticketCount(stripHeight)).forEach { release ->
+            Spacer(GlanceModifier.height(4.dp))
+            TicketStrip(
+                height = stripHeight,
+                stubWidth = if (cells.cols >= 4) 78.dp else 66.dp,
+                stubTop = release.dayLabel(context),
+                stubBottom = release.time(context).orEmpty(),
+                stubLive = release.isToday(),
+                poster = posters.of(release),
+                title = release.title,
+                sub = release.what(context),
+                open = openApp(context, release.path),
+                action = null,
+                actionLabel = null,
+                checked = false,
+            )
         }
     }
 }

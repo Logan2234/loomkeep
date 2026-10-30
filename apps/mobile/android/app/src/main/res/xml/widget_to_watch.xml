@@ -17,6 +17,7 @@
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="1800000"
     android:initialLayout="@layout/glance_default_loading_layout"
+    android:previewLayout="@layout/widget_preview_to_watch"
     android:configure="app.loomkeep.widgets.WidgetStyleActivity"
     android:widgetFeatures="reconfigurable|configuration_optional"
     android:widgetCategory="home_screen" />
