@@ -75,6 +75,10 @@ ships the transitions of what it adds.
   what enters or leaves the DOM. Animate opacity, transform, colour and
   filter — not layout, so nothing around the movement shifts (Svelte's
   `slide` is the one exception, for unfolding content).
+- Pressed, on touch: a phone has no hover, so whatever is tapped must answer
+  the finger. Anything tappable without a pressed state of its own dims to
+  70 % while pressed (`app.css`, base layer); a component that wants better
+  (a scale, a fill) gives itself an `active:` utility, which opts it out.
 - Reduced motion: Svelte transitions take their duration from
   `prefersReducedMotion()` (`$lib/motion`, `duration: reduced ? 0 : 200`), and
   spatial CSS ones (transform) add `motion-reduce:transition-none`. Colour

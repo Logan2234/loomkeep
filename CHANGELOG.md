@@ -54,6 +54,9 @@ history from before it was started.
   `assetlinks.json` now grants each package from `ANDROID_APP_LINKS`
   `delegate_permission/common.get_login_creds`, without which Credential
   Manager refuses the app loomkeep.app's passkeys. Needs the next APK.
+- **Everything tappable answers the finger**: on touch screens, list rows,
+  menu items, bottom tabs, chips and links without a pressed state of their
+  own dim while pressed, replacing the WebView's tap rectangle.
 - **Feels less like a website**: no more translucent rectangle on every
   tap, no text selection or Copy/Share toolbar from a long press on
   buttons, tabs and the navigation (content stays selectable), and icon

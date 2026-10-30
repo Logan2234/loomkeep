@@ -306,6 +306,42 @@ body {
   img {
     -webkit-user-drag: none;
   }
+
+  /* Touch has no hover, so without this a list row, a menu item or a bottom
+     tab gives nothing back under the finger. Anything tappable that doesn't
+     draw its own pressed state (.btn and friends, or an `active:` utility)
+     dims while pressed. In the base layer, so a component's own opacity or
+     transition still wins. */
+  @media (hover: none) {
+    :where(
+      a[href],
+      button:not(:disabled),
+      [role="button"]:not([aria-disabled="true"]),
+      [role="menuitem"],
+      [role="menuitemradio"],
+      [role="menuitemcheckbox"],
+      [role="option"],
+      [role="tab"],
+      summary
+    ):not(.btn, .btn-icon, .btn-icon-bordered, [class*="active:"]) {
+      transition: opacity 150ms ease-out;
+    }
+
+    :where(
+        a[href],
+        button:not(:disabled),
+        [role="button"]:not([aria-disabled="true"]),
+        [role="menuitem"],
+        [role="menuitemradio"],
+        [role="menuitemcheckbox"],
+        [role="option"],
+        [role="tab"],
+        summary
+      ):not(.btn, .btn-icon, .btn-icon-bordered, [class*="active:"]):active {
+      opacity: 0.7;
+      transition-duration: 75ms;
+    }
+  }
 }
 
 ::selection {
