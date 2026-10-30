@@ -17,6 +17,7 @@ import { AppException } from "../common/app.exception";
 import { ACHIEVEMENTS } from "../gamification/achievements/registry";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { PrismaService } from "../prisma/prisma.service";
+import { activityDates } from "../stats/activity-dates";
 import {
   computeStreak,
   isStreakSecuredToday,
@@ -394,36 +395,13 @@ export class ProfileService {
   private async computeActivityStats(
     userId: string,
   ): Promise<ProfileActivityStatsDto> {
-    const [watches, gameSessions, bookSessions] = await Promise.all([
-      this.prisma.episodeWatch.findMany({
-        where: {
-          userId,
-          watchedAt: { not: null },
-          episode: { season: { number: { not: 0 } } },
-        },
-        select: { watchedAt: true },
-      }),
-      this.prisma.gameSession.findMany({
-        where: { gameEntry: { userId } },
-        select: { occurredAt: true },
-      }),
-      this.prisma.bookSession.findMany({
-        where: { bookEntry: { userId } },
-        select: { occurredAt: true },
-      }),
-    ]);
-
     const now = new Date();
-    const activityDates = [
-      ...watches.flatMap((w) => (w.watchedAt ? [w.watchedAt] : [])),
-      ...gameSessions.map((session) => session.occurredAt),
-      ...bookSessions.map((session) => session.occurredAt),
-    ];
+    const dates = await activityDates(this.prisma, userId);
 
     return {
       visible: true,
-      streakDays: computeStreak(activityDates, now),
-      streakSecuredToday: isStreakSecuredToday(activityDates, now),
+      streakDays: computeStreak(dates, now),
+      streakSecuredToday: isStreakSecuredToday(dates, now),
     };
   }
 }

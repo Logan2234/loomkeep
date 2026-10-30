@@ -1,4 +1,8 @@
-import type { HomeScreenWidgetFeedDto } from "@loomkeep/shared";
+import {
+  HOME_SCREEN_WIDGET_PARTS,
+  type HomeScreenWidgetFeedDto,
+  type HomeScreenWidgetPart,
+} from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -6,6 +10,8 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseEnumPipe,
   Post,
   Query,
 } from "@nestjs/common";
@@ -19,8 +25,16 @@ import {
   HomeScreenWidgetFeedResponseDto,
   HomeScreenWidgetTokenResponseDto,
 } from "./dto/home-screen-widget-response.dto";
+import { StartTimerDto } from "./dto/start-timer.dto";
 import { WatchNextDto } from "./dto/watch-next.dto";
 import { HomeScreenWidgetsService } from "./home-screen-widgets.service";
+
+const TIMER_STEPS = {
+  pause: "pause",
+  resume: "resume",
+  finish: "finish",
+} as const;
+type TimerStep = (typeof TIMER_STEPS)[keyof typeof TIMER_STEPS];
 
 /**
  * The Android app's home-screen widgets (MOB-20). The app asks for a token
@@ -38,6 +52,7 @@ export class HomeScreenWidgetsController {
     return this.widgets.token(user.sub, user.sid);
   }
 
+  /** `include` lists the parts the placed widgets read; an APK from before it reads the first two. */
   @Public()
   @Throttle(HOME_SCREEN_WIDGET_THROTTLE)
   @Get("feed")
@@ -46,9 +61,10 @@ export class HomeScreenWidgetsController {
     @Headers("x-widget-token") token?: string,
     @Headers("accept-language") acceptLanguage?: string,
     @Query("lang") lang?: string,
+    @Query("include") include?: string,
   ): Promise<HomeScreenWidgetFeedDto> {
     const userId = await this.widgets.authenticate(token);
-    return this.widgets.feed(userId, lang, acceptLanguage);
+    return this.widgets.feed(userId, parts(include), lang, acceptLanguage);
   }
 
   /** The ✓ on « À suivre »: answers with the feed as it now stands. */
@@ -62,9 +78,60 @@ export class HomeScreenWidgetsController {
     @Headers("x-widget-token") token?: string,
     @Headers("accept-language") acceptLanguage?: string,
     @Query("lang") lang?: string,
+    @Query("include") include?: string,
   ): Promise<HomeScreenWidgetFeedDto> {
     const userId = await this.widgets.authenticate(token);
     await this.widgets.watchNext(userId, dto);
-    return this.widgets.feed(userId, lang, acceptLanguage);
+    return this.widgets.feed(userId, parts(include), lang, acceptLanguage);
   }
+
+  /** « Chrono »: starts a session on a game or a book, then answers with the feed. */
+  @Public()
+  @Throttle(HOME_SCREEN_WIDGET_THROTTLE)
+  @Post("timer/start")
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: HomeScreenWidgetFeedResponseDto })
+  async startTimer(
+    @Body() dto: StartTimerDto,
+    @Headers("x-widget-token") token?: string,
+    @Headers("accept-language") acceptLanguage?: string,
+    @Query("lang") lang?: string,
+    @Query("include") include?: string,
+  ): Promise<HomeScreenWidgetFeedDto> {
+    const userId = await this.widgets.authenticate(token);
+    await this.widgets.startTimer(userId, dto);
+    return this.widgets.feed(userId, parts(include), lang, acceptLanguage);
+  }
+
+  /** « Chrono »: `pause`, `resume`, or `finish` to save the session. */
+  @Public()
+  @Throttle(HOME_SCREEN_WIDGET_THROTTLE)
+  @Post("timer/:step")
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: HomeScreenWidgetFeedResponseDto })
+  async timerStep(
+    @Param("step", new ParseEnumPipe(TIMER_STEPS)) step: TimerStep,
+    @Headers("x-widget-token") token?: string,
+    @Headers("accept-language") acceptLanguage?: string,
+    @Query("lang") lang?: string,
+    @Query("include") include?: string,
+  ): Promise<HomeScreenWidgetFeedDto> {
+    const userId = await this.widgets.authenticate(token);
+    if (step === TIMER_STEPS.pause) await this.widgets.pauseTimer(userId);
+    else if (step === TIMER_STEPS.resume)
+      await this.widgets.resumeTimer(userId);
+    else await this.widgets.finishTimer(userId);
+    return this.widgets.feed(userId, parts(include), lang, acceptLanguage);
+  }
+}
+
+function parts(include: string | undefined): Set<HomeScreenWidgetPart> {
+  if (!include) return new Set(["toWatch", "releases"]);
+  return new Set(
+    include
+      .split(",")
+      .filter((part): part is HomeScreenWidgetPart =>
+        (HOME_SCREEN_WIDGET_PARTS as readonly string[]).includes(part),
+      ),
+  );
 }
