@@ -62,7 +62,7 @@
     "unleash-proxy-client": "^3.8.2"
   },
   "devDependencies": {
-    "@inlang/paraglide-js": "^2.29.1",
+    "@inlang/paraglide-js": "^2.29.2",
     "@sveltejs/adapter-node": "^6.0.0",
     "@sveltejs/kit": "^3.1.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
