@@ -8,5 +8,6 @@ import { SessionTimerService } from "./session-timer.service";
   imports: [BooksModule, GamesModule],
   controllers: [SessionTimerController],
   providers: [SessionTimerService],
+  exports: [SessionTimerService],
 })
 export class SessionTimerModule {}

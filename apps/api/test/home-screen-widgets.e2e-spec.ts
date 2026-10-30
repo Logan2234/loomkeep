@@ -1,3 +1,6 @@
+// Read at module init: « Série et niveau » is null without it.
+process.env.GAMIFICATION_ENABLED = "true";
+
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
@@ -16,14 +19,23 @@ describe("Home-screen widgets (e2e)", () => {
   let userId = "";
   let token = "";
   let entryId = "";
+  let gameEntryId = "";
   const episodeIds: string[] = [];
 
   const DAY = 24 * 60 * 60 * 1000;
 
-  const feed = (widgetToken = token) =>
+  const feed = (widgetToken = token, include?: string) =>
     request(http)
       .get("/api/home-screen-widgets/feed")
+      .query(include ? { include } : {})
       .set("X-Widget-Token", widgetToken);
+
+  const timer = (step: string, body?: object) =>
+    request(http)
+      .post(`/api/home-screen-widgets/timer/${step}`)
+      .query({ include: "timer" })
+      .set("X-Widget-Token", token)
+      .send(body ?? {});
 
   const watchNext = (episodeId: string) =>
     request(http)
@@ -45,7 +57,7 @@ describe("Home-screen widgets (e2e)", () => {
     userId = me.body.id;
     await prisma.user.update({
       where: { id: userId },
-      data: { enabledDomains: ["MEDIA"] },
+      data: { enabledDomains: ["MEDIA", "GAMES"] },
     });
 
     // Three aired episodes, the first watched, and one airing next week.
@@ -80,6 +92,18 @@ describe("Home-screen widgets (e2e)", () => {
     });
     ({ id: entryId } = await prisma.libraryEntry.create({
       data: { userId, mediaItemId: show.id, status: "WATCHING" },
+    }));
+
+    const game = await prisma.gameItem.create({
+      data: {
+        canonicalSource: "IGDB",
+        title: "Widget Game",
+        releaseDate: new Date(Date.now() - 400 * DAY),
+        externalIds: { create: { source: "IGDB", externalId: "widget-game" } },
+      },
+    });
+    ({ id: gameEntryId } = await prisma.gameEntry.create({
+      data: { userId, gameItemId: game.id, status: "PLAYING" },
     }));
 
     ({
@@ -127,6 +151,74 @@ describe("Home-screen widgets (e2e)", () => {
         where: { userId, episodeId: episodeIds[1] },
       }),
     ).toBe(1);
+  });
+
+  it("leaves out what no widget asked for", async () => {
+    const { body } = await feed().expect(200);
+
+    expect(body).toEqual(
+      expect.objectContaining({
+        timer: null,
+        sessions: [],
+        progression: null,
+        added: [],
+      }),
+    );
+  });
+
+  it("runs the session timer from « Chrono » and saves the session", async () => {
+    const started = await timer("start", {
+      domain: "GAMES",
+      entryId: gameEntryId,
+    }).expect(200);
+    expect(started.body.timer).toEqual(
+      expect.objectContaining({
+        domain: "GAMES",
+        entryId: gameEntryId,
+        title: "Widget Game",
+        path: "/app/games/widget-game",
+        paused: false,
+      }),
+    );
+
+    const paused = await timer("pause").expect(200);
+    expect(paused.body.timer.paused).toBe(true);
+
+    await timer("resume").expect(200);
+    const finished = await timer("finish").expect(200);
+
+    expect(finished.body.timer).toBeNull();
+    expect(finished.body.sessions).toEqual([
+      expect.objectContaining({
+        domain: "GAMES",
+        entryId: gameEntryId,
+        title: "Widget Game",
+      }),
+    ]);
+    expect(await prisma.gameSession.count({ where: { gameEntryId } })).toBe(1);
+  });
+
+  it("reads the level, the streak and today's activity for « Série et niveau »", async () => {
+    const { body } = await feed(token, "progression").expect(200);
+
+    expect(body.progression).toEqual(
+      expect.objectContaining({
+        level: expect.any(Number),
+        streakDays: expect.any(Number),
+      }),
+    );
+    // The episode watched and the game played above, both today.
+    expect(body.progression.activeDays).toContain(body.progression.today);
+    expect(body.progression.streakDays).toBeGreaterThanOrEqual(1);
+  });
+
+  it("lists the latest additions across domains", async () => {
+    const { body } = await feed(token, "added").expect(200);
+
+    expect(body.added.map((added: { title: string }) => added.title)).toEqual([
+      "Widget Game",
+      "Widget Show",
+    ]);
   });
 
   it("refuses a request without a valid token", async () => {

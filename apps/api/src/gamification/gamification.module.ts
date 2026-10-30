@@ -30,6 +30,6 @@ import { XpService } from "./xp.service";
     AchievementService,
     OnboardingService,
   ],
-  exports: [XpService, SessionXpService, AchievementService],
+  exports: [XpService, XpHistoryService, SessionXpService, AchievementService],
 })
 export class GamificationModule {}
