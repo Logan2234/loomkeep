@@ -8,6 +8,8 @@
     <color name="widget_success">#5BD6A0</color>
     <color name="widget_on_success">#08251A</color>
     <color name="widget_poster_fallback">#1F232B</color>
+    <color name="widget_field">#1F232B</color>
+    <color name="widget_on_accent">#1A1406</color>
     <color name="widget_roll">#14110B</color>
     <color name="widget_roll_ink">#F2E6C9</color>
     <color name="widget_roll_dim">#B5A884</color>

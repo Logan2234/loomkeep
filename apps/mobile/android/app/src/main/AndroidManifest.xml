@@ -76,6 +76,39 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_releases" />
         </receiver>
+        <receiver
+            android:name=".widgets.ChronoWidgetReceiver"
+            android:label="@string/widget_chrono_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_chrono" />
+        </receiver>
+        <receiver
+            android:name=".widgets.StreakWidgetReceiver"
+            android:label="@string/widget_streak_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_streak" />
+        </receiver>
+        <receiver
+            android:name=".widgets.SearchWidgetReceiver"
+            android:label="@string/widget_search_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_search" />
+        </receiver>
         <activity
             android:name=".widgets.WidgetStyleActivity"
             android:theme="@style/WidgetStyleTheme"

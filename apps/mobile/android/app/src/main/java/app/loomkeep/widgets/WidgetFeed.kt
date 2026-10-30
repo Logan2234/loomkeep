@@ -34,7 +34,58 @@ data class WidgetRelease(
     val monthOnly: Boolean,
 )
 
-data class WidgetFeed(val toWatch: List<WidgetShow>, val releases: List<WidgetRelease>) {
+/** The session timer, for « Chrono ». */
+data class WidgetTimer(
+    val domain: String,
+    val entryId: String,
+    val title: String,
+    val posterUrl: String?,
+    val path: String,
+    val elapsedSeconds: Long,
+    val paused: Boolean,
+)
+
+/** A game or book's latest session, which « Chrono » can start again. */
+data class WidgetSession(
+    val domain: String,
+    val entryId: String,
+    val title: String,
+    val posterUrl: String?,
+    val path: String,
+    val durationMinutes: Int,
+    /** Epoch millis. */
+    val occurredAt: Long,
+)
+
+data class WidgetGain(val amount: Int, val title: String?, val at: Long)
+
+/** « Série et niveau ». */
+data class WidgetProgression(
+    val level: Int,
+    val xpInLevel: Int,
+    val xpToNext: Int,
+    val streakDays: Int,
+    val streakSecuredToday: Boolean,
+    /** "YYYY-MM-DD" in the account's time zone. */
+    val today: String,
+    val activeDays: Set<String>,
+    val gains: List<WidgetGain>,
+)
+
+/** Something just added to the library, for « Recherche ». */
+data class WidgetAdded(val kind: String, val title: String, val posterUrl: String?, val path: String)
+
+// Every part but the first two is optional: an instance older than the app
+// doesn't send them, and a part no placed widget reads comes back empty.
+data class WidgetFeed(
+    val toWatch: List<WidgetShow>,
+    val releases: List<WidgetRelease>,
+    val timer: WidgetTimer? = null,
+    val sessions: List<WidgetSession> = emptyList(),
+    val weekMinutes: Int = 0,
+    val progression: WidgetProgression? = null,
+    val added: List<WidgetAdded> = emptyList(),
+) {
     companion object {
         fun parse(json: String): WidgetFeed {
             val root = JSONObject(json)
@@ -63,6 +114,56 @@ data class WidgetFeed(val toWatch: List<WidgetShow>, val releases: List<WidgetRe
                         episodeNumber = release.optIntOrNull("episodeNumber"),
                         airDate = parseIsoDate(release.getString("airDate")),
                         monthOnly = release.optString("releasePrecision") == "MONTH",
+                    )
+                },
+                timer = root.optJSONObject("timer")?.let { timer ->
+                    WidgetTimer(
+                        domain = timer.getString("domain"),
+                        entryId = timer.getString("entryId"),
+                        title = timer.getString("title"),
+                        posterUrl = timer.optStringOrNull("posterUrl"),
+                        path = timer.getString("path"),
+                        elapsedSeconds = timer.getLong("elapsedSeconds"),
+                        paused = timer.getBoolean("paused"),
+                    )
+                },
+                sessions = root.optJSONArray("sessions")?.objects().orEmpty().map { session ->
+                    WidgetSession(
+                        domain = session.getString("domain"),
+                        entryId = session.getString("entryId"),
+                        title = session.getString("title"),
+                        posterUrl = session.optStringOrNull("posterUrl"),
+                        path = session.getString("path"),
+                        durationMinutes = session.getInt("durationMinutes"),
+                        occurredAt = parseIsoDate(session.getString("occurredAt")),
+                    )
+                },
+                weekMinutes = root.optInt("weekMinutes"),
+                progression = root.optJSONObject("progression")?.let { progression ->
+                    val activeDays = progression.getJSONArray("activeDays")
+                    WidgetProgression(
+                        level = progression.getInt("level"),
+                        xpInLevel = progression.getInt("xpInLevel"),
+                        xpToNext = progression.getInt("xpToNext"),
+                        streakDays = progression.getInt("streakDays"),
+                        streakSecuredToday = progression.getBoolean("streakSecuredToday"),
+                        today = progression.getString("today"),
+                        activeDays = (0 until activeDays.length()).map(activeDays::getString).toSet(),
+                        gains = progression.getJSONArray("gains").objects().map { gain ->
+                            WidgetGain(
+                                amount = gain.getInt("amount"),
+                                title = gain.optStringOrNull("title"),
+                                at = parseIsoDate(gain.getString("at")),
+                            )
+                        },
+                    )
+                },
+                added = root.optJSONArray("added")?.objects().orEmpty().map { added ->
+                    WidgetAdded(
+                        kind = added.getString("kind"),
+                        title = added.getString("title"),
+                        posterUrl = added.optStringOrNull("posterUrl"),
+                        path = added.getString("path"),
                     )
                 },
             )
@@ -94,6 +195,7 @@ object WidgetStore {
     private const val ORIGIN = "origin"
     private const val FEED = "feed"
     private const val FEED_AT = "feed_at"
+    private const val FEED_PARTS = "feed_parts"
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -114,12 +216,16 @@ object WidgetStore {
 
     fun origin(context: Context): String? = prefs(context).getString(ORIGIN, null)
 
-    fun saveFeed(context: Context, json: String) {
+    fun saveFeed(context: Context, json: String, parts: Set<String>) {
         prefs(context).edit()
             .putString(FEED, json)
             .putLong(FEED_AT, System.currentTimeMillis())
+            .putStringSet(FEED_PARTS, parts)
             .apply()
     }
+
+    /** What the cached feed was asked for: a widget placed since needs its own part. */
+    fun feedParts(context: Context): Set<String> = prefs(context).getStringSet(FEED_PARTS, null).orEmpty()
 
     fun feed(context: Context): WidgetFeed? =
         prefs(context).getString(FEED, null)?.let { runCatching { WidgetFeed.parse(it) }.getOrNull() }

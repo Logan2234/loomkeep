@@ -86,7 +86,7 @@ private fun WidgetRelease.localDay(): Calendar {
     }
 }
 
-private fun daysFromToday(day: Calendar): Int {
+internal fun daysFromToday(day: Calendar): Int {
     val today = Calendar.getInstance()
     val start = Calendar.getInstance().apply {
         clear()

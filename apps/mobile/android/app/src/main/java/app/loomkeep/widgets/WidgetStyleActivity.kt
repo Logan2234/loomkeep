@@ -52,8 +52,7 @@ class WidgetStyleActivity : AppCompatActivity() {
         val glanceId = GlanceAppWidgetManager(this@WidgetStyleActivity).getGlanceIdBy(appWidgetId)
         updateAppWidgetState(this@WidgetStyleActivity, glanceId) { it[STYLE_KEY] = style }
         val provider = AppWidgetManager.getInstance(this@WidgetStyleActivity).getAppWidgetInfo(appWidgetId)?.provider
-        val widget = if (provider?.className == ReleasesWidgetReceiver::class.java.name) ReleasesWidget() else ToWatchWidget()
-        widget.update(this@WidgetStyleActivity, glanceId)
+        HomeScreenWidgets.forReceiver(provider?.className.orEmpty()).update(this@WidgetStyleActivity, glanceId)
         setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId))
         finish()
     }

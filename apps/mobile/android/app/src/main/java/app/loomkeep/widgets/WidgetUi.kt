@@ -2,7 +2,15 @@ package app.loomkeep.widgets
 
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
 import android.net.Uri
+import android.os.Build
+import android.os.SystemClock
+import android.os.VibrationAttributes
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.util.TypedValue
+import android.widget.RemoteViews
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -19,6 +27,7 @@ import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
+import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
@@ -132,6 +141,27 @@ fun fallbackColor(title: String): Int {
     return shades[Math.floorMod(title.hashCode(), shades.size)]
 }
 
+/**
+ * A launcher gives a widget's buttons no feedback of their own. Android drops
+ * a vibration from an app in the background unless it's an alarm, a ringtone
+ * or a notification: the press counts as a notification's, and follows its
+ * vibration setting.
+ */
+fun widgetTick(context: Context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+    val vibrator = context.getSystemService(Vibrator::class.java) ?: return
+    val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        vibrator.vibrate(effect, VibrationAttributes.createForUsage(VibrationAttributes.USAGE_NOTIFICATION))
+    } else {
+        @Suppress("DEPRECATION")
+        vibrator.vibrate(
+            effect,
+            AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT).build(),
+        )
+    }
+}
+
 /** Opens the app on `path`, routed by the web like an App Link (appUrlOpen). */
 fun openApp(context: Context, path: String?): Action {
     val origin = WidgetStore.origin(context)
@@ -223,6 +253,9 @@ fun BandTile(
     actionLabel: String?,
     checked: Boolean,
     big: Boolean,
+    actionIcon: Int = R.drawable.ic_widget_check,
+    secondary: TileButton? = null,
+    metaContent: (@Composable () -> Unit)? = null,
 ) {
     val base = fallbackColor(title)
     val band = poster?.band ?: darken(base)
@@ -244,11 +277,15 @@ fun BandTile(
                     .padding(start = if (big) 12.dp else 8.dp, end = if (big) 56.dp else 8.dp, top = 6.dp, bottom = 7.dp),
             ) {
                 Text(title, style = sans(if (big) 16.sp else 13.sp, WidgetColors.white, FontWeight.Bold), maxLines = 1)
-                Text(
-                    meta,
-                    style = mono(if (big) 12.sp else 11.sp, if (metaLive) WidgetColors.marquee else WidgetColors.whiteDim, FontWeight.Medium),
-                    maxLines = 1,
-                )
+                if (metaContent != null) {
+                    metaContent()
+                } else {
+                    Text(
+                        meta,
+                        style = mono(if (big) 12.sp else 11.sp, if (metaLive) WidgetColors.marquee else WidgetColors.whiteDim, FontWeight.Medium),
+                        maxLines = 1,
+                    )
+                }
             }
         }
         if (action != null) {
@@ -256,7 +293,15 @@ fun BandTile(
                 modifier = GlanceModifier.fillMaxSize().padding(if (big) 10.dp else 6.dp),
                 contentAlignment = if (big) Alignment.BottomEnd else Alignment.TopEnd,
             ) {
-                CheckButton(action, actionLabel, if (big) 40.dp else 34.dp, checked, onBand = band)
+                CheckButton(action, actionLabel, if (big) 40.dp else 34.dp, checked, onBand = band, icon = actionIcon)
+            }
+        }
+        if (secondary != null) {
+            Box(
+                modifier = GlanceModifier.fillMaxSize().padding(if (big) 10.dp else 6.dp),
+                contentAlignment = if (big) Alignment.TopEnd else Alignment.TopStart,
+            ) {
+                CheckButton(secondary.action, secondary.label, if (big) 40.dp else 34.dp, false, onBand = band, icon = secondary.icon)
             }
         }
     }
@@ -297,6 +342,10 @@ fun TicketStrip(
     action: Action?,
     actionLabel: String?,
     checked: Boolean,
+    actionIcon: Int = R.drawable.ic_widget_check,
+    secondary: TileButton? = null,
+    showThumb: Boolean = true,
+    stubContent: (@Composable () -> Unit)? = null,
 ) {
     val compact = height < 46.dp
     Row(modifier = GlanceModifier.fillMaxWidth().height(height)) {
@@ -309,11 +358,15 @@ fun TicketStrip(
                 .padding(horizontal = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                stubTop,
-                style = mono(if (stubTop.length > 7) 12.sp else 14.sp, if (stubLive) WidgetColors.accent else WidgetColors.ticketInk),
-                maxLines = 1,
-            )
+            if (stubContent != null) {
+                stubContent()
+            } else {
+                Text(
+                    stubTop,
+                    style = mono(if (stubTop.length > 7) 12.sp else 14.sp, if (stubLive) WidgetColors.accent else WidgetColors.ticketInk),
+                    maxLines = 1,
+                )
+            }
             if (stubBottom.isNotEmpty()) {
                 Text(stubBottom, style = mono(10.5.sp, WidgetColors.ticketDim, FontWeight.Medium), maxLines = 1)
             }
@@ -328,16 +381,22 @@ fun TicketStrip(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(modifier = GlanceModifier.defaultWeight().clickable(open), verticalAlignment = Alignment.CenterVertically) {
-                Thumb(poster, title, if (compact) 22.dp else 26.dp, if (compact) 32.dp else 38.dp)
-                Spacer(GlanceModifier.width(9.dp))
+                if (showThumb) {
+                    Thumb(poster, title, if (compact) 22.dp else 26.dp, if (compact) 32.dp else 38.dp)
+                    Spacer(GlanceModifier.width(9.dp))
+                }
                 Column {
                     Text(title, style = condensed(15.sp, WidgetColors.ticketInk), maxLines = 1)
                     Text(sub, style = sans(12.sp, WidgetColors.ticketDim), maxLines = 1)
                 }
             }
+            if (secondary != null) {
+                Spacer(GlanceModifier.width(6.dp))
+                CheckButton(secondary.action, secondary.label, if (compact) 32.dp else 36.dp, false, onBand = null, icon = secondary.icon)
+            }
             if (action != null) {
                 Spacer(GlanceModifier.width(6.dp))
-                CheckButton(action, actionLabel, if (compact) 32.dp else 36.dp, checked, onBand = null)
+                CheckButton(action, actionLabel, if (compact) 32.dp else 36.dp, checked, onBand = null, icon = actionIcon)
             }
         }
     }
@@ -355,6 +414,10 @@ fun SingleTicket(
     action: Action?,
     actionLabel: String?,
     checked: Boolean,
+    actionIcon: Int = R.drawable.ic_widget_check,
+    secondary: TileButton? = null,
+    leading: (@Composable () -> Unit)? = null,
+    stubContent: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier = GlanceModifier.fillMaxSize()) {
         Row(
@@ -366,7 +429,7 @@ fun SingleTicket(
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Thumb(poster, title, 42.dp, 60.dp)
+            if (leading != null) leading() else Thumb(poster, title, 42.dp, 60.dp)
             Spacer(GlanceModifier.width(10.dp))
             Column {
                 Text(title, style = condensed(16.sp, WidgetColors.ticketInk), maxLines = 2)
@@ -383,10 +446,14 @@ fun SingleTicket(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = GlanceModifier.defaultWeight()) {
-                Text(stubBig, style = mono(19.sp, WidgetColors.accent), maxLines = 1)
+                if (stubContent != null) stubContent() else Text(stubBig, style = mono(19.sp, WidgetColors.accent), maxLines = 1)
                 Text(stubSmall, style = mono(11.sp, WidgetColors.ticketDim, FontWeight.Medium), maxLines = 1)
             }
-            if (action != null) CheckButton(action, actionLabel, 40.dp, checked, onBand = null)
+            if (secondary != null) {
+                CheckButton(secondary.action, secondary.label, 40.dp, false, onBand = null, icon = secondary.icon)
+                Spacer(GlanceModifier.width(6.dp))
+            }
+            if (action != null) CheckButton(action, actionLabel, 40.dp, checked, onBand = null, icon = actionIcon)
         }
     }
 }
@@ -419,12 +486,15 @@ private fun Thumb(poster: Poster?, title: String, width: Dp, height: Dp) {
     }
 }
 
+/** A second button on a tile or a ticket: pause next to stop. */
+data class TileButton(val action: Action, val label: String, val icon: Int)
+
 /**
- * The ✓: a ring on a ticket, a white disc on a poster's band, green once
- * pressed until the API answers.
+ * An item's button, the ✓ by default: a ring on a ticket, a white disc on a
+ * poster's band, green once pressed until the API answers.
  */
 @Composable
-fun CheckButton(action: Action, label: String?, size: Dp, checked: Boolean, onBand: Int?) {
+fun CheckButton(action: Action, label: String?, size: Dp, checked: Boolean, onBand: Int?, icon: Int = R.drawable.ic_widget_check) {
     val background = when {
         checked -> R.drawable.widget_check_done
         onBand != null -> R.drawable.widget_check_on_band
@@ -433,7 +503,7 @@ fun CheckButton(action: Action, label: String?, size: Dp, checked: Boolean, onBa
     val base = GlanceModifier.size(size).background(ImageProvider(background))
     Box(modifier = if (checked) base else base.clickable(action), contentAlignment = Alignment.Center) {
         Image(
-            ImageProvider(R.drawable.ic_widget_check),
+            ImageProvider(icon),
             contentDescription = label,
             modifier = GlanceModifier.size(size * 0.48f),
             colorFilter = ColorFilter.tint(
@@ -445,4 +515,18 @@ fun CheckButton(action: Action, label: String?, size: Dp, checked: Boolean, onBa
             ),
         )
     }
+}
+
+/**
+ * A clock that counts by itself on the launcher: a platform Chronometer,
+ * since Glance has none and a widget can't redraw every second. Stopped, it
+ * shows `elapsedMillis` as it stands.
+ */
+@Composable
+fun LiveClock(elapsedMillis: Long, running: Boolean, onBand: Boolean, sizeSp: Float) {
+    val context = LocalContext.current
+    val views = RemoteViews(context.packageName, if (onBand) R.layout.widget_clock_band else R.layout.widget_clock_ticket)
+    views.setChronometer(R.id.widget_clock, SystemClock.elapsedRealtime() - elapsedMillis, null, running)
+    views.setTextViewTextSize(R.id.widget_clock, TypedValue.COMPLEX_UNIT_SP, sizeSp)
+    AndroidRemoteViews(views)
 }
