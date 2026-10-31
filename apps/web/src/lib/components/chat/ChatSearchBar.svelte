@@ -63,6 +63,7 @@
         bind:this={input}
         bind:value={typed}
         data-chat-search
+        enterkeyhint="search"
         aria-label={label}
         placeholder={label}
         class="input focus:border-accent h-9 py-0 pl-9 text-sm transition-colors duration-150"

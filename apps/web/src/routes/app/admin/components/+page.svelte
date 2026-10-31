@@ -385,6 +385,7 @@
   <input
     type="search"
     bind:value={componentSearch}
+    enterkeyhint="search"
     aria-label={m.admin_components_search()}
     placeholder={m.admin_components_search()}
     class="input mb-6" />

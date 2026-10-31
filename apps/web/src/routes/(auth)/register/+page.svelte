@@ -149,6 +149,7 @@
         aria-describedby={registerMut.fieldErrors.displayName
           ? "register-display-name-error"
           : undefined}
+        enterkeyhint="next"
         placeholder={m.common_username()}
         bind:value={displayName}
         required
@@ -165,6 +166,7 @@
         aria-describedby={registerMut.fieldErrors.email
           ? "register-email-error"
           : undefined}
+        enterkeyhint="next"
         placeholder={m.common_email()}
         bind:value={email}
         readonly={!!invite?.email}

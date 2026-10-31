@@ -40,6 +40,26 @@ export default defineConfig(
   },
   {
     rules: {
+      "no-restricted-globals": [
+        "error",
+        {
+          name: "confirm",
+          message: "Use ConfirmationModal instead of the native confirm dialog.",
+        },
+      ],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression[callee.object.name='window'][callee.property.name='confirm']",
+          message: "Use ConfirmationModal instead of the native confirm dialog.",
+        },
+        {
+          selector:
+            "CallExpression[callee.object.name='globalThis'][callee.property.name='confirm']",
+          message: "Use ConfirmationModal instead of the native confirm dialog.",
+        },
+      ],
       // The app navigates with plain string hrefs/goto and is served from the
       // root — adopting resolve() everywhere is base-path support (a feature),
       // not lint hygiene, so this stylistic rule doesn't fit the codebase.

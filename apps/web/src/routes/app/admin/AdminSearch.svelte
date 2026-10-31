@@ -34,6 +34,7 @@
     id="admin-search"
     type="search"
     autocomplete="off"
+    enterkeyhint="search"
     bind:this={input}
     bind:value={query}
     class="input py-2 pr-20 pl-9 text-sm"

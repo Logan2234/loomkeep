@@ -212,6 +212,7 @@
       <input
         type="search"
         class="input mb-3 hidden md:block"
+        enterkeyhint="search"
         aria-label={m.admin_communications_template()}
         placeholder={m.common_search()}
         bind:value={templateSearch} />

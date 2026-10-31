@@ -230,6 +230,7 @@
     <input
       class="input max-w-sm"
       type="search"
+      enterkeyhint="search"
       bind:value={search}
       aria-label={m.admin_diagram_search()}
       placeholder={m.admin_diagram_search()} />

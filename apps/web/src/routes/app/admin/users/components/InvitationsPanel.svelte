@@ -187,6 +187,7 @@
   <input
     class="input min-w-0 flex-1"
     type="search"
+    enterkeyhint="search"
     aria-label={m.admin_invitations_search()}
     placeholder={m.admin_invitations_search()}
     value={query}

@@ -94,6 +94,7 @@
       bind:this={field}
       type="search"
       class="field min-w-0 flex-1 bg-transparent text-sm"
+      enterkeyhint="search"
       placeholder={m.search_placeholder_all()}
       aria-label={m.search_placeholder_all()}
       aria-controls="list-add-results"

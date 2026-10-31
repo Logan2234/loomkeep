@@ -149,6 +149,7 @@
           class="input"
           name="label"
           maxlength={HOME_LAYOUT_LIMITS.labelLength}
+          enterkeyhint="next"
           placeholder={m.common_name()}
           bind:value={label} />
       </label>
@@ -160,6 +161,7 @@
           type="url"
           inputmode="url"
           maxlength={HOME_LAYOUT_LIMITS.urlLength}
+          enterkeyhint="done"
           placeholder={URL_PLACEHOLDER}
           aria-invalid={urlError}
           bind:value={url}
