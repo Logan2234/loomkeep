@@ -57,6 +57,7 @@ class KeyboardState {
         height: innerHeight,
         typing: isTypingField(document.activeElement),
       });
+      document.documentElement.classList.toggle("keyboard-open", this.open);
     };
 
     // focusout fires before focus lands on its next element.
@@ -70,6 +71,7 @@ class KeyboardState {
       removeEventListener("resize", update);
       document.removeEventListener("focusin", update);
       document.removeEventListener("focusout", updateLater);
+      document.documentElement.classList.remove("keyboard-open");
     };
   }
 }

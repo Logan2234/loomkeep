@@ -114,7 +114,7 @@
 <div
   bind:this={root}
   class="flex min-h-0 {layout.compact
-    ? 'h-[calc(100dvh-4.5rem-env(safe-area-inset-bottom))]'
+    ? 'h-[calc(100dvh-env(safe-area-inset-top)-var(--bottom-bar-space))]'
     : 'h-dvh'}">
   {#if showList}
     <aside

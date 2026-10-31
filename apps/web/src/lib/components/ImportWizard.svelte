@@ -643,7 +643,7 @@
     {/if}
 
     <div
-      class="border-border bg-surface sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom)+0.75rem)] z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl border px-4 py-3 shadow-lg md:bottom-3">
+      class="border-border bg-surface sticky bottom-[calc(var(--bottom-bar-space)+0.75rem)] z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl border px-4 py-3 shadow-lg md:bottom-3">
       <p class="flex items-baseline gap-2">
         <span class="font-display text-xl font-extrabold tabular-nums"
           >{selectedCount}</span>

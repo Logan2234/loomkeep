@@ -13,6 +13,7 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         // Local plugins register before the bridge starts in super.onCreate.
         registerPlugin(ShellThemePlugin.class);
+        registerPlugin(ShellHapticsPlugin.class);
         registerPlugin(ShellInstancePlugin.class);
         registerPlugin(NotificationActionsPlugin.class);
         registerPlugin(HomeScreenWidgetsPlugin.class);

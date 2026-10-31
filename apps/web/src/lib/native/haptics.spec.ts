@@ -1,12 +1,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { successFeedback, tapFeedback } from "./haptics";
 
-const { isPluginAvailable, impact, notification } = vi.hoisted(() => ({
-  isPluginAvailable: vi.fn(),
-  impact: vi.fn(),
-  notification: vi.fn(),
+const { isPluginAvailable, impact, notification, tap, success } = vi.hoisted(
+  () => ({
+    isPluginAvailable: vi.fn(),
+    impact: vi.fn(),
+    notification: vi.fn(),
+    tap: vi.fn(),
+    success: vi.fn(),
+  }),
+);
+vi.mock("@capacitor/core", () => ({
+  Capacitor: { isPluginAvailable },
+  registerPlugin: () => ({ tap, success }),
 }));
-vi.mock("@capacitor/core", () => ({ Capacitor: { isPluginAvailable } }));
 vi.mock("@capacitor/haptics", () => ({
   Haptics: { impact, notification },
   ImpactStyle: { Light: "LIGHT" },
@@ -16,8 +23,22 @@ vi.mock("@capacitor/haptics", () => ({
 afterEach(() => vi.resetAllMocks());
 
 describe("haptic feedback", () => {
-  it("taps lightly and plays the success pattern where it can", () => {
+  it("lets Android play it where the APK can: raw vibrations stay silent on some phones", () => {
     isPluginAvailable.mockReturnValue(true);
+    tap.mockResolvedValue(undefined);
+    success.mockResolvedValue(undefined);
+
+    tapFeedback();
+    successFeedback();
+
+    expect(tap).toHaveBeenCalledOnce();
+    expect(success).toHaveBeenCalledOnce();
+    expect(impact).not.toHaveBeenCalled();
+    expect(notification).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the plugin's vibrations in an older APK", () => {
+    isPluginAvailable.mockImplementation((name) => name === "Haptics");
     impact.mockResolvedValue(undefined);
     notification.mockResolvedValue(undefined);
 
@@ -38,7 +59,7 @@ describe("haptic feedback", () => {
 
   // Vitest fails the run on an unhandled rejection.
   it("swallows a device without vibration", async () => {
-    isPluginAvailable.mockReturnValue(true);
+    isPluginAvailable.mockImplementation((name) => name === "Haptics");
     impact.mockRejectedValue(new Error("unavailable"));
 
     tapFeedback();

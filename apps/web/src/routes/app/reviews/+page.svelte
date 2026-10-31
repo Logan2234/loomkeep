@@ -373,7 +373,7 @@
 
 {#if selected.length > 0}
   <div
-    class="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-30 flex justify-center px-4 md:bottom-6"
+    class="pointer-events-none fixed inset-x-0 bottom-[calc(var(--bottom-bar-space)+0.5rem)] z-30 flex justify-center px-4 md:bottom-6"
     transition:fly={{ y: reduced ? 0 : 24, duration: reduced ? 0 : 220 }}>
     <div
       class="border-border bg-surface pointer-events-auto flex w-full max-w-2xl flex-wrap items-center gap-2 rounded-xl border px-4 py-2.5 shadow-2xl"

@@ -96,6 +96,17 @@
   color-scheme: dark;
 }
 
+:root {
+  /* What the compact shell keeps free for its bottom bar. Nothing while the
+     keyboard is up in the Android app, where the bar is hidden
+     (keyboard.svelte.ts). */
+  --bottom-bar-space: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+html.keyboard-open {
+  --bottom-bar-space: 0px;
+}
+
 html {
   scroll-behavior: smooth;
   /* Pressed states are drawn by the components themselves (`active:`); the

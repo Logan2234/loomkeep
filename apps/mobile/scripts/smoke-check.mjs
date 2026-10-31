@@ -12,6 +12,7 @@ const PLUGINS = [
   "BarcodeScanner",
   "SystemBars",
   "ShellTheme",
+  "ShellHaptics",
   "ShellInstance",
   "NotificationActions",
   // Only in a build made with Firebase's config (capacitor.config.ts).
