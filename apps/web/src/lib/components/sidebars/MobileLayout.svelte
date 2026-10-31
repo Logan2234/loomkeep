@@ -30,11 +30,9 @@
 <div class="min-h-svh">
   <main
     id="main"
-    class="min-h-svh {keyboard.open
-      ? 'pb-4'
-      : showOnboarding
-        ? 'pb-[calc(7.25rem+env(safe-area-inset-bottom))]'
-        : 'pb-[calc(4.5rem+env(safe-area-inset-bottom))]'}">
+    class="min-h-svh {showOnboarding && !keyboard.open
+      ? 'pb-[calc(7.25rem+env(safe-area-inset-bottom))]'
+      : 'pb-[var(--bottom-bar-space)]'}">
     {#key page.url.pathname}
       {@render children()}
     {/key}

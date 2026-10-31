@@ -146,7 +146,7 @@
      landscape keeps it clear of the bar too. -->
 <div
   class="pointer-events-none fixed z-60 flex flex-col gap-2 {layout.compact
-    ? 'inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] items-center'
+    ? 'inset-x-4 bottom-[calc(var(--bottom-bar-space)+0.5rem)] items-center'
     : 'right-4 bottom-4 items-end'}">
   {#each toast.items as t (t.id)}
     {@const style = VARIANT_STYLES[t.variant]}

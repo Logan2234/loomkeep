@@ -30,6 +30,16 @@ history from before it was started.
 
 ### Android app
 
+- **Haptic feedback comes from Android itself** (`ShellHaptics`,
+  `View.performHapticFeedback`), tuned by each maker and following the
+  system's touch feedback setting: the raw waveforms of `@capacitor/haptics`
+  couldn't be felt on some phones (Poco X5 Pro). APKs without it keep the
+  plugin. Needs the next APK.
+- **No more gap above the keyboard** in the app: what the shell reserves for
+  the hidden bottom bar (`--bottom-bar-space`) now goes with it, on every
+  page and above all in full-screen chat, whose composer floated 72 px over
+  the keyboard. Toasts, the reviews selection bar and the import summary
+  follow.
 - **Home-screen widgets** (MOB-20): « To watch » (shows in progress, with a
   ✓ that marks the next episode watched without opening the app),
   « Releases » (today's releases among what's followed, else the next
