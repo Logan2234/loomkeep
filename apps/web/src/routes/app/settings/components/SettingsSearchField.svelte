@@ -49,6 +49,7 @@
     {id}
     type="search"
     autocomplete="off"
+    enterkeyhint="search"
     class="input py-2 pr-16 pl-9 text-sm"
     placeholder={m.settings_search_placeholder()}
     onkeydown={onKeydown} />

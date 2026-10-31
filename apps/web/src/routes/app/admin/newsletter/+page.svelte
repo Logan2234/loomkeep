@@ -107,6 +107,7 @@
   <input
     type="search"
     value={query}
+    enterkeyhint="search"
     aria-label={m.common_search()}
     placeholder={m.common_search()}
     class="input min-w-0 flex-1"

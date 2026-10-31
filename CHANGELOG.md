@@ -15,6 +15,8 @@ history from before it was started.
 
 ### Accessibility
 
+- Show context-appropriate Enter actions on Android keyboards for search and
+  clear multi-field forms.
 - Improve contrast for the mobile navigation, secondary buttons, and the
   commit identifier in the legal footer.
 - Center mobile navigation labels beneath their icons and remove the

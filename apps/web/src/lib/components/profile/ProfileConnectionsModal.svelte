@@ -216,6 +216,7 @@
       <input
         type="search"
         class="input pl-9"
+        enterkeyhint="search"
         placeholder={m.profile_connections_search()}
         aria-label={m.profile_connections_search()}
         bind:value={query} />

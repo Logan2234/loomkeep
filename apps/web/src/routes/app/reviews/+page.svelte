@@ -240,6 +240,7 @@
           <input
             type="search"
             class="input pl-9"
+            enterkeyhint="search"
             placeholder={m.reviews_search()}
             aria-label={m.reviews_search()}
             bind:value={search} />

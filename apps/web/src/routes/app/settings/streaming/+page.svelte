@@ -189,6 +189,7 @@
                 <input
                   type="search"
                   class="input mt-3 w-full"
+                  enterkeyhint="search"
                   placeholder={m.settings_streaming_search_placeholder()}
                   aria-label={m.settings_streaming_search_placeholder()}
                   bind:value={search} />

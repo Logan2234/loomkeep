@@ -23,6 +23,7 @@
   <input
     bind:value
     {oninput}
+    enterkeyhint="search"
     aria-label={m.chat_search_friends()}
     placeholder={m.chat_search_friends()}
     class="input focus:border-accent py-0 pl-9 text-sm transition-colors duration-150 {height}" />
