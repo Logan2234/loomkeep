@@ -19,6 +19,10 @@ history from before it was started.
 
 ### Changed
 
+- Phone: sliding across a page moves between its tabs (stats, calendar, feed,
+  leaderboard, notifications, Messages). Notifications now use underlined tabs.
+- Phone: a bottom tab finds its page where it was left, vertically.
+- Sign out: a quiet row at the bottom of the phone's menu, gone from the profile.
 - "New" badges shrink to a dot under 360 dp.
 - Home's quick search drops its domain picker on a small phone.
 - Search page: on a phone, the domain tabs share the row instead of running

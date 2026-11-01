@@ -295,6 +295,7 @@
   </PageHeader>
 
   <Tabs
+    swipe={false}
     tabs={TABS}
     current={tab}
     onSelect={changeTab}

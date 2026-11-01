@@ -15,7 +15,7 @@
   import FollowRequests from "#lib/components/notifications/FollowRequests.svelte";
   import NotificationRow from "#lib/components/notifications/NotificationRow.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
-  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import {
@@ -108,16 +108,24 @@
     isNew={isFeatureNew("notification-history")}
     class="mb-5" />
 
-  <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-    <SegmentedControl
-      label={m.common_notifications()}
-      options={[
-        { value: "all", label: m.notif_filter_all() },
-        { value: "unread", label: m.notif_filter_unread(), count: unread },
-      ]}
-      value={filter}
-      onChange={changeFilter} />
-    {#if unread > 0}
+  <Tabs
+    class="mb-3"
+    label={m.common_notifications()}
+    tabs={[
+      { value: "all", label: m.notif_filter_all() },
+      {
+        value: "unread",
+        label:
+          unread > 0
+            ? `${m.notif_filter_unread()} (${unread})`
+            : m.notif_filter_unread(),
+      },
+    ]}
+    current={filter}
+    onSelect={changeFilter} />
+
+  {#if unread > 0}
+    <div class="mb-3 flex justify-end">
       <button
         type="button"
         transition:fade={{ duration: reduced ? 0 : 150 }}
@@ -126,8 +134,8 @@
         <Icon name="check-check" class="h-4 w-4" />
         {m.notif_mark_all_read()}
       </button>
-    {/if}
-  </div>
+    </div>
+  {/if}
 
   {#if requests.length > 0}
     <section class="pb-6" in:rowIn out:rowOut>

@@ -5,7 +5,9 @@
   // outgrow a phone screen — hence the baseline drawn as an inset shadow: a
   // bottom border pulled under the tabs with a negative margin would be
   // clipped by the scroll container. Pair it with TabPanels for the content.
+  import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
+  import { adjacentTab, listenTabSwipe } from "#lib/tab-swipe.js";
 
   let {
     tabs,
@@ -14,6 +16,7 @@
     label,
     idPrefix,
     class: className = "",
+    swipe = true,
   }: {
     tabs: (SelectOption<T> & { disabled?: boolean })[];
     current: T;
@@ -23,10 +26,33 @@
     /** Ties each tab to its panel: `{idPrefix}-{value}-tab` / `-panel`. */
     idPrefix?: string;
     class?: string;
+    /** Sliding across the page moves between tabs on a touch screen. */
+    swipe?: boolean;
   } = $props();
 
   const reduced = prefersReducedMotion();
   const buttons: Partial<Record<T, HTMLButtonElement>> = {};
+  let list = $state<HTMLDivElement>();
+
+  $effect(() => {
+    if (!swipe || !layout.compact) return;
+    return listenTabSwipe(
+      document,
+      (step) => {
+        const next = adjacentTab(tabs, current, step);
+        if (next !== null) onSelect(next);
+      },
+      // What follows the strip is its content: it follows the finger a little.
+      () => {
+        const content: HTMLElement[] = [];
+        let el = list?.nextElementSibling;
+        for (; el; el = el.nextElementSibling) {
+          if (el instanceof HTMLElement) content.push(el);
+        }
+        return content;
+      },
+    );
+  });
 
   // One underline that slides to the active tab, rather than one per tab.
   let indicator = $state<{ left: number; width: number } | null>(null);
@@ -66,6 +92,7 @@
 </script>
 
 <div
+  bind:this={list}
   class="no-scrollbar relative flex gap-6 overflow-x-auto shadow-[inset_0_-1px_0_var(--color-border)] {className}"
   role="tablist"
   aria-label={label}>

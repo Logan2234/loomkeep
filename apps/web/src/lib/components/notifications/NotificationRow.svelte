@@ -138,6 +138,7 @@
     {href}
     role={href ? undefined : "group"}
     onclick={href ? open : undefined}
+    data-no-tab-swipe
     {onpointerdown}
     {onpointermove}
     {onpointerup}

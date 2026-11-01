@@ -106,6 +106,7 @@
     {#if run.details}
       <p class="text-dim mt-5 text-sm">{m.admin_imports_selection_help()}</p>
       <Tabs
+        swipe={false}
         class="my-3"
         {tabs}
         current={activeState}

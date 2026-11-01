@@ -46,7 +46,6 @@ function renderHeader(rel: Partial<RelationshipDto>, onUnfriend = vi.fn()) {
     onUnfriend,
     onToggleBlock: vi.fn(),
     onReport: vi.fn(),
-    onSignOut: vi.fn(),
     onOpenAvatarZoom: vi.fn(),
     onOpenAvatarModal: vi.fn(),
     onOpenEditProfile: vi.fn(),

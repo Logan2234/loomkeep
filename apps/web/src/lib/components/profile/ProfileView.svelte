@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { signOutAndRedirect } from "#lib/api/auth.js";
-
   import { type ListTile } from "#lib/components/profile/list-tile.js";
 
   import {
@@ -226,8 +224,6 @@
     blockMut.mutate();
   }
 
-  const signOut = signOutAndRedirect;
-
   let shareModalOpen = $state(false);
   let scanModalOpen = $state(false);
 
@@ -376,7 +372,6 @@
         onUnfriend={() => (confirmUnfriend = true)}
         onToggleBlock={toggleBlock}
         onReport={() => (reporting = true)}
-        onSignOut={signOut}
         onOpenAvatarZoom={() => (avatarZoomed = true)}
         onOpenAvatarModal={() => (avatarModalOpen = true)}
         onOpenEditProfile={() => (editProfileModalOpen = true)}

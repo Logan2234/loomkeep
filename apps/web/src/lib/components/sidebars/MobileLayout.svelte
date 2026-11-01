@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onNavigate } from "$app/navigation";
+  import { afterNavigate, onNavigate } from "$app/navigation";
   import { page } from "$app/state";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { pageTransition } from "#lib/page-transition.js";
@@ -27,6 +27,31 @@
   }: { children: Snippet; navStyle?: NavStyle } = $props();
 
   let lastTap: Element | null = null;
+
+  // A bottom tab finds its page where it was left, vertically. A page opened
+  // any other way starts at the top, as usual.
+  const tabScroll = new Map<string, number>();
+  const RESTORE_WAIT_MS = 500;
+  const tappedBottomBar = () => !!lastTap?.closest("[data-mobile-navigation]");
+
+  onNavigate(({ from }) => {
+    if (from && tappedBottomBar()) tabScroll.set(from.url.pathname, scrollY);
+  });
+
+  afterNavigate(({ to }) => {
+    if (!to || !tappedBottomBar()) return;
+    const top = tabScroll.get(to.url.pathname);
+    if (!top) return;
+    // What was loaded may still be growing the page back to its height.
+    const until = performance.now() + RESTORE_WAIT_MS;
+    const restore = () => {
+      scrollTo({ top, behavior: "instant" });
+      if (scrollY < top - 1 && performance.now() < until) {
+        requestAnimationFrame(restore);
+      }
+    };
+    restore();
+  });
 
   $effect(() => keyboard.init());
 

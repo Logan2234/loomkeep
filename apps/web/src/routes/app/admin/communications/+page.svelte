@@ -38,6 +38,7 @@
     back="/app/admin" />
 
   <Tabs
+    swipe={false}
     class="mb-6"
     label={m.settings_section_communications()}
     idPrefix="communications"

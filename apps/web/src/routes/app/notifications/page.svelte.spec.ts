@@ -100,14 +100,14 @@ it("keeps the filter in the address", async () => {
   renderWithQuery(NotificationsPage, {});
   const user = userEvent.setup();
 
-  const unreadOnly = await screen.findByRole("button", {
+  const unreadOnly = await screen.findByRole("tab", {
     name: new RegExp(m.notif_filter_unread()),
   });
   await waitFor(() => expect(unreadOnly.textContent).toContain("1"));
   await user.click(unreadOnly);
 
   await waitFor(() => expect(page.url.search).toBe("?filter=unread"));
-  expect(unreadOnly.getAttribute("aria-pressed")).toBe("true");
+  expect(unreadOnly.getAttribute("aria-selected")).toBe("true");
 });
 
 it("lets go of an entry read from the unread list", async () => {
