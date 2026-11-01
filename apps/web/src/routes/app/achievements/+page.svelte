@@ -56,6 +56,7 @@
   <PageHeader
     icon="trophy"
     back="/app/profile"
+    backInHistory
     title={m.gamification_page_title()}
     subtitle={m.gamification_page_subtitle()} />
 

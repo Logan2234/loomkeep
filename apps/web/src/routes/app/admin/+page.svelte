@@ -130,6 +130,7 @@
     icon="shield"
     title={m.admin_dashboard_title()}
     back="/app"
+    backInHistory
     subtitle={m.admin_dashboard_subtitle({
       name: auth.user?.displayName ?? "",
     })}>

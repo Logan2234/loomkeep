@@ -229,6 +229,9 @@
 
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
+    back="/app"
+    backInHistory
+    backOnPhoneOnly
     icon="stats"
     title={m.common_stats()}
     subtitle={m.stats_subtitle()} />

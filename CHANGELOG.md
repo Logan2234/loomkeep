@@ -25,6 +25,9 @@ history from before it was started.
 ### Added
 
 - "System" option in Settings › Appearance › Theme.
+- Back button on a phone for Calendar, Stats, Feed, Leaderboard, Search and the
+  libraries. Settings, Admin, Achievements, Lists and Reviews now return to the
+  page they were opened from.
 
 ### Accessibility
 

@@ -77,6 +77,9 @@
 
 <div class="mx-auto max-w-2xl px-5 pt-6 pb-32 md:px-8 md:pt-10">
   <PageHeader
+    back="/app"
+    backInHistory
+    backOnPhoneOnly
     icon="crown"
     title={m.gamification_leaderboard_title()}
     subtitle={m.gamification_leaderboard_subtitle()} />

@@ -78,6 +78,7 @@
   <PageHeader
     icon="list"
     back="/app/profile"
+    backInHistory
     title={m.lists_title()}
     subtitle={m.lists_subtitle()} />
 

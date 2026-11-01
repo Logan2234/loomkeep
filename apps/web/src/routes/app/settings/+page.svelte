@@ -142,6 +142,7 @@
   <PageHeader
     icon="gear"
     back="/app/profile"
+    backInHistory
     title={m.common_settings()}
     class="mb-6" />
 
