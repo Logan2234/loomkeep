@@ -19,6 +19,10 @@ history from before it was started.
 
 ### Changed
 
+- Phone: sliding across a page moves between its tabs (stats, calendar, feed,
+  leaderboard, notifications, Messages). Notifications now use underlined tabs.
+- Phone: a bottom tab finds its page where it was left, vertically.
+- Sign out: a quiet row at the bottom of the phone's menu, gone from the profile.
 - Phone: menus, sort and filter lists open as bottom sheets. A sheet follows
   the speed of the gesture when released, and long ones stop halfway.
 - Phone: larger touch areas on small buttons, chips and segmented controls.

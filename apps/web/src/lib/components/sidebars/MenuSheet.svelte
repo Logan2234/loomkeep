@@ -164,18 +164,17 @@
               {#each group.items as item (item.id)}
                 {@render tile(item)}
               {/each}
-              {#if group.label === m.common_account()}
-                <button
-                  type="button"
-                  onclick={signOut}
-                  class="border-border bg-surface-2 hover:border-danger/40 text-danger flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-colors">
-                  <Icon name="logout" class="h-6 w-6" />
-                  <span class="text-xs font-semibold">{m.common_logout()}</span>
-                </button>
-              {/if}
             </div>
           </div>
         {/each}
+
+        <button
+          type="button"
+          onclick={signOut}
+          class="text-dim mt-4 flex min-h-12 w-full items-center justify-center gap-2 text-sm font-semibold transition-colors duration-150 active:opacity-70">
+          <Icon name="logout" class="h-4 w-4" />
+          {m.common_logout()}
+        </button>
       {/if}
     </div>
   </Drawer>

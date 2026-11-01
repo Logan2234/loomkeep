@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tabSwipe } from "#lib/tab-swipe.js";
   // /app/messages[/<id>]: Messages as a page — the conversation list beside
   // the open conversation. "Réduire" puts it back in the floating panel.
   import { goto } from "$app/navigation";
@@ -112,6 +113,9 @@
 <!-- One screen tall: the list and the conversation scroll on their own. On
      the compact shell, the bottom bar keeps its share of the height. -->
 <div
+  use:tabSwipe={(step) => {
+    if (layout.compact) chat.tab = step > 0 ? "works" : "friends";
+  }}
   bind:this={root}
   class="flex min-h-0 {layout.compact
     ? 'h-[calc(100dvh-env(safe-area-inset-top)-var(--bottom-bar-space))]'

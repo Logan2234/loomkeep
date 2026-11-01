@@ -117,6 +117,14 @@ html {
   overscroll-behavior-y: none;
 }
 
+@media (pointer: coarse) {
+  /* A sideways slide belongs to the tabs (tab-swipe.ts), not to the browser's
+     history. */
+  html {
+    overscroll-behavior-x: none;
+  }
+}
+
 body {
   margin: 0;
   /* Non-zero only where the page draws under the status bar: the Android

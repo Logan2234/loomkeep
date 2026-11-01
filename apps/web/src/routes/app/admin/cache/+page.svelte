@@ -246,6 +246,7 @@
     back="/app/admin" />
 
   <Tabs
+    swipe={false}
     class="mb-5"
     label={m.admin_cache_title()}
     tabs={domainTabs}

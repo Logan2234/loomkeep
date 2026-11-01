@@ -28,7 +28,6 @@
     onUnfriend,
     onToggleBlock,
     onReport,
-    onSignOut,
     onOpenAvatarZoom,
     onOpenAvatarModal,
     onOpenEditProfile,
@@ -49,7 +48,6 @@
     onUnfriend: () => void;
     onToggleBlock: () => void;
     onReport: () => void;
-    onSignOut: () => void;
     onOpenAvatarZoom: () => void;
     onOpenAvatarModal: () => void;
     onOpenEditProfile: () => void;
@@ -288,14 +286,6 @@
           aria-label={m.common_settings()}>
           <Icon name="gear" class="h-4 w-4" />
         </a>
-        <button
-          type="button"
-          class="border-danger/40 text-danger hover:bg-danger/10 grid h-9 w-9 place-items-center rounded-full border"
-          title={m.common_logout()}
-          aria-label={m.common_logout()}
-          onclick={onSignOut}>
-          <Icon name="logout" class="h-4 w-4" />
-        </button>
       </div>
     {/if}
   </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tabSwipe } from "#lib/tab-swipe.js";
   // Messages on the compact shell: a full-screen veil, list then
   // conversation, opened from the bottom bar's Messages tab.
   import { getChatUnread, getConversations } from "#lib/api/chat.js";
@@ -63,6 +64,10 @@
 
 <div
   role="dialog"
+  use:tabSwipe={(step) => {
+    chat.tab = step > 0 ? "works" : "friends";
+    if (step < 0) chat.activeId = null;
+  }}
   aria-modal="true"
   aria-label={m.chat_title()}
   transition:fly={{ y: 24, duration: reduced ? 0 : 240 }}
