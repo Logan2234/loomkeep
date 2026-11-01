@@ -453,8 +453,9 @@
        it) room to sit in without being clipped by `overflow-x: auto`, which
        forces the y-axis to clip too (CSS overflow computes the other axis
        to `auto` once one axis isn't `visible`). */
-    padding: 6px 5px 4px;
-    margin: -6px -5px -4px;
+    padding: 6px 0 4px 5px;
+    /* Nothing on the right: tabs that overflow stop at the bar's own edge. */
+    margin: -6px 0 -4px -5px;
     overflow-x: auto;
   }
 

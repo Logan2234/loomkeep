@@ -45,6 +45,9 @@ history from before it was started.
 
 ### Fixed
 
+- Phone menu: Home, Search, Messages and Alerts stay reachable when they aren't
+  in the bottom bar.
+- Search page: overflowing domain tabs stop at the search bar's right edge.
 - Saga view: the header has the back button of the works view, and section
   titles no longer break around their hint.
 - Work pages: the video hero grows with its content, so a long title or an
