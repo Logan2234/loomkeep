@@ -89,13 +89,13 @@
     <div class="skeleton mb-8 h-[4.5rem] rounded-xl"></div>
   {:else if lastRun}
     <div
-      class="card mb-8 flex items-center gap-3 p-4 {lastRunOk
+      class="card mb-8 flex flex-wrap items-center gap-3 p-4 {lastRunOk
         ? 'border-success/50 bg-success/5'
         : 'border-danger/50 bg-danger/5'}">
       <Icon
         name={lastRunOk ? "check" : "warning"}
         class="h-5 w-5 shrink-0 {lastRunOk ? 'text-success' : 'text-danger'}" />
-      <div class="min-w-0 flex-1">
+      <div class="min-w-48 flex-1">
         <p class="font-semibold">
           {lastRunOk
             ? m.settings_import_last_run_title({ source: lastRunSource })

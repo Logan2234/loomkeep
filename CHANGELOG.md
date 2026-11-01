@@ -17,8 +17,31 @@ history from before it was started.
   hosts and the instance's API origin instead of every `https:` origin.
 - `glob` raised to 14.0.2 in the images (CVE-2026-118773, CVE-2026-118764).
 
+### Changed
+
+- Phone: a tapped poster now travels to the work's page and back.
+- Calendar: only days with a release are listed, under a week strip that stays
+  in view and follows the day being read.
+- Home: widgets of works keep their poster strip at 360 dp instead of falling
+  back to a list, with larger touch areas on their buttons.
+- Settings: on a phone, the search field heads the index only.
+- Chat: a shared "where to watch" card shows three platforms; the others open
+  in a sheet.
+
 ### Fixed
 
+- Work pages: the video hero grows with its content, so a long title or an
+  enlarged system font no longer leaves through its top.
+- Carousels on a touch screen draw five page dots at most, with a chevron
+  toward the pages left. A dot per page could widen a long work's whole page
+  until the bottom bar fell off screen.
+- Phone: the "Première séance" checklist moves from a bar fixed above
+  the tabs, where it covered a conversation's message field, to a card at the
+  head of the home page.
+- Stats: music no longer shows a "domain disabled" error to an account without
+  access to it, and the tab goes away with it.
+- Import: the last run's summary no longer squeezes its text beside the history
+  button, and a phone offers to choose a file rather than to drop one.
 - Android app: no more black band between the page and the keyboard.
 - Mobile bar: Feed and Leaderboard shortcuts no longer vanish, Messages and
   Alerts are drawn like every other tab, and a bar takes up to six shortcuts.

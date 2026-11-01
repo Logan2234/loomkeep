@@ -1,5 +1,5 @@
 <script lang="ts">
-  // MobileLayout reserves room for this bar above the bottom navigation.
+  // The compact shell's checklist, at the head of the home page.
   import { afterNavigate } from "$app/navigation";
   import { skipOnboardingStep } from "#lib/api/gamification.js";
   import { keys } from "#lib/api/keys.js";
@@ -41,14 +41,10 @@
 </script>
 
 {#if steps.length > 0}
-  <!-- bottom matches the 4.5rem the mobile bars themselves reserve
-       (BottomNavigation/ProjectorDockMobileBar/ProgrammeBoardMobileBar), so
-       this docks flush above whichever skin is active. -->
   <button
     type="button"
     onclick={() => (open = true)}
-    class="border-border bg-surface active:bg-surface-2 fixed inset-x-0 z-20 flex w-full items-center gap-2.5 border-t px-4 py-2.5 text-left transition-colors duration-150"
-    style="bottom: calc(4.42rem + env(safe-area-inset-bottom));">
+    class="card active:bg-surface-2 mb-4 flex w-full items-center gap-2.5 px-4 py-2.5 text-left transition-colors duration-150">
     <span
       class="border-accent/40 bg-accent/10 grid h-8 w-8 shrink-0 place-items-center rounded-full border">
       <Icon name="flag" class="text-accent h-4 w-4" />

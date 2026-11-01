@@ -1,19 +1,33 @@
 <script lang="ts">
+  import { pendingPoster } from "#lib/shared-poster.svelte.js";
+
   let { wide = true, media = false }: { wide?: boolean; media?: boolean } =
     $props();
 </script>
 
+{#snippet pendingImage()}
+  {#if pendingPoster.src}
+    <img
+      src={pendingPoster.src}
+      alt=""
+      class="h-full w-full rounded-[inherit] object-cover" />
+  {/if}
+{/snippet}
+
 {#if media}
-  <div class="relative h-[64vh] max-h-155 min-h-[min(26.25rem,62svh)]">
-    <div class="skeleton h-full w-full"></div>
+  <div
+    class="relative flex min-h-[max(min(26.25rem,62svh),min(64vh,38.75rem))] flex-col justify-end">
+    <div class="skeleton absolute inset-0"></div>
     <div
       class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent">
     </div>
     <div class="skeleton absolute top-4 left-4 h-8 w-24 rounded-full"></div>
     <div
+      data-detail-poster
       class="skeleton absolute right-4 bottom-4 z-10 aspect-2/3 w-16 rounded-lg sm:w-20 md:right-6 md:bottom-6 md:w-24">
+      {@render pendingImage()}
     </div>
-    <div class="absolute inset-x-0 bottom-0">
+    <div class="relative w-full pt-16">
       <div
         class="mx-auto max-w-4xl px-5 pr-20 pb-6 sm:pr-24 md:px-8 md:pr-8 md:pb-8">
         <div class="flex gap-2">
@@ -59,7 +73,9 @@
       : 'max-w-4xl'} px-4 md:px-8">
     <div class="-mt-24 flex flex-col gap-5 sm:flex-row sm:items-end md:-mt-28">
       <div
+        data-detail-poster
         class="skeleton aspect-2/3 w-32 shrink-0 rounded-xl shadow-lg md:w-44">
+        {@render pendingImage()}
       </div>
       <div class="flex min-w-0 flex-1 flex-col gap-3">
         <div class="skeleton h-5 w-24 rounded-full"></div>

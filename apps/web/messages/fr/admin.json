@@ -502,6 +502,7 @@
   "admin_components_poster_detail": "fallback déterministe · contenu adulte",
   "admin_components_provider_detail": "marques officielles des sources",
   "admin_components_rating_detail": "0 à 10 · effacement",
+  "admin_components_carousel_dots_detail": "nombreuses pages · points limités, chevrons vers la suite",
   "admin_components_carousel_detail": "défilement · navigation adaptative",
   "admin_components_carousel_label": "Exemple de carrousel",
   "admin_components_body_sample": "Le corps de texte reste lisible et calme.",

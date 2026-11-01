@@ -532,11 +532,17 @@
           <span class="font-semibold">📦 {fileName}</span>
           <span class="timecode text-sm">{m.import_file_change_hint()}</span>
         {:else}
-          <span class="font-semibold"
+          <!-- A phone has nothing to drop a file from. -->
+          <span class="font-semibold [@media(hover:none)]:hidden"
             >{descriptor.input.multiple
               ? m.import_files_drop()
               : m.import_file_drop()}</span>
-          <span class="text-dim text-sm">{m.import_file_browse()}</span>
+          <span class="text-dim text-sm [@media(hover:none)]:hidden"
+            >{m.import_file_browse()}</span>
+          <span class="font-semibold [@media(hover:hover)]:hidden"
+            >{descriptor.input.multiple
+              ? m.import_files_choose()
+              : m.import_file_choose()}</span>
         {/if}
       </label>
       {#if fileError}

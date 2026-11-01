@@ -377,11 +377,15 @@
   <!-- The 26.25rem floor outgrew short viewports: a phone in landscape
        (~430px tall) got a full-screen backdrop with the tracking controls
        pushed below the fold, so the floor yields to the viewport there. -->
-  <div class="relative h-[64vh] max-h-155 min-h-[min(26.25rem,62svh)]">
+  <div
+    class="relative flex min-h-[max(min(26.25rem,62svh),min(64vh,38.75rem))] flex-col justify-end">
     {#if detail.backdropUrl}
-      <img src={detail.backdropUrl} alt="" class="h-full w-full object-cover" />
+      <img
+        src={detail.backdropUrl}
+        alt=""
+        class="absolute inset-0 h-full w-full object-cover" />
     {:else}
-      <div class="from-surface-2 to-surface h-full w-full bg-linear-to-br">
+      <div class="from-surface-2 to-surface absolute inset-0 bg-linear-to-br">
       </div>
     {/if}
     <div
@@ -408,12 +412,16 @@
         type="button"
         class="absolute right-4 bottom-4 z-10 w-16 shrink-0 cursor-zoom-in overflow-hidden rounded-lg border border-white/20 shadow-lg sm:w-20 md:right-6 md:bottom-6 md:w-24"
         aria-label={m.media_enlarge_poster()}
-        onclick={() => openLightbox(detail?.posterUrl ?? null)}>
+        onclick={() => openLightbox(detail?.posterUrl ?? null)}
+        data-detail-poster>
         <Poster src={detail.posterUrl} title={detail.title} alt="" />
       </button>
     {/if}
 
-    <div class="absolute inset-x-0 bottom-0">
+    <!-- In the flow, so the hero grows with a long title or an enlarged system
+         font instead of pushing them out through its top. pt clears the back
+         link. -->
+    <div class="relative w-full pt-16">
       <div
         class="mx-auto max-w-4xl px-5 pr-20 pb-6 sm:pr-24 md:px-8 md:pr-8 md:pb-8">
         <div class="flex flex-wrap items-center gap-2">

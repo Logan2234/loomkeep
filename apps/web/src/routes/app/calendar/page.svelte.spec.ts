@@ -273,4 +273,16 @@ describe("calendar page", () => {
       }),
     ).toBeTruthy();
   });
+
+  it("lists only the days something airs, the strip keeping the week", async () => {
+    renderWithQuery(CalendarPage, {});
+
+    const strip = await screen.findByRole("navigation", {
+      name: m.calendar_week_strip(),
+    });
+    expect(strip.children).toHaveLength(7);
+    // e1 and e2 air tomorrow: the only link in the strip.
+    expect(strip.querySelectorAll("a")).toHaveLength(1);
+    expect(document.querySelectorAll("section[id]")).toHaveLength(2);
+  });
 });

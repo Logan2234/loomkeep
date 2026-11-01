@@ -45,6 +45,7 @@
   import { isPileEmpty, pileTile } from "#lib/pile.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { StatsDomain, StatsWindow } from "@loomkeep/shared";
+  import { isDomainEnabled } from "#lib/domain-availability.js";
   import { Domain, STATS_DOMAINS } from "@loomkeep/shared";
 
   // Tabs also carry the planned domains, which are never selectable.
@@ -52,7 +53,7 @@
     StatsDomainChoice | typeof Domain.PODCASTS | typeof Domain.BOARDGAMES;
 
   const enabledDomains = $derived<StatsDomain[]>(
-    STATS_DOMAINS.filter((d) => auth.user?.enabledDomains?.includes(d) ?? true),
+    STATS_DOMAINS.filter(isDomainEnabled),
   );
 
   // The two domains with no stats yet show up greyed out, and only for

@@ -3,13 +3,20 @@
   import { page } from "$app/state";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { pageTransition } from "#lib/page-transition.js";
-  import OnboardingBanner from "#lib/components/onboarding/OnboardingBanner.svelte";
+  import {
+    detailPoster,
+    isWorkPath,
+    namePoster,
+    pendingPoster,
+    posterImageSrc,
+    posterLinkingTo,
+    tappedPoster,
+  } from "#lib/shared-poster.svelte.js";
   import ProgrammeBoardMobileBar from "#lib/ee/nav/ProgrammeBoardMobileBar.svelte";
   import ProjectorDockMobileBar from "#lib/ee/nav/ProjectorDockMobileBar.svelte";
-  import { useOnboardingChecklist } from "#lib/gamification/onboarding-checklist.svelte.js";
   import { keyboard } from "#lib/keyboard.svelte.js";
   import type { NavStyle } from "#lib/nav-style.svelte.js";
-  import type { Snippet } from "svelte";
+  import { tick, type Snippet } from "svelte";
   import BottomNavigation from "./BottomNavigation.svelte";
   import MenuSheet from "./MenuSheet.svelte";
   import PullToRefresh from "#lib/components/PullToRefresh.svelte";
@@ -19,14 +26,7 @@
     navStyle = "marquee",
   }: { children: Snippet; navStyle?: NavStyle } = $props();
 
-  // Independent of OnboardingBanner's own query (same key, so TanStack serves
-  // both from one cache entry — same idiom as NotificationTab querying the
-  // bell's own feed key just for its badge count) — needed here only to know
-  // whether <main> must reserve extra room above the nav bar for the docked
-  // banner, since the banner itself renders below in a different stacking
-  // position and nothing else reserves space for it.
-  const checklistQuery = useOnboardingChecklist();
-  const showOnboarding = $derived((checklistQuery.data?.steps.length ?? 0) > 0);
+  let lastTap: Element | null = null;
 
   $effect(() => keyboard.init());
 
@@ -42,40 +42,55 @@
       return;
     }
 
-    document.documentElement.dataset.pageTransition = pageTransition(
+    const direction = pageTransition(
       from.url.pathname,
       to.url.pathname,
       "delta" in navigation ? navigation.delta : undefined,
     );
+    document.documentElement.dataset.pageTransition = direction;
+
+    // Only one end is on screen at a time, so each is named when it exists.
+    const backFromWork = direction === "back" && isWorkPath(from.url.pathname);
+    const opening = isWorkPath(to.url.pathname)
+      ? tappedPoster(lastTap, to.url.pathname)
+      : null;
+    pendingPoster.src = posterImageSrc(opening);
+    const unnameOld = namePoster(backFromWork ? detailPoster() : opening);
+    let unnameNew = () => {};
 
     return new Promise((resolve) => {
       const transition = document.startViewTransition(async () => {
         resolve();
         await complete;
+        await tick();
+        unnameOld();
+        if (opening) unnameNew = namePoster(detailPoster());
+        else if (backFromWork) {
+          unnameNew = namePoster(posterLinkingTo(from.url.pathname));
+        }
       });
       void transition.finished.finally(() => {
         delete document.documentElement.dataset.pageTransition;
+        unnameNew();
       });
     });
   });
 </script>
 
+<svelte:window
+  onclickcapture={(e) =>
+    (lastTap = e.target instanceof Element ? e.target : null)} />
+
 <div class="min-h-svh">
-  <main
-    id="main"
-    class="min-h-svh {showOnboarding && !keyboard.open
-      ? 'pb-[calc(7.25rem+env(safe-area-inset-bottom))]'
-      : 'pb-[var(--bottom-bar-space)]'}">
+  <main id="main" class="min-h-svh pb-[var(--bottom-bar-space)]">
     {#key page.url.pathname}
       {@render children()}
     {/key}
   </main>
 
   <!-- Out of the way while typing in the Android app, where the keyboard
-       would otherwise carry them up (see keyboard.svelte.ts); kept mounted. -->
+       would otherwise carry it up (see keyboard.svelte.ts); kept mounted. -->
   <div style:display={keyboard.open ? "none" : "contents"}>
-    <OnboardingBanner />
-
     {#if navStyle === "dock"}
       <ProjectorDockMobileBar />
     {:else if navStyle === "board"}

@@ -54,7 +54,7 @@ export function posterLayout(
   {
     meta = 0,
     action = false,
-    stripMinWidth = 300,
+    stripMinWidth = 240,
     touch = false,
   }: {
     meta?: number;
