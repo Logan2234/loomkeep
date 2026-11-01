@@ -7,7 +7,16 @@
   import { visibleNavItems } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
   import ChatTab from "#lib/components/chat/ChatTab.svelte";
+  import type { NavTabLook } from "#lib/components/sidebars/NavTab.svelte";
   import NotificationTab from "#lib/components/sidebars/NotificationTab.svelte";
+
+  const TAB_LOOK: NavTabLook = {
+    root: "shrink-0 gap-1 rounded-lg px-3 py-2 text-[0.6rem]",
+    rootActive: "bg-accent/10 text-accent -translate-y-1",
+    slot: "h-5 w-5",
+    slotActive: "",
+    glow: "",
+  };
 
   const items = $derived(
     visibleNavItems(
@@ -64,13 +73,9 @@
   </button>
 
   {#if appConfig.chatEnabled}
-    <ChatTab
-      slotClass="h-5 w-5"
-      rootClass="flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 text-[0.6rem]" />
+    <ChatTab look={TAB_LOOK} />
   {/if}
-  <NotificationTab
-    slotClass="h-5 w-5"
-    rootClass="flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 text-[0.6rem]" />
+  <NotificationTab look={TAB_LOOK} />
 </nav>
 
 <style>

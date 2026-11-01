@@ -146,7 +146,12 @@
       id="theme"
       use:flashAnchor={{ anchor: "theme", hash: page.url.hash }}
       class="p-5 md:p-6">
-      <p class="font-semibold">{m.common_theme()}</p>
+      <p class="flex items-center gap-2 font-semibold">
+        {m.common_theme()}
+        {#if isFeatureNew("system-theme")}
+          <NewBadge />
+        {/if}
+      </p>
       <p class="text-dim mt-1 mb-3 text-sm">
         {m.settings_theme_description()}
       </p>

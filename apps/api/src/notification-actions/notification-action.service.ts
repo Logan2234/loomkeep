@@ -121,6 +121,8 @@ export class NotificationActionService {
         return;
       case NotificationAction.TEST:
         return;
+      case NotificationAction.TEST_FAILURE:
+        throw invalid();
     }
   }
 }

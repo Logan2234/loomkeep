@@ -1,16 +1,14 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { auth } from "#lib/auth.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { mobileNav } from "#lib/mobile-nav.svelte.js";
-  import {
-    resolveBottomShortcuts,
-    scrollUpOnReselect,
-  } from "#lib/navigation.js";
+  import { resolveBottomShortcuts } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
   import ChatTab from "#lib/components/chat/ChatTab.svelte";
+  import NavTab from "./NavTab.svelte";
   import NotificationTab from "./NotificationTab.svelte";
 
   // The user's stored order (falls back to the default set), gated by enabled
@@ -20,6 +18,8 @@
     resolveBottomShortcuts(mobileNav.shortcuts, {
       isDomainEnabled,
       isAdmin: auth.isAdmin,
+      socialEnabled: appConfig.socialEnabled,
+      gamificationEnabled: appConfig.gamificationEnabled,
     }),
   );
 
@@ -28,12 +28,6 @@
   }
 </script>
 
-<!-- Labels are truncated, and dropped to screen readers only under 360px, where
-     they'd run into each other. The icon and the accessible name stay, so
-     nothing becomes unreachable.
-
-     Séance signature: a "ticket stub" bar — the active tab punches up
-     through the line, sitting in a lit amber notch. -->
 <nav
   data-mobile-navigation
   style="view-transition-name: mobile-nav"
@@ -52,48 +46,25 @@
     {:else if item.id === "alerts"}
       <NotificationTab />
     {:else if item.id === "menu"}
-      <button
-        onclick={openMenu}
-        aria-label={m.nav_open_menu()}
-        class="text-dim flex min-w-0 flex-1 flex-col items-center gap-1 text-[0.6875rem] font-semibold">
-        <span class="grid h-9 w-9 place-items-center rounded-full">
-          <Icon name={item.icon} class="h-5 w-5" />
-        </span>
-        <span class="w-full truncate px-0.5 max-[359px]:sr-only">
-          {item.label}
-        </span>
-      </button>
+      <NavTab
+        icon={item.icon}
+        label={item.label}
+        ariaLabel={m.nav_open_menu()}
+        onclick={openMenu} />
     {:else}
-      {@const active = item.match(page.url.pathname)}
-      <a
+      <NavTab
         href={item.href}
-        aria-current={active ? "page" : undefined}
-        onclick={(event) => scrollUpOnReselect(event, item.href, page.url)}
-        class="
-          relative flex min-w-0 flex-1 flex-col items-center gap-1 text-[0.6875rem] font-semibold transition-transform duration-200
-          {active ? 'text-accent -translate-y-1.5' : 'text-dim'}
-        ">
-        {#if active}
-          <span
-            class="bg-accent/25 pointer-events-none absolute -top-1 h-8 w-8 rounded-full blur-md"
-            aria-hidden="true"></span>
-        {/if}
-        <span
-          class="relative grid h-9 w-9 place-items-center rounded-full transition-colors {active
-            ? 'bg-accent text-accent-fg shadow-[0_4px_14px_-2px_var(--accent)]'
-            : ''}">
-          <Icon name={item.icon} class="h-5 w-5" />
+        icon={item.icon}
+        label={item.label}
+        active={item.match(page.url.pathname)}>
+        {#snippet badge()}
           {#if item.newBadgeKey && isFeatureNew(item.newBadgeKey)}
             <span
               class="bg-accent ring-surface absolute top-0 right-0 h-2 w-2 rounded-full ring-2"
               aria-hidden="true"></span>
           {/if}
-        </span>
-
-        <span class="truncate max-[359px]:sr-only">
-          {item.label}
-        </span>
-      </a>
+        {/snippet}
+      </NavTab>
     {/if}
   {/each}
 </nav>

@@ -5,6 +5,7 @@ import {
   type SendAdminTestPushRequestDto,
 } from "@loomkeep/shared";
 import {
+  IsBoolean,
   IsEmail,
   IsIn,
   IsOptional,
@@ -19,6 +20,10 @@ export class SendAdminTestPushDto implements SendAdminTestPushRequestDto {
   @IsOptional()
   @IsIn(PUSH_SAMPLE_KEYS)
   type?: AlertKey;
+
+  @IsOptional()
+  @IsBoolean()
+  failingActions?: boolean;
 
   @IsOptional()
   @IsString()

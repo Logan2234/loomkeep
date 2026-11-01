@@ -115,7 +115,7 @@
       : undefined,
     content: contentPreview,
     appearance: auth.user
-      ? `${theme.mode === "dark" ? m.common_theme_dark() : m.common_theme_light()} · ${languageName(auth.user.locale)}`
+      ? `${theme.choice === "system" ? m.common_system() : theme.mode === "dark" ? m.common_theme_dark() : m.common_theme_light()} · ${languageName(auth.user.locale)}`
       : undefined,
     domains: auth.user
       ? m.settings_preview_domains({

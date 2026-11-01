@@ -32,6 +32,7 @@
   let pushBody = $state("");
   // An alert's sample, or the custom title and message below.
   let pushType = $state<AlertKey | null>(null);
+  let failingActions = $state(false);
   const typeOptions: { value: AlertKey | ""; label: string; group?: string }[] =
     [
       { value: "", label: m.admin_communications_push_custom() },
@@ -50,7 +51,7 @@
     mutate: () =>
       sendAdminTestPush(
         pushType
-          ? { email, type: pushType }
+          ? { email, type: pushType, ...(failingActions && { failingActions }) }
           : {
               email,
               title: pushTitle.trim() || undefined,
@@ -193,6 +194,14 @@
         in:fly={{ y: reduced ? 0 : -6, duration: reduced ? 0 : 200 }}>
         {m.admin_communications_push_sample_hint()}
       </p>
+      <label class="flex items-center justify-between gap-3 text-sm">
+        {m.admin_communications_push_failing_actions()}
+        <input
+          type="checkbox"
+          name="failingActions"
+          bind:checked={failingActions}
+          class="accent-accent h-4 w-4 shrink-0" />
+      </label>
     {:else}
       <div
         class="space-y-4"

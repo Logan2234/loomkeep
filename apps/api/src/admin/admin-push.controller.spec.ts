@@ -11,6 +11,7 @@ function makeController() {
   } as unknown as PushService;
   const prisma = {
     user: { findUnique: vi.fn() },
+    mediaItem: { findFirst: vi.fn().mockResolvedValue(null) },
     pushSubscription: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
 

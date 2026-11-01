@@ -2,6 +2,7 @@ const NEW_BADGE_DAYS = 21;
 
 const SHIPPED = {
   "app-lock": "2026-11-01",
+  "system-theme": "2026-11-01",
   "completion-estimate": "2026-10-22",
   "episode-details": "2026-10-14",
   "movie-releases": "2026-10-03",

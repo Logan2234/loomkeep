@@ -43,6 +43,8 @@ export interface SendAdminTestPushRequestDto {
    * included; `title` and `body` are then ignored. Omitted: a custom push.
    */
   type?: AlertKey;
+  /** The sample's buttons are refused by the server, to see a failed action. */
+  failingActions?: boolean;
   /** Defaults to a canned admin-test message when omitted. */
   title?: string;
   body?: string;

@@ -36,16 +36,7 @@
       layout.openSidePanels -= 1;
     };
   });
-
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key !== "Escape" || event.defaultPrevented) return;
-    // A nested modal owns Escape; the panel remains available beneath it.
-    if (document.querySelectorAll('[role="dialog"]').length > 1) return;
-    onclose();
-  }
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div use:portal use:scrollLock class="contents">
   <button
@@ -56,7 +47,7 @@
     aria-label={m.common_close()}
     onclick={onclose}></button>
   <div
-    use:dialogFocus
+    use:dialogFocus={{ onEscape: onclose }}
     role="dialog"
     aria-modal="true"
     aria-labelledby={labelledby}
