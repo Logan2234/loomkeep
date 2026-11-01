@@ -21,6 +21,7 @@ describe("Home-screen widgets (e2e)", () => {
   let entryId = "";
   let gameEntryId = "";
   const episodeIds: string[] = [];
+  const gameSourceId = `widget-game-${Date.now()}`;
 
   const DAY = 24 * 60 * 60 * 1000;
 
@@ -99,7 +100,8 @@ describe("Home-screen widgets (e2e)", () => {
         canonicalSource: "IGDB",
         title: "Widget Game",
         releaseDate: new Date(Date.now() - 400 * DAY),
-        externalIds: { create: { source: "IGDB", externalId: "widget-game" } },
+        // The e2e schema outlives a run, and games stay once nobody tracks them.
+        externalIds: { create: { source: "IGDB", externalId: gameSourceId } },
       },
     });
     ({ id: gameEntryId } = await prisma.gameEntry.create({
@@ -176,7 +178,7 @@ describe("Home-screen widgets (e2e)", () => {
         domain: "GAMES",
         entryId: gameEntryId,
         title: "Widget Game",
-        path: "/app/games/widget-game",
+        path: `/app/games/${gameSourceId}`,
         paused: false,
       }),
     );
@@ -219,6 +221,24 @@ describe("Home-screen widgets (e2e)", () => {
       "Widget Game",
       "Widget Show",
     ]);
+  });
+
+  it("leaves out the releases of a domain that's off, and says which are on", async () => {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { enabledDomains: ["GAMES"] },
+    });
+
+    const { body } = await feed().expect(200);
+
+    expect(body.enabledDomains).toEqual(["GAMES"]);
+    expect(body.releases).toEqual([]);
+    expect(body.toWatch).toEqual([]);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { enabledDomains: ["MEDIA", "GAMES"] },
+    });
   });
 
   it("refuses a request without a valid token", async () => {

@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -44,10 +44,10 @@ import java.util.Calendar
 import java.util.Locale
 
 private const val PROGRESS_PATH = "/app/achievements"
-private val CARD_INK = ColorProvider(Color(0xFF1A1406))
-private val CARD_TRACK = ColorProvider(Color(0x2E1A1406))
+private val CARD_INK = ColorProvider(R.color.widget_on_accent)
+private val CARD_TRACK = ColorProvider(R.color.widget_on_accent_track)
 
-/** « Série et niveau » (MOB-20): the streak, the level, the week and the latest XP. */
+/** « Série et niveau » (MOB-20): the streak, the level and, given a second row, the week. */
 class StreakWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
@@ -60,15 +60,13 @@ class StreakWidget : GlanceAppWidget() {
             val style = currentState(STYLE_KEY) ?: STYLE_POSTERS
             val data = snapshot?.data ?: WidgetData.SignedOut
             val progression = (data as? WidgetData.Ready)?.feed?.progression
-            val cells = currentCells()
 
-            WidgetFrame(style, edgeToEdge = style == STYLE_POSTERS && cells.single && progression != null) {
+            WidgetFrame(style, edgeToEdge = false) {
                 when {
                     data == WidgetData.SignedOut -> WidgetMessage(R.string.widget_signed_out, style)
                     data == WidgetData.Offline -> WidgetMessage(R.string.widget_offline, style)
                     progression == null -> WidgetMessage(R.string.widget_streak_off, style)
-                    style == STYLE_LIST -> StreakTickets(progression, cells)
-                    else -> StreakCards(progression, cells)
+                    else -> StreakContent(progression, style)
                 }
             }
         }
@@ -77,7 +75,7 @@ class StreakWidget : GlanceAppWidget() {
     override suspend fun providePreview(context: Context, widgetCategory: Int) {
         provideContent {
             WidgetFrame(STYLE_POSTERS, edgeToEdge = false) {
-                StreakCards(WidgetSamples.progression(), currentCells())
+                StreakContent(WidgetSamples.progression(), STYLE_POSTERS)
             }
         }
     }
@@ -111,49 +109,96 @@ private fun WidgetProgression.week(): List<Pair<String, Boolean>> {
     }
 }
 
-private fun WidgetGain.label(context: Context) = title ?: context.getString(R.string.widget_gain_other)
+/** Below this, the week doesn't fit: a single row on the home screen. */
+private val WEEK_FITS = 140.dp
+private val WEEK_HEIGHT = 36.dp
 
-/** « Affiches »: the amber card, the only one of the widgets without artwork to show. */
 @Composable
-private fun StreakCard(progression: WidgetProgression, modifier: GlanceModifier) {
+private fun StreakContent(progression: WidgetProgression, style: String) {
+    val height = LocalSize.current.height
+    val week = height >= WEEK_FITS
+    val list = style == STYLE_LIST
+
+    Column(modifier = GlanceModifier.fillMaxSize()) {
+        if (list) {
+            StreakTicket(progression, if (week) height - 12.dp - WEEK_HEIGHT - 4.dp else height - 12.dp)
+        } else {
+            StreakCard(progression, GlanceModifier.fillMaxWidth().defaultWeight(), roomy = week)
+        }
+        if (week) {
+            Spacer(GlanceModifier.height(4.dp))
+            WeekRow(
+                progression,
+                if (list) R.drawable.widget_day_off_ticket else R.drawable.widget_day_off,
+                if (list) WidgetColors.ticketDim else WidgetColors.dim,
+            )
+        }
+    }
+}
+
+/** « Affiches »: a card in Séance's accent, the one widget with no artwork to show. */
+@Composable
+private fun StreakCard(progression: WidgetProgression, modifier: GlanceModifier, roomy: Boolean) {
     val context = LocalContext.current
-    Column(
+    Row(
         modifier = modifier
             .background(ImageProvider(R.drawable.widget_streak_card))
             .clickable(openApp(context, PROGRESS_PATH))
-            .padding(14.dp),
+            .padding(horizontal = 12.dp, vertical = if (roomy) 10.dp else 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                progression.streakDays.toString(),
-                style = TextStyle(color = CARD_INK, fontSize = 40.sp, fontWeight = FontWeight.Bold),
-            )
-            Spacer(GlanceModifier.width(8.dp))
-            Column {
-                Text(context.getString(R.string.widget_streak_days), style = sans(14.sp, CARD_INK, FontWeight.Bold), maxLines = 2)
-                if (!progression.streakSecuredToday && progression.streakDays > 0) {
-                    Text(context.getString(R.string.widget_streak_keep), style = sans(12.sp, CARD_INK), maxLines = 1)
-                }
-            }
-        }
-        Spacer(GlanceModifier.defaultWeight())
-        Row(modifier = GlanceModifier.fillMaxWidth()) {
-            Text(progression.levelLabel(context), style = sans(13.sp, CARD_INK, FontWeight.Bold), modifier = GlanceModifier.defaultWeight(), maxLines = 1)
-            Text(progression.xpLabel(context), style = mono(11.sp, CARD_INK, FontWeight.Medium), maxLines = 1)
-        }
-        Spacer(GlanceModifier.height(5.dp))
-        LinearProgressIndicator(
-            progress = progression.levelShare(),
-            modifier = GlanceModifier.fillMaxWidth().height(6.dp),
-            color = CARD_INK,
-            backgroundColor = CARD_TRACK,
+        Text(
+            progression.streakDays.toString(),
+            style = TextStyle(color = CARD_INK, fontSize = if (roomy) 40.sp else 28.sp, fontWeight = FontWeight.Bold),
         )
+        Spacer(GlanceModifier.width(10.dp))
+        Column(modifier = GlanceModifier.defaultWeight()) {
+            Text(
+                context.getString(
+                    if (progression.streakSecuredToday || progression.streakDays == 0) R.string.widget_streak_days else R.string.widget_streak_keep,
+                ),
+                style = sans(12.sp, CARD_INK, FontWeight.Bold),
+                maxLines = 1,
+            )
+            Row(modifier = GlanceModifier.fillMaxWidth()) {
+                Text(progression.levelLabel(context), style = sans(12.sp, CARD_INK, FontWeight.Bold), modifier = GlanceModifier.defaultWeight(), maxLines = 1)
+                Text(progression.xpLabel(context), style = mono(10.sp, CARD_INK, FontWeight.Medium), maxLines = 1)
+            }
+            Spacer(GlanceModifier.height(3.dp))
+            LinearProgressIndicator(
+                progress = progression.levelShare(),
+                modifier = GlanceModifier.fillMaxWidth().height(5.dp),
+                color = CARD_INK,
+                backgroundColor = CARD_TRACK,
+            )
+        }
     }
+}
+
+/** « Liste »: the streak on the stub, the level on the ticket. */
+@Composable
+private fun StreakTicket(progression: WidgetProgression, height: Dp) {
+    val context = LocalContext.current
+    TicketStrip(
+        height = height,
+        stubWidth = 72.dp,
+        stubTop = progression.streakDays.toString(),
+        stubBottom = context.getString(R.string.widget_streak_days_short),
+        stubLive = true,
+        poster = null,
+        title = progression.levelLabel(context),
+        sub = progression.xpLabel(context),
+        open = openApp(context, PROGRESS_PATH),
+        action = null,
+        actionLabel = null,
+        checked = false,
+        showThumb = false,
+    )
 }
 
 @Composable
 private fun WeekRow(progression: WidgetProgression, offBackground: Int, offText: ColorProvider) {
-    Row(modifier = GlanceModifier.fillMaxWidth().height(44.dp)) {
+    Row(modifier = GlanceModifier.fillMaxWidth().height(WEEK_HEIGHT)) {
         progression.week().forEachIndexed { index, (letter, active) ->
             if (index > 0) Spacer(GlanceModifier.width(4.dp))
             Box(
@@ -167,118 +212,12 @@ private fun WeekRow(progression: WidgetProgression, offBackground: Int, offText:
                     letter,
                     style = TextStyle(
                         color = if (active) ColorProvider(R.color.widget_on_accent) else offText,
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
                     ),
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun StreakCards(progression: WidgetProgression, cells: Cells) {
-    val context = LocalContext.current
-
-    if (cells.single) {
-        StreakCard(progression, GlanceModifier.fillMaxSize())
-        return
-    }
-
-    Column(modifier = GlanceModifier.fillMaxSize()) {
-        WidgetHeader(context.getString(R.string.widget_streak_name), null, STYLE_POSTERS)
-        Spacer(GlanceModifier.height(4.dp))
-        if (cells.rows == 2) {
-            StreakCard(progression, GlanceModifier.fillMaxWidth().defaultWeight())
-            return@Column
-        }
-        StreakCard(progression, GlanceModifier.fillMaxWidth().height(104.dp))
-        Spacer(GlanceModifier.height(6.dp))
-        WeekRow(progression, R.drawable.widget_day_off, WidgetColors.dim)
-
-        val used = 12.dp + 30.dp + 104.dp + 6.dp + 44.dp
-        val rows = ((LocalSize.current.height - used) / 34.dp).toInt().coerceIn(0, progression.gains.size)
-        progression.gains.take(rows).forEach { gain ->
-            Row(
-                modifier = GlanceModifier.fillMaxWidth().height(34.dp).padding(horizontal = 6.dp).clickable(openApp(context, PROGRESS_PATH)),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("+${gain.amount}", style = mono(13.sp, WidgetColors.accent), modifier = GlanceModifier.width(44.dp), maxLines = 1)
-                Text(gain.label(context), style = sans(13.sp, WidgetColors.fg), maxLines = 1)
-            }
-        }
-    }
-}
-
-@Composable
-private fun StreakTickets(progression: WidgetProgression, cells: Cells) {
-    val context = LocalContext.current
-    val open = openApp(context, PROGRESS_PATH)
-
-    if (cells.single) {
-        SingleTicket(
-            poster = null,
-            title = context.getString(R.string.widget_streak_days),
-            sub = progression.levelLabel(context),
-            stubBig = "${progression.xpInLevel} XP",
-            stubSmall = "/ ${progression.xpInLevel + progression.xpToNext}",
-            open = open,
-            action = null,
-            actionLabel = null,
-            checked = false,
-            leading = {
-                Text(
-                    progression.streakDays.toString(),
-                    style = TextStyle(color = WidgetColors.accent, fontSize = 40.sp, fontWeight = FontWeight.Bold),
-                )
-            },
-        )
-        return
-    }
-
-    Column(modifier = GlanceModifier.fillMaxSize()) {
-        WidgetHeader(context.getString(R.string.widget_streak_name), null, STYLE_LIST)
-        Spacer(GlanceModifier.height(4.dp))
-        TicketStrip(
-            height = 58.dp,
-            stubWidth = 78.dp,
-            stubTop = progression.streakDays.toString(),
-            stubBottom = context.getString(R.string.widget_streak_days),
-            stubLive = true,
-            poster = null,
-            title = progression.levelLabel(context),
-            sub = progression.xpLabel(context),
-            open = open,
-            action = null,
-            actionLabel = null,
-            checked = false,
-            showThumb = false,
-        )
-        if (cells.rows == 2) return@Column
-
-        Spacer(GlanceModifier.height(4.dp))
-        WeekRow(progression, R.drawable.widget_day_off_ticket, WidgetColors.ticketDim)
-        val stripHeight = 50.dp
-        val used = 12.dp + 30.dp + 58.dp + 4.dp + 44.dp
-        val rows = ((LocalSize.current.height - used) / (stripHeight + 4.dp)).toInt().coerceIn(0, progression.gains.size)
-        progression.gains.take(rows).forEach { gain ->
-            Spacer(GlanceModifier.height(4.dp))
-            TicketStrip(
-                height = stripHeight,
-                stubWidth = if (cells.cols >= 4) 78.dp else 66.dp,
-                stubTop = "+${gain.amount}",
-                stubBottom = "XP",
-                stubLive = true,
-                poster = null,
-                title = gain.label(context),
-                sub = SimpleDateFormat("EEE d", Locale.getDefault()).format(gain.at),
-                open = open,
-                action = null,
-                actionLabel = null,
-                checked = false,
-                showThumb = false,
-            )
         }
     }
 }

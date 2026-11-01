@@ -77,6 +77,7 @@ fun currentCells(): Cells {
         else -> 5
     }
     val rows = when {
+        size.height < 125.dp -> 1
         size.height < 250.dp -> 2
         size.height < 400.dp -> 3
         size.height < 520.dp -> 4
@@ -88,7 +89,7 @@ fun currentCells(): Cells {
 /** « Affiches »: columns and rows of posters — one, a row of two or three, then up to 3 × 3. */
 fun posterGrid(cells: Cells): Pair<Int, Int> = when {
     cells.single -> 1 to 1
-    cells.rows == 2 -> (if (cells.cols <= 3) 2 else 3) to 1
+    cells.rows <= 2 -> (if (cells.cols <= 3) 2 else 3) to 1
     else -> when (cells.cols) {
         2 -> 1
         3 -> 2
@@ -307,11 +308,15 @@ fun BandTile(
     }
 }
 
-/** A grid of band tiles; a short last row keeps its tiles the size of the others. */
+/**
+ * A grid of band tiles. Empty slots stay empty: a lone work keeps the size of
+ * a tile instead of stretching its poster over the whole widget.
+ */
 @Composable
-fun <T> BandGrid(items: List<T>, cols: Int, tile: @Composable (T, GlanceModifier) -> Unit) {
+fun <T> BandGrid(items: List<T>, cols: Int, rows: Int, tile: @Composable (T, GlanceModifier) -> Unit) {
+    val lines = items.chunked(cols)
     Column(modifier = GlanceModifier.fillMaxSize()) {
-        items.chunked(cols).forEachIndexed { index, row ->
+        lines.forEachIndexed { index, row ->
             if (index > 0) Spacer(GlanceModifier.height(6.dp))
             Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
                 row.forEachIndexed { column, item ->
@@ -323,6 +328,10 @@ fun <T> BandGrid(items: List<T>, cols: Int, tile: @Composable (T, GlanceModifier
                     Spacer(GlanceModifier.defaultWeight())
                 }
             }
+        }
+        repeat(rows - lines.size) {
+            Spacer(GlanceModifier.height(6.dp))
+            Spacer(GlanceModifier.fillMaxWidth().defaultWeight())
         }
     }
 }

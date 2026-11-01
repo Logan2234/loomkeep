@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -44,7 +43,7 @@ import app.loomkeep.R
 
 private const val SEARCH_PATH = "/app/search"
 private const val SCAN_PATH = "/app/search?type=BOOKS&scan=1"
-private val ScanOnAmber = ColorProvider(Color(0xFF1A1406))
+private val ScanOnAmber = ColorProvider(R.color.widget_on_accent)
 
 private val CATEGORIES = listOf(
     "MEDIA" to R.string.widget_search_media,
@@ -68,11 +67,17 @@ class SearchWidget : GlanceAppWidget() {
         provideContent {
             val snapshot by WidgetRepository.snapshot.collectAsState()
             val style = currentState(STYLE_KEY) ?: STYLE_POSTERS
-            val added = (snapshot?.data as? WidgetData.Ready)?.feed?.added.orEmpty()
+            val feed = (snapshot?.data as? WidgetData.Ready)?.feed
+            val added = feed?.added.orEmpty()
+            val categories = CATEGORIES.filter { feed?.enabledDomains?.contains(it.first) != false }
             val posters = snapshot?.posters.orEmpty()
 
             WidgetFrame(style, edgeToEdge = false) {
-                if (style == STYLE_LIST) SearchTickets(added, posters, currentCells()) else SearchBands(added, posters, currentCells())
+                if (style == STYLE_LIST) {
+                    SearchTickets(added, categories, posters, currentCells())
+                } else {
+                    SearchBands(added, categories, posters, currentCells())
+                }
             }
         }
     }
@@ -80,7 +85,7 @@ class SearchWidget : GlanceAppWidget() {
     override suspend fun providePreview(context: Context, widgetCategory: Int) {
         provideContent {
             WidgetFrame(STYLE_POSTERS, edgeToEdge = false) {
-                SearchBands(emptyList(), emptyMap(), currentCells())
+                SearchBands(emptyList(), CATEGORIES, emptyMap(), currentCells())
             }
         }
     }
@@ -105,10 +110,10 @@ private fun Map<String, Poster>.of(added: WidgetAdded) = added.posterUrl?.let { 
 
 /** The categories, two by two until the widget is wide enough for all four on a line. */
 @Composable
-private fun CategoryChips(cells: Cells, background: Int, ink: ColorProvider) {
+private fun CategoryChips(categories: List<Pair<String, Int>>, cells: Cells, background: Int, ink: ColorProvider) {
     val context = LocalContext.current
     Column(modifier = GlanceModifier.fillMaxWidth()) {
-        CATEGORIES.chunked(if (cells.cols >= 5) 4 else 2).forEachIndexed { index, row ->
+        categories.chunked(if (cells.cols >= 5) 4 else 2).forEachIndexed { index, row ->
             if (index > 0) Spacer(GlanceModifier.height(4.dp))
             Row(modifier = GlanceModifier.fillMaxWidth().height(30.dp)) {
                 row.forEachIndexed { column, (domain, label) ->
@@ -135,11 +140,20 @@ private fun CategoryChips(cells: Cells, background: Int, ink: ColorProvider) {
 
 private val BAR_HEIGHT = 46.dp
 
+/** Too short for more than the bar: a single row on the home screen. */
 @Composable
-private fun SearchBands(added: List<WidgetAdded>, posters: Map<String, Poster>, cells: Cells) {
-    val context = LocalContext.current
+private fun barOnly() = LocalSize.current.height < 125.dp
 
-    if (cells.single) {
+/** The categories fit under the header and the bar. */
+@Composable
+private fun chipsFit() = LocalSize.current.height >= 150.dp
+
+@Composable
+private fun SearchBands(added: List<WidgetAdded>, categories: List<Pair<String, Int>>, posters: Map<String, Poster>, cells: Cells) {
+    val context = LocalContext.current
+    val barOnly = barOnly()
+
+    if (cells.single && !barOnly) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
             Column(
                 modifier = GlanceModifier
@@ -183,9 +197,14 @@ private fun SearchBands(added: List<WidgetAdded>, posters: Map<String, Poster>, 
         return
     }
 
-    Column(modifier = GlanceModifier.fillMaxSize()) {
-        WidgetHeader(context.getString(R.string.widget_search_name), null, STYLE_POSTERS)
-        Spacer(GlanceModifier.height(4.dp))
+    Column(
+        modifier = GlanceModifier.fillMaxSize(),
+        verticalAlignment = if (barOnly) Alignment.CenterVertically else Alignment.Top,
+    ) {
+        if (!barOnly) {
+            WidgetHeader(context.getString(R.string.widget_search_name), null, STYLE_POSTERS)
+            Spacer(GlanceModifier.height(4.dp))
+        }
         Row(modifier = GlanceModifier.fillMaxWidth().height(BAR_HEIGHT)) {
             Row(
                 modifier = GlanceModifier
@@ -221,14 +240,17 @@ private fun SearchBands(added: List<WidgetAdded>, posters: Map<String, Poster>, 
                 )
             }
         }
-        Spacer(GlanceModifier.height(6.dp))
-        CategoryChips(cells, R.drawable.widget_chip_bg, WidgetColors.fg)
+        if (chipsFit()) {
+            Spacer(GlanceModifier.height(6.dp))
+            CategoryChips(categories, cells, R.drawable.widget_chip_bg, WidgetColors.fg)
+        }
 
         if (cells.rows >= 3 && added.isNotEmpty()) {
             val (cols, rows) = posterGrid(cells)
             Spacer(GlanceModifier.height(6.dp))
             Box(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
-                BandGrid(added.take(cols * (rows - 1).coerceAtLeast(1)), cols) { item, modifier ->
+                val shown = (rows - 1).coerceAtLeast(1)
+                BandGrid(added.take(cols * shown), cols, shown) { item, modifier ->
                     BandTile(
                         modifier = modifier,
                         poster = posters.of(item),
@@ -248,10 +270,11 @@ private fun SearchBands(added: List<WidgetAdded>, posters: Map<String, Poster>, 
 }
 
 @Composable
-private fun SearchTickets(added: List<WidgetAdded>, posters: Map<String, Poster>, cells: Cells) {
+private fun SearchTickets(added: List<WidgetAdded>, categories: List<Pair<String, Int>>, posters: Map<String, Poster>, cells: Cells) {
     val context = LocalContext.current
+    val barOnly = barOnly()
 
-    if (cells.single) {
+    if (cells.single && !barOnly) {
         SingleTicket(
             poster = null,
             title = context.getString(R.string.widget_search_title),
@@ -275,9 +298,14 @@ private fun SearchTickets(added: List<WidgetAdded>, posters: Map<String, Poster>
         return
     }
 
-    Column(modifier = GlanceModifier.fillMaxSize()) {
-        WidgetHeader(context.getString(R.string.widget_search_name), null, STYLE_LIST)
-        Spacer(GlanceModifier.height(4.dp))
+    Column(
+        modifier = GlanceModifier.fillMaxSize(),
+        verticalAlignment = if (barOnly) Alignment.CenterVertically else Alignment.Top,
+    ) {
+        if (!barOnly) {
+            WidgetHeader(context.getString(R.string.widget_search_name), null, STYLE_LIST)
+            Spacer(GlanceModifier.height(4.dp))
+        }
         Row(modifier = GlanceModifier.fillMaxWidth().height(44.dp)) {
             Row(
                 modifier = GlanceModifier
@@ -314,8 +342,10 @@ private fun SearchTickets(added: List<WidgetAdded>, posters: Map<String, Poster>
                 )
             }
         }
-        Spacer(GlanceModifier.height(4.dp))
-        CategoryChips(cells, R.drawable.widget_chip_ticket_bg, WidgetColors.ticketInk)
+        if (chipsFit()) {
+            Spacer(GlanceModifier.height(4.dp))
+            CategoryChips(categories, cells, R.drawable.widget_chip_ticket_bg, WidgetColors.ticketInk)
+        }
 
         if (cells.rows >= 3) {
             val stripHeight = 50.dp

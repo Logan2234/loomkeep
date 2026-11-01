@@ -1,17 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 4 × 2 when placed, resizable from 2 × 2 to 5 × 5; the content follows
-     the size (WIDGET_SIZES). A phone cell is about 73 dp wide and 118 dp
-     tall (Android's own sizing table): the bounds sit between n and n + 1
-     cells. Settings: WidgetStyleActivity,
-     skipped at placement on Android 12+. -->
+<!-- 4 × 2 when placed, from 2 × 2 to about 5 × 3: past that, it would only stretch its posters. Launchers count cells differently (70n - 30 dp
+     tall on some, 118n - 16 on others): the content follows the size in dp.
+     Settings: WidgetStyleActivity, skipped at placement on Android 12+. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_chrono_description"
     android:minWidth="250dp"
-    android:minHeight="180dp"
+    android:minHeight="110dp"
     android:minResizeWidth="110dp"
-    android:minResizeHeight="180dp"
+    android:minResizeHeight="110dp"
     android:maxResizeWidth="380dp"
-    android:maxResizeHeight="600dp"
+    android:maxResizeHeight="340dp"
     android:targetCellWidth="4"
     android:targetCellHeight="2"
     android:resizeMode="horizontal|vertical"

@@ -57,8 +57,6 @@ data class WidgetSession(
     val occurredAt: Long,
 )
 
-data class WidgetGain(val amount: Int, val title: String?, val at: Long)
-
 /** « Série et niveau ». */
 data class WidgetProgression(
     val level: Int,
@@ -69,7 +67,6 @@ data class WidgetProgression(
     /** "YYYY-MM-DD" in the account's time zone. */
     val today: String,
     val activeDays: Set<String>,
-    val gains: List<WidgetGain>,
 )
 
 /** Something just added to the library, for « Recherche ». */
@@ -85,7 +82,12 @@ data class WidgetFeed(
     val weekMinutes: Int = 0,
     val progression: WidgetProgression? = null,
     val added: List<WidgetAdded> = emptyList(),
+    /** Null from an instance older than the app, which doesn't say. */
+    val enabledDomains: Set<String>? = null,
 ) {
+    /** Whether all of these domains are known to be off: the widget showing them has nothing to say. */
+    fun allOff(vararg domains: String) = enabledDomains != null && domains.none { it in enabledDomains }
+
     companion object {
         fun parse(json: String): WidgetFeed {
             val root = JSONObject(json)
@@ -139,6 +141,9 @@ data class WidgetFeed(
                     )
                 },
                 weekMinutes = root.optInt("weekMinutes"),
+                enabledDomains = root.optJSONArray("enabledDomains")?.let { domains ->
+                    (0 until domains.length()).map(domains::getString).toSet()
+                },
                 progression = root.optJSONObject("progression")?.let { progression ->
                     val activeDays = progression.getJSONArray("activeDays")
                     WidgetProgression(
@@ -149,13 +154,6 @@ data class WidgetFeed(
                         streakSecuredToday = progression.getBoolean("streakSecuredToday"),
                         today = progression.getString("today"),
                         activeDays = (0 until activeDays.length()).map(activeDays::getString).toSet(),
-                        gains = progression.getJSONArray("gains").objects().map { gain ->
-                            WidgetGain(
-                                amount = gain.getInt("amount"),
-                                title = gain.optStringOrNull("title"),
-                                at = parseIsoDate(gain.getString("at")),
-                            )
-                        },
                     )
                 },
                 added = root.optJSONArray("added")?.objects().orEmpty().map { added ->

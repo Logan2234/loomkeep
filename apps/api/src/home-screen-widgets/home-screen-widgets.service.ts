@@ -124,15 +124,21 @@ export class HomeScreenWidgetsService {
         ? this.toWatch(userId, lang)
         : [],
       parts.has("releases")
-        ? this.library
-            .getCalendar(userId, acceptLanguage)
-            .then((calendar) => calendar.slice(0, FEED_LENGTH).map(toRelease))
+        ? this.library.getCalendar(userId, acceptLanguage).then((calendar) =>
+            calendar
+              .filter((entry) =>
+                enabled.has(entry.game ? Domain.GAMES : Domain.MEDIA),
+              )
+              .slice(0, FEED_LENGTH)
+              .map(toRelease),
+          )
         : [],
       parts.has("timer") ? this.chrono(userId, enabled) : null,
       parts.has("progression") ? this.progression(userId) : null,
       parts.has("added") ? this.added(userId, enabled) : [],
     ]);
     return {
+      enabledDomains: [...enabled],
       toWatch,
       releases,
       timer: chrono?.timer ?? null,

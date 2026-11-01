@@ -47,6 +47,7 @@ class ToWatchWidget : GlanceAppWidget() {
                 when {
                     data == WidgetData.SignedOut -> WidgetMessage(R.string.widget_signed_out, style)
                     data == WidgetData.Offline -> WidgetMessage(R.string.widget_offline, style)
+                    (data as? WidgetData.Ready)?.feed?.allOff("MEDIA") == true -> WidgetMessage(R.string.widget_media_off, style)
                     shows.isEmpty() -> WidgetMessage(R.string.widget_to_watch_empty, style)
                     style == STYLE_LIST -> ShowTickets(shows, snapshot?.posters.orEmpty(), snapshot?.checking, cells)
                     else -> ShowBands(shows, snapshot?.posters.orEmpty(), snapshot?.checking, cells)
@@ -124,7 +125,7 @@ private fun ShowBands(shows: List<WidgetShow>, posters: Map<String, Poster>, che
         WidgetHeader(context.getString(R.string.widget_to_watch_name), context.getString(R.string.widget_in_progress, shows.size), STYLE_POSTERS)
         Spacer(GlanceModifier.height(4.dp))
         Box(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
-            BandGrid(shows.take(cols * rows), cols) { show, modifier ->
+            BandGrid(shows.take(cols * rows), cols, rows) { show, modifier ->
                 BandTile(
                     modifier = modifier,
                     poster = posters.of(show),

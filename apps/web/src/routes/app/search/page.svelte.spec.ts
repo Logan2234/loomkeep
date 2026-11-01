@@ -1,8 +1,9 @@
 import { auth } from "#lib/auth.svelte.js";
+import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
-import { visit } from "#lib/test/navigation.svelte.js";
+import { goto, visit } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import { waitFor } from "@testing-library/svelte";
+import { screen, waitFor } from "@testing-library/svelte";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import SearchPage from "./+page.svelte";
@@ -24,7 +25,7 @@ describe("Search page", () => {
     server.use(http.get(apiUrl("/*"), () => HttpResponse.json([])));
     auth.user = {
       id: "user-1",
-      enabledDomains: ["MEDIA", "BOOKS"],
+      enabledDomains: ["MEDIA", "BOOKS", "GAMES"],
     } as unknown as typeof auth.user;
   });
   afterEach(() => {
@@ -37,6 +38,20 @@ describe("Search page", () => {
     renderWithQuery(SearchPage, {});
 
     await waitFor(() => expect(scanNatively).toHaveBeenCalledTimes(1));
+  });
+
+  it("follows the category of a new link while it's already open", async () => {
+    visit("/app/search?type=GAMES");
+    renderWithQuery(SearchPage, {});
+    const active = (name: string) =>
+      screen
+        .getByRole("button", { name })
+        .classList.contains("guichet-tab-active");
+    await waitFor(() => expect(active(m.common_Games())).toBe(true));
+
+    await goto("/app/search?type=BOOKS");
+
+    await waitFor(() => expect(active(m.common_Books())).toBe(true));
   });
 
   it("doesn't scan on an ordinary visit", async () => {
