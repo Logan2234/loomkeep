@@ -237,7 +237,7 @@
     <button
       type="button"
       role={searchable ? undefined : "combobox"}
-      class="inline-flex max-w-[calc(100vw-1rem)] items-center gap-1.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-40 pointer-coarse:min-h-10 {multiselect &&
+      class="relative inline-flex max-w-[calc(100vw-1rem)] items-center gap-1.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors after:absolute after:inset-x-0 after:-inset-y-1 disabled:pointer-events-none disabled:opacity-40 {multiselect &&
       values.length > 0
         ? 'border-accent text-accent'
         : 'border-border text-dim hover:text-fg'}"

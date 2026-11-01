@@ -7,6 +7,7 @@
   import { DOMAINS } from "#lib/constants/domains.js";
   import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import type { BoxSize } from "#lib/home/sizing.js";
+  import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { Domain } from "@loomkeep/shared";
 
@@ -21,6 +22,13 @@
   // offering with more than one.
   const ALL = "ALL";
   const hasAll = $derived(choices.length > 1);
+
+  // A small phone gives the whole row to the field; the search page has the
+  // domains anyway.
+  const PHONE_DOMAINS_FROM = 360;
+  const showDomains = $derived(
+    hasAll && (!layout.compact || size.width >= PHONE_DOMAINS_FROM),
+  );
 
   let picked = $state<Domain | typeof ALL | null>(null);
   // "Tout" (or the only domain) until they pick one — and again if the picked
@@ -63,7 +71,7 @@
     class="bar card"
     style={`--domain-accent: ${domain === ALL ? "var(--accent)" : DOMAINS[domain].accent}`}
     onsubmit={submit}>
-    {#if hasAll}
+    {#if showDomains}
       <div
         class="domains"
         role="group"
@@ -120,7 +128,7 @@
     align-items: center;
     gap: 0.5rem;
     height: 100%;
-    padding: 0 0.75rem 0 0.25rem;
+    padding: 0 0.75rem;
     border-top: 2px solid var(--domain-accent);
     transition:
       border-color 0.2s ease,
@@ -135,6 +143,7 @@
   }
 
   .domains {
+    margin-left: -0.5rem;
     display: flex;
     flex: none;
     gap: 0.125rem;
