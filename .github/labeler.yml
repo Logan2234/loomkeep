@@ -2,9 +2,26 @@ api:
   - changed-files:
       - any-glob-to-any-file: apps/api/**
 
+# Translations alone get i18n, not web.
 web:
   - changed-files:
-      - any-glob-to-any-file: apps/web/**
+      - all-globs-to-any-file:
+          - apps/web/**
+          - "!apps/web/messages/**"
+
+i18n:
+  - changed-files:
+      - any-glob-to-any-file: apps/web/messages/**
+
+database:
+  - changed-files:
+      - any-glob-to-any-file: apps/api/prisma/migrations/**
+
+ee:
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/api/src/ee/**
+          - apps/web/src/lib/ee/**
 
 mobile:
   - changed-files:
@@ -25,8 +42,17 @@ docker:
 
 ci:
   - changed-files:
-      - any-glob-to-any-file: .github/**
+      - any-glob-to-any-file:
+          - .github/workflows/**
+          - .github/actions/**
 
+# Without CHANGELOG.md, which nearly every PR touches.
 documentation:
-  - changed-files:
-      - any-glob-to-any-file: "**/*.md"
+  - any:
+      - changed-files:
+          - all-globs-to-any-file:
+              - "**/*.md"
+              - "!CHANGELOG.md"
+              - "!.claude/**"
+      - changed-files:
+          - any-glob-to-any-file: apps/docs/**

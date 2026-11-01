@@ -18,6 +18,9 @@ permissions:
 jobs:
   label:
     name: Label from changed files
+    # dependabot.yml sets its own labels; every bump touching a package.json
+    # would otherwise read as a change to that app.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
