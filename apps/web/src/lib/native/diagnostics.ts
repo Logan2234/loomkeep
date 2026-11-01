@@ -63,7 +63,7 @@ export const VIBRATION_PROBES: VibrationProbe[] = [
 
 export async function runProbe(
   { plugin, run }: VibrationProbe,
-  isAvailable: (name: string) => boolean = Capacitor.isPluginAvailable,
+  isAvailable = (name: string) => Capacitor.isPluginAvailable(name),
 ): Promise<ProbeResult> {
   if (plugin && !isAvailable(plugin)) return "unavailable";
 

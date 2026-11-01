@@ -105,7 +105,7 @@
     </section>
 
     <button type="button" class="btn btn-primary" onclick={copy}>
-      {copied ? m.admin_diagnostics_copied() : m.common_copy()}
+      {copied ? m.common_copied() : m.common_copy()}
     </button>
   </div>
 </div>

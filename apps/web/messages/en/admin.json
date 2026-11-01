@@ -78,7 +78,6 @@
   "admin_diagnostics_keyboard_hint": "Touch the field to open the keyboard. The pink frame shows where the page ends: anything beyond it isn't the page's. Take a screenshot with the keyboard open.",
   "admin_diagnostics_vibrations": "Vibrations",
   "admin_diagnostics_vibrations_hint": "Press each one and note which you feel. \"ok\" only means Android accepted it.",
-  "admin_diagnostics_copied": "Copied",
   "admin_schema_title": "Schema",
   "admin_schema_subtitle": "Database and app module graphs, generated locally.",
   "admin_schema_not_generated": "Not generated yet for this dev session (file missing from docs/).",

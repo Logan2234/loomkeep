@@ -78,7 +78,6 @@
   "admin_diagnostics_keyboard_hint": "Tocca il campo per aprire la tastiera. La cornice rosa mostra dove finisce la pagina: ciò che la supera non le appartiene. Fai uno screenshot con la tastiera aperta.",
   "admin_diagnostics_vibrations": "Vibrazioni",
   "admin_diagnostics_vibrations_hint": "Premi ciascuna e annota quelle che senti. «ok» significa solo che Android l'ha accettata.",
-  "admin_diagnostics_copied": "Copiato",
   "admin_schema_title": "Schema",
   "admin_schema_subtitle": "Grafi del database e dei moduli dell'app, generati in locale.",
   "admin_schema_not_generated": "Non ancora generato per questa sessione di sviluppo (file assente in docs/).",
