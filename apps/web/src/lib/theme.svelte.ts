@@ -10,7 +10,7 @@ const STORAGE_KEY = STORAGE_KEYS.theme;
 export const THEME_COLOR = { light: "#f7f5f3", dark: "#0c0d10" } as const;
 
 type Mode = "light" | "dark";
-export type ThemeChoice = Mode | "system";
+type ThemeChoice = Mode | "system";
 
 const systemMode = (): Mode =>
   matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
