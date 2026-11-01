@@ -6,10 +6,14 @@
 import { afterNavigate } from "$app/navigation";
 
 let hasInternalHistory = $state(false);
+let previousPath: string | null = null;
 
 export function trackBackHistory() {
   afterNavigate(({ from }) => {
-    if (from) hasInternalHistory = true;
+    if (from?.url) {
+      hasInternalHistory = true;
+      previousPath = from.url.pathname;
+    }
   });
 }
 
@@ -18,6 +22,16 @@ export function trackBackHistory() {
 // loading it fresh), otherwise lets the plain href navigate normally.
 export function goBack(event: MouseEvent) {
   if (hasInternalHistory) {
+    event.preventDefault();
+    history.back();
+  }
+}
+
+// Use on a link to the parent page: coming from that parent, steps back rather
+// than pushing it again. Otherwise the parent's own history-based "<" would
+// lead straight back here, and the two pages would bounce.
+export function goUp(event: MouseEvent, parent: string) {
+  if (previousPath === parent.split(/[?#]/)[0]) {
     event.preventDefault();
     history.back();
   }

@@ -82,6 +82,8 @@
   });
 
   $effect(() => {
+    // The choice too: picking "system" can leave the mode as it was.
+    void theme.choice;
     if (isNativeApp()) void syncSystemBars(theme.mode);
   });
 

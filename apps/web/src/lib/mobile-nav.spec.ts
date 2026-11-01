@@ -17,7 +17,7 @@ describe("parseShortcuts", () => {
     ["broken JSON", "{"],
     ["no menu", JSON.stringify(["home", "search", "alerts"])],
     ["too few", JSON.stringify(["menu", "home"])],
-    ["too many", JSON.stringify(["menu", "a", "b", "c", "d", "e"])],
+    ["too many", JSON.stringify(["menu", "a", "b", "c", "d", "e", "f"])],
     ["not strings", JSON.stringify(["menu", 1, 2])],
   ])("falls back to the defaults on %s", (_label, stored) => {
     expect(parseShortcuts(stored)).toEqual(defaults);

@@ -1,3 +1,4 @@
+import { dismissTopmostDialog } from "#lib/actions/dialog-focus.js";
 import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { render, screen } from "@testing-library/svelte";
@@ -40,5 +41,18 @@ describe("SidePanel", () => {
     await userEvent.setup().click(backdrop());
 
     expect(onclose).toHaveBeenCalledOnce();
+  });
+
+  it("closes on Android's back button, and once on Escape", async () => {
+    const onclose = vi.fn();
+    render(SidePanel, {
+      props: { onclose, labelledby: "panel-title", children: body },
+    });
+
+    expect(dismissTopmostDialog()).toBe(true);
+    expect(onclose).toHaveBeenCalledOnce();
+
+    await userEvent.setup().keyboard("{Escape}");
+    expect(onclose).toHaveBeenCalledTimes(2);
   });
 });

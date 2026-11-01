@@ -199,6 +199,7 @@
   <PageHeader
     icon="star"
     back="/app/profile"
+    backInHistory
     title={m.profile_reviews_title()}
     {subtitle} />
 

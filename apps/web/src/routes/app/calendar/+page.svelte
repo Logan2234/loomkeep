@@ -213,6 +213,9 @@
 
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
+    back="/app"
+    backInHistory
+    backOnPhoneOnly
     icon="calendar"
     title={m.common_calendar()}
     subtitle={m.calendar_subtitle()}

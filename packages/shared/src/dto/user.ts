@@ -20,7 +20,7 @@ export const AVATAR_MIME_TYPES = [
 ] as const;
 export type AvatarMimeType = (typeof AVATAR_MIME_TYPES)[number];
 export const AVATAR_MAX_DIMENSION = 512;
-export const MOBILE_NAV_SHORTCUT_LIMITS = { min: 3, max: 5 } as const;
+export const MOBILE_NAV_SHORTCUT_LIMITS = { min: 3, max: 6 } as const;
 export const REQUIRED_SHORTCUT = "menu";
 
 export interface UserDto {

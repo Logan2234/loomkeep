@@ -9,7 +9,12 @@ import {
 import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { AppException } from "../common/app.exception";
+import {
+  CANONICAL_EXTERNAL_ID_SELECT,
+  canonicalExternalId,
+} from "../common/external-id.util";
 import { notificationCopy } from "../notifications/notification-copy";
+import { avatarPath } from "../notifications/push-image";
 import { PushService } from "../notifications/push.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminOnly } from "./admin-only.decorator";
@@ -20,7 +25,7 @@ import { AdminPushSendResultResponseDto } from "./dto/admin-push-send-response.d
 import { AdminPushSummaryResponseDto } from "./dto/admin-push-summary-response.dto";
 import { SendAdminBroadcastPushDto } from "./dto/send-admin-broadcast-push.dto";
 import { SendAdminTestPushDto } from "./dto/send-admin-test-push.dto";
-import { samplePush } from "./push-samples";
+import { samplePush, type SampleContext } from "./push-samples";
 
 /** Push administration: per-account test sends and instance-wide broadcasts. */
 @AdminOnly()
@@ -85,7 +90,10 @@ export class AdminPushController {
 
     const results = await this.push.sendToUserDetailed(
       user.id,
-      (dto.type && samplePush(dto.type, copy)) || {
+      (dto.type &&
+        samplePush(dto.type, copy, await this.sampleContext(user), {
+          failing: dto.failingActions,
+        })) || {
         title: dto.title?.trim() || "Loomkeep (admin)",
         body: dto.body?.trim() || copy.adminTestPush,
         url: "/app",
@@ -129,12 +137,46 @@ export class AdminPushController {
     };
   }
 
+  /** The recipient's own picture stands in for the sender's; any work with a poster will do. */
+  private async sampleContext(user: {
+    id: string;
+    avatarUpdatedAt: Date | null;
+  }): Promise<SampleContext | undefined> {
+    const item = await this.prisma.mediaItem.findFirst({
+      where: { posterUrl: { not: null } },
+      orderBy: { lastSyncedAt: "desc" },
+      select: {
+        title: true,
+        type: true,
+        posterUrl: true,
+        ...CANONICAL_EXTERNAL_ID_SELECT,
+      },
+    });
+    const avatar =
+      user.avatarUpdatedAt && avatarPath(user.id, user.avatarUpdatedAt);
+
+    return {
+      avatar,
+      work: item
+        ? {
+            title: item.title,
+            url: `/app/media/${item.type.toLowerCase()}/${canonicalExternalId(item, item.externalIds)}`,
+            poster: item.posterUrl,
+          }
+        : {
+            title: "Severance",
+            url: "/app/media/series/95396",
+            poster: null,
+          },
+    };
+  }
+
   private async findUserByEmail(
     email: string,
-  ): Promise<{ id: string; locale: string }> {
+  ): Promise<{ id: string; locale: string; avatarUpdatedAt: Date | null }> {
     const user = await this.prisma.user.findUnique({
       where: { email },
-      select: { id: true, locale: true },
+      select: { id: true, locale: true, avatarUpdatedAt: true },
     });
     if (!user)
       throw new AppException(

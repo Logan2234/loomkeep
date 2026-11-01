@@ -13,6 +13,22 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Fixed
+
+- Mobile bar: Feed and Leaderboard shortcuts no longer vanish, Messages and
+  Alerts are drawn like every other tab, and a bar takes up to six shortcuts.
+- Android's back button closes a side panel. A conversation no longer reads
+  "Deleted account" while loading, and slides in from the right on a phone.
+- Admin push samples link to a real work, carry the pictures of a real push,
+  and can have their buttons refused to see a failed action.
+
+### Added
+
+- "System" option in Settings › Appearance › Theme.
+- Back button on a phone for Calendar, Stats, Feed, Leaderboard, Search and the
+  libraries. Settings, Admin, Achievements, Lists and Reviews now return to the
+  page they were opened from.
+
 ### Accessibility
 
 - Show context-appropriate Enter actions on Android keyboards for search and
