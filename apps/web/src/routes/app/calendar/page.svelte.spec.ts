@@ -275,7 +275,7 @@ describe("calendar page", () => {
   });
 
   it("lists only the days something airs, the strip keeping the week", async () => {
-    renderWithQuery(CalendarPage);
+    renderWithQuery(CalendarPage, {});
 
     const strip = await screen.findByRole("navigation", {
       name: m.calendar_week_strip(),
