@@ -80,7 +80,7 @@
     <string name="channel_security">Security</string>
     <string name="channel_security_description">Sign-ins and sensitive changes</string>
     <string name="channel_admin">Admin</string>
-    <string name="channel_admin_description">For your instance's administrators</string>
+    <string name="channel_admin_description">For your instance\'s administrators</string>
     <string name="channel_announcements">Announcements</string>
     <string name="channel_announcements_description">News about Loomkeep</string>
 </resources>
