@@ -113,6 +113,8 @@ html {
      WebView's translucent tap rectangle is what makes the Android app read
      as a website. */
   -webkit-tap-highlight-color: transparent;
+  /* The stretch at the page's ends pulled the fixed bars under the system's. */
+  overscroll-behavior-y: none;
 }
 
 body {

@@ -7,6 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.Insets;
 import androidx.core.splashscreen.SplashScreen;
@@ -54,6 +55,8 @@ public class MainActivity extends BridgeActivity {
         getBridge().setWebViewClient(new ShellWebViewClient(getBridge(), this::releaseSplash));
         int background = ShellAppearance.backgroundColor(this);
         getBridge().getWebView().setBackgroundColor(background);
+        // The stretch at the page's ends pulled the fixed bars under the system's.
+        getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);
         getWindow().getDecorView().setBackgroundColor(background);
         // The web paints its own surface down to the screen's edge: the veil
         // Android would add behind three-button navigation only greys it.

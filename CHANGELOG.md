@@ -39,6 +39,8 @@ history from before it was started.
   are 11 px, Séance's smallest readable size.
 - **Pages change with a short transition on the compact shell**: a fade with
   a 16 px slide, forward or back with depth, a plain fade at the same level.
+- **No more stretch at the ends of a page**, which pulled the header and
+  bottom bar under the system bars. Fully in the next APK.
 - **Phones stay in portrait**, tablets rotate freely. Needs the next APK.
 - **Notifications show who or what they're about**: the person's avatar, a
   saga sequel's poster, Loomkeep's mark with a lock for admin alerts. Chat
