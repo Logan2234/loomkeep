@@ -18,7 +18,10 @@
   import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { isFeatureNew, type FeatureBadgeKey } from "#lib/feature-badges.js";
+  import { chat } from "#lib/chat/chat.svelte.js";
+  import { mobileNav } from "#lib/mobile-nav.svelte.js";
   import { resolveMenuGroups } from "#lib/navigation.js";
+  import { navStyle } from "#lib/nav-style.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { useAdminUpdateAvailable } from "#lib/admin-update.svelte.js";
   import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
@@ -30,12 +33,16 @@
   const adminUpdate = useAdminUpdateAvailable();
 
   const groups = $derived(
-    resolveMenuGroups({
-      isDomainEnabled,
-      isAdmin: auth.isAdmin,
-      socialEnabled: appConfig.socialEnabled,
-      gamificationEnabled: appConfig.gamificationEnabled,
-    }),
+    resolveMenuGroups(
+      {
+        isDomainEnabled,
+        isAdmin: auth.isAdmin,
+        socialEnabled: appConfig.socialEnabled,
+        gamificationEnabled: appConfig.gamificationEnabled,
+      },
+      // The board skin draws its own tabs rather than these shortcuts.
+      navStyle.choice === "board" ? [] : mobileNav.shortcuts,
+    ),
   );
 
   function close() {
@@ -55,6 +62,7 @@
 </script>
 
 {#snippet tile(dest: {
+  id?: string;
   href: string;
   label: string;
   icon: IconName;
@@ -72,6 +80,17 @@
         {m.common_coming_soon()}
       </span>
     </div>
+  {:else if dest.id === "messages"}
+    <button
+      type="button"
+      onclick={() => {
+        close();
+        chat.show();
+      }}
+      class="border-border bg-surface-2 hover:border-accent/40 text-fg flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-colors">
+      <Icon name={dest.icon} class="text-accent h-6 w-6" />
+      <span class="text-xs font-semibold">{dest.label}</span>
+    </button>
   {:else}
     <a
       href={dest.href}

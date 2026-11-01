@@ -2,6 +2,7 @@ import { Domain } from "@loomkeep/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { auth } from "./auth.svelte";
 import {
+  resolveMenuGroups,
   resolveShortcutChoices,
   scrollUpOnReselect,
   visibleNavItems,
@@ -172,5 +173,24 @@ describe("scrollUpOnReselect", () => {
       prevented: 0,
       scrolled: 0,
     });
+  });
+});
+
+describe("resolveMenuGroups and the bottom bar", () => {
+  const opts = { isDomainEnabled: () => true, isAdmin: false };
+  const ids = (bar: string[]) =>
+    resolveMenuGroups(opts, bar).flatMap((g) => g.items.map((d) => d.id));
+
+  it("offers what the bar leaves out", () => {
+    const menu = ids(["menu", "media"]);
+    expect(menu).toContain("home");
+    expect(menu).toContain("search");
+    expect(menu).toContain("alerts");
+  });
+
+  it("doesn't repeat what the bar carries", () => {
+    const menu = ids(["home", "search", "menu", "messages", "alerts"]);
+    expect(menu).not.toContain("home");
+    expect(menu).not.toContain("alerts");
   });
 });

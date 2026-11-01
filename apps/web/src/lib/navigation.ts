@@ -395,6 +395,10 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
 /** How the launcher sheet groups every destination. */
 const MENU_GROUPS: { label: string; ids: MobileNavId[] }[] = [
   {
+    label: m.nav_section_essentials(),
+    ids: ["home", "search", "messages", "alerts"],
+  },
+  {
     label: m.common_libraries(),
     ids: ["media", "games", "books", "music", "podcasts", "boardgames"],
   },
@@ -488,16 +492,29 @@ export const resolveShortcutChoices = (
   return choices.map((d) => (d.domain ? domains[index++] : d));
 };
 
+// These exist nowhere else on a phone, so they show here whenever the bar
+//  doesn't carry them. The other destinations always show.
+const ONLY_WHEN_OFF_THE_BAR: readonly MobileNavId[] = [
+  "home",
+  "search",
+  "messages",
+  "alerts",
+];
+
 // Launcher sheet groups with their visible destinations (coming-soon kept —
 //  they render dimmed with a "Bientôt" badge when their domain is enabled).
 export function resolveMenuGroups(
   opts: MobileGateOptions,
+  barIds: readonly string[] = [],
 ): { label: string; items: MobileDestination[] }[] {
   return MENU_GROUPS.map((g) => ({
     label: g.label,
     items: g.ids
       .map((id) => MOBILE_DESTINATIONS[id])
-      .filter((d) => isVisible(d, opts)),
+      .filter((d) => isVisible(d, opts))
+      .filter(
+        (d) => !ONLY_WHEN_OFF_THE_BAR.includes(d.id) || !barIds.includes(d.id),
+      ),
   })).filter((g) => g.items.length > 0);
 }
 
