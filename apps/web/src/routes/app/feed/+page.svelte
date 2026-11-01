@@ -66,6 +66,9 @@
 
 <div class="mx-auto max-w-2xl px-4 py-6 md:py-8">
   <PageHeader
+    back="/app"
+    backInHistory
+    backOnPhoneOnly
     icon="users"
     title={m.common_activity_feed()}
     subtitle={m.feed_subtitle()} />

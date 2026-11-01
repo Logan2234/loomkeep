@@ -22,6 +22,44 @@ describe("samplePush", () => {
     ]);
   });
 
+  it("links to a page that exists", () => {
+    for (const key of ["SAGA_SEQUEL_ANNOUNCED", "PAUSED_REMINDER"] as const) {
+      expect(samplePush(key, notificationCopy("en"))!.url).toMatch(
+        /^\/app\/media\/(movie|series|anime)\//,
+      );
+    }
+  });
+
+  it("shows the pictures a real push carries", () => {
+    const context = {
+      avatar: "/api/users/u1/avatar?v=1",
+      work: { title: "Arrival", url: "/app/media/movie/1", poster: "poster" },
+    };
+    const copy = notificationCopy("en");
+
+    expect(samplePush("FOLLOW", copy, context)).toMatchObject({
+      image: context.avatar,
+      imageKind: "person",
+    });
+    expect(samplePush("SAGA_SEQUEL_ANNOUNCED", copy, context)).toMatchObject({
+      image: "poster",
+      imageKind: "work",
+      url: "/app/media/movie/1",
+    });
+    expect(samplePush("CHAT_MESSAGE", copy, context)).toMatchObject({
+      conversationId: "sample",
+      image: context.avatar,
+    });
+  });
+
+  it("can give its buttons an action the server refuses", () => {
+    const sample = samplePush("FOLLOW", notificationCopy("en"), undefined, {
+      failing: true,
+    })!;
+
+    expect(sample.actions![0].action).toBe(NotificationAction.TEST_FAILURE);
+  });
+
   it("keeps a reply's field", () => {
     const [reply] = samplePush(
       "CHAT_MESSAGE",

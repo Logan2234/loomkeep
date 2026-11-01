@@ -7,7 +7,7 @@
   import type { Snippet } from "svelte";
   import Icon from "./Icon.svelte";
 
-  import { goBack } from "#lib/back-nav.svelte.js";
+  import { goBack, goUp } from "#lib/back-nav.svelte.js";
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { fly } from "svelte/transition";
@@ -21,6 +21,7 @@
     actions,
     back,
     backInHistory = false,
+    backOnPhoneOnly = false,
     isNew = false,
     documentTitle,
     class: cls = "mb-8",
@@ -35,6 +36,8 @@
     /** The "<" returns to the previous page instead, `back` only serving a
      * page loaded fresh: for a page reached from anywhere. */
     backInHistory?: boolean;
+    /** For a page the desktop rail always reaches: no "<" there. */
+    backOnPhoneOnly?: boolean;
     /** Shows a "Nouveau" pill next to the title — see feature-badges.ts. */
     isNew?: boolean;
     /** Overrides the <title>, for headings that don't read well in a tab
@@ -42,6 +45,15 @@
     documentTitle?: string;
     class?: string;
   } = $props();
+
+  const backHref = $derived(
+    backOnPhoneOnly && !layout.compact ? undefined : back,
+  );
+
+  function onBack(event: MouseEvent) {
+    if (backInHistory) goBack(event);
+    else if (backHref) goUp(event, backHref);
+  }
 
   // On a phone, the title and the way back stay reachable in a compact bar
   // once the header has scrolled away.
@@ -70,10 +82,10 @@
   <div
     transition:fly={{ y: -8, duration: reduced ? 0 : 180 }}
     class="border-border bg-bg/95 fixed inset-x-0 top-[env(safe-area-inset-top)] z-25 flex h-12 items-center gap-2 border-b px-4 backdrop-blur">
-    {#if back}
+    {#if backHref}
       <a
-        href={back}
-        onclick={backInHistory ? goBack : undefined}
+        href={backHref}
+        onclick={onBack}
         class="text-dim relative -ml-1 flex shrink-0 items-center transition-transform after:absolute after:-inset-3 active:scale-90"
         aria-label={m.common_back()}>
         <Icon name="chevron-left" class="h-6 w-6" />
@@ -93,10 +105,10 @@
          connectés", "Statistiques d'instance"). The slot keeps them centred
          on the first line at both text sizes. -->
     <div class="flex items-start gap-2 text-3xl md:text-4xl">
-      {#if back}
+      {#if backHref}
         <a
-          href={back}
-          onclick={backInHistory ? goBack : undefined}
+          href={backHref}
+          onclick={onBack}
           class="text-dim hover:text-fg relative -ml-1 flex h-lh shrink-0 items-center transition-all after:absolute after:-inset-3 hover:-translate-x-0.5 hover:scale-105 active:scale-90"
           aria-label={back === "/app/admin"
             ? m.admin_back_to_overview()

@@ -183,6 +183,7 @@
 
   const peer = $derived(conversation?.peer ?? null);
   const peerName = $derived(peer?.displayName ?? m.chat_deleted_account());
+  const peerLoading = $derived(!conversation && conversationQuery.loading);
   const online = $derived(
     conversation?.peerOnline === null || !peer
       ? null
@@ -401,8 +402,13 @@
     </button>
   {/if}
   {#if mode !== "panel"}
-    <span class="relative">
-      <Avatar seed={peer?.username ?? "?"} url={peer?.avatarUrl} size={38} />
+    <span class="relative flex shrink-0">
+      {#if peerLoading}
+        <span class="bg-surface-2 h-[38px] w-[38px] animate-pulse rounded-full"
+        ></span>
+      {:else}
+        <Avatar seed={peer?.username ?? "?"} url={peer?.avatarUrl} size={38} />
+      {/if}
       {#if online}
         <span
           class="bg-success ring-surface absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full ring-2"
@@ -414,7 +420,12 @@
     <p
       class="flex items-center gap-1.5 truncate font-semibold
         {mode === 'full' ? 'font-display text-xl font-extrabold' : ''}">
-      {#if peer}
+      {#if peerLoading}
+        <span
+          class="bg-surface-2 my-1 h-4 w-28 animate-pulse rounded"
+          role="status"
+          aria-label={m.common_loading()}></span>
+      {:else if peer}
         <a
           href="/app/u/{peer.username}"
           class="truncate underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-150 hover:decoration-current"
@@ -612,7 +623,7 @@
       {/if}
       <div class="flex-1"></div>
 
-      {#if !messagesQuery.loading && messages.length === 0}
+      {#if !messagesQuery.loading && !peerLoading && messages.length === 0}
         <p class="text-dim self-center py-6 text-center text-sm">
           {m.chat_empty_conversation({ name: peerName })}
         </p>

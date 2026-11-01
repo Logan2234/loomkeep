@@ -99,6 +99,13 @@ beforeEach(() => {
 });
 
 describe("ChatThread", () => {
+  it("doesn't call the peer a deleted account while loading", async () => {
+    renderWithQuery(ChatThread, { conversationId: "cv1", mode: "sheet" });
+
+    expect(screen.queryByText(m.chat_deleted_account())).toBeNull();
+    expect(await screen.findByRole("link", { name: "Léa" })).toBeTruthy();
+  });
+
   it('drops the "new" line once the conversation was read and reopened', async () => {
     const props = { conversationId: "cv1", mode: "panel" as const };
     const first = renderWithQuery(ChatThread, props);

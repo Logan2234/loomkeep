@@ -2,18 +2,31 @@
   import { page } from "$app/state";
   import { auth } from "#lib/auth.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { resolveBottomShortcuts } from "#lib/navigation.js";
   import { mobileNav } from "#lib/mobile-nav.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import ChatTab from "#lib/components/chat/ChatTab.svelte";
+  import type { NavTabLook } from "#lib/components/sidebars/NavTab.svelte";
   import NotificationTab from "#lib/components/sidebars/NotificationTab.svelte";
+
+  const TAB_LOOK: NavTabLook = {
+    root: "flex-1 gap-0.5 text-[0.6rem]",
+    rootActive: "text-fg -translate-y-2.5",
+    slot: "h-10 w-10",
+    slotActive:
+      "bg-accent text-accent-fg shadow-[0_6px_16px_-4px_var(--accent)]",
+    glow: "bg-accent/30 -bottom-1 h-6 w-10",
+  };
 
   const items = $derived(
     resolveBottomShortcuts(mobileNav.shortcuts, {
       isDomainEnabled,
       isAdmin: auth.isAdmin,
+      socialEnabled: appConfig.socialEnabled,
+      gamificationEnabled: appConfig.gamificationEnabled,
     }),
   );
 
@@ -34,13 +47,9 @@
   style="bottom: calc(1rem + env(safe-area-inset-bottom))">
   {#each items as item (item.id)}
     {#if item.id === "messages"}
-      <ChatTab
-        slotClass="h-10 w-10"
-        rootClass="flex flex-1 flex-col items-center gap-0.5 text-[0.6875rem]" />
+      <ChatTab look={TAB_LOOK} />
     {:else if item.id === "alerts"}
-      <NotificationTab
-        slotClass="h-10 w-10"
-        rootClass="flex flex-1 flex-col items-center gap-0.5 text-[0.6875rem]" />
+      <NotificationTab look={TAB_LOOK} />
     {:else if item.id === "menu"}
       <button
         type="button"

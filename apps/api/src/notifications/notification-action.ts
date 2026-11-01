@@ -12,6 +12,8 @@ export const NotificationAction = {
   MARK_READ: "notification.read",
   /** A sample's button (Admin › Communications): reaches the API, does nothing. */
   TEST: "test",
+  /** The same, refused by the API: shows how a notification reports a failure. */
+  TEST_FAILURE: "test.failure",
 } as const;
 
 export type NotificationAction =

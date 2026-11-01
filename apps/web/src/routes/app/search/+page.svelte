@@ -260,6 +260,9 @@
 
 <div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
+    back="/app"
+    backInHistory
+    backOnPhoneOnly
     icon="search"
     title={m.common_search()}
     subtitle={m.search_subtitle()}

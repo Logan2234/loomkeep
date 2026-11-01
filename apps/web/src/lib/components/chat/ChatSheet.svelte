@@ -9,6 +9,7 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import ChatSearchField from "./ChatSearchField.svelte";
+  import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
   import ChatConversationRow from "./ChatConversationRow.svelte";
   import ChatNewMessage from "./ChatNewMessage.svelte";
@@ -18,6 +19,22 @@
   import { shownUnread } from "./conversation-presentation";
 
   const reduced = prefersReducedMotion();
+  const slide = {
+    x: "100%",
+    opacity: 1,
+    duration: reduced ? 0 : 260,
+    easing: cubicOut,
+  };
+  // Over the list, which stays put beneath: a conversation slides in from the
+  // right and back out the same way. The veil's padding isn't inherited here.
+  const PANE =
+    "bg-surface absolute inset-0 flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]";
+
+  const showsWork = $derived(chat.tab === "works" && !!chat.activeWork);
+  const showsConversation = $derived(
+    !chat.composing && chat.tab === "friends" && !!chat.activeId,
+  );
+  const paneOpen = $derived(showsWork || chat.composing || showsConversation);
 
   const conversationsQuery = createApiQuery(() => ({
     key: keys.chat.conversations(),
@@ -49,39 +66,8 @@
   aria-modal="true"
   aria-label={m.chat_title()}
   transition:fly={{ y: 24, duration: reduced ? 0 : 240 }}
-  class="bg-surface fixed inset-0 z-50 flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-  {#if chat.tab === "works" && chat.activeWork}
-    {#key `${chat.activeWork.targetType}:${chat.activeWork.targetId}`}
-      <div
-        class="flex min-h-0 flex-1 flex-col"
-        in:fly={{ x: 18, duration: reduced ? 0 : 200 }}>
-        <ChatWorkThread
-          work={chat.activeWork}
-          mode="sheet"
-          onback={() => (chat.activeWork = null)} />
-      </div>
-    {/key}
-  {:else if chat.composing}
-    <div
-      class="flex min-h-0 flex-1 flex-col"
-      in:fly={{ x: 18, duration: reduced ? 0 : 200 }}>
-      <ChatNewMessage
-        mode="sheet"
-        onopen={(id) => chat.select(id)}
-        onback={() => chat.back()} />
-    </div>
-  {:else if chat.activeId && chat.tab === "friends"}
-    {#key chat.activeId}
-      <div
-        class="flex min-h-0 flex-1 flex-col"
-        in:fly={{ x: 18, duration: reduced ? 0 : 200 }}>
-        <ChatThread
-          conversationId={chat.activeId}
-          mode="sheet"
-          onback={() => chat.back()} />
-      </div>
-    {/key}
-  {:else}
+  class="bg-surface fixed inset-0 z-50 flex flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+  <div class="flex min-h-0 flex-1 flex-col" inert={paneOpen}>
     <header class="flex items-center gap-1 px-2 pt-3 pb-1">
       <button
         type="button"
@@ -174,5 +160,34 @@
     {:else}
       <ChatWorkList onselect={(work) => (chat.activeWork = work)} />
     {/if}
+  </div>
+
+  {#if showsWork}
+    <div class={PANE} transition:fly={slide}>
+      {#key `${chat.activeWork?.targetType}:${chat.activeWork?.targetId}`}
+        <ChatWorkThread
+          work={chat.activeWork!}
+          mode="sheet"
+          onback={() => (chat.activeWork = null)} />
+      {/key}
+    </div>
+  {/if}
+  {#if chat.composing}
+    <div class={PANE} transition:fly={slide}>
+      <ChatNewMessage
+        mode="sheet"
+        onopen={(id) => chat.select(id)}
+        onback={() => chat.back()} />
+    </div>
+  {/if}
+  {#if showsConversation}
+    <div class={PANE} transition:fly={slide}>
+      {#key chat.activeId}
+        <ChatThread
+          conversationId={chat.activeId!}
+          mode="sheet"
+          onback={() => chat.back()} />
+      {/key}
+    </div>
   {/if}
 </div>
