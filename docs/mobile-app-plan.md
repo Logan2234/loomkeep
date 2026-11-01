@@ -163,9 +163,12 @@ par-dessus l'ancien garde la session.
 
 - [ ] Liste des widgets : les cinq montrent un aperçu et s'ajoutent sans
       « Impossible d'ajouter le widget ».
-- [ ] Taille à l'ajout : 4×2, sauf Recherche en 4×1.
+- [ ] Taille à l'ajout : 4×2, sauf Série et niveau en 3×1 et Recherche en
+      4×1. Sur le launcher Xiaomi, comparer à la taille affichée par le sélecteur.
 - [ ] Chacun redimensionné entre ses bornes (voir MOB-20), en Affiches et en
-      Liste (appui long › Réglages), en clair et en sombre : rien n'est coupé.
+      Liste (appui long › Réglages ; Série et niveau n'a que les Affiches), en
+      clair et en sombre : rien n'est coupé.
+- [ ] Recherche en Affiches, agrandie en hauteur : les affiches ne s'étirent pas.
 - [ ] Une seule œuvre en Affiches garde la taille d'une tuile.
 - [ ] Un domaine coupé dans les réglages : ses sorties et sa catégorie
       disparaissent ; À suivre, Sorties et Chrono le disent quand tous ceux
@@ -175,7 +178,7 @@ par-dessus l'ancien garde la session.
       arrêter enregistre la session. Sur un livre, arrêter ouvre sa fiche sur
       le formulaire des pages lues.
 - [ ] Série et niveau : jours d'affilée, niveau et XP sur une ligne, la
-      semaine en plus sur deux ; tout est juste.
+      semaine en plus sur deux ; tout est juste, et le tap ouvre le profil.
 - [ ] Recherche : la barre, le scanner et chaque catégorie ouvrent la bonne
       page, app fermée comme ouverte ; passer de Jeux à Livres change bien
       de catégorie.
@@ -241,7 +244,7 @@ une Notification Service Extension), et gratuit ou premium (`ee/`).
 Décidé le 29/10, revu le 30/10 après un premier essai sur téléphone
 (maquette de la refonte : https://claude.ai/artifact/HXhJptW1hDvrtdk2iBaf69) :
 
-- Chaque widget a deux styles, au choix dans ses réglages : « Affiches »
+- Chaque widget, sauf Série et niveau, a deux styles, au choix dans ses réglages : « Affiches »
   (par défaut : l'affiche, et dessous un bandeau dans sa propre teinte) et
   « Liste » (des billets de cinéma aux couleurs de Séance, le code ou la
   date sur le talon). Ils montrent jusqu'à neuf œuvres, et le sélecteur de
@@ -250,7 +253,7 @@ Décidé le 29/10, revu le 30/10 après un premier essai sur téléphone
 - Tailles, à vérifier sur un vrai launcher : la hauteur d'une case varie
   (70n − 30 ou 118n − 16 dp), les bornes tiennent compte des deux. À suivre
   et Sorties : 4×2 à l'ajout, de 2×2 à 5×5. Chrono : 4×2, de 2×2 à environ
-  5×3. Série et niveau : 4×2, d'une ligne sur 3 colonnes à environ 5×2.
+  5×3. Série et niveau : 3×1, jusqu'à environ 5×2.
   Recherche : 4×1, d'une ligne jusqu'à 5×5.
 - Un domaine coupé disparaît du flux (`enabledDomains`) : Recherche ne
   propose que les catégories actives, et les autres widgets le disent

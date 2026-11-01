@@ -139,6 +139,9 @@ private fun CategoryChips(categories: List<Pair<String, Int>>, cells: Cells, bac
 }
 
 private val BAR_HEIGHT = 46.dp
+/** Under a tile's 2:3 poster: its title and what it is. */
+private val BAND_HEIGHT = 44.dp
+private val MAX_POSTER_LINES = 3
 
 /** Too short for more than the bar: a single row on the home screen. */
 @Composable
@@ -240,17 +243,26 @@ private fun SearchBands(added: List<WidgetAdded>, categories: List<Pair<String, 
                 )
             }
         }
-        if (chipsFit()) {
+        val chips = chipsFit()
+        if (chips) {
             Spacer(GlanceModifier.height(6.dp))
             CategoryChips(categories, cells, R.drawable.widget_chip_bg, WidgetColors.fg)
         }
 
         if (cells.rows >= 3 && added.isNotEmpty()) {
-            val (cols, rows) = posterGrid(cells)
+            val (cols, _) = posterGrid(cells)
+            val size = LocalSize.current
+            val chipLines = if (chips) categories.chunked(if (cells.cols >= 5) 4 else 2).size else 0
+            val chipsHeight = if (chipLines > 0) 6.dp + 30.dp * chipLines + 4.dp * (chipLines - 1) else 0.dp
+            // Frame padding, header, bar, chips, then the gap above the posters.
+            val available = size.height - 12.dp - 34.dp - BAR_HEIGHT - chipsHeight - 6.dp
+            val tileWidth = (size.width - 12.dp - 6.dp * (cols - 1)) / cols
+            val tile = tileWidth * 1.5f + BAND_HEIGHT
+            val lines = ((available + 6.dp) / (tile + 6.dp)).toInt().coerceIn(1, MAX_POSTER_LINES)
             Spacer(GlanceModifier.height(6.dp))
-            Box(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
-                val shown = (rows - 1).coerceAtLeast(1)
-                BandGrid(added.take(cols * shown), cols, shown) { item, modifier ->
+            // A fixed height: given all the space left, the posters would stretch with the widget.
+            Box(modifier = GlanceModifier.fillMaxWidth().height(minOf(available, tile * lines + 6.dp * (lines - 1)))) {
+                BandGrid(added.take(cols * lines), cols, lines) { item, modifier ->
                     BandTile(
                         modifier = modifier,
                         poster = posters.of(item),
