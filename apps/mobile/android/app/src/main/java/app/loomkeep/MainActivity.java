@@ -79,21 +79,31 @@ public class MainActivity extends BridgeActivity {
                 WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP
             );
         }
-        // SystemBars already shrinks the window by the keyboard's height. Told
-        // about the keyboard as well, the WebView takes a share of it off again.
-        ViewCompat.setOnApplyWindowInsetsListener(getBridge().getWebView(), (view, insets) ->
-            ViewCompat.onApplyWindowInsets(
-                view,
-                new WindowInsetsCompat.Builder(insets)
-                    .setInsets(WindowInsetsCompat.Type.ime(), Insets.NONE)
-                    .setVisible(WindowInsetsCompat.Type.ime(), false)
-                    .build()
-            )
-        );
+        fitWindowToBarsAndKeyboard();
         lockPhoneToPortrait(getResources().getConfiguration());
         NotificationChannels.ensure(this);
         AppShortcuts.publish(this, getBridge().getServerUrl());
         appLock.hideFromRecents();
+    }
+
+    /**
+     * Replaces SystemBars' listener, which left the navigation bar's height
+     * above the keyboard (a black band on a Poco X5 Pro). The keyboard covers
+     * that bar: the bottom is whichever is taller, and the page sees no insets
+     * left to apply a second time.
+     */
+    private void fitWindowToBarsAndKeyboard() {
+        int edges = WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout();
+        ViewCompat.setOnApplyWindowInsetsListener(getWindow().getDecorView(), (decor, insets) -> {
+            Insets bars = insets.getInsets(edges);
+            Insets keyboard = insets.getInsets(WindowInsetsCompat.Type.ime());
+            decor.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, keyboard.bottom));
+            return new WindowInsetsCompat.Builder(insets)
+                .setInsets(edges, Insets.NONE)
+                .setInsets(WindowInsetsCompat.Type.ime(), Insets.NONE)
+                .setVisible(WindowInsetsCompat.Type.ime(), false)
+                .build();
+        });
     }
 
     @Override
