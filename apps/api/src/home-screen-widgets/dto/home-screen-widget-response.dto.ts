@@ -84,6 +84,7 @@ export class HomeScreenWidgetAddedResponseDto implements HomeScreenWidgetAddedDt
 }
 
 export class HomeScreenWidgetFeedResponseDto implements HomeScreenWidgetFeedDto {
+  enabledDomains!: string[];
   toWatch!: HomeScreenWidgetShowResponseDto[];
   releases!: HomeScreenWidgetReleaseResponseDto[];
   timer!: HomeScreenWidgetTimerResponseDto | null;

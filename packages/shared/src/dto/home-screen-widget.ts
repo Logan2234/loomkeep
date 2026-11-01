@@ -108,6 +108,8 @@ export type HomeScreenWidgetPart = (typeof HOME_SCREEN_WIDGET_PARTS)[number];
 
 /** Every part is present; one that wasn't asked for is empty (or null). */
 export interface HomeScreenWidgetFeedDto {
+  /** The account's domains: a widget says so when the one it shows is off. */
+  enabledDomains: string[];
   /** Most recently watched first. */
   toWatch: HomeScreenWidgetShowDto[];
   /** Soonest first, from today on. */
