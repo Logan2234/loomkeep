@@ -19,6 +19,7 @@ history from before it was started.
 
 ### Fixed
 
+- Android app: no more black band between the page and the keyboard.
 - Mobile bar: Feed and Leaderboard shortcuts no longer vanish, Messages and
   Alerts are drawn like every other tab, and a bar takes up to six shortcuts.
 - Android's back button closes a side panel. A conversation no longer reads
