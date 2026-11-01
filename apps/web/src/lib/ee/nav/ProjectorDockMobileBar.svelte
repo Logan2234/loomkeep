@@ -4,22 +4,17 @@
   import Icon from "#lib/components/Icon.svelte";
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
-  import {
-    DEFAULT_BOTTOM_SHORTCUTS,
-    resolveBottomShortcuts,
-  } from "#lib/navigation.js";
+  import { resolveBottomShortcuts } from "#lib/navigation.js";
+  import { mobileNav } from "#lib/mobile-nav.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import ChatTab from "#lib/components/chat/ChatTab.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
   import NotificationTab from "#lib/components/sidebars/NotificationTab.svelte";
 
   const items = $derived(
-    resolveBottomShortcuts(
-      auth.user?.mobileNavShortcuts?.length
-        ? auth.user.mobileNavShortcuts
-        : DEFAULT_BOTTOM_SHORTCUTS,
-      { isDomainEnabled, isAdmin: auth.isAdmin },
-    ),
+    resolveBottomShortcuts(mobileNav.shortcuts, {
+      isDomainEnabled,
+      isAdmin: auth.isAdmin,
+    }),
   );
 
   function openMenu() {
@@ -38,7 +33,15 @@
   "
   style="bottom: calc(1rem + env(safe-area-inset-bottom))">
   {#each items as item (item.id)}
-    {#if item.id === "menu"}
+    {#if item.id === "messages"}
+      <ChatTab
+        slotClass="h-10 w-10"
+        rootClass="flex flex-1 flex-col items-center gap-0.5 text-[0.6875rem]" />
+    {:else if item.id === "alerts"}
+      <NotificationTab
+        slotClass="h-10 w-10"
+        rootClass="flex flex-1 flex-col items-center gap-0.5 text-[0.6875rem]" />
+    {:else if item.id === "menu"}
       <button
         type="button"
         onclick={openMenu}
@@ -77,13 +80,4 @@
       </a>
     {/if}
   {/each}
-
-  {#if appConfig.chatEnabled}
-    <ChatTab
-      slotClass="h-10 w-10"
-      rootClass="flex flex-1 flex-col items-center gap-0.5 text-[0.6rem]" />
-  {/if}
-  <NotificationTab
-    slotClass="h-10 w-10"
-    rootClass="flex flex-1 flex-col items-center gap-0.5 text-[0.6rem]" />
 </nav>

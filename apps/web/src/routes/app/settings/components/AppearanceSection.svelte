@@ -26,7 +26,6 @@
   import { languageOptions } from "#lib/locales.js";
   import type { MobileDestination } from "#lib/navigation.js";
   import {
-    DEFAULT_BOTTOM_SHORTCUTS,
     resolveBottomShortcuts,
     resolveShortcutChoices,
   } from "#lib/navigation.js";
@@ -35,6 +34,7 @@
     navStyle,
     type NavStyle,
   } from "#lib/nav-style.svelte.js";
+  import { mobileNav } from "#lib/mobile-nav.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { flashAnchor } from "#lib/flash-anchor.js";
@@ -82,14 +82,7 @@
 
   // Stored order, gated to what's visible now (drops disabled/unknown ids and
   // keeps "menu"). This is the working set every action rebuilds from.
-  const selected = $derived(
-    resolveBottomShortcuts(
-      auth.user?.mobileNavShortcuts?.length
-        ? auth.user.mobileNavShortcuts
-        : DEFAULT_BOTTOM_SHORTCUTS,
-      gate,
-    ),
-  );
+  const selected = $derived(resolveBottomShortcuts(mobileNav.shortcuts, gate));
   const selectedIds = $derived(selected.map((d) => d.id));
 
   // Writable derived: mirrors `selected`, but svelte-dnd-action reassigns it
@@ -105,12 +98,8 @@
   const canRemove = $derived(selected.length > MOBILE_NAV_SHORTCUT_LIMITS.min);
   const canAdd = $derived(selected.length < MOBILE_NAV_SHORTCUT_LIMITS.max);
 
-  const saveShortcutsMut = createApiMutation(() => ({
-    mutate: (next: string[]) => updateMe({ mobileNavShortcuts: next }),
-  }));
-
   function save(next: string[]) {
-    saveShortcutsMut.mutate(next);
+    mobileNav.save(next);
   }
 
   // No error UI here: reload on success (setLocale's default) makes an
@@ -329,7 +318,6 @@
       class="divide-border divide-y"
       use:dragHandleZone={{
         items: dragItems,
-        dragDisabled: saveShortcutsMut.loading,
         flipDurationMs,
         dropTargetStyle: {},
         transformDraggedElement: highlightDraggedShortcut,
@@ -367,7 +355,7 @@
               type="button"
               class="hover:bg-danger/10 hover:text-danger text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-30"
               aria-label={m.common_remove()}
-              disabled={saveShortcutsMut.loading || locked || !canRemove}
+              disabled={locked || !canRemove}
               title={locked
                 ? m.settings_nav_menu_cannot_remove()
                 : !canRemove
@@ -393,7 +381,7 @@
             <button
               type="button"
               class="chip inline-flex items-center gap-1.5 disabled:pointer-events-none disabled:opacity-40"
-              disabled={saveShortcutsMut.loading || !canAdd}
+              disabled={!canAdd}
               title={!canAdd
                 ? m.settings_nav_max_shortcuts({
                     max: MOBILE_NAV_SHORTCUT_LIMITS.max,
@@ -411,10 +399,6 @@
           </p>
         {/if}
       </div>
-    {/if}
-
-    {#if saveShortcutsMut.error}
-      <p class="text-danger mt-3 text-sm">{saveShortcutsMut.error}</p>
     {/if}
   </section>
 </div>

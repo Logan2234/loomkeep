@@ -27,6 +27,7 @@ describe("mobile shortcut choices", () => {
     ).toEqual([
       "home",
       "search",
+      "alerts",
       "music",
       "games",
       "media",
@@ -49,6 +50,7 @@ describe("mobile shortcut choices", () => {
     expect(choices.map((choice) => choice.id)).toEqual([
       "home",
       "search",
+      "alerts",
       "media",
       "games",
       "books",

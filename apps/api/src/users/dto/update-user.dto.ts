@@ -13,14 +13,12 @@ import {
   Domain as DomainValues,
   ListVisibility as ListVisibilityValues,
   Locale as LocaleValues,
-  MOBILE_NAV_SHORTCUT_LIMITS,
   ReviewVisibility as ReviewVisibilityValues,
   SpoilerSensitivity as SpoilerSensitivityValues,
   USER_LIMITS,
 } from "@loomkeep/shared";
 import {
   ArrayMaxSize,
-  ArrayMinSize,
   ArrayNotEmpty,
   ArrayUnique,
   IsBoolean,
@@ -82,17 +80,6 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   @ArrayNotEmpty()
   @IsIn(Object.values(DomainValues), { each: true })
   enabledDomains?: Domain[];
-
-  // Ordered mobile bottom-bar shortcut ids (3–7, unique). Individual ids aren't
-  // enum-checked here — they're a web-UI vocabulary and unknown ones are simply
-  // ignored at render time — but the required "menu" launcher is enforced in the
-  // controller. See web navigation.ts.
-  @IsOptional()
-  @ArrayMinSize(MOBILE_NAV_SHORTCUT_LIMITS.min)
-  @ArrayMaxSize(MOBILE_NAV_SHORTCUT_LIMITS.max)
-  @ArrayUnique()
-  @IsString({ each: true })
-  mobileNavShortcuts?: string[];
 
   @IsOptional()
   @IsString()

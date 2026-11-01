@@ -218,7 +218,9 @@ export type MobileNavId =
   | "feed"
   | "profile"
   | "settings"
-  | "admin";
+  | "admin"
+  | "messages"
+  | "alerts";
 
 export interface MobileDestination {
   id: MobileNavId;
@@ -236,6 +238,8 @@ export interface MobileDestination {
   adminOnly?: boolean;
   /** Hidden until the social features (P4) are enabled on the deployment. */
   social?: boolean;
+  /** Hidden when Messages is off on this instance. */
+  chat?: boolean;
   /** Hidden until GAMIFICATION_ENABLED is enabled on the deployment. */
   gamification?: boolean;
   /** Key into feature-badges.ts — shows a "Nouveau" dot while its window is open. */
@@ -256,6 +260,23 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
     label: m.common_search(),
     icon: "search",
     match: (p) => p.startsWith("/app/search"),
+  },
+  // Drawn by their own tabs in the bars (ChatTab, NotificationTab), for their
+  // badges and, for Messages, the sheet it opens.
+  messages: {
+    id: "messages",
+    href: "#messages",
+    label: m.chat_title(),
+    icon: "message",
+    chat: true,
+    match: () => false,
+  },
+  alerts: {
+    id: "alerts",
+    href: "/app/notifications",
+    label: m.nav_notifications_short(),
+    icon: "bell",
+    match: (p) => p === "/app/notifications",
   },
   // The launcher itself — opened via an event, never navigated to.
   menu: {
@@ -393,8 +414,8 @@ export const DEFAULT_BOTTOM_SHORTCUTS: MobileNavId[] = [
   "home",
   "search",
   REQUIRED_SHORTCUT,
-  "calendar",
-  "settings",
+  "messages",
+  "alerts",
 ];
 
 // Destinations the user may pin to the bottom bar (Phase B config UI). Excludes
@@ -402,6 +423,8 @@ export const DEFAULT_BOTTOM_SHORTCUTS: MobileNavId[] = [
 const BOTTOM_SHORTCUT_CHOICES: MobileNavId[] = [
   "home",
   "search",
+  "messages",
+  "alerts",
   "media",
   "games",
   "books",
@@ -428,6 +451,7 @@ const isVisible = (d: MobileDestination, opts: MobileGateOptions): boolean =>
   (!d.domain || opts.isDomainEnabled(d.domain)) &&
   (!d.anyDomain || d.anyDomain.some(opts.isDomainEnabled)) &&
   (!d.adminOnly || opts.isAdmin) &&
+  (!d.chat || appConfig.chatEnabled) &&
   (!d.social || !!opts.socialEnabled) &&
   (!d.gamification || !!opts.gamificationEnabled);
 

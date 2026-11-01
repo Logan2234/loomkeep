@@ -34,6 +34,7 @@ import { ListService } from "../lists/list.service";
 import { readAlertPrefs } from "../notifications/alert-prefs.util";
 import { NotificationAction } from "../notifications/notification-action";
 import { notificationCopy } from "../notifications/notification-copy";
+import { avatarPath } from "../notifications/push-image";
 import { PushService } from "../notifications/push.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -1344,7 +1345,7 @@ export class ChatService {
       }),
       this.prisma.user.findUnique({
         where: { id: authorId },
-        select: { displayName: true },
+        select: { displayName: true, avatarUpdatedAt: true },
       }),
       this.prisma.conversationMember.findUnique({
         where: {
@@ -1377,6 +1378,11 @@ export class ChatService {
         url: `/app?messages=${conversationId}`,
         tag: `chat:${conversationId}`,
         group: AlertGroup.ACTIVITY,
+        conversationId,
+        ...(author.avatarUpdatedAt && {
+          image: avatarPath(authorId, author.avatarUpdatedAt),
+          imageKind: "person" as const,
+        }),
         actions: [
           {
             action: NotificationAction.CHAT_REPLY,

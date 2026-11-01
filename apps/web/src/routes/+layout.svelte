@@ -10,6 +10,7 @@
   import OpenInAppBanner from "#lib/components/OpenInAppBanner.svelte";
   import Toast from "#lib/components/Toast.svelte";
   import { layout } from "#lib/layout.svelte.js";
+  import { mobileNav } from "#lib/mobile-nav.svelte.js";
   import { navStyle } from "#lib/nav-style.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -53,6 +54,10 @@
 
   $effect(() => {
     navStyle.init();
+  });
+
+  $effect(() => {
+    mobileNav.init();
   });
 
   $effect(() => {

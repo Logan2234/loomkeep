@@ -20,6 +20,15 @@ export interface PushPayload {
   notificationId?: string;
   /** Its ALERTS group: the Android app files it under that notification channel. */
   group: AlertGroup;
+  /**
+   * The picture beside the Android app's notification: an instance path or an
+   * address. It reaches Google in clear, like the rest of the push.
+   */
+  image?: string;
+  /** How to draw `image`: a person's comes round. */
+  imageKind?: "person" | "work";
+  /** Files a chat push under Android's Conversations. */
+  conversationId?: string;
   /** Buttons for the Android app's notification (MOB-17); browsers ignore them. */
   actions?: PushAction[];
 }
@@ -315,6 +324,13 @@ function appBuiltMessage(
       body: payload.body,
       channel: payload.group,
       ...(payload.tag && { tag: payload.tag }),
+      ...(payload.image && {
+        image: payload.image,
+        imageKind: payload.imageKind ?? "work",
+      }),
+      ...(payload.conversationId && {
+        conversationId: payload.conversationId,
+      }),
       actions: JSON.stringify(actions),
     },
     android: { priority: "HIGH" },

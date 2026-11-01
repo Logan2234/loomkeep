@@ -1,11 +1,13 @@
 package app.loomkeep;
 
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.Insets;
 import androidx.core.splashscreen.SplashScreen;
@@ -22,6 +24,7 @@ public class MainActivity extends BridgeActivity {
     // web never calls ShellSplash, and a slow one shows its own loading screen.
     private static final long SPLASH_MAX_MS = 3000;
     private static final long SPLASH_EXIT_MS = 200;
+    private static final int TABLET_MIN_WIDTH_DP = 600;
 
     private volatile boolean splashReleased = false;
     private final AppLock appLock = new AppLock(this);
@@ -58,6 +61,8 @@ public class MainActivity extends BridgeActivity {
         getBridge().setWebViewClient(new ShellWebViewClient(getBridge(), this::releaseSplash));
         int background = ShellAppearance.backgroundColor(this);
         getBridge().getWebView().setBackgroundColor(background);
+        // The stretch at the page's ends pulled the fixed bars under the system's.
+        getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);
         getWindow().getDecorView().setBackgroundColor(background);
         // The web paints its own surface down to the screen's edge: the veil
         // Android would add behind three-button navigation only greys it.
@@ -84,6 +89,7 @@ public class MainActivity extends BridgeActivity {
                     .build()
             )
         );
+        lockPhoneToPortrait(getResources().getConfiguration());
         NotificationChannels.ensure(this);
         AppShortcuts.publish(this, getBridge().getServerUrl());
         appLock.hideFromRecents();
@@ -107,6 +113,17 @@ public class MainActivity extends BridgeActivity {
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         getWindow().getDecorView().setBackgroundColor(ShellAppearance.backgroundColor(this));
+        lockPhoneToPortrait(newConfig);
+    }
+
+    // Read at run time rather than in the manifest: tablets rotate freely, and
+    // a foldable changes category as it opens.
+    private void lockPhoneToPortrait(Configuration configuration) {
+        setRequestedOrientation(
+            configuration.smallestScreenWidthDp < TABLET_MIN_WIDTH_DP
+                ? ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        );
     }
 
     // Also runs on the launch intent, once the bridge exists (BridgeActivity.load).

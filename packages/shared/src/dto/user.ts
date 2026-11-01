@@ -20,7 +20,7 @@ export const AVATAR_MIME_TYPES = [
 ] as const;
 export type AvatarMimeType = (typeof AVATAR_MIME_TYPES)[number];
 export const AVATAR_MAX_DIMENSION = 512;
-export const MOBILE_NAV_SHORTCUT_LIMITS = { min: 3, max: 7 } as const;
+export const MOBILE_NAV_SHORTCUT_LIMITS = { min: 3, max: 5 } as const;
 export const REQUIRED_SHORTCUT = "menu";
 
 export interface UserDto {
@@ -54,13 +54,6 @@ export interface UserDto {
    * nav today. See `Domain`.
    */
   enabledDomains: Domain[];
-  /**
-   * Ordered ids of the mobile bottom-bar shortcuts (3–7 entries), as chosen in
-   * settings. Always contains the required `"menu"` launcher. Values are
-   * `MobileNavId`s from the web nav registry; gating by `enabledDomains` /
-   * admin role happens at render time. See the web `navigation.ts`.
-   */
-  mobileNavShortcuts: string[];
   /** Short free-form profile bio (social); null when unset. */
   bio: string | null;
   /** Default audience applied to new reviews (social). See `ReviewVisibility`. */
@@ -153,8 +146,6 @@ export interface UpdateUserRequestDto {
   timezone?: string;
   /** Content domains to keep visible; must list at least one. See `Domain`. */
   enabledDomains?: Domain[];
-  /** Ordered mobile bottom-bar shortcut ids (3–7 entries, must include "menu"). */
-  mobileNavShortcuts?: string[];
   /** Profile bio (social); pass null or "" to clear it. */
   bio?: string | null;
   /** Default audience for new reviews (social). */

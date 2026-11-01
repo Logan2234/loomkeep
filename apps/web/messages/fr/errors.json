@@ -163,7 +163,6 @@
   "apierr_user_premium_required": "Cette fonctionnalité est réservée aux comptes premium.",
   "apierr_user_birth_date_future": "La date de naissance ne peut pas être dans le futur.",
   "apierr_user_adult_content_requires_birth_date": "Le contenu adulte nécessite une date de naissance confirmant que tu as 18 ans ou plus.",
-  "apierr_user_mobile_nav_missing_menu": "Le raccourci « Menu » doit toujours être présent dans la barre de navigation.",
   "apierr_user_email_already_current": "C'est déjà ton adresse email actuelle.",
   "apierr_user_email_already_exists": "Un compte existe déjà avec cette adresse email.",
   "apierr_user_email_change_code_invalid": "Ce code est invalide ou a expiré.",

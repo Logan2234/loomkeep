@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   contrast: "lk-a11y-contrast",
   density: "lk-a11y-density",
   navStyle: "lk-nav-style",
+  mobileNav: "lk-mobile-nav",
   railPinned: "lk-rail-pinned",
   lastKnownPrefix: "lk-last-known-",
   reviewDraftPrefix: "lk-review-draft-",

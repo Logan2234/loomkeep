@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { onNavigate } from "$app/navigation";
   import { page } from "$app/state";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { pageTransition } from "#lib/page-transition.js";
   import OnboardingBanner from "#lib/components/onboarding/OnboardingBanner.svelte";
   import ProgrammeBoardMobileBar from "#lib/ee/nav/ProgrammeBoardMobileBar.svelte";
   import ProjectorDockMobileBar from "#lib/ee/nav/ProjectorDockMobileBar.svelte";
@@ -26,6 +29,35 @@
   const showOnboarding = $derived((checklistQuery.data?.steps.length ?? 0) > 0);
 
   $effect(() => keyboard.init());
+
+  onNavigate((navigation) => {
+    const { from, to, complete } = navigation;
+    if (
+      !document.startViewTransition ||
+      prefersReducedMotion() ||
+      !from ||
+      !to ||
+      from.url.pathname === to.url.pathname
+    ) {
+      return;
+    }
+
+    document.documentElement.dataset.pageTransition = pageTransition(
+      from.url.pathname,
+      to.url.pathname,
+      "delta" in navigation ? navigation.delta : undefined,
+    );
+
+    return new Promise((resolve) => {
+      const transition = document.startViewTransition(async () => {
+        resolve();
+        await complete;
+      });
+      void transition.finished.finally(() => {
+        delete document.documentElement.dataset.pageTransition;
+      });
+    });
+  });
 </script>
 
 <div class="min-h-svh">

@@ -225,7 +225,6 @@ export const ErrorCode = {
   UserPremiumRequired: "user.premium_required",
   UserBirthDateFuture: "user.birth_date_future",
   UserAdultContentRequiresBirthDate: "user.adult_content_requires_birth_date",
-  UserMobileNavMissingMenu: "user.mobile_nav_missing_menu",
   UserEmailAlreadyCurrent: "user.email_already_current",
   UserEmailAlreadyExists: "user.email_already_exists",
   UserEmailChangeCodeInvalid: "user.email_change_code_invalid",

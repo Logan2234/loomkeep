@@ -70,7 +70,7 @@ public class NotificationActionReceiver extends BroadcastReceiver {
     }
 
     /** The instance the app runs on (MOB-15), which sent the push and minted its tokens. */
-    private static String instanceOrigin(Context context) {
+    static String instanceOrigin(Context context) {
         CapConfig config = InstanceConfig.load(context);
         if (config == null) config = CapConfig.loadDefault(context);
         Uri url = Uri.parse(config.getServerUrl());

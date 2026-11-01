@@ -5,7 +5,6 @@ import {
   LEGAL_VERSION,
   OTP_CODE_LENGTH,
   RealtimeEvent,
-  REQUIRED_SHORTCUT,
   UserDto,
   UsernameAvailabilityDto,
   XpReason,
@@ -362,19 +361,6 @@ export class UsersService {
       nextAllowAdultContent = false;
     }
 
-    // The "menu" launcher must always be reachable from the bottom bar.
-    if (
-      dto.mobileNavShortcuts &&
-      !dto.mobileNavShortcuts.includes(REQUIRED_SHORTCUT)
-    ) {
-      throw new AppException(
-        HttpStatus.BAD_REQUEST,
-        ErrorCode.UserMobileNavMissingMenu,
-        undefined,
-        'mobileNavShortcuts must include the "menu" launcher',
-      );
-    }
-
     const alertPrefs = dto.alertPrefs
       ? mergeAlertPrefs(readAlertPrefs(current.alertPrefs), dto.alertPrefs)
       : undefined;
@@ -401,7 +387,6 @@ export class UsersService {
         newsletterOptInAt,
         timezone: dto.timezone,
         enabledDomains: dto.enabledDomains,
-        mobileNavShortcuts: dto.mobileNavShortcuts,
         // Empty string clears the bio back to null.
         bio: dto.bio === undefined ? undefined : dto.bio || null,
         defaultReviewVisibility: dto.defaultReviewVisibility,

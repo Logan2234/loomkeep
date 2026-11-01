@@ -90,4 +90,5 @@
     <string name="channel_admin_description">For your instance\'s administrators</string>
     <string name="channel_announcements">Announcements</string>
     <string name="channel_announcements_description">News about Loomkeep</string>
+    <string name="notification_you">You</string>
 </resources>
