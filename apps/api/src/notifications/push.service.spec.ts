@@ -309,6 +309,32 @@ describe("PushService on the Android app", () => {
     expect(prisma.pushSubscription.delete).not.toHaveBeenCalled();
   });
 
+  it("sends an app that builds its own notifications its picture and conversation", async () => {
+    process.env.JWT_ACCESS_SECRET = "access-secret";
+    const send = vi
+      .spyOn(FcmClient.prototype, "send")
+      .mockResolvedValue({ ok: true });
+    const { service } = makeAndroidService(true, true);
+
+    await service.sendToUserDetailed("u1", {
+      ...payload,
+      image: "/api/users/u2/avatar?v=1",
+      imageKind: "person",
+      conversationId: "cv1",
+    });
+
+    expect(send).toHaveBeenCalledWith(
+      TOKEN,
+      expect.objectContaining({
+        data: expect.objectContaining({
+          image: "/api/users/u2/avatar?v=1",
+          imageKind: "person",
+          conversationId: "cv1",
+        }),
+      }),
+    );
+  });
+
   it("sends an app that builds its own notifications the content and signed buttons as data", async () => {
     process.env.JWT_ACCESS_SECRET = "access-secret";
     const send = vi

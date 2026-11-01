@@ -663,6 +663,61 @@ describe("NotificationService push", () => {
     });
   });
 
+  describe("its picture", () => {
+    const wanted = {
+      locale: "en",
+      alertPrefs: { COMMENT_REPLY: { push: true } },
+    };
+    const sent = (push: PushService) =>
+      vi.mocked(push.sendToUser).mock.calls[0][1];
+
+    it("shows the person it's about, by their versioned avatar", async () => {
+      const { service, push } = makeService(wanted);
+      vi.mocked(service["prisma"].user.findUnique)
+        .mockResolvedValueOnce(wanted as never)
+        .mockResolvedValueOnce({
+          id: "alice-id",
+          avatarUpdatedAt: new Date(1000),
+        } as never);
+
+      await service.create({ ...reply, data: { actorUsername: "alice" } });
+
+      expect(sent(push)).toMatchObject({
+        image: "/api/users/alice-id/avatar?v=1000",
+        imageKind: "person",
+      });
+    });
+
+    it("falls back to the work's poster for someone without an avatar", async () => {
+      const { service, push } = makeService(wanted);
+      vi.mocked(service["prisma"].user.findUnique)
+        .mockResolvedValueOnce(wanted as never)
+        .mockResolvedValueOnce({
+          id: "alice-id",
+          avatarUpdatedAt: null,
+        } as never);
+
+      await service.create({
+        ...reply,
+        data: { actorUsername: "alice" },
+        pushPoster: "https://image.example/poster.jpg",
+      });
+
+      expect(sent(push)).toMatchObject({
+        image: "https://image.example/poster.jpg",
+        imageKind: "work",
+      });
+    });
+
+    it("sends none when there's nothing to show", async () => {
+      const { service, push } = makeService(wanted);
+
+      await service.create(reply);
+
+      expect(sent(push)).not.toHaveProperty("image");
+    });
+  });
+
   it("keeps it to the bell by default", async () => {
     const { service, push } = makeService({ locale: "en", alertPrefs: {} });
 
