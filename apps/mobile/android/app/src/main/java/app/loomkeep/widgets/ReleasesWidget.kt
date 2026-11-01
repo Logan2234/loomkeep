@@ -48,6 +48,7 @@ class ReleasesWidget : GlanceAppWidget() {
                 when {
                     data == WidgetData.SignedOut -> WidgetMessage(R.string.widget_signed_out, style)
                     data == WidgetData.Offline -> WidgetMessage(R.string.widget_offline, style)
+                    (data as? WidgetData.Ready)?.feed?.allOff("MEDIA", "GAMES") == true -> WidgetMessage(R.string.widget_releases_off, style)
                     releases.isEmpty() -> WidgetMessage(R.string.widget_releases_empty, style)
                     style == STYLE_LIST -> ReleaseTickets(releases, snapshot?.posters.orEmpty(), cells)
                     else -> ReleaseBands(releases, snapshot?.posters.orEmpty(), cells)
@@ -167,7 +168,7 @@ private fun ReleaseBands(releases: List<WidgetRelease>, posters: Map<String, Pos
         ReleasesHeader(releases, STYLE_POSTERS)
         Spacer(GlanceModifier.height(4.dp))
         Box(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
-            BandGrid(releases.take(cols * rows), cols) { release, modifier ->
+            BandGrid(releases.take(cols * rows), cols, rows) { release, modifier ->
                 BandTile(
                     modifier = modifier,
                     poster = posters.of(release),

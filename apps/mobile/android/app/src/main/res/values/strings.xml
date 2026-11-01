@@ -50,13 +50,12 @@
     <string name="widget_series">Series</string>
     <string name="widget_anime">Anime</string>
     <string name="widget_streak_name">Streak and level</string>
-    <string name="widget_streak_description">Your streak, your level and your latest XP</string>
+    <string name="widget_streak_description">Your streak, your level and your week</string>
     <string name="widget_streak_off">Gamification is off on this instance</string>
     <string name="widget_streak_days">days in a row</string>
     <string name="widget_level">Level %d</string>
     <string name="widget_streak_keep">Keep it going today</string>
     <string name="widget_xp_of">%1$d / %2$d XP</string>
-    <string name="widget_gain_other">Bonus</string>
     <string name="widget_search_name">Search</string>
     <string name="widget_search_description">Search or scan to add to Loomkeep</string>
     <string name="widget_search_title">Search</string>
@@ -69,4 +68,8 @@
     <string name="widget_search_games">Games</string>
     <string name="widget_search_books">Books</string>
     <string name="widget_search_music">Music</string>
+    <string name="widget_media_off">Turn on shows and films in your settings to use this widget</string>
+    <string name="widget_releases_off">Only shows, films and games have releases: turn one on in your settings</string>
+    <string name="widget_chrono_off">Sessions are for games and books: turn one on in your settings</string>
+    <string name="widget_streak_days_short">days</string>
 </resources>

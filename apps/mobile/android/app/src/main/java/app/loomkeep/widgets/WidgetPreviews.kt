@@ -49,12 +49,6 @@ object WidgetSamples {
             streakSecuredToday = true,
             today = day(0),
             activeDays = setOf(0, 1, 2, 4, 5, 6).map(day).toSet(),
-            gains = listOf(
-                WidgetGain(20, "Severance", System.currentTimeMillis()),
-                WidgetGain(50, "The Bear", System.currentTimeMillis()),
-                WidgetGain(20, "Frieren", System.currentTimeMillis()),
-                WidgetGain(10, "Dune", System.currentTimeMillis()),
-            ),
         )
     }
 

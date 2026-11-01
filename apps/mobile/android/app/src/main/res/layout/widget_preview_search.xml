@@ -42,6 +42,6 @@
             android:contentDescription="@string/widget_scan_label"
             android:padding="13dp"
             android:src="@drawable/ic_widget_scan"
-            android:tint="#1A1406" />
+            android:tint="@color/widget_on_accent" />
     </LinearLayout>
 </LinearLayout>

@@ -53,6 +53,7 @@ class ChronoWidget : GlanceAppWidget() {
                 when {
                     data == WidgetData.SignedOut -> WidgetMessage(R.string.widget_signed_out, style)
                     data == WidgetData.Offline -> WidgetMessage(R.string.widget_offline, style)
+                    feed?.allOff("GAMES", "BOOKS") == true -> WidgetMessage(R.string.widget_chrono_off, style)
                     items.isEmpty() -> WidgetMessage(R.string.widget_chrono_empty, style)
                     style == STYLE_LIST -> ChronoTickets(items, feed?.weekMinutes ?: 0, posters, cells)
                     else -> ChronoBands(items, feed?.weekMinutes ?: 0, posters, cells)
@@ -215,7 +216,7 @@ private fun ChronoBands(items: List<ChronoItem>, weekMinutes: Int, posters: Map<
         )
         Spacer(GlanceModifier.height(4.dp))
         Box(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
-            BandGrid(items.take(cols * rows), cols) { item, modifier ->
+            BandGrid(items.take(cols * rows), cols, rows) { item, modifier ->
                 ChronoBand(item, posters, modifier, big = false)
             }
         }

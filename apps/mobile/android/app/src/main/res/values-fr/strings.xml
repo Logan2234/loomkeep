@@ -46,13 +46,12 @@
     <string name="widget_series">Série</string>
     <string name="widget_anime">Anime</string>
     <string name="widget_streak_name">Série et niveau</string>
-    <string name="widget_streak_description">Tes jours d\'affilée, ton niveau et tes derniers gains d\'XP</string>
+    <string name="widget_streak_description">Tes jours d\'affilée, ton niveau et ta semaine</string>
     <string name="widget_streak_off">La gamification est désactivée sur cette instance</string>
     <string name="widget_streak_days">jours d\'affilée</string>
     <string name="widget_level">Niveau %d</string>
     <string name="widget_streak_keep">À garder aujourd\'hui</string>
     <string name="widget_xp_of">%1$d / %2$d XP</string>
-    <string name="widget_gain_other">Bonus</string>
     <string name="widget_search_name">Recherche</string>
     <string name="widget_search_description">Cherche ou scanne pour ajouter à Loomkeep</string>
     <string name="widget_search_title">Rechercher</string>
@@ -65,4 +64,8 @@
     <string name="widget_search_games">Jeux</string>
     <string name="widget_search_books">Livres</string>
     <string name="widget_search_music">Musique</string>
+    <string name="widget_media_off">Active les séries et films dans tes réglages pour utiliser ce widget</string>
+    <string name="widget_releases_off">Seuls les séries, films et jeux ont des sorties : active-les dans tes réglages</string>
+    <string name="widget_chrono_off">Les sessions concernent les jeux et les livres : active-les dans tes réglages</string>
+    <string name="widget_streak_days_short">jours</string>
 </resources>

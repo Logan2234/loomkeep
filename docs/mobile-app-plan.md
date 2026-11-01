@@ -252,8 +252,8 @@ selon les widgets posés) et les actions du jeton de widget :
 - Chrono de session : lance, met en pause ou arrête le chrono de jeu ou de
   lecture. Arrêter un jeu enregistre la session ; un livre ouvre l'app sur
   l'écran de fin de session, pour les pages lues.
-- Série et niveau : jours d'affilée, niveau, XP, la semaine en cours et les
-  derniers gains (si la gamification est active sur l'instance).
+- Série et niveau : jours d'affilée, niveau et XP sur une rangée, la semaine
+  avec une deuxième (si la gamification est active sur l'instance).
 - Recherche : barre de recherche, scanner (`/app/search?scan`), raccourcis
   par catégorie et derniers ajouts.
 
