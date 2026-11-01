@@ -195,7 +195,7 @@ object WidgetPosters {
 
     private fun poster(context: Context, url: String): Bitmap? {
         val dir = File(context.cacheDir, "widget-posters").apply { mkdirs() }
-        val file = File(dir, sha1(url))
+        val file = File(dir, sha256(url))
 
         if (!file.exists()) {
             try {
@@ -223,8 +223,8 @@ object WidgetPosters {
         return Bitmap.createScaledBitmap(bitmap, WIDTH_PX, WIDTH_PX * bitmap.height / bitmap.width, true)
     }
 
-    private fun sha1(text: String): String =
-        MessageDigest.getInstance("SHA-1").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
+    private fun sha256(text: String): String =
+        MessageDigest.getInstance("SHA-256").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
 }
 
 /** 45 % towards black: white text stays readable on any poster's shade. */
