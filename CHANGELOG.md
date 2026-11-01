@@ -30,6 +30,8 @@ history from before it was started.
 
 ### Fixed
 
+- Work pages: the video hero grows with its content, so a long title or an
+  enlarged system font no longer leaves through its top.
 - Carousels on a touch screen draw five page dots at most, with a chevron
   toward the pages left. A dot per page could widen a long work's whole page
   until the bottom bar fell off screen.

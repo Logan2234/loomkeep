@@ -15,8 +15,9 @@
 {/snippet}
 
 {#if media}
-  <div class="relative h-[64vh] max-h-155 min-h-[min(26.25rem,62svh)]">
-    <div class="skeleton h-full w-full"></div>
+  <div
+    class="relative flex min-h-[max(min(26.25rem,62svh),min(64vh,38.75rem))] flex-col justify-end">
+    <div class="skeleton absolute inset-0"></div>
     <div
       class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent">
     </div>
@@ -26,7 +27,7 @@
       class="skeleton absolute right-4 bottom-4 z-10 aspect-2/3 w-16 rounded-lg sm:w-20 md:right-6 md:bottom-6 md:w-24">
       {@render pendingImage()}
     </div>
-    <div class="absolute inset-x-0 bottom-0">
+    <div class="relative w-full pt-16">
       <div
         class="mx-auto max-w-4xl px-5 pr-20 pb-6 sm:pr-24 md:px-8 md:pr-8 md:pb-8">
         <div class="flex gap-2">
