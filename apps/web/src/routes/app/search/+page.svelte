@@ -477,6 +477,21 @@
       transform 0.15s ease;
   }
 
+  /* On a phone the stubs share the row instead of running off its edge; they
+     still scroll if a language's labels can't fit. */
+  @media (max-width: 639px) {
+    .guichet-tab {
+      flex: 1 0 auto;
+      justify-content: center;
+      padding-inline: 0.4rem;
+      font-size: 0.75rem;
+    }
+
+    .guichet-tab :global(svg) {
+      display: none;
+    }
+  }
+
   .guichet-tab-active {
     background: var(--surface);
     color: var(--domain-accent);
