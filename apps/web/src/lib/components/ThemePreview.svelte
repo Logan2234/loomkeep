@@ -11,7 +11,7 @@
   const active = $derived(theme.choice === t.mode);
 </script>
 
-{#snippet screen(colors: typeof DARK_THEME, cls = "")}
+{#snippet screen(colors: ThemeDefinition, cls = "")}
   <div class={cls} style="background:{colors.bg}">
     <div
       class="flex h-3 items-center gap-1 px-1.5"
