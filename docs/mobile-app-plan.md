@@ -30,14 +30,20 @@ Livré : MOB-01 à MOB-09, MOB-15, MOB-17, MOB-21, MOB-23, et la partie
 Android de MOB-18 et MOB-19. Seuls MOB-01 et MOB-03 sont validés sur
 téléphone ; le reste attend sa recette.
 
+Hors tickets : l'audit visuel Android passe avant MOB-10, son premier lot
+est livré (#492), et le clavier a été corrigé (#498, #499).
+
+Prochaine étape : une fois MOB-20 validé sur téléphone, MOB-24 et MOB-25 en
+une seule passe.
+
 | Ticket | Titre                                             | Taille | Dépend de      | Statut                     |
 | ------ | ------------------------------------------------- | ------ | -------------- | -------------------------- |
-| MOB-10 | Publication sur Google Play                       | M      | —              | 🚧 reste le compte et Play |
+| MOB-10 | Publication sur Google Play                       | M      | audit visuel   | 🚧 reste le compte et Play |
 | MOB-16 | Relais de push pour les instances self-hostées    | L      | —              | décisions à prendre        |
 | MOB-20 | Widgets Android (cinq, en affiches ou en billets) | L      | —              | 🚧 à valider sur téléphone |
 | MOB-22 | Exploratoire : scrobbling musical Android         | L      | MOB-10         |                            |
-| MOB-24 | Liens d'email vers l'app sur une autre instance   | S      | —              |                            |
-| MOB-25 | Verrouillage de l'app par biométrie               | S      | —              | si le besoin se confirme   |
+| MOB-24 | Liens d'email vers l'app sur une autre instance   | S      | MOB-20         | après la recette MOB-20    |
+| MOB-25 | Verrouillage de l'app par biométrie               | S      | MOB-20         | après la recette MOB-20    |
 | MOB-11 | Projet iOS + build CI macOS + TestFlight          | M      | —              | ⏳ plus tard               |
 | MOB-12 | Push APNs (via FCM) et badge serveur              | S      | MOB-11         | ⏳ plus tard               |
 | MOB-13 | Universal Links et passkeys iOS                   | M      | MOB-11         | ⏳ plus tard               |
@@ -107,7 +113,7 @@ par-dessus l'ancien garde la session.
 - [ ] « Se connecter avec une passkey » et la confirmation par passkey
       ouvrent la feuille de Google et aboutissent. Ne marchait pas au
       29/10 avec `android-dev-1443`, alors que l'APK et `assetlinks.json`
-      sont bons : diagnostic en cours (`chrome://inspect`).
+      sont bons : diagnostic à faire (`chrome://inspect`).
 
 ### Simkl (MOB-09)
 
@@ -155,16 +161,24 @@ par-dessus l'ancien garde la session.
 
 ### Widgets (MOB-20)
 
-- [ ] Liste des widgets : les cinq montrent un aperçu.
-- [ ] Chacun redimensionné de 2×2 à 5×5, en Affiches et en Liste (appui long
-      › Réglages), en clair et en sombre : rien n'est coupé.
+- [ ] Liste des widgets : les cinq montrent un aperçu et s'ajoutent sans
+      « Impossible d'ajouter le widget ».
+- [ ] Taille à l'ajout : 4×2, sauf Recherche en 4×1.
+- [ ] Chacun redimensionné entre ses bornes (voir MOB-20), en Affiches et en
+      Liste (appui long › Réglages), en clair et en sombre : rien n'est coupé.
+- [ ] Une seule œuvre en Affiches garde la taille d'une tuile.
+- [ ] Un domaine coupé dans les réglages : ses sorties et sa catégorie
+      disparaissent ; À suivre, Sorties et Chrono le disent quand tous ceux
+      qu'ils montrent sont coupés.
 - [ ] À suivre : le ✓ passe au vert, vibre, puis l'épisode suivant s'affiche.
 - [ ] Chrono : lancer sur un jeu, l'heure tourne seule ; pause, reprise ;
       arrêter enregistre la session. Sur un livre, arrêter ouvre sa fiche sur
       le formulaire des pages lues.
-- [ ] Série et niveau : jours d'affilée, niveau et semaine justes.
+- [ ] Série et niveau : jours d'affilée, niveau et XP sur une ligne, la
+      semaine en plus sur deux ; tout est juste.
 - [ ] Recherche : la barre, le scanner et chaque catégorie ouvrent la bonne
-      page, app fermée comme ouverte.
+      page, app fermée comme ouverte ; passer de Jeux à Livres change bien
+      de catégorie.
 - [ ] Toucher le fond d'un widget ouvre l'app ; se déconnecter affiche
       « Ouvre Loomkeep… » puis se connecter le remplace aussitôt.
 
@@ -172,8 +186,9 @@ par-dessus l'ancien garde la session.
 
 - [ ] Petite vibration en marquant un épisode, une saison ou un film, depuis
       la fiche ou l'accueil, et à l'appui long dans la bibliothèque ;
-      vibration plus marquée avec une bulle de succès ou de niveau. Ne
-      vibrait pas au 29/10 : même diagnostic que les passkeys.
+      vibration plus marquée avec une bulle de succès ou de niveau. Les
+      vibrations de `@capacitor/haptics` ne se sentaient pas sur un Poco X5
+      Pro : à revérifier depuis le plugin local de la #498.
 - [ ] Compte sans passkey : après une confirmation par mot de passe, un
       toast propose d'en ajouter une, une seule fois sur l'appareil.
 
@@ -221,17 +236,25 @@ dans Admin › Settings.
 À décider avant : chiffrer le payload de bout en bout (sur iOS, il faudra
 une Notification Service Extension), et gratuit ou premium (`ee/`).
 
-### MOB-20 — Widgets « À suivre » et « Sorties du jour »
+### MOB-20 — Widgets
 
 Décidé le 29/10, revu le 30/10 après un premier essai sur téléphone
 (maquette de la refonte : https://claude.ai/artifact/HXhJptW1hDvrtdk2iBaf69) :
 
 - Chaque widget a deux styles, au choix dans ses réglages : « Affiches »
   (par défaut : l'affiche, et dessous un bandeau dans sa propre teinte) et
-  « Liste » (des billets de cinéma, le code ou la date sur le talon). Ils
-  vont de 2×2 à 5×5, jusqu'à neuf œuvres, et le sélecteur de widgets en
-  montre un aperçu (généré par Glance à partir d'Android 15, une mise en
-  page fixe avant).
+  « Liste » (des billets de cinéma aux couleurs de Séance, le code ou la
+  date sur le talon). Ils montrent jusqu'à neuf œuvres, et le sélecteur de
+  widgets en montre un aperçu (généré par Glance à partir d'Android 15, une
+  mise en page fixe avant).
+- Tailles, à vérifier sur un vrai launcher : la hauteur d'une case varie
+  (70n − 30 ou 118n − 16 dp), les bornes tiennent compte des deux. À suivre
+  et Sorties : 4×2 à l'ajout, de 2×2 à 5×5. Chrono : 4×2, de 2×2 à environ
+  5×3. Série et niveau : 4×2, d'une ligne sur 3 colonnes à environ 5×2.
+  Recherche : 4×1, d'une ligne jusqu'à 5×5.
+- Un domaine coupé disparaît du flux (`enabledDomains`) : Recherche ne
+  propose que les catégories actives, et les autres widgets le disent
+  plutôt que de rester vides.
 - « À suivre » : séries et animes en cours avec un épisode à voir ; le
   bouton ✓ marque l'épisode suivant sans ouvrir l'app, le tap ouvre la
   fiche. « Sorties » : celles du jour, sinon « Prochaines sorties » avec
@@ -254,8 +277,8 @@ selon les widgets posés) et les actions du jeton de widget :
   l'écran de fin de session, pour les pages lues.
 - Série et niveau : jours d'affilée, niveau et XP sur une rangée, la semaine
   avec une deuxième (si la gamification est active sur l'instance).
-- Recherche : barre de recherche, scanner (`/app/search?scan`), raccourcis
-  par catégorie et derniers ajouts.
+- Recherche : barre de recherche et scanner (`/app/search?scan`), puis les
+  raccourcis par catégorie et les derniers ajouts quand la place le permet.
 
 ### MOB-22 — Exploratoire : scrobbling musical
 
@@ -273,7 +296,8 @@ dans l'app ».
 
 ### MOB-25 — Verrouillage de l'app par biométrie
 
-Réglage facultatif qui demande l'empreinte ou le visage à l'ouverture
+Décidé le 01/11 : à faire avec MOB-24. Réglage facultatif qui demande
+l'empreinte ou le visage à l'ouverture
 (`BiometricPrompt` dans un plugin local, sans dépendance npm). La
 re-confirmation des actions sensibles passe déjà par les passkeys
 (MOB-21).
