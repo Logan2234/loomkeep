@@ -34,7 +34,7 @@
 {#if mine.loaded}
   <button
     type="button"
-    class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold transition-[filter,transform] hover:brightness-110 active:scale-[0.97] {overlay
+    class="relative inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold transition-[filter,transform] after:absolute after:inset-x-0 after:-inset-y-2.5 hover:brightness-110 active:scale-[0.97] {overlay
       ? 'bg-white/15 text-white backdrop-blur'
       : 'bg-accent/15 text-accent'}"
     onclick={() => (editing = true)}>

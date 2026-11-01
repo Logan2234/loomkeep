@@ -173,7 +173,7 @@
         {#if tracked && episode.id}
           <button
             type="button"
-            class="hover:bg-surface-2 inline-flex h-7 shrink-0 items-center gap-1 rounded-full px-1.5 text-xs transition-colors active:scale-95 motion-reduce:transition-none
+            class="hover:bg-surface-2 relative inline-flex h-7 shrink-0 items-center gap-1 rounded-full px-1.5 text-xs transition-colors after:absolute after:inset-x-0 after:-inset-y-2.5 active:scale-95 motion-reduce:transition-none
               {episode.myRating !== null
               ? 'text-accent'
               : 'text-dim hover:text-fg'}"

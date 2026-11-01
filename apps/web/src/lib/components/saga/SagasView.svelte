@@ -154,7 +154,7 @@
     </div>
 
     <div class="flex min-w-0 flex-col gap-2">
-      <p class="flex items-baseline gap-2">
+      <p class="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
         <!-- Stretched over the row: the row leads to the next work. -->
         <a
           href={focus.href}
@@ -235,8 +235,10 @@
       class="flex flex-col gap-3"
       in:fly={{ y: 10, duration: ms(260), easing: cubicOut }}>
       <div class="flex items-baseline gap-3">
-        <h2 class="font-display text-xl font-bold">{heading}</h2>
-        <span class="timecode text-xs">{hint}</span>
+        <h2 class="font-display text-xl font-bold whitespace-nowrap">
+          {heading}
+        </h2>
+        <span class="timecode hidden text-xs sm:inline">{hint}</span>
       </div>
       <div
         role="list"
@@ -256,6 +258,9 @@
 
 <div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
+    back="/app"
+    backInHistory
+    backOnPhoneOnly
     {icon}
     {title}
     subtitle={sagasQuery.data

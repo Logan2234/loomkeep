@@ -121,7 +121,7 @@
 {#if compact}
   <button
     type="button"
-    class="text-dim hover:text-fg hover:bg-surface-2 inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-full px-1.5 text-xs leading-none transition-colors active:scale-95"
+    class="text-dim hover:text-fg hover:bg-surface-2 relative inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-full px-1.5 text-xs leading-none transition-colors after:absolute after:inset-x-0 after:-inset-y-2.5 active:scale-95"
     title={m.comments_discussion()}
     aria-label={m.media_comments_title({ target: title })}
     aria-haspopup="dialog"

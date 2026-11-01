@@ -6,5 +6,7 @@
  */
 export const ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX = 2_147_483_600;
 export const MODAL_Z_INDEX = 2_147_483_620;
+/** A menu's sheet, over the modal it may have been opened from. */
+export const MENU_SHEET_Z_INDEX = 2_147_483_632;
 export const TOOLTIP_Z_INDEX = 2_147_483_640;
 export const LIGHTBOX_Z_INDEX = 2_147_483_645;

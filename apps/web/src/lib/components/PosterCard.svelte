@@ -51,7 +51,7 @@
         ? m.common_favorite_remove()
         : m.common_favorite_add()}
       aria-pressed={favorite}
-      class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full backdrop-blur-sm transition-[opacity,transform] active:scale-90 {favorite
+      class="bg-surface/90 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full transition-[opacity,transform] active:scale-90 {favorite
         ? 'opacity-100'
         : 'opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100'}">
       {#key favorite}

@@ -38,6 +38,49 @@ export class DragVelocity {
   }
 }
 
+/** The slowest and fastest a sheet takes to finish a gesture, in ms. */
+const SETTLE_MIN_MS = 150;
+const SETTLE_MAX_MS = 300;
+/** Below this speed (px/ms) the release carries no momentum worth matching. */
+const SETTLE_MIN_SPEED = 0.2;
+
+/** How long to cover what's left at the speed the finger left it. */
+export function settleDuration(remaining: number, velocity: number): number {
+  const speed = Math.abs(velocity);
+  if (speed < SETTLE_MIN_SPEED) return SETTLE_MAX_MS;
+  return Math.round(
+    Math.min(SETTLE_MAX_MS, Math.max(SETTLE_MIN_MS, remaining / speed)),
+  );
+}
+
+export type SheetStop = "full" | "half" | "closed";
+
+/**
+ * Where a sheet with a half-open stop goes on release. `position` is how far
+ * below fully open it was let go and `from` the stop the drag began at: a
+ * flick moves one stop in its direction, otherwise the nearest stop wins.
+ */
+export function sheetStop({
+  position,
+  halfAt,
+  size,
+  velocity,
+  from,
+  fraction,
+}: {
+  position: number;
+  halfAt: number;
+  size: number;
+  velocity: number;
+  from: "full" | "half";
+  fraction: number;
+}): SheetStop {
+  if (velocity < -FLICK_VELOCITY) return "full";
+  if (velocity > FLICK_VELOCITY) return from === "full" ? "half" : "closed";
+  if (position < halfAt / 2) return "full";
+  return position > halfAt + (size - halfAt) * fraction ? "closed" : "half";
+}
+
 /**
  * Whether a released drag dismisses. `distance` and `velocity` are measured
  * in the dismissing direction (positive = towards dismissal).

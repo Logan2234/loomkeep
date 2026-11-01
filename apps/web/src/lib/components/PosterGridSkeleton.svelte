@@ -10,7 +10,7 @@
 <div role="status" aria-busy="true">
   <span class="sr-only">{m.common_loading()}</span>
   <div aria-hidden="true">
-    <PosterGrid>
+    <PosterGrid enter={false}>
       {#each { length: count } as _, i (i)}
         <div class="card">
           <div class="skeleton aspect-2/3 w-full"></div>

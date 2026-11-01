@@ -67,8 +67,10 @@
     {@render badge?.()}
   </span>
   <!-- Dropped to screen readers only under 360px, where labels would run into
-       each other: the icon and the accessible name stay. -->
-  <span class="w-full truncate px-0.5 max-[359px]:sr-only">{label}</span>
+       each other: the icon and the accessible name stay. The current tab keeps
+       its label, to say where you are. -->
+  <span class="w-full truncate px-0.5 {active ? '' : 'max-[359px]:sr-only'}"
+    >{label}</span>
 {/snippet}
 
 {#if href}

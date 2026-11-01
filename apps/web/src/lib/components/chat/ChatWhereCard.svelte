@@ -128,7 +128,7 @@
 </div>
 
 {#if allOpen}
-  <Modal title={work.title} onclose={() => (allOpen = false)}>
+  <Modal title={work.title} halfOpen onclose={() => (allOpen = false)}>
     <div class="flex flex-col gap-2">
       {#each sorted as offer, i (`${offer.kind}:${offer.provider.id}`)}
         {@render offerRow(offer, i === best)}

@@ -1,8 +1,9 @@
+import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
-import { render, screen } from "@testing-library/svelte";
+import { render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { createRawSnippet } from "svelte";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import Dropdown from "./Dropdown.svelte";
 
 type TriggerArgs = {
@@ -48,6 +49,26 @@ function renderMenu() {
 
 const actions = () => screen.getByRole("button", { name: "Actions" });
 const focused = () => document.activeElement?.textContent;
+
+describe("Dropdown on a phone", () => {
+  afterEach(() => {
+    layout.compact = false;
+    vi.unstubAllGlobals();
+  });
+
+  it("opens as a sheet, closes after an action", async () => {
+    layout.compact = true;
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    const { user, onRename } = renderMenu();
+
+    await user.click(actions());
+    expect(screen.getByRole("dialog", { name: "Actions" })).toBeTruthy();
+
+    await user.click(screen.getByRole("menuitem", { name: "Rename" }));
+    expect(onRename).toHaveBeenCalledOnce();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+});
 
 describe("Dropdown", () => {
   it("opens a menu with focus on its first item", async () => {

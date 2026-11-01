@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { DragVelocity, isDismissed } from "./swipe-dismiss";
+import {
+  DragVelocity,
+  isDismissed,
+  settleDuration,
+  sheetStop,
+} from "./swipe-dismiss";
 
 describe("isDismissed", () => {
   const base = { size: 400, fraction: 0.3 };
@@ -46,5 +51,38 @@ describe("DragVelocity", () => {
     velocity.reset();
     velocity.add(80, 60);
     expect(velocity.at(60)).toBe(0);
+  });
+});
+
+describe("settleDuration", () => {
+  it("matches the finger's speed", () => {
+    expect(settleDuration(200, 1)).toBe(200);
+  });
+
+  it("stays within bounds", () => {
+    expect(settleDuration(10, 3)).toBe(150);
+    expect(settleDuration(600, 0.5)).toBe(300);
+  });
+
+  it("takes its time when released without momentum", () => {
+    expect(settleDuration(40, 0)).toBe(300);
+  });
+});
+
+describe("sheetStop", () => {
+  const base = { halfAt: 300, size: 700, fraction: 0.3 };
+
+  it("moves one stop on a flick", () => {
+    const flick = { ...base, position: 300 };
+    expect(sheetStop({ ...flick, velocity: -1, from: "half" })).toBe("full");
+    expect(sheetStop({ ...flick, velocity: 1, from: "half" })).toBe("closed");
+    expect(sheetStop({ ...flick, velocity: 1, from: "full" })).toBe("half");
+  });
+
+  it("settles on the nearest stop when released slowly", () => {
+    const slow = { ...base, velocity: 0, from: "half" as const };
+    expect(sheetStop({ ...slow, position: 100 })).toBe("full");
+    expect(sheetStop({ ...slow, position: 320 })).toBe("half");
+    expect(sheetStop({ ...slow, position: 500 })).toBe("closed");
   });
 });

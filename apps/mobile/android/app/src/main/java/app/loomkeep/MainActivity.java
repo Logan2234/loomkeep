@@ -51,7 +51,6 @@ public class MainActivity extends BridgeActivity {
         // Local plugins register before the bridge starts in super.onCreate.
         registerPlugin(ShellThemePlugin.class);
         registerPlugin(ShellHapticsPlugin.class);
-        registerPlugin(ShellDiagnosticsPlugin.class);
         registerPlugin(ShellSplashPlugin.class);
         registerPlugin(ShellInstancePlugin.class);
         registerPlugin(ShellLockPlugin.class);

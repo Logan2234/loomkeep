@@ -19,6 +19,12 @@ history from before it was started.
 
 ### Changed
 
+- Phone: menus, sort and filter lists open as bottom sheets. A sheet follows
+  the speed of the gesture when released, and long ones stop halfway.
+- Phone: larger touch areas on small buttons, chips and segmented controls.
+- Posters fade in as they load and a poster list's first rows arrive in turn.
+- Album pages show five tags, with the rest one tap away.
+- Under 360 dp, the bottom bar keeps the current tab's label.
 - Phone: a tapped poster now travels to the work's page and back.
 - Calendar: only days with a release are listed, under a week strip that stays
   in view and follows the day being read.
@@ -30,6 +36,8 @@ history from before it was started.
 
 ### Fixed
 
+- Saga view: the header has the back button of the works view, and section
+  titles no longer break around their hint.
 - Work pages: the video hero grows with its content, so a long title or an
   enlarged system font no longer leaves through its top.
 - Carousels on a touch screen draw five page dots at most, with a chevron
@@ -53,7 +61,6 @@ history from before it was started.
 ### Added
 
 - "System" option in Settings › Appearance › Theme.
-- Admin › Phone diagnostics: keyboard measures and vibration tests, on the device.
 - Back button on a phone for Calendar, Stats, Feed, Leaderboard, Search and the
   libraries. Settings, Admin, Achievements, Lists and Reviews now return to the
   page they were opened from.

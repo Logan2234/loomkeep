@@ -25,6 +25,7 @@
     dismissable = true,
     overflowVisible = false,
     initialFocus,
+    halfOpen = false,
   }: {
     title: string;
     description?: string;
@@ -51,6 +52,8 @@
      * corners instead of being clipped by `.card`'s `overflow-hidden`. */
     overflowVisible?: boolean;
     initialFocus?: HTMLElement | null;
+    /** On a phone, a long sheet opens halfway (see Drawer). */
+    halfOpen?: boolean;
   } = $props();
 
   // Only one of Drawer/dialog is ever mounted — not both at once toggled by
@@ -175,6 +178,7 @@
     {onclose}
     {dismissable}
     {initialFocus}
+    {halfOpen}
     labelledby="modal-title"
     zIndex={MODAL_Z_INDEX}>
     <!-- `min-h-0` is what lets this actually scroll: a flex child defaults to
