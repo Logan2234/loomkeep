@@ -32,6 +32,22 @@ history from before it was started.
 
 ### Android app
 
+- **Pull down to refresh**, in the app and the installed PWA, from the top
+  of any page: what's on screen is fetched again.
+- **A compact bar keeps the title and the way back** on a phone once the
+  page header has scrolled away.
+- **Links to other sites open in a tab over the app** (Custom Tab, in the
+  theme's colour) instead of sending you out to Chrome.
+- **The back button works in Messages**: it leaves the conversation, then
+  Messages, instead of walking the page history behind them.
+- **The six notification channels exist from the install, with a
+  description**, rather than from the web's first start. Needs the next APK.
+- **Stronger haptics** at the motor's default strength, the effects Android
+  tunes itself being imperceptible on some phones. Needs the next APK.
+- **The system bars dim with a sheet, and stay right after a theme change**
+  instead of turning grey. With no theme chosen, Loomkeep now follows the
+  system's live. Offline, a page change that can't load now reaches
+  Loomkeep's page rather than the WebView's error. Needs the next APK.
 - **The launch is one continuous screen**: the app holds its launch screen
   until the web can draw (`ShellSplash`, at most 3 s) and fades it out,
   instead of a blank window then a second logo. It starts in the theme

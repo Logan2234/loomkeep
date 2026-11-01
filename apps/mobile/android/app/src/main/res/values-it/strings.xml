@@ -74,4 +74,16 @@
     <string name="app_lock_prompt">Sblocca Loomkeep</string>
     <string name="app_lock_title">Loomkeep è bloccato</string>
     <string name="app_lock_unlock">Sblocca</string>
+    <string name="channel_activity">Attività</string>
+    <string name="channel_activity_description">Risposte, messaggi, follower</string>
+    <string name="channel_releases">Uscite</string>
+    <string name="channel_releases_description">Nuovi episodi e uscite</string>
+    <string name="channel_account">Account</string>
+    <string name="channel_account_description">Sul tuo account</string>
+    <string name="channel_security">Sicurezza</string>
+    <string name="channel_security_description">Accessi e modifiche sensibili</string>
+    <string name="channel_admin">Amministrazione</string>
+    <string name="channel_admin_description">Per gli amministratori della tua istanza</string>
+    <string name="channel_announcements">Annunci</string>
+    <string name="channel_announcements_description">Novità su Loomkeep</string>
 </resources>

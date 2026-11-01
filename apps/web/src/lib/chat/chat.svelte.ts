@@ -75,6 +75,14 @@ class ChatState {
     this.composing = false;
   }
 
+  /** Android's back button: up one level in the sheet, then out of it. */
+  stepBack(): void {
+    if (this.tab === "works" && this.activeWork) this.activeWork = null;
+    else if (this.composing || (this.tab === "friends" && this.activeId)) {
+      this.back();
+    } else this.close();
+  }
+
   /** Opens Messages on a work's discussion, from its page or a link. */
   showWork(work: WorkThreadRef): void {
     this.open = true;

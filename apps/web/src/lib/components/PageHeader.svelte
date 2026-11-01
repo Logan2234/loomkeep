@@ -8,6 +8,9 @@
   import Icon from "./Icon.svelte";
 
   import { goBack } from "#lib/back-nav.svelte.js";
+  import { layout } from "#lib/layout.svelte.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { fly } from "svelte/transition";
   import { m } from "#lib/paraglide/messages.js";
   import NewBadge from "./NewBadge.svelte";
 
@@ -39,6 +42,22 @@
     documentTitle?: string;
     class?: string;
   } = $props();
+
+  // On a phone, the title and the way back stay reachable in a compact bar
+  // once the header has scrolled away.
+  const reduced = prefersReducedMotion();
+  let header = $state<HTMLElement | null>(null);
+  let scrolledAway = $state(false);
+
+  $effect(() => {
+    if (!header || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => {
+      scrolledAway =
+        !entry.isIntersecting && entry.boundingClientRect.bottom <= 0;
+    });
+    observer.observe(header);
+    return () => observer.disconnect();
+  });
 </script>
 
 <!-- The document title rides along with the visible one: without it every
@@ -47,7 +66,26 @@
   <title>{documentTitle ?? title} · {m.common_loomkeep()}</title>
 </svelte:head>
 
-<header class="flex flex-wrap items-start justify-between gap-4 {cls}">
+{#if layout.compact && scrolledAway}
+  <div
+    transition:fly={{ y: -8, duration: reduced ? 0 : 180 }}
+    class="border-border bg-bg/95 fixed inset-x-0 top-[env(safe-area-inset-top)] z-25 flex h-12 items-center gap-2 border-b px-4 backdrop-blur">
+    {#if back}
+      <a
+        href={back}
+        onclick={backInHistory ? goBack : undefined}
+        class="text-dim relative -ml-1 flex shrink-0 items-center transition-transform after:absolute after:-inset-3 active:scale-90"
+        aria-label={m.common_back()}>
+        <Icon name="chevron-left" class="h-6 w-6" />
+      </a>
+    {/if}
+    <span class="font-display min-w-0 flex-1 truncate font-bold">{title}</span>
+  </div>
+{/if}
+
+<header
+  bind:this={header}
+  class="flex flex-wrap items-start justify-between gap-4 {cls}">
   <div>
     <!-- `items-start` plus a 1lh-tall slot per adornment: centring the whole
          row pushed the chevron and icon halfway down whenever the title

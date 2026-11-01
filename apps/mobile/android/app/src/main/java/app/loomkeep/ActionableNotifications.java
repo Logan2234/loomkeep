@@ -172,12 +172,12 @@ final class ActionableNotifications {
     }
 
     /**
-     * The web creates one channel per alert group, in the user's language,
-     * at each start; a push arriving first goes to a plain one rather than
-     * being dropped, as Android does for a channel that doesn't exist.
+     * A channel the API names that this APK doesn't know yet goes to a plain
+     * one rather than being dropped, as Android does for one that doesn't exist.
      */
     private static String channel(Context context, String requested) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return requested;
+        NotificationChannels.ensure(context);
         NotificationManager manager = context.getSystemService(NotificationManager.class);
         if (requested != null && manager.getNotificationChannel(requested) != null) return requested;
 

@@ -74,4 +74,16 @@
     <string name="app_lock_prompt">Déverrouiller Loomkeep</string>
     <string name="app_lock_title">Loomkeep est verrouillé</string>
     <string name="app_lock_unlock">Déverrouiller</string>
+    <string name="channel_activity">Activité</string>
+    <string name="channel_activity_description">Réponses, messages, abonnements</string>
+    <string name="channel_releases">Sorties</string>
+    <string name="channel_releases_description">Nouveaux épisodes et sorties</string>
+    <string name="channel_account">Compte</string>
+    <string name="channel_account_description">À propos de ton compte</string>
+    <string name="channel_security">Sécurité</string>
+    <string name="channel_security_description">Connexions et changements sensibles</string>
+    <string name="channel_admin">Admin</string>
+    <string name="channel_admin_description">Pour les administrateurs de ton instance</string>
+    <string name="channel_announcements">Annonces</string>
+    <string name="channel_announcements_description">Nouvelles de Loomkeep</string>
 </resources>
