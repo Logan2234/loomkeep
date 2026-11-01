@@ -19,6 +19,12 @@ beforeEach(() => {
   vi.spyOn(history, "back").mockImplementation(() => {});
 });
 
+// The first navigation has a `from` without a URL. Throwing on it stopped the
+// router from starting, and every link became a full page load.
+it("survives the page's first navigation", () => {
+  expect(() => navigated.run({ from: { url: null } })).not.toThrow();
+});
+
 it("steps back to the parent it came from, so the two can't bounce", () => {
   cameFrom("/app/settings");
   const event = click();

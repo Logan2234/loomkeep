@@ -34,9 +34,9 @@
 
 <button
   type="button"
-  class="w-28 min-w-0 rounded-lg border p-2 text-center transition-colors {active
+  class="w-28 min-w-0 rounded-lg border p-2 text-center transition-[border-color,translate,scale,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-md active:scale-95 {active
     ? 'border-accent'
-    : 'border-border'}"
+    : 'border-border hover:border-accent/50'}"
   aria-pressed={active}
   onclick={() => theme.set(t.mode)}>
   <div class="relative mb-2 overflow-hidden rounded">

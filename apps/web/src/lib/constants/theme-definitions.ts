@@ -19,10 +19,10 @@ export const LIGHT_THEME = {
 };
 
 export const THEME_DEFINITIONS = [
+  // Drawn from the two below, split along a diagonal.
+  { ...DARK_THEME, mode: "system" as const, label: m.common_system() },
   DARK_THEME,
   LIGHT_THEME,
-  // Drawn from the two above, split along a diagonal.
-  { ...DARK_THEME, mode: "system" as const, label: m.common_system() },
 ];
 
 export type ThemeDefinition = (typeof THEME_DEFINITIONS)[number];

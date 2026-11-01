@@ -10,7 +10,7 @@ let previousPath: string | null = null;
 
 export function trackBackHistory() {
   afterNavigate(({ from }) => {
-    if (from) {
+    if (from?.url) {
       hasInternalHistory = true;
       previousPath = from.url.pathname;
     }
