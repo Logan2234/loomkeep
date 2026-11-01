@@ -76,6 +76,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     match: (p) => p.startsWith("/app/admin/cache"),
   },
   {
+    href: "/app/admin/diagnostics",
+    label: m.admin_diagnostics_title(),
+    description: m.admin_nav_diagnostics_description(),
+    icon: "activity",
+    match: (p) => p.startsWith("/app/admin/diagnostics"),
+  },
+  {
     href: "/app/admin/schema",
     label: m.admin_schema_title(),
     description: m.admin_nav_schema_description(),
@@ -150,6 +157,7 @@ export const ADMIN_NAV_GROUPS = [
       "/app/admin/backup",
       "/app/admin/imports",
       "/app/admin/cache",
+      "/app/admin/diagnostics",
     ]),
   },
   {
