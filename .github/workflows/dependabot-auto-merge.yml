@@ -11,7 +11,9 @@ permissions:
 
 jobs:
   auto-merge:
-    if: github.actor == 'dependabot[bot]'
+    # The PR's author, not github.actor: that one is whoever triggered this
+    # run, and Dependabot can trigger a run on a PR it did not open.
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write
