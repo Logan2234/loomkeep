@@ -48,6 +48,7 @@ public class ShellDiagnosticsPlugin extends Plugin {
         View webView = getBridge().getWebView();
         View parent = (View) webView.getParent();
         info.put("decorHeight", decor.getHeight());
+        info.put("decorPaddingBottom", decor.getPaddingBottom());
         info.put("webViewHeight", webView.getHeight());
         info.put("webViewPaddingBottom", webView.getPaddingBottom());
         info.put("parentHeight", parent.getHeight());
