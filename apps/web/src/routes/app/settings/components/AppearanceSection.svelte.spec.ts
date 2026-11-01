@@ -1,4 +1,5 @@
 import { auth } from "#lib/auth.svelte.js";
+import { mobileNav } from "#lib/mobile-nav.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
@@ -12,22 +13,14 @@ import AppearanceSection from "./AppearanceSection.svelte";
 vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
 vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
-let saved: unknown[];
-
 beforeEach(() => {
-  saved = [];
+  mobileNav.shortcuts = ["home", "media", "games", "menu"];
   auth.user = {
     enabledDomains: ["MEDIA", "GAMES"],
-    mobileNavShortcuts: ["home", "media", "games", "menu"],
     locale: "en",
   } as UserDto;
   server.use(
     http.get(apiUrl("/ee/status"), () => HttpResponse.json({ active: true })),
-    http.patch(apiUrl("/users/me"), async ({ request }) => {
-      const body = (await request.json()) as { mobileNavShortcuts: string[] };
-      saved.push(body);
-      return HttpResponse.json({ ...auth.user, ...body });
-    }),
   );
 });
 
@@ -42,9 +35,7 @@ it("reorders mobile shortcuts with a keyboard handle and saves their order", asy
   const user = userEvent.setup();
   await user.keyboard("[Space][ArrowDown]");
   await waitFor(() =>
-    expect(saved).toEqual([
-      { mobileNavShortcuts: ["media", "home", "games", "menu"] },
-    ]),
+    expect(mobileNav.shortcuts).toEqual(["media", "home", "games", "menu"]),
   );
   await user.keyboard("[Escape]");
   await waitFor(() => expect(client.isFetching()).toBe(0));
@@ -66,7 +57,7 @@ it("removes a shortcut without dragging and keeps the menu required", async () =
     }),
   );
   await waitFor(() =>
-    expect(saved).toEqual([{ mobileNavShortcuts: ["media", "games", "menu"] }]),
+    expect(mobileNav.shortcuts).toEqual(["media", "games", "menu"]),
   );
   await waitFor(() => expect(client.isFetching()).toBe(0));
 });

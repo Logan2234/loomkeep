@@ -14,7 +14,7 @@
     slotClass = "h-9 w-9",
     // The filmstrip skin lays its tabs out as a horizontal scroller of
     // fixed-width chips, not flex-1 columns, so the wrapper is overridable.
-    rootClass = "flex flex-1 flex-col items-center gap-1 text-[0.62rem]",
+    rootClass = "flex flex-1 flex-col items-center gap-1 text-[0.6875rem]",
   }: { slotClass?: string; rootClass?: string } = $props();
 
   const countsQuery = createApiQuery(() => ({

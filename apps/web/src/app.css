@@ -292,6 +292,62 @@ body {
   }
 }
 
+/* Page changes on the compact shell (MobileLayout): a fade with a short slide,
+   the bottom bar staying where it is. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 220ms;
+  animation-timing-function: ease-out;
+}
+
+::view-transition-group(mobile-nav) {
+  animation: none;
+}
+
+html[data-page-transition="forward"]::view-transition-new(root) {
+  animation-name: page-in-from-right;
+}
+
+html[data-page-transition="forward"]::view-transition-old(root) {
+  animation-name: page-out-to-left;
+}
+
+html[data-page-transition="back"]::view-transition-new(root) {
+  animation-name: page-in-from-left;
+}
+
+html[data-page-transition="back"]::view-transition-old(root) {
+  animation-name: page-out-to-right;
+}
+
+@keyframes page-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes page-out-to-left {
+  to {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+@keyframes page-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+@keyframes page-out-to-right {
+  to {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
 /* Tailwind's preflight resets buttons to `cursor: default`; restore the
    pointer for enabled interactive controls. In the base layer so any
    `cursor-*` utility (e.g. the modal backdrop's `cursor-default`) still wins. */

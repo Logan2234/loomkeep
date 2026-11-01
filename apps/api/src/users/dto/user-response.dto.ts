@@ -98,12 +98,6 @@ export class UserResponseDto implements UserDto {
   enabledDomains!: Domain[];
 
   /**
-   * Ids of the mobile bottom-bar shortcuts, in order.
-   * @example ["home", "search", "menu", "calendar", "account"]
-   */
-  mobileNavShortcuts!: string[];
-
-  /**
    * The profile's bio, if any.
    * @example "Mostly anime and slow sci-fi."
    */

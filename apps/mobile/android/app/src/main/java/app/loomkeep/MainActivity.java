@@ -1,6 +1,7 @@
 package app.loomkeep;
 
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +23,7 @@ public class MainActivity extends BridgeActivity {
     // web never calls ShellSplash, and a slow one shows its own loading screen.
     private static final long SPLASH_MAX_MS = 3000;
     private static final long SPLASH_EXIT_MS = 200;
+    private static final int TABLET_MIN_WIDTH_DP = 600;
 
     private volatile boolean splashReleased = false;
 
@@ -78,6 +80,7 @@ public class MainActivity extends BridgeActivity {
                     .build()
             )
         );
+        lockPhoneToPortrait(getResources().getConfiguration());
         NotificationChannels.ensure(this);
         AppShortcuts.publish(this, getBridge().getServerUrl());
     }
@@ -88,6 +91,17 @@ public class MainActivity extends BridgeActivity {
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         getWindow().getDecorView().setBackgroundColor(ShellAppearance.backgroundColor(this));
+        lockPhoneToPortrait(newConfig);
+    }
+
+    // Read at run time rather than in the manifest: tablets rotate freely, and
+    // a foldable changes category as it opens.
+    private void lockPhoneToPortrait(Configuration configuration) {
+        setRequestedOrientation(
+            configuration.smallestScreenWidthDp < TABLET_MIN_WIDTH_DP
+                ? ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        );
     }
 
     // Also runs on the launch intent, once the bridge exists (BridgeActivity.load).

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Beside an admin notification: Loomkeep's mark with a lock at the bottom right. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="#0C0D10"
+        android:pathData="M50,0 a50,50 0 1,0 0.01,0 Z" />
+    <group
+        android:scaleX="0.56"
+        android:scaleY="0.56"
+        android:translateX="14"
+        android:translateY="14">
+        <path android:pathData="M16,12 L16,88" android:strokeColor="#D6A02A" android:strokeLineCap="round" android:strokeWidth="14" />
+        <path android:pathData="M36,12 L36,88" android:strokeColor="#1F9DAE" android:strokeLineCap="round" android:strokeWidth="14" />
+        <path android:pathData="M56,12 L56,88" android:strokeColor="#D866A0" android:strokeLineCap="round" android:strokeWidth="14" />
+        <path android:pathData="M76,12 L76,88" android:strokeColor="#6E97E0" android:strokeLineCap="round" android:strokeWidth="14" />
+        <path android:pathData="M8,30 L92,30" android:strokeColor="#F5B841" android:strokeLineCap="round" android:strokeWidth="14" />
+    </group>
+    <path
+        android:fillColor="#F5B841"
+        android:pathData="M76,52 a22,22 0 1,0 0.01,0 Z" />
+    <!-- Icon.svelte's "lock", from its 24-unit grid. -->
+    <group
+        android:scaleX="1.25"
+        android:scaleY="1.25"
+        android:translateX="61"
+        android:translateY="58.5">
+        <path
+            android:fillColor="#1A1406"
+            android:pathData="M7,11 h10 a2,2 0 0,1 2,2 v5 a2,2 0 0,1 -2,2 h-10 a2,2 0 0,1 -2,-2 v-5 a2,2 0 0,1 2,-2 Z" />
+        <path
+            android:pathData="M8,11 V7 a4,4 0 0,1 8,0 v4"
+            android:strokeColor="#1A1406"
+            android:strokeWidth="2.2" />
+    </group>
+</vector>

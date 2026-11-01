@@ -40,6 +40,8 @@ import {
   type NewEpisodeNotification,
   selectNewEpisodeNotifications,
 } from "./notification.util";
+import { avatarPath } from "./push-image";
+import type { PushPayload } from "./push.service";
 import { PushService } from "./push.service";
 
 /** How far back a scan looks, so following an old show never floods the feed. */
@@ -66,6 +68,8 @@ const RELEASE_RETENTION_DAYS = 30;
 const NOTIFICATIONS_PURGE_CRON = "0 7 * * *";
 
 type CreateNotificationInput = {
+  /** A work's poster beside the Android app's notification; never an 18+ work's. */
+  pushPoster?: string | null;
   userId: string;
   type: NotificationType;
   title: string;
@@ -433,6 +437,7 @@ export class NotificationService {
       sagaKey: string;
       sourceId: string;
       sagaTitle: string;
+      posterUrl?: string | null;
     },
     recipients: {
       id: string;
@@ -450,6 +455,7 @@ export class NotificationService {
         userId: user.id,
         type: NotificationType.SAGA_SEQUEL_ANNOUNCED,
         title: work.title,
+        pushPoster: work.posterUrl,
         body: notificationCopy(user.locale).sagaSequel(work.sagaTitle),
         url,
         dedupeKey: `saga-sequel:${work.sagaKey}:${work.sourceId}`,
@@ -827,9 +833,11 @@ export class NotificationService {
     }
 
     const copy = notificationCopy(user.locale);
+    const image = await this.pushImage(input);
 
     try {
       await this.push.sendToUser(input.userId, {
+        ...image,
         title: pushTitle(input, copy),
         body: input.body ?? "",
         url: input.url ?? "/app",
@@ -848,6 +856,32 @@ export class NotificationService {
       // action that caused it.
       this.logger.error(`Push failed for ${input.userId}`, err);
     }
+  }
+
+  /** A social notification shows who it's about, otherwise the work it's about. */
+  private async pushImage(
+    input: CreateNotificationInput,
+  ): Promise<Pick<PushPayload, "image" | "imageKind">> {
+    const username = (input.data as { actorUsername?: unknown } | undefined)
+      ?.actorUsername;
+
+    if (typeof username === "string") {
+      const actor = await this.prisma.user.findUnique({
+        where: { username },
+        select: { id: true, avatarUpdatedAt: true },
+      });
+
+      if (actor?.avatarUpdatedAt) {
+        return {
+          image: avatarPath(actor.id, actor.avatarUpdatedAt),
+          imageKind: "person",
+        };
+      }
+    }
+
+    return input.pushPoster
+      ? { image: input.pushPoster, imageKind: "work" }
+      : {};
   }
 
   /**

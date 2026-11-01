@@ -6,12 +6,18 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.Person;
 import androidx.core.app.RemoteInput;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.pm.ShortcutInfoCompat;
+import androidx.core.content.pm.ShortcutManagerCompat;
+import androidx.core.graphics.drawable.IconCompat;
 import java.util.HashMap;
 import java.util.Map;
 import org.json.JSONArray;
@@ -37,6 +43,9 @@ final class ActionableNotifications {
 
     static void show(Context context, Map<String, String> data, String messageId) {
         NotificationCompat.Builder builder = base(context, data, messageId, data.get("body"));
+        Bitmap image = NotificationImages.load(context, data);
+        if (image != null) builder.setLargeIcon(image);
+        asConversation(context, builder, data, image);
         addActions(context, builder, data, messageId);
         notify(context, data, messageId, builder);
         showSummary(context, data);
@@ -103,7 +112,12 @@ final class ActionableNotifications {
     static void showFailure(Context context, Intent actionIntent) {
         Map<String, String> data = dataOf(actionIntent);
         String messageId = actionIntent.getStringExtra(EXTRA_MESSAGE_ID);
-        notify(context, data, messageId, base(context, data, messageId, context.getString(R.string.notification_action_failed)));
+        notify(
+            context,
+            data,
+            messageId,
+            base(context, data, messageId, context.getString(R.string.notification_action_failed)).setOnlyAlertOnce(true)
+        );
     }
 
     private static NotificationCompat.Builder base(Context context, Map<String, String> data, String messageId, String text) {
@@ -115,7 +129,49 @@ final class ActionableNotifications {
             .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
             .setAutoCancel(true)
             .setGroup(group(data))
+            .setCategory(category(data))
             .setContentIntent(tapIntent(context, data, messageId));
+    }
+
+    private static String category(Map<String, String> data) {
+        if (data.get("conversationId") != null) return NotificationCompat.CATEGORY_MESSAGE;
+        String channel = data.get("channel");
+        if ("activity".equals(channel)) return NotificationCompat.CATEGORY_SOCIAL;
+        if ("releases".equals(channel)) return NotificationCompat.CATEGORY_EVENT;
+        return NotificationCompat.CATEGORY_STATUS;
+    }
+
+    /**
+     * A chat message goes in Android's Conversations section: that takes the
+     * messaging style, the sender as a person, and a long-lived shortcut for
+     * the conversation. The push carries no message text, so there's no thread
+     * to rebuild: the latest notice replaces the last.
+     */
+    private static void asConversation(Context context, NotificationCompat.Builder builder, Map<String, String> data, Bitmap avatar) {
+        String conversationId = data.get("conversationId");
+        if (conversationId == null) return;
+
+        Person.Builder sender = new Person.Builder().setName(data.get("title")).setKey(conversationId);
+        if (avatar != null) sender.setIcon(IconCompat.createWithBitmap(avatar));
+        Person person = sender.build();
+
+        String shortcutId = "conversation:" + conversationId;
+        Uri page = Uri.parse(NotificationActionReceiver.instanceOrigin(context) + "/app?messages=" + conversationId);
+        ShortcutManagerCompat.pushDynamicShortcut(
+            context,
+            new ShortcutInfoCompat.Builder(context, shortcutId)
+                .setShortLabel(data.get("title"))
+                .setIcon(avatar != null ? IconCompat.createWithBitmap(avatar) : IconCompat.createWithResource(context, R.mipmap.ic_launcher))
+                .setIntent(new Intent(Intent.ACTION_VIEW, page, context, MainActivity.class))
+                .setLongLived(true)
+                .setPerson(person)
+                .build()
+        );
+
+        Person me = new Person.Builder().setName(context.getString(R.string.notification_you)).build();
+        builder
+            .setShortcutId(shortcutId)
+            .setStyle(new NotificationCompat.MessagingStyle(me).addMessage(data.get("body"), System.currentTimeMillis(), person));
     }
 
     private static void addActions(Context context, NotificationCompat.Builder builder, Map<String, String> data, String messageId) {

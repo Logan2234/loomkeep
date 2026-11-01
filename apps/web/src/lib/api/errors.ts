@@ -250,8 +250,6 @@ const MESSAGES = {
   [ErrorCode.UserBirthDateFuture]: () => m.apierr_user_birth_date_future(),
   [ErrorCode.UserAdultContentRequiresBirthDate]: () =>
     m.apierr_user_adult_content_requires_birth_date(),
-  [ErrorCode.UserMobileNavMissingMenu]: () =>
-    m.apierr_user_mobile_nav_missing_menu(),
   [ErrorCode.UserEmailAlreadyCurrent]: () =>
     m.apierr_user_email_already_current(),
   [ErrorCode.UserEmailAlreadyExists]: () =>

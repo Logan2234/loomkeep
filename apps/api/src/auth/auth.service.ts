@@ -1194,7 +1194,6 @@ export function toUserDto(user: User): UserDto {
     emailVerified: user.emailVerified,
     role: user.role,
     enabledDomains: user.enabledDomains,
-    mobileNavShortcuts: user.mobileNavShortcuts,
     bio: user.bio,
     defaultReviewVisibility:
       user.defaultReviewVisibility as UserDto["defaultReviewVisibility"],

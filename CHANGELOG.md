@@ -32,6 +32,19 @@ history from before it was started.
 
 ### Android app
 
+- **The bottom bar has five cases at most and belongs to each device**:
+  Messages and Alerts are now shortcuts like the others, and the selection
+  and order live in `localStorage`. The `mobileNavShortcuts` column and API
+  field are gone (migration), so every bar goes back to the defaults. Labels
+  are 11 px, Séance's smallest readable size.
+- **Pages change with a short transition on the compact shell**: a fade with
+  a 16 px slide, forward or back with depth, a plain fade at the same level.
+- **Phones stay in portrait**, tablets rotate freely. Needs the next APK.
+- **Notifications show who or what they're about**: the person's avatar, a
+  saga sequel's poster, Loomkeep's mark with a lock for admin alerts. Chat
+  messages join Android's Conversations section. A button's failure no longer
+  makes the phone ring again. Needs the next APK; avatars and posters reach
+  Google in clear, like the rest of the push.
 - **Pull down to refresh**, in the app and the installed PWA, from the top
   of any page: what's on screen is fetched again.
 - **A compact bar keeps the title and the way back** on a phone once the

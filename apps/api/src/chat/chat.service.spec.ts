@@ -308,6 +308,7 @@ describe("ChatService", () => {
         url: "/app?messages=cv1",
         tag: "chat:cv1",
         group: "activity",
+        conversationId: "cv1",
         // On the Android app: reply or mark read from the notification.
         actions: [
           expect.objectContaining({

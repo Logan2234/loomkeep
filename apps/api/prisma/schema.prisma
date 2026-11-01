@@ -615,7 +615,6 @@ model User {
   // `MobileNavId`). Free-form strings, not a Prisma enum: the set is a web-UI
   // concern (includes the "menu" launcher and non-domain routes), gated at
   // render time. Default mirrors DEFAULT_BOTTOM_SHORTCUTS.
-  mobileNavShortcuts            String[]           @default(["home", "search", "menu", "calendar", "account"])
   // The home page's widget grid (shared HomeLayoutDto). Null means the
   // default grid, which the web builds from the enabled domains — stored
   // only once the user edits the page, so the default keeps evolving.

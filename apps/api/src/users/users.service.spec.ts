@@ -229,91 +229,6 @@ describe("UsersService — email change", () => {
   });
 });
 
-describe("UsersService — updateMe mobile nav shortcuts", () => {
-  const userId = "user-1";
-  let prisma: PrismaService;
-  let service: UsersService;
-
-  // Minimal stored user returned by prisma.user.update, enough for toUserDto.
-  function updatedUser(mobileNavShortcuts: string[]) {
-    return {
-      id: userId,
-      email: "alice@example.com",
-      username: "alice",
-      displayName: "Alice",
-      birthDate: null,
-      allowAdultContent: false,
-      notifyEmail: false,
-      notifyPush: false,
-      emailVerified: false,
-      role: "USER",
-      enabledDomains: ["MEDIA"],
-      mobileNavShortcuts,
-      createdAt: new Date(),
-    };
-  }
-
-  beforeEach(() => {
-    prisma = {
-      user: {
-        findUnique: vi
-          .fn()
-          .mockResolvedValue({ birthDate: null, allowAdultContent: false }),
-        update: vi.fn(),
-      },
-    } as unknown as PrismaService;
-    service = new UsersService(
-      prisma,
-      {} as unknown as MailService,
-      {
-        record: vi.fn().mockResolvedValue(new Date("2026-10-03T10:15:00Z")),
-      } as unknown as SecurityEventService,
-      {} as unknown as DataExportService,
-      {} as unknown as CsvExportService,
-      {} as unknown as ConfigService,
-      {
-        isPasswordPwned: vi.fn().mockResolvedValue(false),
-      } as unknown as HibpService,
-      {
-        hasPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
-      { getProfile: vi.fn() } as unknown as ProfileService,
-      { award: vi.fn() } as unknown as XpService,
-      { emitToUser: vi.fn() } as unknown as EventsGateway,
-      {
-        reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
-      } as unknown as ApiKeysService,
-    );
-  });
-
-  it("persists a valid ordered list that includes the menu launcher", async () => {
-    const shortcuts = ["home", "menu", "account"];
-    (prisma.user.update as Mock).mockResolvedValueOnce(updatedUser(shortcuts));
-
-    const dto = await service.updateMe(userId, {
-      mobileNavShortcuts: shortcuts,
-    });
-
-    expect(prisma.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: userId },
-        data: expect.objectContaining({ mobileNavShortcuts: shortcuts }),
-      }),
-    );
-    expect(dto.mobileNavShortcuts).toEqual(shortcuts);
-  });
-
-  it("rejects a list missing the required menu launcher without writing", async () => {
-    await expect(
-      service.updateMe(userId, {
-        mobileNavShortcuts: ["home", "search", "account"],
-      }),
-    ).rejects.toBeInstanceOf(AppException);
-
-    expect(prisma.user.update).not.toHaveBeenCalled();
-  });
-});
-
 describe("UsersService — home layout", () => {
   const userId = "user-1";
   let prisma: PrismaService;
@@ -399,7 +314,6 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
           emailVerified: false,
           role: "USER",
           enabledDomains: ["MEDIA"],
-          mobileNavShortcuts: [],
           createdAt: new Date(),
         }),
       },
@@ -496,7 +410,6 @@ describe("UsersService — uploadAvatar", () => {
       emailVerified: false,
       role: "USER",
       enabledDomains: ["MEDIA"],
-      mobileNavShortcuts: [],
       createdAt: new Date(),
       avatarUpdatedAt: new Date(),
     };

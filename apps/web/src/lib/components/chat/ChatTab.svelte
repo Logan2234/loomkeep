@@ -10,7 +10,7 @@
 
   let {
     slotClass = "h-9 w-9",
-    rootClass = "flex flex-1 flex-col items-center gap-1 text-[0.62rem]",
+    rootClass = "flex flex-1 flex-col items-center gap-1 text-[0.6875rem]",
   }: { slotClass?: string; rootClass?: string } = $props();
 
   const unreadQuery = createApiQuery(() => ({
