@@ -807,7 +807,7 @@
       <button
         class="{favoritesOnly
           ? 'border-accent text-accent'
-          : 'border-border text-dim hover:text-fg'} inline-flex items-center gap-0.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors pointer-coarse:min-h-10"
+          : 'border-border text-dim hover:text-fg'} relative inline-flex items-center gap-0.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors after:absolute after:inset-x-0 after:-inset-y-1"
         onclick={() => (favoritesOnly = !favoritesOnly)}>
         <Icon name="star" class="h-3.5 w-3.5" />&nbsp;
         {m.common_favorites()}

@@ -44,7 +44,7 @@
   <button
     type="button"
     aria-pressed={on}
-    class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.25 text-[0.82rem] font-semibold whitespace-nowrap transition-[background-color,color,box-shadow] disabled:pointer-events-none disabled:opacity-40 pointer-coarse:min-h-10"
+    class="relative inline-flex items-center gap-1.5 rounded-md px-3 py-1.25 text-[0.82rem] font-semibold whitespace-nowrap transition-[background-color,color,box-shadow] after:absolute after:inset-x-0 after:-inset-y-1 disabled:pointer-events-none disabled:opacity-40"
     class:bg-surface={on}
     class:text-fg={on}
     class:shadow-sm={on}

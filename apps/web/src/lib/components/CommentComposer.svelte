@@ -477,7 +477,7 @@
     {/if}
     <button
       type="button"
-      class="btn btn-primary btn-sm h-8 min-h-0 px-3"
+      class="btn btn-primary btn-sm h-8 px-3"
       disabled={!sendable || busy || waitSeconds > 0}
       onclick={() => void submit()}>
       {waitSeconds > 0

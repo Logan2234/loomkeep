@@ -19,9 +19,14 @@ history from before it was started.
 
 ### Changed
 
+- "New" badges shrink to a dot under 360 dp.
+- Home's quick search drops its domain picker on a small phone.
+- Search page: on a phone, the domain tabs share the row instead of running
+  off its edge.
 - Phone: menus, sort and filter lists open as bottom sheets. A sheet follows
   the speed of the gesture when released, and long ones stop halfway.
-- Phone: larger touch areas on small buttons, chips and segmented controls.
+- Phone: larger touch areas on small buttons, chips and segmented controls,
+  without changing their size.
 - Posters fade in as they load and a poster list's first rows arrive in turn.
 - Album pages show five tags, with the rest one tap away.
 - Under 360 dp, the bottom bar keeps the current tab's label.
