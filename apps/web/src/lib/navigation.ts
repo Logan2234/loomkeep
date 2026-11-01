@@ -489,7 +489,7 @@ export function profileHref(): string {
 export function scrollUpOnReselect(
   event: MouseEvent,
   href: string,
-  current: URL,
+  current: Pick<URL, "pathname" | "search">,
 ): void {
   if (current.pathname !== href || current.search) return;
   event.preventDefault();
