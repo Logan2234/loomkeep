@@ -81,6 +81,15 @@ history from before it was started.
   page and above all in full-screen chat, whose composer floated 72 px over
   the keyboard. Toasts, the reviews selection bar and the import summary
   follow.
+- **App lock** (MOB-25): an option in Settings › Security asks for the
+  fingerprint, face or screen lock PIN when the Android app opens, or comes
+  back after a minute away. Android 10 and later, through Android's own
+  `BiometricPrompt`. Widgets and notification actions stay outside it. Needs
+  the next APK.
+- **Open a self-hosted instance's pages in the app** (MOB-24): App Links only
+  cover loomkeep.app, so on another instance Android browsers now offer the
+  app above the app and account pages, the ones emails link to. The link
+  (`loomkeep://open`) asks before switching instance. Needs the next APK.
 - **Home-screen widgets** (MOB-20): « To watch » (shows in progress, with a
   ✓ that marks the next episode watched without opening the app),
   « Releases » (today's releases among what's followed, else the next

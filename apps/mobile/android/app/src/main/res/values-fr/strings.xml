@@ -67,6 +67,13 @@
     <string name="widget_media_off">Active les séries et films dans tes réglages pour utiliser ce widget</string>
     <string name="widget_releases_off">Seuls les séries, films et jeux ont des sorties : active-les dans tes réglages</string>
     <string name="widget_chrono_off">Les sessions concernent les jeux et les livres : active-les dans tes réglages</string>
+    <string name="instance_link_title">Changer d\'instance ?</string>
+    <string name="instance_link_message">Ce lien ouvre %1$s, une autre instance Loomkeep. Ne continue que si tu lui fais confiance.</string>
+    <string name="instance_link_confirm">Changer</string>
+    <string name="instance_link_failed">Cette instance Loomkeep ne répond pas</string>
+    <string name="app_lock_prompt">Déverrouiller Loomkeep</string>
+    <string name="app_lock_title">Loomkeep est verrouillé</string>
+    <string name="app_lock_unlock">Déverrouiller</string>
     <string name="channel_activity">Activité</string>
     <string name="channel_activity_description">Réponses, messages, abonnements</string>
     <string name="channel_releases">Sorties</string>

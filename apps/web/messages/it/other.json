@@ -1611,5 +1611,7 @@
   "push_channel_releases": "Uscite",
   "push_channel_announcements": "Annunci",
   "scan_isbn_invalid_code": "Questo codice a barre non è l'ISBN di un libro.",
-  "scan_unavailable": "Lo scanner non è riuscito ad avviarsi. Riprova tra poco."
+  "scan_unavailable": "Lo scanner non è riuscito ad avviarsi. Riprova tra poco.",
+  "open_in_app_prompt": "Usi l'app Loomkeep? Apri questa pagina lì.",
+  "open_in_app_action": "Apri"
 }

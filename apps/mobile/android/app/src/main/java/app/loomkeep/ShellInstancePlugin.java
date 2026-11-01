@@ -92,7 +92,7 @@ public class ShellInstancePlugin extends Plugin {
     }
 
     /** https://host[:port] for what the user typed, or null when it can't be one. */
-    private static String originOf(String address) {
+    static String originOf(String address) {
         String trimmed = address.trim();
         Uri uri = Uri.parse(trimmed.contains("://") ? trimmed : "https://" + trimmed);
         String host = uri.getHost();
@@ -103,7 +103,7 @@ public class ShellInstancePlugin extends Plugin {
     }
 
     /** Null when the origin answers /api/config like a Loomkeep instance, else the picker's error code. */
-    private static String probe(String origin) {
+    static String probe(String origin) {
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) new URL(origin + "/api/config").openConnection();
