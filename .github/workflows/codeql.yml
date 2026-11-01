@@ -68,3 +68,22 @@ jobs:
       - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           category: "/language:${{ matrix.language }}"
+          upload: ${{ matrix.language == 'java-kotlin' && 'never' || 'always' }}
+          output: sarif
+      # The build compiles Capacitor's Java too, and paths-ignore doesn't apply
+      # to traced code. Its code is upstream's to fix. The two rules read fields
+      # and variables Kotlin's compilers generate ($stable, tmp0_other_with_cast).
+      - name: Keep only this repository's own findings
+        if: matrix.language == 'java-kotlin'
+        run: |
+          jq '.runs[].results |= map(select(
+            .locations[0].physicalLocation.artifactLocation.uri as $uri
+            | ($uri | startswith("node_modules/") | not)
+            and ((.ruleId == "java/field-masks-super-field" or .ruleId == "java/local-variable-is-never-read")
+              and ($uri | endswith(".kt")) | not)
+          ))' sarif/java.sarif > java-filtered.sarif
+      - if: matrix.language == 'java-kotlin'
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        with:
+          sarif_file: java-filtered.sarif
+          category: "/language:${{ matrix.language }}"

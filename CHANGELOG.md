@@ -13,6 +13,10 @@ history from before it was started.
 
 ## [Unreleased]
 
+- Web: the Content-Security-Policy's `img-src` now lists the catalogs' image
+  hosts and the instance's API origin instead of every `https:` origin.
+- `glob` raised to 14.0.2 in the images (CVE-2026-118773, CVE-2026-118764).
+
 ### Fixed
 
 - Mobile bar: Feed and Leaderboard shortcuts no longer vanish, Messages and

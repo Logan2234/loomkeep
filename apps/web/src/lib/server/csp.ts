@@ -51,6 +51,8 @@ export function integrationSources(env: Env): Sources {
       quackback,
     ),
     "frame-src": present(quackback),
+    // Avatars, served by the API.
+    "img-src": present(api),
   };
 }
 

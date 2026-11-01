@@ -51,7 +51,21 @@ export default defineConfig(({ command }) => ({
           "style-src": ["self", "unsafe-inline"],
           // Catalog artwork comes from many CDNs (TMDB, IGDB, Open Library,
           // Cover Art Archive…) and avatars may be any URL.
-          "img-src": ["self", "data:", "blob:", "https:"],
+          // The catalogs' CDNs, and YouTube's trailer thumbnails. Cover Art
+          // Archive and Open Library redirect to archive.org's servers.
+          "img-src": [
+            "self",
+            "data:",
+            "blob:",
+            "https://image.tmdb.org",
+            "https://s4.anilist.co",
+            "https://images.igdb.com",
+            "https://covers.openlibrary.org",
+            "https://coverartarchive.org",
+            "https://archive.org",
+            "https://*.archive.org",
+            "https://i.ytimg.com",
+          ],
           "font-src": ["self", "data:"],
           "connect-src": ["self", "https://cloudflareinsights.com"],
           // Trailers (Lightbox) and the Turnstile challenge.

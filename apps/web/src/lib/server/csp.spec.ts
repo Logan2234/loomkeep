@@ -25,6 +25,7 @@ describe("integrationSources", () => {
         "https://feedback.example.com",
       ],
       "frame-src": ["https://feedback.example.com"],
+      "img-src": ["https://api.example.com"],
     });
   });
 
@@ -33,6 +34,7 @@ describe("integrationSources", () => {
       "script-src": [],
       "connect-src": [],
       "frame-src": [],
+      "img-src": [],
     });
   });
 });
