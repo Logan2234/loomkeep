@@ -26,28 +26,22 @@ dans les PR citées et dans l'historique de ce fichier.
 
 ## Où on en est
 
-Livré : MOB-01 à MOB-09, MOB-15, MOB-17, MOB-21, MOB-23, et la partie
-Android de MOB-18 et MOB-19. Seuls MOB-01 et MOB-03 sont validés sur
-téléphone ; le reste attend sa recette.
+Livré : MOB-01 à MOB-09, MOB-15, MOB-17, MOB-20, MOB-21, MOB-23, MOB-24,
+MOB-25, et la partie Android de MOB-18 et MOB-19. MOB-01, MOB-03, MOB-09 et
+MOB-20 sont validés sur téléphone ; le reste attend la fin de sa recette.
 
-Hors tickets : l'audit visuel Android passe avant MOB-10, son premier lot
-est livré (#492), et le clavier a été corrigé (#498, #499).
+Hors tickets : l'audit visuel Android passe avant MOB-10 (#492, #501, #504),
+et le clavier a été corrigé (#498, #499).
 
-Prochaine étape : une fois MOB-20 validé sur téléphone, MOB-24 et MOB-25 en
-une seule passe.
-
-| Ticket | Titre                                             | Taille | Dépend de      | Statut                     |
-| ------ | ------------------------------------------------- | ------ | -------------- | -------------------------- |
-| MOB-10 | Publication sur Google Play                       | M      | audit visuel   | 🚧 reste le compte et Play |
-| MOB-16 | Relais de push pour les instances self-hostées    | L      | —              | décisions à prendre        |
-| MOB-20 | Widgets Android (cinq, en affiches ou en billets) | L      | —              | 🚧 à valider sur téléphone |
-| MOB-22 | Exploratoire : scrobbling musical Android         | L      | MOB-10         |                            |
-| MOB-24 | Liens d'email vers l'app sur une autre instance   | S      | MOB-20         | après la recette MOB-20    |
-| MOB-25 | Verrouillage de l'app par biométrie               | S      | MOB-20         | après la recette MOB-20    |
-| MOB-11 | Projet iOS + build CI macOS + TestFlight          | M      | —              | ⏳ plus tard               |
-| MOB-12 | Push APNs (via FCM) et badge serveur              | S      | MOB-11         | ⏳ plus tard               |
-| MOB-13 | Universal Links et passkeys iOS                   | M      | MOB-11         | ⏳ plus tard               |
-| MOB-14 | Dossier de review et soumission App Store         | M      | MOB-12, MOB-13 | ⏳ plus tard               |
+| Ticket | Titre                                          | Taille | Dépend de      | Statut                     |
+| ------ | ---------------------------------------------- | ------ | -------------- | -------------------------- |
+| MOB-10 | Publication sur Google Play                    | M      | audit visuel   | 🚧 reste le compte et Play |
+| MOB-16 | Relais de push pour les instances self-hostées | L      | —              | décisions à prendre        |
+| MOB-22 | Exploratoire : scrobbling musical Android      | L      | MOB-10         |                            |
+| MOB-11 | Projet iOS + build CI macOS + TestFlight       | M      | —              | ⏳ plus tard               |
+| MOB-12 | Push APNs (via FCM) et badge serveur           | S      | MOB-11         | ⏳ plus tard               |
+| MOB-13 | Universal Links et passkeys iOS                | M      | MOB-11         | ⏳ plus tard               |
+| MOB-14 | Dossier de review et soumission App Store      | M      | MOB-12, MOB-13 | ⏳ plus tard               |
 
 Tailles : S ≈ une journée, M ≈ deux à quatre jours, L ≈ une semaine ou
 plus. ⏳ = pas prévu à court terme.
@@ -68,37 +62,22 @@ par-dessus l'ancien garde la session.
 - [ ] Paramètres Android › Apps › Loomkeep Dev › Langue : en, fr, it.
       Introuvable sur un Poco X5 Pro (MIUI/HyperOS) : à chercher dans
       Paramètres supplémentaires › Langues et saisie.
-- [ ] Retour depuis la page d'accueil : l'app passe en arrière-plan, sans
-      clignoter entre /login et /app après une connexion.
-- [ ] Icônes de la barre de statut lisibles en thème clair comme sombre,
-      y compris juste après avoir changé de thème.
 
 ### Push natif (MOB-04, MOB-05)
 
-- [ ] Réglages › Communications : activer le push demande la permission
-      Android, et l'interrupteur reste activé en revenant sur la page.
 - [ ] Paramètres Android › Loomkeep Dev › Notifications : six canaux
       (Activité, Sorties, Compte, Sécurité, Admin, Annonces) en français.
-- [ ] Admin › Communications › Push : reçu app ouverte et app fermée ; le
-      tap ouvre la page.
 - [ ] Message de chat reçu sans Loomkeep ouvert nulle part : notification,
       et le tap ouvre la conversation.
 - [ ] Une notification de la cloche ouverte depuis le push est marquée lue.
-- [ ] Désactiver le push : plus rien n'arrive.
 
 ### Exports et partage (MOB-06)
 
-- [ ] Réglages › Export, JSON puis CSV : la feuille de partage s'ouvre et
-      « Enregistrer » produit un fichier lisible.
 - [ ] Export de migration : les fichiers s'enchaînent, une feuille après
       l'autre.
-- [ ] « Partager » sur une œuvre et sur un profil ouvre la feuille Android ;
-      la fermer sans choisir n'affiche pas d'erreur.
 
 ### Scan natif (MOB-07)
 
-- [ ] Recherche › Livres › caméra : l'écran de Google s'ouvre (le premier
-      scan d'un APK installé à la main télécharge d'abord le module).
 - [ ] Dos d'un livre : la recherche passe en mode ISBN avec le code.
 - [ ] Code-barres d'un produit : « Ce code-barres n'est pas l'ISBN d'un
       livre ».
@@ -107,48 +86,20 @@ par-dessus l'ancien garde la session.
 
 ### App Links et passkeys (MOB-08)
 
-- [ ] Un lien `https://loomkeep.app/app/settings` reçu par mail ou message
-      ouvre l'app directement sur cette page (app fermée et ouverte).
-- [ ] Le lien de réinitialisation de mot de passe ouvre l'app.
 - [ ] « Se connecter avec une passkey » et la confirmation par passkey
       ouvrent la feuille de Google et aboutissent. Ne marchait pas au
       29/10 avec `android-dev-1443`, alors que l'APK et `assetlinks.json`
       sont bons : diagnostic à faire (`chrome://inspect`).
 
-### Simkl (MOB-09)
-
-- [ ] Réglages › Import › Simkl › Se connecter : Simkl s'ouvre dans un
-      onglet par-dessus l'app (pas dans Chrome).
-- [ ] Après « Autoriser », l'onglet se ferme et l'app affiche l'import
-      Simkl, connectée ; l'import va au bout.
-
 ### Choix d'instance (MOB-15)
 
-- [ ] Déconnecté : « Utiliser une autre instance » sous le formulaire de
-      connexion ouvre l'écran de choix (absent dans un navigateur).
-- [ ] `docs.loomkeep.app` est refusé (« n'est pas une instance Loomkeep »),
-      une adresse inexistante aussi (« ne répond pas »).
 - [ ] Une vraie instance self-hostée : l'app redémarre dessus, on peut s'y
       connecter, et elle reste choisie après avoir fermé l'app.
-- [ ] « Utiliser loomkeep.app » ramène sur loomkeep.app, session conservée.
-- [ ] En mode avion, la page d'erreur propose « Utiliser une autre
-      instance » ; « Annuler » ramène à l'instance actuelle.
 
 ### Notifications actionnables (MOB-17)
 
-- [ ] Après la mise à jour de l'APK, les notifications arrivent avec leurs
-      boutons (relancer l'app une fois pour qu'elle le signale à l'API).
-- [ ] Message de chat, app fermée : « Répondre » envoie la réponse sans
-      ouvrir l'app, « Marquer comme lu » retire le badge de la conversation.
-- [ ] Demande d'abonnement : « Accepter » et « Refuser » fonctionnent ;
-      nouvel abonné : « Suivre en retour ».
-- [ ] Réponse ou mention dans un commentaire : « Répondre » publie la
-      réponse dans le fil.
-- [ ] Une autre notification de la cloche : « Marquer comme lu ».
 - [ ] Mode avion puis un bouton : la notification reste et dit que
       l'action a échoué ; le tap ouvre toujours la bonne page.
-- [ ] Admin › Communications › Push, une notification « exemple » : elle
-      arrive avec ses boutons, qui ne font rien.
 
 ### Partage et raccourcis (MOB-18, MOB-19)
 
@@ -159,31 +110,27 @@ par-dessus l'ancien garde la session.
       Mon profil, Paramètres, en français ; chaque raccourci ouvre sa page,
       app fermée comme ouverte.
 
-### Widgets (MOB-20)
+### Ouvrir une autre instance dans l'app (MOB-24)
 
-- [ ] Liste des widgets : les cinq montrent un aperçu et s'ajoutent sans
-      « Impossible d'ajouter le widget ».
-- [ ] Taille à l'ajout : 4×2, sauf Série et niveau en 3×1 et Recherche en
-      4×1. Sur le launcher Xiaomi, comparer à la taille affichée par le sélecteur.
-- [ ] Chacun redimensionné entre ses bornes (voir MOB-20), en Affiches et en
-      Liste (appui long › Réglages ; Série et niveau n'a que les Affiches), en
-      clair et en sombre : rien n'est coupé.
-- [ ] Recherche en Affiches, agrandie en hauteur : les affiches ne s'étirent pas.
-- [ ] Une seule œuvre en Affiches garde la taille d'une tuile.
-- [ ] Un domaine coupé dans les réglages : ses sorties et sa catégorie
-      disparaissent ; À suivre, Sorties et Chrono le disent quand tous ceux
-      qu'ils montrent sont coupés.
-- [ ] À suivre : le ✓ passe au vert, vibre, puis l'épisode suivant s'affiche.
-- [ ] Chrono : lancer sur un jeu, l'heure tourne seule ; pause, reprise ;
-      arrêter enregistre la session. Sur un livre, arrêter ouvre sa fiche sur
-      le formulaire des pages lues.
-- [ ] Série et niveau : jours d'affilée, niveau et XP sur une ligne, la
-      semaine en plus sur deux ; tout est juste, et le tap ouvre le profil.
-- [ ] Recherche : la barre, le scanner et chaque catégorie ouvrent la bonne
-      page, app fermée comme ouverte ; passer de Jeux à Livres change bien
-      de catégorie.
-- [ ] Toucher le fond d'un widget ouvre l'app ; se déconnecter affiche
-      « Ouvre Loomkeep… » puis se connecter le remplace aussitôt.
+Les clients mail retirent les liens `loomkeep://` : l'email garde son lien
+https, et c'est la page, ouverte dans le navigateur, qui propose l'app.
+
+- [ ] Sur une instance self-hostée, Chrome sur Android, page de
+      réinitialisation reçue par mail : le bandeau « Ouvrir » ouvre l'app sur
+      cette page. Le fermer ne le remontre plus.
+- [ ] Sur une autre instance que celle de l'app : il demande avant de changer ;
+      « Annuler » reste sur l'instance actuelle.
+- [ ] Absent sur loomkeep.app, sur le site public et dans l'app.
+
+### Verrouillage (MOB-25)
+
+- [ ] Réglages › Sécurité › Verrouiller l'app : activer et désactiver demandent
+      l'empreinte ou le code ; annuler ne change rien.
+- [ ] Activé : demandé en lançant l'app et en revenant après plus d'une minute,
+      pas avant. L'empreinte comme le code déverrouillent.
+- [ ] Annuler laisse l'écran verrouillé, sans le contenu, avec « Déverrouiller ».
+- [ ] Android 13+ : pas d'aperçu du contenu dans les apps récentes.
+- [ ] Sans verrouillage d'écran : le réglage est grisé et l'explique.
 
 ### Haptique et passkey proposée (MOB-21)
 
@@ -239,71 +186,11 @@ dans Admin › Settings.
 À décider avant : chiffrer le payload de bout en bout (sur iOS, il faudra
 une Notification Service Extension), et gratuit ou premium (`ee/`).
 
-### MOB-20 — Widgets
-
-Décidé le 29/10, revu le 30/10 après un premier essai sur téléphone
-(maquette de la refonte : https://claude.ai/artifact/HXhJptW1hDvrtdk2iBaf69) :
-
-- Chaque widget, sauf Série et niveau, a deux styles, au choix dans ses réglages : « Affiches »
-  (par défaut : l'affiche, et dessous un bandeau dans sa propre teinte) et
-  « Liste » (des billets de cinéma aux couleurs de Séance, le code ou la
-  date sur le talon). Ils montrent jusqu'à neuf œuvres, et le sélecteur de
-  widgets en montre un aperçu (généré par Glance à partir d'Android 15, une
-  mise en page fixe avant).
-- Tailles, à vérifier sur un vrai launcher : la hauteur d'une case varie
-  (70n − 30 ou 118n − 16 dp), les bornes tiennent compte des deux. À suivre
-  et Sorties : 4×2 à l'ajout, de 2×2 à 5×5. Chrono : 4×2, de 2×2 à environ
-  5×3. Série et niveau : 3×1, jusqu'à environ 5×2.
-  Recherche : 4×1, d'une ligne jusqu'à 5×5.
-- Un domaine coupé disparaît du flux (`enabledDomains`) : Recherche ne
-  propose que les catégories actives, et les autres widgets le disent
-  plutôt que de rester vides.
-- « À suivre » : séries et animes en cours avec un épisode à voir ; le
-  bouton ✓ marque l'épisode suivant sans ouvrir l'app, le tap ouvre la
-  fiche. « Sorties » : celles du jour, sinon « Prochaines sorties » avec
-  leurs dates.
-- Glance (Kotlin). Les widgets suivent `WidgetRepository.snapshot` : Glance
-  ne rejoue `provideGlance` qu'à chaque nouvelle session de widget.
-  Mise à jour toutes les 30 minutes, après un ✓, et quand l'app passe en
-  arrière-plan.
-- Authentification : le web demande à l'API un jeton signé rattaché à sa
-  session (`POST /api/home-screen-widgets/token`) et le remet au plugin
-  local `HomeScreenWidgets` ; les widgets l'envoient en `X-Widget-Token`
-  (`GET …/feed`, `POST …/watch-next`). Il meurt avec la session, et la
-  déconnexion le retire.
-
-Trois autres widgets, dans les mêmes deux styles, par le flux (`?include=`
-selon les widgets posés) et les actions du jeton de widget :
-
-- Chrono de session : lance, met en pause ou arrête le chrono de jeu ou de
-  lecture. Arrêter un jeu enregistre la session ; un livre ouvre l'app sur
-  l'écran de fin de session, pour les pages lues.
-- Série et niveau : jours d'affilée, niveau et XP sur une rangée, la semaine
-  avec une deuxième (si la gamification est active sur l'instance).
-- Recherche : barre de recherche et scanner (`/app/search?scan`), puis les
-  raccourcis par catégorie et les derniers ajouts quand la place le permet.
-
 ### MOB-22 — Exploratoire : scrobbling musical
 
 Lire les sessions média Android (à la Pano Scrobbler) pour enregistrer
 automatiquement les écoutes dans le domaine musique. Vérifier d'abord la
 politique Play sur l'accès aux notifications.
-
-### MOB-24 — Liens d'email vers l'app sur une autre instance
-
-Les App Links ne valent que pour les domaines déclarés dans le manifeste
-au build : sur une instance self-hostée, les liens d'email (vérification,
-mot de passe oublié, alertes) s'ouvrent dans le navigateur. Piste : un
-schéma `loomkeep://` que l'instance ajoute à ses emails en bouton « Ouvrir
-dans l'app ».
-
-### MOB-25 — Verrouillage de l'app par biométrie
-
-Décidé le 01/11 : à faire avec MOB-24. Réglage facultatif qui demande
-l'empreinte ou le visage à l'ouverture
-(`BiometricPrompt` dans un plugin local, sans dépendance npm). La
-re-confirmation des actions sensibles passe déjà par les passkeys
-(MOB-21).
 
 ---
 
