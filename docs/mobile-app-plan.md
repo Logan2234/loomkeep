@@ -165,6 +165,8 @@ Reste :
 - Visuels : icône 512 × 512, bannière 1024 × 500, captures téléphone d'au
   moins 1080 px de large et au plus 2:1 (les `pwa-screenshot-*-mobile.jpg`
   actuelles, 375 × 811, ne passent pas).
+  L'icône et la bannière sont dans `apps/mobile/store/`, avec leur source
+  HTML (rendue par Chrome sans interface, à la taille exacte).
 - Page de suppression de compte utilisable sans l'app : Guide › Your data
   décrit le chemin dans l'app ; y ajouter le recours par email quand on ne
   peut plus se connecter, puis donner son adresse à Play.
