@@ -1,6 +1,5 @@
-name: PR Labeler
-description: Automatically labels PRs based on the files changed.
-run-name: Label PR #${{ github.event.pull_request.number }} based on changed files
+name: PR labels
+run-name: "Label #${{ github.event.pull_request.number }} from its changed files"
 
 on:
   pull_request_target:
@@ -18,6 +17,10 @@ permissions:
 
 jobs:
   label:
+    name: Label from changed files
+    # dependabot.yml sets its own labels; every bump touching a package.json
+    # would otherwise read as a change to that app.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read

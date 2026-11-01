@@ -20,6 +20,8 @@ permissions:
 jobs:
   analyze:
     runs-on: ubuntu-latest
+    env:
+      GOOGLE_SERVICES: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
     permissions:
       security-events: write
       actions: read
@@ -28,16 +30,41 @@ jobs:
       fail-fast: false
       matrix:
         # actions: the workflows themselves (script injection, untrusted
-        # checkouts). java-kotlin: the Android shell, which is plain Java, so
-        # it is read without a Gradle build.
+        # checkouts). java-kotlin: the Android shell. Kotlin (the widgets) is
+        # only extracted from a real compilation, and Java without one misses
+        # most of its dependencies, so this one builds below.
         language: [javascript-typescript, actions, java-kotlin]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - if: matrix.language == 'java-kotlin'
+        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - if: matrix.language == 'java-kotlin'
+        uses: ./.github/actions/setup
+        with:
+          build-shared: false
+      - if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      # Without it src/push stays out of the build, so out of the analysis.
+      - name: Restore Firebase's config
+        if: matrix.language == 'java-kotlin' && env.GOOGLE_SERVICES != ''
+        run: echo "$GOOGLE_SERVICES" | base64 -d > apps/mobile/android/app/google-services.json
+      - if: matrix.language == 'java-kotlin'
+        run: pnpm --filter @loomkeep/mobile exec cap sync android
       - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           languages: ${{ matrix.language }}
-          build-mode: none
+          build-mode: ${{ matrix.language == 'java-kotlin' && 'manual' || 'none' }}
           config-file: ./.github/codeql/codeql-config.yml
+      # CodeQL traces the compilers this step starts: a Gradle or Kotlin daemon
+      # would compile out of its sight.
+      - name: Compile the Android app
+        if: matrix.language == 'java-kotlin'
+        working-directory: apps/mobile/android
+        run: ./gradlew :app:compileDebugSources --no-daemon -Pkotlin.compiler.execution.strategy=in-process
       - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           category: "/language:${{ matrix.language }}"
