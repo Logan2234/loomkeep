@@ -98,6 +98,8 @@ final class AppLock {
         });
     }
 
+    // setDeviceCredentialAllowed: the only way to offer the PIN on Android 10.
+    @SuppressWarnings("deprecation")
     static void authenticate(Activity activity, Result result) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             result.done(false);
