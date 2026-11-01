@@ -60,15 +60,6 @@ export interface HomeScreenWidgetSessionDto {
   occurredAt: string;
 }
 
-/** An XP gain, for « Série et niveau ». */
-export interface HomeScreenWidgetGainDto {
-  amount: number;
-  /** The work behind it; null for a gain with none (profile, achievement…). */
-  title: string | null;
-  /** ISO. */
-  at: string;
-}
-
 /** « Série et niveau »: null when gamification is off on the instance. */
 export interface HomeScreenWidgetProgressionDto {
   xp: number;
@@ -82,8 +73,6 @@ export interface HomeScreenWidgetProgressionDto {
   today: string;
   /** The days among the last seven, today included, with activity: "YYYY-MM-DD". */
   activeDays: string[];
-  /** Most recent first. */
-  gains: HomeScreenWidgetGainDto[];
 }
 
 /** Something just added to the library, for « Recherche ». */

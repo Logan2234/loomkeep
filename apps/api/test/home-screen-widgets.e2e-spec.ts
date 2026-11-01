@@ -212,6 +212,7 @@ describe("Home-screen widgets (e2e)", () => {
     // The episode watched and the game played above, both today.
     expect(body.progression.activeDays).toContain(body.progression.today);
     expect(body.progression.streakDays).toBeGreaterThanOrEqual(1);
+    expect(body.progression).not.toHaveProperty("gains");
   });
 
   it("lists the latest additions across domains", async () => {

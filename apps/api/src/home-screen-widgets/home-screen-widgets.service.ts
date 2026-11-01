@@ -20,8 +20,6 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { localDay, localDayOrUtc } from "../common/local-day.util";
-import { parsePageQuery } from "../common/pagination.util";
-import { XpHistoryService } from "../gamification/xp-history.service";
 import { XpService } from "../gamification/xp.service";
 import { LibraryService } from "../library/library.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -81,7 +79,6 @@ export class HomeScreenWidgetsService {
     private readonly domains: DomainGateService,
     private readonly timers: SessionTimerService,
     private readonly xp: XpService,
-    private readonly xpHistory: XpHistoryService,
   ) {}
 
   token(userId: string, sessionId: string | undefined): { token: string } {
@@ -317,13 +314,12 @@ export class HomeScreenWidgetsService {
     if (xp === null) return null;
 
     const now = new Date();
-    const [dates, user, history] = await Promise.all([
+    const [dates, user] = await Promise.all([
       activityDates(this.prisma, userId),
       this.prisma.user.findUnique({
         where: { id: userId },
         select: { timezone: true },
       }),
-      this.xpHistory.history(userId, parsePageQuery(undefined, "3", 3)),
     ]);
     // User.timezone is unvalidated (see local-day.util.ts): an invalid one
     // falls back to UTC, like everywhere else.
@@ -347,15 +343,6 @@ export class HomeScreenWidgetsService {
       streakSecuredToday: isStreakSecuredToday(dates, now),
       today: localDayOrUtc(timezone, now),
       activeDays,
-      gains: history.items
-        .flatMap((day) => day.items)
-        .filter((item) => !item.revoked && item.amount > 0)
-        .slice(0, FEED_LENGTH)
-        .map((item) => ({
-          amount: item.amount,
-          title: item.title,
-          at: item.at,
-        })),
     };
   }
 

@@ -48,7 +48,7 @@ history from before it was started.
   ones), « Chrono » (starts, pauses and stops the session timer; stopping a
   book opens its page for the pages read), « Streak and level » and
   « Search » (search, the scanner, the categories, the latest additions),
-  from 2 × 2 to 5 × 5 with up to nine works. Two looks, chosen in
+  up to 5 × 5 with up to nine works. Two looks, chosen in
   each widget's settings: « Affiches » (the default: posters, each over a
   band in its own shade) and « Liste » (cinema tickets, the code or date on
   the stub). The widget picker previews them. They read `/api/home-screen-widgets` with a token the
