@@ -1,9 +1,13 @@
 <script lang="ts">
+  import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
-  import { tick } from "svelte";
+  import { setContext, tick } from "svelte";
   import { scale } from "svelte/transition";
+  import Drawer from "./Drawer.svelte";
+  import { IN_MENU_SHEET } from "./dropdown-submenu.svelte";
+  import { MENU_SHEET_Z_INDEX } from "./overlay-layers";
   import {
     computeDropdownPosition,
     type DropdownPosition,
@@ -16,12 +20,15 @@
     placement = "bottom-start",
     role = "menu",
     class: panelClass = "",
+    sheetTitle,
     trigger,
     children,
   }: {
     placement?: "bottom-start" | "bottom-end";
     role?: "menu" | "listbox" | "presentation";
     class?: string;
+    /** Makes a `presentation` panel a sheet on a phone too, under this title. */
+    sheetTitle?: string;
     trigger: Snippet<
       [
         {
@@ -36,6 +43,12 @@
   } = $props();
 
   let open = $state(false);
+  // Fixed when it opens, for a finger only: a narrow window with a mouse keeps
+  // the popover and its arrow keys. A panel with a field to type in stays
+  // anchored too (searchable Combobox): a sheet would sit under the keyboard.
+  let asSheet = $state(false);
+  let drawer = $state<{ close: () => void }>();
+  setContext(IN_MENU_SHEET, () => asSheet);
   let positioned = $state(false);
   let triggerElement = $state<HTMLElement | null>(null);
   let panelElement = $state<HTMLDivElement | null>(null);
@@ -69,7 +82,7 @@
   }
 
   function updatePosition() {
-    if (!open || !triggerElement || !panelElement) return;
+    if (!open || asSheet || !triggerElement || !panelElement) return;
     const viewport = viewportBounds();
     const trigger = triggerElement.getBoundingClientRect();
     const nextPosition = computeDropdownPosition({
@@ -99,6 +112,10 @@
   function openPanel(e: Event, focus?: "first" | "last") {
     triggerElement = e.currentTarget as HTMLElement;
     positioned = false;
+    asSheet =
+      layout.compact &&
+      matchMedia("(pointer: coarse)").matches &&
+      (role !== "presentation" || !!sheetTitle);
     open = true;
     void tick().then(() => {
       updatePosition();
@@ -114,9 +131,14 @@
     }
   }
 
-  function close() {
+  function closed() {
     open = false;
     void tick().then(() => triggerElement?.focus());
+  }
+
+  function close() {
+    if (asSheet) drawer?.close();
+    else closed();
   }
 
   function menuItems() {
@@ -194,7 +216,7 @@
   }
 
   $effect(() => {
-    if (!open || !panelElement || !triggerElement) return;
+    if (!open || asSheet || !panelElement || !triggerElement) return;
     const viewport = window.visualViewport;
     const observer = new ResizeObserver(updatePosition);
     observer.observe(panelElement);
@@ -216,7 +238,32 @@
 
 {@render trigger({ open, toggle, close, onkeydown: onTriggerKeydown })}
 
-{#if open}
+{#if open && asSheet}
+  <Drawer
+    bind:this={drawer}
+    onclose={closed}
+    zIndex={MENU_SHEET_Z_INDEX}
+    halfOpen
+    label={sheetTitle ??
+      triggerElement?.getAttribute("aria-label") ??
+      triggerElement?.textContent?.trim() ??
+      undefined}>
+    {#if sheetTitle}
+      <p class="font-display shrink-0 px-5 pt-1 pb-2 font-bold">{sheetTitle}</p>
+    {/if}
+    <div
+      bind:this={panelElement}
+      data-drawer-scroll
+      data-menu-sheet
+      data-escape-consumer
+      role={role === "presentation" ? undefined : role}
+      tabindex="-1"
+      onkeydown={onPanelKeydown}
+      class="flex min-h-0 w-full! max-w-none! flex-1 touch-pan-y flex-col overflow-y-auto pb-[calc(0.75rem+env(safe-area-inset-bottom))] {panelClass}">
+      {@render children({ close })}
+    </div>
+  </Drawer>
+{:else if open}
   <button
     type="button"
     tabindex="-1"

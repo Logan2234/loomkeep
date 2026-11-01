@@ -3,13 +3,18 @@
   // on hover, on click (touch) or with → / Enter. ← or Escape goes back.
   // Only valid inside a Dropdown with role="menu". Where neither side has
   // room (a phone), the submenu slides over its parent menu instead, with a
-  // "‹ label" row to go back — the usual mobile drill-down.
+  // "‹ label" row to go back — the usual mobile drill-down. In a phone's
+  // sheet it unfolds under its item, since the sheet can hold it.
   import { prefersReducedMotion } from "#lib/motion.js";
   import type { Snippet } from "svelte";
-  import { onDestroy, tick } from "svelte";
+  import { getContext, onDestroy, tick } from "svelte";
   import { cubicOut } from "svelte/easing";
-  import { fly } from "svelte/transition";
-  import { openSubmenu, portal } from "./dropdown-submenu.svelte";
+  import { fly, slide } from "svelte/transition";
+  import {
+    IN_MENU_SHEET,
+    openSubmenu,
+    portal,
+  } from "./dropdown-submenu.svelte";
   import Icon from "./Icon.svelte";
 
   let {
@@ -24,6 +29,7 @@
   } = $props();
 
   const reduced = prefersReducedMotion();
+  const inSheet = getContext<(() => boolean) | undefined>(IN_MENU_SHEET);
   const GAP = 4;
   const MARGIN = 8;
   // The panel's min-w-44, to decide before it renders whether a side fits.
@@ -66,7 +72,10 @@
 
   async function show(focusFirst = false) {
     clearTimeout(closeTimer);
-    if (!open) {
+    if (!open && inSheet?.()) {
+      openSubmenu.id = id;
+      await tick();
+    } else if (!open) {
       const parent = parentRect();
       drill =
         !!parent &&
@@ -182,10 +191,22 @@
     <Icon
       name="chevron-right"
       class="h-3.5 w-3.5 transition-[transform,color] duration-200 {open
-        ? 'text-fg translate-x-0.5'
+        ? inSheet?.()
+          ? 'text-fg rotate-90'
+          : 'text-fg translate-x-0.5'
         : 'text-dim'}" />
   </button>
-  {#if open}
+  {#if open && inSheet?.()}
+    <div
+      bind:this={panelElement}
+      role="menu"
+      tabindex="-1"
+      class="bg-surface-2/50 flex flex-col"
+      transition:slide={{ duration: reduced ? 0 : 200 }}
+      onkeydown={onPanelKeydown}>
+      {@render children()}
+    </div>
+  {:else if open}
     <div
       use:portal
       bind:this={panelElement}

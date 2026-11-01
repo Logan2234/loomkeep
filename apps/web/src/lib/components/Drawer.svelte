@@ -28,7 +28,13 @@
   import { scrollLock } from "#lib/actions/scroll-lock.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { dimSystemBars } from "#lib/native/shell-bars.js";
-  import { DragVelocity, isDismissed } from "#lib/swipe-dismiss.js";
+  import {
+    DragVelocity,
+    isDismissed,
+    settleDuration,
+    sheetStop,
+    type SheetStop,
+  } from "#lib/swipe-dismiss.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import { onMount } from "svelte";
@@ -40,6 +46,8 @@
     zIndex = 40,
     dismissable = true,
     initialFocus,
+    label,
+    halfOpen = false,
   }: {
     onclose: () => void;
     children: Snippet;
@@ -53,11 +61,23 @@
     dismissable?: boolean;
     /** Element to focus first once the sheet content is mounted. */
     initialFocus?: HTMLElement | null;
+    /** Accessible name, when no element in the sheet can label it. */
+    label?: string;
+    /** A long sheet opens halfway and is pulled up to read the rest. Not for
+     * a sheet with actions pinned at its bottom: they'd start off screen. */
+    halfOpen?: boolean;
   } = $props();
 
   // JS transitions ignore prefers-reduced-motion, so gate duration manually.
   const reduced = prefersReducedMotion();
   const dur = reduced ? 0 : 220;
+  const CLOSE_MS = reduced ? 0 : 180;
+  // Decelerates: quick out of the gesture or the edge, gentle into place.
+  const SETTLE_CURVE = "cubic-bezier(0.2, 0, 0, 1)";
+  const LEAVE_CURVE = "cubic-bezier(0.3, 0, 1, 1)";
+  /** Taller than this share of the screen, a halfOpen sheet stops halfway. */
+  const HALF_FROM = 0.6;
+  const HALF_SHOWS = 0.5;
 
   let visible = $state(false);
   let closing = $state(false);
@@ -65,20 +85,39 @@
   onMount(() => {
     // Next frame so the initial (off-screen/transparent) state paints first
     // — otherwise there's nothing for the enter transition to animate from.
-    requestAnimationFrame(() => (visible = true));
+    requestAnimationFrame(() => {
+      if (halfOpen && panelEl) {
+        const height = panelEl.offsetHeight;
+        if (height > innerHeight * HALF_FROM) {
+          halfAt = height - innerHeight * HALF_SHOWS;
+          rest = halfAt;
+        }
+      }
+      visible = true;
+    });
     return dimSystemBars();
   });
 
-  function requestClose() {
+  function requestClose(ms = CLOSE_MS, curve = LEAVE_CURVE) {
     if (closing) return;
     closing = true;
+    settle = { ms, curve };
     visible = false;
-    setTimeout(onclose, dur);
+    setTimeout(onclose, ms);
+  }
+
+  /** Closes with the sheet's own animation, for a caller holding a reference. */
+  export function close() {
+    requestClose();
   }
 
   let panelEl = $state<HTMLDivElement | null>(null);
   let dragging = $state(false);
   let dragY = $state(0);
+  // How far below fully open the sheet rests, and its half-open stop if any.
+  let rest = $state(0);
+  let halfAt = 0;
+  let settle = $state({ ms: dur, curve: SETTLE_CURVE });
   let startY = 0;
   let startX = 0;
   let panelHeight = 1;
@@ -151,7 +190,10 @@
         cancelGesture();
         return;
       }
-      if (gestureScroller && delta < 0) {
+      if (rest > 0 && delta < 0) {
+        gesture = "drag";
+        dragging = true;
+      } else if (gestureScroller && delta < 0) {
         gesture = "scroll";
       } else if (dismissable && delta > 0) {
         gesture = "drag";
@@ -167,7 +209,7 @@
     if (gesture === "scroll") {
       gestureScroller!.scrollTop = Math.max(0, -delta);
     } else {
-      dragY = Math.max(0, delta);
+      dragY = Math.max(0, rest + delta);
       velocity.add(e.clientY, e.timeStamp);
     }
   }
@@ -182,16 +224,39 @@
 
   function onPointerUp(e: PointerEvent) {
     if (activePointer !== e.pointerId) return;
-    const close =
-      gesture === "drag" &&
-      isDismissed({
-        distance: dragY,
-        size: panelHeight,
-        velocity: velocity.at(e.timeStamp),
-        fraction: CLOSE_FRACTION,
-      });
+    if (gesture !== "drag") {
+      cancelGesture();
+      return;
+    }
+    const speed = velocity.at(e.timeStamp);
+    const stop: SheetStop =
+      halfAt > 0
+        ? sheetStop({
+            position: dragY,
+            halfAt,
+            size: panelHeight,
+            velocity: speed,
+            from: rest > 0 ? "half" : "full",
+            fraction: CLOSE_FRACTION,
+          })
+        : isDismissed({
+              distance: dragY,
+              size: panelHeight,
+              velocity: speed,
+              fraction: CLOSE_FRACTION,
+            })
+          ? "closed"
+          : "full";
+    const target =
+      stop === "closed" ? panelHeight : stop === "half" ? halfAt : 0;
+    const ms = reduced ? 0 : settleDuration(Math.abs(target - dragY), speed);
     cancelGesture();
-    if (close) requestClose();
+    if (stop === "closed") {
+      requestClose(ms, SETTLE_CURVE);
+      return;
+    }
+    settle = { ms, curve: SETTLE_CURVE };
+    rest = target;
   }
 
   function onClickCapture(e: MouseEvent) {
@@ -215,7 +280,7 @@
         : 'pointer-events-none opacity-0'}"
       style="z-index: {zIndex}; transition-duration: {dur}ms"
       aria-label={m.common_close()}
-      onclick={requestClose}></button>
+      onclick={() => requestClose()}></button>
   {:else}
     <div
       data-dialog-backdrop
@@ -230,19 +295,20 @@
   <div
     use:dialogFocus={{
       initialFocus,
-      onEscape: dismissable ? requestClose : undefined,
+      onEscape: dismissable ? () => requestClose() : undefined,
     }}
     bind:this={panelEl}
     role="dialog"
     aria-modal="true"
     aria-labelledby={labelledby}
+    aria-label={label}
     tabindex="-1"
     class="border-border bg-surface fixed inset-x-0 bottom-0 flex max-h-[88dvh] w-full touch-none flex-col rounded-t-3xl border-t shadow-2xl {closing
       ? 'pointer-events-none'
       : ''}"
     style="z-index: {zIndex + 10}; {dragging
       ? `transform: translateY(${dragY}px); transition: none;`
-      : `transform: translateY(${visible ? '0' : '100%'}); transition: transform ${dur}ms ease;`}"
+      : `transform: translateY(${visible ? `${rest}px` : '100%'}); transition: transform ${settle.ms}ms ${settle.curve};`}"
     onpointerdown={onPointerDown}
     onpointermove={onPointerMove}
     onpointerup={onPointerUp}

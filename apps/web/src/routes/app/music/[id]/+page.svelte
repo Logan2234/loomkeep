@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fade } from "svelte/transition";
   import { buildGallery, galleryIndex } from "#lib/gallery.js";
 
   import DetailsCard from "#lib/components/DetailsCard.svelte";
@@ -56,6 +57,8 @@
   let lightboxIndex = $state(0);
 
   const id = $derived(page.params.id ?? "");
+  const TAGS_SHOWN = 5;
+  let tagsOpen = $state(false);
   const detailKey = $derived(keys.music.detail(SOURCE, id));
 
   const musicQuery = createApiQuery(() => ({
@@ -395,12 +398,21 @@
             <div>
               <dt class="timecode text-xs">{m.music_tags()}</dt>
               <dd class="mt-1.5 flex flex-wrap gap-1.5">
-                {#each detail.tags as tag (tag)}
+                {#each tagsOpen ? detail.tags : detail.tags.slice(0, TAGS_SHOWN) as tag (tag)}
                   <span
+                    in:fade={{ duration: tagsOpen ? 150 : 0 }}
                     class="bg-surface-2 text-dim rounded-md px-2 py-0.5 text-xs">
                     {tag}
                   </span>
                 {/each}
+                {#if !tagsOpen && detail.tags.length > TAGS_SHOWN}
+                  <button
+                    type="button"
+                    class="btn-text px-2"
+                    onclick={() => (tagsOpen = true)}>
+                    {m.common_view_all_count({ count: detail.tags.length })}
+                  </button>
+                {/if}
               </dd>
             </div>
           {/if}
