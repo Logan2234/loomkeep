@@ -4,7 +4,9 @@
   // appears before the first `bootstrap.ready` — SPA navigations don't re-run
   // the bootstrap — and on an explicit reconnect retry. The share target
   // reuses it, with a message, while it looks the shared link up.
+  import { Capacitor } from "@capacitor/core";
   import { m } from "#lib/paraglide/messages.js";
+  import BrandMark from "./BrandMark.svelte";
 
   let {
     message,
@@ -15,32 +17,46 @@
     /** Height: full screen by default, less when shown under the app chrome. */
     class?: string;
   } = $props();
+
+  // In the Android app it takes over from the launch screen, which only gives
+  // way this long after a slow start: same mark, same place, no delay.
+  const takesOver = Capacitor.isNativePlatform() && !message;
 </script>
 
-<div
-  class="boot-splash flex {cls} flex-col items-center justify-center gap-8 px-6"
-  role="status"
-  aria-live="polite">
-  <p class="font-display text-2xl font-extrabold tracking-tight">
-    {m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span>
-  </p>
-
-  <svg viewBox="0 0 100 100" class="boot-reel h-16 w-16" aria-hidden="true">
-    <g class="boot-reel-body">
-      <circle cx="50" cy="50" r="45" />
-      <circle cx="50" cy="24" r="11" />
-      <circle cx="72.5" cy="63" r="11" />
-      <circle cx="27.5" cy="63" r="11" />
-      <circle class="boot-reel-hub" cx="50" cy="50" r="7" />
-    </g>
-  </svg>
-
-  {#if message}
-    <p class="timecode -mt-2 text-sm">{message}</p>
-  {:else}
+{#if takesOver}
+  <div
+    class="relative grid {cls} place-items-center"
+    role="status"
+    aria-live="polite">
+    <BrandMark class="h-[9.3rem] w-[9.3rem]" />
     <span class="sr-only">{m.common_loading()}</span>
-  {/if}
-</div>
+  </div>
+{:else}
+  <div
+    class="boot-splash flex {cls} flex-col items-center justify-center gap-8 px-6"
+    role="status"
+    aria-live="polite">
+    <p class="font-display text-2xl font-extrabold tracking-tight">
+      {m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span>
+    </p>
+
+    <svg viewBox="0 0 100 100" class="boot-reel h-16 w-16" aria-hidden="true">
+      <g class="boot-reel-body">
+        <circle cx="50" cy="50" r="45" />
+        <circle cx="50" cy="24" r="11" />
+        <circle cx="72.5" cy="63" r="11" />
+        <circle cx="27.5" cy="63" r="11" />
+        <circle class="boot-reel-hub" cx="50" cy="50" r="7" />
+      </g>
+    </svg>
+
+    {#if message}
+      <p class="timecode -mt-2 text-sm">{message}</p>
+    {:else}
+      <span class="sr-only">{m.common_loading()}</span>
+    {/if}
+  </div>
+{/if}
 
 <style>
   /* Held back so a warm cache doesn't flash the splash for 80ms — it only

@@ -1,7 +1,11 @@
 package app.loomkeep;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import androidx.core.splashscreen.SplashScreen;
 import androidx.webkit.WebSettingsCompat;
 import androidx.webkit.WebViewFeature;
 import app.loomkeep.widgets.HomeScreenWidgetsPlugin;
@@ -9,17 +13,46 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
+    // The most an instance can hold the launch screen: one running an older
+    // web never calls ShellSplash, and a slow one shows its own loading screen.
+    private static final long SPLASH_MAX_MS = 3000;
+    private static final long SPLASH_EXIT_MS = 200;
+
+    private volatile boolean splashReleased = false;
+
+    /** The launch screen stays until the web can draw, so no empty window shows in between. */
+    void releaseSplash() {
+        splashReleased = true;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        ShellAppearance.applyNightMode(this);
+        SplashScreen splash = SplashScreen.installSplashScreen(this);
+        splash.setKeepOnScreenCondition(() -> !splashReleased);
+        splash.setOnExitAnimationListener(provider ->
+            provider.getView().animate().alpha(0f).setDuration(SPLASH_EXIT_MS).withEndAction(provider::remove).start()
+        );
+        new Handler(Looper.getMainLooper()).postDelayed(this::releaseSplash, SPLASH_MAX_MS);
+
         // Local plugins register before the bridge starts in super.onCreate.
         registerPlugin(ShellThemePlugin.class);
         registerPlugin(ShellHapticsPlugin.class);
+        registerPlugin(ShellSplashPlugin.class);
         registerPlugin(ShellInstancePlugin.class);
         registerPlugin(NotificationActionsPlugin.class);
         registerPlugin(HomeScreenWidgetsPlugin.class);
         config = InstanceConfig.load(this);
         super.onCreate(savedInstanceState);
-        getBridge().setWebViewClient(new ShellWebViewClient(getBridge()));
+        getBridge().setWebViewClient(new ShellWebViewClient(getBridge(), this::releaseSplash));
+        int background = ShellAppearance.backgroundColor(this);
+        getBridge().getWebView().setBackgroundColor(background);
+        getWindow().getDecorView().setBackgroundColor(background);
+        // The web paints its own surface down to the screen's edge: the veil
+        // Android would add behind three-button navigation only greys it.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
         // A WebView refuses WebAuthn unless its app opts in; passkeys then go
         // through Credential Manager, for sites whose assetlinks.json grants
         // this app get_login_creds. An older WebView goes without them.

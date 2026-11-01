@@ -1,8 +1,9 @@
 import { Domain } from "@loomkeep/shared";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { auth } from "./auth.svelte";
 import {
   resolveShortcutChoices,
+  scrollUpOnReselect,
   visibleNavItems,
   visibleNavSections,
 } from "./navigation";
@@ -134,5 +135,40 @@ describe("calendar visibility", () => {
     expect(calendarShown([Domain.GAMES])).toBe(true);
     expect(calendarShown([Domain.MEDIA])).toBe(true);
     expect(calendarShown([Domain.BOOKS, Domain.MUSIC])).toBe(false);
+  });
+});
+
+describe("scrollUpOnReselect", () => {
+  const reselect = (href: string, url: string) => {
+    const event = { preventDefault: vi.fn() } as unknown as MouseEvent;
+    const scrollTo = vi.fn();
+    vi.stubGlobal("scrollTo", scrollTo);
+    scrollUpOnReselect(event, href, new URL(url, "https://loomkeep.test"));
+    vi.unstubAllGlobals();
+    return {
+      prevented: vi.mocked(event.preventDefault).mock.calls.length,
+      scrolled: scrollTo.mock.calls.length,
+    };
+  };
+
+  it("scrolls up without navigating on the tab's own page", () => {
+    expect(reselect("/app/stats", "/app/stats")).toEqual({
+      prevented: 1,
+      scrolled: 1,
+    });
+  });
+
+  it("leaves a normal link on a page under the tab", () => {
+    expect(reselect("/app/stats", "/app/stats/year")).toEqual({
+      prevented: 0,
+      scrolled: 0,
+    });
+  });
+
+  it("leaves a normal link when filters are in the URL, which clears them", () => {
+    expect(reselect("/app/search", "/app/search?q=dune")).toEqual({
+      prevented: 0,
+      scrolled: 0,
+    });
   });
 });

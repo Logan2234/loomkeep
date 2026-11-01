@@ -7,6 +7,7 @@
   import {
     DEFAULT_BOTTOM_SHORTCUTS,
     resolveBottomShortcuts,
+    scrollUpOnReselect,
   } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
   import ChatTab from "#lib/components/chat/ChatTab.svelte";
@@ -66,6 +67,7 @@
       <a
         href={item.href}
         aria-current={active ? "page" : undefined}
+        onclick={(event) => scrollUpOnReselect(event, item.href, page.url)}
         class="
           relative flex min-w-0 flex-1 flex-col items-center gap-1 text-[0.62rem] font-semibold transition-transform duration-200
           {active ? 'text-accent -translate-y-1.5' : 'text-dim'}

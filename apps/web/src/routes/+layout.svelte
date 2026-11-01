@@ -5,6 +5,7 @@
   import { afterNavigate, onNavigate } from "$app/navigation";
   import * as env from "$app/env/public";
   import { bootstrap } from "#lib/bootstrap.svelte.js";
+  import NavigationProgress from "#lib/components/NavigationProgress.svelte";
   import NewsBanner from "#lib/components/NewsBanner.svelte";
   import Toast from "#lib/components/Toast.svelte";
   import { layout } from "#lib/layout.svelte.js";
@@ -18,6 +19,7 @@
   import { auth } from "#lib/auth.svelte.js";
   import {
     isNativeApp,
+    releaseShellSplash,
     startAppShell,
     syncSystemBars,
   } from "#lib/native/app-shell.js";
@@ -57,6 +59,10 @@
   });
 
   $effect(() => (isNativeApp() ? startAppShell() : undefined));
+
+  $effect(() => {
+    if (bootstrap.ready) releaseShellSplash();
+  });
 
   // app.css scrolls smoothly for in-page anchors, but SvelteKit's own scroll
   // after a page change (to the top, or back to the remembered position)
@@ -125,8 +131,10 @@
 
 <div
   aria-hidden="true"
-  class="bg-bg pointer-events-none fixed inset-x-0 top-0 z-45 h-[env(safe-area-inset-top)]">
+  class="bg-bg pointer-events-none fixed inset-x-0 top-0 z-35 h-[env(safe-area-inset-top)]">
 </div>
+
+<NavigationProgress />
 
 <NewsBanner />
 

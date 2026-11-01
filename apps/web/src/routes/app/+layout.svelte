@@ -14,7 +14,7 @@
   import DeletionScheduledBanner from "#lib/components/DeletionScheduledBanner.svelte";
   import { chat } from "#lib/chat/chat.svelte.js";
   import { appConfig } from "#lib/config.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
+  import BrandMark from "#lib/components/BrandMark.svelte";
   import Modal from "#lib/components/Modal.svelte";
   import NotificationBell from "#lib/components/NotificationBell.svelte";
   import OnboardingWidget from "#lib/components/onboarding/OnboardingWidget.svelte";
@@ -75,6 +75,14 @@
   $effect(() => {
     if (bootstrap.ready && auth.isLoggedIn) void scanNotifications();
   });
+
+  // The reconnect screen tries again by itself when the network returns.
+  $effect(() => {
+    if (!bootstrap.apiUnreachable || auth.isLoggedIn) return;
+    const retry = () => bootstrap.retry();
+    addEventListener("online", retry);
+    return () => removeEventListener("online", retry);
+  });
 </script>
 
 {#if !bootstrap.ready}
@@ -82,12 +90,13 @@
 {:else if bootstrap.apiUnreachable && !auth.isLoggedIn}
   <div
     class="flex min-h-svh flex-col items-center justify-center gap-4 px-6 text-center">
-    <Icon name="warning" class="text-dim h-10 w-10" />
+    <BrandMark class="h-18 w-18" />
     <div>
+      <p class="timecode mb-3 text-xs">{m.app_offline_status()}</p>
       <h1 class="font-display text-xl font-extrabold tracking-tight">
         {m.app_offline_title()}
       </h1>
-      <p class="text-dim mt-1 text-sm">{m.apierr_network_offline()}</p>
+      <p class="text-dim mt-1 text-sm">{m.app_offline_body()}</p>
     </div>
     <button
       type="button"
