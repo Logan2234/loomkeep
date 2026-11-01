@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { browser } from "$app/environment";
+  import { browser } from "$app/env";
   import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
   import { readStorage, writeStorage } from "#lib/local-storage.js";
   import { isNativeApp } from "#lib/native/app-shell.js";
@@ -23,7 +23,7 @@
       !dismissed &&
       !isNativeApp() &&
       !matchMedia("(display-mode: standalone)").matches &&
-      canOfferApp(page.url, navigator.userAgent),
+      canOfferApp(new URL(page.url.href), navigator.userAgent),
   );
 </script>
 
@@ -32,7 +32,9 @@
     transition:slide={{ duration: 200 }}
     class="border-border bg-surface flex items-center gap-3 border-b px-4 py-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] text-sm">
     <p class="min-w-0 flex-1">{m.open_in_app_prompt()}</p>
-    <a class="btn btn-primary shrink-0" href={openInAppUrl(page.url)}>
+    <a
+      class="btn btn-primary shrink-0"
+      href={openInAppUrl(new URL(page.url.href))}>
       {m.open_in_app_action()}
     </a>
     <button
