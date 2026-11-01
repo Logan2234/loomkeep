@@ -4,11 +4,13 @@
   import { auth } from "#lib/auth.svelte.js";
   import BetaBadge from "#lib/components/BetaBadge.svelte";
   import HomeGrid from "#lib/components/home/HomeGrid.svelte";
+  import OnboardingCard from "#lib/components/onboarding/OnboardingCard.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { GITHUB_REPO_URL } from "#lib/constants/external-links.js";
   import { currentHomeGate } from "#lib/home/gate.js";
   import { resolveHomeLayout } from "#lib/home/layout.js";
+  import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
 
   const widgets = $derived(
@@ -29,6 +31,8 @@
     title={`${greeting}${auth.user ? ", " + auth.user.displayName : ""}.`}
     documentTitle={m.common_home()}
     subtitle={m.home_subtitle()} />
+
+  {#if layout.compact}<OnboardingCard />{/if}
 
   <HomeGrid {widgets} />
 

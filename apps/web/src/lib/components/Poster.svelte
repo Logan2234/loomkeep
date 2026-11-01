@@ -43,7 +43,7 @@
   });
 </script>
 
-<div class="relative {containerClass}">
+<div data-work-poster class="relative {containerClass}">
   {#if src && !failed}
     <img
       {src}

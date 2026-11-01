@@ -214,6 +214,7 @@
     "openlibrary",
     "musicbrainz",
   ];
+  const LONG_CAROUSEL_ITEMS = Array.from({ length: 30 }, (_, i) => `${i + 1}`);
   const CAROUSEL_ITEMS = [
     m.admin_components_sample_title_one(),
     m.admin_components_sample_title_two(),
@@ -565,6 +566,11 @@
             m.admin_components_carousel_detail(),
             carousel,
           )}
+          {@render specimen(
+            "Carousel",
+            m.admin_components_carousel_dots_detail(),
+            longCarousel,
+          )}
         </div>
       </section>
       <section
@@ -880,6 +886,23 @@
       </div>
     {/snippet}
   </Carousel>
+{/snippet}
+
+{#snippet longCarousel()}
+  <div class="max-w-sm">
+    <Carousel
+      items={LONG_CAROUSEL_ITEMS}
+      keyOf={(item) => item}
+      label={m.admin_components_carousel_label()}
+      alwaysDots>
+      {#snippet card(title)}
+        <div class="card w-32">
+          <Poster {title} alt="" />
+          <p class="truncate p-3 text-xs font-semibold">{title}</p>
+        </div>
+      {/snippet}
+    </Carousel>
+  </div>
 {/snippet}
 
 {#snippet stress()}<StressShowcase />{/snippet}

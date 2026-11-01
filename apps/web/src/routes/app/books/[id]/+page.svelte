@@ -260,7 +260,8 @@
               ? 'cursor-zoom-in'
               : ''}"
             aria-label={m.common_enlarge_image()}
-            onclick={() => detail?.coverUrl && (lightboxOpen = true)}>
+            onclick={() => detail?.coverUrl && (lightboxOpen = true)}
+            data-detail-poster>
             <Poster src={detail.coverUrl} title={detail.title} alt="" />
           </button>
 

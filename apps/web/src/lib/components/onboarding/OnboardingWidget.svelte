@@ -1,5 +1,5 @@
 <script lang="ts">
-  // The mobile checklist uses a separate shell in OnboardingBanner.
+  // The mobile checklist uses a separate shell in OnboardingCard.
   import { afterNavigate } from "$app/navigation";
   import { skipOnboardingStep } from "#lib/api/gamification.js";
   import { keys } from "#lib/api/keys.js";

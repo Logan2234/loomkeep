@@ -141,7 +141,8 @@
       {#if next}
         <button
           type="button"
-          class="btn btn-primary btn-sm {variant === 'strip'
+          class="btn btn-primary btn-sm relative after:absolute after:inset-x-0 after:-inset-y-2 {variant ===
+          'strip'
             ? 'h-6 w-full'
             : 'shrink-0'}"
           disabled={resumeMut.loading && resumeMut.variables?.id === e.id}
@@ -151,7 +152,8 @@
       {:else if e.mediaItem.type === "MOVIE"}
         <button
           type="button"
-          class="btn btn-primary btn-sm {variant === 'strip'
+          class="btn btn-primary btn-sm relative after:absolute after:inset-x-0 after:-inset-y-2 {variant ===
+          'strip'
             ? 'h-6 w-full'
             : 'shrink-0'}"
           disabled={movieSeenMut.loading && movieSeenMut.variables?.id === e.id}

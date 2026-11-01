@@ -165,6 +165,30 @@
     groupByDay(entries.filter((e) => matchesFilter(e, filter))),
   );
   const hasAny = $derived(days.some((d) => d.items.length > 0));
+  // The strip keeps the whole week; the list below only what airs.
+  const airingDays = $derived(days.filter((d) => d.items.length > 0));
+
+  let shownDay = $state<string | null>(null);
+  let dayList = $state<HTMLElement | null>(null);
+
+  // Lights up the day being read in the strip. The margins leave a band under
+  // the sticky strip: whichever day crosses it is the one on screen.
+  $effect(() => {
+    void airingDays;
+    if (!dayList || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (sections) => {
+        for (const section of sections) {
+          if (section.isIntersecting) shownDay = section.target.id;
+        }
+      },
+      { rootMargin: "-25% 0px -65% 0px" },
+    );
+    for (const section of dayList.querySelectorAll("section")) {
+      observer.observe(section);
+    }
+    return () => observer.disconnect();
+  });
 
   const WEEKDAY_LONG_OPTIONS: Intl.DateTimeFormatOptions = { weekday: "long" };
   const WEEKDAY_SHORT_OPTIONS: Intl.DateTimeFormatOptions = {
@@ -265,15 +289,21 @@
       {:else}
         <nav
           aria-label={m.calendar_week_strip()}
-          class="mb-8 grid grid-cols-7 gap-1.5 sm:gap-2">
+          class="bg-bg top-[calc(env(safe-area-inset-top)+3rem)] z-20 -mx-5 mb-8 grid grid-cols-7 gap-1.5 px-5 py-2 max-md:sticky sm:gap-2 md:mx-0 md:px-0 md:py-0">
           {#each days.slice(0, WEEK_DAYS) as day (day.key)}
-            <a
-              href="#{dayId(day)}"
+            <!-- A day with nothing has no section to jump to. -->
+            <svelte:element
+              this={day.items.length > 0 ? "a" : "div"}
+              href={day.items.length > 0 ? `#${dayId(day)}` : undefined}
+              role={day.items.length > 0 ? undefined : "img"}
               aria-label={stripLabel(day)}
-              class="flex flex-col items-center gap-0.5 rounded-xl border py-2 transition-colors sm:gap-1 sm:py-3 {day.offset ===
-              0
+              class="flex flex-col items-center gap-0.5 rounded-xl border py-2 transition-colors duration-150 sm:gap-1 sm:py-3 {shownDay ===
+                dayId(day) ||
+              (shownDay === null && day.offset === 0)
                 ? 'border-accent bg-surface-2'
-                : 'border-border hover:border-dim'}">
+                : 'border-border'} {day.items.length > 0
+                ? '[@media(hover:hover)]:hover:border-dim'
+                : 'opacity-50'}">
               <span
                 class="text-[0.6rem] font-semibold tracking-wide uppercase sm:text-xs {day.offset ===
                 0
@@ -299,14 +329,14 @@
                   —
                 {/if}
               </span>
-            </a>
+            </svelte:element>
           {/each}
         </nav>
 
-        <div class="flex flex-col gap-6 md:gap-3">
-          {#each days as day, i (day.key)}
+        <div bind:this={dayList} class="flex flex-col gap-6 md:gap-3">
+          {#each airingDays as day, i (day.key)}
             {@const band = calendarBand(day.offset)}
-            {#if band !== "week" && (i === 0 || calendarBand(days[i - 1].offset) !== band)}
+            {#if band !== "week" && (i === 0 || calendarBand(airingDays[i - 1].offset) !== band)}
               <div class="flex items-center gap-3 pt-3">
                 <span class="timecode text-xs tracking-widest uppercase">
                   {band === "nextWeek"
@@ -319,7 +349,7 @@
             <section
               id={dayId(day)}
               aria-labelledby="{dayId(day)}-title"
-              class="scroll-mt-6 md:grid md:grid-cols-[8rem_minmax(0,1fr)] md:gap-6 md:py-2">
+              class="scroll-mt-36 md:grid md:scroll-mt-6 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-6 md:py-2">
               <div
                 class="border-border mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-2 md:mb-0 md:flex-col md:gap-0.5 md:border-0 md:pt-2 md:pb-0">
                 <!-- "Tonight" is when episodes air; a film or a game is out all day. -->
@@ -340,12 +370,7 @@
                   {formatDate(day.date, DAY_LABEL_OPTIONS)}
                 </span>
               </div>
-              {#if day.items.length === 0}
-                <p
-                  class="border-border text-dim flex min-h-24.5 items-center rounded-xl border border-dashed px-4 text-sm">
-                  {m.calendar_day_off()}
-                </p>
-              {:else if day.offset === 0}
+              {#if day.offset === 0}
                 <div class="grid gap-3 sm:grid-cols-2">
                   {#each day.items as e (rowKey(e))}
                     <!-- The bell sits beside the card's link, not inside it:

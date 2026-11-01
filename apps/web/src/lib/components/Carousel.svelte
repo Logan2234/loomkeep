@@ -10,8 +10,10 @@
   import type { Snippet } from "svelte";
   import { onDestroy } from "svelte";
   import { flip } from "svelte/animate";
+  import { fade } from "svelte/transition";
   import {
     getAdjacentCarouselOffset,
+    getCarouselDots,
     getCarouselPageIndex,
     getCarouselPageOffsets,
   } from "./carousel-pagination";
@@ -26,6 +28,7 @@
     wrapClass = "-mx-5 md:mx-0",
     innerClass = "px-5 pt-2 pb-2 md:px-0",
     snapPad = "scroll-pl-5 md:scroll-pl-0",
+    alwaysDots = false,
   }: {
     items: T[];
     keyOf: (item: T) => string;
@@ -41,6 +44,8 @@
     /** Scroll-snap padding — must match the inner left padding so the first
      * card snaps flush to the gutter instead of hiding it. */
     snapPad?: string;
+    /** Page dots on any pointer, to try them with a mouse in the showcase. */
+    alwaysDots?: boolean;
   } = $props();
 
   let stripEl = $state<HTMLDivElement | null>(null);
@@ -230,20 +235,32 @@
     {/if}
   </div>
 
-  {#if coarse && pageCount > 1}
+  {#if (coarse || alwaysDots) && pageCount > 1}
     <!-- Touch affordance: page dots (arrows are hover-only and unreachable). -->
     <div class="mt-1 flex justify-center gap-0.5">
-      {#each { length: pageCount } as _, i (i)}
+      {#each getCarouselDots(pageCount, pageIndex) as dot (dot.page)}
         <button
           type="button"
-          aria-label={m.common_page_number({ page: i + 1 })}
-          aria-current={i === pageIndex ? "true" : undefined}
-          onclick={() => scrollToPage(i)}
+          aria-label={m.common_page_number({ page: dot.page + 1 })}
+          aria-current={dot.page === pageIndex ? "true" : undefined}
+          onclick={() => scrollToPage(dot.page)}
+          animate:flip={{ duration: reduced ? 0 : 150 }}
           class="grid h-8 min-w-8 place-items-center rounded-full">
-          <span
-            class="h-1.5 rounded-full transition-all {i === pageIndex
-              ? 'bg-accent w-5'
-              : 'bg-border w-1.5'}"></span>
+          {#if dot.kind === "dot"}
+            <span
+              in:fade={{ duration: reduced ? 0 : 150 }}
+              class="h-1.5 rounded-full transition-all {dot.page === pageIndex
+                ? 'bg-accent w-5'
+                : 'bg-border w-1.5'}"></span>
+          {:else}
+            <span in:fade={{ duration: reduced ? 0 : 150 }} class="text-dim">
+              <Icon
+                name={dot.kind === "more-after"
+                  ? "chevron-right"
+                  : "chevron-left"}
+                class="h-3 w-3" />
+            </span>
+          {/if}
         </button>
       {/each}
     </div>

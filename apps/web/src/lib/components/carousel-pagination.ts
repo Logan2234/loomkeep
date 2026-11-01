@@ -1,3 +1,37 @@
+export type CarouselDot = {
+  page: number;
+  kind: "dot" | "more-before" | "more-after";
+};
+
+/**
+ * The page dots to draw: at most `max`, following the current page. Where
+ * pages remain beyond an end, its dot turns into a chevron, and turns back
+ * once that end is in reach. A dot per page would outgrow the screen on a
+ * long strip, and widen the whole page with it.
+ */
+export function getCarouselDots(
+  pageCount: number,
+  pageIndex: number,
+  max = 5,
+): CarouselDot[] {
+  const shown = Math.min(pageCount, max);
+  const start = Math.max(
+    0,
+    Math.min(pageIndex - Math.floor(max / 2), pageCount - shown),
+  );
+
+  return Array.from({ length: shown }, (_, offset) => {
+    const page = start + offset;
+    if (offset === 0 && start > 0) return { page, kind: "more-before" };
+
+    if (offset === shown - 1 && page < pageCount - 1) {
+      return { page, kind: "more-after" };
+    }
+
+    return { page, kind: "dot" };
+  });
+}
+
 export function getCarouselPageOffsets(
   scrollWidth: number,
   clientWidth: number,

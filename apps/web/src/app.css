@@ -322,6 +322,13 @@ html[data-page-transition="back"]::view-transition-old(root) {
   animation-name: page-out-to-right;
 }
 
+::view-transition-group(work-poster),
+::view-transition-old(work-poster),
+::view-transition-new(work-poster) {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
 @keyframes page-in-from-right {
   from {
     opacity: 0;

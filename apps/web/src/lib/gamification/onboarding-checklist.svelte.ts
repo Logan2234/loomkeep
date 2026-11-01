@@ -1,4 +1,4 @@
-// Shared by OnboardingWidget (desktop), OnboardingBanner (mobile) and
+// Shared by OnboardingWidget (desktop), OnboardingCard (mobile) and
 // MobileLayout. Centralizing the live query avoids duplicate listeners.
 import { useQueryClient } from "@tanstack/svelte-query";
 import { getOnboardingChecklist } from "../api/gamification";

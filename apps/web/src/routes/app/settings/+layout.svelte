@@ -125,11 +125,14 @@
       </aside>
 
       <div class="min-w-0 lg:flex lg:flex-col">
-        <!-- On a phone the field rides above the content instead, since the
-             rail it normally sits in isn't rendered. -->
-        <div class="mb-6 lg:hidden">
-          <SettingsSearchField id="settings-search-content" />
-        </div>
+        <!-- On a phone the field heads the index instead, since the rail it
+             normally sits in isn't rendered. A section keeps its first screen
+             for itself. -->
+        {#if page.url.pathname === "/app/settings" || settingsSearch.active}
+          <div class="mb-6 lg:hidden">
+            <SettingsSearchField id="settings-search-content" />
+          </div>
+        {/if}
 
         {#if settingsSearch.active}
           <SettingsSearchResults />
