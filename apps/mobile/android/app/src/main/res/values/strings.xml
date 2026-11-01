@@ -71,4 +71,11 @@
     <string name="widget_media_off">Turn on shows and films in your settings to use this widget</string>
     <string name="widget_releases_off">Only shows, films and games have releases: turn one on in your settings</string>
     <string name="widget_chrono_off">Sessions are for games and books: turn one on in your settings</string>
+    <string name="instance_link_title">Switch instance?</string>
+    <string name="instance_link_message">This link opens %1$s, another Loomkeep instance. Only continue if you trust it.</string>
+    <string name="instance_link_confirm">Switch</string>
+    <string name="instance_link_failed">This Loomkeep instance can\'t be reached</string>
+    <string name="app_lock_prompt">Unlock Loomkeep</string>
+    <string name="app_lock_title">Loomkeep is locked</string>
+    <string name="app_lock_unlock">Unlock</string>
 </resources>

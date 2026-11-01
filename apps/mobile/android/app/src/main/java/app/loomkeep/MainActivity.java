@@ -19,10 +19,15 @@ public class MainActivity extends BridgeActivity {
     private static final long SPLASH_EXIT_MS = 200;
 
     private volatile boolean splashReleased = false;
+    private final AppLock appLock = new AppLock(this);
 
     /** The launch screen stays until the web can draw, so no empty window shows in between. */
     void releaseSplash() {
         splashReleased = true;
+    }
+
+    AppLock appLock() {
+        return appLock;
     }
 
     @Override
@@ -40,6 +45,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ShellHapticsPlugin.class);
         registerPlugin(ShellSplashPlugin.class);
         registerPlugin(ShellInstancePlugin.class);
+        registerPlugin(ShellLockPlugin.class);
         registerPlugin(NotificationActionsPlugin.class);
         registerPlugin(HomeScreenWidgetsPlugin.class);
         config = InstanceConfig.load(this);
@@ -63,11 +69,25 @@ public class MainActivity extends BridgeActivity {
             );
         }
         AppShortcuts.publish(this, getBridge().getServerUrl());
+        appLock.hideFromRecents();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        appLock.onResume();
+    }
+
+    @Override
+    public void onStop() {
+        appLock.onStop();
+        super.onStop();
     }
 
     // Also runs on the launch intent, once the bridge exists (BridgeActivity.load).
     @Override
     protected void onNewIntent(Intent intent) {
-        super.onNewIntent(SharedText.asAppLink(intent, getBridge() == null ? null : getBridge().getServerUrl()));
+        String serverUrl = getBridge() == null ? null : getBridge().getServerUrl();
+        super.onNewIntent(InstanceLink.resolve(this, SharedText.asAppLink(intent, serverUrl), serverUrl));
     }
 }

@@ -12,6 +12,7 @@ export const STORAGE_KEYS = {
   dismissedNews: "lk-news-banner-dismissed",
   reauthMethod: "lk-reauth-method",
   passkeySuggested: "lk-passkey-suggested",
+  openInAppDismissed: "lk-open-in-app-dismissed",
   nativePushToken: "lk-native-push-token",
   libraryView: (domain: SavedViewDomain) =>
     `lk-library-view-${domain.toLowerCase()}`,

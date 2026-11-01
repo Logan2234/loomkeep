@@ -51,6 +51,14 @@
                 <data android:pathPrefix="/unsubscribe" />
             </intent-filter>
 
+            <!-- A self-hosted instance's pages (MOB-24), which App Links can't cover: see InstanceLink. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="loomkeep" android:host="open" />
+            </intent-filter>
+
         </activity>
 
         <!-- Home-screen widgets (MOB-20). -->
@@ -165,4 +173,5 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 </manifest>

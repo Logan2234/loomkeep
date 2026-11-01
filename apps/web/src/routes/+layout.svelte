@@ -7,6 +7,7 @@
   import { bootstrap } from "#lib/bootstrap.svelte.js";
   import NavigationProgress from "#lib/components/NavigationProgress.svelte";
   import NewsBanner from "#lib/components/NewsBanner.svelte";
+  import OpenInAppBanner from "#lib/components/OpenInAppBanner.svelte";
   import Toast from "#lib/components/Toast.svelte";
   import { layout } from "#lib/layout.svelte.js";
   import { navStyle } from "#lib/nav-style.svelte.js";
@@ -137,6 +138,8 @@
 <NavigationProgress />
 
 <NewsBanner />
+
+<OpenInAppBanner />
 
 <QueryClientProvider client={queryClient}>
   {@render children()}

@@ -1611,5 +1611,7 @@
   "push_channel_releases": "Releases",
   "push_channel_announcements": "Announcements",
   "scan_isbn_invalid_code": "This barcode isn't a book's ISBN.",
-  "scan_unavailable": "The scanner couldn't start. Try again in a moment."
+  "scan_unavailable": "The scanner couldn't start. Try again in a moment.",
+  "open_in_app_prompt": "Do you use the Loomkeep app? Open this page in it.",
+  "open_in_app_action": "Open"
 }

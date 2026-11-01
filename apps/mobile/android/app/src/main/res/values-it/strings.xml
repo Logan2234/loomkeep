@@ -67,4 +67,11 @@
     <string name="widget_media_off">Attiva serie e film nelle impostazioni per usare questo widget</string>
     <string name="widget_releases_off">Solo serie, film e giochi hanno uscite: attivali nelle impostazioni</string>
     <string name="widget_chrono_off">Le sessioni riguardano giochi e libri: attivali nelle impostazioni</string>
+    <string name="instance_link_title">Cambiare istanza?</string>
+    <string name="instance_link_message">Questo link apre %1$s, un\'altra istanza Loomkeep. Continua solo se ti fidi.</string>
+    <string name="instance_link_confirm">Cambia</string>
+    <string name="instance_link_failed">Questa istanza Loomkeep non risponde</string>
+    <string name="app_lock_prompt">Sblocca Loomkeep</string>
+    <string name="app_lock_title">Loomkeep è bloccato</string>
+    <string name="app_lock_unlock">Sblocca</string>
 </resources>
