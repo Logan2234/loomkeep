@@ -239,6 +239,13 @@
     else toast.error(m.scan_isbn_invalid_code());
   }
 
+  // A new link while the page is open (the Android widget's categories): the
+  // page stays mounted, so `initialDomain` alone wouldn't see it.
+  $effect(() => {
+    const linked = enumParam(page.url.searchParams, "type", DOMAIN_IDS, null);
+    if (linked) untrack(() => (domain = linked));
+  });
+
   // The Android widget's scanner button (`?scan`). Mirroring the search into
   // the URL drops the parameter, so each tap on the widget scans once.
   $effect(() => {
