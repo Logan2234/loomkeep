@@ -57,6 +57,13 @@ jobs:
         newRisk: False Positive
         url: http://localhost:18080/_app/immutable/.*
         urlRegex: true
+      # "X-Content-Type-Options Header Missing": adapter-node serves static
+      # files before hooks.server.ts runs. Caddy, absent from this stack, adds
+      # the header to them in production.
+      - ruleId: 10021
+        newRisk: False Positive
+        url: http://localhost:18080/(_app/immutable/.*|favicon\.svg)
+        urlRegex: true
 
   - type: spider
     parameters:
