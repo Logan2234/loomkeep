@@ -1,6 +1,7 @@
 package app.loomkeep;
 
 import android.net.Uri;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
@@ -29,6 +30,7 @@ class ShellWebViewClient extends BridgeWebViewClient {
 
     private final Bridge bridge;
     private final Runnable onShellPage;
+    private String failedUrl;
 
     ShellWebViewClient(Bridge bridge, Runnable onShellPage) {
         super(bridge);
@@ -58,6 +60,28 @@ class ShellWebViewClient extends BridgeWebViewClient {
             return super.shouldInterceptRequest(view, request);
         }
         return super.shouldInterceptRequest(view, request);
+    }
+
+    @Override
+    public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+        if (request.isForMainFrame()) failedUrl = request.getUrl().toString();
+        super.onReceivedError(view, request, error);
+    }
+
+    /**
+     * A navigation the page itself started (SvelteKit reloading when a page's
+     * code can't be fetched offline): the WebView commits its own error page
+     * after onReceivedError, over the shell page requested there.
+     */
+    @Override
+    public void onPageFinished(WebView view, String url) {
+        super.onPageFinished(view, url);
+        if (url.contains("/" + PAGE)) {
+            failedUrl = null;
+        } else if (url.equals(failedUrl)) {
+            failedUrl = null;
+            view.loadUrl(bridge.getErrorUrl());
+        }
     }
 
     /** The page in the theme the app was last in: it can't read the web's localStorage. */

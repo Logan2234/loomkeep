@@ -21,6 +21,15 @@ class ThemeState {
       ? saved === "dark"
       : matchMedia("(prefers-color-scheme: dark)").matches;
     this.apply(dark ? "dark" : "light");
+    // With no choice saved, the theme follows the system's, live.
+    matchMedia("(prefers-color-scheme: dark)").addEventListener?.(
+      "change",
+      (event) => {
+        if (readStorage(STORAGE_KEY) === null) {
+          this.apply(event.matches ? "dark" : "light");
+        }
+      },
+    );
   }
 
   toggle(): void {
