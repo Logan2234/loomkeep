@@ -1,7 +1,13 @@
 import { dialogFocus } from "#lib/actions/dialog-focus.js";
+import { chat } from "#lib/chat/chat.svelte.js";
 import { goto } from "#lib/test/navigation.svelte.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { handleBackButton, openAppLink, syncSystemBars } from "./app-shell";
+import {
+  handleBackButton,
+  openAppLink,
+  openExternalLink,
+  syncSystemBars,
+} from "./app-shell";
 
 const { minimizeApp, native, calls } = vi.hoisted(() => ({
   minimizeApp: vi.fn(() => Promise.resolve()),
@@ -26,6 +32,56 @@ vi.mock("@capacitor/core", async (importOriginal) => ({
   }),
 }));
 vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
+const { browserOpen } = vi.hoisted(() => ({
+  browserOpen: vi.fn(() => Promise.resolve()),
+}));
+vi.mock("@capacitor/browser", () => ({ Browser: { open: browserOpen } }));
+
+describe("back button in Messages", () => {
+  afterEach(() => {
+    chat.close();
+    chat.back();
+    chat.tab = "friends";
+  });
+
+  it("leaves the conversation, then Messages, without touching the history", () => {
+    const back = vi.spyOn(history, "back").mockImplementation(() => {});
+    chat.show("conversation");
+
+    handleBackButton({ canGoBack: true });
+    expect(chat.open).toBe(true);
+    expect(chat.activeId).toBeNull();
+
+    handleBackButton({ canGoBack: true });
+    expect(chat.open).toBe(false);
+    expect(back).not.toHaveBeenCalled();
+  });
+});
+
+describe("links in the app", () => {
+  const click = (href: string) => {
+    const link = document.body.appendChild(document.createElement("a"));
+    link.href = href;
+    const event = new MouseEvent("click", { cancelable: true });
+    Object.defineProperty(event, "target", { value: link });
+    openExternalLink(event);
+    link.remove();
+    return event.defaultPrevented;
+  };
+
+  afterEach(() => browserOpen.mockClear());
+
+  it("opens another site in a tab over the app", () => {
+    expect(click("https://www.themoviedb.org/movie/1")).toBe(true);
+    expect(browserOpen).toHaveBeenCalledOnce();
+  });
+
+  it("leaves the instance's own links and mailto alone", () => {
+    expect(click(new URL("/app/stats", location.href).href)).toBe(false);
+    expect(click("mailto:someone@example.com")).toBe(false);
+    expect(browserOpen).not.toHaveBeenCalled();
+  });
+});
 
 function openDialog(onEscape?: () => void) {
   const node = document.createElement("div");

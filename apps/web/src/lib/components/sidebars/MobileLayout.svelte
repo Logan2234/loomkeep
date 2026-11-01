@@ -9,6 +9,7 @@
   import type { Snippet } from "svelte";
   import BottomNavigation from "./BottomNavigation.svelte";
   import MenuSheet from "./MenuSheet.svelte";
+  import PullToRefresh from "#lib/components/PullToRefresh.svelte";
 
   let {
     children,
@@ -53,4 +54,5 @@
   </div>
 
   <MenuSheet />
+  <PullToRefresh />
 </div>

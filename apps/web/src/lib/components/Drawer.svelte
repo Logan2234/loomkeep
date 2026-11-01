@@ -27,6 +27,7 @@
   import { portal } from "#lib/actions/portal.js";
   import { scrollLock } from "#lib/actions/scroll-lock.js";
   import { prefersReducedMotion } from "#lib/motion.js";
+  import { dimSystemBars } from "#lib/native/shell-bars.js";
   import { DragVelocity, isDismissed } from "#lib/swipe-dismiss.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
@@ -65,6 +66,7 @@
     // Next frame so the initial (off-screen/transparent) state paints first
     // — otherwise there's nothing for the enter transition to animate from.
     requestAnimationFrame(() => (visible = true));
+    return dimSystemBars();
   });
 
   function requestClose() {

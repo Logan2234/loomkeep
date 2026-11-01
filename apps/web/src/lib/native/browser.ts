@@ -1,3 +1,4 @@
+import { THEME_COLOR, theme } from "#lib/theme.svelte.js";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
 
@@ -14,4 +15,4 @@ export const isNativeBrowserAvailable = (): boolean =>
  * routes the WebView there (openAppLink).
  */
 export const openInAppBrowser = (url: string): Promise<void> =>
-  Browser.open({ url });
+  Browser.open({ url, toolbarColor: THEME_COLOR[theme.mode] });

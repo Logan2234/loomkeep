@@ -1,11 +1,16 @@
 package app.loomkeep;
 
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import androidx.annotation.NonNull;
+import androidx.core.graphics.Insets;
 import androidx.core.splashscreen.SplashScreen;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.webkit.WebSettingsCompat;
 import androidx.webkit.WebViewFeature;
 import app.loomkeep.widgets.HomeScreenWidgetsPlugin;
@@ -62,7 +67,27 @@ public class MainActivity extends BridgeActivity {
                 WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP
             );
         }
+        // SystemBars already shrinks the window by the keyboard's height. Told
+        // about the keyboard as well, the WebView takes a share of it off again.
+        ViewCompat.setOnApplyWindowInsetsListener(getBridge().getWebView(), (view, insets) ->
+            ViewCompat.onApplyWindowInsets(
+                view,
+                new WindowInsetsCompat.Builder(insets)
+                    .setInsets(WindowInsetsCompat.Type.ime(), Insets.NONE)
+                    .setVisible(WindowInsetsCompat.Type.ime(), false)
+                    .build()
+            )
+        );
+        NotificationChannels.ensure(this);
         AppShortcuts.publish(this, getBridge().getServerUrl());
+    }
+
+    // SystemBars repaints the window in the theme's windowBackground on every
+    // configuration change, a theme change included.
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        getWindow().getDecorView().setBackgroundColor(ShellAppearance.backgroundColor(this));
     }
 
     // Also runs on the launch intent, once the bridge exists (BridgeActivity.load).

@@ -18,6 +18,10 @@
         <item name="colorPrimaryDark">@color/splash_background</item>
         <item name="colorAccent">@color/seance_accent</item>
         <item name="colorControlActivated">@color/seance_accent</item>
+        <item name="android:colorAccent">@color/seance_accent</item>
+        <item name="android:windowBackground">@color/splash_background</item>
+        <item name="android:datePickerDialogTheme">@style/ShellPickerDialog</item>
+        <item name="android:timePickerDialogTheme">@style/ShellPickerDialog</item>
     </style>
 
 
@@ -35,6 +39,11 @@
 
     <style name="AppTheme.NoActionBarLaunch.Light">
         <item name="windowSplashScreenBackground">@color/seance_paper</item>
+    </style>
+
+    <style name="ShellPickerDialog" parent="Theme.AppCompat.DayNight.Dialog.Alert">
+        <item name="colorAccent">@color/seance_accent</item>
+        <item name="android:colorAccent">@color/seance_accent</item>
     </style>
 
     <!-- WidgetStyleActivity: only its dialog shows, over the home screen. -->

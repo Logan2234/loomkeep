@@ -71,4 +71,16 @@
     <string name="widget_media_off">Turn on shows and films in your settings to use this widget</string>
     <string name="widget_releases_off">Only shows, films and games have releases: turn one on in your settings</string>
     <string name="widget_chrono_off">Sessions are for games and books: turn one on in your settings</string>
+    <string name="channel_activity">Activity</string>
+    <string name="channel_activity_description">Replies, messages, follows</string>
+    <string name="channel_releases">Releases</string>
+    <string name="channel_releases_description">New episodes and releases</string>
+    <string name="channel_account">Account</string>
+    <string name="channel_account_description">About your account</string>
+    <string name="channel_security">Security</string>
+    <string name="channel_security_description">Sign-ins and sensitive changes</string>
+    <string name="channel_admin">Admin</string>
+    <string name="channel_admin_description">For your instance's administrators</string>
+    <string name="channel_announcements">Announcements</string>
+    <string name="channel_announcements_description">News about Loomkeep</string>
 </resources>
