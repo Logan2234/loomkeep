@@ -67,5 +67,4 @@
     <string name="widget_media_off">Attiva serie e film nelle impostazioni per usare questo widget</string>
     <string name="widget_releases_off">Solo serie, film e giochi hanno uscite: attivali nelle impostazioni</string>
     <string name="widget_chrono_off">Le sessioni riguardano giochi e libri: attivali nelle impostazioni</string>
-    <string name="widget_streak_days_short">giorni</string>
 </resources>

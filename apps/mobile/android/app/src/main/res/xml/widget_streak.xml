@@ -1,21 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 4 × 2 when placed (the streak, the level and the week), down to a single row; there's nothing more to show past that. Launchers count cells differently (70n - 30 dp
-     tall on some, 118n - 16 on others): the content follows the size in dp.
-     Settings: WidgetStyleActivity, skipped at placement on Android 12+. -->
+<!-- 3 × 1 when placed (the streak and the level), the week from a second row; there's nothing more to show past that. Launchers count cells differently (70n - 30 dp
+     tall on some, 118n - 16 on others): the content follows the size in dp. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_streak_description"
-    android:minWidth="250dp"
-    android:minHeight="110dp"
+    android:minWidth="180dp"
+    android:minHeight="40dp"
     android:minResizeWidth="180dp"
     android:minResizeHeight="40dp"
     android:maxResizeWidth="380dp"
     android:maxResizeHeight="230dp"
-    android:targetCellWidth="4"
-    android:targetCellHeight="2"
+    android:targetCellWidth="3"
+    android:targetCellHeight="1"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="1800000"
     android:initialLayout="@layout/glance_default_loading_layout"
     android:previewLayout="@layout/widget_preview_streak"
-    android:configure="app.loomkeep.widgets.WidgetStyleActivity"
-    android:widgetFeatures="reconfigurable|configuration_optional"
     android:widgetCategory="home_screen" />

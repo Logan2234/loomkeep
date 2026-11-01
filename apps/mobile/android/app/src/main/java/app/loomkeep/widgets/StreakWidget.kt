@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -19,7 +18,6 @@ import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
-import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -43,7 +41,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-private const val PROGRESS_PATH = "/app/achievements"
+private const val PROGRESS_PATH = "/app/profile"
 private val CARD_INK = ColorProvider(R.color.widget_on_accent)
 private val CARD_TRACK = ColorProvider(R.color.widget_on_accent_track)
 
@@ -57,16 +55,15 @@ class StreakWidget : GlanceAppWidget() {
 
         provideContent {
             val snapshot by WidgetRepository.snapshot.collectAsState()
-            val style = currentState(STYLE_KEY) ?: STYLE_POSTERS
             val data = snapshot?.data ?: WidgetData.SignedOut
             val progression = (data as? WidgetData.Ready)?.feed?.progression
 
-            WidgetFrame(style, edgeToEdge = false) {
+            WidgetFrame(STYLE_POSTERS, edgeToEdge = false) {
                 when {
-                    data == WidgetData.SignedOut -> WidgetMessage(R.string.widget_signed_out, style)
-                    data == WidgetData.Offline -> WidgetMessage(R.string.widget_offline, style)
-                    progression == null -> WidgetMessage(R.string.widget_streak_off, style)
-                    else -> StreakContent(progression, style)
+                    data == WidgetData.SignedOut -> WidgetMessage(R.string.widget_signed_out, STYLE_POSTERS)
+                    data == WidgetData.Offline -> WidgetMessage(R.string.widget_offline, STYLE_POSTERS)
+                    progression == null -> WidgetMessage(R.string.widget_streak_off, STYLE_POSTERS)
+                    else -> StreakContent(progression)
                 }
             }
         }
@@ -75,7 +72,7 @@ class StreakWidget : GlanceAppWidget() {
     override suspend fun providePreview(context: Context, widgetCategory: Int) {
         provideContent {
             WidgetFrame(STYLE_POSTERS, edgeToEdge = false) {
-                StreakContent(WidgetSamples.progression(), STYLE_POSTERS)
+                StreakContent(WidgetSamples.progression())
             }
         }
     }
@@ -109,34 +106,30 @@ private fun WidgetProgression.week(): List<Pair<String, Boolean>> {
     }
 }
 
-/** Below this, the week doesn't fit: a single row on the home screen. */
-private val WEEK_FITS = 140.dp
+/**
+ * A single row is at most 102 dp and two rows at least 110 (see the cell
+ * formulas in widget_streak.xml), so the week shows from the second row.
+ */
+private val WEEK_FITS = 105.dp
 private val WEEK_HEIGHT = 36.dp
+/** Tall enough for the big streak number above the week. */
+private val ROOMY = 140.dp
 
 @Composable
-private fun StreakContent(progression: WidgetProgression, style: String) {
+private fun StreakContent(progression: WidgetProgression) {
     val height = LocalSize.current.height
     val week = height >= WEEK_FITS
-    val list = style == STYLE_LIST
 
     Column(modifier = GlanceModifier.fillMaxSize()) {
-        if (list) {
-            StreakTicket(progression, if (week) height - 12.dp - WEEK_HEIGHT - 4.dp else height - 12.dp)
-        } else {
-            StreakCard(progression, GlanceModifier.fillMaxWidth().defaultWeight(), roomy = week)
-        }
+        StreakCard(progression, GlanceModifier.fillMaxWidth().defaultWeight(), roomy = height >= ROOMY)
         if (week) {
             Spacer(GlanceModifier.height(4.dp))
-            WeekRow(
-                progression,
-                if (list) R.drawable.widget_day_off_ticket else R.drawable.widget_day_off,
-                if (list) WidgetColors.ticketDim else WidgetColors.dim,
-            )
+            WeekRow(progression)
         }
     }
 }
 
-/** « Affiches »: a card in Séance's accent, the one widget with no artwork to show. */
+/** A card in Séance's accent, the one widget with no artwork to show, hence no « Liste » style. */
 @Composable
 private fun StreakCard(progression: WidgetProgression, modifier: GlanceModifier, roomy: Boolean) {
     val context = LocalContext.current
@@ -175,29 +168,8 @@ private fun StreakCard(progression: WidgetProgression, modifier: GlanceModifier,
     }
 }
 
-/** « Liste »: the streak on the stub, the level on the ticket. */
 @Composable
-private fun StreakTicket(progression: WidgetProgression, height: Dp) {
-    val context = LocalContext.current
-    TicketStrip(
-        height = height,
-        stubWidth = 72.dp,
-        stubTop = progression.streakDays.toString(),
-        stubBottom = context.getString(R.string.widget_streak_days_short),
-        stubLive = true,
-        poster = null,
-        title = progression.levelLabel(context),
-        sub = progression.xpLabel(context),
-        open = openApp(context, PROGRESS_PATH),
-        action = null,
-        actionLabel = null,
-        checked = false,
-        showThumb = false,
-    )
-}
-
-@Composable
-private fun WeekRow(progression: WidgetProgression, offBackground: Int, offText: ColorProvider) {
+private fun WeekRow(progression: WidgetProgression) {
     Row(modifier = GlanceModifier.fillMaxWidth().height(WEEK_HEIGHT)) {
         progression.week().forEachIndexed { index, (letter, active) ->
             if (index > 0) Spacer(GlanceModifier.width(4.dp))
@@ -205,13 +177,13 @@ private fun WeekRow(progression: WidgetProgression, offBackground: Int, offText:
                 modifier = GlanceModifier
                     .defaultWeight()
                     .fillMaxHeight()
-                    .background(ImageProvider(if (active) R.drawable.widget_day_on else offBackground)),
+                    .background(ImageProvider(if (active) R.drawable.widget_day_on else R.drawable.widget_day_off)),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     letter,
                     style = TextStyle(
-                        color = if (active) ColorProvider(R.color.widget_on_accent) else offText,
+                        color = if (active) ColorProvider(R.color.widget_on_accent) else WidgetColors.dim,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
