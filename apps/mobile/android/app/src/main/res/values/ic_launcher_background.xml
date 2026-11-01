@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#0C0D10</color>
-    <color name="splash_background">#0C0D10</color>
+    <!-- Follows the system's theme (values-night) until the app has told
+         Android the theme chosen in Loomkeep (ShellThemePlugin). -->
+    <color name="splash_background">#F7F5F3</color>
+    <color name="seance_dark">#0C0D10</color>
+    <color name="seance_paper">#F7F5F3</color>
+    <color name="seance_accent">#8A5F0A</color>
     <color name="notification_accent">#F5B841</color>
 </resources>

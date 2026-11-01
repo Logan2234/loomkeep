@@ -1,5 +1,6 @@
 package app.loomkeep;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -7,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.service.notification.StatusBarNotification;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.RemoteInput;
 import androidx.core.content.ContextCompat;
@@ -28,6 +30,8 @@ final class ActionableNotifications {
     static final String EXTRA_TOKEN = "app.loomkeep.action.token";
     static final String EXTRA_DATA = "app.loomkeep.action.data";
     static final String EXTRA_MESSAGE_ID = "app.loomkeep.action.messageId";
+    private static final String SUMMARY_TAG = "summary:";
+    private static final String FALLBACK_CHANNEL = "loomkeep";
 
     private ActionableNotifications() {}
 
@@ -35,6 +39,56 @@ final class ActionableNotifications {
         NotificationCompat.Builder builder = base(context, data, messageId, data.get("body"));
         addActions(context, builder, data, messageId);
         notify(context, data, messageId, builder);
+        showSummary(context, data);
+    }
+
+    /**
+     * What folds an alert group's notifications together. It stays silent,
+     * the notification itself having just alerted, and Android lists the
+     * group's notifications when it is unfolded.
+     */
+    private static void showSummary(Context context, Map<String, String> data) {
+        String group = group(data);
+        Notification summary = new NotificationCompat.Builder(context, channel(context, data.get("channel")))
+            .setSmallIcon(R.drawable.ic_stat_notify)
+            .setColor(ContextCompat.getColor(context, R.color.notification_accent))
+            .setContentTitle(context.getString(R.string.app_name))
+            .setGroup(group)
+            .setGroupSummary(true)
+            .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+            .setAutoCancel(true)
+            .setContentIntent(summaryIntent(context, group))
+            .build();
+        context.getSystemService(NotificationManager.class).notify(SUMMARY_TAG, group.hashCode(), summary);
+    }
+
+    /** Android doesn't always clear a summary when an app cancels the group's last notification. */
+    private static void clearEmptySummary(Context context, Map<String, String> data) {
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        String group = group(data);
+        for (StatusBarNotification active : manager.getActiveNotifications()) {
+            Notification notification = active.getNotification();
+            boolean summary = (notification.flags & Notification.FLAG_GROUP_SUMMARY) != 0;
+            if (!summary && group.equals(notification.getGroup())) return;
+        }
+        manager.cancel(SUMMARY_TAG, group.hashCode());
+    }
+
+    private static String group(Map<String, String> data) {
+        String channel = data.get("channel");
+        return channel != null ? channel : FALLBACK_CHANNEL;
+    }
+
+    private static PendingIntent summaryIntent(Context context, String group) {
+        Intent intent = new Intent(context, MainActivity.class)
+            .putExtra("google.message_id", SUMMARY_TAG + group)
+            .putExtra("url", "/app/notifications");
+        return PendingIntent.getActivity(
+            context,
+            group.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
     }
 
     /** The button's work is done: the notification goes. */
@@ -42,6 +96,7 @@ final class ActionableNotifications {
         Map<String, String> data = dataOf(actionIntent);
         String messageId = actionIntent.getStringExtra(EXTRA_MESSAGE_ID);
         context.getSystemService(NotificationManager.class).cancel(data.get("tag"), notificationId(data, messageId));
+        clearEmptySummary(context, data);
     }
 
     /** The action failed: the notification stays, says so, and still opens the app. */
@@ -59,6 +114,7 @@ final class ActionableNotifications {
             .setContentText(text)
             .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
             .setAutoCancel(true)
+            .setGroup(group(data))
             .setContentIntent(tapIntent(context, data, messageId));
     }
 
@@ -125,13 +181,12 @@ final class ActionableNotifications {
         NotificationManager manager = context.getSystemService(NotificationManager.class);
         if (requested != null && manager.getNotificationChannel(requested) != null) return requested;
 
-        String fallback = "loomkeep";
-        if (manager.getNotificationChannel(fallback) == null) {
+        if (manager.getNotificationChannel(FALLBACK_CHANNEL) == null) {
             manager.createNotificationChannel(
-                new NotificationChannel(fallback, context.getString(R.string.app_name), NotificationManager.IMPORTANCE_DEFAULT)
+                new NotificationChannel(FALLBACK_CHANNEL, context.getString(R.string.app_name), NotificationManager.IMPORTANCE_DEFAULT)
             );
         }
-        return fallback;
+        return FALLBACK_CHANNEL;
     }
 
     private static Bundle bundleOf(Map<String, String> data) {

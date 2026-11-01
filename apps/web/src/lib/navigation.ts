@@ -480,3 +480,18 @@ export function resolveMenuGroups(
 export function profileHref(): string {
   return appConfig.socialEnabled ? "/app/profile" : "/app/settings";
 }
+
+/**
+ * A tab touched again on its own page goes back to the top, as in any Android
+ * app, without reloading. With filters in the URL it stays a normal link,
+ * which clears them.
+ */
+export function scrollUpOnReselect(
+  event: MouseEvent,
+  href: string,
+  current: URL,
+): void {
+  if (current.pathname !== href || current.search) return;
+  event.preventDefault();
+  scrollTo({ top: 0 });
+}

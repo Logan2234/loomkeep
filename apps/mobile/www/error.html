@@ -7,15 +7,45 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Loomkeep</title>
     <style>
+      @font-face {
+        font-family: "Bricolage Grotesque";
+        src: url("/shell-fonts/bricolage-grotesque.woff2") format("woff2");
+        font-weight: 200 800;
+      }
+      @font-face {
+        font-family: "Hanken Grotesk";
+        src: url("/shell-fonts/hanken-grotesk.woff2") format("woff2");
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: "Space Mono";
+        src: url("/shell-fonts/space-mono.woff2") format("woff2");
+      }
       :root {
         color-scheme: dark;
         --bg: #0c0d10;
         --fg: #ececea;
         --dim: #9aa0ae;
-        --line: #2a2d35;
+        --line: #2a2e38;
         --accent: #f5b841;
-        --accent-fg: #1a1406;
-        --danger: #f2777a;
+        --btn: #f5b841;
+        --btn-fg: #1a1406;
+        --danger: #f0647c;
+      }
+      /* ShellWebViewClient.java sets it from the app's last theme. */
+      :root[data-theme="light"] {
+        color-scheme: light;
+        --bg: #f7f5f3;
+        --fg: #1c1712;
+        --dim: #6b6354;
+        --line: #d3c7a8;
+        --accent: #8a5f0a;
+        --btn: #1c1712;
+        --btn-fg: #ffffff;
+        --danger: #c73c57;
+      }
+      html {
+        -webkit-tap-highlight-color: transparent;
       }
       body {
         margin: 0;
@@ -24,8 +54,33 @@
         place-items: center;
         background: var(--bg);
         color: var(--fg);
-        font-family: system-ui, sans-serif;
+        font-family: "Hanken Grotesk", system-ui, sans-serif;
         text-align: center;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .mark {
+        display: block;
+        width: 4.5rem;
+        height: 4.5rem;
+        margin: 0 auto 1rem;
+      }
+      .wordmark {
+        color: var(--fg);
+        font-family: "Bricolage Grotesque", system-ui, sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin: 0 0 2rem;
+      }
+      .wordmark span {
+        color: var(--accent);
+      }
+      .timecode {
+        font-family: "Space Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        color: var(--dim);
+        margin: 0 0 0.75rem;
       }
       main {
         width: 100%;
@@ -37,6 +92,7 @@
         display: none !important;
       }
       h1 {
+        font-family: "Bricolage Grotesque", system-ui, sans-serif;
         font-size: 1.25rem;
         margin: 0 0 0.75rem;
       }
@@ -48,9 +104,10 @@
       button {
         border: 0;
         border-radius: 0.75rem;
+        min-height: 3rem;
         padding: 0.75rem 1.5rem;
-        background: var(--accent);
-        color: var(--accent-fg);
+        background: var(--btn);
+        color: var(--btn-fg);
         font: inherit;
         font-weight: 600;
         transition: opacity 150ms ease;
@@ -67,10 +124,17 @@
         border: 1px solid var(--line);
       }
       a {
-        display: block;
-        margin-top: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 3rem;
+        margin-top: 0.5rem;
         color: var(--accent);
         font-size: 0.875rem;
+        transition: opacity 150ms ease;
+      }
+      a:active {
+        opacity: 0.7;
       }
       form {
         display: flex;
@@ -89,6 +153,8 @@
         background: transparent;
         color: var(--fg);
         font: inherit;
+        -webkit-user-select: text;
+        user-select: text;
         transition: border-color 150ms ease;
       }
       input:focus {
@@ -111,6 +177,19 @@
   </head>
   <body>
     <main id="failure">
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <g stroke-width="14" stroke-linecap="round">
+          <line x1="16" y1="12" x2="16" y2="88" stroke="#d6a02a" />
+          <line x1="36" y1="12" x2="36" y2="88" stroke="#1f9dae" />
+          <line x1="56" y1="12" x2="56" y2="88" stroke="#d866a0" />
+          <line x1="76" y1="12" x2="76" y2="88" stroke="#6e97e0" />
+          <line x1="8" y1="30" x2="92" y2="30" stroke="#f5b841" />
+          <line x1="36" y1="23" x2="36" y2="37" stroke="#1f9dae" />
+          <line x1="76" y1="23" x2="76" y2="37" stroke="#6e97e0" />
+        </g>
+      </svg>
+      <p class="wordmark">LOOM<span>KEEP</span></p>
+      <p class="timecode" id="status"></p>
       <h1 id="title"></h1>
       <p id="body"></p>
       <button id="retry" type="button"></button>
@@ -143,9 +222,13 @@
     <script>
       const copy = {
         en: {
-          title: "Loomkeep can't load",
-          body: "Check your connection and try again. If it keeps failing, update Android System WebView.",
+          status: "00:00:00 · Offline",
+          title: "Loomkeep can't be reached",
+          body: "Check your connection. The app reloads on its own once it's back.",
+          bodyOldWebView:
+            "This version of Android System WebView is too old for Loomkeep. Update it, then try again.",
           retry: "Try again",
+          retrying: "Connecting…",
           change: "Use another instance",
           update: "Update Android System WebView",
           pickTitle: "Choose your instance",
@@ -162,9 +245,13 @@
           "not-loomkeep": "This address isn't a Loomkeep instance.",
         },
         fr: {
-          title: "Impossible de charger Loomkeep",
-          body: "Vérifie ta connexion puis réessaie. Si le problème persiste, mets à jour Android System WebView.",
+          status: "00:00:00 · Hors ligne",
+          title: "Loomkeep est injoignable",
+          body: "Vérifie ta connexion. L'app se recharge toute seule dès qu'elle revient.",
+          bodyOldWebView:
+            "Cette version d'Android System WebView est trop ancienne pour Loomkeep. Mets-la à jour, puis réessaie.",
           retry: "Réessayer",
+          retrying: "Connexion…",
           change: "Utiliser une autre instance",
           update: "Mettre à jour Android System WebView",
           pickTitle: "Choisir ton instance",
@@ -181,9 +268,13 @@
           "not-loomkeep": "Cette adresse n'est pas une instance Loomkeep.",
         },
         it: {
-          title: "Impossibile caricare Loomkeep",
-          body: "Controlla la connessione e riprova. Se il problema persiste, aggiorna Android System WebView.",
+          status: "00:00:00 · Offline",
+          title: "Loomkeep non è raggiungibile",
+          body: "Controlla la connessione. L'app si ricarica da sola appena torna.",
+          bodyOldWebView:
+            "Questa versione di Android System WebView è troppo vecchia per Loomkeep. Aggiornala, poi riprova.",
           retry: "Riprova",
+          retrying: "Connessione…",
           change: "Usa un'altra istanza",
           update: "Aggiorna Android System WebView",
           pickTitle: "Scegli la tua istanza",
@@ -227,8 +318,26 @@
       } catch {
         // Opened without its instance: nothing to retry or show.
       }
-      document.getElementById("retry").addEventListener("click", () => {
-        if (retryUrl) location.replace(retryUrl.href);
+      const retryButton = document.getElementById("retry");
+      function retry() {
+        if (!retryUrl) return;
+        retryButton.disabled = true;
+        retryButton.textContent = text.retrying;
+        location.replace(retryUrl.href);
+      }
+      retryButton.addEventListener("click", retry);
+
+      // Same bar as capacitor.config.ts's minWebViewVersion, the one case
+      // where updating the WebView is the answer rather than the network.
+      const chrome = /Chrome\/(\d+)/.exec(navigator.userAgent ?? "");
+      const webViewTooOld = chrome !== null && Number(chrome[1]) < 111;
+      document.getElementById("update").hidden = !webViewTooOld;
+      if (webViewTooOld) {
+        document.getElementById("body").textContent = text.bodyOldWebView;
+      }
+
+      addEventListener("online", () => {
+        if (!webViewTooOld && !location.hash.includes("pick")) retry();
       });
 
       const currentHost = retryUrl?.host ?? null;

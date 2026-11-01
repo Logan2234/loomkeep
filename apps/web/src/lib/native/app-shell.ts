@@ -1,4 +1,6 @@
 import { dismissTopmostDialog } from "#lib/actions/dialog-focus.js";
+import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
+import { readStorage } from "#lib/local-storage.js";
 import { THEME_COLOR } from "#lib/theme.svelte.js";
 import { goto } from "$app/navigation";
 import { App } from "@capacitor/app";
@@ -61,8 +63,22 @@ export function startAppShell(): () => void {
 
 /** apps/mobile's own plugin (ShellThemePlugin.java). */
 const ShellTheme = registerPlugin<{
-  setBackground(options: { color: string }): Promise<void>;
+  setBackground(options: {
+    color: string;
+    mode: "light" | "dark";
+    followsSystem: boolean;
+  }): Promise<void>;
 }>("ShellTheme");
+
+/** apps/mobile's own plugin (ShellSplashPlugin.java). */
+const ShellSplash = registerPlugin<{ ready(): Promise<void> }>("ShellSplash");
+
+/** The web can draw now: the app's launch screen may go. */
+export function releaseShellSplash(): void {
+  if (Capacitor.isPluginAvailable("ShellSplash")) {
+    ShellSplash.ready().catch(() => {});
+  }
+}
 
 /**
  * Light icons over the dark theme, dark ones over the light theme, on the
@@ -75,6 +91,10 @@ export async function syncSystemBars(mode: "light" | "dark"): Promise<void> {
   });
 
   if (Capacitor.isPluginAvailable("ShellTheme")) {
-    await ShellTheme.setBackground({ color: THEME_COLOR[mode] });
+    await ShellTheme.setBackground({
+      color: THEME_COLOR[mode],
+      mode,
+      followsSystem: readStorage(STORAGE_KEYS.theme) === null,
+    });
   }
 }

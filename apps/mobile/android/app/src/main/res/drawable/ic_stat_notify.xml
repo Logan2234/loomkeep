@@ -1,19 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Status bar icon: Android keeps only its shape (white on the bar), so the
-     mark's strokes are drawn in one colour. -->
+<!-- Status bar icon: Android keeps only its shape (white on the bar). Drawn for
+     24dp rather than scaled from the mark, whose four threads merge at this
+     size: three threads and the weft, inside the 20dp live area. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <group
-        android:scaleX="0.2"
-        android:scaleY="0.2"
-        android:translateX="2"
-        android:translateY="2">
-        <path android:pathData="M16,12 L16,88 M36,12 L36,88 M56,12 L56,88 M76,12 L76,88 M8,30 L92,30"
-            android:strokeColor="#FFFFFFFF"
-            android:strokeLineCap="round"
-            android:strokeWidth="14" />
-    </group>
+    <path android:pathData="M6,3.5 L6,20.5 M12,3.5 L12,20.5 M18,3.5 L18,20.5 M3.2,8 L20.8,8"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.4" />
 </vector>

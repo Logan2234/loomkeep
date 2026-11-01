@@ -32,6 +32,29 @@ history from before it was started.
 
 ### Android app
 
+- **The launch is one continuous screen**: the app holds its launch screen
+  until the web can draw (`ShellSplash`, at most 3 s) and fades it out,
+  instead of a blank window then a second logo. It starts in the theme
+  chosen in Loomkeep, light included (Android 13+; earlier versions follow
+  the system's theme). Needs the next APK.
+- **The offline page looks like Loomkeep**: its mark, fonts (bundled in the
+  APK) and light theme. It only mentions updating Android System WebView
+  when that WebView really is too old, reloads by itself when the network
+  returns, shows that Retry is connecting, and its links are 48 dp targets.
+  The web's own reconnect screen matches it and reloads the same way. Needs
+  the next APK for the app's page.
+- **Native windows use Séance's colours and the app's theme**: the date
+  picker and select lists no longer come in AppCompat's teal, following the
+  system's dark mode. Needs the next APK.
+- **Notifications fold together** by alert group, under a silent summary
+  that opens the notifications page, and the status bar icon is redrawn for
+  its size instead of merging into a block. Needs the next APK.
+- **No grey veil behind three-button navigation**
+  (`setNavigationBarContrastEnforced(false)`): the bottom bar paints itself
+  down to the edge. Needs the next APK.
+- **Touching the current tab again scrolls smoothly to the top**, and a slow
+  page change shows a thin amber line under the status bar.
+- **The status bar dims with the menu** instead of staying lit above it.
 - **Haptic feedback comes from Android itself** (`ShellHaptics`,
   `View.performHapticFeedback`), tuned by each maker and following the
   system's touch feedback setting: the raw waveforms of `@capacitor/haptics`
