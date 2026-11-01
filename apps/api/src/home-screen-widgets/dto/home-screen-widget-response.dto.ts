@@ -1,7 +1,6 @@
 import type {
   HomeScreenWidgetAddedDto,
   HomeScreenWidgetFeedDto,
-  HomeScreenWidgetGainDto,
   HomeScreenWidgetProgressionDto,
   HomeScreenWidgetReleaseDto,
   HomeScreenWidgetSessionDto,
@@ -57,12 +56,6 @@ export class HomeScreenWidgetSessionResponseDto implements HomeScreenWidgetSessi
   occurredAt!: string;
 }
 
-export class HomeScreenWidgetGainResponseDto implements HomeScreenWidgetGainDto {
-  amount!: number;
-  title!: string | null;
-  at!: string;
-}
-
 export class HomeScreenWidgetProgressionResponseDto implements HomeScreenWidgetProgressionDto {
   xp!: number;
   level!: number;
@@ -72,7 +65,6 @@ export class HomeScreenWidgetProgressionResponseDto implements HomeScreenWidgetP
   streakSecuredToday!: boolean;
   today!: string;
   activeDays!: string[];
-  gains!: HomeScreenWidgetGainResponseDto[];
 }
 
 export class HomeScreenWidgetAddedResponseDto implements HomeScreenWidgetAddedDto {
