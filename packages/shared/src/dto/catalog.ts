@@ -252,6 +252,8 @@ export interface MediaDetailEpisodeDto
   airDate: string | null;
   /** The episode's own length in minutes, when the source gives one. */
   runtimeMin: number | null;
+  /** Comments in the episode's discussion, tombstones left out. */
+  commentCount: number;
   watchCount: number;
   /** The current user's viewings of this episode (date + rating), most recent first. */
   watches: EpisodeWatchDto[];

@@ -1,6 +1,9 @@
 import {
   type BulkEntriesTargetDto,
   type BulkUpdateEntriesDto,
+  type EpisodeWatchBatchAction,
+  type EpisodeWatchBatchResultDto,
+  type EpisodeWatchRestoreDto,
   type LibraryEntryDto,
   type LibrarySagaSort,
   type MEDIA_BULK_STATUSES,
@@ -153,6 +156,23 @@ export const unwatchEpisode = (episodeId: string): Promise<void> =>
     method: "DELETE",
     params: { episodeId },
   });
+
+/** One action over hand-picked episodes; the result is what undoing it needs. */
+export const batchEpisodeWatches = (
+  action: EpisodeWatchBatchAction,
+  episodeIds: string[],
+): Promise<EpisodeWatchBatchResultDto> =>
+  typedRequest("/library/episodes/watches/batch", {
+    method: "POST",
+    body: { action, episodeIds },
+  });
+
+/** Takes a bulk action back: created viewings go, removed ones return as they were. */
+export const undoEpisodeWatches = (body: {
+  deleteWatchIds?: string[];
+  restore?: EpisodeWatchRestoreDto[];
+}): Promise<void> =>
+  typedRequest("/library/episodes/watches/undo", { method: "POST", body });
 
 /** Clear every watch (all rewatches included) for every episode of a season. */
 export const unwatchSeason = (seasonId: string): Promise<void> =>

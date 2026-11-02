@@ -2,6 +2,7 @@ import type {
   BulkEntriesResultDto,
   CalendarEntryDto,
   EntryEpisodesResponseDto,
+  EpisodeWatchBatchResultDto,
   EpisodeWatchDto,
   LibraryDomainCountsDto,
   LibraryEntryDto,
@@ -43,6 +44,11 @@ import { BulkUpdateEntriesBody } from "./dto/bulk-update-entries.dto";
 import { CalendarEntryResponseDto } from "./dto/calendar-entry-response.dto";
 import { EntryEpisodesResponseResponseDto } from "./dto/entry-episodes-response.dto";
 import { EpisodeWatchResponseDto } from "./dto/episode-watch-response.dto";
+import {
+  EpisodeWatchBatchResponseDto,
+  EpisodeWatchesBatchDto,
+  UndoEpisodeWatchesDto,
+} from "./dto/episode-watches-batch.dto";
 import { LibraryDomainCountsResponseDto } from "./dto/library-domain-counts-response.dto";
 import { LibraryEntryResponseDto } from "./dto/library-entry-response.dto";
 import { LibrarySagasResponseDto } from "./dto/media-saga-response.dto";
@@ -257,6 +263,29 @@ export class LibraryController {
     @Param("id") entryId: string,
   ): Promise<EntryEpisodesResponseDto> {
     return this.libraryService.getEntryEpisodes(user.sub, entryId);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post("episodes/watches/batch")
+  @ApiOkResponse({ type: EpisodeWatchBatchResponseDto })
+  batchEpisodeWatches(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: EpisodeWatchesBatchDto,
+  ): Promise<EpisodeWatchBatchResultDto> {
+    return this.libraryService.batchEpisodeWatches(
+      user.sub,
+      dto.action,
+      dto.episodeIds,
+    );
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post("episodes/watches/undo")
+  async undoEpisodeWatches(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UndoEpisodeWatchesDto,
+  ): Promise<void> {
+    await this.libraryService.undoEpisodeWatches(user.sub, dto);
   }
 
   @Post("episodes/:episodeId/watches")

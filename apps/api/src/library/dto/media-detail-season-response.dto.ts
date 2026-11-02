@@ -19,6 +19,7 @@ export class MediaDetailEpisodeResponseDto implements MediaDetailEpisodeDto {
   reviewCount!: number | null;
   reviewAverage!: number | null;
   myRating!: number | null;
+  commentCount!: number;
   watchCount!: number;
   watches!: EpisodeWatchResponseDto[];
 }

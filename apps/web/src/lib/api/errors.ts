@@ -90,6 +90,8 @@ const MESSAGES = {
   [ErrorCode.LibrarySeasonEmpty]: () => m.apierr_library_season_empty(),
   [ErrorCode.LibrarySeasonNotFound]: () => m.apierr_library_season_not_found(),
   [ErrorCode.LibraryNoWatchToUndo]: () => m.apierr_library_no_watch_to_undo(),
+  [ErrorCode.LibraryWatchBatchTooLarge]: () =>
+    m.apierr_library_watch_batch_too_large(),
   [ErrorCode.LibraryEntryNotFound]: () => m.apierr_library_entry_not_found(),
   [ErrorCode.LibraryEntryForbidden]: () => m.apierr_library_entry_forbidden(),
   [ErrorCode.LibrarySessionNotFound]: () =>

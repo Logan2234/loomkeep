@@ -854,6 +854,182 @@ describe("LibraryService — watch endpoints require a tracked entry", () => {
   });
 });
 
+describe("LibraryService — bulk episode watches", () => {
+  const OLD = new Date("2024-03-03T00:00:00.000Z");
+  const row = (id: string, airDate: Date | null = OLD) => ({
+    id,
+    airDate,
+    seasonId: "season-1",
+    season: { mediaItemId: "media-1", mediaItem: { type: "SERIES" } },
+  });
+
+  function makeService({
+    episodes,
+    watches = [],
+    tracked = true,
+  }: {
+    episodes: ReturnType<typeof row>[];
+    watches?: {
+      id: string;
+      userId?: string;
+      episodeId: string;
+      watchedAt: Date | null;
+    }[];
+    tracked?: boolean;
+  }) {
+    const created = vi.fn(({ data }: { data: { episodeId: string }[] }) =>
+      Promise.resolve(
+        data.map((d, i) => ({ id: `new-${i}`, episodeId: d.episodeId })),
+      ),
+    );
+    const prisma = {
+      episode: {
+        findMany: vi.fn().mockResolvedValue(episodes),
+        count: vi.fn().mockResolvedValue(1),
+      },
+      season: { findMany: vi.fn().mockResolvedValue([]) },
+      episodeWatch: {
+        findMany: vi.fn().mockResolvedValue(watches),
+        createManyAndReturn: created,
+        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+      libraryEntry: {
+        findUnique: vi.fn().mockResolvedValue(tracked ? { id: "e" } : null),
+        findMany: vi.fn().mockResolvedValue([]),
+        update: vi.fn(),
+      },
+      $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+    } as unknown as PrismaService;
+    const xp = stubXp();
+    const activity = { emit: vi.fn() };
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      activity as unknown as ActivityService,
+      xp,
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+    return { service, prisma, xp, activity, created };
+  }
+
+  it("watch skips what's watched or not aired, one XP batch and no per-episode activity", async () => {
+    const future = new Date(Date.now() + 86_400_000);
+    const { service, xp, activity, created } = makeService({
+      episodes: [row("a"), row("b"), row("c", future)],
+      watches: [{ id: "w1", episodeId: "a", watchedAt: OLD }],
+    });
+
+    const result = await service.batchEpisodeWatches("user-1", "watch", [
+      "a",
+      "b",
+      "c",
+    ]);
+
+    expect(result).toEqual({
+      created: [{ id: "new-0", episodeId: "b" }],
+      removed: [],
+    });
+    expect(created.mock.calls[0][0].data).toEqual([
+      { userId: "user-1", episodeId: "b" },
+    ]);
+    expect(xp.awardMany).toHaveBeenCalledTimes(1);
+    expect(activity.emit).not.toHaveBeenCalled();
+  });
+
+  it("rewatch only adds a viewing to what's watched", async () => {
+    const { service, created } = makeService({
+      episodes: [row("a"), row("b")],
+      watches: [{ id: "w1", episodeId: "a", watchedAt: OLD }],
+    });
+
+    await service.batchEpisodeWatches("user-1", "rewatch", ["a", "b"]);
+
+    expect(created.mock.calls[0][0].data).toEqual([
+      { userId: "user-1", episodeId: "a" },
+    ]);
+  });
+
+  it("unwatch removes every viewing, revokes their XP and returns their dates", async () => {
+    const { service, prisma, xp } = makeService({
+      episodes: [row("a")],
+      watches: [
+        { id: "w1", episodeId: "a", watchedAt: OLD },
+        { id: "w2", episodeId: "a", watchedAt: null },
+      ],
+    });
+
+    const result = await service.batchEpisodeWatches("user-1", "unwatch", [
+      "a",
+    ]);
+
+    expect(result.removed).toEqual([
+      { episodeId: "a", watchedAt: OLD.toISOString() },
+      { episodeId: "a", watchedAt: null },
+    ]);
+    expect(prisma.episodeWatch.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["w1", "w2"] } },
+    });
+    expect(xp.revokeBySource).toHaveBeenCalledWith("EpisodeWatch", [
+      "w1",
+      "w2",
+    ]);
+  });
+
+  it("refuses more episodes than the limit", async () => {
+    const { service } = makeService({ episodes: [] });
+    const ids = Array.from({ length: 501 }, (_, i) => `e${i}`);
+
+    await expect(
+      service.batchEpisodeWatches("user-1", "watch", ids),
+    ).rejects.toMatchObject({ response: ErrorCode.LibraryWatchBatchTooLarge });
+  });
+
+  it("refuses episodes of a work the caller doesn't track", async () => {
+    const { service, created } = makeService({
+      episodes: [row("a")],
+      tracked: false,
+    });
+
+    await expect(
+      service.batchEpisodeWatches("intruder", "watch", ["a"]),
+    ).rejects.toThrow(AppException);
+    expect(created).not.toHaveBeenCalled();
+  });
+
+  it("undo refuses someone else's viewing", async () => {
+    const { service, prisma } = makeService({
+      episodes: [row("a")],
+      watches: [{ id: "w1", userId: "other", episodeId: "a", watchedAt: OLD }],
+    });
+
+    await expect(
+      service.undoEpisodeWatches("user-1", { deleteWatchIds: ["w1"] }),
+    ).rejects.toThrow(AppException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("undo restores viewings with their dates, an unknown one staying unknown", async () => {
+    const { service, created, xp } = makeService({ episodes: [row("a")] });
+
+    await service.undoEpisodeWatches("user-1", {
+      restore: [
+        { episodeId: "a", watchedAt: OLD.toISOString() },
+        { episodeId: "a", watchedAt: null },
+      ],
+    });
+
+    expect(created.mock.calls[0][0].data).toEqual([
+      { userId: "user-1", episodeId: "a", watchedAt: OLD },
+      { userId: "user-1", episodeId: "a", watchedAt: null },
+    ]);
+    expect(xp.awardMany).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("LibraryService.getDomainCounts", () => {
   it("counts every domain's table for the caller, hidden domains included", async () => {
     const prisma = {
