@@ -2,7 +2,9 @@
   import { episodeCode } from "@loomkeep/shared";
 
   import {
+    batchEpisodeWatches,
     getSeasonImages,
+    undoEpisodeWatches,
     unwatchEpisode,
     unwatchSeason,
     watchEpisode,
@@ -13,20 +15,25 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import ClampedText from "#lib/components/ClampedText.svelte";
-  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import { longpress } from "#lib/actions/longpress.js";
+  import { onBackPress } from "#lib/back-press.js";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
-  import Icon from "#lib/components/Icon.svelte";
   import Lightbox from "#lib/components/Lightbox.svelte";
   import Modal from "#lib/components/Modal.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import ReviewsSection from "#lib/components/ReviewsSection.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
+  import { formatNumber } from "#lib/format.js";
+  import { layout } from "#lib/layout.svelte.js";
   import { tapFeedback } from "#lib/native/haptics.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { listenTabSwipe } from "#lib/tab-swipe.js";
+  import { toast } from "#lib/toast.svelte.js";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import type {
+    EpisodeWatchBatchAction,
+    EpisodeWatchRestoreDto,
     LibraryEntryDto,
     MediaDetailEpisodeDto,
     MediaDetailSeasonDto,
@@ -34,19 +41,32 @@
     ReviewTargetType,
   } from "@loomkeep/shared";
   import { tick, untrack } from "svelte";
-  import { cubicOut } from "svelte/easing";
-  import { fly, slide } from "svelte/transition";
-  import { airDateLabel, scoreLabel } from "./episode-format";
+  import { fly } from "svelte/transition";
+  import { upcomingLabel } from "./episode-format";
+  import { followRangeDrag } from "./episode-range-drag";
   import EpisodePanel from "./EpisodePanel.svelte";
   import EpisodeRow from "./EpisodeRow.svelte";
   import {
-    defaultSeasonNumber,
+    announcedEpisode,
+    arrivalTabKey,
+    episodeTabs,
     isAired,
     largeTmdbImage,
+    nextUpEpisode,
     playlist,
     runProgress,
+    selectionActions,
+    selectionRange,
+    selectionSpan,
+    tabKeyOf,
     unwatchedGapCount,
+    type EpisodeTab,
   } from "./episodes";
+  import GoToEpisode from "./GoToEpisode.svelte";
+  import SeasonHeader from "./SeasonHeader.svelte";
+  import SeasonTabs from "./SeasonTabs.svelte";
+  import SelectionBar from "./SelectionBar.svelte";
+  import UpNextBar from "./UpNextBar.svelte";
 
   const reduced = prefersReducedMotion();
 
@@ -116,6 +136,78 @@
     onError: (err) => onError(resolveApiError(err)),
   }));
 
+  const batchMut = createApiMutation(() => ({
+    mutate: ({
+      action,
+      ids,
+    }: {
+      action: EpisodeWatchBatchAction;
+      ids: string[];
+      /** Every viewing of one episode, from its "Watched" menu. */
+      single?: { code: string; count: number };
+    }) => batchEpisodeWatches(action, ids),
+    onSuccess: async (result, { action, single }) => {
+      exitSelection();
+      await reload();
+      tapFeedback();
+      const touched =
+        action === "unwatch"
+          ? new Set(result.removed.map((r) => r.episodeId)).size
+          : result.created.length;
+      offerUndo(
+        single ? m.media_watches_undone(single) : bulkMessage(action, touched),
+        action === "unwatch"
+          ? { restore: result.removed }
+          : { deleteWatchIds: result.created.map((w) => w.id) },
+      );
+    },
+    onError: (err) => onError(resolveApiError(err)),
+  }));
+  const undoMut = createApiMutation(() => ({
+    mutate: (body: {
+      deleteWatchIds?: string[];
+      restore?: EpisodeWatchRestoreDto[];
+    }) => undoEpisodeWatches(body),
+    onSuccess: async () => {
+      await reload();
+      toast.success(m.media_action_undone(), 2000);
+    },
+    onError: (err) => onError(resolveApiError(err)),
+  }));
+
+  const UNDO_MS = 5000;
+
+  function offerUndo(
+    message: string,
+    body: {
+      deleteWatchIds?: string[];
+      restore?: EpisodeWatchRestoreDto[];
+    },
+  ) {
+    toast.action(
+      message,
+      { label: m.common_cancel(), onSelect: () => undoMut.mutate(body) },
+      "info",
+      UNDO_MS,
+    );
+  }
+
+  function bulkMessage(action: EpisodeWatchBatchAction, count: number): string {
+    if (action === "watch") {
+      return count === 1
+        ? m.media_bulk_watched_one()
+        : m.media_bulk_watched({ count });
+    }
+    if (action === "rewatch") {
+      return count === 1
+        ? m.media_bulk_rewatched_one()
+        : m.media_bulk_rewatched({ count });
+    }
+    return count === 1
+      ? m.media_bulk_unwatched_one()
+      : m.media_bulk_unwatched({ count });
+  }
+
   /** Whether any in-flight mutation targets this episode — drives its buttons' disabled state. */
   function episodeBusy(episodeId: string): boolean {
     return (
@@ -131,17 +223,122 @@
   const episodeTitle = (episode: MediaDetailEpisodeDto) =>
     episode.title ?? `${m.common_episode()} ${episode.number}`;
 
-  // One season open at most, or none — the page stays short. On arrival:
-  // the season being watched, nothing for a show not started or up to date.
-  let selectedSeason = $state<number | null>(
-    untrack(() => defaultSeasonNumber(seasons, new Date())),
+  // Only the open tab's rows exist: at most 100 on a cut anime.
+  const tabs = $derived(episodeTabs(seasons));
+  const sliced = $derived(tabs.some((t) => t.range));
+  let activeKey = $state<string | null>(
+    untrack(() =>
+      arrivalTabKey(episodeTabs(seasons), seasons, !!entry, new Date()),
+    ),
   );
+  const activeIndex = $derived(tabs.findIndex((t) => t.key === activeKey));
+  const activeTab = $derived(tabs[activeIndex] ?? tabs[0] ?? null);
   const current = $derived(
-    seasons.find((s) => s.number === selectedSeason) ?? null,
+    seasons.find((s) => s.number === activeTab?.seasonNumber) ?? null,
   );
-  function toggleSeason(seasonNumber: number) {
-    selectedSeason = selectedSeason === seasonNumber ? null : seasonNumber;
+  /** The season a cut show's single card speaks for, above its tabs. */
+  const cutSeason = $derived(
+    sliced
+      ? (seasons.find(
+          (s) => s.number === tabs.find((t) => t.range)?.seasonNumber,
+        ) ?? null)
+      : null,
+  );
+  // Which way the next page arrives from.
+  let direction = $state(1);
+
+  const tabPageLabel = (tab: EpisodeTab) => {
+    const season = seasons.find((s) => s.number === tab.seasonNumber);
+    return tab.range || !season ? tabTitle(tab) : seasonLabel(season);
+  };
+  const tabTitle = (tab: EpisodeTab) => {
+    if (tab.range) {
+      return `${tab.range.from}–${tab.range.to}`;
+    }
+    const season = seasons.find((s) => s.number === tab.seasonNumber);
+    return tab.seasonNumber === 0 && season
+      ? seasonLabel(season)
+      : `S${tab.seasonNumber}`;
+  };
+
+  let tabsEl = $state<HTMLElement>();
+  let pagesEl = $state<HTMLElement>();
+  let listEl = $state<HTMLElement>();
+
+  /** Changes page; if the list was scrolled under the tabs, they stay on top. */
+  function showTab(key: string) {
+    const to = tabs.findIndex((t) => t.key === key);
+    if (to < 0 || key === activeKey) return;
+    direction = to >= activeIndex ? 1 : -1;
+    activeKey = key;
+    void tick().then(() => {
+      if (!tabsEl || !pagesEl) return;
+      const overlap =
+        tabsEl.getBoundingClientRect().bottom -
+        pagesEl.getBoundingClientRect().top;
+      if (overlap > 0) window.scrollBy?.(0, -overlap);
+    });
   }
+
+  function stepTab(step: -1 | 1) {
+    const next = tabs[activeIndex + step];
+    if (next) showTab(next.key);
+  }
+
+  // The sticky tabs sit under the page's own sticky action bar, whose height
+  // changes as it wraps.
+  let actionBarHeight = $state(0);
+  $effect(() => {
+    const bar = document.querySelector<HTMLElement>("[data-action-bar]");
+    if (!bar) return;
+    const observer = new ResizeObserver(() => {
+      actionBarHeight = bar.offsetHeight;
+    });
+    observer.observe(bar);
+    return () => observer.disconnect();
+  });
+
+  // Sliding sideways changes page; past either end the page gives a little
+  // under the finger, then settles back.
+  const EDGE_RESISTANCE = 4;
+  let edgePull = $state(0);
+  $effect(() => {
+    const pages = pagesEl;
+    if (!pages) return;
+    const stop = listenTabSwipe(pages, (step) => {
+      if (!stopDrag) stepTab(step);
+    });
+    let start: { x: number; y: number } | null = null;
+    const onStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      start = { x: touch.clientX, y: touch.clientY };
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!start || stopDrag || reduced) return;
+      const dx = e.touches[0].clientX - start.x;
+      const dy = e.touches[0].clientY - start.y;
+      const atEnd =
+        (dx > 0 && activeIndex === 0) ||
+        (dx < 0 && activeIndex === tabs.length - 1);
+      edgePull =
+        atEnd && Math.abs(dx) > Math.abs(dy) ? dx / EDGE_RESISTANCE : 0;
+    };
+    const onEnd = () => {
+      start = null;
+      edgePull = 0;
+    };
+    pages.addEventListener("touchstart", onStart, { passive: true });
+    pages.addEventListener("touchmove", onMove, { passive: true });
+    pages.addEventListener("touchend", onEnd, { passive: true });
+    pages.addEventListener("touchcancel", onEnd, { passive: true });
+    return () => {
+      stop();
+      pages.removeEventListener("touchstart", onStart);
+      pages.removeEventListener("touchmove", onMove);
+      pages.removeEventListener("touchend", onEnd);
+      pages.removeEventListener("touchcancel", onEnd);
+    };
+  });
 
   // A season's posters, in a lightbox from its own poster (TMDB only): the
   // one shown first, then the rest once fetched.
@@ -163,23 +360,31 @@
     return [main, ...rest].map((src) => ({ src, alt: seasonLabel(season) }));
   });
 
-  // `#s2e5` (an episode code in a message links here): open the season and
-  // bring the episode into view, lit for a moment.
   let highlightedEpisode = $state<string | null>(null);
+
+  /** Opens the episode's tab and brings its row into view, lit for a moment. */
+  function goToEpisode(seasonNumber: number, episodeNumber: number) {
+    const key = tabKeyOf(tabs, seasonNumber, episodeNumber);
+    if (key) showTab(key);
+    const row = `s${seasonNumber}e${episodeNumber}`;
+    void tick().then(() => {
+      document.getElementById(`episode-${row}`)?.scrollIntoView?.({
+        behavior: reduced ? "auto" : "smooth",
+        block: "center",
+      });
+      highlightedEpisode = row;
+      setTimeout(() => (highlightedEpisode = null), 2000);
+    });
+  }
+
+  // `#s2e5`: an episode code in a message links here.
   $effect(() => {
     const target = /^#s(\d+)e(\d+)$/i.exec(window.location.hash);
     if (!target) return;
-    const season = Number(target[1]);
-    const key = `s${season}e${Number(target[2])}`;
-    untrack(() => (selectedSeason = season));
-    void tick().then(() => {
-      document
-        .getElementById(`episode-${key}`)
-        ?.scrollIntoView({ behavior: reduced ? "auto" : "smooth" });
-      highlightedEpisode = key;
-      setTimeout(() => (highlightedEpisode = null), 2000);
-    });
+    untrack(() => goToEpisode(Number(target[1]), Number(target[2])));
   });
+
+  let goToOpen = $state(false);
 
   // The episode whose side panel is open.
   let openEpisode = $state<{ season: number; episode: number } | null>(null);
@@ -199,7 +404,22 @@
   /** Opens an episode's panel, the list following it into its season. */
   function openPanel(target: { season: number; episode: number }) {
     openEpisode = target;
-    selectedSeason = target.season;
+    const key = tabKeyOf(tabs, target.season, target.episode);
+    if (key) showTab(key);
+  }
+
+  const queryClient = useQueryClient();
+
+  /** A comment posted from its details has to reach the row's counter. */
+  function closePanel() {
+    const id = panel?.episode.id;
+    const shown = panel?.episode.commentCount;
+    openEpisode = null;
+    if (!id) return;
+    const count = queryClient.getQueryData<{ count: number }>(
+      keys.comments.count("EPISODE", id),
+    );
+    if (count && count.count !== shown) void reload();
   }
 
   let confirmUnwatchSeasonId = $state<string | null>(null);
@@ -327,6 +547,139 @@
     markUnwatchMut.mutate(episodeId);
   }
 
+  const nextUp = $derived(entry ? nextUpEpisode(seasons, now) : null);
+  const announced = $derived(
+    entry && !nextUp ? announcedEpisode(seasons, now) : null,
+  );
+  const barEpisode = $derived(nextUp ?? announced);
+
+  // Selection: survives changing tabs, gone with the mode.
+  let selecting = $state(false);
+  let selected = $state.raw<ReadonlySet<string>>(new Set());
+  let lastToggled: string | null = null;
+  let selectionBarEl = $state<HTMLElement>();
+
+  const episodesById = $derived(
+    new Map(
+      seasons.flatMap((s) =>
+        s.episodes.flatMap((e) => (e.id ? [[e.id, e] as const] : [])),
+      ),
+    ),
+  );
+  const selectedEpisodes = $derived(
+    [...selected].flatMap((id) => episodesById.get(id) ?? []),
+  );
+  const actions = $derived(selectionActions(selectedEpisodes, now));
+  const spanLabel = $derived.by(() => {
+    const span = selectionSpan(tabs, selected);
+    if (!span) return "";
+    if ("sliced" in span) {
+      return span.sliced
+        ? m.media_selection_slices({ count: span.tabs })
+        : m.media_selection_seasons({ count: span.tabs });
+    }
+    const first = episodeCode(span.seasonNumber, span.first);
+    return span.first === span.last
+      ? first
+      : `${first} → ${episodeCode(span.seasonNumber, span.last)}`;
+  });
+
+  function exitSelection() {
+    stopDrag?.();
+    stopDrag = null;
+    selecting = false;
+    selected = new Set();
+    lastToggled = null;
+  }
+
+  $effect(() => {
+    return selecting ? onBackPress(exitSelection) : undefined;
+  });
+
+  function toggleEpisode(id: string, shiftKey: boolean) {
+    if (shiftKey && lastToggled && activeTab) {
+      selected = new Set([
+        ...selected,
+        ...selectionRange(activeTab.episodes, lastToggled, id, now),
+      ]);
+    } else {
+      const next = new Set(selected);
+      if (!next.delete(id)) next.add(id);
+      selected = next;
+    }
+    selecting = true;
+    lastToggled = id;
+  }
+
+  // A held row enters the mode; sliding without lifting ticks the whole range
+  // from it. What was ticked before the gesture stays ticked.
+  let stopDrag: (() => void) | null = $state(null);
+
+  function startRangeDrag(pressed: HTMLElement) {
+    const anchor = pressed.dataset.episodeRow;
+    const list = listEl;
+    if (!anchor || !list) return;
+    const before = selected;
+    const extend = (id: string) => {
+      if (!activeTab) return;
+      selected = new Set([
+        ...before,
+        ...selectionRange(activeTab.episodes, anchor, id, now),
+      ]);
+      lastToggled = id;
+    };
+    selecting = true;
+    extend(anchor);
+    stopDrag = followRangeDrag({
+      list,
+      edges: () => ({
+        top: tabsEl?.getBoundingClientRect().bottom ?? 0,
+        bottom:
+          selectionBarEl?.getBoundingClientRect().top ?? window.innerHeight,
+      }),
+      rowAt: (target) =>
+        target.closest<HTMLElement>("[data-episode-row]")?.dataset.episodeRow ??
+        null,
+      onOver: extend,
+      onEnd: () => (stopDrag = null),
+    });
+  }
+
+  // Must be listening before the gesture starts: only then may it stop the
+  // page scrolling under a finger that's ticking rows.
+  $effect(() => {
+    const list = listEl;
+    if (!list) return;
+    const hold = (e: TouchEvent) => {
+      if (stopDrag && e.cancelable) e.preventDefault();
+    };
+    list.addEventListener("touchmove", hold, { passive: false });
+    return () => list.removeEventListener("touchmove", hold);
+  });
+
+  function onWindowKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape" && selecting && !e.defaultPrevented) exitSelection();
+  }
+
+  const sheetOpen = $derived(
+    !!openEpisode ||
+      !!catchup ||
+      !!confirmUnwatchSeasonId ||
+      !!reviewTarget ||
+      goToOpen ||
+      posterLightbox !== null,
+  );
+
+  // The bars sit over the page's end: everything leaves them room (main's
+  // padding, the toast above them).
+  let floatingHeight = $state(0);
+  $effect(() => {
+    if (!layout.compact || floatingHeight === 0) return;
+    const root = document.documentElement.style;
+    root.setProperty("--floating-bar-space", `${floatingHeight + 8}px`);
+    return () => root.removeProperty("--floating-bar-space");
+  });
+
   function reviewEpisode(
     season: MediaDetailSeasonDto,
     episode: MediaDetailEpisodeDto,
@@ -353,250 +706,225 @@
   }
 </script>
 
+<svelte:window onkeydown={onWindowKeydown} />
+
 <h2
   class="font-display mt-10 mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xl font-bold">
   {m.media_episodes()}
-  {#if isFeatureNew("episode-details")}<NewBadge />{/if}
+  {#if isFeatureNew("episode-details") || (entry && isFeatureNew("episode-selection"))}<NewBadge />{/if}
   {#if entry}
     <span class="text-dim font-sans text-sm font-medium">{progressLabel}</span>
   {/if}
 </h2>
 
-<!-- Season cards: one open at most; clicking the open one closes it. They
-     wrap onto new rows rather than scroll, so every season stays in reach. -->
-<div class="grid grid-cols-2 gap-2.5 pb-2 sm:grid-cols-3 md:grid-cols-4">
-  {#each seasons.filter((s) => s.episodes.length > 0) as season (season.number)}
-    {@const open = selectedSeason === season.number}
-    {@const watchedCount = seasonWatchedCount(season)}
-    <button
-      type="button"
-      class="bg-surface relative flex min-w-0 items-center gap-3 overflow-hidden rounded-xl border py-2 pr-3 pl-2 text-left transition-colors duration-150
-        {open
-        ? 'border-accent bg-accent/10'
-        : 'border-border hover:border-dim/50'}"
-      aria-expanded={open}
-      onclick={() => toggleSeason(season.number)}>
-      {#if season.posterUrl}
-        <img
-          src={season.posterUrl}
-          alt=""
-          loading="lazy"
-          class="h-14 w-[2.4rem] shrink-0 rounded object-cover" />
-      {:else}
-        <span
-          aria-hidden="true"
-          class="timecode bg-surface-2 text-dim grid h-14 w-[2.4rem] shrink-0 place-items-center rounded text-xs">
-          {season.number}
-        </span>
-      {/if}
-      <span class="min-w-0">
-        <span class="block truncate text-sm font-semibold">
-          {seasonLabel(season)}
-        </span>
-        <span class="timecode text-dim mt-0.5 block text-[0.7rem]">
-          {#if entry}{watchedCount}/{season.episodes
-              .length}{:else}{m.media_season_episode_count({
-              count: season.episodes.length,
-            })}{/if}{#if season.voteAverage !== null}
-            · TMDB {scoreLabel(season.voteAverage)}{/if}
-        </span>
-      </span>
-      {#if entry}
-        <span class="bg-border absolute inset-x-0 bottom-0 h-[3px]">
-          <span
-            class="block h-full transition-[width] duration-300 ease-out motion-reduce:transition-none
-              {watchedCount === season.episodes.length
-              ? 'bg-success'
-              : 'bg-accent'}"
-            style="width: {Math.round(
-              (watchedCount / season.episodes.length) * 100,
-            )}%"></span>
-        </span>
-      {/if}
-    </button>
-  {/each}
+{#snippet seasonCard(season: MediaDetailSeasonDto)}
+  {@const seasonId = season.id}
+  <SeasonHeader
+    {season}
+    title={seasonLabel(season)}
+    tracked={!!entry}
+    {exactTime}
+    canOpenPosters={!!tmdbSourceId}
+    watchedCount={seasonWatchedCount(season)}
+    hasPending={season.episodes.some(
+      (e) => e.id && e.watchCount === 0 && isAired(e, now),
+    )}
+    finished={justFinished === season.number}
+    allWatched={seasonWatched(season)}
+    marking={markSeasonMut.loading && markSeasonMut.variables === seasonId}
+    onPosters={() => (posterLightbox = season.number)}
+    onReview={() =>
+      seasonId &&
+      (reviewTarget = {
+        type: "SEASON",
+        id: seasonId,
+        label: seasonLabel(season),
+      })}
+    onMark={() => seasonId && markSeason(seasonId)}
+    onUndo={() => (confirmUnwatchSeasonId = seasonId)} />
+{/snippet}
+
+{#if cutSeason}
+  <div class="mb-3">{@render seasonCard(cutSeason)}</div>
+{/if}
+
+<div
+  bind:this={tabsEl}
+  class="bg-bg sticky z-10 -mx-1 px-1 py-1.5"
+  style="top: calc(env(safe-area-inset-top) + {actionBarHeight}px)">
+  <SeasonTabs
+    {tabs}
+    active={activeTab?.key ?? null}
+    tracked={!!entry}
+    {selected}
+    title={tabTitle}
+    onSelect={showTab}
+    onGoTo={sliced ? () => (goToOpen = true) : undefined} />
 </div>
 
-{#if current}
-  {@const season = current}
-  {@const pending = season.episodes.filter(
-    (e) => e.id && e.watchCount === 0 && isAired(e, now),
-  )}
-  {@const watchedCount = seasonWatchedCount(season)}
-  <!-- A whole season unfolds at once: a little slower than a menu, so the
-       eye follows the list growing. -->
+{#if activeTab}
+  {@const tab = activeTab}
+  {@const before = tabs[activeIndex - 1]}
+  {@const after = tabs[activeIndex + 1]}
   <div
-    transition:slide|global={{
-      duration: reduced ? 0 : 300,
-      easing: cubicOut,
-    }}>
-    <section
-      class="border-border bg-surface mt-3 grid grid-cols-[3.75rem_minmax(0,1fr)] gap-x-4 gap-y-2 rounded-xl border p-3 sm:grid-cols-[5.75rem_minmax(0,1fr)] sm:p-4">
-      {#if season.posterUrl && tmdbSourceId}
-        {@const seasonNumber = season.number}
-        <button
-          type="button"
-          class="group row-span-2 self-start overflow-hidden rounded-lg sm:row-span-3"
-          aria-label={m.media_season_images()}
-          onclick={() => (posterLightbox = seasonNumber)}>
-          <img
-            src={season.posterUrl}
-            alt=""
-            class="w-full object-cover transition-transform duration-200 ease-out group-hover:scale-105 motion-reduce:transition-none" />
-        </button>
-      {:else if season.posterUrl}
-        <img
-          src={season.posterUrl}
-          alt=""
-          class="row-span-2 w-full self-start rounded-lg object-cover sm:row-span-3" />
-      {:else}
-        <span
-          class="bg-surface-2 row-span-2 aspect-[2/3] w-full rounded-lg sm:row-span-3"
-        ></span>
-      {/if}
-      <div class="min-w-0">
-        <p class="timecode text-dim text-[0.68rem] uppercase">
-          {exactTime ? m.media_anime_synopsis() : m.media_season_synopsis()}
-        </p>
-        <p
-          class="timecode text-dim mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[0.7rem]">
-          {#if season.airDate}
-            <span>
-              {m.media_season_premiere({
-                date: airDateLabel(season.airDate, false, true),
-              })}
-            </span>
+    bind:this={pagesEl}
+    class="touch-pan-y overflow-x-clip pt-2"
+    role="tabpanel"
+    aria-label={tabTitle(tab)}>
+    <div
+      style:transform={edgePull ? `translateX(${edgePull}px)` : undefined}
+      class={edgePull ? "" : "transition-transform duration-200 ease-out"}>
+      {#key tab.key}
+        <div
+          in:fly={{
+            x: reduced ? 0 : direction * 28,
+            duration: reduced ? 0 : 200,
+          }}>
+          {#if tab.range}
+            <p class="mb-2 flex items-baseline justify-between gap-3 px-1">
+              <span class="text-sm font-semibold">
+                {m.media_episodes_range({
+                  from: formatNumber(tab.range.from),
+                  to: formatNumber(tab.range.to),
+                })}
+              </span>
+              {#if entry}
+                <span class="timecode text-dim text-xs">
+                  {m.media_watched_of({
+                    watched: tab.episodes.filter((e) => e.watchCount > 0)
+                      .length,
+                    total: tab.episodes.length,
+                  })}
+                </span>
+              {/if}
+            </p>
+          {:else if current}
+            <div class="mb-3">{@render seasonCard(current)}</div>
           {/if}
-          <span
-            >{m.media_season_episode_count({
-              count: season.episodes.length,
-            })}</span>
-          {#if season.voteAverage !== null}
-            <span
-              >{m.media_score_tmdb({
-                score: scoreLabel(season.voteAverage),
-              })}</span>
-          {/if}
-          {#if season.reviewAverage !== null}
-            <span
-              >{m.media_score_loomkeep({
-                score: scoreLabel(season.reviewAverage),
-              })}</span>
-          {/if}
-        </p>
-      </div>
 
-      {#if season.overview}
-        <div class="col-span-2 min-w-0 sm:col-span-1 sm:col-start-2">
-          {#key season.number}
-            <ClampedText
-              text={season.overview}
-              class="text-sm leading-relaxed" />
-          {/key}
-        </div>
-      {/if}
-
-      <div
-        class="col-span-2 flex flex-wrap items-center gap-1 sm:col-span-1 sm:col-start-2">
-        {#if entry && season.id}
-          {@const seasonId = season.id}
-          <button
-            type="button"
-            class="hover:bg-surface-2 inline-flex h-7 items-center gap-1 rounded-full px-1.5 text-xs transition-colors active:scale-95 motion-reduce:transition-none
-              {season.myRating !== null
-              ? 'text-accent'
-              : 'text-dim hover:text-fg'}"
-            aria-label={m.media_season_review()}
-            title={m.media_season_review()}
-            onclick={() =>
-              (reviewTarget = {
-                type: "SEASON",
-                id: seasonId,
-                label: seasonLabel(season),
-              })}>
-            <Icon name="star" class="h-3.5 w-3.5" />
-            {#if season.reviewCount !== null}
-              <span class="timecode leading-none tabular-nums"
-                >{season.reviewCount}</span>
-            {:else if season.myRating !== null}
-              <span class="timecode leading-none tabular-nums"
-                >{scoreLabel(season.myRating)}</span>
-            {/if}
-          </button>
-        {/if}
-        {#if appConfig.socialEnabled && season.id}
-          <CommentsPanel
-            targetType="SEASON"
-            targetId={season.id}
-            title={seasonLabel(season)}
-            canParticipate={!!entry}
-            revealSpoilersByDefault={seasonWatched(season)}
-            compact />
-        {/if}
-        {#if justFinished === season.number}
-          <!-- Said in words, once, where the click happened — finishing a
-               season often unlocks an achievement too, and one gesture must
-               not produce two notifications competing at the top. -->
-          <p
-            class="text-accent flex items-center gap-1.5 text-xs font-bold"
-            transition:fly|global={{
-              y: reduced ? 0 : -6,
-              duration: reduced ? 0 : 220,
+          <ul
+            bind:this={listEl}
+            class="card mb-4 overflow-hidden"
+            use:longpress={{
+              enabled: !!entry,
+              mouse: true,
+              pick: (target) =>
+                target.closest<HTMLElement>("[data-episode-row]"),
+              onLongPress: startRangeDrag,
             }}>
-            <Icon name="trophy" class="h-3.5 w-3.5" />
-            {m.media_season_finished()}
-          </p>
-        {/if}
-        {#if entry && season.id}
-          {@const seasonId = season.id}
-          {#if pending.length > 0}
-            <button
-              type="button"
-              class="btn btn-ghost btn-sm ml-auto"
-              disabled={markSeasonMut.loading &&
-                markSeasonMut.variables === seasonId}
-              onclick={() => markSeason(seasonId)}>
-              <Icon name="check" class="h-4 w-4" />
-              {m.media_mark_aired_watched()}
-            </button>
-          {:else if watchedCount > 0}
-            <button
-              type="button"
-              class="btn btn-ghost btn-sm hover:text-danger ml-auto"
-              onclick={() => (confirmUnwatchSeasonId = seasonId)}>
-              {m.media_undo_season()}
-            </button>
-          {/if}
-        {/if}
-      </div>
-    </section>
+            {#each tab.episodes as episode (episode.number)}
+              {@const episodeId = episode.id}
+              {@const seasonNumber = tab.seasonNumber}
+              {@const code = episodeCode(seasonNumber, episode.number)}
+              <EpisodeRow
+                {episode}
+                {seasonNumber}
+                {code}
+                {exactTime}
+                tracked={!!entry}
+                {now}
+                selected={openEpisode?.season === seasonNumber &&
+                  openEpisode.episode === episode.number}
+                highlighted={highlightedEpisode ===
+                  `s${seasonNumber}e${episode.number}`}
+                justWatched={!!episodeId && justWatchedId === episodeId}
+                busy={!!episodeId && episodeBusy(episodeId)}
+                isNext={nextUp?.seasonNumber === seasonNumber &&
+                  nextUp.episode.number === episode.number}
+                {selecting}
+                checked={!!episodeId && selected.has(episodeId)}
+                onOpen={() =>
+                  openEpisode?.season === seasonNumber &&
+                  openEpisode.episode === episode.number
+                    ? closePanel()
+                    : openPanel({
+                        season: seasonNumber,
+                        episode: episode.number,
+                      })}
+                onMark={() =>
+                  episodeId &&
+                  requestMarkWatched(seasonNumber, episode.number, episodeId)}
+                onRewatch={() => episodeId && markWatched(episodeId)}
+                onUndo={() => episodeId && markUnwatch(episodeId)}
+                onUndoAll={() =>
+                  episodeId &&
+                  batchMut.mutate({
+                    action: "unwatch",
+                    ids: [episodeId],
+                    single: { code, count: episode.watchCount },
+                  })}
+                onToggle={(shiftKey) =>
+                  episodeId && toggleEpisode(episodeId, shiftKey)} />
+            {/each}
+          </ul>
 
-    <ul class="card mt-3 mb-4 overflow-hidden">
-      {#each season.episodes as episode (episode.number)}
-        <EpisodeRow
-          {episode}
-          seasonNumber={season.number}
-          code={episodeCode(season.number, episode.number)}
-          {exactTime}
-          tracked={!!entry}
-          {now}
-          selected={openEpisode?.season === season.number &&
-            openEpisode.episode === episode.number}
-          highlighted={highlightedEpisode ===
-            `s${season.number}e${episode.number}`}
-          justWatched={!!episode.id && justWatchedId === episode.id}
-          busy={!!episode.id && episodeBusy(episode.id)}
-          onOpen={() =>
-            openEpisode?.season === season.number &&
-            openEpisode.episode === episode.number
-              ? (openEpisode = null)
-              : openPanel({ season: season.number, episode: episode.number })}
-          onMark={() =>
-            episode.id &&
-            requestMarkWatched(season.number, episode.number, episode.id)}
-          onReview={() => reviewEpisode(season, episode)} />
-      {/each}
-    </ul>
+          {#if before || after}
+            <nav class="mb-4 flex gap-2">
+              {#if before}
+                <button
+                  type="button"
+                  class="border-border bg-surface hover:bg-surface-2 min-w-0 flex-1 rounded-xl border px-3 py-2 text-left transition-colors duration-150"
+                  onclick={() => showTab(before.key)}>
+                  <span class="text-dim block text-xs"
+                    >‹ {m.common_previous()}</span>
+                  <span class="block truncate text-sm font-semibold"
+                    >{tabPageLabel(before)}</span>
+                </button>
+              {:else}
+                <span class="flex-1" aria-hidden="true"></span>
+              {/if}
+              {#if after}
+                <button
+                  type="button"
+                  class="border-border bg-surface hover:bg-surface-2 min-w-0 flex-1 rounded-xl border px-3 py-2 text-right transition-colors duration-150"
+                  onclick={() => showTab(after.key)}>
+                  <span class="text-dim block text-xs"
+                    >{m.common_next()} ›</span>
+                  <span class="block truncate text-sm font-semibold"
+                    >{tabPageLabel(after)}</span>
+                </button>
+              {:else}
+                <span class="flex-1" aria-hidden="true"></span>
+              {/if}
+            </nav>
+          {/if}
+        </div>
+      {/key}
+    </div>
+  </div>
+{/if}
+
+{#if !sheetOpen && (selecting || barEpisode)}
+  <div
+    bind:clientHeight={floatingHeight}
+    class={layout.compact
+      ? "fixed inset-x-2 bottom-[var(--bottom-bar-space)] z-30"
+      : "sticky bottom-4 z-20 mx-auto mt-4 w-full max-w-[480px]"}
+    transition:fly={{ y: reduced ? 0 : 12, duration: reduced ? 0 : 200 }}>
+    {#if selecting}
+      <div bind:this={selectionBarEl}>
+        <SelectionBar
+          count={selected.size}
+          span={spanLabel}
+          {actions}
+          busy={batchMut.loading}
+          onAction={(action, ids) => batchMut.mutate({ action, ids })}
+          onExit={exitSelection} />
+      </div>
+    {:else if barEpisode}
+      {@const { seasonNumber, episode } = barEpisode}
+      {@const code = episodeCode(seasonNumber, episode.number)}
+      <UpNextBar
+        {episode}
+        {code}
+        countdown={nextUp
+          ? null
+          : (upcomingLabel(episode.airDate, now, exactTime) ??
+            m.media_not_aired())}
+        busy={!!episode.id && episodeBusy(episode.id)}
+        onGo={() => goToEpisode(seasonNumber, episode.number)}
+        onMark={() => episode.id && markWatched(episode.id)} />
+    {/if}
   </div>
 {/if}
 
@@ -613,7 +941,7 @@
     busy={!!episode.id && episodeBusy(episode.id)}
     previous={neighbour(before)}
     next={neighbour(after)}
-    onClose={() => (openEpisode = null)}
+    onClose={closePanel}
     onMark={() => {
       if (!episode.id) return;
       // Straight through: move on to the next one, as when watching.
@@ -627,6 +955,18 @@
     onRewatch={() => episode.id && markWatched(episode.id)}
     onUndo={() => episode.id && markUnwatch(episode.id)}
     onReview={() => reviewEpisode(season, episode)} />
+{/if}
+
+{#if goToOpen && sliced}
+  <GoToEpisode
+    tabs={tabs.filter((t) => t.range)}
+    {now}
+    title={tabTitle}
+    onGo={(episodeNumber) => {
+      goToOpen = false;
+      if (cutSeason) goToEpisode(cutSeason.number, episodeNumber);
+    }}
+    onClose={() => (goToOpen = false)} />
 {/if}
 
 {#if posterLightbox !== null && posterImages.length > 0}

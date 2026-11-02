@@ -10,6 +10,8 @@ type LongPressParams = {
   enabled?: boolean;
   /** For a whole list on one node: which element a press is on, if any. */
   pick?: (target: Element) => HTMLElement | null;
+  /** A held mouse button counts too. */
+  mouse?: boolean;
 };
 
 /**
@@ -20,7 +22,7 @@ type LongPressParams = {
  * context menu is replaced, for touch only.
  */
 export function longpress(node: HTMLElement, params: LongPressParams) {
-  let { onLongPress, enabled = true, pick } = params;
+  let { onLongPress, enabled = true, pick, mouse = false } = params;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let sinking: Animation | null = null;
   let startX = 0;
@@ -54,7 +56,7 @@ export function longpress(node: HTMLElement, params: LongPressParams) {
 
   function start(e: PointerEvent) {
     touching = e.pointerType === "touch";
-    if (!enabled || !touching) return;
+    if (!enabled || !(touching || (mouse && e.button === 0))) return;
     const pressed = pick ? pick(e.target as Element) : node;
     if (!pressed) return;
     startX = e.clientX;
@@ -111,6 +113,7 @@ export function longpress(node: HTMLElement, params: LongPressParams) {
       onLongPress = next.onLongPress;
       enabled = next.enabled ?? true;
       pick = next.pick;
+      mouse = next.mouse ?? false;
       mark();
     },
     destroy() {

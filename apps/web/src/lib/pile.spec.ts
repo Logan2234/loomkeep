@@ -87,6 +87,7 @@ describe("timeLeftToWatch", () => {
     reviewAverage: null,
     myRating: null,
     watchCount,
+    commentCount: 0,
     watches: [],
   });
   const season = (number: number, episodes: ReturnType<typeof episode>[]) => ({

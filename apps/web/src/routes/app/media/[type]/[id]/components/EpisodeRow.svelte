@@ -1,5 +1,5 @@
 <script lang="ts">
-  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import Dropdown from "#lib/components/Dropdown.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import {
@@ -7,6 +7,7 @@
     formatDate,
     formatRuntimeTimecode,
   } from "#lib/format.js";
+  import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { MediaDetailEpisodeDto } from "@loomkeep/shared";
   import { airDateLabel, scoreLabel, upcomingLabel } from "./episode-format";
@@ -23,9 +24,15 @@
     highlighted = false,
     justWatched = false,
     busy = false,
+    isNext = false,
+    selecting = false,
+    checked = false,
     onOpen,
     onMark,
-    onReview,
+    onRewatch,
+    onUndo,
+    onUndoAll,
+    onToggle,
   }: {
     episode: MediaDetailEpisodeDto;
     seasonNumber: number;
@@ -33,19 +40,28 @@
     code: string;
     /** Anime: the air date carries a broadcast time. */
     exactTime: boolean;
-    /** In the viewer's library — tracking and review actions show. */
+    /** In the viewer's library — tracking actions show. */
     tracked: boolean;
     now: Date;
-    /** Its side panel is open. */
+    /** Its details are open. */
     selected?: boolean;
-    /** Reached through an `#s2e5` link, lit for a moment. */
+    /** Reached through a link or a jump, lit for a moment. */
     highlighted?: boolean;
     /** Just marked: the tick pops. */
     justWatched?: boolean;
     busy?: boolean;
+    /** The next episode to watch: its circle stands out. */
+    isNext?: boolean;
+    /** The list is in selection mode. */
+    selecting?: boolean;
+    /** Part of the selection. */
+    checked?: boolean;
     onOpen: () => void;
     onMark: () => void;
-    onReview: () => void;
+    onRewatch: () => void;
+    onUndo: () => void;
+    onUndoAll: () => void;
+    onToggle: (shiftKey: boolean) => void;
   } = $props();
 
   const title = $derived(
@@ -55,6 +71,7 @@
   const upcoming = $derived(
     watched ? null : upcomingLabel(episode.airDate, now, exactTime),
   );
+  const selectable = $derived(tracked && !!episode.id && isAired(episode, now));
   // With social features off, reviews are private: the count would always be
   // the viewer's own one, so their score shows instead.
   const reviewBadge = $derived(
@@ -64,32 +81,54 @@
         ? scoreLabel(episode.myRating)
         : null,
   );
+  const lastWatchedAt = $derived(
+    episode.watches[0]?.watchedAt
+      ? formatDate(episode.watches[0].watchedAt, DATE_MEDIUM_OPTIONS)
+      : null,
+  );
 </script>
+
+{#snippet checkbox(onImage: boolean)}
+  <button
+    type="button"
+    role="checkbox"
+    aria-checked={checked}
+    aria-label={m.media_select_episode({ code })}
+    disabled={!selectable}
+    class="relative z-10 grid shrink-0 place-items-center rounded-md border-2 transition-[background-color,border-color,opacity] duration-150 after:absolute after:-inset-2.5 disabled:border-dashed disabled:opacity-40
+      {onImage ? 'h-8 w-8' : 'h-7 w-7'}
+      {checked
+      ? 'bg-accent border-accent text-bg'
+      : onImage
+        ? 'bg-bg/80 border-fg/70'
+        : 'border-dim'}"
+    onclick={(e) => onToggle(e.shiftKey)}>
+    {#if checked}<Icon name="check" class="h-4 w-4" />{/if}
+  </button>
+{/snippet}
 
 <li
   id="episode-s{seasonNumber}e{episode.number}"
-  class="border-border scroll-mt-24 border-t transition-colors duration-500 first:border-t-0
+  data-episode-row={selectable ? episode.id : undefined}
+  class="group/row border-border relative border-t transition-colors duration-500 first:border-t-0
     {justWatched ? 'episode-reward-flash' : ''}
-    {highlighted
-    ? 'bg-accent/15'
-    : selected
-      ? 'bg-surface-2'
-      : 'hover:bg-surface-2/50'}">
-  <!-- Image + title side by side, then the synopsis and actions full width
-       on a phone; a third column for the actions from `sm` up. -->
+    {checked
+    ? 'bg-accent/12'
+    : highlighted
+      ? 'bg-accent/15'
+      : selected
+        ? 'bg-surface-2'
+        : 'hover:bg-surface-2/50'}">
   <div
-    class="grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-2 px-3 py-3 sm:grid-cols-[8.5rem_minmax(0,1fr)_auto] sm:gap-x-4 sm:gap-y-1 sm:px-4">
-    <button
-      type="button"
-      class="bg-surface-2 group relative aspect-video w-full self-start overflow-hidden rounded-lg sm:row-span-2"
-      aria-label={m.media_episode_open({ code })}
-      onclick={onOpen}>
+    class="grid grid-cols-[7rem_minmax(0,1fr)_auto] gap-x-3 gap-y-2 px-3 py-3 sm:gap-x-4 sm:px-4">
+    <div
+      class="bg-surface-2 relative aspect-video w-full self-start overflow-hidden rounded-lg">
       {#if episode.stillUrl}
         <img
           src={episode.stillUrl}
           alt=""
           loading="lazy"
-          class="h-full w-full object-cover transition-transform duration-200 ease-out group-hover:scale-105 motion-reduce:transition-none" />
+          class="h-full w-full object-cover" />
       {:else}
         <span class="text-dim/60 absolute inset-0 grid place-items-center">
           <Icon name="tv" class="h-6 w-6" />
@@ -107,40 +146,172 @@
           {upcoming}
         </span>
       {/if}
-    </button>
+    </div>
+    {#if !layout.compact && selectable}
+      <span
+        class="absolute top-4 left-4 z-10 transition-opacity duration-150 focus-within:opacity-100
+          {selecting ? '' : 'opacity-0 group-hover/row:opacity-100'}">
+        {@render checkbox(true)}
+      </span>
+    {/if}
 
-    <div
-      class="flex min-w-0 flex-wrap items-center gap-x-2 self-center sm:self-end">
-      <span class="timecode shrink-0 text-xs">{code}</span>
+    <div class="min-w-0">
+      <p class="flex items-baseline gap-1.5">
+        <span class="timecode text-xs">{code}</span>
+        {#if episode.watchCount > 1}
+          <span class="timecode text-success text-xs"
+            >×{episode.watchCount}</span>
+        {/if}
+      </p>
+      <!-- Stretched over the row: touching anywhere but its actions opens it,
+           or ticks it while selecting. -->
       <button
         type="button"
-        class="hover:text-accent focus-visible:text-accent min-w-0 text-left text-[0.95rem] font-semibold transition-colors
+        class="hover:text-accent focus-visible:text-accent line-clamp-2 text-left text-[0.95rem] leading-snug font-semibold transition-colors after:absolute after:inset-0
           {episode.title ? '' : 'text-dim'}"
-        onclick={onOpen}>
+        aria-label={selecting ? undefined : m.media_episode_open({ code })}
+        aria-hidden={selecting ? "true" : undefined}
+        tabindex={selecting ? -1 : undefined}
+        disabled={selecting && !selectable}
+        onclick={(e) => (selecting ? onToggle(e.shiftKey) : onOpen())}>
         {title}
       </button>
-      {#if episode.watchCount > 1}
-        <span class="timecode text-success text-xs">×{episode.watchCount}</span>
+      <p class="timecode text-dim mt-0.5 truncate text-[0.7rem]">
+        {#if episode.airDate}{airDateLabel(episode.airDate, exactTime)}{/if}
+        {#if episode.airDate && episode.runtimeMin}<span aria-hidden="true">
+            ·
+          </span>{/if}
+        {#if episode.runtimeMin}<span class="sr-only"
+            >{m.media_episode_runtime()}</span
+          ><span>{formatRuntimeTimecode(episode.runtimeMin)}</span>{/if}
+      </p>
+    </div>
+
+    <div class="relative z-10 flex w-10 flex-col items-center self-start">
+      {#if selecting && layout.compact}
+        {@render checkbox(false)}
+      {:else if selecting}
+        <!-- On desktop the box sits on the image; nothing else competes. -->
+      {:else if tracked && episode.id}
+        {#if watched}
+          <Dropdown placement="bottom-end">
+            {#snippet trigger({ toggle, onkeydown, open })}
+              <button
+                type="button"
+                class="text-success relative flex flex-col items-center gap-0.5 transition-transform duration-150 after:absolute after:-inset-x-1 after:-inset-y-2 active:scale-95 motion-reduce:transition-none"
+                aria-haspopup="menu"
+                aria-expanded={open}
+                aria-label={`${m.media_episode_watched()} ${code}`}
+                onclick={toggle}
+                {onkeydown}>
+                <span
+                  class="bg-success text-bg relative grid h-7 w-7 place-items-center rounded-full">
+                  {#if justWatched}
+                    <!-- A one-off reward: a ring and a few sparks burst out of
+                         the tick, then nothing stays but the tick itself. -->
+                    <span class="episode-reward-ring" aria-hidden="true"></span>
+                    {#each [0, 60, 120, 180, 240, 300] as angle (angle)}
+                      <span
+                        class="episode-reward-spark"
+                        style="--angle: {angle}deg"
+                        aria-hidden="true"></span>
+                    {/each}
+                  {/if}
+                  <span class={justWatched ? "episode-check-pop" : ""}>
+                    <Icon name="check" class="h-4 w-4" />
+                  </span>
+                </span>
+                <span
+                  class="inline-flex items-center text-[0.65rem] font-semibold {justWatched
+                    ? 'episode-reward-word'
+                    : ''}">
+                  {m.media_episode_watched()}
+                  <Icon name="chevron-down" class="h-3 w-3" />
+                </span>
+              </button>
+            {/snippet}
+            {#snippet children({ close })}
+              <div class="border-border max-w-72 border-b px-3 py-2">
+                <p class="truncate text-sm font-semibold">
+                  <span class="timecode">{code}</span> · {title}
+                </p>
+                {#if lastWatchedAt}
+                  <p class="text-dim mt-0.5 text-xs">
+                    {episode.watchCount > 1
+                      ? m.media_watched_on_count({
+                          date: lastWatchedAt,
+                          count: episode.watchCount,
+                        })
+                      : m.media_watched_on({ date: lastWatchedAt })}
+                  </p>
+                {/if}
+              </div>
+              <button
+                type="button"
+                role="menuitem"
+                class="menu-item"
+                onclick={() => {
+                  close();
+                  onRewatch();
+                }}>
+                <Icon name="refresh" class="h-4 w-4" />
+                {m.media_rewatch()}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                class="menu-item"
+                onclick={() => {
+                  close();
+                  onUndo();
+                }}>
+                <Icon name="x" class="h-4 w-4" />
+                {m.media_undo_watch()}
+              </button>
+              {#if episode.watchCount > 1}
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="menu-item menu-item-danger"
+                  onclick={() => {
+                    close();
+                    onUndoAll();
+                  }}>
+                  <Icon name="trash" class="h-4 w-4" />
+                  {m.media_undo_all_watches({ count: episode.watchCount })}
+                </button>
+              {/if}
+            {/snippet}
+          </Dropdown>
+        {:else if upcoming}
+          <span
+            class="timecode border-border text-dim rounded-md border px-1 py-0.5 text-center text-[0.6rem] leading-tight"
+            title={m.media_not_aired()}>
+            {upcoming}
+          </span>
+        {:else if isAired(episode, now)}
+          <button
+            type="button"
+            class="relative h-7 w-7 rounded-full transition-[background-color,transform] duration-150 after:absolute after:-inset-2.5 active:scale-90 motion-reduce:transition-none
+              {isNext
+              ? 'border-accent hover:bg-accent/15 border-[3px]'
+              : 'border-dim hover:bg-surface-2 border-2'}"
+            disabled={busy}
+            aria-label={m.media_mark_watched_code({ code })}
+            title={m.media_mark_watched_short()}
+            onclick={onMark}></button>
+        {/if}
       {/if}
     </div>
 
-    <div class="col-span-2 min-w-0 sm:col-span-1 sm:col-start-2">
+    <div class="col-span-3 min-w-0">
       {#if episode.overview}
         <p class="text-dim line-clamp-2 text-sm leading-relaxed">
           {episode.overview}
         </p>
       {/if}
       <p
-        class="timecode text-dim mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[0.7rem]">
-        {#if episode.airDate}
-          <span>{airDateLabel(episode.airDate, exactTime)}</span>
-        {/if}
-        {#if episode.runtimeMin}
-          <span>
-            <span class="sr-only">{m.media_episode_runtime()}</span>
-            {formatRuntimeTimecode(episode.runtimeMin)}
-          </span>
-        {/if}
+        class="timecode text-dim mt-1 flex items-center gap-x-1.5 overflow-hidden text-[0.7rem] whitespace-nowrap empty:hidden [&>*:not(:first-child)]:before:mr-1.5 [&>*:not(:first-child)]:before:content-['·']">
         {#if episode.voteAverage !== null}
           <span
             >{m.media_score_tmdb({
@@ -148,97 +319,30 @@
             })}</span>
         {/if}
         {#if episode.reviewAverage !== null}
-          <span>
-            {m.media_score_loomkeep({
+          <span
+            >{m.media_score_loomkeep({
               score: scoreLabel(episode.reviewAverage),
-            })}
+            })}</span>
+        {/if}
+        {#if tracked && episode.id && reviewBadge}
+          <span
+            class="inline-flex items-center gap-0.5 {episode.myRating !== null
+              ? 'text-accent'
+              : ''}">
+            <Icon name="star" class="h-3 w-3" />{reviewBadge}
           </span>
         {/if}
-        {#if watched && episode.watches[0]?.watchedAt}
-          <span class="text-success">
-            {m.media_watched_on({
-              date: formatDate(
-                episode.watches[0].watchedAt,
-                DATE_MEDIUM_OPTIONS,
-              ),
-            })}
+        {#if appConfig.socialEnabled && episode.id && episode.commentCount > 0}
+          <span class="inline-flex items-center gap-0.5">
+            <Icon name="message" class="h-3 w-3" />{episode.commentCount}
+          </span>
+        {/if}
+        {#if watched && lastWatchedAt}
+          <span class="text-success min-w-0 truncate">
+            {m.media_watched_on({ date: lastWatchedAt })}
           </span>
         {/if}
       </p>
-    </div>
-
-    <div
-      class="col-span-2 flex items-center justify-between gap-2 sm:col-span-1 sm:col-start-3 sm:row-span-2 sm:row-start-1 sm:flex-col sm:items-end sm:justify-between">
-      <div class="flex items-center gap-0.5">
-        {#if tracked && episode.id}
-          <button
-            type="button"
-            class="hover:bg-surface-2 relative inline-flex h-7 shrink-0 items-center gap-1 rounded-full px-1.5 text-xs transition-colors after:absolute after:inset-x-0 after:-inset-y-2.5 active:scale-95 motion-reduce:transition-none
-              {episode.myRating !== null
-              ? 'text-accent'
-              : 'text-dim hover:text-fg'}"
-            aria-label={m.media_episode_review()}
-            title={m.media_episode_review()}
-            onclick={onReview}>
-            <Icon name="star" class="h-3.5 w-3.5" />
-            {#if reviewBadge}
-              <span class="timecode leading-none tabular-nums"
-                >{reviewBadge}</span>
-            {/if}
-          </button>
-        {/if}
-        {#if appConfig.socialEnabled && episode.id}
-          <CommentsPanel
-            targetType="EPISODE"
-            targetId={episode.id}
-            title={`${code} · ${title}`}
-            canParticipate={tracked}
-            revealSpoilersByDefault={watched}
-            compact />
-        {/if}
-      </div>
-
-      {#if tracked && episode.id}
-        {#if watched}
-          <span
-            class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
-            <span class="relative inline-flex">
-              {#if justWatched}
-                <!-- A one-off reward: a ring and a few sparks burst out of
-                     the tick, then nothing stays but the tick itself. -->
-                <span class="episode-reward-ring" aria-hidden="true"></span>
-                {#each [0, 60, 120, 180, 240, 300] as angle (angle)}
-                  <span
-                    class="episode-reward-spark"
-                    style="--angle: {angle}deg"
-                    aria-hidden="true"></span>
-                {/each}
-              {/if}
-              <span
-                class="inline-flex {justWatched ? 'episode-check-pop' : ''}">
-                <Icon name="check" class="h-4 w-4" />
-              </span>
-            </span>
-            <span class={justWatched ? "episode-reward-word" : ""}>
-              {m.media_episode_watched()}
-            </span>
-          </span>
-        {:else if upcoming}
-          <span
-            class="border-border text-dim shrink-0 rounded-lg border px-2.5 py-1 text-xs"
-            title={m.media_not_aired()}>
-            {upcoming}
-          </span>
-        {:else if isAired(episode, now)}
-          <button
-            type="button"
-            class="btn btn-primary btn-sm shrink-0"
-            disabled={busy}
-            onclick={onMark}>
-            {m.media_mark_watched_short()}
-          </button>
-        {/if}
-      {/if}
     </div>
   </div>
 </li>

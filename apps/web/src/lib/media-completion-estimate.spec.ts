@@ -26,6 +26,7 @@ function episode(
     reviewCount: null,
     reviewAverage: null,
     myRating: null,
+    commentCount: 0,
     watchCount: dates.length,
     watches: dates.map((watchedAt, index) => ({
       id: `w${number}-${index}`,

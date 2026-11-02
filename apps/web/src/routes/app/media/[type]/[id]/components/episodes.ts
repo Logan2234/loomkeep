@@ -11,23 +11,175 @@ export function isAired(
   return !episode.airDate || new Date(episode.airDate) <= now;
 }
 
-/**
- * The season to open on arrival: the one being watched — holding the first
- * aired, unwatched episode of the regular run — once something has been
- * watched. None for a show not started yet, or one watched up to date.
- */
-export function defaultSeasonNumber(
-  seasons: MediaDetailSeasonDto[],
-  now: Date,
-): number | null {
-  const regular = seasons.filter((s) => s.number !== 0);
-  const started = seasons.some((s) => s.episodes.some((e) => e.watchCount));
-  if (!started) return null;
+const SLICE_SIZE = 100;
 
-  const current = regular.find((s) =>
-    s.episodes.some((e) => e.watchCount === 0 && isAired(e, now)),
+/** One page of the episode list: a season, or a slice of a very long one. */
+export interface EpisodeTab {
+  key: string;
+  seasonNumber: number;
+  /** Episode numbers of a slice; null for a whole season. */
+  range: { from: number; to: number } | null;
+  episodes: MediaDetailEpisodeDto[];
+}
+
+/**
+ * One tab per season, specials last. Only a show with a single regular season
+ * over 100 episodes (a long-running anime) is cut into slices of 100: with
+ * several seasons each keeps its one tab, however long.
+ */
+export function episodeTabs(seasons: MediaDetailSeasonDto[]): EpisodeTab[] {
+  const withEpisodes = seasons.filter((s) => s.episodes.length > 0);
+  const regular = withEpisodes
+    .filter((s) => s.number !== 0)
+    .sort((a, b) => a.number - b.number);
+  const specials = withEpisodes.filter((s) => s.number === 0);
+  const whole = (season: MediaDetailSeasonDto): EpisodeTab => ({
+    key: `s${season.number}`,
+    seasonNumber: season.number,
+    range: null,
+    episodes: season.episodes,
+  });
+
+  if (regular.length !== 1 || regular[0].episodes.length <= SLICE_SIZE) {
+    return [...regular, ...specials].map(whole);
+  }
+
+  const season = regular[0];
+  const slices = new Map<number, MediaDetailEpisodeDto[]>();
+
+  for (const episode of season.episodes) {
+    const slice = Math.max(0, Math.floor((episode.number - 1) / SLICE_SIZE));
+    slices.set(slice, [...(slices.get(slice) ?? []), episode]);
+  }
+
+  const cut = [...slices.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([slice, episodes]) => ({
+      key: `s${season.number}-${slice}`,
+      seasonNumber: season.number,
+      range: {
+        from: slice * SLICE_SIZE + 1,
+        to: Math.max(...episodes.map((e) => e.number)),
+      },
+      episodes,
+    }));
+  return [...cut, ...specials.map(whole)];
+}
+
+export function tabKeyOf(
+  tabs: EpisodeTab[],
+  seasonNumber: number,
+  episodeNumber: number,
+): string | null {
+  const tab = tabs.find(
+    (t) =>
+      t.seasonNumber === seasonNumber &&
+      t.episodes.some((e) => e.number === episodeNumber),
   );
-  return current?.number ?? null;
+  return tab?.key ?? null;
+}
+
+type RunEpisode = { seasonNumber: number; episode: MediaDetailEpisodeDto };
+
+function firstInRun(
+  seasons: MediaDetailSeasonDto[],
+  matches: (episode: MediaDetailEpisodeDto) => boolean,
+): RunEpisode | null {
+  for (const season of [...seasons]
+    .filter((s) => s.number !== 0)
+    .sort((a, b) => a.number - b.number)) {
+    const episode = season.episodes.find(matches);
+    if (episode) return { seasonNumber: season.number, episode };
+  }
+
+  return null;
+}
+
+/** The first aired, unwatched episode of the regular run. */
+export const nextUpEpisode = (seasons: MediaDetailSeasonDto[], now: Date) =>
+  firstInRun(seasons, (e) => e.watchCount === 0 && isAired(e, now));
+
+/** The first unwatched episode still to air. */
+export const announcedEpisode = (seasons: MediaDetailSeasonDto[], now: Date) =>
+  firstInRun(seasons, (e) => e.watchCount === 0 && !isAired(e, now));
+
+/**
+ * The tab to open on arrival: where the next episode is; else, up to date on a
+ * tracked show, the last one of the regular run; else the first.
+ */
+export function arrivalTabKey(
+  tabs: EpisodeTab[],
+  seasons: MediaDetailSeasonDto[],
+  tracked: boolean,
+  now: Date,
+): string | null {
+  const next = nextUpEpisode(seasons, now);
+
+  if (next) {
+    return tabKeyOf(tabs, next.seasonNumber, next.episode.number);
+  }
+
+  const regular = tabs.filter((t) => t.seasonNumber !== 0);
+  return (tracked ? regular.at(-1) : undefined)?.key ?? tabs[0]?.key ?? null;
+}
+
+/** Episode ids between two rows of a list, ends included, unaired ones left out. */
+export function selectionRange(
+  episodes: MediaDetailEpisodeDto[],
+  fromId: string,
+  toId: string,
+  now: Date,
+): string[] {
+  const from = episodes.findIndex((e) => e.id === fromId);
+  const to = episodes.findIndex((e) => e.id === toId);
+  if (from < 0 || to < 0) return [];
+  return episodes
+    .slice(Math.min(from, to), Math.max(from, to) + 1)
+    .filter((e) => isAired(e, now))
+    .flatMap((e) => (e.id ? [e.id] : []));
+}
+
+/** Which episodes of a selection each bulk action would really touch. */
+export function selectionActions(
+  episodes: MediaDetailEpisodeDto[],
+  now: Date,
+): { watch: string[]; rewatch: string[]; unwatch: string[] } {
+  const ids = (matches: (e: MediaDetailEpisodeDto) => boolean) =>
+    episodes.filter(matches).flatMap((e) => (e.id ? [e.id] : []));
+  const watched = ids((e) => e.watchCount > 0);
+  return {
+    watch: ids((e) => e.watchCount === 0 && isAired(e, now)),
+    rewatch: watched,
+    unwatch: watched,
+  };
+}
+
+/** What a selection spans: its ends within one tab, or how many tabs. */
+export function selectionSpan(
+  tabs: EpisodeTab[],
+  selected: ReadonlySet<string>,
+):
+  | { tabs: 1; seasonNumber: number; first: number; last: number }
+  | { tabs: number; sliced: boolean }
+  | null {
+  const touched = tabs.filter((t) =>
+    t.episodes.some((e) => e.id && selected.has(e.id)),
+  );
+  if (touched.length === 0) return null;
+
+  if (touched.length > 1) {
+    return { tabs: touched.length, sliced: touched.some((t) => t.range) };
+  }
+
+  const numbers = touched[0].episodes
+    .filter((e) => e.id && selected.has(e.id))
+    .map((e) => e.number);
+  return {
+    tabs: 1,
+    seasonNumber: touched[0].seasonNumber,
+    first: Math.min(...numbers),
+    last: Math.max(...numbers),
+  };
 }
 
 /** Watched / aired counts over the regular run (specials left out). */

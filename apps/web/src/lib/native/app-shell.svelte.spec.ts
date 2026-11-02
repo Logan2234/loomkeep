@@ -1,4 +1,5 @@
 import { dialogFocus } from "#lib/actions/dialog-focus.js";
+import { onBackPress } from "#lib/back-press.js";
 import { chat } from "#lib/chat/chat.svelte.js";
 import { goto } from "#lib/test/navigation.svelte.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -36,6 +37,23 @@ const { browserOpen } = vi.hoisted(() => ({
   browserOpen: vi.fn(() => Promise.resolve()),
 }));
 vi.mock("@capacitor/browser", () => ({ Browser: { open: browserOpen } }));
+
+describe("back button in a mode", () => {
+  it("leaves the mode before walking the history", () => {
+    const back = vi.spyOn(history, "back").mockImplementation(() => {});
+    const leave = vi.fn();
+    const stop = onBackPress(leave);
+
+    handleBackButton({ canGoBack: true });
+    expect(leave).toHaveBeenCalledOnce();
+    expect(back).not.toHaveBeenCalled();
+
+    stop();
+    handleBackButton({ canGoBack: true });
+    expect(back).toHaveBeenCalledOnce();
+    back.mockRestore();
+  });
+});
 
 describe("back button in Messages", () => {
   afterEach(() => {

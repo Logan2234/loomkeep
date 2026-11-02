@@ -16,6 +16,14 @@ history from before it was started.
 - Web: the Content-Security-Policy's `img-src` now lists the catalogs' image
   hosts and the instance's API origin instead of every `https:` origin.
 - `glob` raised to 14.0.2 in the images (CVE-2026-118773, CVE-2026-118764).
+- Series and anime pages: seasons become sticky swipeable tabs, a single season
+  over 100 episodes is cut into tabs of 100 with a jump to any episode, and only
+  the open tab's rows are rendered. A row marks with one tap, a "Watched" menu
+  rewatches or undoes, a bar above the bottom navigation marks the next episode,
+  and a long press (or a checkbox on desktop) selects episodes across tabs for
+  bulk mark, rewatch and unmark, undoable for 5 s. On a phone an episode's
+  details open in a bottom sheet. New `POST /library/episodes/watches/batch` and
+  `/undo` routes; `commentCount` added to each episode of the media detail.
 
 ### Fixed
 

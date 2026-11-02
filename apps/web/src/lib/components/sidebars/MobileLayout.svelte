@@ -109,7 +109,9 @@
     (lastTap = e.target instanceof Element ? e.target : null)} />
 
 <div class="min-h-svh">
-  <main id="main" class="min-h-svh pb-[var(--bottom-bar-space)]">
+  <main
+    id="main"
+    class="min-h-svh pb-[calc(var(--bottom-bar-space)+var(--floating-bar-space,0px))]">
     {#key page.url.pathname}
       {@render children()}
     {/key}
