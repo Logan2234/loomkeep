@@ -1,4 +1,4 @@
-FROM node:26-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS build
+FROM node:26-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS build
 
 RUN npm install -g corepack@0.36.0 && corepack enable && corepack prepare pnpm@12.14.0 --activate
 WORKDIR /app
@@ -33,7 +33,7 @@ RUN pnpm --filter @loomkeep/api deploy --prod --legacy /app/deploy
 # devDependency the prod-only deploy output doesn't have.
 RUN cd /app/deploy && node_modules/.bin/prisma generate --generator client
 
-FROM node:26-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797
+FROM node:26-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94
 
 # postgresql18-client matches the postgres:18-alpine server in docker-compose.yml
 # — pg_dump/psql (admin backup & restore) shell out to it via BackupService.
