@@ -35,15 +35,31 @@ function logoNames() {
 }
 
 describe("where to watch", () => {
-  it("puts the user's services first and still lists every offer", () => {
+  it("shows the user's services and keeps the rest in other options", async () => {
     signIn([8]);
+    const user = userEvent.setup();
 
     renderWithQuery(WhereToWatch, { offers });
 
-    expect(logoNames()).toEqual(["Netflix", "Canal+", "Apple TV Store"]);
+    expect(logoNames()).toEqual(["Netflix"]);
+
+    await user.click(
+      screen.getByRole("button", { name: m.media_watch_other_options() }),
+    );
+
+    expect(screen.getByRole("button", { name: "Canal+" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Apple TV Store" })).toBeTruthy();
   });
 
-  it("adds a service to the user's own from its logo", async () => {
+  it("falls back on what is included when the user has no service here", () => {
+    signIn([]);
+
+    renderWithQuery(WhereToWatch, { offers });
+
+    expect(logoNames()).toEqual(["Canal+", "Netflix"]);
+  });
+
+  it("adds a service to the user's own from the other options", async () => {
     signIn([8]);
     let saved: unknown;
     server.use(
@@ -55,12 +71,15 @@ describe("where to watch", () => {
     const user = userEvent.setup();
     renderWithQuery(WhereToWatch, { offers });
 
+    await user.click(
+      screen.getByRole("button", { name: m.media_watch_other_options() }),
+    );
     await user.click(screen.getByRole("button", { name: "Canal+" }));
     await user.click(
       screen.getByRole("button", { name: m.media_watch_add_mine() }),
     );
 
     await waitFor(() => expect(saved).toEqual({ watchProviderIds: [8, 381] }));
-    expect(logoNames()).toEqual(["Canal+", "Netflix", "Apple TV Store"]);
+    await waitFor(() => expect(logoNames()).toEqual(["Canal+", "Netflix"]));
   });
 });

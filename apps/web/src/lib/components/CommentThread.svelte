@@ -730,11 +730,10 @@
   )}
   <div
     id="comment-{c.id}"
-    class="group relative overflow-visible rounded-lg transition-colors duration-500 [-webkit-touch-callout:none]
+    class="group relative overflow-visible rounded-lg transition-colors duration-500
       {isReply ? 'py-2.5 pl-1' : '-mx-2 px-2 py-3.5'}
-      {focusedId === c.id ? 'bg-surface-2' : ''}
       {highlightedId === c.id ? 'bg-accent/10' : ''}"
-    use:longpress={{ onLongPress: () => (focusedId = c.id), duration: 450 }}>
+    use:longpress={{ onLongPress: () => (focusedId = c.id) }}>
     {#if c.deleted}
       <p class="text-dim text-sm italic">
         {c.deletedByAdmin ? m.comment_deleted_by_admin() : m.comment_deleted()}
@@ -1002,7 +1001,7 @@
           {@render emotePicker(focused.comment, () => (focusedId = null))}
         </div>
       {/if}
-      <div class="flex flex-col" role="menu">
+      <div class="flex flex-col" data-menu-sheet role="menu">
         {@render menuItems(
           focused.comment,
           focused.isReply,

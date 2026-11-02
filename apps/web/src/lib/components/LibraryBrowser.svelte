@@ -1,4 +1,5 @@
 <script module lang="ts">
+  import { longpress } from "#lib/actions/longpress.js";
   import { inView } from "#lib/actions/inView.js";
 
   import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
@@ -77,7 +78,6 @@
     type LibraryViewMode,
   } from "#lib/library-view.js";
   import { prefersReducedMotion } from "#lib/motion.js";
-  import { tapFeedback } from "#lib/native/haptics.js";
   import { m } from "#lib/paraglide/messages.js";
   import { pileHeaderLabel } from "#lib/pile.js";
   import { filtersToSearchParams } from "#lib/saved-views.js";
@@ -335,7 +335,6 @@
 
   // ── Selection mode (UX-04)
   const UNDO_DELAY_MS = 6000;
-  const LONG_PRESS_MS = 450;
   const queryClient = useQueryClient();
 
   let selecting = $state(false);
@@ -686,43 +685,11 @@
   }
 
   // Long press on touch: enters selection mode with the pressed entry.
-  let pressTimer: ReturnType<typeof setTimeout> | null = null;
-  let pressOrigin = { x: 0, y: 0 };
-  let swallowClick = false;
-
-  function onPointerDown(e: PointerEvent) {
-    if (e.pointerType === "mouse" || !bulk) return;
-    const entry = entryOf(e.target as Element);
+  function selectPressed(pressed: HTMLElement) {
+    const entry = entryOf(pressed);
     if (!entry) return;
-    pressOrigin = { x: e.clientX, y: e.clientY };
-    pressTimer = setTimeout(() => {
-      pressTimer = null;
-      selecting = true;
-      if (!selection.has(entry)) toggle(entry, false);
-      swallowClick = true;
-      tapFeedback();
-    }, LONG_PRESS_MS);
-  }
-
-  function cancelPress() {
-    if (pressTimer) clearTimeout(pressTimer);
-    pressTimer = null;
-  }
-
-  function onPointerMove(e: PointerEvent) {
-    if (
-      pressTimer &&
-      Math.hypot(e.clientX - pressOrigin.x, e.clientY - pressOrigin.y) > 8
-    )
-      cancelPress();
-  }
-
-  // The click that ends a long press must not also open the entry.
-  function onClickCapture(e: MouseEvent) {
-    if (!swallowClick) return;
-    swallowClick = false;
-    e.preventDefault();
-    e.stopPropagation();
+    selecting = true;
+    if (!selection.has(entry)) toggle(entry, false);
   }
 
   const hasQuery = $derived(query.trim() !== "");
@@ -940,16 +907,14 @@
     {#key mode}
       <!-- Long press is a touch shortcut for entering selection mode; the
            keyboard has X and the "Affichage" menu. -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         bind:this={container}
-        class="[-webkit-touch-callout:none]"
         in:fly={{ y: 8, duration: reduced ? 0 : 220 }}
-        onpointerdown={onPointerDown}
-        onpointermove={onPointerMove}
-        onpointerup={cancelPress}
-        onpointercancel={cancelPress}
-        onclickcapture={onClickCapture}>
+        use:longpress={{
+          onLongPress: selectPressed,
+          enabled: !!bulk,
+          pick: (target) => target.closest<HTMLElement>("[data-library-item]"),
+        }}>
         {#if mode === "cards"}
           <PosterGrid>
             {#each shown as entry (keyOf(entry))}

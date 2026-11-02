@@ -14,4 +14,16 @@ describe("RelativeTime", () => {
       screen.getByText(formatDateTime(iso, DATETIME_LONG_OPTIONS)),
     ).toBeTruthy();
   });
+
+  // An absolute element with no positioned ancestor in a scrolling list isn't
+  // clipped by it: each row's text pushed the page's height far past its end.
+  it("holds the text read aloud inside a positioned parent", () => {
+    const { container } = render(RelativeTime, {
+      iso: "2026-10-04T11:51:00.000Z",
+    });
+
+    const readAloud = container.querySelector(".sr-only");
+
+    expect(readAloud?.parentElement?.classList).toContain("relative");
+  });
 });

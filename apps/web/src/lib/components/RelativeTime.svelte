@@ -25,6 +25,8 @@
   const text = $derived(showAbsolute ? absolute : formatRelative(iso));
 </script>
 
+<!-- `relative` holds the absolute sr-only text to this spot: otherwise, in a
+     scrolling list, it escapes the list's clipping and lengthens the page. -->
 {#if coarse}
   <button
     type="button"
@@ -32,10 +34,10 @@
     title={absolute}
     aria-pressed={showAbsolute}
     onclick={toggle}>
-    <time datetime={iso}>{@render label()}</time>
+    <time datetime={iso} class="relative">{@render label()}</time>
   </button>
 {:else}
-  <time datetime={iso} class={className} title={absolute}
+  <time datetime={iso} class="relative {className}" title={absolute}
     >{@render label()}</time>
 {/if}
 

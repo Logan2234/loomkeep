@@ -29,26 +29,13 @@
     bookBreakdown?.byStatus.find((s) => s.bucket === "DONE")?.count ?? 0,
   );
 
-  // Static, made-up previews shown instead of the real (redacted) advanced
-  // fields when `locked` — see stats.service.ts's redact* methods and
-  // PremiumTeaser's own doc comment.
-  const FAKE_AUTHORS = [
-    { label: m.stats_preview_author(), value: 850 },
-    { label: m.stats_preview_other_author(), value: 420 },
-    { label: m.stats_preview_recent(), value: 210 },
-  ];
-  const FAKE_LONGEST_BOOK = { title: m.stats_preview_long_book(), pages: 820 };
-  const FAKE_SHORTEST_BOOK = { title: m.stats_preview_short_book(), pages: 96 };
-
   const authorItems = $derived(
-    locked
-      ? FAKE_AUTHORS
-      : books
-        ? books.topAuthorsByPages.map((a) => ({
-            label: a.author,
-            value: a.pages,
-          }))
-        : [],
+    books
+      ? books.topAuthorsByPages.map((a) => ({
+          label: a.author,
+          value: a.pages,
+        }))
+      : [],
   );
 </script>
 
@@ -93,25 +80,23 @@
           {m.stats_books_top_authors()}
         </h3>
         <span class="text-dim text-xs"
-          >{!locked && books.distinctAuthorsCount === 1
+          >{books.distinctAuthorsCount === 1
             ? m.stats_distinct_author({ count: 1 })
             : m.stats_distinct_authors({
-                count: locked ? 8 : books.distinctAuthorsCount,
+                count: books.distinctAuthorsCount,
               })}</span>
       </div>
-      {#if locked || authorItems.length > 0}
+      {#if authorItems.length > 0}
         <RankBars items={authorItems} />
       {:else}
         <p class="text-dim text-sm">{m.stats_books_no_pages()}</p>
       {/if}
-      {#if locked || books.longestBook || books.shortestBook}
-        {@const longestBook = locked ? FAKE_LONGEST_BOOK : books.longestBook}
-        {@const shortestBook = locked ? FAKE_SHORTEST_BOOK : books.shortestBook}
+      {#if books.longestBook || books.shortestBook}
+        {@const longestBook = books.longestBook}
+        {@const shortestBook = books.shortestBook}
         <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
           {#if longestBook}
-            <a
-              href={locked ? "#" : books.longestBook?.href}
-              class="hover:text-accent">
+            <a href={longestBook.href} class="hover:text-accent">
               <span class="text-dim block uppercase"
                 >{m.stats_books_longest()}</span>
               <span class="truncate font-semibold">{longestBook.title}</span>
@@ -120,9 +105,7 @@
             </a>
           {/if}
           {#if shortestBook}
-            <a
-              href={locked ? "#" : books.shortestBook?.href}
-              class="hover:text-accent">
+            <a href={shortestBook.href} class="hover:text-accent">
               <span class="text-dim block uppercase"
                 >{m.stats_books_shortest()}</span>
               <span class="truncate font-semibold">{shortestBook.title}</span>

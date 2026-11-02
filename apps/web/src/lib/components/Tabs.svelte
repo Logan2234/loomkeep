@@ -18,7 +18,7 @@
     class: className = "",
     swipe = true,
   }: {
-    tabs: (SelectOption<T> & { disabled?: boolean })[];
+    tabs: (SelectOption<T> & { disabled?: boolean; disabledReason?: string })[];
     current: T;
     onSelect: (value: T) => void;
     /** Accessible name of the tab list. */
@@ -36,22 +36,29 @@
 
   $effect(() => {
     if (!swipe || !layout.compact) return;
-    return listenTabSwipe(
-      document,
-      (step) => {
-        const next = adjacentTab(tabs, current, step);
-        if (next !== null) onSelect(next);
-      },
-      // What follows the strip is its content: it follows the finger a little.
-      () => {
-        const content: HTMLElement[] = [];
-        let el = list?.nextElementSibling;
-        for (; el; el = el.nextElementSibling) {
-          if (el instanceof HTMLElement) content.push(el);
-        }
-        return content;
-      },
-    );
+    return listenTabSwipe(document, (step) => {
+      const next = adjacentTab(tabs, current, step);
+      if (next !== null) onSelect(next);
+    });
+  });
+
+  // On a phone, what follows the strip slides in from the tab's side.
+  let shown = current;
+  $effect(() => {
+    if (current === shown) return;
+    const index = (value: T) => tabs.findIndex((tab) => tab.value === value);
+    const side = index(current) > index(shown) ? 1 : -1;
+    shown = current;
+    if (reduced || !layout.compact) return;
+    for (let el = list?.nextElementSibling; el; el = el.nextElementSibling) {
+      el.animate(
+        [
+          { opacity: 0, transform: `translateX(${side * 16}px)` },
+          { opacity: 1, transform: "none" },
+        ],
+        { duration: 200, easing: "cubic-bezier(0.2, 0, 0, 1)" },
+      );
+    }
   });
 
   // One underline that slides to the active tab, rather than one per tab.
@@ -105,6 +112,7 @@
       aria-controls={idPrefix ? `${idPrefix}-${tab.value}-panel` : undefined}
       aria-selected={current === tab.value}
       disabled={tab.disabled}
+      title={tab.disabled ? tab.disabledReason : undefined}
       class="shrink-0 border-b-2 border-transparent pb-2.5 text-sm font-bold whitespace-nowrap transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40 {current ===
       tab.value
         ? 'text-fg'

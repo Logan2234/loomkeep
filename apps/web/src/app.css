@@ -258,6 +258,13 @@ body {
   [data-menu-sheet] [role="option"] {
     @apply min-h-12 px-5 text-base whitespace-normal;
   }
+  /* A long press (actions/longpress.ts) replaces the phone's own on this. */
+  @media (pointer: coarse) {
+    [data-longpress] {
+      -webkit-touch-callout: none;
+      user-select: none;
+    }
+  }
   /* What a poster list opens with, row by row: only the first screen, once. */
   .poster-grid-enter > :nth-child(-n + 9) {
     animation: poster-in 180ms ease-out backwards;
