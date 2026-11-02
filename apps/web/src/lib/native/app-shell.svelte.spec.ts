@@ -41,6 +41,7 @@ vi.mock("@capacitor/browser", () => ({ Browser: { open: browserOpen } }));
 describe("back button in a mode", () => {
   it("leaves the mode before walking the history", () => {
     const back = vi.spyOn(history, "back").mockImplementation(() => {});
+    back.mockClear();
     const leave = vi.fn();
     const stop = onBackPress(leave);
 
@@ -51,7 +52,6 @@ describe("back button in a mode", () => {
     stop();
     handleBackButton({ canGoBack: true });
     expect(back).toHaveBeenCalledOnce();
-    back.mockRestore();
   });
 });
 
