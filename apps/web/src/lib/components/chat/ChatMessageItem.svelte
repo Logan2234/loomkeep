@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { longpress } from "#lib/actions/longpress.js";
   import { COMMENT_EMOTE_DISPLAY } from "#lib/constants/comment-emotes.js";
   import {
     deleteMessage,
@@ -53,14 +54,11 @@
   } = $props();
 
   const reduced = prefersReducedMotion();
-  const LONG_PRESS_MS = 450;
   let confirmingDelete = $state(false);
   let wallRevealed = $state(false);
   // The phone's long-press sheet, standing in for the hover pills.
   let sheetOpen = $state(false);
   let forwarding = $state(false);
-  let pressTimer: ReturnType<typeof setTimeout> | undefined;
-  let pressStart: { x: number; y: number } | null = null;
 
   const reactMut = createApiMutation(() => ({
     mutate: (emote: CommentEmote) =>
@@ -129,31 +127,6 @@
   function openSheet() {
     confirmingDelete = false;
     sheetOpen = true;
-  }
-
-  function onpointerdown(event: PointerEvent) {
-    if (!layout.compact || !hasActions || event.pointerType === "mouse") return;
-    pressStart = { x: event.clientX, y: event.clientY };
-    pressTimer = setTimeout(openSheet, LONG_PRESS_MS);
-  }
-
-  // A scroll isn't a press.
-  function onpointermove(event: PointerEvent) {
-    if (!pressStart) return;
-    const moved =
-      Math.abs(event.clientX - pressStart.x) +
-      Math.abs(event.clientY - pressStart.y);
-    if (moved > 10) cancelPress();
-  }
-
-  function cancelPress() {
-    clearTimeout(pressTimer);
-    pressStart = null;
-  }
-
-  function oncontextmenu(event: MouseEvent) {
-    // Android turns a long press into a context menu: the sheet replaces it.
-    if (layout.compact && hasActions) event.preventDefault();
   }
 </script>
 
@@ -295,15 +268,12 @@
     class="flex max-w-full items-center gap-1.5
       {message.mine ? 'flex-row-reverse' : ''}">
     <div
-      class="relative min-w-0 {layout.compact
-        ? 'select-none [-webkit-touch-callout:none]'
-        : ''}"
+      class="relative min-w-0"
       role="presentation"
-      {onpointerdown}
-      {onpointermove}
-      onpointerup={cancelPress}
-      onpointercancel={cancelPress}
-      {oncontextmenu}>
+      use:longpress={{
+        onLongPress: openSheet,
+        enabled: layout.compact && hasActions,
+      }}>
       {#if message.pinned && !message.deleted}
         <!-- On the bubble's outer corner, so a pin shows while reading. -->
         <span

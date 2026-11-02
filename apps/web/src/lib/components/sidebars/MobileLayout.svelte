@@ -40,6 +40,8 @@
 
   afterNavigate(({ to }) => {
     if (!to || !tappedBottomBar()) return;
+    const field = document.querySelector<HTMLInputElement>("[data-tab-focus]");
+    if (field && !field.value) field.focus({ preventScroll: true });
     const top = tabScroll.get(to.url.pathname);
     if (!top) return;
     // What was loaded may still be growing the page back to its height.

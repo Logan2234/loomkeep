@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ClampedText from "#lib/components/ClampedText.svelte";
+  import { layout } from "#lib/layout.svelte.js";
   import StatusCorrectionModal from "#lib/components/StatusCorrectionModal.svelte";
   import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
   import DetailsCard from "#lib/components/DetailsCard.svelte";
@@ -332,9 +334,12 @@
         {/if}
 
         {#if detail.overview}
-          <p class="text-dim mt-6 max-w-2xl whitespace-pre-line">
-            {detail.overview}
-          </p>
+          <div class="mt-6 max-w-2xl">
+            <ClampedText
+              text={detail.overview}
+              lines={layout.compact ? 3 : 8}
+              class="text-dim whitespace-pre-line" />
+          </div>
         {/if}
 
         {#if !entry}

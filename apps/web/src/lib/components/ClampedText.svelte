@@ -1,6 +1,6 @@
 <script lang="ts">
+  import SeeMore from "#lib/components/SeeMore.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
-  import { m } from "#lib/paraglide/messages.js";
   import { tick } from "svelte";
 
   // A paragraph clamped to a few lines, with "Voir plus" / "Voir moins" when
@@ -72,15 +72,9 @@
   class="overflow-hidden {cls}"
   style={expanded
     ? undefined
-    : `display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: ${lines};`}>
+    : `display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: ${lines};${overflowing ? " mask-image: linear-gradient(to bottom, #000 calc(100% - 1lh), transparent);" : ""}`}>
   {text}
 </p>
 {#if overflowing || expanded}
-  <button
-    type="button"
-    class="text-accent hover:text-accent/80 mt-1 text-xs font-semibold transition-colors"
-    aria-expanded={expanded}
-    onclick={toggle}>
-    {expanded ? m.common_see_less() : m.common_see_more()}
-  </button>
+  <SeeMore {expanded} onclick={toggle} ruled class="mt-2" />
 {/if}

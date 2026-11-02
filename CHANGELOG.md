@@ -17,8 +17,29 @@ history from before it was started.
   hosts and the instance's API origin instead of every `https:` origin.
 - `glob` raised to 14.0.2 in the images (CVE-2026-118773, CVE-2026-118764).
 
+### Fixed
+
+- Desktop home: a long activity feed no longer leaves a long empty scroll below
+  the page (the dates' screen-reader text escaped the list's clipping).
+- Search: domain tabs that overflow stop at the search bar's left edge.
+
 ### Changed
 
+- Phone: work pages open on what they're used for: progress, a three-line
+  synopsis, episodes, where to watch, tracking, reviews, similar titles, cast,
+  then a Details section (credits, tags, links, data notices). Games and books
+  get the clamped synopsis too.
+- Where to watch shows the user's services as a row of 40 dp logos, in colour;
+  everything else moves to an "Other options" sheet, and the data notice next
+  to the other ones.
+- A single "see more" control across synopses, reviews, sagas and stats rows.
+- Phone, list detail: titles in full, without the edit tools. Long-pressing a
+  work opens a sheet to edit its note, change the order or remove it.
+- Long presses (lists, comments, messages) share one gesture: the item sinks
+  while held, then a light vibration.
+- Phone: the Search tab opens with the keyboard up when the field is empty.
+- Phone: changing tab slides the new content in from its side; a swipe no
+  longer drags the page along with the finger.
 - Phone: sliding across a page moves between its tabs (stats, calendar, feed,
   leaderboard, notifications, Messages). Notifications now use underlined tabs.
 - Phone: a bottom tab finds its page where it was left, vertically.

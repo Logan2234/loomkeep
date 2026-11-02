@@ -6,6 +6,8 @@
 
   import { page } from "$app/state";
   import { longpress } from "#lib/actions/longpress.js";
+  import Drawer from "#lib/components/Drawer.svelte";
+  import { layout } from "#lib/layout.svelte.js";
   import {
     ApiError,
     getList,
@@ -26,7 +28,6 @@
   import DomainOffMark from "#lib/components/DomainOffMark.svelte";
   import Dropdown from "#lib/components/Dropdown.svelte";
   import EmptyState from "#lib/components/EmptyState.svelte";
-  import FocusOverlay from "#lib/components/FocusOverlay.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import ListAddWorkButton from "#lib/components/ListAddWorkButton.svelte";
   import ListFormModal from "#lib/components/ListFormModal.svelte";
@@ -76,7 +77,30 @@
   let editing = $state(false);
   let managingMembers = $state(false);
   let conflictNotice = $state(false);
-  let focusedItemId = $state<string | null>(null);
+  // A phone reads the list: long-pressing a work opens what the pencil, the
+  // bin and the grip do on desktop.
+  let actionsItemId = $state<string | null>(null);
+  let arranging = $state(false);
+  const LONG_PRESS_HINT_KEY = "lk-list-longpress-seen";
+  let longPressKnown = $state(readLongPressKnown());
+
+  function readLongPressKnown(): boolean {
+    try {
+      return localStorage.getItem(LONG_PRESS_HINT_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function openItemActions(itemId: string) {
+    actionsItemId = itemId;
+    longPressKnown = true;
+    try {
+      localStorage.setItem(LONG_PRESS_HINT_KEY, "1");
+    } catch {
+      // Only a hint shown again next time.
+    }
+  }
   let confirmRemoveId = $state<string | null>(null);
 
   // Set only when getMyList's 403/404 fallback (getList, for a shared/public
@@ -143,6 +167,9 @@
   // change underneath (a refetch, a reorder-conflict reload, …).
   let dragItems: ListItemDto[] = $derived(list?.items ?? []);
 
+  const actionsItem = $derived(
+    dragItems.find((i) => i.id === actionsItemId) ?? null,
+  );
   const confirmRemoveItem = $derived(
     dragItems.find((i) => i.id === confirmRemoveId) ?? null,
   );
@@ -211,7 +238,6 @@
     if (!confirmRemoveId) return;
     const itemId = confirmRemoveId;
     confirmRemoveId = null;
-    focusedItemId = null;
     removeItem(itemId);
   }
 
@@ -260,11 +286,6 @@
     if (!isDomainEnabled(targetDomain(item.targetType))) return null;
     return item.target?.href ?? null;
   }
-
-  // Poster tile for the COLLECTION grid. `focused` renders the enlarged copy
-  // shown inside FocusOverlay on long-press — there the delete button is
-  // always visible (no hover on touch) and the poster isn't a link, since
-  // it's a detached DOM copy purely for the delete action.
 </script>
 
 <svelte:head>
@@ -303,10 +324,10 @@
   {/if}
 {/snippet}
 
-{#snippet gridItem(item: ListItemDto, focused: boolean = false)}
+{#snippet gridItem(item: ListItemDto)}
   {@const domain = targetDomain(item.targetType)}
   {@const off = !isDomainEnabled(domain)}
-  {@const href = focused ? null : itemHref(item)}
+  {@const href = itemHref(item)}
   <svelte:element this={href ? "a" : "div"} href={href ?? undefined}>
     <div
       class="card overflow-hidden transition-[border-color,opacity] {off
@@ -319,7 +340,7 @@
     </div>
     {@render addedByMark(item, 24, "ring-bg absolute top-2 left-2 ring-2")}
     <p class="mt-1.5 flex items-center gap-1 text-sm font-semibold">
-      <span class="min-w-0 truncate">
+      <span class="min-w-0 {layout.compact ? '' : 'truncate'}">
         {item.target?.title ?? m.common_work()}
       </span>
       {#if off}
@@ -330,31 +351,28 @@
       <p class="text-dim mt-0.5 line-clamp-2 text-xs">{item.note}</p>
     {/if}
   </svelte:element>
-  {#if canAdd}
-    <button
-      class="bg-bg/80 text-dim hover:bg-surface-2 hover:text-fg absolute top-2 right-11 grid h-8 w-8 place-items-center rounded-md backdrop-blur transition-all {focused
-        ? 'opacity-100'
-        : 'opacity-0 group-hover:opacity-100 group-hover:shadow-md focus-visible:opacity-100'}"
-      aria-label={item.note ? m.list_item_note_edit() : m.list_item_note_add()}
-      title={item.note ? m.list_item_note_edit() : m.list_item_note_add()}
-      onclick={() => {
-        focusedItemId = null;
-        notingItemId = item.id;
-      }}>
-      <Icon name="edit" class="h-4 w-4" />
-    </button>
-  {/if}
-  {#if canEditList}
-    <button
-      class="bg-bg/80 text-dim hover:bg-danger absolute top-2 right-2 grid h-8 w-8 place-items-center rounded-md backdrop-blur transition-all hover:text-white {focused
-        ? 'opacity-100'
-        : 'opacity-0 group-hover:opacity-100 group-hover:shadow-md'}"
-      aria-label={m.list_item_remove()}
-      title={m.list_item_remove()}
-      disabled={removingId === item.id}
-      onclick={() => (confirmRemoveId = item.id)}>
-      <Icon name="trash" class="h-4 w-4" />
-    </button>
+  {#if !layout.compact}
+    {#if canAdd}
+      <button
+        class="bg-bg/80 text-dim hover:bg-surface-2 hover:text-fg absolute top-2 right-11 grid h-8 w-8 place-items-center rounded-md opacity-0 backdrop-blur transition-all group-hover:opacity-100 group-hover:shadow-md focus-visible:opacity-100"
+        aria-label={item.note
+          ? m.list_item_note_edit()
+          : m.list_item_note_add()}
+        title={item.note ? m.list_item_note_edit() : m.list_item_note_add()}
+        onclick={() => (notingItemId = item.id)}>
+        <Icon name="edit" class="h-4 w-4" />
+      </button>
+    {/if}
+    {#if canEditList}
+      <button
+        class="bg-bg/80 text-dim hover:bg-danger absolute top-2 right-2 grid h-8 w-8 place-items-center rounded-md opacity-0 backdrop-blur transition-all group-hover:opacity-100 group-hover:shadow-md hover:text-white"
+        aria-label={m.list_item_remove()}
+        title={m.list_item_remove()}
+        disabled={removingId === item.id}
+        onclick={() => (confirmRemoveId = item.id)}>
+        <Icon name="trash" class="h-4 w-4" />
+      </button>
+    {/if}
   {/if}
 {/snippet}
 
@@ -424,7 +442,7 @@
           <p class="mt-3 max-w-xl">{list.description}</p>
         {/if}
       </div>
-      <div class="flex shrink-0 gap-2">
+      <div class="flex flex-wrap gap-2">
         {#if canAdd}
           <ListAddWorkButton listId={list.id} title={list.title} {inList} />
         {/if}
@@ -498,7 +516,9 @@
 
     <hr class="border-border mt-5" />
 
-    {#if canAdd && dragItems.length > 0 && isFeatureNew("list-item-notes")}
+    {#if layout.compact && canEditList && dragItems.length > 0 && !longPressKnown}
+      <p class="text-dim mt-6 text-xs">{m.list_item_longpress_hint()}</p>
+    {:else if !layout.compact && canAdd && dragItems.length > 0 && isFeatureNew("list-item-notes")}
       <p class="text-dim mt-6 flex items-center gap-2 text-xs">
         <NewBadge />
         {m.list_item_note_hint()}
@@ -517,11 +537,24 @@
         {/if}
       </EmptyState>
     {:else if list.kind === "RANKED"}
+      {#if arranging}
+        <div
+          class="card bg-surface sticky top-2 z-10 mt-6 flex items-center justify-between gap-3 p-3">
+          <p class="text-dim text-sm">{m.list_item_arrange_hint()}</p>
+          <button
+            type="button"
+            class="btn btn-primary btn-sm shrink-0"
+            onclick={() => (arranging = false)}>
+            {m.list_item_arrange_done()}
+          </button>
+        </div>
+      {/if}
       <ol
         class="mt-6 flex flex-col gap-2"
         use:dndzone={{
           items: dragItems,
-          dragDisabled: !canEditList || reordering,
+          dragDisabled:
+            !canEditList || reordering || (layout.compact && !arranging),
           flipDurationMs: 150,
         }}
         onconsider={handleDndConsider}
@@ -530,8 +563,13 @@
           {@const domain = targetDomain(item.targetType)}
           {@const off = !isDomainEnabled(domain)}
           {@const href = itemHref(item)}
-          <li class="card flex items-center gap-3 p-3">
-            {#if canEditList}
+          <li
+            class="card flex items-center gap-3 p-3"
+            use:longpress={{
+              onLongPress: () => openItemActions(item.id),
+              enabled: layout.compact && canEditList && !arranging,
+            }}>
+            {#if canEditList && (!layout.compact || arranging)}
               <Icon name="grip" class="text-dim h-4 w-4 shrink-0 cursor-grab" />
             {/if}
             <span class="timecode text-accent w-7 shrink-0 text-lg font-bold">
@@ -551,7 +589,7 @@
                   alt="" />
               </div>
               <div class="min-w-0">
-                <p class="truncate font-semibold">
+                <p class="font-semibold {layout.compact ? '' : 'truncate'}">
                   {item.target?.title ?? m.common_work()}
                 </p>
                 {#if item.note}
@@ -563,7 +601,7 @@
               {/if}
             </svelte:element>
             {@render addedByMark(item, 22)}
-            {#if canAdd}
+            {#if canAdd && !layout.compact}
               <button
                 class="text-dim hover:text-fg hover:bg-surface-2 grid h-8 w-8 shrink-0 place-items-center rounded-md transition-colors"
                 aria-label={item.note
@@ -576,7 +614,7 @@
                 <Icon name="edit" class="h-4 w-4" />
               </button>
             {/if}
-            {#if canEditList}
+            {#if canEditList && !layout.compact}
               <button
                 class="text-dim hover:text-danger hover:bg-danger/10 mr-1 grid h-8 w-8 shrink-0 place-items-center rounded-md transition-colors"
                 aria-label={m.list_item_remove()}
@@ -595,11 +633,9 @@
           <div
             class="group relative"
             role="presentation"
-            style="-webkit-touch-callout: none;"
-            oncontextmenu={(e) => canEditList && e.preventDefault()}
             use:longpress={{
-              onLongPress: () => canEditList && (focusedItemId = item.id),
-              duration: 600,
+              onLongPress: () => openItemActions(item.id),
+              enabled: layout.compact && canEditList,
             }}>
             {@render gridItem(item)}
           </div>
@@ -639,17 +675,53 @@
     onClose={() => (managingMembers = false)} />
 {/if}
 
-{#if focusedItemId}
-  {@const focusedItem = dragItems.find((i) => i.id === focusedItemId)}
-  {#if focusedItem}
-    <FocusOverlay onclose={() => (focusedItemId = null)}>
-      {#snippet content()}
-        <div class="group relative">
-          {@render gridItem(focusedItem, true)}
-        </div>
-      {/snippet}
-    </FocusOverlay>
-  {/if}
+{#if actionsItem}
+  {@const closeActions = () => (actionsItemId = null)}
+  <Drawer onclose={closeActions}>
+    <div class="flex flex-col gap-2 px-3 pt-1 pb-3">
+      <p class="truncate px-5 text-sm font-semibold">
+        {actionsItem.target?.title ?? m.common_work()}
+      </p>
+      <div class="flex flex-col" data-menu-sheet role="menu">
+        {#if canAdd}
+          <button
+            role="menuitem"
+            class="menu-item"
+            onclick={() => {
+              notingItemId = actionsItem.id;
+              closeActions();
+            }}>
+            <Icon name="edit" class="h-4 w-4" />
+            {actionsItem.note
+              ? m.list_item_note_edit()
+              : m.list_item_note_add()}
+          </button>
+        {/if}
+        {#if list?.kind === "RANKED"}
+          <button
+            role="menuitem"
+            class="menu-item"
+            onclick={() => {
+              arranging = true;
+              closeActions();
+            }}>
+            <Icon name="grip" class="h-4 w-4" />
+            {m.list_item_arrange()}
+          </button>
+        {/if}
+        <button
+          role="menuitem"
+          class="menu-item menu-item-danger"
+          onclick={() => {
+            confirmRemoveId = actionsItem.id;
+            closeActions();
+          }}>
+          <Icon name="trash" class="h-4 w-4" />
+          {m.list_item_remove()}
+        </button>
+      </div>
+    </div>
+  </Drawer>
 {/if}
 
 {#if notingItem && list}

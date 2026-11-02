@@ -304,6 +304,7 @@
         <input
           type="search"
           name="query"
+          data-tab-focus
           aria-label={placeholder}
           enterkeyhint="search"
           {placeholder}
@@ -453,10 +454,15 @@
        it) room to sit in without being clipped by `overflow-x: auto`, which
        forces the y-axis to clip too (CSS overflow computes the other axis
        to `auto` once one axis isn't `visible`). */
-    padding: 6px 0 4px 5px;
-    /* Nothing on the right: tabs that overflow stop at the bar's own edge. */
-    margin: -6px 0 -4px -5px;
+    padding: 6px 0 4px;
+    /* Nothing on the sides: tabs that overflow stop at the bar's own edges,
+       which is why their focus ring is inset. */
+    margin: -6px 0 -4px;
     overflow-x: auto;
+  }
+
+  .guichet-tab:focus-visible {
+    outline-offset: -2px;
   }
 
   .guichet-tab {

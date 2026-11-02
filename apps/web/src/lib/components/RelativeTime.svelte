@@ -39,7 +39,12 @@
     >{@render label()}</time>
 {/if}
 
-<!-- aria-label is ignored on a <time>: the absolute date is read as text. -->
+<!-- aria-label is ignored on a <time>: the absolute date is read as text.
+     `relative` holds the absolute sr-only text to this spot: otherwise, in a
+     scrolling list, it escapes the list's clipping and lengthens the page. -->
 {#snippet label()}
-  <span aria-hidden="true">{text}</span><span class="sr-only">{absolute}</span>
+  <span class="relative"
+    ><span aria-hidden="true">{text}</span><span class="sr-only"
+      >{absolute}</span
+    ></span>
 {/snippet}

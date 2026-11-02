@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ClampedText from "#lib/components/ClampedText.svelte";
+  import { layout } from "#lib/layout.svelte.js";
   import { buildGallery, galleryIndex } from "#lib/gallery.js";
 
   import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
@@ -52,7 +54,12 @@
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
   } from "#lib/constants/ownership-sources.js";
-  import { formatDate, formatRuntimeTimecode, joinMeta } from "#lib/format.js";
+  import {
+    formatDate,
+    formatRegion,
+    formatRuntimeTimecode,
+    joinMeta,
+  } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { timeLeftToWatch } from "#lib/pile.js";
@@ -611,217 +618,283 @@
       </div>
     {/if}
 
-    {#if (extras && (extras.directors.length > 0 || extras.studios.length > 0)) || detail.overview}
-      {@const hasMeta =
-        !!extras && (extras.directors.length > 0 || extras.studios.length > 0)}
-      <div class="mt-6 max-w-2xl">
-        {#if extras && extras.directors.length > 0}
-          <p class="timecode text-xs">
-            {DIRECTOR_LABELS[detail.type]}
-            <span class="text-fg font-semibold"
-              >{extras.directors.join(", ")}</span>
-          </p>
-        {/if}
-        {#if extras && extras.studios.length > 0}
-          <p
-            class="timecode text-xs {extras.directors.length > 0
-              ? 'mt-1'
-              : ''}">
-            {extras.studios.length > 1 ? m.media_studios() : m.media_studio()}
-            <span class="text-fg font-semibold"
-              >{extras.studios.join(", ")}</span>
-          </p>
-        {/if}
-        {#if detail.overview}
-          <p class="text-dim {hasMeta ? 'mt-2' : ''}">
-            {detail.overview}
-          </p>
-        {/if}
-        {#if extras && extras.tags.length > 0}
-          <div class="mt-3 flex flex-wrap gap-1.5">
-            {#each extras.tags as tag (tag)}
-              <span
-                class="border-border text-dim rounded-full border px-2 py-0.5 text-[0.65rem]">
-                {tag}
-              </span>
-            {/each}
-          </div>
-        {/if}
-      </div>
-    {/if}
+    {#snippet credits()}
+      {#if extras && extras.directors.length > 0}
+        <p class="timecode text-xs">
+          {DIRECTOR_LABELS[detail.type]}
+          <span class="text-fg font-semibold"
+            >{extras.directors.join(", ")}</span>
+        </p>
+      {/if}
+      {#if extras && extras.studios.length > 0}
+        <p class="timecode text-xs {extras.directors.length > 0 ? 'mt-1' : ''}">
+          {extras.studios.length > 1 ? m.media_studios() : m.media_studio()}
+          <span class="text-fg font-semibold">{extras.studios.join(", ")}</span>
+        </p>
+      {/if}
+    {/snippet}
 
-    {#if entry && !upcoming}
-      <!-- Set-once settings, not day-to-day actions — tucked away closed by
-           default rather than living in the action bar above. -->
-      <div
-        class="border-border bg-surface mt-6 max-w-xl overflow-hidden rounded-xl border">
-        <div
-          role="button"
-          tabindex="0"
-          aria-expanded={trackingExpanded}
-          class="flex cursor-pointer items-center gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden {trackingExpanded
-            ? 'border-border border-b'
-            : ''}"
-          onclick={() => (trackingExpanded = !trackingExpanded)}
-          onkeydown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              trackingExpanded = !trackingExpanded;
-            }
-          }}>
-          <Icon
-            name="chevron-right"
-            class="text-dim h-4 w-4 shrink-0 transition-transform {trackingExpanded
-              ? 'rotate-90'
-              : ''}" />
-          <span class="text-sm font-semibold">{m.tracking_title()}</span>
-          <span class="text-dim text-xs">{m.media_tracking_summary()}</span>
+    {#snippet synopsis(cls: string)}
+      {#if detail.overview}
+        <div class={cls}>
+          <ClampedText
+            text={detail.overview}
+            lines={layout.compact ? 3 : 8}
+            class="text-dim" />
         </div>
-        {#if trackingExpanded}
+      {/if}
+    {/snippet}
+
+    {#snippet tags()}
+      {#if extras && extras.tags.length > 0}
+        <div class="mt-3 flex flex-wrap gap-1.5">
+          {#each extras.tags as tag (tag)}
+            <span
+              class="border-border text-dim rounded-full border px-2 py-0.5 text-[0.65rem]">
+              {tag}
+            </span>
+          {/each}
+        </div>
+      {/if}
+    {/snippet}
+
+    {#snippet tracking()}
+      {#if entry && !upcoming}
+        <!-- Set-once settings, not day-to-day actions — tucked away closed by
+           default rather than living in the action bar above. -->
+        <div
+          class="border-border bg-surface mt-6 max-w-xl overflow-hidden rounded-xl border">
           <div
-            class="flex flex-col gap-4 px-4 py-4"
-            transition:slide|global={{ duration: reduced ? 0 : 200 }}>
-            <OwnershipField
-              status={entry.ownershipStatus}
-              source={entry.ownershipSource}
-              statusOptions={MEDIA_OWNERSHIP_STATUS_OPTIONS}
-              sourceOptionsByStatus={MEDIA_OWNERSHIP_SOURCES}
-              onChange={(status, source) =>
-                patchMut.mutate({
-                  ownershipStatus: status as typeof entry.ownershipStatus,
-                  ownershipSource: source,
-                })} />
+            role="button"
+            tabindex="0"
+            aria-expanded={trackingExpanded}
+            class="flex cursor-pointer items-center gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden {trackingExpanded
+              ? 'border-border border-b'
+              : ''}"
+            onclick={() => (trackingExpanded = !trackingExpanded)}
+            onkeydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                trackingExpanded = !trackingExpanded;
+              }
+            }}>
+            <Icon
+              name="chevron-right"
+              class="text-dim h-4 w-4 shrink-0 transition-transform {trackingExpanded
+                ? 'rotate-90'
+                : ''}" />
+            <span class="text-sm font-semibold">{m.tracking_title()}</span>
+            <span class="text-dim text-xs">{m.media_tracking_summary()}</span>
+          </div>
+          {#if trackingExpanded}
+            <div
+              class="flex flex-col gap-4 px-4 py-4"
+              transition:slide|global={{ duration: reduced ? 0 : 200 }}>
+              <OwnershipField
+                status={entry.ownershipStatus}
+                source={entry.ownershipSource}
+                statusOptions={MEDIA_OWNERSHIP_STATUS_OPTIONS}
+                sourceOptionsByStatus={MEDIA_OWNERSHIP_SOURCES}
+                onChange={(status, source) =>
+                  patchMut.mutate({
+                    ownershipStatus: status as typeof entry.ownershipStatus,
+                    ownershipSource: source,
+                  })} />
 
-            <NoteField
-              value={entry.notes}
-              placeholder={m.media_note_placeholder()}
-              onChange={(v) => patchMut.mutate({ notes: v })} />
+              <NoteField
+                value={entry.notes}
+                placeholder={m.media_note_placeholder()}
+                onChange={(v) => patchMut.mutate({ notes: v })} />
 
-            {#if isMovie && (entry.status === "COMPLETED" || entry.replays.length > 0)}
-              <hr class="border-border" />
+              {#if isMovie && (entry.status === "COMPLETED" || entry.replays.length > 0)}
+                <hr class="border-border" />
 
-              <div class="flex flex-col gap-2">
-                <div class="flex items-center justify-between gap-2">
-                  <span
-                    class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-                    {m.media_rewatches()}{#if entry.replays.length > 0}
-                      &nbsp;· {entry.replays.length}{/if}
-                  </span>
-                  {#if entry.status === "COMPLETED"}
-                    <button
-                      type="button"
-                      class="link-accent text-xs disabled:opacity-50"
-                      disabled={saving}
-                      onclick={() => addReplayMut.mutate()}>
-                      {m.media_add_rewatch()}
-                    </button>
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between gap-2">
+                    <span
+                      class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
+                      {m.media_rewatches()}{#if entry.replays.length > 0}
+                        &nbsp;· {entry.replays.length}{/if}
+                    </span>
+                    {#if entry.status === "COMPLETED"}
+                      <button
+                        type="button"
+                        class="link-accent text-xs disabled:opacity-50"
+                        disabled={saving}
+                        onclick={() => addReplayMut.mutate()}>
+                        {m.media_add_rewatch()}
+                      </button>
+                    {/if}
+                  </div>
+                  {#if entry.replays.length > 0}
+                    <ul class="flex flex-col gap-1">
+                      {#each entry.replays as replay (replay.id)}
+                        <li class="text-dim flex items-center gap-2 text-xs">
+                          <span class="flex-1"
+                            >{formatDate(replay.finishedAt)}</span>
+                          <button
+                            type="button"
+                            class="hover:text-danger"
+                            aria-label={m.media_delete_rewatch()}
+                            disabled={saving}
+                            onclick={() => removeReplayMut.mutate(replay.id)}>
+                            {m.common_delete()}
+                          </button>
+                        </li>
+                      {/each}
+                    </ul>
                   {/if}
                 </div>
-                {#if entry.replays.length > 0}
-                  <ul class="flex flex-col gap-1">
-                    {#each entry.replays as replay (replay.id)}
-                      <li class="text-dim flex items-center gap-2 text-xs">
-                        <span class="flex-1"
-                          >{formatDate(replay.finishedAt)}</span>
-                        <button
-                          type="button"
-                          class="hover:text-danger"
-                          aria-label={m.media_delete_rewatch()}
-                          disabled={saving}
-                          onclick={() => removeReplayMut.mutate(replay.id)}>
-                          {m.common_delete()}
-                        </button>
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
-              </div>
-            {/if}
-          </div>
-        {/if}
-      </div>
-    {/if}
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {/if}
+    {/snippet}
 
-    {#if hasProviders && extras}
-      <WhereToWatch offers={extras.watchProviders} />
-    {/if}
+    {#snippet whereToWatch()}
+      {#if hasProviders && extras}
+        <WhereToWatch offers={extras.watchProviders} />
+      {/if}
+    {/snippet}
 
-    {#if extras && extras.externalLinks.length > 0}
-      <section class="mt-4 flex flex-wrap items-center gap-2">
-        <span class="timecode text-xs">{m.common_links()}</span>
-        {#each extras.externalLinks as link (link.url)}
-          <a
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-[0.65rem] font-semibold transition-colors">
-            {link.name} ↗
-          </a>
-        {/each}
-      </section>
-    {/if}
+    {#snippet links()}
+      {#if extras && extras.externalLinks.length > 0}
+        <section class="mt-4 flex flex-wrap items-center gap-2">
+          <span class="timecode text-xs">{m.common_links()}</span>
+          {#each extras.externalLinks as link (link.url)}
+            <a
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-[0.65rem] font-semibold transition-colors">
+              {link.name} ↗
+            </a>
+          {/each}
+        </section>
+      {/if}
+    {/snippet}
 
-    <!-- Provider attribution: required for TMDB (logo + non-endorsement
+    {#snippet attribution()}
+      <!-- Provider attribution: required for TMDB (logo + non-endorsement
          notice, less prominent than Loomkeep's own branding), courtesy for
          AniList. -->
-    <p class="text-dim text-micro mt-4 flex items-center gap-1.5">
-      <ProviderMark
-        brand={type === "ANIME" ? "anilist" : "tmdb"}
-        decorative
-        class="h-3 w-3 shrink-0 opacity-70" />
-      {type === "ANIME" ? m.media_anilist_notice() : m.datasource_tmdb_notice()}
-    </p>
+      <p class="text-dim text-micro mt-4 flex items-center gap-1.5">
+        <ProviderMark
+          brand={type === "ANIME" ? "anilist" : "tmdb"}
+          decorative
+          class="h-3 w-3 shrink-0 opacity-70" />
+        {type === "ANIME"
+          ? m.media_anilist_notice()
+          : m.datasource_tmdb_notice()}
+      </p>
+      {#if hasProviders && extras}
+        <p class="timecode text-dim text-micro mt-2">
+          {m.media_watch_attribution({
+            region: formatRegion(extras.watchProviders.region),
+          })}
+        </p>
+      {/if}
+    {/snippet}
 
-    <!-- Episodes (series/anime). Watch actions only once the media is tracked. -->
-    {#if !isMovie && detail.seasons.length > 0}
-      <EpisodesSection
-        seasons={orderedSeasons}
-        {entry}
-        mediaType={detail.type}
-        sourceId={id}
-        {reload}
-        onError={(m) => (episodesError = m)} />
-    {/if}
+    {#snippet episodes()}
+      <!-- Episodes (series/anime). Watch actions only once the media is tracked. -->
+      {#if !isMovie && detail.seasons.length > 0}
+        <EpisodesSection
+          seasons={orderedSeasons}
+          {entry}
+          mediaType={detail.type}
+          sourceId={id}
+          {reload}
+          onError={(m) => (episodesError = m)} />
+      {/if}
+    {/snippet}
 
-    {#if entry && !upcoming}
-      <ReviewsSection
-        targetType="MEDIA"
-        targetId={entry.mediaItem.id}
-        workTitle={detail.title}
-        workMeta={reviewMeta}
-        workImageUrl={detail.posterUrl} />
-    {/if}
+    {#snippet reviews()}
+      {#if entry && !upcoming}
+        <ReviewsSection
+          targetType="MEDIA"
+          targetId={entry.mediaItem.id}
+          workTitle={detail.title}
+          workMeta={reviewMeta}
+          workImageUrl={detail.posterUrl} />
+      {/if}
+    {/snippet}
 
-    {#key id}
-      <SagaSection {type} sourceId={id} entryStatus={entry?.status ?? null} />
-    {/key}
+    {#snippet works()}
+      {#key id}
+        <SagaSection {type} sourceId={id} entryStatus={entry?.status ?? null} />
+      {/key}
 
-    {#if extras && extras.relations.length > 0}
-      <RelatedCarousel
-        title={m.media_related_works()}
-        items={extras.relations.map((s) => ({
-          key: `${s.source}:${s.sourceId}`,
-          href: `/app/media/${s.type.toLowerCase()}/${s.sourceId}`,
-          cover: s.posterUrl,
-          title: s.title,
-        }))} />
-    {/if}
+      {#if extras && extras.relations.length > 0}
+        <RelatedCarousel
+          title={m.media_related_works()}
+          items={extras.relations.map((s) => ({
+            key: `${s.source}:${s.sourceId}`,
+            href: `/app/media/${s.type.toLowerCase()}/${s.sourceId}`,
+            cover: s.posterUrl,
+            title: s.title,
+          }))} />
+      {/if}
 
-    {#if extras}
-      <RelatedCarousel
-        title={m.media_similar_titles()}
-        items={extras.similar.map((s) => ({
-          key: `${s.source}:${s.sourceId}`,
-          href: `/app/media/${s.type.toLowerCase()}/${s.sourceId}`,
-          cover: s.posterUrl,
-          title: s.title,
-        }))} />
-    {/if}
+      {#if extras}
+        <RelatedCarousel
+          title={m.media_similar_titles()}
+          items={extras.similar.map((s) => ({
+            key: `${s.source}:${s.sourceId}`,
+            href: `/app/media/${s.type.toLowerCase()}/${s.sourceId}`,
+            cover: s.posterUrl,
+            title: s.title,
+          }))} />
+      {/if}
+    {/snippet}
 
-    {#if extras}
-      <CastSection
-        cast={extras.cast}
-        source={type === "ANIME" ? "anilist" : "tmdb"} />
+    {#snippet cast()}
+      {#if extras}
+        <CastSection
+          cast={extras.cast}
+          source={type === "ANIME" ? "anilist" : "tmdb"} />
+      {/if}
+    {/snippet}
+
+    <!-- On a phone, what the page is opened for comes first. -->
+    {#if layout.compact}
+      {@render synopsis("mt-6")}
+      {@render episodes()}
+      {@render whereToWatch()}
+      {@render tracking()}
+      {@render reviews()}
+      {@render works()}
+      {@render cast()}
+      <section class="mt-8">
+        <h2 class="font-display mb-3 text-lg font-bold">
+          {m.common_details()}
+        </h2>
+        {@render credits()}
+        {@render tags()}
+        {@render links()}
+        {@render attribution()}
+      </section>
+    {:else}
+      {#if (extras && (extras.directors.length > 0 || extras.studios.length > 0 || extras.tags.length > 0)) || detail.overview}
+        <div class="mt-6 max-w-2xl">
+          {@render credits()}
+          {@render synopsis(
+            extras && (extras.directors.length > 0 || extras.studios.length > 0)
+              ? "mt-2"
+              : "",
+          )}
+          {@render tags()}
+        </div>
+      {/if}
+      {@render tracking()}
+      {@render whereToWatch()}
+      {@render links()}
+      {@render attribution()}
+      {@render episodes()}
+      {@render reviews()}
+      {@render works()}
+      {@render cast()}
     {/if}
   </div>
 

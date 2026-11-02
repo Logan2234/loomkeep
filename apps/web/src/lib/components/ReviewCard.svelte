@@ -16,6 +16,7 @@
   import Avatar from "./Avatar.svelte";
   import Dropdown from "./Dropdown.svelte";
   import Icon from "./Icon.svelte";
+  import SeeMore from "./SeeMore.svelte";
   import RelativeTime from "./RelativeTime.svelte";
   import RollingNumber from "./RollingNumber.svelte";
 
@@ -246,13 +247,12 @@
     <span class="flex-1"></span>
 
     {#if overflowing || expanded}
-      <button
-        type="button"
-        class="text-accent shrink-0 px-1 text-[0.82rem] font-semibold"
-        aria-expanded={expanded}
-        onclick={toggleExpanded}>
-        {expanded ? m.reviews_read_less() : m.reviews_read_more()}
-      </button>
+      <SeeMore
+        {expanded}
+        onclick={toggleExpanded}
+        more={m.reviews_read_more()}
+        less={m.reviews_read_less()}
+        class="shrink-0" />
     {/if}
 
     {#if mine}

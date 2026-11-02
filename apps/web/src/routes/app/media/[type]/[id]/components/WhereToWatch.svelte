@@ -1,7 +1,7 @@
 <script lang="ts">
   import { auth } from "#lib/auth.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
-  import { formatRegion } from "#lib/format.js";
+  import Modal from "#lib/components/Modal.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { createWatchProviderToggle } from "#lib/watch-provider-toggle.svelte.js";
   import type { WatchProviderDto, WatchProvidersDto } from "@loomkeep/shared";
@@ -10,8 +10,8 @@
 
   const picker = createWatchProviderToggle();
   const mine = $derived(new Set(auth.user?.watchProviderIds ?? []));
-  const pickedNone = $derived(mine.size === 0);
   let openId = $state<number | null>(null);
+  let showingOthers = $state(false);
 
   const groups = $derived(
     [
@@ -20,23 +20,42 @@
       { label: m.media_with_ads(), list: offers.ads },
       { label: m.media_rent(), list: offers.rent },
       { label: m.media_buy(), list: offers.buy },
-    ]
-      .filter((group) => group.list.length > 0)
+    ].filter((group) => group.list.length > 0),
+  );
+
+  function unique(lists: WatchProviderDto[][]): WatchProviderDto[] {
+    const byId = new Map(lists.flat().map((p) => [p.id, p]));
+    return [...byId.values()];
+  }
+
+  // The user's services; without any here, what comes with a subscription or
+  // for free, and only then what has to be paid for.
+  const featured = $derived.by(() => {
+    const all = unique(groups.map((group) => group.list));
+    const own = all.filter((p) => mine.has(p.id));
+    if (own.length > 0) return own;
+    const included = unique([offers.flatrate, offers.free, offers.ads]);
+    return included.length > 0 ? included : all;
+  });
+  const featuredIds = $derived(new Set(featured.map((p) => p.id)));
+  const otherGroups = $derived(
+    groups
       .map((group) => ({
         label: group.label,
-        mine: group.list.filter((p) => mine.has(p.id)),
-        others: group.list.filter((p) => !mine.has(p.id)),
-      })),
+        list: group.list.filter((p) => !featuredIds.has(p.id)),
+      }))
+      .filter((group) => group.list.length > 0),
   );
 
   const opened = $derived.by(() => {
     if (openId === null) return null;
-    const all = groups.flatMap((g) => [...g.mine, ...g.others]);
-    const provider = all.find((p) => p.id === openId);
+    const provider = unique(groups.map((group) => group.list)).find(
+      (p) => p.id === openId,
+    );
     if (!provider) return null;
     const kinds = groups
-      .filter((g) => [...g.mine, ...g.others].some((p) => p.id === openId))
-      .map((g) => g.label.toLowerCase());
+      .filter((group) => group.list.some((p) => p.id === openId))
+      .map((group) => group.label.toLowerCase());
     return { provider, kinds };
   });
 
@@ -45,57 +64,47 @@
   }
 </script>
 
-{#snippet logo(provider: WatchProviderDto, isMine: boolean)}
-  <button
-    type="button"
-    class="relative rounded focus-visible:outline-2"
-    aria-label={provider.name}
-    aria-expanded={openId === provider.id}
-    title={provider.name}
-    onclick={() => open(provider)}>
-    <span
-      class="bg-surface-2 grid h-7 w-7 place-items-center overflow-hidden rounded transition {isMine ||
-      pickedNone
-        ? ''
-        : 'opacity-50 grayscale hover:opacity-100 hover:grayscale-0'}">
-      {#if provider.logoUrl}
-        <img
-          src={provider.logoUrl}
-          alt=""
-          loading="lazy"
-          class="h-full w-full object-cover" />
-      {:else}
-        <span class="text-dim text-[0.55rem] font-bold"
-          >{provider.name.slice(0, 2)}</span>
-      {/if}
-    </span>
-    {#if isMine}
-      <span
-        class="bg-accent text-accent-fg ring-bg absolute -right-1 -bottom-1 grid h-3.5 w-3.5 place-items-center rounded-full ring-2">
-        <Icon name="check" class="h-2.5 w-2.5" />
-      </span>
+{#snippet tile(provider: WatchProviderDto, size: string)}
+  <span
+    class="bg-surface-2 grid {size} shrink-0 place-items-center overflow-hidden rounded-lg">
+    {#if provider.logoUrl}
+      <img
+        src={provider.logoUrl}
+        alt=""
+        loading="lazy"
+        class="h-full w-full object-cover" />
+    {:else}
+      <span class="text-dim text-[0.6rem] font-bold"
+        >{provider.name.slice(0, 2)}</span>
     {/if}
-  </button>
+  </span>
 {/snippet}
 
 <section class="mt-6">
   <span class="timecode text-xs">{m.media_where_to_watch()}</span>
-  <div class="mt-2 grid gap-2">
-    {#each groups as group (group.label)}
-      <div class="flex flex-wrap items-center gap-1.5">
-        <span class="text-dim w-16 shrink-0 text-[0.65rem]">{group.label}</span>
-        {#each group.mine as provider (provider.id)}
-          {@render logo(provider, true)}
-        {/each}
-        {#if group.mine.length > 0 && group.others.length > 0}
-          <span class="bg-border mx-1 h-5 w-px" aria-hidden="true"></span>
-        {/if}
-        {#each group.others as provider (provider.id)}
-          {@render logo(provider, false)}
-        {/each}
-      </div>
+  <div class="no-scrollbar -mx-5 mt-2 flex gap-2.5 overflow-x-auto px-5 py-1">
+    {#each featured as provider (provider.id)}
+      <button
+        type="button"
+        class="shrink-0 rounded-lg transition-transform focus-visible:outline-2 active:scale-95"
+        aria-label={provider.name}
+        aria-expanded={openId === provider.id}
+        title={provider.name}
+        onclick={() => open(provider)}>
+        {@render tile(provider, "h-10 w-10")}
+      </button>
     {/each}
   </div>
+
+  {#if otherGroups.length > 0}
+    <button
+      type="button"
+      class="btn-text mt-1 text-xs"
+      onclick={() => (showingOthers = true)}>
+      {m.media_watch_other_options()}
+      <Icon name="chevron-right" class="h-3.5 w-3.5" />
+    </button>
+  {/if}
 
   {#if opened}
     {@const isMine = mine.has(opened.provider.id)}
@@ -128,8 +137,35 @@
   {#if picker.error}
     <p class="text-danger mt-2 text-xs">{picker.error}</p>
   {/if}
-
-  <p class="timecode text-dim text-micro mt-2">
-    {m.media_watch_attribution({ region: formatRegion(offers.region) })}
-  </p>
 </section>
+
+{#if showingOthers}
+  <Modal
+    title={m.media_watch_other_options()}
+    onclose={() => (showingOthers = false)}>
+    <div class="flex flex-col gap-4">
+      {#each otherGroups as group (group.label)}
+        <div>
+          <h3 class="timecode mb-1 text-xs">{group.label}</h3>
+          <ul>
+            {#each group.list as provider (provider.id)}
+              <li>
+                <button
+                  type="button"
+                  aria-label={provider.name}
+                  class="hover:bg-surface-2 flex min-h-12 w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left text-sm transition-colors"
+                  onclick={() => {
+                    showingOthers = false;
+                    openId = provider.id;
+                  }}>
+                  {@render tile(provider, "h-8 w-8")}
+                  <span class="min-w-0 flex-1">{provider.name}</span>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        </div>
+      {/each}
+    </div>
+  </Modal>
+{/if}

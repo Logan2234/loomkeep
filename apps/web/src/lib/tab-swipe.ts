@@ -5,9 +5,6 @@ const FLICK_DISTANCE = 30;
 const FLICK_SPEED = 0.5;
 /** Where Android's own back gesture starts. */
 const EDGE = 24;
-/** How much of the finger's travel the page follows while dragged. */
-const FOLLOW = 0.3;
-const SETTLE = "transform 180ms cubic-bezier(0.2, 0, 0, 1)";
 
 /** -1 for the previous tab, 1 for the next, 0 for neither. */
 export function swipeStep(dx: number, dy: number, ms: number): -1 | 0 | 1 {
@@ -56,19 +53,10 @@ function ownsGesture(target: Element, root: Document | HTMLElement): boolean {
 export function listenTabSwipe(
   root: Document | HTMLElement,
   onStep: (step: -1 | 1) => void,
-  followers: () => HTMLElement[] = () => [],
 ): () => void {
   if (!matchMedia("(pointer: coarse)").matches) return () => {};
 
   let start: { x: number; y: number; at: number } | null = null;
-  let moving: HTMLElement[] = [];
-
-  function move(x: number, settle: boolean) {
-    for (const el of moving) {
-      el.style.transition = settle ? SETTLE : "none";
-      el.style.transform = x ? `translateX(${x * FOLLOW}px)` : "";
-    }
-  }
 
   function onStart(event: Event) {
     const { touches, target, timeStamp } = event as TouchEvent;
@@ -77,14 +65,6 @@ export function listenTabSwipe(
     const { clientX: x, clientY: y } = touches[0];
     if (x < EDGE || x > innerWidth - EDGE || ownsGesture(target, root)) return;
     start = { x, y, at: timeStamp };
-    moving = followers();
-  }
-
-  function onMove(event: Event) {
-    if (!start) return;
-    const touch = (event as TouchEvent).touches[0];
-    const dx = touch.clientX - start.x;
-    if (Math.abs(dx) > Math.abs(touch.clientY - start.y)) move(dx, false);
   }
 
   function onEnd(event: Event) {
@@ -97,24 +77,20 @@ export function listenTabSwipe(
       timeStamp - start.at,
     );
     start = null;
-    move(0, true);
     if (step) onStep(step);
   }
 
   function onCancel() {
     start = null;
-    move(0, true);
   }
 
   const passive = { passive: true };
   root.addEventListener("touchstart", onStart, passive);
-  root.addEventListener("touchmove", onMove, passive);
   root.addEventListener("touchend", onEnd, passive);
   root.addEventListener("touchcancel", onCancel, passive);
 
   return () => {
     root.removeEventListener("touchstart", onStart);
-    root.removeEventListener("touchmove", onMove);
     root.removeEventListener("touchend", onEnd);
     root.removeEventListener("touchcancel", onCancel);
   };

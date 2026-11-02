@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SeeMore from "#lib/components/SeeMore.svelte";
   import { type ChartDatum } from "#lib/types/chart.js";
 
   import { m } from "#lib/paraglide/messages.js";
@@ -62,13 +63,11 @@
     {/each}
   </ul>
   {#if hasMore}
-    <button
-      type="button"
-      class="btn btn-ghost btn-sm mt-3.5 w-full"
-      onclick={() => (expanded = !expanded)}>
-      {expanded
-        ? m.common_see_less()
-        : m.common_view_all_count({ count: items.length })}
-    </button>
+    <SeeMore
+      {expanded}
+      onclick={() => (expanded = !expanded)}
+      more={m.common_view_all_count({ count: items.length })}
+      ruled
+      class="mt-3.5" />
   {/if}
 {/if}

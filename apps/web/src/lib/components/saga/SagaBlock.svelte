@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Icon from "#lib/components/Icon.svelte";
+  import SeeMore from "#lib/components/SeeMore.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
@@ -253,20 +254,11 @@
     </div>
 
     {#if foldable}
-      <button
-        type="button"
-        class="btn-text self-start text-sm"
-        aria-expanded={expanded}
-        onclick={() => (expanded = !expanded)}>
-        {expanded
-          ? m.common_see_less()
-          : m.media_saga_show_all({ count: members.length })}
-        <Icon
-          name="chevron-down"
-          class="h-4 w-4 transition-transform duration-200 {expanded
-            ? 'rotate-180'
-            : ''}" />
-      </button>
+      <SeeMore
+        {expanded}
+        onclick={() => (expanded = !expanded)}
+        more={m.media_saga_show_all({ count: members.length })}
+        ruled />
     {/if}
   </section>
 {/if}
