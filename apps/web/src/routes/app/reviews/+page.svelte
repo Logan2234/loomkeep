@@ -21,6 +21,7 @@
   import PageHeader from "#lib/components/PageHeader.svelte";
   import ReviewFormModal from "#lib/components/ReviewFormModal.svelte";
   import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import Tabs from "#lib/components/Tabs.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import {
     isDomainEnabled,
@@ -204,14 +205,12 @@
     {subtitle} />
 
   {#if groupOptions.length > 1}
-    <div class="mb-4">
-      <SegmentedControl
-        class="max-w-full overflow-x-auto"
-        label={m.reviews_filter_domain()}
-        options={groupOptions}
-        value={group}
-        onChange={(next) => (group = next)} />
-    </div>
+    <Tabs
+      class="mb-4"
+      label={m.reviews_filter_domain()}
+      tabs={groupOptions}
+      current={group}
+      onSelect={(next) => (group = next)} />
   {/if}
 
   {#if loading}

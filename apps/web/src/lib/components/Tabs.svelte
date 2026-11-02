@@ -18,7 +18,7 @@
     class: className = "",
     swipe = true,
   }: {
-    tabs: (SelectOption<T> & { disabled?: boolean })[];
+    tabs: (SelectOption<T> & { disabled?: boolean; disabledReason?: string })[];
     current: T;
     onSelect: (value: T) => void;
     /** Accessible name of the tab list. */
@@ -112,6 +112,7 @@
       aria-controls={idPrefix ? `${idPrefix}-${tab.value}-panel` : undefined}
       aria-selected={current === tab.value}
       disabled={tab.disabled}
+      title={tab.disabled ? tab.disabledReason : undefined}
       class="shrink-0 border-b-2 border-transparent pb-2.5 text-sm font-bold whitespace-nowrap transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40 {current ===
       tab.value
         ? 'text-fg'

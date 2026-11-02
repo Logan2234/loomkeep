@@ -31,6 +31,7 @@ history from before it was started.
 
 ### Changed
 
+- Reviews: the domain filter uses tabs, the sort keeps its segmented control.
 - Search keeps the six latest terms on the device and offers them under the
   empty field.
 - Statistics: a free account sees one premium block closing the page instead of

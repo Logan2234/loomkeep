@@ -82,11 +82,11 @@ describe("Reviews page", () => {
     server.use(http.get(apiUrl("/reviews/me"), () => HttpResponse.json([])));
     renderWithQuery(ReviewsPage, {});
     await screen.findByText(m.reviews_empty());
-    const group = screen.getByRole("group", {
+    const group = screen.getByRole("tablist", {
       name: m.reviews_filter_domain(),
     });
     expect(
-      within(group).getByRole("button", { name: m.common_Podcasts() }),
+      within(group).getByRole("tab", { name: m.common_Podcasts() }),
     ).toBeTruthy();
   });
 
@@ -96,13 +96,13 @@ describe("Reviews page", () => {
       domainOrder: ["PODCASTS", "GAMES", "MEDIA"],
     } as UserDto;
     renderWithQuery(ReviewsPage, {});
-    const group = await screen.findByRole("group", {
+    const group = await screen.findByRole("tablist", {
       name: m.reviews_filter_domain(),
     });
     expect(
       within(group)
-        .getAllByRole("button")
-        .map((button) => button.textContent?.trim()),
+        .getAllByRole("tab")
+        .map((tab) => tab.textContent?.trim()),
     ).toEqual([
       m.common_all(),
       m.common_Podcasts(),
@@ -111,13 +111,13 @@ describe("Reviews page", () => {
     ]);
     expect(
       (
-        within(group).getByRole("button", {
+        within(group).getByRole("tab", {
           name: m.common_Podcasts(),
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
     expect(
-      within(group).queryByRole("button", { name: m.common_Boardgames() }),
+      within(group).queryByRole("tab", { name: m.common_Boardgames() }),
     ).toBeNull();
   });
 
@@ -159,7 +159,7 @@ describe("Reviews page", () => {
       "Oppenheimer",
     ]);
 
-    await user.click(screen.getByRole("button", { name: m.common_Media() }));
+    await user.click(screen.getByRole("tab", { name: m.common_Media() }));
     expect(titles()).toEqual(["Dune : Deuxième partie", "Oppenheimer"]);
 
     await user.type(
