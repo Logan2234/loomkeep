@@ -111,7 +111,7 @@
 <div class="min-h-svh">
   <main
     id="main"
-    class="min-h-svh pb-[calc(var(--bottom-bar-space)+var(--floating-bar-space,0px))]">
+    class="min-h-svh overflow-x-clip pb-[calc(var(--bottom-bar-space)+var(--floating-bar-space,0px))]">
     {#key page.url.pathname}
       {@render children()}
     {/key}

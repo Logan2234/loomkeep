@@ -189,7 +189,10 @@
       </p>
     </div>
 
-    <div class="relative z-10 flex w-10 flex-col items-center self-start">
+    <!-- Above the row's stretched button; above the next rows too with its menu
+         open, each column being a stacking context. -->
+    <div
+      class="relative z-10 mt-1 mr-1 flex w-10 flex-col items-center self-start has-[[role=menu]]:z-30">
       {#if selecting && layout.compact}
         {@render checkbox(false)}
       {:else if selecting}
@@ -224,10 +227,10 @@
                   </span>
                 </span>
                 <span
-                  class="inline-flex items-center text-[0.65rem] font-semibold {justWatched
-                    ? 'episode-reward-word'
-                    : ''}">
-                  {m.media_episode_watched()}
+                  class="inline-flex items-center text-[0.65rem] font-semibold whitespace-nowrap">
+                  <span class={justWatched ? "episode-reward-word" : ""}>
+                    {m.media_episode_watched()}
+                  </span>
                   <Icon name="chevron-down" class="h-3 w-3" />
                 </span>
               </button>

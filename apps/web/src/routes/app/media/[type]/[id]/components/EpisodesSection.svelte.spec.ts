@@ -1,5 +1,7 @@
 import { ApiError } from "#lib/api/core.js";
 import { resolveApiError } from "#lib/api/errors.js";
+import { chat } from "#lib/chat/chat.svelte.js";
+import { appConfig } from "#lib/config.svelte.js";
 import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
@@ -16,7 +18,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { scoreLabel } from "./episode-format";
+import { scoreLabel, upcomingLabel } from "./episode-format";
 import EpisodesSection from "./EpisodesSection.svelte";
 
 const inDays = (days: number) =>
@@ -284,13 +286,12 @@ describe("EpisodesSection", () => {
   it("shows when an episode airs instead of letting it be marked", async () => {
     const upcoming = season(1, [1], 2);
     upcoming.episodes[1].airDate = inDays(5);
+    const countdown = upcomingLabel(inDays(5), new Date(), false)!;
     const { user } = renderSection([upcoming]);
     // Up to date with what has aired, so no season opens on its own.
     await openSeason(user);
 
-    expect(
-      screen.getAllByText(m.media_airing_in_days({ days: 5 })).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(countdown).length).toBeGreaterThan(0);
     expect(
       screen.queryByRole("button", {
         name: m.media_mark_watched_code({ code: "S01E02" }),
@@ -537,6 +538,33 @@ describe("EpisodesSection", () => {
     expect(
       screen.queryByRole("button", { name: m.media_mark_watched_short() }),
     ).toBeNull();
+  });
+
+  it("closes an episode's sheet when its discussion opens in Messages", async () => {
+    Object.assign(appConfig, { socialEnabled: true, chatEnabled: true });
+    server.use(
+      http.get(apiUrl("/comments/:type/:id/count"), () =>
+        HttpResponse.json({ count: 0 }),
+      ),
+    );
+    const showWork = vi.spyOn(chat, "showWork").mockImplementation(() => {});
+
+    try {
+      const { user } = renderSection([season(1, [1])]);
+      await user.click(openRow(1, 1));
+
+      await user.click(
+        within(panel()).getByRole("button", {
+          name: m.media_comments_title({ target: "S01E01 · Episode 1.1" }),
+        }),
+      );
+
+      expect(showWork).toHaveBeenCalled();
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    } finally {
+      Object.assign(appConfig, { socialEnabled: false, chatEnabled: false });
+      showWork.mockRestore();
+    }
   });
 
   describe("tabs", () => {

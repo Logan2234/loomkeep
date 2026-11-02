@@ -28,6 +28,7 @@
     title,
     canParticipate = false,
     compact = false,
+    onMovedToMessages,
     revealSpoilersByDefault = false,
   }: {
     targetType: CommentTargetType;
@@ -35,6 +36,8 @@
     title: string;
     canParticipate?: boolean;
     compact?: boolean;
+    /** With Messages on, the discussion opens there: over what's left behind. */
+    onMovedToMessages?: () => void;
     revealSpoilersByDefault?: boolean;
   } = $props();
 
@@ -105,6 +108,7 @@
         focusCommentId,
         revealSpoilers: revealSpoilersByDefault,
       });
+      onMovedToMessages?.();
       return;
     }
 

@@ -117,7 +117,10 @@
   {#if season.overview}
     <div class="col-span-2 min-w-0 sm:col-span-1 sm:col-start-2">
       {#key season.number}
-        <ClampedText text={season.overview} class="text-sm leading-relaxed" />
+        <ClampedText
+          text={season.overview}
+          lines={3}
+          class="text-sm leading-relaxed" />
       {/key}
     </div>
   {/if}

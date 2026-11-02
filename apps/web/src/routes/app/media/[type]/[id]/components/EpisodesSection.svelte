@@ -298,46 +298,21 @@
     return () => observer.disconnect();
   });
 
-  // Sliding sideways changes page; past either end the page gives a little
-  // under the finger, then settles back.
-  const EDGE_RESISTANCE = 4;
-  let edgePull = $state(0);
+  // Sliding sideways changes page, the page under the finger until released.
+  let followingEl = $state<HTMLElement>();
   $effect(() => {
     const pages = pagesEl;
     if (!pages) return;
-    const stop = listenTabSwipe(pages, (step) => {
-      if (!stopDrag) stepTab(step);
-    });
-    let start: { x: number; y: number } | null = null;
-    const onStart = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      start = { x: touch.clientX, y: touch.clientY };
-    };
-    const onMove = (e: TouchEvent) => {
-      if (!start || stopDrag || reduced) return;
-      const dx = e.touches[0].clientX - start.x;
-      const dy = e.touches[0].clientY - start.y;
-      const atEnd =
-        (dx > 0 && activeIndex === 0) ||
-        (dx < 0 && activeIndex === tabs.length - 1);
-      edgePull =
-        atEnd && Math.abs(dx) > Math.abs(dy) ? dx / EDGE_RESISTANCE : 0;
-    };
-    const onEnd = () => {
-      start = null;
-      edgePull = 0;
-    };
-    pages.addEventListener("touchstart", onStart, { passive: true });
-    pages.addEventListener("touchmove", onMove, { passive: true });
-    pages.addEventListener("touchend", onEnd, { passive: true });
-    pages.addEventListener("touchcancel", onEnd, { passive: true });
-    return () => {
-      stop();
-      pages.removeEventListener("touchstart", onStart);
-      pages.removeEventListener("touchmove", onMove);
-      pages.removeEventListener("touchend", onEnd);
-      pages.removeEventListener("touchcancel", onEnd);
-    };
+    return listenTabSwipe(
+      pages,
+      (step) => {
+        if (!stopDrag) stepTab(step);
+      },
+      {
+        targets: () => (followingEl && !stopDrag ? [followingEl] : []),
+        canStep: (step) => !!tabs[activeIndex + step],
+      },
+    );
   });
 
   // A season's posters, in a lightbox from its own poster (TMDB only): the
@@ -676,7 +651,7 @@
   $effect(() => {
     if (!layout.compact || floatingHeight === 0) return;
     const root = document.documentElement.style;
-    root.setProperty("--floating-bar-space", `${floatingHeight + 8}px`);
+    root.setProperty("--floating-bar-space", `${floatingHeight + 16}px`);
     return () => root.removeProperty("--floating-bar-space");
   });
 
@@ -750,7 +725,7 @@
 
 <div
   bind:this={tabsEl}
-  class="bg-bg sticky z-10 -mx-1 px-1 py-1.5"
+  class="bg-bg sticky z-15 -mx-1 px-1 py-1.5"
   style="top: calc(env(safe-area-inset-top) + {actionBarHeight}px)">
   <SeasonTabs
     {tabs}
@@ -768,12 +743,10 @@
   {@const after = tabs[activeIndex + 1]}
   <div
     bind:this={pagesEl}
-    class="touch-pan-y overflow-x-clip pt-2"
+    class="touch-pan-y pt-2"
     role="tabpanel"
     aria-label={tabTitle(tab)}>
-    <div
-      style:transform={edgePull ? `translateX(${edgePull}px)` : undefined}
-      class={edgePull ? "" : "transition-transform duration-200 ease-out"}>
+    <div bind:this={followingEl}>
       {#key tab.key}
         <div
           in:fly={{
@@ -898,7 +871,7 @@
   <div
     bind:clientHeight={floatingHeight}
     class={layout.compact
-      ? "fixed inset-x-2 bottom-[var(--bottom-bar-space)] z-30"
+      ? "fixed inset-x-2 bottom-[calc(var(--bottom-bar-space)+0.5rem)] z-30"
       : "sticky bottom-4 z-20 mx-auto mt-4 w-full max-w-[480px]"}
     transition:fly={{ y: reduced ? 0 : 12, duration: reduced ? 0 : 200 }}>
     {#if selecting}

@@ -24,6 +24,8 @@ history from before it was started.
   bulk mark, rewatch and unmark, undoable for 5 s. On a phone an episode's
   details open in a bottom sheet. New `POST /library/episodes/watches/batch` and
   `/undo` routes; `commentCount` added to each episode of the media detail.
+- Phone: sliding between tabs (`Tabs`, seasons, Messages) now moves the content
+  with the finger until release.
 
 ### Fixed
 

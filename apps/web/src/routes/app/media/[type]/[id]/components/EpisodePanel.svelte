@@ -57,6 +57,9 @@
 
   const reduced = prefersReducedMotion();
 
+  let sheet = $state<{ close: () => void }>();
+  const closeSheet = () => sheet?.close();
+
   // Desktop: ← and → step through the episodes, unless the keys belong to
   // something else — a field being typed in, or a dialog opened on top
   // (the lightbox, a review) that has its own use for them.
@@ -162,6 +165,7 @@
         title={`${code} · ${title}`}
         canParticipate={tracked}
         revealSpoilersByDefault={watched}
+        onMovedToMessages={layout.compact ? closeSheet : undefined}
         compact />
     {/if}
     {#if !layout.compact}
@@ -356,9 +360,8 @@
 {/snippet}
 
 {#if layout.compact}
-  <Drawer onclose={onClose} labelledby="episode-panel-title" halfOpen>
-    <!-- A fixed height: moving to another episode must not shift where the
-         half-open sheet rests. -->
+  <Drawer bind:this={sheet} onclose={onClose} labelledby="episode-panel-title">
+    <!-- A fixed height: moving to another episode must not resize the sheet. -->
     <div class="flex h-[85dvh] min-h-0 flex-col">
       {@render header()}
       <div

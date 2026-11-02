@@ -67,10 +67,11 @@
   {:else}
     <button
       type="button"
-      class="btn btn-primary h-11 shrink-0"
+      class="btn bg-accent/15 text-accent hover:bg-accent/25 h-11 shrink-0 gap-1.5 px-3"
       disabled={busy}
       aria-label={m.media_mark_watched_code({ code })}
       onclick={onMark}>
+      <Icon name="check" class="h-4 w-4" />
       {m.media_episode_watched()}
     </button>
   {/if}

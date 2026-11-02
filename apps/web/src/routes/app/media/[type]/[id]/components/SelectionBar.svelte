@@ -20,26 +20,28 @@
     onExit: () => void;
   } = $props();
 
-  const PRIMARY = "bg-accent text-black hover:brightness-95";
-  const SECONDARY = "border border-current/40 hover:bg-bg/10";
+  const BUTTON = "btn btn-sm min-h-10 whitespace-nowrap";
+  const SECONDARY = "border-border hover:bg-surface-2 border";
 </script>
 
-<div class="bg-fg text-bg flex flex-col gap-2 rounded-2xl p-3 shadow-xl">
-  <div class="flex items-start gap-2">
-    <p class="min-w-0 flex-1" aria-live="polite">
-      <span class="block text-sm font-bold">
+<div
+  class="border-border bg-surface flex flex-col gap-2 rounded-2xl border p-3 shadow-xl">
+  <div class="flex items-center gap-2">
+    <p
+      class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2"
+      aria-live="polite">
+      <span class="text-sm font-bold">
         {count === 1
           ? m.media_selection_count_one()
           : m.media_selection_count({ count })}
       </span>
       {#if span}
-        <span class="timecode text-bg/80 block truncate text-[0.7rem]"
-          >{span}</span>
+        <span class="timecode text-dim truncate text-[0.7rem]">{span}</span>
       {/if}
     </p>
     <button
       type="button"
-      class="hover:bg-bg/10 relative grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors duration-150 after:absolute after:-inset-2"
+      class="btn-icon"
       aria-label={m.media_selection_exit()}
       title={m.media_selection_exit()}
       onclick={onExit}>
@@ -51,26 +53,27 @@
       {#if actions.watch.length > 0}
         <button
           type="button"
-          class="btn min-h-11 flex-1 whitespace-nowrap {PRIMARY}"
+          class="{BUTTON} btn-primary"
           disabled={busy}
           onclick={() => onAction("watch", actions.watch)}>
+          <Icon name="check" class="h-4 w-4" />
           {m.media_bulk_watch({ count: actions.watch.length })}
         </button>
       {/if}
       {#if actions.rewatch.length > 0}
         <button
           type="button"
-          class="btn min-h-11 flex-1 whitespace-nowrap {actions.watch.length ===
-          0
-            ? PRIMARY
+          class="{BUTTON} {actions.watch.length === 0
+            ? 'btn-primary'
             : SECONDARY}"
           disabled={busy}
           onclick={() => onAction("rewatch", actions.rewatch)}>
+          <Icon name="refresh" class="h-4 w-4" />
           {m.media_bulk_rewatch({ count: actions.rewatch.length })}
         </button>
         <button
           type="button"
-          class="btn min-h-11 flex-1 whitespace-nowrap {SECONDARY}"
+          class="{BUTTON} {SECONDARY}"
           disabled={busy}
           onclick={() => onAction("unwatch", actions.unwatch)}>
           {m.media_bulk_unwatch({ count: actions.unwatch.length })}
