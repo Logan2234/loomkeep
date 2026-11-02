@@ -89,7 +89,7 @@
             : m.media_season_episode_count({ count: total })
         }`}
         tabindex={open ? 0 : -1}
-        class="bg-surface relative min-h-11 shrink-0 overflow-hidden rounded-lg border-2 px-3 pt-1 pb-1.5 text-center transition-colors duration-150
+        class="bg-surface relative min-h-11 min-w-14 shrink-0 overflow-hidden rounded-lg border-2 px-3 pt-1 pb-1.5 text-center transition-colors duration-150
           {open ? 'border-accent' : 'border-border hover:border-dim/50'}"
         onclick={() => onSelect(tab.key)}>
         <span
@@ -111,7 +111,7 @@
         {/if}
         {#if ticked > 0}
           <span
-            class="bg-accent text-bg timecode absolute top-0.5 right-0.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.6rem] font-bold"
+            class="bg-accent text-bg timecode absolute top-px right-px grid h-3.5 min-w-3.5 place-items-center rounded-full px-0.5 text-[0.55rem] font-bold"
             transition:scale={{ duration: reduced ? 0 : 150, start: 0.95 }}>
             {ticked}
           </span>

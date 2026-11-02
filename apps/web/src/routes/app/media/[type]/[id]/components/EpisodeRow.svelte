@@ -176,14 +176,16 @@
         onclick={(e) => (selecting ? onToggle(e.shiftKey) : onOpen())}>
         {title}
       </button>
-      <p class="timecode text-dim mt-0.5 truncate text-[0.7rem]">
-        {#if episode.airDate}{airDateLabel(episode.airDate, exactTime)}{/if}
-        {#if episode.airDate && episode.runtimeMin}<span aria-hidden="true">
-            ·
-          </span>{/if}
-        {#if episode.runtimeMin}<span class="sr-only"
-            >{m.media_episode_runtime()}</span
-          ><span>{formatRuntimeTimecode(episode.runtimeMin)}</span>{/if}
+      <p class="timecode text-dim mt-0.5 flex flex-wrap gap-x-2 text-[0.7rem]">
+        {#if episode.airDate}
+          <span>{airDateLabel(episode.airDate, exactTime)}</span>
+        {/if}
+        {#if episode.runtimeMin}
+          <span>
+            <span class="sr-only">{m.media_episode_runtime()}</span>
+            {formatRuntimeTimecode(episode.runtimeMin)}
+          </span>
+        {/if}
       </p>
     </div>
 
@@ -231,7 +233,8 @@
               </button>
             {/snippet}
             {#snippet children({ close })}
-              <div class="border-border max-w-72 border-b px-3 py-2">
+              <div
+                class="border-border max-w-72 border-b px-3 py-2 [[data-menu-sheet]_&]:max-w-none [[data-menu-sheet]_&]:px-5">
                 <p class="truncate text-sm font-semibold">
                   <span class="timecode">{code}</span> · {title}
                 </p>

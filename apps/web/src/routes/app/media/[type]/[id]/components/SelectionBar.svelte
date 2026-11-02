@@ -33,7 +33,7 @@
           : m.media_selection_count({ count })}
       </span>
       {#if span}
-        <span class="timecode block truncate text-[0.7rem] opacity-75"
+        <span class="timecode text-bg/80 block truncate text-[0.7rem]"
           >{span}</span>
       {/if}
     </p>
