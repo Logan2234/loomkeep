@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    forgetSearch,
+    readRecentSearches,
+    rememberSearch,
+  } from "#lib/search/recent-searches.js";
   import EmptyState from "#lib/components/EmptyState.svelte";
   import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
 
@@ -117,10 +122,19 @@
     debouncedSyncUrl.call();
   });
 
+  let recent = $state(readRecentSearches());
+
+  // Results come as you type, so a term counts once it's been acted on, not
+  // at each letter: Enter, or opening one of its results.
+  function rememberOnOpen(event: MouseEvent) {
+    if ((event.target as Element).closest("a")) rememberSearch(query);
+  }
+
   // Tab cycles the domain instead of leaving the field — the tabs above the
   // bar are the fast path at a glance, this is the fast path without leaving
   // the keyboard. Escape blurs back out to normal Tab navigation.
   function handleSearchKeydown(event: KeyboardEvent) {
+    if (event.key === "Enter") recent = rememberSearch(query);
     if (event.key === "Escape") {
       (event.currentTarget as HTMLInputElement).blur();
       return;
@@ -393,7 +407,31 @@
     </div>
   </div>
 
-  {#if pastedLink && pastedWork}
+  {#if !query.trim() && !comingSoon && recent.length > 0}
+    <section class="max-w-xl">
+      <h2 class="timecode mb-1 text-xs">{m.search_recent_title()}</h2>
+      <ul>
+        {#each recent as term (term)}
+          <li class="border-border flex items-center border-b last:border-b-0">
+            <button
+              type="button"
+              class="hover:text-accent min-h-12 min-w-0 flex-1 truncate text-left transition-colors"
+              onclick={() => (query = term)}>
+              {term}
+            </button>
+            <button
+              type="button"
+              class="btn-icon text-dim h-11 w-11 shrink-0"
+              aria-label={m.search_recent_remove({ term })}
+              title={m.search_recent_remove({ term })}
+              onclick={() => (recent = forgetSearch(term))}>
+              <Icon name="x" class="h-4 w-4" />
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {:else if pastedLink && pastedWork}
     {#key pastedHref}
       <div class="max-w-xl">
         <QuickAddPanel href={pastedHref!} link={pastedLink} />
@@ -421,19 +459,24 @@
         {m.search_coming_soon_desc()}
       </p>
     </EmptyState>
-  {:else if domain === ALL}
-    <UnifiedSearchPanel
-      {query}
-      order={enabledTabs.map(([d]) => d)}
-      onseeall={(d) => (domain = d)} />
-  {:else if domain === Domain.MEDIA}
-    <MediaSearchPanel {query} type={mediaType} />
-  {:else if domain === Domain.GAMES}
-    <GameSearchPanel {query} mode={gameMode} />
-  {:else if domain === Domain.BOOKS}
-    <BookSearchPanel {query} mode={bookMode} />
-  {:else if domain === Domain.MUSIC}
-    <MusicSearchPanel {query} />
+  {:else}
+    <!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
+    <div onclick={rememberOnOpen}>
+      {#if domain === ALL}
+        <UnifiedSearchPanel
+          {query}
+          order={enabledTabs.map(([d]) => d)}
+          onseeall={(d) => (domain = d)} />
+      {:else if domain === Domain.MEDIA}
+        <MediaSearchPanel {query} type={mediaType} />
+      {:else if domain === Domain.GAMES}
+        <GameSearchPanel {query} mode={gameMode} />
+      {:else if domain === Domain.BOOKS}
+        <BookSearchPanel {query} mode={bookMode} />
+      {:else if domain === Domain.MUSIC}
+        <MusicSearchPanel {query} />
+      {/if}
+    </div>
   {/if}
 </div>
 

@@ -17,6 +17,7 @@
   import BookStatsSection from "#lib/components/stats/BookStatsSection.svelte";
   import GameStatsSection from "#lib/components/stats/GameStatsSection.svelte";
   import HistogramBars from "#lib/components/stats/HistogramBars.svelte";
+  import StatsPremiumBlock from "#lib/components/stats/StatsPremiumBlock.svelte";
   import InsufficientDataNotice from "#lib/components/stats/InsufficientDataNotice.svelte";
   import MusicStatsSection from "#lib/components/stats/MusicStatsSection.svelte";
   import PeriodFilter from "#lib/components/stats/PeriodFilter.svelte";
@@ -129,57 +130,31 @@
     }));
   });
 
-  // Static, made-up datasets shown instead of the real (redacted) ones when
-  // `statsLocked` — the API already zeroes/empties these fields for a
-  // non-premium account (see stats.service.ts), so there's nothing real to
-  // show; a plausible-looking fake chart previews the shape of what's
-  // behind the paywall better than an empty or generic placeholder would.
-  const FAKE_RATING_BARS = [2, 3, 5, 8, 12, 15, 11, 9, 6, 3].map(
-    (value, i) => ({ label: String(i + 1), value }),
-  );
-  const FAKE_DECADE_BARS = [
-    { label: "1990", value: 4 },
-    { label: "2000", value: 9 },
-    { label: "2010", value: 14 },
-    { label: "2020", value: 7 },
-  ];
-  const FAKE_POSSESSION_BARS = [
-    { label: m.stats_ownership_owned(), value: 18 },
-    { label: m.ownership_borrowed(), value: 6 },
-    { label: m.ownership_streaming(), value: 11 },
-  ];
-
   const ratingBars = $derived(
-    statsLocked
-      ? FAKE_RATING_BARS
-      : overview
-        ? overview.ratingDistribution.map((b) => ({
-            label: String(b.rating),
-            value: b.count,
-          }))
-        : [],
+    overview
+      ? overview.ratingDistribution.map((b) => ({
+          label: String(b.rating),
+          value: b.count,
+        }))
+      : [],
   );
   const decadeBars = $derived(
-    statsLocked
-      ? FAKE_DECADE_BARS
-      : overview
-        ? overview.decades.map((b) => ({
-            label: String(b.decade),
-            value: b.count,
-          }))
-        : [],
+    overview
+      ? overview.decades.map((b) => ({
+          label: String(b.decade),
+          value: b.count,
+        }))
+      : [],
   );
   const possessionBars = $derived(
-    statsLocked
-      ? FAKE_POSSESSION_BARS
-      : overview?.possession.sufficientData
-        ? overview.possession.byStatus
-            .map((s) => ({
-              label: POSSESSION_STATUS_LABEL[s.status] ?? s.status,
-              value: s.count,
-            }))
-            .sort((a, b) => b.value - a.value)
-        : [],
+    overview?.possession.sufficientData
+      ? overview.possession.byStatus
+          .map((s) => ({
+            label: POSSESSION_STATUS_LABEL[s.status] ?? s.status,
+            value: s.count,
+          }))
+          .sort((a, b) => b.value - a.value)
+      : [],
   );
 
   const isEmpty = $derived(!!overview && overview.total === 0);
@@ -297,7 +272,7 @@
           <h2 class="font-display mb-4 text-lg font-bold">
             {m.stats_rating_distribution()}
           </h2>
-          {#if statsLocked || overview.ratedCount > 0}
+          {#if overview.ratedCount > 0}
             <HistogramBars bars={ratingBars} onSelect={openRatingModal} />
           {:else}
             <p class="text-dim text-sm">{m.stats_no_rated()}</p>
@@ -312,7 +287,7 @@
           <h2 class="font-display mb-4 text-lg font-bold">
             {m.stats_decade()}
           </h2>
-          {#if statsLocked || decadeBars.length > 0}
+          {#if decadeBars.length > 0}
             <HistogramBars bars={decadeBars} onSelect={openDecadeModal} />
           {:else}
             <p class="text-dim text-sm">{m.stats_no_decade()}</p>
@@ -325,7 +300,7 @@
           <h2 class="font-display mb-4 text-lg font-bold">
             {m.stats_possession()}
           </h2>
-          {#if statsLocked || overview.possession.sufficientData}
+          {#if overview.possession.sufficientData}
             <RankBars items={possessionBars} />
           {:else}
             <InsufficientDataNotice
@@ -374,23 +349,23 @@
     <!-- Entirely premium sections come last: a free account sees plenty of
          real content first, rather than landing on a locked block right
          after the overview. -->
-    {#if showSection("MEDIA")}
+    {#if showSection("MEDIA") && !statsLocked}
       <div class="mt-10 flex flex-wrap items-center gap-3">
         <SectionLabel label={m.stats_temporal_section()} class="mb-0 flex-1" />
-        {#if !statsLocked}
-          <PeriodFilter selected={period} onSelect={(w) => (period = w)} />
-        {/if}
+        <PeriodFilter selected={period} onSelect={(w) => (period = w)} />
       </div>
-      <PremiumTeaser locked={statsLocked} class="mt-4 block">
-        <VideoTemporalSection {period} locked={statsLocked} />
-      </PremiumTeaser>
+      <div class="mt-4">
+        <VideoTemporalSection {period} locked={false} />
+      </div>
     {/if}
 
-    {#if appConfig.socialEnabled}
+    {#if appConfig.socialEnabled && !statsLocked}
       <SectionLabel label={m.common_social()} class="mt-10" />
-      <PremiumTeaser locked={statsLocked}>
-        <SocialStatsSection locked={statsLocked} />
-      </PremiumTeaser>
+      <SocialStatsSection locked={false} />
+    {/if}
+
+    {#if statsLocked}
+      <StatsPremiumBlock />
     {/if}
   {/if}
 </div>
