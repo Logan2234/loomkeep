@@ -1,7 +1,7 @@
 # The build runs on the CI machine's own platform, even for the arm64 image:
 # its output is JavaScript and its production dependencies have no native
 # code, and Paraglide's compiler fails under QEMU emulation.
-FROM --platform=$BUILDPLATFORM node:26-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS build
+FROM --platform=$BUILDPLATFORM node:26-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS build
 
 RUN npm install -g corepack@0.36.0 && corepack enable && corepack prepare pnpm@12.14.0 --activate
 WORKDIR /app
@@ -49,7 +49,7 @@ RUN pnpm --filter @loomkeep/shared build && pnpm --filter @loomkeep/web generate
 # need from it; build/ itself is copied straight from the build stage below.
 RUN pnpm --filter @loomkeep/web deploy --prod --legacy /app/deploy
 
-FROM node:26-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797
+FROM node:26-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94
 RUN apk upgrade --no-cache \
   && rm -rf /usr/local/lib/node_modules/npm \
     /usr/local/lib/node_modules/corepack \
