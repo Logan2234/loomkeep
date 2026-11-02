@@ -1,4 +1,5 @@
 import { auth } from "#lib/auth.svelte.js";
+import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
@@ -7,7 +8,7 @@ import { ErrorCode, type UserDto } from "@loomkeep/shared";
 import { fireEvent, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ListPage from "./+page.svelte";
 
 vi.mock("$app/state", () => ({
@@ -20,7 +21,11 @@ vi.mock("#lib/realtime/socket.js", () => ({
   joinRealtimeRoom: () => () => {},
   onRealtimeEvent: () => () => {},
 }));
+beforeEach(() => {
+  layout.compact = false;
+});
 afterEach(() => {
+  layout.compact = true;
   for (const item of toast.items) toast.dismiss(item.id);
   auth.user = null;
 });
@@ -203,5 +208,35 @@ describe("a note on a list item", () => {
     expect(
       screen.queryByRole("button", { name: m.list_item_note_add() }),
     ).toBeNull();
+  });
+});
+
+describe("a list on a phone", () => {
+  beforeEach(() => {
+    layout.compact = true;
+    server.use(
+      http.get(apiUrl("/lists/me/list"), () => HttpResponse.json(list)),
+    );
+  });
+
+  it("reads without edit tools, and a long press opens them", async () => {
+    renderWithQuery(ListPage, {});
+
+    const [title] = await screen.findAllByText("first");
+    expect(
+      screen.queryByRole("button", { name: m.list_item_remove() }),
+    ).toBeNull();
+
+    await fireEvent.pointerDown(title, { pointerType: "touch" });
+
+    expect(
+      await screen.findByRole("menuitem", { name: m.list_item_note_add() }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("menuitem", { name: m.list_item_arrange() }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("menuitem", { name: m.list_item_remove() }),
+    ).toBeTruthy();
   });
 });
