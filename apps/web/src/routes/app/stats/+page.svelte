@@ -355,13 +355,13 @@
         <PeriodFilter selected={period} onSelect={(w) => (period = w)} />
       </div>
       <div class="mt-4">
-        <VideoTemporalSection {period} locked={false} />
+        <VideoTemporalSection {period} />
       </div>
     {/if}
 
     {#if appConfig.socialEnabled && !statsLocked}
       <SectionLabel label={m.common_social()} class="mt-10" />
-      <SocialStatsSection locked={false} />
+      <SocialStatsSection />
     {/if}
 
     {#if statsLocked}

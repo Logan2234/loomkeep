@@ -39,76 +39,39 @@
       : null,
   );
 
-  // Static, made-up previews shown instead of the real (redacted) advanced
-  // fields when `locked` — see stats.service.ts's redact* methods and
-  // PremiumTeaser's own doc comment.
-  const FAKE_TOP_GAMES = [
-    { label: m.stats_preview_game(), value: 24 },
-    { label: m.stats_preview_favorite(), value: 16 },
-    { label: m.stats_preview_recent(), value: 9 },
-  ];
-  const FAKE_PLATFORMS = [
-    { label: "PC", value: 5 },
-    { label: "Switch", value: 3 },
-    { label: "PS5", value: 2 },
-  ];
-  const FAKE_GENRES = [
-    { label: "Action", value: 6 },
-    { label: "Rogue-like", value: 4 },
-    { label: "Puzzle", value: 2 },
-  ];
-  const FAKE_RATING_BY_PLATFORM = [
-    { label: "PC", value: 8.4 },
-    { label: "Switch", value: 7.9 },
-  ];
-  const FAKE_RATING_BY_GENRE = [
-    { label: "Action", value: 8.1 },
-    { label: "Rogue-like", value: 7.6 },
-  ];
-
   const topGamesItems = $derived(
-    locked
-      ? FAKE_TOP_GAMES
-      : games
-        ? games.topGamesByPlaytime.map((g) => ({
-            label: g.title,
-            value: Math.round(g.minutes / 60),
-          }))
-        : [],
+    games
+      ? games.topGamesByPlaytime.map((g) => ({
+          label: g.title,
+          value: Math.round(g.minutes / 60),
+        }))
+      : [],
   );
   const platformItems = $derived(
-    locked
-      ? FAKE_PLATFORMS
-      : games
-        ? games.topPlatforms.map((p) => ({ label: p.label, value: p.count }))
-        : [],
+    games
+      ? games.topPlatforms.map((p) => ({ label: p.label, value: p.count }))
+      : [],
   );
   const genreItems = $derived(
-    locked
-      ? FAKE_GENRES
-      : games
-        ? games.topGenres.map((g) => ({ label: g.label, value: g.count }))
-        : [],
+    games
+      ? games.topGenres.map((g) => ({ label: g.label, value: g.count }))
+      : [],
   );
   const ratingByPlatformItems = $derived(
-    locked
-      ? FAKE_RATING_BY_PLATFORM
-      : games
-        ? games.avgRatingByPlatform.map((r) => ({
-            label: r.label,
-            value: r.averageRating,
-          }))
-        : [],
+    games
+      ? games.avgRatingByPlatform.map((r) => ({
+          label: r.label,
+          value: r.averageRating,
+        }))
+      : [],
   );
   const ratingByGenreItems = $derived(
-    locked
-      ? FAKE_RATING_BY_GENRE
-      : games
-        ? games.avgRatingByGenre.map((r) => ({
-            label: r.label,
-            value: r.averageRating,
-          }))
-        : [],
+    games
+      ? games.avgRatingByGenre.map((r) => ({
+          label: r.label,
+          value: r.averageRating,
+        }))
+      : [],
   );
 </script>
 
@@ -143,7 +106,7 @@
       <h3 class="font-display mb-4 text-lg font-bold">
         {m.stats_games_top_playtime()}
       </h3>
-      {#if locked || topGamesItems.length > 0}
+      {#if topGamesItems.length > 0}
         <RankBars items={topGamesItems} />
       {:else}
         <p class="text-dim text-sm">{m.stats_games_no_playtime()}</p>
@@ -170,7 +133,7 @@
         <h3 class="font-display mb-4 text-lg font-bold">
           {m.stats_games_rating_platform()}
         </h3>
-        {#if locked || ratingByPlatformItems.length > 0}
+        {#if ratingByPlatformItems.length > 0}
           <RankBars items={ratingByPlatformItems} />
         {:else}
           <p class="text-dim text-sm">{m.stats_games_no_ratings()}</p>
@@ -180,7 +143,7 @@
         <h3 class="font-display mb-4 text-lg font-bold">
           {m.stats_rating_genre()}
         </h3>
-        {#if locked || ratingByGenreItems.length > 0}
+        {#if ratingByGenreItems.length > 0}
           <RankBars items={ratingByGenreItems} />
         {:else}
           <p class="text-dim text-sm">{m.stats_games_no_ratings()}</p>

@@ -21,6 +21,8 @@ history from before it was started.
 
 - Phone: sliding across an open conversation no longer changes the Messages tab
   and closes it.
+- Phone: a long press on your own message in a read-only conversation offers
+  copy and forward instead of nothing.
 - Long presses sink everywhere while held, comments included; the library's
   selection press uses the same gesture.
 - Desktop home: a long activity feed no longer leaves a long empty scroll below

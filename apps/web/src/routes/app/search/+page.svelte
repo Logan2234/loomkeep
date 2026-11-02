@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { flip } from "svelte/animate";
+  import { scale } from "svelte/transition";
   import {
     forgetSearch,
     readRecentSearches,
@@ -123,6 +126,7 @@
   });
 
   let recent = $state(readRecentSearches());
+  const reducedMotion = prefersReducedMotion();
 
   // Results come as you type, so a term counts once it's been acted on, not
   // at each letter: Enter, or opening one of its results.
@@ -408,24 +412,30 @@
   </div>
 
   {#if !query.trim() && !comingSoon && recent.length > 0}
-    <section class="max-w-xl">
-      <h2 class="timecode mb-1 text-xs">{m.search_recent_title()}</h2>
-      <ul>
+    <section>
+      <h2 class="text-dim mb-2.5 text-sm font-semibold">
+        {m.search_recent_title()}
+      </h2>
+      <ul class="flex flex-wrap gap-2">
         {#each recent as term (term)}
-          <li class="border-border flex items-center border-b last:border-b-0">
+          <li
+            class="recent-term"
+            animate:flip={{ duration: reducedMotion ? 0 : 180 }}
+            out:scale={{ duration: reducedMotion ? 0 : 120, start: 0.9 }}>
             <button
               type="button"
-              class="hover:text-accent min-h-12 min-w-0 flex-1 truncate text-left transition-colors"
+              class="recent-term-pick"
               onclick={() => (query = term)}>
-              {term}
+              <Icon name="search" class="text-dim h-3.5 w-3.5 shrink-0" />
+              <span class="truncate">{term}</span>
             </button>
             <button
               type="button"
-              class="btn-icon text-dim h-11 w-11 shrink-0"
+              class="recent-term-forget"
               aria-label={m.search_recent_remove({ term })}
               title={m.search_recent_remove({ term })}
               onclick={() => (recent = forgetSearch(term))}>
-              <Icon name="x" class="h-4 w-4" />
+              <Icon name="x" class="h-3.5 w-3.5" />
             </button>
           </li>
         {/each}
@@ -485,6 +495,46 @@
 {/if}
 
 <style>
+  .recent-term {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    transition: border-color 0.2s ease;
+  }
+
+  .recent-term:hover,
+  .recent-term:focus-within {
+    border-color: var(--accent);
+  }
+
+  .recent-term-pick {
+    display: flex;
+    min-width: 0;
+    min-height: 2.5rem;
+    align-items: center;
+    gap: 0.45rem;
+    padding-left: 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .recent-term-forget {
+    display: grid;
+    width: 2.25rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+    place-items: center;
+    color: var(--dim);
+    transition: color 0.2s ease;
+  }
+
+  .recent-term-forget:hover {
+    color: var(--fg);
+  }
+
   /* "Le Guichet" — domain tabs sit like ticket stubs above the bar; the
      active one lifts and hands its color down as the bar's top edge, so the
      two read as one connected control instead of a filter row plus a

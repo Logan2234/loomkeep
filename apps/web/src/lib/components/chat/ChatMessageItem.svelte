@@ -90,7 +90,7 @@
     errorToast: true,
   }));
 
-  const hasActions = $derived(!message.deleted && (writable || !message.mine));
+  const hasActions = $derived(!message.deleted);
   // /pick and /where draw their work as their own card.
   const commandCard = $derived(
     (!!message.pick || message.where) && message.works.length > 0,
@@ -306,15 +306,14 @@
       {:else}
         <div
           in:fade={{ duration: reduced ? 0 : 150 }}
-          class="flex flex-col gap-1.5 rounded-2xl transition-shadow duration-150
+          class="flex flex-col gap-1.5 rounded-2xl
             {jumbo
             ? 'text-[2.5rem] leading-tight'
             : `text-sm leading-relaxed ${message.text ? 'px-3 py-2' : 'p-1.5'} ${
                 message.mine
                   ? 'bg-accent/20 text-fg rounded-br-md'
                   : 'bg-surface-2 rounded-bl-md'
-              }`}
-            {sheetOpen ? 'ring-accent ring-2' : ''}">
+              }`}">
           {#if message.text}
             <ChatMessageText
               text={message.text}
@@ -455,7 +454,7 @@
           {@render emotePicker(() => {})}
         </div>
       {/if}
-      <div class="flex flex-col" role="menu">
+      <div class="flex flex-col" data-menu-sheet role="menu">
         {#if confirmingDelete}
           {@render deleteConfirm(() => (confirmingDelete = false))}
         {:else}

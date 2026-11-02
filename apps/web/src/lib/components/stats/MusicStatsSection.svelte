@@ -30,26 +30,10 @@
 
   const hours = $derived(music ? Math.round(music.listenDurationMin / 60) : 0);
 
-  // Static, made-up previews shown instead of the real (redacted) advanced
-  // fields when `locked` — see stats.service.ts's redact* methods and
-  // PremiumTeaser's own doc comment.
-  const FAKE_ARTISTS = [
-    { label: m.stats_preview_artist(), value: 12 },
-    { label: m.stats_preview_other_artist(), value: 8 },
-    { label: m.stats_preview_recent(), value: 3 },
-  ];
-  const FAKE_TYPE_SPLIT = [
-    { label: m.music_album(), count: 14 },
-    { label: "EP", count: 5 },
-    { label: "Single", count: 3 },
-  ];
-
   const artistItems = $derived(
-    locked
-      ? FAKE_ARTISTS
-      : music
-        ? music.topArtists.map((a) => ({ label: a.label, value: a.count }))
-        : [],
+    music
+      ? music.topArtists.map((a) => ({ label: a.label, value: a.count }))
+      : [],
   );
 
   const TYPE_TINTS = [
@@ -59,13 +43,11 @@
     "color-mix(in srgb, var(--stat-music) 20%, var(--surface))",
   ];
   const typeSegments = $derived(
-    (locked ? FAKE_TYPE_SPLIT : music ? music.releaseTypeSplit : []).map(
-      (t, i) => ({
-        label: t.label,
-        color: TYPE_TINTS[i % TYPE_TINTS.length],
-        value: t.count,
-      }),
-    ),
+    (music ? music.releaseTypeSplit : []).map((t, i) => ({
+      label: t.label,
+      color: TYPE_TINTS[i % TYPE_TINTS.length],
+      value: t.count,
+    })),
   );
 </script>
 
@@ -90,7 +72,7 @@
         <h3 class="font-display mb-4 text-lg font-bold">
           {m.stats_music_top_artists()}
         </h3>
-        {#if locked || artistItems.length > 0}
+        {#if artistItems.length > 0}
           <RankBars items={artistItems} />
         {:else}
           <p class="text-dim text-sm">{m.stats_music_no_artists()}</p>
@@ -100,7 +82,7 @@
         <h3 class="font-display mb-4 text-lg font-bold">
           {m.music_release_type()}
         </h3>
-        {#if locked || typeSegments.length > 0}
+        {#if typeSegments.length > 0}
           <StackedBar segments={typeSegments} />
         {:else}
           <p class="text-dim text-sm">{m.stats_music_no_albums()}</p>
