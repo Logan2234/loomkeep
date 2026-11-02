@@ -1,4 +1,12 @@
 <script lang="ts">
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { flip } from "svelte/animate";
+  import { scale } from "svelte/transition";
+  import {
+    forgetSearch,
+    readRecentSearches,
+    rememberSearch,
+  } from "#lib/search/recent-searches.js";
   import EmptyState from "#lib/components/EmptyState.svelte";
   import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
 
@@ -117,10 +125,20 @@
     debouncedSyncUrl.call();
   });
 
+  let recent = $state(readRecentSearches());
+  const reducedMotion = prefersReducedMotion();
+
+  // Results come as you type, so a term counts once it's been acted on, not
+  // at each letter: Enter, or opening one of its results.
+  function rememberOnOpen(event: MouseEvent) {
+    if ((event.target as Element).closest("a")) rememberSearch(query);
+  }
+
   // Tab cycles the domain instead of leaving the field — the tabs above the
   // bar are the fast path at a glance, this is the fast path without leaving
   // the keyboard. Escape blurs back out to normal Tab navigation.
   function handleSearchKeydown(event: KeyboardEvent) {
+    if (event.key === "Enter") recent = rememberSearch(query);
     if (event.key === "Escape") {
       (event.currentTarget as HTMLInputElement).blur();
       return;
@@ -393,7 +411,37 @@
     </div>
   </div>
 
-  {#if pastedLink && pastedWork}
+  {#if !query.trim() && !comingSoon && recent.length > 0}
+    <section>
+      <h2 class="text-dim mb-2.5 text-sm font-semibold">
+        {m.search_recent_title()}
+      </h2>
+      <ul class="flex flex-wrap gap-2">
+        {#each recent as term (term)}
+          <li
+            class="recent-term"
+            animate:flip={{ duration: reducedMotion ? 0 : 180 }}
+            out:scale={{ duration: reducedMotion ? 0 : 120, start: 0.9 }}>
+            <button
+              type="button"
+              class="recent-term-pick"
+              onclick={() => (query = term)}>
+              <Icon name="search" class="text-dim h-3.5 w-3.5 shrink-0" />
+              <span class="truncate">{term}</span>
+            </button>
+            <button
+              type="button"
+              class="recent-term-forget"
+              aria-label={m.search_recent_remove({ term })}
+              title={m.search_recent_remove({ term })}
+              onclick={() => (recent = forgetSearch(term))}>
+              <Icon name="x" class="h-3.5 w-3.5" />
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {:else if pastedLink && pastedWork}
     {#key pastedHref}
       <div class="max-w-xl">
         <QuickAddPanel href={pastedHref!} link={pastedLink} />
@@ -421,19 +469,24 @@
         {m.search_coming_soon_desc()}
       </p>
     </EmptyState>
-  {:else if domain === ALL}
-    <UnifiedSearchPanel
-      {query}
-      order={enabledTabs.map(([d]) => d)}
-      onseeall={(d) => (domain = d)} />
-  {:else if domain === Domain.MEDIA}
-    <MediaSearchPanel {query} type={mediaType} />
-  {:else if domain === Domain.GAMES}
-    <GameSearchPanel {query} mode={gameMode} />
-  {:else if domain === Domain.BOOKS}
-    <BookSearchPanel {query} mode={bookMode} />
-  {:else if domain === Domain.MUSIC}
-    <MusicSearchPanel {query} />
+  {:else}
+    <!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
+    <div onclick={rememberOnOpen}>
+      {#if domain === ALL}
+        <UnifiedSearchPanel
+          {query}
+          order={enabledTabs.map(([d]) => d)}
+          onseeall={(d) => (domain = d)} />
+      {:else if domain === Domain.MEDIA}
+        <MediaSearchPanel {query} type={mediaType} />
+      {:else if domain === Domain.GAMES}
+        <GameSearchPanel {query} mode={gameMode} />
+      {:else if domain === Domain.BOOKS}
+        <BookSearchPanel {query} mode={bookMode} />
+      {:else if domain === Domain.MUSIC}
+        <MusicSearchPanel {query} />
+      {/if}
+    </div>
   {/if}
 </div>
 
@@ -442,6 +495,46 @@
 {/if}
 
 <style>
+  .recent-term {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    transition: border-color 0.2s ease;
+  }
+
+  .recent-term:hover,
+  .recent-term:focus-within {
+    border-color: var(--accent);
+  }
+
+  .recent-term-pick {
+    display: flex;
+    min-width: 0;
+    min-height: 2.5rem;
+    align-items: center;
+    gap: 0.45rem;
+    padding-left: 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .recent-term-forget {
+    display: grid;
+    width: 2.25rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+    place-items: center;
+    color: var(--dim);
+    transition: color 0.2s ease;
+  }
+
+  .recent-term-forget:hover {
+    color: var(--fg);
+  }
+
   /* "Le Guichet" — domain tabs sit like ticket stubs above the bar; the
      active one lifts and hands its color down as the bar's top edge, so the
      two read as one connected control instead of a filter row plus a

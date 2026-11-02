@@ -70,11 +70,15 @@ afterEach(() => {
   layout.compact = true;
 });
 
-function renderMessage(message: MessageDto = MINE, onmarkedunread = vi.fn()) {
+function renderMessage(
+  message: MessageDto = MINE,
+  onmarkedunread = vi.fn(),
+  writable = true,
+) {
   renderWithQuery(ChatMessageItem, {
     message,
     onmarkedunread,
-    writable: true,
+    writable,
     endOfGroup: true,
     time: "21:14",
     onedit: vi.fn(),
@@ -389,6 +393,25 @@ describe("ChatMessageItem", () => {
     expect(
       screen.getByText(m.media_watch_attribution({ region: "FR" })),
     ).toBeTruthy();
+  });
+
+  it("still offers copy and forward on my message in a read-only conversation", async () => {
+    layout.compact = true;
+    renderMessage(MINE, vi.fn(), false);
+
+    await fireEvent.pointerDown(screen.getByText(MINE.text!), {
+      pointerType: "touch",
+    });
+
+    expect(
+      await screen.findByRole("menuitem", { name: m.chat_copy_text() }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("menuitem", { name: m.chat_forward_ellipsis() }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("menuitem", { name: m.common_edit() })).toBe(
+      null,
+    );
   });
 
   it("opens the actions on a long press on a phone", async () => {

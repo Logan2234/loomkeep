@@ -1,19 +1,28 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { longpress } from "./longpress";
 
+vi.mock("#lib/motion.js", () => ({ prefersReducedMotion: () => false }));
+
 function press(node: HTMLElement, pointerType = "touch") {
   node.dispatchEvent(
-    new PointerEvent("pointerdown", { pointerType, clientX: 10, clientY: 10 }),
+    new PointerEvent("pointerdown", {
+      bubbles: true,
+      pointerType,
+      clientX: 10,
+      clientY: 10,
+    }),
   );
 }
 
 describe("longpress", () => {
   let node: HTMLElement;
+  const cancel = vi.fn();
 
   beforeEach(() => {
     vi.useFakeTimers();
     node = document.createElement("a");
     document.body.append(node);
+    node.animate = vi.fn(() => ({ cancel })) as never;
   });
 
   afterEach(() => {
@@ -21,16 +30,36 @@ describe("longpress", () => {
     node.remove();
   });
 
-  it("fires after a held touch, saying so while it's held", () => {
+  it("fires after a held touch, sinking while it's held", () => {
     const onLongPress = vi.fn();
     longpress(node, { onLongPress });
 
     press(node);
-    expect(node.dataset.pressing).toBe("");
+    expect(node.animate).toHaveBeenCalledOnce();
     vi.advanceTimersByTime(450);
 
-    expect(onLongPress).toHaveBeenCalledOnce();
-    expect(node.dataset.pressing).toBeUndefined();
+    expect(onLongPress).toHaveBeenCalledWith(node);
+    expect(cancel).toHaveBeenCalled();
+  });
+
+  it("in a list, presses the element picked, and nothing outside one", () => {
+    const row = node.appendChild(document.createElement("span"));
+    row.animate = vi.fn(() => ({ cancel })) as never;
+    const gap = node.appendChild(document.createElement("i"));
+    const onLongPress = vi.fn();
+    longpress(node, {
+      onLongPress,
+      pick: (target) => (target === row ? row : null),
+    });
+
+    press(gap);
+    vi.advanceTimersByTime(450);
+    expect(onLongPress).not.toHaveBeenCalled();
+
+    press(row);
+    expect(row.animate).toHaveBeenCalledOnce();
+    vi.advanceTimersByTime(450);
+    expect(onLongPress).toHaveBeenCalledWith(row);
   });
 
   it("swallows the click the release makes, wherever it lands, and only that one", () => {

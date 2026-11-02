@@ -679,9 +679,17 @@
   {@const closeActions = () => (actionsItemId = null)}
   <Drawer onclose={closeActions}>
     <div class="flex flex-col gap-2 px-3 pt-1 pb-3">
-      <p class="truncate px-5 text-sm font-semibold">
-        {actionsItem.target?.title ?? m.common_work()}
-      </p>
+      <div class="flex items-center gap-3 px-5 pb-1">
+        <div class="w-10 shrink-0 overflow-hidden rounded">
+          <Poster
+            src={actionsItem.target?.imageUrl ?? null}
+            title={actionsItem.target?.title ?? "?"}
+            alt="" />
+        </div>
+        <p class="min-w-0 font-semibold">
+          {actionsItem.target?.title ?? m.common_work()}
+        </p>
+      </div>
       <div class="flex flex-col" data-menu-sheet role="menu">
         {#if canAdd}
           <button

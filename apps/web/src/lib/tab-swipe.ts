@@ -101,7 +101,11 @@ export function tabSwipe(node: HTMLElement, onStep: (step: -1 | 1) => void) {
   let step = onStep;
   const stop = listenTabSwipe(node, (direction) => {
     const tabs = node.querySelector("[role='tablist']");
-    if (tabs && tabs.getClientRects().length > 0) step(direction);
+
+    // An open conversation covers the tabs and makes them inert.
+    if (tabs && tabs.getClientRects().length > 0 && !tabs.closest("[inert]")) {
+      step(direction);
+    }
   });
   return {
     update(next: (step: -1 | 1) => void) {

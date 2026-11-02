@@ -258,22 +258,11 @@ body {
   [data-menu-sheet] [role="option"] {
     @apply min-h-12 px-5 text-base whitespace-normal;
   }
-  /* Something held under a finger (actions/longpress.ts) sinks slowly: going
-     on holding will do something. */
+  /* A long press (actions/longpress.ts) replaces the phone's own on this. */
   @media (pointer: coarse) {
     [data-longpress] {
       -webkit-touch-callout: none;
       user-select: none;
-      transition: transform 150ms ease-out;
-    }
-    [data-longpress][data-pressing] {
-      transform: scale(0.97);
-      transition: transform 350ms ease-in 100ms;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    [data-longpress][data-pressing] {
-      transform: none;
     }
   }
   /* What a poster list opens with, row by row: only the first screen, once. */
