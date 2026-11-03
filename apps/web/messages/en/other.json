@@ -489,6 +489,7 @@
   "calendar_filter_anime": "Anime",
   "calendar_filter_empty": "Nothing upcoming with this filter.",
   "calendar_next_week": "Next week",
+  "calendar_behind": "{count} behind",
   "calendar_catch_up": "{count} episodes to catch up on",
   "calendar_catch_up_one": "1 episode to catch up on",
   "lists_subtitle": "Your rankings and collections across all domains.",

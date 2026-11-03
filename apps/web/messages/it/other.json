@@ -489,6 +489,7 @@
   "calendar_filter_anime": "Anime",
   "calendar_filter_empty": "Niente in arrivo con questo filtro.",
   "calendar_next_week": "La settimana prossima",
+  "calendar_behind": "{count} di ritardo",
   "calendar_catch_up": "{count} episodi da recuperare",
   "calendar_catch_up_one": "1 episodio da recuperare",
   "lists_subtitle": "Le tue classifiche e collezioni, in tutti i domini.",

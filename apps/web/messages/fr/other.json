@@ -489,6 +489,7 @@
   "calendar_filter_anime": "Animés",
   "calendar_filter_empty": "Rien à venir avec ce filtre.",
   "calendar_next_week": "Semaine prochaine",
+  "calendar_behind": "{count} en retard",
   "calendar_catch_up": "{count} épisodes à rattraper",
   "calendar_catch_up_one": "1 épisode à rattraper",
   "lists_subtitle": "Tes classements et collections, tous domaines confondus.",

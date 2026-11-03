@@ -44,7 +44,8 @@
   }
 
   const MIN_COVERS = 6;
-  const PER_ROW = 12;
+  // Enough to outrun the widest screens before the loop shows.
+  const PER_ROW = 20;
   const HUES = [
     "#7a3b2e",
     "#3d4a35",
@@ -106,7 +107,7 @@
   <aside
     class="bg-surface border-border relative hidden min-w-0 flex-1 flex-col justify-between overflow-hidden border-r p-14 lg:flex">
     {@render wordmark("relative z-10 text-2xl")}
-    <div class="auth-wall" aria-hidden="true">
+    <div class="auth-wall select-none" aria-hidden="true">
       {#each rows as row, i (i)}
         <div class="auth-row {i % 2 ? 'auth-row-back' : ''}">
           {#each row as cover, j (j)}
@@ -116,6 +117,7 @@
                 alt=""
                 loading="lazy"
                 decoding="async"
+                draggable="false"
                 class="bg-surface-2 h-42 w-28 shrink-0 rounded-xl object-cover" />
             {:else}
               <span
