@@ -195,8 +195,10 @@
   {#snippet tagline()}{m.auth_login_tagline()}{/snippet}
 
   {#if step === "credentials"}
-    <form onsubmit={submit} class="card flex flex-col gap-4 p-7">
-      <h1 class="font-display text-xl font-bold">{m.auth_login_title()}</h1>
+    <form onsubmit={submit} class="flex flex-1 flex-col gap-4 lg:flex-none">
+      <h1 class="font-display sr-only text-2xl font-bold lg:not-sr-only">
+        {m.auth_login_title()}
+      </h1>
       <input
         type="text"
         name="identifier"
@@ -227,6 +229,9 @@
         <a href="/forgot-password" class="link-accent text-sm"
           >{m.auth_forgot_password()}</a>
       </p>
+      <!-- On a phone the submit sits at the bottom, over the keyboard once
+           it opens. -->
+      <div class="flex-1 lg:hidden"></div>
       {#if suspendedUntil !== null && (loginMut.error || passwordlessMut.error)}
         <div
           role="alert"
@@ -253,9 +258,10 @@
       <button type="submit" class="btn btn-primary" disabled={loginMut.loading}>
         {loginMut.loading ? m.auth_login_action_loading() : m.common_login()}
       </button>
+      <!-- A security key is offered once it knows whose account to open. -->
       <button
         type="button"
-        class="btn-text self-center text-sm"
+        class="btn border-accent text-accent hover:bg-accent/10 border"
         disabled={!identifier.trim() || passwordlessMut.loading}
         onclick={() => passwordlessMut.mutate()}>
         <Icon name="key" class="h-4 w-4" />

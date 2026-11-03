@@ -115,8 +115,8 @@
       </a>
     </div>
   {:else}
-    <form onsubmit={submit} class="card flex flex-col gap-4 p-7">
-      <h1 class="font-display text-xl font-bold">
+    <form onsubmit={submit} class="flex flex-1 flex-col gap-4 lg:flex-none">
+      <h1 class="font-display sr-only text-2xl font-bold lg:not-sr-only">
         {m.common_register()}
       </h1>
       {#if invite}
@@ -200,14 +200,14 @@
       {#if registerMut.error}
         <Banner variant="error">{registerMut.error}</Banner>
       {/if}
-      <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
+      <label class="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
         <input
           type="checkbox"
           name="acceptedTerms"
           value="true"
           bind:checked={acceptedTerms}
           required
-          class="mt-0.5" />
+          class="accent-accent mt-0.5 size-5 shrink-0" />
         <span>
           {m.auth_register_accept_terms_prefix()}
           <a
@@ -225,17 +225,18 @@
         </span>
       </label>
       <FieldError message={registerMut.fieldErrors.acceptedTerms} />
-      <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
+      <label class="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
         <input
           type="checkbox"
           name="certifiedAge"
           value="true"
           bind:checked={certifiedAge}
           required
-          class="mt-0.5" />
+          class="accent-accent mt-0.5 size-5 shrink-0" />
         <span>{m.auth_register_certify_age()}</span>
       </label>
       <FieldError message={registerMut.fieldErrors.certifiedAge} />
+      <div class="flex-1 lg:hidden"></div>
       <button
         type="submit"
         class="btn btn-primary"
