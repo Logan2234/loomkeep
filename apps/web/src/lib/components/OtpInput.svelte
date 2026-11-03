@@ -101,7 +101,7 @@
         total: length,
       })}
       value={digit}
-      class="input min-w-0 flex-1 px-0 text-center font-mono text-xl!"
+      class="input h-18! min-w-0 flex-1 rounded-xl px-0 text-center font-mono text-2xl!"
       onfocus={(e) => e.currentTarget.select()}
       onclick={(e) => e.currentTarget.select()}
       oninput={(e) => onInput(index, e)}
