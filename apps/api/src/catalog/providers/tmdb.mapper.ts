@@ -36,6 +36,10 @@ function tmdbImage(
   return `${IMG}/${size}${path}`;
 }
 
+export function tmdbPosterUrl(path: string): string {
+  return tmdbImage(path, IMAGE_SIZE.poster);
+}
+
 export interface TmdbMovieResult {
   id: number;
   title: string;

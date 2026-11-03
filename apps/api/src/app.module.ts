@@ -44,6 +44,7 @@ import { ReviewsModule } from "./reviews/reviews.module";
 import { SavedViewsModule } from "./saved-views/saved-view.module";
 import { SearchModule } from "./search/search.module";
 import { SessionTimerModule } from "./session-timer/session-timer.module";
+import { ShowcaseModule } from "./showcase/showcase.module";
 import { SocialModule } from "./social/social.module";
 import { StatsModule } from "./stats/stats.module";
 import { UsersModule } from "./users/users.module";
@@ -79,6 +80,7 @@ import { UsersModule } from "./users/users.module";
     UsersModule,
     CatalogModule,
     GamesModule,
+    ShowcaseModule,
     GamificationModule,
     BooksModule,
     MusicModule,

@@ -1,4 +1,5 @@
 export const keys = {
+  showcase: () => ["showcase"] as const,
   stats: {
     all: () => ["stats"] as const,
     books: () => ["stats", "books"] as const,

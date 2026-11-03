@@ -13,6 +13,22 @@ history from before it was started.
 
 ## [Unreleased]
 
+- Phone: a series or film page's sticky bar is one row; once stuck it shows
+  the title over the status and progress, the next episode being marked from
+  the bar above the bottom navigation.
+- Phone calendar: every release, today's too, is a row with the broadcast time
+  for anime, the backlog under the episode and a muted work dimmed whole;
+  "Add to my calendar" moves to a "…" menu beside the title. The desktop
+  calendar is unchanged.
+- Sign-in and sign-up drop the card: full-width 52 dp fields, the submit at
+  the bottom on a phone, the security key as an outlined button, one line of
+  legal links without the version, the brand mark beside the name; a wide
+  screen splits into a drifting poster wall and the form. The password pages
+  follow, and moving between auth pages keeps the wall going and slides the
+  form in. The wall shows real covers from a new public `GET /api/showcase`:
+  this week's trending films and series (TMDB) and recent popular games
+  (IGDB), plus books and albums at least 10 accounts of the instance follow,
+  computed once a day and shuffled on each visit.
 - Web: the Content-Security-Policy's `img-src` now lists the catalogs' image
   hosts and the instance's API origin instead of every `https:` origin.
 - `glob` raised to 14.0.2 in the images (CVE-2026-118773, CVE-2026-118764).

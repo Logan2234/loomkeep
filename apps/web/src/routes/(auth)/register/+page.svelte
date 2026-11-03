@@ -7,7 +7,6 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import FieldError from "#lib/components/FieldError.svelte";
-  import AuthShell from "#lib/components/AuthShell.svelte";
   import Banner from "#lib/components/Banner.svelte";
   import PasswordInput from "#lib/components/PasswordInput.svelte";
   import PasswordRequirements from "#lib/components/PasswordRequirements.svelte";
@@ -91,169 +90,166 @@
   <title>{m.common_register()} · {m.common_loomkeep()}</title>
 </svelte:head>
 
-<AuthShell>
-  {#snippet tagline()}{m.auth_register_tagline()}{/snippet}
-
-  {#if inviteToken && inviteQuery.loading}
-    <div
-      class="card text-dim flex items-center justify-center gap-2 p-7 text-sm"
-      role="status">
-      <Icon name="mail" class="h-4 w-4 {reduced ? '' : 'animate-pulse'}" />
-      {m.auth_invitation_checking()}
-    </div>
-  {:else if blocked}
-    <div
-      class="card flex flex-col items-center gap-4 p-7 text-center"
-      in:fade={{ duration: reduced ? 0 : 180 }}>
-      <span
-        class="bg-danger/10 text-danger grid h-12 w-12 place-items-center rounded-full">
-        <Icon name="mail" class="h-5 w-5" />
-      </span>
-      <p class="text-sm">{inviteQuery.error}</p>
-      <a href="/login" class="btn btn-ghost">
-        {m.auth_invitation_back_to_login()}
-      </a>
-    </div>
-  {:else}
-    <form onsubmit={submit} class="card flex flex-col gap-4 p-7">
-      <h1 class="font-display text-xl font-bold">
-        {m.common_register()}
-      </h1>
-      {#if invite}
-        <div
-          class="border-accent/40 bg-accent/10 flex items-start gap-3 rounded-lg border px-3.5 py-3"
-          in:slide={{ duration: reduced ? 0 : 200 }}>
-          <span
-            class="bg-accent text-accent-fg grid h-8 w-8 shrink-0 place-items-center rounded-full">
-            <Icon name="send" class="h-4 w-4" />
-          </span>
-          <div class="min-w-0 text-sm">
-            <p class="text-fg font-semibold">
-              {invite.inviterName
-                ? m.auth_invitation_from({ name: invite.inviterName })
-                : m.auth_invitation_generic()}
-            </p>
-            <p class="text-dim">{m.auth_invitation_body()}</p>
-          </div>
-        </div>
-      {:else if inviteQuery.error}
-        <Banner variant="warning">{inviteQuery.error}</Banner>
-      {/if}
-      <input
-        type="text"
-        name="displayName"
-        minlength="1"
-        maxlength={USER_LIMITS.displayName}
-        aria-label={m.common_username()}
-        aria-invalid={registerMut.fieldErrors.displayName ? "true" : undefined}
-        aria-describedby={registerMut.fieldErrors.displayName
-          ? "register-display-name-error"
-          : undefined}
-        enterkeyhint="next"
-        placeholder={m.common_username()}
-        bind:value={displayName}
-        required
-        class="input" />
-      <FieldError
-        id="register-display-name-error"
-        message={registerMut.fieldErrors.displayName} />
-      <input
-        type="email"
-        name="email"
-        autocomplete="email"
-        aria-label={m.common_email()}
-        aria-invalid={registerMut.fieldErrors.email ? "true" : undefined}
-        aria-describedby={registerMut.fieldErrors.email
-          ? "register-email-error"
-          : undefined}
-        enterkeyhint="next"
-        placeholder={m.common_email()}
-        bind:value={email}
-        readonly={!!invite?.email}
-        required
-        class="input {invite?.email ? 'text-dim' : ''}" />
-      {#if invite?.email}
-        <p class="text-dim -mt-2 flex items-center gap-1.5 text-xs">
-          <Icon name="lock" class="h-3 w-3" />
-          {m.auth_invitation_email_locked()}
-        </p>
-      {/if}
-      <FieldError
-        id="register-email-error"
-        message={registerMut.fieldErrors.email} />
-      <PasswordInput
-        placeholder={m.common_password()}
-        name="password"
-        ariaLabel={m.common_password()}
-        autocomplete="new-password"
-        enterkeyhint="done"
-        bind:value={password}
-        minlength={PASSWORD_MIN_LENGTH}
-        maxlength={PASSWORD_MAX_LENGTH}
-        required />
-      <PasswordRequirements value={password} />
-      {#if turnstileSiteKey}
-        <Turnstile
-          siteKey={turnstileSiteKey}
-          onVerify={(token) => (turnstileToken = token)} />
-      {/if}
-      {#if registerMut.error}
-        <Banner variant="error">{registerMut.error}</Banner>
-      {/if}
-      <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
-        <input
-          type="checkbox"
-          name="acceptedTerms"
-          value="true"
-          bind:checked={acceptedTerms}
-          required
-          class="mt-0.5" />
-        <span>
-          {m.auth_register_accept_terms_prefix()}
-          <a
-            href="/legal/terms-of-service"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="link-accent">{m.common_terms()}</a>
-          {m.auth_register_accept_terms_and()}
-          <a
-            href="/legal/privacy-policy"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="link-accent">{m.common_privacy()}</a
-          >.
+{#if inviteToken && inviteQuery.loading}
+  <div
+    class="card text-dim flex items-center justify-center gap-2 p-7 text-sm"
+    role="status">
+    <Icon name="mail" class="h-4 w-4 {reduced ? '' : 'animate-pulse'}" />
+    {m.auth_invitation_checking()}
+  </div>
+{:else if blocked}
+  <div
+    class="card flex flex-col items-center gap-4 p-7 text-center"
+    in:fade={{ duration: reduced ? 0 : 180 }}>
+    <span
+      class="bg-danger/10 text-danger grid h-12 w-12 place-items-center rounded-full">
+      <Icon name="mail" class="h-5 w-5" />
+    </span>
+    <p class="text-sm">{inviteQuery.error}</p>
+    <a href="/login" class="btn btn-ghost">
+      {m.auth_invitation_back_to_login()}
+    </a>
+  </div>
+{:else}
+  <form onsubmit={submit} class="flex flex-1 flex-col gap-4 lg:flex-none">
+    <h1 class="font-display sr-only text-2xl font-bold lg:not-sr-only">
+      {m.common_register()}
+    </h1>
+    {#if invite}
+      <div
+        class="border-accent/40 bg-accent/10 flex items-start gap-3 rounded-lg border px-3.5 py-3"
+        in:slide={{ duration: reduced ? 0 : 200 }}>
+        <span
+          class="bg-accent text-accent-fg grid h-8 w-8 shrink-0 place-items-center rounded-full">
+          <Icon name="send" class="h-4 w-4" />
         </span>
-      </label>
-      <FieldError message={registerMut.fieldErrors.acceptedTerms} />
-      <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
-        <input
-          type="checkbox"
-          name="certifiedAge"
-          value="true"
-          bind:checked={certifiedAge}
-          required
-          class="mt-0.5" />
-        <span>{m.auth_register_certify_age()}</span>
-      </label>
-      <FieldError message={registerMut.fieldErrors.certifiedAge} />
-      <button
-        type="submit"
-        class="btn btn-primary"
-        disabled={registerMut.loading ||
-          !displayName ||
-          !email ||
-          !isPasswordValid(password) ||
-          !acceptedTerms ||
-          !certifiedAge ||
-          (!!turnstileSiteKey && !turnstileToken)}>
-        {registerMut.loading
-          ? m.auth_register_action_loading()
-          : m.auth_register_action()}
-      </button>
-      <p class="text-dim text-center text-sm">
-        {m.auth_already_registered()}
-        <a href="/login" class="link-accent text-sm">{m.common_login()}</a>
+        <div class="min-w-0 text-sm">
+          <p class="text-fg font-semibold">
+            {invite.inviterName
+              ? m.auth_invitation_from({ name: invite.inviterName })
+              : m.auth_invitation_generic()}
+          </p>
+          <p class="text-dim">{m.auth_invitation_body()}</p>
+        </div>
+      </div>
+    {:else if inviteQuery.error}
+      <Banner variant="warning">{inviteQuery.error}</Banner>
+    {/if}
+    <input
+      type="text"
+      name="displayName"
+      minlength="1"
+      maxlength={USER_LIMITS.displayName}
+      aria-label={m.common_username()}
+      aria-invalid={registerMut.fieldErrors.displayName ? "true" : undefined}
+      aria-describedby={registerMut.fieldErrors.displayName
+        ? "register-display-name-error"
+        : undefined}
+      enterkeyhint="next"
+      placeholder={m.common_username()}
+      bind:value={displayName}
+      required
+      class="input" />
+    <FieldError
+      id="register-display-name-error"
+      message={registerMut.fieldErrors.displayName} />
+    <input
+      type="email"
+      name="email"
+      autocomplete="email"
+      aria-label={m.common_email()}
+      aria-invalid={registerMut.fieldErrors.email ? "true" : undefined}
+      aria-describedby={registerMut.fieldErrors.email
+        ? "register-email-error"
+        : undefined}
+      enterkeyhint="next"
+      placeholder={m.common_email()}
+      bind:value={email}
+      readonly={!!invite?.email}
+      required
+      class="input {invite?.email ? 'text-dim' : ''}" />
+    {#if invite?.email}
+      <p class="text-dim -mt-2 flex items-center gap-1.5 text-xs">
+        <Icon name="lock" class="h-3 w-3" />
+        {m.auth_invitation_email_locked()}
       </p>
-    </form>
-  {/if}
-</AuthShell>
+    {/if}
+    <FieldError
+      id="register-email-error"
+      message={registerMut.fieldErrors.email} />
+    <PasswordInput
+      placeholder={m.common_password()}
+      name="password"
+      ariaLabel={m.common_password()}
+      autocomplete="new-password"
+      enterkeyhint="done"
+      bind:value={password}
+      minlength={PASSWORD_MIN_LENGTH}
+      maxlength={PASSWORD_MAX_LENGTH}
+      required />
+    <PasswordRequirements value={password} />
+    {#if turnstileSiteKey}
+      <Turnstile
+        siteKey={turnstileSiteKey}
+        onVerify={(token) => (turnstileToken = token)} />
+    {/if}
+    {#if registerMut.error}
+      <Banner variant="error">{registerMut.error}</Banner>
+    {/if}
+    <label class="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
+      <input
+        type="checkbox"
+        name="acceptedTerms"
+        value="true"
+        bind:checked={acceptedTerms}
+        required
+        class="accent-accent mt-0.5 size-5 shrink-0" />
+      <span>
+        {m.auth_register_accept_terms_prefix()}
+        <a
+          href="/legal/terms-of-service"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="link-accent">{m.common_terms()}</a>
+        {m.auth_register_accept_terms_and()}
+        <a
+          href="/legal/privacy-policy"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="link-accent">{m.common_privacy()}</a
+        >.
+      </span>
+    </label>
+    <FieldError message={registerMut.fieldErrors.acceptedTerms} />
+    <label class="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
+      <input
+        type="checkbox"
+        name="certifiedAge"
+        value="true"
+        bind:checked={certifiedAge}
+        required
+        class="accent-accent mt-0.5 size-5 shrink-0" />
+      <span>{m.auth_register_certify_age()}</span>
+    </label>
+    <FieldError message={registerMut.fieldErrors.certifiedAge} />
+    <div class="flex-1 lg:hidden"></div>
+    <button
+      type="submit"
+      class="btn btn-primary"
+      disabled={registerMut.loading ||
+        !displayName ||
+        !email ||
+        !isPasswordValid(password) ||
+        !acceptedTerms ||
+        !certifiedAge ||
+        (!!turnstileSiteKey && !turnstileToken)}>
+      {registerMut.loading
+        ? m.auth_register_action_loading()
+        : m.auth_register_action()}
+    </button>
+    <p class="text-dim text-center text-sm">
+      {m.auth_already_registered()}
+      <a href="/login" class="link-accent text-sm">{m.common_login()}</a>
+    </p>
+  </form>
+{/if}

@@ -17,9 +17,7 @@
     getMediaExtras,
     updateLibraryEntry,
     upsertLibraryEntry,
-    watchEpisode,
   } from "#lib/api/client.js";
-  import { resolveApiError } from "#lib/api/errors.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -302,23 +300,6 @@
       : [],
   );
 
-  // Powers the action bar's "Continuer" shortcut only — the episode
-  // list (EpisodesSection) has its own copy for its per-row actions.
-  const continueWatchingMut = createApiMutation(() => ({
-    mutate: (episodeId: string) => watchEpisode(episodeId),
-    onSuccess: async () => {
-      await reload();
-      tapFeedback();
-    },
-    onError: (err) => (episodesError = resolveApiError(err)),
-  }));
-
-  function continueWatching() {
-    const next = entry?.progress?.nextEpisode;
-    if (!next) return;
-    continueWatchingMut.mutate(next.episodeId);
-  }
-
   function toggleFavorite() {
     if (!entry) return;
     patchMut.mutate({ favorite: !entry.favorite });
@@ -550,11 +531,8 @@
     saving={saving || movieAlertsMut.loading}
     {compact}
     title={detail.title}
-    nextEpisode={entry?.progress?.nextEpisode ?? null}
-    continuing={continueWatchingMut.loading}
     onAdd={() => addMut.mutate()}
     onToggleFavorite={toggleFavorite}
-    onContinue={continueWatching}
     onToggleWatched={toggleWatched}
     onDrop={dropEntry}
     onResume={resumeEntry}

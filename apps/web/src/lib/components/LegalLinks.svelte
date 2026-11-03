@@ -9,8 +9,14 @@
   // resolves conflicting utilities by stylesheet order, not by the order they
   // appear in the attribute, so `items-center` in the base would always beat
   // an `items-start` passed in here.
-  let { class: cls = "items-center px-4 text-center" }: { class?: string } =
-    $props();
+  let {
+    class: cls = "items-center px-4 text-center",
+    version = true,
+  }: {
+    class?: string;
+    /** The app version and repository link under the legal ones. */
+    version?: boolean;
+  } = $props();
 </script>
 
 <footer class="border-border text-dim flex flex-col gap-4 py-5 text-xs {cls}">
@@ -48,20 +54,22 @@
     {/if}
   </nav>
 
-  <p class="flex gap-2">
-    <!-- Held back until the version lands: the label interpolates it, so an
+  {#if version}
+    <p class="flex gap-2">
+      <!-- Held back until the version lands: the label interpolates it, so an
          empty config rendered a bare "Loomkeep v" for as long as
          /api/config took. `invisible` keeps the footer from shifting. -->
-    <a
-      href={GITHUB_REPO_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="btn-text font-normal {appConfig.version ? '' : 'invisible'}">
-      {m.app_version({ version: appConfig.version })}
-      {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
-        <span>({appConfig.gitSha})</span>
-      {/if}
-    </a>
-    {#if env.PUBLIC_IS_BETA === "true"}<BetaBadge />{/if}
-  </p>
+      <a
+        href={GITHUB_REPO_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-text font-normal {appConfig.version ? '' : 'invisible'}">
+        {m.app_version({ version: appConfig.version })}
+        {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
+          <span>({appConfig.gitSha})</span>
+        {/if}
+      </a>
+      {#if env.PUBLIC_IS_BETA === "true"}<BetaBadge />{/if}
+    </p>
+  {/if}
 </footer>

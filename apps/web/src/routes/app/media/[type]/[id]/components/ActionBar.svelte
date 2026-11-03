@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { episodeCode } from "@loomkeep/shared";
-
   import AddToListButton from "#lib/components/AddToListButton.svelte";
   import Dropdown from "#lib/components/Dropdown.svelte";
   import Icon from "#lib/components/Icon.svelte";
@@ -9,16 +7,18 @@
   import Tooltip from "#lib/components/Tooltip.svelte";
   import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
+  import { MEDIA_STATUS_META } from "#lib/constants/status-labels.js";
   import { formatDate } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { releaseDigestOff } from "#lib/release-alerts.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { LibraryEntryDto, NextEpisodeDto } from "@loomkeep/shared";
+  import type { LibraryEntryDto } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
   import { scale } from "svelte/transition";
 
-  // Sticky action bar for the media detail page ("Cinéma minimal"). Kept to a
-  // handful of frequent, glanceable controls — Continuer/favori/liste, plus a
+  // Sticky action bar for the media detail page ("Cinéma minimal"), one row
+  // high. Kept to a handful of frequent, glanceable controls — the film's
+  // watched toggle, favori/liste, plus a
   // "…" for the rare, set-and-forget actions (alertes, abandonner, retirer).
   // Everything else (note privée, possession) lives in the "Mon suivi" panel
   // further down the page, not here.
@@ -29,13 +29,10 @@
     airingFinished = false,
     onToggleMovieAlerts = () => {},
     saving,
-    nextEpisode,
-    continuing,
     compact,
     title,
     onAdd,
     onToggleFavorite,
-    onContinue,
     onToggleWatched,
     onDrop,
     onResume,
@@ -51,14 +48,11 @@
     airingFinished?: boolean;
     onToggleMovieAlerts?: () => void;
     saving: boolean;
-    nextEpisode: NextEpisodeDto | null;
-    continuing: boolean;
-    /** Scrolled past the hero — reveal the title inline. */
+    /** Stuck under the top of the screen: the title takes the status's place. */
     compact: boolean;
     title: string;
     onAdd: () => void;
     onToggleFavorite: () => void;
-    onContinue: () => void;
     onToggleWatched: () => void;
     onDrop: () => void;
     onResume: () => void;
@@ -73,6 +67,12 @@
   const isWatched = $derived(entry?.status === "COMPLETED");
   // With no release summary on, a reminder or a mute would change nothing.
   const digestOff = $derived(releaseDigestOff());
+
+  // Room for the date in one row at 360 dp: no year within the current one.
+  const shortDate = (date: string): Intl.DateTimeFormatOptions =>
+    new Date(date).getFullYear() === new Date().getFullYear()
+      ? { day: "numeric", month: "short" }
+      : { day: "numeric", month: "short", year: "numeric" };
 </script>
 
 {#snippet digestOffTooltip(control: Snippet, block = false)}
@@ -87,104 +87,134 @@
   {/if}
 {/snippet}
 
+{#snippet status(inline: boolean)}
+  {#if entry && !isMovie}
+    {@const meta = MEDIA_STATUS_META[entry.status]}
+    {#if !inline}
+      <span
+        class="h-2 w-2 shrink-0 rounded-full {entry.status === 'DROPPED'
+          ? 'bg-danger'
+          : entry.status === 'COMPLETED' || entry.status === 'UP_TO_DATE'
+            ? 'bg-success'
+            : 'bg-accent'}"></span>
+    {/if}
+    <span class="truncate">
+      <span class={inline ? "" : "font-semibold"}>{meta.label}</span>
+      {#if entry.progress}
+        · <span class="timecode text-dim"
+          >{m.media_watched_of({
+            watched: entry.progress.watchedEpisodes,
+            total: entry.progress.totalEpisodes,
+          })}</span>
+      {/if}
+    </span>
+  {:else if entry && isMovie && upcoming}
+    <span class="truncate {digestOff ? 'text-dim' : ''}"
+      >{entry.movieReleaseAlertsEnabled
+        ? m.media_movie_reminder_active()
+        : m.media_movie_reminder_enable()}</span>
+    {#if !inline && isFeatureNew("movie-releases")}<NewBadge />{/if}
+  {:else if entry && isMovie}
+    <span class="truncate">
+      {#if isWatched}
+        {m.home_mark_seen()}
+        {#if entry.finishedAt}<span class="timecode text-dim"
+            >{formatDate(entry.finishedAt, shortDate(entry.finishedAt))}</span
+          >{/if}
+      {:else}
+        {m.media_not_watched()}
+      {/if}
+    </span>
+  {/if}
+{/snippet}
+
 <div
   data-action-bar
   class="bg-bg border-border sticky top-[env(safe-area-inset-top)] z-20 border-b">
   <div
-    class="mx-auto flex max-w-4xl flex-wrap items-center gap-x-2.5 gap-y-2 px-5 py-3 md:px-8">
-    <h2
-      class="font-display hidden shrink-0 overflow-hidden text-sm font-bold whitespace-nowrap transition-all duration-300 ease-out sm:block {compact
-        ? 'max-w-48 opacity-100'
-        : 'max-w-0 opacity-0'}">
-      {title}
-    </h2>
+    class="mx-auto flex min-h-14 max-w-4xl items-center gap-2.5 py-2 pr-4 pl-5 md:px-8">
+    {#if !entry}
+      <button
+        class="btn btn-primary shrink-0"
+        disabled={saving}
+        onclick={onAdd}>
+        <Icon name="plus" class="h-4 w-4" />
+        {m.library_add()}
+      </button>
+    {:else if isMovie && upcoming}
+      {#snippet movieBell()}
+        <button
+          type="button"
+          class="grid h-10 w-10 shrink-0 place-items-center rounded-full disabled:opacity-50 {entry!
+            .movieReleaseAlertsEnabled
+            ? 'bg-accent text-accent-fg'
+            : 'border-border text-dim border'}"
+          disabled={saving || digestOff}
+          aria-pressed={!!entry!.movieReleaseAlertsEnabled}
+          aria-label={entry!.movieReleaseAlertsEnabled
+            ? m.media_movie_reminder_cancel()
+            : m.media_movie_reminder_enable()}
+          title={digestOff
+            ? undefined
+            : entry!.movieReleaseAlertsEnabled
+              ? m.media_movie_reminder_cancel()
+              : m.media_movie_reminder_enable()}
+          onclick={onToggleMovieAlerts}>
+          <Icon
+            name={entry!.movieReleaseAlertsEnabled ? "bell" : "bell-off"}
+            class="h-5 w-5" />
+        </button>
+      {/snippet}
+      {@render digestOffTooltip(movieBell)}
+    {:else if isMovie}
+      <button
+        type="button"
+        class="grid h-10 w-10 shrink-0 place-items-center rounded-full transition-transform active:scale-95 disabled:opacity-50 {isWatched
+          ? 'bg-accent text-accent-fg'
+          : 'border-border text-dim border'}"
+        disabled={saving}
+        title={isWatched ? m.media_mark_unwatched() : m.media_mark_watched()}
+        aria-label={isWatched
+          ? m.media_mark_unwatched()
+          : m.media_mark_watched()}
+        onclick={onToggleWatched}>
+        <Icon name="check" class="h-5 w-5" />
+      </button>
+    {/if}
+
+    <!-- Once stuck, the title takes the status's place, the status under it.
+         A series' next episode is marked from the bar above the bottom one. -->
+    <div class="relative h-10 min-w-0 flex-1">
+      <p
+        class="absolute inset-0 flex items-center gap-2 text-sm transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none {compact
+          ? 'pointer-events-none translate-y-1.5 opacity-0'
+          : ''}"
+        aria-hidden={compact}>
+        {@render status(false)}
+      </p>
+      <div
+        class="absolute inset-0 flex min-w-0 flex-col justify-center transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none {compact
+          ? ''
+          : 'pointer-events-none translate-y-1.5 opacity-0'}"
+        aria-hidden={!compact}>
+        <h2 class="font-display truncate text-sm font-bold">{title}</h2>
+        {#if entry}
+          <p class="text-dim flex min-w-0 text-[0.7rem]">
+            {@render status(true)}
+          </p>
+        {/if}
+      </div>
+    </div>
 
     {#if !entry}
-      <div class="ml-auto flex items-center gap-2">
+      <div class="flex shrink-0 items-center gap-2">
         {#if socialActions}
           <div class="mr-1 flex">{@render socialActions()}</div>
         {/if}
-        <button class="btn btn-primary" disabled={saving} onclick={onAdd}>
-          <Icon name="plus" class="h-4 w-4" />
-          {m.library_add()}
-        </button>
         <WorkMoreMenu onshare={onShare} />
       </div>
     {:else}
-      <div class="flex min-w-0 items-center gap-2.5">
-        {#if !isMovie && nextEpisode && !isDropped}
-          <button
-            type="button"
-            class="bg-accent text-accent-fg grid h-11 w-11 shrink-0 place-items-center rounded-full transition-transform active:scale-95 disabled:opacity-50"
-            disabled={continuing}
-            title={`${m.common_continue()} ${episodeCode(nextEpisode.seasonNumber, nextEpisode.episodeNumber)}`}
-            onclick={onContinue}>
-            <Icon name="chevron-right" class="h-5 w-5" />
-          </button>
-          <div class="text-sm whitespace-nowrap">
-            {m.common_continue()} ·
-            <b class="timecode">
-              {episodeCode(nextEpisode.seasonNumber, nextEpisode.episodeNumber)}
-            </b>
-          </div>
-        {:else if isMovie && upcoming}
-          {#snippet movieBell()}
-            <button
-              type="button"
-              class="grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50 {entry!
-                .movieReleaseAlertsEnabled
-                ? 'bg-accent text-accent-fg'
-                : 'border-border text-dim border'}"
-              disabled={saving || digestOff}
-              aria-pressed={!!entry!.movieReleaseAlertsEnabled}
-              aria-label={entry!.movieReleaseAlertsEnabled
-                ? m.media_movie_reminder_cancel()
-                : m.media_movie_reminder_enable()}
-              title={digestOff
-                ? undefined
-                : entry!.movieReleaseAlertsEnabled
-                  ? m.media_movie_reminder_cancel()
-                  : m.media_movie_reminder_enable()}
-              onclick={onToggleMovieAlerts}>
-              <Icon
-                name={entry!.movieReleaseAlertsEnabled ? "bell" : "bell-off"}
-                class="h-5 w-5" />
-            </button>
-          {/snippet}
-          {@render digestOffTooltip(movieBell)}
-          <span class="text-sm {digestOff ? 'text-dim' : ''}"
-            >{entry.movieReleaseAlertsEnabled
-              ? m.media_movie_reminder_active()
-              : m.media_movie_reminder_enable()}</span>
-          {#if isFeatureNew("movie-releases")}<NewBadge />{/if}
-        {:else if isMovie}
-          <button
-            type="button"
-            class="grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50 {isWatched
-              ? 'bg-accent text-accent-fg'
-              : 'border-border text-dim border'}"
-            disabled={saving}
-            title={isWatched
-              ? m.media_mark_unwatched()
-              : m.media_mark_watched()}
-            onclick={onToggleWatched}>
-            <Icon name="check" class="h-5 w-5" />
-          </button>
-          <div class="text-sm whitespace-nowrap">
-            {#if isWatched}
-              {m.home_mark_seen()}
-              <span class="text-dim"
-                >{entry.finishedAt
-                  ? `(${formatDate(entry.finishedAt)})`
-                  : ""}</span>
-            {:else}
-              {m.media_not_watched()}
-            {/if}
-          </div>
-        {/if}
-      </div>
-
-      <div class="ml-auto flex shrink-0 items-center gap-2.5">
+      <div class="flex shrink-0 items-center gap-2">
         {#if socialActions}
           <div class="mr-1 flex">{@render socialActions()}</div>
         {/if}

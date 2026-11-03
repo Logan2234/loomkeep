@@ -22,6 +22,7 @@
     isReleaseReminder,
   } from "#lib/calendar-entry.js";
   import Banner from "#lib/components/Banner.svelte";
+  import Dropdown from "#lib/components/Dropdown.svelte";
   import CalendarSubscribeModal from "#lib/ee/calendar/CalendarSubscribeModal.svelte";
   import { useEeLock } from "#lib/ee/license.svelte.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
@@ -36,6 +37,7 @@
   import Tabs from "#lib/components/Tabs.svelte";
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { formatDate } from "#lib/format.js";
+  import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { CalendarEntryDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -220,14 +222,24 @@
   const code = calendarCode;
   const href = calendarHref;
   const rowKey = (e: CalendarEntryDto) => calendarItemId(e) + code(e);
+
+  const TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+    hour: "2-digit",
+    minute: "2-digit",
+  };
+
+  /** Only an anime's air date is a broadcast time (AniList's schedule): TMDB
+   * dates a day, a film or a game its release. */
+  const airTime = (e: CalendarEntryDto) =>
+    e.mediaItem?.type === "ANIME" ? formatDate(e.airDate, TIME_OPTIONS) : null;
 </script>
 
-{#snippet badges(e: CalendarEntryDto)}
+{#snippet badges(e: CalendarEntryDto, behind: boolean)}
   <span
     class="border-border text-dim shrink-0 rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold">
     {e.mediaItem ? MEDIA_TYPE_LABEL[e.mediaItem.type] : m.game_type()}
   </span>
-  {#if e.episodesBehind > 0}
+  {#if behind && e.episodesBehind > 0}
     <span
       class="border-accent/40 text-accent shrink-0 rounded-full border px-2 py-0.5 font-mono text-[0.65rem]">
       {m.calendar_behind({ count: e.episodesBehind })}
@@ -236,37 +248,81 @@
 {/snippet}
 
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
-  <PageHeader
-    back="/app"
-    backInHistory
-    backOnPhoneOnly
-    icon="calendar"
-    title={m.common_calendar()}
-    subtitle={m.calendar_subtitle()}
-    isNew={isFeatureNew("calendar-redesign")}>
-    {#snippet actions()}
-      {#snippet calendarButton()}
-        <button
-          class="btn btn-ghost shrink-0"
-          disabled={calendarLocked}
-          onclick={() => (showSubscribeModal = true)}>
-          <Icon name="calendar" class="mr-1.5 inline h-4 w-4" />
-          {m.calendar_subscribe_button()}
-          {#if isFeatureNew("release-feed")}
-            <span class="ml-1.5"><NewBadge /></span>
+  <div class="relative">
+    <PageHeader
+      back="/app"
+      backInHistory
+      backOnPhoneOnly
+      icon="calendar"
+      title={m.common_calendar()}
+      subtitle={m.calendar_subtitle()}
+      isNew={isFeatureNew("calendar-redesign")}>
+      {#snippet actions()}
+        {#if !layout.compact}
+          {#snippet calendarButton()}
+            <button
+              class="btn btn-ghost shrink-0"
+              disabled={calendarLocked}
+              onclick={() => (showSubscribeModal = true)}>
+              <Icon name="calendar" class="mr-1.5 inline h-4 w-4" />
+              {m.calendar_subscribe_button()}
+              {#if isFeatureNew("release-feed")}
+                <span class="ml-1.5"><NewBadge /></span>
+              {/if}
+            </button>
+          {/snippet}
+          {#if calendarLocked}
+            <Tooltip text={m.premium_locked()} class="inline-flex shrink-0">
+              {@render calendarButton()}
+              <PremiumLockBadge />
+            </Tooltip>
+          {:else}
+            {@render calendarButton()}
           {/if}
-        </button>
+        {/if}
       {/snippet}
-      {#if calendarLocked}
-        <Tooltip text={m.premium_locked()} class="inline-flex shrink-0">
-          {@render calendarButton()}
-          <PremiumLockBadge />
-        </Tooltip>
-      {:else}
-        {@render calendarButton()}
-      {/if}
-    {/snippet}
-  </PageHeader>
+    </PageHeader>
+    {#if layout.compact}
+      <!-- On the title's line: a phone has no room to wrap it below. -->
+      <div class="absolute top-0 right-0">
+        <Dropdown placement="bottom-end" class="min-w-60">
+          {#snippet trigger({ open, toggle, onkeydown })}
+            <button
+              type="button"
+              class="btn-icon-bordered"
+              aria-haspopup="menu"
+              aria-expanded={open}
+              aria-label={m.common_more_actions()}
+              title={m.common_more_actions()}
+              onclick={toggle}
+              {onkeydown}>
+              <Icon name="dots-horizontal" class="h-4 w-4" />
+            </button>
+          {/snippet}
+          {#snippet children({ close })}
+            <button
+              type="button"
+              role="menuitem"
+              class="menu-item"
+              disabled={calendarLocked}
+              title={calendarLocked ? m.premium_locked() : undefined}
+              onclick={() => {
+                close();
+                showSubscribeModal = true;
+              }}>
+              <Icon name="calendar" class="h-4 w-4" />
+              {m.calendar_subscribe_button()}
+              {#if calendarLocked}
+                <PremiumLockBadge />
+              {:else if isFeatureNew("release-feed")}
+                <span class="ml-auto"><NewBadge /></span>
+              {/if}
+            </button>
+          {/snippet}
+        </Dropdown>
+      </div>
+    {/if}
+  </div>
 
   {#if error}
     <Banner variant="error">{error}</Banner>
@@ -370,91 +426,62 @@
                   {formatDate(day.date, DAY_LABEL_OPTIONS)}
                 </span>
               </div>
-              {#if day.offset === 0}
-                <div class="grid gap-3 sm:grid-cols-2">
+              <!-- The desktop keeps its cards; a phone gets one row per
+                   release, today's too. -->
+              {#if layout.compact}
+                <!-- Every release one row high, today's too: the time on the
+                     right, the backlog under the episode, a muted work dimmed. -->
+                <div class="flex flex-col">
                   {#each day.items as e (rowKey(e))}
-                    <!-- The bell sits beside the card's link, not inside it:
+                    {@const time = airTime(e)}
+                    <!-- The bell sits beside the row's link, not inside it:
                          a click on it mutes, never opens the page. -->
-                    <article
-                      class="card [@media(hover:hover)]:has-[a:hover]:border-accent relative flex overflow-hidden transition-[border-color]">
-                      <a href={href(e)} class="flex min-w-0 flex-1">
-                        <div
-                          class="w-28 shrink-0 transition-opacity {e.episodeAlertsMuted
-                            ? 'opacity-50'
-                            : ''}">
-                          <Poster
-                            src={calendarPoster(e)}
-                            title={calendarTitle(e)}
-                            alt="" />
-                        </div>
-                        <div
-                          class="flex min-w-0 flex-1 flex-col gap-1.5 py-3.5 pr-14 pl-4">
-                          <span class="timecode text-accent text-sm">
-                            {code(e)}
-                          </span>
-                          <h3
-                            class="font-display line-clamp-2 text-lg leading-snug font-bold">
-                            {calendarTitle(e)}
-                          </h3>
-                          {#if e.episodeTitle}
-                            <p class="text-dim line-clamp-2 text-sm">
-                              {e.episodeTitle}
-                            </p>
-                          {/if}
-                          <div class="mt-auto flex flex-wrap gap-1.5 pt-1">
-                            {@render badges(e)}
-                          </div>
-                        </div>
-                      </a>
-                      <div class="absolute top-3 right-3">
-                        <AlertBellButton
-                          movie={isReleaseReminder(e)}
-                          title={calendarTitle(e)}
-                          muted={e.episodeAlertsMuted}
-                          disabled={alertsMut.loading}
-                          onToggle={() => toggleAlerts(e)} />
-                      </div>
-                    </article>
-                  {/each}
-                </div>
-              {:else}
-                <div class="flex flex-col gap-2.5">
-                  {#each day.items as e (rowKey(e))}
                     <div
-                      class="card [@media(hover:hover)]:has-[a:hover]:border-accent flex items-center gap-3 p-3 transition-[border-color] sm:gap-4">
+                      class="border-border flex min-h-19 items-center gap-2 border-b py-2.5 transition-opacity duration-150 {e.episodeAlertsMuted
+                        ? 'opacity-55'
+                        : ''}">
                       <a
                         href={href(e)}
-                        class="flex min-w-0 flex-1 items-center gap-4">
-                        <div
-                          class="w-12 shrink-0 overflow-hidden rounded-md transition-opacity {e.episodeAlertsMuted
-                            ? 'opacity-50'
-                            : ''}">
+                        class="group flex min-w-0 flex-1 items-center gap-3">
+                        <div class="w-12 shrink-0 overflow-hidden rounded-md">
                           <Poster
                             src={calendarPoster(e)}
                             title={calendarTitle(e)}
                             alt="" />
                         </div>
-                        <div class="min-w-0 flex-1">
-                          <div
-                            class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <div class="flex min-w-0 flex-1 flex-col gap-1">
+                          <div class="flex min-w-0 items-center gap-1.5">
                             <p
-                              class="font-display max-w-full truncate font-semibold">
+                              class="font-display group-hover:text-accent truncate font-semibold transition-colors duration-150">
                               {calendarTitle(e)}
                             </p>
-                            {@render badges(e)}
+                            {@render badges(e, false)}
                           </div>
-                          <p class="timecode mt-0.5 truncate text-sm">
+                          <p class="timecode truncate text-xs">
                             {code(e)}{#if e.episodeTitle}
-                              &nbsp;· {e.episodeTitle}{/if}
+                              <span class="text-dim font-sans"
+                                >&nbsp;· {e.episodeTitle}</span
+                              >{/if}
                           </p>
+                          {#if e.episodeAlertsMuted}
+                            <p class="text-dim truncate text-xs">
+                              {m.calendar_alerts_muted()}
+                            </p>
+                          {:else if e.episodesBehind > 0}
+                            <p class="text-accent truncate text-xs">
+                              {e.episodesBehind === 1
+                                ? m.calendar_catch_up_one()
+                                : m.calendar_catch_up({
+                                    count: e.episodesBehind,
+                                  })}
+                            </p>
+                          {/if}
                         </div>
+                        {#if time}
+                          <span class="timecode text-dim shrink-0 text-xs"
+                            >{time}</span>
+                        {/if}
                       </a>
-                      {#if e.episodeAlertsMuted}
-                        <span
-                          class="text-dim hidden shrink-0 text-xs sm:inline">
-                          {m.calendar_alerts_muted()}
-                        </span>
-                      {/if}
                       <AlertBellButton
                         movie={isReleaseReminder(e)}
                         title={calendarTitle(e)}
@@ -464,6 +491,102 @@
                     </div>
                   {/each}
                 </div>
+              {:else}
+                {#if day.offset === 0}
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    {#each day.items as e (rowKey(e))}
+                      <!-- The bell sits beside the card's link, not inside it:
+                           a click on it mutes, never opens the page. -->
+                      <article
+                        class="card [@media(hover:hover)]:has-[a:hover]:border-accent relative flex overflow-hidden transition-[border-color]">
+                        <a href={href(e)} class="flex min-w-0 flex-1">
+                          <div
+                            class="w-28 shrink-0 transition-opacity {e.episodeAlertsMuted
+                              ? 'opacity-50'
+                              : ''}">
+                            <Poster
+                              src={calendarPoster(e)}
+                              title={calendarTitle(e)}
+                              alt="" />
+                          </div>
+                          <div
+                            class="flex min-w-0 flex-1 flex-col gap-1.5 py-3.5 pr-14 pl-4">
+                            <span class="timecode text-accent text-sm">
+                              {code(e)}
+                            </span>
+                            <h3
+                              class="font-display line-clamp-2 text-lg leading-snug font-bold">
+                              {calendarTitle(e)}
+                            </h3>
+                            {#if e.episodeTitle}
+                              <p class="text-dim line-clamp-2 text-sm">
+                                {e.episodeTitle}
+                              </p>
+                            {/if}
+                            <div class="mt-auto flex flex-wrap gap-1.5 pt-1">
+                              {@render badges(e, true)}
+                            </div>
+                          </div>
+                        </a>
+                        <div class="absolute top-3 right-3">
+                          <AlertBellButton
+                            movie={isReleaseReminder(e)}
+                            title={calendarTitle(e)}
+                            muted={e.episodeAlertsMuted}
+                            disabled={alertsMut.loading}
+                            onToggle={() => toggleAlerts(e)} />
+                        </div>
+                      </article>
+                    {/each}
+                  </div>
+                {:else}
+                  <div class="flex flex-col gap-2.5">
+                    {#each day.items as e (rowKey(e))}
+                      <div
+                        class="card [@media(hover:hover)]:has-[a:hover]:border-accent flex items-center gap-3 p-3 transition-[border-color] sm:gap-4">
+                        <a
+                          href={href(e)}
+                          class="flex min-w-0 flex-1 items-center gap-4">
+                          <div
+                            class="w-12 shrink-0 overflow-hidden rounded-md transition-opacity {e.episodeAlertsMuted
+                              ? 'opacity-50'
+                              : ''}">
+                            <Poster
+                              src={calendarPoster(e)}
+                              title={calendarTitle(e)}
+                              alt="" />
+                          </div>
+                          <div class="min-w-0 flex-1">
+                            <div
+                              class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <p
+                                class="font-display max-w-full truncate font-semibold">
+                                {calendarTitle(e)}
+                              </p>
+                              {@render badges(e, true)}
+                            </div>
+                            <p class="timecode mt-0.5 truncate text-sm">
+                              {code(e)}{#if e.episodeTitle}
+                                &nbsp;· {e.episodeTitle}{/if}
+                            </p>
+                          </div>
+                        </a>
+                        {#if e.episodeAlertsMuted}
+                          <span
+                            class="text-dim hidden shrink-0 text-xs sm:inline">
+                            {m.calendar_alerts_muted()}
+                          </span>
+                        {/if}
+                        <AlertBellButton
+                          movie={isReleaseReminder(e)}
+                          title={calendarTitle(e)}
+                          muted={e.episodeAlertsMuted}
+                          disabled={alertsMut.loading}
+                          onToggle={() => toggleAlerts(e)} />
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
               {/if}
             </section>
           {/each}

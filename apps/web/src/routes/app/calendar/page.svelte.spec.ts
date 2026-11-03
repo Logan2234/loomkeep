@@ -1,4 +1,5 @@
 import { auth } from "#lib/auth.svelte.js";
+import { formatDate } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
@@ -234,7 +235,7 @@ describe("calendar page", () => {
     ).toHaveLength(1);
   });
 
-  it("shows today's episodes as the Ce soir cards, with the show's backlog", async () => {
+  it("shows today's episodes in rows, with the show's backlog", async () => {
     serveCalendar([
       upcoming("e1", "Lanterns", 7, 0, { episodesBehind: 3 }),
       upcoming("e2", "Futurama", 10, 1),
@@ -242,7 +243,46 @@ describe("calendar page", () => {
     renderWithQuery(CalendarPage, {});
 
     expect(await screen.findByText(m.calendar_tonight())).toBeTruthy();
-    expect(screen.getByText(m.calendar_behind({ count: 3 }))).toBeTruthy();
+    expect(screen.getByText(m.calendar_catch_up({ count: 3 }))).toBeTruthy();
+  });
+
+  it("gives an anime's broadcast time, never a TMDB day's, and says a work is muted", async () => {
+    const air = inDays(2);
+    serveCalendar([
+      upcoming("e1", "Frieren", 5, 2, {
+        airDate: air,
+        mediaItem: {
+          id: "media-e1",
+          type: "ANIME",
+          title: "Frieren",
+          posterUrl: null,
+          canonicalSource: "ANILIST",
+          sourceId: "1",
+        },
+      }),
+      upcoming("e2", "Andor", 1, 2, { airDate: air, episodeAlertsMuted: true }),
+    ]);
+    renderWithQuery(CalendarPage, {});
+
+    const time = formatDate(air, { hour: "2-digit", minute: "2-digit" });
+    await screen.findByRole("link", { name: /Frieren/ });
+    expect(screen.getAllByText(time)).toHaveLength(1);
+    expect(screen.getByText(m.calendar_alerts_muted())).toBeTruthy();
+  });
+
+  it("offers the calendar subscription from the header's menu", async () => {
+    renderWithQuery(CalendarPage, {});
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole("button", { name: m.common_more_actions() }),
+    );
+
+    expect(
+      screen.getByRole("menuitem", {
+        name: new RegExp(m.calendar_subscribe_button()),
+      }),
+    ).toBeTruthy();
   });
 
   it("narrows the list with the filter tabs", async () => {

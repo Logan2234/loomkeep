@@ -3,7 +3,6 @@
   import { page } from "$app/state";
   import { resetPassword } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import AuthShell from "#lib/components/AuthShell.svelte";
   import PasswordInput from "#lib/components/PasswordInput.svelte";
   import PasswordRequirements from "#lib/components/PasswordRequirements.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -43,51 +42,49 @@
   <title>{m.auth_forgot_password_title()} · {m.common_loomkeep()}</title>
 </svelte:head>
 
-<AuthShell>
-  <div class="card flex flex-col gap-4 p-7">
-    <h1 class="font-display text-xl font-bold">
-      {m.common_new_password()}
-    </h1>
+<div class="flex flex-col gap-4">
+  <h1 class="font-display text-2xl font-bold">
+    {m.common_new_password()}
+  </h1>
 
-    {#if !token}
-      <p class="text-danger text-sm">
-        {m.link_invalid_missing_token()}
-      </p>
-    {:else}
-      <form onsubmit={submit} class="flex flex-col gap-4">
-        <PasswordInput
-          placeholder={m.common_new_password()}
-          name="newPassword"
-          ariaLabel={m.common_new_password()}
-          autocomplete="new-password"
-          enterkeyhint="next"
-          bind:value={newPassword}
-          minlength={PASSWORD_MIN_LENGTH}
-          maxlength={PASSWORD_MAX_LENGTH}
-          required />
-        <PasswordRequirements value={newPassword} />
-        <PasswordInput
-          placeholder={m.auth_reset_password_confirm_placeholder()}
-          name="confirmPassword"
-          ariaLabel={m.auth_reset_password_confirm_placeholder()}
-          autocomplete="new-password"
-          enterkeyhint="done"
-          bind:value={confirmPassword}
-          minlength={PASSWORD_MIN_LENGTH}
-          maxlength={PASSWORD_MAX_LENGTH}
-          required />
-        {#if error}<p class="text-danger text-sm">{error}</p>{/if}
-        <button
-          type="submit"
-          class="btn btn-primary"
-          disabled={resetMut.loading || !isPasswordValid(newPassword)}>
-          {resetMut.loading ? m.common_save_loading() : m.common_reset()}
-        </button>
-      </form>
-    {/if}
-
-    <p class="text-center">
-      <a href="/login" class="link-accent text-sm">{m.auth_back_to_login()}</a>
+  {#if !token}
+    <p class="text-danger text-sm">
+      {m.link_invalid_missing_token()}
     </p>
-  </div>
-</AuthShell>
+  {:else}
+    <form onsubmit={submit} class="flex flex-col gap-4">
+      <PasswordInput
+        placeholder={m.common_new_password()}
+        name="newPassword"
+        ariaLabel={m.common_new_password()}
+        autocomplete="new-password"
+        enterkeyhint="next"
+        bind:value={newPassword}
+        minlength={PASSWORD_MIN_LENGTH}
+        maxlength={PASSWORD_MAX_LENGTH}
+        required />
+      <PasswordRequirements value={newPassword} />
+      <PasswordInput
+        placeholder={m.auth_reset_password_confirm_placeholder()}
+        name="confirmPassword"
+        ariaLabel={m.auth_reset_password_confirm_placeholder()}
+        autocomplete="new-password"
+        enterkeyhint="done"
+        bind:value={confirmPassword}
+        minlength={PASSWORD_MIN_LENGTH}
+        maxlength={PASSWORD_MAX_LENGTH}
+        required />
+      {#if error}<p class="text-danger text-sm">{error}</p>{/if}
+      <button
+        type="submit"
+        class="btn btn-primary"
+        disabled={resetMut.loading || !isPasswordValid(newPassword)}>
+        {resetMut.loading ? m.common_save_loading() : m.common_reset()}
+      </button>
+    </form>
+  {/if}
+
+  <p class="text-center">
+    <a href="/login" class="link-accent text-sm">{m.auth_back_to_login()}</a>
+  </p>
+</div>
