@@ -269,30 +269,6 @@ body {
       -webkit-user-drag: none;
     }
   }
-  /* What a poster list opens with, row by row: only the first screen, once. */
-  .poster-grid-enter > :nth-child(-n + 9) {
-    animation: poster-in 180ms ease-out backwards;
-  }
-  .poster-grid-enter > :nth-child(n + 3):nth-child(-n + 4) {
-    animation-delay: 40ms;
-  }
-  .poster-grid-enter > :nth-child(n + 5):nth-child(-n + 6) {
-    animation-delay: 80ms;
-  }
-  .poster-grid-enter > :nth-child(n + 7):nth-child(-n + 9) {
-    animation-delay: 120ms;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .poster-grid-enter > :nth-child(-n + 9) {
-      animation: none;
-    }
-  }
-  @keyframes poster-in {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-  }
   .menu-item-danger {
     @apply text-danger hover:bg-danger/10;
   }

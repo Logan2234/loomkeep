@@ -3,13 +3,10 @@
   // their loading skeletons.
   import type { Snippet } from "svelte";
 
-  let { children, enter = true }: { children: Snippet; enter?: boolean } =
-    $props();
+  let { children }: { children: Snippet } = $props();
 </script>
 
 <div
-  class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 {enter
-    ? 'poster-grid-enter'
-    : ''}">
+  class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
   {@render children()}
 </div>

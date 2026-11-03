@@ -37,34 +37,21 @@
   // Some sources (e.g. Cover Art Archive) build a URL without confirming the
   // image exists — a 404 falls back to the same gradient as a null src.
   let failed = $state(false);
-  // Fades in once loaded, except what the browser already has: a poster that
-  // just travelled from a list (View Transition) must be there at once.
-  let loadedSrc = $state<string | null>(null);
-  function markIfLoaded(image: HTMLImageElement) {
-    if (image.complete && image.naturalWidth > 0) loadedSrc = src;
-  }
   $effect(() => {
     void src;
     failed = false;
   });
 </script>
 
-<div
-  data-work-poster
-  class="relative {src && !failed ? 'bg-surface-2' : ''} {containerClass}">
+<div data-work-poster class="relative {containerClass}">
   {#if src && !failed}
     <img
       {src}
       alt={resolvedAlt}
       {draggable}
       loading="lazy"
-      use:markIfLoaded
-      onload={() => (loadedSrc = src)}
       onerror={() => (failed = true)}
-      class="aspect-2/3 w-full object-cover transition-opacity duration-150 {loadedSrc ===
-      src
-        ? ''
-        : 'opacity-0'} {cls}" />
+      class="bg-surface-2 aspect-2/3 w-full object-cover {cls}" />
   {:else if fallback}
     {@render fallback()}
   {:else}

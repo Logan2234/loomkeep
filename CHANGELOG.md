@@ -18,6 +18,11 @@ history from before it was started.
 - GitHub releases are named `X.Y.Z`; the CHANGELOG heading's subtitle opens
   the notes.
 
+### Fixed
+
+- Selecting episodes by dragging scrolls at full speed near the list's edges,
+  without a jump when the finger lifts.
+
 ## 1.13.0 — Home-screen widgets, actionable notifications, and a phone-first app
 
 ### Breaking changes
