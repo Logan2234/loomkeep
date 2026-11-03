@@ -31,3 +31,19 @@ it("offers an overview destination and the pending reports badge in the admin me
   expect(within(reports).getByText("9+")).toBeTruthy();
   expect(page.url.pathname).toBe("/app/admin/users");
 });
+
+it("rises after a pull from the bar, with tracking and account rows but no domains", async () => {
+  visit("/app/stats");
+  renderWithQuery(MenuSheet, {});
+  window.dispatchEvent(new CustomEvent("mobile-menu-pull", { detail: 240 }));
+  window.dispatchEvent(new CustomEvent("mobile-menu-pull", { detail: null }));
+
+  const menu = await screen.findByRole("dialog", { name: m.common_menu() });
+  const stats = within(menu).getByRole("link", { name: /Stat/ });
+  expect(stats.getAttribute("aria-current")).toBe("page");
+  expect(menu.querySelector('a[href="/app/settings"]')).toBeTruthy();
+  expect(menu.querySelector('a[href="/app/media"]')).toBeNull();
+  expect(
+    within(menu).getByRole("button", { name: m.common_logout() }),
+  ).toBeTruthy();
+});

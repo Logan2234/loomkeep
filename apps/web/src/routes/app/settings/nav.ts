@@ -25,6 +25,8 @@ interface SettingsEntryDef {
    */
   id: string;
   label: string;
+  /** Only shown on a phone's layout: the bottom bar exists nowhere else. */
+  compactOnly?: boolean;
   /**
    * Terms a user might type for this control that its label doesn't contain:
    * synonyms, the English word for a French label, the brand name of a
@@ -419,6 +421,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           {
             id: "mobile-nav",
             label: m.settings_mobile_nav_bar_label(),
+            compactOnly: true,
             keywords: [
               "raccourcis",
               "shortcuts",
@@ -427,7 +430,8 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
               "bottom bar",
               "home",
               "search",
-              "menu",
+              "library",
+              "bibliotheque",
               "calendar",
               "stats",
               "leaderboard",
@@ -435,10 +439,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
               "profile",
               "settings",
               "admin",
-              "media",
-              "games",
-              "books",
-              "music",
             ],
           },
         ],

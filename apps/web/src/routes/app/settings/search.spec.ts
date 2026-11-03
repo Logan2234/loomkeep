@@ -1,3 +1,4 @@
+import { layout } from "#lib/layout.svelte.js";
 import { describe, expect, it } from "vitest";
 import { SETTINGS_SECTIONS } from "./nav";
 import { fold, groupSearchHits, hitHref, searchSettings } from "./search";
@@ -73,12 +74,21 @@ describe("settings search", () => {
   });
 
   it("points mobile destinations to the mobile navigation setting", () => {
+    layout.compact = true;
     const [leaderboard] = searchSettings("leaderboard");
 
     expect(leaderboard).toMatchObject({
       section: { slug: "appearance" },
       entryId: "mobile-nav",
     });
+  });
+
+  it("leaves the phone's bottom bar out of a desktop search", () => {
+    layout.compact = false;
+    const hits = searchSettings("leaderboard");
+    layout.compact = true;
+
+    expect(hits.some((hit) => hit.entryId === "mobile-nav")).toBe(false);
   });
 
   it("indexes each import source as a result that lands on its card", () => {

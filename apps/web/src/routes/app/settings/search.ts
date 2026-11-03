@@ -2,6 +2,7 @@
 // five groups and fifteen sections. It matches individual controls, not just
 // section titles — someone looking for the digest hour types "fuseau", which
 // is a row inside Communications and nowhere in its name.
+import { layout } from "#lib/layout.svelte.js";
 import type { SettingsSectionDef } from "./nav";
 import { SETTINGS_SEARCHABLE, sectionHref } from "./nav";
 
@@ -52,6 +53,8 @@ export function searchSettings(
     }
 
     for (const entry of section.entries) {
+      if (entry.compactOnly && !layout.compact) continue;
+
       if (matches([entry.label, ...entry.keywords], needle)) {
         entryHits.push({
           section,

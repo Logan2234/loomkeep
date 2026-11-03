@@ -1,19 +1,19 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { pullMenu } from "#lib/actions/pull-menu.js";
   import { auth } from "#lib/auth.svelte.js";
   import { appConfig } from "#lib/config.svelte.js";
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { mobileNav } from "#lib/mobile-nav.svelte.js";
   import { resolveBottomShortcuts } from "#lib/navigation.js";
-  import { m } from "#lib/paraglide/messages.js";
-  import ChatTab from "#lib/components/chat/ChatTab.svelte";
+  import LibraryTab from "./LibraryTab.svelte";
+  import MenuGrabber from "./MenuGrabber.svelte";
   import NavTab from "./NavTab.svelte";
-  import NotificationTab from "./NotificationTab.svelte";
 
-  // The user's stored order (falls back to the default set), gated by enabled
-  // domains / admin role at render time — a shortcut for a since-disabled domain
-  // silently drops out.
+  // The user's stored order (falls back to the default set) around Library,
+  // gated by enabled domains / admin role at render time — a shortcut for a
+  // since-disabled feature silently drops out.
   const items = $derived(
     resolveBottomShortcuts(mobileNav.shortcuts, {
       isDomainEnabled,
@@ -22,35 +22,25 @@
       gamificationEnabled: appConfig.gamificationEnabled,
     }),
   );
-
-  function openMenu() {
-    dispatchEvent(new CustomEvent("mobile-menu-toggle"));
-  }
 </script>
 
 <nav
   data-mobile-navigation
+  use:pullMenu
   style="view-transition-name: mobile-nav"
   class="
     border-border bg-surface fixed inset-x-0
     bottom-0
     z-30 flex
-    border-t
-    pt-2
+    touch-none border-t
+    pt-2.5
     pb-[calc(0.4rem+env(safe-area-inset-bottom))]
     text-center
   ">
+  <MenuGrabber />
   {#each items as item (item.id)}
-    {#if item.id === "messages"}
-      <ChatTab />
-    {:else if item.id === "alerts"}
-      <NotificationTab />
-    {:else if item.id === "menu"}
-      <NavTab
-        icon={item.icon}
-        label={item.label}
-        ariaLabel={m.nav_open_menu()}
-        onclick={openMenu} />
+    {#if item.id === "library"}
+      <LibraryTab />
     {:else}
       <NavTab
         href={item.href}

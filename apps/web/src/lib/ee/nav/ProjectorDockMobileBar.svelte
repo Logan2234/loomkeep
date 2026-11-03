@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { pullMenu } from "#lib/actions/pull-menu.js";
   import { auth } from "#lib/auth.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
   import { appConfig } from "#lib/config.svelte.js";
@@ -7,10 +8,9 @@
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { resolveBottomShortcuts } from "#lib/navigation.js";
   import { mobileNav } from "#lib/mobile-nav.svelte.js";
-  import { m } from "#lib/paraglide/messages.js";
-  import ChatTab from "#lib/components/chat/ChatTab.svelte";
   import type { NavTabLook } from "#lib/components/sidebars/NavTab.svelte";
-  import NotificationTab from "#lib/components/sidebars/NotificationTab.svelte";
+  import LibraryTab from "#lib/components/sidebars/LibraryTab.svelte";
+  import MenuGrabber from "#lib/components/sidebars/MenuGrabber.svelte";
 
   const TAB_LOOK: NavTabLook = {
     root: "flex-1 gap-0.5 text-[0.6rem]",
@@ -29,38 +29,23 @@
       gamificationEnabled: appConfig.gamificationEnabled,
     }),
   );
-
-  function openMenu() {
-    dispatchEvent(new CustomEvent("mobile-menu-toggle"));
-  }
 </script>
 
 <nav
   data-mobile-navigation
+  use:pullMenu
   class="
     border-border bg-surface/95 fixed inset-x-4
-    z-30 flex items-end
+    z-30 flex touch-none items-end
     justify-between rounded-full border
     px-2 py-2
     shadow-xl backdrop-blur
   "
   style="bottom: calc(1rem + env(safe-area-inset-bottom))">
+  <MenuGrabber class="-top-5" />
   {#each items as item (item.id)}
-    {#if item.id === "messages"}
-      <ChatTab look={TAB_LOOK} />
-    {:else if item.id === "alerts"}
-      <NotificationTab look={TAB_LOOK} />
-    {:else if item.id === "menu"}
-      <button
-        type="button"
-        onclick={openMenu}
-        aria-label={m.nav_open_menu()}
-        class="text-dim flex flex-1 flex-col items-center gap-0.5 text-[0.6rem] font-semibold">
-        <span class="grid h-10 w-10 place-items-center rounded-full">
-          <Icon name={item.icon} class="h-5 w-5" />
-        </span>
-        {item.label}
-      </button>
+    {#if item.id === "library"}
+      <LibraryTab look={TAB_LOOK} />
     {:else}
       {@const active = item.match(page.url.pathname)}
       <a

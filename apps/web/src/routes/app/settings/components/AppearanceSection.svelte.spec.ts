@@ -1,4 +1,5 @@
 import { auth } from "#lib/auth.svelte.js";
+import { layout } from "#lib/layout.svelte.js";
 import { mobileNav } from "#lib/mobile-nav.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
@@ -14,7 +15,8 @@ vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
 vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 beforeEach(() => {
-  mobileNav.shortcuts = ["home", "media", "games", "menu"];
+  layout.compact = true;
+  mobileNav.shortcuts = ["home", "search", "calendar"];
   auth.user = {
     enabledDomains: ["MEDIA", "GAMES"],
     locale: "en",
@@ -35,18 +37,19 @@ it("reorders mobile shortcuts with a keyboard handle and saves their order", asy
   const user = userEvent.setup();
   await user.keyboard("[Space][ArrowDown]");
   await waitFor(() =>
-    expect(mobileNav.shortcuts).toEqual(["media", "home", "games", "menu"]),
+    expect(mobileNav.shortcuts).toEqual(["search", "home", "calendar"]),
   );
   await user.keyboard("[Escape]");
   await waitFor(() => expect(client.isFetching()).toBe(0));
 });
 
-it("removes a shortcut without dragging and keeps the menu required", async () => {
+it("removes a shortcut without dragging and keeps Library at the centre", async () => {
   const { container, client } = renderWithQuery(AppearanceSection, {});
   const rows = container.querySelectorAll("#mobile-nav li");
+  expect(rows[2].getAttribute("aria-label")).toBe(m.common_library());
   expect(
     (
-      within(rows[3] as HTMLElement).getByRole("button", {
+      within(rows[2] as HTMLElement).getByRole("button", {
         name: m.common_remove(),
       }) as HTMLButtonElement
     ).disabled,
@@ -57,7 +60,19 @@ it("removes a shortcut without dragging and keeps the menu required", async () =
     }),
   );
   await waitFor(() =>
-    expect(mobileNav.shortcuts).toEqual(["media", "games", "menu"]),
+    expect(mobileNav.shortcuts).toEqual(["search", "calendar"]),
   );
   await waitFor(() => expect(client.isFetching()).toBe(0));
+});
+
+// The bar only exists on a phone, and is stored on it: a desktop has
+// nothing to arrange.
+it("leaves the bottom bar out on a desktop", () => {
+  layout.compact = false;
+  const { container } = renderWithQuery(AppearanceSection, {});
+
+  expect(container.querySelector("#mobile-nav")).toBeNull();
+  expect(
+    screen.getByText(m.settings_nav_style_label(), { exact: false }),
+  ).toBeTruthy();
 });

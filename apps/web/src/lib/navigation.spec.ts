@@ -2,6 +2,8 @@ import { Domain } from "@loomkeep/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { auth } from "./auth.svelte";
 import {
+  resolveBottomShortcuts,
+  resolveLibraryDomains,
   resolveMenuGroups,
   resolveShortcutChoices,
   scrollUpOnReselect,
@@ -14,10 +16,7 @@ afterEach(() => {
 });
 
 describe("mobile shortcut choices", () => {
-  it("orders domain pills without moving the other destinations", () => {
-    auth.user = {
-      domainOrder: [Domain.MUSIC, Domain.GAMES, Domain.MEDIA, Domain.BOOKS],
-    } as never;
+  it("leaves the domains to Library, and Messages and Alerts to the edge tab", () => {
     expect(
       resolveShortcutChoices({
         isDomainEnabled: () => true,
@@ -25,25 +24,13 @@ describe("mobile shortcut choices", () => {
         socialEnabled: false,
         gamificationEnabled: false,
       }).map((choice) => choice.id),
-    ).toEqual([
-      "home",
-      "search",
-      "alerts",
-      "music",
-      "games",
-      "media",
-      "books",
-      "calendar",
-      "stats",
-      "profile",
-      "settings",
-    ]);
+    ).toEqual(["home", "search", "calendar", "stats", "profile", "settings"]);
   });
 
   it("includes social destinations when their features are available", () => {
     const choices = resolveShortcutChoices({
       isDomainEnabled: () => true,
-      isAdmin: false,
+      isAdmin: true,
       socialEnabled: true,
       gamificationEnabled: true,
     });
@@ -51,18 +38,62 @@ describe("mobile shortcut choices", () => {
     expect(choices.map((choice) => choice.id)).toEqual([
       "home",
       "search",
-      "alerts",
-      "media",
-      "games",
-      "books",
-      "music",
       "calendar",
       "stats",
       "leaderboard",
       "feed",
       "profile",
       "settings",
+      "admin",
     ]);
+  });
+});
+
+describe("resolveBottomShortcuts", () => {
+  const opts = { isDomainEnabled: () => true, isAdmin: false };
+  const bar = (ids: string[]) =>
+    resolveBottomShortcuts(ids, opts).map((d) => d.id);
+
+  it("puts Library at the centre", () => {
+    expect(bar(["home", "search", "calendar", "profile"])).toEqual([
+      "home",
+      "search",
+      "library",
+      "calendar",
+      "profile",
+    ]);
+    expect(bar(["home", "search"])).toEqual(["home", "library", "search"]);
+  });
+
+  it("puts it just right of the centre when the others are odd", () => {
+    expect(bar(["home", "search", "stats"])).toEqual([
+      "home",
+      "search",
+      "library",
+      "stats",
+    ]);
+  });
+
+  it("keeps it centred among what's left once a tab is gated out", () => {
+    expect(bar(["home", "admin", "search"])).toEqual([
+      "home",
+      "library",
+      "search",
+    ]);
+  });
+});
+
+describe("resolveLibraryDomains", () => {
+  it("offers the enabled domains in the user's order, without the planned ones", () => {
+    auth.user = {
+      domainOrder: [Domain.MUSIC, Domain.GAMES, Domain.MEDIA, Domain.BOOKS],
+    } as never;
+
+    expect(
+      resolveLibraryDomains({
+        isDomainEnabled: (d) => d !== Domain.GAMES,
+      }).map((d) => d.id),
+    ).toEqual(["music", "media", "books"]);
   });
 });
 
@@ -177,20 +208,30 @@ describe("scrollUpOnReselect", () => {
 });
 
 describe("resolveMenuGroups and the bottom bar", () => {
-  const opts = { isDomainEnabled: () => true, isAdmin: false };
+  const opts = { isDomainEnabled: () => true, isAdmin: true };
   const ids = (bar: string[]) =>
     resolveMenuGroups(opts, bar).flatMap((g) => g.items.map((d) => d.id));
 
-  it("offers what the bar leaves out", () => {
-    const menu = ids(["menu", "media"]);
+  it("offers Home and Search when the bar leaves them out", () => {
+    const menu = ids(["calendar", "stats"]);
     expect(menu).toContain("home");
     expect(menu).toContain("search");
-    expect(menu).toContain("alerts");
   });
 
-  it("doesn't repeat what the bar carries", () => {
-    const menu = ids(["home", "search", "menu", "messages", "alerts"]);
+  it("doesn't repeat Home and Search when the bar carries them", () => {
+    const menu = ids(["home", "search", "calendar", "profile"]);
     expect(menu).not.toContain("home");
-    expect(menu).not.toContain("alerts");
+    expect(menu).not.toContain("search");
+  });
+
+  it("leaves the domains to Library and the alerts to the edge tab", () => {
+    expect(ids([])).toEqual([
+      "home",
+      "search",
+      "calendar",
+      "stats",
+      "settings",
+      "admin",
+    ]);
   });
 });

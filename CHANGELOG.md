@@ -19,15 +19,14 @@ history from before it was started.
   the notes.
 - Settings › Security: the app lock now sits above "Go further".
 - Android app lock: a redrawn lock screen, touch the fingerprint to unlock.
+- Phone navigation: a central Library tab fans out your domains, Alerts and
+  Messages move to a movable edge tab, and the menu opens by pulling the bar up.
 
 ### Fixed
 
 - Passkeys created or used in the Android app are no longer rejected with
   "Security key verification failed" (the API now reads `ANDROID_APP_LINKS`
   too).
-
-### Fixed
-
 - Selecting episodes by dragging scrolls at full speed near the list's edges,
   without a jump when the finger lifts.
 

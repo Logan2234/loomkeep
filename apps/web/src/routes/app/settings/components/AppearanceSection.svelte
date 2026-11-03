@@ -23,6 +23,7 @@
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { useEeLock } from "#lib/ee/license.svelte.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
+  import { layout } from "#lib/layout.svelte.js";
   import { languageOptions } from "#lib/locales.js";
   import type { MobileDestination } from "#lib/navigation.js";
   import {
@@ -80,10 +81,13 @@
     gamificationEnabled: appConfig.gamificationEnabled,
   });
 
-  // Stored order, gated to what's visible now (drops disabled/unknown ids and
-  // keeps "menu"). This is the working set every action rebuilds from.
+  // Stored order, gated to what's visible now, with Library at the centre.
+  // This is the working set every action rebuilds from.
   const selected = $derived(resolveBottomShortcuts(mobileNav.shortcuts, gate));
   const selectedIds = $derived(selected.map((d) => d.id));
+  // What's stored: the bar without Library, which finds the centre again.
+  const others = (ids: string[]) =>
+    ids.filter((id) => id !== REQUIRED_SHORTCUT);
 
   // Writable derived: mirrors `selected`, but svelte-dnd-action reassigns it
   // directly mid-drag; it resets to `selected` whenever that changes
@@ -121,7 +125,7 @@
 
   function handleDndFinalize(e: CustomEvent<{ items: MobileDestination[] }>) {
     dragItems = e.detail.items;
-    void save(dragItems.map((d) => d.id));
+    void save(others(dragItems.map((d) => d.id)));
   }
 
   function highlightDraggedShortcut(element: HTMLElement | undefined) {
@@ -131,12 +135,12 @@
 
   function remove(id: string) {
     if (!canRemove || id === REQUIRED_SHORTCUT) return;
-    void save(selectedIds.filter((x) => x !== id));
+    void save(others(selectedIds).filter((x) => x !== id));
   }
 
   function add(id: string) {
     if (!canAdd) return;
-    void save([...selectedIds, id]);
+    void save([...others(selectedIds), id]);
   }
 </script>
 
@@ -307,105 +311,113 @@
     </div>
   </section>
 
-  <section
-    id="mobile-nav"
-    use:flashAnchor={{ anchor: "mobile-nav", hash: page.url.hash }}
-    class="card p-5 md:p-6">
-    <p class="mb-2 font-semibold">{m.settings_mobile_nav_bar_label()}</p>
-    <p class="text-dim text-sm">
-      {m.settings_mobile_nav_bar_description({
-        min: MOBILE_NAV_SHORTCUT_LIMITS.min,
-        max: MOBILE_NAV_SHORTCUT_LIMITS.max,
-      })}
-    </p>
+  <!-- The bottom bar only exists on a phone, and is kept on this device. -->
+  {#if layout.compact}
+    <section
+      id="mobile-nav"
+      use:flashAnchor={{ anchor: "mobile-nav", hash: page.url.hash }}
+      class="card p-5 md:p-6">
+      <p class="mb-2 font-semibold">{m.settings_mobile_nav_bar_label()}</p>
+      <p class="text-dim text-sm">
+        {m.settings_mobile_nav_bar_description({
+          min: MOBILE_NAV_SHORTCUT_LIMITS.min,
+          max: MOBILE_NAV_SHORTCUT_LIMITS.max,
+        })}
+      </p>
 
-    <ul
-      class="divide-border divide-y"
-      use:dragHandleZone={{
-        items: dragItems,
-        flipDurationMs,
-        dropTargetStyle: {},
-        transformDraggedElement: highlightDraggedShortcut,
-        type: "mobile-shortcuts",
-      }}
-      onconsider={handleDndConsider}
-      onfinalize={handleDndFinalize}>
-      {#each dragItems as item (item.id)}
-        {@const locked = item.id === REQUIRED_SHORTCUT}
-        <li
-          aria-label={item.label}
-          class="py-1"
-          animate:flip={{ duration: flipDurationMs, easing: cubicOut }}>
-          <div
-            class="mobile-shortcut flex items-center gap-3 rounded-lg px-2 py-1.5"
-            style:--drag-scale={reduced ? 1 : 1.02}
-            style:--drag-duration={reduced ? "0ms" : "150ms"}
-            data-dragging="false">
-            <span
-              use:dragHandle
-              aria-label={m.common_reorder()}
-              class="btn-icon text-dim shrink-0 cursor-grab touch-none active:cursor-grabbing">
-              <Icon name="grip" class="h-4 w-4" />
-            </span>
-            <Icon name={item.icon} class="text-accent h-5 w-5 shrink-0" />
-            <span class="min-w-0 flex-1 truncate font-semibold">
-              {item.label}
+      <ul
+        class="divide-border divide-y"
+        use:dragHandleZone={{
+          items: dragItems,
+          flipDurationMs,
+          dropTargetStyle: {},
+          transformDraggedElement: highlightDraggedShortcut,
+          type: "mobile-shortcuts",
+        }}
+        onconsider={handleDndConsider}
+        onfinalize={handleDndFinalize}>
+        {#each dragItems as item (item.id)}
+          {@const locked = item.id === REQUIRED_SHORTCUT}
+          <li
+            aria-label={item.label}
+            class="py-1"
+            animate:flip={{ duration: flipDurationMs, easing: cubicOut }}>
+            <div
+              class="mobile-shortcut flex items-center gap-3 rounded-lg px-2 py-1.5"
+              style:--drag-scale={reduced ? 1 : 1.02}
+              style:--drag-duration={reduced ? "0ms" : "150ms"}
+              data-dragging="false">
               {#if locked}
-                <span class="text-dim ml-1 text-xs font-normal"
-                  >· {m.settings_nav_always_visible()}</span>
+                <span class="btn-icon shrink-0" aria-hidden="true"></span>
+              {:else}
+                <span
+                  use:dragHandle
+                  aria-label={m.common_reorder()}
+                  class="btn-icon text-dim shrink-0 cursor-grab touch-none active:cursor-grabbing">
+                  <Icon name="grip" class="h-4 w-4" />
+                </span>
               {/if}
-            </span>
+              <Icon name={item.icon} class="text-accent h-5 w-5 shrink-0" />
+              <span class="min-w-0 flex-1 truncate font-semibold">
+                {item.label}
+                {#if locked}
+                  <span class="text-dim ml-1 text-xs font-normal"
+                    >· {m.settings_nav_always_centered()}</span>
+                {/if}
+              </span>
 
-            <button
-              type="button"
-              class="hover:bg-danger/10 hover:text-danger text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-30"
-              aria-label={m.common_remove()}
-              disabled={locked || !canRemove}
-              title={locked
-                ? m.settings_nav_menu_cannot_remove()
-                : !canRemove
-                  ? m.settings_nav_min_shortcuts({
-                      min: MOBILE_NAV_SHORTCUT_LIMITS.min,
+              <button
+                type="button"
+                class="hover:bg-danger/10 hover:text-danger text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-30"
+                aria-label={m.common_remove()}
+                disabled={locked || !canRemove}
+                title={locked
+                  ? m.settings_nav_library_cannot_remove()
+                  : !canRemove
+                    ? m.settings_nav_min_shortcuts({
+                        min: MOBILE_NAV_SHORTCUT_LIMITS.min,
+                      })
+                    : undefined}
+                onclick={() => remove(item.id)}>
+                <Icon name="x" class="h-4 w-4" />
+              </button>
+            </div>
+          </li>
+        {/each}
+      </ul>
+
+      {#if choices.length > 0}
+        <div class="border-border border-t pt-4">
+          <p
+            class="text-dim mb-2 text-xs font-semibold tracking-wide uppercase">
+            {m.common_add()}
+          </p>
+          <div class="flex flex-wrap gap-2">
+            {#each choices as c (c.id)}
+              <button
+                type="button"
+                class="chip inline-flex items-center gap-1.5 disabled:pointer-events-none disabled:opacity-40"
+                disabled={!canAdd}
+                title={!canAdd
+                  ? m.settings_nav_max_shortcuts({
+                      max: MOBILE_NAV_SHORTCUT_LIMITS.max,
                     })
                   : undefined}
-              onclick={() => remove(item.id)}>
-              <Icon name="x" class="h-4 w-4" />
-            </button>
+                onclick={() => add(c.id)}>
+                <Icon name={c.icon} class="h-3.5 w-3.5" />
+                {c.label}
+              </button>
+            {/each}
           </div>
-        </li>
-      {/each}
-    </ul>
-
-    {#if choices.length > 0}
-      <div class="border-border border-t pt-4">
-        <p class="text-dim mb-2 text-xs font-semibold tracking-wide uppercase">
-          {m.common_add()}
-        </p>
-        <div class="flex flex-wrap gap-2">
-          {#each choices as c (c.id)}
-            <button
-              type="button"
-              class="chip inline-flex items-center gap-1.5 disabled:pointer-events-none disabled:opacity-40"
-              disabled={!canAdd}
-              title={!canAdd
-                ? m.settings_nav_max_shortcuts({
-                    max: MOBILE_NAV_SHORTCUT_LIMITS.max,
-                  })
-                : undefined}
-              onclick={() => add(c.id)}>
-              <Icon name={c.icon} class="h-3.5 w-3.5" />
-              {c.label}
-            </button>
-          {/each}
+          {#if !canAdd}
+            <p class="text-dim mt-2 text-xs">
+              {m.settings_nav_max_reached()}
+            </p>
+          {/if}
         </div>
-        {#if !canAdd}
-          <p class="text-dim mt-2 text-xs">
-            {m.settings_nav_max_reached()}
-          </p>
-        {/if}
-      </div>
-    {/if}
-  </section>
+      {/if}
+    </section>
+  {/if}
 </div>
 
 <style>
