@@ -13,6 +13,19 @@ history from before it was started.
 
 ## [Unreleased]
 
+## 1.13.0 — Home-screen widgets, actionable notifications, and a phone-first app
+
+### Before upgrading a self-hosted instance
+
+- **A reverse proxy's own `Content-Security-Policy` now stacks with the
+  app's** (both apply), since the web app enforces its own: drop the
+  proxy's. Details under Security.
+- **Every account's mobile bottom bar goes back to the defaults**: the
+  `mobileNavShortcuts` column is dropped by a migration, the bar's
+  shortcuts now living on each device.
+
+### Added
+
 - Phone: a series or film page's sticky bar is one row; once stuck it shows
   the title over the status and progress, the next episode being marked from
   the bar above the bottom navigation.
@@ -50,18 +63,10 @@ history from before it was started.
   `/undo` routes; `commentCount` added to each episode of the media detail.
 - Phone: sliding between tabs (`Tabs`, seasons, Messages) now moves the content
   with the finger until release.
-
-### Fixed
-
-- Phone: sliding across an open conversation no longer changes the Messages tab
-  and closes it.
-- Phone: a long press on your own message in a read-only conversation offers
-  copy and forward instead of nothing.
-- Long presses sink everywhere while held, comments included; the library's
-  selection press uses the same gesture.
-- Desktop home: a long activity feed no longer leaves a long empty scroll below
-  the page (the dates' screen-reader text escaped the list's clipping).
-- Search: domain tabs that overflow stop at the search bar's left edge.
+- "System" option in Settings › Appearance › Theme.
+- Back button on a phone for Calendar, Stats, Feed, Leaderboard, Search and the
+  libraries. Settings, Admin, Achievements, Lists and Reviews now return to the
+  page they were opened from.
 
 ### Changed
 
@@ -111,9 +116,16 @@ history from before it was started.
 
 ### Fixed
 
+- Phone: sliding across an open conversation no longer changes the Messages tab
+  and closes it.
+- Phone: a long press on your own message in a read-only conversation offers
+  copy and forward instead of nothing.
+- Long presses sink everywhere while held, comments included; the library's
+  selection press uses the same gesture.
+- Desktop home: a long activity feed no longer leaves a long empty scroll below
+  the page (the dates' screen-reader text escaped the list's clipping).
 - Phone menu: Home, Search, Messages and Alerts stay reachable when they aren't
   in the bottom bar.
-- Search page: overflowing domain tabs stop at the search bar's right edge.
 - Saga view: the header has the back button of the works view, and section
   titles no longer break around their hint.
 - Work pages: the video hero grows with its content, so a long title or an
@@ -135,34 +147,15 @@ history from before it was started.
   "Deleted account" while loading, and slides in from the right on a phone.
 - Admin push samples link to a real work, carry the pictures of a real push,
   and can have their buttons refused to see a failed action.
-
-### Added
-
-- "System" option in Settings › Appearance › Theme.
-- Back button on a phone for Calendar, Stats, Feed, Leaderboard, Search and the
-  libraries. Settings, Admin, Achievements, Lists and Reviews now return to the
-  page they were opened from.
-
-### Accessibility
-
-- Show context-appropriate Enter actions on Android keyboards for search and
-  clear multi-field forms.
-- Improve contrast for the mobile navigation, secondary buttons, and the
-  commit identifier in the legal footer.
-- Center mobile navigation labels beneath their icons and remove the
-  perforated top edge.
-
-### Admin
-
-- **Admin › Communications › Push sends any notification as a sample**,
-  besides the custom test and the broadcast: pick an alert and the account
-  gets its push as it would for real, in its language, on its channel,
-  with its buttons on the Android app (which reach the API through a no-op
-  `test` action instead of accepting or sending anything).
+- Search: domain tabs that overflow stop at both edges of the search bar.
+- **Newsletter unsubscribe page no longer ends on a server error.** The
+  unsubscription itself went through, but the page read the API's empty
+  response as a failed query and showed "A server error occurred" anyway;
+  it now confirms the unsubscription.
 
 ### Android app
 
-- **The bottom bar has five cases at most and belongs to each device**:
+- **The bottom bar has six cases at most and belongs to each device**:
   Messages and Alerts are now shortcuts like the others, and the selection
   and order live in `localStorage`. The `mobileNavShortcuts` column and API
   field are gone (migration), so every bar goes back to the defaults. Labels
@@ -309,6 +302,14 @@ history from before it was started.
   next version's is the first to carry one. Until it is published, every
   `main` commit builds the release APK, whatever it changes.
 
+### Admin
+
+- **Admin › Communications › Push sends any notification as a sample**,
+  besides the custom test and the broadcast: pick an alert and the account
+  gets its push as it would for real, in its language, on its channel,
+  with its buttons on the Android app (which reach the API through a no-op
+  `test` action instead of accepting or sending anything).
+
 ### Security
 
 - **The Content-Security-Policy is enforced.** The web app now sends it
@@ -326,6 +327,12 @@ history from before it was started.
 
 ### Accessibility
 
+- Show context-appropriate Enter actions on Android keyboards for search and
+  clear multi-field forms.
+- Improve contrast for the mobile navigation, secondary buttons, and the
+  commit identifier in the legal footer.
+- Center mobile navigation labels beneath their icons and remove the
+  perforated top edge.
 - **Screen-reader fixes found by a new axe pass on every component test**:
   the import wizard's item checkboxes are named after their title and its
   All/None buttons left the group's `<summary>`; the activity feed's
@@ -347,37 +354,6 @@ history from before it was started.
   on the real stack for a dozen representative screens, mobile and
   desktop; ZAP's browser spider reaches the signed-in app. Advisory, with
   an ntfy message when an audit finds something.
-
-### Accessibility
-
-- **Screen-reader fixes found by a new axe pass on every component test**:
-  the import wizard's item checkboxes are named after their title and its
-  All/None buttons left the group's `<summary>`; the activity feed's
-  cover link, a duplicate of the title link, is hidden from assistive tech;
-  a combobox's "no results" message moved out of its listbox; clickable
-  histogram bars are a group instead of an image; a tooltip around a
-  disabled control no longer wraps it in a second button.
-- **Fixes from the first Pa11y pass over the signed-in app**: "Skip to
-  content" targets the shell's `<main id="main">` (it could land on the
-  fullscreen chat's); the note field of a work page is named by its visible
-  label; the import identifier field and the admin restore file picker have
-  a name; the admin cohort table and the Communications grid tie every cell
-  to its headers; the legal pages' tables, which scroll sideways on a phone,
-  can be scrolled from the keyboard; relative dates ("2 hours ago") give
-  screen readers the full date as text, where their `aria-label` was
-  ignored.
-- **web-audit covers every page**: Pa11y on all ~80 routes, signed out and
-  signed in (admin included), light and dark, 375 and 1280 px; Lighthouse
-  on the real stack for a dozen representative screens, mobile and
-  desktop; ZAP's browser spider reaches the signed-in app. Advisory, with
-  an ntfy message when an audit finds something.
-
-### Account, security and notifications
-
-- **Newsletter unsubscribe page no longer ends on a server error.** The
-  unsubscription itself went through, but the page read the API's empty
-  response as a failed query and showed "A server error occurred" anyway;
-  it now confirms the unsubscription.
 
 ## 1.12.0 — The Android app, imports from every tracker, and commands in Messages
 
