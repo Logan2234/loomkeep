@@ -38,13 +38,10 @@ function props() {
     isMovie: true,
     upcoming: true,
     saving: false,
-    nextEpisode: null,
-    continuing: false,
     compact: false,
     title: "Future movie",
     onAdd: vi.fn(),
     onToggleFavorite: vi.fn(),
-    onContinue: vi.fn(),
     onToggleWatched: vi.fn(),
     onDrop: vi.fn(),
     onResume: vi.fn(),
@@ -89,7 +86,9 @@ describe("upcoming movie action bar", () => {
         .getByRole("button", { name: m.media_movie_reminder_cancel() })
         .getAttribute("aria-pressed"),
     ).toBe("true");
-    expect(screen.getByText(m.media_movie_reminder_active())).toBeTruthy();
+    expect(
+      screen.getAllByText(m.media_movie_reminder_active()),
+    ).not.toHaveLength(0);
   });
   it("restores the watched action when worldwide release has happened", () => {
     render(ActionBar, { props: { ...props(), upcoming: false } });
@@ -99,6 +98,39 @@ describe("upcoming movie action bar", () => {
     expect(
       screen.queryByRole("button", { name: m.media_movie_reminder_enable() }),
     ).toBeNull();
+  });
+});
+
+describe("a series' action bar", () => {
+  const series = {
+    ...props(),
+    isMovie: false,
+    upcoming: false,
+    entry: {
+      ...entry,
+      status: "WATCHING" as const,
+      progress: { watchedEpisodes: 11, totalEpisodes: 62, nextEpisode: null },
+    } as LibraryEntryDto,
+  };
+
+  it("says where the viewer stands instead of offering the next episode", () => {
+    render(ActionBar, { props: series });
+
+    expect(
+      screen.getAllByText(m.media_watched_of({ watched: 11, total: 62 })),
+    ).not.toHaveLength(0);
+    expect(
+      screen.queryByRole("button", { name: new RegExp(m.common_continue()) }),
+    ).toBeNull();
+  });
+
+  it("shows the title once stuck, over the status", () => {
+    render(ActionBar, { props: { ...series, compact: true } });
+
+    const heading = screen.getByRole("heading", { name: "Future movie" });
+    expect(heading.closest("[aria-hidden]")?.getAttribute("aria-hidden")).toBe(
+      "false",
+    );
   });
 });
 
