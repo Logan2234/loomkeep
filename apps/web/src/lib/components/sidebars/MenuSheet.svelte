@@ -80,9 +80,8 @@
     fetch: getMyProgression,
     enabled: open && !!auth.user && appConfig.gamificationEnabled,
   }));
-  const progress = $derived(
-    progressionQuery.data ? levelProgress(progressionQuery.data.xp) : null,
-  );
+  const xp = $derived(progressionQuery.data?.xp ?? null);
+  const progress = $derived(xp === null ? null : levelProgress(xp));
   const levelShare = $derived(
     progress
       ? progress.xpInLevel /
@@ -196,7 +195,7 @@
               <span class="timecode text-dim mt-0.5 block text-xs">
                 {m.common_level()}
                 {progress.level} · {m.gamification_podium_xp({
-                  xp: formatNumber(progressionQuery.data?.xp ?? 0),
+                  xp: formatNumber(xp ?? 0),
                 })}
               </span>
               <span
