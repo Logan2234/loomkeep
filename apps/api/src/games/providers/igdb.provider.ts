@@ -536,6 +536,23 @@ export class IgdbProvider implements GameCatalogProvider {
     );
   }
 
+  /**
+   * Covers of the most rated base games out these last two years, adult ones
+   * left out: IGDB's closest thing to what's popular right now.
+   */
+  async popularCovers(): Promise<string[]> {
+    const since = Math.floor(Date.now() / 1000) - 2 * 365 * 24 * 60 * 60;
+    const games = await this.query<IgdbGame[]>(
+      "/games",
+      `fields cover.image_id, themes; where game_type = 0 & cover != null & first_release_date > ${since}; sort total_rating_count desc; limit 20;`,
+    );
+    return games.flatMap((g) =>
+      g.cover?.image_id && !g.themes?.includes(EROTIC_THEME_ID)
+        ? [igdbImage(g.cover.image_id, IMAGE_SIZE.cover)]
+        : [],
+    );
+  }
+
   /** Cached Twitch app-access token, fetched (or refreshed) on demand. */
   private async accessToken(): Promise<string> {
     if (this.token && this.token.expiresAt - TOKEN_SKEW_MS > Date.now()) {

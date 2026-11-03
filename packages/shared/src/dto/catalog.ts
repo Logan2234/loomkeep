@@ -242,6 +242,11 @@ export interface MediaDetailsDto extends MediaSummaryDto {
   seasons: SeasonDto[];
 }
 
+/** Cover images for the sign-in page's backdrop. */
+export interface ShowcaseDto {
+  posters: string[];
+}
+
 /** One episode on the unified media page, carrying the user's watch history. */
 export interface MediaDetailEpisodeDto
   extends EpisodeSourceDetailsDto, CommunityRatingDto {
