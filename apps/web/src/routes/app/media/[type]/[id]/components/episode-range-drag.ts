@@ -15,6 +15,14 @@ export function autoScrollSpeed(
   return 0;
 }
 
+/**
+ * Moves the list by one frame's step, instantly: the page scrolls smoothly,
+ * and a smooth step every frame would restart before getting anywhere.
+ */
+export function scrollStep(scroller: Pick<Element, "scrollBy">, step: number) {
+  scroller.scrollBy({ top: step, behavior: "instant" });
+}
+
 function scrollParent(node: Element): Element {
   for (let el = node.parentElement; el; el = el.parentElement) {
     const { overflowY } = getComputedStyle(el);
@@ -66,7 +74,7 @@ export function followRangeDrag({
     const { top, bottom } = edges();
     const speed = autoScrollSpeed(y, top, bottom);
     if (speed === 0) return;
-    scroller.scrollBy(0, speed);
+    scrollStep(scroller, speed);
     over();
   }
 
