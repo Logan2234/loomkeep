@@ -3,6 +3,7 @@
   import { getShowcase } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { dealCovers } from "#lib/auth-wall.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { fade, fly } from "svelte/transition";
@@ -64,19 +65,14 @@
   const tile = (hue: string) =>
     `linear-gradient(150deg, ${hue}, var(--surface))`;
 
-  // Covers are dealt out between the rows, so no two rows show the same
-  // ones; a row short of covers repeats its own, as far apart as it can.
   // Each row holds its tiles twice, so sliding it by half loops seamlessly.
   const rows = $derived.by(() => {
     const covers = shuffled(showcase.data?.posters ?? []);
-    const real = covers.length >= MIN_COVERS;
+    const dealt =
+      covers.length >= MIN_COVERS ? dealCovers(covers, ROWS, PER_ROW) : null;
     return Array.from({ length: ROWS }, (_, row) => {
-      const dealt = covers.filter((_, i) => i % ROWS === row);
-      const own = real
-        ? Array.from({ length: Math.max(PER_ROW, dealt.length) }, (_, i) => ({
-            src: dealt[i % dealt.length],
-            bg: null,
-          }))
+      const own = dealt
+        ? dealt[row].map((src) => ({ src, bg: null }))
         : Array.from({ length: PER_ROW }, (_, i) => ({
             src: null,
             bg: tile(HUES[(row * 5 + i * 2) % HUES.length]),
