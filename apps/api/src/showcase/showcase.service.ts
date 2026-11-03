@@ -10,7 +10,8 @@ const TTL_MS = 24 * 60 * 60 * 1000;
  * users follow: only one followed this widely, so no single account shows.
  */
 export const SHOWCASE_MIN_FOLLOWERS = 10;
-const PER_SOURCE = 12;
+/** Films and series, games, books, albums: room for a wall of distinct covers. */
+const PER_SOURCE = [40, 20, 12, 12];
 
 /**
  * The covers behind the sign-in page, which is open to anyone: this week's
@@ -46,7 +47,7 @@ export class ShowcaseService {
 
     const posters = sources.flatMap((source, i) => {
       if (source.status === "fulfilled") {
-        return source.value.slice(0, i === 0 ? PER_SOURCE * 2 : PER_SOURCE);
+        return source.value.slice(0, PER_SOURCE[i]);
       }
 
       // A catalog not configured on this instance just leaves its share out.
@@ -64,7 +65,7 @@ export class ShowcaseService {
       _count: { _all: true },
       having: { bookItemId: { _count: { gte: SHOWCASE_MIN_FOLLOWERS } } },
       orderBy: { _count: { bookItemId: "desc" } },
-      take: PER_SOURCE,
+      take: PER_SOURCE[2],
     });
     const books = await this.prisma.bookItem.findMany({
       where: {
@@ -83,7 +84,7 @@ export class ShowcaseService {
       _count: { _all: true },
       having: { musicItemId: { _count: { gte: SHOWCASE_MIN_FOLLOWERS } } },
       orderBy: { _count: { musicItemId: "desc" } },
-      take: PER_SOURCE,
+      take: PER_SOURCE[3],
     });
     const albums = await this.prisma.musicItem.findMany({
       where: {

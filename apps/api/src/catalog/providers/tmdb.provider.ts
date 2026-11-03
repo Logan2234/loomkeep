@@ -444,20 +444,26 @@ export class TmdbProvider implements CatalogProvider {
 
   /** This week's trending films and series, adult titles left out. */
   async trendingPosters(): Promise<string[]> {
-    const data = await this.get<{
-      results: {
-        media_type?: string;
-        adult?: boolean;
-        poster_path?: string | null;
-      }[];
-    }>("/trending/all/week", {});
-    return data.results.flatMap((r) =>
-      (r.media_type === "movie" || r.media_type === "tv") &&
-      !r.adult &&
-      r.poster_path
-        ? [tmdbPosterUrl(r.poster_path)]
-        : [],
+    const pages = await Promise.all(
+      ["1", "2"].map((page) =>
+        this.get<{
+          results: {
+            media_type?: string;
+            adult?: boolean;
+            poster_path?: string | null;
+          }[];
+        }>("/trending/all/week", { page }),
+      ),
     );
+    return pages
+      .flatMap((data) => data.results)
+      .flatMap((r) =>
+        (r.media_type === "movie" || r.media_type === "tv") &&
+        !r.adult &&
+        r.poster_path
+          ? [tmdbPosterUrl(r.poster_path)]
+          : [],
+      );
   }
 
   private async get<T>(

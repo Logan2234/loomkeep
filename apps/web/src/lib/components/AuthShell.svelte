@@ -43,9 +43,10 @@
     return copy;
   }
 
-  const MIN_COVERS = 6;
+  const MIN_COVERS = 8;
   // Enough to outrun the widest screens before the loop shows.
-  const PER_ROW = 20;
+  const PER_ROW = 16;
+  const ROWS = 4;
   const HUES = [
     "#7a3b2e",
     "#3d4a35",
@@ -63,16 +64,23 @@
   const tile = (hue: string) =>
     `linear-gradient(150deg, ${hue}, var(--surface))`;
 
+  // Covers are dealt out between the rows, so no two rows show the same
+  // ones; a row short of covers repeats its own, as far apart as it can.
   // Each row holds its tiles twice, so sliding it by half loops seamlessly.
   const rows = $derived.by(() => {
     const covers = shuffled(showcase.data?.posters ?? []);
     const real = covers.length >= MIN_COVERS;
-    return [0, 1, 2, 3].map((row) => {
-      const own = Array.from({ length: PER_ROW }, (_, i) =>
-        real
-          ? { src: covers[(row * PER_ROW + i) % covers.length], bg: null }
-          : { src: null, bg: tile(HUES[(row * 5 + i * 2) % HUES.length]) },
-      );
+    return Array.from({ length: ROWS }, (_, row) => {
+      const dealt = covers.filter((_, i) => i % ROWS === row);
+      const own = real
+        ? Array.from({ length: Math.max(PER_ROW, dealt.length) }, (_, i) => ({
+            src: dealt[i % dealt.length],
+            bg: null,
+          }))
+        : Array.from({ length: PER_ROW }, (_, i) => ({
+            src: null,
+            bg: tile(HUES[(row * 5 + i * 2) % HUES.length]),
+          }));
       return [...own, ...own];
     });
   });
