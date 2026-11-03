@@ -29,6 +29,8 @@
     );
     return [...own, ...own];
   });
+  const tile = (hue: string) =>
+    `linear-gradient(150deg, ${hue}, var(--surface))`;
 </script>
 
 {#snippet wordmark(cls: string)}
@@ -49,8 +51,7 @@
           {#each row as hue, j (j)}
             <span
               class="h-42 w-28 shrink-0 rounded-xl"
-              style:background="linear-gradient(150deg, {hue}, var(--surface))"
-            ></span>
+              style:background={tile(hue)}></span>
           {/each}
         </div>
       {/each}
