@@ -5,10 +5,10 @@
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { visibleNavItems } from "#lib/navigation.js";
-  import { m } from "#lib/paraglide/messages.js";
-  import ChatTab from "#lib/components/chat/ChatTab.svelte";
+  import { pullMenu } from "#lib/actions/pull-menu.js";
   import type { NavTabLook } from "#lib/components/sidebars/NavTab.svelte";
-  import NotificationTab from "#lib/components/sidebars/NotificationTab.svelte";
+  import LibraryTab from "#lib/components/sidebars/LibraryTab.svelte";
+  import MenuGrabber from "#lib/components/sidebars/MenuGrabber.svelte";
 
   const TAB_LOOK: NavTabLook = {
     root: "shrink-0 gap-1 rounded-lg px-3 py-2 text-[0.6rem]",
@@ -18,6 +18,7 @@
     glow: "",
   };
 
+  // The domains are behind Library, right after Search.
   const items = $derived(
     visibleNavItems(
       {
@@ -26,56 +27,44 @@
         gamificationEnabled: appConfig.gamificationEnabled,
       },
       { includeComingSoon: false },
-    ),
+    ).filter((item) => !item.domain),
   );
-
-  function openMenu() {
-    dispatchEvent(new CustomEvent("mobile-menu-toggle"));
-  }
 </script>
 
+<!-- The strip scrolls sideways; a pull up anywhere on it opens the menu. -->
 <nav
   data-mobile-navigation
+  use:pullMenu
   class="
-    border-border bg-surface/95 no-scrollbar filmstrip fixed inset-x-0
+    border-border bg-surface/95 filmstrip fixed inset-x-0
     bottom-0
-    z-30 flex gap-1
-    overflow-x-auto border-t
-    px-2 pt-2
-    pb-[calc(0.5rem+env(safe-area-inset-bottom))]
+    z-30 border-t
     backdrop-blur
   ">
-  {#each items as item (item.href)}
-    {@const active = item.match(page.url.pathname)}
-    <a
-      href={item.href}
-      aria-current={active ? "page" : undefined}
-      class="relative flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 text-[0.6rem] font-semibold transition-all duration-150 {active
-        ? 'bg-accent/10 text-accent -translate-y-1'
-        : 'text-dim'}">
-      <Icon name={item.icon} class="h-5 w-5" />
-      {item.label}
-      {#if item.newBadgeKey && isFeatureNew(item.newBadgeKey)}
-        <span
-          class="bg-accent absolute top-1 right-1.5 h-1.5 w-1.5 rounded-full"
-          aria-hidden="true"></span>
+  <MenuGrabber />
+  <div
+    class="no-scrollbar flex touch-pan-x gap-1 overflow-x-auto px-2 pt-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+    {#each items as item (item.href)}
+      {@const active = item.match(page.url.pathname)}
+      <a
+        href={item.href}
+        aria-current={active ? "page" : undefined}
+        class="relative flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 text-[0.6rem] font-semibold transition-all duration-150 {active
+          ? 'bg-accent/10 text-accent -translate-y-1'
+          : 'text-dim'}">
+        <Icon name={item.icon} class="h-5 w-5" />
+        {item.label}
+        {#if item.newBadgeKey && isFeatureNew(item.newBadgeKey)}
+          <span
+            class="bg-accent absolute top-1 right-1.5 h-1.5 w-1.5 rounded-full"
+            aria-hidden="true"></span>
+        {/if}
+      </a>
+      {#if item.href === "/app/search"}
+        <LibraryTab look={TAB_LOOK} />
       {/if}
-    </a>
-  {/each}
-
-  <button
-    type="button"
-    onclick={openMenu}
-    aria-label={m.nav_open_menu()}
-    class="text-dim flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 text-[0.6rem] font-semibold">
-    <Icon name="menu" class="h-5 w-5" />
-    {m.common_menu()}
-  </button>
-
-  {#if appConfig.chatEnabled}
-    <ChatTab look={TAB_LOOK} />
-  {/if}
-  <NotificationTab look={TAB_LOOK} />
+    {/each}
+  </div>
 </nav>
 
 <style>

@@ -1,7 +1,7 @@
 import { appConfig } from "#lib/config.svelte.js";
 import { DOMAINS } from "#lib/constants/domains.js";
 import { type FeatureBadgeKey } from "#lib/feature-badges.js";
-import { Domain, REQUIRED_SHORTCUT } from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared";
 import { auth } from "./auth.svelte";
 import { orderedDomains } from "./domain-availability";
 import { m } from "./paraglide/messages.js";
@@ -196,16 +196,17 @@ export function visibleNavItems(
 // Mobile navigation
 // The mobile UI is driven by a flat registry of destinations (below) rather
 // than the desktop `NAVIGATION` sections: the bottom tab bar shows a short,
-// user-orderable subset and the "Menu" launcher sheet shows all of
-// them, grouped. Desktop keeps its own rail structure above — the two don't
-// share layout, only the underlying routes.
+// user-orderable subset around the Library tab, which opens the domains as a
+// fan, and the menu sheet pulled up from the bar shows the rest, grouped.
+// Messages and Alerts live in their own edge tab. Desktop keeps its own rail
+// structure above — the two don't share layout, only the underlying routes.
 
 // Stable id for a mobile destination; also the value stored in the user's
-//  bottom-bar shortcut list. `menu` is the launcher itself (no route).
+//  bottom-bar shortcut list. `library` is the domain fan (no route of its own).
 export type MobileNavId =
   | "home"
   | "search"
-  | "menu"
+  | "library"
   | "media"
   | "games"
   | "books"
@@ -218,9 +219,7 @@ export type MobileNavId =
   | "feed"
   | "profile"
   | "settings"
-  | "admin"
-  | "messages"
-  | "alerts";
+  | "admin";
 
 export interface MobileDestination {
   id: MobileNavId;
@@ -232,64 +231,58 @@ export interface MobileDestination {
   domain?: Domain;
   /** Hidden only when every one of these domains is disabled. */
   anyDomain?: Domain[];
-  /** Planned domain with no screen yet: shown dimmed with a "Bientôt" badge. */
+  /** Planned domain with no screen yet: kept out of the Library fan. */
   comingSoon?: boolean;
   /** Only surfaced to admins (the /admin entry). */
   adminOnly?: boolean;
   /** Hidden until the social features (P4) are enabled on the deployment. */
   social?: boolean;
-  /** Hidden when Messages is off on this instance. */
-  chat?: boolean;
   /** Hidden until GAMIFICATION_ENABLED is enabled on the deployment. */
   gamification?: boolean;
+  /** One line under its label in the menu sheet. */
+  hint?: () => string;
   /** Key into feature-badges.ts — shows a "Nouveau" dot while its window is open. */
   newBadgeKey?: FeatureBadgeKey;
 }
 
+// Labels are getters: read when drawn, in the locale of the moment, not the
+// one the module happened to load in.
 const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   home: {
     id: "home",
     href: "/app",
-    label: m.common_home(),
+    get label() {
+      return m.common_home();
+    },
     icon: "home",
     match: (p) => p === "/app",
   },
   search: {
     id: "search",
     href: "/app/search",
-    label: m.common_search(),
+    get label() {
+      return m.common_search();
+    },
     icon: "search",
     match: (p) => p.startsWith("/app/search"),
   },
-  // Drawn by their own tabs in the bars (ChatTab, NotificationTab), for their
-  // badges and, for Messages, the sheet it opens.
-  messages: {
-    id: "messages",
-    href: "#messages",
-    label: m.chat_title(),
-    icon: "message",
-    chat: true,
-    match: () => false,
-  },
-  alerts: {
-    id: "alerts",
-    href: "/app/notifications",
-    label: m.nav_notifications_short(),
-    icon: "bell",
-    match: (p) => p === "/app/notifications",
-  },
-  // The launcher itself — opened via an event, never navigated to.
-  menu: {
-    id: "menu",
-    href: "#menu",
-    label: m.common_menu(),
+  // Drawn by LibraryTab, which opens the domains rather than a page.
+  library: {
+    id: "library",
+    href: "#library",
+    get label() {
+      return m.common_library();
+    },
     icon: "library",
+    newBadgeKey: "phone-navigation",
     match: () => false,
   },
   media: {
     id: "media",
     href: DOMAINS.MEDIA.href,
-    label: DOMAINS.MEDIA.label,
+    get label() {
+      return DOMAINS.MEDIA.label;
+    },
     icon: DOMAINS.MEDIA.icon,
     domain: Domain.MEDIA,
     match: (p) => p.startsWith(DOMAINS.MEDIA.href),
@@ -297,7 +290,9 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   games: {
     id: "games",
     href: DOMAINS.GAMES.href,
-    label: DOMAINS.GAMES.label,
+    get label() {
+      return DOMAINS.GAMES.label;
+    },
     icon: DOMAINS.GAMES.icon,
     domain: Domain.GAMES,
     match: (p) => p.startsWith(DOMAINS.GAMES.href),
@@ -305,7 +300,9 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   books: {
     id: "books",
     href: DOMAINS.BOOKS.href,
-    label: DOMAINS.BOOKS.label,
+    get label() {
+      return DOMAINS.BOOKS.label;
+    },
     icon: DOMAINS.BOOKS.icon,
     domain: Domain.BOOKS,
     match: (p) => p.startsWith(DOMAINS.BOOKS.href),
@@ -313,7 +310,9 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   music: {
     id: "music",
     href: DOMAINS.MUSIC.href,
-    label: DOMAINS.MUSIC.label,
+    get label() {
+      return DOMAINS.MUSIC.label;
+    },
     icon: DOMAINS.MUSIC.icon,
     domain: Domain.MUSIC,
     match: (p) => p.startsWith(DOMAINS.MUSIC.href),
@@ -321,7 +320,9 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   podcasts: {
     id: "podcasts",
     href: DOMAINS.PODCASTS.href,
-    label: DOMAINS.PODCASTS.label,
+    get label() {
+      return DOMAINS.PODCASTS.label;
+    },
     icon: DOMAINS.PODCASTS.icon,
     domain: Domain.PODCASTS,
     comingSoon: true,
@@ -330,7 +331,9 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   boardgames: {
     id: "boardgames",
     href: DOMAINS.BOARDGAMES.href,
-    label: DOMAINS.BOARDGAMES.label,
+    get label() {
+      return DOMAINS.BOARDGAMES.label;
+    },
     icon: DOMAINS.BOARDGAMES.icon,
     domain: Domain.BOARDGAMES,
     comingSoon: true,
@@ -339,100 +342,113 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   calendar: {
     id: "calendar",
     href: "/app/calendar",
-    label: m.common_calendar(),
+    get label() {
+      return m.common_calendar();
+    },
     icon: "calendar",
     anyDomain: [Domain.MEDIA, Domain.GAMES],
+    hint: m.nav_menu_calendar_hint,
     match: (p) => p.startsWith("/app/calendar"),
   },
   stats: {
     id: "stats",
     href: "/app/stats",
-    label: m.common_stats(),
+    get label() {
+      return m.common_stats();
+    },
     icon: "stats",
+    hint: m.nav_menu_stats_hint,
     match: (p) => p.startsWith("/app/stats"),
   },
   leaderboard: {
     id: "leaderboard",
     href: "/app/leaderboard",
-    label: m.gamification_leaderboard_title(),
+    get label() {
+      return m.gamification_leaderboard_title();
+    },
     icon: "crown",
     social: true,
     gamification: true,
+    hint: m.nav_menu_leaderboard_hint,
     match: (p) => p.startsWith("/app/leaderboard"),
   },
   feed: {
     id: "feed",
     href: "/app/feed",
-    label: m.nav_feed(),
+    get label() {
+      return m.nav_feed();
+    },
     icon: "activity",
     social: true,
+    hint: m.nav_menu_feed_hint,
     match: (p) => p.startsWith("/app/feed"),
   },
   profile: {
     id: "profile",
     href: "/app/profile",
-    label: m.nav_profile(),
+    get label() {
+      return m.nav_profile();
+    },
     icon: "user",
     match: (p) => p === "/app/profile",
   },
   settings: {
     id: "settings",
     href: "/app/settings",
-    label: m.common_settings(),
+    get label() {
+      return m.common_settings();
+    },
     icon: "gear",
     match: (p) => p.startsWith("/app/settings"),
   },
   admin: {
     id: "admin",
     href: "/app/admin",
-    label: m.common_admin(),
+    get label() {
+      return m.common_admin();
+    },
     icon: "shield",
     adminOnly: true,
     match: (p) => p.startsWith("/app/admin"),
   },
 };
 
-/** How the launcher sheet groups every destination. */
+/** How the menu sheet groups what the bar and the Library fan don't carry. */
 const MENU_GROUPS: { label: string; ids: MobileNavId[] }[] = [
   {
-    label: m.nav_section_essentials(),
-    ids: ["home", "search", "messages", "alerts"],
+    get label() {
+      return m.nav_section_essentials();
+    },
+    ids: ["home", "search"],
   },
   {
-    label: m.common_libraries(),
-    ids: ["media", "games", "books", "music", "podcasts", "boardgames"],
-  },
-  {
-    label: m.nav_section_tracking(),
+    get label() {
+      return m.nav_section_tracking();
+    },
     ids: ["calendar", "stats", "leaderboard", "feed"],
   },
   {
-    label: m.common_account(),
-    ids: ["profile", "admin", "settings"],
+    get label() {
+      return m.common_account();
+    },
+    ids: ["settings", "admin"],
   },
 ];
 
-// Bottom bar when the user hasn't customised it (Phase B). "menu" is required
-//  and kept centred so the launcher is a stable thumb target.
+// Bottom bar when the user hasn't customised it, Library aside: it is always
+//  there, inserted at the centre (see resolveBottomShortcuts).
 export const DEFAULT_BOTTOM_SHORTCUTS: MobileNavId[] = [
   "home",
   "search",
-  REQUIRED_SHORTCUT,
-  "messages",
-  "alerts",
+  "calendar",
+  "profile",
 ];
 
-// Destinations the user may pin to the bottom bar (Phase B config UI). Excludes
-//  `menu` (always present, not a free choice) and coming-soon placeholders.
+// Destinations the user may pin around Library. The domains are reached
+//  through it, Messages and Alerts through the edge tab.
 const BOTTOM_SHORTCUT_CHOICES: MobileNavId[] = [
   "home",
   "search",
-  "messages",
-  "alerts",
-  "media",
-  "games",
-  "books",
-  "music",
   "calendar",
   "stats",
   "leaderboard",
@@ -441,6 +457,10 @@ const BOTTOM_SHORTCUT_CHOICES: MobileNavId[] = [
   "settings",
   "admin",
 ];
+
+export function isBottomShortcutChoice(id: string): id is MobileNavId {
+  return (BOTTOM_SHORTCUT_CHOICES as string[]).includes(id);
+}
 
 interface MobileGateOptions {
   isDomainEnabled: (domain: Domain) => boolean;
@@ -455,54 +475,62 @@ const isVisible = (d: MobileDestination, opts: MobileGateOptions): boolean =>
   (!d.domain || opts.isDomainEnabled(d.domain)) &&
   (!d.anyDomain || d.anyDomain.some(opts.isDomainEnabled)) &&
   (!d.adminOnly || opts.isAdmin) &&
-  (!d.chat || appConfig.chatEnabled) &&
   (!d.social || !!opts.socialEnabled) &&
   (!d.gamification || !!opts.gamificationEnabled);
 
-// Resolve the ordered bottom-bar ids into visible destinations, dropping any
-//  gated out by the user's enabled domains / admin role. Coming-soon entries
-//  can't reach the bar (not offered as choices), so they're excluded too.
+/** Where Library sits among `count` other tabs: the centre, or just right of it. */
+const libraryIndex = (count: number): number => Math.ceil(count / 2);
+
+// Resolve the stored ids into visible destinations, dropping any gated out by
+//  the user's enabled domains / admin role, with Library at the centre.
 export const resolveBottomShortcuts = (
   ids: readonly string[],
   opts: MobileGateOptions,
-): MobileDestination[] =>
-  ids
-    .map((id) => MOBILE_DESTINATIONS[id as MobileNavId])
-    .filter((d): d is MobileDestination => !!d && !d.comingSoon)
+): MobileDestination[] => {
+  const others = ids
+    .filter(isBottomShortcutChoice)
+    .map((id) => MOBILE_DESTINATIONS[id])
     .filter((d) => isVisible(d, opts));
+  const centre = libraryIndex(others.length);
+  return [
+    ...others.slice(0, centre),
+    MOBILE_DESTINATIONS.library,
+    ...others.slice(centre),
+  ];
+};
 
 // Destinations the user may pin to the bottom bar, gated to what's currently
-//  visible (enabled domains / admin). Used by the settings config UI.
+//  visible (admin, social). Used by the settings config UI.
 export const resolveShortcutChoices = (
   opts: MobileGateOptions,
-): MobileDestination[] => {
-  const choices = BOTTOM_SHORTCUT_CHOICES.map(
-    (id) => MOBILE_DESTINATIONS[id],
-  ).filter((d) => isVisible(d, opts));
+): MobileDestination[] =>
+  BOTTOM_SHORTCUT_CHOICES.map((id) => MOBILE_DESTINATIONS[id]).filter((d) =>
+    isVisible(d, opts),
+  );
+
+/** The domains the Library tab opens, in the user's display order. */
+export function resolveLibraryDomains(
+  opts: Pick<MobileGateOptions, "isDomainEnabled">,
+): MobileDestination[] {
   const rank = new Map(
     orderedDomains(auth.user?.domainOrder).map((domain, index) => [
       domain,
       index,
     ]),
   );
-  const domains = choices
-    .filter((d) => d.domain)
-    .sort((a, b) => rank.get(a.domain!)! - rank.get(b.domain!)!);
-  let index = 0;
-  return choices.map((d) => (d.domain ? domains[index++] : d));
-};
+  return Object.values(MOBILE_DESTINATIONS)
+    .filter((d) => d.domain && !d.comingSoon && opts.isDomainEnabled(d.domain))
+    .sort(
+      (a, b) =>
+        (rank.get(a.domain!) ?? Infinity) - (rank.get(b.domain!) ?? Infinity),
+    );
+}
 
 // These exist nowhere else on a phone, so they show here whenever the bar
 //  doesn't carry them. The other destinations always show.
-const ONLY_WHEN_OFF_THE_BAR: readonly MobileNavId[] = [
-  "home",
-  "search",
-  "messages",
-  "alerts",
-];
+const ONLY_WHEN_OFF_THE_BAR: readonly MobileNavId[] = ["home", "search"];
 
-// Launcher sheet groups with their visible destinations (coming-soon kept —
-//  they render dimmed with a "Bientôt" badge when their domain is enabled).
+// Menu sheet groups with their visible destinations.
 export function resolveMenuGroups(
   opts: MobileGateOptions,
   barIds: readonly string[] = [],

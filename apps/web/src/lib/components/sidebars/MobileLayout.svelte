@@ -18,6 +18,7 @@
   import type { NavStyle } from "#lib/nav-style.svelte.js";
   import { tick, type Snippet } from "svelte";
   import BottomNavigation from "./BottomNavigation.svelte";
+  import EdgeTab from "./EdgeTab.svelte";
   import MenuSheet from "./MenuSheet.svelte";
   import PullToRefresh from "#lib/components/PullToRefresh.svelte";
 
@@ -32,7 +33,8 @@
   // any other way starts at the top, as usual.
   const tabScroll = new Map<string, number>();
   const RESTORE_WAIT_MS = 500;
-  const tappedBottomBar = () => !!lastTap?.closest("[data-mobile-navigation]");
+  const tappedBottomBar = () =>
+    !!lastTap?.closest("[data-mobile-navigation], [data-library-fan]");
 
   onNavigate(({ from }) => {
     if (from && tappedBottomBar()) tabScroll.set(from.url.pathname, scrollY);
@@ -127,6 +129,7 @@
     {:else}
       <BottomNavigation />
     {/if}
+    <EdgeTab />
   </div>
 
   <MenuSheet />

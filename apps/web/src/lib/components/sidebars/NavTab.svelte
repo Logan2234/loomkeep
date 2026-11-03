@@ -26,6 +26,7 @@
   import { scrollUpOnReselect } from "#lib/navigation.js";
   import type { IconName } from "#lib/types/icon-name.js";
   import type { Snippet } from "svelte";
+  import type { HTMLButtonAttributes } from "svelte/elements";
 
   let {
     href,
@@ -36,9 +37,10 @@
     active = false,
     look = STUB_LOOK,
     badge,
+    ...rest
   }: {
     href?: string;
-    onclick?: () => void;
+    onclick?: (event: MouseEvent) => void;
     icon: IconName;
     label: string;
     ariaLabel?: string;
@@ -46,7 +48,7 @@
     look?: NavTabLook;
     /** Over the icon's corner. */
     badge?: Snippet;
-  } = $props();
+  } & Omit<HTMLButtonAttributes, "onclick" | "children" | "class"> = $props();
 
   const rootClass = $derived(
     `relative flex min-w-0 flex-col items-center font-semibold transition-[translate,color] duration-200 ${look.root} ${active ? look.rootActive : "text-dim"}`,
@@ -83,7 +85,12 @@
     {@render face()}
   </a>
 {:else}
-  <button type="button" {onclick} aria-label={ariaLabel} class={rootClass}>
+  <button
+    type="button"
+    {...rest}
+    {onclick}
+    aria-label={ariaLabel}
+    class={rootClass}>
     {@render face()}
   </button>
 {/if}

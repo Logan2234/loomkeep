@@ -48,6 +48,7 @@
     initialFocus,
     label,
     halfOpen = false,
+    pull = null,
   }: {
     onclose: () => void;
     children: Snippet;
@@ -66,6 +67,10 @@
     /** A long sheet opens halfway and is pulled up to read the rest. Not for
      * a sheet with actions pinned at its bottom: they'd start off screen. */
     halfOpen?: boolean;
+    /** How far a finger has pulled the sheet up, while it does: MenuSheet's,
+     * pulled from the bottom bar. Back to null when it lifts, and the sheet
+     * finishes opening or falls back, as a released swipe-down would. */
+    pull?: number | null;
   } = $props();
 
   // JS transitions ignore prefers-reduced-motion, so gate duration manually.
@@ -262,6 +267,53 @@
     rest = target;
   }
 
+  // A sheet pulled up follows the finger, and is let go like a dragged one:
+  // past a share of its height, or flicked up, it opens.
+  const OPEN_FRACTION = 0.3;
+  const pulling = $derived(pull !== null);
+  const pullVelocity = new DragVelocity();
+  let pulledTo = 0;
+  let wasPulling = false;
+
+  $effect(() => {
+    if (pull === null) return;
+    pulledTo = pull;
+    pullVelocity.add(pull, performance.now());
+  });
+
+  $effect(() => {
+    if (wasPulling && !pulling) releasePull();
+    wasPulling = pulling;
+  });
+
+  function releasePull() {
+    const height = panelEl?.offsetHeight || 1;
+    const speed = pullVelocity.at(performance.now());
+    pullVelocity.reset();
+    const opens =
+      speed >= 0
+        ? isDismissed({
+            distance: pulledTo,
+            size: height,
+            velocity: speed,
+            fraction: OPEN_FRACTION,
+          })
+        : pulledTo > height * (1 - OPEN_FRACTION);
+    if (!opens) {
+      requestClose(reduced ? 0 : settleDuration(pulledTo, speed), SETTLE_CURVE);
+      return;
+    }
+    settle = {
+      ms: reduced ? 0 : settleDuration(height - pulledTo, speed),
+      curve: SETTLE_CURVE,
+    };
+    rest = 0;
+  }
+
+  const pulledShare = $derived(
+    pulling ? Math.min(1, (pull ?? 0) / (panelEl?.offsetHeight || 1)) : 1,
+  );
+
   function onClickCapture(e: MouseEvent) {
     if (!gestureMoved || e.detail === 0) return;
     e.preventDefault();
@@ -281,7 +333,9 @@
       class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity {visible
         ? 'opacity-100'
         : 'pointer-events-none opacity-0'}"
-      style="z-index: {zIndex}; transition-duration: {dur}ms"
+      style="z-index: {zIndex}; {pulling
+        ? `opacity: ${pulledShare}; transition: none`
+        : `transition-duration: ${dur}ms`}"
       aria-label={m.common_close()}
       onclick={() => requestClose()}></button>
   {:else}
@@ -309,9 +363,11 @@
     class="border-border bg-surface fixed inset-x-0 bottom-0 flex max-h-[88dvh] w-full touch-none flex-col rounded-t-3xl border-t shadow-2xl {closing
       ? 'pointer-events-none'
       : ''}"
-    style="z-index: {zIndex + 10}; {dragging
-      ? `transform: translateY(${dragY}px); transition: none;`
-      : `transform: translateY(${visible ? `${rest}px` : '100%'}); transition: transform ${settle.ms}ms ${settle.curve};`}"
+    style="z-index: {zIndex + 10}; {pulling
+      ? `transform: translateY(calc(100% - ${pull}px)); transition: none;`
+      : dragging
+        ? `transform: translateY(${dragY}px); transition: none;`
+        : `transform: translateY(${visible ? `${rest}px` : '100%'}); transition: transform ${settle.ms}ms ${settle.curve};`}"
     onpointerdown={onPointerDown}
     onpointermove={onPointerMove}
     onpointerup={onPointerUp}

@@ -20,8 +20,9 @@ export const AVATAR_MIME_TYPES = [
 ] as const;
 export type AvatarMimeType = (typeof AVATAR_MIME_TYPES)[number];
 export const AVATAR_MAX_DIMENSION = 512;
+/** Tabs on the phone bar, its always-centred Library included. */
 export const MOBILE_NAV_SHORTCUT_LIMITS = { min: 3, max: 6 } as const;
-export const REQUIRED_SHORTCUT = "menu";
+export const REQUIRED_SHORTCUT = "library";
 
 export interface UserDto {
   id: string;

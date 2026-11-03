@@ -2,7 +2,7 @@
   // Mounted once in the app layout. On desktop it's the bell in the top-right
   // corner (the rail owns the left edge): a panel with the follow requests
   // and the latest entries, and a way to the full history. The compact shell
-  // has no bell of its own — BottomNavigation's tab leads to the
+  // has no bell of its own — its edge tab (EdgeTab.svelte) leads to the
   // notifications page — but what keeps the badges right lives here for
   // both: live refreshes, a push opened from the system tray, and the
   // installed app's icon badge.

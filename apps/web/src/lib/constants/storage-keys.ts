@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   density: "lk-a11y-density",
   navStyle: "lk-nav-style",
   mobileNav: "lk-mobile-nav",
+  edgeTab: "lk-edge-tab",
   railPinned: "lk-rail-pinned",
   lastKnownPrefix: "lk-last-known-",
   reviewDraftPrefix: "lk-review-draft-",
