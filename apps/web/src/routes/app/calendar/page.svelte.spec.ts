@@ -234,7 +234,7 @@ describe("calendar page", () => {
     ).toHaveLength(1);
   });
 
-  it("shows today's episodes as the Ce soir cards, with the show's backlog", async () => {
+  it("shows today's episodes in rows, with the show's backlog", async () => {
     serveCalendar([
       upcoming("e1", "Lanterns", 7, 0, { episodesBehind: 3 }),
       upcoming("e2", "Futurama", 10, 1),
@@ -242,7 +242,7 @@ describe("calendar page", () => {
     renderWithQuery(CalendarPage, {});
 
     expect(await screen.findByText(m.calendar_tonight())).toBeTruthy();
-    expect(screen.getByText(m.calendar_behind({ count: 3 }))).toBeTruthy();
+    expect(screen.getByText(m.calendar_catch_up({ count: 3 }))).toBeTruthy();
   });
 
   it("narrows the list with the filter tabs", async () => {
