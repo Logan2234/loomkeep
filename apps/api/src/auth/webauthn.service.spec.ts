@@ -178,6 +178,7 @@ function makeService() {
   return {
     service: new WebauthnService(prisma, configService, security, mfa),
     prisma,
+    configService,
     challenges,
     security,
     mfa,
@@ -257,6 +258,42 @@ describe("WebauthnService.verifyRegistration", () => {
 
     expect(mfa.ensureRecoveryCodes).toHaveBeenCalledWith("user-1");
     expect(recoveryCodes).toEqual(["AAAAA-BBBBB"]);
+  });
+
+  it("accepts a passkey created in the Android app, whose origin is its signing key", async () => {
+    const { service, configService } = makeService();
+    vi.mocked(configService.get).mockImplementation((key: string) =>
+      key === "ANDROID_APP_LINKS"
+        ? "app.loomkeep=FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C"
+        : undefined,
+    );
+    const { verifyRegistrationResponse } =
+      await import("@simplewebauthn/server");
+    vi.mocked(verifyRegistrationResponse).mockResolvedValueOnce({
+      verified: false,
+    } as never);
+
+    const { webauthnChallengeId } = await service.registrationOptions(
+      "user-1",
+      "alice@example.com",
+      "alice@example.com",
+    );
+    await service
+      .verifyRegistration("user-1", {
+        webauthnChallengeId,
+        response: {} as never,
+        name: "Bitwarden",
+      })
+      .catch(() => undefined);
+
+    expect(verifyRegistrationResponse).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        expectedOrigin: [
+          "https://loomkeep.app",
+          "android:apk-key-hash:-sYXRdwJA3hvue3mKpYrOZ9zSPC7b4mbgzJmdZEDO5w",
+        ],
+      }),
+    );
   });
 });
 

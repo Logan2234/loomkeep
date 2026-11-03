@@ -8,7 +8,7 @@ import type {
   WebauthnRegistrationVerifyRequestDto,
 } from "@loomkeep/shared";
 import { ErrorCode } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { User, WebauthnCredential } from "@prisma/client";
 import type {
@@ -23,7 +23,7 @@ import {
 } from "@simplewebauthn/server";
 import { createHmac } from "node:crypto";
 import { AppException } from "../common/app.exception";
-import { webOrigins } from "../common/web-origin.util";
+import { androidAppOrigins, webOrigins } from "../common/web-origin.util";
 import { notificationCopy } from "../notifications/notification-copy";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
@@ -75,6 +75,8 @@ export interface VerifiedWebauthnLogin {
 
 @Injectable()
 export class WebauthnService {
+  private readonly logger = new Logger(WebauthnService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
@@ -89,6 +91,13 @@ export class WebauthnService {
 
   private rpID(): string {
     return new URL(this.origins()[0]).hostname;
+  }
+
+  private expectedOrigins(): string[] {
+    return [
+      ...this.origins(),
+      ...androidAppOrigins(this.configService.get<string>("ANDROID_APP_LINKS")),
+    ];
   }
 
   async hasCredentials(userId: string): Promise<boolean> {
@@ -192,10 +201,11 @@ export class WebauthnService {
       verification = await verifyRegistrationResponse({
         response: dto.response as RegistrationResponseJSON,
         expectedChallenge: challenge.challenge,
-        expectedOrigin: this.origins(),
+        expectedOrigin: this.expectedOrigins(),
         expectedRPID: this.rpID(),
       });
-    } catch {
+    } catch (error) {
+      this.logger.warn(`Passkey registration rejected: ${String(error)}`);
       verification = { verified: false } as const;
     }
 
@@ -490,11 +500,12 @@ export class WebauthnService {
       verification = await verifyAuthenticationResponse({
         response,
         expectedChallenge: challenge.challenge,
-        expectedOrigin: this.origins(),
+        expectedOrigin: this.expectedOrigins(),
         expectedRPID: this.rpID(),
         credential: toWebAuthnCredential(credential),
       });
-    } catch {
+    } catch (error) {
+      this.logger.warn(`Passkey sign-in rejected: ${String(error)}`);
       verification = { verified: false } as const;
     }
 

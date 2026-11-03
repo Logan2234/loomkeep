@@ -3,3 +3,6 @@
 cb0492a41f3600c12bde9d9fdf25ea48e7235426:apps/web/src/routes/app/settings/integrations/components/ApiKeyCreateModal.svelte.spec.ts:generic-api-key:11
 # A made-up FCM registration token in the push service's spec, since replaced.
 364be616fb100abeab0c052da47d2dcde5c7aaa7:apps/api/src/notifications/push.service.spec.ts:generic-api-key:224
+# The expected Android passkey origin in WebauthnService's spec: the SHA-256 of
+# a made-up signing certificate, public by nature.
+41e31be35d6ce055d0aeff4cf4622d8fea8afc4d:apps/api/src/auth/webauthn.service.spec.ts:generic-api-key:293

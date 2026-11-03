@@ -1,8 +1,15 @@
 package app.loomkeep;
 
+import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
+import android.animation.StateListAnimator;
 import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
 import android.os.Build;
@@ -11,7 +18,9 @@ import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -135,31 +144,119 @@ final class AppLock {
     }
 
     private void showOverlay() {
+        int fg = activity.getColor(R.color.widget_fg);
+        int accent = activity.getColor(R.color.widget_accent);
+
         LinearLayout screen = new LinearLayout(activity);
         screen.setOrientation(LinearLayout.VERTICAL);
-        screen.setGravity(Gravity.CENTER);
+        screen.setGravity(Gravity.CENTER_HORIZONTAL);
         screen.setBackgroundColor(ShellAppearance.backgroundColor(activity));
         screen.setClickable(true);
+        screen.setPadding(dp(32), dp(72), dp(32), dp(64));
 
-        TextView title = new TextView(activity);
-        title.setText(R.string.app_lock_title);
-        title.setTextColor(activity.getColor(R.color.widget_fg));
-        title.setTextSize(18);
-        title.setGravity(Gravity.CENTER);
-        title.setPadding(0, 0, 0, 32);
-        screen.addView(title);
+        LinearLayout brand = new LinearLayout(activity);
+        brand.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView logo = new ImageView(activity);
+        logo.setImageResource(R.drawable.ic_widget_logo);
+        brand.addView(logo, new LinearLayout.LayoutParams(dp(28), dp(28)));
+        TextView name = text(R.string.app_name, 20, fg, Typeface.BOLD);
+        name.setPadding(dp(10), 0, 0, 0);
+        brand.addView(name);
+        screen.addView(brand);
 
-        Button unlock = new Button(activity);
-        unlock.setText(R.string.app_lock_unlock);
+        LinearLayout center = new LinearLayout(activity);
+        center.setOrientation(LinearLayout.VERTICAL);
+        center.setGravity(Gravity.CENTER);
+        screen.addView(center, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+
+        TextView title = text(R.string.app_lock_title, 22, fg, Typeface.BOLD);
+        title.setPadding(0, 0, 0, dp(40));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) title.setAccessibilityHeading(true);
+        center.addView(title);
+
+        FrameLayout target = new FrameLayout(activity);
+        // The halo grows past the target's bounds.
+        target.setClipChildren(false);
+        center.setClipChildren(false);
+        View halo = new View(activity);
+        halo.setBackground(ring(accent, Color.TRANSPARENT));
+        target.addView(halo, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        FrameLayout unlock = new FrameLayout(activity);
+        // The accent at 10 %: a glow behind the fingerprint, not a filled disc.
+        unlock.setBackground(ring(accent, (accent & 0x00FFFFFF) | 0x1A000000));
+        unlock.setContentDescription(activity.getString(R.string.app_lock_unlock));
+        unlock.setFocusable(true);
+        unlock.setStateListAnimator(pressScale(unlock));
         unlock.setOnClickListener(view -> {
             if (!prompting) prompt();
         });
-        screen.addView(unlock);
+        ImageView fingerprint = new ImageView(activity);
+        fingerprint.setImageResource(R.drawable.ic_lock_fingerprint);
+        fingerprint.setImageTintList(ColorStateList.valueOf(accent));
+        unlock.addView(fingerprint, new FrameLayout.LayoutParams(dp(56), dp(56), Gravity.CENTER));
+        target.addView(unlock, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        center.addView(target, new LinearLayout.LayoutParams(dp(136), dp(136)));
+
+        TextView hint = text(R.string.app_lock_touch, 16, fg, Typeface.NORMAL);
+        hint.setPadding(0, dp(28), 0, 0);
+        center.addView(hint);
+        TextView methods = text(R.string.app_lock_methods, 14, activity.getColor(R.color.widget_dim), Typeface.NORMAL);
+        methods.setPadding(0, dp(6), 0, 0);
+        center.addView(methods);
+
+        // Arrives like the web's pages (DESIGN.md › Motion); the halo calls the
+        // eye to the target once, then stays still. Android's own animation
+        // scale turns both off for reduced motion.
+        for (View part : new View[] { brand, center }) {
+            part.setAlpha(0);
+            part.setTranslationY(dp(8));
+            part.animate().alpha(1).translationY(0).setDuration(240).setInterpolator(new DecelerateInterpolator());
+        }
+        halo.setAlpha(0.55f);
+        halo.animate().alpha(0).scaleX(1.35f).scaleY(1.35f).setStartDelay(260).setDuration(900).setInterpolator(new DecelerateInterpolator());
 
         activity.addContentView(screen, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         overlay = screen;
         // Out of reach of a screen reader too, not just out of sight.
         activity.getBridge().getWebView().setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+    }
+
+    private int dp(int value) {
+        return Math.round(value * activity.getResources().getDisplayMetrics().density);
+    }
+
+    private TextView text(int string, int sp, int color, int style) {
+        TextView view = new TextView(activity);
+        view.setText(string);
+        view.setTextSize(sp);
+        view.setTextColor(color);
+        view.setTypeface(Typeface.create(Typeface.DEFAULT, style));
+        view.setGravity(Gravity.CENTER);
+        return view;
+    }
+
+    private GradientDrawable ring(int stroke, int fill) {
+        GradientDrawable ring = new GradientDrawable();
+        ring.setShape(GradientDrawable.OVAL);
+        ring.setColor(fill);
+        ring.setStroke(dp(2), stroke);
+        return ring;
+    }
+
+    private static StateListAnimator pressScale(View view) {
+        StateListAnimator press = new StateListAnimator();
+        press.addState(new int[] { android.R.attr.state_pressed }, scaleTo(view, 0.96f));
+        press.addState(new int[] {}, scaleTo(view, 1f));
+        return press;
+    }
+
+    private static ObjectAnimator scaleTo(View view, float scale) {
+        return ObjectAnimator.ofPropertyValuesHolder(
+            view,
+            PropertyValuesHolder.ofFloat(View.SCALE_X, scale),
+            PropertyValuesHolder.ofFloat(View.SCALE_Y, scale)
+        ).setDuration(150);
     }
 
     private void hideOverlay() {

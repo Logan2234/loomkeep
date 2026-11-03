@@ -84,13 +84,6 @@ par-dessus l'ancien garde la session.
 - [ ] Profil › scanner : le QR d'un autre profil l'ouvre ; un autre QR est
       refusé avec un message.
 
-### App Links et passkeys (MOB-08)
-
-- [ ] « Se connecter avec une passkey » et la confirmation par passkey
-      ouvrent la feuille de Google et aboutissent. Ne marchait pas au
-      29/10 avec `android-dev-1443`, alors que l'APK et `assetlinks.json`
-      sont bons : diagnostic à faire (`chrome://inspect`).
-
 ### Choix d'instance (MOB-15)
 
 - [ ] Une vraie instance self-hostée : l'app redémarre dessus, on peut s'y

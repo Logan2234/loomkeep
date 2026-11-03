@@ -74,6 +74,8 @@ services:
       # Public HTTPS API URL for newsletter one-click unsubscribe headers.
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000/api}
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
+      # Also the Android app's passkey origins (WebauthnService).
+      ANDROID_APP_LINKS: ${ANDROID_APP_LINKS:-}
       LOG_LEVEL: ${LOG_LEVEL:-}
       # Empty = TurnstileService.verify() always passes — see https://docs.loomkeep.app/self-hosting/cloudflare/.
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}

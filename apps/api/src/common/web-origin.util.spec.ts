@@ -1,4 +1,20 @@
-import { primaryWebOrigin, webOrigins } from "./web-origin.util";
+import {
+  androidAppOrigins,
+  primaryWebOrigin,
+  webOrigins,
+} from "./web-origin.util";
+
+describe("androidAppOrigins", () => {
+  it("turns each signing key into the origin Credential Manager reports", () => {
+    expect(
+      androidAppOrigins("app.loomkeep=AB:CD, app.loomkeep.debug = 01:02:03"),
+    ).toEqual(["android:apk-key-hash:q80", "android:apk-key-hash:AQID"]);
+  });
+  it("accepts no origin when ANDROID_APP_LINKS is unset or malformed", () => {
+    expect(androidAppOrigins(undefined)).toEqual([]);
+    expect(androidAppOrigins("app.loomkeep, app.loomkeep=")).toEqual([]);
+  });
+});
 
 describe("web origins", () => {
   it("keeps all configured origins for authentication and CORS", () => {
