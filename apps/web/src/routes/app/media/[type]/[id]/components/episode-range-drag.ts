@@ -1,6 +1,6 @@
 /** Within this distance of an edge, a drag scrolls the list. */
-const EDGE_ZONE = 72;
-const MAX_SPEED = 16;
+const EDGE_ZONE = 96;
+const MAX_SPEED = 40;
 
 /** Pixels per frame, faster nearer the edge: negative up, positive down. */
 export function autoScrollSpeed(
