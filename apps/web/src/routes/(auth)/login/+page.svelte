@@ -165,6 +165,17 @@
     onSuccess: () => openAfterSignIn(),
   }));
 
+  // A full six-digit code goes off on its own, autofilled from an email or
+  // typed; a recovery code still waits for the button.
+  function onCodeInput(event: Event & { currentTarget: HTMLInputElement }) {
+    const recovery = selectedMethod === "recovery";
+    codeInput = normalizeCodeInput(
+      event.currentTarget,
+      recovery ? RECOVERY_CODE_LENGTH + 1 : OTP_CODE_LENGTH,
+    );
+    if (!recovery && codeInput.length === OTP_CODE_LENGTH) verifyMut.mutate();
+  }
+
   function verifyCode(event: SubmitEvent) {
     event.preventDefault();
     verifyMut.mutate();
@@ -189,6 +200,32 @@
 <svelte:head>
   <title>{m.auth_login_title()} · {m.common_loomkeep()}</title>
 </svelte:head>
+
+{#snippet method(
+  icon: "qr-code" | "mail" | "key",
+  label: string,
+  description: string,
+  busy: boolean,
+  disabled: boolean,
+  onclick: () => void,
+)}
+  <button
+    type="button"
+    class="border-border hover:border-accent hover:bg-accent/5 focus-visible:border-accent flex min-h-16 items-center gap-3 rounded-xl border px-4 py-3 text-left transition-[border-color,background-color,transform] duration-150 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50"
+    {disabled}
+    {onclick}>
+    <span
+      class="bg-accent/12 text-accent grid size-10 shrink-0 place-items-center rounded-full"
+      class:animate-pulse={busy}>
+      <Icon name={icon} class="h-5 w-5" />
+    </span>
+    <span class="min-w-0 flex-1">
+      <span class="block font-semibold">{label}</span>
+      <span class="text-dim block text-sm">{description}</span>
+    </span>
+    <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+  </button>
+{/snippet}
 
 {#if step === "credentials"}
   <form onsubmit={submit} class="flex flex-1 flex-col gap-4 lg:flex-none">
@@ -289,65 +326,46 @@
     {/if}
   </form>
 {:else if step === "choose-method"}
-  <div class="card flex flex-col gap-4 p-7">
-    <h1 class="font-display text-xl font-bold">
+  <div
+    class="flex flex-1 flex-col gap-4 lg:flex-none"
+    in:fly={{ y: reduced ? 0 : 10, duration: reduced ? 0 : 220 }}>
+    <h1 class="font-display text-2xl font-bold">
       {m.auth_mfa_choose_method_title()}
     </h1>
     <div class="flex flex-col gap-3">
       {#if availableMethods.includes("totp")}
-        <button
-          type="button"
-          class="border-border hover:border-accent hover:bg-accent/5 flex items-center gap-3 rounded-xl border p-4 text-left transition-colors disabled:pointer-events-none disabled:opacity-50"
-          disabled={sendEmailCodeMut.loading}
-          onclick={() => chooseMethod("totp")}>
-          <Icon name="qr-code" class="text-accent h-6 w-6 shrink-0" />
-          <span>
-            <span class="block font-semibold">
-              {m.auth_mfa_totp_label()}
-            </span>
-            <span class="text-dim block text-sm">
-              {m.auth_mfa_choose_method_totp_desc()}
-            </span>
-          </span>
-        </button>
+        {@render method(
+          "qr-code",
+          m.auth_mfa_totp_label(),
+          m.auth_mfa_choose_method_totp_desc(),
+          false,
+          sendEmailCodeMut.loading,
+          () => chooseMethod("totp"),
+        )}
       {/if}
       {#if availableMethods.includes("email")}
-        <button
-          type="button"
-          class="border-border hover:border-accent hover:bg-accent/5 flex items-center gap-3 rounded-xl border p-4 text-left transition-colors disabled:pointer-events-none disabled:opacity-50"
-          disabled={sendEmailCodeMut.loading}
-          onclick={() => chooseMethod("email")}>
-          <Icon name="mail" class="text-accent h-6 w-6 shrink-0" />
-          <span>
-            <span class="block font-semibold">
-              {m.auth_mfa_email_label()}
-            </span>
-            <span class="text-dim block text-sm">
-              {sendEmailCodeMut.loading
-                ? m.auth_mfa_sending_code()
-                : m.auth_mfa_choose_method_email_desc()}
-            </span>
-          </span>
-        </button>
+        {@render method(
+          "mail",
+          m.auth_mfa_email_label(),
+          sendEmailCodeMut.loading
+            ? m.auth_mfa_sending_code()
+            : m.auth_mfa_choose_method_email_desc(),
+          sendEmailCodeMut.loading,
+          sendEmailCodeMut.loading,
+          () => chooseMethod("email"),
+        )}
       {/if}
       {#if availableMethods.includes("webauthn")}
-        <button
-          type="button"
-          class="border-border hover:border-accent hover:bg-accent/5 flex items-center gap-3 rounded-xl border p-4 text-left transition-colors disabled:pointer-events-none disabled:opacity-50"
-          disabled={webauthnMfaMut.loading}
-          onclick={() => chooseMethod("webauthn")}>
-          <Icon name="key" class="text-accent h-6 w-6 shrink-0" />
-          <span>
-            <span class="block font-semibold">
-              {m.common_security_key()}
-            </span>
-            <span class="text-dim block text-sm">
-              {webauthnMfaMut.loading
-                ? m.auth_mfa_webauthn_waiting()
-                : m.auth_mfa_choose_method_webauthn_desc()}
-            </span>
-          </span>
-        </button>
+        {@render method(
+          "key",
+          m.common_security_key(),
+          webauthnMfaMut.loading
+            ? m.auth_mfa_webauthn_waiting()
+            : m.auth_mfa_choose_method_webauthn_desc(),
+          webauthnMfaMut.loading,
+          webauthnMfaMut.loading,
+          () => chooseMethod("webauthn"),
+        )}
       {/if}
     </div>
     {#if sendEmailCodeMut.error}
@@ -356,6 +374,7 @@
     {#if webauthnMfaMut.error}
       <Banner variant="error">{webauthnMfaMut.error}</Banner>
     {/if}
+    <div class="flex-1 lg:hidden"></div>
     <button
       type="button"
       class="btn-text self-center text-sm"
@@ -364,17 +383,22 @@
     </button>
   </div>
 {:else}
-  <form onsubmit={verifyCode} class="card flex flex-col gap-4 p-7">
-    <h1 class="font-display text-xl font-bold">
-      {m.auth_mfa_code_title()}
-    </h1>
-    <p class="text-dim text-sm">
-      {selectedMethod === "email"
-        ? m.auth_mfa_code_email_hint()
-        : selectedMethod === "totp"
-          ? m.auth_mfa_code_totp_hint()
-          : ""}
-    </p>
+  <form
+    onsubmit={verifyCode}
+    class="flex flex-1 flex-col gap-4 lg:flex-none"
+    in:fly={{ y: reduced ? 0 : 10, duration: reduced ? 0 : 220 }}>
+    <div>
+      <h1 class="font-display text-2xl font-bold">
+        {m.auth_mfa_code_title()}
+      </h1>
+      {#if selectedMethod === "email" || selectedMethod === "totp"}
+        <p class="text-dim mt-2 text-sm">
+          {selectedMethod === "email"
+            ? m.auth_mfa_code_email_hint()
+            : m.auth_mfa_code_totp_hint()}
+        </p>
+      {/if}
+    </div>
     <label class="block">
       <span class="mb-1.5 block text-sm font-semibold">
         {selectedMethod === "recovery"
@@ -390,16 +414,10 @@
           : "one-time-code"}
         required
         enterkeyhint="done"
-        class="input font-mono text-lg tracking-[0.3em]"
+        class="input text-center font-mono text-xl! tracking-[0.3em]"
         placeholder={selectedMethod === "recovery" ? "XXXXX-XXXXX" : "000000"}
         value={codeInput}
-        oninput={(e) =>
-          (codeInput = normalizeCodeInput(
-            e.currentTarget,
-            selectedMethod === "recovery"
-              ? RECOVERY_CODE_LENGTH + 1
-              : OTP_CODE_LENGTH,
-          ))} />
+        oninput={onCodeInput} />
     </label>
 
     {#if selectedMethod === "email"}
@@ -414,6 +432,7 @@
       </button>
     {/if}
 
+    <div class="flex-1 lg:hidden"></div>
     {#if verifyMut.error || resendEmailCodeMut.error}
       <Banner variant="error"
         >{verifyMut.error ?? resendEmailCodeMut.error}</Banner>

@@ -169,7 +169,7 @@ describe("login page", () => {
     const user = await signIn();
 
     expect(await screen.findByText(m.auth_mfa_code_totp_hint())).toBeTruthy();
-    await enterCode(user, "123456");
+    await user.type(screen.getByRole("textbox"), "123456");
 
     await waitFor(() =>
       expect(goto).toHaveBeenCalledWith("/app", { replace: true }),
@@ -178,6 +178,36 @@ describe("login page", () => {
       challengeId: "challenge-1",
       code: "123456",
     });
+  });
+
+  it("verifies a six-digit code as soon as it's complete", async () => {
+    serveLogin(mfaChallenge(["totp", "recovery"]));
+    const user = await signIn();
+
+    await user.type(await screen.findByRole("textbox"), "12345");
+    expect(posted["/auth/mfa/verify"]).toBeUndefined();
+    await user.type(screen.getByRole("textbox"), "6");
+
+    await waitFor(() =>
+      expect(posted["/auth/mfa/verify"]).toEqual({
+        challengeId: "challenge-1",
+        code: "123456",
+      }),
+    );
+  });
+
+  it("waits for the button on a recovery code", async () => {
+    serveLogin(mfaChallenge(["totp", "recovery"]));
+    const user = await signIn();
+    await user.click(
+      await screen.findByRole("button", {
+        name: m.auth_mfa_use_recovery_code(),
+      }),
+    );
+
+    await user.type(screen.getByRole("textbox"), "ABCDE-12345");
+
+    expect(posted["/auth/mfa/verify"]).toBeUndefined();
   });
 
   // The field's length cap used to count the spaces of a pasted code, cutting
@@ -190,7 +220,6 @@ describe("login page", () => {
 
       await user.click(await screen.findByRole("textbox"));
       await user.paste(pasted);
-      await user.click(screen.getByRole("button", { name: m.common_verify() }));
 
       await waitFor(() =>
         expect(posted["/auth/mfa/verify"]).toEqual({

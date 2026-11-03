@@ -25,7 +25,9 @@ history from before it was started.
   legal links without the version, the brand mark beside the name; a wide
   screen splits into a drifting poster wall and the form. The password pages
   follow, and moving between auth pages keeps the wall going and slides the
-  form in. The wall shows real covers from a new public `GET /api/showcase`:
+  form in. So do the two-step verification steps: each method is a full-width
+  row, and a complete six-digit code verifies itself without the button (a
+  recovery code still waits for it). The wall shows real covers from a new public `GET /api/showcase`:
   this week's trending films and series (TMDB) and recent popular games
   (IGDB), plus books and albums at least 10 accounts of the instance follow,
   computed once a day and shuffled on each visit.
