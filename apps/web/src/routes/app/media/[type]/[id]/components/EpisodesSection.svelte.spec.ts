@@ -734,6 +734,16 @@ describe("EpisodesSection", () => {
   });
 
   describe("selection", () => {
+    it("can't be entered by holding a mouse button", async () => {
+      renderSection([season(1, [1])]);
+      const row = document.getElementById("episode-s1e2")!;
+
+      fireEvent.pointerDown(row, { button: 0, pointerType: "mouse" });
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
+      expect(screen.queryByRole("checkbox")).toBeNull();
+    });
+
     const box = (code: string) =>
       screen.getByRole("checkbox", {
         name: m.media_select_episode({ code }),
@@ -753,7 +763,7 @@ describe("EpisodesSection", () => {
       renderSection([season(1, [1])]);
       const row = document.getElementById("episode-s1e2")!;
 
-      fireEvent.pointerDown(row, { button: 0, pointerType: "mouse" });
+      fireEvent.pointerDown(row, { pointerType: "touch" });
       expect(
         await screen.findByRole(
           "checkbox",

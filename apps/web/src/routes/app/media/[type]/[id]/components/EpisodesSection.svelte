@@ -783,7 +783,6 @@
               class="card mb-4 overflow-hidden"
               use:longpress={{
                 enabled: !!entry,
-                mouse: true,
                 // The action column holds a menu, whose backdrop covers the page.
                 pick: (target) =>
                   target.closest("[data-row-actions]")
