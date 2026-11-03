@@ -782,11 +782,17 @@ jobs:
             echo "::error::CHANGELOG.md has no '## ${tag#v} …' section."
             exit 1
           fi
-          awk -v h="$heading" '$0 == h {f=1; next} f && /^## / {exit} f' CHANGELOG.md > notes.md
+          # The release is named after the version alone; the heading's
+          # subtitle, after " — ", opens the notes instead.
+          subtitle=$(printf '%s' "$heading" | sed -n 's/^## [^ ]* — //p')
+          {
+            if [ -n "$subtitle" ]; then printf '# %s\n' "$subtitle"; fi
+            awk -v h="$heading" '$0 == h {f=1; next} f && /^## / {exit} f' CHANGELOG.md
+          } > notes.md
           # The tag only exists once publish-release-apk publishes it.
           gh release create "$tag" \
             --target "$GITHUB_SHA" \
-            --title "Loomkeep ${heading#\#\# }" \
+            --title "${tag#v}" \
             --notes-file notes.md \
             --draft
           echo "draft=true" >> "$GITHUB_OUTPUT"

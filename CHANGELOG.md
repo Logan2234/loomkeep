@@ -13,347 +13,86 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Changed
+
+- GitHub releases are named `X.Y.Z`; the CHANGELOG heading's subtitle opens
+  the notes.
+
 ## 1.13.0 — Home-screen widgets, actionable notifications, and a phone-first app
 
-### Before upgrading a self-hosted instance
+### Breaking changes
 
-- **A reverse proxy's own `Content-Security-Policy` now stacks with the
-  app's** (both apply), since the web app enforces its own: drop the
-  proxy's. Details under Security.
-- **Every account's mobile bottom bar goes back to the defaults**: the
-  `mobileNavShortcuts` column is dropped by a migration, the bar's
-  shortcuts now living on each device.
+- **Self-hosting: drop your reverse proxy's `Content-Security-Policy`.** The
+  web app now enforces its own (nonces, no `'unsafe-inline'` scripts); a
+  proxy's header stacks with it. Integration origins are read from the env
+  already set (`PUBLIC_API_URL`, `PUBLIC_UMAMI_SCRIPT_URL`, …).
+- **Mobile bottom bars reset to the defaults**: the `mobileNavShortcuts`
+  column is dropped, shortcuts now live in each device's `localStorage`.
+- `POST /api/security/csp-report` is removed.
 
 ### Added
 
-- Phone: a series or film page's sticky bar is one row; once stuck it shows
-  the title over the status and progress, the next episode being marked from
-  the bar above the bottom navigation.
-- Phone calendar: every release, today's too, is a row with the broadcast time
-  for anime, the backlog under the episode and a muted work dimmed whole;
-  "Add to my calendar" moves to a "…" menu beside the title. The desktop
-  calendar is unchanged.
-- Sign-in and sign-up drop the card: full-width 52 dp fields, the submit at
-  the bottom on a phone, the security key as an outlined button, one line of
-  legal links without the version, the brand mark beside the name; a wide
-  screen splits into a drifting poster wall and the form, while a phone
-  keeps the logo and the page's title, without the tagline. The password pages
-  follow, and moving between auth pages keeps the wall going and slides the
-  form in. So do the two-step verification steps, each method and each kind
-  of code sliding in: a method is a full-width row, a six-digit code gets one
-  box per digit (arrow keys, backspace and paste move between them) and
-  verifies itself once complete, but not again for the same code, a rejected
-  code shakes its field, and errors fade after a few seconds. A recovery code
-  is upper-cased and gets its dash as it's typed, and says where it comes
-  from. The wall shows real covers from a new public `GET /api/showcase`:
-  this week's trending films and series (TMDB) and recent popular games
-  (IGDB), plus books and albums at least 10 accounts of the instance follow,
-  computed once a day and shuffled on each visit.
-- Settings: one click on the recovery codes selects all of them.
-- Web: the Content-Security-Policy's `img-src` now lists the catalogs' image
-  hosts and the instance's API origin instead of every `https:` origin.
-- `glob` raised to 14.0.2 in the images (CVE-2026-118773, CVE-2026-118764).
-- Series and anime pages: seasons become sticky swipeable tabs, a single season
-  over 100 episodes is cut into tabs of 100 with a jump to any episode, and only
-  the open tab's rows are rendered. A row marks with one tap, a "Watched" menu
-  rewatches or undoes, a bar above the bottom navigation marks the next episode,
-  and a long press (or a checkbox on desktop) selects episodes across tabs for
-  bulk mark, rewatch and unmark, undoable for 5 s. On a phone an episode's
-  details open in a bottom sheet. New `POST /library/episodes/watches/batch` and
-  `/undo` routes; `commentCount` added to each episode of the media detail.
-- Phone: sliding between tabs (`Tabs`, seasons, Messages) now moves the content
-  with the finger until release.
-- "System" option in Settings › Appearance › Theme.
-- Back button on a phone for Calendar, Stats, Feed, Leaderboard, Search and the
-  libraries. Settings, Admin, Achievements, Lists and Reviews now return to the
-  page they were opened from.
+- **Home-screen widgets** (Android, Glance): To watch (✓ marks the next
+  episode), Releases, Chrono (drives the session timer), Streak and level,
+  Search; posters or ticket list, 2 × 2 to 5 × 5. Fed by
+  `/api/home-screen-widgets` with a session-bound token.
+- **Actionable notifications** (Android): reply, mark read, accept a follow,
+  follow back, add a sequel, from the notification
+  (`POST /api/notifications/actions`, per-device signed tokens).
+- **App lock** (Android 10+, `BiometricPrompt`) in Settings › Security.
+- **Self-hosted instances open in the app** through `loomkeep://open`, after
+  confirming the instance switch.
+- **Episodes rework**: seasons as swipeable tabs (100 episodes per tab),
+  one-tap marking, multi-selection for bulk mark/rewatch/unmark with a 5 s
+  undo. New `POST /library/episodes/watches/batch` and `/undo`.
+- **Card-less sign-in, sign-up and two-step pages**, with a poster wall on
+  wide screens fed by the public `GET /api/showcase` (trending covers,
+  computed daily). Two-step codes get one box per digit and submit on
+  completion.
+- Recent searches (six, stored on the device), a "System" theme, back
+  buttons on phone pages, haptic feedback on marking and unlocks.
+- Passkeys in the Android app (WebView WebAuthn + Credential Manager
+  `assetlinks.json` grant), and a one-time passkey offer after a password
+  re-confirmation.
+- Admin › Communications › Push sends any alert as a sample.
 
 ### Changed
 
-- Reviews: the domain filter uses tabs, the sort keeps its segmented control.
-- Search keeps the six latest terms on the device and offers them under the
-  empty field.
-- Statistics: a free account sees a sentence and blurred locked blocks closing
-  the page instead of a blurred wall per section.
-- Phone: work pages open on what they're used for: progress, a three-line
-  synopsis, episodes, where to watch, tracking, reviews, similar titles, cast,
-  then a Details section (credits, tags, links, data notices). Games and books
-  get the clamped synopsis too.
-- Where to watch shows the user's services as a row of 40 dp logos, in colour;
-  everything else moves to an "Other options" sheet, and the data notice next
-  to the other ones.
-- A single "see more" control across synopses, reviews, sagas and stats rows.
-- Phone, list detail: titles in full, without the edit tools. Long-pressing a
-  work opens a sheet to edit its note, change the order or remove it.
-- Long presses (lists, comments, messages) share one gesture: the item sinks
-  while held, then a light vibration.
-- Phone: the Search tab opens with the keyboard up when the field is empty.
-- Phone: changing tab slides the new content in from its side; a swipe no
-  longer drags the page along with the finger.
-- Phone: sliding across a page moves between its tabs (stats, calendar, feed,
-  leaderboard, notifications, Messages). Notifications now use underlined tabs.
-- Phone: a bottom tab finds its page where it was left, vertically.
-- Sign out: a quiet row at the bottom of the phone's menu, gone from the profile.
-- "New" badges shrink to a dot under 360 dp.
-- Home's quick search drops its domain picker on a small phone.
-- Search page: on a phone, the domain tabs share the row instead of running
-  off its edge.
-- Phone: menus, sort and filter lists open as bottom sheets. A sheet follows
-  the speed of the gesture when released, and long ones stop halfway.
-- Phone: larger touch areas on small buttons, chips and segmented controls,
-  without changing their size.
-- Posters fade in as they load and a poster list's first rows arrive in turn.
-- Album pages show five tags, with the rest one tap away.
-- Under 360 dp, the bottom bar keeps the current tab's label.
-- Phone: a tapped poster now travels to the work's page and back.
-- Calendar: only days with a release are listed, under a week strip that stays
-  in view and follows the day being read.
-- Home: widgets of works keep their poster strip at 360 dp instead of falling
-  back to a list, with larger touch areas on their buttons.
-- Settings: on a phone, the search field heads the index only.
-- Chat: a shared "where to watch" card shows three platforms; the others open
-  in a sheet.
+- **Phone-first web**: menus and filters as bottom sheets, swipe between
+  tabs, pull to refresh, compact header bar, tab positions kept, larger touch
+  areas, pressed states, page transitions.
+- Bottom bar: up to six shortcuts, Messages and Alerts included.
+- Work pages lead with progress, synopsis and episodes; streaming services
+  show as a row of logos. The calendar lists only days with releases, one row
+  per release.
+- Android shell: continuous launch screen, branded offline page, native
+  pickers in Séance colours, grouped notifications with avatars and posters,
+  portrait on phones, haptics through Android's own feedback (needs the
+  1.13.0 APK).
+- Statistics: a single locked block for free accounts instead of one per
+  section.
+- web-audit runs Pa11y, Lighthouse and ZAP over every page; every component
+  test ends with an axe pass.
 
 ### Fixed
 
-- Phone: sliding across an open conversation no longer changes the Messages tab
-  and closes it.
-- Phone: a long press on your own message in a read-only conversation offers
-  copy and forward instead of nothing.
-- Long presses sink everywhere while held, comments included; the library's
-  selection press uses the same gesture.
-- Desktop home: a long activity feed no longer leaves a long empty scroll below
-  the page (the dates' screen-reader text escaped the list's clipping).
-- Phone menu: Home, Search, Messages and Alerts stay reachable when they aren't
-  in the bottom bar.
-- Saga view: the header has the back button of the works view, and section
-  titles no longer break around their hint.
-- Work pages: the video hero grows with its content, so a long title or an
-  enlarged system font no longer leaves through its top.
-- Carousels on a touch screen draw five page dots at most, with a chevron
-  toward the pages left. A dot per page could widen a long work's whole page
-  until the bottom bar fell off screen.
-- Phone: the "Première séance" checklist moves from a bar fixed above
-  the tabs, where it covered a conversation's message field, to a card at the
-  head of the home page.
-- Stats: music no longer shows a "domain disabled" error to an account without
-  access to it, and the tab goes away with it.
-- Import: the last run's summary no longer squeezes its text beside the history
-  button, and a phone offers to choose a file rather than to drop one.
-- Android app: no more black band between the page and the keyboard.
-- Mobile bar: Feed and Leaderboard shortcuts no longer vanish, Messages and
-  Alerts are drawn like every other tab, and a bar takes up to six shortcuts.
-- Android's back button closes a side panel. A conversation no longer reads
-  "Deleted account" while loading, and slides in from the right on a phone.
-- Admin push samples link to a real work, carry the pictures of a real push,
-  and can have their buttons refused to see a failed action.
-- Search: domain tabs that overflow stop at both edges of the search bar.
-- **Newsletter unsubscribe page no longer ends on a server error.** The
-  unsubscription itself went through, but the page read the API's empty
-  response as a failed query and showed "A server error occurred" anyway;
-  it now confirms the unsubscription.
-
-### Android app
-
-- **The bottom bar has six cases at most and belongs to each device**:
-  Messages and Alerts are now shortcuts like the others, and the selection
-  and order live in `localStorage`. The `mobileNavShortcuts` column and API
-  field are gone (migration), so every bar goes back to the defaults. Labels
-  are 11 px, Séance's smallest readable size.
-- **Pages change with a short transition on the compact shell**: a fade with
-  a 16 px slide, forward or back with depth, a plain fade at the same level.
-- **No more stretch at the ends of a page**, which pulled the header and
-  bottom bar under the system bars. Fully in the next APK.
-- **Phones stay in portrait**, tablets rotate freely. Needs the next APK.
-- **Notifications show who or what they're about**: the person's avatar, a
-  saga sequel's poster, Loomkeep's mark with a lock for admin alerts. Chat
-  messages join Android's Conversations section. A button's failure no longer
-  makes the phone ring again. Needs the next APK; avatars and posters reach
-  Google in clear, like the rest of the push.
-- **Pull down to refresh**, in the app and the installed PWA, from the top
-  of any page: what's on screen is fetched again.
-- **A compact bar keeps the title and the way back** on a phone once the
-  page header has scrolled away.
-- **Links to other sites open in a tab over the app** (Custom Tab, in the
-  theme's colour) instead of sending you out to Chrome.
-- **The back button works in Messages**: it leaves the conversation, then
-  Messages, instead of walking the page history behind them.
-- **The six notification channels exist from the install, with a
-  description**, rather than from the web's first start. Needs the next APK.
-- **Stronger haptics** at the motor's default strength, the effects Android
-  tunes itself being imperceptible on some phones. Needs the next APK.
-- **The system bars dim with a sheet, and stay right after a theme change**
-  instead of turning grey. With no theme chosen, Loomkeep now follows the
-  system's live. Offline, a page change that can't load now reaches
-  Loomkeep's page rather than the WebView's error. Needs the next APK.
-- **The launch is one continuous screen**: the app holds its launch screen
-  until the web can draw (`ShellSplash`, at most 3 s) and fades it out,
-  instead of a blank window then a second logo. It starts in the theme
-  chosen in Loomkeep, light included (Android 13+; earlier versions follow
-  the system's theme). Needs the next APK.
-- **The offline page looks like Loomkeep**: its mark, fonts (bundled in the
-  APK) and light theme. It only mentions updating Android System WebView
-  when that WebView really is too old, reloads by itself when the network
-  returns, shows that Retry is connecting, and its links are 48 dp targets.
-  The web's own reconnect screen matches it and reloads the same way. Needs
-  the next APK for the app's page.
-- **Native windows use Séance's colours and the app's theme**: the date
-  picker and select lists no longer come in AppCompat's teal, following the
-  system's dark mode. Needs the next APK.
-- **Notifications fold together** by alert group, under a silent summary
-  that opens the notifications page, and the status bar icon is redrawn for
-  its size instead of merging into a block. Needs the next APK.
-- **No grey veil behind three-button navigation**
-  (`setNavigationBarContrastEnforced(false)`): the bottom bar paints itself
-  down to the edge. Needs the next APK.
-- **Touching the current tab again scrolls smoothly to the top**, and a slow
-  page change shows a thin amber line under the status bar.
-- **The status bar dims with the menu** instead of staying lit above it.
-- **Haptic feedback comes from Android itself** (`ShellHaptics`,
-  `View.performHapticFeedback`), tuned by each maker and following the
-  system's touch feedback setting: the raw waveforms of `@capacitor/haptics`
-  couldn't be felt on some phones (Poco X5 Pro). APKs without it keep the
-  plugin. Needs the next APK.
-- **No more gap above the keyboard** in the app: what the shell reserves for
-  the hidden bottom bar (`--bottom-bar-space`) now goes with it, on every
-  page and above all in full-screen chat, whose composer floated 72 px over
-  the keyboard. Toasts, the reviews selection bar and the import summary
-  follow.
-- **App lock** (MOB-25): an option in Settings › Security asks for the
-  fingerprint, face or screen lock PIN when the Android app opens, or comes
-  back after a minute away. Android 10 and later, through Android's own
-  `BiometricPrompt`. Widgets and notification actions stay outside it. Needs
-  the next APK.
-- **Open a self-hosted instance's pages in the app** (MOB-24): App Links only
-  cover loomkeep.app, so on another instance Android browsers now offer the
-  app above the app and account pages, the ones emails link to. The link
-  (`loomkeep://open`) asks before switching instance. Needs the next APK.
-- **Home-screen widgets** (MOB-20): « To watch » (shows in progress, with a
-  ✓ that marks the next episode watched without opening the app),
-  « Releases » (today's releases among what's followed, else the next
-  ones), « Chrono » (starts, pauses and stops the session timer; stopping a
-  book opens its page for the pages read), « Streak and level » and
-  « Search » (search, the scanner, the categories, the latest additions),
-  up to 5 × 5 with up to nine works. Two looks, chosen in
-  each widget's settings (« Streak and level » only has the first): « Affiches » (the default: posters, each over a
-  band in its own shade) and « Liste » (cinema tickets, the code or date on
-  the stub). The widget picker previews them. They read `/api/home-screen-widgets` with a token the
-  app hands them, tied to its session: signing out, or the session ending,
-  signs them out. Written in Kotlin with Glance, which brings Kotlin into
-  `apps/mobile`. Needs the next APK.
-- **Haptic feedback** (MOB-21): a light tap when an episode, a season, a
-  catch-up or a film is marked seen (detail page and home), and when a
-  long press starts a library selection; a fuller pattern with each
-  achievement or level bubble. Through `@capacitor/haptics`, which also
-  brings the `VIBRATE` permission the app's WebView lacked (its
-  `navigator.vibrate` did nothing); Android browsers and the PWA vibrate
-  through the same calls. Needs the next APK.
-- **Re-confirming with a fingerprint**: after confirming a sensitive
-  action with a password or a code, an account without a passkey, on a
-  device that can use one, is offered once to add one — a passkey then
-  confirms through the device's own unlock, in the app as in a browser.
-- **Passkeys work in the Android app.** Its WebView turns on WebAuthn
-  (`WEB_AUTHENTICATION_SUPPORT_FOR_APP`, on WebViews that have it), and
-  `assetlinks.json` now grants each package from `ANDROID_APP_LINKS`
-  `delegate_permission/common.get_login_creds`, without which Credential
-  Manager refuses the app loomkeep.app's passkeys. Needs the next APK.
-- **Everything tappable answers the finger**: on touch screens, list rows,
-  menu items, bottom tabs, chips and links without a pressed state of their
-  own dim while pressed, replacing the WebView's tap rectangle.
-- **Feels less like a website**: no more translucent rectangle on every
-  tap, no text selection or Copy/Share toolbar from a long press on
-  buttons, tabs and the navigation (content stays selectable), and icon
-  buttons and the back chevron answer a 48 px touch while keeping their
-  look. A page change no longer glides from the old scroll position to the
-  top (or back down on return): SvelteKit's scroll after a navigation is
-  instant, in-page anchors stay smooth.
-- **Toasts swipe away sideways** on a phone, where the × is now for screen
-  readers only, and sit above the bottom bar whatever the system's
-  navigation inset (they overlapped it with gesture or three-button
-  navigation, and in landscape). A tap no longer freezes a toast's
-  countdown; only a mouse hovering it does.
-- **Sheets close with a flick**: a quick downward swipe closes them even
-  when short, as on Android, besides dragging past 30 % of their height.
-- **The bottom bar hides while typing** in the app, instead of riding on
-  top of the keyboard.
-- **Leaving the home editor with unsaved changes asks in Loomkeep's own
-  dialog**, not the WebView's native one with English « OK / Cancel ».
-- **Hover effects no longer stick after a tap** (badges, sagas,
-  achievements, search filters, calendar): hand-written `:hover` rules now
-  only apply to a pointer that can hover.
-- **« Loomkeep Dev » has its own icon**, the mark on light paper, to tell
-  it from « Loomkeep » on the home screen. Needs the next debug APK.
-- **The privacy policy covers the Android app** (section 21): GitHub for
-  downloads, Google's code scanner, passkeys through Credential Manager,
-  what stays on the device. Section 7 now says the app's notifications,
-  unlike the browser's, reach Google (FCM) unencrypted.
-- **Buttons on the app's notifications** (MOB-17), done without opening
-  it: reply to a chat message or a comment from the notification, mark a
-  message or a bell entry read, accept or decline a follow request,
-  follow back, add an announced sequel to "To watch" / "To play". The app
-  draws these notifications itself (`ShellMessagingService`, data-only
-  FCM messages); each button carries a token signed for that device,
-  valid seven days, sent to `POST /api/notifications/actions`. Needs the
-  next APK; older ones keep the notifications Android draws.
-- **Each version's release gets its APK again.** The GitHub release is
-  created as a draft and only published once the signed APK and Play
-  bundle are attached: the repository's releases are immutable, so
-  1.12.0's, published first, refused them (HTTP 422) and has no APK; the
-  next version's is the first to carry one. Until it is published, every
-  `main` commit builds the release APK, whatever it changes.
-
-### Admin
-
-- **Admin › Communications › Push sends any notification as a sample**,
-  besides the custom test and the broadcast: pick an alert and the account
-  gets its push as it would for real, in its language, on its channel,
-  with its buttons on the Android app (which reach the API through a no-op
-  `test` action instead of accepting or sending anything).
+- Desktop home: no more empty scroll under a long activity feed.
+- Phone menu keeps Home, Search, Messages and Alerts reachable when they're
+  out of the bottom bar.
+- Android: no gap or black band above the keyboard, back button in Messages
+  and side panels, context-appropriate keyboard Enter actions.
+- Long works no longer widen the page past the bottom bar (carousel dots).
+- Newsletter unsubscribe page no longer reports a server error on success.
+- Screen-reader fixes found by axe and Pa11y (names, table headers, skip
+  link, relative dates), and better contrast in the mobile navigation.
+- Releases get their APK again: created as drafts, published once the APK is
+  attached (1.12.0 has none).
 
 ### Security
 
-- **The Content-Security-Policy is enforced.** The web app now sends it
-  itself (SvelteKit `csp`, a per-request nonce on its scripts and
-  app.html's), without `'unsafe-inline'` for scripts; Caddy no longer adds
-  a Report-Only one. The origins of an instance's own integrations are read
-  from the env it already sets (`PUBLIC_API_URL`, `PUBLIC_UMAMI_SCRIPT_URL`,
-  `PUBLIC_GLITCHTIP_WEB_DSN`, `PUBLIC_UNLEASH_FRONTEND_URL`,
-  `PUBLIC_QUACKBACK_URL`) instead of loomkeep.app's being hardcoded. The
-  policy also allows YouTube trailers, Turnstile and Cloudflare's Web
-  Analytics beacon. The CSP report collector (`POST
-/api/security/csp-report`) is gone. Self-hosting: a reverse proxy that
-  sets its own `Content-Security-Policy` now stacks with the app's (both
-  apply); drop the proxy's.
-
-### Accessibility
-
-- Show context-appropriate Enter actions on Android keyboards for search and
-  clear multi-field forms.
-- Improve contrast for the mobile navigation, secondary buttons, and the
-  commit identifier in the legal footer.
-- Center mobile navigation labels beneath their icons and remove the
-  perforated top edge.
-- **Screen-reader fixes found by a new axe pass on every component test**:
-  the import wizard's item checkboxes are named after their title and its
-  All/None buttons left the group's `<summary>`; the activity feed's
-  cover link, a duplicate of the title link, is hidden from assistive tech;
-  a combobox's "no results" message moved out of its listbox; clickable
-  histogram bars are a group instead of an image; a tooltip around a
-  disabled control no longer wraps it in a second button.
-- **Fixes from the first Pa11y pass over the signed-in app**: "Skip to
-  content" targets the shell's `<main id="main">` (it could land on the
-  fullscreen chat's); the note field of a work page is named by its visible
-  label; the import identifier field and the admin restore file picker have
-  a name; the admin cohort table and the Communications grid tie every cell
-  to its headers; the legal pages' tables, which scroll sideways on a phone,
-  can be scrolled from the keyboard; relative dates ("2 hours ago") give
-  screen readers the full date as text, where their `aria-label` was
-  ignored.
-- **web-audit covers every page**: Pa11y on all ~80 routes, signed out and
-  signed in (admin included), light and dark, 375 and 1280 px; Lighthouse
-  on the real stack for a dozen representative screens, mobile and
-  desktop; ZAP's browser spider reaches the signed-in app. Advisory, with
-  an ntfy message when an audit finds something.
+- Content-Security-Policy enforced (see Breaking changes); `img-src` narrowed
+  to the catalogs' hosts and the instance's API.
+- `glob` 14.0.2 in the images (CVE-2026-118773, CVE-2026-118764).
 
 ## 1.12.0 — The Android app, imports from every tracker, and commands in Messages
 

@@ -72,15 +72,30 @@ Don't touch anything else in these files.
 
 - Turn `## [Unreleased]` into `## X.Y.Z — <short title>` (reconciled per step 2), and put a fresh,
   empty `## [Unreleased]` above it. The heading must start with `## X.Y.Z ` exactly: `ci.yml`'s
-  `release` job finds the release notes by it and fails without it.
-- Same technical, git-facing tone as existing entries: what changed and why, for a future
-  engineer, not for end users.
+  `release` job finds the release notes by it and fails without it. The section becomes the GitHub
+  release as is: the release is named `X.Y.Z`, and `<short title>` opens its notes as a heading.
+- The section is the release notes, so it must read as one: rewrite `[Unreleased]` rather than
+  pasting it, merging bullets about the same feature, one or two lines each, what changed rather
+  than how. Technical, git-facing tone, for a future engineer, not for end users. Sections, in this
+  order, keeping only those that apply:
+
+  ```md
+  ### Breaking changes ← self-hosting steps and removed/changed contracts, worded as what to do
+
+  ### Added
+
+  ### Changed
+
+  ### Fixed
+
+  ### Security
+  ```
 
 ## 6. Quackback changelog entry (user-facing)
 
-- Fetch the permanent draft titled `Template — Loomkeep X.Y.Z` (`search()` or `list_conversations`-style
+- Fetch the permanent draft titled `Template — [BETA] Loomkeep X.Y.Z` (`search()` or `list_conversations`-style
   lookup on the changelog, then `get_details`) to get the current structure/tone to reuse.
-- `create_changelog` (or duplicate + `update_changelog`) with title `Loomkeep X.Y.Z`, body: a short,
+- `create_changelog` (or duplicate + `update_changelog`) with title `[BETA] Loomkeep X.Y.Z`, body: a short,
   warm one-line summary of what this release is about (**not** the generic "Here's what's changing
   in this version." placeholder — write a real sentence specific to this release), then the
   `✨ New` / `🔧 Improvements` / `🐛 Fixes` sections (keep only the ones that apply), in plain user
