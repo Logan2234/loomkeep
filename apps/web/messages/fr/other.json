@@ -118,6 +118,8 @@
   "auth_mfa_code_title": "Vérification en deux étapes",
   "auth_mfa_code_totp_hint": "Saisis le code affiché par ton application d'authentification.",
   "auth_mfa_code_email_hint": "Saisis le code que tu as reçu par email.",
+  "auth_mfa_code_recovery_hint": "Un des codes de secours que tu as notés ou téléchargés en activant la vérification en deux étapes. Chacun ne sert qu'une fois.",
+  "auth_mfa_code_digit": "Chiffre {position} sur {total}",
   "auth_mfa_recovery_code_label": "Code de secours",
   "auth_mfa_use_recovery_code": "Utiliser un code de secours",
   "auth_mfa_use_normal_code": "Utiliser mon code habituel",

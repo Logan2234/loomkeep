@@ -26,12 +26,17 @@ history from before it was started.
   screen splits into a drifting poster wall and the form, while a phone
   keeps the logo and the page's title, without the tagline. The password pages
   follow, and moving between auth pages keeps the wall going and slides the
-  form in. So do the two-step verification steps: each method is a full-width
-  row, and a complete six-digit code verifies itself without the button (a
-  recovery code still waits for it). The wall shows real covers from a new public `GET /api/showcase`:
+  form in. So do the two-step verification steps, each method and each kind
+  of code sliding in: a method is a full-width row, a six-digit code gets one
+  box per digit (arrow keys, backspace and paste move between them) and
+  verifies itself once complete, but not again for the same code, a rejected
+  code shakes its field, and errors fade after a few seconds. A recovery code
+  is upper-cased and gets its dash as it's typed, and says where it comes
+  from. The wall shows real covers from a new public `GET /api/showcase`:
   this week's trending films and series (TMDB) and recent popular games
   (IGDB), plus books and albums at least 10 accounts of the instance follow,
   computed once a day and shuffled on each visit.
+- Settings: one click on the recovery codes selects all of them.
 - Web: the Content-Security-Policy's `img-src` now lists the catalogs' image
   hosts and the instance's API origin instead of every `https:` origin.
 - `glob` raised to 14.0.2 in the images (CVE-2026-118773, CVE-2026-118764).

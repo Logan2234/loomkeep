@@ -49,8 +49,9 @@
 
 <Modal title={m.settings_mfa_recovery_reveal_title()} {onclose}>
   <p class="text-dim mb-4 text-sm">{m.settings_mfa_recovery_reveal_hint()}</p>
+  <!-- One click selects every code, ready to copy. -->
   <div
-    class="border-border bg-surface-2 grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-dashed p-4">
+    class="border-border bg-surface-2 grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-dashed p-4 select-all">
     {#each codes as code (code)}
       <p class="text-center font-mono text-sm tracking-wider tabular-nums">
         {groupCode(code)}
