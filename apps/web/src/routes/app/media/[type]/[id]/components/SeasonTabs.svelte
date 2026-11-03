@@ -44,14 +44,17 @@
     });
   });
 
-  // A mouse has no way to slide the row: arrows, on the sides with more to see.
+  // A mouse has no way to slide the row: arrows while it overflows, the one
+  // at an end disabled rather than gone, so nothing shifts as it's reached.
   let canLeft = $state(false);
   let canRight = $state(false);
+  let overflowing = $state(false);
 
   function measure() {
     if (!list) return;
     canLeft = list.scrollLeft > 1;
     canRight = list.scrollLeft + list.clientWidth < list.scrollWidth - 1;
+    overflowing = list.scrollWidth > list.clientWidth + 1;
   }
 
   $effect(() => {
@@ -93,10 +96,11 @@
       #
     </button>
   {/if}
-  {#if !layout.compact && canLeft}
+  {#if !layout.compact && overflowing}
     <button
       type="button"
       class="btn-icon self-center"
+      disabled={!canLeft}
       aria-label={m.common_previous()}
       onclick={() => scrollRow(-1)}>
       <Icon name="chevron-left" class="h-5 w-5" />
@@ -158,10 +162,11 @@
       </button>
     {/each}
   </div>
-  {#if !layout.compact && canRight}
+  {#if !layout.compact && overflowing}
     <button
       type="button"
       class="btn-icon self-center"
+      disabled={!canRight}
       aria-label={m.common_next()}
       onclick={() => scrollRow(1)}>
       <Icon name="chevron-right" class="h-5 w-5" />

@@ -826,7 +826,8 @@
           : m.datasource_tmdb_notice()}
       </p>
       {#if hasProviders && extras}
-        <p class="timecode text-dim text-micro mt-2">
+        <!-- Under the notice's text, in its type: one block, two sources. -->
+        <p class="text-dim text-micro mt-1 pl-[1.125rem]">
           {m.media_watch_attribution({
             region: formatRegion(extras.watchProviders.region),
           })}
