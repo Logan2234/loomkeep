@@ -433,6 +433,66 @@ describe("Loomkeep API (e2e)", () => {
       episodeNumber: 2,
     });
 
+    const watchCounts = async () => {
+      const res = await request(http)
+        .get(`/api/library/entries/${newEntryId}/episodes`)
+        .set("Cookie", sessionCookies)
+        .expect(200);
+      return res.body.seasons[0].episodes.map(
+        (e: { watchCount: number }) => e.watchCount,
+      );
+    };
+
+    const batch = (action: string, episodeIds: string[]) =>
+      request(http)
+        .post("/api/library/episodes/watches/batch")
+        .set("Cookie", sessionCookies)
+        .send({ action, episodeIds })
+        .expect(200);
+    const undo = (body: object) =>
+      request(http)
+        .post("/api/library/episodes/watches/undo")
+        .set("Cookie", sessionCookies)
+        .send(body)
+        .expect(204);
+
+    // A bulk mark skips what's already watched, and undoing takes it back.
+    const marked = await batch("watch", [eps[0].id, eps[1].id]);
+    expect(marked.body.created).toEqual([
+      { id: expect.any(String), episodeId: eps[1].id },
+    ]);
+    expect(await watchCounts()).toEqual([1, 1, 0]);
+    await undo({
+      deleteWatchIds: marked.body.created.map((w: { id: string }) => w.id),
+    });
+    expect(await watchCounts()).toEqual([1, 0, 0]);
+
+    // A bulk rewatch only touches what's watched.
+    const rewatched = await batch("rewatch", [eps[0].id, eps[1].id]);
+    expect(rewatched.body.created).toHaveLength(1);
+    expect(await watchCounts()).toEqual([2, 0, 0]);
+
+    // A bulk unmark removes every viewing; undoing restores their dates.
+    const removed = await batch("unwatch", [eps[0].id]);
+    expect(removed.body.removed).toHaveLength(2);
+    expect(await watchCounts()).toEqual([0, 0, 0]);
+    await undo({ restore: removed.body.removed });
+    expect(await watchCounts()).toEqual([2, 0, 0]);
+    const restored = await request(http)
+      .get(`/api/media/anime/5555`)
+      .set("Cookie", sessionCookies)
+      .expect(200);
+    const dates = (rows: { watchedAt: string | null }[]) =>
+      rows.map((w) => w.watchedAt).sort();
+    expect(dates(restored.body.seasons[0].episodes[0].watches)).toEqual(
+      dates(removed.body.removed),
+    );
+
+    await request(http)
+      .delete(`/api/library/episodes/${eps[0].id}/watches`)
+      .set("Cookie", sessionCookies)
+      .expect(204);
+
     // The media detail exposes each viewing's date.
     const detail = await request(http)
       .get(`/api/media/anime/5555`)

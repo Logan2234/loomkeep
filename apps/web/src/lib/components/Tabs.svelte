@@ -36,10 +36,25 @@
 
   $effect(() => {
     if (!swipe || !layout.compact) return;
-    return listenTabSwipe(document, (step) => {
-      const next = adjacentTab(tabs, current, step);
-      if (next !== null) onSelect(next);
-    });
+    return listenTabSwipe(
+      document,
+      (step) => {
+        const next = adjacentTab(tabs, current, step);
+        if (next !== null) onSelect(next);
+      },
+      {
+        targets: function* () {
+          for (
+            let el = list?.nextElementSibling;
+            el;
+            el = el.nextElementSibling
+          ) {
+            yield el;
+          }
+        },
+        canStep: (step) => adjacentTab(tabs, current, step) !== null,
+      },
+    );
   });
 
   // On a phone, what follows the strip slides in from the tab's side.

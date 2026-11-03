@@ -83,7 +83,14 @@
     inset: -0.55rem -0.25rem;
   }
 
-  .see-more:hover .see-more-pill,
+  /* A finger leaves :hover behind after a tap. */
+  @media (hover: hover) {
+    .see-more:hover .see-more-pill {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+  }
+
   .see-more:focus-visible .see-more-pill {
     border-color: var(--accent);
     color: var(--accent);

@@ -181,6 +181,7 @@ export const ErrorCode = {
   LibrarySeasonEmpty: "library.season_empty",
   LibrarySeasonNotFound: "library.season_not_found",
   LibraryNoWatchToUndo: "library.no_watch_to_undo",
+  LibraryWatchBatchTooLarge: "library.watch_batch_too_large",
   LibraryEntryNotFound: "library.entry_not_found",
   LibraryEntryForbidden: "library.entry_forbidden",
   LibraryReplayNotMovie: "library.replay_not_movie",

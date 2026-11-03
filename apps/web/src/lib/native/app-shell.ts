@@ -1,4 +1,5 @@
 import { dismissTopmostDialog } from "#lib/actions/dialog-focus.js";
+import { consumeBackPress } from "#lib/back-press.js";
 import { chat } from "#lib/chat/chat.svelte.js";
 import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
 import { readStorage } from "#lib/local-storage.js";
@@ -29,6 +30,7 @@ export const isNativeApp = (): boolean => Capacitor.isNativePlatform();
  */
 export function handleBackButton({ canGoBack }: { canGoBack: boolean }): void {
   if (dismissTopmostDialog()) return;
+  if (consumeBackPress()) return;
 
   if (chat.open) {
     chat.stepBack();

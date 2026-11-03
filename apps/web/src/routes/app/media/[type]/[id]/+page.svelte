@@ -74,6 +74,7 @@
 
   import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
+  import type { Snippet } from "svelte";
   import ActionBar from "./components/ActionBar.svelte";
   import CastSection from "./components/CastSection.svelte";
   import SagaSection from "./components/SagaSection.svelte";
@@ -645,16 +646,17 @@
       {/if}
     {/snippet}
 
+    {#snippet tagChips()}
+      {#each extras?.tags ?? [] as tag (tag)}
+        <span
+          class="border-border text-dim rounded-full border px-2 py-0.5 text-[0.65rem]">
+          {tag}
+        </span>
+      {/each}
+    {/snippet}
     {#snippet tags()}
       {#if extras && extras.tags.length > 0}
-        <div class="mt-3 flex flex-wrap gap-1.5">
-          {#each extras.tags as tag (tag)}
-            <span
-              class="border-border text-dim rounded-full border px-2 py-0.5 text-[0.65rem]">
-              {tag}
-            </span>
-          {/each}
-        </div>
+        <div class="mt-3 flex flex-wrap gap-1.5">{@render tagChips()}</div>
       {/if}
     {/snippet}
 
@@ -758,20 +760,55 @@
       {/if}
     {/snippet}
 
+    {#snippet linkChips()}
+      {#each extras?.externalLinks ?? [] as link (link.url)}
+        <a
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-[0.65rem] font-semibold transition-colors">
+          {link.name} ↗
+        </a>
+      {/each}
+    {/snippet}
     {#snippet links()}
       {#if extras && extras.externalLinks.length > 0}
         <section class="mt-4 flex flex-wrap items-center gap-2">
           <span class="timecode text-xs">{m.common_links()}</span>
-          {#each extras.externalLinks as link (link.url)}
-            <a
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-[0.65rem] font-semibold transition-colors">
-              {link.name} ↗
-            </a>
-          {/each}
+          {@render linkChips()}
         </section>
+      {/if}
+    {/snippet}
+
+    {#snippet detailRow(label: string, value: Snippet)}
+      <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 px-4 py-3">
+        <dt class="timecode text-dim text-xs">{label}</dt>
+        <dd class="flex min-w-0 flex-wrap gap-1.5 text-sm font-semibold">
+          {@render value()}
+        </dd>
+      </div>
+    {/snippet}
+    {#snippet directorNames()}{extras?.directors.join(", ")}{/snippet}
+    {#snippet studioNames()}{extras?.studios.join(", ")}{/snippet}
+    {#snippet detailsCard()}
+      {#if extras && (extras.directors.length > 0 || extras.studios.length > 0 || extras.tags.length > 0 || extras.externalLinks.length > 0)}
+        <dl class="card divide-border divide-y">
+          {#if extras.directors.length > 0}
+            {@render detailRow(DIRECTOR_LABELS[detail.type], directorNames)}
+          {/if}
+          {#if extras.studios.length > 0}
+            {@render detailRow(
+              extras.studios.length > 1 ? m.media_studios() : m.media_studio(),
+              studioNames,
+            )}
+          {/if}
+          {#if extras.tags.length > 0}
+            {@render detailRow(m.music_tags(), tagChips)}
+          {/if}
+          {#if extras.externalLinks.length > 0}
+            {@render detailRow(m.common_links(), linkChips)}
+          {/if}
+        </dl>
       {/if}
     {/snippet}
 
@@ -789,7 +826,8 @@
           : m.datasource_tmdb_notice()}
       </p>
       {#if hasProviders && extras}
-        <p class="timecode text-dim text-micro mt-2">
+        <!-- Under the notice's text, in its type: one block, two sources. -->
+        <p class="text-dim text-micro mt-1 pl-[1.125rem]">
           {m.media_watch_attribution({
             region: formatRegion(extras.watchProviders.region),
           })}
@@ -870,9 +908,7 @@
         <h2 class="font-display mb-3 text-lg font-bold">
           {m.common_details()}
         </h2>
-        {@render credits()}
-        {@render tags()}
-        {@render links()}
+        {@render detailsCard()}
         {@render attribution()}
       </section>
     {:else}

@@ -3,6 +3,7 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import Drawer from "#lib/components/Drawer.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import SidePanel from "#lib/components/SidePanel.svelte";
   import { appConfig } from "#lib/config.svelte.js";
@@ -55,6 +56,9 @@
   } = $props();
 
   const reduced = prefersReducedMotion();
+
+  let sheet = $state<{ close: () => void }>();
+  const closeSheet = () => sheet?.close();
 
   // Desktop: ← and → step through the episodes, unless the keys belong to
   // something else — a field being typed in, or a dialog opened on top
@@ -114,26 +118,36 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<SidePanel
-  onclose={onClose}
-  labelledby="episode-panel-title"
-  desktopClass="max-w-lg">
+{#snippet header()}
   <header
     class="border-border flex shrink-0 items-center gap-1 border-b py-2 pr-2 pl-4">
     {#if layout.compact}
-      <button
-        type="button"
-        class="btn-icon -ml-2"
-        aria-label={m.common_back()}
-        onclick={onClose}>
-        <Icon name="chevron-left" class="h-5 w-5" />
-      </button>
+      {#if previous}
+        <button
+          type="button"
+          class="btn-icon -ml-2"
+          aria-label={m.media_episode_previous()}
+          onclick={previous.go}>
+          <Icon name="chevron-left" class="h-5 w-5" />
+        </button>
+      {:else}
+        <span class="-ml-2 w-7 shrink-0" aria-hidden="true"></span>
+      {/if}
     {/if}
     <h2
       id="episode-panel-title"
       class="min-w-0 flex-1 truncate text-sm font-semibold">
       <span class="timecode text-dim mr-1.5 text-xs">{code}</span>{title}
     </h2>
+    {#if layout.compact && next}
+      <button
+        type="button"
+        class="btn-icon"
+        aria-label={m.media_episode_next()}
+        onclick={next.go}>
+        <Icon name="chevron-right" class="h-5 w-5" />
+      </button>
+    {/if}
     {#if tracked && episode.id}
       <button
         type="button"
@@ -151,6 +165,7 @@
         title={`${code} · ${title}`}
         canParticipate={tracked}
         revealSpoilersByDefault={watched}
+        onMovedToMessages={layout.compact ? closeSheet : onClose}
         compact />
     {/if}
     {#if !layout.compact}
@@ -163,178 +178,213 @@
       </button>
     {/if}
   </header>
+{/snippet}
 
-  <!-- Only this part scrolls: previous/next stay put below it, whatever
-       the synopsis length. -->
-  <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-    {#key episode.id ?? episode.number}
-      <div in:fade={{ duration: reduced ? 0 : 160 }}>
-        <EpisodeMediaSlider
-          {images}
-          videos={mediaQuery.data?.videos ?? []}
-          alt={title}
-          caption={imageSource}
-          overlay={upcoming} />
+{#snippet actions()}
+  {#if tracked && episode.id && !watched && isAired(episode, now)}
+    <!-- The panel's main action: as wide as the panel, easy to hit. -->
+    <button
+      type="button"
+      class="btn btn-primary mt-5 w-full py-3 text-base"
+      disabled={busy}
+      onclick={onMark}>
+      <Icon name="check" class="h-5 w-5" />
+      {m.media_mark_watched_short()}
+    </button>
+  {/if}
 
-        <p class="font-display mt-4 text-2xl leading-tight font-bold">
-          {title}
-        </p>
-
-        <dl
-          class="border-border bg-border mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border">
-          <div class="bg-surface px-3 py-2">
-            <dt class="timecode text-dim text-[0.65rem] uppercase">
-              {m.media_episode_air_date()}
-            </dt>
-            <dd class="mt-0.5 text-sm">
-              {episode.airDate
-                ? airDateLabel(episode.airDate, exactTime, true)
-                : "—"}
-            </dd>
-          </div>
-          <div class="bg-surface px-3 py-2">
-            <dt class="timecode text-dim text-[0.65rem] uppercase">
-              {m.media_episode_runtime()}
-            </dt>
-            <dd class="timecode mt-0.5 text-sm">
-              {episode.runtimeMin
-                ? formatRuntimeTimecode(episode.runtimeMin)
-                : "—"}
-            </dd>
-          </div>
-          <div class="bg-surface px-3 py-2">
-            <dt class="timecode text-dim text-[0.65rem] uppercase">TMDB</dt>
-            <dd class="mt-0.5 text-sm">
-              {#if episode.voteAverage !== null}
-                <span class="timecode text-accent"
-                  >{scoreLabel(episode.voteAverage)}</span>
-                <span class="text-dim ml-1.5 text-xs">
-                  {m.media_episode_votes({ count: episode.voteCount ?? 0 })}
-                </span>
-              {:else}—{/if}
-            </dd>
-          </div>
-          <div class="bg-surface px-3 py-2">
-            <dt class="timecode text-dim text-[0.65rem] uppercase">Loomkeep</dt>
-            <dd class="mt-0.5 text-sm">
-              {#if episode.reviewAverage !== null}
-                <span class="timecode"
-                  >{scoreLabel(episode.reviewAverage)}</span>
-                <span class="text-dim ml-1.5 text-xs">
-                  {m.media_episode_review_count({
-                    count: episode.reviewCount ?? 0,
-                  })}
-                </span>
-              {:else}—{/if}
-            </dd>
-          </div>
-        </dl>
-
-        {#if episode.overview}
-          <p class="mt-4 leading-relaxed">{episode.overview}</p>
-        {:else}
-          <p class="text-dim mt-4 text-sm">
-            {exactTime
-              ? m.media_episode_no_synopsis_anime()
-              : m.media_episode_no_synopsis()}
-          </p>
-        {/if}
-
-        {#if tracked && episode.id && !watched && isAired(episode, now)}
-          <!-- The panel's main action: as wide as the panel, easy to hit. -->
-          <button
-            type="button"
-            class="btn btn-primary mt-5 w-full py-3 text-base"
-            disabled={busy}
-            onclick={onMark}>
-            <Icon name="check" class="h-5 w-5" />
-            {m.media_mark_watched_short()}
-          </button>
-        {/if}
-
-        {#if (tracked && episode.id && watched) || episode.streamingUrl}
-          <div class="mt-5 flex flex-wrap gap-2">
-            {#if tracked && episode.id && watched}
-              <!-- Same reading order as the timeline below: taking one away
+  {#if (tracked && episode.id && watched) || episode.streamingUrl}
+    <div class="mt-5 flex flex-wrap gap-2">
+      {#if tracked && episode.id && watched}
+        <!-- Same reading order as the timeline below: taking one away
                    on the left, adding one on the right. -->
-              <button
-                type="button"
-                class="btn btn-ghost"
-                disabled={busy}
-                onclick={onUndo}>
-                {m.media_undo_watch()}
-              </button>
-              <button
-                type="button"
-                class="btn btn-ghost"
-                disabled={busy}
-                onclick={onRewatch}>
-                <Icon name="refresh" class="h-4 w-4" />
-                {m.media_rewatch()}
-              </button>
-            {/if}
-            {#if episode.streamingUrl && episode.streamingSite}
-              <a
-                class="btn btn-ghost"
-                href={episode.streamingUrl}
-                target="_blank"
-                rel="noopener noreferrer">
-                <Icon name="play" class="h-4 w-4" />
-                {m.media_watch_on({ site: episode.streamingSite })}
-              </a>
-            {/if}
-          </div>
-        {/if}
-
-        {#if tracked && episode.id}
-          <section class="border-border mt-6 border-t pt-4">
-            <h3
-              class="timecode text-dim flex items-center justify-between text-[0.7rem] uppercase">
-              {m.media_episode_history()}
-              {#if episode.watches.length > 1}
-                <span
-                  >{m.media_episode_times({
-                    count: episode.watches.length,
-                  })}</span>
-              {/if}
-            </h3>
-            {#if episode.watches.length > 0}
-              <div class="mt-3">
-                <WatchTimeline watches={episode.watches} />
-              </div>
-            {:else}
-              <p class="text-dim mt-2 text-sm">
-                {m.media_episode_not_watched()}
-              </p>
-            {/if}
-          </section>
-        {/if}
-      </div>
-    {/key}
-  </div>
-
-  <footer class="border-border bg-bg flex shrink-0 gap-2 border-t px-4 py-3">
-    <!-- Nothing before the first episode or after the last: the side stays
-         empty rather than offering a dead button. -->
-    {#each [{ n: previous, prev: true }, { n: next, prev: false }] as nav (nav.prev)}
-      {#if nav.n}
-        {@const target = nav.n}
         <button
           type="button"
-          class="border-border bg-surface hover:bg-surface-2 hover:border-dim/40 min-w-0 flex-1 rounded-xl border px-3 py-2 transition-colors
+          class="btn btn-ghost"
+          disabled={busy}
+          onclick={onUndo}>
+          {m.media_undo_watch()}
+        </button>
+        <button
+          type="button"
+          class="btn btn-ghost"
+          disabled={busy}
+          onclick={onRewatch}>
+          <Icon name="refresh" class="h-4 w-4" />
+          {m.media_rewatch()}
+        </button>
+      {/if}
+      {#if episode.streamingUrl && episode.streamingSite}
+        <a
+          class="btn btn-ghost"
+          href={episode.streamingUrl}
+          target="_blank"
+          rel="noopener noreferrer">
+          <Icon name="play" class="h-4 w-4" />
+          {m.media_watch_on({ site: episode.streamingSite })}
+        </a>
+      {/if}
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet content()}
+  {#key episode.id ?? episode.number}
+    <div in:fade={{ duration: reduced ? 0 : 160 }}>
+      <EpisodeMediaSlider
+        {images}
+        videos={mediaQuery.data?.videos ?? []}
+        alt={title}
+        caption={imageSource}
+        overlay={upcoming} />
+
+      <p class="font-display mt-4 text-2xl leading-tight font-bold">
+        {title}
+      </p>
+
+      {#if layout.compact}{@render actions()}{/if}
+
+      <dl
+        class="border-border bg-border mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border">
+        <div class="bg-surface px-3 py-2">
+          <dt class="timecode text-dim text-[0.65rem] uppercase">
+            {m.media_episode_air_date()}
+          </dt>
+          <dd class="mt-0.5 text-sm">
+            {episode.airDate
+              ? airDateLabel(episode.airDate, exactTime, true)
+              : "—"}
+          </dd>
+        </div>
+        <div class="bg-surface px-3 py-2">
+          <dt class="timecode text-dim text-[0.65rem] uppercase">
+            {m.media_episode_runtime()}
+          </dt>
+          <dd class="timecode mt-0.5 text-sm">
+            {episode.runtimeMin
+              ? formatRuntimeTimecode(episode.runtimeMin)
+              : "—"}
+          </dd>
+        </div>
+        <div class="bg-surface px-3 py-2">
+          <dt class="timecode text-dim text-[0.65rem] uppercase">TMDB</dt>
+          <dd class="mt-0.5 text-sm">
+            {#if episode.voteAverage !== null}
+              <span class="timecode text-accent"
+                >{scoreLabel(episode.voteAverage)}</span>
+              <span class="text-dim ml-1.5 text-xs">
+                {m.media_episode_votes({ count: episode.voteCount ?? 0 })}
+              </span>
+            {:else}—{/if}
+          </dd>
+        </div>
+        <div class="bg-surface px-3 py-2">
+          <dt class="timecode text-dim text-[0.65rem] uppercase">Loomkeep</dt>
+          <dd class="mt-0.5 text-sm">
+            {#if episode.reviewAverage !== null}
+              <span class="timecode">{scoreLabel(episode.reviewAverage)}</span>
+              <span class="text-dim ml-1.5 text-xs">
+                {m.media_episode_review_count({
+                  count: episode.reviewCount ?? 0,
+                })}
+              </span>
+            {:else}—{/if}
+          </dd>
+        </div>
+      </dl>
+
+      {#if episode.overview}
+        <p class="mt-4 leading-relaxed">{episode.overview}</p>
+      {:else}
+        <p class="text-dim mt-4 text-sm">
+          {exactTime
+            ? m.media_episode_no_synopsis_anime()
+            : m.media_episode_no_synopsis()}
+        </p>
+      {/if}
+
+      {#if !layout.compact}{@render actions()}{/if}
+
+      {#if tracked && episode.id}
+        <section class="border-border mt-6 border-t pt-4">
+          <h3
+            class="timecode text-dim flex items-center justify-between text-[0.7rem] uppercase">
+            {m.media_episode_history()}
+            {#if episode.watches.length > 1}
+              <span
+                >{m.media_episode_times({
+                  count: episode.watches.length,
+                })}</span>
+            {/if}
+          </h3>
+          {#if episode.watches.length > 0}
+            <div class="mt-3">
+              <WatchTimeline watches={episode.watches} />
+            </div>
+          {:else}
+            <p class="text-dim mt-2 text-sm">
+              {m.media_episode_not_watched()}
+            </p>
+          {/if}
+        </section>
+      {/if}
+    </div>
+  {/key}
+{/snippet}
+
+{#snippet neighbours()}
+  <!-- Nothing before the first episode or after the last: the side stays
+         empty rather than offering a dead button. -->
+  {#each [{ n: previous, prev: true }, { n: next, prev: false }] as nav (nav.prev)}
+    {#if nav.n}
+      {@const target = nav.n}
+      <button
+        type="button"
+        class="border-border bg-surface hover:bg-surface-2 hover:border-dim/40 min-w-0 flex-1 rounded-xl border px-3 py-2 transition-colors
             {nav.prev ? 'text-left' : 'text-right'}"
-          aria-label={nav.prev
+        aria-label={layout.compact
+          ? undefined
+          : nav.prev
             ? m.media_episode_previous()
             : m.media_episode_next()}
-          onclick={target.go}>
-          <span class="timecode text-dim block text-[0.65rem]">
-            {nav.prev ? `‹ ${target.code}` : `${target.code} ›`}
-          </span>
-          <span class="block truncate text-sm">{target.title}</span>
-        </button>
-      {:else}
-        <span class="flex-1" aria-hidden="true"></span>
-      {/if}
-    {/each}
-  </footer>
-</SidePanel>
+        onclick={target.go}>
+        <span class="timecode text-dim block text-[0.65rem]">
+          {nav.prev ? `‹ ${target.code}` : `${target.code} ›`}
+        </span>
+        <span class="block truncate text-sm">{target.title}</span>
+      </button>
+    {:else}
+      <span class="flex-1" aria-hidden="true"></span>
+    {/if}
+  {/each}
+{/snippet}
+
+{#if layout.compact}
+  <Drawer bind:this={sheet} onclose={onClose} labelledby="episode-panel-title">
+    <!-- A fixed height: moving to another episode must not resize the sheet. -->
+    <div class="flex h-[85dvh] min-h-0 flex-col">
+      {@render header()}
+      <div
+        data-drawer-scroll
+        class="min-h-0 flex-1 touch-pan-y overflow-y-auto px-5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        {@render content()}
+        <div class="mt-6 flex gap-2">{@render neighbours()}</div>
+      </div>
+    </div>
+  </Drawer>
+{:else}
+  <SidePanel
+    onclose={onClose}
+    labelledby="episode-panel-title"
+    desktopClass="max-w-lg">
+    {@render header()}
+    <!-- Only this part scrolls: previous/next stay put below it, whatever
+         the synopsis length. -->
+    <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+      {@render content()}
+    </div>
+    <footer class="border-border bg-bg flex shrink-0 gap-2 border-t px-4 py-3">
+      {@render neighbours()}
+    </footer>
+  </SidePanel>
+{/if}

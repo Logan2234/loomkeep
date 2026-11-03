@@ -42,7 +42,7 @@
   <button
     data-dialog-backdrop
     class="fixed inset-0 cursor-default bg-black/60 {backdropClass}"
-    transition:fade={{ duration: reduced ? 0 : 200 }}
+    transition:fade|global={{ duration: reduced ? 0 : 200 }}
     style="z-index: {zIndex}"
     aria-label={m.common_close()}
     onclick={onclose}></button>
@@ -52,7 +52,7 @@
     aria-modal="true"
     aria-labelledby={labelledby}
     tabindex="-1"
-    transition:fly={{
+    transition:fly|global={{
       x: reduced ? 0 : 28,
       duration: reduced ? 0 : 220,
     }}

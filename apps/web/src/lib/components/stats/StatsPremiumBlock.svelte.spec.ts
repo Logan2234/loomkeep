@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import StatsPremiumBlock from "./StatsPremiumBlock.svelte";
 
 describe("the premium block of the statistics", () => {
-  it("says what is reserved and shows three previews", () => {
+  it("says what is reserved and shows blurred previews under a lock", () => {
     render(StatsPremiumBlock);
 
     expect(screen.getByText(m.stats_premium_block())).toBeTruthy();
@@ -13,6 +13,7 @@ describe("the premium block of the statistics", () => {
       m.stats_rating_distribution(),
       m.stats_decade(),
       m.stats_possession(),
+      m.stats_temporal_section(),
     ]) {
       expect(screen.getByText(title)).toBeTruthy();
     }

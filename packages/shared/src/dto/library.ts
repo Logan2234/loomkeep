@@ -142,6 +142,24 @@ export interface EpisodeWatchDto {
   watchedAt: string | null;
 }
 
+/** Most episodes one bulk watch action can touch. */
+export const EPISODE_WATCH_BATCH_MAX = 500;
+/** Most watches one undo can touch: a bulk unmark takes every rewatch along. */
+export const EPISODE_WATCH_UNDO_MAX = 5000;
+
+export type EpisodeWatchBatchAction = "watch" | "rewatch" | "unwatch";
+
+export interface EpisodeWatchRestoreDto {
+  episodeId: string;
+  watchedAt: string | null;
+}
+
+/** What a bulk watch action changed: exactly what undoing it needs. */
+export interface EpisodeWatchBatchResultDto {
+  created: { id: string; episodeId: string }[];
+  removed: EpisodeWatchRestoreDto[];
+}
+
 /** Persisted episode enriched with the current user's watch count. */
 export interface EpisodeWithWatchesDto {
   id: string;

@@ -93,6 +93,9 @@
           rest = halfAt;
         }
       }
+      // Opened from a timer (a long press), this frame may be the first one:
+      // without a computed starting point there would be nothing to slide from.
+      void panelEl?.offsetHeight;
       visible = true;
     });
     return dimSystemBars();

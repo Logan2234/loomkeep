@@ -1,9 +1,12 @@
 import { ApiError } from "#lib/api/core.js";
 import { resolveApiError } from "#lib/api/errors.js";
+import { chat } from "#lib/chat/chat.svelte.js";
+import { appConfig } from "#lib/config.svelte.js";
 import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
+import { toast } from "#lib/toast.svelte.js";
 import {
   ErrorCode,
   type LibraryEntryDto,
@@ -11,11 +14,11 @@ import {
   type MediaDetailSeasonDto,
   type MediaType,
 } from "@loomkeep/shared";
-import { screen, waitFor, within } from "@testing-library/svelte";
+import { fireEvent, screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { scoreLabel } from "./episode-format";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { scoreLabel, upcomingLabel } from "./episode-format";
 import EpisodesSection from "./EpisodesSection.svelte";
 
 const inDays = (days: number) =>
@@ -41,6 +44,7 @@ function episode(
     reviewCount: null,
     reviewAverage: null,
     myRating: null,
+    commentCount: 0,
     watchCount,
     watches: Array.from({ length: watchCount }, (_, i) => ({
       id: `w${season}${number}${i}`,
@@ -75,9 +79,17 @@ function season(
 const ENTRY = { id: "entry" } as LibraryEntryDto;
 
 let requests: string[];
+let batches: { action: string; episodeIds: string[] }[];
+let undos: unknown[];
+
+afterEach(() => {
+  toast.items.map((t) => t.id).forEach((id) => toast.dismiss(id));
+});
 
 beforeEach(() => {
   requests = [];
+  batches = [];
+  undos = [];
 
   const record = ({ request }: { request: Request }) => {
     requests.push(
@@ -91,6 +103,36 @@ beforeEach(() => {
     http.delete(apiUrl("/library/episodes/:id/watches"), record),
     http.post(apiUrl("/library/episodes/:id/watch-through"), record),
     http.post(apiUrl("/library/seasons/:id/watches"), record),
+    http.post(
+      apiUrl("/library/episodes/watches/batch"),
+      async ({ request }) => {
+        const body = (await request.json()) as {
+          action: string;
+          episodeIds: string[];
+        };
+        batches.push(body);
+        return HttpResponse.json({
+          created:
+            body.action === "unwatch"
+              ? []
+              : body.episodeIds.map((episodeId, i) => ({
+                  id: `new${i}`,
+                  episodeId,
+                })),
+          removed:
+            body.action === "unwatch"
+              ? body.episodeIds.map((episodeId) => ({
+                  episodeId,
+                  watchedAt: "2024-03-03T00:00:00.000Z",
+                }))
+              : [],
+        });
+      },
+    ),
+    http.post(apiUrl("/library/episodes/watches/undo"), async ({ request }) => {
+      undos.push(await request.json());
+      return new HttpResponse(null, { status: 204 });
+    }),
     http.delete(apiUrl("/library/seasons/:id/watches"), record),
     http.get(
       apiUrl("/catalog/tmdb/:id/seasons/:season/episodes/:episode/media"),
@@ -116,42 +158,52 @@ function renderSection(
   return { props, user: userEvent.setup() };
 }
 
-const seasonCard = (number: number) =>
-  screen.getByRole("button", {
-    name: new RegExp(`^${m.common_season()} ${number}\\b`),
-  });
+const seasonTab = (number: number) =>
+  screen.getByRole("tab", { name: new RegExp(`^S${number} `) });
 
 async function openSeason(user: ReturnType<typeof userEvent.setup>, n = 1) {
-  await user.click(seasonCard(n));
+  await user.click(seasonTab(n));
 }
 
 const markButtons = () =>
-  screen.getAllByRole("button", { name: m.media_mark_watched_short() });
+  screen
+    .getAllByRole("button", {
+      name: new RegExp(
+        `^${m.media_mark_watched_code({ code: "S" })}|S\\d+E\\d+`,
+      ),
+    })
+    .filter((b) => b.title === m.media_mark_watched_short());
+
+const openRow = (season: number, episode: number) =>
+  screen.getByRole("button", {
+    name: m.media_episode_open({
+      code: `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`,
+    }),
+  });
 
 const panel = () => screen.getByRole("dialog");
 
 describe("EpisodesSection", () => {
-  it("opens the season being watched, and one season at most", async () => {
+  it("opens the tab being watched, one page at a time", async () => {
     const { user } = renderSection([season(1, [1, 2, 3]), season(2, [1])]);
 
-    expect(seasonCard(2).getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByText("Episode 2.2")).toBeTruthy();
+    expect(seasonTab(2).getAttribute("aria-selected")).toBe("true");
+    expect(openRow(2, 2)).toBeTruthy();
     expect(screen.queryByText("Episode 1.1")).toBeNull();
 
     await openSeason(user, 1);
-    expect(screen.getByText("Episode 1.1")).toBeTruthy();
-    await waitFor(() => expect(screen.queryByText("Episode 2.2")).toBeNull());
-
-    // Clicking the open season closes it: no season open is fine too.
-    await openSeason(user, 1);
-    await waitFor(() => expect(screen.queryByText("Episode 1.1")).toBeNull());
+    expect(openRow(1, 1)).toBeTruthy();
+    expect(screen.queryByText("Episode 2.1")).toBeNull();
   });
 
-  it("opens no season for a show not started or watched up to date", () => {
-    renderSection([season(1), season(2)]);
-    expect(seasonCard(1).getAttribute("aria-expanded")).toBe("false");
-    expect(seasonCard(2).getAttribute("aria-expanded")).toBe("false");
-    expect(screen.getByText(m.media_episodes_not_started())).toBeTruthy();
+  it("opens the first tab of a show not followed", () => {
+    renderSection([season(1), season(2)], null);
+    expect(seasonTab(1).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("opens the last tab once watched up to date", () => {
+    renderSection([season(1, [1, 2, 3]), season(2, [1, 2, 3])]);
+    expect(seasonTab(2).getAttribute("aria-selected")).toBe("true");
   });
 
   it("shows each episode's synopsis, runtime and scores when known", async () => {
@@ -234,16 +286,21 @@ describe("EpisodesSection", () => {
   it("shows when an episode airs instead of letting it be marked", async () => {
     const upcoming = season(1, [1], 2);
     upcoming.episodes[1].airDate = inDays(5);
+    const countdown = upcomingLabel(inDays(5), new Date(), false)!;
     const { user } = renderSection([upcoming]);
     // Up to date with what has aired, so no season opens on its own.
     await openSeason(user);
 
+    expect(screen.getAllByText(countdown).length).toBeGreaterThan(0);
     expect(
-      screen.getAllByText(m.media_airing_in_days({ days: 5 })).length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.queryByRole("button", { name: m.media_mark_watched_short() }),
+      screen.queryByRole("button", {
+        name: m.media_mark_watched_code({ code: "S01E02" }),
+      }),
     ).toBeNull();
+    // What's announced takes the bar's place, with nothing to mark.
+    expect(
+      screen.getByText(m.media_next_announced({ code: "S01E02" })),
+    ).toBeTruthy();
   });
 
   it("opens an episode's panel with its details and full history", async () => {
@@ -269,7 +326,7 @@ describe("EpisodesSection", () => {
   it("walks previous/next across seasons, with nothing past either end", async () => {
     const { user } = renderSection([season(1, [1, 2, 3], 2), season(2, [], 2)]);
     await openSeason(user, 1);
-    await user.click(screen.getByRole("button", { name: "Episode 1.1" }));
+    await user.click(openRow(1, 1));
 
     expect(
       within(panel()).queryByRole("button", {
@@ -288,7 +345,7 @@ describe("EpisodesSection", () => {
     expect(
       within(panel()).getByRole("heading", { name: /Episode 2\.1/ }),
     ).toBeTruthy();
-    expect(seasonCard(2).getAttribute("aria-expanded")).toBe("true");
+    expect(seasonTab(2).getAttribute("aria-selected")).toBe("true");
 
     await user.click(
       within(panel()).getByRole("button", { name: m.media_episode_next() }),
@@ -300,7 +357,7 @@ describe("EpisodesSection", () => {
 
   it("rewatches or undoes an episode from its panel", async () => {
     const { user } = renderSection([season(1, [1])]);
-    await user.click(screen.getByRole("button", { name: "Episode 1.1" }));
+    await user.click(openRow(1, 1));
 
     await user.click(
       within(panel()).getByRole("button", { name: m.media_rewatch() }),
@@ -319,7 +376,7 @@ describe("EpisodesSection", () => {
 
   it("moves on to the next episode once one is marked from its panel", async () => {
     const { user } = renderSection([season(1, [1])]);
-    await user.click(screen.getByRole("button", { name: "Episode 1.2" }));
+    await user.click(openRow(1, 2));
 
     await user.click(
       within(panel()).getByRole("button", {
@@ -347,7 +404,7 @@ describe("EpisodesSection", () => {
 
     try {
       const { user } = renderSection([season(1, [1])]);
-      await user.click(screen.getByRole("button", { name: "Episode 1.2" }));
+      await user.click(openRow(1, 2));
 
       await user.keyboard("{ArrowRight}");
       expect(
@@ -461,7 +518,7 @@ describe("EpisodesSection", () => {
       streamingSite: "Crunchyroll",
     });
     const { user } = renderSection([s], ENTRY, "ANIME");
-    await user.click(screen.getByRole("button", { name: "Episode 1.2" }));
+    await user.click(openRow(1, 2));
 
     const link = within(panel()).getByRole("link", {
       name: m.media_watch_on({ site: "Crunchyroll" }),
@@ -482,4 +539,376 @@ describe("EpisodesSection", () => {
       screen.queryByRole("button", { name: m.media_mark_watched_short() }),
     ).toBeNull();
   });
+
+  it("closes an episode's sheet when its discussion opens in Messages", async () => {
+    Object.assign(appConfig, { socialEnabled: true, chatEnabled: true });
+    server.use(
+      http.get(apiUrl("/comments/:type/:id/count"), () =>
+        HttpResponse.json({ count: 0 }),
+      ),
+    );
+    const showWork = vi.spyOn(chat, "showWork").mockImplementation(() => {});
+
+    try {
+      const { user } = renderSection([season(1, [1])]);
+      await user.click(openRow(1, 1));
+
+      await user.click(
+        within(panel()).getByRole("button", {
+          name: m.media_comments_title({ target: "S01E01 · Episode 1.1" }),
+        }),
+      );
+
+      expect(showWork).toHaveBeenCalled();
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    } finally {
+      Object.assign(appConfig, { socialEnabled: false, chatEnabled: false });
+      showWork.mockRestore();
+    }
+  });
+
+  describe("tabs", () => {
+    it("walks the pages with the buttons at their foot", async () => {
+      const { user } = renderSection([season(1), season(2)]);
+
+      await user.click(
+        screen.getByRole("button", { name: /Saison 2|Season 2|Stagione 2/ }),
+      );
+      expect(seasonTab(2).getAttribute("aria-selected")).toBe("true");
+
+      await user.click(
+        screen.getByRole("button", { name: /Saison 1|Season 1|Stagione 1/ }),
+      );
+      expect(seasonTab(1).getAttribute("aria-selected")).toBe("true");
+    });
+
+    it("cuts a very long season, rendering one slice, its card once", async () => {
+      const { user } = renderSection([season(1, [], 250)]);
+
+      expect(screen.getByRole("tab", { name: /^1–100 / })).toBeTruthy();
+      expect(screen.getByRole("tab", { name: /^201–250 / })).toBeTruthy();
+      expect(screen.getByText("Episode 1.100")).toBeTruthy();
+      expect(screen.queryByText("Episode 1.101")).toBeNull();
+      expect(
+        screen.getByText(m.media_episodes_range({ from: "1", to: "100" })),
+      ).toBeTruthy();
+
+      await user.click(screen.getByRole("tab", { name: /^101–200 / }));
+
+      expect(screen.getByText("Episode 1.101")).toBeTruthy();
+      expect(
+        screen.getAllByRole("button", {
+          name: m.media_mark_aired_watched(),
+        }),
+      ).toHaveLength(1);
+    });
+
+    it("jumps to an episode by number, sharing where it is", async () => {
+      const { user } = renderSection([season(1, [], 250)]);
+
+      await user.click(
+        screen.getByRole("button", { name: m.media_goto_open() }),
+      );
+      const field = screen.getByLabelText(m.media_goto_label({ max: "250" }));
+      await user.type(field, "999");
+      expect(screen.getByText(m.media_goto_not_found())).toBeTruthy();
+
+      await user.clear(field);
+      await user.type(field, "212{Enter}");
+
+      expect(await screen.findByText("Episode 1.212")).toBeTruthy();
+      expect(
+        screen
+          .getByRole("tab", { name: /^201–250 / })
+          .getAttribute("aria-selected"),
+      ).toBe("true");
+    });
+
+    it("offers nothing to jump with when seasons stay whole", () => {
+      renderSection([season(1), season(2)]);
+      expect(
+        screen.queryByRole("button", { name: m.media_goto_open() }),
+      ).toBeNull();
+    });
+  });
+
+  describe("up next bar", () => {
+    const barMark = (code: string) =>
+      screen
+        .getAllByRole("button", { name: m.media_mark_watched_code({ code }) })
+        .find((b) => b.textContent?.trim() === m.media_episode_watched())!;
+
+    it("marks the next episode with no question, then moves on", async () => {
+      const { props, user } = renderSection([season(1, [1])]);
+      props.reload.mockImplementation(async () => {
+        props.seasons = [season(1, [1, 2])];
+      });
+
+      await user.click(barMark("S01E02"));
+
+      await waitFor(() =>
+        expect(requests).toEqual(["POST /library/episodes/s1e2/watches"]),
+      );
+      expect(screen.queryByText(m.media_catch_up_title())).toBeNull();
+      expect(
+        await screen.findByText(m.media_up_next({ code: "S01E03" })),
+      ).toBeTruthy();
+      expect(toast.items).toHaveLength(0);
+    });
+
+    it("brings the row into view rather than opening its details", async () => {
+      const { user } = renderSection([season(1, [1, 2, 3]), season(2)]);
+      await openSeason(user, 1);
+
+      await user.click(
+        screen.getByRole("button", {
+          name: m.media_go_to_code({ code: "S02E01" }),
+        }),
+      );
+
+      expect(seasonTab(2).getAttribute("aria-selected")).toBe("true");
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("isn't there on a work not followed", () => {
+      renderSection([season(1)], null);
+      expect(
+        screen.queryByText(m.media_up_next({ code: "S01E01" })),
+      ).toBeNull();
+    });
+  });
+
+  describe("watched menu", () => {
+    const openMenu = (user: ReturnType<typeof userEvent.setup>, code: string) =>
+      user.click(
+        screen.getByRole("button", {
+          name: `${m.media_episode_watched()} ${code}`,
+        }),
+      );
+
+    it("offers rewatch and undo, silently", async () => {
+      const { user } = renderSection([season(1, [1])]);
+      await openMenu(user, "S01E01");
+
+      expect(screen.getAllByRole("menuitem")).toHaveLength(2);
+      await user.click(
+        screen.getByRole("menuitem", { name: m.media_rewatch() }),
+      );
+
+      await waitFor(() =>
+        expect(requests).toEqual(["POST /library/episodes/s1e1/watches"]),
+      );
+      expect(toast.items).toHaveLength(0);
+    });
+
+    it("from two viewings, undoes them all with a way back", async () => {
+      const s = season(1, [1]);
+      s.episodes[0] = episode(1, 1, 3);
+      const { user } = renderSection([s]);
+      await openMenu(user, "S01E01");
+
+      await user.click(
+        screen.getByRole("menuitem", {
+          name: m.media_undo_all_watches({ count: 3 }),
+        }),
+      );
+
+      await waitFor(() =>
+        expect(toast.items[0]?.message).toBe(
+          m.media_watches_undone({ count: 3, code: "S01E01" }),
+        ),
+      );
+      expect(batches).toEqual([{ action: "unwatch", episodeIds: ["s1e1"] }]);
+
+      toast.selectAction(toast.items[0].id);
+      await waitFor(() =>
+        expect(undos).toEqual([
+          {
+            restore: [
+              { episodeId: "s1e1", watchedAt: "2024-03-03T00:00:00.000Z" },
+            ],
+          },
+        ]),
+      );
+    });
+  });
+
+  describe("selection", () => {
+    it("can't be entered by holding a mouse button", async () => {
+      renderSection([season(1, [1])]);
+      const row = document.getElementById("episode-s1e2")!;
+
+      fireEvent.pointerDown(row, { button: 0, pointerType: "mouse" });
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
+      expect(screen.queryByRole("checkbox")).toBeNull();
+    });
+
+    const box = (code: string) =>
+      screen.getByRole("checkbox", {
+        name: m.media_select_episode({ code }),
+      });
+
+    async function desktop(run: () => Promise<void>) {
+      layout.compact = false;
+
+      try {
+        await run();
+      } finally {
+        layout.compact = true;
+      }
+    }
+
+    it("enters on a long press, ticking that episode only", async () => {
+      renderSection([season(1, [1])]);
+      const row = document.getElementById("episode-s1e2")!;
+
+      fireEvent.pointerDown(row, { pointerType: "touch" });
+      expect(
+        await screen.findByRole(
+          "checkbox",
+          {
+            name: m.media_select_episode({ code: "S01E02" }),
+          },
+          { timeout: 1000 },
+        ),
+      ).toBeTruthy();
+      fireEvent.pointerUp(document);
+
+      expect(box("S01E02").getAttribute("aria-checked")).toBe("true");
+      expect(box("S01E01").getAttribute("aria-checked")).toBe("false");
+      expect(screen.getByText(m.media_selection_count_one())).toBeTruthy();
+    });
+
+    it("ticks by row without opening it, across tabs, and leaves unaired ones out", async () => {
+      await desktop(async () => {
+        const s = season(1, [], 3);
+        s.episodes[2].airDate = inDays(4);
+        const { user } = renderSection([s, season(2)]);
+
+        await user.click(box("S01E01"));
+        await user.click(openableRowText("Episode 1.2"));
+        expect(screen.queryByRole("dialog")).toBeNull();
+        expect(
+          screen.queryByRole("checkbox", {
+            name: m.media_select_episode({ code: "S01E03" }),
+          }),
+        ).toBeNull();
+
+        await openSeason(user, 2);
+        await user.click(box("S02E01"));
+
+        expect(
+          screen.getByText(m.media_selection_count({ count: 3 })),
+        ).toBeTruthy();
+        expect(
+          screen.getByText(m.media_selection_seasons({ count: 2 })),
+        ).toBeTruthy();
+      });
+    });
+
+    it("shift-clicking ticks the whole range", async () => {
+      await desktop(async () => {
+        const { user } = renderSection([season(1, [], 5)]);
+
+        await user.click(box("S01E01"));
+        await user.keyboard("{Shift>}");
+        await user.click(box("S01E04"));
+        await user.keyboard("{/Shift}");
+
+        expect(
+          screen.getByText(m.media_selection_count({ count: 4 })),
+        ).toBeTruthy();
+        expect(screen.getByText("S01E01 → S01E04")).toBeTruthy();
+      });
+    });
+
+    it("offers only what makes sense, counting what's really touched", async () => {
+      await desktop(async () => {
+        const { user } = renderSection([season(1, [1], 3)]);
+
+        await user.click(box("S01E02"));
+        expect(
+          screen.getByRole("button", {
+            name: m.media_bulk_watch({ count: 1 }),
+          }),
+        ).toBeTruthy();
+        expect(
+          screen.queryByRole("button", {
+            name: m.media_bulk_rewatch({ count: 1 }),
+          }),
+        ).toBeNull();
+
+        await user.click(box("S01E01"));
+        expect(
+          screen.getByRole("button", {
+            name: m.media_bulk_rewatch({ count: 1 }),
+          }),
+        ).toBeTruthy();
+        expect(
+          screen.getByRole("button", {
+            name: m.media_bulk_unwatch({ count: 1 }),
+          }),
+        ).toBeTruthy();
+      });
+    });
+
+    it("acts once, leaves the mode and offers a way back", async () => {
+      await desktop(async () => {
+        const { props, user } = renderSection([season(1, [], 3)]);
+
+        await user.click(box("S01E01"));
+        await user.click(box("S01E02"));
+        await user.click(
+          screen.getByRole("button", {
+            name: m.media_bulk_watch({ count: 2 }),
+          }),
+        );
+
+        await waitFor(() =>
+          expect(toast.items[0]?.message).toBe(
+            m.media_bulk_watched({ count: 2 }),
+          ),
+        );
+        expect(batches).toEqual([
+          { action: "watch", episodeIds: ["s1e1", "s1e2"] },
+        ]);
+        expect(props.reload).toHaveBeenCalled();
+        expect(
+          screen.queryByText(m.media_selection_count({ count: 2 })),
+        ).toBeNull();
+        expect(screen.queryByText(m.media_catch_up_title())).toBeNull();
+
+        toast.selectAction(toast.items[0].id);
+        await waitFor(() =>
+          expect(undos).toEqual([{ deleteWatchIds: ["new0", "new1"] }]),
+        );
+        expect(
+          (await screen
+            .findByText(m.media_action_undone())
+            .catch(() => null)) ?? toast.items.at(-1)?.message,
+        ).toBeTruthy();
+      });
+    });
+
+    it("leaves with its cross, keeping nothing", async () => {
+      await desktop(async () => {
+        const { user } = renderSection([season(1, [], 3)]);
+
+        await user.click(box("S01E01"));
+        await user.click(
+          screen.getByRole("button", { name: m.media_selection_exit() }),
+        );
+
+        expect(box("S01E01").getAttribute("aria-checked")).toBe("false");
+        expect(
+          screen.getByText(m.media_up_next({ code: "S01E01" })),
+        ).toBeTruthy();
+      });
+    });
+  });
 });
+
+function openableRowText(title: string): HTMLElement {
+  return screen.getByText(title);
+}

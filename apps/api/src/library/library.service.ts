@@ -1,34 +1,38 @@
 import {
+  ActivityType,
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
   type CalendarEntryDto,
   type CatalogSource,
-  type EntryEpisodesResponseDto,
-  type EpisodeWatchDto,
-  type LibraryDomainCountsDto,
-  type LibraryEntryDto,
-  type MediaDetailDto,
-  type MediaItemDto,
-  type MediaSortKey,
-  type MovieReplayDto,
-  type PagedResult,
-  type PileSummaryDto,
-  type ProgressDto,
-  type TrackedMediaDto,
-  ActivityType,
   Domain,
+  type EntryEpisodesResponseDto,
   EntryStatus,
+  EPISODE_WATCH_BATCH_MAX,
+  EPISODE_WATCH_UNDO_MAX,
   episodesTimeLeft,
+  type EpisodeWatchBatchAction,
+  type EpisodeWatchBatchResultDto,
+  type EpisodeWatchDto,
+  type EpisodeWatchRestoreDto,
   ErrorCode,
   isAnimeUnaired,
   isDormant,
   isGhost,
   isRuntimeKnown,
+  type LibraryDomainCountsDto,
+  type LibraryEntryDto,
   MEDIA_SORT_KEYS,
   MEDIA_SYNTHETIC_STATUS,
+  type MediaDetailDto,
+  type MediaItemDto,
+  type MediaSortKey,
   MediaType,
   movieReleaseDates,
   movieReleaseInfo,
+  type MovieReplayDto,
+  type PagedResult,
+  type PileSummaryDto,
+  type ProgressDto,
   progressPercent,
   RealtimeEvent,
   ReviewTargetType,
@@ -36,6 +40,7 @@ import {
   sagaCompletionXp,
   seasonCompletedXp,
   seriesCompletedXp,
+  type TrackedMediaDto,
   XpReason,
 } from "@loomkeep/shared";
 import { revokeEntryXp } from "../common/entry-lifecycle.util";
@@ -1584,6 +1589,227 @@ export class LibraryService {
     );
   }
 
+  /**
+   * One action over episodes picked by hand, possibly across seasons: `watch`
+   * skips what's already watched or not aired, `rewatch` what isn't watched,
+   * `unwatch` removes every viewing. Effects are those of a whole-season mark
+   * (one milestone per finished season, no per-episode activity), and the
+   * result is what `undoEpisodeWatches` needs to put things back.
+   */
+  async batchEpisodeWatches(
+    userId: string,
+    action: EpisodeWatchBatchAction,
+    episodeIds: string[],
+  ): Promise<EpisodeWatchBatchResultDto> {
+    const ids = [...new Set(episodeIds)];
+
+    if (ids.length > EPISODE_WATCH_BATCH_MAX) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryWatchBatchTooLarge,
+      );
+    }
+
+    const episodes = await this.ownedEpisodes(userId, ids);
+    const watches = await this.prisma.episodeWatch.findMany({
+      where: { userId, episodeId: { in: ids } },
+      select: { id: true, episodeId: true, watchedAt: true },
+    });
+    const watchedIds = new Set(watches.map((watch) => watch.episodeId));
+
+    if (action === "unwatch") {
+      await this.prisma.episodeWatch.deleteMany({
+        where: { id: { in: watches.map((watch) => watch.id) } },
+      });
+      await this.xp.revokeBySource(
+        "EpisodeWatch",
+        watches.map((watch) => watch.id),
+      );
+      await this.syncAfterWatchChange(userId, episodes);
+      return {
+        created: [],
+        removed: watches.map((watch) => ({
+          episodeId: watch.episodeId,
+          watchedAt: watch.watchedAt?.toISOString() ?? null,
+        })),
+      };
+    }
+
+    const now = new Date();
+    const targets = episodes.filter((episode) =>
+      action === "rewatch"
+        ? watchedIds.has(episode.id)
+        : !watchedIds.has(episode.id) &&
+          (!episode.airDate || episode.airDate <= now),
+    );
+    const previouslyWatchedIds =
+      action === "watch"
+        ? await this.watchedEpisodeIds(userId, {
+            episode: {
+              seasonId: { in: targets.map((episode) => episode.seasonId) },
+            },
+          })
+        : new Set<string>();
+
+    const created = await this.prisma.episodeWatch.createManyAndReturn({
+      data: targets.map((episode) => ({ userId, episodeId: episode.id })),
+      select: { id: true, episodeId: true },
+    });
+    await this.xp.awardMany(
+      userId,
+      XpReason.EPISODE_WATCHED,
+      created.map((watch) => watch.id),
+    );
+
+    if (created.length > 0) {
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.EPISODE_WATCHED],
+      );
+    }
+
+    await this.syncAfterWatchChange(userId, targets);
+
+    if (action === "watch") {
+      for (const mediaItemId of new Set(
+        targets.map((episode) => episode.season.mediaItemId),
+      )) {
+        await this.emitSeasonFinishedMilestones(
+          userId,
+          mediaItemId,
+          targets
+            .filter((episode) => episode.season.mediaItemId === mediaItemId)
+            .map((episode) => episode.id),
+          previouslyWatchedIds,
+        );
+      }
+    }
+
+    return { created, removed: [] };
+  }
+
+  /**
+   * Takes a bulk action back: viewings it created go, viewings it removed come
+   * back with their original dates. Nothing is announced, as the viewer is
+   * only returning to where they stood.
+   */
+  async undoEpisodeWatches(
+    userId: string,
+    {
+      deleteWatchIds = [],
+      restore = [],
+    }: {
+      deleteWatchIds?: string[];
+      restore?: EpisodeWatchRestoreDto[];
+    },
+  ): Promise<void> {
+    if (deleteWatchIds.length + restore.length > EPISODE_WATCH_UNDO_MAX) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryWatchBatchTooLarge,
+      );
+    }
+
+    const toDelete = await this.prisma.episodeWatch.findMany({
+      where: { id: { in: deleteWatchIds } },
+      select: { id: true, userId: true, episodeId: true },
+    });
+
+    if (toDelete.some((watch) => watch.userId !== userId)) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.LibraryEntryForbidden,
+      );
+    }
+
+    const episodes = await this.ownedEpisodes(userId, [
+      ...new Set([
+        ...toDelete.map((watch) => watch.episodeId),
+        ...restore.map((row) => row.episodeId),
+      ]),
+    ]);
+
+    const [, created] = await this.prisma.$transaction([
+      this.prisma.episodeWatch.deleteMany({
+        where: { id: { in: toDelete.map((watch) => watch.id) } },
+      }),
+      this.prisma.episodeWatch.createManyAndReturn({
+        data: restore.map((row) => ({
+          userId,
+          episodeId: row.episodeId,
+          // Null stays null: a missing value would take the column's now().
+          watchedAt: row.watchedAt ? new Date(row.watchedAt) : null,
+        })),
+        select: { id: true },
+      }),
+    ]);
+
+    await this.xp.revokeBySource(
+      "EpisodeWatch",
+      toDelete.map((watch) => watch.id),
+    );
+    await this.xp.awardMany(
+      userId,
+      XpReason.EPISODE_WATCHED,
+      created.map((watch) => watch.id),
+    );
+    await this.syncAfterWatchChange(userId, episodes);
+  }
+
+  /** The episodes, once the caller is known to track every work they're from. */
+  private async ownedEpisodes(userId: string, episodeIds: string[]) {
+    const episodes = await this.prisma.episode.findMany({
+      where: { id: { in: episodeIds } },
+      select: {
+        id: true,
+        airDate: true,
+        seasonId: true,
+        season: {
+          select: { mediaItemId: true, mediaItem: { select: { type: true } } },
+        },
+      },
+    });
+
+    if (episodes.length !== episodeIds.length) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryEpisodeNotFound,
+      );
+    }
+
+    for (const mediaItemId of new Set(
+      episodes.map((episode) => episode.season.mediaItemId),
+    )) {
+      await this.assertMediaOwnership(userId, mediaItemId);
+    }
+
+    return episodes;
+  }
+
+  /** Never inside the write's transaction: XP is awarded and revoked here. */
+  private async syncAfterWatchChange(
+    userId: string,
+    episodes: {
+      seasonId: string;
+      season: { mediaItemId: string; mediaItem: { type: MediaType } };
+    }[],
+  ): Promise<void> {
+    await this.syncSeasonAndSeriesXp(
+      userId,
+      episodes.map((episode) => episode.seasonId),
+    );
+    const types = new Map(
+      episodes.map((episode) => [
+        episode.season.mediaItemId,
+        episode.season.mediaItem.type,
+      ]),
+    );
+
+    for (const [mediaItemId, type] of types) {
+      await this.syncFinishedAt(userId, mediaItemId, type);
+    }
+  }
+
   private assertEntryOwnership(userId: string, entryId: string) {
     return assertEntryOwnership(userId, () =>
       this.prisma.libraryEntry.findUnique({ where: { id: entryId } }),
@@ -2162,6 +2388,7 @@ export class LibraryService {
         episodes: season.episodes.map((episode) => ({
           ...episode,
           ...NO_COMMUNITY_RATING,
+          commentCount: 0,
           watchCount: 0,
           watches: [],
         })),
@@ -2213,7 +2440,7 @@ export class LibraryService {
         },
       },
     });
-    const [seasonRatings, episodeRatings] = await Promise.all([
+    const [seasonRatings, episodeRatings, episodeComments] = await Promise.all([
       this.reviews.communityRatings(
         userId,
         ReviewTargetType.SEASON,
@@ -2224,7 +2451,21 @@ export class LibraryService {
         ReviewTargetType.EPISODE,
         seasons.flatMap((s) => s.episodes.map((e) => e.id)),
       ),
+      this.prisma.comment.groupBy({
+        by: ["targetId"],
+        where: {
+          targetType: "EPISODE",
+          targetId: {
+            in: seasons.flatMap((s) => s.episodes.map((e) => e.id)),
+          },
+          deletedAt: null,
+        },
+        _count: { _all: true },
+      }),
     ]);
+    const commentCounts = new Map(
+      episodeComments.map((row) => [row.targetId, row._count._all]),
+    );
 
     const entryRow = await this.prisma.libraryEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
@@ -2290,6 +2531,7 @@ export class LibraryService {
           streamingUrl: episode.streamingUrl,
           streamingSite: episode.streamingSite,
           ...(episodeRatings.get(episode.id) ?? NO_COMMUNITY_RATING),
+          commentCount: commentCounts.get(episode.id) ?? 0,
           watchCount: episode.watches.length,
           watches: episode.watches.map((w) => ({
             id: w.id,

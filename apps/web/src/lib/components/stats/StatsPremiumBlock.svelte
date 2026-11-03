@@ -1,7 +1,7 @@
 <script lang="ts">
-  // What a free account sees of the premium statistics: one block, closing the
-  // page. The API sends these fields empty for such an account, so the charts
-  // show made-up figures, as an example.
+  // What a free account sees of the premium statistics, closing the page: a
+  // sentence, then blurred blocks under a lock. The API sends these fields empty
+  // for such an account, so the shapes behind the blur are made up.
   import Icon from "#lib/components/Icon.svelte";
   import HistogramBars from "#lib/components/stats/HistogramBars.svelte";
   import RankBars from "#lib/components/stats/RankBars.svelte";
@@ -22,28 +22,36 @@
     { label: m.ownership_borrowed(), value: 6 },
     { label: m.ownership_streaming(), value: 11 },
   ];
+  const ACTIVITY = [4, 7, 3, 9, 12, 6, 8, 14, 10, 5, 11, 7].map((value, i) => ({
+    label: String(i + 1),
+    value,
+  }));
 </script>
 
-<section class="card mt-10 p-5">
-  <p class="flex items-center gap-2 font-semibold">
+{#snippet locked(title: string, preview: import("svelte").Snippet)}
+  <div class="card relative overflow-hidden p-4">
+    <div class="blur-sm select-none" inert aria-hidden="true">
+      <p class="timecode mb-3 text-xs">{title}</p>
+      {@render preview()}
+    </div>
     <span
-      class="bg-accent text-accent-fg grid h-7 w-7 shrink-0 place-items-center rounded-full">
-      <Icon name="lock" class="h-3.5 w-3.5" />
+      class="bg-accent text-accent-fg absolute top-1/2 left-1/2 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full">
+      <Icon name="lock" class="h-4 w-4" />
     </span>
-    {m.stats_premium_block()}
-  </p>
-  <div class="mt-5 grid gap-6 md:grid-cols-3" inert>
-    <div>
-      <h3 class="timecode mb-3 text-xs">{m.stats_rating_distribution()}</h3>
-      <HistogramBars bars={RATINGS} />
-    </div>
-    <div>
-      <h3 class="timecode mb-3 text-xs">{m.stats_decade()}</h3>
-      <HistogramBars bars={DECADES} />
-    </div>
-    <div>
-      <h3 class="timecode mb-3 text-xs">{m.stats_possession()}</h3>
-      <RankBars items={POSSESSION} />
-    </div>
+  </div>
+{/snippet}
+
+{#snippet ratings()}<HistogramBars bars={RATINGS} />{/snippet}
+{#snippet decades()}<HistogramBars bars={DECADES} />{/snippet}
+{#snippet possession()}<RankBars items={POSSESSION} />{/snippet}
+{#snippet activity()}<HistogramBars bars={ACTIVITY} />{/snippet}
+
+<section class="mt-10">
+  <p class="font-semibold">{m.stats_premium_block()}</p>
+  <div class="mt-4 grid gap-4 md:grid-cols-2">
+    {@render locked(m.stats_rating_distribution(), ratings)}
+    {@render locked(m.stats_decade(), decades)}
+    {@render locked(m.stats_possession(), possession)}
+    {@render locked(m.stats_temporal_section(), activity)}
   </div>
 </section>

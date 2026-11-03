@@ -264,6 +264,10 @@ body {
       -webkit-touch-callout: none;
       user-select: none;
     }
+    [data-longpress] :is(a, img) {
+      -webkit-touch-callout: none;
+      -webkit-user-drag: none;
+    }
   }
   /* What a poster list opens with, row by row: only the first screen, once. */
   .poster-grid-enter > :nth-child(-n + 9) {
