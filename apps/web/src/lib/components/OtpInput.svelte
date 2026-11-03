@@ -41,10 +41,11 @@
     emit();
   }
 
-  function onInput(index: number, event: InputEvent) {
+  function onInput(index: number, event: Event) {
     const box = event.currentTarget as HTMLInputElement;
+    const { inputType, data } = event as InputEvent;
     const typed = (
-      event.inputType === "insertText" && event.data ? event.data : box.value
+      inputType === "insertText" && data ? data : box.value
     ).replace(/\D/g, "");
     if (typed.length > 1) {
       box.value = digits[index];
@@ -54,7 +55,7 @@
     digits[index] = typed;
     box.value = typed;
     if (typed) focusBox(index + 1);
-    else if (event.inputType === "deleteContentBackward") focusBox(index - 1);
+    else if (inputType === "deleteContentBackward") focusBox(index - 1);
     emit();
   }
 
