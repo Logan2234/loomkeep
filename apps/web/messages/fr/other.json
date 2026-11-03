@@ -154,7 +154,6 @@
   "app_offline_status": "00:00:00 · Hors ligne",
   "auth_back_to_login": "Retour à la connexion",
   "auth_forgot_password_title": "Réinitialiser le mot de passe",
-  "auth_forgot_password_tagline": "Mot de passe oublié.",
   "auth_forgot_password_body": "Indique l'email de ton compte. Si un compte existe, un lien de réinitialisation (valable 1h) va t'être envoyé par email.",
   "auth_forgot_password_sent": "Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé.",
   "auth_forgot_password_action": "Envoyer le lien",

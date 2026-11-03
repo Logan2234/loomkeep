@@ -4,7 +4,10 @@
   import { goto } from "$app/navigation";
   import { auth } from "#lib/auth.svelte.js";
   import { bootstrap } from "#lib/bootstrap.svelte.js";
+  import AuthShell from "#lib/components/AuthShell.svelte";
   import BootSplash from "#lib/components/BootSplash.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+  import { page } from "$app/state";
   import { untrack } from "svelte";
 
   let { children }: LayoutProps = $props();
@@ -30,7 +33,13 @@
 </script>
 
 {#if allowed}
-  {@render children()}
+  <AuthShell
+    page={page.url.pathname}
+    tagline={page.url.pathname.startsWith("/register")
+      ? m.auth_register_tagline()
+      : m.auth_login_tagline()}>
+    {@render children()}
+  </AuthShell>
 {:else}
   <BootSplash />
 {/if}

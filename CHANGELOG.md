@@ -21,8 +21,10 @@ history from before it was started.
   "Add to my calendar" moves to the header's "…" menu.
 - Sign-in and sign-up drop the card: full-width 52 dp fields, the submit at
   the bottom on a phone, the security key as an outlined button, one line of
-  legal links without the version; a wide screen splits into a drifting
-  poster wall and the form.
+  legal links without the version, the brand mark beside the name; a wide
+  screen splits into a drifting poster wall and the form. The password pages
+  follow, and moving between auth pages keeps the wall going and slides the
+  form in.
 - Web: the Content-Security-Policy's `img-src` now lists the catalogs' image
   hosts and the instance's API origin instead of every `https:` origin.
 - `glob` raised to 14.0.2 in the images (CVE-2026-118773, CVE-2026-118764).

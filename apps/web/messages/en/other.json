@@ -154,7 +154,6 @@
   "app_offline_status": "00:00:00 · Offline",
   "auth_back_to_login": "Back to log in",
   "auth_forgot_password_title": "Reset your password",
-  "auth_forgot_password_tagline": "Forgot your password.",
   "auth_forgot_password_body": "Enter your account's email. If an account exists, a reset link (valid for 1h) will be sent to it.",
   "auth_forgot_password_sent": "If an account exists with that email, a reset link has just been sent.",
   "auth_forgot_password_action": "Send the link",

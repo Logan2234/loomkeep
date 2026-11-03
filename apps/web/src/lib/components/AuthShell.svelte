@@ -1,10 +1,26 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { fade, fly } from "svelte/transition";
+  import BrandMark from "./BrandMark.svelte";
   import LegalLinks from "./LegalLinks.svelte";
 
-  let { tagline, children }: { tagline?: Snippet; children: Snippet } =
-    $props();
+  // Mounted once by the (auth) layout: moving between sign-in, sign-up and
+  // password pages keeps the wall drifting where it was, only the tagline and
+  // the form change.
+  let {
+    tagline,
+    page,
+    children,
+  }: {
+    tagline: string;
+    /** What changes from one auth page to the next. */
+    page: string;
+    children: Snippet;
+  } = $props();
+
+  const reduced = prefersReducedMotion();
 
   // Decorative: the outline of a shelf of posters, in warm projector hues.
   // Each row holds its tiles twice, so sliding it by half loops seamlessly.
@@ -24,7 +40,7 @@
   ];
   const ROWS = [0, 1, 2].map((row) => {
     const own = Array.from(
-      { length: 8 },
+      { length: 12 },
       (_, i) => HUES[(row * 5 + i * 2) % HUES.length],
     );
     return [...own, ...own];
@@ -34,9 +50,26 @@
 </script>
 
 {#snippet wordmark(cls: string)}
-  <p class="font-display font-extrabold tracking-tight {cls}">
-    {m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span>
+  <p
+    class="font-display flex items-center gap-2.5 font-extrabold tracking-tight {cls}">
+    <BrandMark class="h-[1.3em] w-[1.3em] shrink-0" />
+    <span
+      >{m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span
+      ></span>
   </p>
+{/snippet}
+
+{#snippet headline(cls: string)}
+  <div class="grid {cls}">
+    {#key tagline}
+      <p
+        class="font-display col-start-1 row-start-1 leading-[1.05] font-extrabold tracking-tight text-balance"
+        in:fade={{ duration: reduced ? 0 : 220, delay: reduced ? 0 : 80 }}
+        out:fade={{ duration: reduced ? 0 : 120 }}>
+        {tagline}
+      </p>
+    {/key}
+  </div>
 {/snippet}
 
 <div class="flex min-h-svh">
@@ -57,43 +90,47 @@
       {/each}
     </div>
     <div class="auth-scrim" aria-hidden="true"></div>
-    {#if tagline}
-      <p
-        class="font-display relative z-10 max-w-xl text-5xl leading-[1.05] font-extrabold tracking-tight text-balance">
-        {@render tagline()}
-      </p>
-    {/if}
+    {@render headline("relative z-10 max-w-xl text-5xl")}
   </aside>
 
   <div
     class="flex min-h-svh w-full flex-col px-5 pt-12 pb-2 lg:w-[32.5rem] lg:shrink-0 lg:justify-center lg:px-16 lg:py-14">
     <div class="mb-7 lg:hidden">
-      {@render wordmark("text-accent text-lg")}
-      {#if tagline}
-        <p
-          class="font-display mt-3 text-3xl leading-tight font-extrabold tracking-tight text-balance">
-          {@render tagline()}
-        </p>
-      {/if}
+      {@render wordmark("text-lg")}
+      {@render headline("mt-3 text-3xl")}
     </div>
     <!-- Thumb-sized fields on a phone, as the rest of the app's forms. -->
     <div
-      class="flex flex-1 flex-col lg:flex-none [&_.input]:h-13 [&_.input]:text-base lg:[&_.input]:h-12 lg:[&_.input]:text-sm">
-      {@render children()}
+      class="grid flex-1 lg:flex-none [&_.input]:h-13 [&_.input]:text-base lg:[&_.input]:h-12 lg:[&_.input]:text-sm">
+      {#key page}
+        <div
+          class="col-start-1 row-start-1 flex min-w-0 flex-col"
+          in:fly={{
+            x: reduced ? 0 : 16,
+            duration: reduced ? 0 : 220,
+            delay: reduced ? 0 : 80,
+          }}
+          out:fade={{ duration: reduced ? 0 : 100 }}>
+          {@render children()}
+        </div>
+      {/key}
     </div>
     <LegalLinks version={false} class="items-center pt-6 text-center" />
   </div>
 </div>
 
 <style>
+  /* Over the whole half, dimmed: the tagline reads on the posters rather than
+     on an edge where they stop. */
   .auth-wall {
     position: absolute;
-    inset: 7.5rem -5rem 9rem;
+    inset: -4rem -6rem;
+    justify-content: center;
     display: flex;
     flex-direction: column;
     gap: 0.875rem;
     transform: rotate(-4deg);
-    opacity: 0.85;
+    opacity: 0.55;
   }
 
   .auth-row {
@@ -126,8 +163,9 @@
 
   .auth-scrim {
     position: absolute;
-    inset: auto 0 0;
-    height: 18rem;
-    background: linear-gradient(transparent, var(--surface) 70%);
+    inset: 0;
+    background:
+      linear-gradient(to top, var(--surface) 12%, transparent 55%),
+      linear-gradient(to bottom, var(--surface), transparent 22%);
   }
 </style>

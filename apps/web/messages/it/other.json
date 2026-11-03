@@ -154,7 +154,6 @@
   "app_offline_status": "00:00:00 · Offline",
   "auth_back_to_login": "Torna all'accesso",
   "auth_forgot_password_title": "Reimposta la password",
-  "auth_forgot_password_tagline": "Password dimenticata.",
   "auth_forgot_password_body": "Inserisci l'email del tuo account. Se l'account esiste, riceverà un link di reimpostazione (valido 1 h).",
   "auth_forgot_password_sent": "Se esiste un account con questa email, è appena stato inviato un link di reimpostazione.",
   "auth_forgot_password_action": "Invia il link",
