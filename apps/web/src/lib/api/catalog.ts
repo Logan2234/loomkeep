@@ -2,6 +2,9 @@ import type { MediaType } from "@loomkeep/shared";
 import { getLocale } from "../paraglide/runtime.js";
 import { typedRequest } from "./generated/typed-request";
 
+/** Covers for the sign-in page's backdrop, public. */
+export const getShowcase = () => typedRequest("/showcase");
+
 export function searchCatalog(query: string, type?: MediaType, page = 1) {
   return typedRequest("/catalog/search", {
     query: {

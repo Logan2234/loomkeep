@@ -24,7 +24,10 @@ history from before it was started.
   legal links without the version, the brand mark beside the name; a wide
   screen splits into a drifting poster wall and the form. The password pages
   follow, and moving between auth pages keeps the wall going and slides the
-  form in.
+  form in. The wall shows real covers from a new public `GET /api/showcase`:
+  this week's trending films and series (TMDB) and recent popular games
+  (IGDB), plus books and albums at least 10 accounts of the instance follow,
+  computed once a day and shuffled on each visit.
 - Web: the Content-Security-Policy's `img-src` now lists the catalogs' image
   hosts and the instance's API origin instead of every `https:` origin.
 - `glob` raised to 14.0.2 in the images (CVE-2026-118773, CVE-2026-118764).

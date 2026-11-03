@@ -1,5 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { getShowcase } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { fade, fly } from "svelte/transition";
@@ -22,8 +25,26 @@
 
   const reduced = prefersReducedMotion();
 
-  // Decorative: the outline of a shelf of posters, in warm projector hues.
-  // Each row holds its tiles twice, so sliding it by half loops seamlessly.
+  // Real covers when the instance can name some (trending films, series and
+  // games, its most followed books and albums), shuffled on every visit; warm
+  // projector hues until then, or when it can't.
+  const showcase = createApiQuery(() => ({
+    key: keys.showcase(),
+    fetch: getShowcase,
+    retry: 0,
+  }));
+
+  function shuffled<T>(items: T[]): T[] {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  const MIN_COVERS = 6;
+  const PER_ROW = 12;
   const HUES = [
     "#7a3b2e",
     "#3d4a35",
@@ -38,15 +59,22 @@
     "#7a5a2e",
     "#35504a",
   ];
-  const ROWS = [0, 1, 2].map((row) => {
-    const own = Array.from(
-      { length: 12 },
-      (_, i) => HUES[(row * 5 + i * 2) % HUES.length],
-    );
-    return [...own, ...own];
-  });
   const tile = (hue: string) =>
     `linear-gradient(150deg, ${hue}, var(--surface))`;
+
+  // Each row holds its tiles twice, so sliding it by half loops seamlessly.
+  const rows = $derived.by(() => {
+    const covers = shuffled(showcase.data?.posters ?? []);
+    const real = covers.length >= MIN_COVERS;
+    return [0, 1, 2, 3].map((row) => {
+      const own = Array.from({ length: PER_ROW }, (_, i) =>
+        real
+          ? { src: covers[(row * PER_ROW + i) % covers.length], bg: null }
+          : { src: null, bg: tile(HUES[(row * 5 + i * 2) % HUES.length]) },
+      );
+      return [...own, ...own];
+    });
+  });
 </script>
 
 {#snippet wordmark(cls: string)}
@@ -79,12 +107,21 @@
     class="bg-surface border-border relative hidden min-w-0 flex-1 flex-col justify-between overflow-hidden border-r p-14 lg:flex">
     {@render wordmark("relative z-10 text-2xl")}
     <div class="auth-wall" aria-hidden="true">
-      {#each ROWS as row, i (i)}
+      {#each rows as row, i (i)}
         <div class="auth-row {i % 2 ? 'auth-row-back' : ''}">
-          {#each row as hue, j (j)}
-            <span
-              class="h-42 w-28 shrink-0 rounded-xl"
-              style:background={tile(hue)}></span>
+          {#each row as cover, j (j)}
+            {#if cover.src}
+              <img
+                src={cover.src}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                class="bg-surface-2 h-42 w-28 shrink-0 rounded-xl object-cover" />
+            {:else}
+              <span
+                class="h-42 w-28 shrink-0 rounded-xl"
+                style:background={cover.bg}></span>
+            {/if}
           {/each}
         </div>
       {/each}
@@ -94,7 +131,7 @@
   </aside>
 
   <div
-    class="flex min-h-svh w-full flex-col px-5 pt-12 pb-2 lg:w-[32.5rem] lg:shrink-0 lg:justify-center lg:px-16 lg:py-14">
+    class="flex min-h-svh w-full flex-col px-5 pt-12 pb-2 lg:relative lg:w-[32.5rem] lg:shrink-0 lg:justify-center lg:px-16 lg:py-20">
     <div class="mb-7 lg:hidden">
       {@render wordmark("text-lg")}
       {@render headline("mt-3 text-3xl")}
@@ -102,20 +139,20 @@
     <!-- Thumb-sized fields on a phone, as the rest of the app's forms. -->
     <div
       class="grid flex-1 lg:flex-none [&_.input]:h-13 [&_.input]:text-base lg:[&_.input]:h-12 lg:[&_.input]:text-sm">
+      <!-- No exit: the page leaving would hold its height for a moment and
+           shift everything around the one arriving. -->
       {#key page}
         <div
           class="col-start-1 row-start-1 flex min-w-0 flex-col"
-          in:fly={{
-            x: reduced ? 0 : 16,
-            duration: reduced ? 0 : 220,
-            delay: reduced ? 0 : 80,
-          }}
-          out:fade={{ duration: reduced ? 0 : 100 }}>
+          in:fly={{ y: reduced ? 0 : 10, duration: reduced ? 0 : 220 }}>
           {@render children()}
         </div>
       {/key}
     </div>
-    <LegalLinks version={false} class="items-center pt-6 text-center" />
+    <!-- Pinned to the bottom on a wide screen, wherever the form ends. -->
+    <LegalLinks
+      version={false}
+      class="items-center pt-6 text-center lg:absolute lg:inset-x-16 lg:bottom-4" />
   </div>
 </div>
 
