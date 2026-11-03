@@ -69,8 +69,7 @@ beforeEach(() => {
   );
 });
 
-async function signIn() {
-  const user = userEvent.setup();
+async function signIn(user = userEvent.setup()) {
   renderWithQuery(LoginPage, {});
   await user.type(
     screen.getByRole("textbox", {
@@ -83,13 +82,27 @@ async function signIn() {
   return user;
 }
 
-async function enterCode(
-  user: ReturnType<typeof userEvent.setup>,
-  code: string,
-) {
-  await user.type(await screen.findByRole("textbox"), code);
-  await user.click(screen.getByRole("button", { name: m.common_verify() }));
-}
+const firstDigit = () =>
+  screen.findByRole("textbox", {
+    name: m.auth_mfa_code_digit({ position: 1, total: 6 }),
+  });
+
+const rejectCodes = () => {
+  let verifications = 0;
+  server.use(
+    http.post(apiUrl("/auth/mfa/verify"), () => {
+      verifications++;
+      return HttpResponse.json(
+        { code: ErrorCode.AuthMfaInvalidCode, message: "nope" },
+        { status: 400 },
+      );
+    }),
+  );
+  return () => verifications;
+};
+
+const invalidCode = () =>
+  resolveApiError(new ApiError(400, "", ErrorCode.AuthMfaInvalidCode));
 
 describe("login page", () => {
   it("signs in and opens the app", async () => {
@@ -169,7 +182,7 @@ describe("login page", () => {
     const user = await signIn();
 
     expect(await screen.findByText(m.auth_mfa_code_totp_hint())).toBeTruthy();
-    await enterCode(user, "123456");
+    await user.type(await firstDigit(), "123456");
 
     await waitFor(() =>
       expect(goto).toHaveBeenCalledWith("/app", { replace: true }),
@@ -180,6 +193,69 @@ describe("login page", () => {
     });
   });
 
+  it("verifies a six-digit code as soon as it's complete", async () => {
+    serveLogin(mfaChallenge(["totp", "recovery"]));
+    const user = await signIn();
+
+    await user.type(await firstDigit(), "12345");
+    expect(posted["/auth/mfa/verify"]).toBeUndefined();
+    await user.keyboard("6");
+
+    await waitFor(() =>
+      expect(posted["/auth/mfa/verify"]).toEqual({
+        challengeId: "challenge-1",
+        code: "123456",
+      }),
+    );
+  });
+
+  it("doesn't verify the same code again when a digit is retyped", async () => {
+    const verifications = rejectCodes();
+    serveLogin(mfaChallenge(["totp", "recovery"]));
+    const user = await signIn();
+
+    await user.type(await firstDigit(), "123456");
+    await waitFor(() => expect(verifications()).toBe(1));
+    await user.keyboard("6");
+
+    await new Promise((r) => setTimeout(r, 50));
+    expect(verifications()).toBe(1);
+  });
+
+  it("shows a rejected code's error for a few seconds only", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    try {
+      rejectCodes();
+      serveLogin(mfaChallenge(["totp", "recovery"]));
+      const user = await signIn(
+        userEvent.setup({ advanceTimers: vi.advanceTimersByTime }),
+      );
+
+      await user.type(await firstDigit(), "123456");
+      expect(await screen.findByText(invalidCode())).toBeTruthy();
+
+      vi.advanceTimersByTime(5000);
+      await waitFor(() => expect(screen.queryByText(invalidCode())).toBeNull());
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("waits for the button on a recovery code", async () => {
+    serveLogin(mfaChallenge(["totp", "recovery"]));
+    const user = await signIn();
+    await user.click(
+      await screen.findByRole("button", {
+        name: m.auth_mfa_use_recovery_code(),
+      }),
+    );
+
+    await user.type(screen.getByRole("textbox"), "ABCDE-12345");
+
+    expect(posted["/auth/mfa/verify"]).toBeUndefined();
+  });
+
   // The field's length cap used to count the spaces of a pasted code, cutting
   // " 123456" down to " 12345" before they could be trimmed.
   it.each([" 123456", "123 456", "123456\n"])(
@@ -188,9 +264,8 @@ describe("login page", () => {
       serveLogin(mfaChallenge(["totp", "recovery"]));
       const user = await signIn();
 
-      await user.click(await screen.findByRole("textbox"));
+      await user.click(await firstDigit());
       await user.paste(pasted);
-      await user.click(screen.getByRole("button", { name: m.common_verify() }));
 
       await waitFor(() =>
         expect(posted["/auth/mfa/verify"]).toEqual({
@@ -226,8 +301,14 @@ describe("login page", () => {
     await user.click(
       screen.getByRole("button", { name: m.auth_mfa_use_recovery_code() }),
     );
-    expect(screen.getByText(m.auth_mfa_recovery_code_label())).toBeTruthy();
-    await enterCode(user, "ABCDE-12345");
+    expect(
+      await screen.findByText(m.auth_mfa_code_recovery_hint()),
+    ).toBeTruthy();
+    await user.type(
+      screen.getByRole("textbox", { name: m.auth_mfa_recovery_code_label() }),
+      "abcde12345",
+    );
+    await user.click(screen.getByRole("button", { name: m.common_verify() }));
 
     await waitFor(() =>
       expect(posted["/auth/mfa/verify"]).toEqual({
@@ -235,6 +316,38 @@ describe("login page", () => {
         code: "ABCDE-12345",
       }),
     );
+  });
+
+  it("forgets a method's error once another one is picked", async () => {
+    server.use(
+      http.post(apiUrl("/auth/mfa/resend-email-code"), () =>
+        HttpResponse.json(
+          { code: ErrorCode.AuthMfaTooManyAttempts, message: "nope" },
+          { status: 429 },
+        ),
+      ),
+    );
+    serveLogin(mfaChallenge(["totp", "email", "recovery"]));
+    const user = await signIn();
+    const emailError = resolveApiError(
+      new ApiError(429, "", ErrorCode.AuthMfaTooManyAttempts),
+    );
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: new RegExp(m.auth_mfa_email_label()),
+      }),
+    );
+    expect(await screen.findByText(emailError)).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", { name: new RegExp(m.auth_mfa_totp_label()) }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: m.common_back() }),
+    );
+
+    await screen.findByText(m.auth_mfa_choose_method_title());
+    expect(screen.queryByText(emailError)).toBeNull();
   });
 
   it("goes back to the credentials with the password cleared", async () => {

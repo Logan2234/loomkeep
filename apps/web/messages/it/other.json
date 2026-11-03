@@ -118,6 +118,8 @@
   "auth_mfa_code_title": "Verifica in due passaggi",
   "auth_mfa_code_totp_hint": "Inserisci il codice mostrato dalla tua app di autenticazione.",
   "auth_mfa_code_email_hint": "Inserisci il codice ricevuto via email.",
+  "auth_mfa_code_recovery_hint": "Uno dei codici di recupero che hai salvato o scaricato quando hai attivato la verifica in due passaggi. Ognuno funziona una sola volta.",
+  "auth_mfa_code_digit": "Cifra {position} di {total}",
   "auth_mfa_recovery_code_label": "Codice di recupero",
   "auth_mfa_use_recovery_code": "Usa un codice di recupero",
   "auth_mfa_use_normal_code": "Usa il mio codice abituale",

@@ -138,9 +138,9 @@
 
   <div
     class="flex min-h-svh w-full flex-col px-5 pt-12 pb-2 lg:relative lg:w-[32.5rem] lg:shrink-0 lg:justify-center lg:px-16 lg:py-20">
-    <div class="mb-7 lg:hidden">
-      {@render wordmark("text-lg")}
-      {@render headline("mt-3 text-3xl")}
+    <!-- No tagline on a phone: it would push the form down for nothing. -->
+    <div class="mb-8 lg:hidden">
+      {@render wordmark("text-xl")}
     </div>
     <!-- Thumb-sized fields on a phone, as the rest of the app's forms. -->
     <div

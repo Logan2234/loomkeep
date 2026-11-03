@@ -112,7 +112,7 @@
   </div>
 {:else}
   <form onsubmit={submit} class="flex flex-1 flex-col gap-4 lg:flex-none">
-    <h1 class="font-display sr-only text-2xl font-bold lg:not-sr-only">
+    <h1 class="font-display text-2xl font-bold">
       {m.common_register()}
     </h1>
     {#if invite}

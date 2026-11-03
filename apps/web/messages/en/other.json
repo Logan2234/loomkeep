@@ -118,6 +118,8 @@
   "auth_mfa_code_title": "Two-step verification",
   "auth_mfa_code_totp_hint": "Enter the code shown by your authenticator app.",
   "auth_mfa_code_email_hint": "Enter the code you received by email.",
+  "auth_mfa_code_recovery_hint": "One of the recovery codes you saved or downloaded when you turned on two-step verification. Each one works only once.",
+  "auth_mfa_code_digit": "Digit {position} of {total}",
   "auth_mfa_recovery_code_label": "Recovery code",
   "auth_mfa_use_recovery_code": "Use a recovery code",
   "auth_mfa_use_normal_code": "Use my usual code",
