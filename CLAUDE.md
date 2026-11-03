@@ -5,324 +5,157 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 Loomkeep — self-hosted media tracker (series, movies, anime, games, books,
-music, and more to come), open-core under AGPL-3.0. pnpm monorepo: `apps/api`
-(NestJS + Prisma + PostgreSQL), `apps/web` (SvelteKit PWA), `apps/docs`
-(docs.loomkeep.app: Astro Starlight guides + a Scalar reference rendered from
-the public API's `openapi-v1.json`, deployed to GitHub Pages by `docs.yml` —
-every field of a public DTO needs a JSDoc description and `@example`, read by
-the Swagger plugin's `introspectComments`; `generate:openapi` fails on a gap),
-`apps/mobile` (Capacitor Android shell that loads the instance's `/app`
-rather than bundling the web build — roadmap and rationale in
-[docs/mobile-app-plan.md](docs/mobile-app-plan.md); debug and release APKs
-built by `ci.yml`), `packages/shared`
-(DTOs/enums — consumed from its built `dist/`, so run `pnpm build:package` after any change
-there). Catalogs are queried live (TMDB/AniList/IGDB/Open Library/
-MusicBrainz) and nothing is persisted until a user tracks an item — see
-"Data model & catalog" below.
+music), open-core under AGPL-3.0. pnpm monorepo:
 
-Two destinations: Logan's own hosted VPS (auto-deployed by `ci.yml`) and
-self-hosting via `docker/`. A premium plan exists as a seam, not sold yet —
-see "Feature flags & entitlements".
+- `apps/api` — NestJS + Prisma + PostgreSQL.
+- `apps/web` — SvelteKit PWA.
+- `apps/docs` — docs.loomkeep.app (Astro Starlight + a Scalar reference from
+  the public API's `openapi-v1.json`). Every field of a public DTO needs a
+  JSDoc description and `@example`; `generate:openapi` fails on a gap.
+- `apps/mobile` — Capacitor Android shell that loads the instance's `/app`
+  rather than bundling the web ([docs/mobile-app-plan.md](docs/mobile-app-plan.md)).
+- `packages/shared` — DTOs/enums, consumed from its built `dist/`: run
+  `pnpm build:package` after any change there.
+
+Two destinations: Logan's hosted VPS (auto-deployed by `ci.yml`) and
+self-hosting via `docker/`.
 
 ## Commands
 
 ```sh
-pnpm dev                                       # api on :3000 + web on :5173 (parallel), packages/shared rebuilt on save
-pnpm test                                      # runs all tests
-pnpm build:package                             # REQUIRED after any change in packages/shared, outside `pnpm dev`
-pnpm dev:docs                                  # docs site on :4321 (needs apps/api built + generate:openapi first)
-
-# API
-pnpm --filter @loomkeep/api exec vitest src/catalog/providers/tmdb.provider.spec.ts   # single test file
-pnpm --filter @loomkeep/api test:e2e           # full API flow; needs the dev Postgres running
-pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing schema.prisma
-
-# Web
-pnpm --filter @loomkeep/web exec vitest --project component   # component tests only (see "Web tests")
-
-# Tools
-pnpm lint / pnpm lint:fix                      # global eslint + prettier
-pnpm check                                     # global typecheck (tsc on api/shared, svelte-check on web)
-pnpm knip                                      # dead code / unused dependency detection
+pnpm dev                                       # api :3000 + web :5173, packages/shared rebuilt on save
+pnpm test                                      # all tests
+pnpm build:package                             # after any change in packages/shared, outside `pnpm dev`
+pnpm dev:docs                                  # docs on :4321 (needs apps/api built + generate:openapi)
+pnpm --filter @loomkeep/api exec vitest <file> # single API test file
+pnpm --filter @loomkeep/api test:e2e           # full API flow, isolated `e2e` schema of the dev Postgres
+pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>
+pnpm --filter @loomkeep/web exec vitest --project component
+pnpm lint / pnpm check / pnpm knip
 ```
 
-Knip's root `rxjs` exception covers the peer declaration in
-`pnpm-workspace.yaml` for `@nestjs/platform-fastify`, not an API import.
-
-e2e tests reuse the dev Postgres but run in an isolated `e2e` schema
-(`apps/api/test/global-setup.js`), so they never touch dev data.
-
 **Never lint, format, typecheck, or run the test suite yourself as a
-verification step, mid-task or at the end.** `pre-commit` (lint-staged)
-already formats/lints staged files, `pre-push` already typechecks every
-package changed since `origin/main` and what depends on them (the whole repo
-when a root file changed), and CI runs the full test suite + e2e on every PR — running any of
-that yourself only duplicates the gate. Judge whether a change plausibly
-broke something before reaching for a test run at all: a style tweak, a
-wording change, a rename almost never needs one; new/changed logic or a bug
-fix does.
+verification step.** `pre-commit` formats/lints staged files, `pre-push`
+typechecks what changed, and CI runs the full suite + e2e on every PR. Run a
+test only for new/changed logic or a bug fix, not for a style tweak, a
+wording change or a rename.
 
 ## Architecture
 
 ### Data model & catalog
 
-- **On-demand cache, not a mirror.** A `MediaItem`/`GameItem`/`BookItem`/
-  `MusicItem` (with children — seasons, episodes, external ids) is created
-  only when a user first tracks it. Each domain replicates the same
-  pattern through its own single entry point — `MediaItemService`,
-  `GameItemService`, `BookItemService`, `MusicItemService`, each with an
-  `upsertFromSource()`. Refreshes are throttled by `lastSyncedAt` (24h TTL)
-  and never delete seasons/episodes, so `EpisodeWatch` rows always keep a
-  valid target.
-  Behaviour the four domains must share (first-track race, XP revoked on
-  entry deletion, orphan purge) gets a case in
-  `apps/api/src/common/domain-parity.spec.ts`, which runs it on all four.
-- **One provider per domain** (`apps/api/src/<domain>/providers/`): TMDB
-  (movies/series) + AniList (anime) share the catalog, IGDB (games), Open
-  Library (books), MusicBrainz (music). TMDB movie/TV ids are separate
-  namespaces, so every call carries a `MediaType`. AniList has no
-  per-episode listing — episodes are generated 1..N.
-- `MediaExternalId` is multi-source (TMDB/ANILIST/TVDB/IMDB) — TVDB is
-  captured from TMDB responses specifically because the TV Time import
-  reconciles through TVDB ids.
-- **Tracking history**: films keep one row per viewing (`MovieReplay`) and
-  `EpisodeWatch` keeps one row per episode view. Games and books group dated
-  sessions into `GamePlaythrough` / `BookReading` cycles; sessions deliberately
-  logged as history-only keep a null cycle relation. `LibraryService.computeProgress`
-  excludes season 0 (TMDB specials). The media library ranks and filters on
-  `LibraryEntry.watchedEpisodes`/`lastWatchedAt` and `MediaItem.episodeCount`,
-  kept by Postgres triggers on `EpisodeWatch`/`Episode` (migration
-  `20261019160000_materialized_library_progress`) — never write them from the
-  app; `progressDrift` in the e2e suite checks they match.
-- **Import sources** (`apps/api/src/import/sources/`) share a base class per
-  domain: `MediaImportSource` (TV Time CSV, Trakt account-export ZIP, Simkl
-  OAuth, MyAnimeList XML, Letterboxd export ZIP, IMDb CSVs, AniList public
-  list by user name) and `BookCsvSource` (Goodreads, StoryGraph, Babelio) own the
-  common analyze/resolve/commit flow — a new source only supplies its
-  parsing. Steam implements `ImportReq` directly (no shared base, single
-  source). `GET /import/availability` greys out a source when its env key
-  is unset.
-- Shared enums (`packages/shared/src/enums.ts`) are `as const` objects
-  mirrored by Prisma enums with identical values — cast at boundaries
-  (`source as DbExternalSource`), don't write a mapping function.
+- **On-demand cache, not a mirror.** Catalogs (TMDB + AniList, IGDB, Open
+  Library, MusicBrainz — one provider per domain) are queried live. A
+  `MediaItem`/`GameItem`/`BookItem`/`MusicItem` is created only when a user
+  first tracks it, through its domain's `upsertFromSource()`. Refreshes
+  (24h TTL) never delete seasons/episodes, so `EpisodeWatch` rows keep a
+  valid target. Behaviour the four domains must share gets a case in
+  `apps/api/src/common/domain-parity.spec.ts`.
+- TMDB movie/TV ids are separate namespaces: every call carries a
+  `MediaType`. TVDB ids are captured from TMDB because the TV Time import
+  reconciles through them.
+- `LibraryEntry.watchedEpisodes`/`lastWatchedAt` and `MediaItem.episodeCount`
+  are maintained by Postgres triggers — never write them from the app.
+- Import sources share a base class per domain (`MediaImportSource`,
+  `BookCsvSource`): a new source only supplies its parsing.
+- Shared enums (`packages/shared/src/enums.ts`) mirror Prisma enums with
+  identical values — cast at boundaries, don't write a mapping function.
 
 ### Auth & errors
 
-- Access JWT (15 min) + rotating refresh tokens, one `RefreshToken`
-  row per browser (a sign-in ends the session its refresh cookie still
-  names, never matched by User-Agent), SHA-256 hashed. `JwtAuthGuard` is global, opt out with
-  `@Public()`; `@CurrentUser()` reads `sub` from the JWT payload. MFA layers
-  on top with three second factors — TOTP and an emailed code
-  (`auth/mfa.service.ts`), WebAuthn security keys/passkeys
-  (`auth/webauthn.service.ts`) — plus passwordless passkey sign-in and a
-  recent-confirmation gate on sensitive actions (`@RequireRecentAuth`,
-  `auth/recent-auth.guard.ts`). Anything that asks "has MFA?" (e.g.
-  `AdminGuard`) must count all three.
-- Errors are typed codes (`packages/shared/src/error-codes.ts`,
-  `ErrorCode.AuthInvalidCredentials`-style, `domain.reason`), thrown via
-  `AppException` and caught by the global `AllExceptionsFilter`. The web
-  maps each code explicitly to an i18n message in
-  `apps/web/src/lib/api/errors.ts` — never
-  display API-supplied text directly; adding a failure mode means adding a
-  code here, not a bespoke string.
+- Access JWT (15 min) + rotating refresh tokens in encrypted `HttpOnly`
+  cookies — never localStorage. `JwtAuthGuard` is global, opt out with
+  `@Public()`. Personal API keys (`Bearer lk_…`) are accepted only on
+  `@AllowApiKey()` routes (the public API, `/api/v1`).
+- MFA has three second factors (TOTP, emailed code, WebAuthn): anything
+  that asks "has MFA?" (e.g. `AdminGuard`) must count all three. Sensitive
+  actions use `@RequireRecentAuth`.
+- Errors are typed codes (`packages/shared/src/error-codes.ts`) thrown via
+  `AppException`. The web maps each code to an i18n message in
+  `apps/web/src/lib/api/errors.ts` — never display API-supplied text; a new
+  failure mode means a new code.
 
-### Feature flags & entitlements
+### Feature flags, settings & premium
 
-- `FeatureFlagsService` wraps Unleash with an env/config fallback
-  (`isEnabled(flag, default)`) so an unconfigured flag never locks out a
-  feature. Web's default gating path is `liveFlags.isEnabled("MY_FLAG")`
-  (`apps/web/src/lib/feature-flags-live.svelte.ts`) — reactive, no reload.
-  Flags are for rollouts and kill switches. Permanent instance configuration
-  (social, gamification, registration, public API and its quotas) lives in
-  the `InstanceSettings` table instead, edited from Admin › Settings and read
-  through `instanceSetting()` / `isSocialEnabled()` & co.; an env var of the
-  same name (`INSTANCE_SETTING_ENV`) wins and locks the setting in the admin
-  page. The web reads them from `GET /api/config`.
-- Premium is a seam, not sold yet: enforcement points call
-  `EntitlementService.isEffectivelyPremium()`, not the raw `hasPremium()` —
-  it's `true` for everyone until the `premium-features` Unleash flag is on
-  (no CGV/billing exists yet; positioning in
-  [docs/adr/0001-open-core-agpl.md](docs/adr/0001-open-core-agpl.md)).
-- A premium feature that is a whole feature (not a quota or tier of a free
-  one) lives in an `ee/` directory (`apps/api/src/ee`, `apps/web/src/lib/ee`)
-  under [LICENSE-EE](LICENSE-EE), not the AGPL. On the API the core never
-  imports `ee/` (ESLint enforces it; only `app.module.ts` registers
-  `EeModule`), and every `ee/` controller carries `EeLicenseGuard` (404 on an
-  unlicensed instance). Web screens use `useEeLock()` rather than
-  `auth.isPremiumLocked`. The instance license (`LOOMKEEP_LICENSE_KEY`, an
-  offline-signed annual key) is only required once `premium-features` is on;
-  the maintainer signs keys with `pnpm --filter @loomkeep/api ee:license`. A
-  self-host key (`--instance`) makes every account of the instance premium,
-  through `EntitlementService.setInstancePremiumSource` — the hosted
-  instance's key doesn't, premium stays per account there.
+- Unleash flags (`FeatureFlagsService`, web `liveFlags.isEnabled()`) are for
+  rollouts and kill switches, with a fallback so an unconfigured flag never
+  locks a feature out. Permanent instance configuration lives in the
+  `InstanceSettings` table (Admin › Settings, `instanceSetting()`); an env
+  var of the same name wins and locks it.
+- Premium is a seam, not sold yet: call
+  `EntitlementService.isEffectivelyPremium()`, never `hasPremium()`.
+- A whole premium feature lives in `ee/` (`apps/api/src/ee`,
+  `apps/web/src/lib/ee`) under [LICENSE-EE](LICENSE-EE). The core never
+  imports `ee/` (ESLint enforces it), every `ee/` controller carries
+  `EeLicenseGuard`, web screens use `useEeLock()`.
 
-### Web routing & data fetching
+### Web
 
-- App lives under `/app`, public site at root (`+page.svelte`, `legal/*` —
-  both server-rendered per request, for absolute URLs on any origin and the
-  visitor's language). Auth is enforced by **layout nesting, not a route
-  allowlist**: `app/+layout.svelte` ↔ `(auth)/+layout.svelte` mirror-redirect
-  each other. Adding a screen under `app/` gates it automatically — never
-  reintroduce a `PUBLIC_ROUTES` array.
-- Signed-in routes run as SPA (`ssr = false` in the `app`/`(auth)`/
-  `(verification)` layouts only, never the root). Tokens live in
-  encrypted (AES-256-GCM), `HttpOnly`/`SameSite=Strict` cookies
-  (`Secure` in production) set by `apps/api/src/auth/auth-cookies.ts` —
-  never in localStorage, and `JwtAuthGuard` reads only that cookie for a
-  session. The one exception is a personal API key (`Authorization: Bearer
-lk_…`), accepted only on routes marked `@AllowApiKey()` — the versioned
-  public API (`apps/api/src/public-api`, `/api/v1`); every other route
-  refuses keys by default, and internal routes stay unversioned. Auto-refresh-and-
-  retry on 401 lives in `src/lib/api/core.ts` (`src/lib/api/client.ts` is
-  now just a re-export barrel). The API itself emits `/app`-prefixed paths
-  (push/email links) — grep `/app/` in `apps/api/src` before renaming a
-  client route.
-- API calls go through three helpers over `@tanstack/svelte-query`
-  (`apps/web/src/lib/api/{query,mutation,infinite-query}.svelte.ts`) —
-  never a hand-rolled `try/catch` + local `error`/`loading` `$state`.
-  `createApiQuery`/`createApiMutation`/`createApiInfiniteQuery` all take a
-  _getter_ (`() => ({...})`, not a plain object — TanStack needs to
-  re-evaluate the options reactively) and return `{ data, error, loading }`.
-  `error` is always a translated string: `resolveApiError()` for the two
-  read helpers, `bannerMessage()` for mutations (returns `null` once every
-  field it names is already shown under its own input via `fieldError()`).
-  A mutation also adds `mutate(args)` (ignored while one's already in
-  flight — no hand-rolled double-submit guard needed), `fieldErrors`, and
-  `invalidates` (factory keys to refetch on success). `CommentThread.svelte`
-  is the one deliberate exception — it needs raw TanStack directly
-  (`refetchInterval` polling, its own `createInfiniteQuery`) — don't
-  migrate it.
-- Query keys come from a factory (`apps/web/src/lib/api/keys.ts`),
-  namespaced per domain. TanStack dedupes by key at the single
-  `QueryClient` (mounted in `routes/+layout.svelte`) — two components
-  requesting the same key share one cache entry, so e.g. a nav badge and
-  its detail page stay in sync with no context/DI wiring needed.
-  `invalidates` lists only the keys for what's _displayed at the same
-  time_ as the mutation, not everything it semantically touches —
-  navigating away unmounts a query, and the next mount refetches it if
-  stale. When something outside the helpers changes the same data (a
-  not-yet-migrated modal calling its own route function), patch the cache
-  with `queryClient.setQueryData(key, ...)` rather than reassigning a
-  `$derived` value, which isn't a valid assignment target.
-- Every paginated `GET` list endpoint shares one contract: `page`/`limit`
-  request params (`apps/api/src/common/pagination.util.ts`'s
-  `parsePageQuery`), `PagedResult<T>` response
-  (`packages/shared/src/dto/pagination.ts`: `{ items, hasMore, total? }`).
+- App under `/app`, public site at root. Auth is enforced by **layout
+  nesting**, not a route allowlist: a screen under `app/` is gated
+  automatically. The API emits `/app/…` links (push, email) — grep before
+  renaming a client route.
+- API calls go through `createApiQuery`/`createApiMutation`/
+  `createApiInfiniteQuery` (TanStack, `src/lib/api/`), which take a getter
+  and return a translated `error` — never a hand-rolled `try/catch` +
+  `loading` state. `CommentThread.svelte` is the one deliberate exception.
+- Query keys come from `src/lib/api/keys.ts`. `invalidates` lists only what
+  is displayed alongside the mutation.
+- Paginated `GET` lists share one contract: `page`/`limit` params
+  (`parsePageQuery`), `PagedResult<T>` response.
 
 ### Web tests
 
-- Two Vitest projects (`apps/web/vitest.config.ts`): `unit` runs plain
-  `*.spec.ts` in Node; `component` runs `*.svelte.spec.ts` in happy-dom with
-  `@testing-library/svelte` + `user-event`. Logic that can live in a plain
-  `.ts` module (like `wizard-state.ts`) is tested there first — cheaper than
-  rendering.
-- Test behaviour, not internals: query by role/label, and take expected text
-  from `m.*()` rather than hardcoding the French copy.
-- The API is stubbed at the network level with msw (`src/lib/test/msw.ts`,
-  `server.use(http.get(apiUrl(...)))`), so `core.ts` and the TanStack helpers
-  run for real — don't `vi.mock` `#lib/api/*` per component. An unhandled
-  request fails the test. A component using the API helpers renders through
-  `renderWithQuery()` (`src/lib/test/render.ts`), which provides a fresh
-  retry-less `QueryClient`. `$app/state` + `$app/navigation` are mocked with
-  `src/lib/test/navigation.svelte.ts` (reactive `page.url`, a `goto` that
-  updates it like SvelteKit does); the realtime socket per spec file. Props a
-  test changes after mounting live in a `$state` object — the reason specs
-  are `.svelte.spec.ts`.
-- Every component test ends with an axe pass over what it left rendered
-  (`src/lib/test/setup.ts`, WCAG A/AA, contrast excluded): a violation
-  fails the test it appeared in. Contrast and whole pages are web-audit's
-  weekly Pa11y run, which visits every route (`.github/web-audit/pages.mjs`
-  — a new route with a parameter needs a value or an exclusion there).
-- No coverage threshold (Codecov stays informational) and no snapshot tests.
-  Browser E2E (Playwright against the API on the `e2e` schema) is
-  deliberately deferred until the component layer is settled.
+- Vitest `unit` (plain `*.spec.ts`, Node) and `component`
+  (`*.svelte.spec.ts`, happy-dom + Testing Library). Logic that can live in
+  a plain `.ts` module is tested there first.
+- Test behaviour: query by role/label, expected text from `m.*()`.
+- The API is stubbed with msw (`src/lib/test/msw.ts`) — never `vi.mock`
+  `#lib/api/*`. Render with `renderWithQuery()`.
+- Every component test ends with an axe pass. A new route with a parameter
+  needs a value or an exclusion in `.github/web-audit/pages.mjs`.
+- No coverage threshold, no snapshot tests.
 
-### Ops
+### Ops & social
 
-- `docker/` holds every compose file, the Caddyfile, and add-on configs;
-  `context: ..` resolves against the compose file's location, not repo root.
-  `ci.yml` redeploys at the end of every successful run on `main` — which
-  override files get combined comes from `COMPOSE_FILE` in the VPS's own
-  `.env`, not the workflow. The add-on stack (observability, Authelia SSO,
-  Portainer, GlitchTip, Umami, Unleash, Homepage) is documented for
-  self-hosters in `apps/docs` (Self-hosting › Optional services);
-  [docker/README.md](docker/README.md) keeps how loomkeep.app itself runs.
-- `nestjs-pino` structured JSON logging; `Authorization`/`Cookie`/
-  `Set-Cookie` redacted, request bodies never logged. `AllExceptionsFilter`
-  also reports to GlitchTip when `GLITCHTIP_API_DSN`/`PUBLIC_GLITCHTIP_WEB_DSN`
-  are set.
-
-### Social
-
-Gated behind the `socialEnabled` instance setting (off by default
-self-host, pinned on for the hosted VPS by `SOCIAL_ENABLED`) — `SocialFeatureGuard` 404s (never 403) when disabled, so a self-host
-install doesn't advertise the surface exists. `Follow` is the one
-relationship primitive (friend = reciprocal accepted follow). Details:
-[apps/api/src/social/README.md](apps/api/src/social/README.md).
+- `docker/` holds every compose file; `context: ..` resolves against the
+  compose file's location. Which overrides the VPS combines comes from its
+  own `.env` (`COMPOSE_FILE`). Logs redact auth headers and never log
+  request bodies.
+- Social features are gated by the `socialEnabled` instance setting;
+  `SocialFeatureGuard` answers 404 (never 403) when off.
+  [apps/api/src/social/README.md](apps/api/src/social/README.md).
 
 ## Conventions
 
-- Code, comments, commits: English. UI is English-first (French and Italian
-  too), i18n-ready via Paraglide — use `m()`, never hardcode a string. Sources live in
-  `apps/web/messages/{locale}/{common,other,errors,gamification,admin,settings,site}.json`
-  (a `settings_`, `landing_`/`transparency_`, `gamification_` or `admin_` key
-  goes in its matching file; `src/catalogs.spec.ts` enforces it).
-- Prefer no new runtime deps (global `fetch`, Node 26, pinned in `.nvmrc`). pnpm blocks
-  postinstall scripts by default — allow-list in `pnpm-workspace.yaml`'s
-  `allowBuilds`. Ask before adding one.
-- Versioning: the six `package.json` versions (root, `apps/api`,
-  `apps/web`, `apps/docs`, `apps/mobile`, `packages/shared`) are kept in
-  lockstep (the Android `versionName` reads `apps/mobile`'s) — minor for a new module/capability, patch for a smaller
-  fix/polish. Bump via the `version-bump` skill, in a PR (`main` takes no
-  direct pushes): `CHANGELOG.md` + a Quackback changelog draft —
-  **publishing that draft sends the release newsletter**, so it always
-  needs Logan's go-ahead. Merging the bump is the release, all in that
-  commit's `ci.yml` run: `release` creates the GitHub release `v<version>`
-  from its CHANGELOG section, `docker-tag` tags the images `<version>`,
-  `<major.minor>`, `<major>` and `latest` (every main commit gets its SHA
-  and `edge`), and `publish-release-apk` attaches the APK, then publishes
-  the release (a draft until then: releases are immutable, a published one
-  takes no assets). Each checks what
-  already exists, so a bump whose run failed is made up by the next commit.
-  Dev APKs stay `android-dev-<n>` pre-releases, the three newest kept.
-- **Every PR with a change someone outside the code would notice** (a
-  feature, a fix, a behaviour or config change, a self-hosting upgrade
-  step) adds a bullet under `## [Unreleased]` in `CHANGELOG.md`, in the
-  file's technical tone. The version bump turns that section into the
-  release's notes; a change missing from it ships unannounced.
-- Feedback lives on Quackback (feedback.loomkeep.app), not GitHub Issues:
-  **Feature Requests**/**Bug Reports** (public) vs **Internal Roadmap**
-  (private, business-sensitive) — new posts need adding to the matching
-  roadmap by hand, no automation for it. Gotchas: the REST API ignores
-  `audience`/`isPublic` on board/roadmap creation (`PATCH` after the fact);
-  Cloudflare blocks Python's default `urllib` user agent on this domain
-  (pass an explicit one, or use `curl`). See `.claude/skills/quackback-ticket`.
-- Check `apps/web/src/lib/components/` (and route-local `components/`)
-  before writing a new Svelte component — extend or reuse instead.
-- Installable as a PWA — check the mobile viewport, not just desktop, on
-  every `apps/web` UI change.
-- The Android app (`apps/mobile`) runs the deployed web, so its web side is
-  always current while the installed APK can be several releases old: web
-  code reaches a native plugin only once `Capacitor.isPluginAvailable()`
-  says the APK has it (directly or through a `src/lib/native/` helper such
-  as `isNativeShareAvailable()`), never on `isNativeApp()` alone. A new
-  plugin goes in both `apps/web` and `apps/mobile` at the same version
-  (`src/lib/native/plugins.spec.ts` checks). Web changes reach phones on
-  deploy; only `apps/mobile/**` changes need a new APK, which `ci.yml`
-  builds and smoke-tests on an emulator.
-- Visual identity ("Séance" — fonts, palette, nav pattern):
-  `apps/web/DESIGN.md`.
-- Every `apps/web` UI change ships its transitions (hover and focus states,
-  whatever appears, unfolds or closes) — how they should feel and how to
-  write them: `apps/web/DESIGN.md` › Motion.
-- Every alert Loomkeep sends — bell (`Notification` row), web push, email —
-  is declared once in `ALERTS` (`packages/shared/src/alerts.ts`): its
-  channels, which ones each account can switch (stored in
-  `User.alertPrefs`), and their defaults. `NotificationService` pushes from
-  it, Settings › Communications and the docs' Notifications page are drawn
-  from it, and tests fail on a `NotificationType` or mail template missing
-  from it. A new alert starts there.
-- Shipping something a user will notice → add a `"Nouveau"` badge entry
-  (`apps/web/src/lib/feature-badges.ts`'s `SHIPPED` map, `{ key:
-shippedISODate }`) at its point of discovery — it fades on its own after
-  21 days. Skip for internal refactors and fixes.
+- Code, comments, commits: English. UI is English-first (French, Italian),
+  through Paraglide `m()` — never a hardcoded string. A key's prefix decides
+  its catalog file (`settings_`, `admin_`, …; `src/catalogs.spec.ts`).
+- No new runtime dependency without asking; pnpm blocks postinstall scripts
+  unless allow-listed in `pnpm-workspace.yaml`.
+- **Versioning**: the six `package.json` versions stay in lockstep — minor
+  for a new capability, patch for fixes/polish. Bump with the `version-bump`
+  skill, in a PR; merging it is the release (GitHub release, image tags,
+  APK). Publishing the Quackback changelog draft sends the newsletter:
+  always Logan's go-ahead.
+- **CHANGELOG**: every PR with a change someone outside the code would
+  notice adds a bullet under `## [Unreleased]` in `CHANGELOG.md`, which
+  becomes the release notes. Each bullet must feel like a changelog item:
+  one or two lines, what changed, straight to the point — no implementation
+  walkthrough. A breaking change (above all for self-hosters: env var,
+  default, port, volume, removed route, migration to watch) goes first, in
+  its own `### Breaking changes` section, worded as what to do.
+- Feedback and roadmap live on Quackback (feedback.loomkeep.app), not
+  GitHub Issues — see `.claude/skills/quackback-ticket`.
+- Reuse `apps/web/src/lib/components/` before writing a new component.
+- Check the mobile viewport on every `apps/web` UI change, and ship its
+  transitions (`apps/web/DESIGN.md` › Motion; visual identity "Séance" in
+  the same file).
+- The installed APK can be several releases behind the web: reach a native
+  plugin only once `Capacitor.isPluginAvailable()` says so, never on
+  `isNativeApp()` alone. A new plugin goes in `apps/web` and `apps/mobile`
+  at the same version.
+- Every alert (bell, push, email) is declared once in `ALERTS`
+  (`packages/shared/src/alerts.ts`). A new alert starts there.
+- A shipped user-facing feature gets a `"Nouveau"` badge entry in
+  `apps/web/src/lib/feature-badges.ts` at its point of discovery.
