@@ -78,6 +78,8 @@
     <string name="app_lock_prompt">Unlock Loomkeep</string>
     <string name="app_lock_title">Loomkeep is locked</string>
     <string name="app_lock_unlock">Unlock</string>
+    <string name="app_lock_touch">Touch to unlock</string>
+    <string name="app_lock_methods">Fingerprint, face or PIN</string>
     <string name="channel_activity">Activity</string>
     <string name="channel_activity_description">Replies, messages, follows</string>
     <string name="channel_releases">Releases</string>

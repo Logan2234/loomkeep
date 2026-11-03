@@ -74,6 +74,8 @@
     <string name="app_lock_prompt">Déverrouiller Loomkeep</string>
     <string name="app_lock_title">Loomkeep est verrouillé</string>
     <string name="app_lock_unlock">Déverrouiller</string>
+    <string name="app_lock_touch">Touche pour déverrouiller</string>
+    <string name="app_lock_methods">Empreinte, visage ou code</string>
     <string name="channel_activity">Activité</string>
     <string name="channel_activity_description">Réponses, messages, abonnements</string>
     <string name="channel_releases">Sorties</string>

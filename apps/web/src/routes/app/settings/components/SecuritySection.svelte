@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppLockSetting from "./AppLockSetting.svelte";
   import SettingsLinkRow from "./SettingsLinkRow.svelte";
   import { page } from "$app/state";
   import {
@@ -305,6 +306,8 @@
       </div>
     </div>
   </section>
+
+  <AppLockSetting />
 
   <p
     class="timecode mt-6 mb-2 block text-[0.65rem] tracking-[0.14em] uppercase">

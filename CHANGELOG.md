@@ -17,6 +17,14 @@ history from before it was started.
 
 - GitHub releases are named `X.Y.Z`; the CHANGELOG heading's subtitle opens
   the notes.
+- Settings › Security: the app lock now sits above "Go further".
+- Android app lock: a redrawn lock screen, touch the fingerprint to unlock.
+
+### Fixed
+
+- Passkeys created or used in the Android app are no longer rejected with
+  "Security key verification failed" (the API now reads `ANDROID_APP_LINKS`
+  too).
 
 ## 1.13.0 — Home-screen widgets, actionable notifications, and a phone-first app
 
