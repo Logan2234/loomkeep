@@ -23,7 +23,8 @@ history from before it was started.
 - Sign-in and sign-up drop the card: full-width 52 dp fields, the submit at
   the bottom on a phone, the security key as an outlined button, one line of
   legal links without the version, the brand mark beside the name; a wide
-  screen splits into a drifting poster wall and the form. The password pages
+  screen splits into a drifting poster wall and the form, while a phone
+  keeps the logo and the page's title, without the tagline. The password pages
   follow, and moving between auth pages keeps the wall going and slides the
   form in. So do the two-step verification steps: each method is a full-width
   row, and a complete six-digit code verifies itself without the button (a

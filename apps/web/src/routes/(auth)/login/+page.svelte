@@ -229,7 +229,7 @@
 
 {#if step === "credentials"}
   <form onsubmit={submit} class="flex flex-1 flex-col gap-4 lg:flex-none">
-    <h1 class="font-display sr-only text-2xl font-bold lg:not-sr-only">
+    <h1 class="font-display text-2xl font-bold">
       {m.auth_login_title()}
     </h1>
     <input
