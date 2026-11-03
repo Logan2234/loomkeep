@@ -165,7 +165,7 @@
         title={`${code} · ${title}`}
         canParticipate={tracked}
         revealSpoilersByDefault={watched}
-        onMovedToMessages={layout.compact ? closeSheet : undefined}
+        onMovedToMessages={layout.compact ? closeSheet : onClose}
         compact />
     {/if}
     {#if !layout.compact}

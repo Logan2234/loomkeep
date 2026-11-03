@@ -298,7 +298,7 @@
   "app_version": "Loomkeep v{version}",
   "search_recent_title": "Recent searches",
   "search_recent_remove": "Remove {term} from recent searches",
-  "stats_premium_block": "Your ratings, your decades and what you own: the detail of your statistics is for premium members.",
+  "stats_premium_block": "Some statistics, like your ratings breakdown, decades, what you own and your activity over time, are for premium members only.",
   "premium_locked": "Premium members only",
   "import_free_quota": "1 free import",
   "import_free_quota_used": "Free import already used for this domain — go premium to re-import.",

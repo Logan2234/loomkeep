@@ -159,16 +159,20 @@ describe("selection", () => {
   it("gives a selection's ends in one tab, or how many tabs", () => {
     const tabs = episodeTabs([season(1, [{}, {}, {}]), season(2, [{}])]);
     const one = new Set([tabs[0].episodes[0].id!, tabs[0].episodes[2].id!]);
-    expect(selectionSpan(tabs, one)).toEqual({
+    expect(selectionSpan(tabs, one, NOW)).toEqual({
       tabs: 1,
       seasonNumber: 1,
       first: 1,
       last: 3,
+      contiguous: false,
     });
     expect(
-      selectionSpan(tabs, new Set([...one, tabs[1].episodes[0].id!])),
+      selectionSpan(tabs, new Set([...one, tabs[0].episodes[1].id!]), NOW),
+    ).toMatchObject({ contiguous: true });
+    expect(
+      selectionSpan(tabs, new Set([...one, tabs[1].episodes[0].id!]), NOW),
     ).toEqual({ tabs: 2, sliced: false });
-    expect(selectionSpan(tabs, new Set())).toBeNull();
+    expect(selectionSpan(tabs, new Set(), NOW)).toBeNull();
   });
 });
 

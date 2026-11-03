@@ -48,8 +48,9 @@
 </script>
 
 <section
-  class="border-border bg-surface grid grid-cols-[3.75rem_minmax(0,1fr)] gap-x-4 gap-y-2 rounded-xl border p-3 sm:grid-cols-[5.75rem_minmax(0,1fr)] sm:p-4">
-  <h3 class="col-span-2 flex items-baseline justify-between gap-3">
+  class="border-border bg-surface grid grid-cols-[3.75rem_minmax(0,1fr)] gap-x-4 gap-y-2 rounded-xl border p-3 sm:grid-cols-[5.75rem_minmax(0,1fr)] sm:grid-rows-[auto_auto_auto_1fr] sm:p-4">
+  <h3
+    class="col-span-2 flex items-baseline justify-between gap-3 sm:col-span-1 sm:col-start-2">
     <span class="font-display min-w-0 truncate font-bold">{title}</span>
     <span class="timecode text-dim shrink-0 text-xs">
       {tracked
@@ -64,7 +65,7 @@
   {#if season.posterUrl && canOpenPosters}
     <button
       type="button"
-      class="group row-span-2 self-start overflow-hidden rounded-lg sm:row-span-3"
+      class="group row-span-2 self-start overflow-hidden rounded-lg sm:col-start-1 sm:row-span-4 sm:row-start-1"
       aria-label={m.media_season_images()}
       onclick={onPosters}>
       <img
@@ -76,13 +77,13 @@
     <img
       src={season.posterUrl}
       alt=""
-      class="row-span-2 w-full self-start rounded-lg object-cover sm:row-span-3" />
+      class="row-span-2 w-full self-start rounded-lg object-cover sm:col-start-1 sm:row-span-4 sm:row-start-1" />
   {:else}
     <span
-      class="bg-surface-2 row-span-2 aspect-[2/3] w-full rounded-lg sm:row-span-3"
+      class="bg-surface-2 row-span-2 aspect-[2/3] w-full self-start rounded-lg sm:col-start-1 sm:row-span-4 sm:row-start-1"
     ></span>
   {/if}
-  <div class="min-w-0">
+  <div class="min-w-0 sm:col-start-2">
     <p class="timecode text-dim text-[0.68rem] uppercase">
       {exactTime ? m.media_anime_synopsis() : m.media_season_synopsis()}
     </p>
@@ -126,7 +127,7 @@
   {/if}
 
   <div
-    class="col-span-2 flex flex-wrap items-center gap-1 sm:col-span-1 sm:col-start-2">
+    class="col-span-2 flex flex-wrap items-center gap-1 sm:col-span-1 sm:col-start-2 sm:row-start-4 sm:self-end">
     {#if tracked && season.id}
       <button
         type="button"

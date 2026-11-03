@@ -1,5 +1,7 @@
 <script lang="ts">
+  import Icon from "#lib/components/Icon.svelte";
   import { formatNumber } from "#lib/format.js";
+  import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { scale } from "svelte/transition";
@@ -42,6 +44,33 @@
     });
   });
 
+  // A mouse has no way to slide the row: arrows, on the sides with more to see.
+  let canLeft = $state(false);
+  let canRight = $state(false);
+
+  function measure() {
+    if (!list) return;
+    canLeft = list.scrollLeft > 1;
+    canRight = list.scrollLeft + list.clientWidth < list.scrollWidth - 1;
+  }
+
+  $effect(() => {
+    const row = list;
+    if (!row || layout.compact) return;
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(row);
+    return () => observer.disconnect();
+  });
+
+  function scrollRow(side: -1 | 1) {
+    if (!list) return;
+    list.scrollBy({
+      left: side * list.clientWidth * 0.7,
+      behavior: reduced ? "auto" : "smooth",
+    });
+  }
+
   function onKeydown(e: KeyboardEvent) {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     const at = tabs.findIndex((t) => t.key === active);
@@ -64,8 +93,18 @@
       #
     </button>
   {/if}
+  {#if !layout.compact && canLeft}
+    <button
+      type="button"
+      class="btn-icon self-center"
+      aria-label={m.common_previous()}
+      onclick={() => scrollRow(-1)}>
+      <Icon name="chevron-left" class="h-5 w-5" />
+    </button>
+  {/if}
   <div
     bind:this={list}
+    onscroll={measure}
     role="tablist"
     tabindex="-1"
     aria-label={m.media_episodes()}
@@ -119,4 +158,13 @@
       </button>
     {/each}
   </div>
+  {#if !layout.compact && canRight}
+    <button
+      type="button"
+      class="btn-icon self-center"
+      aria-label={m.common_next()}
+      onclick={() => scrollRow(1)}>
+      <Icon name="chevron-right" class="h-5 w-5" />
+    </button>
+  {/if}
 </div>

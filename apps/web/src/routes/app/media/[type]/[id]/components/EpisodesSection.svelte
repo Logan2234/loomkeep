@@ -546,13 +546,14 @@
   );
   const actions = $derived(selectionActions(selectedEpisodes, now));
   const spanLabel = $derived.by(() => {
-    const span = selectionSpan(tabs, selected);
+    const span = selectionSpan(tabs, selected, now);
     if (!span) return "";
     if ("sliced" in span) {
       return span.sliced
         ? m.media_selection_slices({ count: span.tabs })
         : m.media_selection_seasons({ count: span.tabs });
     }
+    if (!span.contiguous) return "";
     const first = episodeCode(span.seasonNumber, span.first);
     return span.first === span.last
       ? first
@@ -723,183 +724,189 @@
   <div class="mb-3">{@render seasonCard(cutSeason)}</div>
 {/if}
 
-<div
-  bind:this={tabsEl}
-  class="bg-bg sticky z-15 -mx-1 px-1 py-1.5"
-  style="top: calc(env(safe-area-inset-top) + {actionBarHeight}px)">
-  <SeasonTabs
-    {tabs}
-    active={activeTab?.key ?? null}
-    tracked={!!entry}
-    {selected}
-    title={tabTitle}
-    onSelect={showTab}
-    onGoTo={sliced ? () => (goToOpen = true) : undefined} />
-</div>
-
-{#if activeTab}
-  {@const tab = activeTab}
-  {@const before = tabs[activeIndex - 1]}
-  {@const after = tabs[activeIndex + 1]}
+<!-- Scopes what sticks: the tabs and the bar leave with the list. -->
+<div>
   <div
-    bind:this={pagesEl}
-    class="touch-pan-y pt-2"
-    role="tabpanel"
-    aria-label={tabTitle(tab)}>
-    <div bind:this={followingEl}>
-      {#key tab.key}
-        <div
-          in:fly={{
-            x: reduced ? 0 : direction * 28,
-            duration: reduced ? 0 : 200,
-          }}>
-          {#if tab.range}
-            <p class="mb-2 flex items-baseline justify-between gap-3 px-1">
-              <span class="text-sm font-semibold">
-                {m.media_episodes_range({
-                  from: formatNumber(tab.range.from),
-                  to: formatNumber(tab.range.to),
-                })}
-              </span>
-              {#if entry}
-                <span class="timecode text-dim text-xs">
-                  {m.media_watched_of({
-                    watched: tab.episodes.filter((e) => e.watchCount > 0)
-                      .length,
-                    total: tab.episodes.length,
+    bind:this={tabsEl}
+    class="bg-bg sticky z-15 -mx-1 px-1 py-1.5"
+    style="top: calc(env(safe-area-inset-top) + {actionBarHeight}px)">
+    <SeasonTabs
+      {tabs}
+      active={activeTab?.key ?? null}
+      tracked={!!entry}
+      {selected}
+      title={tabTitle}
+      onSelect={showTab}
+      onGoTo={sliced ? () => (goToOpen = true) : undefined} />
+  </div>
+
+  {#if activeTab}
+    {@const tab = activeTab}
+    {@const before = tabs[activeIndex - 1]}
+    {@const after = tabs[activeIndex + 1]}
+    <div
+      bind:this={pagesEl}
+      class="touch-pan-y pt-2"
+      role="tabpanel"
+      aria-label={tabTitle(tab)}>
+      <div bind:this={followingEl}>
+        {#key tab.key}
+          <div
+            in:fly={{
+              x: reduced ? 0 : direction * 28,
+              duration: reduced ? 0 : 200,
+            }}>
+            {#if tab.range}
+              <p class="mb-2 flex items-baseline justify-between gap-3 px-1">
+                <span class="text-sm font-semibold">
+                  {m.media_episodes_range({
+                    from: formatNumber(tab.range.from),
+                    to: formatNumber(tab.range.to),
                   })}
                 </span>
-              {/if}
-            </p>
-          {:else if current}
-            <div class="mb-3">{@render seasonCard(current)}</div>
-          {/if}
+                {#if entry}
+                  <span class="timecode text-dim text-xs">
+                    {m.media_watched_of({
+                      watched: tab.episodes.filter((e) => e.watchCount > 0)
+                        .length,
+                      total: tab.episodes.length,
+                    })}
+                  </span>
+                {/if}
+              </p>
+            {:else if current}
+              <div class="mb-3">{@render seasonCard(current)}</div>
+            {/if}
 
-          <ul
-            bind:this={listEl}
-            class="card mb-4 overflow-hidden"
-            use:longpress={{
-              enabled: !!entry,
-              mouse: true,
-              pick: (target) =>
-                target.closest<HTMLElement>("[data-episode-row]"),
-              onLongPress: startRangeDrag,
-            }}>
-            {#each tab.episodes as episode (episode.number)}
-              {@const episodeId = episode.id}
-              {@const seasonNumber = tab.seasonNumber}
-              {@const code = episodeCode(seasonNumber, episode.number)}
-              <EpisodeRow
-                {episode}
-                {seasonNumber}
-                {code}
-                {exactTime}
-                tracked={!!entry}
-                {now}
-                selected={openEpisode?.season === seasonNumber &&
-                  openEpisode.episode === episode.number}
-                highlighted={highlightedEpisode ===
-                  `s${seasonNumber}e${episode.number}`}
-                justWatched={!!episodeId && justWatchedId === episodeId}
-                busy={!!episodeId && episodeBusy(episodeId)}
-                isNext={nextUp?.seasonNumber === seasonNumber &&
-                  nextUp.episode.number === episode.number}
-                {selecting}
-                checked={!!episodeId && selected.has(episodeId)}
-                onOpen={() =>
-                  openEpisode?.season === seasonNumber &&
-                  openEpisode.episode === episode.number
-                    ? closePanel()
-                    : openPanel({
-                        season: seasonNumber,
-                        episode: episode.number,
-                      })}
-                onMark={() =>
-                  episodeId &&
-                  requestMarkWatched(seasonNumber, episode.number, episodeId)}
-                onRewatch={() => episodeId && markWatched(episodeId)}
-                onUndo={() => episodeId && markUnwatch(episodeId)}
-                onUndoAll={() =>
-                  episodeId &&
-                  batchMut.mutate({
-                    action: "unwatch",
-                    ids: [episodeId],
-                    single: { code, count: episode.watchCount },
-                  })}
-                onToggle={(shiftKey) =>
-                  episodeId && toggleEpisode(episodeId, shiftKey)} />
-            {/each}
-          </ul>
+            <ul
+              bind:this={listEl}
+              class="card mb-4 overflow-hidden"
+              use:longpress={{
+                enabled: !!entry,
+                mouse: true,
+                // The action column holds a menu, whose backdrop covers the page.
+                pick: (target) =>
+                  target.closest("[data-row-actions]")
+                    ? null
+                    : target.closest<HTMLElement>("[data-episode-row]"),
+                onLongPress: startRangeDrag,
+              }}>
+              {#each tab.episodes as episode (episode.number)}
+                {@const episodeId = episode.id}
+                {@const seasonNumber = tab.seasonNumber}
+                {@const code = episodeCode(seasonNumber, episode.number)}
+                <EpisodeRow
+                  {episode}
+                  {seasonNumber}
+                  {code}
+                  {exactTime}
+                  tracked={!!entry}
+                  {now}
+                  selected={openEpisode?.season === seasonNumber &&
+                    openEpisode.episode === episode.number}
+                  highlighted={highlightedEpisode ===
+                    `s${seasonNumber}e${episode.number}`}
+                  justWatched={!!episodeId && justWatchedId === episodeId}
+                  busy={!!episodeId && episodeBusy(episodeId)}
+                  isNext={nextUp?.seasonNumber === seasonNumber &&
+                    nextUp.episode.number === episode.number}
+                  {selecting}
+                  checked={!!episodeId && selected.has(episodeId)}
+                  onOpen={() =>
+                    openEpisode?.season === seasonNumber &&
+                    openEpisode.episode === episode.number
+                      ? closePanel()
+                      : openPanel({
+                          season: seasonNumber,
+                          episode: episode.number,
+                        })}
+                  onMark={() =>
+                    episodeId &&
+                    requestMarkWatched(seasonNumber, episode.number, episodeId)}
+                  onRewatch={() => episodeId && markWatched(episodeId)}
+                  onUndo={() => episodeId && markUnwatch(episodeId)}
+                  onUndoAll={() =>
+                    episodeId &&
+                    batchMut.mutate({
+                      action: "unwatch",
+                      ids: [episodeId],
+                      single: { code, count: episode.watchCount },
+                    })}
+                  onToggle={(shiftKey) =>
+                    episodeId && toggleEpisode(episodeId, shiftKey)} />
+              {/each}
+            </ul>
 
-          {#if before || after}
-            <nav class="mb-4 flex gap-2">
-              {#if before}
-                <button
-                  type="button"
-                  class="border-border bg-surface hover:bg-surface-2 min-w-0 flex-1 rounded-xl border px-3 py-2 text-left transition-colors duration-150"
-                  onclick={() => showTab(before.key)}>
-                  <span class="text-dim block text-xs"
-                    >‹ {m.common_previous()}</span>
-                  <span class="block truncate text-sm font-semibold"
-                    >{tabPageLabel(before)}</span>
-                </button>
-              {:else}
-                <span class="flex-1" aria-hidden="true"></span>
-              {/if}
-              {#if after}
-                <button
-                  type="button"
-                  class="border-border bg-surface hover:bg-surface-2 min-w-0 flex-1 rounded-xl border px-3 py-2 text-right transition-colors duration-150"
-                  onclick={() => showTab(after.key)}>
-                  <span class="text-dim block text-xs"
-                    >{m.common_next()} ›</span>
-                  <span class="block truncate text-sm font-semibold"
-                    >{tabPageLabel(after)}</span>
-                </button>
-              {:else}
-                <span class="flex-1" aria-hidden="true"></span>
-              {/if}
-            </nav>
-          {/if}
-        </div>
-      {/key}
-    </div>
-  </div>
-{/if}
-
-{#if !sheetOpen && (selecting || barEpisode)}
-  <div
-    bind:clientHeight={floatingHeight}
-    class={layout.compact
-      ? "fixed inset-x-2 bottom-[calc(var(--bottom-bar-space)+0.5rem)] z-30"
-      : "sticky bottom-4 z-20 mx-auto mt-4 w-full max-w-[480px]"}
-    transition:fly={{ y: reduced ? 0 : 12, duration: reduced ? 0 : 200 }}>
-    {#if selecting}
-      <div bind:this={selectionBarEl}>
-        <SelectionBar
-          count={selected.size}
-          span={spanLabel}
-          {actions}
-          busy={batchMut.loading}
-          onAction={(action, ids) => batchMut.mutate({ action, ids })}
-          onExit={exitSelection} />
+            {#if before || after}
+              <nav class="mb-4 flex gap-2">
+                {#if before}
+                  <button
+                    type="button"
+                    class="border-border bg-surface hover:bg-surface-2 min-w-0 flex-1 rounded-xl border px-3 py-2 text-left transition-colors duration-150"
+                    onclick={() => showTab(before.key)}>
+                    <span class="text-dim block text-xs"
+                      >‹ {m.common_previous()}</span>
+                    <span class="block truncate text-sm font-semibold"
+                      >{tabPageLabel(before)}</span>
+                  </button>
+                {:else}
+                  <span class="flex-1" aria-hidden="true"></span>
+                {/if}
+                {#if after}
+                  <button
+                    type="button"
+                    class="border-border bg-surface hover:bg-surface-2 min-w-0 flex-1 rounded-xl border px-3 py-2 text-right transition-colors duration-150"
+                    onclick={() => showTab(after.key)}>
+                    <span class="text-dim block text-xs"
+                      >{m.common_next()} ›</span>
+                    <span class="block truncate text-sm font-semibold"
+                      >{tabPageLabel(after)}</span>
+                  </button>
+                {:else}
+                  <span class="flex-1" aria-hidden="true"></span>
+                {/if}
+              </nav>
+            {/if}
+          </div>
+        {/key}
       </div>
-    {:else if barEpisode}
-      {@const { seasonNumber, episode } = barEpisode}
-      {@const code = episodeCode(seasonNumber, episode.number)}
-      <UpNextBar
-        {episode}
-        {code}
-        countdown={nextUp
-          ? null
-          : (upcomingLabel(episode.airDate, now, exactTime) ??
-            m.media_not_aired())}
-        busy={!!episode.id && episodeBusy(episode.id)}
-        onGo={() => goToEpisode(seasonNumber, episode.number)}
-        onMark={() => episode.id && markWatched(episode.id)} />
-    {/if}
-  </div>
-{/if}
+    </div>
+  {/if}
+
+  {#if !sheetOpen && (selecting || barEpisode)}
+    <div
+      bind:clientHeight={floatingHeight}
+      class={layout.compact
+        ? "fixed inset-x-2 bottom-[calc(var(--bottom-bar-space)+0.5rem)] z-30"
+        : "sticky bottom-4 z-20 mx-auto mt-4 w-full max-w-[480px]"}
+      transition:fly={{ y: reduced ? 0 : 12, duration: reduced ? 0 : 200 }}>
+      {#if selecting}
+        <div bind:this={selectionBarEl}>
+          <SelectionBar
+            count={selected.size}
+            span={spanLabel}
+            {actions}
+            busy={batchMut.loading}
+            onAction={(action, ids) => batchMut.mutate({ action, ids })}
+            onExit={exitSelection} />
+        </div>
+      {:else if barEpisode}
+        {@const { seasonNumber, episode } = barEpisode}
+        {@const code = episodeCode(seasonNumber, episode.number)}
+        <UpNextBar
+          {episode}
+          {code}
+          countdown={nextUp
+            ? null
+            : (upcomingLabel(episode.airDate, now, exactTime) ??
+              m.media_not_aired())}
+          busy={!!episode.id && episodeBusy(episode.id)}
+          onGo={() => goToEpisode(seasonNumber, episode.number)}
+          onMark={() => episode.id && markWatched(episode.id)} />
+      {/if}
+    </div>
+  {/if}
+</div>
 
 {#if panel}
   {@const { season, episode, before, after } = panel}

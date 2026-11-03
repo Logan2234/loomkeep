@@ -35,7 +35,7 @@
   class="border-border bg-surface flex items-center gap-2 rounded-2xl border p-2 shadow-xl">
   <button
     type="button"
-    class="hover:bg-surface-2 flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left transition-colors duration-150"
+    class="group flex min-w-0 flex-1 items-center gap-3 rounded-md text-left"
     aria-label={m.media_go_to_code({ code })}
     onclick={onGo}>
     <span
@@ -52,7 +52,8 @@
         in:fly={{ y: reduced ? 0 : 6, duration: reduced ? 0 : 180 }}>
         <span class="timecode text-dim block truncate text-[0.7rem]"
           >{label}</span>
-        <span class="block truncate text-sm font-semibold">
+        <span
+          class="group-hover:text-accent block truncate text-sm font-semibold transition-colors duration-150">
           {episode.title ?? `${m.common_episode()} ${episode.number}`}
         </span>
       </span>

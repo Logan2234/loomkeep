@@ -101,12 +101,18 @@ export function longpress(node: HTMLElement, params: LongPressParams) {
     if (enabled && touching) e.preventDefault();
   }
 
+  // A held link or image would start a drag, which ends the press.
+  function dragStart(e: DragEvent) {
+    if (enabled && touching) e.preventDefault();
+  }
+
   mark();
   node.addEventListener("pointerdown", start);
   node.addEventListener("pointermove", move);
   node.addEventListener("pointerup", release);
   node.addEventListener("pointercancel", release);
   node.addEventListener("contextmenu", contextMenu);
+  node.addEventListener("dragstart", dragStart);
 
   return {
     update(next: LongPressParams) {
@@ -123,6 +129,7 @@ export function longpress(node: HTMLElement, params: LongPressParams) {
       node.removeEventListener("pointerup", release);
       node.removeEventListener("pointercancel", release);
       node.removeEventListener("contextmenu", contextMenu);
+      node.removeEventListener("dragstart", dragStart);
     },
   };
 }

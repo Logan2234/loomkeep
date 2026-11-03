@@ -158,8 +158,16 @@ export function selectionActions(
 export function selectionSpan(
   tabs: EpisodeTab[],
   selected: ReadonlySet<string>,
+  now: Date,
 ):
-  | { tabs: 1; seasonNumber: number; first: number; last: number }
+  | {
+      tabs: 1;
+      seasonNumber: number;
+      first: number;
+      last: number;
+      /** Nothing selectable left out between both ends. */
+      contiguous: boolean;
+    }
   | { tabs: number; sliced: boolean }
   | null {
   const touched = tabs.filter((t) =>
@@ -174,11 +182,16 @@ export function selectionSpan(
   const numbers = touched[0].episodes
     .filter((e) => e.id && selected.has(e.id))
     .map((e) => e.number);
+  const first = Math.min(...numbers);
+  const last = Math.max(...numbers);
   return {
     tabs: 1,
     seasonNumber: touched[0].seasonNumber,
-    first: Math.min(...numbers),
-    last: Math.max(...numbers),
+    first,
+    last,
+    contiguous: touched[0].episodes
+      .filter((e) => e.number >= first && e.number <= last && isAired(e, now))
+      .every((e) => e.id && selected.has(e.id)),
   };
 }
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Drawer from "#lib/components/Drawer.svelte";
+  import Modal from "#lib/components/Modal.svelte";
   import { formatNumber } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { MediaDetailEpisodeDto } from "@loomkeep/shared";
@@ -48,11 +48,8 @@
   }
 </script>
 
-<Drawer onclose={onClose} labelledby="goto-episode-title" initialFocus={input}>
-  <form class="flex flex-col gap-3 px-5 pt-1 pb-5" onsubmit={submit}>
-    <h2 id="goto-episode-title" class="font-display font-bold">
-      {m.media_goto_title()}
-    </h2>
+<Modal title={m.media_goto_title()} onclose={onClose} initialFocus={input}>
+  <form class="flex flex-col gap-3" onsubmit={submit}>
     <label class="flex flex-col gap-1 text-sm">
       {m.media_goto_label({ max: formatNumber(max) })}
       <input
@@ -79,4 +76,4 @@
       {m.media_goto_submit()}
     </button>
   </form>
-</Drawer>
+</Modal>

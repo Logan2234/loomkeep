@@ -96,14 +96,16 @@
     aria-label={m.media_select_episode({ code })}
     disabled={!selectable}
     class="relative z-10 grid shrink-0 place-items-center rounded-md border-2 transition-[background-color,border-color,opacity] duration-150 after:absolute after:-inset-2.5 disabled:border-dashed disabled:opacity-40
-      {onImage ? 'h-8 w-8' : 'h-7 w-7'}
+      {onImage ? 'h-6 w-6' : 'h-7 w-7'}
       {checked
       ? 'bg-accent border-accent text-bg'
       : onImage
         ? 'bg-bg/80 border-fg/70'
         : 'border-dim'}"
     onclick={(e) => onToggle(e.shiftKey)}>
-    {#if checked}<Icon name="check" class="h-4 w-4" />{/if}
+    {#if checked}<Icon
+        name="check"
+        class={onImage ? "h-3.5 w-3.5" : "h-4 w-4"} />{/if}
   </button>
 {/snippet}
 
@@ -146,14 +148,14 @@
           {upcoming}
         </span>
       {/if}
+      {#if !layout.compact && selectable}
+        <span
+          class="absolute top-1.5 left-1.5 z-10 transition-opacity duration-150 focus-within:opacity-100
+            {selecting ? '' : 'opacity-0 group-hover/row:opacity-100'}">
+          {@render checkbox(true)}
+        </span>
+      {/if}
     </div>
-    {#if !layout.compact && selectable}
-      <span
-        class="absolute top-4 left-4 z-10 transition-opacity duration-150 focus-within:opacity-100
-          {selecting ? '' : 'opacity-0 group-hover/row:opacity-100'}">
-        {@render checkbox(true)}
-      </span>
-    {/if}
 
     <div class="min-w-0">
       <p class="flex items-baseline gap-1.5">
@@ -192,6 +194,7 @@
     <!-- Above the row's stretched button; above the next rows too with its menu
          open, each column being a stacking context. -->
     <div
+      data-row-actions
       class="relative z-10 mt-1 mr-1 flex w-10 flex-col items-center self-start has-[[role=menu]]:z-30">
       {#if selecting && layout.compact}
         {@render checkbox(false)}
@@ -236,22 +239,24 @@
               </button>
             {/snippet}
             {#snippet children({ close })}
-              <div
-                class="border-border max-w-72 border-b px-3 py-2 [[data-menu-sheet]_&]:max-w-none [[data-menu-sheet]_&]:px-5">
-                <p class="truncate text-sm font-semibold">
-                  <span class="timecode">{code}</span> · {title}
-                </p>
-                {#if lastWatchedAt}
-                  <p class="text-dim mt-0.5 text-xs">
-                    {episode.watchCount > 1
-                      ? m.media_watched_on_count({
-                          date: lastWatchedAt,
-                          count: episode.watchCount,
-                        })
-                      : m.media_watched_on({ date: lastWatchedAt })}
+              {#if layout.compact}
+                <div
+                  class="border-border max-w-72 border-b px-3 py-2 [[data-menu-sheet]_&]:max-w-none [[data-menu-sheet]_&]:px-5">
+                  <p class="truncate text-sm font-semibold">
+                    <span class="timecode">{code}</span> · {title}
                   </p>
-                {/if}
-              </div>
+                  {#if lastWatchedAt}
+                    <p class="text-dim mt-0.5 text-xs">
+                      {episode.watchCount > 1
+                        ? m.media_watched_on_count({
+                            date: lastWatchedAt,
+                            count: episode.watchCount,
+                          })
+                        : m.media_watched_on({ date: lastWatchedAt })}
+                    </p>
+                  {/if}
+                </div>
+              {/if}
               <button
                 type="button"
                 role="menuitem"
