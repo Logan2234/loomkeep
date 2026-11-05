@@ -19,7 +19,7 @@
   // The welcome tour's send-off opens the checklist for its glow.
   $effect(() => {
     if (!welcomeCelebration.startedAt) return;
-    const timer = setTimeout(() => (open = true), 1200);
+    const timer = setTimeout(() => (open = true), 2800);
     return () => clearTimeout(timer);
   });
 

@@ -62,7 +62,9 @@
         {/if}
         <span
           class="relative grid h-10 w-10 place-items-center rounded-full transition-colors {active
-            ? 'bg-accent text-accent-fg shadow-[0_6px_16px_-4px_var(--accent)]'
+            ? item.id === 'profile' && auth.user
+              ? 'ring-accent ring-offset-surface ring-2 ring-offset-2'
+              : 'bg-accent text-accent-fg shadow-[0_6px_16px_-4px_var(--accent)]'
             : 'text-dim'}">
           {#if item.id === "profile" && auth.user}
             <span data-profile-target class="block rounded-full">

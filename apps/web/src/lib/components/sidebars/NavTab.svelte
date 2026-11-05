@@ -66,7 +66,9 @@
   {/if}
   <span
     class="relative grid place-items-center rounded-full transition-colors {look.slot} {active
-      ? look.slotActive
+      ? glyph
+        ? 'ring-accent ring-offset-surface ring-2 ring-offset-2'
+        : look.slotActive
       : ''}">
     {#if glyph}{@render glyph()}{:else}<Icon name={icon} class="h-5 w-5" />{/if}
     {@render badge?.()}
