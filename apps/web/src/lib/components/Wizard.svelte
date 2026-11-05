@@ -284,6 +284,7 @@
 
       <div
         bind:this={scroller}
+        role="presentation"
         class="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto"
         onpointerdown={onPointerDown}
         onpointerup={onPointerUp}
