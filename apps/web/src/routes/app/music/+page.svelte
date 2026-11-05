@@ -165,7 +165,7 @@
     n === 1
       ? m.music_library_count_one({ count: n })
       : m.music_library_count_many({ count: n })}
-  noun="album"
+  noun={m.common_album()}
   domain={Domain.MUSIC}
   {load}
   {loadPile}

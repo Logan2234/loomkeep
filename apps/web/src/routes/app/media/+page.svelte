@@ -224,7 +224,7 @@
       n === 1
         ? m.media_library_count_one({ count: n })
         : m.media_library_count_many({ count: n })}
-    noun="titre"
+    noun={m.library_title_one()}
     domain={Domain.MEDIA}
     {load}
     {loadPile}

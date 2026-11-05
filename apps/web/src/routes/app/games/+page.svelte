@@ -216,7 +216,7 @@
       n === 1
         ? m.game_library_count_one({ count: n })
         : m.game_library_count_many({ count: n })}
-    noun="jeu"
+    noun={m.common_game()}
     domain={Domain.GAMES}
     {load}
     {loadPile}
