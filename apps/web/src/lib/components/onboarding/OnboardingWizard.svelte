@@ -41,6 +41,7 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { isNativeApp } from "#lib/native/app-shell.js";
   import { successFeedback, tapFeedback } from "#lib/native/haptics.js";
+  import { celebrateWelcome } from "#lib/onboarding-celebration.svelte.js";
   import { onboardingReplay } from "#lib/onboarding-replay.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -106,16 +107,6 @@
   const stepId = $derived(STEPS[activeIndex].id);
   const reduced = prefersReducedMotion();
   const queryClient = useQueryClient();
-
-  const canAdvance = $derived(
-    stepId === "domains"
-      ? pickedCount > 0
-      : stepId === "profile"
-        ? usernameCheck !== "taken" &&
-          usernameCheck !== "checking" &&
-          !saveUsernameMut.loading
-        : true,
-  );
 
   const hint = $derived.by((): string | Snippet | undefined => {
     switch (stepId) {
@@ -309,6 +300,16 @@
     if (next === ProfileAccess.GHOST) ghostImpactMut.mutate();
     else accessMut.mutate(next);
   }
+
+  const canAdvance = $derived(
+    stepId === "domains"
+      ? pickedCount > 0
+      : stepId === "profile"
+        ? usernameCheck !== "taken" &&
+          usernameCheck !== "checking" &&
+          !saveUsernameMut.loading
+        : true,
+  );
 
   // ── Settings ────────────────────────────────────────────────────────────
 
@@ -523,8 +524,18 @@
     activeIndex++;
   }
 
-  async function finish() {
+  let memberCard = $state<HTMLElement>();
+  let leaving = false;
+
+  async function openHome() {
+    if (leaving) return;
+    leaving = true;
     successFeedback();
+    if (memberCard) await celebrateWelcome(memberCard);
+    await finish();
+  }
+
+  async function finish() {
     if (onboardingReplay.active) onboardingReplay.active = false;
     else await completeOnboarding();
     if (browser) removeSessionStorage(STEP_STORAGE_KEY);
@@ -600,7 +611,7 @@
   onBack={() => activeIndex--}
   onNext={next}
   onJump={(i) => (activeIndex = i)}
-  onFinish={finish}>
+  onFinish={openHome}>
   {#if stepId === "welcome"}
     <div class="lg:grid lg:grid-cols-[minmax(0,34rem)_minmax(0,1fr)] lg:gap-12">
       <div>
@@ -930,6 +941,7 @@
     <div
       class="lg:grid lg:max-w-5xl lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start lg:gap-14">
       <div
+        bind:this={memberCard}
         class="member-card bg-surface border-border relative mb-6 flex max-w-xl overflow-hidden rounded-[18px] border shadow-[0_18px_40px_-18px_rgba(0,0,0,0.6)] md:rounded-[22px]">
         <div class="min-w-0 flex-1 py-4.5 pr-4 pl-4.5 md:px-7 md:py-6.5">
           <p

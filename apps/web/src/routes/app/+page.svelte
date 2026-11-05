@@ -12,10 +12,20 @@
   import { resolveHomeLayout } from "#lib/home/layout.js";
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
+  import {
+    landHome,
+    welcomeCelebration,
+  } from "#lib/onboarding-celebration.svelte.js";
+  import { untrack } from "svelte";
 
   const widgets = $derived(
     resolveHomeLayout(auth.user?.homeLayout, currentHomeGate()),
   );
+
+  let root = $state<HTMLElement>();
+  $effect(() => {
+    if (welcomeCelebration.startedAt && root) untrack(() => landHome(root!));
+  });
 
   const greeting = $derived.by(() => {
     const h = new Date().getHours();
@@ -25,14 +35,14 @@
   });
 </script>
 
-<div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
+<div bind:this={root} class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="home"
     title={`${greeting}${auth.user ? ", " + auth.user.displayName : ""}.`}
     documentTitle={m.common_home()}
     subtitle={m.home_subtitle()} />
 
-  {#if layout.compact}<OnboardingCard />{/if}
+  {#if layout.compact}<div data-welcome-land><OnboardingCard /></div>{/if}
 
   <HomeGrid {widgets} />
 

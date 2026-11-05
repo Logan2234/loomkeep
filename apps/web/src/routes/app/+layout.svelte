@@ -36,22 +36,8 @@
   import { reauth } from "#lib/reauth.svelte.js";
   import { LEGAL_VERSION } from "@loomkeep/shared";
   import { fade } from "svelte/transition";
-  import { cubicIn } from "svelte/easing";
   import { scrollLock } from "#lib/actions/scroll-lock.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
   import UnlockBubble from "./components/UnlockBubble.svelte";
-
-  // The welcome tour lifts away like a lowered screen, the app behind it
-  // coming into focus.
-  const reducedMotion = prefersReducedMotion();
-  function curtain(_node: Element) {
-    return {
-      duration: reducedMotion ? 0 : 520,
-      easing: cubicIn,
-      css: (t: number, u: number) =>
-        `opacity: ${t}; transform: translateY(${-u * 6}%) scale(${1 + u * 0.04}); filter: blur(${u * 6}px);`,
-    };
-  }
 
   const needsTermsReacceptance = $derived(
     !!auth.user && auth.user.acceptedTermsVersion !== LEGAL_VERSION,
@@ -176,8 +162,7 @@
       aria-modal="true"
       aria-label={m.common_welcome()}
       use:scrollLock
-      in:fade={{ duration: 200 }}
-      out:curtain>
+      transition:fade={{ duration: 200 }}>
       <OnboardingWizard />
     </div>
   {/if}

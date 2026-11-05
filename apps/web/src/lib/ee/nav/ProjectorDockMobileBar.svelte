@@ -2,6 +2,7 @@
   import { page } from "$app/state";
   import { pullMenu } from "#lib/actions/pull-menu.js";
   import { auth } from "#lib/auth.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { isDomainEnabled } from "#lib/domain-availability.js";
@@ -63,7 +64,17 @@
           class="relative grid h-10 w-10 place-items-center rounded-full transition-colors {active
             ? 'bg-accent text-accent-fg shadow-[0_6px_16px_-4px_var(--accent)]'
             : 'text-dim'}">
-          <Icon name={item.icon} class="h-5 w-5" />
+          {#if item.id === "profile" && auth.user}
+            <span data-profile-target class="block rounded-full">
+              <Avatar
+                seed={auth.user.username}
+                url={auth.user.avatarUrl}
+                size={26}
+                class="block rounded-full!" />
+            </span>
+          {:else}
+            <Icon name={item.icon} class="h-5 w-5" />
+          {/if}
           {#if item.newBadgeKey && isFeatureNew(item.newBadgeKey)}
             <span
               class="bg-accent ring-surface absolute top-0 right-0 h-2 w-2 rounded-full ring-2"

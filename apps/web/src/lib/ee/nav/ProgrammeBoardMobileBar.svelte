@@ -1,10 +1,12 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { auth } from "#lib/auth.svelte.js";
+  import Avatar from "#lib/components/Avatar.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
-  import { visibleNavItems } from "#lib/navigation.js";
+  import { profileHref, visibleNavItems } from "#lib/navigation.js";
   import { pullMenu } from "#lib/actions/pull-menu.js";
   import type { NavTabLook } from "#lib/components/sidebars/NavTab.svelte";
   import LibraryTab from "#lib/components/sidebars/LibraryTab.svelte";
@@ -52,7 +54,17 @@
         class="relative flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 text-[0.6rem] font-semibold transition-all duration-150 {active
           ? 'bg-accent/10 text-accent -translate-y-1'
           : 'text-dim'}">
-        <Icon name={item.icon} class="h-5 w-5" />
+        {#if item.href === profileHref() && auth.user}
+          <span data-profile-target class="block rounded-full">
+            <Avatar
+              seed={auth.user.username}
+              url={auth.user.avatarUrl}
+              size={22}
+              class="block rounded-full!" />
+          </span>
+        {:else}
+          <Icon name={item.icon} class="h-5 w-5" />
+        {/if}
         {item.label}
         {#if item.newBadgeKey && isFeatureNew(item.newBadgeKey)}
           <span

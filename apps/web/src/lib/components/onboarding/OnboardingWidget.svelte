@@ -7,6 +7,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import { useOnboardingChecklist } from "#lib/gamification/onboarding-checklist.svelte.js";
   import { layout } from "#lib/layout.svelte.js";
+  import { welcomeCelebration } from "#lib/onboarding-celebration.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { OnboardingStepKey } from "@loomkeep/shared";
   import { fly } from "svelte/transition";
@@ -14,6 +15,13 @@
   import OnboardingChecklistRows from "./OnboardingChecklistRows.svelte";
 
   let open = $state(false);
+
+  // The welcome tour's send-off opens the checklist for its glow.
+  $effect(() => {
+    if (!welcomeCelebration.startedAt) return;
+    const timer = setTimeout(() => (open = true), 1200);
+    return () => clearTimeout(timer);
+  });
 
   // A step's own link is a normal client-side navigation, not a call this
   // component makes itself — nothing else closes the popover once it lands,
@@ -52,6 +60,7 @@
     {#if open}
       <div
         transition:fly={{ duration: 220, y: 12, opacity: 0 }}
+        data-welcome-glow
         style="transform-origin: bottom right;"
         class="border-border bg-surface w-96 overflow-hidden rounded-2xl border shadow-2xl">
         <div class="relative overflow-hidden px-4 pt-3.5 pb-3">

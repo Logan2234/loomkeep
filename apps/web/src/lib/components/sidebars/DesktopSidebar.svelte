@@ -379,7 +379,9 @@
             )
               ? 'bg-surface-2'
               : ''}">
-            <span class="grid h-10 w-10 shrink-0 place-items-center">
+            <span
+              data-profile-target
+              class="grid h-10 w-10 shrink-0 place-items-center rounded-lg">
               {#if auth.user}
                 <Avatar
                   seed={auth.user.username}

@@ -157,6 +157,7 @@
         <a
           href={profileHref}
           aria-label={auth.user?.displayName}
+          data-profile-target
           class="grid h-11 w-11 place-items-center rounded-xl transition-transform duration-150 ease-out group-hover:scale-110">
           {#if auth.user}
             <Avatar
