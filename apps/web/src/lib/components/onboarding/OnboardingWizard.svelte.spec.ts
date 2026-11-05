@@ -11,6 +11,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import OnboardingWizard from "./OnboardingWizard.svelte";
 
 vi.mock("$app/env", () => ({ browser: true, dev: false }));
+// The send-off's timing is its own spec's business; here it lands at once.
+vi.mock("#lib/onboarding-celebration.svelte.js", () => ({
+  celebrateWelcome: () => Promise.resolve(),
+}));
 
 const USER = {
   id: "u1",
