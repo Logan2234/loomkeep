@@ -3,19 +3,17 @@
   // which stay in sight on the toolbar. One set of controls, rising from the
   // bottom on a phone and sliding in from the right on a wide screen. The
   // list behind updates as each control changes; the footer only closes.
-  import { TABLET_QUERY } from "#lib/constants/media-queries.js";
   import { layout } from "#lib/layout.svelte.js";
-  import {
-    LIBRARY_VIEW_MODES,
-    type LibraryPosterSize,
-    type LibraryViewMode,
+  import type {
+    LibraryPosterSize,
+    LibraryViewMode,
   } from "#lib/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { SelectOption } from "#lib/types/select-option.js";
   import type { Snippet } from "svelte";
-  import { MediaQuery } from "svelte/reactivity";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
+  import LibraryDisplayPicker from "./LibraryDisplayPicker.svelte";
   import SegmentedControl from "./SegmentedControl.svelte";
   import SidePanel from "./SidePanel.svelte";
   import Switch from "./Switch.svelte";
@@ -73,22 +71,6 @@
     onResetColumns: () => void;
     onReset: () => void;
   } = $props();
-
-  // Below md the table renders as rows.
-  const wide = new MediaQuery(TABLET_QUERY);
-
-  function modeLabel(value: LibraryViewMode): string {
-    switch (value) {
-      case "cards":
-        return m.library_view_cards();
-      case "table":
-        return wide.current ? m.library_view_table() : m.library_view_rows();
-      case "wall":
-        return m.library_view_wall();
-      case "compact":
-        return m.library_view_compact();
-    }
-  }
 
   let drawer = $state<Drawer | null>(null);
   const titleId = "library-filters-title";
@@ -192,36 +174,7 @@
       onChange={(value) => (reversed = value === "asc")} />
 
     {@render heading(m.library_display())}
-    <SegmentedControl
-      label={m.library_display()}
-      options={LIBRARY_VIEW_MODES.map((value) => ({
-        value,
-        label: modeLabel(value),
-      }))}
-      value={mode}
-      onChange={onMode} />
-    {#if mode === "cards"}
-      <div class="mt-2">
-        <SegmentedControl
-          label={m.library_poster_size()}
-          options={[
-            {
-              value: "large",
-              label: layout.compact
-                ? m.library_columns_two()
-                : m.library_posters_large(),
-            },
-            {
-              value: "small",
-              label: layout.compact
-                ? m.library_columns_three()
-                : m.library_posters_small(),
-            },
-          ]}
-          value={posterSize}
-          onChange={onPosterSize} />
-      </div>
-    {/if}
+    <LibraryDisplayPicker {mode} {onMode} {posterSize} {onPosterSize} />
     {#if onSelect}
       <button
         type="button"
