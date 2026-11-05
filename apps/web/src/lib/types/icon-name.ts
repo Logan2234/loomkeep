@@ -95,6 +95,7 @@ export type IconName =
   | "table"
   | "wall"
   | "rows"
+  | "sliders"
   | "at"
   | "heart"
   | "thumbs-up"

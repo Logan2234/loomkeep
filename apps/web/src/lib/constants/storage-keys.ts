@@ -20,6 +20,8 @@ export const STORAGE_KEYS = {
     `lk-library-view-${domain.toLowerCase()}`,
   libraryColumns: (domain: SavedViewDomain) =>
     `lk-library-columns-${domain.toLowerCase()}`,
+  libraryPosterSize: (domain: SavedViewDomain) =>
+    `lk-library-poster-size-${domain.toLowerCase()}`,
 };
 export const LEGACY_STORAGE_KEYS = {
   lastKnownPrefix: "loomkeep.lastKnown.",

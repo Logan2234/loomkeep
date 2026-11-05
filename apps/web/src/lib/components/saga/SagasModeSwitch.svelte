@@ -10,6 +10,7 @@
   import { page } from "$app/state";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
 
   // A library's works or its sagas, the choice living in the URL so a link
@@ -30,8 +31,17 @@
   <SegmentedControl
     label={m.media_view_label()}
     options={[
-      { value: "works", label: m.common_works(), icon: "library" },
-      { value: "sagas", label: m.media_view_sagas(), icon: "list" },
+      // Without icons on a phone, to fit beside the page's title.
+      {
+        value: "works",
+        label: m.common_works(),
+        icon: layout.compact ? undefined : "library",
+      },
+      {
+        value: "sagas",
+        label: m.media_view_sagas(),
+        icon: layout.compact ? undefined : "list",
+      },
     ]}
     value={mode}
     onChange={setMode} />

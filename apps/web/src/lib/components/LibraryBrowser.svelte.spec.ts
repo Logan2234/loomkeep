@@ -1,5 +1,6 @@
 import { ApiError } from "#lib/api/core.js";
 import { resolveApiError } from "#lib/api/errors.js";
+import { layout } from "#lib/layout.svelte.js";
 import type {
   LibraryBulkActions,
   LibraryColumn,
@@ -132,8 +133,18 @@ function renderBrowser(
 const lastLoad = (load: ReturnType<typeof vi.fn>) =>
   load.mock.lastCall?.[0] as LibraryLoadParams;
 
+async function openPanel(
+  user: ReturnType<typeof userEvent.setup> = userEvent.setup(),
+) {
+  await user.click(
+    screen.getByRole("button", { name: new RegExp(m.common_filters()) }),
+  );
+  return screen.findByRole("dialog", { name: m.library_filters_title() });
+}
+
 beforeEach(() => {
   localStorage.clear();
+  layout.compact = false;
   visit("/app/books");
   server.use(
     http.get(apiUrl("/saved-views"), () => HttpResponse.json([])),
@@ -156,15 +167,14 @@ describe("LibraryBrowser", () => {
   }
 
   async function startSelecting(user: ReturnType<typeof userEvent.setup>) {
+    await openPanel(user);
     await user.click(
-      screen.getByRole("button", { name: new RegExp(m.library_display()) }),
+      screen.getByRole("button", { name: m.library_select_start() }),
     );
-    await user.click(
-      screen.getByRole("menuitem", { name: m.library_select_start() }),
-    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   }
 
-  it("shows a hidden column picked in the display menu, remembered for this library", async () => {
+  it("shows a hidden column picked in the panel, remembered for this library", async () => {
     const user = userEvent.setup();
     localStorage.setItem("lk-library-view-books", "table");
     renderBrowser(
@@ -175,10 +185,8 @@ describe("LibraryBrowser", () => {
     await screen.findByRole("table");
     expect(screen.queryByRole("columnheader", { name: "Notes" })).toBeNull();
 
-    await user.click(
-      screen.getByRole("button", { name: new RegExp(m.library_display()) }),
-    );
-    await user.click(screen.getByRole("menuitemcheckbox", { name: "Notes" }));
+    const panel = await openPanel(user);
+    await user.click(within(panel).getByRole("checkbox", { name: "Notes" }));
 
     expect(screen.getByRole("columnheader", { name: "Notes" })).toBeTruthy();
     expect(localStorage.getItem("lk-library-columns-books")).toBe(
@@ -186,7 +194,7 @@ describe("LibraryBrowser", () => {
     );
 
     await user.click(
-      screen.getByRole("menuitem", { name: m.library_columns_reset() }),
+      within(panel).getByRole("button", { name: m.library_columns_reset() }),
     );
     expect(screen.queryByRole("columnheader", { name: "Notes" })).toBeNull();
     expect(localStorage.getItem("lk-library-columns-books")).toBeNull();
@@ -360,17 +368,20 @@ describe("LibraryBrowser", () => {
     expect(toast.items.map((t) => t.id)).not.toContain(undo.id);
   });
 
-  it("renders the mode picked in the display menu, remembered for this library", async () => {
+  it("renders the mode picked in the panel, remembered for this library", async () => {
     const user = userEvent.setup();
     const load = vi.fn(async () => pageOf([DUNE, HYPERION]));
     renderBrowser(load);
     expect(await screen.findByText("Dune")).toBeTruthy();
 
+    const panel = await openPanel(user);
     await user.click(
-      screen.getByRole("button", { name: new RegExp(m.library_display()) }),
+      within(panel).getByRole("button", { name: m.library_view_table() }),
     );
     await user.click(
-      screen.getByRole("menuitem", { name: m.library_view_table() }),
+      within(panel).getByRole("button", {
+        name: m.library_show_results_many({ count: 2 }),
+      }),
     );
 
     expect(await screen.findByRole("table")).toBeTruthy();
@@ -488,13 +499,9 @@ describe("LibraryBrowser", () => {
     await screen.findByText("Dune");
     expect(lastLoad(load).extra).toEqual(["Nintendo Switch"]);
 
+    const panel = await openPanel();
     await userEvent.click(
-      screen.getByRole("combobox", {
-        name: new RegExp(m.game_platform_filter()),
-      }),
-    );
-    await userEvent.click(
-      screen.getByRole("option", { name: "PlayStation 5" }),
+      within(panel).getByRole("button", { name: "PlayStation 5" }),
     );
 
     await waitFor(() =>
@@ -510,11 +517,14 @@ describe("LibraryBrowser", () => {
     renderBrowser(load);
     await screen.findByText("Dune");
 
+    const panel = await openPanel();
     await userEvent.click(
-      screen.getByRole("button", { name: m.common_favorites() }),
+      within(panel).getByRole("switch", { name: m.library_favorites_only() }),
     );
     await userEvent.click(
-      screen.getByRole("button", { name: m.common_reverse_sort() }),
+      within(panel).getByRole("button", {
+        name: `↑ ${m.library_sort_asc()}`,
+      }),
     );
 
     await waitFor(() =>
@@ -537,30 +547,93 @@ describe("LibraryBrowser", () => {
     renderBrowser(load);
     await screen.findByText("Dune");
 
+    const panel = await openPanel();
     await userEvent.click(
-      screen.getByRole("button", { name: m.common_favorites() }),
+      within(panel).getByRole("switch", { name: m.library_favorites_only() }),
     );
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(goto.mock.calls.length).toBeLessThanOrEqual(3);
   });
 
-  it("filters by status through the status picker", async () => {
+  it("filters by the status pills on the toolbar", async () => {
     const load = vi.fn(async () => pageOf([DUNE]));
     renderBrowser(load);
     await screen.findByText("Dune");
+    const statuses = screen.getByRole("group", { name: m.common_status() });
 
     await userEvent.click(
-      screen.getByRole("combobox", {
-        name: m.common_selection_summary({
-          label: m.common_status(),
-          selection: m.common_all(),
-        }),
+      within(statuses).getByRole("button", { name: "Read" }),
+    );
+    await userEvent.click(
+      within(statuses).getByRole("button", { name: "Reading" }),
+    );
+
+    await waitFor(() =>
+      expect(lastLoad(load).statuses).toEqual(["READ", "READING"]),
+    );
+    expect(
+      within(statuses)
+        .getByRole("button", { name: "Read" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+  });
+
+  it("keeps the panel's filters on the toolbar, each removable from there", async () => {
+    visit("/app/books?fav=1");
+    const load = vi.fn(async () => pageOf([DUNE]));
+    renderBrowser(load);
+    await screen.findByText("Dune");
+    expect(
+      screen.getByRole("button", {
+        name: m.library_filters_active({ count: 1 }),
+      }),
+    ).toBeTruthy();
+
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: m.library_remove_filter({ label: m.common_favorites() }),
       }),
     );
-    await userEvent.click(screen.getByRole("option", { name: "Read" }));
 
-    await waitFor(() => expect(lastLoad(load).statuses).toEqual(["READ"]));
+    await waitFor(() => expect(lastLoad(load).favoritesOnly).toBe(false));
+    expect(
+      screen.queryByRole("button", {
+        name: m.library_filters_active({ count: 1 }),
+      }),
+    ).toBeNull();
+  });
+
+  it("remembers the poster size picked in the panel, for this library", async () => {
+    renderBrowser(vi.fn(async () => pageOf([DUNE])));
+    await screen.findByText("Dune");
+
+    const panel = await openPanel();
+    await userEvent.click(
+      within(panel).getByRole("button", { name: m.library_posters_small() }),
+    );
+
+    expect(localStorage.getItem("lk-library-poster-size-books")).toBe("small");
+  });
+
+  it("hides the search behind a magnifier on a phone", async () => {
+    layout.compact = true;
+    const user = userEvent.setup();
+    renderBrowser(vi.fn(async () => pageOf([DUNE])));
+    await screen.findByText("Dune");
+    expect(
+      screen.queryByRole("searchbox", { name: m.library_filter_placeholder() }),
+    ).toBeNull();
+
+    await user.click(
+      screen.getByRole("button", { name: m.library_filter_placeholder() }),
+    );
+
+    expect(
+      await screen.findByRole("searchbox", {
+        name: m.library_filter_placeholder(),
+      }),
+    ).toBeTruthy();
   });
 
   it("searches only once typing settles", async () => {

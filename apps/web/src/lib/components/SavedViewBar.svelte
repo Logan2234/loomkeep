@@ -35,6 +35,7 @@
     defaultSort,
     activeId = $bindable(),
     onApply,
+    heading,
   }: {
     domain: SavedViewDomain;
     /** The library's filters as they stand. */
@@ -43,6 +44,8 @@
     /** The view in use, if any. */
     activeId: string | null;
     onApply: (filters: SavedViewFiltersDto) => void;
+    /** A section title above the chips, shown only when they are. */
+    heading?: string;
   } = $props();
 
   const queryClient = useQueryClient();
@@ -140,6 +143,12 @@
 </script>
 
 {#if views.length > 0 || !pristine}
+  {#if heading}
+    <h3
+      class="text-dim mt-2 mb-2.5 flex items-center gap-3 font-mono text-[0.65rem] font-bold tracking-[0.14em] uppercase">
+      {heading}<span class="bg-border h-px flex-1"></span>
+    </h3>
+  {/if}
   <div
     class="mb-4 flex flex-wrap items-center gap-2"
     role="group"

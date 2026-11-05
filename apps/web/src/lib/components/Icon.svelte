@@ -354,6 +354,11 @@
     <rect x="17" y="14" width="4" height="7" rx="1" />
   {:else if name === "rows"}
     <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+  {:else if name === "sliders"}
+    <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12" />
+    <circle cx="16" cy="6" r="2" />
+    <circle cx="10" cy="12" r="2" />
+    <circle cx="18" cy="18" r="2" />
   {:else if name === "at"}
     <circle cx="12" cy="12" r="4" />
     <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />

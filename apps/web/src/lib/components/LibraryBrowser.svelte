@@ -36,10 +36,10 @@
 <script lang="ts" generics="T extends { favorite: boolean }">
   // Generic library browser shared by the games / books / media / music list
   // pages: server-paginated infinite scroll (mirrors MediaSearchPanel's
-  // debounce + sentinel pattern), text filter, status multi-select, favorites
-  // toggle, sort + direction, loading states, the three empty states and the
-  // results in the mode picked from the "Affichage" menu (cards, table, wall,
-  // compact). Filtering/sorting itself happens server-side (see each domain's
+  // debounce + sentinel pattern), text filter, status pills on a sticky
+  // toolbar, everything else (favorites, sort, saved views, display mode) in
+  // the "Filtres et affichage" panel, loading states, the three empty states
+  // and the results in the mode picked there (cards, table, wall, compact). Filtering/sorting itself happens server-side (see each domain's
   // `listEntries`); everything domain-specific (labels, card markup, the
   // table's columns, the actual `load` call, and media's extra "type"
   // filter) is injected via props/snippets.
@@ -48,32 +48,39 @@
   import { resolveApiError } from "#lib/api/errors.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
+  import { getSavedViews } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import Banner from "#lib/components/Banner.svelte";
-  import Combobox from "#lib/components/Combobox.svelte";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import EmptyState from "#lib/components/EmptyState.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import LibraryBulkBar from "#lib/components/LibraryBulkBar.svelte";
+  import LibraryEntrySheet from "#lib/components/LibraryEntrySheet.svelte";
+  import LibraryFiltersPanel from "#lib/components/LibraryFiltersPanel.svelte";
   import LibraryReviewEditor from "#lib/components/LibraryReviewEditor.svelte";
   import LibraryTable from "#lib/components/LibraryTable.svelte";
-  import LibraryViewMenu from "#lib/components/LibraryViewMenu.svelte";
   import LibraryWall from "#lib/components/LibraryWall.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import PosterGrid from "#lib/components/PosterGrid.svelte";
   import PosterGridSkeleton from "#lib/components/PosterGridSkeleton.svelte";
   import SavedViewBar from "#lib/components/SavedViewBar.svelte";
   import { debounce } from "#lib/debounce.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { layout } from "#lib/layout.svelte.js";
   import {
     readLibraryColumns,
+    readLibraryPosterSize,
     readLibraryViewMode,
     writeLibraryColumns,
+    writeLibraryPosterSize,
     writeLibraryViewMode,
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryInlineEdit,
     type LibraryItemView,
+    type LibraryPosterSize,
     type LibrarySelection,
     type LibraryViewMode,
   } from "#lib/library-view.js";
@@ -199,6 +206,38 @@
   function setMode(next: LibraryViewMode) {
     mode = next;
     writeLibraryViewMode(domain, next);
+  }
+
+  let posterSize = $state<LibraryPosterSize>(
+    readLibraryPosterSize(domain, layout.compact),
+  );
+
+  function setPosterSize(next: LibraryPosterSize) {
+    posterSize = next;
+    writeLibraryPosterSize(domain, next);
+  }
+
+  let filtersOpen = $state(false);
+  // On a phone the search hides behind a magnifier, unless a query is set.
+  let searchOpen = $state(!!initialParams.get("q"));
+  let searchInput = $state<HTMLInputElement | null>(null);
+
+  function openSearch() {
+    searchOpen = true;
+    requestAnimationFrame(() => searchInput?.focus());
+  }
+
+  function closeSearch() {
+    searchOpen = false;
+    query = "";
+    previewCount = null;
+    debouncedQueryFilter.call();
+  }
+
+  function toggleStatus(value: string) {
+    statuses = statuses.includes(value)
+      ? statuses.filter((v) => v !== value)
+      : [...statuses, value];
   }
 
   function sortBy(value: string) {
@@ -643,6 +682,12 @@
       return;
     }
 
+    if (e.key === "/" && !layout.compact && searchInput) {
+      e.preventDefault();
+      searchInput.focus();
+      return;
+    }
+
     const elements = [
       ...(container?.querySelectorAll<HTMLElement>("[data-library-item]") ??
         []),
@@ -684,9 +729,8 @@
     }
   }
 
-  // Long press on touch: enters selection mode with the pressed entry.
-  function selectPressed(pressed: HTMLElement) {
-    const entry = entryOf(pressed);
+  function selectPressed(element: HTMLElement) {
+    const entry = entryOf(element);
     if (!entry) return;
     selecting = true;
     if (!selection.has(entry)) toggle(entry, false);
@@ -706,6 +750,79 @@
     types = [];
     platforms = [];
   }
+
+  function resetFilters() {
+    clearFilters();
+    sort = defaultSort;
+    reversed = false;
+    activeViewId = null;
+  }
+
+  // The statuses show on the toolbar itself: the badge counts the rest.
+  const panelFilterCount = $derived(
+    types.length + platforms.length + (favoritesOnly ? 1 : 0),
+  );
+
+  const savedViewsQuery = createApiQuery(() => ({
+    key: keys.savedViews.all(),
+    fetch: getSavedViews,
+  }));
+  const activeView = $derived(
+    savedViewsQuery.data?.find((view) => view.id === activeViewId),
+  );
+
+  // What the panel filters on, kept in sight on the toolbar and removable
+  // without opening it.
+  const tokens = $derived([
+    ...(activeView
+      ? [
+          {
+            key: `view-${activeView.id}`,
+            label: activeView.name,
+            remove: () => {
+              activeViewId = null;
+              applyFilters({});
+            },
+          },
+        ]
+      : []),
+    ...types.map((type) => ({
+      key: `type-${type}`,
+      label: TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type,
+      remove: () => (types = types.filter((t) => t !== type)),
+    })),
+    ...platforms.map((platform) => ({
+      key: `platform-${platform}`,
+      label:
+        platformOptions.find((o) => o.value === platform)?.label ?? platform,
+      remove: () => (platforms = platforms.filter((p) => p !== platform)),
+    })),
+    ...(favoritesOnly
+      ? [
+          {
+            key: "favorites",
+            label: m.common_favorites(),
+            remove: () => (favoritesOnly = false),
+          },
+        ]
+      : []),
+  ]);
+
+  const sortLabel = $derived(
+    sorts.find((option) => option.value === sort)?.label ?? sort,
+  );
+
+  // A long press on a phone opens the entry's shortcuts; in selection mode
+  // it adds the entry instead.
+  let pressed = $state<T | null>(null);
+
+  function onLongPress(element: HTMLElement) {
+    if (selecting) {
+      selectPressed(element);
+      return;
+    }
+    pressed = entryOf(element) ?? null;
+  }
 </script>
 
 <div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
@@ -716,95 +833,110 @@
     {icon}
     {title}
     subtitle={headerSubtitle}
-    actions={headerActions}
-    class="mb-6" />
+    actions={pageActions}
+    class="mb-4 md:mb-6" />
 
-  <SavedViewBar
-    {domain}
-    {current}
-    {defaultSort}
-    bind:activeId={activeViewId}
-    onApply={applyFilters} />
-
-  <div class="relative mb-4">
-    <span
-      class="text-dim pointer-events-none absolute inset-y-0 left-3 flex items-center">
-      <Icon name="search" class="h-5 w-5" />
-    </span>
-    <input
-      type="search"
-      name="query"
-      aria-label={m.library_filter_placeholder()}
-      enterkeyhint="search"
-      placeholder={m.library_filter_placeholder()}
-      value={query}
-      oninput={(e) => {
-        query = e.currentTarget.value;
-        previewCount = null;
-        debouncedQueryFilter.call();
-      }}
-      class="input pl-10" />
-  </div>
-
-  <div
-    class="mb-7 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-    <div class="flex flex-wrap items-center gap-2">
-      {#if domain === "MEDIA"}
-        <Combobox
-          label={m.common_type()}
-          multiselect
-          options={TYPE_OPTIONS}
-          values={types}
-          onChange={(v) => (types = v as MediaType[])} />
-      {/if}
-      {#if domain === "GAMES" && (platformOptions.length > 0 || platforms.length > 0)}
-        <Combobox
-          label={m.game_platform_filter()}
-          multiselect
-          options={platformOptions}
-          values={platforms}
-          onChange={(v) => (platforms = v)} />
-      {/if}
-      <Combobox
-        label={m.common_status()}
-        multiselect
-        options={statusOptions}
-        values={statuses}
-        onChange={(v) => (statuses = v)} />
-      <button
-        class="{favoritesOnly
-          ? 'border-accent text-accent'
-          : 'border-border text-dim hover:text-fg'} relative inline-flex items-center gap-0.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors after:absolute after:inset-x-0 after:-inset-y-1"
-        onclick={() => (favoritesOnly = !favoritesOnly)}>
-        <Icon name="star" class="h-3.5 w-3.5" />&nbsp;
-        {m.common_favorites()}
+  {#if layout.compact && searchOpen}
+    <div
+      class="mb-3 flex items-center gap-1"
+      transition:slide={{ duration: reduced ? 0 : 180 }}>
+      {@render searchField()}
+      <button type="button" class="btn btn-ghost px-3" onclick={closeSearch}>
+        {m.common_cancel()}
       </button>
     </div>
-    <div class="flex items-center gap-2 sm:ml-auto">
-      <Combobox
-        label={m.common_sort()}
-        options={sorts}
-        values={[sort]}
-        onChange={(v) => (sort = v[0] ?? sort)} />
+  {/if}
+
+  <!-- Under the phone's compact title bar once the header scrolls away. -->
+  <div
+    class="bg-bg sticky z-20 -mx-5 px-5 py-2 md:-mx-8 md:px-8"
+    style:top={layout.compact
+      ? "calc(env(safe-area-inset-top) + 3rem)"
+      : "0px"}>
+    <div class="flex items-center gap-2">
+      <div
+        class="flex min-w-0 flex-1 gap-2 {layout.compact
+          ? 'no-scrollbar -my-1 overflow-x-auto py-1'
+          : 'flex-wrap items-center'}">
+        <div
+          class="flex shrink-0 gap-2"
+          role="group"
+          aria-label={m.common_status()}>
+          {#each statusOptions as option (option.value)}
+            {@const on = statuses.includes(option.value)}
+            <button
+              type="button"
+              class="chip shrink-0"
+              class:chip-on={on}
+              aria-pressed={on}
+              onclick={() => toggleStatus(option.value)}>
+              {option.label}
+            </button>
+          {/each}
+        </div>
+        {#if !layout.compact && tokens.length > 0}
+          <span class="bg-border mx-1 h-5 w-px shrink-0" aria-hidden="true"
+          ></span>
+          {@render tokenList()}
+        {/if}
+      </div>
+      {#if layout.compact}
+        <button
+          type="button"
+          class="btn-icon h-9 w-9 rounded-full"
+          aria-label={m.library_filter_placeholder()}
+          aria-expanded={searchOpen}
+          onclick={() => (searchOpen ? searchInput?.focus() : openSearch())}>
+          <Icon name="search" class="h-5 w-5" />
+        </button>
+      {/if}
       <button
         type="button"
-        class="chip px-2.5 font-mono"
-        title={reversed ? m.common_sort_reversed() : m.common_sort_default()}
-        aria-label={m.common_reverse_sort()}
-        onclick={() => (reversed = !reversed)}>
-        {reversed ? "↑" : "↓"}
+        class="bg-surface-2 hover:bg-border relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors after:absolute after:inset-x-0 after:-inset-y-1"
+        aria-label={panelFilterCount > 0
+          ? m.library_filters_active({ count: panelFilterCount })
+          : undefined}
+        aria-haspopup="dialog"
+        aria-expanded={filtersOpen}
+        onclick={() => (filtersOpen = true)}>
+        <Icon name="sliders" class="h-4 w-4" />
+        {m.common_filters()}
+        {#if panelFilterCount > 0}
+          <span
+            class="bg-accent text-accent-fg grid h-4.5 min-w-4.5 place-items-center rounded-full px-1 font-mono text-[0.62rem] font-bold">
+            {panelFilterCount}
+          </span>
+        {/if}
+        {#if isFeatureNew("library-filters")}
+          <!-- A dot on a phone, where the pills need the width. -->
+          {#if layout.compact}
+            <span
+              class="bg-accent ring-bg absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2"
+              aria-hidden="true"></span>
+          {:else}
+            <NewBadge />
+          {/if}
+        {/if}
       </button>
-      <LibraryViewMenu
-        {mode}
-        onChange={setMode}
-        selecting={bulk ? selecting : undefined}
-        onToggleSelecting={() =>
-          selecting ? exitSelecting() : (selecting = true)}
-        columns={columnMenu}
-        onToggleColumn={toggleColumn}
-        onResetColumns={resetColumns} />
     </div>
+    {#if layout.compact && tokens.length > 0}
+      <div class="no-scrollbar mt-2 flex gap-1.5 overflow-x-auto">
+        {@render tokenList()}
+      </div>
+    {/if}
   </div>
+
+  {#if layout.compact}
+    <div class="mb-3"></div>
+  {:else}
+    <button
+      type="button"
+      class="timecode hover:text-fg mt-1 mb-4 text-xs transition-colors"
+      onclick={() => (filtersOpen = true)}>
+      {m.library_sorted_by({ sort: sortLabel.toLowerCase() })}
+      {reversed ? "↑" : "↓"}
+    </button>
+  {/if}
 
   {#if selecting}
     <div
@@ -905,22 +1037,22 @@
     </div>
   {:else if items.length > 0}
     {#key mode}
-      <!-- Long press is a touch shortcut for entering selection mode; the
-           keyboard has X and the "Affichage" menu. -->
+      <!-- Long press opens an entry's shortcuts on touch, selection mode
+           among them; the keyboard has X and the panel. -->
       <div
         bind:this={container}
         in:fly={{ y: 8, duration: reduced ? 0 : 220 }}
         use:longpress={{
-          onLongPress: selectPressed,
+          onLongPress,
           enabled: !!bulk,
           pick: (target) => target.closest<HTMLElement>("[data-library-item]"),
         }}>
         {#if mode === "cards"}
-          <PosterGrid>
+          <PosterGrid size={posterSize}>
             {#each shown as entry (keyOf(entry))}
               {@const on = selection.has(entry)}
               <div
-                class="has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-bg relative rounded-xl transition-shadow has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2"
+                class="has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-bg relative rounded-lg transition-shadow has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2"
                 data-library-item={keyOf(entry)}
                 animate:flip={{ duration: reduced ? 0 : 250 }}
                 in:fade|global={{ duration: reduced ? 0 : 150 }}
@@ -929,7 +1061,7 @@
                 {#if selecting}
                   <button
                     type="button"
-                    class="absolute inset-0 z-20 rounded-xl transition-[background-color,box-shadow] duration-150 active:bg-black/10 {on
+                    class="absolute inset-0 z-20 rounded-lg transition-[background-color,box-shadow] duration-150 active:bg-black/10 {on
                       ? 'bg-accent/10 ring-accent ring-2'
                       : ''}"
                     aria-pressed={on}
@@ -1021,9 +1153,121 @@
     onCancel={() => (confirmingRemove = false)} />
 {/if}
 
+{#if filtersOpen}
+  <LibraryFiltersPanel
+    onclose={() => (filtersOpen = false)}
+    {total}
+    {savedViews}
+    extraLabel={domain === "MEDIA"
+      ? m.common_type()
+      : domain === "GAMES"
+        ? m.game_platform_filter()
+        : undefined}
+    extraOptions={domain === "GAMES" ? platformOptions : TYPE_OPTIONS}
+    extra={domain === "GAMES" ? platforms : types}
+    onExtra={(values) => {
+      if (domain === "GAMES") platforms = values;
+      else types = values as MediaType[];
+    }}
+    bind:favoritesOnly
+    {sorts}
+    bind:sort
+    bind:reversed
+    {mode}
+    onMode={setMode}
+    {posterSize}
+    onPosterSize={setPosterSize}
+    onSelect={bulk ? () => (selecting = true) : undefined}
+    columns={columnMenu}
+    onToggleColumn={toggleColumn}
+    onResetColumns={resetColumns}
+    onReset={resetFilters} />
+{/if}
+
+{#if pressed}
+  {@const entry = pressed}
+  {@const item = itemView(entry)}
+  <LibraryEntrySheet
+    {item}
+    statusOptions={bulk && !item.trackingLocked ? bulk.statusOptions : []}
+    onFavorite={(next) => toggleFavorite(entry, next)}
+    onStatus={(status) => inlineMut.mutate({ entry, action: { status } })}
+    onReview={() => (reviewing = entry)}
+    onSelect={bulk
+      ? () => {
+          selecting = true;
+          if (!selection.has(entry)) toggle(entry, false);
+        }
+      : undefined}
+    onclose={() => (pressed = null)} />
+{/if}
+
+{#snippet pageActions()}
+  <div class="flex items-center gap-3">
+    {@render headerActions?.()}
+    {#if !layout.compact}
+      {@render searchField()}
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet searchField()}
+  <div class="relative min-w-0 flex-1 md:w-72 md:flex-none">
+    <span
+      class="text-dim pointer-events-none absolute inset-y-0 left-3 flex items-center">
+      <Icon name="search" class="h-4.5 w-4.5" />
+    </span>
+    <input
+      bind:this={searchInput}
+      type="search"
+      name="query"
+      aria-label={m.library_filter_placeholder()}
+      enterkeyhint="search"
+      placeholder={m.library_filter_placeholder()}
+      value={query}
+      oninput={(e) => {
+        query = e.currentTarget.value;
+        previewCount = null;
+        debouncedQueryFilter.call();
+      }}
+      class="input pl-10 {layout.compact ? '' : 'pr-9'}" />
+    {#if !layout.compact && !query}
+      <kbd
+        class="border-border text-dim pointer-events-none absolute inset-y-0 right-3 my-auto h-fit rounded border px-1.5 font-mono text-[0.68rem]"
+        aria-hidden="true">/</kbd>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet tokenList()}
+  {#each tokens as token (token.key)}
+    <button
+      type="button"
+      class="bg-accent/14 text-accent hover:bg-accent/22 inline-flex h-8 shrink-0 items-center gap-0.5 rounded-full pr-1 pl-3 text-[0.8rem] font-semibold transition-colors"
+      aria-label={m.library_remove_filter({ label: token.label })}
+      in:scale={{ duration: reduced ? 0 : 160, start: 0.9 }}
+      onclick={token.remove}>
+      {token.label}
+      <span class="grid h-6 w-6 place-items-center">
+        <Icon name="x" class="h-3.5 w-3.5" />
+      </span>
+    </button>
+  {/each}
+{/snippet}
+
+{#snippet savedViews()}
+  <SavedViewBar
+    {domain}
+    {current}
+    {defaultSort}
+    heading={m.saved_views_label()}
+    bind:activeId={activeViewId}
+    onApply={applyFilters} />
+{/snippet}
+
 {#snippet skeleton(count: number)}
   {#if mode === "cards"}
-    <PosterGridSkeleton {count} />
+    <PosterGridSkeleton {count} size={posterSize} />
   {:else}
     <div role="status" aria-busy="true">
       <span class="sr-only">{m.common_loading()}</span>

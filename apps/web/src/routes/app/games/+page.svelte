@@ -246,7 +246,7 @@
         favorite={entry.favorite}
         {onToggleFavorite}>
         {#snippet meta()}
-          <span class="timecode text-xs">
+          <span class="timecode text-[0.7rem]">
             {entry.game.upcoming
               ? m.media_upcoming()
               : GAME_STATUS_LABELS[entry.status]}{#if entry.rating !== null}

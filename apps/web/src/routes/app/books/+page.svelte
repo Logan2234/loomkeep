@@ -18,7 +18,6 @@
   } from "#lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "#lib/components/LibraryBrowser.svelte";
   import PosterCard from "#lib/components/PosterCard.svelte";
-  import ProgressBar from "#lib/components/ProgressBar.svelte";
   import ReadingGoalChip from "#lib/components/ReadingGoalChip.svelte";
   import SagasModeSwitch, {
     sagasMode,
@@ -237,16 +236,16 @@
         src={entry.book.coverUrl}
         title={entry.book.title}
         favorite={entry.favorite}
+        progress={entry.book.pageCount
+          ? {
+              percent: pct(entry),
+              paused: isSessionPaused(entry, "READING"),
+            }
+          : null}
         {onToggleFavorite}>
         {#snippet meta()}
           {#if entry.book.pageCount}
-            <ProgressBar
-              value={pct(entry)}
-              label={m.common_selection_summary({
-                label: m.book_reading_progress(),
-                selection: entry.book.title,
-              })} />
-            <span class="timecode text-xs">
+            <span class="timecode text-[0.7rem]">
               {entry.currentPage} / {entry.book.pageCount}
               {m.book_pages_lower()}
               {#if isSessionPaused(entry, "READING")}
@@ -254,7 +253,7 @@
               {/if}
             </span>
           {:else}
-            <span class="timecode text-xs">
+            <span class="timecode text-[0.7rem]">
               {BOOK_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
                 · ★ {entry.rating}{/if}{#if isSessionPaused(entry, "READING")}
                 {m.media_paused_suffix()}{/if}

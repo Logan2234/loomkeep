@@ -1,6 +1,8 @@
 <script lang="ts">
-  // Clickable poster tile for a library entry. The line(s) under the title
-  // (status/rating, progress bar, ...) vary per domain, so they're a snippet.
+  // A library entry as a bare poster: no frame, the progress along its bottom
+  // edge, the title and the domain's meta line under it. Favorites show as a
+  // star on the poster; a pointer can toggle it there, a finger goes through
+  // the long-press sheet instead.
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
@@ -14,6 +16,7 @@
     title,
     favorite = false,
     onToggleFavorite,
+    progress = null,
     meta,
   }: {
     href: string;
@@ -22,24 +25,43 @@
     favorite?: boolean;
     /** Toggles the entry's favorite state; omit to hide the shortcut. */
     onToggleFavorite?: (next: boolean) => void;
+    /** Drawn along the poster's bottom edge; paused progress is dimmed. */
+    progress?: { percent: number; paused?: boolean } | null;
     meta: Snippet;
   } = $props();
 
   const reduced = prefersReducedMotion();
 </script>
 
-<!-- Pressing the card sinks it; releasing springs it back (a slight
-     overshoot on the way up). Keyed on the overlay link so pressing the
-     favorite button doesn't press the whole card. -->
-<div
-  class="card group hover:border-accent relative transition-[transform,border-color] duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] hover:-translate-y-0.5 has-[a:active]:translate-y-0 has-[a:active]:scale-[0.97] has-[a:active]:duration-75 has-[a:active]:ease-out">
-  <a {href} class="absolute inset-0 z-1" aria-label={title}></a>
-  <Poster {src} {title} alt="" />
-  <div class="flex flex-col gap-1.5 p-3">
-    <span class="font-display text-sm leading-tight font-semibold">
+<div class="group relative min-w-0">
+  <a
+    {href}
+    aria-label={title}
+    class="block rounded-lg transition-transform duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] active:scale-[0.97] active:duration-75 active:ease-out md:group-hover:-translate-y-0.5">
+    <div class="relative overflow-hidden rounded-lg">
+      <Poster {src} {title} alt="" />
+      {#if progress}
+        <span class="absolute inset-x-0 bottom-0 h-0.75 bg-black/45">
+          <span
+            class="block h-full {progress.paused ? 'bg-dim' : 'bg-accent'}"
+            style="width: {progress.percent}%"></span>
+        </span>
+      {/if}
+      {#if favorite}
+        <span
+          class="text-accent absolute top-1.5 right-1.5 grid h-6 w-6 place-items-center rounded-full bg-black/70 md:hidden">
+          <Icon name="star" class="fill-accent h-3.5 w-3.5" />
+        </span>
+      {/if}
+    </div>
+  </a>
+  <div class="mt-1.5 flex min-w-0 flex-col gap-0.5">
+    <span class="truncate text-[0.82rem] leading-tight font-semibold">
       {title}
     </span>
-    {@render meta()}
+    <div class="truncate leading-tight">
+      {@render meta()}
+    </div>
   </div>
 
   {#if onToggleFavorite}
@@ -51,9 +73,9 @@
         ? m.common_favorite_remove()
         : m.common_favorite_add()}
       aria-pressed={favorite}
-      class="bg-surface/90 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full transition-[opacity,transform] active:scale-90 {favorite
+      class="absolute top-2 right-2 z-10 hidden h-8 w-8 place-items-center rounded-full bg-black/70 text-white transition-[opacity,transform] group-hover:opacity-100 focus-visible:opacity-100 active:scale-90 md:grid {favorite
         ? 'opacity-100'
-        : 'opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100'}">
+        : 'opacity-0'}">
       {#key favorite}
         <!-- Keyed on `favorite` so the icon remounts (and pops) on every
              toggle, not just its first appearance. Transition sits on this
@@ -61,9 +83,7 @@
         <span in:scale|global={{ duration: reduced ? 0 : 200, start: 0.5 }}>
           <Icon
             name="star"
-            class="h-4 w-4 {favorite
-              ? 'fill-accent text-accent'
-              : 'text-fg'}" />
+            class="h-4 w-4 {favorite ? 'fill-accent text-accent' : ''}" />
         </span>
       {/key}
     </button>
