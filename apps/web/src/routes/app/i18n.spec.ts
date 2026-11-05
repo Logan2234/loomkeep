@@ -61,6 +61,7 @@ const textAttributes = new Set([
   "message",
   "help",
   "emptyText",
+  "noun",
   "confirmLabel",
   "cancelLabel",
 ]);

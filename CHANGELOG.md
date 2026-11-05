@@ -44,6 +44,8 @@ history from before it was started.
   without a jump when the finger lifts.
 - Email confirmation and account-deletion cancel links no longer turn to
   "invalid link" after they worked.
+- Empty video, game and music libraries name what to add in your language
+  instead of always in French.
 
 ## 1.13.0 — Home-screen widgets, actionable notifications, and a phone-first app
 

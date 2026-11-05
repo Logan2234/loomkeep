@@ -133,7 +133,7 @@
     title: string;
     /** Header subtitle, e.g. `(n) => "3 livres"`. */
     subtitle: (count: number) => string;
-    /** Masculine noun for the empty-state copy: "livre", "jeu", "titre". */
+    /** Masculine noun for the empty-state copy, from the catalogs: `m.common_book()`, never a literal. */
     noun: string;
     /** This library's domain: its saved views, and the tab to preselect on /search. */
     domain: SavedViewDomain;
