@@ -58,17 +58,33 @@
       : m.library_posters_small();
   }
 
+  // Hues for the little posters, stable from one picture to the next.
+  const HUES = [32, 200, 330, 150, 265, 12, 185, 48, 290, 110];
+
+  const posterStyle = (i: number) => {
+    const hue = HUES[i % HUES.length];
+    return `background: linear-gradient(160deg, hsl(${hue} 58% 52%), hsl(${(hue + 35) % 360} 52% 22%))`;
+  };
+
+  // Unpicked pictures rest muted and come to colour under the pointer.
   const OPTION =
-    "flex min-w-0 flex-col gap-1.5 rounded-xl border p-1.5 text-center transition-[border-color,box-shadow,background-color] active:scale-[0.97]";
-  const ON = "border-accent ring-accent bg-accent/5 ring-1";
+    "group flex min-w-0 flex-col gap-1.5 rounded-xl border p-1.5 text-center transition-[border-color,box-shadow,background-color,translate] duration-150 hover:-translate-y-0.5 active:scale-[0.97]";
+  const ON = "border-accent ring-accent bg-accent/8 ring-1";
   const OFF = "border-border hover:border-dim";
+  const PICTURE =
+    "bg-bg border-border/60 relative flex h-16 overflow-hidden rounded-lg border p-1.5 transition-[filter,opacity] duration-200";
+  const MUTED =
+    "opacity-70 grayscale-[.7] group-hover:opacity-100 group-hover:grayscale-0";
 </script>
 
-{#snippet bar(on: boolean, cls = "")}
+{#snippet poster(i: number, cls = "")}
   <span
-    class="block rounded-[2px] transition-colors {on
-      ? 'bg-accent/45'
-      : 'bg-dim/30'} {cls}"></span>
+    class="block rounded-[3px] shadow-sm shadow-black/40 {cls}"
+    style={posterStyle(i)}></span>
+{/snippet}
+
+{#snippet line(cls = "")}
+  <span class="bg-fg/25 block h-[3px] rounded-full {cls}"></span>
 {/snippet}
 
 <div
@@ -82,46 +98,65 @@
       aria-pressed={on}
       class="{OPTION} {on ? ON : OFF}"
       onclick={() => onMode(value)}>
-      <span
-        class="bg-surface-2 flex h-14 overflow-hidden rounded-lg p-1.5"
-        aria-hidden="true">
+      <span class="{PICTURE} {on ? '' : MUTED}" aria-hidden="true">
         {#if value === "cards"}
           <span class="grid w-full grid-cols-3 gap-1">
             {#each Array(3) as _, i (i)}
-              <span class="flex flex-col gap-0.75">
-                {@render bar(on, "flex-1")}
-                {@render bar(on, "h-0.75 w-4/5 opacity-70")}
+              <span class="flex min-w-0 flex-col gap-[3px]">
+                <span class="relative flex-1">
+                  {@render poster(i, "absolute inset-0")}
+                  {#if i === 1}
+                    <span
+                      class="bg-accent absolute bottom-0 left-0 h-[2px] w-3/5 rounded-full"
+                    ></span>
+                  {/if}
+                </span>
+                {@render line("w-4/5")}
               </span>
             {/each}
           </span>
         {:else if value === "table"}
-          <span class="flex w-full flex-col justify-between">
+          <span class="flex w-full flex-col gap-[3px]">
+            <span class="border-fg/15 flex gap-1 border-b pb-[3px]">
+              {@render line("w-2/5 bg-fg/15")}
+              {@render line("ml-auto w-1/5 bg-fg/15")}
+            </span>
             {#each Array(3) as _, i (i)}
-              <span class="flex items-center gap-1">
-                {@render bar(on, "h-3 w-2 shrink-0")}
-                {@render bar(on, "h-1 flex-1")}
-                {@render bar(on, "h-1 w-2.5 shrink-0 opacity-70")}
+              <span class="flex flex-1 items-center gap-1">
+                {@render poster(i + 3, "h-full w-[7px] shrink-0")}
+                {@render line("flex-1")}
+                <span
+                  class="h-[5px] w-3 shrink-0 rounded-full {i === 0
+                    ? 'bg-accent/70'
+                    : 'bg-fg/20'}"></span>
               </span>
             {/each}
           </span>
         {:else if value === "wall"}
-          <span class="grid w-full grid-cols-4 grid-rows-2 gap-0.5">
-            {#each Array(8) as _, i (i)}
-              {@render bar(on)}
+          <span class="grid w-full grid-cols-5 grid-rows-2 gap-[2px]">
+            {#each Array(10) as _, i (i)}
+              {@render poster(i, "h-full")}
             {/each}
           </span>
         {:else}
-          <span class="flex w-full flex-col justify-between py-0.5">
-            {#each Array(5) as _, i (i)}
-              {@render bar(on, `h-1 ${i % 2 ? "w-3/4" : "w-full"}`)}
+          <span class="divide-fg/10 flex w-full flex-col divide-y">
+            {#each Array(4) as _, i (i)}
+              <span class="flex flex-1 items-center gap-1">
+                <span
+                  class="h-[4px] w-[4px] shrink-0 rounded-full {i === 0
+                    ? 'bg-accent'
+                    : 'bg-fg/30'}"></span>
+                {@render line(i % 2 ? "w-1/2" : "w-2/3")}
+                {@render line("ml-auto w-1/5 bg-fg/15")}
+              </span>
             {/each}
           </span>
         {/if}
       </span>
       <span
-        class="truncate text-xs font-semibold {on
+        class="truncate text-xs font-semibold transition-colors {on
           ? 'text-accent'
-          : 'text-dim'}">
+          : 'text-dim group-hover:text-fg'}">
         {modeLabel(value)}
       </span>
     </button>
@@ -140,17 +175,18 @@
         aria-pressed={on}
         class="{OPTION} {on ? ON : OFF}"
         onclick={() => onPosterSize(size)}>
-        <span
-          class="bg-surface-2 flex h-14 items-start gap-1 overflow-hidden rounded-lg p-1.5"
-          aria-hidden="true">
+        <span class="{PICTURE} {on ? '' : MUTED} gap-1" aria-hidden="true">
           {#each Array(perRow[size]) as _, i (i)}
-            {@render bar(on, "aspect-2/3 flex-1")}
+            <span class="flex min-w-0 flex-1 flex-col gap-[3px]">
+              {@render poster(i, "aspect-2/3 w-full")}
+              {@render line("w-3/4")}
+            </span>
           {/each}
         </span>
         <span
-          class="truncate text-xs font-semibold {on
+          class="truncate text-xs font-semibold transition-colors {on
             ? 'text-accent'
-            : 'text-dim'}">
+            : 'text-dim group-hover:text-fg'}">
           {sizeLabel(size)}
         </span>
       </button>
