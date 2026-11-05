@@ -11,7 +11,7 @@ export const welcomeCelebration = $state({ startedAt: 0 });
 const COLORS = ["#d6a02a", "#1f9dae", "#d866a0", "#6e97e0", "#f5b841"];
 
 /** When the home's cards start landing, counted from the click. */
-const LANDING_DELAY_MS = 1650;
+const LANDING_DELAY_MS = 2100;
 
 const reducedMotion = () =>
   typeof matchMedia !== "undefined" &&
@@ -21,7 +21,7 @@ const reducedMotion = () =>
 function celebrationPending(): boolean {
   return (
     welcomeCelebration.startedAt > 0 &&
-    Date.now() - welcomeCelebration.startedAt < 6000
+    Date.now() - welcomeCelebration.startedAt < 7000
   );
 }
 
@@ -37,8 +37,12 @@ function profileTarget(): DOMRect | null {
   return null;
 }
 
-/** Two confetti cannons, at the screen's left and right edges, aimed at (x, y). */
-function cannons(x: number, y: number) {
+/**
+ * Two confetti cannons in the bottom corners, fired steeply upwards so the
+ * confetti peaks around `peakY` (the card's top) then rains down across the
+ * screen, over the card, and out at the bottom.
+ */
+function cannons(peakY: number) {
   const canvas = document.createElement("canvas");
   const ratio = window.devicePixelRatio || 1;
   canvas.width = innerWidth * ratio;
@@ -49,23 +53,26 @@ function cannons(x: number, y: number) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return canvas.remove();
 
-  const originY = innerHeight * 0.78;
-  const bits = Array.from({ length: 160 }, (_, i) => {
+  const GRAVITY = 0.32;
+  const startY = innerHeight + 10;
+  const bits = Array.from({ length: 220 }, (_, i) => {
     const fromLeft = i % 2 === 0;
-    const startX = fromLeft ? -10 : innerWidth + 10;
-    // Aimed a little above the card, so gravity brings the arc onto it.
-    const angle =
-      Math.atan2(y - 80 - originY, x - startX) + (Math.random() - 0.5) * 0.5;
-    const speed = Math.hypot(x - startX, originY - y) / 38 + Math.random() * 6;
+    // 64° to 80° above the horizontal, mirrored on the right.
+    const angle = ((64 + Math.random() * 16) * Math.PI) / 180;
+    const rise = Math.max(120, startY - peakY + (Math.random() - 0.5) * 120);
+    const vy = -Math.sqrt(2 * GRAVITY * rise);
+    const vx = (Math.abs(vy) / Math.tan(angle)) * (fromLeft ? 1 : -1);
     return {
-      x: startX,
-      y: originY,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
+      x: fromLeft ? -10 : innerWidth + 10,
+      y: startY,
+      vx,
+      vy,
+      sway: Math.random() * Math.PI * 2,
       size: 2.5 + Math.random() * 3.5,
       color: COLORS[i % COLORS.length],
       spin: Math.random() * 6,
-      life: 1,
+      // Fired in a few volleys rather than all at once.
+      wait: Math.floor(Math.random() * 18),
     };
   });
 
@@ -74,17 +81,28 @@ function cannons(x: number, y: number) {
     let alive = false;
 
     for (const bit of bits) {
-      bit.vy += 0.3;
-      bit.vx *= 0.975;
-      bit.vy *= 0.99;
+      if (bit.y > innerHeight + 20) continue;
+      alive = true;
+
+      if (bit.wait > 0) {
+        bit.wait--;
+        continue;
+      }
+
+      if (bit.vy < 0) {
+        bit.vy += GRAVITY;
+      } else {
+        // Past the peak: paper flutters down, drifting sideways.
+        bit.vy = Math.min(bit.vy + GRAVITY * 0.35, 3.2);
+        bit.vx *= 0.97;
+        bit.sway += 0.08;
+        bit.x += Math.sin(bit.sway) * 0.9;
+      }
+
       bit.x += bit.vx;
       bit.y += bit.vy;
-      bit.spin += 0.2;
-      bit.life -= 0.008;
-      if (bit.life <= 0 || bit.y > innerHeight + 20) continue;
-      alive = true;
+      bit.spin += 0.15;
       ctx.save();
-      ctx.globalAlpha = Math.min(1, bit.life * 1.5);
       ctx.translate(bit.x * ratio, bit.y * ratio);
       ctx.rotate(bit.spin);
       ctx.fillStyle = bit.color;
@@ -106,10 +124,19 @@ function cannons(x: number, y: number) {
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** A ragged vertical tear at `x` down a `height`-tall card, top to bottom. */
+function tearLine(x: number, height: number): string[] {
+  const points: string[] = [];
+  for (let y = 0, i = 0; y <= height; y += 6, i++)
+    points.push(`${x + (i % 2 ? 2.5 : -2.5)}px ${Math.min(y, height)}px`);
+  return points;
+}
+
 /**
- * Plays the send-off from the membership card: the card leaves the tour for
- * the middle of the screen, confetti fires at it from both sides, then it
- * lifts and arcs into the avatar. Resolves once it has landed.
+ * Plays the send-off from the membership card: it leaves the tour for the
+ * middle of the screen over a dimmed app, confetti rains from both bottom
+ * corners, the card tears at its stub like a used ticket, and the card part
+ * arcs into the avatar while the dimming lifts. Resolves once it has landed.
  */
 export async function celebrateWelcome(card: HTMLElement): Promise<void> {
   welcomeCelebration.startedAt = Date.now();
@@ -124,22 +151,37 @@ export async function celebrateWelcome(card: HTMLElement): Promise<void> {
     return;
   }
 
-  // A copy flies, outside the tour, so the tour can fade under it.
-  const flyer = card.cloneNode(true) as HTMLElement;
-  flyer.setAttribute("aria-hidden", "true");
-  Object.assign(flyer.style, {
-    position: "fixed",
-    left: `${from.left}px`,
-    top: `${from.top}px`,
-    width: `${from.width}px`,
-    height: `${from.height}px`,
-    margin: "0",
-    zIndex: String(MODAL_Z_INDEX),
-    pointerEvents: "none",
+  const scrim = document.createElement("div");
+  scrim.setAttribute("aria-hidden", "true");
+  scrim.style.cssText = `position:fixed;inset:0;pointer-events:none;background:rgb(12 13 16 / .62);z-index:${MODAL_Z_INDEX - 1}`;
+  document.body.appendChild(scrim);
+  scrim.animate([{ opacity: 0 }, { opacity: 1 }], {
+    duration: 450,
+    fill: "forwards",
   });
-  document.body.appendChild(flyer);
-  for (const el of [flyer, ...flyer.querySelectorAll<HTMLElement>("*")])
-    el.style.animation = "none";
+
+  // Copies travel outside the tour, so the tour can fade under them.
+  const copy = () => {
+    const piece = card.cloneNode(true) as HTMLElement;
+    piece.setAttribute("aria-hidden", "true");
+    Object.assign(piece.style, {
+      position: "fixed",
+      left: `${from.left}px`,
+      top: `${from.top}px`,
+      width: `${from.width}px`,
+      height: `${from.height}px`,
+      margin: "0",
+      zIndex: String(MODAL_Z_INDEX),
+      pointerEvents: "none",
+      visibility: "visible",
+    });
+    for (const el of [piece, ...piece.querySelectorAll<HTMLElement>("*")])
+      el.style.animation = "none";
+    document.body.appendChild(piece);
+    return piece;
+  };
+
+  const flyer = copy();
   card.style.visibility = "hidden";
 
   tour?.animate([{ opacity: 1 }, { opacity: 0 }], {
@@ -148,38 +190,78 @@ export async function celebrateWelcome(card: HTMLElement): Promise<void> {
     fill: "forwards",
   });
 
+  // A small phone shows the card a little smaller, with room around it.
+  const scale = Math.min(1.04, (innerWidth * 0.8) / from.width);
   const startX = from.left + from.width / 2;
   const startY = from.top + from.height / 2;
   const centre = { x: innerWidth / 2 - startX, y: innerHeight / 2 - startY };
-  const at = (x: number, y: number, rotate: number, scale: number) =>
-    `translate(${x}px, ${y}px) rotate(${rotate}deg) scale(${scale})`;
+  const at = (x: number, y: number, rotate: number, s: number) =>
+    `translate(${x}px, ${y}px) rotate(${rotate}deg) scale(${s})`;
+  const resting = at(centre.x, centre.y, 0, scale);
 
-  await flyer.animate(
-    [{ transform: "none" }, { transform: at(centre.x, centre.y, 0, 1.04) }],
-    { duration: 650, easing: "cubic-bezier(.3,0,.2,1)", fill: "forwards" },
+  await flyer.animate([{ transform: "none" }, { transform: resting }], {
+    duration: 650,
+    easing: "cubic-bezier(.3,0,.2,1)",
+    fill: "forwards",
+  }).finished;
+
+  cannons(innerHeight / 2 - (from.height * scale) / 2);
+  await pause(550);
+
+  // The tear: two copies clipped along a ragged line at the stub's edge.
+  const stub = flyer.lastElementChild as HTMLElement | null;
+  const tearX = stub ? stub.offsetLeft : from.width * 0.8;
+  const line = tearLine(tearX, from.height);
+  const ticket = copy();
+  const torn = copy();
+  ticket.style.clipPath = `polygon(0 0, ${line.join(", ")}, 0 ${from.height}px)`;
+  torn.style.clipPath = `polygon(${line.join(", ")}, ${from.width}px ${from.height}px, ${from.width}px 0)`;
+  for (const piece of [ticket, torn]) piece.style.transform = resting;
+  flyer.remove();
+  navigator.vibrate?.(12);
+
+  // The stub jerks away and falls off the screen, spinning.
+  torn
+    .animate(
+      [
+        { transform: resting, opacity: 1 },
+        {
+          transform: `${resting} translate(14px, -6px) rotate(9deg)`,
+          opacity: 1,
+          offset: 0.15,
+        },
+        {
+          transform: `${resting} translate(60px, ${innerHeight}px) rotate(70deg)`,
+          opacity: 0.6,
+        },
+      ],
+      { duration: 1300, easing: "cubic-bezier(.4,0,.8,.6)", fill: "forwards" },
+    )
+    .finished.then(() => torn.remove());
+
+  await ticket.animate(
+    [
+      { transform: resting },
+      { transform: `${resting} translate(-8px, 2px) rotate(-3deg)` },
+    ],
+    { duration: 220, easing: "ease-out", fill: "forwards" },
   ).finished;
 
-  cannons(innerWidth / 2, innerHeight / 2);
-  flyer.animate(
+  const lifted = { x: centre.x - 8, y: centre.y - 40 };
+  await ticket.animate(
     [
-      { transform: at(centre.x, centre.y, 0, 1.04) },
-      { transform: at(centre.x, centre.y, 0, 1.08) },
-      { transform: at(centre.x, centre.y, 0, 1.04) },
-    ],
-    { duration: 900, easing: "ease-in-out" },
-  );
-  await pause(900);
-
-  const lifted = { x: centre.x, y: centre.y - 40 };
-  await flyer.animate(
-    [
-      { transform: at(centre.x, centre.y, 0, 1.04) },
-      { transform: at(lifted.x, lifted.y, -3, 1.08) },
+      { transform: `${resting} translate(-8px, 2px) rotate(-3deg)` },
+      { transform: at(lifted.x, lifted.y, -4, scale * 1.04) },
     ],
     { duration: 350, easing: "cubic-bezier(.2,.8,.3,1)", fill: "forwards" },
   ).finished;
 
-  // An arc up and over into the avatar.
+  // An arc up and over into the avatar, while the dimming lifts.
+  scrim.animate([{ opacity: 1 }, { opacity: 0 }], {
+    duration: 950,
+    easing: "ease-in",
+    fill: "forwards",
+  });
   const to = profileTarget();
   const end = to
     ? {
@@ -199,16 +281,17 @@ export async function celebrateWelcome(card: HTMLElement): Promise<void> {
     const y =
       (1 - t) ** 2 * lifted.y + 2 * (1 - t) * t * control.y + t ** 2 * end.y;
     return {
-      transform: at(x, y, -3 + 13 * t, 1.08 - 1.03 * t ** 1.4),
+      transform: at(x, y, -4 + 14 * t, scale * 1.04 * (1 - 0.96 * t ** 1.4)),
       opacity: t < 0.9 ? 1 : 0.9,
     };
   });
-  await flyer.animate(path, {
+  await ticket.animate(path, {
     duration: 950,
     easing: "cubic-bezier(.45,0,.35,1)",
     fill: "forwards",
   }).finished;
-  flyer.remove();
+  ticket.remove();
+  scrim.remove();
 
   for (const el of document.querySelectorAll<HTMLElement>(
     "[data-profile-target]",
