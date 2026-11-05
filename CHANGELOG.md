@@ -42,8 +42,8 @@ history from before it was started.
   too).
 - Selecting episodes by dragging scrolls at full speed near the list's edges,
   without a jump when the finger lifts.
-- Opening an email confirmation link no longer shows "invalid link" once the
-  address is confirmed.
+- Email confirmation and account-deletion cancel links no longer turn to
+  "invalid link" after they worked.
 
 ## 1.13.0 — Home-screen widgets, actionable notifications, and a phone-first app
 

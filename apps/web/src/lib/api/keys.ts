@@ -116,8 +116,6 @@ export const keys = {
   verification: {
     newsletterUnsubscribe: (token: string) =>
       ["verification", "newsletter-unsubscribe", token] as const,
-    cancelDeletion: (token: string) =>
-      ["verification", "cancel-deletion", token] as const,
     invitation: (token: string) =>
       ["verification", "invitation", token] as const,
   },

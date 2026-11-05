@@ -1,36 +1,37 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { cancelAccountDeletionWithToken } from "#lib/api/client.js";
-  import { keys } from "#lib/api/keys.js";
-  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { onMount } from "svelte";
   import { fade } from "svelte/transition";
 
   const reduced = prefersReducedMotion();
   const token = page.url.searchParams.get("token") ?? "";
+  let cancelled = $state(false);
 
-  const cancelQuery = createApiQuery(() => ({
-    key: keys.verification.cancelDeletion(token),
-    fetch: async () => {
-      await cancelAccountDeletionWithToken(token);
+  // A mutation, sent once: the link works a single time, and a query's
+  // refetch (tab focus, remount) spent it again and replaced the success with
+  // "invalid link".
+  const cancelMut = createApiMutation(() => ({
+    mutate: cancelAccountDeletionWithToken,
+    onSuccess: () => {
+      cancelled = true;
       if (auth.user) auth.user = { ...auth.user, deletionScheduledFor: null };
-      return true;
     },
-    enabled: !!token,
   }));
+  onMount(() => {
+    if (token) cancelMut.mutate(token);
+  });
 
   const status = $derived<"pending" | "done" | "error">(
-    !token || cancelQuery.error
-      ? "error"
-      : cancelQuery.loading
-        ? "pending"
-        : "done",
+    cancelled ? "done" : !token || cancelMut.error ? "error" : "pending",
   );
   const error = $derived(
-    !token ? m.link_invalid_missing_token() : cancelQuery.error,
+    !token ? m.link_invalid_missing_token() : cancelMut.error,
   );
 </script>
 
