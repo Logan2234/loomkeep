@@ -115,7 +115,6 @@
   <PageHeader
     icon="keyboard"
     title={m.settings_shortcuts_title()}
-    subtitle={m.settings_shortcuts_description()}
     back="/app/settings/help"
     class="mb-6" />
 

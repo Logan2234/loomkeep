@@ -255,7 +255,6 @@
       backOnPhoneOnly
       icon="calendar"
       title={m.common_calendar()}
-      subtitle={m.calendar_subtitle()}
       isNew={isFeatureNew("calendar-redesign")}>
       {#snippet actions()}
         {#if !layout.compact}

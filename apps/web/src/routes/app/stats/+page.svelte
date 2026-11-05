@@ -209,8 +209,7 @@
     backInHistory
     backOnPhoneOnly
     icon="stats"
-    title={m.common_stats()}
-    subtitle={m.stats_subtitle()} />
+    title={m.common_stats()} />
 
   <Tabs
     class="mb-6"

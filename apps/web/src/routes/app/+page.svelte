@@ -40,7 +40,7 @@
     icon="home"
     title={`${greeting}${auth.user ? ", " + auth.user.displayName : ""}.`}
     documentTitle={m.common_home()}
-    subtitle={m.home_subtitle()} />
+    hero />
 
   {#if layout.compact}<div data-welcome-land><OnboardingCard /></div>{/if}
 

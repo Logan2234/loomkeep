@@ -379,7 +379,6 @@
   <PageHeader
     icon="compass"
     title={m.admin_components_title()}
-    subtitle={m.admin_components_subtitle()}
     back="/app/admin"
     class="mb-5" />
 

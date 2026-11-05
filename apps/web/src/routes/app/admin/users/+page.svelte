@@ -273,7 +273,6 @@
   <PageHeader
     icon="user"
     title={m.common_users()}
-    subtitle={m.admin_users_subtitle()}
     back="/app/admin"
     class="mb-6">
     {#snippet actions()}

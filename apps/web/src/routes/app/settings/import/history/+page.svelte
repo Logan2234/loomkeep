@@ -46,7 +46,6 @@
   <PageHeader
     icon="download"
     title={m.settings_import_history_title()}
-    subtitle={m.settings_import_history_description()}
     back="/app/settings/import"
     class="mb-6" />
 

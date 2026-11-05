@@ -70,8 +70,7 @@
     backInHistory
     backOnPhoneOnly
     icon="users"
-    title={m.common_activity_feed()}
-    subtitle={m.feed_subtitle()} />
+    title={m.common_activity_feed()} />
 
   {#if domainTabs.length > 1}
     <Tabs

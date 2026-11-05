@@ -7,8 +7,11 @@
   import type { Snippet } from "svelte";
   import Icon from "./Icon.svelte";
 
+  import { page } from "$app/state";
   import { goBack, goUp } from "#lib/back-nav.svelte.js";
   import { layout } from "#lib/layout.svelte.js";
+  import { mobileNav } from "#lib/mobile-nav.svelte.js";
+  import { isPhoneTabRoot } from "#lib/navigation.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { fly } from "svelte/transition";
   import { m } from "#lib/paraglide/messages.js";
@@ -24,7 +27,8 @@
     backOnPhoneOnly = false,
     isNew = false,
     documentTitle,
-    class: cls = "mb-8",
+    hero = false,
+    class: cls = "mb-4 md:mb-8",
   }: {
     icon?: IconName;
     title: string;
@@ -43,12 +47,19 @@
     /** Overrides the <title>, for headings that don't read well in a tab
      * ("Bonsoir, Logan." on the home screen). */
     documentTitle?: string;
+    /** Keeps the large title on a phone too: the home screen only. */
+    hero?: boolean;
     class?: string;
   } = $props();
 
+  // A phone reaches a tab's own page from the bar: no chevron there.
   const backHref = $derived(
-    backOnPhoneOnly && !layout.compact ? undefined : back,
+    (backOnPhoneOnly && !layout.compact) ||
+      (layout.compact && isPhoneTabRoot(page.url.pathname, mobileNav.shortcuts))
+      ? undefined
+      : back,
   );
+  const bar = $derived(layout.compact && !hero);
 
   function onBack(event: MouseEvent) {
     if (backInHistory) goBack(event);
@@ -95,47 +106,68 @@
   </div>
 {/if}
 
-<header
-  bind:this={header}
-  class="flex flex-wrap items-start justify-between gap-4 {cls}">
-  <div>
-    <!-- `items-start` plus a 1lh-tall slot per adornment: centring the whole
-         row pushed the chevron and icon halfway down whenever the title
-         wrapped to two lines, which it does on a phone ("Appareils
-         connectés", "Statistiques d'instance"). The slot keeps them centred
-         on the first line at both text sizes. -->
-    <div class="flex items-start gap-2 text-3xl md:text-4xl">
-      {#if backHref}
-        <a
-          href={backHref}
-          onclick={onBack}
-          class="text-dim hover:text-fg relative -ml-1 flex h-lh shrink-0 items-center transition-all after:absolute after:-inset-3 hover:-translate-x-0.5 hover:scale-105 active:scale-90"
-          aria-label={back === "/app/admin"
-            ? m.admin_back_to_overview()
-            : m.common_back()}
-          title={back === "/app/admin"
-            ? m.admin_back_to_overview()
-            : undefined}>
-          <Icon name="chevron-left" class="h-6 w-6" />
-        </a>
-      {/if}
+{#snippet backLink(cls: string)}
+  <a
+    href={backHref}
+    onclick={onBack}
+    class="text-dim hover:text-fg relative -ml-1 flex shrink-0 items-center transition-all after:absolute after:-inset-3 hover:-translate-x-0.5 hover:scale-105 active:scale-90 {cls}"
+    aria-label={back === "/app/admin"
+      ? m.admin_back_to_overview()
+      : m.common_back()}
+    title={back === "/app/admin" ? m.admin_back_to_overview() : undefined}>
+    <Icon name="chevron-left" class="h-6 w-6" />
+  </a>
+{/snippet}
+
+<header bind:this={header} class={cls}>
+  {#if bar}
+    <!-- A phone gets an app bar, not a page title: one 56dp row with the
+         actions at its end, so the content starts high on the screen. -->
+    <div class="flex h-14 items-center gap-2">
+      {#if backHref}{@render backLink("")}{/if}
       {#if icon}
-        <span class="flex h-lh shrink-0 items-center">
-          <Icon name={icon} class="text-accent h-7 w-7" />
-        </span>
+        <Icon name={icon} class="text-accent h-5 w-5 shrink-0" />
       {/if}
-      <h1 class="font-display min-w-0 font-extrabold tracking-tight">
+      <h1
+        class="font-display min-w-0 flex-1 truncate text-xl font-extrabold tracking-tight">
         {title}
       </h1>
-      {#if isNew}
-        <span class="flex h-lh shrink-0 items-center"><NewBadge /></span>
+      {#if isNew}<NewBadge />{/if}
+      {#if actions}
+        <div class="flex shrink-0 items-center gap-1">{@render actions()}</div>
       {/if}
     </div>
     {#if subtitle}
-      <p class="text-dim mt-1">{subtitle}</p>
+      <p class="text-dim -mt-1 text-sm">{subtitle}</p>
     {/if}
-  </div>
-  {#if actions}
-    {@render actions()}
+  {:else}
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <!-- `items-start` plus a 1lh-tall slot per adornment: centring the
+             whole row pushed the chevron and icon halfway down whenever the
+             title wrapped to two lines. The slot keeps them centred on the
+             first line at both text sizes. -->
+        <div class="flex items-start gap-2 text-3xl md:text-4xl">
+          {#if backHref}{@render backLink("h-lh")}{/if}
+          {#if icon}
+            <span class="flex h-lh shrink-0 items-center">
+              <Icon name={icon} class="text-accent h-7 w-7" />
+            </span>
+          {/if}
+          <h1 class="font-display min-w-0 font-extrabold tracking-tight">
+            {title}
+          </h1>
+          {#if isNew}
+            <span class="flex h-lh shrink-0 items-center"><NewBadge /></span>
+          {/if}
+        </div>
+        {#if subtitle}
+          <p class="text-dim mt-1">{subtitle}</p>
+        {/if}
+      </div>
+      {#if actions}
+        {@render actions()}
+      {/if}
+    </div>
   {/if}
 </header>

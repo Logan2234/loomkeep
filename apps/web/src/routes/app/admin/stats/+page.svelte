@@ -131,11 +131,7 @@
 </script>
 
 <div>
-  <PageHeader
-    icon="stats"
-    title={m.admin_stats_title()}
-    subtitle={m.admin_stats_subtitle()}
-    back="/app/admin">
+  <PageHeader icon="stats" title={m.admin_stats_title()} back="/app/admin">
     {#snippet actions()}
       <button
         onclick={refresh}

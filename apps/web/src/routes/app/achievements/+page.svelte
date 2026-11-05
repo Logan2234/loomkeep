@@ -57,8 +57,7 @@
     icon="trophy"
     back="/app/profile"
     backInHistory
-    title={m.gamification_page_title()}
-    subtitle={m.gamification_page_subtitle()} />
+    title={m.gamification_page_title()} />
 
   {#if !appConfig.gamificationEnabled}
     <EmptyState>{m.gamification_disabled()}</EmptyState>

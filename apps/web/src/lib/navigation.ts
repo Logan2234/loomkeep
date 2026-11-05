@@ -546,6 +546,23 @@ export function resolveMenuGroups(
   })).filter((g) => g.items.length > 0);
 }
 
+/**
+ * Whether a phone opens this page straight from a tab (the bar, the Library
+ * fan, the edge tab): there is nothing behind it to go back to.
+ */
+export function isPhoneTabRoot(
+  path: string,
+  shortcuts: readonly string[],
+): boolean {
+  if (path === "/app/notifications" || path === "/app/messages") return true;
+  return Object.values(MOBILE_DESTINATIONS).some(
+    (destination) =>
+      (destination.domain !== undefined ||
+        shortcuts.includes(destination.id)) &&
+      destination.href === path,
+  );
+}
+
 export function profileHref(): string {
   return appConfig.socialEnabled ? "/app/profile" : "/app/settings";
 }

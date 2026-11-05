@@ -104,7 +104,6 @@
     title={m.common_notifications()}
     back="/app"
     backInHistory
-    subtitle={m.notif_page_subtitle()}
     isNew={isFeatureNew("notification-history")}
     class="mb-5" />
 
@@ -193,6 +192,10 @@
       <div class="flex justify-center">
         <LoadMoreButton query={history} />
       </div>
+    {:else}
+      <p class="text-dim mt-6 text-center text-sm">
+        {m.notif_page_subtitle()}
+      </p>
     {/if}
   {/if}
 </div>

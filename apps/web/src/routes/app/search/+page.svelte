@@ -283,7 +283,6 @@
     backOnPhoneOnly
     icon="search"
     title={m.common_search()}
-    subtitle={m.search_subtitle()}
     class="mb-6" />
 
   <div

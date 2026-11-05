@@ -9,7 +9,6 @@
   } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
   import BetaBadge from "#lib/components/BetaBadge.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
@@ -130,10 +129,7 @@
     icon="shield"
     title={m.admin_dashboard_title()}
     back="/app"
-    backInHistory
-    subtitle={m.admin_dashboard_subtitle({
-      name: auth.user?.displayName ?? "",
-    })}>
+    backInHistory>
     {#snippet actions()}
       <a
         href={`${DOCS_URL}/self-hosting/administration/`}
