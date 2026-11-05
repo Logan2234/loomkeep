@@ -324,6 +324,7 @@
   "onboarding_done_title": "Tout est prêt.",
   "onboarding_done_intro": "Voici ta carte de membre. À toi de la remplir.",
   "onboarding_done_member_since": "Membre depuis le {date}",
+  "onboarding_done_number": "N° {number}",
   "onboarding_done_services_one": "1 service dans « Où regarder »",
   "onboarding_done_services_many": "{count} services dans « Où regarder »",
   "onboarding_done_alerts_push": "Alertes de sortie sur cet appareil",

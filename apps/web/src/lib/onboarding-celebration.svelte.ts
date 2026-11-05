@@ -11,14 +11,14 @@ export const welcomeCelebration = $state({ startedAt: 0 });
 const COLORS = ["#d6a02a", "#1f9dae", "#d866a0", "#6e97e0", "#f5b841"];
 
 /** When the home's cards start landing, counted from the click. */
-export const LANDING_DELAY_MS = 450;
+const LANDING_DELAY_MS = 450;
 
 const reducedMotion = () =>
   typeof matchMedia !== "undefined" &&
   matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** Whether the home should play its first landing now. */
-export function celebrationPending(): boolean {
+function celebrationPending(): boolean {
   return (
     welcomeCelebration.startedAt > 0 &&
     Date.now() - welcomeCelebration.startedAt < 4000
@@ -213,7 +213,7 @@ export function landHome(node: HTMLElement) {
 }
 
 /** A pulse of amber light around an element, with a sheen across it. */
-export function shimmer(el: HTMLElement) {
+function shimmer(el: HTMLElement) {
   el.animate(
     [
       { boxShadow: "0 0 0 0 rgba(245,184,65,.65)" },

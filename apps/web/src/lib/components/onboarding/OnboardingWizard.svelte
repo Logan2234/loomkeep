@@ -992,7 +992,8 @@
             class="member-stamp timecode text-accent border-accent rounded-md border-2 px-1.5 py-1.5 text-center text-[0.62rem] leading-tight font-bold tracking-[0.06em] uppercase md:text-xs">
             {m.common_welcome()}
           </span>
-          <span class="timecode text-xs">N° {memberNumber}</span>
+          <span class="timecode text-xs"
+            >{m.onboarding_done_number({ number: memberNumber })}</span>
         </div>
       </div>
       {#if firstSteps.length > 0}

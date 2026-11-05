@@ -324,6 +324,7 @@
   "onboarding_done_title": "Tutto pronto.",
   "onboarding_done_intro": "Ecco la tua tessera. Sta a te riempirla.",
   "onboarding_done_member_since": "Membro dal {date}",
+  "onboarding_done_number": "N. {number}",
   "onboarding_done_services_one": "1 servizio in «Dove guardare»",
   "onboarding_done_services_many": "{count} servizi in «Dove guardare»",
   "onboarding_done_alerts_push": "Avvisi di uscita su questo dispositivo",

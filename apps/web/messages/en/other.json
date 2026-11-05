@@ -324,6 +324,7 @@
   "onboarding_done_title": "All set.",
   "onboarding_done_intro": "Here's your membership card. It's yours to fill.",
   "onboarding_done_member_since": "Member since {date}",
+  "onboarding_done_number": "No. {number}",
   "onboarding_done_services_one": "1 service in \"Where to watch\"",
   "onboarding_done_services_many": "{count} services in \"Where to watch\"",
   "onboarding_done_alerts_push": "Release alerts on this device",
