@@ -45,7 +45,7 @@
      * swipeable steps on a phone, the footer pinned to the bottom. */
     fullscreen?: boolean;
     /** A short line beside the footer's buttons (fullscreen only). */
-    hint?: string;
+    hint?: string | Snippet;
     /** Replaces "Suivant"/"Terminer" on the current step (fullscreen only). */
     nextLabel?: string;
     /** Above the desktop step rail (fullscreen only). */
@@ -321,7 +321,8 @@
           </button>
         {:else}
           <p class="text-dim grid h-10 place-items-center text-center text-xs">
-            {hint ?? ""}
+            {#if typeof hint === "function"}{@render hint()}{:else}{hint ??
+                ""}{/if}
           </p>
         {/if}
       </div>
@@ -337,7 +338,10 @@
           onclick={onBack}>
           {m.common_previous()}
         </button>
-        <p class="text-dim ml-auto text-sm">{hint ?? ""}</p>
+        <p class="text-dim ml-auto text-sm">
+          {#if typeof hint === "function"}{@render hint()}{:else}{hint ??
+              ""}{/if}
+        </p>
         {#if additionalAction}
           <button
             type="button"

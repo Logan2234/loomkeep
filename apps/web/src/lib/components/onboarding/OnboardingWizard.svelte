@@ -12,20 +12,27 @@
 
   import { browser } from "$app/env";
   import { goto } from "$app/navigation";
+  import { page } from "$app/state";
   import {
+    checkUsernameAvailable,
     completeOnboarding,
     getShowcase,
     getWatchProviderCatalog,
     updateMe,
+    updateUsername,
   } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { updatePrivacySettings } from "#lib/api/social.js";
+  import {
+    getGhostSwitchImpact,
+    updatePrivacySettings,
+  } from "#lib/api/social.js";
   import { auth } from "#lib/auth.svelte.js";
   import { appConfig } from "#lib/config.svelte.js";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { THEME_DEFINITIONS } from "#lib/constants/theme-definitions.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { createDomainToggle } from "#lib/domain-toggle.svelte.js";
   import { formatDate, formatRegion } from "#lib/format.js";
   import { useOnboardingChecklist } from "#lib/gamification/onboarding-checklist.svelte.js";
@@ -33,7 +40,7 @@
   import { languageName } from "#lib/locales.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { isNativeApp } from "#lib/native/app-shell.js";
-  import { tapFeedback } from "#lib/native/haptics.js";
+  import { successFeedback, tapFeedback } from "#lib/native/haptics.js";
   import { onboardingReplay } from "#lib/onboarding-replay.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
@@ -48,11 +55,13 @@
     USER_LIMITS,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import type { Snippet } from "svelte";
   import { backOut } from "svelte/easing";
   import { scale } from "svelte/transition";
   import Avatar from "../Avatar.svelte";
   import BrandMark from "../BrandMark.svelte";
   import EditAvatarModal from "../EditAvatarModal.svelte";
+  import GhostSwitchModal from "../GhostSwitchModal.svelte";
   import Icon from "../Icon.svelte";
   import SegmentedControl from "../SegmentedControl.svelte";
   import Switch from "../Switch.svelte";
@@ -99,17 +108,19 @@
   const queryClient = useQueryClient();
 
   const canAdvance = $derived(
-    stepId !== "domains" || (auth.user?.enabledDomains.length ?? 0) > 0,
+    stepId === "domains"
+      ? pickedCount > 0
+      : stepId === "profile"
+        ? usernameCheck !== "taken" &&
+          usernameCheck !== "checking" &&
+          !saveUsernameMut.loading
+        : true,
   );
 
-  const pickedCount = $derived(auth.user?.enabledDomains.length ?? 0);
-
-  const hint = $derived.by(() => {
+  const hint = $derived.by((): string | Snippet | undefined => {
     switch (stepId) {
       case "welcome":
-        return layout.compact
-          ? m.onboarding_hint_swipe()
-          : m.onboarding_hint_keys();
+        return layout.compact ? m.onboarding_hint_swipe() : arrowKeysHint;
       case "domains":
         if (pickedCount === 0) return m.onboarding_domains_none();
         return pickedCount > 1
@@ -141,19 +152,24 @@
     fetch: getShowcase,
     retry: 0,
   }));
-  const WALL_SIZE = 25;
   const HUES = [32, 200, 330, 150, 265, 12, 185, 48, 290, 110];
-  const wall = $derived.by(() => {
+  const tileAt = (covers: string[], i: number) =>
+    covers.length >= 8
+      ? { src: covers[i % covers.length], bg: null }
+      : {
+          src: null,
+          bg: `linear-gradient(165deg, hsl(${HUES[i % HUES.length]} 45% 40%), hsl(${(HUES[i % HUES.length] + 35) % 360} 50% 13%))`,
+        };
+  // Columns, every other one dropped by half a poster: the staggered shelf
+  // the sign-in wall uses, never a hole in the middle of a row.
+  function wallColumns(columns: number, perColumn: number) {
     const covers = showcase.data?.posters ?? [];
-    return Array.from({ length: WALL_SIZE }, (_, i) =>
-      covers.length >= 8
-        ? { src: covers[i % covers.length], bg: null }
-        : {
-            src: null,
-            bg: `linear-gradient(165deg, hsl(${HUES[i % HUES.length]} 45% 40%), hsl(${(HUES[i % HUES.length] + 35) % 360} 50% 13%))`,
-          },
+    return Array.from({ length: columns }, (_, c) =>
+      Array.from({ length: perColumn }, (_, r) =>
+        tileAt(covers, c * perColumn + r),
+      ),
     );
-  });
+  }
 
   const FEATURES = $derived(
     [
@@ -198,31 +214,74 @@
   // PrivacySection make for the same kind of low-stakes setting.
   const domainToggle = createDomainToggle();
 
+  // The account always keeps one domain (the API refuses none), so unticking
+  // the last one only clears the tiles here; picking again saves.
+  let domainsCleared = $state(false);
+  const picked = $derived(
+    domainsCleared ? [] : (auth.user?.enabledDomains ?? []),
+  );
+  const pickedCount = $derived(picked.length);
+
   function toggleDomain(id: Domain) {
     tapFeedback();
-    domainToggle.toggle(id);
+    const saved = auth.user?.enabledDomains ?? [];
+    if (domainsCleared) {
+      domainsCleared = false;
+      if (saved.length === 1 && saved[0] !== id) {
+        domainToggle.toggle(id);
+        domainToggle.toggle(saved[0]);
+      }
+    } else if (saved.length === 1 && saved[0] === id) {
+      domainsCleared = true;
+    } else {
+      domainToggle.toggle(id);
+    }
   }
 
   // ── Profile ─────────────────────────────────────────────────────────────
 
-  let displayName = $state(auth.user?.displayName ?? "");
   let avatarModalOpen = $state(false);
 
-  const displayNameMut = createApiMutation(() => ({
-    mutate: (next: string) => updateMe({ displayName: next }),
-    errorToast: true,
-  }));
+  let username = $state(auth.user?.username ?? "");
+  type UsernameCheck = "idle" | "checking" | "available" | "taken" | "error";
+  let usernameCheck = $state<UsernameCheck>("idle");
 
-  function saveDisplayName() {
-    const next = displayName.trim();
-    if (!auth.user || !next || next === auth.user.displayName) return;
-    displayNameMut.mutate(next);
+  // Keyed on the value typed, so a slow answer never labels a newer one.
+  const checkUsername = debounce(async (value: string) => {
+    try {
+      const { available } = await checkUsernameAvailable(value);
+      if (username.trim() === value)
+        usernameCheck = available ? "available" : "taken";
+    } catch {
+      if (username.trim() === value) usernameCheck = "error";
+    }
+  }, SEARCH_DEBOUNCE_MS);
+  $effect(() => () => checkUsername.cancel());
+
+  function onUsernameInput() {
+    const value = username.trim();
+    if (!value || value === auth.user?.username) {
+      usernameCheck = "idle";
+      checkUsername.cancel();
+      return;
+    }
+    usernameCheck = "checking";
+    checkUsername.call(value);
   }
 
-  // A brand-new account has no followers or lists to hide, so the wizard
-  // offers only the two everyday modes; Figurant stays in Settings › Privacy,
-  // behind its confirmation.
-  const ONBOARDING_ACCESS = ACCESS.filter((a) => a.id !== ProfileAccess.GHOST);
+  const saveUsernameMut = createApiMutation(() => ({
+    mutate: (value: string) => updateUsername({ username: value }),
+    coveredFields: ["username"],
+    onSuccess: () => {
+      usernameCheck = "idle";
+      activeIndex++;
+    },
+  }));
+
+  const profileUrl = $derived(
+    `${page.url.host}/app/u/${username.trim() || auth.user?.username || ""}`,
+  );
+
   const profileAccess = $derived(auth.user?.profileAccess);
 
   const accessMut = createApiMutation(() => ({
@@ -231,13 +290,24 @@
     onSuccess: (updated) => {
       queryClient.setQueryData(keys.privacy.settings(), updated);
       if (auth.user) auth.user.profileAccess = updated.profileAccess;
+      confirmingGhost = false;
     },
+    errorToast: true,
+  }));
+
+  // Figurant applies at once: same live counts and confirmation as
+  // Settings › Privacy, even on a brand-new account.
+  let confirmingGhost = $state(false);
+  const ghostImpactMut = createApiMutation(() => ({
+    mutate: () => getGhostSwitchImpact(),
+    onSuccess: () => (confirmingGhost = true),
     errorToast: true,
   }));
 
   function setAccess(next: ProfileAccess) {
     if (next === profileAccess || accessMut.loading) return;
-    accessMut.mutate(next);
+    if (next === ProfileAccess.GHOST) ghostImpactMut.mutate();
+    else accessMut.mutate(next);
   }
 
   // ── Settings ────────────────────────────────────────────────────────────
@@ -388,7 +458,21 @@
   );
 
   const pickedDomains = $derived(
-    PICKABLE_DOMAINS.filter(({ id }) => auth.user?.enabledDomains.includes(id)),
+    PICKABLE_DOMAINS.filter(({ id }) => picked.includes(id)),
+  );
+
+  // A card number that means nothing, only stable for the account.
+  const memberNumber = $derived.by(() => {
+    let h = 5381;
+    for (const ch of auth.user?.id ?? "") h = ((h << 5) + h) ^ ch.charCodeAt(0);
+    return 1000 + ((h >>> 0) % 9000);
+  });
+  const memberSince = $derived(
+    formatDate(auth.user?.createdAt ?? new Date(), {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).replace(/\D+/g, "."),
   );
 
   const facts = $derived.by(() => {
@@ -411,31 +495,36 @@
       list.push(
         profileAccess === ProfileAccess.PUBLIC
           ? m.onboarding_done_profile_public()
-          : m.onboarding_done_profile_private(),
+          : profileAccess === ProfileAccess.GHOST
+            ? m.onboarding_done_profile_ghost()
+            : m.onboarding_done_profile_private(),
       );
     return list;
   });
 
   const additionalAction = $derived(
-    stepId === "profile"
-      ? { label: m.onboarding_later(), onClick: () => activeIndex++ }
-      : stepId === "done"
-        ? {
-            label: m.onboarding_done_import_cta(),
-            onClick: async () => {
-              await finish();
-              await goto("/app/settings/import");
-            },
-          }
-        : undefined,
+    stepId === "done"
+      ? {
+          label: m.onboarding_done_import_cta(),
+          onClick: async () => {
+            await finish();
+            await goto("/app/settings/import");
+          },
+        }
+      : undefined,
   );
 
   function next() {
-    if (stepId === "profile") saveDisplayName();
+    const value = username.trim();
+    if (stepId === "profile" && value && value !== auth.user?.username) {
+      saveUsernameMut.mutate(value);
+      return;
+    }
     activeIndex++;
   }
 
   async function finish() {
+    successFeedback();
     if (onboardingReplay.active) onboardingReplay.active = false;
     else await completeOnboarding();
     if (browser) removeSessionStorage(STEP_STORAGE_KEY);
@@ -450,6 +539,18 @@
       >{m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span
       ></span>
   </p>
+{/snippet}
+
+{#snippet arrowKeysHint()}
+  <span class="inline-flex items-center gap-1.5">
+    {#each ["chevron-left", "chevron-right"] as const as key (key)}
+      <kbd
+        class="border-border bg-surface-2 text-fg inline-grid h-6 w-6 place-items-center rounded-md border shadow-[inset_0_-2px_0_var(--color-border)]">
+        <Icon name={key} class="h-3.5 w-3.5" />
+      </kbd>
+    {/each}
+    <span class="ml-1">{m.onboarding_hint_keys()}</span>
+  </span>
 {/snippet}
 
 {#snippet youngProject()}
@@ -504,9 +605,12 @@
     <div class="lg:grid lg:grid-cols-[minmax(0,34rem)_minmax(0,1fr)] lg:gap-12">
       <div>
         <div
-          class="relative -mx-5 -mt-3 mb-5 h-44 overflow-hidden lg:hidden"
+          class="relative -mx-5 -mt-3 mb-5 h-44 lg:hidden"
           aria-hidden="true">
-          {@render posterWall("grid-cols-7 gap-2 [&>*]:h-24")}
+          <div
+            class="absolute inset-0 overflow-hidden [mask-image:linear-gradient(to_bottom,black_40%,transparent)]">
+            {@render posterWall(7, 3, "w-16 h-24", "mt-12")}
+          </div>
           <p
             class="font-display absolute bottom-1.5 left-5 z-10 flex items-center gap-2 text-lg font-extrabold">
             <BrandMark class="h-5 w-5" />
@@ -538,16 +642,16 @@
         <div class="md:hidden">{@render youngProject()}</div>
       </div>
       <div
-        class="relative hidden overflow-hidden rounded-2xl lg:block"
+        class="relative -mt-14 -mr-16 -mb-8 hidden overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_25%,black_80%,transparent),linear-gradient(to_bottom,transparent,black_12%,black_75%,transparent)] [mask-composite:intersect] lg:block"
         aria-hidden="true">
-        {@render posterWall("grid-cols-5 gap-3 [&>*]:h-40")}
+        {@render posterWall(5, 5, "w-26 h-40", "mt-20")}
       </div>
     </div>
   {:else if stepId === "domains"}
     {@render title(m.onboarding_domains_title(), m.onboarding_domains_intro())}
     <div class="grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
       {#each PICKABLE_DOMAINS as { id, example } (id)}
-        {@const on = auth.user?.enabledDomains.includes(id) ?? false}
+        {@const on = picked.includes(id)}
         {@const accent = DOMAINS[id].accent}
         <button
           type="button"
@@ -592,50 +696,71 @@
     {@render title(m.onboarding_profile_title(), m.onboarding_profile_intro())}
     <div
       class="flex flex-col md:grid md:max-w-3xl md:grid-cols-[10.5rem_minmax(0,1fr)] md:items-start md:gap-12">
-      <div class="mb-6 flex flex-col items-center gap-2.5 md:mb-0">
-        <button
-          type="button"
-          class="relative rounded-full transition-transform duration-150 active:scale-95"
-          aria-label={auth.user?.avatarUrl
-            ? m.onboarding_profile_photo_change()
-            : m.onboarding_profile_photo_add()}
-          onclick={() => (avatarModalOpen = true)}>
-          <span class="block overflow-hidden rounded-full">
-            <Avatar
-              seed={auth.user?.username ?? ""}
-              url={auth.user?.avatarUrl ?? null}
-              size={layout.compact ? 112 : 168} />
-          </span>
+      <button
+        type="button"
+        class="group mb-6 flex flex-col items-center gap-2.5 md:mb-0"
+        onclick={() => (avatarModalOpen = true)}>
+        <span
+          class="relative rounded-full transition-transform duration-150 group-active:scale-95">
+          <Avatar
+            seed={auth.user?.username ?? ""}
+            url={auth.user?.avatarUrl ?? null}
+            size={layout.compact ? 112 : 168}
+            class="block rounded-full!" />
           <span
-            class="bg-btn text-btn-fg border-bg absolute right-1 bottom-1 grid h-9 w-9 place-items-center rounded-full border-[3px]">
+            class="bg-btn text-btn-fg border-bg absolute right-1 bottom-1 grid h-9 w-9 place-items-center rounded-full border-[3px]"
+            aria-hidden="true">
             <Icon name="camera" class="h-4 w-4" />
           </span>
-        </button>
-        <span class="text-accent text-sm font-semibold" aria-hidden="true">
+        </span>
+        <span
+          class="text-accent text-sm font-semibold underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-200 group-hover:decoration-current">
           {auth.user?.avatarUrl
             ? m.onboarding_profile_photo_change()
             : m.onboarding_profile_photo_add()}
         </span>
-      </div>
+      </button>
       <div class="max-w-md">
         <label class="mb-6 block">
           <span class="mb-1.5 block text-sm font-semibold">
-            {m.common_display_name()}
+            {m.common_username()}
           </span>
-          <input
-            type="text"
-            name="displayName"
-            class="input h-12 w-full text-base"
-            autocomplete="nickname"
-            minlength="1"
-            maxlength={USER_LIMITS.displayName}
-            bind:value={displayName}
-            onblur={saveDisplayName} />
-          {#if auth.user?.username}
-            <span class="timecode text-dim mt-1.5 block text-xs">
-              @{auth.user.username}
-            </span>
-          {/if}
+          <span
+            class="border-border bg-surface focus-within:border-accent flex h-12 items-center rounded-xl border-[1.5px] px-3.5 transition-colors">
+            <span class="text-dim" aria-hidden="true">@</span>
+            <input
+              type="text"
+              name="username"
+              class="h-full min-w-0 flex-1 bg-transparent pl-0.5 text-base shadow-none! ring-0! outline-none!"
+              autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
+              minlength="1"
+              maxlength={USER_LIMITS.username}
+              bind:value={username}
+              oninput={onUsernameInput} />
+            {#if usernameCheck === "available"}
+              <Icon name="check" class="text-success h-4 w-4 shrink-0" />
+            {/if}
+          </span>
+          <span class="timecode text-dim mt-1.5 block text-xs">
+            {m.onboarding_profile_url({ url: profileUrl })}
+          </span>
+          <span class="mt-1 block min-h-5 text-sm" aria-live="polite">
+            {#if usernameCheck === "checking"}
+              <span class="text-dim">{m.common_verifying()}</span>
+            {:else if usernameCheck === "available"}
+              <span class="text-success"
+                >{m.settings_username_available()}</span>
+            {:else if usernameCheck === "taken"}
+              <span class="text-danger">{m.settings_username_taken()}</span>
+            {:else if usernameCheck === "error"}
+              <span class="text-danger"
+                >{m.settings_username_check_error()}</span>
+            {:else if saveUsernameMut.error}
+              <span class="text-danger">{saveUsernameMut.error}</span>
+            {/if}
+          </span>
         </label>
         {#if appConfig.socialEnabled && profileAccess}
           <p class="font-display mb-2.5 text-lg font-extrabold">
@@ -643,11 +768,8 @@
           </p>
           <SegmentedControl
             label={m.onboarding_profile_access_title()}
-            options={ONBOARDING_ACCESS.map((a) => ({
-              label: a.label,
-              value: a.id,
-            }))}
-            value={profileAccess === ProfileAccess.GHOST ? "" : profileAccess}
+            options={ACCESS.map((a) => ({ label: a.label, value: a.id }))}
+            value={profileAccess}
             onChange={(v) => setAccess(v as ProfileAccess)} />
           <p class="text-dim mt-2 min-h-10 text-sm leading-snug">
             {ACCESS.find((a) => a.id === profileAccess)?.desc}
@@ -808,24 +930,17 @@
     <div
       class="lg:grid lg:max-w-5xl lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start lg:gap-14">
       <div
-        class="bg-surface border-border relative mb-6 flex max-w-xl rounded-[18px] border shadow-[0_18px_40px_-18px_rgba(0,0,0,0.6)] md:rounded-[22px]"
-        in:scale={{
-          start: 0.9,
-          duration: reduced ? 0 : 500,
-          delay: reduced ? 0 : 120,
-          easing: backOut,
-        }}>
+        class="member-card bg-surface border-border relative mb-6 flex max-w-xl overflow-hidden rounded-[18px] border shadow-[0_18px_40px_-18px_rgba(0,0,0,0.6)] md:rounded-[22px]">
         <div class="min-w-0 flex-1 py-4.5 pr-4 pl-4.5 md:px-7 md:py-6.5">
-          <p class="timecode text-xs">
-            {m.onboarding_done_member_since({
-              date: formatDate(auth.user?.createdAt ?? new Date()),
-            })}
+          <p
+            class="timecode text-[0.7rem] tracking-[0.06em] uppercase md:text-xs">
+            {m.onboarding_done_member_since({ date: memberSince })}
           </p>
           <p
-            class="font-display mt-1.5 truncate text-[1.75rem] leading-none font-extrabold tracking-tight md:text-[2.75rem]">
+            class="font-display mt-1.5 truncate text-[1.75rem] leading-none font-extrabold tracking-tight md:mt-2 md:text-[2.75rem]">
             {auth.user?.displayName}
           </p>
-          <p class="timecode mt-1 mb-3 text-xs md:mb-4">
+          <p class="timecode mt-1.5 mb-3 text-xs md:mb-4">
             @{auth.user?.username}
           </p>
           <div class="mb-3 flex flex-wrap gap-1.5 md:mb-4 md:gap-2">
@@ -851,25 +966,21 @@
             {/each}
           </ul>
         </div>
+        <!-- The stub: a dashed tear line with a half-punched notch at each
+             end, the stamp, and a number that means nothing. -->
         <div
-          class="border-border relative flex w-20 shrink-0 flex-col items-center justify-center border-l-2 border-dashed md:w-28"
-          aria-hidden="true">
+          class="border-border relative flex w-22 shrink-0 flex-col items-center justify-center gap-3 border-l-2 border-dashed md:w-28">
           <span
-            class="bg-bg border-border absolute -top-2.75 -left-2.75 h-5 w-5 rounded-full border"
-          ></span>
+            class="bg-bg border-border absolute -top-3 -left-3 h-6 w-6 rounded-full border"
+            aria-hidden="true"></span>
           <span
-            class="bg-bg border-border absolute -bottom-2.75 -left-2.75 h-5 w-5 rounded-full border"
-          ></span>
+            class="bg-bg border-border absolute -bottom-3 -left-3 h-6 w-6 rounded-full border"
+            aria-hidden="true"></span>
           <span
-            class="timecode text-accent border-accent -rotate-14 rounded-md border-2 px-1 py-1.5 text-center text-[0.65rem] leading-tight font-bold md:text-xs"
-            in:scale={{
-              start: 1.8,
-              duration: reduced ? 0 : 350,
-              delay: reduced ? 0 : 650,
-              easing: backOut,
-            }}>
+            class="member-stamp timecode text-accent border-accent rounded-md border-2 px-1.5 py-1.5 text-center text-[0.62rem] leading-tight font-bold tracking-[0.06em] uppercase md:text-xs">
             {m.common_welcome()}
           </span>
+          <span class="timecode text-xs">N° {memberNumber}</span>
         </div>
       </div>
       {#if firstSteps.length > 0}
@@ -905,26 +1016,32 @@
   {/if}
 </Wizard>
 
-{#snippet posterWall(cls: string)}
-  <div class="absolute -top-8 -left-10 grid -rotate-8 {cls}">
-    {#each wall as tile, i (i)}
-      <span
-        class="block w-16 overflow-hidden rounded-md lg:w-26 {i % 2
-          ? 'mt-8 lg:mt-14'
-          : ''}"
-        style:background={tile.bg ?? undefined}>
-        {#if tile.src}
-          <img
-            src={tile.src}
-            alt=""
-            class="h-full w-full object-cover"
-            loading="lazy" />
-        {/if}
-      </span>
-    {/each}
-  </div>
+{#snippet posterWall(
+  columns: number,
+  perColumn: number,
+  tile: string,
+  drop: string,
+)}
   <div
-    class="from-bg pointer-events-none absolute inset-0 bg-linear-to-t to-transparent to-70% lg:bg-linear-to-r lg:to-35%">
+    class="absolute -top-14 -left-8 flex -rotate-8 gap-2 select-none lg:-top-24 lg:gap-3">
+    {#each wallColumns(columns, perColumn) as column, c (c)}
+      <div class="flex flex-col gap-2 lg:gap-3 {c % 2 ? drop : ''}">
+        {#each column as cover, r (r)}
+          <span
+            class="block overflow-hidden rounded-md {tile}"
+            style:background={cover.bg ?? undefined}>
+            {#if cover.src}
+              <img
+                src={cover.src}
+                alt=""
+                class="h-full w-full object-cover"
+                draggable="false"
+                loading="lazy" />
+            {/if}
+          </span>
+        {/each}
+      </div>
+    {/each}
   </div>
 {/snippet}
 
@@ -937,3 +1054,45 @@
     }}
     onclose={() => (avatarModalOpen = false)} />
 {/if}
+
+{#if confirmingGhost && ghostImpactMut.data}
+  <GhostSwitchModal
+    impact={ghostImpactMut.data}
+    loading={accessMut.loading}
+    onconfirm={() => accessMut.mutate(ProfileAccess.GHOST)}
+    onclose={() => (confirmingGhost = false)} />
+{/if}
+
+<style>
+  /* The card slides up tilted and settles, then the stamp lands on it. */
+  .member-card {
+    animation: card-in 650ms cubic-bezier(0.2, 0.9, 0.3, 1.15) 120ms both;
+  }
+  .member-stamp {
+    animation: stamp-in 380ms cubic-bezier(0.3, 1.6, 0.5, 1) 700ms both;
+  }
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateY(46px) rotate(-5deg);
+    }
+  }
+  @keyframes stamp-in {
+    from {
+      opacity: 0;
+      transform: rotate(-30deg) scale(1.8);
+    }
+    to {
+      transform: rotate(-14deg);
+    }
+  }
+  .member-stamp {
+    transform: rotate(-14deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .member-card,
+    .member-stamp {
+      animation: none;
+    }
+  }
+</style>

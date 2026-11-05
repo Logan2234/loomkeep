@@ -85,3 +85,62 @@ describe("replaying the welcome tour", () => {
     expect(complete).not.toHaveBeenCalled();
   });
 });
+
+describe("domains step", () => {
+  it("lets the last domain be unticked, then holds the tour there", async () => {
+    const saved = vi.fn();
+    stubSideRequests();
+    server.use(
+      http.patch(apiUrl("/users/me"), () => {
+        saved();
+        return HttpResponse.json(USER);
+      }),
+    );
+    auth.user = { ...USER };
+    sessionStorage.setItem(STORAGE_KEYS.onboardingStep, "1");
+
+    renderWithQuery(OnboardingWizard, {});
+    const [video] = screen
+      .getAllByRole("button", { name: new RegExp(m.common_Media()) })
+      .filter((tile) => tile.hasAttribute("aria-pressed"));
+    await fireEvent.click(video);
+
+    expect(video.getAttribute("aria-pressed")).toBe("false");
+    for (const next of screen.getAllByRole("button", { name: m.common_next() }))
+      expect((next as HTMLButtonElement).disabled).toBe(true);
+    expect(saved).not.toHaveBeenCalled();
+  });
+});
+
+describe("profile step", () => {
+  it("saves a new username before moving on", async () => {
+    const renamed = vi.fn();
+    stubSideRequests();
+    server.use(
+      http.get(apiUrl("/users/me/username-availability"), () =>
+        HttpResponse.json({ available: true }),
+      ),
+      http.patch(apiUrl("/users/me/username"), async ({ request }) => {
+        const body = (await request.json()) as { username: string };
+        renamed(body.username);
+        return HttpResponse.json({ ...USER, username: body.username });
+      }),
+    );
+    auth.user = { ...USER };
+    sessionStorage.setItem(STORAGE_KEYS.onboardingStep, "2");
+
+    renderWithQuery(OnboardingWizard, {});
+    const field = screen.getByRole("textbox");
+    await fireEvent.input(field, { target: { value: "alice_reads" } });
+    await screen.findByText(m.settings_username_available());
+    const [next] = screen.getAllByRole("button", { name: m.common_next() });
+    await fireEvent.click(next);
+
+    await vi.waitFor(() => expect(renamed).toHaveBeenCalledWith("alice_reads"));
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole("progressbar").getAttribute("aria-valuenow"),
+      ).toBe("4"),
+    );
+  });
+});

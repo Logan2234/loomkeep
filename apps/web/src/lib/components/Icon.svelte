@@ -165,15 +165,19 @@
     <path
       d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
   {:else if name === "pin"}
-    <!-- Outline map-pin: "not pinned" state. -->
-    <path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21Z" />
-    <circle cx="12" cy="9.5" r="2.2" />
+    <!-- Pushpin, tilted as if pressed into a board: "not pinned" state. -->
+    <g transform="rotate(45 12 12)">
+      <path d="M8 3h8" />
+      <path d="M9.5 3v6l-3 4.5h11l-3-4.5V3" />
+      <path d="M12 13.5V21" />
+    </g>
   {:else if name === "pin-filled"}
-    <!-- Solid map-pin: "pinned" state — same silhouette, filled. -->
-    <path
-      d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21Z"
-      fill="currentColor"
-      stroke="none" />
+    <!-- Same pushpin, filled: "pinned" state. -->
+    <g transform="rotate(45 12 12)">
+      <path d="M8 3h8" />
+      <path d="M9.5 3v6l-3 4.5h11l-3-4.5V3Z" fill="currentColor" />
+      <path d="M12 13.5V21" />
+    </g>
   {:else if name === "message"}
     <path
       d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8A2.5 2.5 0 0 1 17.5 16H9l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5Z" />
