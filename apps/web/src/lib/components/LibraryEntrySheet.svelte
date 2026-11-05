@@ -69,7 +69,7 @@
     {#if statusOptions.length > 0}
       <div class="px-5 pt-2 pb-3">
         <p
-          class="text-dim mb-2.5 font-mono text-[0.65rem] font-bold tracking-[0.14em] uppercase">
+          class="text-dim text-micro mb-2.5 font-mono font-bold tracking-[0.14em] uppercase">
           {m.common_status()}
         </p>
         <div

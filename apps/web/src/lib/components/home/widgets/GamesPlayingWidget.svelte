@@ -53,10 +53,11 @@
     {size}
     metaHeight={16}
     loading={gamesQuery.loading}
+    emptyArt="controller"
     empty={m.home_nothing_playing()}>
     {#snippet meta(e)}
       {#if e.playtimeMinutes > 0}
-        <p class="timecode text-[0.65rem]">{hours(e.playtimeMinutes)}</p>
+        <p class="timecode text-micro">{hours(e.playtimeMinutes)}</p>
       {/if}
     {/snippet}
   </PosterRail>

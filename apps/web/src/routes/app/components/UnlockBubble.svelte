@@ -227,7 +227,7 @@
       <span class="flex min-w-0 flex-col">
         {#if current.kind === "achievement"}
           <span
-            class="text-accent text-[0.6rem] font-semibold tracking-widest uppercase">
+            class="text-accent text-micro font-semibold tracking-widest uppercase">
             {m.gamification_bubble_unlocked()}
           </span>
           <span class="font-display text-fg truncate text-base font-bold">
@@ -238,7 +238,7 @@
           </span>
         {:else}
           <span
-            class="text-accent text-[0.6rem] font-semibold tracking-widest uppercase">
+            class="text-accent text-micro font-semibold tracking-widest uppercase">
             {m.gamification_bubble_level_reached()}
           </span>
           <span class="font-display text-fg truncate text-base font-bold">

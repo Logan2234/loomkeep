@@ -223,7 +223,7 @@
   {#if error}
     <Banner variant="error">{error}</Banner>
   {:else if isEmpty}
-    <EmptyState>
+    <EmptyState art="chart">
       {m.stats_empty()}
     </EmptyState>
   {:else if overview}

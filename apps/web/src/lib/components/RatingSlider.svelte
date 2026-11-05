@@ -53,7 +53,7 @@
 
 <div>
   <div class="flex items-center justify-between">
-    <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
+    <span class="timecode text-micro tracking-[0.18em] uppercase">
       {m.reviews_my_rating()}
     </span>
     {#if selected !== null}
@@ -99,7 +99,7 @@
   <div class="mt-0.5 flex justify-between px-[7px]" aria-hidden="true">
     {#each TICKS as n (n)}
       <span
-        class="w-3 text-center font-mono text-[0.66rem] tabular-nums"
+        class="text-micro w-3 text-center font-mono tabular-nums"
         class:text-accent={n === selected}
         class:font-bold={n === selected}
         class:text-dim={n !== selected}>

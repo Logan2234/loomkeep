@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyState from "#lib/components/EmptyState.svelte";
   import { getCalendar } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -99,9 +100,9 @@
       {/each}
     </ul>
   {:else}
-    <p
-      class="text-dim flex h-full items-center justify-center text-center text-sm">
-      {m.home_nothing_this_week()}
-    </p>
+    <div class="flex h-full items-center">
+      <EmptyState compact art="calendar"
+        >{m.home_nothing_this_week()}</EmptyState>
+    </div>
   {/if}
 </WidgetShell>

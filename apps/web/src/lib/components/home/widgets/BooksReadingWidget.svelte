@@ -64,6 +64,7 @@
     metaHeight={26}
     stripMinWidth={480}
     loading={booksQuery.loading}
+    emptyArt="book"
     empty={m.home_nothing_reading()}>
     {#snippet meta(e)}
       {@const p = pct(e)}
@@ -77,7 +78,7 @@
           height="h-1"
           class="mt-1" />
       {/if}
-      <p class="timecode mt-0.5 truncate text-[0.65rem]">{pages(e)}</p>
+      <p class="timecode text-micro mt-0.5 truncate">{pages(e)}</p>
     {/snippet}
   </PosterRail>
 </WidgetShell>

@@ -27,7 +27,7 @@
           class="bg-accent/75 block w-full max-w-11 rounded-t-md"
           style="height: {barHeight(day.durationMinutes)}%"></span>
       </div>
-      <span class="timecode text-dim text-center text-[0.58rem] uppercase">
+      <span class="timecode text-dim text-micro text-center uppercase">
         {formatDate(dateAtNoon(day.date), {
           weekday: "narrow",
           timeZone: "UTC",

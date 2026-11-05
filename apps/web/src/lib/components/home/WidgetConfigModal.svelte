@@ -169,7 +169,7 @@
           placeholder={m.home_note_placeholder()}
           bind:value={text}></textarea>
       </label>
-      <p class="timecode -mt-3.5 text-right text-[0.65rem]">
+      <p class="timecode text-micro -mt-3.5 text-right">
         {text.length} / {HOME_LAYOUT_LIMITS.noteLength}
       </p>
     {/if}

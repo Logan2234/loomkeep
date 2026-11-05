@@ -9,7 +9,6 @@
   import Banner from "#lib/components/Banner.svelte";
   import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
   import EmptyState from "#lib/components/EmptyState.svelte";
-  import Icon from "#lib/components/Icon.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import type { PagedResult, UserSummaryDto } from "@loomkeep/shared";
   import SettingsSection from "../components/SettingsSection.svelte";
@@ -40,12 +39,8 @@
   {:else if blockedQuery.error}
     <Banner variant="error">{blockedQuery.error}</Banner>
   {:else if blockedUsers.length === 0}
-    <EmptyState class="px-5 py-10">
-      <Icon name="users" class="text-accent mx-auto h-6 w-6" />
-      <p class="mt-3 font-semibold">{m.settings_blocked_users_empty_title()}</p>
-      <p class="text-dim mt-1 text-sm">
-        {m.settings_blocked_users_empty_body()}
-      </p>
+    <EmptyState art="shield" title={m.settings_blocked_users_empty_title()}>
+      <p class="text-sm">{m.settings_blocked_users_empty_body()}</p>
     </EmptyState>
   {:else}
     <ul class="flex flex-col gap-2.5">

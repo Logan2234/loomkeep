@@ -37,7 +37,7 @@
   <span class="flex min-w-0 flex-1 flex-col gap-0.5">
     <span class="truncate font-semibold">{work.title}</span>
     <span
-      class="text-accent font-mono text-[0.62rem] font-bold tracking-wider uppercase">
+      class="text-accent text-micro font-mono font-bold tracking-wider uppercase">
       {workKindLabel(work.kind)}{work.year ? ` · ${work.year}` : ""}
     </span>
   </span>
@@ -58,7 +58,7 @@
     </span>
   {/if}
 
-  <span class="text-dim shrink-0 font-mono text-[0.66rem] tabular-nums">
+  <span class="text-dim text-micro shrink-0 font-mono tabular-nums">
     {work.mine ? m.common_you() : peerName} · {formatDate(work.sharedAt, {
       day: "2-digit",
       month: "2-digit",

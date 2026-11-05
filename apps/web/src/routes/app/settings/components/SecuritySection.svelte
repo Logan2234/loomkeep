@@ -309,8 +309,7 @@
 
   <AppLockSetting />
 
-  <p
-    class="timecode mt-6 mb-2 block text-[0.65rem] tracking-[0.14em] uppercase">
+  <p class="timecode text-micro mt-6 mb-2 block tracking-[0.14em] uppercase">
     {m.settings_go_further()}
   </p>
   <ul class="inset-card divide-border divide-y">

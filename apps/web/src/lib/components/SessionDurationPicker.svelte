@@ -44,7 +44,7 @@
 
     <div class="min-w-0 text-center">
       <span
-        class="timecode text-dim block text-[0.62rem] tracking-[0.16em] uppercase">
+        class="timecode text-dim text-micro block tracking-[0.16em] uppercase">
         {m.session_duration()}
       </span>
       <span class="mt-1 flex items-baseline justify-center gap-2">

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyState from "#lib/components/EmptyState.svelte";
   import {
     SESSION_NOTES_MAX_LENGTH,
     MAX_SESSION_DURATION_MINUTES,
@@ -741,7 +742,7 @@
             bind:value={notes}
             disabled={createMut.loading || finishTimerMut.loading}></textarea>
           <span
-            class="text-dim pointer-events-none absolute right-3 bottom-2 text-[0.65rem] tabular-nums">
+            class="text-dim text-micro pointer-events-none absolute right-3 bottom-2 tabular-nums">
             {notes.length} / 1000
           </span>
         </span>
@@ -995,7 +996,7 @@
         </div>
       {/if}
     {:else if !sessionsQuery.loading}
-      <p class="text-dim text-sm">{m.session_history_empty()}</p>
+      <EmptyState compact art="book">{m.session_history_empty()}</EmptyState>
     {/if}
   </Modal>
 {/if}

@@ -118,9 +118,8 @@
     {:else if apiKeysQuery.error}
       <p class="text-danger text-sm">{apiKeysQuery.error}</p>
     {:else if apiKeys.length === 0}
-      <EmptyState class="px-5 py-8">
-        <p class="font-semibold">{m.settings_api_keys_empty_title()}</p>
-        <p class="mt-1 text-sm">{m.settings_api_keys_empty_body()}</p>
+      <EmptyState art="key" title={m.settings_api_keys_empty_title()}>
+        <p class="text-sm">{m.settings_api_keys_empty_body()}</p>
         <button
           type="button"
           class="btn btn-primary mt-4"

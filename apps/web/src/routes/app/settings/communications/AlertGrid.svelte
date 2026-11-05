@@ -113,7 +113,7 @@
               id={headerId("group", index)}
               scope="rowgroup"
               colspan={columns.length + 1}
-              class="text-accent pb-1 text-left font-mono text-[0.65rem] font-normal tracking-[0.12em] uppercase
+              class="text-accent text-micro pb-1 text-left font-mono font-normal tracking-[0.12em] uppercase
                 {index === 0 ? 'pt-1' : 'pt-4'}">
               <span class="flex items-center gap-2">
                 {group.label}

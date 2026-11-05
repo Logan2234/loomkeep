@@ -208,7 +208,7 @@
       {/if}
     </span>
 
-    <span class="timecode shrink-0 pt-0.5 text-[0.68rem] whitespace-nowrap">
+    <span class="timecode text-micro shrink-0 pt-0.5 whitespace-nowrap">
       {formatRelative(entry.createdAt)}
     </span>
     {#if domain && off}

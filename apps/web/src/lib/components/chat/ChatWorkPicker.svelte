@@ -87,7 +87,7 @@
     </span>
     <span class="min-w-0">
       <span class="block truncate text-sm font-semibold">{work.title}</span>
-      <span class="text-dim block font-mono text-[0.68rem] uppercase">
+      <span class="text-dim text-micro block font-mono uppercase">
         {workKindLabel(work.kind)}{work.year ? ` · ${work.year}` : ""}
       </span>
     </span>

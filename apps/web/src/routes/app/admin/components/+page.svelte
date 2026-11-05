@@ -599,7 +599,7 @@
     <div class="grid gap-4 sm:grid-cols-2">
       {#each SWATCH_GROUPS.map( (group) => ({ ...group, swatches: group.swatches.filter((swatch) => !componentSearch || matches(swatch) || matches("Tokens")) }) ).filter((group) => group.swatches.length) as group (group.label)}
         <section>
-          <p class="timecode mb-2 text-[0.65rem]">{group.label}</p>
+          <p class="timecode text-micro mb-2">{group.label}</p>
           <div class="grid grid-cols-5 gap-2">
             {#each group.swatches as swatch (swatch)}
               <div>
@@ -607,7 +607,7 @@
                   class="border-border aspect-square rounded-lg border"
                   style:background={`var(--${swatch})`}>
                 </div>
-                <code class="text-dim mt-1 block truncate text-[0.6rem]"
+                <code class="text-dim text-micro mt-1 block truncate"
                   >{swatch}</code>
               </div>
             {/each}
@@ -643,7 +643,7 @@
       <div
         class="bg-surface-2 flex min-w-0 flex-col items-center gap-2 px-2 py-3">
         <Icon name={icon} class="text-accent h-5 w-5" />
-        <code class="text-dim max-w-full truncate text-[0.6rem]">{icon}</code>
+        <code class="text-dim text-micro max-w-full truncate">{icon}</code>
       </div>
     {/each}
   </div>

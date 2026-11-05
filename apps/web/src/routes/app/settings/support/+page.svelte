@@ -56,7 +56,7 @@
 </script>
 
 {#snippet accountBadge(accountRequired: boolean)}
-  <span class="chip hover:text-dim px-2 py-0.5 text-[0.65rem]">
+  <span class="chip hover:text-dim text-micro px-2 py-0.5">
     {accountRequired
       ? m.settings_support_account_required()
       : m.settings_support_no_account()}

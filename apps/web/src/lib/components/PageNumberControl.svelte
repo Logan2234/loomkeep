@@ -29,8 +29,7 @@
 </script>
 
 <div class="min-w-0 text-center">
-  <span
-    class="timecode text-dim block text-[0.58rem] tracking-[0.12em] uppercase">
+  <span class="timecode text-dim text-micro block tracking-[0.12em] uppercase">
     {label}
   </span>
   <div class="mt-2 flex items-center justify-center gap-1.5 sm:gap-2">

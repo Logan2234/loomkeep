@@ -87,9 +87,10 @@
     {size}
     metaHeight={16}
     loading={dormantQuery.loading}
+    emptyArt="tv"
     empty={m.home_nothing_to_resume()}>
     {#snippet meta(e)}
-      <p class="timecode mt-0.5 truncate text-[0.65rem]">
+      <p class="timecode text-micro mt-0.5 truncate">
         {m.home_resume_paused_days({ days: pausedDays(e) })}
       </p>
     {/snippet}

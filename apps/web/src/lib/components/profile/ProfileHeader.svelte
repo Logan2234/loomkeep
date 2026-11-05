@@ -300,7 +300,7 @@
         value={profile.followerCount}
         class="font-display block text-lg font-extrabold tabular-nums" />
       <span
-        class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+        class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
         {profile.followerCount > 1
           ? m.profile_followers_plural()
           : m.profile_followers_singular()}
@@ -313,7 +313,7 @@
       <span class="font-display block text-lg font-extrabold tabular-nums"
         >{profile.followingCount}</span>
       <span
-        class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+        class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
         {profile.followingCount > 1
           ? m.profile_following_plural()
           : m.profile_following_singular()}
@@ -327,7 +327,7 @@
         <span class="font-display block text-lg font-extrabold tabular-nums"
           >{profile.reviewsCount}</span>
         <span
-          class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+          class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
           {profile.reviewsCount > 1
             ? m.profile_reviews_count_plural()
             : m.profile_reviews_count_singular()}
@@ -340,7 +340,7 @@
         <span class="font-display block text-lg font-extrabold tabular-nums"
           >{profile.commentsCount}</span>
         <span
-          class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+          class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
           {m.profile_comments_count()}
         </span>
       </button>
@@ -351,7 +351,7 @@
         <span class="font-display block text-lg font-extrabold tabular-nums"
           >{profile.listsCount}</span>
         <span
-          class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+          class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
           {profile.listsCount > 1
             ? m.profile_lists_count_plural()
             : m.profile_lists_count_singular()}
@@ -363,7 +363,7 @@
         <span class="font-display block text-lg font-extrabold tabular-nums"
           >{profile.reviewsCount}</span>
         <span
-          class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+          class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
           {profile.reviewsCount > 1
             ? m.profile_reviews_count_plural()
             : m.profile_reviews_count_singular()}
@@ -374,7 +374,7 @@
         <span class="font-display block text-lg font-extrabold tabular-nums"
           >{profile.commentsCount}</span>
         <span
-          class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+          class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
           {m.profile_comments_count()}
         </span>
       </div>
@@ -382,7 +382,7 @@
         <span class="font-display block text-lg font-extrabold tabular-nums"
           >{profile.listsCount}</span>
         <span
-          class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+          class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
           {profile.listsCount > 1
             ? m.profile_lists_count_plural()
             : m.profile_lists_count_singular()}

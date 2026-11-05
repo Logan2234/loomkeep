@@ -120,8 +120,7 @@
 
     {#each groups as group (group.id)}
       <div>
-        <p
-          class="timecode mb-1 px-3 text-[0.65rem] tracking-[0.14em] uppercase">
+        <p class="timecode text-micro mb-1 px-3 tracking-[0.14em] uppercase">
           {group.label}
         </p>
         <ul>
@@ -166,8 +165,7 @@
   <nav aria-label={m.common_settings()} class="flex flex-col gap-5">
     {#each groups as group (group.id)}
       <div>
-        <p
-          class="timecode mb-1.5 px-1 text-[0.65rem] tracking-[0.14em] uppercase">
+        <p class="timecode text-micro mb-1.5 px-1 tracking-[0.14em] uppercase">
           {group.label}
         </p>
         <ul class="inset-card divide-border divide-y">

@@ -92,7 +92,7 @@
 
 {#snippet heading(label: string)}
   <h3
-    class="text-dim mt-6 mb-2.5 flex items-center gap-3 font-mono text-[0.65rem] font-bold tracking-[0.14em] uppercase">
+    class="text-dim text-micro mt-6 mb-2.5 flex items-center gap-3 font-mono font-bold tracking-[0.14em] uppercase">
     {label}<span class="bg-border h-px flex-1"></span>
   </h3>
 {/snippet}

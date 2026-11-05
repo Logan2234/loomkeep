@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyState from "#lib/components/EmptyState.svelte";
   import { getLeaderboard } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -78,7 +79,7 @@
                   : ''}">
                 {entry.displayName}
               </p>
-              <p class="timecode text-[0.65rem]">
+              <p class="timecode text-micro">
                 {m.gamification_podium_xp({ xp: formatNumber(entry.xp) })}
               </p>
               <div
@@ -105,9 +106,9 @@
       {/if}
     </div>
   {:else}
-    <p
-      class="text-dim flex h-full items-center justify-center text-center text-sm">
-      {m.gamification_podium_empty()}
-    </p>
+    <div class="flex h-full items-center">
+      <EmptyState compact art="trophy"
+        >{m.gamification_podium_empty()}</EmptyState>
+    </div>
   {/if}
 </WidgetShell>

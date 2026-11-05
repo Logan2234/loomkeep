@@ -31,6 +31,11 @@ history from before it was started.
   notifications that ask the device's permission, and a membership card that
   flies into your avatar as the home lands. Settings › Help can replay it.
 - The phone bar's Profile tab shows your avatar; pins are drawn as a pushpin.
+- Phone layout: pages open on a compact title bar (no back arrow on a tab's
+  own page), sections become filled blocks with their title above, and
+  subtitles that only repeated the page are gone.
+- Empty screens show an amber line drawing, one sentence and what to do
+  next, instead of a dashed box; small text no longer drops below 11px.
 
 ### Fixed
 

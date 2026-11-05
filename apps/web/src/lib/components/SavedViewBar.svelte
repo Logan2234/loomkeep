@@ -145,7 +145,7 @@
 {#if views.length > 0 || !pristine}
   {#if heading}
     <h3
-      class="text-dim mt-2 mb-2.5 flex items-center gap-3 font-mono text-[0.65rem] font-bold tracking-[0.14em] uppercase">
+      class="text-dim text-micro mt-2 mb-2.5 flex items-center gap-3 font-mono font-bold tracking-[0.14em] uppercase">
       {heading}<span class="bg-border h-px flex-1"></span>
     </h3>
   {/if}
@@ -246,7 +246,7 @@
       {/if}
       <label
         for="saved-view-name-input"
-        class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
+        class="timecode text-micro mb-1 block tracking-[0.18em] uppercase">
         {m.saved_view_name_label()}
       </label>
       <input

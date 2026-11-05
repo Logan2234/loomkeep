@@ -84,7 +84,7 @@
     ></span>
   {/if}
   <div class="min-w-0 sm:col-start-2">
-    <p class="timecode text-dim text-[0.68rem] uppercase">
+    <p class="timecode text-dim text-micro uppercase">
       {exactTime ? m.media_anime_synopsis() : m.media_season_synopsis()}
     </p>
     <p

@@ -527,7 +527,7 @@
               <div
                 class="card flex h-full items-end overflow-hidden p-1.5 pl-2">
                 <span
-                  class="flex min-w-0 items-center gap-1 text-[0.65rem] leading-tight font-semibold">
+                  class="text-micro flex min-w-0 items-center gap-1 leading-tight font-semibold">
                   <Icon name={def.icon} class="text-accent h-3 w-3 shrink-0" />
                   <span class="truncate">{def.title()}</span>
                 </span>

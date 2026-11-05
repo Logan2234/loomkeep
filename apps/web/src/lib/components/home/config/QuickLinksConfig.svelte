@@ -92,7 +92,7 @@
                 {described?.label ?? row.link.id}
               </span>
               {#if row.link.kind === "url"}
-                <span class="timecode block truncate text-[0.65rem]">
+                <span class="timecode text-micro block truncate">
                   {row.link.url}
                 </span>
               {/if}

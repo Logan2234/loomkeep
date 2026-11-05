@@ -46,7 +46,7 @@
     <div class="flex flex-col">
       {#each months as month (month.label)}
         <h3
-          class="text-dim mt-2.5 mb-0.5 flex items-center gap-2 font-mono text-[0.66rem] tracking-widest uppercase first:mt-0">
+          class="text-dim text-micro mt-2.5 mb-0.5 flex items-center gap-2 font-mono tracking-widest uppercase first:mt-0">
           {month.label}
           <span class="bg-border h-px flex-1"></span>
         </h3>

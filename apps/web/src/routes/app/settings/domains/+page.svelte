@@ -177,7 +177,7 @@
                   {#if countsQuery.loading && !d.comingSoon}
                     <span class="skeleton block h-3 w-12 rounded"></span>
                   {:else if (counts[id] ?? 0) > 0}
-                    <span class="timecode text-[0.65rem]">
+                    <span class="timecode text-micro">
                       {trackedLabel(counts[id] ?? 0)}
                     </span>
                   {/if}

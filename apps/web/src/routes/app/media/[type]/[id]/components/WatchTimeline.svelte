@@ -63,7 +63,7 @@
           duration: reduced ? 0 : 200,
           delay: reduced ? 0 : 160,
         }}>
-        <span class="timecode text-dim mt-2 block text-[0.65rem] uppercase">
+        <span class="timecode text-dim text-micro mt-2 block uppercase">
           {i === 0 ? m.media_episode_watched() : m.media_episode_rewatched()}
         </span>
         <span class="block text-sm">

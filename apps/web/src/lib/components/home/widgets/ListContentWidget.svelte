@@ -50,6 +50,7 @@
       })}
       {size}
       loading={listQuery.loading}
+      emptyArt="list"
       empty={m.home_list_content_empty()} />
   {/if}
 </WidgetShell>

@@ -32,7 +32,7 @@
       <Icon name={icon} class="text-accent h-4 w-4 shrink-0" />
       <span class="truncate">{title}</span>
       {#if tag}
-        <span class="timecode shrink-0 text-[0.65rem] font-normal uppercase">
+        <span class="timecode text-micro shrink-0 font-normal uppercase">
           {tag}
         </span>
       {/if}

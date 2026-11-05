@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyState from "#lib/components/EmptyState.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
@@ -150,20 +151,16 @@
   {:else if history.error && entries.length === 0}
     <p class="text-danger text-sm">{history.error}</p>
   {:else if entries.length === 0}
-    <div
-      in:fade={{ duration: reduced ? 0 : 200 }}
-      class="text-dim flex flex-col items-center gap-2 px-6 py-12 text-center text-sm">
-      <span class="bg-surface-2 grid h-12 w-12 place-items-center rounded-full">
-        <Icon
-          name={filter === "unread" ? "check-check" : "bell"}
-          class="h-5 w-5" />
-      </span>
-      <b class="font-display text-fg text-base">
-        {filter === "unread"
+    <div in:fade={{ duration: reduced ? 0 : 200 }}>
+      <EmptyState
+        art="bell"
+        title={filter === "unread"
           ? m.notif_empty_unread_title()
-          : m.notif_empty_title()}
-      </b>
-      {filter === "unread" ? m.notif_empty_unread() : m.notif_empty()}
+          : m.notif_empty_title()}>
+        <p class="text-sm">
+          {filter === "unread" ? m.notif_empty_unread() : m.notif_empty()}
+        </p>
+      </EmptyState>
     </div>
   {:else}
     {#each sections as group (group.section)}

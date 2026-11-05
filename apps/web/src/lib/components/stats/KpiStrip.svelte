@@ -21,7 +21,7 @@
           </small>{/if}
       </div>
       <div
-        class="text-dim mt-2 font-mono text-[10px] tracking-[0.08em] uppercase">
+        class="text-dim text-micro mt-2 font-mono tracking-[0.08em] uppercase">
         {tile.label}
       </div>
     </div>

@@ -55,7 +55,7 @@
       <span class="truncate font-semibold"
         >{conversationName(conversation)}</span>
       <span
-        class="shrink-0 font-mono text-[0.68rem] {unread
+        class="text-micro shrink-0 font-mono {unread
           ? 'text-accent'
           : 'text-dim'}">{conversationTime(conversation)}</span>
     </span>
@@ -73,7 +73,7 @@
   </span>
   {#if unread > 0}
     <span
-      class="grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1.5 font-mono text-[0.68rem] font-bold {badgeTone(
+      class="text-micro grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1.5 font-mono font-bold {badgeTone(
         conversation.muted,
       )}">
       {unread > 99 ? "99+" : unread}

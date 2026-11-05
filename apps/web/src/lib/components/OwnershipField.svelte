@@ -34,7 +34,7 @@
 </script>
 
 <div class="flex flex-col gap-2">
-  <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
+  <span class="timecode text-micro tracking-[0.18em] uppercase">
     {m.ownership_title()}
   </span>
   <Dropdown placement="bottom-start" role="menu" class="min-w-52">

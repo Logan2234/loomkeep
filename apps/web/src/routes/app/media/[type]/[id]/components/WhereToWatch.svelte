@@ -74,7 +74,7 @@
         loading="lazy"
         class="h-full w-full object-cover" />
     {:else}
-      <span class="text-dim text-[0.6rem] font-bold"
+      <span class="text-dim text-micro font-bold"
         >{provider.name.slice(0, 2)}</span>
     {/if}
   </span>

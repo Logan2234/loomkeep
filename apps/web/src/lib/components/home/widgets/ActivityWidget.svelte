@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyState from "#lib/components/EmptyState.svelte";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import ActivityItem from "#lib/components/ActivityItem.svelte";
@@ -49,9 +50,8 @@
       {/each}
     </ul>
   {:else}
-    <p
-      class="text-dim flex h-full items-center justify-center text-center text-sm">
-      {m.home_activity_empty()}
-    </p>
+    <div class="flex h-full items-center">
+      <EmptyState compact art="people">{m.home_activity_empty()}</EmptyState>
+    </div>
   {/if}
 </WidgetShell>

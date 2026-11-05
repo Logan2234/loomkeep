@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyArt from "#lib/components/EmptyArt.svelte";
   import { tabSwipe } from "#lib/tab-swipe.js";
   // Messages on the compact shell: a full-screen veil, list then
   // conversation, opened from the bottom bar's Messages tab.
@@ -149,6 +150,7 @@
           {#if !conversationsQuery.loading}
             <div
               class="text-dim flex flex-col items-center gap-3 px-6 py-10 text-center text-sm">
+              {#if !search}<EmptyArt name="chat" class="h-20 w-28" />{/if}
               <p>{search ? m.common_no_results() : m.chat_no_conversation()}</p>
               {#if !search}
                 <button

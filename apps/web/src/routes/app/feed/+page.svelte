@@ -89,13 +89,8 @@
     {:else if feed.data.length === 0 && domain}
       <EmptyState>{m.feed_empty_domain()}</EmptyState>
     {:else if feed.data.length === 0}
-      <EmptyState>
-        <p class="font-display text-lg font-bold">
-          {m.feed_empty_title()}
-        </p>
-        <p class="mt-1 text-sm">
-          {m.feed_empty_body()}
-        </p>
+      <EmptyState art="people" title={m.feed_empty_title()}>
+        <p class="text-sm">{m.feed_empty_body()}</p>
         <a href="/app/profile" class="btn btn-ghost mt-3"
           >{m.feed_share_profile()}</a>
       </EmptyState>

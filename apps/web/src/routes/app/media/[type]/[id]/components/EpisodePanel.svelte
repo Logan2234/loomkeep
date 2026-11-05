@@ -247,7 +247,7 @@
       <dl
         class="border-border bg-border mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border">
         <div class="bg-surface px-3 py-2">
-          <dt class="timecode text-dim text-[0.65rem] uppercase">
+          <dt class="timecode text-dim text-micro uppercase">
             {m.media_episode_air_date()}
           </dt>
           <dd class="mt-0.5 text-sm">
@@ -257,7 +257,7 @@
           </dd>
         </div>
         <div class="bg-surface px-3 py-2">
-          <dt class="timecode text-dim text-[0.65rem] uppercase">
+          <dt class="timecode text-dim text-micro uppercase">
             {m.media_episode_runtime()}
           </dt>
           <dd class="timecode mt-0.5 text-sm">
@@ -267,7 +267,7 @@
           </dd>
         </div>
         <div class="bg-surface px-3 py-2">
-          <dt class="timecode text-dim text-[0.65rem] uppercase">TMDB</dt>
+          <dt class="timecode text-dim text-micro uppercase">TMDB</dt>
           <dd class="mt-0.5 text-sm">
             {#if episode.voteAverage !== null}
               <span class="timecode text-accent"
@@ -279,7 +279,7 @@
           </dd>
         </div>
         <div class="bg-surface px-3 py-2">
-          <dt class="timecode text-dim text-[0.65rem] uppercase">Loomkeep</dt>
+          <dt class="timecode text-dim text-micro uppercase">Loomkeep</dt>
           <dd class="mt-0.5 text-sm">
             {#if episode.reviewAverage !== null}
               <span class="timecode">{scoreLabel(episode.reviewAverage)}</span>
@@ -348,7 +348,7 @@
             ? m.media_episode_previous()
             : m.media_episode_next()}
         onclick={target.go}>
-        <span class="timecode text-dim block text-[0.65rem]">
+        <span class="timecode text-dim text-micro block">
           {nav.prev ? `‹ ${target.code}` : `${target.code} ›`}
         </span>
         <span class="block truncate text-sm">{target.title}</span>

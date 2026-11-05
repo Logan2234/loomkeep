@@ -72,7 +72,7 @@
                 {item.list.title}
               </p>
               {#if item.list.role === "EDITOR"}
-                <p class="text-dim truncate text-[0.65rem]">
+                <p class="text-dim text-micro truncate">
                   {m.list_owned_by_editor({
                     name: item.list.author.displayName,
                   })}

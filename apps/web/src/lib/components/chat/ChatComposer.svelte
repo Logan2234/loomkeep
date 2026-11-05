@@ -709,7 +709,7 @@
       <span class="min-w-0 flex-1 truncate">
         {#if linked}
           <span
-            class="text-dim mr-1 font-mono text-[0.62rem] font-bold tracking-wider uppercase"
+            class="text-dim text-micro mr-1 font-mono font-bold tracking-wider uppercase"
             >{m.chat_link_preview()}</span>
         {/if}
         <b class="font-semibold">{title}</b>
@@ -956,7 +956,7 @@
   </div>
 
   {#if value.length > COUNTER_FROM}
-    <p class="text-warning mt-1 text-right font-mono text-[0.68rem]">
+    <p class="text-warning text-micro mt-1 text-right font-mono">
       {value.length} / {MESSAGE_TEXT_MAX_LENGTH}
     </p>
   {/if}

@@ -226,9 +226,8 @@
       {/each}
     </div>
   {:else if reviews.length === 0}
-    <EmptyState>
-      <p class="font-display text-lg font-bold">{m.reviews_empty()}</p>
-      <p class="mt-1 text-sm">{m.reviews_empty_hint()}</p>
+    <EmptyState art="star" title={m.reviews_empty()}>
+      <p class="text-sm">{m.reviews_empty_hint()}</p>
     </EmptyState>
   {:else}
     <div class="mb-4 flex flex-col gap-3">

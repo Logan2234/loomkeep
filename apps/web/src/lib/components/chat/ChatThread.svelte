@@ -462,7 +462,7 @@
           onclick={toggle}>
           <Icon name="pin" class="h-4.5 w-4.5" />
           <span
-            class="text-accent absolute -top-0.5 -right-0.5 font-mono text-[0.6rem] font-bold"
+            class="text-accent text-micro absolute -top-0.5 -right-0.5 font-mono font-bold"
             >{pins.length}</span>
         </button>
       {/snippet}
@@ -486,7 +486,7 @@
                   close();
                   void reveal(pin.id);
                 }}>
-                <span class="text-dim font-mono text-[0.65rem]">
+                <span class="text-dim text-micro font-mono">
                   {pin.mine ? m.common_you() : peerName} · {formatDate(
                     pin.createdAt,
                     { day: "2-digit", month: "2-digit" },
@@ -645,7 +645,7 @@
               class="text-accent my-2 flex items-center gap-2">
               <span class="bg-accent h-px flex-1"></span>
               <span
-                class="font-mono text-[0.62rem] font-bold tracking-widest uppercase"
+                class="text-micro font-mono font-bold tracking-widest uppercase"
                 >{m.common_new()}</span>
               <span class="bg-accent h-px flex-1"></span>
             </div>

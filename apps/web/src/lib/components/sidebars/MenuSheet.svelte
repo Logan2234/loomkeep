@@ -155,7 +155,7 @@
           <section class="mt-4 first:mt-2">
             <div class="mb-2.5 flex items-center gap-3">
               <span
-                class="timecode text-[0.65rem] font-bold tracking-[0.14em] uppercase">
+                class="timecode text-micro font-bold tracking-[0.14em] uppercase">
                 {group.label}
               </span>
               <span class="bg-border h-px flex-1"></span>
@@ -219,7 +219,7 @@
             <!-- Séance: section label as a timecode with a letterbox hairline. -->
             <div class="mb-1 flex items-center gap-3">
               <span
-                class="timecode text-[0.65rem] font-bold tracking-[0.14em] uppercase">
+                class="timecode text-micro font-bold tracking-[0.14em] uppercase">
                 {group.label}
               </span>
               <span class="bg-border h-px flex-1"></span>

@@ -350,7 +350,7 @@
                         {credential.name}
                       </p>
                       <p
-                        class="text-dim font-mono text-[0.68rem] tracking-wide uppercase">
+                        class="text-dim text-micro font-mono tracking-wide uppercase">
                         {credential.lastUsedAt
                           ? m.settings_mfa_webauthn_used_at({
                               date: formatDate(

@@ -121,14 +121,15 @@
         {/each}
       </section>
     {:else if currentSession}
-      <EmptyState class="mb-3 px-5 py-7">
-        <p class="font-semibold">{m.settings_empty_devices_title()}</p>
-        <p class="mt-1 text-sm">{m.settings_empty_devices_body()}</p>
+      <EmptyState
+        class="mb-3"
+        art="shield"
+        title={m.settings_empty_devices_title()}>
+        <p class="text-sm">{m.settings_empty_devices_body()}</p>
       </EmptyState>
     {:else}
-      <EmptyState class="px-5 py-9">
-        <p class="font-semibold">{m.settings_empty_devices_title()}</p>
-        <p class="mt-1 text-sm">{m.settings_empty_devices_body()}</p>
+      <EmptyState art="shield" title={m.settings_empty_devices_title()}>
+        <p class="text-sm">{m.settings_empty_devices_body()}</p>
       </EmptyState>
     {/if}
 
