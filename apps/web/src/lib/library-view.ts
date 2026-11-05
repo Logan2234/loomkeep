@@ -64,6 +64,29 @@ export function writeLibraryColumns(
   else removeStorage(columnsKey(domain));
 }
 
+// Poster size in cards mode: two or three columns on a phone, six or eight
+// on a wide screen.
+export type LibraryPosterSize = "large" | "small";
+
+const posterSizeKey = STORAGE_KEYS.libraryPosterSize;
+
+/** Phones default to small posters, three to a row; wider screens to large. */
+export function readLibraryPosterSize(
+  domain: SavedViewDomain,
+  compact: boolean,
+): LibraryPosterSize {
+  const stored = readStorage(posterSizeKey(domain));
+  if (stored === "large" || stored === "small") return stored;
+  return compact ? "small" : "large";
+}
+
+export function writeLibraryPosterSize(
+  domain: SavedViewDomain,
+  size: LibraryPosterSize,
+): void {
+  writeStorage(posterSizeKey(domain), size);
+}
+
 /** What the table, compact and wall modes show of an entry, whatever its domain. */
 export interface LibraryItemView {
   upcoming?: boolean;

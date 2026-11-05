@@ -21,6 +21,11 @@ history from before it was started.
 - Android app lock: a redrawn lock screen, touch the fingerprint to unlock.
 - Phone navigation: a central Library tab fans out your domains, Alerts and
   Messages move to a movable edge tab, and the menu opens by pulling the bar up.
+- Libraries: status pills on one sticky bar, everything else (favorites,
+  sort, saved views, display) in a single Filters panel; active filters stay
+  removable from the bar.
+- Libraries: borderless posters, three per row on a phone (two or three, small
+  or large on desktop); a long press opens favorite, status and review.
 
 ### Fixed
 

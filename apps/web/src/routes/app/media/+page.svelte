@@ -21,7 +21,6 @@
   import Icon from "#lib/components/Icon.svelte";
   import LibraryBrowser from "#lib/components/LibraryBrowser.svelte";
   import PosterCard from "#lib/components/PosterCard.svelte";
-  import ProgressBar from "#lib/components/ProgressBar.svelte";
   import MediaSearchPanel from "#lib/components/search/MediaSearchPanel.svelte";
   import SagasModeSwitch, {
     sagasMode,
@@ -252,16 +251,14 @@
         src={entry.mediaItem.posterUrl}
         title={entry.mediaItem.title}
         favorite={entry.favorite}
+        progress={entry.progress && {
+          percent: progressPercent(entry.progress),
+          paused: isDormant(entry) || isGhost(entry),
+        }}
         {onToggleFavorite}>
         {#snippet meta()}
           {#if entry.progress}
-            <ProgressBar
-              value={progressPercent(entry.progress)}
-              label={m.common_selection_summary({
-                label: m.common_progress(),
-                selection: entry.mediaItem.title,
-              })} />
-            <span class="timecode text-xs">
+            <span class="timecode text-[0.7rem]">
               {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes}
               {m.media_episode_short()}
               {#if isGhost(entry)}
@@ -274,7 +271,7 @@
               {/if}
             </span>
           {:else}
-            <span class="timecode text-xs">
+            <span class="timecode text-[0.7rem]">
               {entry.mediaItem.upcoming
                 ? m.media_upcoming()
                 : STATUS_LABELS[entry.status]}{#if entry.rating !== null}

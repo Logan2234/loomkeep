@@ -191,7 +191,7 @@
       favorite={entry.favorite}
       {onToggleFavorite}>
       {#snippet meta()}
-        <span class="timecode text-xs">
+        <span class="timecode text-[0.7rem]">
           {MUSIC_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
             · ★ {entry.rating}{/if}
         </span>
