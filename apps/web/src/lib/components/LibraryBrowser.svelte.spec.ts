@@ -616,24 +616,33 @@ describe("LibraryBrowser", () => {
     expect(localStorage.getItem("lk-library-poster-size-books")).toBe("small");
   });
 
-  it("hides the search behind a magnifier on a phone", async () => {
+  it("toggles the search with a magnifier on a phone, dropping its query when hidden", async () => {
     layout.compact = true;
     const user = userEvent.setup();
-    renderBrowser(vi.fn(async () => pageOf([DUNE])));
+    const load = vi.fn(async () => pageOf([DUNE]));
+    renderBrowser(load);
     await screen.findByText("Dune");
+    const magnifier = screen.getByRole("button", {
+      name: m.library_filter_placeholder(),
+    });
     expect(
       screen.queryByRole("searchbox", { name: m.library_filter_placeholder() }),
     ).toBeNull();
 
-    await user.click(
-      screen.getByRole("button", { name: m.library_filter_placeholder() }),
-    );
-
-    expect(
+    await user.click(magnifier);
+    await user.type(
       await screen.findByRole("searchbox", {
         name: m.library_filter_placeholder(),
       }),
-    ).toBeTruthy();
+      "dune",
+    );
+    expect(magnifier.getAttribute("aria-pressed")).toBe("true");
+    await waitFor(() => expect(lastLoad(load).query).toBe("dune"));
+
+    await user.click(magnifier);
+
+    expect(magnifier.getAttribute("aria-pressed")).toBe("false");
+    await waitFor(() => expect(lastLoad(load).query).toBe(""));
   });
 
   it("searches only once typing settles", async () => {

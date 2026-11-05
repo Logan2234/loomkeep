@@ -227,6 +227,7 @@
     requestAnimationFrame(() => searchInput?.focus());
   }
 
+  // Hiding the field also drops its query: no filter left out of sight.
   function closeSearch() {
     searchOpen = false;
     query = "";
@@ -837,13 +838,8 @@
     class="mb-4 md:mb-6" />
 
   {#if layout.compact && searchOpen}
-    <div
-      class="mb-3 flex items-center gap-1"
-      transition:slide={{ duration: reduced ? 0 : 180 }}>
+    <div class="mb-3 flex" transition:slide={{ duration: reduced ? 0 : 180 }}>
       {@render searchField()}
-      <button type="button" class="btn btn-ghost px-3" onclick={closeSearch}>
-        {m.common_cancel()}
-      </button>
     </div>
   {/if}
 
@@ -883,10 +879,12 @@
       {#if layout.compact}
         <button
           type="button"
-          class="btn-icon h-9 w-9 rounded-full"
+          class="btn-icon h-9 w-9 rounded-full {searchOpen
+            ? 'bg-accent/14 text-accent hover:bg-accent/22 hover:text-accent'
+            : ''}"
           aria-label={m.library_filter_placeholder()}
-          aria-expanded={searchOpen}
-          onclick={() => (searchOpen ? searchInput?.focus() : openSearch())}>
+          aria-pressed={searchOpen}
+          onclick={() => (searchOpen ? closeSearch() : openSearch())}>
           <Icon name="search" class="h-5 w-5" />
         </button>
       {/if}
