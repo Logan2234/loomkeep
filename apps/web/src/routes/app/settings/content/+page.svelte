@@ -67,7 +67,7 @@
 <SettingsSection slug="content">
   {#if auth.user}
     {@const user = auth.user}
-    <section class="card p-5 md:p-6">
+    <section class="inset-card p-5 md:p-6">
       <div class="divide-border divide-y">
         <SettingRow
           anchor="birthdate"

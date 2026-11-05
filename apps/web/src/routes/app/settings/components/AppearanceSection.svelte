@@ -145,7 +145,7 @@
 </script>
 
 <div class="space-y-4">
-  <section class="card divide-border divide-y">
+  <section class="inset-card divide-border divide-y">
     <div
       id="theme"
       use:flashAnchor={{ anchor: "theme", hash: page.url.hash }}
@@ -253,7 +253,7 @@
   <section
     id="home-layout"
     use:flashAnchor={{ anchor: "home-layout", hash: page.url.hash }}
-    class="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center md:p-6">
+    class="inset-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center md:p-6">
     <div class="min-w-0 flex-1">
       <p class="mb-2 flex items-center gap-2 font-semibold">
         {m.settings_home_layout_title()}
@@ -276,7 +276,7 @@
   <section
     id="nav-style"
     use:flashAnchor={{ anchor: "nav-style", hash: page.url.hash }}
-    class="card p-5 md:p-6">
+    class="inset-card p-5 md:p-6">
     <p class="mb-2 font-semibold">
       {m.settings_nav_style_label()}
     </p>
@@ -316,7 +316,7 @@
     <section
       id="mobile-nav"
       use:flashAnchor={{ anchor: "mobile-nav", hash: page.url.hash }}
-      class="card p-5 md:p-6">
+      class="inset-card p-5 md:p-6">
       <p class="mb-2 font-semibold">{m.settings_mobile_nav_bar_label()}</p>
       <p class="text-dim text-sm">
         {m.settings_mobile_nav_bar_description({

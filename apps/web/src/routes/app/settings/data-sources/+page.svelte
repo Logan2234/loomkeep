@@ -74,7 +74,7 @@
           href={p.href}
           target="_blank"
           rel="noopener noreferrer"
-          class="card hover:border-accent hover:bg-surface-2 flex h-full w-full items-start gap-2.5 p-4 text-left text-sm transition-[border-color,background-color]">
+          class="inset-card hover:border-accent hover:bg-surface-2 flex h-full w-full items-start gap-2.5 p-4 text-left text-sm transition-[border-color,background-color]">
           {#if p.brand}
             <ProviderMark
               brand={p.brand}

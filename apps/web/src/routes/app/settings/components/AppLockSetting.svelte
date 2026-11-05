@@ -29,7 +29,7 @@
 </script>
 
 {#if supported && status}
-  <section class="card mt-3 flex items-center gap-4 p-5 md:p-6">
+  <section class="inset-card mt-3 flex items-center gap-4 p-5 md:p-6">
     <div class="min-w-0 flex-1">
       <p class="flex items-center gap-2 text-sm font-semibold">
         {m.settings_app_lock_label()}

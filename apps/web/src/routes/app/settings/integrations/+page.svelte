@@ -145,7 +145,7 @@
           {m.settings_api_keys_create()}
         </button>
       </div>
-      <div class="card divide-border divide-y overflow-hidden">
+      <div class="inset-card divide-border divide-y overflow-hidden">
         {#each apiKeys as apiKey (apiKey.id)}
           <ApiKeyRow {apiKey} onrevoke={(key) => (revoking = key)} />
         {/each}
@@ -162,7 +162,7 @@
         {#each RECIPES as item (item.id)}
           <button
             type="button"
-            class="card hover:border-accent/60 flex flex-col gap-0.5 p-3 text-left transition-colors motion-reduce:transition-none"
+            class="inset-card hover:border-accent/60 flex flex-col gap-0.5 p-3 text-left transition-colors motion-reduce:transition-none"
             onclick={() => {
               recipe = item;
               creating = true;
@@ -190,7 +190,7 @@
     <p class="text-dim text-sm">
       {m.settings_subscription_links_description()}
     </p>
-    <div class="card divide-border divide-y overflow-hidden">
+    <div class="inset-card divide-border divide-y overflow-hidden">
       {#each links as link (link.id)}
         <div class="flex items-center gap-4 px-4 py-3">
           <Icon

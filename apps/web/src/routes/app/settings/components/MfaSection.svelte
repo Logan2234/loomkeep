@@ -277,7 +277,7 @@
   <CardRowSkeleton count={4} />
 {:else}
   <div class="space-y-4">
-    <section class="card p-5 md:p-6">
+    <section class="inset-card p-5 md:p-6">
       <p class="text-dim mb-3 text-sm font-semibold">
         {m.settings_mfa_verification_methods()}
       </p>
@@ -313,7 +313,7 @@
     </section>
 
     {#if webauthnBrowserSupported}
-      <section class="card p-5 md:p-6">
+      <section class="inset-card p-5 md:p-6">
         <p class="text-dim mb-3 text-sm font-semibold">
           {m.settings_mfa_security_keys()}
         </p>
@@ -408,7 +408,7 @@
     {/if}
 
     {#if hasAnyMfa && status}
-      <section class="card p-5 md:p-6">
+      <section class="inset-card p-5 md:p-6">
         <p class="text-dim mb-3 text-sm font-semibold">
           {m.settings_mfa_account_recovery()}
         </p>

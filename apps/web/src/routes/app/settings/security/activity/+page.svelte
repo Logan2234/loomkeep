@@ -103,7 +103,7 @@
       <p class="mt-1 text-sm">{m.settings_activity_empty_body()}</p>
     </EmptyState>
   {:else}
-    <ul class="card divide-border divide-y overflow-hidden">
+    <ul class="inset-card divide-border divide-y overflow-hidden">
       {#each events as event (event.id)}
         {@const alert = ALERTS.has(event.type)}
         <li class="flex items-start gap-4 p-4">

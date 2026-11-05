@@ -105,7 +105,7 @@
   </div>
 
   <div class="mt-5 grid gap-5 md:grid-cols-2">
-    <section class="card p-5">
+    <section class="inset-card p-5">
       <div class="mb-4 flex items-center justify-between">
         <h3 class="font-display text-lg font-bold">
           {m.stats_video_type_split()}
@@ -150,16 +150,18 @@
     </section>
 
     <PremiumTeaser {locked}>
-      <section class="card p-5">
-        <h3 class="font-display mb-4 text-lg font-bold">
+      <section class="panel md:p-5">
+        <h3 class="panel-head font-display text-lg font-bold md:mb-4">
           {m.stats_favorite_genres()}
         </h3>
-        <RankBars items={genreItems} />
+        <div class="panel-body">
+          <RankBars items={genreItems} />
+        </div>
       </section>
     </PremiumTeaser>
   </div>
 
-  <section class="card mt-5 p-5">
+  <section class="inset-card mt-5 p-5">
     <h3 class="font-display mb-1 text-lg font-bold">
       {m.stats_video_tracking()}
     </h3>

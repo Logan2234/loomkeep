@@ -12,7 +12,7 @@
       <div class="skeleton h-8 w-28 rounded-lg"></div>
       <div class="skeleton h-8 w-32 rounded-lg"></div>
     </div>
-    <div class="card divide-border divide-y overflow-hidden">
+    <div class="inset-card divide-border divide-y overflow-hidden">
       {#each { length: count } as _, i (i)}
         <div class="flex items-center gap-4 px-4 py-3">
           <div class="skeleton hidden h-5 w-5 shrink-0 rounded sm:block"></div>

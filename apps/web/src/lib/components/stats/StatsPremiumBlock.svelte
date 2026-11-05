@@ -29,7 +29,7 @@
 </script>
 
 {#snippet locked(title: string, preview: import("svelte").Snippet)}
-  <div class="card relative overflow-hidden p-4">
+  <div class="inset-card relative overflow-hidden p-4">
     <div class="blur-sm select-none" inert aria-hidden="true">
       <p class="timecode mb-3 text-xs">{title}</p>
       {@render preview()}

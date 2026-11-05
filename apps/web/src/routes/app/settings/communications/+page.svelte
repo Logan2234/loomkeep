@@ -285,7 +285,7 @@
   {#if auth.user}
     {@const user = auth.user}
     <div class="space-y-3">
-      <section class="card p-5 md:p-6">
+      <section class="inset-card p-5 md:p-6">
         <div class="divide-border divide-y">
           <SettingRow
             anchor="push"
@@ -321,7 +321,7 @@
         </div>
       </section>
 
-      <section class="card p-5 md:p-6">
+      <section class="inset-card p-5 md:p-6">
         <p class="font-semibold">
           {m.settings_communications_releases_title()}
         </p>
@@ -370,7 +370,7 @@
         </div>
       </section>
 
-      <section class="card p-5 md:p-6">
+      <section class="inset-card p-5 md:p-6">
         <AlertGrid
           anchor="activity-alerts"
           title={m.common_activity()}
@@ -415,7 +415,7 @@
       </section>
 
       {#if auth.isAdmin}
-        <section class="card p-5 md:p-6">
+        <section class="inset-card p-5 md:p-6">
           <AlertGrid
             anchor="admin-alerts"
             title={m.settings_communications_admin_title()}
@@ -426,7 +426,7 @@
         </section>
       {/if}
 
-      <section class="card p-5 md:p-6">
+      <section class="inset-card p-5 md:p-6">
         <SettingRow
           anchor="newsletter"
           label={m.common_newsletter()}

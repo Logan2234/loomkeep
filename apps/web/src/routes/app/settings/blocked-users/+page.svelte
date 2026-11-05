@@ -50,7 +50,7 @@
   {:else}
     <ul class="flex flex-col gap-2.5">
       {#each blockedUsers as user (user.id)}
-        <li class="card flex items-center gap-3 p-4">
+        <li class="inset-card flex items-center gap-3 p-4">
           <Avatar seed={user.username} url={user.avatarUrl} size={40} />
           <a
             href="/app/u/{user.username}"

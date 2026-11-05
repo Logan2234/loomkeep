@@ -81,7 +81,7 @@
 
 {#if loading}
   {#if layout.mode === "strip"}
-    <div class="flex gap-3 overflow-hidden">
+    <div class="panel-bleed flex gap-3 overflow-hidden">
       {#each { length: 8 } as _, i (i)}
         <div class="shrink-0" style:width={`${layout.posterWidth}px`}>
           <div
@@ -117,7 +117,7 @@
     {keyOf}
     {label}
     gap="gap-3"
-    wrapClass=""
+    wrapClass="panel-bleed"
     innerClass="pb-1"
     snapPad="">
     {#snippet card(item)}

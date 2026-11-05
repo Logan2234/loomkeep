@@ -200,7 +200,7 @@
 {#if appConfig.socialEnabled && settingsQuery.loading}
   <CardRowSkeleton count={3} />
 {:else if appConfig.socialEnabled && settings}
-  <section class="card p-5 md:p-6">
+  <section class="inset-card p-5 md:p-6">
     <div
       id="profile-access"
       use:flashAnchor={{ anchor: "profile-access", hash: page.url.hash }}
@@ -321,7 +321,7 @@
 
   {#if appConfig.chatEnabled && auth.user}
     {@const chatUser = auth.user}
-    <section class="card mt-5 p-5 md:p-6">
+    <section class="inset-card mt-5 p-5 md:p-6">
       <p class="font-semibold">{m.settings_chat_title()}</p>
       <p class="text-dim mt-0.5 mb-2 text-xs">
         {m.settings_chat_description()}

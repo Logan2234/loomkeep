@@ -67,7 +67,7 @@
 {#if error}
   <p class="text-danger text-sm">{error}</p>
 {:else if temporal}
-  <div class="card p-5">
+  <div class="inset-card p-5">
     <h3 class="font-display mb-1 text-lg font-bold">
       {m.stats_video_daily_watches()}
     </h3>
@@ -89,21 +89,25 @@
   </div>
 
   <div class="mt-5 grid gap-5 md:grid-cols-2">
-    <section class="card p-5">
-      <h3 class="font-display mb-4 text-lg font-bold">
+    <section class="panel md:p-5">
+      <h3 class="panel-head font-display text-lg font-bold md:mb-4">
         {m.stats_video_weekday()}
       </h3>
-      <LineChart points={weekdayPoints} color="var(--stat-media)" />
+      <div class="panel-body">
+        <LineChart points={weekdayPoints} color="var(--stat-media)" />
+      </div>
     </section>
-    <section class="card p-5">
-      <h3 class="font-display mb-4 text-lg font-bold">
+    <section class="panel md:p-5">
+      <h3 class="panel-head font-display text-lg font-bold md:mb-4">
         {m.stats_video_hour()}
       </h3>
-      <LineChart points={hourPoints} color="var(--stat-media)" />
+      <div class="panel-body">
+        <LineChart points={hourPoints} color="var(--stat-media)" />
+      </div>
     </section>
   </div>
 
-  <section class="card mt-5 p-5">
+  <section class="inset-card mt-5 p-5">
     <div class="mb-4 flex items-baseline justify-between">
       <h3 class="font-display text-lg font-bold">
         {m.stats_video_monthly_hours()}

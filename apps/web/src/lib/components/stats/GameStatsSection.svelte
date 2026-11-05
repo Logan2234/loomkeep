@@ -102,52 +102,62 @@
   </div>
 
   <PremiumTeaser {locked} class="mt-5 block">
-    <section class="card p-5">
-      <h3 class="font-display mb-4 text-lg font-bold">
+    <section class="panel md:p-5">
+      <h3 class="panel-head font-display text-lg font-bold md:mb-4">
         {m.stats_games_top_playtime()}
       </h3>
-      {#if topGamesItems.length > 0}
-        <RankBars items={topGamesItems} />
-      {:else}
-        <p class="text-dim text-sm">{m.stats_games_no_playtime()}</p>
-      {/if}
+      <div class="panel-body">
+        {#if topGamesItems.length > 0}
+          <RankBars items={topGamesItems} />
+        {:else}
+          <p class="text-dim text-sm">{m.stats_games_no_playtime()}</p>
+        {/if}
+      </div>
     </section>
 
     <div class="mt-5 grid gap-5 md:grid-cols-2">
-      <section class="card p-5">
-        <h3 class="font-display mb-4 text-lg font-bold">
+      <section class="panel md:p-5">
+        <h3 class="panel-head font-display text-lg font-bold md:mb-4">
           {m.game_platforms()}
         </h3>
-        <RankBars items={platformItems} />
+        <div class="panel-body">
+          <RankBars items={platformItems} />
+        </div>
       </section>
-      <section class="card p-5">
-        <h3 class="font-display mb-4 text-lg font-bold">
+      <section class="panel md:p-5">
+        <h3 class="panel-head font-display text-lg font-bold md:mb-4">
           {m.stats_favorite_genres()}
         </h3>
-        <RankBars items={genreItems} />
+        <div class="panel-body">
+          <RankBars items={genreItems} />
+        </div>
       </section>
     </div>
 
     <div class="mt-5 grid gap-5 md:grid-cols-2">
-      <section class="card p-5">
-        <h3 class="font-display mb-4 text-lg font-bold">
+      <section class="panel md:p-5">
+        <h3 class="panel-head font-display text-lg font-bold md:mb-4">
           {m.stats_games_rating_platform()}
         </h3>
-        {#if ratingByPlatformItems.length > 0}
-          <RankBars items={ratingByPlatformItems} />
-        {:else}
-          <p class="text-dim text-sm">{m.stats_games_no_ratings()}</p>
-        {/if}
+        <div class="panel-body">
+          {#if ratingByPlatformItems.length > 0}
+            <RankBars items={ratingByPlatformItems} />
+          {:else}
+            <p class="text-dim text-sm">{m.stats_games_no_ratings()}</p>
+          {/if}
+        </div>
       </section>
-      <section class="card p-5">
-        <h3 class="font-display mb-4 text-lg font-bold">
+      <section class="panel md:p-5">
+        <h3 class="panel-head font-display text-lg font-bold md:mb-4">
           {m.stats_rating_genre()}
         </h3>
-        {#if ratingByGenreItems.length > 0}
-          <RankBars items={ratingByGenreItems} />
-        {:else}
-          <p class="text-dim text-sm">{m.stats_games_no_ratings()}</p>
-        {/if}
+        <div class="panel-body">
+          {#if ratingByGenreItems.length > 0}
+            <RankBars items={ratingByGenreItems} />
+          {:else}
+            <p class="text-dim text-sm">{m.stats_games_no_ratings()}</p>
+          {/if}
+        </div>
       </section>
     </div>
   </PremiumTeaser>

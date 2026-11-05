@@ -37,7 +37,7 @@
   </p>
   <div class="space-y-3">
     {#each resultGroups as group (group.section.slug)}
-      <section class="card overflow-hidden">
+      <section class="inset-card overflow-hidden">
         <SettingsLinkRow
           icon={group.section.icon}
           iconClass="h-5 w-5 shrink-0 {group.section.danger

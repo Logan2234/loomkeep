@@ -69,64 +69,68 @@
   </div>
 
   <div class="mt-5 grid gap-5 md:grid-cols-2">
-    <section class="card p-5">
-      <h3 class="font-display mb-4 text-lg font-bold">
+    <section class="panel md:p-5">
+      <h3 class="panel-head font-display text-lg font-bold md:mb-4">
         {m.stats_social_comments_breakdown()}
       </h3>
-      <div class="flex items-baseline gap-6">
-        <div>
-          <p class="font-display text-2xl font-extrabold tabular-nums">
-            {social.rootCommentsCount}
-          </p>
-          <p class="text-dim text-xs tracking-wide uppercase">
-            {m.stats_social_root_comments()}
-          </p>
-        </div>
-        <div>
-          <p class="font-display text-2xl font-extrabold tabular-nums">
-            {social.replyCommentsCount}
-          </p>
-          <p class="text-dim text-xs tracking-wide uppercase">
-            {m.common_replies()}
-          </p>
+      <div class="panel-body">
+        <div class="flex items-baseline gap-6">
+          <div>
+            <p class="font-display text-2xl font-extrabold tabular-nums">
+              {social.rootCommentsCount}
+            </p>
+            <p class="text-dim text-xs tracking-wide uppercase">
+              {m.stats_social_root_comments()}
+            </p>
+          </div>
+          <div>
+            <p class="font-display text-2xl font-extrabold tabular-nums">
+              {social.replyCommentsCount}
+            </p>
+            <p class="text-dim text-xs tracking-wide uppercase">
+              {m.common_replies()}
+            </p>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="card p-5">
-      <h3 class="font-display mb-4 text-lg font-bold">
+    <section class="panel md:p-5">
+      <h3 class="panel-head font-display text-lg font-bold md:mb-4">
         {m.stats_social_revisions_reactions()}
       </h3>
-      <div class="flex flex-wrap items-baseline gap-6">
-        <div>
-          <p class="font-display text-2xl font-extrabold tabular-nums">
-            {social.reviewRevisionsCount}
-          </p>
-          <p class="text-dim text-xs tracking-wide uppercase">
-            {m.stats_social_review_revisions()}
-          </p>
-        </div>
-        <div>
-          <p class="font-display text-2xl font-extrabold tabular-nums">
-            {social.reactionsGiven}
-          </p>
-          <p class="text-dim text-xs tracking-wide uppercase">
-            {m.stats_social_reactions_given()}
-          </p>
-        </div>
-        <div>
-          <p class="font-display text-2xl font-extrabold tabular-nums">
-            {social.reactionsReceived}
-          </p>
-          <p class="text-dim text-xs tracking-wide uppercase">
-            {m.stats_social_reactions_received()}
-          </p>
+      <div class="panel-body">
+        <div class="flex flex-wrap items-baseline gap-6">
+          <div>
+            <p class="font-display text-2xl font-extrabold tabular-nums">
+              {social.reviewRevisionsCount}
+            </p>
+            <p class="text-dim text-xs tracking-wide uppercase">
+              {m.stats_social_review_revisions()}
+            </p>
+          </div>
+          <div>
+            <p class="font-display text-2xl font-extrabold tabular-nums">
+              {social.reactionsGiven}
+            </p>
+            <p class="text-dim text-xs tracking-wide uppercase">
+              {m.stats_social_reactions_given()}
+            </p>
+          </div>
+          <div>
+            <p class="font-display text-2xl font-extrabold tabular-nums">
+              {social.reactionsReceived}
+            </p>
+            <p class="text-dim text-xs tracking-wide uppercase">
+              {m.stats_social_reactions_received()}
+            </p>
+          </div>
         </div>
       </div>
     </section>
   </div>
 
-  <section class="card mt-5 p-5">
+  <section class="inset-card mt-5 p-5">
     <h3 class="font-display text-lg font-bold">
       {m.stats_social_rating_comparison()}
     </h3>
@@ -178,23 +182,25 @@
   </section>
 
   <div class="mt-5 grid gap-5 md:grid-cols-2">
-    <section class="card p-5">
-      <h3 class="font-display mb-4 text-lg font-bold">
+    <section class="panel md:p-5">
+      <h3 class="panel-head font-display text-lg font-bold md:mb-4">
         {m.stats_social_new_followers()}
       </h3>
-      <p class="text-dim mb-3 text-xs">
-        {m.stats_social_reciprocity({
-          percent: formatNumber(
-            social.followerReciprocityRate,
-            PERCENT_OPTIONS,
-          ),
-        })}
-      </p>
-      <LineChart
-        points={toPoints(social.newFollowersByMonth)}
-        color="var(--accent)" />
+      <div class="panel-body">
+        <p class="text-dim mb-3 text-xs">
+          {m.stats_social_reciprocity({
+            percent: formatNumber(
+              social.followerReciprocityRate,
+              PERCENT_OPTIONS,
+            ),
+          })}
+        </p>
+        <LineChart
+          points={toPoints(social.newFollowersByMonth)}
+          color="var(--accent)" />
+      </div>
     </section>
-    <section class="card p-5">
+    <section class="inset-card p-5">
       <div class="mb-4 flex items-baseline justify-between">
         <h3 class="font-display text-lg font-bold">
           {m.stats_social_monthly_activity()}

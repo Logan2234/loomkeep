@@ -118,7 +118,7 @@
     <section
       id="streaming-region"
       use:flashAnchor={{ anchor: "streaming-region", hash: page.url.hash }}
-      class="card flex flex-wrap items-center justify-between gap-3 p-5 md:p-6">
+      class="inset-card flex flex-wrap items-center justify-between gap-3 p-5 md:p-6">
       <div class="min-w-0">
         <p class="font-semibold">{m.settings_streaming_region_label()}</p>
         <p class="text-dim mt-1 max-w-xl text-sm">
@@ -140,7 +140,7 @@
     <section
       id="streaming-services"
       use:flashAnchor={{ anchor: "streaming-services", hash: page.url.hash }}
-      class="card p-5 md:p-6">
+      class="inset-card p-5 md:p-6">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <p class="font-semibold">{m.settings_streaming_title()}</p>
         <span class="timecode text-xs">{countLabel(mine.size)}</span>

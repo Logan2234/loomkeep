@@ -118,7 +118,7 @@
     back="/app/settings/help"
     class="mb-6" />
 
-  <section class="card divide-border mb-4 divide-y p-5 md:p-6">
+  <section class="inset-card divide-border mb-4 divide-y p-5 md:p-6">
     <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
       <span class="flex items-center gap-3">
         <Icon name="search" class="text-dim h-4 w-4 shrink-0" />
@@ -144,7 +144,7 @@
   <p class="text-dim mb-2 text-sm font-semibold">
     {m.common_search()}
   </p>
-  <section class="card divide-border mb-4 divide-y p-5 md:p-6">
+  <section class="inset-card divide-border mb-4 divide-y p-5 md:p-6">
     <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
       <span class="flex items-center gap-3">
         <Icon name="search" class="text-dim h-4 w-4 shrink-0" />
@@ -180,7 +180,7 @@
   <p class="text-dim mb-2 text-sm font-semibold">
     {m.common_libraries()}
   </p>
-  <section class="card divide-border mb-4 divide-y p-5 md:p-6">
+  <section class="inset-card divide-border mb-4 divide-y p-5 md:p-6">
     <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
       <span class="flex items-center gap-3">
         <Icon name="rows" class="text-dim h-4 w-4 shrink-0" />
@@ -265,7 +265,7 @@
   <p class="text-dim mb-2 text-sm font-semibold">
     {m.settings_shortcuts_viewer_title()}
   </p>
-  <section class="card divide-border mb-4 divide-y p-5 md:p-6">
+  <section class="inset-card divide-border mb-4 divide-y p-5 md:p-6">
     <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
       <span class="flex items-center gap-3">
         <Icon name="chevron-left" class="text-dim h-4 w-4 shrink-0" />
@@ -302,7 +302,7 @@
     <p class="text-dim mb-2 text-sm font-semibold">
       {m.settings_shortcuts_mentions_title()}
     </p>
-    <section class="card divide-border mb-4 divide-y p-5 md:p-6">
+    <section class="inset-card divide-border mb-4 divide-y p-5 md:p-6">
       <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
         <span class="font-semibold"
           >{m.settings_shortcuts_mentions_previous()}</span>
@@ -347,7 +347,7 @@
   <p class="text-dim mb-2 text-sm font-semibold">
     {m.settings_shortcuts_overlays_title()}
   </p>
-  <section class="card mb-4 p-5 md:p-6">
+  <section class="inset-card mb-4 p-5 md:p-6">
     <div class="flex items-center justify-between gap-4">
       <span class="flex items-center gap-3">
         <Icon name="x" class="text-dim h-4 w-4 shrink-0" />
@@ -365,7 +365,7 @@
     <p class="text-dim mb-2 text-sm font-semibold">
       {m.settings_chat_title()}
     </p>
-    <section class="card divide-border mb-4 divide-y p-5 md:p-6">
+    <section class="inset-card divide-border mb-4 divide-y p-5 md:p-6">
       {#each CHAT_SHORTCUTS as shortcut (shortcut.label)}
         <div
           class="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
@@ -389,7 +389,7 @@
   <p class="text-dim mb-2 text-sm font-semibold">
     {m.settings_shortcuts_jump_title()}
   </p>
-  <section class="card divide-border divide-y p-5 md:p-6">
+  <section class="inset-card divide-border divide-y p-5 md:p-6">
     {#each sectionShortcuts as { section, shortcut } (section.slug)}
       <div
         class="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">

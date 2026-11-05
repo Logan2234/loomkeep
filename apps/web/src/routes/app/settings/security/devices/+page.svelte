@@ -96,7 +96,7 @@
     {/if}
 
     {#if otherSessions.length > 0}
-      <section class="card divide-border divide-y overflow-hidden">
+      <section class="inset-card divide-border divide-y overflow-hidden">
         {#each otherSessions as session (session.id)}
           <div class="flex items-center gap-4 p-4">
             <Icon name="monitor" class="text-dim h-6 w-6 shrink-0" />

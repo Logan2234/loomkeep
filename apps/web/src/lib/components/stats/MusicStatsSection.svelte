@@ -68,25 +68,29 @@
 
   <PremiumTeaser {locked} class="mt-5 block">
     <div class="grid gap-5 md:grid-cols-2">
-      <section class="card p-5">
-        <h3 class="font-display mb-4 text-lg font-bold">
+      <section class="panel md:p-5">
+        <h3 class="panel-head font-display text-lg font-bold md:mb-4">
           {m.stats_music_top_artists()}
         </h3>
-        {#if artistItems.length > 0}
-          <RankBars items={artistItems} />
-        {:else}
-          <p class="text-dim text-sm">{m.stats_music_no_artists()}</p>
-        {/if}
+        <div class="panel-body">
+          {#if artistItems.length > 0}
+            <RankBars items={artistItems} />
+          {:else}
+            <p class="text-dim text-sm">{m.stats_music_no_artists()}</p>
+          {/if}
+        </div>
       </section>
-      <section class="card p-5">
-        <h3 class="font-display mb-4 text-lg font-bold">
+      <section class="panel md:p-5">
+        <h3 class="panel-head font-display text-lg font-bold md:mb-4">
           {m.music_release_type()}
         </h3>
-        {#if typeSegments.length > 0}
-          <StackedBar segments={typeSegments} />
-        {:else}
-          <p class="text-dim text-sm">{m.stats_music_no_albums()}</p>
-        {/if}
+        <div class="panel-body">
+          {#if typeSegments.length > 0}
+            <StackedBar segments={typeSegments} />
+          {:else}
+            <p class="text-dim text-sm">{m.stats_music_no_albums()}</p>
+          {/if}
+        </div>
       </section>
     </div>
   </PremiumTeaser>

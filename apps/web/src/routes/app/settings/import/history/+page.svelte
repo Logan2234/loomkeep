@@ -68,7 +68,7 @@
       {#each runs as run (run.id)}
         {@const succeeded = run.status === "SUCCESS"}
         {@const domain = domainLabel(run.domain)}
-        <li class="card flex items-start gap-3 p-4">
+        <li class="inset-card flex items-start gap-3 p-4">
           <Icon
             name={run.domain ? DOMAINS[run.domain].icon : "download"}
             class="mt-0.5 h-5 w-5 shrink-0 {succeeded

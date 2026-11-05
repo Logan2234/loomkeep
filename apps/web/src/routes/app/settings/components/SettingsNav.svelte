@@ -170,7 +170,7 @@
           class="timecode mb-1.5 px-1 text-[0.65rem] tracking-[0.14em] uppercase">
           {group.label}
         </p>
-        <ul class="card divide-border divide-y">
+        <ul class="inset-card divide-border divide-y">
           {#each group.sections as section (section.slug)}
             {@const shortcut = shortcutFor(section.slug)}
             <li>
