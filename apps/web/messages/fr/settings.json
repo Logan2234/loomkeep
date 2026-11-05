@@ -597,5 +597,7 @@
   "settings_delete_account_reason_none": "Je préfère ne pas répondre",
   "settings_app_lock_label": "Verrouiller l'app",
   "settings_app_lock_desc": "Demande ton empreinte, ton visage ou ton code à l'ouverture de l'app sur ce téléphone.",
-  "settings_app_lock_unavailable": "Il faut Android 10 ou plus et un verrouillage d'écran sur ce téléphone."
+  "settings_app_lock_unavailable": "Il faut Android 10 ou plus et un verrouillage d'écran sur ce téléphone.",
+  "settings_help_onboarding_title": "Revoir l'accueil de Loomkeep",
+  "settings_help_onboarding_hint": "Le parcours du premier lancement, avec tes réglages actuels."
 }

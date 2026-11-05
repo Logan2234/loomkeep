@@ -6,7 +6,10 @@
   } from "#lib/constants/theme-definitions.js";
   import { theme } from "#lib/theme.svelte.js";
 
-  const { theme: t }: { theme: ThemeDefinition } = $props();
+  const {
+    theme: t,
+    class: cls = "w-28",
+  }: { theme: ThemeDefinition; class?: string } = $props();
 
   const active = $derived(theme.choice === t.mode);
 </script>
@@ -34,7 +37,7 @@
 
 <button
   type="button"
-  class="w-28 min-w-0 rounded-lg border p-2 text-center transition-[border-color,translate,scale,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-md active:scale-95 {active
+  class="{cls} min-w-0 rounded-lg border p-2 text-center transition-[border-color,translate,scale,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-md active:scale-95 {active
     ? 'border-accent'
     : 'border-border hover:border-accent/50'}"
   aria-pressed={active}

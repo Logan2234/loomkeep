@@ -37,6 +37,7 @@
     active = false,
     look = STUB_LOOK,
     badge,
+    glyph,
     ...rest
   }: {
     href?: string;
@@ -48,6 +49,8 @@
     look?: NavTabLook;
     /** Over the icon's corner. */
     badge?: Snippet;
+    /** Drawn in place of the icon, e.g. the account's avatar. */
+    glyph?: Snippet;
   } & Omit<HTMLButtonAttributes, "onclick" | "children" | "class"> = $props();
 
   const rootClass = $derived(
@@ -63,9 +66,11 @@
   {/if}
   <span
     class="relative grid place-items-center rounded-full transition-colors {look.slot} {active
-      ? look.slotActive
+      ? glyph
+        ? 'ring-accent ring-offset-surface ring-2 ring-offset-2'
+        : look.slotActive
       : ''}">
-    <Icon name={icon} class="h-5 w-5" />
+    {#if glyph}{@render glyph()}{:else}<Icon name={icon} class="h-5 w-5" />{/if}
     {@render badge?.()}
   </span>
   <!-- Dropped to screen readers only under 360px, where labels would run into

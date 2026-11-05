@@ -13,6 +13,7 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
   import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import GhostSwitchModal from "#lib/components/GhostSwitchModal.svelte";
   import Modal from "#lib/components/Modal.svelte";
   import SegmentedControl from "#lib/components/SegmentedControl.svelte";
   import Switch from "#lib/components/Switch.svelte";
@@ -406,64 +407,9 @@
 {/if}
 
 {#if confirmingGhost && ghostImpact}
-  <Modal
-    title={m.settings_privacy_ghost_title()}
-    onclose={() => (confirmingGhost = false)}>
-    <p class="text-dim text-sm">
-      {m.settings_privacy_ghost_description()}
-    </p>
-    <ul class="border-border divide-border mt-3 divide-y border-y text-sm">
-      {#if ghostImpact.followersToRemove > 0}
-        <li class="flex items-center justify-between gap-3 py-2">
-          <span
-            >{ghostImpact.followersToRemove > 1
-              ? m.settings_privacy_removed_followers()
-              : m.settings_privacy_removed_follower()}</span>
-          <span class="timecode text-fg font-semibold"
-            >{ghostImpact.followersToRemove}</span>
-        </li>
-      {/if}
-      {#if ghostImpact.outgoingFollowsToCancel > 0}
-        <li class="flex items-center justify-between gap-3 py-2">
-          <span>{m.settings_privacy_cancelled_following()}</span>
-          <span class="timecode text-fg font-semibold"
-            >{ghostImpact.outgoingFollowsToCancel}</span>
-        </li>
-      {/if}
-      {#if ghostImpact.listsToDowngrade > 0}
-        <li class="flex items-center justify-between gap-3 py-2">
-          <span
-            >{ghostImpact.listsToDowngrade > 1
-              ? m.settings_privacy_private_lists()
-              : m.settings_privacy_private_list()}</span>
-          <span class="timecode text-fg font-semibold"
-            >{ghostImpact.listsToDowngrade}</span>
-        </li>
-      {/if}
-      {#if ghostImpact.followersToRemove === 0 && ghostImpact.outgoingFollowsToCancel === 0 && ghostImpact.listsToDowngrade === 0}
-        <li class="text-dim py-2">
-          {m.settings_privacy_nothing_to_clean()}
-        </li>
-      {/if}
-    </ul>
-    <p class="text-dim mt-4 text-xs">
-      {m.settings_privacy_anonymity_warning()}
-    </p>
-    <div class="mt-5 flex justify-end gap-2">
-      <button
-        type="button"
-        class="btn btn-ghost"
-        disabled={ghostSwitchMut.loading}
-        onclick={() => (confirmingGhost = false)}>
-        {m.common_cancel()}
-      </button>
-      <button
-        type="button"
-        class="btn btn-danger"
-        disabled={ghostSwitchMut.loading}
-        onclick={confirmGhostSwitch}>
-        {m.settings_privacy_become_ghost()}
-      </button>
-    </div>
-  </Modal>
+  <GhostSwitchModal
+    impact={ghostImpact}
+    loading={ghostSwitchMut.loading}
+    onconfirm={confirmGhostSwitch}
+    onclose={() => (confirmingGhost = false)} />
 {/if}

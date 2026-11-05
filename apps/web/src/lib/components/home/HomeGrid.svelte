@@ -48,6 +48,7 @@
           class="min-w-0"
           style:grid-column={`${widget.x + 1} / span ${widget.w}`}
           style:grid-row={`${widget.y + 1} / span ${widget.h}`}
+          data-welcome-land
           in:fly|global={settle(widget.id)}>
           <HomeWidget
             {widget}
@@ -66,6 +67,7 @@
             ? undefined
             : `${rowsToPixels(widget.h)}px`}
           style:min-height={`${rowsToPixels(widget.h)}px`}
+          data-welcome-land
           in:fly|global={settle(widget.id)}>
           <HomeWidget
             {widget}

@@ -597,5 +597,7 @@
   "settings_delete_account_reason_none": "I'd rather not say",
   "settings_app_lock_label": "Lock the app",
   "settings_app_lock_desc": "Ask for your fingerprint, face or PIN when you open the app on this phone.",
-  "settings_app_lock_unavailable": "Needs Android 10 or later and a screen lock on this phone."
+  "settings_app_lock_unavailable": "Needs Android 10 or later and a screen lock on this phone.",
+  "settings_help_onboarding_title": "Replay Loomkeep's welcome",
+  "settings_help_onboarding_hint": "The first-run tour, with your current settings."
 }

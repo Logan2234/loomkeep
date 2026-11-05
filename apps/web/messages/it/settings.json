@@ -597,5 +597,7 @@
   "settings_delete_account_reason_none": "Preferisco non rispondere",
   "settings_app_lock_label": "Blocca l'app",
   "settings_app_lock_desc": "Chiede impronta, volto o PIN quando apri l'app su questo telefono.",
-  "settings_app_lock_unavailable": "Servono Android 10 o successivo e un blocco schermo su questo telefono."
+  "settings_app_lock_unavailable": "Servono Android 10 o successivo e un blocco schermo su questo telefono.",
+  "settings_help_onboarding_title": "Rivedi il benvenuto di Loomkeep",
+  "settings_help_onboarding_hint": "Il percorso del primo avvio, con le tue impostazioni attuali."
 }

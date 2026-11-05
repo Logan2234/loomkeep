@@ -1,5 +1,6 @@
 import { auth } from "#lib/auth.svelte.js";
 import { layout } from "#lib/layout.svelte.js";
+import { onboardingReplay } from "#lib/onboarding-replay.svelte.js";
 import { toast } from "#lib/toast.svelte.js";
 import type { UserDto } from "@loomkeep/shared";
 import { render } from "@testing-library/svelte";
@@ -21,13 +22,14 @@ beforeEach(() => {
   quackback = vi.fn<(...args: unknown[]) => void>();
   window.Quackback = quackback;
   layout.compact = false;
-  auth.user = { id: "u1" } as UserDto;
+  auth.user = { id: "u1", onboardedAt: "2026-11-01T00:00:00.000Z" } as UserDto;
 });
 
 afterEach(() => {
   delete window.Quackback;
   layout.compact = true;
   auth.user = null;
+  onboardingReplay.active = false;
 });
 
 describe("WidgetIdentify", () => {
@@ -60,10 +62,31 @@ describe("WidgetIdentify", () => {
   });
 
   it("stays away for an account that turned the launcher off", () => {
-    auth.user = { id: "u1", feedbackWidget: false } as UserDto;
+    auth.user = {
+      id: "u1",
+      onboardedAt: "2026-11-01T00:00:00.000Z",
+      feedbackWidget: false,
+    } as UserDto;
     render(WidgetIdentify);
 
     expect(quackback).not.toHaveBeenCalled();
+  });
+
+  it("hides the feedback launcher while the welcome tour covers the screen", () => {
+    auth.user = { id: "u1", onboardedAt: null } as UserDto;
+    render(WidgetIdentify);
+    expect(lastCommand()).toBe("hideLauncher");
+
+    auth.user = {
+      id: "u1",
+      onboardedAt: "2026-11-05T00:00:00.000Z",
+    } as UserDto;
+    flushSync();
+    expect(lastCommand()).toBe("showLauncher");
+
+    onboardingReplay.active = true;
+    flushSync();
+    expect(lastCommand()).toBe("hideLauncher");
   });
 
   it("hides the feedback launcher while a toast shares its corner", () => {

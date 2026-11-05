@@ -18,6 +18,12 @@
     onFinish,
     onJump,
     additionalAction,
+    fullscreen = false,
+    hint,
+    nextLabel,
+    asideHeader,
+    aside,
+    topAction,
     class: cls = "",
     children,
   }: {
@@ -35,6 +41,19 @@
     /** Replaces "Précédent" in the footer's left slot for the current step
      * (e.g. the last step's "Vers l'import"). */
     additionalAction?: { label: string; onClick: () => void };
+    /** Fills its container: a step rail on desktop, one tab per step and
+     * swipeable steps on a phone, the footer pinned to the bottom. */
+    fullscreen?: boolean;
+    /** A short line beside the footer's buttons (fullscreen only). */
+    hint?: string | Snippet;
+    /** Replaces "Suivant"/"Terminer" on the current step (fullscreen only). */
+    nextLabel?: string;
+    /** Above the desktop step rail (fullscreen only). */
+    asideHeader?: Snippet;
+    /** Below the desktop step rail (fullscreen only). */
+    aside?: Snippet;
+    /** Top-right corner, e.g. a close button (fullscreen only). */
+    topAction?: Snippet;
     class?: string;
     /** The current step's own markup — the wizard only owns nav/progress chrome. */
     children: Snippet;
@@ -97,7 +116,56 @@
     observer.observe(nav);
     return () => observer.disconnect();
   });
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  function advance() {
+    if (!canAdvance) return;
+    if (isLast) onFinish();
+    else onNext();
+  }
+
+  // Fullscreen: a horizontal swipe on a phone, the arrow keys on a keyboard.
+  // The last step only moves back, so finishing stays a deliberate tap.
+  let swipeStart: { x: number; y: number } | null = null;
+
+  function onPointerDown(event: PointerEvent) {
+    swipeStart =
+      event.pointerType === "touch"
+        ? { x: event.clientX, y: event.clientY }
+        : null;
+  }
+
+  function onPointerUp(event: PointerEvent) {
+    if (!swipeStart) return;
+    const dx = event.clientX - swipeStart.x;
+    const dy = event.clientY - swipeStart.y;
+    swipeStart = null;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx > 0 && showBack) onBack();
+    else if (dx < 0 && !isLast && canAdvance) onNext();
+  }
+
+  function onKeydown(event: KeyboardEvent) {
+    if (!fullscreen || currentIndex === null || event.defaultPrevented) return;
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest("input, textarea, select, [contenteditable]")
+    )
+      return;
+    if (event.key === "ArrowLeft" && showBack) onBack();
+    else if (event.key === "ArrowRight" && !isLast && canAdvance) onNext();
+  }
+
+  let scroller = $state<HTMLElement>();
+  $effect(() => {
+    void currentIndex;
+    scroller?.scrollTo({ top: 0 });
+  });
 </script>
+
+<svelte:window onkeydown={onKeydown} />
 
 {#snippet dot()}
   <span
@@ -138,10 +206,158 @@
   </button>
 {/snippet}
 
-<div class={`relative ${cls}`}>
+<div class={fullscreen ? `flex h-full min-h-0 ${cls}` : `relative ${cls}`}>
   {#if currentIndex === null}
     <div class="min-w-0 p-5 md:p-6">
       {@render children()}
+    </div>
+  {:else if fullscreen}
+    <aside
+      class="border-border hidden w-72 shrink-0 flex-col border-r border-dashed px-6 pt-8 pb-7 md:flex">
+      {@render asideHeader?.()}
+      <nav bind:this={nav} class="relative flex flex-col gap-0.5">
+        {#if highlight}
+          <div
+            class="bg-accent/10 pointer-events-none absolute inset-x-0 top-0 rounded-lg transition-[translate,height] duration-250 ease-out motion-reduce:transition-none"
+            style:translate={`0 ${highlight.top}px`}
+            style:height={`${highlight.height}px`}
+            aria-hidden="true">
+            <span
+              class="bg-accent absolute top-1/2 -left-1 h-1.5 w-1.5 -translate-y-1/2 rounded-full shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-accent)_20%,transparent)]"
+            ></span>
+          </div>
+        {/if}
+        {#each steps as _step, i (steps[i].id)}
+          {@render stepRow(i)}
+        {/each}
+      </nav>
+      {#if aside}
+        <div class="mt-auto">{@render aside()}</div>
+      {/if}
+    </aside>
+
+    <div class="relative flex min-h-0 min-w-0 flex-1 flex-col">
+      <div class="shrink-0 pt-[env(safe-area-inset-top)] md:hidden">
+        <div class="flex h-14 items-center gap-2.5 pr-5 pl-1.5">
+          <button
+            type="button"
+            class="btn-icon h-11 w-11 shrink-0 rounded-full transition-opacity duration-200 {showBack
+              ? ''
+              : 'pointer-events-none opacity-0'}"
+            aria-label={m.common_previous()}
+            tabindex={showBack ? undefined : -1}
+            onclick={onBack}>
+            <Icon name="chevron-left" class="h-5 w-5" />
+          </button>
+          <div
+            class="flex flex-1 gap-1.5"
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={steps.length}
+            aria-valuenow={currentIndex + 1}
+            aria-label={m.wizard_step_progress({
+              current: currentIndex + 1,
+              total: steps.length,
+              label: steps[currentIndex].label,
+            })}>
+            {#each steps as step, i (step.id)}
+              <span
+                class="bg-surface-2 relative h-1.5 flex-1 overflow-hidden rounded-full">
+                <span
+                  class="bg-accent absolute inset-0 origin-left rounded-full transition-[scale,opacity] duration-300 ease-out motion-reduce:transition-none"
+                  style:scale={i <= currentIndex ? "1 1" : "0 1"}
+                  style:opacity={i < currentIndex ? 0.55 : 1}></span>
+              </span>
+            {/each}
+          </div>
+          <span class="timecode text-xs" aria-hidden="true">
+            {pad(currentIndex + 1)} / {pad(steps.length)}
+          </span>
+          {@render topAction?.()}
+        </div>
+      </div>
+      {#if topAction}
+        <div class="absolute top-5 right-6 z-10 hidden md:block">
+          {@render topAction()}
+        </div>
+      {/if}
+
+      <div
+        bind:this={scroller}
+        role="presentation"
+        class="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto"
+        onpointerdown={onPointerDown}
+        onpointerup={onPointerUp}
+        onpointercancel={() => (swipeStart = null)}>
+        <div class="grid px-5 pt-3 pb-6 md:px-16 md:pt-14 md:pb-8">
+          {#key currentIndex}
+            <div
+              class="min-w-0 [grid-area:1/1]"
+              in:stepIn={direction}
+              out:stepOut={direction}>
+              {@render children()}
+            </div>
+          {/key}
+        </div>
+      </div>
+
+      <div
+        class="flex shrink-0 flex-col gap-1 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden">
+        <button
+          type="button"
+          class="btn btn-primary h-13 w-full {isLast
+            ? 'btn-primary-cartouche'
+            : ''}"
+          disabled={!canAdvance}
+          onclick={advance}>
+          {nextLabel ?? (isLast ? m.common_finish() : m.common_next())}
+        </button>
+        {#if additionalAction}
+          <button
+            type="button"
+            class="link-accent h-10 text-sm font-semibold"
+            onclick={additionalAction.onClick}>
+            {additionalAction.label}
+          </button>
+        {:else}
+          <p class="text-dim grid h-10 place-items-center text-center text-xs">
+            {#if typeof hint === "function"}{@render hint()}{:else}{hint ??
+                ""}{/if}
+          </p>
+        {/if}
+      </div>
+
+      <div
+        class="border-border relative hidden h-21 shrink-0 items-center gap-4 border-t border-dashed px-16 md:flex">
+        <button
+          type="button"
+          class="btn btn-ghost transition-opacity duration-200 {showBack
+            ? ''
+            : 'pointer-events-none opacity-0'}"
+          tabindex={showBack ? undefined : -1}
+          onclick={onBack}>
+          {m.common_previous()}
+        </button>
+        <p class="text-dim ml-auto text-sm">
+          {#if typeof hint === "function"}{@render hint()}{:else}{hint ??
+              ""}{/if}
+        </p>
+        {#if additionalAction}
+          <button
+            type="button"
+            class="btn btn-ghost"
+            onclick={additionalAction.onClick}>
+            {additionalAction.label}
+          </button>
+        {/if}
+        <button
+          type="button"
+          class="btn btn-primary {isLast ? 'btn-primary-cartouche' : ''}"
+          disabled={!canAdvance}
+          onclick={advance}>
+          {nextLabel ?? (isLast ? m.common_finish() : m.common_next())}
+        </button>
+      </div>
     </div>
   {:else}
     <div class="md:flex">

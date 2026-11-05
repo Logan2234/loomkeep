@@ -9,6 +9,7 @@
   import { resolveBottomShortcuts } from "#lib/navigation.js";
   import LibraryTab from "./LibraryTab.svelte";
   import MenuGrabber from "./MenuGrabber.svelte";
+  import Avatar from "../Avatar.svelte";
   import NavTab from "./NavTab.svelte";
 
   // The user's stored order (falls back to the default set) around Library,
@@ -46,7 +47,8 @@
         href={item.href}
         icon={item.icon}
         label={item.label}
-        active={item.match(page.url.pathname)}>
+        active={item.match(page.url.pathname)}
+        glyph={item.id === "profile" && auth.user ? avatar : undefined}>
         {#snippet badge()}
           {#if item.newBadgeKey && isFeatureNew(item.newBadgeKey)}
             <span
@@ -58,3 +60,15 @@
     {/if}
   {/each}
 </nav>
+
+{#snippet avatar()}
+  {#if auth.user}
+    <span data-profile-target class="block rounded-full">
+      <Avatar
+        seed={auth.user.username}
+        url={auth.user.avatarUrl}
+        size={26}
+        class="block rounded-full!" />
+    </span>
+  {/if}
+{/snippet}

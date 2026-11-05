@@ -44,6 +44,7 @@
   <button
     type="button"
     onclick={() => (open = true)}
+    data-welcome-glow
     class="card active:bg-surface-2 mb-4 flex w-full items-center gap-2.5 px-4 py-2.5 text-left transition-colors duration-150">
     <span
       class="border-accent/40 bg-accent/10 grid h-8 w-8 shrink-0 place-items-center rounded-full border">

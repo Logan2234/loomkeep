@@ -1,5 +1,6 @@
 import { auth } from "#lib/auth.svelte.js";
 import { layout } from "#lib/layout.svelte.js";
+import { onboardingReplay } from "#lib/onboarding-replay.svelte.js";
 import { toast } from "#lib/toast.svelte.js";
 import * as env from "$app/env/public";
 
@@ -21,8 +22,15 @@ export function feedbackLauncherWanted(): boolean {
 /**
  * The bottom-right launchers (feedback, then Messages beside it) step aside
  * together: the compact shell has no free corner beside its tab bar, and side
- * panels and toasts sit in that same corner.
+ * panels and toasts sit in that same corner, and so does the fullscreen
+ * welcome tour's main button.
  */
 export function cornerLaunchersHidden(): boolean {
-  return layout.compact || layout.openSidePanels > 0 || toast.items.length > 0;
+  return (
+    layout.compact ||
+    layout.openSidePanels > 0 ||
+    toast.items.length > 0 ||
+    (auth.isLoggedIn && !auth.user?.onboardedAt) ||
+    onboardingReplay.active
+  );
 }

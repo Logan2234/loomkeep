@@ -748,6 +748,17 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
             keywords: ["avis", "feedback", "quackback", "bouton", "launcher"],
           },
           {
+            id: "help-onboarding",
+            label: m.settings_help_onboarding_title(),
+            keywords: [
+              "onboarding",
+              "bienvenue",
+              "welcome",
+              "tutoriel",
+              "tour",
+            ],
+          },
+          {
             id: "help-shortcuts",
             label: m.settings_shortcuts_title(),
             keywords: [

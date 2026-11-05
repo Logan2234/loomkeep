@@ -103,7 +103,11 @@
 
       <div class="mt-auto">
         {#if auth.user}
-          <a href={profileHref} aria-label={auth.user.displayName}>
+          <a
+            href={profileHref}
+            aria-label={auth.user.displayName}
+            data-profile-target
+            class="block rounded-md">
             <Avatar
               seed={auth.user.username}
               url={auth.user.avatarUrl}
