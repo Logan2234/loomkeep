@@ -15,10 +15,11 @@
   import { chat } from "#lib/chat/chat.svelte.js";
   import { appConfig } from "#lib/config.svelte.js";
   import BrandMark from "#lib/components/BrandMark.svelte";
-  import Modal from "#lib/components/Modal.svelte";
   import NotificationBell from "#lib/components/NotificationBell.svelte";
   import OnboardingWidget from "#lib/components/onboarding/OnboardingWidget.svelte";
   import OnboardingWizard from "#lib/components/onboarding/OnboardingWizard.svelte";
+  import { ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX } from "#lib/components/overlay-layers.js";
+  import { onboardingReplay } from "#lib/onboarding-replay.svelte.js";
   import RealtimeConnection from "#lib/components/RealtimeConnection.svelte";
   import ReauthModal from "#lib/components/ReauthModal.svelte";
   import DesktopSidebar from "#lib/components/sidebars/DesktopSidebar.svelte";
@@ -34,6 +35,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { reauth } from "#lib/reauth.svelte.js";
   import { LEGAL_VERSION } from "@loomkeep/shared";
+  import { fade } from "svelte/transition";
   import UnlockBubble from "./components/UnlockBubble.svelte";
 
   const needsTermsReacceptance = $derived(
@@ -150,16 +152,17 @@
 
   {#if needsTermsReacceptance}
     <TermsReacceptance />
-  {:else if !auth.user?.onboardedAt}
-    <Modal
-      dismissable={false}
-      title={m.common_welcome()}
-      onclose={() => {}}
-      wide
-      blur
-      overflowVisible>
+  {:else if !auth.user?.onboardedAt || onboardingReplay.active}
+    <!-- Below the modals, so the avatar editor opens over it. -->
+    <div
+      class="bg-bg fixed inset-0"
+      style:z-index={ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX}
+      role="dialog"
+      aria-modal="true"
+      aria-label={m.common_welcome()}
+      transition:fade={{ duration: 200 }}>
       <OnboardingWizard />
-    </Modal>
+    </div>
   {/if}
 
   {#if reauth.reason}

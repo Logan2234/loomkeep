@@ -4,6 +4,7 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
   import Switch from "#lib/components/Switch.svelte";
   import { feedbackBoardUrl } from "#lib/corner-launchers.svelte.js";
   import {
@@ -18,6 +19,8 @@
   import SettingRow from "../components/SettingRow.svelte";
   import SettingsSection from "../components/SettingsSection.svelte";
   import { flashAnchor } from "#lib/flash-anchor.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { onboardingReplay } from "#lib/onboarding-replay.svelte.js";
 
   const LINKS = [
     {
@@ -127,6 +130,25 @@
         </button>
       </section>
     {/if}
+
+    <button
+      type="button"
+      id="help-onboarding"
+      use:flashAnchor={{ anchor: "help-onboarding", hash: page.url.hash }}
+      class="card hover:border-accent hover:bg-surface-2 flex w-full items-center gap-3 p-4 text-left transition-[border-color,background-color]"
+      onclick={() => (onboardingReplay.active = true)}>
+      <Icon name="play" class="text-accent h-4 w-4 shrink-0" />
+      <span class="min-w-0 flex-1">
+        <span class="flex items-center gap-2 text-sm font-semibold">
+          {m.settings_help_onboarding_title()}
+          {#if isFeatureNew("onboarding-replay")}<NewBadge />{/if}
+        </span>
+        <span class="text-dim block text-xs">
+          {m.settings_help_onboarding_hint()}
+        </span>
+      </span>
+      <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+    </button>
 
     <a
       id="help-shortcuts"

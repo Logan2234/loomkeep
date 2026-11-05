@@ -26,6 +26,10 @@ history from before it was started.
   removable from the bar.
 - Libraries: borderless posters, three per row on a phone (two or three, small
   or large on desktop); a long press opens favorite, status and review.
+- First-run welcome: full screen on phone and desktop, swipeable steps, a new
+  optional profile step (photo, name, visibility), streaming services and
+  notifications that ask the device's permission, and a membership card to
+  finish. Settings › Help can replay it.
 
 ### Fixed
 
