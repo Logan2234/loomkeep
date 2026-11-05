@@ -1,5 +1,4 @@
 <script lang="ts">
-  import BrandMark from "./BrandMark.svelte";
   import Icon from "./Icon.svelte";
 
   // The sign-up reward: a letter slides in, the flap closes, an amber seal
@@ -19,7 +18,7 @@
     {#if confirmed}
       <span class="contents"><Icon name="check" class="h-5 w-5" /></span>
     {:else}
-      <BrandMark class="h-5 w-5" />
+      <span class="font-display text-lg font-extrabold">L</span>
     {/if}
   </div>
 </div>
@@ -58,6 +57,7 @@
     flex-direction: column;
     gap: 0.45rem;
     padding: 0.875rem 0.875rem 0;
+    z-index: 1;
     border-radius: 0.25rem;
     background: var(--paper);
     animation: letter-in 1.3s both;
@@ -101,15 +101,26 @@
   .flap {
     bottom: 32%;
     z-index: 3;
-    background: color-mix(
-      in oklab,
-      var(--color-surface-2) 86%,
-      var(--color-fg)
-    );
+    background: var(--color-surface);
     clip-path: polygon(0 0, 100% 0, 50% 100%);
     transform-origin: top;
-    filter: drop-shadow(0 1px 0 var(--color-border));
     animation: flap-close 1.3s both;
+  }
+
+  /* Its two edges: a drop-shadow would be cut away by the clip-path. */
+  .flap::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--color-border);
+    clip-path: polygon(
+      0 0,
+      50% 100%,
+      100% 0,
+      calc(100% - 3px) 0,
+      50% calc(100% - 3px),
+      3px 0
+    );
   }
 
   .seal {
@@ -123,7 +134,7 @@
     height: 2.4rem;
     margin: -1.2rem 0 0 -1.2rem;
     border-radius: 50%;
-    color: #4a3006;
+    color: #1a1406;
     background: radial-gradient(
       circle at 35% 30%,
       #ffd27a,
