@@ -31,6 +31,9 @@ history from before it was started.
   notifications that ask the device's permission, and a membership card that
   flies into your avatar as the home lands. Settings › Help can replay it.
 - The phone bar's Profile tab shows your avatar; pins are drawn as a pushpin.
+- After sign-up, "Check your email" sits on the poster wall with a sealed
+  envelope, opens your webmail (Gmail, Outlook…) in one tap, and turns to
+  "Address confirmed" by itself once the link is opened, on any device.
 
 ### Fixed
 
