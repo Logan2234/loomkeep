@@ -40,7 +40,7 @@ beforeEach(() => {
 
 it("offers to open the webmail of a known address", async () => {
   signIn("alice.martin@gmail.com");
-  renderWithQuery(CheckEmailPage);
+  renderWithQuery(CheckEmailPage, {});
 
   const open = screen.getByRole("link", {
     name: m.auth_register_check_email_open_inbox({ inbox: "Gmail" }),
@@ -51,7 +51,7 @@ it("offers to open the webmail of a known address", async () => {
 
 it("shows no webmail button for an address it can't place", () => {
   signIn("alice@loomkeep.app");
-  renderWithQuery(CheckEmailPage);
+  renderWithQuery(CheckEmailPage, {});
 
   const openLabel = m
     .auth_register_check_email_open_inbox({ inbox: "" })
@@ -64,7 +64,7 @@ it("shows no webmail button for an address it can't place", () => {
 
 it("turns to confirmed when the link is opened elsewhere", async () => {
   signIn("alice.martin@gmail.com");
-  renderWithQuery(CheckEmailPage);
+  renderWithQuery(CheckEmailPage, {});
 
   listeners.get(RealtimeEvent.EMAIL_VERIFIED)?.();
 

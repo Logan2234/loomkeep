@@ -31,7 +31,7 @@ beforeEach(() => {
 });
 
 it("keeps the success once the single-use link has been spent", async () => {
-  renderWithQuery(VerifyEmailPage);
+  renderWithQuery(VerifyEmailPage, {});
   expect(await screen.findByText(m.auth_verify_email_done())).toBeTruthy();
 
   // Coming back to the tab used to send the spent token again.
