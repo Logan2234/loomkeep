@@ -2,13 +2,8 @@ import { auth } from "#lib/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import {
-  CatalogSource,
-  Domain,
-  MediaType,
-  type UserDto,
-} from "@loomkeep/shared";
-import { fireEvent, screen, waitFor } from "@testing-library/svelte";
+import { Domain, type UserDto } from "@loomkeep/shared";
+import { screen } from "@testing-library/svelte";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import PhoneHome from "./PhoneHome.svelte";
@@ -16,16 +11,6 @@ import PhoneHome from "./PhoneHome.svelte";
 vi.mock("#lib/realtime/socket.js", () => ({
   onRealtimeEvent: () => () => {},
 }));
-
-const DUNE = {
-  source: CatalogSource.TMDB,
-  sourceId: "693134",
-  type: MediaType.MOVIE,
-  title: "Dune: Part Two",
-  posterUrl: null,
-  year: 2024,
-  isAdult: false,
-};
 
 function checklist(addedTitle: boolean) {
   server.use(
@@ -46,36 +31,20 @@ beforeEach(() => {
     homeLayout: null,
     homePhoneLayout: { widgets: [{ id: "n", type: "note" }] },
   } as unknown as UserDto;
-  server.use(
-    http.get(apiUrl("/catalog/trending"), () => HttpResponse.json([DUNE])),
-  );
 });
 
 afterEach(() => {
   auth.user = null;
 });
 
-it("starts a new account from one screen, and adds a trending title", async () => {
+it("starts a new account from one screen", async () => {
   checklist(false);
-  let added: unknown;
-  server.use(
-    http.put(apiUrl("/library"), async ({ request }) => {
-      added = await request.json();
-      return HttpResponse.json({});
-    }),
-  );
   renderWithQuery(PhoneHome, {});
 
   expect(await screen.findByText(m.home_starter_title())).toBeTruthy();
-  await fireEvent.click(
-    await screen.findByRole("button", {
-      name: m.home_starter_add({ title: DUNE.title }),
-    }),
-  );
-
-  await waitFor(() =>
-    expect(added).toMatchObject({ sourceId: DUNE.sourceId, status: "PLANNED" }),
-  );
+  expect(
+    screen.getByRole("link", { name: m.home_starter_search() }),
+  ).toBeTruthy();
 });
 
 it("shows the phone's own widgets once a first title is in", async () => {

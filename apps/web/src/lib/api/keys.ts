@@ -259,7 +259,6 @@ export const keys = {
       ["catalog", "cast-detail", source, personId] as const,
     watchProviders: (region: string | null) =>
       ["catalog", "watch-providers", region] as const,
-    trending: () => ["catalog", "trending"] as const,
   },
   admin: {
     overview: () => ["admin", "overview"] as const,

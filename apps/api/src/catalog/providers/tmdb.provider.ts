@@ -170,23 +170,6 @@ export class TmdbProvider implements CatalogProvider {
     ];
   }
 
-  /**
-   * This week's trending films and series, in the account's language. Adult
-   * titles stay flagged for the caller's age gate, as in search().
-   */
-  async trending(lang?: string): Promise<MediaSummaryDto[]> {
-    const data = await this.get<{
-      results: ((TmdbMovieResult | TmdbTvResult) & { media_type?: string })[];
-    }>("/trending/all/week", { language: regionalLocale(lang) });
-    return data.results.flatMap((result) =>
-      result.media_type === "movie"
-        ? [toMovieSummary(result as TmdbMovieResult)]
-        : result.media_type === "tv"
-          ? [toTvSummary(result as TmdbTvResult)]
-          : [],
-    );
-  }
-
   async getDetails(
     sourceId: string,
     type: MediaType,

@@ -5,10 +5,6 @@ import { typedRequest } from "./generated/typed-request";
 /** Covers for the sign-in page's backdrop, public. */
 export const getShowcase = () => typedRequest("/showcase");
 
-/** This week's trending films and series, for a new account's home. */
-export const getTrendingMedia = () =>
-  typedRequest("/catalog/trending", { query: { lang: getLocale() } });
-
 export function searchCatalog(query: string, type?: MediaType, page = 1) {
   return typedRequest("/catalog/search", {
     query: {
