@@ -1,3 +1,5 @@
+import type { HomeWidgetDisplay } from "@loomkeep/shared";
+
 // How a widget's content reflows with the room it's given. Widgets get their
 // pixel size from the grid (not a CSS container query) so the editor can
 // reflow them live while a resize is still in progress.
@@ -56,14 +58,21 @@ export function posterLayout(
     action = false,
     stripMinWidth = 240,
     touch = false,
+    display,
   }: {
     meta?: number;
     action?: boolean;
     stripMinWidth?: number;
     touch?: boolean;
+    /** The phone home's choice, which the size no longer decides. */
+    display?: HomeWidgetDisplay;
   } = {},
 ): PosterLayout {
-  if (body.width < stripMinWidth || body.height < STRIP_MIN_HEIGHT) {
+  if (
+    display === "rows" ||
+    (display !== "posters" &&
+      (body.width < stripMinWidth || body.height < STRIP_MIN_HEIGHT))
+  ) {
     return {
       mode: "list",
       rows: Math.max(1, Math.floor(body.height / LIST_ROW_HEIGHT)),

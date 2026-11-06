@@ -28,6 +28,7 @@
 
 <WidgetShell icon={def.icon} title={def.title()} href="/app/music">
   <PosterRail
+    display={widget.config?.display}
     label={def.title()}
     items={musicQuery.data ?? []}
     keyOf={(e) => e.id}

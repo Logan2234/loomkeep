@@ -10,7 +10,7 @@ import type {
   SpoilerSensitivity,
   UserDto,
 } from "@loomkeep/shared";
-import { HomeLayoutBody } from "./home-layout.dto";
+import { HomeLayoutBody, HomePhoneLayoutBody } from "./home-layout.dto";
 
 export class UserResponseDto implements UserDto {
   /**
@@ -222,6 +222,9 @@ export class UserResponseDto implements UserDto {
 
   /** The home page's widget grid; null for the default one. */
   homeLayout!: HomeLayoutBody | null;
+
+  /** The phone home's widgets in order; null for the phone default. */
+  homePhoneLayout!: HomePhoneLayoutBody | null;
 
   /**
    * When the account is due to be deleted; null when no deletion is scheduled.

@@ -57,6 +57,10 @@ export const HOME_WIDGET_SORTS = [
 ] as const;
 export type HomeWidgetSort = (typeof HOME_WIDGET_SORTS)[number];
 
+/** How a works widget draws on a phone: a poster strip or rows. */
+export const HOME_WIDGET_DISPLAYS = ["posters", "rows"] as const;
+export type HomeWidgetDisplay = (typeof HOME_WIDGET_DISPLAYS)[number];
+
 /**
  * An app screen (`kind: "app"`, with `id` a web navigation id) or any http(s)
  * address (`kind: "url"`, with `url` and `label`). Flat rather than a union:
@@ -94,6 +98,8 @@ export interface HomeWidgetConfigDto {
   sort?: HomeWidgetSort;
   /** myLists: only the user's own lists, not those they edit with others. */
   ownOnly?: boolean;
+  /** Works widgets on the phone home: "posters" when unset. */
+  display?: HomeWidgetDisplay;
 }
 
 /** A widget on the grid, in grid cells: column `x`, row `y`, `w` × `h`. */
@@ -110,4 +116,19 @@ export interface HomeWidgetDto {
 
 export interface HomeLayoutDto {
   widgets: HomeWidgetDto[];
+}
+
+/** A widget on the phone home, which is one column: its place is its index. */
+export interface HomePhoneWidgetDto {
+  id: string;
+  type: HomeWidgetType;
+  config?: HomeWidgetConfigDto;
+}
+
+/**
+ * The phone's own home page, kept apart from the desktop grid: a phone stacks
+ * one column, so a list in reading order is all it needs.
+ */
+export interface HomePhoneLayoutDto {
+  widgets: HomePhoneWidgetDto[];
 }

@@ -619,6 +619,9 @@ model User {
   // default grid, which the web builds from the enabled domains — stored
   // only once the user edits the page, so the default keeps evolving.
   homeLayout                    Json?
+  // The phone home's widgets in order (shared HomePhoneLayoutDto), apart
+  // from the desktop grid. Null means the phone default, built on the web.
+  homePhoneLayout               Json?
   // UI language (Paraglide locale code, "fr" or "en"). Set from the
   // Accept-Language header at registration (see AuthService.register), and
   // editable from Réglages > Apparence — this is also the sync-across-devices

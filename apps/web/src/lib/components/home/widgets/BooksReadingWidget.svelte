@@ -51,6 +51,7 @@
        page matters more than the cover), covers side by side only once the
        widget is wide enough for several. -->
   <PosterRail
+    display={widget.config?.display}
     label={def.title()}
     items={booksQuery.data ?? []}
     keyOf={(e) => e.id}

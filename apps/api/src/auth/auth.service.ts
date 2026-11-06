@@ -46,7 +46,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { isSocialEnabled } from "../social/social.config";
 import { avatarUrl } from "../users/avatar.util";
-import { readHomeLayout } from "../users/home-layout.util";
+import { readHomeLayout, readHomePhoneLayout } from "../users/home-layout.util";
 import { assertNotSuspended, isSuspended } from "../users/suspension.util";
 import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
 import type { JwtPayload } from "./decorators/current-user.decorator";
@@ -1220,6 +1220,7 @@ export function toUserDto(user: User): UserDto {
     watchRegion: user.watchRegion,
     watchProviderIds: user.watchProviderIds,
     homeLayout: readHomeLayout(user.homeLayout),
+    homePhoneLayout: readHomePhoneLayout(user.homePhoneLayout),
     deletionScheduledFor: user.deletionScheduledFor?.toISOString() ?? null,
   };
 }

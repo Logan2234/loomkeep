@@ -7,6 +7,7 @@
   // up whatever each work has to show.
   import EmptyState from "#lib/components/EmptyState.svelte";
   import type { EmptyArtName } from "#lib/components/EmptyArt.svelte";
+  import type { HomeWidgetDisplay } from "@loomkeep/shared";
   import Carousel from "#lib/components/Carousel.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import {
@@ -35,6 +36,7 @@
     loading,
     empty,
     emptyArt = "projector",
+    display,
     label,
     image,
     meta,
@@ -53,6 +55,8 @@
     empty: string;
     /** The drawing beside `empty`, after what the widget shows. */
     emptyArt?: EmptyArtName;
+    /** Posters or rows, as chosen on the phone home; the size decides otherwise. */
+    display?: HomeWidgetDisplay;
     /** Accessible name of the strip, when it scrolls sideways. */
     label: string;
     /** Replaces the poster, e.g. a list's cover collage. */
@@ -72,6 +76,7 @@
       action: !!action,
       stripMinWidth,
       touch,
+      display,
     }),
   );
 </script>

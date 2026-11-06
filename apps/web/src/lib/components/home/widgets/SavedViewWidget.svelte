@@ -144,6 +144,7 @@
     </p>
   {:else}
     <PosterRail
+      display={widget.config?.display}
       label={title}
       items={cardsQuery.data ?? []}
       keyOf={(card) => card.id}

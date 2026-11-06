@@ -287,6 +287,37 @@ describe("UsersService — home layout", () => {
       data: { homeLayout: Prisma.DbNull },
     });
   });
+
+  it("keeps the phone home in order and drops a repeated id", async () => {
+    await service.setHomePhoneLayout(userId, {
+      widgets: [
+        { id: "a", type: "gamesPlaying", config: { display: "rows" } },
+        { id: "a", type: "thisWeek" },
+        { id: "b", type: "toWatch" },
+      ],
+    });
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: userId },
+      data: {
+        homePhoneLayout: {
+          widgets: [
+            { id: "a", type: "gamesPlaying", config: { display: "rows" } },
+            { id: "b", type: "toWatch" },
+          ],
+        },
+      },
+    });
+  });
+
+  it("clears the phone home back to its default, leaving the grid", async () => {
+    await service.resetHomePhoneLayout(userId);
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: userId },
+      data: { homePhoneLayout: Prisma.DbNull },
+    });
+  });
 });
 
 describe("UsersService — updateMe newsletter opt-in timestamp", () => {

@@ -49,7 +49,7 @@ import { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";
 import { CsvExportResponseDto } from "./dto/csv-export-response.dto";
 import { UserDataExportResponseDto } from "./dto/data-export/user-data-export-response.dto";
 import { EntitlementResponseDto } from "./dto/entitlement-response.dto";
-import { HomeLayoutBody } from "./dto/home-layout.dto";
+import { HomeLayoutBody, HomePhoneLayoutBody } from "./dto/home-layout.dto";
 import { MigrationExportResponseDto } from "./dto/migration-export-response.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UpdateUsernameDto } from "./dto/update-username.dto";
@@ -269,6 +269,21 @@ export class UsersController {
   @ApiOkResponse({ type: UserResponseDto })
   resetHomeLayout(@CurrentUser() payload: JwtPayload): Promise<UserDto> {
     return this.users.resetHomeLayout(payload.sub);
+  }
+
+  @Put("me/home-layout/phone")
+  @ApiOkResponse({ type: UserResponseDto })
+  setHomePhoneLayout(
+    @CurrentUser() payload: JwtPayload,
+    @Body() body: HomePhoneLayoutBody,
+  ): Promise<UserDto> {
+    return this.users.setHomePhoneLayout(payload.sub, body);
+  }
+
+  @Delete("me/home-layout/phone")
+  @ApiOkResponse({ type: UserResponseDto })
+  resetHomePhoneLayout(@CurrentUser() payload: JwtPayload): Promise<UserDto> {
+    return this.users.resetHomePhoneLayout(payload.sub);
   }
 
   /**
