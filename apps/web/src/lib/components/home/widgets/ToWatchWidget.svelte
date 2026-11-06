@@ -122,6 +122,7 @@
     metaHeight={8}
     loading={(wantsShows && watchingQuery.loading) ||
       (wantsMovies && plannedMoviesQuery.loading)}
+    emptyArt="tv"
     empty={m.home_nothing_to_watch()}>
     {#snippet meta(e)}
       {#if e.progress}

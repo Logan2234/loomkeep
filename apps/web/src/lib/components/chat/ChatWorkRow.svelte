@@ -40,13 +40,13 @@
     <span class="flex items-baseline justify-between gap-2">
       <span class="truncate font-semibold">{thread.title}</span>
       <span
-        class="shrink-0 font-mono text-[0.68rem] {thread.unread
+        class="text-micro shrink-0 font-mono {thread.unread
           ? 'text-accent'
           : 'text-dim'}">{workThreadTime(thread)}</span>
     </span>
     {#if context}
       <span
-        class="text-accent block font-mono text-[0.62rem] font-bold tracking-wider uppercase">
+        class="text-accent text-micro block font-mono font-bold tracking-wider uppercase">
         {context}
       </span>
     {/if}
@@ -62,7 +62,7 @@
   </span>
   {#if thread.unread > 0}
     <span
-      class="grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1.5 font-mono text-[0.68rem] font-bold {badgeTone(
+      class="text-micro grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1.5 font-mono font-bold {badgeTone(
         thread.muted,
       )}">
       {thread.unread > 99 ? "99+" : thread.unread}

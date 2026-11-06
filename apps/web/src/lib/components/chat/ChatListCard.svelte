@@ -23,7 +23,7 @@
   onclick={() => chat.close()}>
   <span class="flex items-center justify-between gap-2">
     <span
-      class="text-accent font-mono text-[0.62rem] font-bold tracking-wider uppercase">
+      class="text-accent text-micro font-mono font-bold tracking-wider uppercase">
       {ranked ? m.chat_list_ranked() : m.chat_list_collection()} · {list.itemCount}
     </span>
     <span
@@ -59,7 +59,7 @@
       {/if}
     </span>
   {/if}
-  <span class="text-dim font-mono text-[0.68rem]">
+  <span class="text-dim text-micro font-mono">
     {m.chat_list_footer({
       by: list.mine
         ? m.chat_list_by_you()

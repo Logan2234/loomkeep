@@ -11,7 +11,6 @@
   <PageHeader
     icon="layout"
     title={m.home_editor_title()}
-    subtitle={m.home_editor_subtitle()}
     back="/app/settings/appearance#home-layout"
     isNew={isFeatureNew("home-layout")}
     class="mb-4" />

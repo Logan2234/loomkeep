@@ -1,5 +1,5 @@
 <script lang="ts">
-  // A home widget's card: icon, title, an optional "see all" link, and the
+  // A home widget's panel (a card, an inset group on a phone): icon, title, an optional "see all" link, and the
   // body the widget lays out in. The header's height is fixed — sizing.ts
   // subtracts it to know the room the body has.
   import Icon from "#lib/components/Icon.svelte";
@@ -25,14 +25,14 @@
   } = $props();
 </script>
 
-<section class="card flex h-full flex-col overflow-hidden p-4">
-  <div class="mb-3 flex h-6 shrink-0 items-center justify-between gap-2">
+<section class="panel flex h-full flex-col">
+  <div class="panel-head flex h-6 shrink-0 items-center justify-between gap-2">
     <h2
       class="font-display flex min-w-0 items-center gap-2 text-base font-bold">
       <Icon name={icon} class="text-accent h-4 w-4 shrink-0" />
       <span class="truncate">{title}</span>
       {#if tag}
-        <span class="timecode shrink-0 text-[0.65rem] font-normal uppercase">
+        <span class="timecode text-micro shrink-0 font-normal uppercase">
           {tag}
         </span>
       {/if}
@@ -46,7 +46,7 @@
       </a>
     {/if}
   </div>
-  <div class="min-h-0 flex-1">
+  <div class="panel-body min-h-0 flex-1">
     {@render children()}
   </div>
 </section>

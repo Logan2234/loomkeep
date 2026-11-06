@@ -168,7 +168,7 @@
           {m.comments_discussion()}
         </h2>
         <p
-          class="text-accent mt-1 inline-flex items-center gap-1.5 text-[0.68rem] font-semibold">
+          class="text-accent text-micro mt-1 inline-flex items-center gap-1.5 font-semibold">
           <span class="bg-accent h-1.5 w-1.5 rounded-full"></span>
           {peopleHereLabel}
         </p>

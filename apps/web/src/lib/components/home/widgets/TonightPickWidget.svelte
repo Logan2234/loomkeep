@@ -79,7 +79,7 @@
           alt="" />
       </div>
       <div class="flex min-w-0 flex-col {side ? 'justify-center' : ''}">
-        <p class="timecode text-[0.65rem] uppercase">
+        <p class="timecode text-micro uppercase">
           {MEDIA_TYPE_LABEL[pick.mediaItem.type]}
         </p>
         <p

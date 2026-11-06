@@ -42,7 +42,7 @@
 {#if loading}
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
     {#each { length: 4 } as _, i (i)}
-      <div class="card p-4">
+      <div class="inset-card p-4">
         <div class="skeleton h-8 w-1/2 rounded"></div>
         <div class="skeleton mt-2 h-3 w-2/3 rounded"></div>
       </div>
@@ -74,7 +74,7 @@
   </div>
 
   <PremiumTeaser {locked} class="mt-5 block">
-    <section class="card p-5">
+    <section class="inset-card p-5">
       <div class="mb-4 flex items-baseline justify-between">
         <h3 class="font-display text-lg font-bold">
           {m.stats_books_top_authors()}

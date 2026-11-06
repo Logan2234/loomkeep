@@ -218,7 +218,7 @@
     <div>
       <label
         for="review-text"
-        class="timecode mb-1.5 block text-[0.62rem] tracking-[0.18em] uppercase">
+        class="timecode text-micro mb-1.5 block tracking-[0.18em] uppercase">
         {m.reviews_optional_text()}
       </label>
       <textarea
@@ -249,7 +249,7 @@
 
     {#if appConfig.socialEnabled}
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
+        <span class="timecode text-micro tracking-[0.18em] uppercase">
           {m.common_visible_to()}
         </span>
         <SegmentedControl

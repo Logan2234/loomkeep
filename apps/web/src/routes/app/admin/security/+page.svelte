@@ -243,11 +243,7 @@
 </script>
 
 <div>
-  <PageHeader
-    icon="shield"
-    title={m.common_security()}
-    subtitle={m.admin_security_subtitle()}
-    back="/app/admin" />
+  <PageHeader icon="shield" title={m.common_security()} back="/app/admin" />
 
   {#if summaryQuery.error}<AdminQueryError
       message={summaryQuery.error}

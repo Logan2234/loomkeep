@@ -34,7 +34,6 @@
   <PageHeader
     icon="mail"
     title={m.settings_section_communications()}
-    subtitle={m.admin_communications_subtitle()}
     back="/app/admin" />
 
   <Tabs

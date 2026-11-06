@@ -61,7 +61,7 @@
   style="transform-origin: bottom left;">
   <div class="flex items-center justify-between gap-2">
     <span
-      class="text-accent font-mono text-[0.68rem] font-bold tracking-wider uppercase">
+      class="text-accent text-micro font-mono font-bold tracking-wider uppercase">
       {m.chat_poll_builder()}
     </span>
     <button

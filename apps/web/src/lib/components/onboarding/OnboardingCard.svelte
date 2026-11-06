@@ -54,7 +54,7 @@
       <span class="text-fg block text-xs font-semibold">
         {m.gamification_premiere_seance_name()}
       </span>
-      <span class="text-dim timecode block text-[0.65rem]">
+      <span class="text-dim timecode text-micro block">
         {done} / {steps.length}
       </span>
     </span>

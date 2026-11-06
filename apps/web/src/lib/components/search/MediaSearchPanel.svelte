@@ -229,9 +229,9 @@
   {/if}
 {:else if !limit}
   {#if searched}
-    <p class="timecode text-sm">{m.common_no_results()}.</p>
+    <EmptyState art="search" title={m.common_no_results()} />
   {:else}
-    <EmptyState>
+    <EmptyState art="search">
       {m.search_media_hint()}
     </EmptyState>
   {/if}

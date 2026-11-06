@@ -198,7 +198,7 @@
           {#each VISIBLE_ADMIN_NAV_GROUPS as group (group.label)}
             {#if expanded}
               <div
-                class="text-dim px-3 pt-3 pb-2 text-[0.6rem] font-bold tracking-[0.13em] whitespace-nowrap uppercase">
+                class="text-dim text-micro px-3 pt-3 pb-2 font-bold tracking-[0.13em] whitespace-nowrap uppercase">
                 {group.label}
               </div>
             {:else}
@@ -252,7 +252,7 @@
           {#each visibleSections as section (section.label)}
             {#if section.label && expanded}
               <div
-                class="text-dim px-3 pt-3 pb-2 text-[0.6rem] font-bold tracking-widest whitespace-nowrap uppercase">
+                class="text-dim text-micro px-3 pt-3 pb-2 font-bold tracking-widest whitespace-nowrap uppercase">
                 {section.label}
               </div>
             {:else if section.label}

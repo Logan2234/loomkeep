@@ -164,11 +164,7 @@
 </script>
 
 <div>
-  <PageHeader
-    icon="monitor"
-    title={m.admin_services_title()}
-    subtitle={m.admin_services_subtitle()}
-    back="/app/admin">
+  <PageHeader icon="monitor" title={m.admin_services_title()} back="/app/admin">
     {#snippet actions()}
       <button
         onclick={() =>

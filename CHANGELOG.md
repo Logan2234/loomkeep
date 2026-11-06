@@ -34,6 +34,11 @@ history from before it was started.
 - After sign-up, "Check your email" sits on the poster wall with a sealed
   envelope, opens your webmail (Gmail, Outlook…) in one tap, and turns to
   "Address confirmed" by itself once the link is opened, on any device.
+- Phone layout: pages open on a compact title bar (no back arrow on a tab's
+  own page), sections become filled blocks with their title above, and
+  subtitles that only repeated the page are gone.
+- Empty screens show an amber line drawing, one sentence and what to do
+  next, instead of a dashed box; small text no longer drops below 11px.
 
 ### Fixed
 

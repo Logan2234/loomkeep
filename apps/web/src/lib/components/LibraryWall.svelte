@@ -59,7 +59,7 @@
             class="font-display line-clamp-2 text-xs leading-tight font-bold">
             {item.title}
           </span>
-          <span class="line-clamp-2 font-mono text-[0.62rem] opacity-85">
+          <span class="text-micro line-clamp-2 font-mono opacity-85">
             {joinMeta(
               item.status.label,
               item.rating !== null ? `★ ${item.rating}` : null,

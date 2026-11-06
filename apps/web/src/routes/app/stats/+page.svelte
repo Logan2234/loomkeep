@@ -209,8 +209,7 @@
     backInHistory
     backOnPhoneOnly
     icon="stats"
-    title={m.common_stats()}
-    subtitle={m.stats_subtitle()} />
+    title={m.common_stats()} />
 
   <Tabs
     class="mb-6"
@@ -224,7 +223,7 @@
   {#if error}
     <Banner variant="error">{error}</Banner>
   {:else if isEmpty}
-    <EmptyState>
+    <EmptyState art="chart">
       {m.stats_empty()}
     </EmptyState>
   {:else if overview}
@@ -260,52 +259,60 @@
     {/if}
 
     <div class="mt-5 grid gap-5 md:grid-cols-2">
-      <section class="card p-5">
-        <h2 class="font-display mb-4 text-lg font-bold">
+      <section class="panel md:p-5">
+        <h2 class="panel-head font-display text-lg font-bold md:mb-4">
           {selected === "ALL" ? m.stats_composition() : m.stats_progression()}
         </h2>
-        <StackedBar segments={compositionSegments} />
+        <div class="panel-body">
+          <StackedBar segments={compositionSegments} />
+        </div>
       </section>
 
       <PremiumTeaser locked={statsLocked}>
-        <section class="card p-5">
-          <h2 class="font-display mb-4 text-lg font-bold">
+        <section class="panel md:p-5">
+          <h2 class="panel-head font-display text-lg font-bold md:mb-4">
             {m.stats_rating_distribution()}
           </h2>
-          {#if overview.ratedCount > 0}
-            <HistogramBars bars={ratingBars} onSelect={openRatingModal} />
-          {:else}
-            <p class="text-dim text-sm">{m.stats_no_rated()}</p>
-          {/if}
+          <div class="panel-body">
+            {#if overview.ratedCount > 0}
+              <HistogramBars bars={ratingBars} onSelect={openRatingModal} />
+            {:else}
+              <p class="text-dim text-sm">{m.stats_no_rated()}</p>
+            {/if}
+          </div>
         </section>
       </PremiumTeaser>
     </div>
 
     <div class="mt-5 grid gap-5 md:grid-cols-2">
       <PremiumTeaser locked={statsLocked}>
-        <section class="card p-5">
-          <h2 class="font-display mb-4 text-lg font-bold">
+        <section class="panel md:p-5">
+          <h2 class="panel-head font-display text-lg font-bold md:mb-4">
             {m.stats_decade()}
           </h2>
-          {#if decadeBars.length > 0}
-            <HistogramBars bars={decadeBars} onSelect={openDecadeModal} />
-          {:else}
-            <p class="text-dim text-sm">{m.stats_no_decade()}</p>
-          {/if}
+          <div class="panel-body">
+            {#if decadeBars.length > 0}
+              <HistogramBars bars={decadeBars} onSelect={openDecadeModal} />
+            {:else}
+              <p class="text-dim text-sm">{m.stats_no_decade()}</p>
+            {/if}
+          </div>
         </section>
       </PremiumTeaser>
 
       <PremiumTeaser locked={statsLocked}>
-        <section class="card p-5">
-          <h2 class="font-display mb-4 text-lg font-bold">
+        <section class="panel md:p-5">
+          <h2 class="panel-head font-display text-lg font-bold md:mb-4">
             {m.stats_possession()}
           </h2>
-          {#if overview.possession.sufficientData}
-            <RankBars items={possessionBars} />
-          {:else}
-            <InsufficientDataNotice
-              renseignedRatio={overview.possession.renseignedRatio} />
-          {/if}
+          <div class="panel-body">
+            {#if overview.possession.sufficientData}
+              <RankBars items={possessionBars} />
+            {:else}
+              <InsufficientDataNotice
+                renseignedRatio={overview.possession.renseignedRatio} />
+            {/if}
+          </div>
         </section>
       </PremiumTeaser>
     </div>

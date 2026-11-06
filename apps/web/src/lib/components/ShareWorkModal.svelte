@@ -122,7 +122,7 @@
       </span>
       <span class="min-w-0">
         <span
-          class="text-accent block font-mono text-[0.62rem] font-bold tracking-wider uppercase">
+          class="text-accent text-micro block font-mono font-bold tracking-wider uppercase">
           {workKindLabel(work.kind)}{work.year ? ` · ${work.year}` : ""}
         </span>
         <span class="font-display block truncate font-extrabold"
@@ -133,7 +133,7 @@
     {#if withFriends}
       <section class="flex flex-col gap-2">
         <p
-          class="text-dim font-mono text-[0.62rem] font-bold tracking-widest uppercase">
+          class="text-dim text-micro font-mono font-bold tracking-widest uppercase">
           {m.share_work_send_to()}
         </p>
         <ChatFriendPicker bind:picked label={m.share_work_send_to()} />

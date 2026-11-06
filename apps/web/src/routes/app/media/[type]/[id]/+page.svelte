@@ -478,7 +478,7 @@
         </p>
 
         {#if isMovie && detail.movieRelease}
-          <p class="timecode mt-2 text-sm text-white/80">
+          <p class="mt-2 text-sm text-white/80 tabular-nums">
             {#if detail.movieRelease.localDate}
               {detail.movieRelease.localDate > today
                 ? m.media_release_expected()
@@ -692,7 +692,7 @@
                 <div class="flex flex-col gap-2">
                   <div class="flex items-center justify-between gap-2">
                     <span
-                      class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
+                      class="timecode text-micro tracking-[0.18em] uppercase">
                       {m.media_rewatches()}{#if entry.replays.length > 0}
                         &nbsp;· {entry.replays.length}{/if}
                     </span>

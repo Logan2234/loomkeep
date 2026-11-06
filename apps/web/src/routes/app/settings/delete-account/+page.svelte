@@ -256,7 +256,7 @@
       class="hover:bg-surface-2 flex w-full items-baseline gap-3 rounded-lg px-2 py-2 text-left transition-colors"
       onclick={() => toggle(key)}>
       <span
-        class="timecode w-24 shrink-0 text-[0.65rem] tracking-wide uppercase {tone}">
+        class="timecode text-micro w-24 shrink-0 tracking-wide uppercase {tone}">
         {label}
       </span>
       <span class="min-w-0 flex-1 text-sm font-semibold">{title}</span>

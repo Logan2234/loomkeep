@@ -162,7 +162,7 @@
           {saga.title}
         </a>
         {#if saga.kind}
-          <span class="timecode shrink-0 text-[0.65rem] uppercase">
+          <span class="timecode text-micro shrink-0 uppercase">
             {saga.kind}
           </span>
         {/if}
@@ -336,7 +336,7 @@
   {:else}
     <div class="flex flex-col gap-9">
       {#if ongoing === 0}
-        <EmptyState>
+        <EmptyState art={filtered ? undefined : "list"}>
           {filtered ? m.media_sagas_empty_filtered() : empty}
         </EmptyState>
       {/if}

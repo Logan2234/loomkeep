@@ -183,7 +183,7 @@
         </Tooltip>
       {/each}
     </div>
-    <figcaption class="timecode mt-1 text-right text-[0.65rem]">
+    <figcaption class="timecode text-micro mt-1 text-right">
       {m.gamification_xp_history_chart_caption({ net: signed(chartNet) })}
     </figcaption>
   </figure>

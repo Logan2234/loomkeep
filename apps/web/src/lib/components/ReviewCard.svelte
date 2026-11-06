@@ -140,7 +140,7 @@
       >{ratingWord(review.rating)}</span>
     {#if mine}
       <span
-        class="text-accent ml-1 font-mono text-[0.6rem] tracking-[0.14em] uppercase">
+        class="text-accent text-micro ml-1 font-mono tracking-[0.14em] uppercase">
         {m.common_you()}
       </span>
     {/if}
@@ -152,7 +152,7 @@
     {/if}
     <RelativeTime
       iso={review.updatedAt}
-      class="timecode ml-auto shrink-0 text-[0.68rem]" />
+      class="timecode text-micro ml-auto shrink-0" />
   </div>
 
   {#if review.text}
@@ -235,7 +235,7 @@
           </a>
           {#if appConfig.gamificationEnabled && level !== null}
             <span
-              class="border-border text-dim shrink-0 rounded border px-[5px] font-mono text-[0.62rem] font-bold"
+              class="border-border text-dim text-micro shrink-0 rounded border px-[5px] font-mono font-bold"
               title={m.gamification_level({ level })}>
               {level}
             </span>

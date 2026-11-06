@@ -69,9 +69,10 @@
     {size}
     metaHeight={16}
     loading={memoriesQuery.loading}
+    emptyArt="calendar"
     empty={m.home_on_this_day_empty()}>
     {#snippet meta(e)}
-      <p class="timecode truncate text-[0.65rem]">{caption(e)}</p>
+      <p class="timecode text-micro truncate">{caption(e)}</p>
     {/snippet}
   </PosterRail>
 </WidgetShell>

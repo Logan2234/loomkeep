@@ -122,5 +122,6 @@
     info={(f) => ({ href: f.href, title: f.title, imageUrl: f.imageUrl })}
     {size}
     {loading}
+    emptyArt="star"
     empty={m.home_favorites_empty()} />
 </WidgetShell>

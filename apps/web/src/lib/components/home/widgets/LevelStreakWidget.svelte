@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyState from "#lib/components/EmptyState.svelte";
   import { getMyProfile, getMyProgression } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -65,7 +66,7 @@
         value={levelSpan > 0 ? (progress.xpInLevel / levelSpan) * 100 : 0}
         label={m.common_progress()}
         height="h-2" />
-      <p class="timecode truncate text-[0.65rem]">
+      <p class="timecode text-micro truncate">
         {roomy
           ? m.gamification_level_progress({
               xpInLevel: progress.xpInLevel,
@@ -79,9 +80,9 @@
       </p>
     </div>
   {:else}
-    <p
-      class="text-dim flex h-full items-center justify-center text-center text-sm">
-      {m.gamification_level_streak_empty()}
-    </p>
+    <div class="flex h-full items-center">
+      <EmptyState compact art="trophy"
+        >{m.gamification_level_streak_empty()}</EmptyState>
+    </div>
   {/if}
 </WidgetShell>

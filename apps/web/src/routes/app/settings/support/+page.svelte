@@ -56,7 +56,7 @@
 </script>
 
 {#snippet accountBadge(accountRequired: boolean)}
-  <span class="chip hover:text-dim px-2 py-0.5 text-[0.65rem]">
+  <span class="chip hover:text-dim text-micro px-2 py-0.5">
     {accountRequired
       ? m.settings_support_account_required()
       : m.settings_support_no_account()}
@@ -72,7 +72,7 @@
         href={tile.href}
         target="_blank"
         rel="noopener noreferrer"
-        class="card hover:border-accent hover:bg-surface-2 flex items-start gap-2.5 p-4 text-left text-sm font-semibold transition-[border-color,background-color]">
+        class="inset-card hover:border-accent hover:bg-surface-2 flex items-start gap-2.5 p-4 text-left text-sm font-semibold transition-[border-color,background-color]">
         <svg
           viewBox="0 0 24 24"
           class="mt-0.5 h-4 w-4 shrink-0"

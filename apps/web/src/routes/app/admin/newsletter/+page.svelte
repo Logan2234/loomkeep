@@ -71,11 +71,7 @@
   ]);
 </script>
 
-<PageHeader
-  icon="sparkles"
-  title={m.common_newsletter()}
-  subtitle={m.admin_newsletter_history()}
-  back="/app/admin">
+<PageHeader icon="sparkles" title={m.common_newsletter()} back="/app/admin">
 </PageHeader>
 <div class="card mb-5 space-y-4 p-5">
   <p class="text-dim text-sm">{m.admin_newsletter_help()}</p>

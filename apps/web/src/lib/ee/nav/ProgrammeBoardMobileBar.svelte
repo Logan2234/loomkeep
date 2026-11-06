@@ -13,7 +13,7 @@
   import MenuGrabber from "#lib/components/sidebars/MenuGrabber.svelte";
 
   const TAB_LOOK: NavTabLook = {
-    root: "shrink-0 gap-1 rounded-lg px-3 py-2 text-[0.6rem]",
+    root: "shrink-0 gap-1 rounded-lg px-3 py-2 text-micro",
     rootActive: "bg-accent/10 text-accent -translate-y-1",
     slot: "h-5 w-5",
     slotActive: "",
@@ -51,7 +51,7 @@
       <a
         href={item.href}
         aria-current={active ? "page" : undefined}
-        class="relative flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 text-[0.6rem] font-semibold transition-all duration-150 {active
+        class="text-micro relative flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 font-semibold transition-all duration-150 {active
           ? 'bg-accent/10 text-accent -translate-y-1'
           : 'text-dim'}">
         {#if item.href === profileHref() && auth.user}

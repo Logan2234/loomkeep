@@ -526,14 +526,12 @@
     {/if}
 
     {#if dragItems.length === 0}
-      <EmptyState class="mt-6">
-        <p class="font-display text-lg font-bold">
-          {canEditList ? m.list_empty_title() : m.list_empty()}
-        </p>
+      <EmptyState
+        class="mt-6"
+        art="list"
+        title={canEditList ? m.list_empty_title() : m.list_empty()}>
         {#if canEditList}
-          <p class="mt-1 text-sm">
-            {m.list_empty_hint()}
-          </p>
+          <p class="text-sm">{m.list_empty_hint()}</p>
         {/if}
       </EmptyState>
     {:else if list.kind === "RANKED"}

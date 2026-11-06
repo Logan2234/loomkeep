@@ -1,11 +1,14 @@
 import { goBack, goUp } from "#lib/back-nav.svelte.js";
 import { layout } from "#lib/layout.svelte.js";
+import { mobileNav } from "#lib/mobile-nav.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
+import { visit } from "#lib/test/navigation.svelte.js";
 import { render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import PageHeader from "./PageHeader.svelte";
 
+vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
 vi.mock("#lib/back-nav.svelte.js", () => ({ goBack: vi.fn(), goUp: vi.fn() }));
 
 beforeEach(() => vi.mocked(goBack).mockClear());
@@ -71,4 +74,17 @@ it("lets a fixed chevron step back to its parent", async () => {
 
   expect(goUp).toHaveBeenCalledWith(expect.anything(), "/app/admin");
   expect(goBack).not.toHaveBeenCalled();
+});
+
+it("drops the chevron on a phone tab's own page", () => {
+  layout.compact = true;
+  mobileNav.shortcuts = ["home", "search", "calendar", "profile"];
+  visit("/app/calendar");
+  const tab = render(PageHeader, { title: "Calendar", back: "/app" });
+  expect(screen.queryByRole("link", { name: m.common_back() })).toBeNull();
+  tab.unmount();
+
+  visit("/app/stats");
+  render(PageHeader, { title: "Stats", back: "/app" });
+  expect(screen.getByRole("link", { name: m.common_back() })).toBeTruthy();
 });

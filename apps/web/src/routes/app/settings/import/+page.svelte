@@ -89,7 +89,7 @@
     <div class="skeleton mb-8 h-[4.5rem] rounded-xl"></div>
   {:else if lastRun}
     <div
-      class="card mb-8 flex flex-wrap items-center gap-3 p-4 {lastRunOk
+      class="inset-card mb-8 flex flex-wrap items-center gap-3 p-4 {lastRunOk
         ? 'border-success/50 bg-success/5'
         : 'border-danger/50 bg-danger/5'}">
       <Icon

@@ -217,6 +217,39 @@ body {
   .card {
     @apply border-border bg-surface overflow-hidden rounded-xl border;
   }
+  /* A titled block, one markup for both shells: a card on a wide screen; on
+     a phone the title sits above a filled, borderless group (SHL-06). The
+     phone padding keeps the card's total chrome (34px across, the head plus
+     70px down) so a home widget's body keeps the size sizing.ts computes. */
+  .panel {
+    @apply border-border bg-surface overflow-hidden rounded-xl border p-4;
+  }
+  .panel-head {
+    @apply mb-3;
+  }
+  /* A group whose title is its first row (settings, stats): a card on a wide
+     screen, a filled borderless block on a phone. */
+  .inset-card {
+    @apply border-border bg-surface overflow-hidden rounded-xl border;
+  }
+  @media (width < 48rem) {
+    .inset-card {
+      @apply rounded-[14px] border-0;
+    }
+    .panel {
+      @apply overflow-visible rounded-none border-0 bg-transparent p-0;
+    }
+    .panel-head {
+      @apply mb-2.5 px-1;
+    }
+    .panel-body {
+      @apply bg-surface rounded-[14px] px-[17px] py-[18px];
+    }
+    /* A poster strip is its own row of objects: no block around it. */
+    .panel-body:has(.panel-bleed) {
+      @apply bg-transparent px-0;
+    }
+  }
   /* Timecode/metadata voice: mono, dim, wide-tracked. */
   .timecode {
     @apply text-dim font-mono tabular-nums;

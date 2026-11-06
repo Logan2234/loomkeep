@@ -180,7 +180,7 @@
 
       {#each COLUMNS as column (column.title)}
         <nav aria-label={column.title}>
-          <p class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
+          <p class="timecode text-micro tracking-[0.18em] uppercase">
             {column.title}
           </p>
           <ul class="mt-4 flex flex-col gap-2.5">

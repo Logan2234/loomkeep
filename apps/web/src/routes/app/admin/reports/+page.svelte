@@ -317,7 +317,6 @@
   <PageHeader
     icon="flag"
     title={m.admin_social_reports_title()}
-    subtitle={m.admin_reports_subtitle()}
     back="/app/admin" />
 
   {#if !appConfig.socialEnabled}<Banner variant="info" class="mb-4"

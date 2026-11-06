@@ -39,8 +39,9 @@ export interface SettingsSectionDef {
   slug: string;
   label: string;
   icon: IconName;
-  /** One line of what the section is for, shown under its title. */
-  description: string;
+  // Under the title, only when it says what the page itself doesn't: a
+  // rule, a side effect. Never a rephrasing of the title.
+  description?: string;
   keywords: string[];
   entries: SettingsEntryDef[];
   /** Hidden when the deployment runs with social off. */
@@ -97,7 +98,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         slug: "two-factor-authentication",
         label: m.settings_section_mfa(),
         icon: "lock",
-        description: m.settings_mfa_totp_desc(),
         keywords: ["2fa", "mfa", "totp", "otp", "authenticator"],
         legacyHash: "mfa",
         entries: [
@@ -152,7 +152,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         slug: "integrations",
         label: m.settings_integrations_title(),
         icon: "key",
-        description: m.settings_integrations_description(),
         keywords: ["api", "token", "jeton", "integration", "script"],
         newBadgeKey: "integrations",
         entries: [
@@ -172,7 +171,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         slug: "delete-account",
         label: m.settings_delete_account_button(),
         icon: "trash",
-        description: m.settings_delete_account_description(),
         keywords: ["danger", "delete", "supprimer", "rgpd", "fermer"],
         danger: true,
         legacyHash: "danger",
@@ -188,7 +186,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         slug: "privacy",
         label: m.settings_profile_visibility(),
         icon: "eye",
-        description: m.settings_privacy_description(),
         keywords: ["privacy", "public", "prive", "fantome", "ghost"],
         social: true,
         newBadgeKey: "default-list-visibility",
@@ -277,7 +274,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         slug: "content",
         label: m.settings_section_content(),
         icon: "eye-off",
-        description: m.settings_birthdate_description(),
         keywords: ["contenu", "content", "age"],
         legacyHash: "contenu",
         entries: [
@@ -312,7 +308,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         slug: "blocked-users",
         label: m.settings_blocked_users_title(),
         icon: "users",
-        description: m.settings_blocked_users_description(),
         keywords: [
           "blocked",
           "block",
@@ -351,7 +346,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         slug: "appearance",
         label: m.settings_appearance_title(),
         icon: "sun",
-        description: m.settings_appearance_description(),
         keywords: ["apparence", "appearance", "ui"],
         legacyHash: "apparence",
         newBadgeKey: "home-layout",
@@ -524,7 +518,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         slug: "communications",
         label: m.settings_section_communications(),
         icon: "bell",
-        description: m.settings_communications_description(),
         keywords: ["notifications", "emails", "alertes", "cloche", "push"],
         newBadgeKey: "alert-settings",
         legacyHash: "communications",
@@ -601,7 +594,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         slug: "import",
         label: m.common_import(),
         icon: "download",
-        description: m.settings_import_description(),
         keywords: [
           "import",
           "tv time",
@@ -689,7 +681,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         slug: "help",
         label: `${m.common_help()} & ${m.common_feedback()}`,
         icon: "question",
-        description: m.settings_help_body(),
         keywords: [
           "aide",
           "help",
@@ -869,7 +860,6 @@ const SETTINGS_SUBPAGES: SettingsSectionDef[] = [
     slug: "security/devices",
     label: m.settings_sessions_title(),
     icon: "monitor",
-    description: m.settings_sessions_description(),
     parent: "security",
     keywords: ["sessions", "devices", "deconnecter", "logout"],
     entries: [
@@ -884,7 +874,7 @@ const SETTINGS_SUBPAGES: SettingsSectionDef[] = [
     slug: "security/activity",
     label: m.settings_activity_title(),
     icon: "activity",
-    description: m.settings_activity_description(),
+    description: m.settings_activity_subtitle(),
     parent: "security",
     keywords: [
       "activite",

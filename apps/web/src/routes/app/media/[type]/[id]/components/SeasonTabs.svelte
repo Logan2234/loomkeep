@@ -139,7 +139,7 @@
           class="block max-w-28 truncate text-sm leading-tight font-semibold">
           {title(tab)}
         </span>
-        <span class="timecode text-dim block text-[0.65rem] leading-tight">
+        <span class="timecode text-dim text-micro block leading-tight">
           {tracked
             ? `${formatNumber(watched)}/${formatNumber(total)}`
             : m.media_season_episodes_short({ count: total })}

@@ -156,8 +156,8 @@
   </PosterGrid>
 {:else if !limit}
   {#if searched}
-    <p class="timecode text-sm">{m.search_music_empty()}</p>
+    <EmptyState art="search" title={m.search_music_empty()} />
   {:else}
-    <EmptyState>{m.search_music_hint()}</EmptyState>
+    <EmptyState art="search">{m.search_music_hint()}</EmptyState>
   {/if}
 {/if}

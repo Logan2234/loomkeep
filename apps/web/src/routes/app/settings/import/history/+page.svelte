@@ -46,7 +46,6 @@
   <PageHeader
     icon="download"
     title={m.settings_import_history_title()}
-    subtitle={m.settings_import_history_description()}
     back="/app/settings/import"
     class="mb-6" />
 
@@ -55,21 +54,15 @@
   {:else if historyQuery.error}
     <Banner variant="error">{historyQuery.error}</Banner>
   {:else if runs.length === 0}
-    <EmptyState class="px-5 py-10">
-      <Icon name="download" class="text-accent mx-auto h-6 w-6" />
-      <p class="mt-3 font-semibold">
-        {m.settings_import_history_empty_title()}
-      </p>
-      <p class="text-dim mt-1 text-sm">
-        {m.settings_import_history_empty_body()}
-      </p>
+    <EmptyState art="import" title={m.settings_import_history_empty_title()}>
+      <p class="text-sm">{m.settings_import_history_empty_body()}</p>
     </EmptyState>
   {:else}
     <ul class="flex flex-col gap-2.5">
       {#each runs as run (run.id)}
         {@const succeeded = run.status === "SUCCESS"}
         {@const domain = domainLabel(run.domain)}
-        <li class="card flex items-start gap-3 p-4">
+        <li class="inset-card flex items-start gap-3 p-4">
           <Icon
             name={run.domain ? DOMAINS[run.domain].icon : "download"}
             class="mt-0.5 h-5 w-5 shrink-0 {succeeded

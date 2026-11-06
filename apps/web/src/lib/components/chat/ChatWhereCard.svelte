@@ -78,7 +78,7 @@
       href={where.link}
       target="_blank"
       rel="noopener noreferrer"
-      class="text-dim hover:text-fg self-start font-mono text-[0.65rem] no-underline transition-colors duration-150">
+      class="text-dim hover:text-fg text-micro self-start font-mono no-underline transition-colors duration-150">
       {m.media_watch_attribution({ region: where.region })}
     </a>
   {/if}

@@ -119,8 +119,7 @@
     {/if}
 
     {#each list as shelf (shelf.domain)}
-      <p
-        class="timecode px-2 pt-2 pb-1 text-[0.62rem] tracking-widest uppercase">
+      <p class="timecode text-micro px-2 pt-2 pb-1 tracking-widest uppercase">
         {DOMAINS[shelf.domain].label}
       </p>
       {#if shelf.state === "results"}
@@ -147,7 +146,7 @@
             <span class="min-w-0 flex-1">
               <span class="block truncate text-sm font-semibold"
                 >{hit.title}</span>
-              <span class="timecode block text-[0.68rem]">
+              <span class="timecode text-micro block">
                 {workKindLabel(hit.kind)}{hit.year ? ` · ${hit.year}` : ""}
               </span>
             </span>

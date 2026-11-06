@@ -131,11 +131,7 @@
 </script>
 
 <div>
-  <PageHeader
-    icon="calendar"
-    title={m.admin_jobs_title()}
-    subtitle={m.admin_jobs_subtitle()}
-    back="/app/admin">
+  <PageHeader icon="calendar" title={m.admin_jobs_title()} back="/app/admin">
     {#snippet actions()}
       <button
         onclick={() =>

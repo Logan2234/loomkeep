@@ -377,7 +377,7 @@
             <span class="min-w-0">
               <span class="block truncate text-xs font-semibold"
                 >{candidate.displayName}</span>
-              <span class="text-dim block truncate text-[0.68rem]"
+              <span class="text-dim text-micro block truncate"
                 >@{candidate.username}</span>
             </span>
           </button>
@@ -464,7 +464,7 @@
       </button>
     {/if}
     <span
-      class="timecode ml-auto text-[0.65rem] tabular-nums {serialized.length >
+      class="timecode text-micro ml-auto tabular-nums {serialized.length >
       COMMENT_TEXT_MAX_LENGTH
         ? 'text-danger'
         : 'text-dim'}">

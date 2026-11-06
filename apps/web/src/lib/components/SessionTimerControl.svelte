@@ -120,7 +120,7 @@
     class="border-accent/35 bg-accent/6 w-full basis-full rounded-xl border p-3">
     <div class="flex items-center justify-between gap-3">
       <div>
-        <p class="timecode text-dim text-[0.58rem] tracking-[0.14em] uppercase">
+        <p class="timecode text-dim text-micro tracking-[0.14em] uppercase">
           {timer.pausedAt
             ? m.session_timer_paused()
             : m.session_timer_running()}

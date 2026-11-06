@@ -130,7 +130,7 @@
     <div>
       <label
         for="list-title"
-        class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
+        class="timecode text-micro mb-1 block tracking-[0.18em] uppercase">
         {m.common_title()}
       </label>
       <input
@@ -148,7 +148,7 @@
     <div>
       <label
         for="list-description"
-        class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
+        class="timecode text-micro mb-1 block tracking-[0.18em] uppercase">
         {m.common_description()}
         {m.common_optional_marker()}
       </label>
@@ -162,8 +162,7 @@
     </div>
 
     <div>
-      <span
-        class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
+      <span class="timecode text-micro mb-1 block tracking-[0.18em] uppercase">
         {m.common_type()}
       </span>
       <div class="grid grid-cols-2 gap-2" role="group">
@@ -191,8 +190,7 @@
               {:else}
                 {#each [80, 62, 45] as width, i (i)}
                   <span class="flex items-center gap-1.5">
-                    <span
-                      class="timecode text-accent w-2 text-[0.6rem] font-bold"
+                    <span class="timecode text-accent text-micro w-2 font-bold"
                       >{i + 1}</span>
                     <span
                       class="h-1.5 rounded-sm transition-colors {on
@@ -215,7 +213,7 @@
     {#if appConfig.socialEnabled && canManage}
       <div>
         <span
-          class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
+          class="timecode text-micro mb-1 block tracking-[0.18em] uppercase">
           {m.common_visible_to()}
         </span>
         <SegmentedControl

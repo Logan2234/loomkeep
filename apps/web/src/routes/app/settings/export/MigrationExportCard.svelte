@@ -78,7 +78,7 @@
 <section
   id="export-services"
   use:flashAnchor={{ anchor: "export-services", hash: page.url.hash }}
-  class="card p-5 md:p-6">
+  class="inset-card p-5 md:p-6">
   <p class="flex items-center gap-2 font-semibold">
     {m.settings_export_services_title()}
     {#if isFeatureNew("migration-export")}

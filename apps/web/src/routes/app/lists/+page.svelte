@@ -79,8 +79,7 @@
     icon="list"
     back="/app/profile"
     backInHistory
-    title={m.lists_title()}
-    subtitle={m.lists_subtitle()} />
+    title={m.lists_title()} />
 
   {#if !loading && lists.length > 0}
     <div class="relative mb-4">

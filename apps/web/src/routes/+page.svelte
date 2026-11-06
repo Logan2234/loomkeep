@@ -581,7 +581,7 @@
                 </span>
                 <span class="text-dim text-sm">{salle.detail()}</span>
                 <span
-                  class="timecode text-[0.65rem] tracking-[0.16em] text-nowrap uppercase md:justify-self-end"
+                  class="timecode text-micro tracking-[0.16em] text-nowrap uppercase md:justify-self-end"
                   style={salle.color ? `color: ${salle.color}` : undefined}>
                   {salle.catalog}
                 </span>
@@ -597,7 +597,7 @@
 
         <div class="mt-8 grid gap-4 md:grid-cols-2">
           <div class="border-border rounded-2xl border p-6">
-            <p class="timecode text-[0.65rem] tracking-[0.16em] uppercase">
+            <p class="timecode text-micro tracking-[0.16em] uppercase">
               {m.landing_comparator_existing_label()}
             </p>
             {#if picked.length === 0}
@@ -635,7 +635,7 @@
 
           <div class="border-accent bg-accent/5 rounded-2xl border p-6">
             <p
-              class="timecode text-accent text-[0.65rem] tracking-[0.16em] uppercase">
+              class="timecode text-accent text-micro tracking-[0.16em] uppercase">
               {m.landing_comparator_loomkeep_label()}
             </p>
             <p
@@ -714,7 +714,7 @@
                       {@const full = rival.full.includes(salle.id)}
                       {@const partial = rival.partial?.salle === salle.id}
                       <span
-                        class="rounded px-1.5 py-0.5 text-[0.68rem] font-semibold"
+                        class="text-micro rounded px-1.5 py-0.5 font-semibold"
                         class:opacity-25={!picked.includes(salle.id)}
                         style={full
                           ? `color: ${salle.color ?? "var(--fg)"}; background: color-mix(in srgb, ${salle.color ?? "var(--dim)"} 15%, transparent)`
@@ -725,7 +725,7 @@
                       </span>
                     {/each}
                   </span>
-                  <span class="timecode text-[0.68rem] md:text-right">
+                  <span class="timecode text-micro md:text-right">
                     {rival.price()}
                   </span>
                   <span class="text-dim col-span-full text-sm">
@@ -744,7 +744,7 @@
                 <span class="flex flex-wrap items-center gap-1.5">
                   {#each SALLES as salle (salle.id)}
                     <span
-                      class="rounded px-1.5 py-0.5 text-[0.68rem] font-semibold"
+                      class="text-micro rounded px-1.5 py-0.5 font-semibold"
                       class:opacity-25={!picked.includes(salle.id)}
                       style={salle.shipped
                         ? `color: ${salle.color}; background: color-mix(in srgb, ${salle.color} 15%, transparent)`
@@ -753,7 +753,7 @@
                     </span>
                   {/each}
                 </span>
-                <span class="timecode text-[0.68rem] md:text-right">
+                <span class="timecode text-micro md:text-right">
                   {m.landing_comparator_loomkeep_row_price()}
                 </span>
                 <span class="text-dim col-span-full text-sm">
@@ -800,7 +800,7 @@
           </div>
 
           <div>
-            <p class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
+            <p class="timecode text-micro tracking-[0.18em] uppercase">
               {m.landing_import_available_label()}
             </p>
             <ul
@@ -821,7 +821,7 @@
               {/each}
             </ul>
 
-            <p class="timecode mt-8 text-[0.62rem] tracking-[0.18em] uppercase">
+            <p class="timecode text-micro mt-8 tracking-[0.18em] uppercase">
               {m.landing_import_todo_label()}
             </p>
             <ul class="mt-3 flex flex-wrap gap-2">

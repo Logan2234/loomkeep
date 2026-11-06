@@ -40,11 +40,11 @@
 </script>
 
 {#if !search.enabled}
-  <EmptyState>{m.search_all_hint()}</EmptyState>
+  <EmptyState art="search">{m.search_all_hint()}</EmptyState>
 {:else if search.error}
   <Banner variant="error">{search.error}</Banner>
 {:else if list.length === 0 && search.settled}
-  <p class="timecode text-sm">{m.common_no_results()}.</p>
+  <EmptyState art="search" title={m.common_no_results()} />
 {:else}
   <div class="grid gap-x-10 gap-y-7 md:grid-cols-2">
     {#each list as shelf (shelf.domain)}

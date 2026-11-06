@@ -54,6 +54,7 @@
   import Banner from "#lib/components/Banner.svelte";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import EmptyState from "#lib/components/EmptyState.svelte";
+  import type { EmptyArtName } from "#lib/components/EmptyArt.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import LibraryBulkBar from "#lib/components/LibraryBulkBar.svelte";
   import LibraryEntrySheet from "#lib/components/LibraryEntrySheet.svelte";
@@ -167,6 +168,13 @@
 
   // Result count reported by `catalogPreview`, reset whenever the query
   // changes so a stale count never lingers across searches.
+  const DOMAIN_ART: Record<SavedViewDomain, EmptyArtName> = {
+    MEDIA: "tv",
+    GAMES: "controller",
+    BOOKS: "book",
+    MUSIC: "vinyl",
+  };
+
   let previewCount = $state<number | null>(null);
 
   // Seeded from the URL so a filtered/sorted view survives a real browser
@@ -1010,9 +1018,12 @@
     {/if}
   {:else if items.length === 0 && !loading}
     <div in:fade|global={{ duration: reduced ? 0 : 150 }}>
-      <EmptyState>
+      <EmptyState
+        art={!hasFilters && !hasQuery ? DOMAIN_ART[domain] : undefined}
+        title={!hasFilters && !hasQuery
+          ? m.library_empty_domain({ noun })
+          : undefined}>
         {#if !hasFilters && !hasQuery}
-          <p>{m.library_empty_domain({ noun })}</p>
           <a href={`/app/search?type=${domain}`} class="btn btn-primary mt-4">
             <Icon name="search" class="h-4 w-4" />
             {domain === "MUSIC"

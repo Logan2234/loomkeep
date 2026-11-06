@@ -87,7 +87,7 @@
           href={link.href}
           target="_blank"
           rel="noopener noreferrer"
-          class="card hover:border-accent hover:bg-surface-2 flex items-center gap-2.5 p-4 text-sm font-semibold transition-[border-color,background-color]">
+          class="inset-card hover:border-accent hover:bg-surface-2 flex items-center gap-2.5 p-4 text-sm font-semibold transition-[border-color,background-color]">
           <Icon name={link.icon} class="text-accent h-4 w-4 shrink-0" />
           {link.label}
         </a>
@@ -96,7 +96,7 @@
 
     {#if feedbackBoardUrl && auth.user}
       {@const user = auth.user}
-      <div class="card p-4 md:p-5">
+      <div class="inset-card p-4 md:p-5">
         <SettingRow
           anchor="feedback-widget"
           label={m.settings_feedback_widget()}
@@ -117,7 +117,7 @@
       <section
         id="help-chat"
         use:flashAnchor={{ anchor: "help-chat", hash: page.url.hash }}
-        class="card p-5 md:p-6">
+        class="inset-card p-5 md:p-6">
         <p class="flex items-center gap-2 font-semibold">
           <Icon name="message" class="text-accent h-4 w-4" />
           {m.settings_help_chat_title()}
@@ -135,7 +135,7 @@
       type="button"
       id="help-onboarding"
       use:flashAnchor={{ anchor: "help-onboarding", hash: page.url.hash }}
-      class="card hover:border-accent hover:bg-surface-2 flex w-full items-center gap-3 p-4 text-left transition-[border-color,background-color]"
+      class="inset-card hover:border-accent hover:bg-surface-2 flex w-full items-center gap-3 p-4 text-left transition-[border-color,background-color]"
       onclick={() => (onboardingReplay.active = true)}>
       <Icon name="play" class="text-accent h-4 w-4 shrink-0" />
       <span class="min-w-0 flex-1">
@@ -154,7 +154,7 @@
       id="help-shortcuts"
       use:flashAnchor={{ anchor: "help-shortcuts", hash: page.url.hash }}
       href="/app/settings/help/shortcuts"
-      class="card hover:border-accent hover:bg-surface-2 hidden items-center gap-3 p-4 transition-[border-color,background-color] md:flex">
+      class="inset-card hover:border-accent hover:bg-surface-2 hidden items-center gap-3 p-4 transition-[border-color,background-color] md:flex">
       <Icon name="keyboard" class="text-accent h-4 w-4 shrink-0" />
       <span class="min-w-0 flex-1">
         <span class="block text-sm font-semibold">

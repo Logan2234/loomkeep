@@ -194,7 +194,7 @@
             </span>
             {#if thread.unread > 0}
               <span
-                class="ring-bg absolute -top-1.5 -right-2.5 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 font-mono text-[0.62rem] font-bold ring-2 {badgeTone(
+                class="ring-bg text-micro absolute -top-1.5 -right-2.5 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 font-mono font-bold ring-2 {badgeTone(
                   thread.muted,
                 )}">
                 {thread.unread > 99 ? "99+" : thread.unread}
@@ -215,13 +215,13 @@
               <span class="flex items-baseline justify-between gap-2">
                 <span class="truncate font-semibold">{thread.title}</span>
                 <span
-                  class="shrink-0 font-mono text-[0.68rem] {thread.unread
+                  class="text-micro shrink-0 font-mono {thread.unread
                     ? 'text-accent'
                     : 'text-dim'}">{workThreadTime(thread)}</span>
               </span>
               {#if context}
                 <span
-                  class="text-accent block font-mono text-[0.62rem] font-bold tracking-wider uppercase"
+                  class="text-accent text-micro block font-mono font-bold tracking-wider uppercase"
                   >{context}</span>
               {/if}
               <span
@@ -281,7 +281,7 @@
             {/if}
             {#if unread > 0}
               <span
-                class="ring-bg absolute -top-1.5 -right-2 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 font-mono text-[0.62rem] font-bold ring-2 {badgeTone(
+                class="ring-bg text-micro absolute -top-1.5 -right-2 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 font-mono font-bold ring-2 {badgeTone(
                   conversation.muted,
                 )}">
                 {unread > 99 ? "99+" : unread}
@@ -303,7 +303,7 @@
                 <span class="truncate font-semibold"
                   >{conversationName(conversation)}</span>
                 <span
-                  class="shrink-0 font-mono text-[0.68rem] {unread
+                  class="text-micro shrink-0 font-mono {unread
                     ? 'text-accent'
                     : 'text-dim'}">{conversationTime(conversation)}</span>
               </span>
@@ -363,20 +363,19 @@
     <span class="flex items-baseline justify-between gap-2">
       <b class="truncate font-semibold">{card.title}</b>
       <span
-        class="font-mono text-[0.68rem] {card.unread
-          ? 'text-accent'
-          : 'text-dim'}">{workThreadTime(card)}</span>
+        class="text-micro font-mono {card.unread ? 'text-accent' : 'text-dim'}"
+        >{workThreadTime(card)}</span>
     </span>
     {#if context}
       <span
-        class="text-accent font-mono text-[0.62rem] font-bold tracking-wider uppercase"
+        class="text-accent text-micro font-mono font-bold tracking-wider uppercase"
         >{context}</span>
     {/if}
     <span class="text-dim truncate text-[0.8rem]"
       >{workThreadPreview(card)}</span>
     {#if card.unread > 0}
       <span
-        class="text-accent font-mono text-[0.62rem] font-bold tracking-wider uppercase">
+        class="text-accent text-micro font-mono font-bold tracking-wider uppercase">
         {m.chat_unread_count({ count: card.unread })}
       </span>
     {/if}
@@ -393,25 +392,24 @@
     aria-hidden="true">
     <span class="flex items-baseline justify-between gap-2">
       <b class="truncate font-semibold">{conversationName(card)}</b>
-      <span
-        class="font-mono text-[0.68rem] {unread ? 'text-accent' : 'text-dim'}"
+      <span class="text-micro font-mono {unread ? 'text-accent' : 'text-dim'}"
         >{conversationTime(card)}</span>
     </span>
     <span class="text-dim truncate text-[0.8rem]"
       >{conversationPreview(card)}</span>
     {#if unread > 0}
       <span
-        class="text-accent font-mono text-[0.62rem] font-bold tracking-wider uppercase">
+        class="text-accent text-micro font-mono font-bold tracking-wider uppercase">
         {m.chat_unread_count({ count: unread })}
       </span>
     {:else if card.readOnly}
       <span
-        class="text-dim font-mono text-[0.62rem] font-bold tracking-wider uppercase">
+        class="text-dim text-micro font-mono font-bold tracking-wider uppercase">
         {m.chat_read_only()}
       </span>
     {:else if card.muted}
       <span
-        class="text-dim font-mono text-[0.62rem] font-bold tracking-wider uppercase">
+        class="text-dim text-micro font-mono font-bold tracking-wider uppercase">
         {m.chat_muted()}
       </span>
     {/if}

@@ -54,8 +54,7 @@
 
   <div class="flex min-w-72 flex-1 flex-col gap-1.5">
     <div class="flex items-baseline justify-between gap-3">
-      <span
-        class="text-dim text-[0.65rem] font-semibold tracking-widest uppercase">
+      <span class="text-dim text-micro font-semibold tracking-widest uppercase">
         {m.gamification_hero_progress_label()}
       </span>
       <span class="timecode text-accent text-xs">

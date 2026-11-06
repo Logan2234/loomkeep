@@ -2,6 +2,7 @@ import { Domain } from "@loomkeep/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { auth } from "./auth.svelte";
 import {
+  isPhoneTabRoot,
   resolveBottomShortcuts,
   resolveLibraryDomains,
   resolveMenuGroups,
@@ -233,5 +234,21 @@ describe("resolveMenuGroups and the bottom bar", () => {
       "settings",
       "admin",
     ]);
+  });
+});
+
+describe("isPhoneTabRoot", () => {
+  const bar = ["home", "search", "calendar", "profile"];
+
+  it("knows the pages a tab opens directly", () => {
+    expect(isPhoneTabRoot("/app/calendar", bar)).toBe(true);
+    expect(isPhoneTabRoot("/app/games", bar)).toBe(true);
+    expect(isPhoneTabRoot("/app/notifications", bar)).toBe(true);
+  });
+
+  it("leaves out a page the bar doesn't hold, and pages under a tab", () => {
+    expect(isPhoneTabRoot("/app/stats", bar)).toBe(false);
+    expect(isPhoneTabRoot("/app/stats", [...bar, "stats"])).toBe(true);
+    expect(isPhoneTabRoot("/app/settings/appearance", bar)).toBe(false);
   });
 });

@@ -24,6 +24,30 @@ Pills are the exception and stay at `text-[0.6rem]`: a badge is read as a
 shape and a colour before it is read as a word (ADMIN, PREMIUM, DÉBLOQUÉ,
 NOUVEAU), and at 12px they stop reading as pills at all.
 
+**Phone type scale** (SHL-07): four sizes, no arbitrary ones in between —
+`.text-micro`/12px for metadata, 14px (`text-sm`) for secondary text, 16px
+(`text-base`) for body and rows, 20px and up for titles. Space Mono is for
+short metadata only (`S01E04`, `2:46:00`, `12 / 24`), never for a sentence
+such as "Released on 05/10/1994 · In cinemas".
+
+**Blocks on a phone** (SHL-06): a group is a filled, borderless block, its
+title above it, one markup for both shells. `.panel` / `.panel-head` /
+`.panel-body` when the title is a heading (home widgets, stats),
+`.inset-card` when the title is the group's first row (settings). A poster
+strip (`.panel-bleed`) stays out of the block. `.card` remains for objects
+that stand apart.
+
+**Page headers** (SHL-03): on a phone, `PageHeader` is a 56dp app bar —
+icon, 20px title, actions at its end, a chevron only when the page isn't a
+tab's own. The large title is the home screen's alone (`hero`). A subtitle
+says what the page doesn't show already: a rule, a side effect, never a
+rephrasing of the title.
+
+**Empty states** (SHL-08): `EmptyState` with an `art` line drawing
+(`EmptyArt`, traced once in amber), a title, one sentence, one action —
+`compact` for a widget or a section. A filter with no match or an admin
+table keeps a plain sentence. No dashed boxes.
+
 **Palette** — single ownable accent = **projector amber**.
 
 | Token     | Dark ("la salle") | Light ("le programme")                                    |

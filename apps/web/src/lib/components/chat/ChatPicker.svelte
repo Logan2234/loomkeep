@@ -84,7 +84,7 @@
   style="transform-origin: bottom left;">
   {#if title}
     <p
-      class="text-dim px-2 pt-1 pb-1.5 font-mono text-[0.65rem] tracking-widest uppercase">
+      class="text-dim text-micro px-2 pt-1 pb-1.5 font-mono tracking-widest uppercase">
       {title}
     </p>
   {/if}

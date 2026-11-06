@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyState from "#lib/components/EmptyState.svelte";
   import {
     getReviewsForTarget,
     reportReview,
@@ -240,7 +241,7 @@
                     style="height: {(count / mostCommon) * 100}%"></i>
                 {/if}
               </div>
-              <span class="timecode text-[0.6rem]">{rating}</span>
+              <span class="timecode text-micro">{rating}</span>
             </div>
           {/each}
         </div>
@@ -266,9 +267,9 @@
 
     {#if appConfig.socialEnabled}
       {#if communityLoaded && othersReviews.length === 0}
-        <p class="text-dim text-sm">
+        <EmptyState compact art="star">
           {m.reviews_section_empty_community()}
-        </p>
+        </EmptyState>
       {:else if arrangement === "friends" && shownOthers.length === 0}
         <p class="text-dim text-sm">{m.reviews_filter_friends_empty()}</p>
       {:else}

@@ -36,7 +36,7 @@
     aria-hidden="true"></span>
   <span class="flex min-w-0 flex-1 flex-col gap-0.5 py-0.5 pr-7 pl-1.5">
     <span
-      class="text-accent font-mono text-[0.62rem] font-bold tracking-wider uppercase">
+      class="text-accent text-micro font-mono font-bold tracking-wider uppercase">
       {workKindLabel(work.kind)}{work.year ? ` · ${work.year}` : ""}
     </span>
     <span

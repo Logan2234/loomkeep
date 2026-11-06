@@ -230,7 +230,7 @@
                   </span>
                 </span>
                 <span
-                  class="inline-flex items-center text-[0.65rem] font-semibold whitespace-nowrap">
+                  class="text-micro inline-flex items-center font-semibold whitespace-nowrap">
                   <span class={justWatched ? "episode-reward-word" : ""}>
                     {m.media_episode_watched()}
                   </span>

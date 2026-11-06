@@ -429,8 +429,7 @@
   {/if}
 
   {#if endOfGroup && !message.deleted}
-    <p
-      class="text-dim mx-1 mt-1 flex items-center gap-1 font-mono text-[0.68rem]">
+    <p class="text-dim text-micro mx-1 mt-1 flex items-center gap-1 font-mono">
       {message.edited ? `${time} · ${m.chat_edited()}` : time}
     </p>
   {/if}

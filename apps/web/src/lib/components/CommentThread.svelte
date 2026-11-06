@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyState from "#lib/components/EmptyState.svelte";
   import { COMMENT_EMOTE_DISPLAY } from "#lib/constants/comment-emotes.js";
   import { inView } from "#lib/actions/inView.js";
 
@@ -782,7 +783,7 @@
                 <LevelBadge xp={c.author.xp} />
               {/if}
             {/if}
-            <RelativeTime iso={c.createdAt} class="timecode text-[0.68rem]" />
+            <RelativeTime iso={c.createdAt} class="timecode text-micro" />
             {#if c.edited}
               <span class="text-dim text-xs">{m.comment_edited_marker()}</span>
             {/if}
@@ -877,7 +878,7 @@
             </button>
           </div>
         {:else if visibleComments.length === 0}
-          <p class="text-dim text-sm">{m.comments_empty()}</p>
+          <EmptyState compact art="chat">{m.comments_empty()}</EmptyState>
         {:else}
           {#if query.hasNextPage}
             <div
@@ -913,7 +914,7 @@
                   class="text-accent my-1 flex items-center gap-2">
                   <span class="bg-accent h-px flex-1"></span>
                   <span
-                    class="font-mono text-[0.62rem] font-bold tracking-widest uppercase"
+                    class="text-micro font-mono font-bold tracking-widest uppercase"
                     >{m.common_new()}</span>
                   <span class="bg-accent h-px flex-1"></span>
                 </div>

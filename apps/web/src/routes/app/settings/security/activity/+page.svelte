@@ -98,12 +98,11 @@
   {#if eventsQuery.loading}
     <CardRowSkeleton count={4} />
   {:else if events.length === 0}
-    <EmptyState class="px-5 py-9">
-      <p class="font-semibold">{m.settings_activity_empty_title()}</p>
-      <p class="mt-1 text-sm">{m.settings_activity_empty_body()}</p>
+    <EmptyState art="shield" title={m.settings_activity_empty_title()}>
+      <p class="text-sm">{m.settings_activity_empty_body()}</p>
     </EmptyState>
   {:else}
-    <ul class="card divide-border divide-y overflow-hidden">
+    <ul class="inset-card divide-border divide-y overflow-hidden">
       {#each events as event (event.id)}
         {@const alert = ALERTS.has(event.type)}
         <li class="flex items-start gap-4 p-4">

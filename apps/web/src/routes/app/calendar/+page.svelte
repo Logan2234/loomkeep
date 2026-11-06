@@ -255,7 +255,6 @@
       backOnPhoneOnly
       icon="calendar"
       title={m.common_calendar()}
-      subtitle={m.calendar_subtitle()}
       isNew={isFeatureNew("calendar-redesign")}>
       {#snippet actions()}
         {#if !layout.compact}
@@ -329,7 +328,7 @@
   {:else if loading}
     <CardRowSkeleton count={5} />
   {:else if entries.length === 0}
-    <EmptyState>{m.calendar_no_episodes()}</EmptyState>
+    <EmptyState art="calendar">{m.calendar_no_episodes()}</EmptyState>
   {:else}
     <Tabs
       class="mb-5"
@@ -361,7 +360,7 @@
                 ? '[@media(hover:hover)]:hover:border-dim'
                 : 'opacity-50'}">
               <span
-                class="text-[0.6rem] font-semibold tracking-wide uppercase sm:text-xs {day.offset ===
+                class="text-micro font-semibold tracking-wide uppercase sm:text-xs {day.offset ===
                 0
                   ? 'text-accent'
                   : 'text-dim'}">
@@ -370,7 +369,7 @@
               <span class="font-mono text-base font-bold sm:text-xl">
                 {day.date.getDate()}
               </span>
-              <span class="text-dim font-mono text-[0.6rem] sm:text-xs">
+              <span class="text-dim text-micro font-mono sm:text-xs">
                 {#if day.items.length > 0}
                   <!-- A phone's tile only has room for the number. -->
                   <span class="sm:hidden">{day.items.length}</span>

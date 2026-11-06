@@ -56,7 +56,7 @@
       maxlength={LIST_LIMITS.itemNote}
       placeholder={m.list_item_note_placeholder()}
       bind:value={draft}></textarea>
-    <p class="text-dim self-end font-mono text-[0.68rem]">
+    <p class="text-dim text-micro self-end font-mono">
       {draft.length}/{LIST_LIMITS.itemNote}
     </p>
     {#if saveMut.error}

@@ -92,7 +92,7 @@
           type="button"
           class="hover:bg-surface-2 flex w-full flex-col gap-0.5 px-4 py-2 text-left transition-colors duration-150"
           onclick={() => onpick(result.id)}>
-          <span class="text-dim font-mono text-[0.65rem]">
+          <span class="text-dim text-micro font-mono">
             {result.who} · {formatDate(result.createdAt, {
               day: "2-digit",
               month: "2-digit",

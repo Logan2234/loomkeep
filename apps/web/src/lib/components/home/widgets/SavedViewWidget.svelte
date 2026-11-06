@@ -150,6 +150,7 @@
       info={(card) => card}
       {size}
       loading={viewsQuery.loading || cardsQuery.loading}
+      emptyArt="list"
       empty={m.home_saved_view_empty()} />
   {/if}
 </WidgetShell>

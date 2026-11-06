@@ -123,7 +123,7 @@
         ? 'translate-x-0 opacity-100'
         : 'pointer-events-none -translate-x-4 opacity-0'}">
       <p
-        class="mb-4 font-mono text-[0.62rem] font-bold tracking-[0.2em] text-[#f5b841]">
+        class="text-micro mb-4 font-mono font-bold tracking-[0.2em] text-[#f5b841]">
         {inAdmin ? m.nav_administration() : m.common_menu()}
       </p>
 
@@ -144,7 +144,7 @@
         </a>
         {#each VISIBLE_ADMIN_NAV_GROUPS as group (group.label)}
           <p
-            class="mt-4 mb-2 font-mono text-[0.58rem] font-bold tracking-[0.14em] text-white/40 first:mt-2">
+            class="text-micro mt-4 mb-2 font-mono font-bold tracking-[0.14em] text-white/40 first:mt-2">
             {group.label}
           </p>
           {#each group.items as item (item.href)}
@@ -168,7 +168,7 @@
               {/if}
               {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
                 <span
-                  class="ml-auto rounded-full bg-[#f5b841] px-1.5 text-[0.6rem] font-bold text-[#1a1406]">
+                  class="text-micro ml-auto rounded-full bg-[#f5b841] px-1.5 font-bold text-[#1a1406]">
                   {reportsPending.count > 9 ? "9+" : reportsPending.count}
                 </span>
               {/if}
@@ -185,7 +185,7 @@
         {#each visibleSections as section (section.label ?? "primary")}
           {#if section.label}
             <p
-              class="mt-4 mb-2 font-mono text-[0.58rem] font-bold tracking-[0.14em] text-white/40 first:mt-0">
+              class="text-micro mt-4 mb-2 font-mono font-bold tracking-[0.14em] text-white/40 first:mt-0">
               {section.label.toUpperCase()}
             </p>
           {/if}
@@ -213,7 +213,7 @@
 
         {#if auth.isAdmin}
           <p
-            class="mt-4 mb-2 font-mono text-[0.58rem] font-bold tracking-[0.14em] text-white/40">
+            class="text-micro mt-4 mb-2 font-mono font-bold tracking-[0.14em] text-white/40">
             {m.nav_administration()}
           </p>
           <a

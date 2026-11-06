@@ -14,7 +14,7 @@
   import MenuGrabber from "#lib/components/sidebars/MenuGrabber.svelte";
 
   const TAB_LOOK: NavTabLook = {
-    root: "flex-1 gap-0.5 text-[0.6rem]",
+    root: "flex-1 gap-0.5 text-micro",
     rootActive: "text-fg -translate-y-2.5",
     slot: "h-10 w-10",
     slotActive:
@@ -52,7 +52,7 @@
       <a
         href={item.href}
         aria-current={active ? "page" : undefined}
-        class="relative flex flex-1 flex-col items-center gap-0.5 text-[0.6rem] font-semibold transition-transform duration-200 {active
+        class="text-micro relative flex flex-1 flex-col items-center gap-0.5 font-semibold transition-transform duration-200 {active
           ? '-translate-y-2.5'
           : ''}">
         {#if active}

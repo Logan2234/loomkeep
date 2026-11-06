@@ -10,7 +10,7 @@
 <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
   {#each tiles as tile (tile.label)}
     <div
-      class="card min-w-0 px-4 py-3.5"
+      class="inset-card min-w-0 px-4 py-3.5"
       class:border-danger={tile.alert}
       class:border-opacity-45={tile.alert}>
       <div
@@ -21,7 +21,7 @@
           </small>{/if}
       </div>
       <div
-        class="text-dim mt-2 font-mono text-[10px] tracking-[0.08em] uppercase">
+        class="text-dim text-micro mt-2 font-mono tracking-[0.08em] uppercase">
         {tile.label}
       </div>
     </div>

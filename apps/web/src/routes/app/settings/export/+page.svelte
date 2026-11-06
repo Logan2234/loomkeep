@@ -82,7 +82,7 @@
     <section
       id="export-json"
       use:flashAnchor={{ anchor: "export-json", hash: page.url.hash }}
-      class="card p-5 md:p-6">
+      class="inset-card p-5 md:p-6">
       <p class="font-semibold">{m.settings_export_json_title()}</p>
       <p class="text-dim mt-1 max-w-xl text-sm">
         {m.settings_export_json_description()}
@@ -104,7 +104,7 @@
     <section
       id="export-csv"
       use:flashAnchor={{ anchor: "export-csv", hash: page.url.hash }}
-      class="card p-5 md:p-6">
+      class="inset-card p-5 md:p-6">
       <p class="text-dim mb-3 text-sm">{m.settings_export_csv_body()}</p>
       <div class="flex flex-wrap gap-2">
         {#each exportableDomains as d (d.domain)}

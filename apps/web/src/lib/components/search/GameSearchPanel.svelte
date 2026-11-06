@@ -186,8 +186,8 @@
   {/if}
 {:else if !limit}
   {#if searched}
-    <p class="timecode text-sm">{m.search_games_empty()}</p>
+    <EmptyState art="search" title={m.search_games_empty()} />
   {:else}
-    <EmptyState>{m.search_games_hint()}</EmptyState>
+    <EmptyState art="search">{m.search_games_hint()}</EmptyState>
   {/if}
 {/if}

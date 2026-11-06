@@ -277,7 +277,7 @@
   <CardRowSkeleton count={4} />
 {:else}
   <div class="space-y-4">
-    <section class="card p-5 md:p-6">
+    <section class="inset-card p-5 md:p-6">
       <p class="text-dim mb-3 text-sm font-semibold">
         {m.settings_mfa_verification_methods()}
       </p>
@@ -313,7 +313,7 @@
     </section>
 
     {#if webauthnBrowserSupported}
-      <section class="card p-5 md:p-6">
+      <section class="inset-card p-5 md:p-6">
         <p class="text-dim mb-3 text-sm font-semibold">
           {m.settings_mfa_security_keys()}
         </p>
@@ -350,7 +350,7 @@
                         {credential.name}
                       </p>
                       <p
-                        class="text-dim font-mono text-[0.68rem] tracking-wide uppercase">
+                        class="text-dim text-micro font-mono tracking-wide uppercase">
                         {credential.lastUsedAt
                           ? m.settings_mfa_webauthn_used_at({
                               date: formatDate(
@@ -408,7 +408,7 @@
     {/if}
 
     {#if hasAnyMfa && status}
-      <section class="card p-5 md:p-6">
+      <section class="inset-card p-5 md:p-6">
         <p class="text-dim mb-3 text-sm font-semibold">
           {m.settings_mfa_account_recovery()}
         </p>

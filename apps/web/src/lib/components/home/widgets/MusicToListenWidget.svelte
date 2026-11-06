@@ -38,5 +38,6 @@
     })}
     {size}
     loading={musicQuery.loading}
+    emptyArt="vinyl"
     empty={m.home_nothing_listening()} />
 </WidgetShell>

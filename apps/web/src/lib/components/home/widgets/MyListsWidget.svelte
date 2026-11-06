@@ -53,12 +53,13 @@
       {size}
       metaHeight={16}
       loading={listsQuery.loading}
+      emptyArt="list"
       empty={m.lists_none_yet()}>
       {#snippet image(list)}
         <ListCoverGrid images={list.previewImageUrls} title={list.title} />
       {/snippet}
       {#snippet meta(list)}
-        <p class="timecode truncate text-[0.65rem]">{count(list.itemCount)}</p>
+        <p class="timecode text-micro truncate">{count(list.itemCount)}</p>
       {/snippet}
     </PosterRail>
   {/if}

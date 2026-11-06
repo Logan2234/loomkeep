@@ -402,7 +402,7 @@
 
     <section class="mb-5">
       <h3
-        class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+        class="text-dim text-micro mb-2 flex items-center gap-2 font-bold tracking-wider uppercase">
         {m.admin_users_identity()}
         <span class="bg-border h-px flex-1"></span>
       </h3>
@@ -435,7 +435,7 @@
 
     <section class="mb-5">
       <h3
-        class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+        class="text-dim text-micro mb-2 flex items-center gap-2 font-bold tracking-wider uppercase">
         {m.admin_users_plan()}
         <span class="bg-border h-px flex-1"></span>
       </h3>
@@ -464,7 +464,7 @@
     {#if appConfig.gamificationEnabled}
       <section class="mb-5">
         <h3
-          class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+          class="text-dim text-micro mb-2 flex items-center gap-2 font-bold tracking-wider uppercase">
           {m.admin_users_xp()}
           <span class="bg-border h-px flex-1"></span>
         </h3>
@@ -508,7 +508,7 @@
 
     <section class="mb-5">
       <h3
-        class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+        class="text-dim text-micro mb-2 flex items-center gap-2 font-bold tracking-wider uppercase">
         {m.admin_users_access()}
         <span class="bg-border h-px flex-1"></span>
       </h3>
@@ -541,7 +541,7 @@
                 <p class="text-fg truncate text-xs font-semibold">
                   {s.userAgent ?? m.settings_sessions_unknown_device()}
                 </p>
-                <p class="text-dim text-[0.65rem]">
+                <p class="text-dim text-micro">
                   {m.common_active()}
                   {formatDate(s.lastUsedAt, DAY_MONTH_TIME_OPTIONS)}
                 </p>
@@ -570,7 +570,7 @@
 
     <section class="mb-5">
       <h3
-        class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+        class="text-dim text-micro mb-2 flex items-center gap-2 font-bold tracking-wider uppercase">
         {m.admin_social_activity_title()}
         <span class="bg-border h-px flex-1"></span>
       </h3>
@@ -600,7 +600,7 @@
 
     <section class="mb-5">
       <h3
-        class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+        class="text-dim text-micro mb-2 flex items-center gap-2 font-bold tracking-wider uppercase">
         {m.common_library()}
         <span class="bg-border h-px flex-1"></span>
       </h3>
@@ -641,7 +641,7 @@
 
     <section class="mb-5">
       <h3
-        class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+        class="text-dim text-micro mb-2 flex items-center gap-2 font-bold tracking-wider uppercase">
         {m.admin_users_data()}
         <span class="bg-border h-px flex-1"></span>
       </h3>
@@ -669,7 +669,7 @@
 
     <section class="border-danger/40 bg-danger/5 mt-auto rounded-xl border p-3">
       <h3
-        class="text-danger mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+        class="text-danger text-micro mb-2 flex items-center gap-2 font-bold tracking-wider uppercase">
         {m.admin_users_sensitive_area()}
         <span class="bg-danger/40 h-px flex-1"></span>
       </h3>

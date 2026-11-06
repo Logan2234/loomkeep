@@ -5,6 +5,8 @@
   // poster (`meta`) and the button next to it (`action`); both get a fixed
   // slot on every card, filled or not, so a strip's posters and buttons line
   // up whatever each work has to show.
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import type { EmptyArtName } from "#lib/components/EmptyArt.svelte";
   import Carousel from "#lib/components/Carousel.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import {
@@ -32,6 +34,7 @@
     stripMinWidth,
     loading,
     empty,
+    emptyArt = "projector",
     label,
     image,
     meta,
@@ -48,6 +51,8 @@
     stripMinWidth?: number;
     loading: boolean;
     empty: string;
+    /** The drawing beside `empty`, after what the widget shows. */
+    emptyArt?: EmptyArtName;
     /** Accessible name of the strip, when it scrolls sideways. */
     label: string;
     /** Replaces the poster, e.g. a list's cover collage. */
@@ -81,7 +86,7 @@
 
 {#if loading}
   {#if layout.mode === "strip"}
-    <div class="flex gap-3 overflow-hidden">
+    <div class="panel-bleed flex gap-3 overflow-hidden">
       {#each { length: 8 } as _, i (i)}
         <div class="shrink-0" style:width={`${layout.posterWidth}px`}>
           <div
@@ -106,10 +111,9 @@
     </div>
   {/if}
 {:else if items.length === 0}
-  <p
-    class="text-dim flex h-full items-center justify-center text-center text-sm">
-    {empty}
-  </p>
+  <div class="flex h-full items-center">
+    <EmptyState compact art={emptyArt}>{empty}</EmptyState>
+  </div>
 {:else if layout.mode === "strip"}
   <Carousel
     bind:this={carousel}
@@ -117,7 +121,7 @@
     {keyOf}
     {label}
     gap="gap-3"
-    wrapClass=""
+    wrapClass="panel-bleed"
     innerClass="pb-1"
     snapPad="">
     {#snippet card(item)}

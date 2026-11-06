@@ -217,7 +217,7 @@
 </script>
 
 {#if auth.user}
-  <section class="card p-5 md:p-6">
+  <section class="inset-card p-5 md:p-6">
     <div class="divide-border divide-y">
       <div
         id="username"
@@ -309,11 +309,10 @@
 
   <AppLockSetting />
 
-  <p
-    class="timecode mt-6 mb-2 block text-[0.65rem] tracking-[0.14em] uppercase">
+  <p class="timecode text-micro mt-6 mb-2 block tracking-[0.14em] uppercase">
     {m.settings_go_further()}
   </p>
-  <ul class="card divide-border divide-y">
+  <ul class="inset-card divide-border divide-y">
     <li>
       <SettingsLinkRow
         icon="monitor"

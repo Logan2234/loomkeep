@@ -124,7 +124,8 @@
           {/each}
         </div>
       {:else if entries.length === 0 && !viewerOutsideTop}
-        <EmptyState>{m.gamification_leaderboard_empty()}</EmptyState>
+        <EmptyState art="trophy"
+          >{m.gamification_leaderboard_empty()}</EmptyState>
       {:else}
         <div class="card divide-border divide-y divide-dashed overflow-hidden">
           {#each entries as entry, i (entry.id)}
@@ -150,7 +151,7 @@
                   </span>
                   {#if entry.isViewer}
                     <span
-                      class="text-accent text-[0.6rem] font-bold tracking-wide uppercase">
+                      class="text-accent text-micro font-bold tracking-wide uppercase">
                       {m.common_you()}
                     </span>
                   {/if}
@@ -184,7 +185,7 @@
               size={34} />
             <span class="min-w-0 flex-1">
               <span
-                class="text-accent block text-[0.6rem] font-bold tracking-wide uppercase">
+                class="text-accent text-micro block font-bold tracking-wide uppercase">
                 {m.common_you()}
               </span>
               <span class="truncate text-sm font-semibold">

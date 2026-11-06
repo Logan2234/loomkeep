@@ -57,8 +57,7 @@
     icon="trophy"
     back="/app/profile"
     backInHistory
-    title={m.gamification_page_title()}
-    subtitle={m.gamification_page_subtitle()} />
+    title={m.gamification_page_title()} />
 
   {#if !appConfig.gamificationEnabled}
     <EmptyState>{m.gamification_disabled()}</EmptyState>
@@ -72,7 +71,7 @@
     {#each FAMILY_ORDER.slice(0, 2) as family (family)}
       <div class="flex items-center gap-3 pt-8 pb-3">
         <span
-          class="text-dim text-[0.65rem] font-semibold tracking-widest uppercase">
+          class="text-dim text-micro font-semibold tracking-widest uppercase">
           {familyLabel(family)}
         </span>
         <span class="bg-border h-px flex-1"></span>
@@ -84,14 +83,14 @@
       </div>
     {/each}
   {:else if list.length === 0}
-    <EmptyState>{m.gamification_empty()}</EmptyState>
+    <EmptyState art="trophy">{m.gamification_empty()}</EmptyState>
   {:else}
     <AchievementsHero {summary} />
 
     {#each sections as section (section.family)}
       <div class="flex items-center gap-3 pt-8 pb-3">
         <span
-          class="text-dim text-[0.65rem] font-semibold tracking-widest uppercase">
+          class="text-dim text-micro font-semibold tracking-widest uppercase">
           {familyLabel(section.family)}
         </span>
         <span class="bg-border h-px flex-1"></span>

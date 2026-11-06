@@ -28,7 +28,7 @@
 
 <div class="flex flex-col gap-2">
   <span
-    class="timecode flex items-center gap-2 text-[0.62rem] tracking-[0.18em] uppercase">
+    class="timecode text-micro flex items-center gap-2 tracking-[0.18em] uppercase">
     {m.game_platform_title()}
     {#if isFeatureNew("game-platform")}<NewBadge />{/if}
   </span>
