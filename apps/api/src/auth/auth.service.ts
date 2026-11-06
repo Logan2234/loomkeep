@@ -14,6 +14,7 @@ import {
   LEGAL_VERSION,
   NotificationType,
   OTP_CODE_LENGTH,
+  RealtimeEvent,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -297,6 +298,7 @@ export class AuthService {
         where: { userId: stored.userId, type: "EMAIL_VERIFICATION" },
       }),
     ]);
+    this.events.emitToUser(stored.userId, RealtimeEvent.EMAIL_VERIFIED);
   }
 
   /**

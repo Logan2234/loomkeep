@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode, RealtimeEvent } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
 import type { JwtService } from "@nestjs/jwt";
 import { Prisma, type User } from "@prisma/client";
@@ -161,7 +161,10 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
   } as unknown as WebauthnService;
 
   const sessionCache = new SessionCacheService();
-  const events = { disconnectSession: vi.fn() } as unknown as EventsGateway;
+  const events = {
+    disconnectSession: vi.fn(),
+    emitToUser: vi.fn(),
+  } as unknown as EventsGateway;
   const invitations = {
     findRedeemableFor: vi.fn(),
     claim: vi.fn(),
@@ -1384,6 +1387,22 @@ describe("AuthService.verifyEmail", () => {
     expect(prisma.userToken.deleteMany).toHaveBeenCalledWith({
       where: { userId: "user-1", type: "EMAIL_VERIFICATION" },
     });
+  });
+
+  it("tells the account's open screens that the address is confirmed", async () => {
+    const { service, prisma, events } = makeService();
+    (prisma.userToken.findUnique as Mock).mockResolvedValue({
+      userId: "user-1",
+      type: "EMAIL_VERIFICATION",
+      expiresAt: new Date(Date.now() + 1000),
+    });
+
+    await service.verifyEmail("good-token");
+
+    expect(events.emitToUser).toHaveBeenCalledWith(
+      "user-1",
+      RealtimeEvent.EMAIL_VERIFIED,
+    );
   });
 });
 

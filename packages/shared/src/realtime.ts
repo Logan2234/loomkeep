@@ -17,6 +17,8 @@ export const RealtimeEvent = {
   COMMENT_PRESENCE: "comment-presence",
   LIST_UPDATED: "list-updated",
   ONBOARDING_UPDATED: "onboarding-updated",
+  // The account's address was confirmed, from whichever device opened the link.
+  EMAIL_VERIFIED: "email-verified",
   FOLLOW_REQUEST_CHANGED: "follow-request-changed",
   CHAT_MESSAGE: "chat-message",
   CHAT_READ: "chat-read",

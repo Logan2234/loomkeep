@@ -16,11 +16,15 @@
   let {
     tagline,
     page,
+    phoneWall = false,
     children,
   }: {
     tagline: string;
     /** What changes from one auth page to the next. */
     page: string;
+    /** Fades the wall in behind the top of a phone screen too: for a page
+     * with no form to fill, where it has room. */
+    phoneWall?: boolean;
     children: Snippet;
   } = $props();
 
@@ -92,6 +96,30 @@
   </p>
 {/snippet}
 
+{#snippet wall()}
+  <div class="auth-wall select-none" aria-hidden="true">
+    {#each rows as row, i (i)}
+      <div class="auth-row {i % 2 ? 'auth-row-back' : ''}">
+        {#each row as cover, j (j)}
+          {#if cover.src}
+            <img
+              src={cover.src}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              draggable="false"
+              class="bg-surface-2 h-42 w-28 shrink-0 rounded-xl object-cover" />
+          {:else}
+            <span
+              class="h-42 w-28 shrink-0 rounded-xl"
+              style:background={cover.bg}></span>
+          {/if}
+        {/each}
+      </div>
+    {/each}
+  </div>
+{/snippet}
+
 {#snippet headline(cls: string)}
   <div class="grid {cls}">
     {#key tagline}
@@ -111,33 +139,20 @@
   <aside
     class="bg-surface border-border relative hidden min-w-0 flex-1 flex-col justify-between overflow-hidden border-r p-14 lg:flex">
     {@render wordmark("relative z-10 text-2xl")}
-    <div class="auth-wall select-none" aria-hidden="true">
-      {#each rows as row, i (i)}
-        <div class="auth-row {i % 2 ? 'auth-row-back' : ''}">
-          {#each row as cover, j (j)}
-            {#if cover.src}
-              <img
-                src={cover.src}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                draggable="false"
-                class="bg-surface-2 h-42 w-28 shrink-0 rounded-xl object-cover" />
-            {:else}
-              <span
-                class="h-42 w-28 shrink-0 rounded-xl"
-                style:background={cover.bg}></span>
-            {/if}
-          {/each}
-        </div>
-      {/each}
-    </div>
+    {@render wall()}
     <div class="auth-scrim" aria-hidden="true"></div>
     {@render headline("relative z-10 max-w-xl text-5xl")}
   </aside>
 
   <div
-    class="flex min-h-svh w-full flex-col px-5 pt-12 pb-2 lg:relative lg:w-[32.5rem] lg:shrink-0 lg:justify-center lg:px-16 lg:py-20">
+    class="relative isolate flex min-h-svh w-full flex-col px-5 pt-12 pb-2 lg:w-[32.5rem] lg:shrink-0 lg:justify-center lg:px-16 lg:py-20">
+    {#if phoneWall}
+      <div
+        class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 overflow-hidden [mask-image:linear-gradient(#000_25%,transparent)] lg:hidden">
+        {@render wall()}
+        <div class="auth-phone-scrim" aria-hidden="true"></div>
+      </div>
+    {/if}
     <!-- No tagline on a phone: it would push the form down for nothing. -->
     <div class="mb-8 lg:hidden">
       {@render wordmark("text-xl")}
@@ -202,6 +217,12 @@
 
   :global(.a11y-reduce-motion) .auth-row {
     animation: none;
+  }
+
+  .auth-phone-scrim {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in oklab, var(--bg) 55%, transparent);
   }
 
   .auth-scrim {
