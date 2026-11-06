@@ -4,6 +4,8 @@
   import { auth } from "#lib/auth.svelte.js";
   import BetaBadge from "#lib/components/BetaBadge.svelte";
   import HomeGrid from "#lib/components/home/HomeGrid.svelte";
+  import HomeStatPills from "#lib/components/home/HomeStatPills.svelte";
+  import PhoneHome from "#lib/components/home/PhoneHome.svelte";
   import OnboardingCard from "#lib/components/onboarding/OnboardingCard.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import { appConfig } from "#lib/config.svelte.js";
@@ -42,9 +44,12 @@
     documentTitle={m.common_home()}
     hero />
 
-  {#if layout.compact}<div data-welcome-land><OnboardingCard /></div>{/if}
+  {#if layout.compact}
+    {#if appConfig.gamificationEnabled}<HomeStatPills />{/if}
+    <div data-welcome-land><OnboardingCard /></div>
+  {/if}
 
-  <HomeGrid {widgets} />
+  {#if layout.compact}<PhoneHome />{:else}<HomeGrid {widgets} />{/if}
 
   <p class="text-dim mt-8 flex items-center justify-center gap-2 text-xs">
     <a

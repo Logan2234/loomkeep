@@ -11,11 +11,13 @@
   import SegmentedControl from "#lib/components/SegmentedControl.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { DEFAULT_QUICK_LINKS } from "#lib/home/quick-links.js";
+  import { PHONE_DISPLAY_TYPES } from "#lib/home/phone-layout.js";
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     HOME_LAYOUT_LIMITS,
     type HomeWidgetConfigDto,
+    type HomeWidgetDisplay,
     type HomeWidgetDto,
     type HomeWidgetSort,
     type HomeWidgetType,
@@ -31,10 +33,13 @@
 
   let {
     widget,
+    phone = false,
     onapply,
     onclose,
   }: {
     widget: HomeWidgetDto;
+    /** From the phone's editor: works widgets also choose posters or rows. */
+    phone?: boolean;
     onapply: (config: HomeWidgetConfigDto) => void;
     onclose: () => void;
   } = $props();
@@ -53,6 +58,10 @@
     stored.sort ?? untrack(() => def.sorts?.[0] ?? "recent"),
   );
   let ownOnly = $state(stored.ownOnly ?? false);
+  let display = $state<HomeWidgetDisplay>(stored.display ?? "posters");
+  const choosesDisplay = $derived(
+    phone && PHONE_DISPLAY_TYPES.includes(widget.type),
+  );
 
   // What each kind keeps of the form: only the fields it reads.
   const CONFIG_OF: Partial<Record<HomeWidgetType, () => HomeWidgetConfigDto>> =
@@ -73,9 +82,15 @@
     };
 
   function apply() {
-    onapply(CONFIG_OF[widget.type]?.() ?? {});
+    const config = CONFIG_OF[widget.type]?.() ?? {};
+    onapply(choosesDisplay ? { ...config, display } : config);
     onclose();
   }
+
+  const DISPLAYS: SelectOption<HomeWidgetDisplay>[] = [
+    { value: "posters", label: m.home_config_display_posters() },
+    { value: "rows", label: m.home_config_display_rows() },
+  ];
 
   const MEDIA_TYPES = MEDIA_TYPE_OPTIONS;
   const SCOPES: SelectOption<LeaderboardScope>[] = [
@@ -127,6 +142,16 @@
 
 <Modal title={m.home_editor_configure({ name: def.title() })} wide {onclose}>
   <div class="space-y-5">
+    {#if choosesDisplay}
+      <div>
+        {@render legend(m.home_config_display_legend())}
+        <SegmentedControl
+          label={m.home_config_display_legend()}
+          options={DISPLAYS}
+          value={display}
+          onChange={(v) => (display = v)} />
+      </div>
+    {/if}
     {#if widget.type === "quickLinks"}
       <QuickLinksConfig bind:links />
     {:else if widget.type === "listContent"}

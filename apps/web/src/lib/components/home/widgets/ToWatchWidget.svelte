@@ -106,6 +106,7 @@
   href="/app/media"
   linkLabel={m.common_see_more()}>
   <PosterRail
+    display={widget.config?.display}
     label={def.title()}
     bind:carousel
     items={toWatch}

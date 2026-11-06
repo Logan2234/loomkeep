@@ -39,6 +39,11 @@ history from before it was started.
   subtitles that only repeated the page are gone.
 - Empty screens show an amber line drawing, one sentence and what to do
   next, instead of a dashed box; small text no longer drops below 11px.
+- Phone home: its own page, apart from the desktop grid — a poster shelf per
+  domain, then the week's releases, with your level and streak up top. Its
+  editor is a list: drag to reorder, add any widget, choose posters or rows.
+- A new account's phone home opens on one screen: find a title, import your
+  history, or add one of this week's trending films and series.
 
 ### Fixed
 

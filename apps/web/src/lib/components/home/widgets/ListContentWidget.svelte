@@ -40,6 +40,7 @@
     </p>
   {:else}
     <PosterRail
+      display={widget.config?.display}
       label={list?.title ?? def.title()}
       items={list?.items ?? []}
       keyOf={(item) => item.id}

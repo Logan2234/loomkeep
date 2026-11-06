@@ -116,6 +116,7 @@
 
 <WidgetShell icon={def.icon} title={def.title()}>
   <PosterRail
+    display={widget.config?.display}
     label={def.title()}
     items={favorites}
     keyOf={(f) => f.id}

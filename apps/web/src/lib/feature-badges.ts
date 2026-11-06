@@ -1,6 +1,7 @@
 const NEW_BADGE_DAYS = 21;
 
 const SHIPPED = {
+  "phone-home": "2026-11-06",
   "onboarding-replay": "2026-11-05",
   "library-filters": "2026-11-05",
   "phone-navigation": "2026-11-03",

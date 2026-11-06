@@ -11,6 +11,7 @@ import type {
   CreateApiKeyDto,
   Domain,
   HomeLayoutDto,
+  HomePhoneLayoutDto,
   LoginRequestDto,
   LoginResponseDto,
   MfaVerifyRequestDto,
@@ -258,6 +259,26 @@ export async function saveHomeLayout(body: HomeLayoutDto): Promise<UserDto> {
 /** Back to the default home page, which follows the enabled domains again. */
 export async function resetHomeLayout(): Promise<UserDto> {
   const user = await typedRequest("/users/me/home-layout", {
+    method: "DELETE",
+  });
+  auth.user = user;
+  return user;
+}
+
+export async function saveHomePhoneLayout(
+  body: HomePhoneLayoutDto,
+): Promise<UserDto> {
+  const user = await typedRequest("/users/me/home-layout/phone", {
+    method: "PUT",
+    body,
+  });
+  auth.user = user;
+  return user;
+}
+
+/** Back to the phone's default home, built from the enabled domains. */
+export async function resetHomePhoneLayout(): Promise<UserDto> {
+  const user = await typedRequest("/users/me/home-layout/phone", {
     method: "DELETE",
   });
   auth.user = user;
