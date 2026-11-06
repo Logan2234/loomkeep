@@ -1,27 +1,29 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { verifyEmail } from "#lib/api/client.js";
-  import { keys } from "#lib/api/keys.js";
-  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { onMount } from "svelte";
 
   const token = page.url.searchParams.get("token") ?? "";
+  let verified = $state(false);
 
-  const verifyQuery = createApiQuery(() => ({
-    key: keys.verification.email(token),
-    fetch: () => verifyEmail(token),
-    enabled: !!token,
+  // A mutation, sent once: the token is single-use, and a query's refetch
+  // (tab focus, remount) spent it again and replaced the success with
+  // "invalid link".
+  const verifyMut = createApiMutation(() => ({
+    mutate: verifyEmail,
+    onSuccess: () => (verified = true),
   }));
+  onMount(() => {
+    if (token) verifyMut.mutate(token);
+  });
 
   const status = $derived<"pending" | "done" | "error">(
-    !token || verifyQuery.error
-      ? "error"
-      : verifyQuery.loading
-        ? "pending"
-        : "done",
+    verified ? "done" : !token || verifyMut.error ? "error" : "pending",
   );
   const error = $derived(
-    !token ? m.link_invalid_missing_token() : verifyQuery.error,
+    !token ? m.link_invalid_missing_token() : verifyMut.error,
   );
 </script>
 

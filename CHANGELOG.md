@@ -31,6 +31,9 @@ history from before it was started.
   notifications that ask the device's permission, and a membership card that
   flies into your avatar as the home lands. Settings › Help can replay it.
 - The phone bar's Profile tab shows your avatar; pins are drawn as a pushpin.
+- After sign-up, "Check your email" sits on the poster wall with a sealed
+  envelope, opens your webmail (Gmail, Outlook…) in one tap, and turns to
+  "Address confirmed" by itself once the link is opened, on any device.
 - Phone layout: pages open on a compact title bar (no back arrow on a tab's
   own page), sections become filled blocks with their title above, and
   subtitles that only repeated the page are gone.
@@ -44,6 +47,8 @@ history from before it was started.
   too).
 - Selecting episodes by dragging scrolls at full speed near the list's edges,
   without a jump when the finger lifts.
+- Email confirmation and account-deletion cancel links no longer turn to
+  "invalid link" after they worked.
 - Empty video, game and music libraries name what to add in your language
   instead of always in French.
 
