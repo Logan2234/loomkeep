@@ -23,7 +23,7 @@ const PHONE_DEFAULT: HomeWidgetType[] = [
 ];
 
 /** Kinds a phone can show: a single column has nothing to divide vertically. */
-export const PHONE_WIDGET_TYPES = (
+export const PHONE_WIDGET_TYPES: readonly HomeWidgetType[] = (
   Object.keys(HOME_WIDGETS) as HomeWidgetType[]
 ).filter((type) => type !== "dividerVertical");
 
