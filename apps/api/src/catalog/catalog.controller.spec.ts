@@ -55,3 +55,41 @@ describe("CatalogController.search", () => {
     expect(result.items).toHaveLength(2);
   });
 });
+
+describe("CatalogController.trending", () => {
+  function makeController(trending: Mock, allowsAdult: boolean) {
+    return new CatalogController(
+      {} as MediaItemService,
+      {
+        allowsAdultContent: vi.fn().mockResolvedValue(allowsAdult),
+      } as unknown as AgeGateService,
+      {
+        assertEnabled: vi.fn().mockResolvedValue(undefined),
+      } as unknown as DomainGateService,
+      { trending } as never,
+    );
+  }
+
+  it("leaves adult titles out for an account that hasn't opted in", async () => {
+    const controller = makeController(
+      vi.fn().mockResolvedValue([
+        { sourceId: "1", title: "Dune", isAdult: false },
+        { sourceId: "2", title: "Adult", isAdult: true },
+      ]),
+      false,
+    );
+
+    const items = await controller.trending(user);
+
+    expect(items.map((item) => item.sourceId)).toEqual(["1"]);
+  });
+
+  it("shows nothing rather than failing when TMDB is down", async () => {
+    const controller = makeController(
+      vi.fn().mockRejectedValue(new Error("TMDB is down")),
+      true,
+    );
+
+    await expect(controller.trending(user)).resolves.toEqual([]);
+  });
+});

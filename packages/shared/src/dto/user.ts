@@ -9,7 +9,7 @@ import {
   SpoilerSensitivity,
 } from "../enums";
 import type { Locale } from "../locale";
-import type { HomeLayoutDto } from "./home-layout";
+import type { HomeLayoutDto, HomePhoneLayoutDto } from "./home-layout";
 
 export const USER_LIMITS = { displayName: 50, username: 50, bio: 500 } as const;
 export const WEBAUTHN_NAME_MAX_LENGTH = 60;
@@ -126,6 +126,8 @@ export interface UserDto {
    * keeps following them until the user edits the page.
    */
   homeLayout: HomeLayoutDto | null;
+  /** The phone home's widgets in order, or null for the phone default. */
+  homePhoneLayout: HomePhoneLayoutDto | null;
   /**
    * When the account is due to be deleted, null when no deletion is
    * scheduled. The account keeps working normally until then.

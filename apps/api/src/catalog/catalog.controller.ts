@@ -5,6 +5,7 @@ import {
   EpisodeMediaDto,
   ErrorCode,
   MediaExtrasDto,
+  MediaSummaryDto,
   MediaType,
   SearchResponseDto,
   SeasonImagesDto,
@@ -115,6 +116,21 @@ export class CatalogController {
     // wasn't empty — matches how a provider's own pagination ends (an empty
     // page), same heuristic the client used before this moved server-side.
     return { items, hasMore: items.length > 0 };
+  }
+
+  /** This week's trending films and series: what a new account starts from. */
+  @Get("trending")
+  @ApiOkResponse({ type: [MediaSummaryResponseDto] })
+  async trending(
+    @CurrentUser() user: JwtPayload,
+    @Query("lang") lang?: string,
+  ): Promise<MediaSummaryDto[]> {
+    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
+    const [items, allowAdult] = await Promise.all([
+      this.tmdb.trending(safeLang(lang)).catch(() => []),
+      this.ageGate.allowsAdultContent(user.sub),
+    ]);
+    return filterAdultContent(items, allowAdult);
   }
 
   /** Live detail of a cast entity (TMDB person, or AniList staff) for the media-page modal. */

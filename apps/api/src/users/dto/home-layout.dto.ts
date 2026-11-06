@@ -3,6 +3,7 @@ import {
   HOME_GRID_COLUMNS,
   HOME_LAYOUT_LIMITS,
   HOME_QUICK_LINK_KINDS,
+  HOME_WIDGET_DISPLAYS,
   HOME_WIDGET_SORTS,
   HOME_WIDGET_TYPES,
   LEADERBOARD_PERIODS,
@@ -10,7 +11,9 @@ import {
   MediaType,
   type Domain,
   type HomeLayoutDto,
+  type HomePhoneLayoutDto,
   type HomeQuickLinkKind,
+  type HomeWidgetDisplay,
   type HomeWidgetSort,
   type HomeWidgetType,
   type LeaderboardPeriod,
@@ -161,6 +164,14 @@ class HomeWidgetConfigBody {
   @IsOptional()
   @IsBoolean()
   ownOnly?: boolean;
+
+  /**
+   * How a works widget draws on the phone home.
+   * @example "posters"
+   */
+  @IsOptional()
+  @IsIn(HOME_WIDGET_DISPLAYS)
+  display?: HomeWidgetDisplay;
 }
 
 class HomeWidgetBody {
@@ -232,4 +243,38 @@ export class HomeLayoutBody implements HomeLayoutDto {
   @ValidateNested({ each: true })
   @Type(() => HomeWidgetBody)
   widgets!: HomeWidgetBody[];
+}
+
+class HomePhoneWidgetBody {
+  /**
+   * The widget's id within the layout.
+   * @example "w-3"
+   */
+  @Matches(/^[\w-]{1,36}$/)
+  id!: string;
+
+  /**
+   * The kind of widget.
+   * @example "gamesPlaying"
+   */
+  @IsIn(HOME_WIDGET_TYPES)
+  type!: HomeWidgetType;
+
+  /** Settings of that kind of widget. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => HomeWidgetConfigBody)
+  config?: HomeWidgetConfigBody;
+}
+
+// A phone stacks one column: the order is the layout. An empty page isn't a
+// layout either: going back to the phone default is DELETE.
+export class HomePhoneLayoutBody implements HomePhoneLayoutDto {
+  /** The widgets, in the order the phone shows them. */
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(HOME_LAYOUT_LIMITS.widgets)
+  @ValidateNested({ each: true })
+  @Type(() => HomePhoneWidgetBody)
+  widgets!: HomePhoneWidgetBody[];
 }

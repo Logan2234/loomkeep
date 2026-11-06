@@ -47,7 +47,10 @@ import { DataExportService } from "./data-export.service";
 import type { ChangeEmailDto } from "./dto/change-email.dto";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
 import type { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";
-import type { HomeLayoutBody } from "./dto/home-layout.dto";
+import type {
+  HomeLayoutBody,
+  HomePhoneLayoutBody,
+} from "./dto/home-layout.dto";
 import type { UpdateUserDto } from "./dto/update-user.dto";
 import type { UpdateUsernameDto } from "./dto/update-username.dto";
 import type { UploadAvatarDto } from "./dto/upload-avatar.dto";
@@ -287,6 +290,33 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { homeLayout: toHomeLayoutJson({ widgets }) },
+    });
+    return toUserDto(user);
+  }
+
+  /** Stores the phone home's widgets in order, a repeated id keeping its first. */
+  async setHomePhoneLayout(
+    userId: string,
+    body: HomePhoneLayoutBody,
+  ): Promise<UserDto> {
+    const seen = new Set<string>();
+    const widgets = body.widgets.filter((widget) => {
+      if (seen.has(widget.id)) return false;
+      seen.add(widget.id);
+      return true;
+    });
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { homePhoneLayout: toHomeLayoutJson({ widgets }) },
+    });
+    return toUserDto(user);
+  }
+
+  /** Back to the phone default, built on the web from the enabled domains. */
+  async resetHomePhoneLayout(userId: string): Promise<UserDto> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { homePhoneLayout: Prisma.DbNull },
     });
     return toUserDto(user);
   }
