@@ -82,6 +82,24 @@ describe("landing questions", () => {
       ),
     ).toBeTruthy();
   });
+
+  it("counts the imports listed on the page, and closes on a second tap", async () => {
+    renderWithQuery(LandingPage, {});
+    const importQuestion = question(m.landing_faq_q_import());
+
+    await fireEvent.click(importQuestion);
+    expect(
+      screen.getByText(m.landing_faq_a_import({ count: 11 })),
+    ).toBeTruthy();
+
+    await fireEvent.click(importQuestion);
+    expect(importQuestion.getAttribute("aria-expanded")).toBe("false");
+    await waitFor(() =>
+      expect(
+        screen.queryByText(m.landing_faq_a_import({ count: 11 })),
+      ).toBeNull(),
+    );
+  });
 });
 
 describe("landing hero title", () => {
