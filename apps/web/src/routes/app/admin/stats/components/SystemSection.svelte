@@ -64,7 +64,7 @@
 
 <div class="grid gap-3.5 lg:grid-cols-2">
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">
+    <h3 class="font-display text-[0.9375rem] font-bold">
       {m.admin_system_api_calls_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-xs">
@@ -84,7 +84,7 @@
   </div>
 
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">
+    <h3 class="font-display text-[0.9375rem] font-bold">
       {m.admin_system_ops_signals_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-xs">{m.admin_system_misc()}</p>

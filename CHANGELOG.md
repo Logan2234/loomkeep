@@ -15,6 +15,9 @@ history from before it was started.
 
 ### Changed
 
+- Android app: a larger system font now grows the text without swelling
+  bars and spacing; tab labels stop at 130% and page titles wrap instead of
+  being cut.
 - Profile: counters on one line (comments dropped), labelled Edit and Share
   buttons, and "Member since" moved to the bottom of the page.
 - Settings › Visibility: who sees each domain's library and activity is one

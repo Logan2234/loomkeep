@@ -120,7 +120,7 @@
   </TrendPeriodCard>
 
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">
+    <h3 class="font-display text-[0.9375rem] font-bold">
       {m.admin_accounts_retention_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-xs">
@@ -132,7 +132,7 @@
 
 <div class="mt-3.5 grid gap-3.5 lg:grid-cols-3">
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">
+    <h3 class="font-display text-[0.9375rem] font-bold">
       {m.admin_accounts_domains_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-xs">
@@ -142,7 +142,7 @@
   </div>
 
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">
+    <h3 class="font-display text-[0.9375rem] font-bold">
       {m.admin_accounts_privacy_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-xs">
@@ -152,7 +152,7 @@
   </div>
 
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">
+    <h3 class="font-display text-[0.9375rem] font-bold">
       {m.admin_accounts_health_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-xs">
@@ -168,7 +168,7 @@
 
 <div class="mt-3.5 grid gap-3.5 lg:grid-cols-2">
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">
+    <h3 class="font-display text-[0.9375rem] font-bold">
       {m.admin_accounts_age_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-xs">
@@ -186,7 +186,7 @@
   </div>
 
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">
+    <h3 class="font-display text-[0.9375rem] font-bold">
       {m.admin_accounts_locale_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-xs">
@@ -196,7 +196,7 @@
   </div>
 
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">
+    <h3 class="font-display text-[0.9375rem] font-bold">
       {m.admin_accounts_departures_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-xs">

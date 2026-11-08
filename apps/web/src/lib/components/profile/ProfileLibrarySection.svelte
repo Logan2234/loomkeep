@@ -54,7 +54,7 @@
         {/if}
       {/each}
     </div>
-    <p class="text-dim mt-2 font-mono text-[11.5px]">
+    <p class="text-dim mt-2 font-mono text-[0.71875rem]">
       {visibleTotal}
       {visibleTotal > 1 ? m.library_title_many() : m.library_title_one()}
       {#if favoritesTotal > 0}
@@ -109,7 +109,7 @@
             <span class="whitespace-nowrap">
               <span class="font-display text-lg font-extrabold tabular-nums"
                 >{stat.count}</span>
-              <span class="text-dim ml-0.5 text-[11px]"
+              <span class="text-dim ml-0.5 text-[0.6875rem]"
                 >{stat.count > 1
                   ? m.library_title_many()
                   : m.library_title_one()}</span>

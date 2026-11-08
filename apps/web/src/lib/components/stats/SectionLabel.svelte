@@ -16,7 +16,7 @@
 </script>
 
 <p
-  class="text-dim mb-4 flex items-center gap-2.5 font-mono text-[11px] tracking-[0.16em] uppercase {className}">
+  class="text-dim mb-4 flex items-center gap-2.5 font-mono text-[0.6875rem] tracking-[0.16em] uppercase {className}">
   {label}
   {#if badge}
     <span
