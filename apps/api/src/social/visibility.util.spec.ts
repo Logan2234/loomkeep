@@ -2,6 +2,7 @@ import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared";
 import {
   computeIsFriend,
   resolveFacet,
+  resolveOwnVisibility,
   resolveProfileVisibility,
   resolveReviewVisibility,
   type ViewerRelation,
@@ -204,6 +205,18 @@ describe("resolveReviewVisibility", () => {
     ).toBe(false);
   });
 
+  // A private profile caps PUBLIC to FRIENDS: it narrows the audience, it
+  // never hides the review from the friends a FRIENDS review would reach.
+  it("a PUBLIC review on a PRIVATE profile still reaches its friends", () => {
+    expect(
+      resolveReviewVisibility(
+        "PUBLIC",
+        ProfileAccess.PRIVATE,
+        relation({ following: true }),
+      ),
+    ).toBe(true);
+  });
+
   it("a FRIENDS review needs isFriend (via computeIsFriend)", () => {
     // PRIVATE author: following them is enough.
     expect(
@@ -229,6 +242,21 @@ describe("resolveReviewVisibility", () => {
         "FRIENDS",
         ProfileAccess.PUBLIC,
         relation({ following: true, followsYou: true }),
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("resolveOwnVisibility", () => {
+  it("caps PUBLIC to FRIENDS on a PRIVATE profile", () => {
+    expect(
+      resolveOwnVisibility("PUBLIC", ProfileAccess.PRIVATE, relation()),
+    ).toBe(false);
+    expect(
+      resolveOwnVisibility(
+        "PUBLIC",
+        ProfileAccess.PRIVATE,
+        relation({ following: true }),
       ),
     ).toBe(true);
   });

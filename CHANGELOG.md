@@ -70,6 +70,8 @@ history from before it was started.
 
 ### Fixed
 
+- A review or list set to public on a private profile is visible to friends
+  again, as a friends-only one is; strangers still don't see it.
 - Passkeys created or used in the Android app are no longer rejected with
   "Security key verification failed" (the API now reads `ANDROID_APP_LINKS`
   too).
