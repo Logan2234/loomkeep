@@ -484,7 +484,7 @@
     {/snippet}
   </ActionBar>
 
-  <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
+  <div class="mx-auto max-w-5xl px-5 pb-6 md:px-8 md:pb-10">
     {#if appConfig.socialEnabled && detail.commentTargetId}
       <WorkFriendsStrip
         domain="MEDIA"
@@ -526,22 +526,6 @@
       </div>
     {/if}
 
-    {#snippet credits()}
-      {#if extras && extras.directors.length > 0}
-        <p class="timecode text-xs">
-          {DIRECTOR_LABELS[detail.type]}
-          <span class="text-fg font-semibold"
-            >{extras.directors.join(", ")}</span>
-        </p>
-      {/if}
-      {#if extras && extras.studios.length > 0}
-        <p class="timecode text-xs {extras.directors.length > 0 ? 'mt-1' : ''}">
-          {extras.studios.length > 1 ? m.media_studios() : m.media_studio()}
-          <span class="text-fg font-semibold">{extras.studios.join(", ")}</span>
-        </p>
-      {/if}
-    {/snippet}
-
     {#snippet synopsis(cls: string)}
       {#if detail.overview}
         <div class={cls}>
@@ -560,11 +544,6 @@
           {tag}
         </span>
       {/each}
-    {/snippet}
-    {#snippet tags()}
-      {#if extras && extras.tags.length > 0}
-        <div class="mt-3 flex flex-wrap gap-1.5">{@render tagChips()}</div>
-      {/if}
     {/snippet}
 
     {#snippet tracking()}
@@ -677,14 +656,6 @@
           {link.name} ↗
         </a>
       {/each}
-    {/snippet}
-    {#snippet links()}
-      {#if extras && extras.externalLinks.length > 0}
-        <section class="mt-4 flex flex-wrap items-center gap-2">
-          <span class="timecode text-xs">{m.common_links()}</span>
-          {@render linkChips()}
-        </section>
-      {/if}
     {/snippet}
 
     {#snippet detailRow(label: string, value: Snippet)}
@@ -819,25 +790,22 @@
         {@render attribution()}
       </section>
     {:else}
-      {#if (extras && (extras.directors.length > 0 || extras.studios.length > 0 || extras.tags.length > 0)) || detail.overview}
-        <div class="mt-6 max-w-2xl">
-          {@render credits()}
-          {@render synopsis(
-            extras && (extras.directors.length > 0 || extras.studios.length > 0)
-              ? "mt-2"
-              : "",
-          )}
-          {@render tags()}
+      <!-- Desktop: the credits, tags and links in a column beside the page. -->
+      <div class="grid grid-cols-[minmax(0,1fr)_17rem] items-start gap-x-10">
+        <div class="min-w-0">
+          {@render synopsis("mt-6")}
+          {@render tracking()}
+          {@render whereToWatch()}
+          {@render episodes()}
+          {@render reviews()}
+          {@render works()}
+          {@render cast()}
         </div>
-      {/if}
-      {@render tracking()}
-      {@render whereToWatch()}
-      {@render links()}
-      {@render attribution()}
-      {@render episodes()}
-      {@render reviews()}
-      {@render works()}
-      {@render cast()}
+        <aside class="sticky top-20 mt-6">
+          {@render detailsCard()}
+          {@render attribution()}
+        </aside>
+      </div>
     {/if}
   </div>
 
@@ -869,5 +837,5 @@
       onClose={() => (lightboxOpen = false)} />
   {/if}
 {:else if !error}
-  <DetailHeroSkeleton wide={false} media />
+  <DetailHeroSkeleton />
 {/if}

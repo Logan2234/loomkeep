@@ -357,84 +357,94 @@
     {/snippet}
   </WorkActionBar>
 
-  <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
-    {#if appConfig.socialEnabled && detail.commentTargetId}
-      <WorkFriendsStrip
-        domain="BOOKS"
+  <!-- Desktop: the work's details in a column beside the page, as before;
+       a phone gets them right after "My tracking". -->
+  <div
+    class="mx-auto max-w-5xl px-5 pb-6 md:grid md:grid-cols-[minmax(0,1fr)_17rem] md:items-start md:gap-x-10 md:px-8 md:pb-10">
+    <div class="min-w-0">
+      {#if appConfig.socialEnabled && detail.commentTargetId}
+        <WorkFriendsStrip
+          domain="BOOKS"
+          targetType="BOOK"
+          targetId={detail.commentTargetId}
+          revision={`${entry?.status}:${entry?.currentPage}`} />
+      {/if}
+
+      {#if entry}
+        <div class="mt-6 max-w-xl">
+          <BookSessionDock {entry} {detailKey} />
+        </div>
+      {/if}
+
+      {#if detail.firstSentence}
+        <p
+          class="text-dim border-border mt-6 max-w-2xl border-l-2 pl-3 text-sm italic">
+          « {detail.firstSentence} »
+        </p>
+      {/if}
+
+      {#if detail.overview}
+        <div class="mt-6 max-w-2xl">
+          <ClampedText
+            text={detail.overview}
+            lines={layout.compact ? 3 : 8}
+            class="text-dim whitespace-pre-line" />
+        </div>
+      {/if}
+
+      {#if entry}
+        <WorkTrackingFold summary={m.media_tracking_summary()}>
+          <OwnershipField
+            status={entry.ownershipStatus}
+            source={entry.ownershipSource}
+            statusOptions={BOOK_OWNERSHIP_STATUS_OPTIONS}
+            sourceOptionsByStatus={BOOK_OWNERSHIP_SOURCES}
+            onChange={(status, source) =>
+              patchMut.mutate({
+                ownershipStatus: status as typeof entry.ownershipStatus,
+                ownershipSource: source,
+              })} />
+          <NoteField
+            value={entry.notes}
+            placeholder={m.book_note_placeholder()}
+            onChange={(v) => patchMut.mutate({ notes: v })} />
+        </WorkTrackingFold>
+      {/if}
+
+      {#if hasMeta}
+        <div class="mt-8 md:hidden">
+          {@render detailsPanel()}
+        </div>
+      {/if}
+
+      {#if sagaQuery.data}
+        <BookSagaSection
+          saga={sagaQuery.data}
+          {sagaKey}
+          sourceId={detail.sourceId}
+          entryStatus={entry?.status ?? null} />
+      {/if}
+
+      <RelatedCarousel
+        title={m.book_same_author()}
+        items={toCarouselItems(
+          detail.sameAuthorBooks.filter((b) => !sagaIds.has(b.sourceId)),
+          "/app/books",
+        )} />
+
+      <WorkSocialSection
         targetType="BOOK"
-        targetId={detail.commentTargetId}
-        revision={`${entry?.status}:${entry?.currentPage}`} />
-    {/if}
-
-    {#if entry}
-      <div class="mt-6 max-w-xl">
-        <BookSessionDock {entry} {detailKey} />
-      </div>
-    {/if}
-
-    {#if detail.firstSentence}
-      <p
-        class="text-dim border-border mt-6 max-w-2xl border-l-2 pl-3 text-sm italic">
-        « {detail.firstSentence} »
-      </p>
-    {/if}
-
-    {#if detail.overview}
-      <div class="mt-6 max-w-2xl">
-        <ClampedText
-          text={detail.overview}
-          lines={layout.compact ? 3 : 8}
-          class="text-dim whitespace-pre-line" />
-      </div>
-    {/if}
-
-    {#if entry}
-      <WorkTrackingFold summary={m.media_tracking_summary()}>
-        <OwnershipField
-          status={entry.ownershipStatus}
-          source={entry.ownershipSource}
-          statusOptions={BOOK_OWNERSHIP_STATUS_OPTIONS}
-          sourceOptionsByStatus={BOOK_OWNERSHIP_SOURCES}
-          onChange={(status, source) =>
-            patchMut.mutate({
-              ownershipStatus: status as typeof entry.ownershipStatus,
-              ownershipSource: source,
-            })} />
-        <NoteField
-          value={entry.notes}
-          placeholder={m.book_note_placeholder()}
-          onChange={(v) => patchMut.mutate({ notes: v })} />
-      </WorkTrackingFold>
-    {/if}
-
-    {#if sagaQuery.data}
-      <BookSagaSection
-        saga={sagaQuery.data}
-        {sagaKey}
-        sourceId={detail.sourceId}
-        entryStatus={entry?.status ?? null} />
-    {/if}
-
-    <RelatedCarousel
-      title={m.book_same_author()}
-      items={toCarouselItems(
-        detail.sameAuthorBooks.filter((b) => !sagaIds.has(b.sourceId)),
-        "/app/books",
-      )} />
-
-    <WorkSocialSection
-      targetType="BOOK"
-      reviewTargetId={entry?.book.id ?? null}
-      commentTargetId={detail.commentTargetId}
-      title={detail.title}
-      meta={reviewMeta}
-      imageUrl={detail.coverUrl}
-      canParticipate={!!entry} />
-
+        reviewTargetId={entry?.book.id ?? null}
+        commentTargetId={detail.commentTargetId}
+        title={detail.title}
+        meta={reviewMeta}
+        imageUrl={detail.coverUrl}
+        canParticipate={!!entry} />
+    </div>
     {#if hasMeta}
-      <div class="mt-8 max-w-xl">
+      <aside class="hidden md:sticky md:top-20 md:mt-6 md:block">
         {@render detailsPanel()}
-      </div>
+      </aside>
     {/if}
   </div>
 

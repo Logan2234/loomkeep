@@ -75,14 +75,16 @@
   <div
     class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent">
   </div>
+  <!-- In the corner on a phone; centred on a desktop, where the alerts bell
+       holds the top-right corner. -->
   {#if onTrailer}
     <button
       type="button"
-      class="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/55 md:right-6"
+      class="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/55 md:top-[38%] md:right-auto md:left-1/2 md:h-16 md:w-16 md:-translate-x-1/2 md:-translate-y-1/2 md:border-0 md:hover:bg-black/60"
       aria-label={m.media_watch_trailer()}
       title={m.media_watch_trailer()}
       onclick={onTrailer}>
-      <Icon name="play" class="pointer-events-none h-5 w-5" />
+      <Icon name="play" class="pointer-events-none h-5 w-5 md:h-7 md:w-7" />
     </button>
   {/if}
   <a
@@ -116,7 +118,7 @@
   <div
     class="relative w-full bg-[linear-gradient(to_bottom,transparent,rgb(0_0_0/0.6)_4rem,rgb(0_0_0/0.85))] pt-[4rem]">
     <div
-      class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-8 {square
+      class="mx-auto max-w-5xl px-5 pb-6 md:px-8 md:pb-8 {square
         ? 'pr-24 sm:pr-28 md:pr-8'
         : 'pr-20 sm:pr-24 md:pr-8'}">
       <div class="flex flex-wrap items-center gap-2">

@@ -83,7 +83,7 @@
   data-action-bar
   class="bg-bg border-border sticky top-[env(safe-area-inset-top)] z-20 border-b">
   <div
-    class="mx-auto flex min-h-14 max-w-4xl items-center gap-2.5 py-2 pr-4 pl-5 md:px-8">
+    class="mx-auto flex min-h-14 max-w-5xl items-center gap-2.5 py-2 pr-4 pl-5 md:px-8">
     {#if !tracked}
       <button
         class="btn btn-primary shrink-0"

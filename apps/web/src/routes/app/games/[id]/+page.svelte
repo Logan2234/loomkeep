@@ -376,148 +376,158 @@
     {/snippet}
   </WorkActionBar>
 
-  <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
-    {#if appConfig.socialEnabled && detail.commentTargetId}
-      <WorkFriendsStrip
-        domain="GAMES"
+  <!-- Desktop: the work's details in a column beside the page, as before;
+       a phone gets them right after "My tracking". -->
+  <div
+    class="mx-auto max-w-5xl px-5 pb-6 md:grid md:grid-cols-[minmax(0,1fr)_17rem] md:items-start md:gap-x-10 md:px-8 md:pb-10">
+    <div class="min-w-0">
+      {#if appConfig.socialEnabled && detail.commentTargetId}
+        <WorkFriendsStrip
+          domain="GAMES"
+          targetType="GAME"
+          targetId={detail.commentTargetId}
+          revision={`${entry?.status}:${entry?.playtimeMinutes}`} />
+      {/if}
+
+      {#if entry}
+        <div class="mt-6 max-w-xl">
+          {#if upcoming}
+            {@render releaseReminder(entry)}
+          {:else}
+            <GameSessionDock
+              {entry}
+              {detailKey}
+              averageMinutes={detail.timeToBeat?.normallyMin ?? null} />
+          {/if}
+        </div>
+      {/if}
+
+      {#if detail.platforms.length > 0}
+        <div class="mt-6 flex flex-wrap gap-1.5">
+          {#each detail.platforms as platform (platform)}
+            <span class="bg-surface-2 text-dim rounded-md px-2 py-0.5 text-xs">
+              {platform}
+            </span>
+          {/each}
+        </div>
+      {/if}
+
+      {#if detail.overview}
+        <div class="mt-6 max-w-2xl">
+          <ClampedText
+            text={detail.overview}
+            lines={layout.compact ? 3 : 8}
+            class="text-dim whitespace-pre-line" />
+        </div>
+      {/if}
+
+      {#if detail.storyline}
+        <div class="mt-3 max-w-2xl">
+          <button
+            type="button"
+            class="btn-text group"
+            aria-expanded={historyOpen}
+            onclick={() => (historyOpen = !historyOpen)}>
+            <Icon
+              name="chevron-down"
+              class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 {historyOpen
+                ? 'rotate-0'
+                : '-rotate-90'}" />
+            <span
+              class="underline decoration-transparent decoration-2 underline-offset-4 transition-colors group-hover:decoration-current">
+              {m.game_story()}
+            </span>
+          </button>
+          {#if historyOpen}
+            <p
+              transition:slide|global={{ duration: reduced ? 0 : 200 }}
+              class="text-dim mt-2 px-4.5 whitespace-pre-line">
+              {detail.storyline}
+            </p>
+          {/if}
+        </div>
+      {/if}
+
+      {#if entry && !upcoming}
+        <WorkTrackingFold summary={m.game_tracking_summary()}>
+          <OwnershipField
+            status={entry.ownershipStatus}
+            source={entry.ownershipSource}
+            statusOptions={GAME_OWNERSHIP_STATUS_OPTIONS}
+            sourceOptionsByStatus={GAME_OWNERSHIP_SOURCES}
+            onChange={(status, source) =>
+              patchMut.mutate({
+                ownershipStatus: status as typeof entry.ownershipStatus,
+                ownershipSource: source,
+              })} />
+          {#if detail.platforms.length > 0}
+            <GamePlatformField
+              platform={entry.platform}
+              platforms={detail.platforms}
+              onChange={(platform) => patchMut.mutate({ platform })} />
+          {/if}
+          <NoteField
+            value={entry.notes}
+            placeholder={m.game_note_placeholder()}
+            onChange={(v) => patchMut.mutate({ notes: v })} />
+        </WorkTrackingFold>
+      {/if}
+
+      {#if hasSidePanels}
+        <div class="mt-8 md:hidden">
+          {@render sidePanels()}
+        </div>
+      {/if}
+
+      {#if sagaQuery.data}
+        <GameSagaSection
+          saga={sagaQuery.data}
+          {sagaKey}
+          sourceId={detail.sourceId}
+          entryStatus={entry?.status ?? null} />
+      {/if}
+
+      <RelatedCarousel
+        title={detail.franchiseName
+          ? m.game_franchise_title({ name: detail.franchiseName })
+          : m.game_same_franchise()}
+        items={toCarouselItems(
+          detail.franchiseGames.filter((g) => !sagaIds.has(g.sourceId)),
+          "/app/games",
+        )} />
+
+      <RelatedCarousel
+        title={m.media_similar_titles()}
+        items={toCarouselItems(detail.similarGames, "/app/games")} />
+
+      <WorkSocialSection
         targetType="GAME"
-        targetId={detail.commentTargetId}
-        revision={`${entry?.status}:${entry?.playtimeMinutes}`} />
-    {/if}
+        reviewTargetId={entry && !upcoming ? entry.game.id : null}
+        commentTargetId={detail.commentTargetId}
+        title={detail.title}
+        meta={reviewMeta}
+        imageUrl={detail.coverUrl}
+        canParticipate={!!entry} />
 
-    {#if entry}
-      <div class="mt-6 max-w-xl">
-        {#if upcoming}
-          {@render releaseReminder(entry)}
-        {:else}
-          <GameSessionDock
-            {entry}
-            {detailKey}
-            averageMinutes={detail.timeToBeat?.normallyMin ?? null} />
-        {/if}
-      </div>
-    {/if}
-
-    {#if detail.platforms.length > 0}
-      <div class="mt-6 flex flex-wrap gap-1.5">
-        {#each detail.platforms as platform (platform)}
-          <span class="bg-surface-2 text-dim rounded-md px-2 py-0.5 text-xs">
-            {platform}
-          </span>
-        {/each}
-      </div>
-    {/if}
-
-    {#if detail.overview}
-      <div class="mt-6 max-w-2xl">
-        <ClampedText
-          text={detail.overview}
-          lines={layout.compact ? 3 : 8}
-          class="text-dim whitespace-pre-line" />
-      </div>
-    {/if}
-
-    {#if detail.storyline}
-      <div class="mt-3 max-w-2xl">
-        <button
-          type="button"
-          class="btn-text group"
-          aria-expanded={historyOpen}
-          onclick={() => (historyOpen = !historyOpen)}>
-          <Icon
-            name="chevron-down"
-            class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 {historyOpen
-              ? 'rotate-0'
-              : '-rotate-90'}" />
-          <span
-            class="underline decoration-transparent decoration-2 underline-offset-4 transition-colors group-hover:decoration-current">
-            {m.game_story()}
-          </span>
-        </button>
-        {#if historyOpen}
-          <p
-            transition:slide|global={{ duration: reduced ? 0 : 200 }}
-            class="text-dim mt-2 px-4.5 whitespace-pre-line">
-            {detail.storyline}
-          </p>
-        {/if}
-      </div>
-    {/if}
-
-    {#if entry && !upcoming}
-      <WorkTrackingFold summary={m.game_tracking_summary()}>
-        <OwnershipField
-          status={entry.ownershipStatus}
-          source={entry.ownershipSource}
-          statusOptions={GAME_OWNERSHIP_STATUS_OPTIONS}
-          sourceOptionsByStatus={GAME_OWNERSHIP_SOURCES}
-          onChange={(status, source) =>
-            patchMut.mutate({
-              ownershipStatus: status as typeof entry.ownershipStatus,
-              ownershipSource: source,
-            })} />
-        {#if detail.platforms.length > 0}
-          <GamePlatformField
-            platform={entry.platform}
-            platforms={detail.platforms}
-            onChange={(platform) => patchMut.mutate({ platform })} />
-        {/if}
-        <NoteField
-          value={entry.notes}
-          placeholder={m.game_note_placeholder()}
-          onChange={(v) => patchMut.mutate({ notes: v })} />
-      </WorkTrackingFold>
-    {/if}
-
-    {#if sagaQuery.data}
-      <GameSagaSection
-        saga={sagaQuery.data}
-        {sagaKey}
-        sourceId={detail.sourceId}
-        entryStatus={entry?.status ?? null} />
-    {/if}
-
-    <RelatedCarousel
-      title={detail.franchiseName
-        ? m.game_franchise_title({ name: detail.franchiseName })
-        : m.game_same_franchise()}
-      items={toCarouselItems(
-        detail.franchiseGames.filter((g) => !sagaIds.has(g.sourceId)),
-        "/app/games",
-      )} />
-
-    <RelatedCarousel
-      title={m.media_similar_titles()}
-      items={toCarouselItems(detail.similarGames, "/app/games")} />
-
-    <WorkSocialSection
-      targetType="GAME"
-      reviewTargetId={entry && !upcoming ? entry.game.id : null}
-      commentTargetId={detail.commentTargetId}
-      title={detail.title}
-      meta={reviewMeta}
-      imageUrl={detail.coverUrl}
-      canParticipate={!!entry} />
-
+      <!-- Attribution required by the IGDB API/Data Commercial Usage
+           Addendum: linked mention on every page using IGDB Services. -->
+      <a
+        href={IGDB_API}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-dim hover:text-accent text-micro mt-4 flex w-fit items-center gap-1.5 transition-colors">
+        <ProviderMark
+          brand="igdb"
+          decorative
+          class="h-3 w-3 shrink-0 opacity-70" />
+        {m.datasource_igdb_notice()}
+      </a>
+    </div>
     {#if hasSidePanels}
-      <div class="mt-8 max-w-xl">
+      <aside class="hidden md:sticky md:top-20 md:mt-6 md:block">
         {@render sidePanels()}
-      </div>
+      </aside>
     {/if}
-
-    <!-- Attribution required by the IGDB API/Data Commercial Usage
-         Addendum: linked mention on every page using IGDB Services. -->
-    <a
-      href={IGDB_API}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="text-dim hover:text-accent text-micro mt-4 flex w-fit items-center gap-1.5 transition-colors">
-      <ProviderMark
-        brand="igdb"
-        decorative
-        class="h-3 w-3 shrink-0 opacity-70" />
-      {m.datasource_igdb_notice()}
-    </a>
   </div>
 
   {#snippet bellButton(entry: GameEntryDto)}
