@@ -16,6 +16,8 @@
   import { m } from "#lib/paraglide/messages.js";
   import { theme } from "#lib/theme.svelte.js";
   import type { IconName } from "#lib/types/icon-name.js";
+  import { ACCOUNT_DELETION_GRACE_DAYS } from "@loomkeep/shared";
+  import { slide } from "svelte/transition";
   import LandingFooter from "./components/LandingFooter.svelte";
   import { LANDING_LIBRARY } from "./components/landing-mock-data";
 
@@ -319,6 +321,49 @@
       what: m.landing_mobile_links_what,
     },
   ];
+
+  const FAQ_PLEDGES = [
+    m.landing_faq_pledge_export,
+    m.landing_faq_pledge_delete,
+    m.landing_faq_pledge_ads,
+    m.landing_faq_pledge_code,
+  ];
+
+  const FAQ: { id: string; question: () => string; answer: () => string }[] = [
+    {
+      id: "solo",
+      question: m.landing_faq_q_solo,
+      answer: m.landing_faq_a_solo,
+    },
+    {
+      id: "import",
+      question: m.landing_faq_q_import,
+      answer: () => m.landing_faq_a_import({ count: IMPORTS_DONE.length }),
+    },
+    {
+      id: "free",
+      question: m.landing_faq_q_free,
+      answer: m.landing_faq_a_free,
+    },
+    {
+      id: "server",
+      question: m.landing_faq_q_server,
+      answer: m.landing_faq_a_server,
+    },
+    {
+      id: "phone",
+      question: m.landing_faq_q_phone,
+      answer: m.landing_faq_a_phone,
+    },
+    {
+      id: "delete",
+      question: m.landing_faq_q_delete,
+      answer: () =>
+        m.landing_faq_a_delete({ days: ACCOUNT_DELETION_GRACE_DAYS }),
+    },
+  ];
+
+  let openFaq = $state<string | null>("solo");
 
   // WCAG 2.2.2: moving text that runs on needs a way to stop it. Hovering the
   // title holds the current word.
@@ -900,6 +945,67 @@
       </div>
     </section>
 
+    <!-- ── Questions ───────────────────────────────────────────────────── -->
+    <section class="border-border border-t">
+      <div
+        class="mx-auto grid max-w-5xl gap-10 px-5 py-20 md:py-28 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
+        <div>
+          <p class="timecode text-xs tracking-[0.22em] uppercase">
+            {m.landing_faq_kicker()}
+          </p>
+          <h2
+            class="font-display mt-5 text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
+            {m.landing_faq_title()}
+          </h2>
+          <ul class="mt-6 flex flex-col gap-2.5">
+            {#each FAQ_PLEDGES as pledge (pledge)}
+              <li class="flex items-baseline gap-2.5">
+                <Icon name="check" class="text-success h-4 w-4 shrink-0" />
+                {pledge()}
+              </li>
+            {/each}
+          </ul>
+        </div>
+
+        <div class="border-border border-t">
+          {#each FAQ as item (item.id)}
+            {@const open = openFaq === item.id}
+            <div class="border-border border-b">
+              <h3>
+                <button
+                  type="button"
+                  id="faq-q-{item.id}"
+                  aria-expanded={open}
+                  aria-controls="faq-a-{item.id}"
+                  onclick={() => (openFaq = open ? null : item.id)}
+                  class="font-display hover:text-accent flex w-full items-center justify-between gap-4 py-4 text-left text-lg font-extrabold tracking-tight transition-colors duration-150">
+                  {item.question()}
+                  <span
+                    class="border-border grid h-6 w-6 shrink-0 place-items-center rounded-md border transition-transform duration-200 motion-reduce:transition-none"
+                    class:rotate-45={open}
+                    class:border-accent={open}
+                    aria-hidden="true">
+                    <Icon name="plus" class="h-3.5 w-3.5" />
+                  </span>
+                </button>
+              </h3>
+              {#if open}
+                <div
+                  id="faq-a-{item.id}"
+                  role="region"
+                  aria-labelledby="faq-q-{item.id}"
+                  transition:slide={{
+                    duration: prefersReducedMotion() ? 0 : 200,
+                  }}>
+                  <p class="text-dim max-w-xl pb-5">{item.answer()}</p>
+                </div>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      </div>
+    </section>
+
     <!-- ── Le nom ──────────────────────────────────────────────────────── -->
     <section class="border-border border-t">
       <div
@@ -914,9 +1020,6 @@
           </h2>
           <p class="text-dim mt-5">
             {m.landing_name_body1()}
-          </p>
-          <p class="text-dim mt-4">
-            {m.landing_name_body2()}
           </p>
           <div class="mt-7 flex flex-wrap gap-3">
             <a

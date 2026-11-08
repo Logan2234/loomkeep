@@ -120,8 +120,9 @@ malicieux, jamais commercial.
 **Landing** : hero (piliers 1-2-3, « Créer mon compte » + levée du risque),
 six salles et comparateur (pilier 1), import (pilier 3), mobile (pilier 2,
 bascule « Google Play » à la publication), à propos du nom, dernier appel.
-Prévus, avec maquette d'abord : une courte section Sorties (pilier 2) et une
-section Confiance + FAQ (les objections ci-dessus).
+Une section Questions reprend les objections ci-dessus, avec les engagements
+à côté. Pas de section Sorties dédiée : le pilier 2 vit dans le hero et la
+section mobile.
 
 **Fiche Google Play** (brouillon dans [mobile-app-plan.md](mobile-app-plan.md)) :
 garder la description courte, remonter le pilier 3 en tête de la description

@@ -1,8 +1,8 @@
 import { auth } from "#lib/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { UserDto } from "@loomkeep/shared";
-import { fireEvent, screen, within } from "@testing-library/svelte";
+import { ACCOUNT_DELETION_GRACE_DAYS, type UserDto } from "@loomkeep/shared";
+import { fireEvent, screen, waitFor, within } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import LandingPage from "./+page.svelte";
 
@@ -53,6 +53,34 @@ describe("landing hero call to action", () => {
     } finally {
       auth.user = null;
     }
+  });
+});
+
+describe("landing questions", () => {
+  const question = (name: string) => screen.getByRole("button", { name });
+
+  it("opens one answer at a time, the first one to start with", async () => {
+    renderWithQuery(LandingPage, {});
+
+    expect(question(m.landing_faq_q_solo()).getAttribute("aria-expanded")).toBe(
+      "true",
+    );
+    expect(screen.getByText(m.landing_faq_a_solo())).toBeTruthy();
+
+    await fireEvent.click(question(m.landing_faq_q_delete()));
+
+    expect(question(m.landing_faq_q_solo()).getAttribute("aria-expanded")).toBe(
+      "false",
+    );
+    await waitFor(() =>
+      expect(screen.queryByText(m.landing_faq_a_solo())).toBeNull(),
+    );
+    // The grace period comes from the API's own constant, not a copy of it.
+    expect(
+      screen.getByText(
+        m.landing_faq_a_delete({ days: ACCOUNT_DELETION_GRACE_DAYS }),
+      ),
+    ).toBeTruthy();
   });
 });
 
