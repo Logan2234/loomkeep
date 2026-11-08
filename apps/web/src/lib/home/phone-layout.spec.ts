@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   defaultPhoneLayout,
   PHONE_WIDGET_TYPES,
+  phoneBoxHeight,
   phoneWidgetSize,
   resolvePhoneLayout,
 } from "./phone-layout";
@@ -76,4 +77,15 @@ it("gives a shelf drawn as rows less height than a poster shelf", () => {
     360,
   );
   expect(rows.height).toBeLessThan(posters.height);
+});
+
+// A poster shelf drops its block's 18px top and bottom padding on a phone:
+// its box shrinks by as much, so the posters keep their size.
+it("shortens a poster shelf's box by its dropped padding only", () => {
+  const shelf = { id: "a", type: "toWatch" } as const;
+  const rows = { ...shelf, config: { display: "rows" } } as const;
+  expect(phoneBoxHeight(shelf, 360)).toBe(
+    phoneWidgetSize(shelf, 360).height - 36,
+  );
+  expect(phoneBoxHeight(rows, 360)).toBe(phoneWidgetSize(rows, 360).height);
 });

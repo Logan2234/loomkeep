@@ -80,3 +80,20 @@ export function phoneWidgetSize(
 
   return { width, height: rowsToPixels(HOME_WIDGETS[widget.type].initial.h) };
 }
+
+// A poster shelf sits on the page without its block's 18px top and bottom
+// padding (app.css, .panel-body:has(.panel-bleed)); the sizing still counts
+// them, so its box gives them back.
+const SHELF_DROPPED_PADDING = 36;
+
+/** The height of a widget's box in the phone column. */
+export function phoneBoxHeight(
+  widget: HomePhoneWidgetDto,
+  width: number,
+): number {
+  const { height } = phoneWidgetSize(widget, width);
+  const shelf =
+    PHONE_DISPLAY_TYPES.includes(widget.type) &&
+    widget.config?.display !== "rows";
+  return shelf ? height - SHELF_DROPPED_PADDING : height;
+}

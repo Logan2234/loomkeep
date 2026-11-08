@@ -90,18 +90,18 @@
   {#if onclick}
     <button
       type="button"
-      class="hover:bg-surface-2 rounded-lg px-1.5 py-1 transition-colors"
+      class="hover:bg-surface-2 rounded-lg px-0.5 py-1 whitespace-nowrap transition-colors sm:px-1"
       {onclick}>
       <CountFlash
         {value}
-        class="font-display text-fg text-base font-extrabold tabular-nums" />
+        class="font-display text-fg text-[0.875rem] font-extrabold tabular-nums sm:text-base" />
       {label}
     </button>
   {:else}
-    <span class="px-1.5 py-1">
+    <span class="px-0.5 py-1 whitespace-nowrap sm:px-1">
       <CountFlash
         {value}
-        class="font-display text-fg text-base font-extrabold tabular-nums" />
+        class="font-display text-fg text-[0.875rem] font-extrabold tabular-nums sm:text-base" />
       {label}
     </span>
   {/if}
@@ -174,7 +174,9 @@
         </p>
       {/if}
 
-      <div class="text-dim -mx-1.5 mt-3 flex flex-wrap text-sm">
+      <!-- One line down to a 360 dp phone: four short counts, no wrap. -->
+      <div
+        class="text-dim -mx-0.5 mt-3 flex flex-wrap justify-between text-[0.78125rem] sm:-mx-1 sm:justify-start sm:gap-x-2 sm:text-sm">
         {@render counter(
           profile.followerCount,
           profile.followerCount > 1
@@ -206,24 +208,24 @@
       </div>
 
       {#if selfManage}
-        <div class="mt-4 flex flex-wrap gap-2">
+        <div class="mt-4 flex items-center gap-2">
           <button
             type="button"
-            class="btn btn-ghost grow sm:grow-0"
+            class="btn btn-ghost min-w-0 flex-1 px-3 sm:flex-none"
             onclick={onOpenEditProfile}>
             <Icon name="edit" class="h-4 w-4" />
-            {m.common_edit()}
+            <span class="truncate">{m.common_edit()}</span>
           </button>
           <button
             type="button"
-            class="btn btn-ghost grow sm:grow-0"
+            class="btn btn-ghost min-w-0 flex-1 px-3 sm:flex-none"
             onclick={onOpenShareModal}>
             <Icon name="share" class="h-4 w-4" />
-            {m.common_share()}
+            <span class="truncate">{m.common_share()}</span>
           </button>
           <button
             type="button"
-            class="btn-icon-bordered self-center sm:hidden"
+            class="btn-icon-bordered sm:hidden"
             title={m.scan_profile_title()}
             aria-label={m.scan_profile_title()}
             onclick={onOpenScanModal}>
@@ -231,7 +233,7 @@
           </button>
           <a
             href="/app/settings"
-            class="btn-icon-bordered self-center"
+            class="btn-icon-bordered"
             title={m.common_settings()}
             aria-label={m.common_settings()}>
             <Icon name="gear" class="h-4 w-4" />
@@ -241,7 +243,7 @@
     </div>
 
     {#if rel && !rel.isSelf}
-      <div class="flex shrink-0 flex-wrap gap-2 md:justify-end">
+      <div class="flex shrink-0 items-center gap-2 md:justify-end">
         {#if rel.blocking}
           <button class="btn btn-ghost" disabled={busy} onclick={onToggleBlock}>
             {m.common_unblock()}
@@ -249,7 +251,7 @@
         {:else}
           {#if !ghostCantFollow && !rel.following}
             <button
-              class="btn {rel.following || rel.requested
+              class="btn grow md:grow-0 {rel.following || rel.requested
                 ? 'btn-ghost'
                 : 'btn-primary'}"
               disabled={busy}
@@ -261,19 +263,19 @@
         {#if canMessage}
           <button
             type="button"
-            class="btn btn-ghost px-3"
-            aria-label={m.chat_write_to({ name: profile.displayName })}
+            class="btn btn-ghost grow md:grow-0"
             title={m.chat_write_to({ name: profile.displayName })}
             disabled={messageMut.loading}
             onclick={() => messageMut.mutate()}>
             <Icon name="message" class="h-4 w-4" />
+            {m.profile_message()}
           </button>
         {/if}
         <Dropdown placement="bottom-end" role="menu" class="min-w-44">
           {#snippet trigger({ open, toggle, onkeydown })}
             <button
               type="button"
-              class="btn btn-ghost px-3"
+              class="btn-icon-bordered"
               aria-label={m.common_more_actions()}
               title={m.common_more_actions()}
               aria-haspopup="menu"

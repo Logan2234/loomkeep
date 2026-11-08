@@ -7,6 +7,7 @@
   import { auth } from "#lib/auth.svelte.js";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import Icon from "#lib/components/Icon.svelte";
+  import { dragShift, dropIndex } from "#lib/home/drag-order.js";
   import { currentHomeGate } from "#lib/home/gate.js";
   import {
     PHONE_WIDGET_TYPES,
@@ -15,6 +16,7 @@
   import { HOME_WIDGETS, isWidgetShown } from "#lib/home/widgets.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { HomePhoneWidgetDto, HomeWidgetType } from "@loomkeep/shared";
+  import { tick } from "svelte";
   import { flip } from "svelte/animate";
   import { prefersReducedMotion } from "#lib/motion.js";
   import WidgetConfigModal from "./WidgetConfigModal.svelte";
@@ -83,56 +85,67 @@
     });
   }
 
-  // Dragging by the handle: the row follows the finger and takes the place of
-  // the row its middle crosses; the order is saved when it's let go.
-  let dragging = $state<{ id: string; offset: number } | null>(null);
+  // Dragging by the handle: the row follows the finger while the rows it
+  // passes slide out of its way; the list is reordered, and saved, only when
+  // it's let go — moving rows in the DOM mid-drag made the row jump.
+  let dragging = $state<{
+    id: string;
+    offset: number;
+    from: number;
+    to: number;
+    height: number;
+  } | null>(null);
+  // The frame the drop lands in: transforms clear as the order changes, so
+  // nothing may animate between the two.
+  let dropping = $state(false);
   let list = $state<HTMLElement>();
+
   function startDrag(event: PointerEvent, widget: HomePhoneWidgetDto) {
     if (event.button !== 0 || !list) return;
     event.preventDefault();
     const handle = event.currentTarget as HTMLElement;
     handle.setPointerCapture(event.pointerId);
-    let base = event.clientY;
-    const startIndex = draft.findIndex((w) => w.id === widget.id);
-    dragging = { id: widget.id, offset: 0 };
+    const startY = event.clientY;
+    const from = draft.findIndex((w) => w.id === widget.id);
+    const rects = [...list.querySelectorAll<HTMLElement>("[data-row]")].map(
+      (row) => row.getBoundingClientRect(),
+    );
+    const self = rects[from];
+    const startCenter = self.top + self.height / 2;
+    dragging = {
+      id: widget.id,
+      offset: 0,
+      from,
+      to: from,
+      height: self.height,
+    };
 
     const onMove = (e: PointerEvent) => {
-      if (!dragging || !list) return;
-      dragging.offset = e.clientY - base;
-      const rows = [...list.querySelectorAll<HTMLElement>("[data-row]")];
-      const index = draft.findIndex((w) => w.id === widget.id);
-      const self = rows[index].getBoundingClientRect();
-      const middle = self.top + self.height / 2;
-      const target = rows.findIndex((row, i) => {
-        if (i === index) return false;
-        const r = row.getBoundingClientRect();
-        return middle > r.top && middle < r.bottom;
-      });
-      if (target === -1) return;
-      const next = [...draft];
-      next.splice(target, 0, ...next.splice(index, 1));
-      draft = next;
-      base = e.clientY;
-      dragging.offset = 0;
+      if (!dragging) return;
+      dragging.offset = e.clientY - startY;
+      const center = startCenter + dragging.offset;
+      dragging.to = dropIndex(rects, from, center);
     };
-    const onUp = () => {
+    const onUp = async () => {
       handle.removeEventListener("pointermove", onMove);
       handle.removeEventListener("pointerup", onUp);
       handle.removeEventListener("pointercancel", onUp);
+      const to = dragging?.to ?? from;
+      dropping = true;
       dragging = null;
-      const to = draft.findIndex((w) => w.id === widget.id);
-      if (to !== startIndex) {
-        commit(draft);
-        announcement = m.home_phone_editor_moved({
-          name: title(widget.type),
-          position: to + 1,
-        });
-      }
+      if (to !== from) move(from, to);
+      await tick();
+      requestAnimationFrame(() => (dropping = false));
     };
     handle.addEventListener("pointermove", onMove);
     handle.addEventListener("pointerup", onUp);
     handle.addEventListener("pointercancel", onUp);
   }
+
+  const shiftOf = (index: number) =>
+    dragging
+      ? dragShift(index, dragging.from, dragging.to, dragging.height)
+      : 0;
 
   function onHandleKey(event: KeyboardEvent, index: number) {
     if (event.key === "ArrowUp") move(index, index - 1);
@@ -157,11 +170,15 @@
       class="bg-surface relative flex min-h-14 items-center gap-2 px-2 py-1.5 {dragging?.id ===
       widget.id
         ? 'z-10 rounded-xl shadow-lg'
+        : ''} {dragging && dragging.id !== widget.id && !reduced
+        ? 'transition-transform duration-200 ease-out'
         : ''}"
       style:transform={dragging?.id === widget.id
         ? `translateY(${dragging.offset}px)`
-        : undefined}
-      animate:flip={{ duration: reduced || dragging ? 0 : 200 }}>
+        : shiftOf(index)
+          ? `translateY(${shiftOf(index)}px)`
+          : undefined}
+      animate:flip={{ duration: reduced || dragging || dropping ? 0 : 200 }}>
       <button
         type="button"
         class="text-dim grid h-11 w-9 shrink-0 cursor-grab touch-none place-items-center"
