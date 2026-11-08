@@ -15,6 +15,8 @@ history from before it was started.
 
 ### Changed
 
+- Settings › Visibility: who sees each domain's library and activity is one
+  table, with an "All domains" row that sets a whole column at once.
 - GitHub releases are named `X.Y.Z`; the CHANGELOG heading's subtitle opens
   the notes.
 - Settings › Security: the app lock now sits above "Go further".

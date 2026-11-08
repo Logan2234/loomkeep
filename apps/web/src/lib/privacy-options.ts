@@ -1,5 +1,6 @@
 import { m } from "#lib/paraglide/messages.js";
 import {
+  type Domain,
   ProfileAccess,
   VisibilityAudience,
   VisibilityFacet,
@@ -103,3 +104,13 @@ export const MODE_MATRIX: {
     ghost: "✗",
   },
 ];
+
+/** The audience every given domain shares for a facet, or null when they differ. */
+export function commonAudience(
+  audienceOf: (domain: Domain, facet: VisibilityFacet) => VisibilityAudience,
+  domains: Domain[],
+  facet: VisibilityFacet,
+): VisibilityAudience | null {
+  const audiences = new Set(domains.map((d) => audienceOf(d, facet)));
+  return audiences.size === 1 ? [...audiences][0] : null;
+}

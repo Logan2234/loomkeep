@@ -246,6 +246,8 @@
   "settings_privacy_private_desc": "Approvi ogni richiesta; solo i tuoi amici vedono i tuoi contenuti.",
   "settings_privacy_ghost_desc": "Invisibile: nessuno può trovarti, seguirti o vedere la tua attività. Puoi seguire e commentare in modo anonimo.",
   "settings_privacy_nobody": "Nessuno",
+  "settings_privacy_all_domains": "Tutti i domini",
+  "settings_privacy_mixed": "Misto",
   "settings_privacy_searchable": "Rintracciabile",
   "settings_privacy_profile_viewable": "Profilo consultabile",
   "settings_privacy_can_follow": "Può essere seguito",
