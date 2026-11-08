@@ -14,6 +14,7 @@
     icon="layout"
     title={m.home_editor_title()}
     back="/app/settings/appearance#home-layout"
+    backInHistory
     isNew={isFeatureNew("home-layout")}
     class="mb-4" />
   {#if layout.compact}<PhoneHomeEditor />{:else}<HomeLayoutEditor />{/if}

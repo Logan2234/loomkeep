@@ -249,9 +249,10 @@ body {
     .panel-body {
       @apply bg-surface rounded-[14px] px-[17px] py-[18px];
     }
-    /* A poster strip is its own row of objects: no block around it. */
+    /* A poster strip is its own row of objects: no block around it, and
+       none of its padding either (PhoneHome shortens the box to match). */
     .panel-body:has(.panel-bleed) {
-      @apply bg-transparent px-0;
+      @apply bg-transparent p-0;
     }
   }
   /* Timecode/metadata voice: mono, dim, wide-tracked. */

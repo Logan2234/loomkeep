@@ -6,6 +6,7 @@
   import { useOnboardingChecklist } from "#lib/gamification/onboarding-checklist.svelte.js";
   import { currentHomeGate } from "#lib/home/gate.js";
   import {
+    phoneBoxHeight,
     phoneWidgetSize,
     resolvePhoneLayout,
   } from "#lib/home/phone-layout.js";
@@ -46,7 +47,7 @@
           data-welcome-land
           style:height={widget.type === "quickLinks" || widget.type === "note"
             ? undefined
-            : `${size.height}px`}>
+            : `${phoneBoxHeight(widget, width)}px`}>
           <HomeWidget widget={{ ...widget, x: 0, y: 0, w: 12, h: 1 }} {size} />
         </div>
       {/each}
