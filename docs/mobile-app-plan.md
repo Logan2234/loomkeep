@@ -156,7 +156,7 @@ Reste :
   actuelle. L'APK de GitHub et celui de Play auront la même signature et se
   mettront à jour l'un par l'autre.
 - Visuels prêts dans `apps/mobile/store/` : icône, bannière (avec leur
-  source HTML) et sept captures en français, 1080 × 2160
+  source HTML) et huit captures en français, 1080 × 2160
   (`screenshots/fr/`), prises sur un compte de démo de l'instance de dev
   puis mises en page avec une accroche tirée de `docs/messaging.md`. Les
   versions anglaise et italienne restent à faire.
