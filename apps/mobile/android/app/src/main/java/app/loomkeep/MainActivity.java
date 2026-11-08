@@ -66,6 +66,9 @@ public class MainActivity extends BridgeActivity {
         getBridge().getWebView().setBackgroundColor(background);
         // The stretch at the page's ends pulled the fixed bars under the system's.
         getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);
+        // The shell loads the instance over https and its own local server:
+        // nothing needs content:// URLs, which a link could use to read app data.
+        getBridge().getWebView().getSettings().setAllowContentAccess(false);
         getWindow().getDecorView().setBackgroundColor(background);
         // The web paints its own surface down to the screen's edge: the veil
         // Android would add behind three-button navigation only greys it.
