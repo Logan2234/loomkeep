@@ -246,6 +246,8 @@
   "settings_privacy_private_desc": "Tu valides chaque demande ; seuls tes amis voient ton contenu.",
   "settings_privacy_ghost_desc": "Invisible : personne ne peut te trouver, te suivre, ni voir ton activité. Tu peux suivre et commenter de façon anonyme.",
   "settings_privacy_nobody": "Personne",
+  "settings_privacy_all_domains": "Tous les domaines",
+  "settings_privacy_mixed": "Mixte",
   "settings_privacy_searchable": "Trouvable en recherche",
   "settings_privacy_profile_viewable": "Profil consultable",
   "settings_privacy_can_follow": "Peut être suivi",
