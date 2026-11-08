@@ -99,7 +99,7 @@
 <div class="mt-3.5 grid gap-3.5 lg:grid-cols-3">
   <div class="card border-danger/40 p-4">
     <div class="flex items-baseline gap-2">
-      <h3 class="font-display text-[15px] font-bold">
+      <h3 class="font-display text-[0.9375rem] font-bold">
         {m.admin_social_reports_title()}
       </h3>
       <a
@@ -139,7 +139,7 @@
   </div>
 
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">
+    <h3 class="font-display text-[0.9375rem] font-bold">
       {m.admin_social_ratings_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-xs">
@@ -161,7 +161,7 @@
   </div>
 
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">
+    <h3 class="font-display text-[0.9375rem] font-bold">
       {m.admin_social_top_contributors_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-xs">

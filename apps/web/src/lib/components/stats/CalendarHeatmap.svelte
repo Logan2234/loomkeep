@@ -80,7 +80,7 @@
   {/each}
 </div>
 {#if legend}
-  <div class="text-dim mt-3 flex items-center gap-1.5 text-[11px]">
+  <div class="text-dim mt-3 flex items-center gap-1.5 text-[0.6875rem]">
     <span>{m.common_less()}</span>
     {#each LEVEL_BG as bg, i (i)}
       <span class="h-3 w-3 rounded-sm" style="background:{bg}"></span>

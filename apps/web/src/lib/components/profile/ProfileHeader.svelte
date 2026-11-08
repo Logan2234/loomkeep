@@ -139,7 +139,7 @@
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <h1
-              class="font-display text-[26px] leading-tight font-extrabold wrap-anywhere md:text-[34px]">
+              class="font-display text-[1.625rem] leading-tight font-extrabold wrap-anywhere md:text-[2.125rem]">
               {profile.displayName}
             </h1>
             {#if appConfig.gamificationEnabled}
@@ -206,17 +206,17 @@
       </div>
 
       {#if selfManage}
-        <div class="mt-4 flex gap-2">
+        <div class="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
-            class="btn btn-ghost flex-1 sm:flex-none"
+            class="btn btn-ghost grow sm:grow-0"
             onclick={onOpenEditProfile}>
             <Icon name="edit" class="h-4 w-4" />
             {m.common_edit()}
           </button>
           <button
             type="button"
-            class="btn btn-ghost flex-1 sm:flex-none"
+            class="btn btn-ghost grow sm:grow-0"
             onclick={onOpenShareModal}>
             <Icon name="share" class="h-4 w-4" />
             {m.common_share()}

@@ -18,5 +18,5 @@
     class:text-danger={alert}>
     {typeof value === "number" ? formatNumber(value) : value}
   </span>
-  <span class="text-dim text-[11.5px]">{label}</span>
+  <span class="text-dim text-[0.71875rem]">{label}</span>
 </div>

@@ -55,7 +55,7 @@
   {/if}
   <polyline fill="none" stroke={color} stroke-width="2" points={path} />
 </svg>
-<div class="text-dim mt-1 flex justify-between text-[11px]">
+<div class="text-dim mt-1 flex justify-between text-[0.6875rem]">
   {#each labelIndexes as i (i)}
     <span>{points[i]?.label}</span>
   {/each}

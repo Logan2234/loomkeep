@@ -11,7 +11,9 @@
   // Séance signature: a "ticket stub" bar — the active tab punches up through
   // the line, sitting in a lit amber notch.
   export const STUB_LOOK: NavTabLook = {
-    root: "flex-1 gap-1 text-[0.6875rem]",
+    // The label grows with the system font up to 130%, then holds: four
+    // labels side by side have no room for more, and the icon stays.
+    root: "flex-1 gap-1 text-[min(0.6875rem,14.3px)]",
     rootActive: "text-accent -translate-y-1.5",
     slot: "h-9 w-9",
     slotActive:
