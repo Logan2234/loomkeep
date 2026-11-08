@@ -52,7 +52,7 @@
           class="bg-accent w-full rounded-t transition-[filter,height] duration-300 ease-out group-hover:brightness-110"
           style="height:{barHeight(b)}px">
         </div>
-        <span class="timecode text-[11px]">{b.label}</span>
+        <span class="timecode text-[0.6875rem]">{b.label}</span>
       </button>
     {:else}
       <div
@@ -62,7 +62,7 @@
           class="bg-accent w-full rounded-t transition-[height] duration-300 ease-out"
           style="height:{barHeight(b)}px">
         </div>
-        <span class="timecode text-[11px]">{b.label}</span>
+        <span class="timecode text-[0.6875rem]">{b.label}</span>
       </div>
     {/if}
   {/each}

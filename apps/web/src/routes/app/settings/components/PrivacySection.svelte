@@ -251,52 +251,56 @@
     </div>
 
     {#if settings.profileAccess !== ProfileAccess.GHOST}
-      <table class="w-full max-w-xl text-sm">
-        <thead>
-          <tr>
-            <td></td>
-            {#each FACETS as f (f.id)}
-              <th scope="col" class="text-dim pb-1 text-left font-semibold">
-                {f.label}
-              </th>
-            {/each}
-          </tr>
-        </thead>
-        <tbody>
-          {#if visibleDomainEntries.length > 1}
-            <tr class="border-border border-b">
-              <th scope="row" class="py-2 pr-3 text-left font-semibold">
-                {m.settings_privacy_all_domains()}
-              </th>
-              {#each FACETS as f (f.id)}
-                <td class="py-2 pr-2">
-                  {@render audienceCombobox(
-                    `${m.settings_privacy_all_domains()} · ${f.label}`,
-                    commonAudience(audienceOf, visibleDomainIds, f.id),
-                    (audience) => setAudienceEverywhere(f.id, audience),
-                  )}
-                </td>
-              {/each}
-            </tr>
-          {/if}
-          {#each visibleDomainEntries as [domainId, domainInfo] (domainId)}
+      <div class="overflow-x-auto">
+        <table class="w-full max-w-xl text-sm">
+          <thead>
             <tr>
-              <th scope="row" class="py-2 pr-3 text-left font-semibold">
-                {domainInfo.label}
-              </th>
+              <td></td>
               {#each FACETS as f (f.id)}
-                <td class="py-2 pr-2">
-                  {@render audienceCombobox(
-                    `${domainInfo.label} · ${f.label}`,
-                    audienceOf(domainId, f.id),
-                    (audience) => setAudience(domainId, f.id, audience),
-                  )}
-                </td>
+                <th
+                  scope="col"
+                  class="text-dim pr-2 pb-1 text-left font-semibold">
+                  {f.label}
+                </th>
               {/each}
             </tr>
-          {/each}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {#if visibleDomainEntries.length > 1}
+              <tr class="border-border border-b">
+                <th scope="row" class="py-2 pr-3 text-left font-semibold">
+                  {m.settings_privacy_all_domains()}
+                </th>
+                {#each FACETS as f (f.id)}
+                  <td class="py-2 pr-2">
+                    {@render audienceCombobox(
+                      `${m.settings_privacy_all_domains()} · ${f.label}`,
+                      commonAudience(audienceOf, visibleDomainIds, f.id),
+                      (audience) => setAudienceEverywhere(f.id, audience),
+                    )}
+                  </td>
+                {/each}
+              </tr>
+            {/if}
+            {#each visibleDomainEntries as [domainId, domainInfo] (domainId)}
+              <tr>
+                <th scope="row" class="py-2 pr-3 text-left font-semibold">
+                  {domainInfo.label}
+                </th>
+                {#each FACETS as f (f.id)}
+                  <td class="py-2 pr-2">
+                    {@render audienceCombobox(
+                      `${domainInfo.label} · ${f.label}`,
+                      audienceOf(domainId, f.id),
+                      (audience) => setAudience(domainId, f.id, audience),
+                    )}
+                  </td>
+                {/each}
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
       {#if isPrivate}
         <p class="text-dim mt-2 text-xs">
           {m.settings_private_profile_public_hint()}

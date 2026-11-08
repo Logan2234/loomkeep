@@ -123,13 +123,15 @@
   {#if bar}
     <!-- A phone gets an app bar, not a page title: one 56dp row with the
          actions at its end, so the content starts high on the screen. -->
-    <div class="flex h-14 items-center gap-2">
+    <!-- min-h, not h: with a large system font the title wraps rather
+         than being cut. -->
+    <div class="flex min-h-14 items-center gap-2 py-1">
       {#if backHref}{@render backLink("")}{/if}
       {#if icon}
         <Icon name={icon} class="text-accent h-5 w-5 shrink-0" />
       {/if}
       <h1
-        class="font-display min-w-0 flex-1 truncate text-xl font-extrabold tracking-tight">
+        class="font-display min-w-0 flex-1 text-xl font-extrabold tracking-tight text-balance wrap-anywhere">
         {title}
       </h1>
       {#if isNew}<NewBadge />{/if}

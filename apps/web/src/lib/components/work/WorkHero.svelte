@@ -111,7 +111,7 @@
 
   <!-- In the flow, so the hero grows with a long title or an enlarged system
        font instead of pushing them out through its top. pt clears the back
-       link. Its own gradient keeps every line readable on a bright backdrop
+       link, in rem since that link grows with the system font. Its own gradient keeps every line readable on a bright backdrop
        (a sky), whatever height the text block reaches. -->
   <div
     class="relative w-full bg-[linear-gradient(to_bottom,transparent,rgb(0_0_0/0.6)_4rem,rgb(0_0_0/0.85))] pt-[4rem]">

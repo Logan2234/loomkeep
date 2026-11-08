@@ -39,7 +39,7 @@
             <span class="truncate">{item.label}</span>
             {#if item.badge}
               <span
-                class="shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] {item
+                class="shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.625rem] {item
                   .badge.tone === 'warn'
                   ? 'bg-accent/15 text-accent'
                   : 'bg-surface-2 text-dim'}">

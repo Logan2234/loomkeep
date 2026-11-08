@@ -74,10 +74,10 @@
 <div class="relative">
   <div
     class="mb-3.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-    <p class="font-display text-[26px] font-extrabold">
+    <p class="font-display text-[1.625rem] font-extrabold">
       {m.common_level()} <span class="text-accent">{progress.level}</span>
     </p>
-    <p class="text-dim font-mono text-[12.5px]">{progressText}</p>
+    <p class="text-dim font-mono text-[0.78125rem]">{progressText}</p>
   </div>
   <div class="flex gap-1">
     {#each cells as cell, i (i)}

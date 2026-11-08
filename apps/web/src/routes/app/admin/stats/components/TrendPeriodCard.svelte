@@ -58,7 +58,7 @@
 <div class="card p-4">
   <div class="mb-3.5 flex flex-wrap items-start justify-between gap-2">
     <div>
-      <h3 class="font-display text-[15px] font-bold">{title}</h3>
+      <h3 class="font-display text-[0.9375rem] font-bold">{title}</h3>
       <p class="text-dim mt-0.5 text-xs">
         {#if description}{description}
         {/if}{CADENCE[trend.period]}

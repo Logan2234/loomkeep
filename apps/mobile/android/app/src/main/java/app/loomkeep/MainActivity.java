@@ -8,15 +8,18 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.webkit.WebView;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.Insets;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.webkit.WebSettingsCompat;
+import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 import app.loomkeep.widgets.HomeScreenWidgetsPlugin;
 import com.getcapacitor.BridgeActivity;
+import java.util.Collections;
 
 public class MainActivity extends BridgeActivity {
 
@@ -63,6 +66,9 @@ public class MainActivity extends BridgeActivity {
         getBridge().getWebView().setBackgroundColor(background);
         // The stretch at the page's ends pulled the fixed bars under the system's.
         getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);
+        // The shell loads the instance over https and its own local server:
+        // nothing needs content:// URLs, which a link could use to read app data.
+        getBridge().getWebView().getSettings().setAllowContentAccess(false);
         getWindow().getDecorView().setBackgroundColor(background);
         // The web paints its own surface down to the screen's edge: the veil
         // Android would add behind three-button navigation only greys it.
@@ -78,11 +84,32 @@ public class MainActivity extends BridgeActivity {
                 WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP
             );
         }
+        applyFontScale(getBridge().getWebView());
         fitWindowToBarsAndKeyboard();
         lockPhoneToPortrait(getResources().getConfiguration());
         NotificationChannels.ensure(this);
         AppShortcuts.publish(this, getBridge().getServerUrl());
         appLock.hideFromRecents();
+    }
+
+    /**
+     * The WebView applied the system font size through textZoom, which grows
+     * every text past what the page can hold back (tab labels cut to "Acc…").
+     * The page gets the scale as its root font size instead: rem text grows
+     * like sp, px spacing stays like dp, and the page caps what must stay
+     * short. A font size change recreates the activity, so this reruns.
+     */
+    private void applyFontScale(WebView webView) {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return;
+        float scale = getResources().getConfiguration().fontScale;
+        webView.getSettings().setTextZoom(100);
+        // The inline size serves a web that predates --system-font-scale.
+        String script =
+            "(function(r){" +
+            "r.setProperty('--system-font-scale','" + scale + "');" +
+            "r.fontSize='" + Math.round(scale * 100) + "%';" +
+            "})(document.documentElement.style);";
+        WebViewCompat.addDocumentStartJavaScript(webView, script, Collections.singleton("*"));
     }
 
     /**
