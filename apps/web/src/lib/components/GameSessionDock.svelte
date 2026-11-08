@@ -41,15 +41,23 @@
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
   import NewBadge from "./NewBadge.svelte";
+  import ProgressBar from "./ProgressBar.svelte";
   import SessionDurationPicker from "./SessionDurationPicker.svelte";
   import SessionTimerControl from "./SessionTimerControl.svelte";
   import SessionWeekChart from "./SessionWeekChart.svelte";
   import Switch from "./Switch.svelte";
   import Tooltip from "./Tooltip.svelte";
-  import TrackingStatusBadge from "./TrackingStatusBadge.svelte";
 
-  let { entry, detailKey }: { entry: GameEntryDto; detailKey: QueryKey } =
-    $props();
+  let {
+    entry,
+    detailKey,
+    averageMinutes = null,
+  }: {
+    entry: GameEntryDto;
+    detailKey: QueryKey;
+    /** A normal playthrough's length, from the time-to-beat averages. */
+    averageMinutes?: number | null;
+  } = $props();
 
   const quickDurations = [15, 30, 60, 120] as const;
   const today = localDateInput();
@@ -254,10 +262,6 @@
       : m.session_week_summary_many({ count, duration });
   }
 
-  function historyLabel(count: number): string {
-    return count === 1 ? m.session_view_one() : m.session_view_many({ count });
-  }
-
   function historyDescription(count: number): string {
     return count === 1
       ? m.game_session_history_grouped_one()
@@ -349,180 +353,87 @@
   }
 </script>
 
-<section aria-labelledby="game-session-title">
-  <article class="border-border bg-bg/45 overflow-hidden rounded-2xl border">
-    <div class="p-4 sm:p-5">
-      <header class="flex flex-wrap items-start justify-between gap-3">
-        <div class="min-w-0">
-          <p class="text-dim text-sm">
-            {displayedPlaythroughIsActive
-              ? m.game_cycle_current_label()
-              : m.game_cycle_last_label()}
-          </p>
-          <h3
-            id="game-session-title"
-            class="font-display mt-0.5 text-xl font-bold">
-            {m.game_cycle_current({
+<!-- On the page: one progress line, the session button and the timer
+     (FIC-07). The week, the totals and the history open in "My sessions". -->
+<section aria-labelledby="game-session-title" class="flex flex-col gap-3">
+  {#if totalSessions > 0}
+    {@const tracked = displayedPlaythrough?.trackedMinutes ?? 0}
+    <div class="flex flex-col gap-1.5">
+      <p class="flex flex-wrap items-baseline gap-x-2">
+        <span
+          id="game-session-title"
+          class="font-display text-lg font-extrabold tabular-nums">
+          {formatSessionMinutes(tracked)}
+        </span>
+        <span class="text-dim text-sm">
+          {m.game_session_played({
+            cycle: m.game_cycle_current({
               number: displayedPlaythrough?.number ?? 1,
-            })}
-          </h3>
-          {#if displayedPlaythrough?.startedAt}
-            <p class="text-dim mt-1 text-xs">
-              {m.session_cycle_started({
-                date: formatDate(displayedPlaythrough.startedAt),
-              })}
-            </p>
-          {/if}
-        </div>
-        <div class="flex items-center gap-2">
-          {#if isFeatureNew("sessions")}<NewBadge />{/if}
-          <TrackingStatusBadge domain="GAMES" status={entry.status} />
-        </div>
-      </header>
-
-      <div
-        class="mt-5 grid gap-6 lg:grid-cols-[minmax(13rem,0.85fr)_minmax(20rem,1.15fr)] lg:items-end">
-        <div>
-          <p class="text-dim text-xs">{m.session_cycle_current_total()}</p>
-          <p
-            class="font-display mt-1 text-4xl leading-none font-extrabold tabular-nums sm:text-5xl">
-            {formatSessionMinutes(displayedPlaythrough?.trackedMinutes ?? 0)}
-          </p>
-          <p class="text-dim mt-3 max-w-sm text-xs leading-relaxed">
-            {m.game_cycle_explainer()}
-          </p>
-        </div>
-
-        <div>
-          <div class="flex flex-wrap items-baseline justify-between gap-2">
-            <h4 class="font-display font-bold">{m.common_this_week()}</h4>
-            <p class="text-dim text-xs tabular-nums">
-              {weeklySummary(
-                summary?.weekSessions ?? 0,
-                summary?.weekMinutes ?? 0,
-              )}
-            </p>
-          </div>
-          {#if sessionsQuery.error}
-            <div class="mt-4">
-              <Banner variant="error">{sessionsQuery.error}</Banner>
-            </div>
-          {:else if summary}
-            <SessionWeekChart days={summary.weekDays} />
-          {:else}
-            <div
-              class="mt-4 grid h-20 grid-cols-7 items-end gap-2"
-              aria-hidden="true">
-              {#each Array(7) as _, i (i)}
-                <span class="bg-surface-2 h-2 rounded-t-md"></span>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      </div>
-
-      <dl class="border-border mt-5 grid grid-cols-1 border-y sm:grid-cols-3">
-        <div class="border-border px-1 py-3 sm:border-r sm:px-4">
-          <dt class="text-dim text-xs">{m.game_cycle_sessions()}</dt>
-          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
-            {displayedPlaythrough?.sessionCount ?? 0}
-          </dd>
-        </div>
-        <div
-          class="border-border border-t px-1 py-3 sm:border-t-0 sm:border-r sm:px-4">
-          <dt class="text-dim text-xs">{m.game_session_manual_total()}</dt>
-          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
-            {formatSessionMinutes(
-              summary?.totalTrackedMinutes ?? entry.trackedPlaytimeMinutes,
-            )}
-          </dd>
-        </div>
-        <div class="border-border border-t px-1 py-3 sm:border-t-0 sm:px-4">
-          <dt class="text-dim flex items-center gap-1.5 text-xs">
-            <span>{m.game_session_steam_total()}</span>
-            <Tooltip text={steamDetails} class="inline-flex">
-              <button
-                type="button"
-                class="text-dim hover:text-fg focus-visible:ring-accent grid h-5 w-5 place-items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                aria-label={`${m.common_details()} — ${m.game_session_steam_total()}`}>
-                <Icon name="info" class="h-3.5 w-3.5" />
-              </button>
-            </Tooltip>
-          </dt>
-          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
-            {entry.steamPlaytimeMinutes === null
-              ? "—"
-              : formatSessionMinutes(entry.steamPlaytimeMinutes)}
-          </dd>
-        </div>
-      </dl>
-
-      <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <button type="button" class="btn btn-primary" onclick={openAdd}>
-            <Icon name="plus" class="h-4 w-4" />
-            {m.game_session_add_short()}
-          </button>
-          <SessionTimerControl
-            domain="GAMES"
-            entryId={entry.id}
-            compact
-            onFinish={finishTimedSession} />
-        </div>
-        {#if entry.status === "PLAYING" && summary?.estimatedCompletionDate}
-          <p
-            class="text-dim flex flex-wrap items-center gap-2 text-xs"
-            transition:fade={{ duration: reduced ? 0 : 200 }}>
-            {m.completion_estimate_finish({
-              date: formatDate(`${summary.estimatedCompletionDate}T12:00:00`),
-            })}
-            {#if isFeatureNew("completion-estimate")}<NewBadge />{/if}
-          </p>
-        {/if}
-      </div>
-    </div>
-
-    <footer
-      class="border-border bg-surface/55 flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 sm:px-5">
-      {#if completedPlaythroughs.length > 0}
-        <div class="flex min-w-0 items-center gap-3">
-          <span
-            class="bg-success/12 text-success grid h-9 w-9 shrink-0 place-items-center rounded-full">
-            <Icon name="check" class="h-4 w-4" />
-          </span>
-          <div class="min-w-0">
-            <p class="text-sm font-semibold">
-              {completedPlaythroughs.length === 1
-                ? m.game_cycle_completed_one()
-                : m.game_cycle_completed_many({
-                    count: completedPlaythroughs.length,
-                  })}
-            </p>
-            <p class="text-dim truncate text-xs">
-              {m.game_cycle_completed_detail({
-                number: completedPlaythroughs[0]!.number,
-                duration: formatSessionMinutes(
-                  completedPlaythroughs[0]!.trackedMinutes,
-                ),
-              })}
-            </p>
-          </div>
-        </div>
-      {:else if lastFinishedPlaythrough?.status === "DROPPED"}
+            }),
+          })}
+        </span>
+      </p>
+      {#if averageMinutes && displayedPlaythroughIsActive}
+        <ProgressBar
+          value={Math.min(100, (tracked / averageMinutes) * 100)}
+          label={m.common_progress()} />
         <p class="text-dim text-xs">
-          {m.game_cycle_current({ number: lastFinishedPlaythrough.number })} ·
-          {m.session_cycle_dropped()}
+          {m.game_session_time_left({
+            average: formatSessionMinutes(averageMinutes),
+            left: formatSessionMinutes(Math.max(0, averageMinutes - tracked)),
+          })}
         </p>
       {/if}
-      <button
-        type="button"
-        class="text-dim hover:text-accent ml-auto text-sm font-semibold underline decoration-current/40 underline-offset-4 transition-colors disabled:cursor-default disabled:opacity-50"
-        disabled={totalSessions === 0}
-        onclick={openHistory}>
-        {historyLabel(totalSessions)}
-      </button>
-    </footer>
-  </article>
+      {#if entry.status === "PLAYING" && summary?.estimatedCompletionDate}
+        <p
+          class="text-dim flex flex-wrap items-center gap-2 text-xs"
+          transition:fade={{ duration: reduced ? 0 : 200 }}>
+          {m.completion_estimate_finish({
+            date: formatDate(`${summary.estimatedCompletionDate}T12:00:00`),
+          })}
+          {#if isFeatureNew("completion-estimate")}<NewBadge />{/if}
+        </p>
+      {/if}
+    </div>
+  {:else}
+    <h3 id="game-session-title" class="sr-only">
+      {m.game_session_add_short()}
+    </h3>
+  {/if}
+
+  <div class="flex flex-wrap items-center gap-2">
+    <button
+      type="button"
+      class="btn btn-primary grow whitespace-nowrap sm:grow-0"
+      onclick={openAdd}>
+      <Icon name="plus" class="h-4 w-4" />
+      {m.game_session_add_short()}
+    </button>
+    <SessionTimerControl
+      domain="GAMES"
+      entryId={entry.id}
+      compact
+      onFinish={finishTimedSession} />
+  </div>
+
+  {#if totalSessions > 0}
+    <button
+      type="button"
+      class="bg-surface hover:bg-surface-2 flex min-h-14 w-full items-center gap-3 rounded-xl px-4 text-left transition-colors"
+      onclick={openHistory}>
+      <span class="min-w-0 flex-1">
+        <span class="font-semibold">{m.session_mine()}</span>
+        <span class="text-dim ml-1.5 text-sm tabular-nums">
+          {totalSessions} · {formatSessionMinutes(
+            summary?.totalTrackedMinutes ?? entry.trackedPlaytimeMinutes,
+          )}
+        </span>
+      </span>
+      <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+    </button>
+  {:else if !sessionsQuery.loading}
+    <p class="text-dim text-xs">{m.session_first_hint()}</p>
+  {/if}
 </section>
 
 {#if showAdd}
@@ -646,10 +557,121 @@
 
 {#if showHistory}
   <Modal
-    title={m.game_session_history_title()}
+    title={m.session_mine()}
     description={historyDescription(totalSessions)}
     wide
     onclose={() => (showHistory = false)}>
+    <div class="mb-5">
+      <div
+        class="grid gap-6 lg:grid-cols-[minmax(13rem,0.85fr)_minmax(20rem,1.15fr)] lg:items-end">
+        <div>
+          <p class="text-dim text-xs">{m.session_cycle_current_total()}</p>
+          <p
+            class="font-display mt-1 text-4xl leading-none font-extrabold tabular-nums sm:text-5xl">
+            {formatSessionMinutes(displayedPlaythrough?.trackedMinutes ?? 0)}
+          </p>
+          <p class="text-dim mt-3 max-w-sm text-xs leading-relaxed">
+            {m.game_cycle_explainer()}
+          </p>
+        </div>
+
+        <div>
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <h4 class="font-display font-bold">{m.common_this_week()}</h4>
+            <p class="text-dim text-xs tabular-nums">
+              {weeklySummary(
+                summary?.weekSessions ?? 0,
+                summary?.weekMinutes ?? 0,
+              )}
+            </p>
+          </div>
+          {#if sessionsQuery.error}
+            <div class="mt-4">
+              <Banner variant="error">{sessionsQuery.error}</Banner>
+            </div>
+          {:else if summary}
+            <SessionWeekChart days={summary.weekDays} />
+          {:else}
+            <div
+              class="mt-4 grid h-20 grid-cols-7 items-end gap-2"
+              aria-hidden="true">
+              {#each Array(7) as _, i (i)}
+                <span class="bg-surface-2 h-2 rounded-t-md"></span>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <dl class="border-border mt-5 grid grid-cols-1 border-y sm:grid-cols-3">
+        <div class="border-border px-1 py-3 sm:border-r sm:px-4">
+          <dt class="text-dim text-xs">{m.game_cycle_sessions()}</dt>
+          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
+            {displayedPlaythrough?.sessionCount ?? 0}
+          </dd>
+        </div>
+        <div
+          class="border-border border-t px-1 py-3 sm:border-t-0 sm:border-r sm:px-4">
+          <dt class="text-dim text-xs">{m.game_session_manual_total()}</dt>
+          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
+            {formatSessionMinutes(
+              summary?.totalTrackedMinutes ?? entry.trackedPlaytimeMinutes,
+            )}
+          </dd>
+        </div>
+        <div class="border-border border-t px-1 py-3 sm:border-t-0 sm:px-4">
+          <dt class="text-dim flex items-center gap-1.5 text-xs">
+            <span>{m.game_session_steam_total()}</span>
+            <Tooltip text={steamDetails} class="inline-flex">
+              <button
+                type="button"
+                class="text-dim hover:text-fg focus-visible:ring-accent grid h-5 w-5 place-items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                aria-label={`${m.common_details()} — ${m.game_session_steam_total()}`}>
+                <Icon name="info" class="h-3.5 w-3.5" />
+              </button>
+            </Tooltip>
+          </dt>
+          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
+            {entry.steamPlaytimeMinutes === null
+              ? "—"
+              : formatSessionMinutes(entry.steamPlaytimeMinutes)}
+          </dd>
+        </div>
+      </dl>
+
+      <div class="mt-4 flex flex-wrap items-center gap-3">
+        {#if completedPlaythroughs.length > 0}
+          <div class="flex min-w-0 items-center gap-3">
+            <span
+              class="bg-success/12 text-success grid h-9 w-9 shrink-0 place-items-center rounded-full">
+              <Icon name="check" class="h-4 w-4" />
+            </span>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold">
+                {completedPlaythroughs.length === 1
+                  ? m.game_cycle_completed_one()
+                  : m.game_cycle_completed_many({
+                      count: completedPlaythroughs.length,
+                    })}
+              </p>
+              <p class="text-dim truncate text-xs">
+                {m.game_cycle_completed_detail({
+                  number: completedPlaythroughs[0]!.number,
+                  duration: formatSessionMinutes(
+                    completedPlaythroughs[0]!.trackedMinutes,
+                  ),
+                })}
+              </p>
+            </div>
+          </div>
+        {:else if lastFinishedPlaythrough?.status === "DROPPED"}
+          <p class="text-dim text-xs">
+            {m.game_cycle_current({ number: lastFinishedPlaythrough.number })} ·
+            {m.session_cycle_dropped()}
+          </p>
+        {/if}
+      </div>
+    </div>
     {#if sessionsQuery.error}
       <Banner variant="error">{sessionsQuery.error}</Banner>
     {:else if summary?.items.length}

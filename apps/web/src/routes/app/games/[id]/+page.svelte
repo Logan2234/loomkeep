@@ -33,13 +33,14 @@
   import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
   import NoteField from "#lib/components/NoteField.svelte";
   import OwnershipField from "#lib/components/OwnershipField.svelte";
-  import Poster from "#lib/components/Poster.svelte";
+  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import WorkActionBar from "#lib/components/work/WorkActionBar.svelte";
+  import WorkHero from "#lib/components/work/WorkHero.svelte";
+  import WorkTrackingFold from "#lib/components/work/WorkTrackingFold.svelte";
   import ProviderMark from "#lib/components/ProviderMark.svelte";
   import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
 
-  import TrackingPanel from "#lib/components/TrackingPanel.svelte";
   import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
-  import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
   import { gameWork } from "#lib/chat/work-search.js";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
 
@@ -83,6 +84,7 @@
   let confirmRemove = $state(false);
   let statusEditorOpen = $state(false);
   let historyOpen = $state(false);
+  let compact = $state(false);
   const reduced = prefersReducedMotion();
 
   const id = $derived(page.params.id ?? "");
@@ -241,448 +243,398 @@
 {/if}
 
 {#if detail}
-  <!-- Hero: real artwork, gradient fallback fading into the page. -->
-  <div class="relative">
-    {#if detail.backdropUrl}
-      <button
-        type="button"
-        class="block w-full cursor-zoom-in"
-        aria-label={m.common_enlarge_image()}
-        onclick={() => openLightbox(detail?.backdropUrl ?? null)}>
-        <img
-          src={detail.backdropUrl}
-          alt=""
-          class="h-44 w-full object-cover md:h-60" />
-      </button>
-    {:else}
-      <div
-        class="from-surface-2 to-surface h-44 w-full bg-linear-to-br md:h-60">
+  <WorkHero
+    title={detail.title}
+    backdropUrl={detail.backdropUrl || null}
+    coverUrl={detail.coverUrl || null}
+    backHref="/app/games"
+    backLabel={m.common_Games()}
+    onTrailer={detail.trailerVideoId ? openTrailer : undefined}
+    onEnlargeCover={() => openLightbox(detail?.coverUrl ?? null)}
+    onCompactChange={(value) => (compact = value)}>
+    {#snippet pills()}
+      <span
+        class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur">
+        {m.game_type()}
+      </span>
+      {#if upcoming}
+        <span
+          class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold text-white backdrop-blur"
+          ><Icon
+            name="calendar"
+            class="h-3.5 w-3.5" />{m.media_upcoming()}</span>
+      {:else if entry}
+        <TrackingStatusBadge domain="GAMES" status={entry.status} onImage />
+      {/if}
+      {#if detail.isAdult}
+        <span
+          class="bg-danger/80 rounded-full px-2.5 py-0.5 text-xs font-bold text-white">
+          18+
+        </span>
+      {/if}
+      {#each detail.ageRatingImageUrls as url (url)}
+        <img src={url} alt={m.game_age_rating()} class="h-6 rounded" />
+      {/each}
+    {/snippet}
+    <p class="timecode mt-1.5 text-sm text-white/80">
+      {#if detail.year}{detail.year}{/if}
+      {#if detail.genres.length > 0}
+        {#if detail.year}·{/if}
+        {detail.genres.slice(0, 3).join(", ")}
+      {/if}
+    </p>
+    {#if upcoming}
+      {@const release = gameReleaseLabel(
+        detail.releaseDate,
+        detail.releaseDatePrecision,
+      )}
+      {#if release}
+        <p class="mt-1 text-sm text-white/80 tabular-nums">{release}</p>
+      {/if}
+    {/if}
+    {#if (entry && !upcoming) || detail.ratings.length > 0}
+      <div class="mt-2.5 flex flex-wrap gap-1.5">
+        {#if entry && !upcoming}
+          <MyRatingBadge
+            targetType="GAME"
+            targetId={entry.game.id}
+            workTitle={detail.title}
+            workMeta={reviewMeta}
+            workImageUrl={detail.coverUrl}
+            overlay />
+        {/if}
+        <ExternalRatingChips ratings={detail.ratings} overlay />
       </div>
     {/if}
-    <div
-      class="from-bg via-bg/50 absolute inset-0 bg-linear-to-t to-transparent">
-    </div>
-    {#if detail.trailerVideoId}
-      <button
-        type="button"
-        class="absolute top-1/2 left-1/2 z-20 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60"
-        aria-label={m.media_watch_trailer()}
-        onclick={openTrailer}>
-        <Icon name="play" class="pointer-events-none h-7 w-7" />
-      </button>
+  </WorkHero>
+
+  <WorkActionBar
+    tracked={!!entry}
+    status={entry ? STATUS_META[entry.status].label : undefined}
+    statusTone={entry?.status === "DROPPED"
+      ? "danger"
+      : entry?.status === "COMPLETED"
+        ? "success"
+        : "accent"}
+    {compact}
+    title={detail.title}
+    {saving}
+    favorite={entry?.favorite}
+    listTarget={entry ? { type: "GAME", id: entry.game.id } : undefined}
+    actions={!entry || upcoming
+      ? []
+      : [
+          ...(entry.status === "PLAYING"
+            ? [
+                {
+                  label: m.game_status_mark_completed(),
+                  icon: "check" as const,
+                  onSelect: () => patchMut.mutate({ status: "COMPLETED" }),
+                },
+                {
+                  label: m.game_status_drop(),
+                  icon: "archive" as const,
+                  onSelect: () => patchMut.mutate({ status: "DROPPED" }),
+                },
+              ]
+            : []),
+          ...(entry.status === "DROPPED"
+            ? [
+                {
+                  label: m.game_status_resume(),
+                  icon: "refresh" as const,
+                  onSelect: () => patchMut.mutate({ status: "PLAYING" }),
+                },
+              ]
+            : []),
+          ...(correctionLabel
+            ? [
+                {
+                  label: correctionLabel,
+                  icon: "edit" as const,
+                  separator: true,
+                  onSelect: openStatusCorrection,
+                },
+              ]
+            : []),
+        ]}
+    onAdd={() => addMut.mutate()}
+    onToggleFavorite={() =>
+      entry && patchMut.mutate({ favorite: !entry.favorite })}
+    onShare={() => (sharing = true)}
+    onRemove={() => (confirmRemove = true)}>
+    {#snippet socialActions()}
+      {#if appConfig.socialEnabled && detail.commentTargetId}
+        <CommentsPanel
+          targetType="GAME"
+          targetId={detail.commentTargetId}
+          title={detail.title}
+          canParticipate={!!entry}
+          revealSpoilersByDefault={entry?.status === "COMPLETED"}
+          compact />
+      {/if}
+    {/snippet}
+  </WorkActionBar>
+
+  <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
+    {#if appConfig.socialEnabled && detail.commentTargetId}
+      <WorkFriendsStrip
+        domain="GAMES"
+        targetType="GAME"
+        targetId={detail.commentTargetId}
+        revision={`${entry?.status}:${entry?.playtimeMinutes}`} />
     {/if}
+
+    {#if entry}
+      <div class="mt-6 max-w-xl">
+        {#if upcoming}
+          {@render releaseReminder(entry)}
+        {:else}
+          <GameSessionDock
+            {entry}
+            {detailKey}
+            averageMinutes={detail.timeToBeat?.normallyMin ?? null} />
+        {/if}
+      </div>
+    {/if}
+
+    {#if detail.platforms.length > 0}
+      <div class="mt-6 flex flex-wrap gap-1.5">
+        {#each detail.platforms as platform (platform)}
+          <span class="bg-surface-2 text-dim rounded-md px-2 py-0.5 text-xs">
+            {platform}
+          </span>
+        {/each}
+      </div>
+    {/if}
+
+    {#if detail.overview}
+      <div class="mt-6 max-w-2xl">
+        <ClampedText
+          text={detail.overview}
+          lines={layout.compact ? 3 : 8}
+          class="text-dim whitespace-pre-line" />
+      </div>
+    {/if}
+
+    {#if detail.storyline}
+      <div class="mt-3 max-w-2xl">
+        <button
+          type="button"
+          class="btn-text group"
+          aria-expanded={historyOpen}
+          onclick={() => (historyOpen = !historyOpen)}>
+          <Icon
+            name="chevron-down"
+            class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 {historyOpen
+              ? 'rotate-0'
+              : '-rotate-90'}" />
+          <span
+            class="underline decoration-transparent decoration-2 underline-offset-4 transition-colors group-hover:decoration-current">
+            {m.game_story()}
+          </span>
+        </button>
+        {#if historyOpen}
+          <p
+            transition:slide|global={{ duration: reduced ? 0 : 200 }}
+            class="text-dim mt-2 px-4.5 whitespace-pre-line">
+            {detail.storyline}
+          </p>
+        {/if}
+      </div>
+    {/if}
+
+    {#if entry && !upcoming}
+      <WorkTrackingFold summary={m.game_tracking_summary()}>
+        <OwnershipField
+          status={entry.ownershipStatus}
+          source={entry.ownershipSource}
+          statusOptions={GAME_OWNERSHIP_STATUS_OPTIONS}
+          sourceOptionsByStatus={GAME_OWNERSHIP_SOURCES}
+          onChange={(status, source) =>
+            patchMut.mutate({
+              ownershipStatus: status as typeof entry.ownershipStatus,
+              ownershipSource: source,
+            })} />
+        {#if detail.platforms.length > 0}
+          <GamePlatformField
+            platform={entry.platform}
+            platforms={detail.platforms}
+            onChange={(platform) => patchMut.mutate({ platform })} />
+        {/if}
+        <NoteField
+          value={entry.notes}
+          placeholder={m.game_note_placeholder()}
+          onChange={(v) => patchMut.mutate({ notes: v })} />
+      </WorkTrackingFold>
+    {/if}
+
+    {#if sagaQuery.data}
+      <GameSagaSection
+        saga={sagaQuery.data}
+        {sagaKey}
+        sourceId={detail.sourceId}
+        entryStatus={entry?.status ?? null} />
+    {/if}
+
+    <RelatedCarousel
+      title={detail.franchiseName
+        ? m.game_franchise_title({ name: detail.franchiseName })
+        : m.game_same_franchise()}
+      items={toCarouselItems(
+        detail.franchiseGames.filter((g) => !sagaIds.has(g.sourceId)),
+        "/app/games",
+      )} />
+
+    <RelatedCarousel
+      title={m.media_similar_titles()}
+      items={toCarouselItems(detail.similarGames, "/app/games")} />
+
+    <WorkSocialSection
+      targetType="GAME"
+      reviewTargetId={entry && !upcoming ? entry.game.id : null}
+      commentTargetId={detail.commentTargetId}
+      title={detail.title}
+      meta={reviewMeta}
+      imageUrl={detail.coverUrl}
+      canParticipate={!!entry} />
+
+    {#if hasSidePanels}
+      <div class="mt-8 max-w-xl">
+        {@render sidePanels()}
+      </div>
+    {/if}
+
+    <!-- Attribution required by the IGDB API/Data Commercial Usage
+         Addendum: linked mention on every page using IGDB Services. -->
     <a
-      href="/app/games"
-      onclick={goBack}
-      class="border-border bg-bg/60 hover:bg-bg absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold backdrop-blur">
-      ← {m.common_Games()}
+      href={IGDB_API}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="text-dim hover:text-accent text-micro mt-4 flex w-fit items-center gap-1.5 transition-colors">
+      <ProviderMark
+        brand="igdb"
+        decorative
+        class="h-3 w-3 shrink-0 opacity-70" />
+      {m.datasource_igdb_notice()}
     </a>
   </div>
 
-  <!-- relative z-10: the positioned hero would otherwise paint over the cover
-       pulled up into it. -->
-  <div class="relative z-10 mx-auto max-w-5xl px-5 pb-6 md:px-8 md:pb-10">
-    <div class="md:grid md:grid-cols-[1fr_260px] md:items-start md:gap-8">
-      <div class="min-w-0">
-        <div
-          class="-mt-24 flex flex-col gap-5 sm:flex-row sm:items-end md:-mt-28">
-          <button
-            type="button"
-            class="border-border w-32 shrink-0 overflow-hidden rounded-xl border shadow-lg md:w-44 {detail.coverUrl
-              ? 'cursor-zoom-in'
-              : ''}"
-            aria-label={m.common_enlarge_image()}
-            onclick={() => openLightbox(detail?.coverUrl ?? null)}
-            data-detail-poster>
-            <Poster src={detail.coverUrl} title={detail.title} alt="" />
-          </button>
+  {#snippet bellButton(entry: GameEntryDto)}
+    <button
+      type="button"
+      class="grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50 {entry.releaseAlertsEnabled
+        ? 'bg-accent text-accent-fg'
+        : 'border-border text-dim border'}"
+      disabled={saving || digestOff}
+      aria-pressed={entry.releaseAlertsEnabled}
+      aria-label={entry.releaseAlertsEnabled
+        ? m.media_movie_reminder_cancel()
+        : m.media_movie_reminder_enable()}
+      title={digestOff
+        ? undefined
+        : entry.releaseAlertsEnabled
+          ? m.media_movie_reminder_cancel()
+          : m.media_movie_reminder_enable()}
+      onclick={() => releaseAlertsMut.mutate(!entry.releaseAlertsEnabled)}>
+      <Icon
+        name={entry.releaseAlertsEnabled ? "bell" : "bell-off"}
+        class="h-5 w-5" />
+    </button>
+  {/snippet}
 
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-2">
-              <span
-                class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                {m.game_type()}
-              </span>
-              {#if detail.isAdult}
-                <span
-                  class="bg-danger/15 text-danger rounded-full px-2.5 py-0.5 text-xs font-bold">
-                  18+
-                </span>
-              {/if}
-              {#each detail.ageRatingImageUrls as url (url)}
-                <img src={url} alt={m.game_age_rating()} class="h-6 rounded" />
-              {/each}
-              {#if upcoming}
-                <span
-                  class="bg-surface-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold">
-                  <Icon name="calendar" class="h-3.5 w-3.5" />
-                  {m.media_upcoming()}
-                </span>
-              {:else if entry}
-                <TrackingStatusBadge domain="GAMES" status={entry.status} />
-              {/if}
-            </div>
-            <h1
-              class="font-display mt-2 text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
-              {detail.title}
-            </h1>
-            <p class="timecode mt-1.5 text-sm">
-              {#if detail.year}{detail.year}{/if}
-              {#if detail.genres.length > 0}
-                {#if detail.year}·{/if}
-                {detail.genres.slice(0, 3).join(", ")}
-              {/if}
-            </p>
-            {#if upcoming}
-              {@const release = gameReleaseLabel(
-                detail.releaseDate,
-                detail.releaseDatePrecision,
-              )}
-              {#if release}
-                <p class="timecode mt-1 text-sm">{release}</p>
-              {/if}
-            {/if}
-            {#if (entry && !upcoming) || detail.ratings.length > 0}
-              <div class="mt-2.5 flex flex-wrap gap-1.5">
-                {#if entry && !upcoming}
-                  <MyRatingBadge
-                    targetType="GAME"
-                    targetId={entry.game.id}
-                    workTitle={detail.title}
-                    workMeta={reviewMeta}
-                    workImageUrl={detail.coverUrl} />
-                {/if}
-                <ExternalRatingChips ratings={detail.ratings} />
-              </div>
-            {/if}
-            {#if detail.platforms.length > 0}
-              <div class="mt-2.5 flex flex-wrap gap-1.5">
-                {#each detail.platforms as platform (platform)}
-                  <span
-                    class="bg-surface-2 text-dim rounded-md px-2 py-0.5 text-xs">
-                    {platform}
-                  </span>
-                {/each}
-              </div>
-            {/if}
-          </div>
-        </div>
-
-        {#if appConfig.socialEnabled && detail.commentTargetId}
-          <WorkFriendsStrip
-            domain="GAMES"
-            targetType="GAME"
-            targetId={detail.commentTargetId}
-            revision={`${entry?.status}:${entry?.playtimeMinutes}`} />
-        {/if}
-
-        {#if detail.overview}
-          <div class="mt-6 max-w-2xl">
-            <ClampedText
-              text={detail.overview}
-              lines={layout.compact ? 3 : 8}
-              class="text-dim whitespace-pre-line" />
-          </div>
-        {/if}
-
-        {#if detail.storyline}
-          <div class="mt-3 max-w-2xl">
-            <button
-              type="button"
-              class="btn-text group"
-              aria-expanded={historyOpen}
-              onclick={() => (historyOpen = !historyOpen)}>
-              <Icon
-                name="chevron-down"
-                class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 {historyOpen
-                  ? 'rotate-0'
-                  : '-rotate-90'}" />
-              <span
-                class="underline decoration-transparent decoration-2 underline-offset-4 transition-colors group-hover:decoration-current">
-                {m.game_story()}
-              </span>
-            </button>
-            {#if historyOpen}
-              <p
-                transition:slide|global={{ duration: reduced ? 0 : 200 }}
-                class="text-dim mt-2 px-4.5 whitespace-pre-line">
-                {detail.storyline}
-              </p>
-            {/if}
-          </div>
-        {/if}
-
-        {#if !entry}
-          <div class="mt-6 flex items-center gap-2.5">
-            <button
-              class="btn btn-primary"
-              disabled={saving}
-              onclick={() => addMut.mutate()}>
-              <Icon name="plus" class="h-4 w-4" />
-              {m.library_add()}
-            </button>
-            <WorkMoreMenu onshare={() => (sharing = true)} />
-          </div>
+  {#snippet releaseReminder(entry: GameEntryDto)}
+    <div class="flex flex-col gap-3">
+      <div class="flex items-center gap-3">
+        {#if digestOff}
+          <Tooltip
+            text={m.release_alerts_channels_off()}
+            class="inline-flex shrink-0">
+            {@render bellButton(entry)}
+          </Tooltip>
         {:else}
-          <TrackingPanel
-            onShare={() => (sharing = true)}
-            favorite={entry.favorite}
-            {saving}
-            onToggleFavorite={() =>
-              patchMut.mutate({ favorite: !entry.favorite })}
-            onRemove={() => (confirmRemove = true)}
-            actions={upcoming
-              ? []
-              : [
-                  ...(entry.status === "PLAYING"
-                    ? [
-                        {
-                          label: m.game_status_mark_completed(),
-                          icon: "check" as const,
-                          onSelect: () =>
-                            patchMut.mutate({ status: "COMPLETED" }),
-                        },
-                        {
-                          label: m.game_status_drop(),
-                          icon: "archive" as const,
-                          onSelect: () =>
-                            patchMut.mutate({ status: "DROPPED" }),
-                        },
-                      ]
-                    : []),
-                  ...(entry.status === "DROPPED"
-                    ? [
-                        {
-                          label: m.game_status_resume(),
-                          icon: "refresh" as const,
-                          onSelect: () =>
-                            patchMut.mutate({ status: "PLAYING" }),
-                        },
-                      ]
-                    : []),
-                  ...(correctionLabel
-                    ? [
-                        {
-                          label: correctionLabel,
-                          icon: "edit" as const,
-                          separator: true,
-                          onSelect: openStatusCorrection,
-                        },
-                      ]
-                    : []),
-                ]}
-            targetType="GAME"
-            targetId={entry.game.id}>
-            {#if upcoming}
-              {@render releaseReminder(entry)}
-            {:else}
-              <GameSessionDock {entry} {detailKey} />
-
-              <hr class="border-border" />
-
-              <OwnershipField
-                status={entry.ownershipStatus}
-                source={entry.ownershipSource}
-                statusOptions={GAME_OWNERSHIP_STATUS_OPTIONS}
-                sourceOptionsByStatus={GAME_OWNERSHIP_SOURCES}
-                onChange={(status, source) =>
-                  patchMut.mutate({
-                    ownershipStatus: status as typeof entry.ownershipStatus,
-                    ownershipSource: source,
-                  })} />
-
-              {#if detail.platforms.length > 0}
-                <GamePlatformField
-                  platform={entry.platform}
-                  platforms={detail.platforms}
-                  onChange={(platform) => patchMut.mutate({ platform })} />
-              {/if}
-            {/if}
-
-            <hr class="border-border" />
-
-            <NoteField
-              value={entry.notes}
-              placeholder={m.game_note_placeholder()}
-              onChange={(v) => patchMut.mutate({ notes: v })} />
-          </TrackingPanel>
+          {@render bellButton(entry)}
         {/if}
-
-        <!-- Side panels, mobile position: after "Mon suivi", before the carousels. -->
-        {#if hasSidePanels}
-          <div class="mt-8 md:hidden">
-            {@render sidePanels()}
-          </div>
-        {/if}
-
-        {#if sagaQuery.data}
-          <GameSagaSection
-            saga={sagaQuery.data}
-            {sagaKey}
-            sourceId={detail.sourceId}
-            entryStatus={entry?.status ?? null} />
-        {/if}
-
-        <RelatedCarousel
-          title={detail.franchiseName
-            ? m.game_franchise_title({ name: detail.franchiseName })
-            : m.game_same_franchise()}
-          items={toCarouselItems(
-            detail.franchiseGames.filter((g) => !sagaIds.has(g.sourceId)),
-            "/app/games",
-          )} />
-
-        <RelatedCarousel
-          title={m.media_similar_titles()}
-          items={toCarouselItems(detail.similarGames, "/app/games")} />
-
-        <!-- Attribution required by the IGDB API/Data Commercial Usage
-             Addendum: linked mention on every page using IGDB Services. -->
-        <a
-          href={IGDB_API}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="text-dim hover:text-accent text-micro mt-4 flex w-fit items-center gap-1.5 transition-colors">
-          <ProviderMark
-            brand="igdb"
-            decorative
-            class="h-3 w-3 shrink-0 opacity-70" />
-          {m.datasource_igdb_notice()}
-        </a>
-
-        <WorkSocialSection
-          targetType="GAME"
-          reviewTargetId={entry && !upcoming ? entry.game.id : null}
-          commentTargetId={detail.commentTargetId}
-          title={detail.title}
-          meta={reviewMeta}
-          imageUrl={detail.coverUrl}
-          canParticipate={!!entry} />
-      </div>
-
-      {#snippet bellButton(entry: GameEntryDto)}
-        <button
-          type="button"
-          class="grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50 {entry.releaseAlertsEnabled
-            ? 'bg-accent text-accent-fg'
-            : 'border-border text-dim border'}"
-          disabled={saving || digestOff}
-          aria-pressed={entry.releaseAlertsEnabled}
-          aria-label={entry.releaseAlertsEnabled
-            ? m.media_movie_reminder_cancel()
-            : m.media_movie_reminder_enable()}
-          title={digestOff
-            ? undefined
-            : entry.releaseAlertsEnabled
-              ? m.media_movie_reminder_cancel()
+        <div class="min-w-0 text-sm">
+          <p class={digestOff ? "text-dim" : ""}>
+            {entry.releaseAlertsEnabled
+              ? m.media_movie_reminder_active()
               : m.media_movie_reminder_enable()}
-          onclick={() => releaseAlertsMut.mutate(!entry.releaseAlertsEnabled)}>
-          <Icon
-            name={entry.releaseAlertsEnabled ? "bell" : "bell-off"}
-            class="h-5 w-5" />
-        </button>
-      {/snippet}
-
-      {#snippet releaseReminder(entry: GameEntryDto)}
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center gap-3">
-            {#if digestOff}
-              <Tooltip
-                text={m.release_alerts_channels_off()}
-                class="inline-flex shrink-0">
-                {@render bellButton(entry)}
-              </Tooltip>
-            {:else}
-              {@render bellButton(entry)}
-            {/if}
-            <div class="min-w-0 text-sm">
-              <p class={digestOff ? "text-dim" : ""}>
-                {entry.releaseAlertsEnabled
-                  ? m.media_movie_reminder_active()
-                  : m.media_movie_reminder_enable()}
-                {#if isFeatureNew("game-releases")}<NewBadge />{/if}
-              </p>
-              {#if entry.releaseAlertsEnabled && isVagueRelease(detail?.releaseDatePrecision ?? null)}
-                <p class="text-dim text-xs">
-                  {m.game_release_reminder_vague_hint()}
-                </p>
-              {/if}
-            </div>
-          </div>
-          <p class="text-dim text-xs">{m.game_upcoming_tracking_hint()}</p>
-        </div>
-      {/snippet}
-
-      <!-- Side panels, desktop position: sidebar next to the main column. -->
-      {#snippet sidePanels()}
-        <div class="flex flex-col gap-4">
-          {#if hasMeta}
-            {@render detailsPanel()}
-          {/if}
-          {#if detail?.timeToBeat}
-            <GameTimeToBeat timeToBeat={detail.timeToBeat} />
+            {#if isFeatureNew("game-releases")}<NewBadge />{/if}
+          </p>
+          {#if entry.releaseAlertsEnabled && isVagueRelease(detail?.releaseDatePrecision ?? null)}
+            <p class="text-dim text-xs">
+              {m.game_release_reminder_vague_hint()}
+            </p>
           {/if}
         </div>
-      {/snippet}
-      {#snippet detailsPanel()}
-        <DetailsCard>
-          {#if detail && detail.developers.length > 0}
-            <div>
-              <dt class="timecode text-xs">{m.media_developer()}</dt>
-              <dd class="mt-0.5 text-sm">
-                {detail.developers.join(", ")}
-              </dd>
-            </div>
-          {/if}
-          {#if detail && detail.publishers.length > 0}
-            <div>
-              <dt class="timecode text-xs">{m.media_publisher()}</dt>
-              <dd class="mt-0.5 text-sm">
-                {detail.publishers.join(", ")}
-              </dd>
-            </div>
-          {/if}
-          {#if detail && detail.gameModes.length > 0}
-            <div>
-              <dt class="timecode text-xs">{m.game_play_modes()}</dt>
-              <dd class="mt-0.5 text-sm">{detail.gameModes.join(", ")}</dd>
-            </div>
-          {/if}
-          {#if detail && detail.playerPerspectives.length > 0}
-            <div>
-              <dt class="timecode text-xs">{m.game_view()}</dt>
-              <dd class="mt-0.5 text-sm">
-                {detail.playerPerspectives.join(", ")}
-              </dd>
-            </div>
-          {/if}
-          {#if detail && detail.multiplayerModes.length > 0}
-            <div>
-              <dt class="timecode text-xs">{m.game_multiplayer()}</dt>
-              <dd class="mt-0.5 text-sm">
-                {detail.multiplayerModes.join(", ")}
-              </dd>
-            </div>
-          {/if}
+      </div>
+      <p class="text-dim text-xs">{m.game_upcoming_tracking_hint()}</p>
+    </div>
+  {/snippet}
 
-          {#if detail && detail.website}
-            <a
-              href={detail.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="link-accent mt-0.5 w-fit text-xs decoration-1">
-              {m.media_official_site()}
-            </a>
-          {/if}
-        </DetailsCard>
-      {/snippet}
-      {#if hasSidePanels}
-        <div class="hidden md:block">
-          {@render sidePanels()}
-        </div>
+  {#snippet sidePanels()}
+    <div class="flex flex-col gap-4">
+      {#if hasMeta}
+        {@render detailsPanel()}
+      {/if}
+      {#if detail?.timeToBeat}
+        <GameTimeToBeat timeToBeat={detail.timeToBeat} />
       {/if}
     </div>
-  </div>
+  {/snippet}
+  {#snippet detailsPanel()}
+    <DetailsCard>
+      {#if detail && detail.developers.length > 0}
+        <div>
+          <dt class="timecode text-xs">{m.media_developer()}</dt>
+          <dd class="mt-0.5 text-sm">
+            {detail.developers.join(", ")}
+          </dd>
+        </div>
+      {/if}
+      {#if detail && detail.publishers.length > 0}
+        <div>
+          <dt class="timecode text-xs">{m.media_publisher()}</dt>
+          <dd class="mt-0.5 text-sm">
+            {detail.publishers.join(", ")}
+          </dd>
+        </div>
+      {/if}
+      {#if detail && detail.gameModes.length > 0}
+        <div>
+          <dt class="timecode text-xs">{m.game_play_modes()}</dt>
+          <dd class="mt-0.5 text-sm">{detail.gameModes.join(", ")}</dd>
+        </div>
+      {/if}
+      {#if detail && detail.playerPerspectives.length > 0}
+        <div>
+          <dt class="timecode text-xs">{m.game_view()}</dt>
+          <dd class="mt-0.5 text-sm">
+            {detail.playerPerspectives.join(", ")}
+          </dd>
+        </div>
+      {/if}
+      {#if detail && detail.multiplayerModes.length > 0}
+        <div>
+          <dt class="timecode text-xs">{m.game_multiplayer()}</dt>
+          <dd class="mt-0.5 text-sm">
+            {detail.multiplayerModes.join(", ")}
+          </dd>
+        </div>
+      {/if}
+
+      {#if detail && detail.website}
+        <a
+          href={detail.website}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="link-accent mt-0.5 w-fit text-xs decoration-1">
+          {m.media_official_site()}
+        </a>
+      {/if}
+    </DetailsCard>
+  {/snippet}
 
   {#if sharing && work}
     <ShareWorkModal

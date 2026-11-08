@@ -1,6 +1,5 @@
 import { formatDate } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
-import { formatSessionMinutes } from "#lib/session-presentation.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import {
@@ -96,11 +95,52 @@ describe("game completion estimate", () => {
       if (status === "PLAYING") {
         expect(await screen.findByText(text)).toBeTruthy();
       } else {
-        await screen.findByText(formatSessionMinutes(180));
+        await screen.findByRole("button", {
+          name: new RegExp(m.session_mine()),
+        });
         expect(screen.queryByText(text)).toBeNull();
       }
     },
   );
+});
+
+describe("sessions on the page", () => {
+  it("keeps the week and history for the My sessions sheet", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(apiUrl("/session-timer"), () => HttpResponse.json(null)),
+      http.get(apiUrl("/games/entries/entry/sessions"), () =>
+        HttpResponse.json({
+          items: [],
+          hasMore: false,
+          totalSessions: 3,
+          totalTrackedMinutes: 180,
+          weekMinutes: 0,
+          weekSessions: 0,
+          weekDays: [],
+          monthMinutes: 180,
+          activePlaythrough: null,
+          estimatedCompletionDate: null,
+        }),
+      ),
+    );
+    renderWithQuery(GameSessionDock, {
+      entry: { ...game, status: "PLAYING" },
+      detailKey: ["detail"],
+    });
+
+    const sessions = await screen.findByRole("button", {
+      name: new RegExp(m.session_mine()),
+    });
+    expect(screen.queryByText(m.common_this_week())).toBeNull();
+
+    await user.click(sessions);
+
+    expect(
+      await screen.findByRole("dialog", { name: m.session_mine() }),
+    ).toBeTruthy();
+    expect(screen.getByText(m.common_this_week())).toBeTruthy();
+  });
 });
 
 describe("session timer confirmation", () => {

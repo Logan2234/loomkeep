@@ -23,7 +23,6 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { formatDate } from "#lib/format.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -40,7 +39,6 @@
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
-  import NewBadge from "./NewBadge.svelte";
   import PageNumberControl from "./PageNumberControl.svelte";
   import ProgressBar from "./ProgressBar.svelte";
   import SegmentedControl from "./SegmentedControl.svelte";
@@ -48,7 +46,6 @@
   import SessionTimerControl from "./SessionTimerControl.svelte";
   import SessionWeekChart from "./SessionWeekChart.svelte";
   import Switch from "./Switch.svelte";
-  import TrackingStatusBadge from "./TrackingStatusBadge.svelte";
 
   let {
     entry,
@@ -119,9 +116,6 @@
     activeReading ??
       entry.readings.find((reading) => reading.status === "ACTIVE") ??
       lastFinishedReading,
-  );
-  const displayedReadingIsActive = $derived(
-    displayedReading?.status === "ACTIVE",
   );
   const displayedReferencePages = $derived(
     displayedReading?.referencePageCount ?? referencePages,
@@ -296,10 +290,6 @@
       : m.session_week_summary_many({ count, duration });
   }
 
-  function historyLabel(count: number): string {
-    return count === 1 ? m.session_view_one() : m.session_view_many({ count });
-  }
-
   function historyDescription(count: number): string {
     return count === 1
       ? m.book_session_history_grouped_one()
@@ -420,194 +410,84 @@
   }
 </script>
 
-<section aria-labelledby="book-session-title">
-  <article class="border-border bg-bg/45 overflow-hidden rounded-2xl border">
-    <div class="p-4 sm:p-5">
-      <header class="flex flex-wrap items-start justify-between gap-3">
-        <div class="min-w-0">
-          <p class="text-dim text-sm">
-            {displayedReadingIsActive
-              ? m.book_cycle_current_label()
-              : m.book_cycle_last_label()}
-          </p>
-          <h3
-            id="book-session-title"
-            class="font-display mt-0.5 text-xl font-bold">
-            {m.book_cycle_current({ number: displayedReading?.number ?? 1 })}
-          </h3>
-          {#if displayedReading?.startedAt}
-            <p class="text-dim mt-1 text-xs">
-              {m.session_cycle_started({
-                date: formatDate(displayedReading.startedAt),
-              })}
-            </p>
-          {/if}
-        </div>
-        <div class="flex items-center gap-2">
-          {#if isFeatureNew("sessions")}<NewBadge />{/if}
-          <TrackingStatusBadge domain="BOOKS" status={entry.status} />
-        </div>
-      </header>
-
-      <div
-        class="mt-5 grid gap-6 lg:grid-cols-[minmax(13rem,0.85fr)_minmax(20rem,1.15fr)] lg:items-end">
-        <div>
-          <p
-            class="font-display text-4xl leading-none font-extrabold tabular-nums sm:text-5xl">
-            {m.book_session_page_value({ number: displayedCurrentPage })}
-          </p>
-          {#if displayedReferencePages}
-            <p class="text-dim mt-2 text-sm tabular-nums">
-              {m.book_cycle_page_context({
-                count: displayedReferencePages,
-                progress: progressPct,
-              })}
-            </p>
-            {#if remainingPages !== null}
-              <p class="text-dim mt-4 text-right text-xs tabular-nums">
-                {m.book_cycle_remaining({ count: remainingPages })}
-              </p>
-            {/if}
-            <ProgressBar
-              value={progressPct}
-              label={m.book_session_progress()}
-              height="h-2.5"
-              fillClass="bg-accent"
-              endCap="bookmark"
-              class="mt-2" />
-          {/if}
-        </div>
-
-        <div>
-          <div class="flex flex-wrap items-baseline justify-between gap-2">
-            <h4 class="font-display font-bold">{m.common_this_week()}</h4>
-            <p class="text-dim text-xs tabular-nums">
-              {weeklySummary(
-                summary?.weekSessions ?? 0,
-                summary?.weekMinutes ?? 0,
-              )}
-            </p>
-          </div>
-          {#if sessionsQuery.error}
-            <div class="mt-4">
-              <Banner variant="error">{sessionsQuery.error}</Banner>
-            </div>
-          {:else if summary}
-            <SessionWeekChart days={summary.weekDays} />
-          {:else}
-            <div
-              class="mt-4 grid h-20 grid-cols-7 items-end gap-2"
-              aria-hidden="true">
-              {#each Array(7) as _, i (i)}
-                <span class="bg-surface-2 h-2 rounded-t-md"></span>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      </div>
-
-      <dl class="border-border mt-5 grid grid-cols-1 border-y sm:grid-cols-3">
-        <div class="border-border px-1 py-3 sm:border-r sm:px-4">
-          <dt class="text-dim text-xs">{m.book_cycle_time()}</dt>
-          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
-            {formatSessionMinutes(displayedReading?.trackedMinutes ?? 0)}
-          </dd>
-        </div>
-        <div
-          class="border-border border-t px-1 py-3 sm:border-t-0 sm:border-r sm:px-4">
-          <dt class="text-dim text-xs">{m.book_session_total_time()}</dt>
-          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
-            {formatSessionMinutes(
-              summary?.totalTrackedMinutes ?? entry.trackedReadingMinutes,
-            )}
-          </dd>
-        </div>
-        <div class="border-border border-t px-1 py-3 sm:border-t-0 sm:px-4">
-          <dt class="text-dim text-xs">{m.book_session_pace()}</dt>
-          <dd class="font-display mt-1 text-lg font-bold">
-            {summary?.averagePagesPerDay === null ||
-            summary?.averagePagesPerDay === undefined
-              ? m.book_session_pace_pending()
-              : m.book_session_pace_value({
-                  count: summary.averagePagesPerDay,
-                })}
-          </dd>
-        </div>
-      </dl>
-
-      <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            class="btn btn-primary"
-            disabled={!referencePages}
-            onclick={openAdd}>
-            <Icon name="plus" class="h-4 w-4" />
-            {m.book_session_add_short()}
-          </button>
-          <SessionTimerControl
-            domain="BOOKS"
-            entryId={entry.id}
-            disabled={!referencePages}
-            compact
-            onFinish={finishTimedSession} />
-        </div>
-        {#if summary?.estimatedCompletionDate}
-          <p class="text-dim text-xs">
-            {m.book_session_eta({
-              date: formatDate(`${summary.estimatedCompletionDate}T12:00:00`),
-            })}
-          </p>
-        {/if}
-      </div>
+<!-- On the page: one progress line, the session button and the timer
+     (FIC-07). The week, the totals and the history open in "My sessions". -->
+<section aria-labelledby="book-session-title" class="flex flex-col gap-3">
+  {#if displayedReferencePages && (totalSessions > 0 || displayedCurrentPage > 0)}
+    <div class="flex flex-col gap-1.5">
+      <p class="flex flex-wrap items-baseline gap-x-2">
+        <span
+          id="book-session-title"
+          class="font-display text-lg font-extrabold tabular-nums">
+          {m.book_session_page_value({ number: displayedCurrentPage })}
+        </span>
+        <span class="text-dim text-sm tabular-nums">
+          {m.book_cycle_page_context({
+            count: displayedReferencePages,
+            progress: progressPct,
+          })}
+        </span>
+      </p>
+      <ProgressBar
+        value={progressPct}
+        label={m.book_session_progress()}
+        height="h-2.5"
+        fillClass="bg-accent"
+        endCap="bookmark" />
+      <p class="text-dim text-xs tabular-nums">
+        {#if remainingPages !== null}{m.book_cycle_remaining({
+            count: remainingPages,
+          })}{/if}{#if remainingPages !== null && summary?.estimatedCompletionDate}
+          ·
+        {/if}{#if summary?.estimatedCompletionDate}{m.book_session_eta({
+            date: formatDate(`${summary.estimatedCompletionDate}T12:00:00`),
+          })}{/if}
+      </p>
     </div>
+  {:else}
+    <h3 id="book-session-title" class="sr-only">
+      {m.book_session_add_short()}
+    </h3>
+  {/if}
 
-    <footer
-      class="border-border bg-surface/55 flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 sm:px-5">
-      {#if completedReadings.length > 0}
-        <div class="flex min-w-0 items-center gap-3">
-          <span
-            class="bg-success/12 text-success grid h-9 w-9 shrink-0 place-items-center rounded-full">
-            <Icon name="check" class="h-4 w-4" />
-          </span>
-          <div class="min-w-0">
-            <p class="text-sm font-semibold">
-              {completedReadings.length === 1
-                ? m.book_cycle_completed_one()
-                : m.book_cycle_completed_many({
-                    count: completedReadings.length,
-                  })}
-            </p>
-            <p class="text-dim truncate text-xs">
-              {m.book_cycle_completed_detail({
-                number: completedReadings[0]!.number,
-                count:
-                  completedReadings[0]!.referencePageCount ??
-                  completedReadings[0]!.currentPage,
-              })}
-            </p>
-          </div>
-        </div>
-      {:else if lastFinishedReading?.status === "DROPPED"}
-        <p class="text-dim text-xs">
-          {m.book_cycle_current({ number: lastFinishedReading.number })} ·
-          {m.session_cycle_dropped()}
-        </p>
-      {/if}
-      <button
-        type="button"
-        class="text-dim hover:text-accent ml-auto text-sm font-semibold underline decoration-current/40 underline-offset-4 transition-colors disabled:cursor-default disabled:opacity-50"
-        disabled={totalSessions === 0}
-        onclick={openHistory}>
-        {historyLabel(totalSessions)}
-      </button>
-    </footer>
-  </article>
+  <div class="flex flex-wrap items-center gap-2">
+    <button
+      type="button"
+      class="btn btn-primary grow whitespace-nowrap sm:grow-0"
+      disabled={!referencePages}
+      onclick={openAdd}>
+      <Icon name="plus" class="h-4 w-4" />
+      {m.book_session_add_short()}
+    </button>
+    <SessionTimerControl
+      domain="BOOKS"
+      entryId={entry.id}
+      disabled={!referencePages}
+      compact
+      onFinish={finishTimedSession} />
+  </div>
+
+  {#if totalSessions > 0}
+    <button
+      type="button"
+      class="bg-surface hover:bg-surface-2 flex min-h-14 w-full items-center gap-3 rounded-xl px-4 text-left transition-colors"
+      onclick={openHistory}>
+      <span class="min-w-0 flex-1">
+        <span class="font-semibold">{m.session_mine()}</span>
+        <span class="text-dim ml-1.5 text-sm tabular-nums">
+          {totalSessions} · {formatSessionMinutes(
+            summary?.totalTrackedMinutes ?? entry.trackedReadingMinutes,
+          )}
+        </span>
+      </span>
+      <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+    </button>
+  {:else if !sessionsQuery.loading && referencePages}
+    <p class="text-dim text-xs">{m.session_first_hint()}</p>
+  {/if}
 
   {#if !referencePages}
-    <div class="mt-3">
-      <Banner variant="info">{m.book_session_reference_missing()}</Banner>
-    </div>
+    <Banner variant="info">{m.book_session_reference_missing()}</Banner>
   {/if}
 </section>
 
@@ -779,10 +659,98 @@
 
 {#if showHistory}
   <Modal
-    title={m.book_session_history_title()}
+    title={m.session_mine()}
     description={historyDescription(totalSessions)}
     wide
     onclose={() => (showHistory = false)}>
+    <div class="mb-5">
+      <div>
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h4 class="font-display font-bold">{m.common_this_week()}</h4>
+          <p class="text-dim text-xs tabular-nums">
+            {weeklySummary(
+              summary?.weekSessions ?? 0,
+              summary?.weekMinutes ?? 0,
+            )}
+          </p>
+        </div>
+        {#if sessionsQuery.error}
+          <div class="mt-4">
+            <Banner variant="error">{sessionsQuery.error}</Banner>
+          </div>
+        {:else if summary}
+          <SessionWeekChart days={summary.weekDays} />
+        {:else}
+          <div
+            class="mt-4 grid h-20 grid-cols-7 items-end gap-2"
+            aria-hidden="true">
+            {#each Array(7) as _, i (i)}
+              <span class="bg-surface-2 h-2 rounded-t-md"></span>
+            {/each}
+          </div>
+        {/if}
+      </div>
+      <dl class="border-border mt-5 grid grid-cols-1 border-y sm:grid-cols-3">
+        <div class="border-border px-1 py-3 sm:border-r sm:px-4">
+          <dt class="text-dim text-xs">{m.book_cycle_time()}</dt>
+          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
+            {formatSessionMinutes(displayedReading?.trackedMinutes ?? 0)}
+          </dd>
+        </div>
+        <div
+          class="border-border border-t px-1 py-3 sm:border-t-0 sm:border-r sm:px-4">
+          <dt class="text-dim text-xs">{m.book_session_total_time()}</dt>
+          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
+            {formatSessionMinutes(
+              summary?.totalTrackedMinutes ?? entry.trackedReadingMinutes,
+            )}
+          </dd>
+        </div>
+        <div class="border-border border-t px-1 py-3 sm:border-t-0 sm:px-4">
+          <dt class="text-dim text-xs">{m.book_session_pace()}</dt>
+          <dd class="font-display mt-1 text-lg font-bold">
+            {summary?.averagePagesPerDay === null ||
+            summary?.averagePagesPerDay === undefined
+              ? m.book_session_pace_pending()
+              : m.book_session_pace_value({
+                  count: summary.averagePagesPerDay,
+                })}
+          </dd>
+        </div>
+      </dl>
+      <div class="mt-4 flex flex-wrap items-center gap-3">
+        {#if completedReadings.length > 0}
+          <div class="flex min-w-0 items-center gap-3">
+            <span
+              class="bg-success/12 text-success grid h-9 w-9 shrink-0 place-items-center rounded-full">
+              <Icon name="check" class="h-4 w-4" />
+            </span>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold">
+                {completedReadings.length === 1
+                  ? m.book_cycle_completed_one()
+                  : m.book_cycle_completed_many({
+                      count: completedReadings.length,
+                    })}
+              </p>
+              <p class="text-dim truncate text-xs">
+                {m.book_cycle_completed_detail({
+                  number: completedReadings[0]!.number,
+                  count:
+                    completedReadings[0]!.referencePageCount ??
+                    completedReadings[0]!.currentPage,
+                })}
+              </p>
+            </div>
+          </div>
+        {:else if lastFinishedReading?.status === "DROPPED"}
+          <p class="text-dim text-xs">
+            {m.book_cycle_current({ number: lastFinishedReading.number })} ·
+            {m.session_cycle_dropped()}
+          </p>
+        {/if}
+      </div>
+    </div>
     {#if sessionsQuery.error}
       <Banner variant="error">{sessionsQuery.error}</Banner>
     {:else if summary?.items.length}

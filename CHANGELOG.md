@@ -15,6 +15,10 @@ history from before it was started.
 
 ### Changed
 
+- Game, book and album pages take the video page's layout: full-width image
+  header, the same sticky action bar (with the discussion), then the
+  tracking. Sessions show as one progress line with the session button and
+  timer; the week, totals and history open in "My sessions".
 - Profile: counters on one line (comments dropped), labelled Edit and Share
   buttons, and "Member since" moved to the bottom of the page.
 - Settings › Visibility: who sees each domain's library and activity is one
