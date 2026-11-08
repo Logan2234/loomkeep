@@ -13,6 +13,7 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
   import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
   import GhostSwitchModal from "#lib/components/GhostSwitchModal.svelte";
   import Modal from "#lib/components/Modal.svelte";
   import SegmentedControl from "#lib/components/SegmentedControl.svelte";
@@ -24,6 +25,7 @@
     ACCESS,
     ACCESS_OPTIONS,
     AUDIENCES,
+    commonAudience,
     FACETS,
     MODE_MATRIX,
   } from "#lib/privacy-options.js";
@@ -102,12 +104,15 @@
     ghostSwitchMut.mutate();
   }
 
+  type AudienceChange = {
+    domain: Domain;
+    facet: VisibilityFacet;
+    audience: VisibilityAudience;
+  };
+
   const audienceMut = createApiMutation(() => ({
-    mutate: (args: {
-      domain: Domain;
-      facet: VisibilityFacet;
-      audience: VisibilityAudience;
-    }) => updatePrivacySettings({ settings: [args] }),
+    mutate: (changes: AudienceChange[]) =>
+      updatePrivacySettings({ settings: changes }),
     onSuccess: patchSettings,
     errorToast: true,
   }));
@@ -118,7 +123,17 @@
     audience: VisibilityAudience,
   ) {
     if (!settings) return;
-    audienceMut.mutate({ domain, facet, audience });
+    audienceMut.mutate([{ domain, facet, audience }]);
+  }
+
+  function setAudienceEverywhere(
+    facet: VisibilityFacet,
+    audience: VisibilityAudience,
+  ) {
+    if (!settings) return;
+    audienceMut.mutate(
+      visibleDomainIds.map((domain) => ({ domain, facet, audience })),
+    );
   }
 
   const reviewVisibilityMut = createApiMutation(() => ({
@@ -179,22 +194,25 @@
       .filter((id) => auth.user?.enabledDomains.includes(id))
       .map((id): [Domain, (typeof DOMAINS)[Domain]] => [id, DOMAINS[id]]),
   );
+  const visibleDomainIds = $derived(visibleDomainEntries.map(([id]) => id));
 </script>
 
-{#snippet audienceSegmented(
-  domain: Domain,
-  facet: VisibilityFacet,
-  current: VisibilityAudience,
+{#snippet audienceCombobox(
+  label: string,
+  current: VisibilityAudience | null,
+  onChange: (audience: VisibilityAudience) => void,
 )}
-  <SegmentedControl
+  <Combobox
+    {label}
     options={AUDIENCES.map((a) => ({
       value: a.id,
       label: a.label,
       disabled: isPrivate && a.id === VisibilityAudience.PUBLIC,
-      disabledReason: m.settings_private_profile_public_hint(),
     }))}
-    value={current}
-    onChange={(v) => setAudience(domain, facet, v)} />
+    values={current ? [current] : []}
+    selectedLabel={current ? undefined : m.settings_privacy_mixed()}
+    disabled={audienceMut.loading}
+    onChange={([v]) => v && onChange(v as VisibilityAudience)} />
 {/snippet}
 
 {#if appConfig.socialEnabled && settingsQuery.loading}
@@ -233,26 +251,57 @@
     </div>
 
     {#if settings.profileAccess !== ProfileAccess.GHOST}
-      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {#each visibleDomainEntries as [domainId, domainInfo] (domainId)}
-          <section class="border-border rounded-xl border p-4">
-            <p class="font-semibold">{domainInfo.label}</p>
-            <div
-              class="mt-4 flex w-full flex-wrap justify-between gap-4 md:flex-col">
+      <table class="w-full max-w-xl text-sm">
+        <thead>
+          <tr>
+            <td></td>
+            {#each FACETS as f (f.id)}
+              <th scope="col" class="text-dim pb-1 text-left font-semibold">
+                {f.label}
+              </th>
+            {/each}
+          </tr>
+        </thead>
+        <tbody>
+          {#if visibleDomainEntries.length > 1}
+            <tr class="border-border border-b">
+              <th scope="row" class="py-2 pr-3 text-left font-semibold">
+                {m.settings_privacy_all_domains()}
+              </th>
               {#each FACETS as f (f.id)}
-                {@const current = audienceOf(domainId, f.id)}
-                <div>
-                  <p
-                    class="text-dim mb-1.5 text-xs font-semibold tracking-wide uppercase">
-                    {f.label}
-                  </p>
-                  {@render audienceSegmented(domainId, f.id, current)}
-                </div>
+                <td class="py-2 pr-2">
+                  {@render audienceCombobox(
+                    `${m.settings_privacy_all_domains()} · ${f.label}`,
+                    commonAudience(audienceOf, visibleDomainIds, f.id),
+                    (audience) => setAudienceEverywhere(f.id, audience),
+                  )}
+                </td>
               {/each}
-            </div>
-          </section>
-        {/each}
-      </div>
+            </tr>
+          {/if}
+          {#each visibleDomainEntries as [domainId, domainInfo] (domainId)}
+            <tr>
+              <th scope="row" class="py-2 pr-3 text-left font-semibold">
+                {domainInfo.label}
+              </th>
+              {#each FACETS as f (f.id)}
+                <td class="py-2 pr-2">
+                  {@render audienceCombobox(
+                    `${domainInfo.label} · ${f.label}`,
+                    audienceOf(domainId, f.id),
+                    (audience) => setAudience(domainId, f.id, audience),
+                  )}
+                </td>
+              {/each}
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+      {#if isPrivate}
+        <p class="text-dim mt-2 text-xs">
+          {m.settings_private_profile_public_hint()}
+        </p>
+      {/if}
 
       {#if auth.user}
         {@const user = auth.user}

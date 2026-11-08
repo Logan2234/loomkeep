@@ -29,14 +29,13 @@ it("orders enabled privacy domains including planned ones", async () => {
       HttpResponse.json({ profileAccess: "PUBLIC", settings: [] }),
     ),
   );
-  const { container } = renderWithQuery(PrivacySection, {});
+  renderWithQuery(PrivacySection, {});
   await screen.findByText(m.common_Podcasts());
   expect(
-    Array.from(
-      container.querySelectorAll(
-        "section.grid > section > p, div.grid > section > p",
-      ),
-    ).map((p) => p.textContent?.trim()),
+    screen
+      .getAllByRole("rowheader")
+      .map((th) => th.textContent?.trim())
+      .filter((name) => name !== m.settings_privacy_all_domains()),
   ).toEqual([m.common_Podcasts(), m.common_Games(), m.common_Media()]);
 });
 
