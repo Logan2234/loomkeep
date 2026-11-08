@@ -1,5 +1,7 @@
+import { auth } from "#lib/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { renderWithQuery } from "#lib/test/render.js";
+import type { UserDto } from "@loomkeep/shared";
 import { fireEvent, screen, within } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import LandingPage from "./+page.svelte";
@@ -35,6 +37,22 @@ describe("landing hero call to action", () => {
       within(hero).getByRole("link", { name: m.landing_comparator_cta() }),
     ).toBeTruthy();
     expect(within(hero).getByText(m.landing_hero_reassurance())).toBeTruthy();
+  });
+
+  it("drops the reassurance for a signed-in visitor, who just opens the app", () => {
+    auth.user = { id: "u1" } as UserDto;
+
+    try {
+      renderWithQuery(LandingPage, {});
+
+      const hero = screen.getByRole("heading", { level: 1 }).parentElement!;
+      expect(
+        within(hero).getByRole("link", { name: m.landing_open_app() }),
+      ).toBeTruthy();
+      expect(within(hero).queryByText(m.landing_hero_reassurance())).toBeNull();
+    } finally {
+      auth.user = null;
+    }
   });
 });
 
