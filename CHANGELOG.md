@@ -17,6 +17,9 @@ history from before it was started.
 
 - Landing page: a clearer promise under the title, "free · no ads · full
   export" next to the main button, and shorter, plainer section texts.
+- Onboarding: albums join the welcome screen, and release alerts are
+  described as what they are, a digest at the pace you choose. An empty
+  library now also offers to import your history.
 - Game, book and album pages take the video page's layout: full-width image
   header, the same sticky action bar (with the discussion), then the
   tracking. Sessions show as one progress line with the session button and

@@ -671,6 +671,12 @@ describe("LibraryBrowser", () => {
       name: m.library_search_noun({ noun: "livre" }),
     });
     expect(link.getAttribute("href")).toBe("/app/search?type=BOOKS");
+    // Someone arriving from another tracker shouldn't have to re-enter it.
+    expect(
+      screen
+        .getByRole("link", { name: m.library_empty_import() })
+        .getAttribute("href"),
+    ).toBe("/app/settings/import");
   });
 
   it("offers to clear filters that match nothing", async () => {
