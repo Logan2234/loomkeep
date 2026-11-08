@@ -155,12 +155,13 @@ Reste :
 - Play App Signing avec « utiliser une clé existante » : la clé release
   actuelle. L'APK de GitHub et celui de Play auront la même signature et se
   mettront à jour l'un par l'autre.
-- Visuels : icône 512 × 512, bannière 1024 × 500, captures téléphone d'au
-  moins 1080 px de large et au plus 2:1 (les `pwa-screenshot-*-mobile.jpg`
-  actuelles, 375 × 811, ne passent pas).
-- Page de suppression de compte utilisable sans l'app : Guide › Your data
-  décrit le chemin dans l'app ; y ajouter le recours par email quand on ne
-  peut plus se connecter, puis donner son adresse à Play.
+- Captures téléphone d'au moins 1080 px de large et au plus 2:1 (les
+  `pwa-screenshot-*-mobile.jpg`, 375 × 811, ne passent pas) : celles du
+  Poco (1080 × 2400) recadrées en 1080 × 2160. L'icône et la bannière sont
+  dans `apps/mobile/store/`, avec leur source HTML (rendue par Chrome sans
+  interface, à la taille exacte).
+- Adresse de suppression de compte à donner à Play :
+  https://docs.loomkeep.app/guide/your-data/#if-you-cant-sign-in-anymore
 - Saisir l'annexe dans la console, test fermé, puis production. Plus tard,
   envoi des AAB par l'API Play (compte de service en secret).
 

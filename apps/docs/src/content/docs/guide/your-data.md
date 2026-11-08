@@ -67,6 +67,20 @@ Once the 14 days are over there is no undo: export first if you might want
 your data back. An administrator can cancel a scheduled deletion for you if
 you ask them before the date.
 
+### If you can't sign in anymore
+
+You don't need the app or the website to ask for a deletion:
+
+1. Try **Forgot password** on the sign-in page first: once back in, delete
+   the account yourself as above.
+2. If that doesn't work (lost access to your email, or to your two-factor
+   method), write to the instance's administrator from the address your
+   account uses and ask for its deletion. On loomkeep.app, that's
+   [contact@loomkeep.app](mailto:contact@loomkeep.app).
+
+The same data is deleted and kept as listed above, but right away: there are
+no 14 days to change your mind, so export first if you can still get in.
+
 ## Inactive accounts
 
 An account left unused for **two years** gets an email: it will be deleted

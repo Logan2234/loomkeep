@@ -15,6 +15,8 @@ history from before it was started.
 
 ### Changed
 
+- Docs: Guide › Your data explains how to have an account deleted when you
+  can't sign in anymore.
 - Landing page: a clearer promise under the title, "free · no ads · full
   export" next to the main button, and shorter, plainer section texts.
 - Onboarding: albums join the welcome screen, and release alerts are
