@@ -125,7 +125,7 @@ describe("ListService.getForViewer — own-visibility gate", () => {
     expect(await friend.getForViewer(VIEWER, "l1")).not.toBeNull();
   });
 
-  it("shows a PUBLIC list only when the author's profile is public", async () => {
+  it("caps a PUBLIC list to friends when the author's profile is private", async () => {
     const publicAuthor = make(
       listRow({
         visibility: "PUBLIC",
@@ -135,15 +135,19 @@ describe("ListService.getForViewer — own-visibility gate", () => {
     );
     expect(await publicAuthor.getForViewer(VIEWER, "l1")).not.toBeNull();
 
-    const privateAuthor = make(
-      listRow({
-        visibility: "PUBLIC",
-        user: { id: "author", profileAccess: "PRIVATE" },
-      }),
-      relation({ following: true, followsYou: true, isFriend: true }),
-    );
-    // PUBLIC review-style content is capped by the author's own profileAccess.
-    expect(await privateAuthor.getForViewer(VIEWER, "l1")).toBeNull();
+    const privateRow = listRow({
+      visibility: "PUBLIC",
+      user: { id: "author", profileAccess: "PRIVATE" },
+    });
+    expect(
+      await make(privateRow, relation()).getForViewer(VIEWER, "l1"),
+    ).toBeNull();
+    expect(
+      await make(
+        privateRow,
+        relation({ following: true, followsYou: true, isFriend: true }),
+      ).getForViewer(VIEWER, "l1"),
+    ).not.toBeNull();
   });
 
   it("hides the list when either side blocks", async () => {

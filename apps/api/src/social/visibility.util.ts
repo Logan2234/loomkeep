@@ -75,8 +75,8 @@ export function resolveProfileVisibility(
  * (PRIVATE/FRIENDS/PUBLIC) rather than a per-domain VisibilitySetting facet —
  * the pattern `Review` and `List` both use (their own scope, never inherited
  * from the facet system). `access` still caps FRIENDS/PUBLIC the same way
- * `resolveFacet` does: a PRIVATE profile can't expose PUBLIC content to a
- * stranger.
+ * `resolveFacet` does: on a PRIVATE profile, PUBLIC content reaches friends
+ * only, as FRIENDS content would.
  */
 export function resolveOwnVisibility(
   ownVisibility: "PRIVATE" | "FRIENDS" | "PUBLIC",
@@ -87,7 +87,11 @@ export function resolveOwnVisibility(
   if (relation.blocking || relation.blockedByTarget) return false;
   if (access === ProfileAccess.GHOST) return false;
   if (ownVisibility === "PRIVATE") return false;
-  if (ownVisibility === "PUBLIC") return access === ProfileAccess.PUBLIC;
+
+  if (ownVisibility === "PUBLIC" && access === ProfileAccess.PUBLIC) {
+    return true;
+  }
+
   return computeIsFriend(access, relation.following, relation.followsYou);
 }
 
@@ -112,7 +116,11 @@ export function resolveReviewVisibility(
   if (relation.isSelf) return true;
   if (relation.blocking || relation.blockedByTarget) return false;
   if (access === ProfileAccess.GHOST) return true;
-  if (ownVisibility === "PUBLIC") return access === ProfileAccess.PUBLIC;
+
+  if (ownVisibility === "PUBLIC" && access === ProfileAccess.PUBLIC) {
+    return true;
+  }
+
   return computeIsFriend(access, relation.following, relation.followsYou);
 }
 

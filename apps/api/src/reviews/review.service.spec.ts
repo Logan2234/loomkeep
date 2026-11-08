@@ -121,17 +121,26 @@ describe("ReviewService.listForTarget", () => {
     ).toHaveLength(0);
   });
 
-  it("shows a PUBLIC review only when the author's profile is public", async () => {
+  it("caps a PUBLIC review to friends when the author's profile is private", async () => {
     const rows = [
       review("pub", { id: "a", profileAccess: "PUBLIC" }, "PUBLIC"),
       review("priv", { id: "b", profileAccess: "PRIVATE" }, "PUBLIC"),
     ];
-    const svc = make(rows, {
+    const stranger = make(rows, { a: relation({}), b: relation({}) });
+    expect(
+      (await stranger.listForTarget(VIEWER, "MEDIA" as never, "m1")).map(
+        (r) => r.id,
+      ),
+    ).toEqual(["pub"]);
+    const follower = make(rows, {
       a: relation({}),
       b: relation({ following: true }),
     });
-    const out = await svc.listForTarget(VIEWER, "MEDIA" as never, "m1");
-    expect(out.map((r) => r.id)).toEqual(["pub"]);
+    expect(
+      (await follower.listForTarget(VIEWER, "MEDIA" as never, "m1")).map(
+        (r) => r.id,
+      ),
+    ).toEqual(["pub", "priv"]);
   });
 
   it("shows a FRIENDS review only to a friend", async () => {
