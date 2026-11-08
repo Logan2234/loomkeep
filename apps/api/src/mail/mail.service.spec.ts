@@ -866,6 +866,14 @@ describe("MailService template gallery", () => {
     expect(footer(classic)).toContain("mailto:contact@loomkeep.app");
   });
 
+  it("words the French invitation with or without an inviter", () => {
+    const { intro } = MAIL_COPY.fr.invitation;
+
+    expect(intro("Alice")).toMatch(/^Alice t'invite à rejoindre Loomkeep/);
+    expect(intro(null)).toMatch(/^Tu es invité·e à rejoindre Loomkeep/);
+    expect(intro(null)).toContain("séries, films, animes, jeux");
+  });
+
   it.each(["passwordResetLink", "verifyEmail", "invitation"])(
     "offers a direct fallback link for %s",
     (key) => {
