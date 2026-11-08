@@ -20,9 +20,16 @@ const PROFILE = {
   bio: null,
   followerCount: 3,
   followingCount: 4,
+  reviewsCount: 2,
+  listsCount: 1,
+  commentsCount: 9,
 } as unknown as SocialProfileDto;
 
-function renderHeader(rel: Partial<RelationshipDto>, onUnfriend = vi.fn()) {
+function renderHeader(
+  rel: Partial<RelationshipDto>,
+  onUnfriend = vi.fn(),
+  selfManage = false,
+) {
   renderWithQuery(ProfileHeader, {
     profile: PROFILE,
     rel: {
@@ -34,14 +41,13 @@ function renderHeader(rel: Partial<RelationshipDto>, onUnfriend = vi.fn()) {
       blocking: false,
       ...rel,
     },
-    selfManage: false,
+    selfManage,
     publicView: false,
     busy: false,
     followLabel: rel.following
       ? m.profile_follow_following()
       : m.common_follow(),
     ghostCantFollow: false,
-    memberSince: "",
     onToggleFollow: vi.fn(),
     onUnfriend,
     onToggleBlock: vi.fn(),
@@ -97,5 +103,16 @@ describe("ProfileHeader", () => {
     );
 
     expect(onUnfriend).toHaveBeenCalled();
+  });
+
+  it("names its own actions and counts on one line, without comments", () => {
+    renderHeader({ isSelf: true }, vi.fn(), true);
+
+    expect(screen.getByRole("button", { name: m.common_edit() })).toBeTruthy();
+    expect(screen.getByRole("button", { name: m.common_share() })).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: m.common_settings() }),
+    ).toBeTruthy();
+    expect(screen.queryByText("9")).toBe(null);
   });
 });

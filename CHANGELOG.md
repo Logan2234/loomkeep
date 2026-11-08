@@ -15,6 +15,8 @@ history from before it was started.
 
 ### Changed
 
+- Profile: counters on one line (comments dropped), labelled Edit and Share
+  buttons, and "Member since" moved to the bottom of the page.
 - Settings › Visibility: who sees each domain's library and activity is one
   table, with an "All domains" row that sets a whole column at once.
 - Title pages: the tagline and ratings stay readable on a bright backdrop,

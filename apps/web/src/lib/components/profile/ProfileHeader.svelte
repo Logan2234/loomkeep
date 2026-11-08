@@ -23,7 +23,6 @@
     busy,
     followLabel,
     ghostCantFollow,
-    memberSince,
     onToggleFollow,
     onUnfriend,
     onToggleBlock,
@@ -42,7 +41,6 @@
     busy: boolean;
     followLabel: string;
     ghostCantFollow: boolean;
-    memberSince: string;
     onToggleFollow: () => void;
     /** Unfollowing a friend, from the menu: it ends the friendship. */
     onUnfriend: () => void;
@@ -88,6 +86,27 @@
   }));
 </script>
 
+{#snippet counter(value: number, label: string, onclick?: () => void)}
+  {#if onclick}
+    <button
+      type="button"
+      class="hover:bg-surface-2 rounded-lg px-1.5 py-1 transition-colors"
+      {onclick}>
+      <CountFlash
+        {value}
+        class="font-display text-fg text-base font-extrabold tabular-nums" />
+      {label}
+    </button>
+  {:else}
+    <span class="px-1.5 py-1">
+      <CountFlash
+        {value}
+        class="font-display text-fg text-base font-extrabold tabular-nums" />
+      {label}
+    </span>
+  {/if}
+{/snippet}
+
 <section class="card relative flex flex-col p-5 md:p-6">
   <span
     aria-hidden="true"
@@ -96,78 +115,129 @@
   </span>
 
   <div
-    class="relative mb-5 flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-    <div class="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-start">
-      <div class="relative shrink-0 self-start">
-        <button
-          type="button"
-          class="cursor-zoom-in"
-          aria-label={m.profile_avatar_zoom()}
-          onclick={onOpenAvatarZoom}>
-          <Avatar seed={profile.username} url={profile.avatarUrl} size={88} />
-        </button>
-        {#if selfManage}
+    class="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+    <div class="min-w-0 flex-1">
+      <div class="flex items-center gap-4">
+        <div class="relative shrink-0">
           <button
             type="button"
-            class="bg-accent text-accent-fg border-surface absolute -right-1 -bottom-1 grid h-7 w-7 place-items-center rounded-full border-2"
-            aria-label={m.profile_avatar_change()}
-            onclick={onOpenAvatarModal}>
-            <Icon name="camera" class="h-3.5 w-3.5" />
+            class="cursor-zoom-in"
+            aria-label={m.profile_avatar_zoom()}
+            onclick={onOpenAvatarZoom}>
+            <Avatar seed={profile.username} url={profile.avatarUrl} size={88} />
           </button>
-        {/if}
-      </div>
-      <div class="min-w-0 flex-1">
-        <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <h1
-            class="font-display truncate text-[26px] font-extrabold md:text-[34px]">
-            {profile.displayName}
-          </h1>
-          {#if appConfig.gamificationEnabled}
-            <StreakBadge
-              days={profile.activityStats.streakDays}
-              securedToday={profile.activityStats.streakSecuredToday}
-              isSelf={!!rel?.isSelf}
-              trackKey={rel?.isSelf && auth.user
-                ? `streak:${auth.user.id}`
-                : undefined} />
-          {/if}
           {#if selfManage}
             <button
               type="button"
-              class="text-dim hover:text-fg hover:bg-surface-2 rounded-full p-1"
-              aria-label={m.profile_edit()}
-              onclick={onOpenEditProfile}>
-              <Icon name="edit" class="h-3.5 w-3.5" />
+              class="bg-accent text-accent-fg border-surface absolute -right-1 -bottom-1 grid h-7 w-7 place-items-center rounded-full border-2"
+              aria-label={m.profile_avatar_change()}
+              onclick={onOpenAvatarModal}>
+              <Icon name="camera" class="h-3.5 w-3.5" />
             </button>
-          {:else if rel?.isFriend}
-            <span class="chip chip-on py-1! text-xs">{m.common_friends()}</span>
-          {:else if rel?.followsYou}
-            <span class="chip py-1! text-xs">{m.profile_follows_you()}</span>
           {/if}
         </div>
-        <p class="text-dim mt-0.5 flex flex-wrap items-center gap-x-2 text-sm">
-          <span class="timecode">@{profile.username}</span>
-          {#if selfManage && auth.user}
-            <span aria-hidden="true">·</span>
-            <span>{auth.user.email}</span>
-          {/if}
-        </p>
-        <p class="text-dim mt-1 flex flex-wrap items-center gap-x-2 text-sm">
-          <span
-            >{profile.profileAccess === "PUBLIC"
-              ? m.profile_status_public()
-              : profile.profileAccess === "PRIVATE"
-                ? m.profile_status_private()
-                : m.profile_ghost()}</span>
-          <span aria-hidden="true">·</span>
-          <span>{m.profile_member_since({ date: memberSince })}</span>
-        </p>
-        {#if profile.bio}
-          <p class="mt-3 max-w-[62ch] text-sm leading-relaxed">
-            {profile.bio}
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            <h1
+              class="font-display text-[26px] leading-tight font-extrabold wrap-anywhere md:text-[34px]">
+              {profile.displayName}
+            </h1>
+            {#if appConfig.gamificationEnabled}
+              <StreakBadge
+                days={profile.activityStats.streakDays}
+                securedToday={profile.activityStats.streakSecuredToday}
+                isSelf={!!rel?.isSelf}
+                trackKey={rel?.isSelf && auth.user
+                  ? `streak:${auth.user.id}`
+                  : undefined} />
+            {/if}
+            {#if !selfManage && rel?.isFriend}
+              <span class="chip chip-on py-1! text-xs"
+                >{m.common_friends()}</span>
+            {:else if !selfManage && rel?.followsYou}
+              <span class="chip py-1! text-xs">{m.profile_follows_you()}</span>
+            {/if}
+          </div>
+          <p
+            class="text-dim mt-0.5 flex flex-wrap items-center gap-x-2 text-sm">
+            <span class="timecode">@{profile.username}</span>
           </p>
-        {/if}
+          {#if selfManage && auth.user}
+            <p class="text-dim truncate text-sm">{auth.user.email}</p>
+          {/if}
+        </div>
       </div>
+
+      {#if profile.bio}
+        <p class="mt-3 max-w-[62ch] text-sm leading-relaxed">
+          {profile.bio}
+        </p>
+      {/if}
+
+      <div class="text-dim -mx-1.5 mt-3 flex flex-wrap text-sm">
+        {@render counter(
+          profile.followerCount,
+          profile.followerCount > 1
+            ? m.profile_followers_plural()
+            : m.profile_followers_singular(),
+          () => onOpenConnections("followers"),
+        )}
+        {@render counter(
+          profile.followingCount,
+          profile.followingCount > 1
+            ? m.profile_following_plural()
+            : m.profile_following_singular(),
+          () => onOpenConnections("following"),
+        )}
+        {@render counter(
+          profile.reviewsCount,
+          profile.reviewsCount > 1
+            ? m.profile_reviews_count_plural()
+            : m.profile_reviews_count_singular(),
+          rel?.isSelf ? () => goto("/app/reviews") : undefined,
+        )}
+        {@render counter(
+          profile.listsCount,
+          profile.listsCount > 1
+            ? m.profile_lists_count_plural()
+            : m.profile_lists_count_singular(),
+          rel?.isSelf ? () => goto("/app/lists") : undefined,
+        )}
+      </div>
+
+      {#if selfManage}
+        <div class="mt-4 flex gap-2">
+          <button
+            type="button"
+            class="btn btn-ghost flex-1 sm:flex-none"
+            onclick={onOpenEditProfile}>
+            <Icon name="edit" class="h-4 w-4" />
+            {m.common_edit()}
+          </button>
+          <button
+            type="button"
+            class="btn btn-ghost flex-1 sm:flex-none"
+            onclick={onOpenShareModal}>
+            <Icon name="share" class="h-4 w-4" />
+            {m.common_share()}
+          </button>
+          <button
+            type="button"
+            class="btn-icon-bordered self-center sm:hidden"
+            title={m.scan_profile_title()}
+            aria-label={m.scan_profile_title()}
+            onclick={onOpenScanModal}>
+            <Icon name="camera" class="h-4 w-4" />
+          </button>
+          <a
+            href="/app/settings"
+            class="btn-icon-bordered self-center"
+            title={m.common_settings()}
+            aria-label={m.common_settings()}>
+            <Icon name="gear" class="h-4 w-4" />
+          </a>
+        </div>
+      {/if}
     </div>
 
     {#if rel && !rel.isSelf}
@@ -261,133 +331,6 @@
         <Icon name="chevron-left" class="h-3.5 w-3.5" />
         {m.profile_back_to_own()}
       </a>
-    {:else if selfManage}
-      <div class="flex shrink-0 flex-wrap gap-1.5 md:justify-end">
-        <button
-          type="button"
-          class="btn-icon-bordered"
-          title={m.share_profile_title()}
-          aria-label={m.share_profile_title()}
-          onclick={onOpenShareModal}>
-          <Icon name="share" class="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          class="btn-icon-bordered sm:hidden"
-          title={m.scan_profile_title()}
-          aria-label={m.scan_profile_title()}
-          onclick={onOpenScanModal}>
-          <Icon name="camera" class="h-4 w-4" />
-        </button>
-        <a
-          href="/app/settings"
-          class="btn-icon-bordered"
-          title={m.common_settings()}
-          aria-label={m.common_settings()}>
-          <Icon name="gear" class="h-4 w-4" />
-        </a>
-      </div>
-    {/if}
-  </div>
-
-  <div
-    class="relative -mx-5 mt-auto -mb-5 grid grid-cols-6 text-center sm:grid-cols-5 md:-mx-6 md:-mb-6">
-    <button
-      type="button"
-      class="border-border hover:bg-surface-2 col-span-3 border-y py-3 text-center transition-colors sm:col-span-1 sm:border-b-0"
-      onclick={() => onOpenConnections("followers")}>
-      <CountFlash
-        value={profile.followerCount}
-        class="font-display block text-lg font-extrabold tabular-nums" />
-      <span
-        class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
-        {profile.followerCount > 1
-          ? m.profile_followers_plural()
-          : m.profile_followers_singular()}
-      </span>
-    </button>
-    <button
-      type="button"
-      class="border-border hover:bg-surface-2 col-span-3 border-y border-l py-3 text-center transition-colors sm:col-span-1 sm:border-b-0"
-      onclick={() => onOpenConnections("following")}>
-      <span class="font-display block text-lg font-extrabold tabular-nums"
-        >{profile.followingCount}</span>
-      <span
-        class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
-        {profile.followingCount > 1
-          ? m.profile_following_plural()
-          : m.profile_following_singular()}
-      </span>
-    </button>
-    {#if rel?.isSelf}
-      <button
-        type="button"
-        class="border-border hover:bg-surface-2 col-span-2 py-3 text-center transition-colors sm:col-span-1 sm:border-t sm:border-l"
-        onclick={() => goto("/app/reviews")}>
-        <span class="font-display block text-lg font-extrabold tabular-nums"
-          >{profile.reviewsCount}</span>
-        <span
-          class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
-          {profile.reviewsCount > 1
-            ? m.profile_reviews_count_plural()
-            : m.profile_reviews_count_singular()}
-        </span>
-      </button>
-      <button
-        type="button"
-        class="border-border hover:bg-surface-2 pointer-events-none col-span-2 border-x py-3 text-center transition-colors sm:col-span-1 sm:border-t"
-        onclick={() => goto("/app/comments")}>
-        <span class="font-display block text-lg font-extrabold tabular-nums"
-          >{profile.commentsCount}</span>
-        <span
-          class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
-          {m.profile_comments_count()}
-        </span>
-      </button>
-      <button
-        type="button"
-        class="border-border hover:bg-surface-2 col-span-2 py-3 text-center transition-colors sm:col-span-1 sm:border-t"
-        onclick={() => goto("/app/lists")}>
-        <span class="font-display block text-lg font-extrabold tabular-nums"
-          >{profile.listsCount}</span>
-        <span
-          class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
-          {profile.listsCount > 1
-            ? m.profile_lists_count_plural()
-            : m.profile_lists_count_singular()}
-        </span>
-      </button>
-    {:else}
-      <div
-        class="border-border col-span-2 py-3 sm:col-span-1 sm:border-t sm:border-l">
-        <span class="font-display block text-lg font-extrabold tabular-nums"
-          >{profile.reviewsCount}</span>
-        <span
-          class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
-          {profile.reviewsCount > 1
-            ? m.profile_reviews_count_plural()
-            : m.profile_reviews_count_singular()}
-        </span>
-      </div>
-      <div
-        class="border-border col-span-2 border-x py-3 sm:col-span-1 sm:border-t">
-        <span class="font-display block text-lg font-extrabold tabular-nums"
-          >{profile.commentsCount}</span>
-        <span
-          class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
-          {m.profile_comments_count()}
-        </span>
-      </div>
-      <div class="border-border col-span-2 py-3 sm:col-span-1 sm:border-t">
-        <span class="font-display block text-lg font-extrabold tabular-nums"
-          >{profile.listsCount}</span>
-        <span
-          class="text-dim text-micro mt-0.5 block font-mono tracking-[0.13em] uppercase">
-          {profile.listsCount > 1
-            ? m.profile_lists_count_plural()
-            : m.profile_lists_count_singular()}
-        </span>
-      </div>
     {/if}
   </div>
 </section>
