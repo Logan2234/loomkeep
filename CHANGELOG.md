@@ -15,6 +15,8 @@ history from before it was started.
 
 ### Changed
 
+- Title pages: the tagline and ratings stay readable on a bright backdrop,
+  and the trailer button moves to the top corner.
 - GitHub releases are named `X.Y.Z`; the CHANGELOG heading's subtitle opens
   the notes.
 - Settings › Security: the app lock now sits above "Go further".

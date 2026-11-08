@@ -383,10 +383,11 @@
     {#if extras?.trailerVideoId}
       <button
         type="button"
-        class="absolute top-[38%] left-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60"
+        class="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/55 md:right-6"
         aria-label={m.media_watch_trailer()}
+        title={m.media_watch_trailer()}
         onclick={openTrailer}>
-        <Icon name="play" class="pointer-events-none h-7 w-7" />
+        <Icon name="play" class="pointer-events-none h-5 w-5" />
       </button>
     {/if}
     <a
@@ -409,8 +410,10 @@
 
     <!-- In the flow, so the hero grows with a long title or an enlarged system
          font instead of pushing them out through its top. pt clears the back
-         link. -->
-    <div class="relative w-full pt-16">
+         link. Its own gradient keeps every line readable on a bright backdrop
+         (a sky), whatever height the text block reaches. -->
+    <div
+      class="relative w-full bg-[linear-gradient(to_bottom,transparent,rgb(0_0_0/0.6)_4rem,rgb(0_0_0/0.85))] pt-16">
       <div
         class="mx-auto max-w-4xl px-5 pr-20 pb-6 sm:pr-24 md:px-8 md:pr-8 md:pb-8">
         <div class="flex flex-wrap items-center gap-2">
