@@ -15,6 +15,8 @@ history from before it was started.
 
 ### Changed
 
+- Profile: counters on one line (comments dropped), labelled Edit and Share
+  buttons, and "Member since" moved to the bottom of the page.
 - GitHub releases are named `X.Y.Z`; the CHANGELOG heading's subtitle opens
   the notes.
 - Settings › Security: the app lock now sits above "Go further".

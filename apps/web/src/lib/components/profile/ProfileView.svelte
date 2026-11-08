@@ -367,7 +367,6 @@
         {busy}
         {followLabel}
         {ghostCantFollow}
-        {memberSince}
         onToggleFollow={toggleFollow}
         onUnfriend={() => (confirmUnfriend = true)}
         onToggleBlock={toggleBlock}
@@ -416,6 +415,15 @@
 
       <ProfileActivity username={profile.username} {selfManage} />
     </div>
+
+    <p class="text-dim mt-8 text-xs">
+      {profile.profileAccess === "PUBLIC"
+        ? m.profile_status_public()
+        : profile.profileAccess === "PRIVATE"
+          ? m.profile_status_private()
+          : m.profile_ghost()}
+      · {m.profile_member_since({ date: memberSince })}
+    </p>
   {/if}
 </div>
 
