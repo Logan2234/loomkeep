@@ -113,6 +113,6 @@ describe("ProfileHeader", () => {
     expect(
       screen.getByRole("link", { name: m.common_settings() }),
     ).toBeTruthy();
-    expect(screen.queryByText(m.profile_comments_count())).toBe(null);
+    expect(screen.queryByText("9")).toBe(null);
   });
 });
