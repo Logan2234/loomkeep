@@ -790,7 +790,8 @@
         {@render attribution()}
       </section>
     {:else}
-      <!-- Desktop: the credits, tags and links in a column beside the page. -->
+      <!-- Desktop: the credits, tags and links in a column beside the page;
+           the source credits stay at the page's end. -->
       <div class="grid grid-cols-[minmax(0,1fr)_17rem] items-start gap-x-10">
         <div class="min-w-0">
           {@render synopsis("mt-6")}
@@ -800,10 +801,10 @@
           {@render reviews()}
           {@render works()}
           {@render cast()}
+          {@render attribution()}
         </div>
         <aside class="sticky top-20 mt-6">
           {@render detailsCard()}
-          {@render attribution()}
         </aside>
       </div>
     {/if}
