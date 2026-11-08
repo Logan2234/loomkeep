@@ -3,6 +3,9 @@ title: Key concepts
 description: Domains, statuses, rewatches, sessions and cycles — what Loomkeep tracks and how.
 ---
 
+What Loomkeep tracks, and the words it uses for it. Once you know them, the
+rest of the guide (imports, the calendar, your data) reads straight through.
+
 ## Domains
 
 Loomkeep tracks four domains, each with its own library:

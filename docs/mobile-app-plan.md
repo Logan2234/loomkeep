@@ -239,13 +239,15 @@ la landing (tutoiement en français).
 > bibliothèque, une seule page de statistiques, au lieu d'une application
 > par passion.
 >
+> Ton historique reste à toi : importe-le depuis TV Time, Trakt, Simkl,
+> MyAnimeList, AniList, Letterboxd, IMDb, Steam, Goodreads, StoryGraph ou
+> Babelio, et exporte-le en entier quand tu veux. Gratuit, sans publicité.
+>
 > • Suivi précis : saisons, épisodes, relectures, parties en cours,
 > abandonnées ou terminées, avec les dates de chaque séance.
-> • Calendrier des sorties : les prochains épisodes de tes séries, et un
-> flux à ajouter à ton agenda.
+> • Calendrier des sorties : les prochains épisodes, films et jeux de ce
+> que tu suis, et un flux à ajouter à ton agenda.
 > • Statistiques : ton année en séries, films, jeux, livres et musique.
-> • Import de ton historique depuis TV Time, Trakt, Simkl, MyAnimeList,
-> AniList, Letterboxd, IMDb, Steam, Goodreads, StoryGraph et Babelio.
 > • Entre amis : profils, avis, listes partagées et messages.
 >
 > L'application ajoute les notifications Android (nouveaux épisodes,
@@ -253,8 +255,7 @@ la landing (tutoiement en français).
 > d'un ami, le partage d'un lien IMDb ou Letterboxd vers Loomkeep, et des
 > raccourcis sur son icône.
 >
-> Loomkeep est gratuit et sans publicité. C'est un logiciel libre (AGPL) :
-> tu peux exporter tes données à tout moment, ou héberger ta propre
+> Loomkeep est un logiciel libre (AGPL) : tu peux aussi héberger ta propre
 > instance et y connecter l'application.
 
 **Description longue — EN**
@@ -264,22 +265,23 @@ la landing (tutoiement en français).
 > their playtime, books page by page, albums. One library and one stats
 > page, instead of one app per passion.
 >
+> Your history stays yours: bring it from TV Time, Trakt, Simkl,
+> MyAnimeList, AniList, Letterboxd, IMDb, Steam, Goodreads, StoryGraph or
+> Babelio, and export all of it whenever you like. Free, no ads.
+>
 > • Precise tracking: seasons, episodes, rereads, games in progress,
 > dropped or finished, with the date of every session.
-> • Release calendar: your shows' upcoming episodes, and a feed for your
-> own calendar.
+> • Release calendar: upcoming episodes, films and games from what you
+> follow, and a feed for your own calendar.
 > • Stats: your year in series, films, games, books and music.
-> • Bring your history from TV Time, Trakt, Simkl, MyAnimeList, AniList,
-> Letterboxd, IMDb, Steam, Goodreads, StoryGraph and Babelio.
 > • With friends: profiles, reviews, shared lists and messages.
 >
 > The app adds Android notifications (new episodes, replies, messages),
 > scanning a book's barcode or a friend's QR code, sharing an IMDb or
 > Letterboxd link to Loomkeep, and shortcuts on its icon.
 >
-> Loomkeep is free and has no ads. It's free software (AGPL): export your
-> data whenever you like, or host your own instance and connect the app to
-> it.
+> Loomkeep is free software (AGPL): you can also host your own instance and
+> connect the app to it.
 
 **Description longue — IT**
 
@@ -288,13 +290,15 @@ la landing (tutoiement en français).
 > tempo di gioco, libri pagina per pagina, album. Una sola libreria e una
 > sola pagina di statistiche, invece di un'app per ogni passione.
 >
+> La tua cronologia resta tua: importala da TV Time, Trakt, Simkl,
+> MyAnimeList, AniList, Letterboxd, IMDb, Steam, Goodreads, StoryGraph o
+> Babelio, ed esportala per intero quando vuoi. Gratis, senza pubblicità.
+>
 > • Tracciamento preciso: stagioni, episodi, riletture, giochi in corso,
 > abbandonati o finiti, con la data di ogni sessione.
-> • Calendario delle uscite: i prossimi episodi delle tue serie, e un feed
-> da aggiungere al tuo calendario.
+> • Calendario delle uscite: i prossimi episodi, film e giochi di ciò che
+> segui, e un feed da aggiungere al tuo calendario.
 > • Statistiche: il tuo anno in serie, film, giochi, libri e musica.
-> • Importa la tua cronologia da TV Time, Trakt, Simkl, MyAnimeList,
-> AniList, Letterboxd, IMDb, Steam, Goodreads, StoryGraph e Babelio.
 > • Con gli amici: profili, recensioni, liste condivise e messaggi.
 >
 > L'app aggiunge le notifiche Android (nuovi episodi, risposte, messaggi),
@@ -302,8 +306,7 @@ la landing (tutoiement en français).
 > condivisione di un link IMDb o Letterboxd verso Loomkeep, e scorciatoie
 > sulla sua icona.
 >
-> Loomkeep è gratuito e senza pubblicità. È software libero (AGPL): puoi
-> esportare i tuoi dati in qualsiasi momento, o ospitare la tua istanza e
+> Loomkeep è software libero (AGPL): puoi anche ospitare la tua istanza e
 > collegarci l'app.
 
 ### Data safety
