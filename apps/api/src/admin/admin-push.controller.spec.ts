@@ -62,7 +62,7 @@ describe("AdminPushController.sendAdminTestPush", () => {
       "user-1",
       expect.objectContaining({
         title: "Alice",
-        body: "souhaite vous suivre",
+        body: "souhaite te suivre",
         group: "activity",
         actions: [
           expect.objectContaining({ action: "test", label: "Accepter" }),

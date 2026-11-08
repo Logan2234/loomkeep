@@ -3,15 +3,15 @@ import { notificationCopy } from "./notification-copy";
 
 describe("notificationCopy", () => {
   it("renders in the recipient's language", () => {
-    expect(notificationCopy("fr").follow.followed).toBe("vous suit");
+    expect(notificationCopy("fr").follow.followed).toBe("te suit");
     expect(notificationCopy("en").follow.followed).toBe("follows you");
   });
 
   it("falls back to French for an unknown or missing locale", () => {
     // A notification must still be written: the locale column is free-form
     // enough that an unexpected value cannot be allowed to throw.
-    expect(notificationCopy(undefined).follow.followed).toBe("vous suit");
-    expect(notificationCopy("de").follow.followed).toBe("vous suit");
+    expect(notificationCopy(undefined).follow.followed).toBe("te suit");
+    expect(notificationCopy("de").follow.followed).toBe("te suit");
   });
 
   it("covers every supported locale", () => {
