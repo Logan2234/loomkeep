@@ -529,7 +529,7 @@
         </p>
         <div class="mt-10 flex flex-wrap gap-3">
           {@render primaryCta(
-            m.common_register(),
+            m.landing_comparator_cta(),
             "cta-hero-register",
             "btn btn-primary btn-primary-cartouche btn-lg",
           )}
@@ -537,6 +537,9 @@
             {m.landing_hero_cta_secondary()}
           </a>
         </div>
+        {#if !auth.isLoggedIn}
+          <p class="text-dim mt-4 text-sm">{m.landing_hero_reassurance()}</p>
+        {/if}
       </div>
     </section>
 
