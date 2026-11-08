@@ -1024,12 +1024,17 @@
           ? m.library_empty_domain({ noun })
           : undefined}>
         {#if !hasFilters && !hasQuery}
-          <a href={`/app/search?type=${domain}`} class="btn btn-primary mt-4">
-            <Icon name="search" class="h-4 w-4" />
-            {domain === "MUSIC"
-              ? m.library_search_album()
-              : m.library_search_noun({ noun })}
-          </a>
+          <div class="mt-4 flex flex-wrap justify-center gap-2">
+            <a href={`/app/search?type=${domain}`} class="btn btn-primary">
+              <Icon name="search" class="h-4 w-4" />
+              {domain === "MUSIC"
+                ? m.library_search_album()
+                : m.library_search_noun({ noun })}
+            </a>
+            <a href="/app/settings/import" class="btn btn-ghost">
+              {m.library_empty_import()}
+            </a>
+          </div>
         {:else}
           <p>
             {#if hasQuery}

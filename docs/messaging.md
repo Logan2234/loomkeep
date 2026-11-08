@@ -129,8 +129,9 @@ longue.
 après, sans le cacher. Chaque page d'entrée ouvre sur deux phrases qui disent
 ce que le lecteur saura faire.
 
-**Onboarding** : la musique dans l'introduction et le choix des domaines ; les
-trois piliers dans l'ordre.
+**Onboarding** : la musique dans l'introduction (elle était déjà dans le choix
+des domaines) ; les trois piliers dans l'ordre ; les sorties décrites comme un
+résumé (hebdomadaire par défaut, quotidien en premium), jamais « le jour même ».
 
 **E-mails et notifications** : relus pour le ton seulement ; leur texte vit
 dans `apps/api/src/mail/copy`, pas dans Paraglide.
