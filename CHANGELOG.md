@@ -15,6 +15,9 @@ history from before it was started.
 
 ### Changed
 
+- Landing page: a questions section answers what people ask before signing
+  up (what if the project stops, imports, ads, servers, phone, deleting an
+  account).
 - Docs: Guide › Your data explains how to have an account deleted when you
   can't sign in anymore.
 - Landing page: a clearer promise under the title, "free · no ads · full
