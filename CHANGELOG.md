@@ -15,6 +15,8 @@ history from before it was started.
 
 ### Changed
 
+- Landing page: a clearer promise under the title, "free · no ads · full
+  export" next to the main button, and shorter, plainer section texts.
 - Game, book and album pages take the video page's layout: full-width image
   header, the same sticky action bar (with the discussion), then the
   tracking. Sessions show as one progress line with the session button and
