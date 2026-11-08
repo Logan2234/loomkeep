@@ -20,7 +20,6 @@
   import { appConfig } from "#lib/config.svelte.js";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
-  import Icon from "#lib/components/Icon.svelte";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
   import Lightbox from "#lib/components/Lightbox.svelte";
   import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
@@ -30,9 +29,11 @@
   import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
 
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
-  import TrackingPanel from "#lib/components/TrackingPanel.svelte";
+  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
+  import WorkActionBar from "#lib/components/work/WorkActionBar.svelte";
+  import WorkHero from "#lib/components/work/WorkHero.svelte";
+  import WorkTrackingFold from "#lib/components/work/WorkTrackingFold.svelte";
   import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
-  import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
   import { musicWork } from "#lib/chat/work-search.js";
 
   import {
@@ -53,6 +54,7 @@
   const SOURCE = "musicbrainz";
 
   let confirmRemove = $state(false);
+  let compact = $state(false);
   let lightboxOpen = $state(false);
   let lightboxIndex = $state(0);
 
@@ -169,278 +171,258 @@
 {/if}
 
 {#if detail}
-  <!-- Hero: albums have no wide artwork, so a gradient fades into the page. -->
-  <div class="relative">
-    <div class="from-surface-2 to-surface h-44 w-full bg-linear-to-br md:h-60">
-    </div>
-    <div
-      class="from-bg via-bg/50 absolute inset-0 bg-linear-to-t to-transparent">
-    </div>
-    <a
-      href="/app/music"
-      onclick={goBack}
-      class="border-border bg-bg/60 hover:bg-bg absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold backdrop-blur">
-      ← {m.common_Music()}
-    </a>
-  </div>
-
-  <!-- relative z-10: the positioned hero would otherwise paint over the cover
-       pulled up into it. -->
-  <div class="relative z-10 mx-auto max-w-5xl px-5 pb-6 md:px-8 md:pb-10">
-    <div class="md:grid md:grid-cols-[1fr_260px] md:items-start md:gap-8">
-      <div class="min-w-0">
-        <div
-          class="-mt-24 flex flex-col gap-5 sm:flex-row sm:items-end md:-mt-28">
-          <button
-            type="button"
-            class="border-border w-32 shrink-0 overflow-hidden rounded-xl border shadow-lg md:w-44 {detail.coverUrl
-              ? 'cursor-zoom-in'
-              : ''}"
-            aria-label={m.common_enlarge_image()}
-            onclick={() => openLightbox(detail?.coverUrl ?? null)}
-            data-detail-poster>
-            <Poster src={detail.coverUrl} title={detail.title} alt="" />
-          </button>
-
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-2">
-              <span
-                class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                {detail.albumType ?? m.music_album()}
-              </span>
-              {#if entry}
-                <TrackingStatusBadge domain="MUSIC" status={entry.status} />
-              {/if}
-            </div>
-            <h1
-              class="font-display mt-2 text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
-              {detail.title}
-            </h1>
-            {#if detail.artists.length > 0}
-              <p class="font-display text-dim mt-1.5 text-lg font-semibold">
-                {detail.artists.join(", ")}
-              </p>
-            {/if}
-            {#if detail.disambiguation}
-              <p class="text-dim mt-0.5 text-sm italic">
-                {detail.disambiguation}
-              </p>
-            {/if}
-            <p class="timecode mt-1.5 text-sm">
-              {#if releaseDateLabel}
-                {releaseDateLabel}
-              {:else if detail.year}
-                {detail.year}
-              {/if}
-              {#if detail.genres.length > 0}
-                {#if releaseDateLabel || detail.year}·{/if}
-                {detail.genres.slice(0, 3).join(", ")}
-              {/if}
-            </p>
-            {#if entry}
-              <div class="mt-2.5 flex">
-                <MyRatingBadge
-                  targetType="MUSIC"
-                  targetId={entry.album.id}
-                  workTitle={detail.title}
-                  workMeta={reviewMeta}
-                  workImageUrl={detail.coverUrl} />
-              </div>
-            {/if}
-          </div>
-        </div>
-
-        {#if appConfig.socialEnabled && detail.commentTargetId}
-          <WorkFriendsStrip
-            domain="MUSIC"
-            targetType="MUSIC"
-            targetId={detail.commentTargetId}
-            revision={entry?.status ?? ""} />
-        {/if}
-
-        {#if !entry}
-          <div class="mt-6 flex items-center gap-2.5">
-            <button
-              class="btn btn-primary"
-              disabled={saving}
-              onclick={() => addMut.mutate()}>
-              <Icon name="plus" class="h-4 w-4" />
-              {m.library_add()}
-            </button>
-            <WorkMoreMenu onshare={() => (sharing = true)} />
-          </div>
-        {:else}
-          <TrackingPanel
-            onShare={() => (sharing = true)}
-            favorite={entry.favorite}
-            {saving}
-            targetType="MUSIC"
-            targetId={entry.album.id}
-            onToggleFavorite={() =>
-              patchMut.mutate({ favorite: !entry.favorite })}
-            onRemove={() => (confirmRemove = true)}>
-            <SegmentedStatusControl
-              statuses={STATUS_ORDER}
-              current={entry.status}
-              disabled={saving}
-              meta={STATUS_META}
-              desc={STATUS_DESC}
-              activeClass={SEG_ACTIVE}
-              onSelect={(status) => patchMut.mutate({ status })} />
-
-            <NoteField
-              value={entry.notes}
-              placeholder={m.music_note_placeholder()}
-              onChange={(v) => patchMut.mutate({ notes: v })} />
-
-            <hr class="border-border" />
-
-            <OwnershipField
-              status={entry.ownershipStatus}
-              source={entry.ownershipSource}
-              statusOptions={MUSIC_OWNERSHIP_STATUS_OPTIONS}
-              sourceOptionsByStatus={MUSIC_OWNERSHIP_SOURCES}
-              onChange={(status, source) =>
-                patchMut.mutate({
-                  ownershipStatus: status as typeof entry.ownershipStatus,
-                  ownershipSource: source,
-                })} />
-          </TrackingPanel>
-        {/if}
-
-        {#if detail.tracks.length > 0}
-          <div class="mt-8">
-            <div class="mb-3 flex items-baseline justify-between">
-              <h2 class="font-display text-lg font-bold">{m.music_tracks()}</h2>
-              {#if detail.totalDurationMs !== null}
-                <span class="timecode text-xs">
-                  {formatTotalDuration(detail.totalDurationMs)}
-                </span>
-              {/if}
-            </div>
-            <ol class="card divide-border divide-y">
-              {#each detail.tracks as track (track.position)}
-                <li class="flex items-center gap-3 px-4 py-2.5 text-sm">
-                  <span class="timecode text-dim w-6 shrink-0 text-right">
-                    {track.position}
-                  </span>
-                  <span class="min-w-0 flex-1 truncate">{track.title}</span>
-                  {#if track.durationMs !== null}
-                    <span class="timecode shrink-0 text-xs">
-                      {formatTrackDuration(track.durationMs)}
-                    </span>
-                  {/if}
-                </li>
-              {/each}
-            </ol>
-          </div>
-        {/if}
-
-        {#if detail.extraCoverImages.length > 0}
-          <div class="mt-8">
-            <h2 class="font-display mb-3 text-lg font-bold">
-              {m.music_artwork()}
-            </h2>
-            <div class="flex flex-wrap gap-3">
-              {#each detail.extraCoverImages as img (img.url)}
-                <button
-                  type="button"
-                  class="border-border hover:border-accent w-20 shrink-0 overflow-hidden rounded-lg border shadow-sm transition-colors"
-                  aria-label={m.music_enlarge_artwork({ type: img.type })}
-                  onclick={() => openLightbox(img.url)}>
-                  <Poster
-                    src={img.url}
-                    title={`${detail.title} — ${img.type}`}
-                    alt="" />
-                </button>
-              {/each}
-            </div>
-          </div>
-        {/if}
-
-        <!-- Details panel, mobile position: after the album content, before the carousel. -->
-        {#if hasMeta}
-          <div class="mt-8 md:hidden">
-            {@render detailsPanel()}
-          </div>
-        {/if}
-
-        <RelatedCarousel
-          title={m.music_same_artist()}
-          items={toCarouselItems(detail.sameArtistAlbums, "/app/music")} />
-
-        <WorkSocialSection
+  <WorkHero
+    title={detail.title}
+    backdropUrl={null}
+    coverUrl={detail.coverUrl || null}
+    square
+    backHref="/app/music"
+    backLabel={m.common_Music()}
+    onEnlargeCover={() => openLightbox(detail?.coverUrl ?? null)}
+    onCompactChange={(value) => (compact = value)}>
+    {#snippet pills()}
+      <span
+        class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur">
+        {detail.albumType ?? m.music_album()}
+      </span>
+      {#if entry}
+        <TrackingStatusBadge domain="MUSIC" status={entry.status} onImage />
+      {/if}
+    {/snippet}
+    {#if detail.artists.length > 0}
+      <p class="font-display mt-1.5 font-semibold text-white/90">
+        {detail.artists.join(", ")}
+      </p>
+    {/if}
+    {#if detail.disambiguation}
+      <p class="mt-0.5 text-sm text-white/70 italic">
+        {detail.disambiguation}
+      </p>
+    {/if}
+    <p class="timecode mt-1.5 text-sm text-white/80">
+      {#if releaseDateLabel}
+        {releaseDateLabel}
+      {:else if detail.year}
+        {detail.year}
+      {/if}
+      {#if detail.genres.length > 0}
+        {#if releaseDateLabel || detail.year}·{/if}
+        {detail.genres.slice(0, 3).join(", ")}
+      {/if}
+    </p>
+    {#if entry}
+      <div class="mt-2.5 flex">
+        <MyRatingBadge
           targetType="MUSIC"
-          reviewTargetId={entry?.album.id ?? null}
-          commentTargetId={detail.commentTargetId}
-          title={detail.title}
-          meta={reviewMeta}
-          imageUrl={detail.coverUrl}
-          canParticipate={!!entry} />
+          targetId={entry.album.id}
+          workTitle={detail.title}
+          workMeta={reviewMeta}
+          workImageUrl={detail.coverUrl}
+          overlay />
       </div>
+    {/if}
+  </WorkHero>
 
-      <!-- Details panel, desktop position: sidebar next to the main column. -->
-      {#snippet detailsPanel()}
-        <DetailsCard>
-          {#if detail && detail.label}
-            <div>
-              <dt class="timecode text-xs">{m.music_label()}</dt>
-              <dd class="mt-0.5 text-sm">{detail.label}</dd>
-            </div>
-          {/if}
-          {#if detail && detail.catalogNumber}
-            <div>
-              <dt class="timecode text-xs">{m.music_catalog_number()}</dt>
-              <dd class="mt-0.5 text-sm">{detail.catalogNumber}</dd>
-            </div>
-          {/if}
-          {#if detail && detail.tags.length > 0}
-            <div>
-              <dt class="timecode text-xs">{m.music_tags()}</dt>
-              <dd class="mt-1.5 flex flex-wrap gap-1.5">
-                {#each tagsOpen ? detail.tags : detail.tags.slice(0, TAGS_SHOWN) as tag (tag)}
-                  <span
-                    in:fade={{ duration: tagsOpen ? 150 : 0 }}
-                    class="bg-surface-2 text-dim rounded-md px-2 py-0.5 text-xs">
-                    {tag}
+  <WorkActionBar
+    tracked={!!entry}
+    status={entry ? STATUS_META[entry.status].label : undefined}
+    {compact}
+    title={detail.title}
+    {saving}
+    favorite={entry?.favorite}
+    listTarget={entry ? { type: "MUSIC", id: entry.album.id } : undefined}
+    onAdd={() => addMut.mutate()}
+    onToggleFavorite={() =>
+      entry && patchMut.mutate({ favorite: !entry.favorite })}
+    onShare={() => (sharing = true)}
+    onRemove={() => (confirmRemove = true)}>
+    {#snippet socialActions()}
+      {#if appConfig.socialEnabled && detail.commentTargetId}
+        <CommentsPanel
+          targetType="MUSIC"
+          targetId={detail.commentTargetId}
+          title={detail.title}
+          canParticipate={!!entry}
+          compact />
+      {/if}
+    {/snippet}
+  </WorkActionBar>
+
+  <!-- Desktop: the work's details in a column beside the page, as before;
+       a phone gets them right after "My tracking". -->
+  <div
+    class="mx-auto max-w-5xl px-5 pb-6 md:grid md:grid-cols-[minmax(0,1fr)_17rem] md:items-start md:gap-x-10 md:px-8 md:pb-10">
+    <div class="min-w-0">
+      {#if appConfig.socialEnabled && detail.commentTargetId}
+        <WorkFriendsStrip
+          domain="MUSIC"
+          targetType="MUSIC"
+          targetId={detail.commentTargetId}
+          revision={entry?.status ?? ""} />
+      {/if}
+
+      {#if entry}
+        <div class="mt-6 max-w-xl">
+          <SegmentedStatusControl
+            statuses={STATUS_ORDER}
+            current={entry.status}
+            disabled={saving}
+            meta={STATUS_META}
+            desc={STATUS_DESC}
+            activeClass={SEG_ACTIVE}
+            onSelect={(status) => patchMut.mutate({ status })} />
+        </div>
+      {/if}
+
+      {#if detail.tracks.length > 0}
+        <div class="mt-8">
+          <div class="mb-3 flex items-baseline justify-between">
+            <h2 class="font-display text-lg font-bold">{m.music_tracks()}</h2>
+            {#if detail.totalDurationMs !== null}
+              <span class="timecode text-xs">
+                {formatTotalDuration(detail.totalDurationMs)}
+              </span>
+            {/if}
+          </div>
+          <ol class="card divide-border divide-y">
+            {#each detail.tracks as track (track.position)}
+              <li class="flex items-center gap-3 px-4 py-2.5 text-sm">
+                <span class="timecode text-dim w-6 shrink-0 text-right">
+                  {track.position}
+                </span>
+                <span class="min-w-0 flex-1 truncate">{track.title}</span>
+                {#if track.durationMs !== null}
+                  <span class="timecode shrink-0 text-xs">
+                    {formatTrackDuration(track.durationMs)}
                   </span>
-                {/each}
-                {#if !tagsOpen && detail.tags.length > TAGS_SHOWN}
-                  <button
-                    type="button"
-                    class="btn-text px-2"
-                    onclick={() => (tagsOpen = true)}>
-                    {m.common_view_all_count({ count: detail.tags.length })}
-                  </button>
                 {/if}
-              </dd>
-            </div>
-          {/if}
-          {#if detail && detail.externalLinks.length > 0}
-            <div>
-              <dt class="timecode text-xs">{m.common_links()}</dt>
-              <dd class="mt-1.5 flex flex-wrap gap-2">
-                {#each detail.externalLinks as link (link.url)}
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors">
-                    {link.label} ↗
-                  </a>
-                {/each}
-              </dd>
-            </div>
-          {/if}
-        </DetailsCard>
-      {/snippet}
+              </li>
+            {/each}
+          </ol>
+        </div>
+      {/if}
+
+      {#if entry}
+        <WorkTrackingFold summary={m.media_tracking_summary()}>
+          <OwnershipField
+            status={entry.ownershipStatus}
+            source={entry.ownershipSource}
+            statusOptions={MUSIC_OWNERSHIP_STATUS_OPTIONS}
+            sourceOptionsByStatus={MUSIC_OWNERSHIP_SOURCES}
+            onChange={(status, source) =>
+              patchMut.mutate({
+                ownershipStatus: status as typeof entry.ownershipStatus,
+                ownershipSource: source,
+              })} />
+          <NoteField
+            value={entry.notes}
+            placeholder={m.music_note_placeholder()}
+            onChange={(v) => patchMut.mutate({ notes: v })} />
+        </WorkTrackingFold>
+      {/if}
+
       {#if hasMeta}
-        <div class="hidden md:block">
+        <div class="mt-8 md:hidden">
           {@render detailsPanel()}
         </div>
       {/if}
+
+      {#if detail.extraCoverImages.length > 0}
+        <div class="mt-8">
+          <h2 class="font-display mb-3 text-lg font-bold">
+            {m.music_artwork()}
+          </h2>
+          <div class="flex flex-wrap gap-3">
+            {#each detail.extraCoverImages as img (img.url)}
+              <button
+                type="button"
+                class="border-border hover:border-accent w-20 shrink-0 overflow-hidden rounded-lg border shadow-sm transition-colors"
+                aria-label={m.music_enlarge_artwork({ type: img.type })}
+                onclick={() => openLightbox(img.url)}>
+                <Poster
+                  src={img.url}
+                  title={`${detail.title} — ${img.type}`}
+                  alt="" />
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
+      <RelatedCarousel
+        title={m.music_same_artist()}
+        items={toCarouselItems(detail.sameArtistAlbums, "/app/music")} />
+
+      <WorkSocialSection
+        targetType="MUSIC"
+        reviewTargetId={entry?.album.id ?? null}
+        commentTargetId={detail.commentTargetId}
+        title={detail.title}
+        meta={reviewMeta}
+        imageUrl={detail.coverUrl}
+        canParticipate={!!entry} />
     </div>
+    {#if hasMeta}
+      <aside class="hidden md:sticky md:top-20 md:mt-6 md:block">
+        {@render detailsPanel()}
+      </aside>
+    {/if}
   </div>
+
+  {#snippet detailsPanel()}
+    <DetailsCard>
+      {#if detail && detail.label}
+        <div>
+          <dt class="timecode text-xs">{m.music_label()}</dt>
+          <dd class="mt-0.5 text-sm">{detail.label}</dd>
+        </div>
+      {/if}
+      {#if detail && detail.catalogNumber}
+        <div>
+          <dt class="timecode text-xs">{m.music_catalog_number()}</dt>
+          <dd class="mt-0.5 text-sm">{detail.catalogNumber}</dd>
+        </div>
+      {/if}
+      {#if detail && detail.tags.length > 0}
+        <div>
+          <dt class="timecode text-xs">{m.music_tags()}</dt>
+          <dd class="mt-1.5 flex flex-wrap gap-1.5">
+            {#each tagsOpen ? detail.tags : detail.tags.slice(0, TAGS_SHOWN) as tag (tag)}
+              <span
+                in:fade={{ duration: tagsOpen ? 150 : 0 }}
+                class="bg-surface-2 text-dim rounded-md px-2 py-0.5 text-xs">
+                {tag}
+              </span>
+            {/each}
+            {#if !tagsOpen && detail.tags.length > TAGS_SHOWN}
+              <button
+                type="button"
+                class="btn-text px-2"
+                onclick={() => (tagsOpen = true)}>
+                {m.common_view_all_count({ count: detail.tags.length })}
+              </button>
+            {/if}
+          </dd>
+        </div>
+      {/if}
+      {#if detail && detail.externalLinks.length > 0}
+        <div>
+          <dt class="timecode text-xs">{m.common_links()}</dt>
+          <dd class="mt-1.5 flex flex-wrap gap-2">
+            {#each detail.externalLinks as link (link.url)}
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors">
+                {link.label} ↗
+              </a>
+            {/each}
+          </dd>
+        </div>
+      {/if}
+    </DetailsCard>
+  {/snippet}
 
   {#if sharing && work}
     <ShareWorkModal {work} sendable={true} onclose={() => (sharing = false)} />

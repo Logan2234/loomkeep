@@ -22,7 +22,6 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
-  import { goBack } from "#lib/back-nav.svelte.js";
   import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
   import Banner from "#lib/components/Banner.svelte";
   import CommentsPanel from "#lib/components/CommentsPanel.svelte";
@@ -37,7 +36,7 @@
   import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
   import NoteField from "#lib/components/NoteField.svelte";
   import OwnershipField from "#lib/components/OwnershipField.svelte";
-  import Poster from "#lib/components/Poster.svelte";
+  import WorkHero from "#lib/components/work/WorkHero.svelte";
   import ProgressBar from "#lib/components/ProgressBar.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
@@ -141,21 +140,7 @@
     lightboxOpen = true;
   }
 
-  // Once the hero has scrolled behind the sticky action bar, it grows a
-  // compact title so the viewer never loses track of which work they're on.
-  let heroEnd = $state<HTMLDivElement>();
   let compact = $state(false);
-
-  $effect(() => {
-    const el = heroEnd;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([e]) => (compact = !e.isIntersecting),
-      { rootMargin: "-65px 0px 0px 0px", threshold: 0 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  });
 
   const type = $derived((page.params.type ?? "").toUpperCase() as MediaType);
   const id = $derived(page.params.id ?? "");
@@ -360,169 +345,110 @@
 {/if}
 
 {#if detail}
-  <!-- Hero: full-bleed backdrop, title/meta/ratings overlaid, poster tucked
-       in the corner. Text stays white regardless of theme — it sits on a
-       photo, not on the page background. -->
-  <!-- The 26.25rem floor outgrew short viewports: a phone in landscape
-       (~430px tall) got a full-screen backdrop with the tracking controls
-       pushed below the fold, so the floor yields to the viewport there. -->
-  <div
-    class="relative flex min-h-[max(min(26.25rem,62svh),min(64vh,38.75rem))] flex-col justify-end">
-    {#if detail.backdropUrl}
-      <img
-        src={detail.backdropUrl}
-        alt=""
-        class="absolute inset-0 h-full w-full object-cover" />
-    {:else}
-      <div class="from-surface-2 to-surface absolute inset-0 bg-linear-to-br">
-      </div>
-    {/if}
-    <div
-      class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent">
-    </div>
-    {#if extras?.trailerVideoId}
-      <button
-        type="button"
-        class="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/55 md:right-6"
-        aria-label={m.media_watch_trailer()}
-        title={m.media_watch_trailer()}
-        onclick={openTrailer}>
-        <Icon name="play" class="pointer-events-none h-5 w-5" />
-      </button>
-    {/if}
-    <a
-      href="/app/media"
-      onclick={goBack}
-      class="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/40 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur hover:bg-black/55">
-      ← {m.common_Media()}
-    </a>
-
-    {#if detail.posterUrl}
-      <button
-        type="button"
-        class="absolute right-4 bottom-4 z-10 w-16 shrink-0 cursor-zoom-in overflow-hidden rounded-lg border border-white/20 shadow-lg sm:w-20 md:right-6 md:bottom-6 md:w-24"
-        aria-label={m.media_enlarge_poster()}
-        onclick={() => openLightbox(detail?.posterUrl ?? null)}
-        data-detail-poster>
-        <Poster src={detail.posterUrl} title={detail.title} alt="" />
-      </button>
-    {/if}
-
-    <!-- In the flow, so the hero grows with a long title or an enlarged system
-         font instead of pushing them out through its top. pt clears the back
-         link, in rem since that link grows with the system font. Its own gradient keeps every line readable on a bright backdrop
-         (a sky), whatever height the text block reaches. -->
-    <div
-      class="relative w-full bg-[linear-gradient(to_bottom,transparent,rgb(0_0_0/0.6)_4rem,rgb(0_0_0/0.85))] pt-[4rem]">
-      <div
-        class="mx-auto max-w-4xl px-5 pr-20 pb-6 sm:pr-24 md:px-8 md:pr-8 md:pb-8">
-        <div class="flex flex-wrap items-center gap-2">
+  <WorkHero
+    title={detail.title}
+    backdropUrl={detail.backdropUrl || null}
+    coverUrl={detail.posterUrl || null}
+    backHref="/app/media"
+    backLabel={m.common_Media()}
+    onTrailer={extras?.trailerVideoId ? openTrailer : undefined}
+    onEnlargeCover={() => openLightbox(detail?.posterUrl ?? null)}
+    onCompactChange={(value) => (compact = value)}>
+    {#snippet pills()}
+      <span
+        class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur">
+        {MEDIA_TYPE_LABEL[detail.type]}
+      </span>
+      {#if upcoming}
+        <span
+          class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold text-white backdrop-blur"
+          ><Icon
+            name="calendar"
+            class="h-3.5 w-3.5" />{m.media_upcoming()}</span>
+      {:else if entry}
+        <TrackingStatusBadge domain="MEDIA" status={entry.status} onImage />
+        {#if dormant}
           <span
-            class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur">
-            {MEDIA_TYPE_LABEL[detail.type]}
+            title={ghost ? m.media_ghost_hint() : m.media_dormant_hint()}
+            class="inline-flex items-center gap-1.5 rounded-full border border-white/30 px-2.5 py-1 text-xs font-bold text-white">
+            <Icon name={ghost ? "ghost" : "hourglass"} class="h-3.5 w-3.5" />
+            {ghost ? m.media_status_ghost() : m.media_status_paused()}
           </span>
-          {#if upcoming}
-            <span
-              class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold text-white backdrop-blur"
-              ><Icon
-                name="calendar"
-                class="h-3.5 w-3.5" />{m.media_upcoming()}</span>
-          {:else if entry}
-            <TrackingStatusBadge domain="MEDIA" status={entry.status} onImage />
-            {#if dormant}
-              <span
-                title={ghost ? m.media_ghost_hint() : m.media_dormant_hint()}
-                class="inline-flex items-center gap-1.5 rounded-full border border-white/30 px-2.5 py-1 text-xs font-bold text-white">
-                <Icon
-                  name={ghost ? "ghost" : "hourglass"}
-                  class="h-3.5 w-3.5" />
-                {ghost ? m.media_status_ghost() : m.media_status_paused()}
-              </span>
-            {/if}
-          {/if}
-          {#if detail.isAdult}
-            <span
-              class="bg-danger/80 rounded-full px-2.5 py-0.5 text-xs font-bold text-white">
-              18+
-            </span>
-          {/if}
-          {#if extras?.contentRating}
-            <span
-              title={m.media_official_rating()}
-              class="rounded-full border border-white/40 px-2.5 py-0.5 text-xs font-bold text-white">
-              {extras.contentRating}
-            </span>
-          {/if}
-        </div>
-        <h1
-          class="font-display mt-2 text-3xl font-extrabold tracking-tight text-balance text-white text-shadow-[0_2px_24px_rgba(0,0,0,.5)] md:text-4xl">
-          {detail.title}
-        </h1>
-        {#if extras?.tagline}
-          <p class="mt-1 text-sm text-white/70 italic">{extras.tagline}</p>
         {/if}
-        <p class="timecode mt-1.5 text-sm text-white/80">
-          {#if detail.year}{detail.year}{#if extras?.season}
-              &nbsp;· {SEASON_LABELS[extras.season] ?? extras.season}
-            {/if}{/if}
-          {#if detail.genres.length > 0}
-            {#if detail.year}
-              ·&nbsp;
-            {/if}{detail.genres.slice(0, 3).join(", ")}
-          {/if}
-          {#if extras?.format && extras.format !== "TV"}
-            · {FORMAT_LABELS[extras.format] ?? extras.format}
-          {/if}
-          {#if !isMovie && detail.seasons.some((s) => s.episodes.length > 0)}
-            · {detail.airingFinished
-              ? m.media_airing_finished()
-              : m.media_airing()}
-          {/if}
-        </p>
+      {/if}
+      {#if detail.isAdult}
+        <span
+          class="bg-danger/80 rounded-full px-2.5 py-0.5 text-xs font-bold text-white">
+          18+
+        </span>
+      {/if}
+      {#if extras?.contentRating}
+        <span
+          title={m.media_official_rating()}
+          class="rounded-full border border-white/40 px-2.5 py-0.5 text-xs font-bold text-white">
+          {extras.contentRating}
+        </span>
+      {/if}
+    {/snippet}
+    {#if extras?.tagline}
+      <p class="mt-1 text-sm text-white/70 italic">{extras.tagline}</p>
+    {/if}
+    <p class="timecode mt-1.5 text-sm text-white/80">
+      {#if detail.year}{detail.year}{#if extras?.season}
+          &nbsp;· {SEASON_LABELS[extras.season] ?? extras.season}
+        {/if}{/if}
+      {#if detail.genres.length > 0}
+        {#if detail.year}
+          ·&nbsp;
+        {/if}{detail.genres.slice(0, 3).join(", ")}
+      {/if}
+      {#if extras?.format && extras.format !== "TV"}
+        · {FORMAT_LABELS[extras.format] ?? extras.format}
+      {/if}
+      {#if !isMovie && detail.seasons.some((s) => s.episodes.length > 0)}
+        · {detail.airingFinished ? m.media_airing_finished() : m.media_airing()}
+      {/if}
+    </p>
 
-        {#if isMovie && detail.movieRelease}
-          <p class="mt-2 text-sm text-white/80 tabular-nums">
-            {#if detail.movieRelease.localDate}
-              {detail.movieRelease.localDate > today
-                ? m.media_release_expected()
-                : m.media_release_released()}
-              {formatDate(`${detail.movieRelease.localDate}T12:00:00`)} ·
-              {detail.movieRelease.localType === "cinema"
-                ? m.media_release_cinema()
-                : m.media_release_digital()} · {detail.movieRelease.region}
-            {:else}{m.media_release_local_unknown()} · {detail.movieRelease
-                .region}{/if}
-          </p>
-        {/if}
+    {#if isMovie && detail.movieRelease}
+      <p class="mt-2 text-sm text-white/80 tabular-nums">
+        {#if detail.movieRelease.localDate}
+          {detail.movieRelease.localDate > today
+            ? m.media_release_expected()
+            : m.media_release_released()}
+          {formatDate(`${detail.movieRelease.localDate}T12:00:00`)} ·
+          {detail.movieRelease.localType === "cinema"
+            ? m.media_release_cinema()
+            : m.media_release_digital()} · {detail.movieRelease.region}
+        {:else}{m.media_release_local_unknown()} · {detail.movieRelease
+            .region}{/if}
+      </p>
+    {/if}
 
-        {#if (entry && !upcoming) || (extras && extras.ratings.length > 0)}
-          <div class="mt-2.5 flex flex-wrap gap-1.5">
-            {#if entry && !upcoming}
-              <MyRatingBadge
-                targetType="MEDIA"
-                targetId={entry.mediaItem.id}
-                workTitle={detail.title}
-                workMeta={reviewMeta}
-                workImageUrl={detail.posterUrl}
-                overlay />
-            {/if}
-            <ExternalRatingChips ratings={extras?.ratings ?? []} overlay />
-          </div>
-          {#if hasOmdbRatings}
-            <a
-              href={OMDB_API}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="btn-text text-micro mt-1 inline-block">
-              {m.media_omdb_notice()}
-            </a>
-          {/if}
+    {#if (entry && !upcoming) || (extras && extras.ratings.length > 0)}
+      <div class="mt-2.5 flex flex-wrap gap-1.5">
+        {#if entry && !upcoming}
+          <MyRatingBadge
+            targetType="MEDIA"
+            targetId={entry.mediaItem.id}
+            workTitle={detail.title}
+            workMeta={reviewMeta}
+            workImageUrl={detail.posterUrl}
+            overlay />
         {/if}
+        <ExternalRatingChips ratings={extras?.ratings ?? []} overlay />
       </div>
-    </div>
-  </div>
-
-  <div bind:this={heroEnd}></div>
+      {#if hasOmdbRatings}
+        <a
+          href={OMDB_API}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-text text-micro mt-1 inline-block">
+          {m.media_omdb_notice()}
+        </a>
+      {/if}
+    {/if}
+  </WorkHero>
 
   <ActionBar
     {upcoming}
@@ -558,7 +484,7 @@
     {/snippet}
   </ActionBar>
 
-  <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
+  <div class="mx-auto max-w-5xl px-5 pb-6 md:px-8 md:pb-10">
     {#if appConfig.socialEnabled && detail.commentTargetId}
       <WorkFriendsStrip
         domain="MEDIA"
@@ -600,22 +526,6 @@
       </div>
     {/if}
 
-    {#snippet credits()}
-      {#if extras && extras.directors.length > 0}
-        <p class="timecode text-xs">
-          {DIRECTOR_LABELS[detail.type]}
-          <span class="text-fg font-semibold"
-            >{extras.directors.join(", ")}</span>
-        </p>
-      {/if}
-      {#if extras && extras.studios.length > 0}
-        <p class="timecode text-xs {extras.directors.length > 0 ? 'mt-1' : ''}">
-          {extras.studios.length > 1 ? m.media_studios() : m.media_studio()}
-          <span class="text-fg font-semibold">{extras.studios.join(", ")}</span>
-        </p>
-      {/if}
-    {/snippet}
-
     {#snippet synopsis(cls: string)}
       {#if detail.overview}
         <div class={cls}>
@@ -634,11 +544,6 @@
           {tag}
         </span>
       {/each}
-    {/snippet}
-    {#snippet tags()}
-      {#if extras && extras.tags.length > 0}
-        <div class="mt-3 flex flex-wrap gap-1.5">{@render tagChips()}</div>
-      {/if}
     {/snippet}
 
     {#snippet tracking()}
@@ -751,14 +656,6 @@
           {link.name} ↗
         </a>
       {/each}
-    {/snippet}
-    {#snippet links()}
-      {#if extras && extras.externalLinks.length > 0}
-        <section class="mt-4 flex flex-wrap items-center gap-2">
-          <span class="timecode text-xs">{m.common_links()}</span>
-          {@render linkChips()}
-        </section>
-      {/if}
     {/snippet}
 
     {#snippet detailRow(label: string, value: Snippet)}
@@ -893,25 +790,23 @@
         {@render attribution()}
       </section>
     {:else}
-      {#if (extras && (extras.directors.length > 0 || extras.studios.length > 0 || extras.tags.length > 0)) || detail.overview}
-        <div class="mt-6 max-w-2xl">
-          {@render credits()}
-          {@render synopsis(
-            extras && (extras.directors.length > 0 || extras.studios.length > 0)
-              ? "mt-2"
-              : "",
-          )}
-          {@render tags()}
+      <!-- Desktop: the credits, tags and links in a column beside the page;
+           the source credits stay at the page's end. -->
+      <div class="grid grid-cols-[minmax(0,1fr)_17rem] items-start gap-x-10">
+        <div class="min-w-0">
+          {@render synopsis("mt-6")}
+          {@render tracking()}
+          {@render whereToWatch()}
+          {@render episodes()}
+          {@render reviews()}
+          {@render works()}
+          {@render cast()}
+          {@render attribution()}
         </div>
-      {/if}
-      {@render tracking()}
-      {@render whereToWatch()}
-      {@render links()}
-      {@render attribution()}
-      {@render episodes()}
-      {@render reviews()}
-      {@render works()}
-      {@render cast()}
+        <aside class="sticky top-20 mt-6">
+          {@render detailsCard()}
+        </aside>
+      </div>
     {/if}
   </div>
 
@@ -943,5 +838,5 @@
       onClose={() => (lightboxOpen = false)} />
   {/if}
 {:else if !error}
-  <DetailHeroSkeleton wide={false} media />
+  <DetailHeroSkeleton />
 {/if}
