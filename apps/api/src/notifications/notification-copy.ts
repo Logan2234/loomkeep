@@ -23,9 +23,9 @@ const COPY = {
       dismissed: "Nous n'avons pas donné suite à ton signalement.",
     },
     follow: {
-      followed: "vous suit",
-      requested: "souhaite vous suivre",
-      accepted: "a accepté votre demande",
+      followed: "te suit",
+      requested: "souhaite te suivre",
+      accepted: "a accepté ta demande",
     },
     /** The push for a new message: its content stays off the lock screen. */
     chatMessage: "t'a envoyé un message",
@@ -44,7 +44,7 @@ const COPY = {
       body: (count: number) => `${count} réactions`,
     },
     listEditorAdded: (listTitle: string) =>
-      `vous a ajouté comme éditeur sur « ${listTitle} »`,
+      `t'a ajouté comme éditeur sur « ${listTitle} »`,
     listItemAdded: (itemTitle: string | null, listTitle: string) =>
       itemTitle
         ? `a ajouté « ${itemTitle} » à « ${listTitle} »`

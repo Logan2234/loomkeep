@@ -25,11 +25,11 @@ de streaming. Les amis, l'XP et le chat sont des bonus, pas la promesse.
 
 Dans cet ordre. Une section ou un paragraphe en défend un seul à la fois.
 
-| Pilier                        | Ce que le lecteur y gagne                                                                    | Ce qui le prouve                                                                                                                   |
-| ----------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 1. Tu sais où tu en es        | Plus besoin d'une app par passion ni de te souvenir de l'épisode, de la page ou de la partie | Quatre domaines dans une bibliothèque, suivi épisode par épisode, pages, temps de jeu, revisionnages, statistiques communes        |
-| 2. Les sorties viennent à toi | Tu n'as plus à surveiller les annonces                                                       | Calendrier (épisodes, films, jeux), notifications et résumé par e-mail au rythme choisi, alerte de suite annoncée, « Où regarder » |
-| 3. Ton historique reste à toi | Tu arrives sans tout ressaisir, et tu repars quand tu veux avec tout                         | 11 imports, export complet et gratuit, suppression immédiate, code ouvert (AGPL-3.0), auto-hébergement possible                    |
+| Pilier                        | Ce que le lecteur y gagne                                                                    | Ce qui le prouve                                                                                                                       |
+| ----------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Tu sais où tu en es        | Plus besoin d'une app par passion ni de te souvenir de l'épisode, de la page ou de la partie | Quatre domaines dans une bibliothèque, suivi épisode par épisode, pages, temps de jeu, revisionnages, statistiques communes            |
+| 2. Les sorties viennent à toi | Tu n'as plus à surveiller les annonces                                                       | Calendrier (épisodes, films, jeux), notifications et résumé par e-mail au rythme choisi, alerte de suite annoncée, « Où regarder »     |
+| 3. Ton historique reste à toi | Tu arrives sans tout ressaisir, et tu repars quand tu veux avec tout                         | 11 imports, export complet et gratuit, compte supprimable (définitif sous 14 jours), code ouvert (AGPL-3.0), auto-hébergement possible |
 
 Le pilier 3 est la différence la plus nette, rendue concrète par la fermeture
 de TV Time. Les piliers 1 et 2 sont ce que le visiteur cherche en arrivant.
@@ -46,8 +46,8 @@ Autorisé :
 - Le produit montré : affiches réelles, captures, comparateur interactif.
 - La transparence : code public, feuille de route publique
   (feedback.loomkeep.app), notes de version, prix des concurrents datés.
-- L'engagement écrit avant l'inscription : export complet, suppression
-  immédiate, pas de publicité.
+- L'engagement écrit avant l'inscription : export complet, compte
+  supprimable depuis les réglages, pas de publicité.
 
 Jamais :
 
@@ -61,6 +61,8 @@ Jamais :
   « sans publicité », « export gratuit ».
 - Les liens de calendrier et les flux comme gratuits : la doc les annonce dans
   le futur premium.
+- « Suppression immédiate » : la suppression devient définitive 14 jours
+  après la demande, annulable d'ici là.
 - Une alerte de sortie pour les livres ou les albums : seuls les épisodes, les
   films et les jeux en ont une.
 
@@ -139,8 +141,7 @@ dans `apps/api/src/mail/copy`, pas dans Paraglide.
 ## Anglais et italien
 
 L'UI est rédigée d'abord en anglais. Un jeu de mots qui ne passe pas se
-remplace, il ne se force pas. L'italien est à faire relire par une personne
-dont c'est la langue.
+remplace, il ne se force pas.
 
 |                  | Anglais                                                                                                                                    | Italien                                                                                                                                        |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -4,7 +4,7 @@ export const FR_COPY: MailCopy = {
   preheaders: {
     welcome: "Ton compte est prêt. Retrouve ta bibliothèque sur Loomkeep.",
     verifyEmail: "Confirme ton adresse email pour activer ton compte.",
-    invitation: "Tu es invité à rejoindre cette instance Loomkeep.",
+    invitation: "Tu es invité·e à rejoindre Loomkeep.",
     passwordResetLink:
       "Choisis un nouveau mot de passe à l’aide de ton lien personnel.",
     passwordChanged:
@@ -44,7 +44,7 @@ export const FR_COPY: MailCopy = {
       "Consulte la décision, ses motifs et la procédure de contestation.",
   },
   layout: {
-    tagline: "Ta bibliothèque culturelle",
+    tagline: "Tout ce que tu suis, au même endroit",
     contact: "Nous contacter",
     shortContact: "Contact",
     fallback:
@@ -366,7 +366,7 @@ export const FR_COPY: MailCopy = {
   welcome: {
     subject: "Bienvenue sur Loomkeep",
     intro: (name) =>
-      `Bienvenue ${name} ! Ton compte Loomkeep a été créé avec succès.`,
+      `Bienvenue ${name} ! Ton compte est prêt : ajoute ce que tu suis, ou importe ton historique depuis TV Time, Trakt, Letterboxd ou Goodreads.`,
     button: "Ouvrir Loomkeep",
   },
   verifyEmail: {
@@ -383,7 +383,7 @@ export const FR_COPY: MailCopy = {
         : "Tu es invité·e sur Loomkeep",
     heading: "Une place t'attend sur Loomkeep",
     intro: (inviter) =>
-      `${inviter ? `${inviter} t'invite` : "Tu es invité·e"} à rejoindre Loomkeep pour suivre tes séries, films, animés, jeux, livres et albums. Crée ton compte avec le bouton ci-dessous.`,
+      `${inviter ? `${inviter} t'invite` : "Tu es invité·e"} à rejoindre Loomkeep pour suivre tes séries, films, animes, jeux, livres et albums. Crée ton compte avec le bouton ci-dessous.`,
     button: "Créer mon compte",
     expiry: (date) =>
       `Cette invitation est valable jusqu'au ${date}. Si tu ne t'attendais pas à la recevoir, ignore simplement cet email.`,

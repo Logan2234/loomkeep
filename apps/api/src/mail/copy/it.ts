@@ -4,7 +4,7 @@ export const IT_COPY: MailCopy = {
   preheaders: {
     welcome: "Il tuo account è pronto. Apri la tua biblioteca su Loomkeep.",
     verifyEmail: "Conferma il tuo indirizzo email per attivare l’account.",
-    invitation: "Sei invitato a unirti a questa istanza Loomkeep.",
+    invitation: "Sei invitato a unirti a Loomkeep.",
     passwordResetLink:
       "Scegli una nuova password usando il tuo link personale.",
     passwordChanged:
@@ -46,7 +46,7 @@ export const IT_COPY: MailCopy = {
     moderationDecision: "Leggi la decisione, i motivi e come contestarla.",
   },
   layout: {
-    tagline: "La tua biblioteca culturale",
+    tagline: "Tutto ciò che segui, in un solo posto",
     contact: "Contattaci",
     shortContact: "Contatti",
     fallback: "Se il pulsante non funziona, copia questo link nel browser:",
@@ -367,7 +367,7 @@ export const IT_COPY: MailCopy = {
   welcome: {
     subject: "Benvenuto su Loomkeep",
     intro: (name) =>
-      `Benvenuto ${name}! Il tuo account Loomkeep è stato creato.`,
+      `Benvenuto ${name}! Il tuo account è pronto: aggiungi ciò che segui, o importa la tua cronologia da TV Time, Trakt, Letterboxd o Goodreads.`,
     button: "Apri Loomkeep",
   },
   verifyEmail: {

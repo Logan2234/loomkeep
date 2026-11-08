@@ -1278,7 +1278,7 @@
   "search_link_open": "Ouvrir la fiche",
   "auth_invitation_from": "{name} t'invite sur Loomkeep",
   "auth_invitation_generic": "Tu es invité·e sur Loomkeep",
-  "auth_invitation_body": "Crée ton compte pour rejoindre l'instance.",
+  "auth_invitation_body": "Crée ton compte pour accepter l'invitation.",
   "auth_invitation_email_locked": "Cette invitation est liée à cette adresse.",
   "auth_invitation_checking": "Vérification de l'invitation…",
   "auth_invitation_back_to_login": "Retour à la connexion",

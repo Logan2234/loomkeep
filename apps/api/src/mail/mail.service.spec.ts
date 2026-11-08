@@ -704,7 +704,7 @@ describe("MailService template gallery", () => {
     expect(french?.html).toContain('<html lang="fr">');
     expect(english?.subject).toBe("Welcome to Loomkeep");
     expect(english?.html).toContain('<html lang="en">');
-    expect(english?.text).toContain("Your Loomkeep account was created");
+    expect(english?.text).toContain("Your account is ready");
   });
 
   it("renders every gallery template in English", () => {
