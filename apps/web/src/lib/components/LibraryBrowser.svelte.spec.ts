@@ -715,6 +715,30 @@ describe("LibraryBrowser", () => {
       );
     });
 
+    it("lists the pills of what shows unpicked first, the others after", async () => {
+      renderBrowser(
+        vi.fn(async () => pageOf([DUNE])),
+        undefined,
+        undefined,
+        undefined,
+        {
+          ...aheadOnly,
+          statusOptions: [
+            { label: "Read", value: "READ" },
+            { label: "Reading", value: "READING" },
+          ],
+        },
+      );
+      await screen.findByText("Dune");
+
+      const statuses = screen.getByRole("group", { name: m.common_status() });
+      expect(
+        within(statuses)
+          .getAllByRole("button")
+          .map((pill) => pill.textContent?.trim()),
+      ).toEqual(["Reading", "Read"]);
+    });
+
     it("shows a left-out status once its pill is picked", async () => {
       const load = vi.fn(async () => pageOf([DUNE]));
       renderBrowser(load, undefined, undefined, undefined, aheadOnly);

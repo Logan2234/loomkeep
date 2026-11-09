@@ -765,6 +765,19 @@
     favoritesOnly || types.length > 0 || platforms.length > 0,
   );
   const hasFilters = $derived(statuses.length > 0 || hasPanelFilters);
+  // The pills of what the list shows unpicked first, then, past a divider,
+  // the ones only shown once picked.
+  const alwaysShownOptions = $derived(
+    unpickedStatuses.length > 0
+      ? statusOptions.filter((o) => unpickedStatuses.includes(o.value))
+      : statusOptions,
+  );
+  const pickToShowOptions = $derived(
+    unpickedStatuses.length > 0
+      ? statusOptions.filter((o) => !unpickedStatuses.includes(o.value))
+      : [],
+  );
+
   // Some statuses left out while no pill is picked.
   const narrowedUnpicked = $derived(
     statuses.length === 0 && unpickedStatuses.length > 0,
@@ -908,17 +921,19 @@
           class="flex shrink-0 gap-2"
           role="group"
           aria-label={m.common_status()}>
-          {#each statusOptions as option (option.value)}
-            {@const on = statuses.includes(option.value)}
-            <button
-              type="button"
-              class="chip shrink-0"
-              class:chip-on={on}
-              aria-pressed={on}
-              onclick={() => toggleStatus(option.value)}>
-              {option.label}
-            </button>
+          {#each alwaysShownOptions as option (option.value)}
+            {@render statusPill(option)}
           {/each}
+          {#if pickToShowOptions.length > 0}
+            <!-- Left: what the list shows unpicked. Right: what only
+                 shows once picked (finished, dropped). -->
+            <span
+              class="bg-border mx-0.5 w-px shrink-0 self-stretch"
+              aria-hidden="true"></span>
+            {#each pickToShowOptions as option (option.value)}
+              {@render statusPill(option)}
+            {/each}
+          {/if}
         </div>
         {#if !layout.compact && tokens.length > 0}
           <span class="bg-border mx-1 h-5 w-px shrink-0" aria-hidden="true"
@@ -1255,6 +1270,18 @@
       previewCount = null;
       debouncedQueryFilter.call();
     }} />
+{/snippet}
+
+{#snippet statusPill(option: Option)}
+  {@const on = statuses.includes(option.value)}
+  <button
+    type="button"
+    class="chip shrink-0"
+    class:chip-on={on}
+    aria-pressed={on}
+    onclick={() => toggleStatus(option.value)}>
+    {option.label}
+  </button>
 {/snippet}
 
 {#snippet tokenList()}

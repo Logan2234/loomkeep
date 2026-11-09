@@ -184,7 +184,7 @@ function materializedProgress(entry: {
 }
 
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
-function compareMediaEntries(
+export function compareMediaEntries(
   sort: MediaSortKey,
   a: MediaRow,
   b: MediaRow,
@@ -209,8 +209,19 @@ function compareMediaEntries(
     case "added":
       return b.createdAt.localeCompare(a.createdAt);
     case "recent":
-      return timeMs(b.lastWatchedAt) - timeMs(a.lastWatchedAt);
+      return lastActivityMs(b) - lastActivityMs(a);
   }
+}
+
+/**
+ * When an entry last moved: its latest viewing, or when it was added if that
+ * came later. A title never watched yet (a planned movie) then sits where it
+ * was added among the series being watched, not after all of them.
+ */
+function lastActivityMs(
+  row: Pick<MediaRow, "lastWatchedAt" | "createdAt">,
+): number {
+  return Math.max(timeMs(row.lastWatchedAt), timeMs(row.createdAt));
 }
 
 @Injectable()
