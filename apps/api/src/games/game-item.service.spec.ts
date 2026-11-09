@@ -252,6 +252,33 @@ describe("GameItemService.refreshStale", () => {
     expect(await service.refreshStale()).toBe(1);
   });
 
+  it("keeps going when one IGDB batch fails", async () => {
+    const getDetailsByIds = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("IGDB timeout"))
+      .mockResolvedValueOnce([details]);
+    const { service } = makeService({
+      gameExternalId: { gameItemId: "existing-1" },
+      staleItems: Array.from({ length: 150 }, (_, i) =>
+        staleItem(`g${i}`, String(i + 1)),
+      ),
+      getDetailsByIds,
+    });
+
+    expect(await service.refreshStale()).toBe(1);
+    expect(getDetailsByIds).toHaveBeenCalledTimes(2);
+    expect(getDetailsByIds.mock.calls[0][0]).toHaveLength(100);
+  });
+
+  it("fails the run when every IGDB batch fails", async () => {
+    const { service } = makeService({
+      staleItems: [staleItem("g1", "42")],
+      getDetailsByIds: vi.fn().mockRejectedValue(new Error("IGDB down")),
+    });
+
+    await expect(service.refreshStale()).rejects.toThrow("IGDB down");
+  });
+
   it("calls nothing when no game is stale", async () => {
     const getDetailsByIds = vi.fn();
     const { service } = makeService({ getDetailsByIds });

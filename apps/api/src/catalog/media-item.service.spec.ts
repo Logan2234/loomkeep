@@ -26,12 +26,25 @@ describe("MediaItemService.refreshStale", () => {
   }
 
   it("only queries non-dropped tracked media past the sync TTL, oldest first and capped", async () => {
+    vi.useFakeTimers({ now: new Date("2026-11-09T12:00:00Z") });
     const { service, prisma } = makeService([]);
     await service.refreshStale();
+    vi.useRealTimers();
     expect(prisma.mediaItem.findMany).toHaveBeenCalledWith({
       where: {
-        lastSyncedAt: { lt: expect.any(Date) },
         entries: { some: { status: { not: "DROPPED" } } },
+        // An ended series waits a week; anything else, a day.
+        OR: [
+          { lastSyncedAt: { lt: new Date("2026-11-02T12:00:00Z") } },
+          {
+            lastSyncedAt: { lt: new Date("2026-11-08T12:00:00Z") },
+            OR: [
+              { type: { not: "SERIES" } },
+              { status: null },
+              { status: { notIn: ["Ended", "Canceled"] } },
+            ],
+          },
+        ],
       },
       orderBy: { lastSyncedAt: "asc" },
       take: expect.any(Number),

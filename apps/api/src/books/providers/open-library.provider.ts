@@ -279,10 +279,23 @@ export class OpenLibraryProvider implements BookCatalogProvider {
    * `editionKey`: an OLID from `getEditions()` — when given, that exact
    * edition is shown instead of the one `lang` would auto-pick.
    */
-  async getDetails(
+  getDetails(
     sourceId: string,
     lang: string = DEFAULT_LANG,
     editionKey?: string,
+  ): Promise<ProviderBookDetails> {
+    return this.fetchDetails(sourceId, lang, editionKey, true);
+  }
+
+  getStoredDetails(sourceId: string): Promise<ProviderBookDetails> {
+    return this.fetchDetails(sourceId, DEFAULT_LANG, undefined, false);
+  }
+
+  private async fetchDetails(
+    sourceId: string,
+    lang: string,
+    editionKey: string | undefined,
+    withSameAuthorBooks: boolean,
   ): Promise<ProviderBookDetails> {
     // A merged work resolves to another id; everything below keys off the
     // canonical one so the cache never stores the stale alias.
@@ -352,7 +365,9 @@ export class OpenLibraryProvider implements BookCatalogProvider {
       editionKey: pickedOlid ?? null,
       releaseDate: toIsoDate(work.first_publish_date),
       website: bookUrl,
-      sameAuthorBooks: await this.sameAuthorBooks(id, doc?.author_key?.[0]),
+      sameAuthorBooks: withSameAuthorBooks
+        ? await this.sameAuthorBooks(id, doc?.author_key?.[0])
+        : [],
       ratings: toRatings(doc, bookUrl),
       externalIds: [{ source: this.source, externalId: id }],
       editionCount: doc?.edition_count ?? null,
