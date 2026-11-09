@@ -24,5 +24,6 @@ export class LibraryEntryResponseDto implements LibraryEntryDto {
   ownershipSource!: string | null;
   episodeAlertsMuted!: boolean;
   movieReleaseAlertsEnabled?: boolean;
+  rewatching!: boolean;
   replays!: MovieReplayResponseDto[];
 }

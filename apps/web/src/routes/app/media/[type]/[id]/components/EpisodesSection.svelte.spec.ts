@@ -46,6 +46,7 @@ function episode(
     myRating: null,
     commentCount: 0,
     watchCount,
+    seen: watchCount > 0,
     watches: Array.from({ length: watchCount }, (_, i) => ({
       id: `w${season}${number}${i}`,
       episodeId: `s${season}e${number}`,
@@ -699,6 +700,55 @@ describe("EpisodesSection", () => {
         expect(requests).toEqual(["POST /library/episodes/s1e1/watches"]),
       );
       expect(toast.items).toHaveLength(0);
+    });
+
+    it("asks whether a finished show is being rewatched, and starts it on yes", async () => {
+      const patches: unknown[] = [];
+      server.use(
+        http.patch(apiUrl("/library/entries/:id"), async ({ request }) => {
+          patches.push(await request.json());
+          return HttpResponse.json({});
+        }),
+      );
+      const { user } = renderSection([season(1, [1, 2, 3])], {
+        ...ENTRY,
+        status: "COMPLETED",
+        rewatching: false,
+      });
+      await openMenu(user, "S01E01");
+      await user.click(
+        screen.getByRole("menuitem", { name: m.media_rewatch() }),
+      );
+
+      const prompt = await screen.findByRole("dialog", {
+        name: m.media_rewatch_prompt_title(),
+      });
+      await user.click(
+        within(prompt).getByRole("button", {
+          name: m.media_rewatch_prompt_confirm(),
+        }),
+      );
+
+      await waitFor(() => expect(patches).toEqual([{ rewatching: true }]));
+    });
+
+    it("doesn't ask again while a rewatch is on", async () => {
+      const { user } = renderSection([season(1, [1, 2, 3])], {
+        ...ENTRY,
+        status: "WATCHING",
+        rewatching: true,
+      });
+      await openMenu(user, "S01E01");
+      await user.click(
+        screen.getByRole("menuitem", { name: m.media_rewatch() }),
+      );
+
+      await waitFor(() =>
+        expect(requests).toEqual(["POST /library/episodes/s1e1/watches"]),
+      );
+      expect(
+        screen.queryByRole("dialog", { name: m.media_rewatch_prompt_title() }),
+      ).toBeNull();
     });
 
     it("from two viewings, undoes them all with a way back", async () => {

@@ -70,6 +70,11 @@ export interface LibraryEntryDto {
   /** Series/anime: left out of the new-episode push/email digest (still in the calendar). */
   episodeAlertsMuted: boolean;
   movieReleaseAlertsEnabled?: boolean;
+  /**
+   * Being rewatched: a series shows as WATCHING with its progress counted
+   * since the rewatch began, a movie shows as PLANNED.
+   */
+  rewatching: boolean;
   /** Completed rewatches beyond the first, movies only, most recent first. */
   replays: MovieReplayDto[];
 }

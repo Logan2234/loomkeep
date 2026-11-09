@@ -29,6 +29,7 @@ const entry: LibraryEntryDto = {
   ownershipStatus: "NONE",
   ownershipSource: null,
   episodeAlertsMuted: false,
+  rewatching: false,
   replays: [],
 };
 
@@ -49,6 +50,7 @@ function props() {
     onRemove: vi.fn(),
     onShare: vi.fn(),
     onToggleMovieAlerts: vi.fn(),
+    onToggleRewatch: vi.fn(),
   };
 }
 
@@ -177,5 +179,101 @@ describe("release alerts in the action bar", () => {
       name: m.media_movie_reminder_enable(),
     }) as HTMLButtonElement;
     expect(bell.disabled).toBe(true);
+  });
+});
+
+describe("rewatch in the action bar's menu", () => {
+  const openMenu = async () => {
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: m.common_more_actions() }),
+    );
+    return user;
+  };
+
+  it("offers to watch a seen movie again", async () => {
+    const values = {
+      ...props(),
+      upcoming: false,
+      entry: { ...entry, status: "COMPLETED" as const },
+    };
+    render(ActionBar, { props: values });
+    const user = await openMenu();
+
+    await user.click(
+      screen.getByRole("menuitem", {
+        name: new RegExp(m.media_rewatch_movie_start()),
+      }),
+    );
+    expect(values.onToggleRewatch).toHaveBeenCalledOnce();
+  });
+
+  it("offers no rewatch for a movie not seen yet", async () => {
+    render(ActionBar, { props: { ...props(), upcoming: false } });
+    await openMenu();
+
+    expect(
+      screen.queryByRole("menuitem", {
+        name: new RegExp(m.media_rewatch_movie_start()),
+      }),
+    ).toBeNull();
+  });
+
+  it("lets a series' rewatch be stopped", async () => {
+    render(ActionBar, {
+      props: {
+        ...props(),
+        isMovie: false,
+        upcoming: false,
+        entry: { ...entry, status: "WATCHING" as const, rewatching: true },
+      },
+    });
+    await openMenu();
+
+    expect(
+      screen.getByRole("menuitem", { name: m.media_rewatch_stop() }),
+    ).toBeTruthy();
+  });
+});
+
+describe("dropping and resuming in the action bar's menu", () => {
+  const openMenu = async () =>
+    userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: m.common_more_actions() }));
+
+  it("doesn't offer to drop a seen movie, and counts its viewings", async () => {
+    render(ActionBar, {
+      props: {
+        ...props(),
+        upcoming: false,
+        entry: {
+          ...entry,
+          status: "COMPLETED" as const,
+          replays: [{ id: "r1", finishedAt: "2026-01-12" }],
+        },
+      },
+    });
+    await openMenu();
+
+    expect(
+      screen.queryByRole("menuitem", { name: m.media_drop_tracking() }),
+    ).toBeNull();
+    expect(screen.getAllByText("×2")).not.toHaveLength(0);
+  });
+
+  it("puts a dropped movie back to watch rather than resuming it", async () => {
+    render(ActionBar, {
+      props: {
+        ...props(),
+        upcoming: false,
+        entry: { ...entry, status: "DROPPED" as const },
+      },
+    });
+    await openMenu();
+
+    expect(
+      screen.getByRole("menuitem", { name: m.media_back_to_watch() }),
+    ).toBeTruthy();
   });
 });

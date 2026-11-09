@@ -23,8 +23,18 @@ history from before it was started.
   list (it comes back, history included, with the next message).
 - Same on a work's discussion: mark read, mute, pin, go to the title, or
   stop following it until you write in it or someone mentions you.
+- Rewatching: mark an episode of a show you've finished as seen again and
+  Loomkeep asks whether you're rewatching it. If so, the show goes back to
+  in progress and into To watch with its ticks cleared (rewatch counts
+  stay), picking up after the episode you've just seen, until every episode
+  is seen again. A movie you've seen can go back to To watch from its "…"
+  menu.
 
 ### Changed
+
+- Video page: a seen movie shows how many times you've watched it; a
+  finished title no longer offers "Drop", and a dropped title never started
+  offers "Put back in To watch" instead of "Resume".
 
 - Video library: sorted by recent activity, a title not watched yet (a
   planned movie) now sits where it was added among the series you're

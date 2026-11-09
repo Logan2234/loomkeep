@@ -117,7 +117,7 @@
     {#each tabs as tab (tab.key)}
       {@const open = tab.key === active}
       {@const total = tab.episodes.length}
-      {@const watched = tab.episodes.filter((e) => e.watchCount > 0).length}
+      {@const watched = tab.episodes.filter((e) => e.seen).length}
       {@const ticked = tab.episodes.filter(
         (e) => e.id && selected.has(e.id),
       ).length}

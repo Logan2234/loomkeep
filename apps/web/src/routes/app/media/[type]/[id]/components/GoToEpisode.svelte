@@ -36,7 +36,7 @@
   });
 
   const stateLabel = (episode: MediaDetailEpisodeDto) =>
-    episode.watchCount > 0
+    episode.seen
       ? m.media_goto_state_watched()
       : isAired(episode, now)
         ? m.media_goto_state_unwatched()

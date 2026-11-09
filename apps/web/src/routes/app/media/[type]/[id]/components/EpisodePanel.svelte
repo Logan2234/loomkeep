@@ -87,7 +87,7 @@
   const title = $derived(
     episode.title ?? `${m.common_episode()} ${episode.number}`,
   );
-  const watched = $derived(episode.watchCount > 0);
+  const watched = $derived(episode.seen);
   const upcoming = $derived(
     watched ? null : upcomingLabel(episode.airDate, now, exactTime),
   );

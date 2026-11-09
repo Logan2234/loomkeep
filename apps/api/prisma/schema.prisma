@@ -2193,6 +2193,11 @@ model LibraryEntry {
   // Series/anime only: skip this show in the new-episode push/email digest.
   // It stays in the release calendar — only the alerts are silenced.
   episodeAlertsMuted Boolean              @default(false)
+  // Set while the user rewatches a title they had finished: a series counts
+  // only the watches since this instant for its progress, a movie goes back
+  // to "to watch". Cleared once every aired episode is seen again (series)
+  // or the movie is logged as rewatched.
+  rewatchStartedAt   DateTime?
   movieReleaseReminderAt DateTime?
   // A scheduled reminder has no browser language to resolve an automatic country from.
   movieReleaseRegion String?

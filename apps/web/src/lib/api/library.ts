@@ -100,6 +100,7 @@ export const updateLibraryEntry = (
       | "ownershipSource"
       | "episodeAlertsMuted"
       | "movieReleaseAlertsEnabled"
+      | "rewatching"
     >
   >,
 ) =>

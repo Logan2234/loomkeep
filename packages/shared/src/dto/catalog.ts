@@ -260,6 +260,11 @@ export interface MediaDetailEpisodeDto
   /** Comments in the episode's discussion, tombstones left out. */
   commentCount: number;
   watchCount: number;
+  /**
+   * Watched in the current viewing: ever outside a rewatch, since it began
+   * during one — what the episode's tick shows.
+   */
+  seen: boolean;
   /** The current user's viewings of this episode (date + rating), most recent first. */
   watches: EpisodeWatchDto[];
 }
