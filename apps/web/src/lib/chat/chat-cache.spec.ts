@@ -92,6 +92,7 @@ describe("applyToConversations", () => {
     unread: 0,
     lastReadAt: "2026-10-06T21:30:00.000Z",
     muted: false,
+    pinned: false,
     lastMessageAt: "2026-10-06T21:30:00.000Z",
   } satisfies ConversationDto;
   const other = { ...conversation, id: "cv0" };
@@ -105,6 +106,28 @@ describe("applyToConversations", () => {
     expect(list?.items.map((c) => c.id)).toEqual(["cv1", "cv0"]);
     expect(list?.items[0].unread).toBe(1);
     expect(list?.items[0].lastMessage?.id).toBe("m2");
+  });
+
+  it("moves it up only to just under the pinned conversations", () => {
+    const pinned = { ...conversation, id: "cvP", pinned: true };
+    const list = applyToConversations(
+      { items: [pinned, other, conversation], hasMore: false },
+      message("m2", "21:31"),
+      false,
+    );
+    expect(list?.items.map((c) => c.id)).toEqual(["cvP", "cv1", "cv0"]);
+  });
+
+  it("keeps a pinned conversation in its place", () => {
+    const first = { ...conversation, id: "cvP", pinned: true };
+    const second = { ...conversation, pinned: true };
+    const list = applyToConversations(
+      { items: [first, second, other], hasMore: false },
+      message("m2", "21:31"),
+      false,
+    );
+    expect(list?.items.map((c) => c.id)).toEqual(["cvP", "cv1", "cv0"]);
+    expect(list?.items[1].lastMessage?.id).toBe("m2");
   });
 
   it("counts nothing for the viewer's own message or one read on screen", () => {

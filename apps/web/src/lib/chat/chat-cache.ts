@@ -59,8 +59,8 @@ export function chronological(pages: PagedResult<MessageDto>[]): MessageDto[] {
 
 /**
  * A new or changed message, reflected in the conversation list: its last
- * line, and its unread count when the other member wrote it and the
- * conversation isn't on screen. Null when the conversation isn't in the
+ * line, its place (first, after the pinned ones), and its unread count when
+ * the other member wrote it and the conversation isn't on screen. Null when the conversation isn't in the
  * list yet: the caller refetches it.
  */
 export function applyToConversations(
@@ -87,11 +87,20 @@ export function applyToConversations(
         : conversation.unread,
   };
 
+  if (!isNew || updated.pinned) {
+    return {
+      ...list,
+      items: list.items.map((c) => (c.id === conversation.id ? updated : c)),
+    };
+  }
+
+  // A pinned conversation keeps its place on top: a new message only
+  // moves the others, right under the pinned ones.
+  const others = list.items.filter((c) => c.id !== conversation.id);
+  const pinned = others.filter((c) => c.pinned).length;
   return {
     ...list,
-    items: isNew
-      ? [updated, ...list.items.filter((c) => c.id !== conversation.id)]
-      : list.items.map((c) => (c.id === conversation.id ? updated : c)),
+    items: [...others.slice(0, pinned), updated, ...others.slice(pinned)],
   };
 }
 

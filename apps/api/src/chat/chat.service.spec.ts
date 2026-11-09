@@ -37,6 +37,7 @@ function membership(
     conversationId: "cv1",
     lastReadAt: new Date("2026-10-06T20:00:00Z"),
     mutedAt: null,
+    pinnedAt: null,
     conversation: {
       id: "cv1",
       lastMessageAt: new Date("2026-10-06T21:00:00Z"),
@@ -152,6 +153,7 @@ function setup(
         ),
       findMany: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
     message: {
       create: vi.fn().mockResolvedValue(messageRow()),
@@ -257,6 +259,98 @@ describe("ChatService", () => {
 
       await expectCode(service.open(ME, LEA), ErrorCode.ChatNotFriends);
       expect(prisma.conversation.upsert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("the conversation list", () => {
+    it("leaves out conversations removed from it, pinned ones first", async () => {
+      const { service, prisma } = setup();
+      (prisma.conversationMember.findMany as Mock).mockResolvedValue([
+        { ...membership(), pinnedAt: new Date("2026-10-07T08:00:00Z") },
+      ]);
+
+      const { items } = await service.list(
+        ME,
+        parsePageQuery(undefined, undefined, 40),
+      );
+
+      expect(prisma.conversationMember.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ userId: ME, hiddenAt: null }),
+          orderBy: [
+            { pinnedAt: { sort: "desc", nulls: "last" } },
+            { conversation: { lastMessageAt: "desc" } },
+          ],
+        }),
+      );
+      expect(items[0].pinned).toBe(true);
+    });
+
+    it("pins and unpins for the viewer only", async () => {
+      const { service, prisma } = setup();
+
+      await service.setPinned(ME, "cv1", true);
+      await service.setPinned(ME, "cv1", false);
+
+      const calls = (prisma.conversationMember.update as Mock).mock.calls;
+      expect(calls.map(([arg]) => arg)).toEqual([
+        {
+          where: {
+            conversationId_userId: { conversationId: "cv1", userId: ME },
+          },
+          data: { pinnedAt: expect.any(Date) },
+        },
+        {
+          where: {
+            conversationId_userId: { conversationId: "cv1", userId: ME },
+          },
+          data: { pinnedAt: null },
+        },
+      ]);
+    });
+
+    it("removes a conversation from the viewer's list, read and unpinned", async () => {
+      const { service, prisma } = setup();
+
+      await service.hide(ME, "cv1");
+
+      const update = prisma.conversationMember.update as Mock;
+      expect(update).toHaveBeenCalledWith({
+        where: { conversationId_userId: { conversationId: "cv1", userId: ME } },
+        data: { hiddenAt: expect.any(Date), pinnedAt: null },
+      });
+      expect(update).toHaveBeenCalledWith({
+        where: { conversationId_userId: { conversationId: "cv1", userId: ME } },
+        data: { lastReadAt: expect.any(Date) },
+      });
+      // Nothing is deleted: the history stays for both members.
+      expect(prisma.message.update).not.toHaveBeenCalled();
+    });
+
+    it("brings a removed conversation back with the next message", async () => {
+      const { service, prisma } = setup();
+
+      await service.send(LEA, "cv1", "Tu as vu la fin ?");
+
+      expect(prisma.conversationMember.updateMany).toHaveBeenCalledWith({
+        where: { conversationId: "cv1", hiddenAt: { not: null } },
+        data: { hiddenAt: null },
+      });
+    });
+
+    it("refuses a conversation the viewer isn't in", async () => {
+      const { service, prisma } = setup();
+      (prisma.conversationMember.findUnique as Mock).mockResolvedValue(null);
+
+      await expectCode(
+        service.hide(ME, "cv9"),
+        ErrorCode.ChatConversationNotFound,
+      );
+      await expectCode(
+        service.setPinned(ME, "cv9", true),
+        ErrorCode.ChatConversationNotFound,
+      );
+      expect(prisma.conversationMember.update).not.toHaveBeenCalled();
     });
   });
 

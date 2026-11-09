@@ -69,6 +69,7 @@ const CONVERSATION: ConversationDto = {
   unread: 1,
   lastReadAt: "2026-10-09T20:30:00.000Z",
   muted: false,
+  pinned: false,
   lastMessageAt: MESSAGES[1].createdAt,
 };
 

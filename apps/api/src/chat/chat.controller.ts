@@ -58,6 +58,7 @@ import {
   MuteConversationBody,
   OpenConversationBody,
   PickBody,
+  PinConversationBody,
   ReactMessageBody,
   RecommendWorkBody,
   SendMessageBody,
@@ -275,6 +276,24 @@ export class ChatController {
     return this.chat.mute(user.sub, id, body.muted);
   }
 
+  @Put("conversations/:id/pin")
+  pinConversation(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: PinConversationBody,
+  ): Promise<void> {
+    return this.chat.setPinned(user.sub, id, body.pinned);
+  }
+
+  /** Off the viewer's list, history kept: the next message brings it back. */
+  @Post("conversations/:id/hide")
+  hideConversation(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.chat.hide(user.sub, id);
+  }
+
   /** Friends to start a conversation with. */
   @Get("friends")
   @ApiOkResponse({ type: UserSummaryResponseDto, isArray: true })
@@ -342,6 +361,26 @@ export class ChatController {
     @Body() body: MuteConversationBody,
   ): Promise<void> {
     return this.threads.setMuted(user.sub, parseTarget(type), id, body.muted);
+  }
+
+  @Put("works/:type/:id/pin")
+  pinWorkThread(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+    @Body() body: PinConversationBody,
+  ): Promise<void> {
+    return this.threads.setPinned(user.sub, parseTarget(type), id, body.pinned);
+  }
+
+  /** Off the "Œuvres" tab until the viewer writes in it or is mentioned. */
+  @Post("works/:type/:id/unfollow")
+  unfollowWorkThread(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.threads.unfollow(user.sub, parseTarget(type), id);
   }
 
   @Post("works/:type/:id/read")

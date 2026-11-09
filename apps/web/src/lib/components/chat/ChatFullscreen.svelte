@@ -11,7 +11,9 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import ChatSearchField from "./ChatSearchField.svelte";
@@ -195,6 +197,12 @@
         <ChatWorkList
           active={chat.activeWork}
           onselect={(work) => (chat.activeWork = work)} />
+      {/if}
+      {#if layout.compact && isFeatureNew("chat-list-actions") && (worksTab ? threads.length > 0 : shown.length > 0)}
+        <p class="text-dim flex items-center gap-2 px-3 py-1 text-xs">
+          <NewBadge />
+          {worksTab ? m.chat_work_longpress_hint() : m.chat_longpress_hint()}
+        </p>
       {/if}
     </aside>
   {/if}

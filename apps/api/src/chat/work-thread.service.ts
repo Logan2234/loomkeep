@@ -25,6 +25,7 @@ type ThreadRow = {
   lastAt: Date | null;
   unread: bigint;
   muted: boolean;
+  pinned: boolean;
   readAt: Date | null;
 };
 
@@ -68,9 +69,9 @@ export class WorkThreadService {
     targetType: CommentTargetType,
     targetId: string,
   ): Promise<WorkThreadDto | null> {
-    const followed = (await this.threads(userId)).find(
-      (row) => row.targetType === targetType && row.targetId === targetId,
-    );
+    const followed = (
+      await this.threads(userId, { targetType, targetId })
+    ).find((row) => row.targetType === targetType && row.targetId === targetId);
     const [dto] = await this.toDtos(userId, [
       followed ?? {
         targetType,
@@ -79,6 +80,7 @@ export class WorkThreadService {
         lastAt: null,
         unread: 0n,
         muted: false,
+        pinned: false,
         readAt: null,
       },
     ]);
@@ -130,6 +132,39 @@ export class WorkThreadService {
     });
   }
 
+  async setPinned(
+    userId: string,
+    targetType: CommentTargetType,
+    targetId: string,
+    pinned: boolean,
+  ): Promise<void> {
+    const pinnedAt = pinned ? new Date() : null;
+    await this.prisma.commentThreadRead.upsert({
+      where: { userId_targetType_targetId: { userId, targetType, targetId } },
+      update: { pinnedAt },
+      create: { userId, targetType, targetId, pinnedAt },
+    });
+  }
+
+  /**
+   * Off the "Œuvres" tab until the member writes in the discussion or is
+   * mentioned in it again. Read on the way out and unpinned, as a
+   * conversation removed from the list is.
+   */
+  async unfollow(
+    userId: string,
+    targetType: CommentTargetType,
+    targetId: string,
+  ): Promise<void> {
+    const now = new Date();
+    const data = { unfollowedAt: now, lastReadAt: now, pinnedAt: null };
+    await this.prisma.commentThreadRead.upsert({
+      where: { userId_targetType_targetId: { userId, targetType, targetId } },
+      update: data,
+      create: { userId, targetType, targetId, ...data },
+    });
+  }
+
   async markRead(
     userId: string,
     targetType: CommentTargetType,
@@ -145,8 +180,13 @@ export class WorkThreadService {
 
   // A mention counts from just before it, so the comment holding it is
   // unread; a discussion the member wrote in, from their last word. Only the
-  // domains the member keeps on: a turned-off one has no page to open.
-  private async threads(userId: string): Promise<ThreadRow[]> {
+  // domains the member keeps on: a turned-off one has no page to open. One
+  // they stopped following stays out until they write or are mentioned
+  // again — unless it's the one asked for (`only`), opened from its page.
+  private async threads(
+    userId: string,
+    only?: { targetType: CommentTargetType; targetId: string },
+  ): Promise<ThreadRow[]> {
     const types = (await this.domains.getEnabledDomains(userId)).flatMap(
       (domain) => TARGETS_OF[domain] ?? [],
     );
@@ -174,6 +214,7 @@ export class WorkThreadService {
       )
       SELECT t."targetType", t."targetId", t."mineAt",
         r."mutedAt" IS NOT NULL AS muted,
+        r."pinnedAt" IS NOT NULL AS pinned,
         COALESCE(r."lastReadAt", t."mineAt") AS "readAt",
         (
           SELECT MAX(c."createdAt") FROM "Comment" c
@@ -199,7 +240,12 @@ export class WorkThreadService {
         ON r."userId" = ${userId}
         AND r."targetType" = t."targetType"
         AND r."targetId" = t."targetId"
-      ORDER BY t."mineAt" DESC
+      WHERE ${
+        only
+          ? Prisma.sql`t."targetType" = ${only.targetType}::"CommentTargetType" AND t."targetId" = ${only.targetId}`
+          : Prisma.sql`(r."unfollowedAt" IS NULL OR t."mineAt" > r."unfollowedAt")`
+      }
+      ORDER BY r."pinnedAt" DESC NULLS LAST, t."mineAt" DESC
       LIMIT ${WORK_THREADS_MAX}
     `;
   }
@@ -228,6 +274,7 @@ export class WorkThreadService {
           ...work,
           unread: Number(row.unread),
           muted: row.muted,
+          pinned: row.pinned,
           lastReadAt: row.readAt?.toISOString() ?? null,
           canParticipate: !!libraryKey && tracked.has(libraryKey),
           lastActivityAt: (row.lastAt ?? row.mineAt).toISOString(),
