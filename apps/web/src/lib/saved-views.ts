@@ -5,7 +5,7 @@ import type { SavedViewDto, SavedViewFiltersDto } from "@loomkeep/shared";
 /** Each domain's library page. */
 
 /** The address's spelling of "every status", on a page that opens on some. */
-export const ALL_STATUSES_PARAM = "all";
+const ALL_STATUSES_PARAM = "all";
 
 const sameSet = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((v) => b.includes(v));
