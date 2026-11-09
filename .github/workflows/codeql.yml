@@ -43,7 +43,7 @@ jobs:
         with:
           build-shared: false
       - if: matrix.language == 'java-kotlin'
-        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: 21
@@ -54,7 +54,7 @@ jobs:
         run: echo "$GOOGLE_SERVICES" | base64 -d > apps/mobile/android/app/google-services.json
       - if: matrix.language == 'java-kotlin'
         run: pnpm --filter @loomkeep/mobile exec cap sync android
-      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.language == 'java-kotlin' && 'manual' || 'none' }}
@@ -65,7 +65,7 @@ jobs:
         if: matrix.language == 'java-kotlin'
         working-directory: apps/mobile/android
         run: ./gradlew :app:compileDebugSources --no-daemon -Pkotlin.compiler.execution.strategy=in-process
-      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           category: "/language:${{ matrix.language }}"
           upload: ${{ matrix.language == 'java-kotlin' && 'never' || 'always' }}
@@ -83,7 +83,7 @@ jobs:
               and ($uri | endswith(".kt")) | not)
           ))' sarif/java.sarif > java-filtered.sarif
       - if: matrix.language == 'java-kotlin'
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           sarif_file: java-filtered.sarif
           category: "/language:${{ matrix.language }}"
