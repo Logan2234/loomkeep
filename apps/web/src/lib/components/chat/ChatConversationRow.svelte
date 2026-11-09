@@ -105,16 +105,16 @@
     <Avatar seed={peer?.username ?? "?"} url={peer?.avatarUrl} {size} />
     {#if online}
       <span
-        class="bg-success ring-surface absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full ring-2"
-      ></span>
+        class="bg-success ring-surface absolute -right-0.5 h-3 w-3 rounded-full ring-2
+          {conversation.muted ? '-top-0.5' : '-bottom-0.5'}"></span>
     {/if}
     {#if conversation.muted}
-      <!-- Where the rail shows it: the online dot keeps the other corner. -->
+      <!-- The online dot moves up to leave it the corner. -->
       <span
         role="img"
         aria-label={m.chat_muted()}
         title={m.chat_muted()}
-        class="bg-surface-2 text-dim ring-surface absolute -bottom-1 -left-1.5 grid h-[18px] w-[18px] place-items-center rounded-full ring-2">
+        class="bg-surface-2 text-dim ring-surface absolute -right-1.5 -bottom-1 grid h-[18px] w-[18px] place-items-center rounded-full ring-2">
         <Icon name="bell-off" class="h-2.5 w-2.5" />
       </span>
     {/if}

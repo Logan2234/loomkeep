@@ -105,7 +105,7 @@
         role="img"
         aria-label={m.chat_muted()}
         title={m.chat_muted()}
-        class="bg-surface-2 text-dim ring-surface absolute -bottom-1 -left-1.5 grid h-[18px] w-[18px] place-items-center rounded-full ring-2">
+        class="bg-surface-2 text-dim ring-surface absolute -right-1.5 -bottom-1 grid h-[18px] w-[18px] place-items-center rounded-full ring-2">
         <Icon name="bell-off" class="h-2.5 w-2.5" />
       </span>
     {/if}
