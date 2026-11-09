@@ -5,6 +5,7 @@ import {
   type GameStatus,
   type MediaFilterStatus,
   type MusicStatus,
+  type SavedViewDomain,
 } from "@loomkeep/shared";
 
 export const MEDIA_STATUS_META: Record<
@@ -168,3 +169,21 @@ export function mediaFilterLabel(status: MediaFilterStatus): string {
   if (status === "GHOST") return m.media_status_ghost();
   return MEDIA_STATUS_META[status].label;
 }
+
+/**
+ * What a library's works view shows while no status pill is picked: what's
+ * still ahead. The finished and dropped show once their own pill is picked.
+ * Music has no "in progress" (an album is heard or not, and heard again), so
+ * it shows everything.
+ */
+export const LIBRARY_UNPICKED_STATUSES: Record<SavedViewDomain, string[]> = {
+  MEDIA: [
+    "WATCHING",
+    "PLANNED",
+    "DORMANT",
+    "GHOST",
+  ] satisfies MediaFilterStatus[],
+  GAMES: ["BACKLOG", "PLAYING"] satisfies GameStatus[],
+  BOOKS: ["TO_READ", "READING"] satisfies BookStatus[],
+  MUSIC: [],
+};

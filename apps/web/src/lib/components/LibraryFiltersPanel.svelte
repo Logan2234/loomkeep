@@ -26,14 +26,12 @@
     extraOptions = [],
     extra = [],
     onExtra,
+    favorites = true,
     favoritesOnly = $bindable(false),
     sorts,
     sort = $bindable(),
     reversed = $bindable(false),
-    mode,
-    onMode,
-    posterSize,
-    onPosterSize,
+    display,
     onSelect,
     columns,
     onToggleColumn,
@@ -44,20 +42,25 @@
     /** How many entries the filters match, for the footer's button. */
     total: number;
     /** The library's saved views, as SavedViewBar renders them. */
-    savedViews: Snippet;
+    savedViews?: Snippet;
     /** The domain's extra filter (media's types, games' platforms), if any. */
     extraLabel?: string;
     extraOptions?: SelectOption[];
     extra?: string[];
     onExtra?: (values: string[]) => void;
+    /** Whether the "favorites only" switch applies (not to a saga). */
+    favorites?: boolean;
     favoritesOnly?: boolean;
     sorts: SelectOption[];
     sort: string;
     reversed?: boolean;
-    mode: LibraryViewMode;
-    onMode: (mode: LibraryViewMode) => void;
-    posterSize: LibraryPosterSize;
-    onPosterSize: (size: LibraryPosterSize) => void;
+    /** The display picker; a list with a single look (sagas) has none. */
+    display?: {
+      mode: LibraryViewMode;
+      onMode: (mode: LibraryViewMode) => void;
+      posterSize: LibraryPosterSize;
+      onPosterSize: (size: LibraryPosterSize) => void;
+    };
     /** Enters selection mode; undefined where there's none. */
     onSelect?: () => void;
     /** The table's columns and whether each shows; undefined hides the section. */
@@ -67,8 +70,8 @@
       visible: boolean;
       locked: boolean;
     }[];
-    onToggleColumn: (key: string) => void;
-    onResetColumns: () => void;
+    onToggleColumn?: (key: string) => void;
+    onResetColumns?: () => void;
     onReset: () => void;
   } = $props();
 
@@ -115,7 +118,7 @@
   <div
     data-drawer-scroll
     class="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-4">
-    {@render savedViews()}
+    {@render savedViews?.()}
 
     {#if extraLabel && (extraOptions.length > 0 || extra.length > 0)}
       {@render heading(extraLabel)}
@@ -134,14 +137,16 @@
       </div>
     {/if}
 
-    <label
-      class="mt-4 flex min-h-11 cursor-pointer items-center justify-between gap-3">
-      <span class="font-medium">{m.library_favorites_only()}</span>
-      <Switch
-        checked={favoritesOnly}
-        label={m.library_favorites_only()}
-        onChange={(next) => (favoritesOnly = next)} />
-    </label>
+    {#if favorites}
+      <label
+        class="mt-4 flex min-h-11 cursor-pointer items-center justify-between gap-3">
+        <span class="font-medium">{m.library_favorites_only()}</span>
+        <Switch
+          checked={favoritesOnly}
+          label={m.library_favorites_only()}
+          onChange={(next) => (favoritesOnly = next)} />
+      </label>
+    {/if}
 
     {@render heading(m.common_sort_by())}
     <div
@@ -173,8 +178,10 @@
       value={reversed ? "asc" : "desc"}
       onChange={(value) => (reversed = value === "asc")} />
 
-    {@render heading(m.library_display())}
-    <LibraryDisplayPicker {mode} {onMode} {posterSize} {onPosterSize} />
+    {#if display}
+      {@render heading(m.library_display())}
+      <LibraryDisplayPicker {...display} />
+    {/if}
     {#if onSelect}
       <button
         type="button"
@@ -201,7 +208,7 @@
               class="accent-accent h-4 w-4"
               checked={column.visible}
               disabled={column.locked}
-              onchange={() => onToggleColumn(column.key)} />
+              onchange={() => onToggleColumn?.(column.key)} />
             {column.label}
           </label>
         {/each}

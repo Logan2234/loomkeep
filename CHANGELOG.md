@@ -23,6 +23,12 @@ history from before it was started.
 
 ### Changed
 
+- Video, game and book libraries now show only what's still ahead (in
+  progress, to watch, paused, ghost…) until a status is picked: finished and
+  dropped titles appear once their own pill is selected. Music still shows
+  everything.
+- Sagas view: the search sits beside the Works/Sagas switch as in the works
+  view, and type and sort move into the same "Filters" panel.
 - Self-hosting: the nightly achievements sweep now covers accounts active
   in the last two days, and every account on Sundays.
 - Self-hosting: the games and books catalogue refreshes ask much less of

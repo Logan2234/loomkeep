@@ -35,6 +35,7 @@
     GAME_STATUS_LABELS,
     GAME_STATUS_META,
     GAME_STATUS_ORDER,
+    LIBRARY_UNPICKED_STATUSES,
   } from "#lib/constants/status-labels.js";
   import { DATE_MEDIUM_OPTIONS, formatDate, formatHours } from "#lib/format.js";
   import {
@@ -222,6 +223,7 @@
     {loadPile}
     keyOf={(e) => e.id}
     statusOptions={STATUS_OPTIONS}
+    unpickedStatuses={LIBRARY_UNPICKED_STATUSES.GAMES}
     sorts={SORTS}
     defaultSort="added"
     {itemView}

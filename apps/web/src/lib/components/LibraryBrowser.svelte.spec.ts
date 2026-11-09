@@ -697,6 +697,77 @@ describe("LibraryBrowser", () => {
     expect(lastLoad(load).favoritesOnly).toBe(false);
   });
 
+  describe("on a page that leaves some statuses out until picked", () => {
+    const aheadOnly = { unpickedStatuses: ["READING"] };
+
+    it("shows what's ahead with no pill picked, keeping a bare address", async () => {
+      const load = vi.fn(async () => pageOf([DUNE]));
+      renderBrowser(load, undefined, undefined, undefined, aheadOnly);
+
+      await screen.findByText("Dune");
+      expect(lastLoad(load).statuses).toEqual(["READING"]);
+      const statuses = screen.getByRole("group", { name: m.common_status() });
+      for (const pill of within(statuses).getAllByRole("button"))
+        expect(pill.getAttribute("aria-pressed")).toBe("false");
+      expect(goto).not.toHaveBeenCalledWith(
+        expect.stringContaining("status"),
+        expect.anything(),
+      );
+    });
+
+    it("shows a left-out status once its pill is picked", async () => {
+      const load = vi.fn(async () => pageOf([DUNE]));
+      renderBrowser(load, undefined, undefined, undefined, aheadOnly);
+      await screen.findByText("Dune");
+
+      const statuses = screen.getByRole("group", { name: m.common_status() });
+      await userEvent.click(
+        within(statuses).getByRole("button", { name: "Read" }),
+      );
+
+      await waitFor(() => expect(lastLoad(load).statuses).toEqual(["READ"]));
+    });
+
+    it("still invites to search the catalogue when the library is empty", async () => {
+      server.use(
+        http.get(apiUrl("/library/domain-counts"), () =>
+          HttpResponse.json({ BOOKS: 0 }),
+        ),
+      );
+      renderBrowser(
+        vi.fn(async () => pageOf([])),
+        undefined,
+        undefined,
+        undefined,
+        aheadOnly,
+      );
+
+      expect(
+        await screen.findByText(m.library_empty_domain({ noun: "livre" })),
+      ).toBeTruthy();
+    });
+
+    it("points to the status pills when everything in it is done", async () => {
+      server.use(
+        http.get(apiUrl("/library/domain-counts"), () =>
+          HttpResponse.json({ BOOKS: 3 }),
+        ),
+      );
+      renderBrowser(
+        vi.fn(async () => pageOf([])),
+        undefined,
+        undefined,
+        undefined,
+        aheadOnly,
+      );
+
+      expect(await screen.findByText(m.library_empty_unpicked())).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: m.common_clear_filters() }),
+      ).toBeNull();
+    });
+  });
+
   it("shows a translated error when the library can't be loaded", async () => {
     const failure = new ApiError(0, "offline", ErrorCode.NetworkOffline);
     renderBrowser(vi.fn(async () => Promise.reject(failure)));
