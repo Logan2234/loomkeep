@@ -135,6 +135,7 @@ describe("ChatConversationRow", () => {
     renderRow({ ...CONVERSATION, unread: 0, muted: true, pinned: true });
 
     expect(screen.getByRole("img", { name: m.chat_pinned() })).toBeTruthy();
+    expect(screen.getByRole("img", { name: m.chat_muted() })).toBeTruthy();
     await longPress();
 
     expect(screen.getByRole("menuitem", { name: m.chat_unpin() })).toBeTruthy();

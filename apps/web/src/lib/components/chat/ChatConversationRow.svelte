@@ -108,6 +108,16 @@
         class="bg-success ring-surface absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full ring-2"
       ></span>
     {/if}
+    {#if conversation.muted}
+      <!-- Where the rail shows it: the online dot keeps the other corner. -->
+      <span
+        role="img"
+        aria-label={m.chat_muted()}
+        title={m.chat_muted()}
+        class="bg-surface-2 text-dim ring-surface absolute -bottom-1 -left-1.5 grid h-[18px] w-[18px] place-items-center rounded-full ring-2">
+        <Icon name="bell-off" class="h-2.5 w-2.5" />
+      </span>
+    {/if}
   </span>
   <span class="min-w-0 flex-1">
     <span class="flex items-baseline justify-between gap-2">
@@ -131,8 +141,6 @@
         : 'text-dim'}">
       {#if conversation.readOnly}
         <Icon name="lock" class="h-3 w-3 shrink-0" />
-      {:else if conversation.muted}
-        <Icon name="bell-off" class="h-3 w-3 shrink-0" />
       {/if}
       <span class="truncate">{conversationPreview(conversation)}</span>
     </span>

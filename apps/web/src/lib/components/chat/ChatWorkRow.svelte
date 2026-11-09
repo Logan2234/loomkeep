@@ -92,8 +92,23 @@
       class="bg-accent absolute top-1/2 left-0 h-8 w-1 -translate-y-1/2 rounded-r"
       aria-hidden="true"></span>
   {/if}
-  <span class="w-9 shrink-0 overflow-hidden rounded-md">
-    <Poster src={thread.imageUrl} title={thread.title} alt="" caption={false} />
+  <span class="relative w-9 shrink-0">
+    <span class="block overflow-hidden rounded-md">
+      <Poster
+        src={thread.imageUrl}
+        title={thread.title}
+        alt=""
+        caption={false} />
+    </span>
+    {#if thread.muted}
+      <span
+        role="img"
+        aria-label={m.chat_muted()}
+        title={m.chat_muted()}
+        class="bg-surface-2 text-dim ring-surface absolute -bottom-1 -left-1.5 grid h-[18px] w-[18px] place-items-center rounded-full ring-2">
+        <Icon name="bell-off" class="h-2.5 w-2.5" />
+      </span>
+    {/if}
   </span>
   <span class="min-w-0 flex-1">
     <span class="flex items-baseline justify-between gap-2">
@@ -120,9 +135,6 @@
       class="flex items-center gap-1 text-[0.8rem] {thread.unread
         ? 'text-fg'
         : 'text-dim'}">
-      {#if thread.muted}
-        <Icon name="bell-off" class="h-3 w-3 shrink-0" />
-      {/if}
       <span class="truncate">{workThreadPreview(thread)}</span>
     </span>
   </span>
