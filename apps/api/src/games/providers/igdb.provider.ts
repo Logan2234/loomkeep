@@ -278,6 +278,12 @@ export class IgdbProvider implements GameCatalogProvider {
     "multiplayer_modes.campaigncoop, multiplayer_modes.onlinecoop, multiplayer_modes.offlinecoop, multiplayer_modes.splitscreen, multiplayer_modes.lancoop, " +
     "rating, rating_count, aggregated_rating, aggregated_rating_count";
 
+  // What a stored GameItem keeps (see GameItemService.baseFields). The full
+  // DETAIL_FIELDS nest every franchise's games and similar games: on 500
+  // games at once, a payload that could outrun the HTTP timeout.
+  private static readonly STORED_FIELDS =
+    "name, summary, first_release_date, release_dates.date, release_dates.date_format, cover.image_id, artworks.image_id, genres.name, platforms.name, themes";
+
   async getDetails(sourceId: string): Promise<ProviderGameDetails> {
     // Number() alone keeps the Apicalypse query safe, but a non-numeric id
     // interpolates as `where id = NaN`, which IGDB rejects — surfacing a
@@ -316,7 +322,8 @@ export class IgdbProvider implements GameCatalogProvider {
    * Batch details for many IGDB ids in two queries each 500 (IGDB's result
    * cap: the games, then their times to beat), used by the Steam import and
    * the stale-cache refresh so hundreds of games cost a couple of calls
-   * instead of two per game.
+   * instead of two per game. Only what a stored game keeps is filled in:
+   * screenshots, similar games, franchise, ratings… come back empty.
    */
   async getDetailsByIds(ids: string[]): Promise<ProviderGameDetails[]> {
     const details: ProviderGameDetails[] = [];
@@ -327,7 +334,7 @@ export class IgdbProvider implements GameCatalogProvider {
       const idList = batch.map((id) => Number(id)).join(",");
       const games = await this.query<IgdbGame[]>(
         "/games",
-        `fields ${IgdbProvider.DETAIL_FIELDS}; where id = (${idList}); limit 500;`,
+        `fields ${IgdbProvider.STORED_FIELDS}; where id = (${idList}); limit 500;`,
       );
       const timesToBeat = await this.timesToBeat(batch.map(Number));
       details.push(

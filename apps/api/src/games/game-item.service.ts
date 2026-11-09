@@ -3,6 +3,7 @@ import { isGameUpcoming } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { GameItem } from "@prisma/client";
+import { chunk } from "../common/array.util";
 import {
   CATALOG_SYNC_TTL_MS,
   isCatalogFresh,
@@ -24,6 +25,10 @@ import { IgdbProvider } from "./providers/igdb.provider";
 // Same bound as the media refresh: a catalog bigger than this is caught up
 // over the next runs, most stale first. IGDB serves them 500 per query.
 const MAX_REFRESHED_PER_RUN = 500;
+
+// Fetched per IGDB query: an IGDB timeout or 5xx then costs this many games
+// until the next run, not the whole run.
+const REFRESH_BATCH_SIZE = 100;
 
 // Games persisted in parallel once a batch is fetched — each is a handful of
 // writes, bounded so a full run can't empty the connection pool.
@@ -78,8 +83,21 @@ export class GameItemService {
     if (sourceIds.length === 0) return 0;
 
     // Batched rather than upsertFromSource per game: two IGDB queries per
-    // 500 games instead of two per game, under a 4 requests/second cap.
-    const details = await this.igdbProvider.getDetailsByIds(sourceIds);
+    // batch instead of two per game, under a 4 requests/second cap.
+    const details: ProviderGameDetails[] = [];
+    let lastError: unknown = null;
+
+    for (const batch of chunk(sourceIds, REFRESH_BATCH_SIZE)) {
+      try {
+        details.push(...(await this.igdbProvider.getDetailsByIds(batch)));
+      } catch (err) {
+        lastError = err;
+        this.logger.error(`IGDB batch of ${batch.length} game(s) failed`, err);
+      }
+    }
+
+    if (details.length === 0 && lastError) throw lastError;
+
     const outcomes = await mapWithConcurrency(
       details,
       PERSIST_CONCURRENCY,

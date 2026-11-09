@@ -224,7 +224,7 @@ export abstract class BookCsvSource<
   ): Promise<boolean> {
     const details = await this.bookItemService
       .providerFor()
-      .getDetails(sourceId)
+      .getStoredDetails(sourceId)
       .catch(() => null);
     if (!details) return false;
     // Guard the commit too: the client sends its own list of ids.

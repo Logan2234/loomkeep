@@ -337,6 +337,24 @@ describe("IgdbProvider", () => {
     );
   });
 
+  it("asks a batch only for the fields a stored game keeps", async () => {
+    const fn = mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/game_time_to_beats": [],
+      "/games": [{ id: 1, name: "One" }],
+    });
+
+    await provider.getDetailsByIds(["1"]);
+
+    const [gamesCall] = fn.mock.calls.filter(([url]) =>
+      String(url).endsWith("/games"),
+    );
+    const body = String((gamesCall[1] as RequestInit).body);
+    expect(body).toContain("artworks.image_id");
+    expect(body).not.toContain("similar_games");
+    expect(body).not.toContain("franchises");
+  });
+
   it("maps rating and aggregated_rating to IGDB/Critiques percentages", async () => {
     mockFetchByUrl({
       "id.twitch.tv": TOKEN_RESPONSE,

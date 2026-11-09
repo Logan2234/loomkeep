@@ -30,7 +30,7 @@ function setup(
   overrides: {
     resolve?: Mock;
     resolveByIsbns?: Mock;
-    getDetails?: Mock;
+    getStoredDetails?: Mock;
     inLibraryRefs?: {
       source: string;
       externalId: string;
@@ -41,13 +41,13 @@ function setup(
     allowAdult?: boolean;
   } = {},
 ) {
-  const getDetails = overrides.getDetails ?? vi.fn();
+  const getStoredDetails = overrides.getStoredDetails ?? vi.fn();
   const bookItemService = {
     resolve: overrides.resolve ?? vi.fn().mockResolvedValue(null),
     resolveByIsbns:
       overrides.resolveByIsbns ??
       vi.fn().mockResolvedValue({ matches: new Map(), failedIsbns: [] }),
-    providerFor: vi.fn().mockReturnValue({ getDetails }),
+    providerFor: vi.fn().mockReturnValue({ getStoredDetails }),
     persistDetails: vi.fn().mockResolvedValue({ id: "item-1" }),
   };
   const upsert = vi.fn().mockResolvedValue({ id: "entry-1" });
@@ -245,7 +245,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   });
 
   it("commit persists metadata, marks finished books fully read, and backfills reading cycles", async () => {
-    const getDetails = vi.fn().mockResolvedValue({
+    const getStoredDetails = vi.fn().mockResolvedValue({
       summary: summary({ sourceId: "OL1W" }),
       overview: null,
       genres: [],
@@ -254,7 +254,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
     });
     const { service, bookItemService, upsert, createMany, reviews } = setup({
-      getDetails,
+      getStoredDetails,
       resolveByIsbns: vi.fn().mockResolvedValue({
         matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
         failedIsbns: [],
@@ -308,7 +308,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   });
 
   it("commit does not backfill replays when the entry already exists", async () => {
-    const getDetails = vi.fn().mockResolvedValue({
+    const getStoredDetails = vi.fn().mockResolvedValue({
       summary: summary({ sourceId: "OL1W" }),
       overview: null,
       genres: [],
@@ -317,7 +317,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
     });
     const { service, createMany } = setup({
-      getDetails,
+      getStoredDetails,
       existingEntry: { id: "entry-1" },
       resolveByIsbns: vi.fn().mockResolvedValue({
         matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
@@ -342,7 +342,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   });
 
   it("commit skips adult titles even if their key is included", async () => {
-    const getDetails = vi.fn().mockResolvedValue({
+    const getStoredDetails = vi.fn().mockResolvedValue({
       summary: summary({ sourceId: "OL1W", isAdult: true }),
       overview: null,
       genres: [],
@@ -353,7 +353,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     // The plan resolves it (opted-in during analyze), but commit re-checks with
     // adult disabled → skipped.
     const { service, upsert } = setup({
-      getDetails,
+      getStoredDetails,
       allowAdult: false,
       resolveByIsbns: vi.fn().mockResolvedValue({
         matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
@@ -380,7 +380,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   });
 
   it("commit with overwrite wipes the book library first", async () => {
-    const getDetails = vi.fn().mockResolvedValue({
+    const getStoredDetails = vi.fn().mockResolvedValue({
       summary: summary({ sourceId: "OL1W" }),
       overview: null,
       genres: [],
@@ -389,7 +389,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
     });
     const { service, deleteMany } = setup({
-      getDetails,
+      getStoredDetails,
       resolveByIsbns: vi.fn().mockResolvedValue({
         matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
         failedIsbns: [],

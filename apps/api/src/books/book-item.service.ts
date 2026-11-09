@@ -23,7 +23,7 @@ import { OpenLibraryProvider } from "./providers/open-library.provider";
 
 // The background refresh is far lazier than the on-demand TTL: a book's
 // metadata barely moves, and each refresh costs Open Library (a volunteer-run
-// API) four calls. It exists so stored books pick up new data at all — the
+// API) three calls. It exists so stored books pick up new data at all — the
 // ISBN the Goodreads export needs, for books stored before it was kept.
 const BACKGROUND_SYNC_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_REFRESHED_PER_RUN = 100;
@@ -193,7 +193,7 @@ export class BookItemService {
       return existingRef.bookItem;
     }
 
-    const details = await this.providerFor().getDetails(sourceId);
+    const details = await this.providerFor().getStoredDetails(sourceId);
     return this.persistDetails(source, details);
   }
 
@@ -251,7 +251,7 @@ export class BookItemService {
       throw new Error(`Book ${bookItemId} has no ${item.canonicalSource} id`);
     }
 
-    const details = await this.providerFor().getDetails(sourceId);
+    const details = await this.providerFor().getStoredDetails(sourceId);
     return this.persistDetails(item.canonicalSource as BookSource, details);
   }
 
