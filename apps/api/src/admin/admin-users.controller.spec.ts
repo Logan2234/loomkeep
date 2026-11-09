@@ -45,8 +45,8 @@ function makeController() {
     securityEvent: { updateMany: vi.fn() },
     invitation: { updateMany: vi.fn() },
     notification: { deleteMany: vi.fn() },
-    libraryEntry: { count: vi.fn() },
-    gameEntry: { count: vi.fn() },
+    libraryEntry: { count: vi.fn(), findMany: vi.fn() },
+    gameEntry: { count: vi.fn(), findMany: vi.fn() },
     bookEntry: { count: vi.fn() },
     musicEntry: { count: vi.fn() },
   } as unknown as PrismaService;
@@ -350,6 +350,74 @@ describe("AdminUsersController.getUserLibraryStats", () => {
     expect(prisma.libraryEntry.count).toHaveBeenCalledWith({
       where: { userId: "user-2", mediaItem: { type: "ANIME" } },
     });
+  });
+});
+
+describe("AdminUsersController.getUserLibrary", () => {
+  const createdAt = new Date("2026-01-02T03:04:05.000Z");
+
+  it("lists the works of a media tile with their page link", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.libraryEntry.findMany as Mock).mockResolvedValue([
+      {
+        id: "entry-1",
+        status: "WATCHING",
+        favorite: true,
+        createdAt,
+        mediaItem: {
+          title: "Dune",
+          posterUrl: "https://img/dune.jpg",
+          canonicalSource: "TMDB",
+          externalIds: [{ source: "TMDB", externalId: "438631" }],
+        },
+      },
+    ]);
+
+    await expect(
+      controller.getUserLibrary("user-2", "movies"),
+    ).resolves.toEqual({
+      items: [
+        {
+          id: "entry-1",
+          title: "Dune",
+          imageUrl: "https://img/dune.jpg",
+          href: "/app/media/movie/438631",
+          status: "WATCHING",
+          favorite: true,
+          addedAt: createdAt.toISOString(),
+        },
+      ],
+      hasMore: false,
+    });
+    expect(prisma.libraryEntry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-2", mediaItem: { type: "MOVIE" } },
+        skip: 0,
+      }),
+    );
+  });
+
+  it("reads games from their own table and flags a further page", async () => {
+    const { controller, prisma } = makeController();
+    const row = (id: string) => ({
+      id,
+      status: "BACKLOG",
+      favorite: false,
+      createdAt,
+      gameItem: {
+        title: id,
+        coverUrl: null,
+        canonicalSource: "IGDB",
+        externalIds: [],
+      },
+    });
+    (prisma.gameEntry.findMany as Mock).mockResolvedValue([row("a"), row("b")]);
+
+    const result = await controller.getUserLibrary("user-2", "games", "1", "1");
+
+    expect(result.hasMore).toBe(true);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({ id: "a", href: null });
   });
 });
 

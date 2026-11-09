@@ -4,6 +4,7 @@ import type {
   AdminCacheSort,
   AdminImportStatus,
   AdminUserFilter,
+  AdminUserLibraryKind,
   AdminUserOptionDto,
   CreateAdminInvitationRequestDto,
   Domain,
@@ -201,6 +202,16 @@ export function normalizeAdminUserOptionsPage(
 
 export const getAdminUserLibraryStats = (userId: string) =>
   typedRequest("/admin/users/{userId}/library-stats", { params: { userId } });
+
+export const getAdminUserLibrary = (
+  userId: string,
+  kind: AdminUserLibraryKind,
+  page?: number,
+) =>
+  typedRequest("/admin/users/{userId}/library/{kind}", {
+    params: { userId, kind },
+    query: { page: pageParam(page) },
+  });
 
 export const getAdminUserSessions = (userId: string) =>
   typedRequest("/admin/users/{userId}/sessions", { params: { userId } });

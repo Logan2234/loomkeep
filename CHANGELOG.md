@@ -15,6 +15,9 @@ history from before it was started.
 
 ### Added
 
+- Admin › Users: the account panel shows the reason given when a deletion is
+  scheduled, and each library tile (movies, series, anime, games, books,
+  albums) opens the list of works behind its counter.
 - Messages on a phone: press and hold a conversation to mark it read, mute
   it, pin it to the top, open the friend's profile or delete it from your
   list (it comes back, history included, with the next message).

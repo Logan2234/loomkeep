@@ -1,4 +1,5 @@
 import type {
+  AccountDeletionReason,
   AdminUserDto,
   AdminUserInvitationDto,
   Plan,
@@ -24,6 +25,7 @@ export class AdminUserResponseDto implements AdminUserDto {
   inactivityWarningSentAt!: string | null;
   suspendedUntil!: string | null;
   deletionScheduledFor!: string | null;
+  deletionReason!: AccountDeletionReason | null;
   xp!: number;
   invitation!: AdminUserInvitationResponseDto | null;
 }
