@@ -34,6 +34,7 @@
     MEDIA_STATUS_META,
     MEDIA_STATUS_ORDER,
     mediaFilterLabel,
+    LIBRARY_DEFAULT_STATUSES,
   } from "#lib/constants/status-labels.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
@@ -230,6 +231,7 @@
     {loadPile}
     keyOf={(e) => e.id}
     statusOptions={STATUS_OPTIONS}
+    defaultStatuses={LIBRARY_DEFAULT_STATUSES.MEDIA}
     sorts={SORTS}
     defaultSort="recent"
     {itemView}

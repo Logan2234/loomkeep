@@ -49,6 +49,7 @@
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
   import { getSavedViews } from "#lib/api/client.js";
+  import { getLibraryDomainCounts } from "#lib/api/library.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import Banner from "#lib/components/Banner.svelte";
@@ -58,17 +59,17 @@
   import Icon from "#lib/components/Icon.svelte";
   import LibraryBulkBar from "#lib/components/LibraryBulkBar.svelte";
   import LibraryEntrySheet from "#lib/components/LibraryEntrySheet.svelte";
+  import LibraryFiltersButton from "#lib/components/LibraryFiltersButton.svelte";
   import LibraryFiltersPanel from "#lib/components/LibraryFiltersPanel.svelte";
   import LibraryReviewEditor from "#lib/components/LibraryReviewEditor.svelte";
+  import LibrarySearchField from "#lib/components/LibrarySearchField.svelte";
   import LibraryTable from "#lib/components/LibraryTable.svelte";
   import LibraryWall from "#lib/components/LibraryWall.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import PosterGrid from "#lib/components/PosterGrid.svelte";
   import PosterGridSkeleton from "#lib/components/PosterGridSkeleton.svelte";
   import SavedViewBar from "#lib/components/SavedViewBar.svelte";
   import { debounce } from "#lib/debounce.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { layout } from "#lib/layout.svelte.js";
   import {
     readLibraryColumns,
@@ -88,7 +89,10 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { pileHeaderLabel } from "#lib/pile.js";
-  import { filtersToSearchParams } from "#lib/saved-views.js";
+  import {
+    filtersToSearchParams,
+    statusesFromParam,
+  } from "#lib/saved-views.js";
   import { toast } from "#lib/toast.svelte.js";
   import type {
     BulkEntriesResultDto,
@@ -119,6 +123,7 @@
     loadPile,
     keyOf,
     statusOptions,
+    defaultStatuses = [],
     sorts,
     defaultSort,
     card,
@@ -144,6 +149,8 @@
     /** Stable key for the poster grid's keyed each. */
     keyOf: (entry: T) => string;
     statusOptions: Option[];
+    /** The statuses the page opens on (what's still ahead); none means all. */
+    defaultStatuses?: string[];
     sorts: Option[];
     defaultSort: string;
     /** Gets the toggle the card's favorite star should call. */
@@ -183,7 +190,7 @@
   const initialParams = page.url.searchParams;
 
   let statuses = $state<string[]>(
-    initialParams.get("status")?.split(",").filter(Boolean) ?? [],
+    statusesFromParam(initialParams.get("status"), defaultStatuses),
   );
   let favoritesOnly = $state(initialParams.get("fav") === "1");
   let sort = $state<string>(initialParams.get("sort") ?? defaultSort);
@@ -301,7 +308,7 @@
   // `goto()` (which updates `page.url`) makes the effect see its own output
   // as a fresh dependency change and re-fire itself, forever.
   function syncUrl() {
-    const params = filtersToSearchParams(current, defaultSort);
+    const params = filtersToSearchParams(current, defaultSort, defaultStatuses);
     if (activeViewId) params.set("view", activeViewId);
     const qs = params.toString();
     void goto(qs ? `?${qs}` : untrack(() => page.url.pathname), {
@@ -746,11 +753,39 @@
   }
 
   const hasQuery = $derived(query.trim() !== "");
-  const hasFilters = $derived(
-    statuses.length > 0 ||
-      favoritesOnly ||
-      types.length > 0 ||
-      platforms.length > 0,
+  const hasPanelFilters = $derived(
+    favoritesOnly || types.length > 0 || platforms.length > 0,
+  );
+  const hasFilters = $derived(statuses.length > 0 || hasPanelFilters);
+  const onDefaultStatuses = $derived(
+    defaultStatuses.length > 0 &&
+      statuses.length === defaultStatuses.length &&
+      statuses.every((s) => defaultStatuses.includes(s)),
+  );
+
+  // Nothing ahead on a page that opens on what's ahead: an empty library, or
+  // one where everything is done? Only the whole library's count tells.
+  const needsCounts = $derived(
+    onDefaultStatuses &&
+      !hasPanelFilters &&
+      !hasQuery &&
+      !loading &&
+      items.length === 0,
+  );
+  const countsQuery = createApiQuery(() => ({
+    key: keys.library.domainCounts(),
+    fetch: getLibraryDomainCounts,
+    enabled: needsCounts,
+  }));
+  const awaitingCounts = $derived(
+    needsCounts && !countsQuery.data && !countsQuery.error,
+  );
+  // Nothing tracked at all: the invitation to search or import.
+  const libraryEmpty = $derived(
+    !hasQuery &&
+      !hasPanelFilters &&
+      (statuses.length === 0 ||
+        (onDefaultStatuses && countsQuery.data?.[domain] === 0)),
   );
 
   function clearFilters() {
@@ -762,6 +797,7 @@
 
   function resetFilters() {
     clearFilters();
+    statuses = [...defaultStatuses];
     sort = defaultSort;
     reversed = false;
     activeViewId = null;
@@ -896,34 +932,10 @@
           <Icon name="search" class="h-5 w-5" />
         </button>
       {/if}
-      <button
-        type="button"
-        class="bg-surface-2 hover:bg-border relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors after:absolute after:inset-x-0 after:-inset-y-1"
-        aria-label={panelFilterCount > 0
-          ? m.library_filters_active({ count: panelFilterCount })
-          : undefined}
-        aria-haspopup="dialog"
-        aria-expanded={filtersOpen}
-        onclick={() => (filtersOpen = true)}>
-        <Icon name="sliders" class="h-4 w-4" />
-        {m.common_filters()}
-        {#if panelFilterCount > 0}
-          <span
-            class="bg-accent text-accent-fg grid h-4.5 min-w-4.5 place-items-center rounded-full px-1 font-mono text-[0.62rem] font-bold">
-            {panelFilterCount}
-          </span>
-        {/if}
-        {#if isFeatureNew("library-filters")}
-          <!-- A dot on a phone, where the pills need the width. -->
-          {#if layout.compact}
-            <span
-              class="bg-accent ring-bg absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2"
-              aria-hidden="true"></span>
-          {:else}
-            <NewBadge />
-          {/if}
-        {/if}
-      </button>
+      <LibraryFiltersButton
+        count={panelFilterCount}
+        expanded={filtersOpen}
+        onclick={() => (filtersOpen = true)} />
     </div>
     {#if layout.compact && tokens.length > 0}
       <div class="no-scrollbar mt-2 flex gap-1.5 overflow-x-auto">
@@ -1016,14 +1028,12 @@
         {m.library_empty_search({ noun, query: query.trim() })}
       </p>
     {/if}
-  {:else if items.length === 0 && !loading}
+  {:else if items.length === 0 && !loading && !awaitingCounts}
     <div in:fade|global={{ duration: reduced ? 0 : 150 }}>
       <EmptyState
-        art={!hasFilters && !hasQuery ? DOMAIN_ART[domain] : undefined}
-        title={!hasFilters && !hasQuery
-          ? m.library_empty_domain({ noun })
-          : undefined}>
-        {#if !hasFilters && !hasQuery}
+        art={libraryEmpty ? DOMAIN_ART[domain] : undefined}
+        title={libraryEmpty ? m.library_empty_domain({ noun }) : undefined}>
+        {#if libraryEmpty}
           <div class="mt-4 flex flex-wrap justify-center gap-2">
             <a href={`/app/search?type=${domain}`} class="btn btn-primary">
               <Icon name="search" class="h-4 w-4" />
@@ -1187,10 +1197,12 @@
     {sorts}
     bind:sort
     bind:reversed
-    {mode}
-    onMode={setMode}
-    {posterSize}
-    onPosterSize={setPosterSize}
+    display={{
+      mode,
+      onMode: setMode,
+      posterSize,
+      onPosterSize: setPosterSize,
+    }}
     onSelect={bulk ? () => (selecting = true) : undefined}
     columns={columnMenu}
     onToggleColumn={toggleColumn}
@@ -1226,31 +1238,14 @@
 {/snippet}
 
 {#snippet searchField()}
-  <div class="relative min-w-0 flex-1 md:w-72 md:flex-none">
-    <span
-      class="text-dim pointer-events-none absolute inset-y-0 left-3 flex items-center">
-      <Icon name="search" class="h-4.5 w-4.5" />
-    </span>
-    <input
-      bind:this={searchInput}
-      type="search"
-      name="query"
-      aria-label={m.library_filter_placeholder()}
-      enterkeyhint="search"
-      placeholder={m.library_filter_placeholder()}
-      value={query}
-      oninput={(e) => {
-        query = e.currentTarget.value;
-        previewCount = null;
-        debouncedQueryFilter.call();
-      }}
-      class="input pl-10 {layout.compact ? '' : 'pr-9'}" />
-    {#if !layout.compact && !query}
-      <kbd
-        class="border-border text-dim pointer-events-none absolute inset-y-0 right-3 my-auto h-fit rounded border px-1.5 font-mono text-[0.68rem]"
-        aria-hidden="true">/</kbd>
-    {/if}
-  </div>
+  <LibrarySearchField
+    bind:input={searchInput}
+    value={query}
+    oninput={(value) => {
+      query = value;
+      previewCount = null;
+      debouncedQueryFilter.call();
+    }} />
 {/snippet}
 
 {#snippet tokenList()}
@@ -1274,6 +1269,7 @@
     {domain}
     {current}
     {defaultSort}
+    {defaultStatuses}
     heading={m.saved_views_label()}
     bind:activeId={activeViewId}
     onApply={applyFilters} />

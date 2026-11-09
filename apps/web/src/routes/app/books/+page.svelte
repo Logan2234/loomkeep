@@ -32,6 +32,7 @@
     BOOK_STATUS_LABELS,
     BOOK_STATUS_META,
     BOOK_STATUS_ORDER,
+    LIBRARY_DEFAULT_STATUSES,
   } from "#lib/constants/status-labels.js";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
   import {
@@ -212,6 +213,7 @@
     {loadPile}
     keyOf={(e) => e.id}
     statusOptions={STATUS_OPTIONS}
+    defaultStatuses={LIBRARY_DEFAULT_STATUSES.BOOKS}
     sorts={SORTS}
     defaultSort="added"
     {itemView}

@@ -17,14 +17,17 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import Banner from "#lib/components/Banner.svelte";
-  import Combobox from "#lib/components/Combobox.svelte";
   import EmptyState from "#lib/components/EmptyState.svelte";
   import Icon from "#lib/components/Icon.svelte";
+  import LibraryFiltersButton from "#lib/components/LibraryFiltersButton.svelte";
+  import LibraryFiltersPanel from "#lib/components/LibraryFiltersPanel.svelte";
+  import LibrarySearchField from "#lib/components/LibrarySearchField.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
-  import { debounce } from "#lib/debounce.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { formatDate } from "#lib/format.js";
+  import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type {
@@ -84,17 +87,70 @@
     { label: m.common_progress(), value: "progress" },
   ];
 
+  const DEFAULT_SORT: LibrarySagaSort = "recent";
+
   let query = $state("");
   let appliedQuery = $state("");
   let types = $state<string[]>([]);
-  let sort = $state<LibrarySagaSort>("recent");
+  let sort = $state<string>(DEFAULT_SORT);
   let reversed = $state(false);
-  const applyQuery = debounce(() => (appliedQuery = query), 250);
+  const applyQuery = debounce(() => (appliedQuery = query), SEARCH_DEBOUNCE_MS);
+
+  let filtersOpen = $state(false);
+  // On a phone the search hides behind a magnifier, as in the works view.
+  let searchOpen = $state(false);
+  let searchInput = $state<HTMLInputElement | null>(null);
+
+  function setQuery(value: string) {
+    query = value;
+    applyQuery.call();
+  }
+
+  function openSearch() {
+    searchOpen = true;
+    requestAnimationFrame(() => searchInput?.focus());
+  }
+
+  // Hiding the field also drops its query: no filter left out of sight.
+  function closeSearch() {
+    searchOpen = false;
+    setQuery("");
+  }
+
+  function resetFilters() {
+    types = [];
+    sort = DEFAULT_SORT;
+    reversed = false;
+  }
+
+  function onKeydown(e: KeyboardEvent) {
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("input, textarea, select, [role=dialog]")) return;
+    if (e.key === "/" && !layout.compact && searchInput) {
+      e.preventDefault();
+      searchInput.focus();
+    }
+  }
+
+  const sortLabel = $derived(
+    SORTS.find((option) => option.value === sort)?.label ?? sort,
+  );
+
+  // The panel's type filter, kept in sight on the toolbar and removable
+  // without opening it.
+  const tokens = $derived(
+    types.map((type) => ({
+      key: type,
+      label: typeOptions.find((o) => o.value === type)?.label ?? type,
+      remove: () => (types = types.filter((t) => t !== type)),
+    })),
+  );
 
   const filters = $derived<SagaListFilters>({
     query: appliedQuery.trim(),
     types,
-    sort,
+    sort: sort as LibrarySagaSort,
     // Titles read A to Z by default, the rest most-first.
     order: (sort === "title") !== reversed ? "asc" : "desc",
   });
@@ -268,56 +324,68 @@
         ? m.media_sagas_count_one({ count: total })
         : m.media_sagas_count_many({ count: total })
       : undefined}
-    actions={modeSwitch}
-    class="mb-6" />
+    actions={pageActions}
+    class="mb-4 md:mb-6" />
 
-  <div class="relative mb-4">
-    <span
-      class="text-dim pointer-events-none absolute inset-y-0 left-3 flex items-center">
-      <Icon name="search" class="h-5 w-5" />
-    </span>
-    <input
-      type="search"
-      name="query"
-      aria-label={m.library_filter_placeholder()}
-      enterkeyhint="search"
-      placeholder={m.library_filter_placeholder()}
-      value={query}
-      oninput={(e) => {
-        query = e.currentTarget.value;
-        applyQuery.call();
-      }}
-      class="input pl-10" />
-  </div>
+  {#if layout.compact && searchOpen}
+    <div class="mb-3 flex" transition:slide={{ duration: ms(180) }}>
+      {@render searchField()}
+    </div>
+  {/if}
 
+  <!-- Under the phone's compact title bar once the header scrolls away. -->
   <div
-    class="mb-7 flex flex-wrap items-center gap-2 {typeOptions.length > 0
-      ? 'justify-between'
-      : 'justify-end'}">
-    {#if typeOptions.length > 0}
-      <Combobox
-        label={m.common_type()}
-        multiselect
-        options={typeOptions}
-        values={types}
-        onChange={(v) => (types = v)} />
-    {/if}
+    class="bg-bg sticky z-20 -mx-5 px-5 py-2 md:-mx-8 md:px-8"
+    style:top={layout.compact
+      ? "calc(env(safe-area-inset-top) + 3rem)"
+      : "0px"}>
     <div class="flex items-center gap-2">
-      <Combobox
-        label={m.common_sort()}
-        options={SORTS}
-        values={[sort]}
-        onChange={(v) => (sort = (v[0] as LibrarySagaSort) ?? sort)} />
-      <button
-        type="button"
-        class="chip px-2.5 font-mono"
-        title={reversed ? m.common_sort_reversed() : m.common_sort_default()}
-        aria-label={m.common_reverse_sort()}
-        onclick={() => (reversed = !reversed)}>
-        {reversed ? "↑" : "↓"}
-      </button>
+      <div
+        class="no-scrollbar -my-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto py-1">
+        {#each tokens as token (token.key)}
+          <button
+            type="button"
+            class="bg-accent/14 text-accent hover:bg-accent/22 inline-flex h-8 shrink-0 items-center gap-0.5 rounded-full pr-1 pl-3 text-[0.8rem] font-semibold transition-colors"
+            aria-label={m.library_remove_filter({ label: token.label })}
+            in:scale={{ duration: ms(160), start: 0.9 }}
+            onclick={token.remove}>
+            {token.label}
+            <span class="grid h-6 w-6 place-items-center">
+              <Icon name="x" class="h-3.5 w-3.5" />
+            </span>
+          </button>
+        {/each}
+      </div>
+      {#if layout.compact}
+        <button
+          type="button"
+          class="btn-icon h-9 w-9 rounded-full {searchOpen
+            ? 'bg-accent/14 text-accent hover:bg-accent/22 hover:text-accent'
+            : ''}"
+          aria-label={m.library_filter_placeholder()}
+          aria-pressed={searchOpen}
+          onclick={() => (searchOpen ? closeSearch() : openSearch())}>
+          <Icon name="search" class="h-5 w-5" />
+        </button>
+      {/if}
+      <LibraryFiltersButton
+        count={types.length}
+        expanded={filtersOpen}
+        onclick={() => (filtersOpen = true)} />
     </div>
   </div>
+
+  {#if layout.compact}
+    <div class="mb-3"></div>
+  {:else}
+    <button
+      type="button"
+      class="timecode hover:text-fg mt-1 mb-4 text-xs transition-colors"
+      onclick={() => (filtersOpen = true)}>
+      {m.library_sorted_by({ sort: sortLabel.toLowerCase() })}
+      {reversed ? "↑" : "↓"}
+    </button>
+  {/if}
 
   {#if sagasQuery.error}
     <Banner variant="error">{sagasQuery.error}</Banner>
@@ -389,6 +457,39 @@
     </div>
   {/if}
 </div>
+
+<svelte:window onkeydown={onKeydown} />
+
+{#if filtersOpen}
+  <LibraryFiltersPanel
+    onclose={() => (filtersOpen = false)}
+    {total}
+    extraLabel={typeOptions.length > 0 ? m.common_type() : undefined}
+    extraOptions={typeOptions}
+    extra={types}
+    onExtra={(values) => (types = values)}
+    favorites={false}
+    sorts={SORTS}
+    bind:sort
+    bind:reversed
+    onReset={resetFilters} />
+{/if}
+
+{#snippet pageActions()}
+  <div class="flex items-center gap-3">
+    {@render modeSwitch()}
+    {#if !layout.compact}
+      {@render searchField()}
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet searchField()}
+  <LibrarySearchField
+    bind:input={searchInput}
+    value={query}
+    oninput={setQuery} />
+{/snippet}
 
 <style>
   /* Fanned out on hover, like a hand of cards spread on the table. */

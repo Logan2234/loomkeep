@@ -33,6 +33,7 @@
     domain,
     current,
     defaultSort,
+    defaultStatuses = [],
     activeId = $bindable(),
     onApply,
     heading,
@@ -41,6 +42,8 @@
     /** The library's filters as they stand. */
     current: SavedViewFiltersDto;
     defaultSort: string;
+    /** The statuses the library opens on. */
+    defaultStatuses?: string[];
     /** The view in use, if any. */
     activeId: string | null;
     onApply: (filters: SavedViewFiltersDto) => void;
@@ -59,9 +62,17 @@
   );
   const active = $derived(views.find((view) => view.id === activeId));
   const modified = $derived(
-    !!active && !sameFilters(active.filters, current, defaultSort),
+    !!active &&
+      !sameFilters(active.filters, current, defaultSort, defaultStatuses),
   );
-  const pristine = $derived(sameFilters(current, {}, defaultSort));
+  const pristine = $derived(
+    sameFilters(
+      current,
+      { statuses: defaultStatuses },
+      defaultSort,
+      defaultStatuses,
+    ),
+  );
 
   // A view deleted elsewhere, or a stale `view` in the address.
   $effect(() => {

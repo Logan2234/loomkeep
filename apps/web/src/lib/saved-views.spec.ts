@@ -3,6 +3,7 @@ import {
   filtersToSearchParams,
   sameFilters,
   savedViewHref,
+  statusesFromParam,
 } from "./saved-views";
 
 describe("filtersToSearchParams", () => {
@@ -38,6 +39,27 @@ describe("filtersToSearchParams", () => {
   });
 });
 
+describe("filtersToSearchParams, on a page that opens on some statuses", () => {
+  const defaults = ["PLAYING", "BACKLOG"];
+
+  it("leaves the default statuses out, whatever their order", () => {
+    expect(
+      filtersToSearchParams(
+        { statuses: ["BACKLOG", "PLAYING"] },
+        undefined,
+        defaults,
+      ).toString(),
+    ).toBe("");
+  });
+
+  it("spells out every status as `all`, read back as no status filter", () => {
+    const params = filtersToSearchParams({ statuses: [] }, undefined, defaults);
+    expect(params.toString()).toBe("status=all");
+    expect(statusesFromParam(params.get("status"), defaults)).toEqual([]);
+    expect(statusesFromParam(null, defaults)).toEqual(defaults);
+  });
+});
+
 describe("sameFilters", () => {
   it("ignores how an unset field is spelled and the order of statuses", () => {
     expect(
@@ -67,5 +89,18 @@ describe("savedViewHref", () => {
         updatedAt: "",
       }),
     ).toBe("/app/games?status=PLAYING&sort=playtime&view=v1");
+  });
+
+  it("keeps a view of every status from opening on the page's default ones", () => {
+    expect(
+      savedViewHref({
+        id: "v2",
+        name: "Tout",
+        domain: "GAMES",
+        filters: { statuses: [] },
+        createdAt: "",
+        updatedAt: "",
+      }),
+    ).toBe("/app/games?status=all&view=v2");
   });
 });

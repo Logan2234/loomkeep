@@ -1,3 +1,4 @@
+import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
@@ -10,7 +11,7 @@ import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createRawSnippet } from "svelte";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import SagasView from "./SagasView.svelte";
 
 const work = (
@@ -96,6 +97,10 @@ function serve(sagas: LibrarySagasDto = SAGAS) {
   return requests;
 }
 
+beforeEach(() => {
+  layout.compact = false;
+});
+
 describe("SagasView", () => {
   it("splits the sagas in progress from the ones waiting on a sequel", async () => {
     serve();
@@ -152,7 +157,12 @@ describe("SagasView", () => {
         name: m.media_sagas_show_finished({ count: 0 }),
       }),
     ).toBeNull();
-    expect(screen.queryByRole("button", { expanded: false })).toBeNull();
+    // The filters panel's button aside, nothing folds.
+    expect(
+      screen
+        .queryAllByRole("button", { expanded: false })
+        .filter((button) => button.getAttribute("aria-haspopup") !== "dialog"),
+    ).toEqual([]);
   });
 
   it("adds the next work of a saga to the watchlist", async () => {
@@ -184,21 +194,53 @@ describe("SagasView", () => {
     );
   });
 
-  it("offers only the filters a saga can answer", async () => {
-    serve();
+  it("offers only the filters a saga can answer, in the filters panel", async () => {
+    const requests = serve();
+    const user = userEvent.setup();
 
     renderWithQuery(SagasView, { modeSwitch });
     await screen.findByText("Dune");
 
+    expect(screen.queryByRole("group", { name: m.common_status() })).toBeNull();
+    await user.click(
+      screen.getByRole("button", { name: new RegExp(m.common_filters()) }),
+    );
+    const panel = await screen.findByRole("dialog", {
+      name: m.library_filters_title(),
+    });
     expect(
-      screen.getByRole("combobox", { name: new RegExp(m.common_type()) }),
-    ).toBeTruthy();
-    expect(
-      screen.queryByRole("combobox", { name: new RegExp(m.common_status()) }),
+      within(panel).queryByRole("switch", {
+        name: m.library_favorites_only(),
+      }),
     ).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: m.common_favorites() }),
-    ).toBeNull();
+
+    const typeGroup = within(panel).getByRole("group", {
+      name: m.common_type(),
+    });
+    await user.click(
+      within(typeGroup).getByRole("button", { name: m.media_anime() }),
+    );
+
+    await waitFor(() =>
+      expect(requests.at(-1)?.searchParams.getAll("type")).toEqual(["ANIME"]),
+    );
+  });
+
+  it("searches from the header, beside the view switch", async () => {
+    const requests = serve();
+    const user = userEvent.setup();
+
+    renderWithQuery(SagasView, { modeSwitch });
+    await screen.findByText("Dune");
+
+    await user.type(
+      screen.getByRole("searchbox", { name: m.library_filter_placeholder() }),
+      "dune",
+    );
+
+    await waitFor(() =>
+      expect(requests.at(-1)?.searchParams.get("q")).toBe("dune"),
+    );
   });
 
   it("says so when the library has no saga going", async () => {
